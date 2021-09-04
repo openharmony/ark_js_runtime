@@ -1,0 +1,1480 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+intrinsics_namespace: panda::ecmascript::intrinsics
+
+intrinsics:
+- name: Ldnan
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldnan
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldnan
+
+- name: Ldinfinity
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldinfinity
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldinfinity
+
+- name: Ldglobalthis
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldglobalthis
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldglobalthis
+
+- name: Ldundefined
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldundefined
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldundefined
+
+- name: Ldboolean
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldboolean
+  static: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::Ldboolean
+
+- name: Ldnumber
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldnumber
+  static: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::Ldnumber
+
+- name: Ldstring
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldstring
+  static: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::Ldstring
+
+- name: Ldbigint
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldbigint
+  static: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::Ldbigint
+
+- name: Ldnull
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldnull
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldnull
+
+- name: Ldsymbol
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldsymbol
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldsymbol
+
+- name: Ldobject
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldobject
+  static: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::Ldobject
+
+- name: Ldfunction
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldfunction
+  static: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::Ldfunction
+
+- name: Ldglobal
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldglobal
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldglobal
+
+- name: Ldtrue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldtrue
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldtrue
+
+- name: Ldfalse
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldfalse
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::Ldfalse
+
+- name: Add2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: add2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Add2Dyn
+
+- name: Sub2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: sub2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Sub2Dyn
+
+- name: Mul2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: mul2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Mul2Dyn
+
+- name: Div2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: div2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Div2Dyn
+
+- name: Mod2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: mod2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Mod2Dyn
+
+- name: EqDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: eqDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::EqDyn
+
+- name: NotEqDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: noteqDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::NotEqDyn
+
+- name: LessDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: lessDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::LessDyn
+
+- name: LessEqDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: lesseqDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::LessEqDyn
+
+- name: GreaterDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: greaterDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::GreaterDyn
+
+- name: GreaterEqDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: greatereqDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::GreaterEqDyn
+
+- name: LdObjByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldObjByValue
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any, any]
+  impl: panda::ecmascript::intrinsics::LdObjByValue
+
+- name: TryLdGlobalByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: tryLdGlobalByValue
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any]
+  impl: panda::ecmascript::intrinsics::TryLdGlobalByValue
+
+- name: StObjByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: stObjByValue
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [u16, any, any, acc]
+  impl: panda::ecmascript::intrinsics::StObjByValue
+
+- name: Shl2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: shl2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Shl2Dyn
+
+- name: Shr2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: shr2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Shr2Dyn
+
+- name: Ashr2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ashr2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Ashr2Dyn
+
+- name: And2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: and2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::And2Dyn
+
+- name: Or2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: or2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Or2Dyn
+
+- name: Xor2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: xor2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::Xor2Dyn
+
+- name: Tonumber
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: tonumber
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::Tonumber
+
+- name: NegDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: negDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::NegDyn
+
+- name: NotDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: notDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::NotDyn
+
+- name: IncDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: incDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::IncDyn
+
+- name: DecDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: decDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::DecDyn
+
+- name: ThrowDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: throwDyn
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [acc]
+  impl: panda::ecmascript::intrinsics::ThrowDyn
+
+- name: Delobjprop
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: delobjprop
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::Delobjprop
+
+- name: Defineglobalvar
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: defineglobalvar
+  static: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::Defineglobalvar
+
+- name: Definelocalvar
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: definelocalvar
+  static: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::Definelocalvar
+
+- name: Definefuncexpr
+  class_name: Ecmascript.Intrinsics
+  space: ecmascript
+  method_name: definefuncexpr
+  static: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::Definefuncexpr
+
+- name: DefinefuncDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: definefuncDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [method_id, any]
+  impl: panda::ecmascript::intrinsics::DefinefuncDyn
+
+- name: DefineNCFuncDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: defineNCFuncDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [method_id, any, acc]
+  impl: panda::ecmascript::intrinsics::DefineNCFuncDyn
+
+- name: NewobjDynrange
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: newobjDynrange
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any]
+  impl: panda::ecmascript::intrinsics::NewobjDynrange
+
+- name: RefeqDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: refeqDyn
+  static: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::RefeqDyn
+
+- name: ExpDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: expDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::ExpDyn
+
+- name: TypeofDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: typeofDyn
+  static: true
+  signature:
+    ret: any
+    args: [acc]
+  impl: panda::ecmascript::intrinsics::TypeofDyn
+
+- name: Callruntimerange
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: callruntimerange
+  static: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::Callruntimerange
+
+- name: IsinDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: isinDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::IsinDyn
+
+- name: InstanceofDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: instanceofDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::InstanceofDyn
+
+- name: StrictNotEqDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: strictNotEqDyn
+  static: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::StrictNotEqDyn
+
+- name: StrictEqDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: strictEqDyn
+  static: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::StrictEqDyn
+
+- name: NewobjspreadDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: newobjspreadDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any, acc]
+  impl: panda::ecmascript::intrinsics::NewobjspreadDyn
+
+- name: CallspreadDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: callspreadDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any, any]
+  impl: panda::ecmascript::intrinsics::CallspreadDyn
+
+- name: NewlexenvDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: newlexenvDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16]
+  impl: panda::ecmascript::intrinsics::NewlexenvDyn
+
+- name: StLexVarDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StLexVarDyn
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [u16, u16, any]
+  impl: panda::ecmascript::intrinsics::StLexVarDyn
+
+- name: LdLexVarDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdLexVarDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, u16]
+  impl: panda::ecmascript::intrinsics::LdLexVarDyn
+
+- name: LdlexenvDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldlexenvDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::LdlexenvDyn
+
+- name: PopLexenvDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: popLexenvDyn
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::PopLexenvDyn
+
+- name: GetUnmappedArgs
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: getUnmappedArgs
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::GetUnmappedArgs
+
+- name: Toboolean
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: toboolean
+  static: true
+  signature:
+    ret: any
+    args: [acc]
+  impl: panda::ecmascript::intrinsics::Toboolean
+
+- name: GetPropIterator
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: getPropIterator
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [acc]
+  impl: panda::ecmascript::intrinsics::GetPropIterator
+
+- name: DefineGeneratorFunc
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: defineGeneratorFunc
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [method_id, any]
+  impl: panda::ecmascript::intrinsics::DefineGeneratorFunc
+
+- name: CreateIterResultObj
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: createIterResultObj
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::CreateIterResultObj
+
+- name: SuspendGenerator
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: suspendGenerator
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::SuspendGenerator
+
+- name: ResumeGenerator
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: resumeGenerator
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::ResumeGenerator
+
+- name: GetResumeMode
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: getResumeMode
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::GetResumeMode
+
+- name: CreateGeneratorObj
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: createGeneratorObj
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::CreateGeneratorObj
+
+- name: DefineAsyncFunc
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: defineAsyncFunc
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [method_id, any]
+  impl: panda::ecmascript::intrinsics::DefineAsyncFunc
+
+- name: AsyncFunctionEnter
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: asyncFunctionEnter
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::AsyncFunctionEnter
+
+- name: AsyncFunctionAwaitUncaught
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: asyncFunctionAwaitUncaught
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::AsyncFunctionAwaitUncaught
+
+- name: AsyncFunctionResolve
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: asyncFunctionResolve
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any, any]
+  impl: panda::ecmascript::intrinsics::AsyncFunctionResolve
+
+- name: AsyncFunctionReject
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: asyncFunctionReject
+  exception: true
+  static: true
+  signature:
+    ret: any
+    args: [any, any, any]
+  impl: panda::ecmascript::intrinsics::AsyncFunctionReject
+
+- name: ThrowUndefined
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: throwUndefined
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [any]
+  impl: panda::ecmascript::intrinsics::ThrowUndefined
+
+- name: ThrowConstAssignment
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: throwConstAssignment
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [any]
+  impl: panda::ecmascript::intrinsics::ThrowConstAssignment
+
+- name: ThrowUndefinedIfHole
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: throwUndefinedIfHole
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::ThrowUndefinedIfHole
+
+- name: Copyrestargs
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: copyrestargs
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16]
+  impl: panda::ecmascript::intrinsics::Copyrestargs
+
+- name: LdHole
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ldHole
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::LdHole
+
+- name: TryStGlobalByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: tryStGlobalByValue
+  exception: true
+  static: true
+  signature:
+    ret: void
+    args: [u16, any, acc]
+  impl: panda::ecmascript::intrinsics::TryStGlobalByValue
+
+- name: GetTemplateObject
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: getTemplateObject
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::GetTemplateObject
+
+- name: TryLdGlobalByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: TryLdGlobalByName
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [string_id, u16]
+  impl: panda::ecmascript::intrinsics::TryLdGlobalByName
+
+- name: TryStGlobalByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: TryStGlobalByName
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [string_id, u16, acc]
+  impl: panda::ecmascript::intrinsics::TryStGlobalByName
+
+- name: LdGlobalVar
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdGlobalVar
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [string_id, u16]
+  impl: panda::ecmascript::intrinsics::LdGlobalVar
+
+- name: StGlobalVar
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StGlobalVar
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [string_id, u16, acc]
+  impl: panda::ecmascript::intrinsics::StGlobalVar
+
+- name: LdObjByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdObjByName
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [string_id, u16, any]
+  impl: panda::ecmascript::intrinsics::LdObjByName
+
+- name: StObjByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StObjByName
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [string_id, u16, any, acc]
+  impl: panda::ecmascript::intrinsics::StObjByName
+
+- name: LdObjByIndex
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdObjByIndex
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any, any]
+  impl: panda::ecmascript::intrinsics::LdObjByIndex
+
+- name: StObjByIndex
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StObjByIndex
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [u16, any, any, acc]
+  impl: panda::ecmascript::intrinsics::StObjByIndex
+
+- name: GetNextPropName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: getnextpropname
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::GetNextPropName
+
+- name: ReturnUndefined
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ReturnUndefined
+  static: true
+  signature:
+    ret: void
+    args: []
+  impl: panda::ecmascript::intrinsics::ReturnUndefined
+
+- name: Call0Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: Call0Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::CallArg0Dyn
+
+- name: Call1Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: Call1Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::CallArg1Dyn
+
+- name: Call2Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: Call2Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any, any]
+  impl: panda::ecmascript::intrinsics::CallArgs2Dyn
+
+- name: Call3Dyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: Call3Dyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any, any, any]
+  impl: panda::ecmascript::intrinsics::CallArgs3Dyn
+
+- name: CalliRangeDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: CalliRangeDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any]
+  impl: panda::ecmascript::intrinsics::CalliRangeDyn
+
+- name: CalliThisRangeDyn
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: CalliThisRangeDyn
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any]
+  impl: panda::ecmascript::intrinsics::CalliThisRangeDyn
+
+- name: CreateEmptyObject
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: createemptyobject
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::CreateEmptyObject
+
+- name: CreateObjectWithBuffer
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: createobjectwithbuffer
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16]
+  impl: panda::ecmascript::intrinsics::CreateObjectWithBuffer
+
+- name: CopyDataProperties
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: copydataproperties
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::CopyDataProperties
+
+- name: DefineGetterSetterByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: definegettersetterbyvalue
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any, any, any, acc]
+  impl: panda::ecmascript::intrinsics::DefineGetterSetterByValue
+
+- name: CreateEmptyArray
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: createemptyarray
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::CreateEmptyArray
+
+- name: CreateArrayWithBuffer
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: createarraywithbuffer
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16]
+  impl: panda::ecmascript::intrinsics::CreateArrayWithBuffer
+
+- name: StOwnByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StOwnByName
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [string_id, u16, any, acc]
+  impl: panda::ecmascript::intrinsics::StOwnByName
+
+- name: StOwnByIndex
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StOwnByIndex
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [u16, any, any, acc]
+  impl: panda::ecmascript::intrinsics::StOwnByIndex
+
+- name: StOwnByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StOwnByValue
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [u16, any, any, acc]
+  impl: panda::ecmascript::intrinsics::StOwnByValue
+
+- name: StArraySpread
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: starrayspread
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any, acc]
+  impl: panda::ecmascript::intrinsics::StArraySpread
+
+- name: GetIterator
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: GetIterator
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [acc]
+  impl: panda::ecmascript::intrinsics::GetIterator
+
+- name: ThrowIfNotObject
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ThrowIfNotObject
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [any]
+  impl: panda::ecmascript::intrinsics::ThrowIfNotObject
+
+- name: ThrowThrowNotExists
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ThrowThrowNotExists
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: []
+  impl: panda::ecmascript::intrinsics::ThrowThrowNotExists
+
+- name: CreateObjectWithExcludedKeys
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: CreateObjectWithExcludedKeys
+  static: true
+  signature:
+    ret: any
+    args: [u16, any, any]
+  impl: panda::ecmascript::intrinsics::CreateObjectWithExcludedKeys
+
+- name: ThrowPatternNonCoercible
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ThrowPatternNonCoercible
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: []
+  impl: panda::ecmascript::intrinsics::ThrowPatternNonCoercible
+
+- name: IterNext
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: IterNext
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::IterNext
+
+- name: GetIteratorNext
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: GetIteratorNext
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::GetIteratorNext
+
+- name: CloseIterator
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: CloseIterator
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any]
+  impl: panda::ecmascript::intrinsics::CloseIterator
+
+- name: ImportModule
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ImportModule
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [string_id]
+  impl: panda::ecmascript::intrinsics::ImportModule
+
+- name: StModuleVar
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StModuleVar
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [string_id, acc]
+  impl: panda::ecmascript::intrinsics::StModuleVar
+
+- name: CopyModule
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: CopyModule
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [any]
+  impl: panda::ecmascript::intrinsics::CopyModule
+
+- name: LdModvarByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdModvarByName
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [string_id, u16, any]
+  impl: panda::ecmascript::intrinsics::LdModvarByName
+
+- name: DefineClassWithBuffer
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: DefineClassWithBuffer
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [method_id, u16, any, any]
+  impl: panda::ecmascript::intrinsics::DefineClassWithBuffer
+
+- name: SuperCall
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: SuperCall
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any, acc]
+  impl: panda::ecmascript::intrinsics::SuperCall
+
+- name: SuperCallSpread
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: SuperCallSpread
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [any, acc]
+  impl: panda::ecmascript::intrinsics::SuperCallSpread
+
+- name: DefineMethod
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: defineMethod
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [method_id, any, acc]
+  impl: panda::ecmascript::intrinsics::DefineMethod
+
+- name: LdSuperByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdSuperByName
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [string_id, u16, any]
+  impl: panda::ecmascript::intrinsics::LdSuperByName
+
+- name: StSuperByName
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StSuperByName
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [string_id, u16, any, acc]
+  impl: panda::ecmascript::intrinsics::StSuperByName
+
+- name: StSuperByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: StSuperByValue
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [u16, any, any, acc]
+  impl: panda::ecmascript::intrinsics::StSuperByValue
+
+- name: LdSuperByValue
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdSuperByValue
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, any, any]
+  impl: panda::ecmascript::intrinsics::LdSuperByValue
+
+- name: CreateObjectHavingMethod
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: createobjecthavingmethod
+  static: true
+  exception: true
+  signature:
+    ret: any
+    args: [u16, acc]
+  impl: panda::ecmascript::intrinsics::CreateObjectHavingMethod
+
+- name: ThrowIfSuperNotCorrectCall
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ThrowIfSuperNotCorrectCall
+  static: true
+  signature:
+    ret: void
+    args: [u16, acc]
+  impl: panda::ecmascript::intrinsics::ThrowIfSuperNotCorrectCall
+
+- name: LdHomeObject
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: LdHomeObject
+  static: true
+  signature:
+    ret: any
+    args: []
+  impl: panda::ecmascript::intrinsics::LdHomeObject
+
+- name: SetObjectWithProto
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: setobjectwithproto
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: [any, any]
+  impl: panda::ecmascript::intrinsics::SetObjectWithProto
+
+- name: ThrowDeleteSuperProperty
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: ThrowDeleteSuperProperty
+  static: true
+  exception: true
+  signature:
+    ret: void
+    args: []
+  impl: panda::ecmascript::intrinsics::ThrowDeleteSuperProperty
+
+- name: Debugger
+  space: ecmascript
+  class_name: Ecmascript.Intrinsics
+  method_name: debugger
+  static: true
+  signature:
+    ret: void
+    args: []
+  impl: panda::ecmascript::intrinsics::Debugger

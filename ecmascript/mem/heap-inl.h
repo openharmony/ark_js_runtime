@@ -1,0 +1,189 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_INL_H
+#define PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_INL_H
+
+#include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/mem_controller.h"
+#include "ecmascript/mem/space.h"
+#include "ecmascript/hprof/heap_tracker.h"
+#include "ecmascript/mem/remembered_set.h"
+
+namespace panda::ecmascript {
+template <class Callback>
+void Heap::EnumerateOldSpaceRegions(const Callback &cb, Region *region) const
+{
+    oldSpace_->EnumerateRegions(cb, region);
+    nonMovableSpace_->EnumerateRegions(cb);
+    largeObjectSpace_->EnumerateRegions(cb);
+}
+
+template <class Callback>
+void Heap::EnumerateSnapShotSpaceRegions(const Callback &cb) const
+{
+    snapshotSpace_->EnumerateRegions(cb);
+}
+
+template <class Callback>
+void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
+{
+    toSpace_->EnumerateRegions(cb);
+}
+
+template <class Callback>
+void Heap::EnumerateRegions(const Callback &cb) const
+{
+    toSpace_->EnumerateRegions(cb);
+    oldSpace_->EnumerateRegions(cb);
+    snapshotSpace_->EnumerateRegions(cb);
+    nonMovableSpace_->EnumerateRegions(cb);
+    largeObjectSpace_->EnumerateRegions(cb);
+}
+
+template <class Callback>
+void Heap::IteratorOverObjects(const Callback &cb) const
+{
+    toSpace_->IterateOverObjects(cb);
+    oldSpace_->IterateOverObjects(cb);
+    nonMovableSpace_->IterateOverObjects(cb);
+}
+
+bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allowGc)
+{
+    if (toSpace_->Expand(spaceAllocator->GetTop())) {
+        spaceAllocator->Reset(toSpace_);
+        return true;
+    }
+    if (!allowGc) {
+        return false;
+    }
+    if (!CheckAndTriggerCompressGC()) {
+        CollectGarbage(TriggerGCType::SEMI_GC);
+    }
+    return true;
+}
+
+bool Heap::FillOldSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
+{
+    if (oldSpace_->Expand()) {
+        spaceAllocator->AddFree(oldSpace_->GetCurrentRegion());
+        return true;
+    }
+    if (allowGc) {
+        CollectGarbage(TriggerGCType::OLD_GC);
+        return true;
+    }
+    return false;
+}
+
+bool Heap::FillNonMovableSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
+{
+    if (nonMovableSpace_->Expand()) {
+        spaceAllocator->AddFree(nonMovableSpace_->GetCurrentRegion());
+        return true;
+    }
+    if (allowGc) {
+        CollectGarbage(TriggerGCType::NON_MOVE_GC);
+        return true;
+    }
+    return false;
+}
+
+bool Heap::FillSnapShotSpace(BumpPointerAllocator *spaceAllocator)
+{
+    bool result = snapshotSpace_->Expand(spaceAllocator->GetTop());
+    if (result) {
+        spaceAllocator->Reset(snapshotSpace_);
+    }
+    return result;
+}
+
+void Heap::OnAllocateEvent(uintptr_t address)
+{
+    if (tracker_ != nullptr) {
+        tracker_->AllocationEvent(address);
+    }
+}
+
+void Heap::OnMoveEvent(uintptr_t address, uintptr_t forwardAddress)
+{
+    if (tracker_ != nullptr) {
+        tracker_->MoveEvent(address, forwardAddress);
+    }
+}
+
+void Heap::SetNewSpaceAgeMark(uintptr_t mark)
+{
+    ASSERT(toSpace_ != nullptr);
+    toSpace_->SetAgeMark(mark);
+}
+
+void Heap::SetNewSpaceMaximumCapacity(size_t maximumCapacity)
+{
+    ASSERT(toSpace_ != nullptr);
+    SetMaximumCapacity(toSpace_, maximumCapacity);
+}
+
+void Heap::InitializeFromSpace()
+{
+    ASSERT(fromSpace_ != nullptr);
+    fromSpace_->SetUp();
+}
+
+void Heap::SwapSpace()
+{
+    ASSERT(toSpace_ != nullptr);
+    ASSERT(fromSpace_ != nullptr);
+    toSpace_->Swap(fromSpace_);
+}
+
+void Heap::ReclaimFromSpaceRegions()
+{
+    ASSERT(fromSpace_ != nullptr);
+    fromSpace_->ReclaimRegions();
+}
+
+void Heap::SetFromSpaceMaximumCapacity(size_t maximumCapacity)
+{
+    ASSERT(fromSpace_ != nullptr);
+    SetMaximumCapacity(fromSpace_, maximumCapacity);
+}
+
+void Heap::ResetAppStartup()
+{
+    ASSERT(memController_ != nullptr);
+    memController_->ResetAppStartup();
+}
+
+void Heap::SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity)
+{
+    space->SetMaximumCapacity(maximumCapacity);
+}
+
+void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd)
+{
+    auto set = current->GetOldToNewRememberedSet();
+    if (set != nullptr) {
+        set->ClearRange(freeStart, freeEnd);
+    }
+    set = current->GetCrossRegionRememberedSet();
+    if (set != nullptr) {
+        set->ClearRange(freeStart, freeEnd);
+    }
+}
+}  // namespace panda::ecmascript
+
+#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_INL_H

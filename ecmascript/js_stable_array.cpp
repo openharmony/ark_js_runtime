@@ -1,0 +1,146 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "js_stable_array.h"
+#include "ecmascript/base/builtins_base.h"
+#include "ecmascript/ecma_vm.h"
+#include "ecmascript/global_env.h"
+#include "ecmascript/js_array.h"
+#include "ecmascript/js_invoker.h"
+#include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/object_factory.h"
+#include "ecmascript/tagged_array.h"
+#include "interpreter/fast_runtime_stub-inl.h"
+
+namespace panda::ecmascript {
+JSTaggedValue JSStableArray::Push(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo *argv)
+{
+    JSThread *thread = argv->GetThread();
+    array_size_t argc = argv->GetArgsNumber();
+    uint32_t oldLength = receiver->GetArrayLength();
+    array_size_t newLength = argc + oldLength;
+
+    TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
+    if (newLength > elements->GetLength()) {
+        elements = *JSObject::GrowElementsCapacity(thread, JSHandle<JSObject>::Cast(receiver), newLength);
+    }
+
+    for (array_size_t k = 0; k < argc; k++) {
+        JSHandle<JSTaggedValue> value = argv->GetCallArg(k);
+        elements->Set(thread, oldLength + k, value.GetTaggedValue());
+    }
+    receiver->SetArrayLength(thread, newLength);
+
+    return JSTaggedValue(newLength);
+}
+
+JSTaggedValue JSStableArray::Pop(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo *argv)
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    JSThread *thread = argv->GetThread();
+    uint32_t length = receiver->GetArrayLength();
+    if (length == 0) {
+        return JSTaggedValue::Undefined();
+    }
+
+    TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
+    array_size_t capacity = elements->GetLength();
+    array_size_t index = length - 1;
+    auto result = elements->Get(index);
+    if (JSObject::ShouldTransToDict(capacity, index)) {
+        elements->Trim(thread, length);
+    } else {
+        elements->Set(thread, index, JSTaggedValue::Hole());
+    }
+    receiver->SetArrayLength(thread, index);
+    return result;
+}
+
+JSTaggedValue JSStableArray::Join(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo *argv)
+{
+    JSThread *thread = argv->GetThread();
+    uint32_t length = receiver->GetArrayLength();
+    JSHandle<JSTaggedValue> sepHandle = base::BuiltinsBase::GetCallArg(argv, 0);
+    int sep = ',';
+    uint32_t sepLength = 1;
+    JSHandle<EcmaString> sepStringHandle;
+    if (!sepHandle->IsUndefined()) {
+        if (sepHandle->IsString()) {
+            sepStringHandle = JSHandle<EcmaString>::Cast(sepHandle);
+        } else {
+            sepStringHandle = JSTaggedValue::ToString(thread, sepHandle);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        }
+        if (sepStringHandle->IsUtf8() && sepStringHandle->GetLength() == 1) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            sep = sepStringHandle->GetDataUtf8()[0];
+        } else if (sepStringHandle->GetLength() == 0) {
+            sep = JSStableArray::SeparatorFlag::MINUS_TWO;
+            sepLength = 0;
+        } else {
+            sep = JSStableArray::SeparatorFlag::MINUS_ONE;
+            sepLength = sepStringHandle->GetLength();
+        }
+    }
+    if (length == 0) {
+        const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+        return globalConst->GetEmptyString();
+    }
+    TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
+    size_t allocateLength = 0;
+    bool isOneByte = (sep != JSStableArray::SeparatorFlag::MINUS_ONE) || sepStringHandle->IsUtf8();
+    CVector<JSHandle<EcmaString>> vec;
+    JSMutableHandle<JSTaggedValue> elementHandle(thread, JSTaggedValue::Undefined());
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    for (array_size_t k = 0; k < length; k++) {
+        JSTaggedValue element = elements->Get(k);
+        if (!element.IsUndefinedOrNull() && !element.IsHole()) {
+            if (!element.IsString()) {
+                elementHandle.Update(element);
+                JSHandle<EcmaString> strElement = JSTaggedValue::ToString(thread, elementHandle);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                element = strElement.GetTaggedValue();
+                elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
+            }
+            auto nextStr = EcmaString::Cast(element.GetTaggedObject());
+            JSHandle<EcmaString> nextStrHandle(thread, nextStr);
+            vec.push_back(nextStrHandle);
+            isOneByte = nextStr->IsUtf8() ? isOneByte : false;
+            allocateLength += nextStr->GetLength();
+        } else {
+            vec.push_back(JSHandle<EcmaString>(globalConst->GetHandledEmptyString()));
+        }
+    }
+    allocateLength += sepLength * (length - 1);
+    auto newString = EcmaString::AllocStringObject(allocateLength, isOneByte, thread->GetEcmaVM());
+    int current = 0;
+    DISALLOW_GARBAGE_COLLECTION;
+    for (array_size_t k = 0; k < length; k++) {
+        if (k > 0) {
+            if (sep >= 0) {
+                newString->WriteData(static_cast<char>(sep), current);
+            } else if (sep != JSStableArray::SeparatorFlag::MINUS_TWO) {
+                newString->WriteData(*sepStringHandle, current, allocateLength - current, sepLength);
+            }
+            current += sepLength;
+        }
+        JSHandle<EcmaString> nextStr = vec[k];
+        int nextLength = nextStr->GetLength();
+        newString->WriteData(*nextStr, current, allocateLength - current, nextLength);
+        current += nextLength;
+    }
+    return JSTaggedValue(newString);
+}
+}  // namespace panda::ecmascript

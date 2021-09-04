@@ -1,0 +1,811 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_H
+#define PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_H
+
+#include <cassert>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "ecmascript/common.h"
+#include "libpandabase/macros.h"
+
+namespace panda {
+class JSNApiHelper;
+class EscapeLocalScope;
+template <typename T>
+class Global;
+class JSNApi;
+class PrimitiveRef;
+class ArrayRef;
+class StringRef;
+class ObjectRef;
+class FunctionRef;
+class NumberRef;
+class BooleanRef;
+namespace test {
+class JSNApiTests;
+}  // namespace test
+
+namespace ecmascript {
+class EcmaVM;
+}  // namespace ecmascript
+
+using EcmaVM = ecmascript::EcmaVM;
+using JSTaggedType = uint64_t;
+static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DISALLOW_COPY(className)           \
+    className(const className &) = delete; \
+    className &operator=(const className &) = delete
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DISALLOW_MOVE(className)      \
+    className(className &&) = delete; \
+    className &operator=(className &&) = delete
+
+template <typename T>
+class PUBLIC_API Local {  // NOLINT(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
+public:
+    inline Local() = default;
+
+    template <typename S>
+    inline Local(const Local<S> &current) : address_(reinterpret_cast<uintptr_t>(*current))
+    {
+        // Check
+    }
+
+    Local(const EcmaVM *vm, const Global<T> &current);
+
+    ~Local() = default;
+
+    inline T *operator*() const
+    {
+        return GetAddress();
+    }
+
+    inline T *operator->() const
+    {
+        return GetAddress();
+    }
+
+    inline bool IsEmpty() const
+    {
+        return GetAddress() == nullptr;
+    }
+
+    inline bool CheckException() const
+    {
+        return IsEmpty() || GetAddress()->IsException();
+    }
+
+    inline bool IsException() const
+    {
+        return !IsEmpty() && GetAddress()->IsException();
+    }
+
+    inline bool IsNull() const
+    {
+        return IsEmpty() || GetAddress()->IsHole();
+    }
+
+private:
+    explicit inline Local(uintptr_t addr) : address_(addr) {}
+    inline T *GetAddress() const
+    {
+        return reinterpret_cast<T *>(address_);
+    };
+    uintptr_t address_ = 0U;
+    friend JSNApiHelper;
+    friend EscapeLocalScope;
+};
+
+template <typename T>
+class PUBLIC_API Global {  // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions
+public:
+    inline Global() = default;
+
+    template <typename S>
+    Global(const EcmaVM *vm, const Local<S> &current);
+    ~Global() = default;
+
+    Local<T> ToLocal(const EcmaVM *vm) const
+    {
+        return Local<T>(vm, *this);
+    }
+
+    // This method must be called before Global is released.
+    void FreeGlobalHandleAddr();
+
+    inline T *operator*() const
+    {
+        return GetAddress();
+    }
+
+    inline T *operator->() const
+    {
+        return GetAddress();
+    }
+
+    inline bool IsEmpty() const
+    {
+        return GetAddress() == nullptr;
+    }
+
+    inline bool CheckException() const
+    {
+        return IsEmpty() || GetAddress()->IsException();
+    }
+
+private:
+    inline T *GetAddress() const
+    {
+        return reinterpret_cast<T *>(address_);
+    };
+    uintptr_t address_ = 0U;
+    const EcmaVM *vm_{nullptr};
+};
+
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
+class PUBLIC_API LocalScope {
+public:
+    explicit LocalScope(const EcmaVM *vm);
+    virtual ~LocalScope();
+
+protected:
+    inline LocalScope(const EcmaVM *vm, JSTaggedType value);
+
+private:
+    void *prevNext_ = nullptr;
+    void *prevEnd_ = nullptr;
+    void *thread_ = nullptr;
+};
+
+class PUBLIC_API EscapeLocalScope final : public LocalScope {
+public:
+    explicit EscapeLocalScope(const EcmaVM *vm);
+    ~EscapeLocalScope() override = default;
+
+    DISALLOW_COPY(EscapeLocalScope);
+    DISALLOW_MOVE(EscapeLocalScope);
+
+    template <typename T>
+    inline Local<T> Escape(Local<T> current)
+    {
+        ASSERT(!alreadyEscape_);
+        alreadyEscape_ = true;
+        *(reinterpret_cast<T *>(escapeHandle_)) = **current;
+        return Local<T>(escapeHandle_);
+    }
+
+private:
+    bool alreadyEscape_ = false;
+    uintptr_t escapeHandle_ = 0U;
+};
+
+class PUBLIC_API JSExecutionScope {
+public:
+    explicit JSExecutionScope(const EcmaVM *vm);
+    ~JSExecutionScope();
+    DISALLOW_COPY(JSExecutionScope);
+    DISALLOW_MOVE(JSExecutionScope);
+
+private:
+    void *last_current_thread_ = nullptr;
+    bool is_revert_ = false;
+};
+
+class PUBLIC_API JSValueRef {
+public:
+    static Local<PrimitiveRef> Undefined(const EcmaVM *vm);
+    static Local<PrimitiveRef> Null(const EcmaVM *vm);
+    static Local<PrimitiveRef> True(const EcmaVM *vm);
+    static Local<PrimitiveRef> False(const EcmaVM *vm);
+    static Local<JSValueRef> Exception(const EcmaVM *vm);
+
+    bool BooleaValue();
+    int64_t IntegerValue(const EcmaVM *vm);
+    uint32_t Uint32Value(const EcmaVM *vm);
+    int32_t Int32Value(const EcmaVM *vm);
+
+    Local<NumberRef> ToNumber(const EcmaVM *vm);
+    Local<BooleanRef> ToBoolean(const EcmaVM *vm);
+    Local<StringRef> ToString(const EcmaVM *vm);
+    Local<ObjectRef> ToObject(const EcmaVM *vm);
+
+    bool IsUndefined();
+    bool IsNull();
+    bool IsHole();
+    bool IsTrue();
+    bool IsFalse();
+    bool IsNumber();
+    bool IsInt();
+    bool WithinInt32();
+    bool IsBoolean();
+    bool IsString();
+    bool IsSymbol();
+    bool IsObject();
+    bool IsArray(const EcmaVM *vm);
+    bool IsConstructor();
+    bool IsFunction();
+    bool IsProxy();
+    bool IsException();
+    bool IsPromise();
+    bool IsDataView();
+    bool IsTypedArray();
+    bool IsNativePointer();
+    bool IsNativeObject();
+    bool IsDate();
+    bool IsError();
+    bool IsMap();
+    bool IsSet();
+    bool IsWeakMap();
+    bool IsWeakSet();
+    bool IsRegExp();
+    bool IsArrayIterator();
+    bool IsStringIterator();
+    bool IsSetIterator();
+    bool IsMapIterator();
+    bool IsArrayBuffer();
+    bool IsUint8Array();
+    bool IsInt8Array();
+    bool IsUint8ClampedArray();
+    bool IsInt16Array();
+    bool IsUint16Array();
+    bool IsInt32Array();
+    bool IsUint32Array();
+    bool IsFloat32Array();
+    bool IsFloat64Array();
+
+    bool IsStrictEquals(const EcmaVM *vm, Local<JSValueRef> value);
+    Local<StringRef> Typeof(const EcmaVM *vm);
+    bool InstanceOf(const EcmaVM *vm, Local<JSValueRef> value);
+
+private:
+    JSTaggedType value_;
+    friend JSNApi;
+    template <typename T>
+    friend class Global;
+    template <typename T>
+    friend class Local;
+};
+
+class PUBLIC_API PrimitiveRef : public JSValueRef {
+};
+
+class PUBLIC_API IntegerRef : public PrimitiveRef {
+public:
+    static Local<IntegerRef> New(const EcmaVM *vm, int input);
+    int Value();
+};
+
+class PUBLIC_API NumberRef : public PrimitiveRef {
+public:
+    static Local<NumberRef> New(const EcmaVM *vm, double input);
+    double Value();
+};
+
+class PUBLIC_API BooleanRef : public PrimitiveRef {
+public:
+    static Local<BooleanRef> New(const EcmaVM *vm, bool input);
+    bool Value();
+};
+
+class PUBLIC_API StringRef : public PrimitiveRef {
+public:
+    static inline StringRef *Cast(JSValueRef *value)
+    {
+        // check
+        return static_cast<StringRef *>(value);
+    }
+    static Local<StringRef> NewFromUtf8(const EcmaVM *vm, const char *utf8, int length = -1);
+    std::string ToString();
+    int32_t Length();
+    int32_t Utf8Length();
+    int WriteUtf8(char *buffer, int length);
+};
+
+class PUBLIC_API SymbolRef : public PrimitiveRef {
+public:
+    static Local<SymbolRef> New(const EcmaVM *vm, Local<StringRef> description);
+    Local<StringRef> GetDescription(const EcmaVM *vm);
+};
+
+using NativePointerCallback = void (*)(void* value, void* hint);
+class PUBLIC_API NativePointerRef : public JSValueRef {
+public:
+    static Local<NativePointerRef> New(const EcmaVM *vm, void *nativePointer);
+    static Local<NativePointerRef> New(const EcmaVM *vm,
+                                       void *nativePointer,
+                                       NativePointerCallback callBack,
+                                       void *data);
+    void *Value();
+};
+
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
+class PUBLIC_API PropertyAttribute {
+public:
+    static PropertyAttribute Default()
+    {
+        return PropertyAttribute();
+    }
+    PropertyAttribute() = default;
+    PropertyAttribute(Local<JSValueRef> value, bool w, bool e, bool c)
+        : value_(value),
+          writable_(w),
+          enumerable_(e),
+          configurable_(c),
+          hasWritable_(true),
+          hasEnumerable_(true),
+          hasConfigurable_(true)
+    {}
+    ~PropertyAttribute() = default;
+
+    bool IsWritable() const
+    {
+        return writable_;
+    }
+    void SetWritable(bool flag)
+    {
+        writable_ = flag;
+        hasWritable_ = true;
+    }
+    bool IsEnumerable() const
+    {
+        return enumerable_;
+    }
+    void SetEnumerable(bool flag)
+    {
+        enumerable_ = flag;
+        hasEnumerable_ = true;
+    }
+    bool IsConfigurable() const
+    {
+        return configurable_;
+    }
+    void SetConfigurable(bool flag)
+    {
+        configurable_ = flag;
+        hasConfigurable_ = true;
+    }
+    bool HasWritable() const
+    {
+        return hasWritable_;
+    }
+    bool HasConfigurable() const
+    {
+        return hasConfigurable_;
+    }
+    bool HasEnumerable() const
+    {
+        return hasEnumerable_;
+    }
+    Local<JSValueRef> GetValue(const EcmaVM *vm) const
+    {
+        if (value_.IsEmpty()) {
+            return JSValueRef::Undefined(vm);
+        }
+        return value_;
+    }
+    void SetValue(Local<JSValueRef> value)
+    {
+        value_ = value;
+    }
+    inline bool HasValue() const
+    {
+        return !value_.IsEmpty();
+    }
+    Local<JSValueRef> GetGetter(const EcmaVM *vm) const
+    {
+        if (getter_.IsEmpty()) {
+            return JSValueRef::Undefined(vm);
+        }
+        return getter_;
+    }
+    void SetGetter(Local<JSValueRef> value)
+    {
+        getter_ = value;
+    }
+    bool HasGetter() const
+    {
+        return !getter_.IsEmpty();
+    }
+    Local<JSValueRef> GetSetter(const EcmaVM *vm) const
+    {
+        if (setter_.IsEmpty()) {
+            return JSValueRef::Undefined(vm);
+        }
+        return setter_;
+    }
+    void SetSetter(Local<JSValueRef> value)
+    {
+        setter_ = value;
+    }
+    bool HasSetter() const
+    {
+        return !setter_.IsEmpty();
+    }
+
+private:
+    Local<JSValueRef> value_;
+    Local<JSValueRef> getter_;
+    Local<JSValueRef> setter_;
+    bool writable_ = false;
+    bool enumerable_ = false;
+    bool configurable_ = false;
+    bool hasWritable_ = false;
+    bool hasEnumerable_ = false;
+    bool hasConfigurable_ = false;
+};
+
+class PUBLIC_API ObjectRef : public JSValueRef {
+public:
+    static inline ObjectRef *Cast(JSValueRef *value)
+    {
+        // check
+        return static_cast<ObjectRef *>(value);
+    }
+    static Local<ObjectRef> New(const EcmaVM *vm);
+    bool Set(const EcmaVM *vm, Local<JSValueRef> key, Local<JSValueRef> value);
+    bool Set(const EcmaVM *vm, uint32_t key, Local<JSValueRef> value);
+    bool SetAccessorProperty(const EcmaVM *vm, Local<JSValueRef> key, Local<FunctionRef> getter,
+                             Local<FunctionRef> setter, PropertyAttribute attribute = PropertyAttribute::Default());
+    Local<JSValueRef> Get(const EcmaVM *vm, Local<JSValueRef> key);
+    Local<JSValueRef> Get(const EcmaVM *vm, int32_t key);
+
+    bool GetOwnProperty(const EcmaVM *vm, Local<JSValueRef> key, PropertyAttribute &property);
+    Local<ArrayRef> GetOwnPropertyNames(const EcmaVM *vm);
+    Local<ArrayRef> GetOwnEnumerablePropertyNames(const EcmaVM *vm);
+    Local<JSValueRef> GetPrototype(const EcmaVM *vm);
+
+    bool DefineProperty(const EcmaVM *vm, Local<JSValueRef> key, PropertyAttribute attribute);
+
+    bool Has(const EcmaVM *vm, Local<JSValueRef> key);
+    bool Has(const EcmaVM *vm, uint32_t key);
+
+    bool Delete(const EcmaVM *vm, Local<JSValueRef> key);
+    bool Delete(const EcmaVM *vm, uint32_t key);
+    // Private
+};
+
+using FunctionCallback = Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>,
+                                               const Local<JSValueRef>[],  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+                                               int32_t, void *);
+using FunctionCallbackWithNewTarget =
+    Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>, Local<JSValueRef>, const Local<JSValueRef>[], int32_t, void *);
+class PUBLIC_API FunctionRef : public ObjectRef {
+public:
+    static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, void *data);
+    static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, void *data);
+    Local<JSValueRef> Call(const EcmaVM *vm, Local<JSValueRef> thisObj, const Local<JSValueRef> argv[],
+        int32_t length);
+    Local<JSValueRef> Constructor(const EcmaVM *vm, const Local<JSValueRef> argv[], int32_t length);
+    Local<JSValueRef> GetFunctionPrototype(const EcmaVM *vm);
+    void SetName(const EcmaVM *vm, Local<StringRef> name);
+    Local<StringRef> GetName(const EcmaVM *vm);
+    bool IsNative(const EcmaVM *vm);
+};
+
+class PUBLIC_API ArrayRef : public ObjectRef {
+public:
+    static Local<ArrayRef> New(const EcmaVM *vm, int32_t length = 0);
+    int32_t Length(const EcmaVM *vm);
+};
+
+class PUBLIC_API PromiseRef : public ObjectRef {
+public:
+    Local<PromiseRef> Catch(const EcmaVM *vm, Local<FunctionRef> handler);
+    Local<PromiseRef> Then(const EcmaVM *vm, Local<FunctionRef> handler);
+    Local<PromiseRef> Then(const EcmaVM *vm, Local<FunctionRef> onFulfilled, Local<FunctionRef> onRejected);
+};
+
+class PUBLIC_API PromiseCapabilityRef : public ObjectRef {
+public:
+    static Local<PromiseCapabilityRef> New(const EcmaVM *vm);
+    bool Resolve(const EcmaVM *vm, Local<JSValueRef> value);
+    bool Reject(const EcmaVM *vm, Local<JSValueRef> reason);
+    Local<PromiseRef> GetPromise(const EcmaVM *vm);
+};
+
+using Deleter = void (*)(void *buffer, void *data);
+class PUBLIC_API ArrayBufferRef : public ObjectRef {
+public:
+    static Local<ArrayBufferRef> New(const EcmaVM *vm, int32_t length);
+    static Local<ArrayBufferRef> New(const EcmaVM *vm, void *buffer, int32_t length, const Deleter &deleter,
+                                     void *data);
+
+    int32_t ByteLength(const EcmaVM *vm);
+    void *GetBuffer();
+};
+
+class PUBLIC_API DataViewRef : public ObjectRef {
+public:
+    static Local<DataViewRef> New(const EcmaVM *vm, Local<ArrayBufferRef> arrayBuffer, int32_t byteOffset,
+                                  int32_t byteLength);
+    int32_t ByteLength();
+    int32_t ByteOffset();
+    Local<ArrayBufferRef> GetArrayBuffer(const EcmaVM *vm);
+};
+
+class PUBLIC_API TypedArrayRef : public ObjectRef {
+public:
+    int32_t ByteLength(const EcmaVM *vm);
+    int32_t ByteOffset(const EcmaVM *vm);
+    int32_t ArrayLength(const EcmaVM *vm);
+    Local<ArrayBufferRef> GetArrayBuffer(const EcmaVM *vm);
+};
+
+class PUBLIC_API Int8ArrayRef : public TypedArrayRef {
+public:
+    static Local<Int8ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset, int32_t length);
+};
+
+class PUBLIC_API Uint8ArrayRef : public TypedArrayRef {
+public:
+    static Local<Uint8ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset, int32_t length);
+};
+
+class PUBLIC_API Uint8ClampedArrayRef : public TypedArrayRef {
+public:
+    static Local<Uint8ClampedArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
+                                           int32_t length);
+};
+
+class PUBLIC_API Int16ArrayRef : public TypedArrayRef {
+public:
+    static Local<Int16ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset, int32_t length);
+};
+
+class PUBLIC_API Uint16ArrayRef : public TypedArrayRef {
+public:
+    static Local<Uint16ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
+                                     int32_t length);
+};
+
+class PUBLIC_API Int32ArrayRef : public TypedArrayRef {
+public:
+    static Local<Int32ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset, int32_t length);
+};
+
+class PUBLIC_API Uint32ArrayRef : public TypedArrayRef {
+public:
+    static Local<Uint32ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
+                                     int32_t length);
+};
+
+class PUBLIC_API Float32ArrayRef : public TypedArrayRef {
+public:
+    static Local<Float32ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
+                                      int32_t length);
+};
+
+class PUBLIC_API Float64ArrayRef : public TypedArrayRef {
+public:
+    static Local<Float64ArrayRef> New(const EcmaVM *vm, Local<ArrayBufferRef> buffer, int32_t byteOffset,
+                                      int32_t length);
+};
+
+class PUBLIC_API RegExpRef : public ObjectRef {
+public:
+    Local<StringRef> GetOriginalSource(const EcmaVM *vm);
+};
+
+class PUBLIC_API DateRef : public ObjectRef {
+public:
+    Local<StringRef> ToString(const EcmaVM *vm);
+};
+
+class PUBLIC_API MapRef : public ObjectRef {
+public:
+    int32_t GetSize();
+};
+
+class PUBLIC_API SetRef : public ObjectRef {
+public:
+    int32_t GetSize();
+};
+
+class PUBLIC_API JSON {
+public:
+    static Local<JSValueRef> Parse(const EcmaVM *vm, Local<StringRef> string);
+    static Local<JSValueRef> Stringify(const EcmaVM *vm, Local<JSValueRef> json);
+};
+
+class PUBLIC_API Exception {
+public:
+    static Local<JSValueRef> Error(const EcmaVM *vm, Local<StringRef> message);
+    static Local<JSValueRef> RangeError(const EcmaVM *vm, Local<StringRef> message);
+    static Local<JSValueRef> ReferenceError(const EcmaVM *vm, Local<StringRef> message);
+    static Local<JSValueRef> SyntaxError(const EcmaVM *vm, Local<StringRef> message);
+    static Local<JSValueRef> TypeError(const EcmaVM *vm, Local<StringRef> message);
+    static Local<JSValueRef> EvalError(const EcmaVM *vm, Local<StringRef> message);
+};
+
+using LOG_PRINT = int (*)(int id, int level, const char *tag, const char *fmt, const char *message);
+
+class PUBLIC_API RuntimeOption {
+public:
+    enum class PUBLIC_API GC_TYPE : uint8_t { EPSILON, GEN_GC, STW };
+    enum class PUBLIC_API LOG_LEVEL : uint8_t {
+        DEBUG = 3,
+        INFO = 4,
+        WARN = 5,
+        ERROR = 6,
+        FATAL = 7,
+    };
+
+    void SetGcType(GC_TYPE type)
+    {
+        gcType_ = type;
+    }
+
+    void SetGcPoolSize(uint32_t size)
+    {
+        gcPoolSize_ = size;
+    }
+
+    void SetLogLevel(LOG_LEVEL logLevel)
+    {
+        logLevel_ = logLevel;
+    }
+
+    void SetLogBufPrint(LOG_PRINT out)
+    {
+        logBufPrint_ = out;
+    }
+
+    void SetDebuggerLibraryPath(const std::string &path)
+    {
+        debuggerLibraryPath_ = path;
+    }
+
+private:
+    std::string GetGcType() const
+    {
+        std::string gcType;
+        switch (gcType_) {
+            case GC_TYPE::GEN_GC:
+                gcType = "gen-gc";
+                break;
+            case GC_TYPE::STW:
+                gcType = "stw";
+                break;
+            case GC_TYPE::EPSILON:
+                gcType = "epsilon";
+                break;
+            default:
+                UNREACHABLE();
+        }
+        return gcType;
+    }
+
+    std::string GetLogLevel() const
+    {
+        std::string logLevel;
+        switch (logLevel_) {
+            case LOG_LEVEL::INFO:
+            case LOG_LEVEL::WARN:
+                logLevel = "info";
+                break;
+            case LOG_LEVEL::ERROR:
+                logLevel = "error";
+                break;
+            case LOG_LEVEL::FATAL:
+                logLevel = "fatal";
+                break;
+            case LOG_LEVEL::DEBUG:
+            default:
+                logLevel = "debug";
+                break;
+        }
+
+        return logLevel;
+    }
+
+    uint32_t GetGcPoolSize() const
+    {
+        return gcPoolSize_;
+    }
+
+    LOG_PRINT GetLogBufPrint() const
+    {
+        return logBufPrint_;
+    }
+
+    std::string GetDebuggerLibraryPath() const
+    {
+        return debuggerLibraryPath_;
+    }
+
+    GC_TYPE gcType_ = GC_TYPE::EPSILON;
+    LOG_LEVEL logLevel_ = LOG_LEVEL::DEBUG;
+    uint32_t gcPoolSize_ = DEFAULT_GC_POOL_SIZE;
+    LOG_PRINT logBufPrint_{nullptr};
+    std::string debuggerLibraryPath_{};
+    friend JSNApi;
+};
+
+class PUBLIC_API JSNApi {
+public:
+    // JSVM
+    static EcmaVM *CreateJSVM(const RuntimeOption &option);
+    static void DestoryJSVM(EcmaVM *ecmaVm);
+
+    // JS code
+    static bool Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> entry);
+    static bool Execute(EcmaVM *vm, const uint8_t *data, int32_t size, Local<StringRef> entry);
+    static bool ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file);
+    static Local<ObjectRef> GetExportObject(EcmaVM *vm, const std::string &file, const std::string &itemName);
+
+    // ObjectRef Operation
+    static Local<ObjectRef> GetGlobalObject(const EcmaVM *vm);
+    static void ExecutePendingJob(const EcmaVM *vm);
+
+    // Memory
+    static void TriggerGC(const EcmaVM *vm);
+
+    // Exception
+    static void ThrowException(const EcmaVM *vm, Local<JSValueRef> error);
+    static Local<ObjectRef> GetUncaughtException(const EcmaVM *vm);
+    static void EnableUserUncaughtErrorHandler(EcmaVM *vm);
+
+    static bool StartDebugger(const char *library_path, EcmaVM *vm);
+    // Serialize & Deserialize.
+    static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
+    static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
+    static void DeleteSerializationData(void *data);
+
+private:
+    static bool CreateRuntime(const RuntimeOption &option);
+    static bool DestoryRuntime();
+
+    static uintptr_t GetHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
+    static uintptr_t GetGlobalHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
+    static void DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr);
+    template <typename T>
+    friend class Global;
+    template <typename T>
+    friend class Local;
+    friend class test::JSNApiTests;
+};
+
+template <typename T>
+template <typename S>
+Global<T>::Global(const EcmaVM *vm, const Local<S> &current) : vm_(vm)
+{
+    address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
+}
+
+template <typename T>
+void Global<T>::FreeGlobalHandleAddr()
+{
+    if (address_ == 0) {
+        return;
+    }
+    JSNApi::DisposeGlobalHandleAddr(vm_, address_);
+    address_ = 0;
+}
+
+// ---------------------------------- Local --------------------------------------------
+template <typename T>
+Local<T>::Local(const EcmaVM *vm, const Global<T> &current)
+{
+    address_ = JSNApi::GetHandleAddr(vm, reinterpret_cast<uintptr_t>(*current));
+}
+}  // namespace panda
+#endif  // PANDA_RUNTIME_ECMASCRIPT_JSNAPI_JSNAPI_H

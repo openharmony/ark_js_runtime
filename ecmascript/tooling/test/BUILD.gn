@@ -1,0 +1,217 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//ark/js_runtime/test/test_helper.gni")
+import("//ark/js_runtime/js_runtime_config.gni")
+import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
+import("//build/ohos.gni")
+import("//build/test.gni")
+
+test_js_path = "//ark/js_runtime/ecmascript/tooling/test/js/Sample.js"
+test_abc_path = "$target_out_dir/Sample.abc"
+
+module_output_path = "ark/js_runtime"
+
+config("debug_api_test") {
+  visibility = [ ":*" ]
+
+  cflags_cc = [ "-Wno-gnu-zero-variadic-macro-arguments" ]
+  ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
+  include_dirs = [
+    "//ark/js_runtime",
+    "$ark_root/third_party/libc_sec/include",
+    "//ark/js_runtime/ecmascript/tooling/test",
+  ]
+}
+
+action("copy_resource_xml") {
+  visibility = [ ":*" ]  # Only targets in this file can depend on this.
+
+  deps = []
+
+  script = "//ark/js_runtime/test/copy_resource.py"
+
+  src_path = "//ark/js_runtime/test/resource/js_runtime/"
+  src_xml = "ohos_test.xml"
+  dst_path = "//ark/test/resource/js_runtime/"
+
+  args = [
+    "--src-path",
+    rebase_path(src_path),
+    "--src-xml",
+    src_xml,
+    "--dst-path",
+    rebase_path(dst_path),
+  ]
+
+  inputs = [ src_path + src_xml ]
+  outputs = [ "$target_out_dir" ]
+}
+
+ts2abc_gen_abc("ark_debug_abc") {
+  extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
+  src_js = rebase_path(test_js_path)
+  dst_file = rebase_path(test_abc_path)
+  extra_args = [ "--debug" ]
+
+  in_puts = [ test_js_path ]
+  out_puts = [ test_abc_path ]
+}
+
+ohos_shared_library("jsdebugtest") {
+  sources = [
+    "init.cpp",
+    "test_extractor.cpp",
+    "test_list.cpp",
+    "test_util.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    ":debug_api_test",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "$ark_root/libpandafile:libarkfile",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
+  ]
+  output_extension = "so"
+  relative_install_dir = "test"
+  subsystem_name = "test"
+}
+
+host_unittest_action("EcmaDebugApiTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "launcher.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    ":debug_api_test",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    ":ark_debug_abc",
+    ":copy_resource_xml",
+    ":jsdebugtest",
+    "$ark_root/libpandabase:libarkbase",
+    "$ark_root/libpandafile:libarkfile",
+  ]
+
+  is_debugger = true
+}
+
+host_unittest_action("DebuggerCommandsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "debugger_commands_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+
+  is_debugger = true
+}
+
+host_unittest_action("DebuggerEventsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "debugger_events_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+
+  is_debugger = true
+}
+
+host_unittest_action("DebuggerTypesTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "debugger_types_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+
+  is_debugger = true
+}
+
+group("unittest") {
+  testonly = true
+
+  # deps file
+  deps = [
+    ":DebuggerCommandsTest",
+    ":DebuggerEventsTest",
+    ":DebuggerTypesTest",
+    ":EcmaDebugApiTest",
+  ]
+}
+
+group("host_unittest") {
+  testonly = true
+
+  # deps file
+  deps = [
+    ":DebuggerCommandsTestAction(${host_toolchain})",
+    ":DebuggerEventsTestAction(${host_toolchain})",
+    ":DebuggerTypesTestAction(${host_toolchain})",
+  ]
+}
