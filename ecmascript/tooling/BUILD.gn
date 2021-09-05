@@ -73,8 +73,8 @@ ohos_shared_library("libark_ecma_debugger") {
 
 ohos_static_library("libark_ecma_debugger_test") {
   deps = [
-    "//ark/js_runtime:libark_jsruntime_test",
     ":libark_ecma_debugger_static",
+    "//ark/js_runtime:libark_jsruntime_test",
   ]
 
   output_extension = "a"

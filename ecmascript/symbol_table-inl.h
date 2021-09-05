@@ -22,14 +22,14 @@
 #include "libpandabase/utils/hash.h"
 
 namespace panda::ecmascript {
-uint32_t SymbolTable::Hash(const JSTaggedValue &obj)
+int SymbolTable::Hash(const JSTaggedValue &obj)
 {
     if (obj.IsHeapObject()) {
         if (obj.IsString()) {
             auto *nameString = static_cast<EcmaString *>(obj.GetTaggedObject());
-            return nameString->GetHashcode();
+            return static_cast<int>(nameString->GetHashcode());
         }
-        return JSSymbol::ComputeHash();
+        return static_cast<int>(JSSymbol::ComputeHash());
     }
     UNREACHABLE();
 }

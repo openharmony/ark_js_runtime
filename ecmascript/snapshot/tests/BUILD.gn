@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//ark/js_runtime/test/test_helper.gni")
 import("//ark/js_runtime/js_runtime_config.gni")
+import("//ark/js_runtime/test/test_helper.gni")
 import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
@@ -32,7 +32,6 @@ host_unittest_action("SnapshotTest") {
     "//ark/js_runtime:ark_jsruntime_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
-
 
   deps = [
     "$ark_root/libpandabase:libarkbase",

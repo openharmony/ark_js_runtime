@@ -31,12 +31,11 @@ group("ark_js_host_linux_tools_packages") {
     deps += [
       "//ark/js_runtime:libark_jsruntime(${host_toolchain})",
       "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})",
+
       #"//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})",
     ]
     if (current_cpu == "x86_64" || current_cpu == "x64") {
-      deps += [
-        "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})",
-      ]
+      deps += [ "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})" ]
     }
   }
 }
@@ -72,9 +71,7 @@ group("ark_js_host_unittest") {
       "//ark/js_runtime/ecmascript/tooling/test:host_unittest",
     ]
     if (current_cpu == "x86_64" || current_cpu == "x64") {
-      deps += [
-        "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})",
-      ]
+      deps += [ "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})" ]
     }
 
     # js bytecode test
@@ -119,7 +116,7 @@ config("ark_jsruntime_config") {
   } else {
     defines += [
       "PANDA_TARGET_UNIX",
-      "PANDA_USE_FUTEX"
+      "PANDA_USE_FUTEX",
     ]
   }
 
@@ -130,6 +127,7 @@ config("ark_jsruntime_config") {
     "-pipe",
     "-Wdate-time",
     "-Wformat=2",
+
     #"-Wshadow",
   ]
 

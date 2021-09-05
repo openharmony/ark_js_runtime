@@ -631,11 +631,10 @@ void GlobalDictionary::Dump(JSThread *thread, std::ostream &os) const
         JSTaggedValue key(GetKey(hashIndex));
         if (!key.IsUndefined() && !key.IsHole()) {
             JSTaggedValue val(GetValue(hashIndex));
-            PropertyBox *box = PropertyBox::Cast(val.GetTaggedObject());
             os << std::right << std::setw(DUMP_PROPERTY_OFFSET);
             DumpPropertyKey(key, os);
             os << " : ";
-            box->GetValue().DumpTaggedValue(thread, os);
+            val.DumpTaggedValue(thread, os);
             os << " ";
             DumpAttr(GetAttributes(hashIndex), false, os);
             os << "\n";

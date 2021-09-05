@@ -45,7 +45,7 @@ public:
         return ENTRY_SIZE;
     }
     static inline bool IsMatch(const JSTaggedValue &name, const JSTaggedValue &other);
-    static inline uint32_t Hash(const JSTaggedValue &obj);
+    static inline int Hash(const JSTaggedValue &obj);
 
     static const int DEFAULT_ELEMENTS_NUMBER = 64;
     static SymbolTable *Create(JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)

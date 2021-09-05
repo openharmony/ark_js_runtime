@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//ark/js_runtime/test/test_helper.gni")
 import("//ark/js_runtime/js_runtime_config.gni")
+import("//ark/js_runtime/test/test_helper.gni")
 import("//build/test.gni")
 
 module_output_path = "ark/js_runtime"
@@ -48,11 +48,11 @@ host_unittest_action("BuiltinsTest") {
   ]
 
   configs = [
-      "//ark/js_runtime:ecma_test_config",
-      "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                       # arkruntime_public_config
-      "//ark/js_runtime:ark_jsruntime_config",
-      "$ark_root/runtime:arkruntime_public_config",
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
@@ -70,11 +70,11 @@ host_unittest_action("DumpTest") {
   ]
 
   configs = [
-      "//ark/js_runtime:ecma_test_config",
-      "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
-                                                       # arkruntime_public_config
-      "//ark/js_runtime:ark_jsruntime_config",
-      "$ark_root/runtime:arkruntime_public_config",
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
@@ -135,7 +135,7 @@ host_unittest_action("JsDateTest") {
     "js_date_test.cpp",
   ]
 
-    configs = [
+  configs = [
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
@@ -684,6 +684,7 @@ group("unittest") {
     ":AssertScopeTest",
     ":BuiltinsTest",
     ":DumpTest",
+    ":GcTest",
     ":GlueRegsTest",
     ":JargeObjectTest",
     ":JexicalEnvTest",
@@ -710,7 +711,6 @@ group("unittest") {
     ":TaggedValueTest",
     ":WeakRefGenGcTest",
     ":WeakRefStwGcTest",
-    ":GcTest",
   ]
 }
 
@@ -722,6 +722,7 @@ group("host_unittest") {
     ":AssertScopeTestAction(${host_toolchain})",
     ":BuiltinsTestAction(${host_toolchain})",
     ":DumpTestAction(${host_toolchain})",
+    ":GcTestAction(${host_toolchain})",
     ":GlueRegsTestAction(${host_toolchain})",
     ":JargeObjectTestAction(${host_toolchain})",
     ":JexicalEnvTestAction(${host_toolchain})",
@@ -748,6 +749,5 @@ group("host_unittest") {
     ":TaggedValueTestAction(${host_toolchain})",
     ":WeakRefGenGcTestAction(${host_toolchain})",
     ":WeakRefStwGcTestAction(${host_toolchain})",
-    ":GcTestAction(${host_toolchain})",
   ]
 }
