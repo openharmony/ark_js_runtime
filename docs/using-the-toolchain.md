@@ -191,14 +191,14 @@ Input file: ARK bytecodes in text format
 
 Output file: ARK bytecodes in binary format
 
-Disassembler ark\_dissam
+Disassembler ark\_disasm
 
-The ark\_dissam disassembler converts binary ARK bytecodes into readable text ARK bytecodes.
+The ark\_disasm disassembler converts binary ARK bytecodes into readable text ARK bytecodes.
 
 Command:
 
 ```
-ark_dissam [Option] Input file Output file
+ark_disasm [Option] Input file Output file
 ```
 
 <a name="table125062517328"></a>

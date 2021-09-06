@@ -10,7 +10,7 @@
 
 ### 简介<a name="section190813718209"></a>
 
-**方舟JS运行时（ARK JavaScript Runtime）**是OpenHarmony上JS应用使用的运行时。包含JS对象的分配器以及垃圾回收器（GC）、符合ECMAScript规范的标准库、用于运行ARK前端组件生成的方舟字节码（ARK Bytecode，abc）的解释器、用于存储隐藏类的内联缓存、方舟JS运行时对外的函数接口（AFFI）等模块。
+方舟JS运行时（ARK JavaScript Runtime）是OpenHarmony上JS应用使用的运行时。包含JS对象的分配器以及垃圾回收器（GC）、符合ECMAScript规范的标准库、用于运行ARK前端组件生成的方舟字节码（ARK Bytecode，abc）的解释器、用于存储隐藏类的内联缓存、方舟JS运行时对外的函数接口（AFFI）等模块。
 
 **方舟JS运行时组件架构图：**
 
@@ -63,7 +63,9 @@ JS生成字节码参考[工具链使用](docs/工具链使用.md)
 
 cd out/release
 
-LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/ ./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc \_GLOBAL::func\_main\_0
+LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
+
+./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc
 
 ## 相关仓<a name="section1371113476307"></a>
 

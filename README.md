@@ -63,7 +63,9 @@ To run bytecodes:
 
 cd out/release
 
-LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/ ./clang\_x64/ark/ark/ark\_js\_vm helloworld.abc \_GLOBAL::func\_main\_0
+LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
+
+./clang\_x64/ark/ark/ark\_js\_vm helloworld.abc
 
 ## Repositories Involved<a name="section1371113476307"></a>
 
