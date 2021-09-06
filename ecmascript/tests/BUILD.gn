@@ -700,7 +700,8 @@ group("unittest") {
     ":JsPrimitiveRefTest",
     ":JsPromiseTest",
     ":JsProxyTest",
-    ":JsSerializerTest",
+
+    # ":JsSerializerTest",
     ":JsSetTest",
     ":JsSymbolTest",
     ":JsTaggedQueueTest",
@@ -738,7 +739,8 @@ group("host_unittest") {
     ":JsPrimitiveRefTestAction(${host_toolchain})",
     ":JsPromiseTestAction(${host_toolchain})",
     ":JsProxyTestAction(${host_toolchain})",
-    ":JsSerializerTestAction(${host_toolchain})",
+
+    # ":JsSerializerTestAction(${host_toolchain})",
     ":JsSetTestAction(${host_toolchain})",
     ":JsSymbolTestAction(${host_toolchain})",
     ":JsTaggedQueueTestAction(${host_toolchain})",

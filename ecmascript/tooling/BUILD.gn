@@ -45,7 +45,6 @@ ohos_static_library("libark_ecma_debugger_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime:libark_jsruntime",
   ]
 
   output_extension = "a"
@@ -53,13 +52,16 @@ ohos_static_library("libark_ecma_debugger_static") {
 }
 
 ohos_shared_library("libark_ecma_debugger") {
-  deps = [ ":libark_ecma_debugger_static" ]
+  deps = [
+    ":libark_ecma_debugger_static",
+    "//ark/js_runtime:libark_jsruntime",
+  ]
+
+  cflags_cc = [ "-fvisibility=hidden" ]
 
   if (!is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
-
-  cflags_cc = [ "-fvisibility=hidden" ]
 
   install_enable = true
   part_name = "ark_js_runtime"
@@ -68,15 +70,5 @@ ohos_shared_library("libark_ecma_debugger") {
   if (!is_standard_system) {
     relative_install_dir = "ark"
   }
-  subsystem_name = "ark"
-}
-
-ohos_static_library("libark_ecma_debugger_test") {
-  deps = [
-    ":libark_ecma_debugger_static",
-    "//ark/js_runtime:libark_jsruntime_test",
-  ]
-
-  output_extension = "a"
   subsystem_name = "ark"
 }

@@ -87,7 +87,8 @@ ohos_shared_library("jsdebugtest") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
+    "//ark/js_runtime:libark_jsruntime_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
   ]
   output_extension = "so"
   relative_install_dir = "test"
@@ -116,9 +117,8 @@ host_unittest_action("EcmaDebugApiTest") {
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
   ]
-
-  is_debugger = true
 }
 
 host_unittest_action("DebuggerCommandsTest") {
@@ -139,10 +139,9 @@ host_unittest_action("DebuggerCommandsTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
     sdk_libc_secshared_dep,
   ]
-
-  is_debugger = true
 }
 
 host_unittest_action("DebuggerEventsTest") {
@@ -163,10 +162,9 @@ host_unittest_action("DebuggerEventsTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
     sdk_libc_secshared_dep,
   ]
-
-  is_debugger = true
 }
 
 host_unittest_action("DebuggerTypesTest") {
@@ -187,10 +185,9 @@ host_unittest_action("DebuggerTypesTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
     sdk_libc_secshared_dep,
   ]
-
-  is_debugger = true
 }
 
 group("unittest") {

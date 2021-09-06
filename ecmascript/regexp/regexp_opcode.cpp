@@ -626,7 +626,7 @@ void RangeSet::Invert(bool isUtf16)
 
     uint32_t first = iter->first;
 
-    for (iter = rangeSet_.begin(); iter != rangeSet_.end(); iter++, iter2++) {
+    for (iter = rangeSet_.begin(); iter != rangeSet_.end(); iter++) {
         if (iter->second == maxValue) {
             rangeSet_.erase(iter);
             break;
@@ -634,6 +634,7 @@ void RangeSet::Invert(bool isUtf16)
         iter->first = iter->second + 1;
         if (iter2 != rangeSet_.end()) {
             iter->second = iter2->first - 1;
+            iter2++;
         } else {
             iter->second = maxValue;
         }

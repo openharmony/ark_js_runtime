@@ -98,17 +98,22 @@ HWTEST_F_L0(LargeObjectTest, MultipleArrays)
 #if !defined(NDEBUG)
     auto ecmaVm = thread->GetEcmaVM();
     auto heap = ecmaVm->GetHeap();
-    LargeObjectSpace *space = heap->GetLargeObjectSpace();
+    Region *firstPage = nullptr;
+    Region *secondPage = nullptr;
+    Region *thirdPage = nullptr;
+
     JSHandle<TaggedArray> array1(thread, LargeArrayTestCreate(thread));
+    firstPage = Region::ObjectAddressToRange(*array1);
     {
         DISALLOW_GARBAGE_COLLECTION;
         [[maybe_unused]] TaggedArray *array2 = LargeArrayTestCreate(thread);
+        secondPage = Region::ObjectAddressToRange(array2);
     }
     JSHandle<TaggedArray> array3(thread, LargeArrayTestCreate(thread));
+    thirdPage = Region::ObjectAddressToRange(*array3);
 
-    Region *firstPage = space->GetRegionList().GetFirst();
-    Region *secondPage = firstPage->GetNext();
-    Region *thirdPage = secondPage->GetNext();
+    EXPECT_EQ(firstPage->GetNext(), secondPage);
+    EXPECT_EQ(secondPage->GetNext(), thirdPage);
 
     ecmaVm->CollectGarbage(TriggerGCType::LARGE_GC);  // Trigger GC.
 

@@ -25,14 +25,8 @@ if (is_standard_system) {
 template("host_unittest_action") {
   _target_name_ = "${target_name}"
   _deps_ = invoker.deps
-  _is_debugger_ = defined(invoker.is_debugger) && invoker.is_debugger
 
-  if (_is_debugger_) {
-    _deps_ +=
-        [ "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test" ]
-  } else {
-    _deps_ += [ "//ark/js_runtime:libark_jsruntime_test" ]
-  }
+  _deps_ += [ "//ark/js_runtime:libark_jsruntime_static" ]
 
   # unittest for phone running
   ohos_unittest(_target_name_) {

@@ -25,7 +25,7 @@ ohos_executable("ark_js_vm") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime:libark_jsruntime",
+    "//ark/js_runtime:libark_jsruntime_static",
   ]
 
   if (!is_standard_system) {
