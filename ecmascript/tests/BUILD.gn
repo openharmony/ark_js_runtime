@@ -1,0 +1,755 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//ark/js_runtime/js_runtime_config.gni")
+import("//ark/js_runtime/test/test_helper.gni")
+import("//build/test.gni")
+
+module_output_path = "ark/js_runtime"
+
+host_unittest_action("AssertScopeTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "assert_scope_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("DumpTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "dump_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("GlueRegsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "glue_regs_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsArrayTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_array_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsDateTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_date_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsForinIteratorTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_forin_iterator_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsFunctionTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_function_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsHandleTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_handle_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsIteratorTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_iterator_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsMapTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_map_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsObjectTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_object_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsPrimitiveRefTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_primitive_ref_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsPromiseTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_promise_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsProxyTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_proxy_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsSetTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_set_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsSymbolTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_symbol_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsTaggedQueueTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_tagged_queue_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsVerificationTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_verification_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JargeObjectTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "large_object_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JexicalEnvTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "lexical_env_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JinkedHashTableTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "linked_hash_table_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("NameDictionaryTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "name_dictionary_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("NativePointerTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "native_pointer_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("ObjectFactoryTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "object_factory_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("TaggedValueTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "tagged_value_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("WeakRefGenGcTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "weak_ref_gen_gc_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("WeakRefStwGcTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "weak_ref_stw_gc_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("JsSerializerTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "js_serializer_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("GcTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "gc_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+group("unittest") {
+  testonly = true
+
+  # deps file
+  deps = [
+    ":AssertScopeTest",
+    ":BuiltinsTest",
+    ":DumpTest",
+    ":GcTest",
+    ":GlueRegsTest",
+    ":JargeObjectTest",
+    ":JexicalEnvTest",
+    ":JinkedHashTableTest",
+    ":JsArrayTest",
+    ":JsDateTest",
+    ":JsForinIteratorTest",
+    ":JsFunctionTest",
+    ":JsHandleTest",
+    ":JsIteratorTest",
+    ":JsMapTest",
+    ":JsObjectTest",
+    ":JsPrimitiveRefTest",
+    ":JsPromiseTest",
+    ":JsProxyTest",
+
+    # ":JsSerializerTest",
+    ":JsSetTest",
+    ":JsSymbolTest",
+    ":JsTaggedQueueTest",
+    ":JsVerificationTest",
+    ":NameDictionaryTest",
+    ":NativePointerTest",
+    ":ObjectFactoryTest",
+    ":TaggedValueTest",
+    ":WeakRefGenGcTest",
+    ":WeakRefStwGcTest",
+  ]
+}
+
+group("host_unittest") {
+  testonly = true
+
+  # deps file
+  deps = [
+    ":AssertScopeTestAction(${host_toolchain})",
+    ":BuiltinsTestAction(${host_toolchain})",
+    ":DumpTestAction(${host_toolchain})",
+    ":GcTestAction(${host_toolchain})",
+    ":GlueRegsTestAction(${host_toolchain})",
+    ":JargeObjectTestAction(${host_toolchain})",
+    ":JexicalEnvTestAction(${host_toolchain})",
+    ":JinkedHashTableTestAction(${host_toolchain})",
+    ":JsArrayTestAction(${host_toolchain})",
+    ":JsDateTestAction(${host_toolchain})",
+    ":JsForinIteratorTestAction(${host_toolchain})",
+    ":JsFunctionTestAction(${host_toolchain})",
+    ":JsHandleTestAction(${host_toolchain})",
+    ":JsIteratorTestAction(${host_toolchain})",
+    ":JsMapTestAction(${host_toolchain})",
+    ":JsObjectTestAction(${host_toolchain})",
+    ":JsPrimitiveRefTestAction(${host_toolchain})",
+    ":JsPromiseTestAction(${host_toolchain})",
+    ":JsProxyTestAction(${host_toolchain})",
+
+    # ":JsSerializerTestAction(${host_toolchain})",
+    ":JsSetTestAction(${host_toolchain})",
+    ":JsSymbolTestAction(${host_toolchain})",
+    ":JsTaggedQueueTestAction(${host_toolchain})",
+    ":JsVerificationTestAction(${host_toolchain})",
+    ":NameDictionaryTestAction(${host_toolchain})",
+    ":NativePointerTestAction(${host_toolchain})",
+    ":ObjectFactoryTestAction(${host_toolchain})",
+    ":TaggedValueTestAction(${host_toolchain})",
+    ":WeakRefGenGcTestAction(${host_toolchain})",
+    ":WeakRefStwGcTestAction(${host_toolchain})",
+  ]
+}

@@ -1,0 +1,575 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "panda_file_translator.h"
+
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/global_env.h"
+#include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/js_array.h"
+#include "ecmascript/js_function.h"
+#include "ecmascript/js_thread.h"
+#include "ecmascript/literal_data_extractor.h"
+#include "ecmascript/object_factory.h"
+#include "ecmascript/tagged_array.h"
+#include "libpandabase/mem/mem.h"
+#include "libpandabase/utils/logger.h"
+#include "libpandabase/utils/utf.h"
+#include "libpandafile/bytecode_instruction-inl.h"
+#include "libpandafile/class_data_accessor-inl.h"
+
+namespace panda::ecmascript {
+PandaFileTranslator::PandaFileTranslator(EcmaVM *vm)
+    : ecmaVm_(vm), factory_(vm->GetFactory()), thread_(vm->GetJSThread())
+{
+}
+
+JSHandle<Program> PandaFileTranslator::TranslatePandaFile(EcmaVM *vm, const panda_file::File &pf,
+                                                          const CString &methodName)
+{
+    PandaFileTranslator translator(vm);
+    translator.TranslateClasses(pf, methodName);
+    auto result = translator.GenerateProgram(pf);
+    return JSHandle<Program>(translator.thread_, result);
+}
+
+template <class T, class... Args>
+static T *InitializeMemory(T *mem, Args... args)
+{
+    return new (mem) T(std::forward<Args>(args)...);
+}
+
+const JSMethod *PandaFileTranslator::FindMethods(uint32_t offset) const
+{
+    Span<JSMethod> methods = GetMethods();
+    auto pred = [offset](const JSMethod &method) { return method.GetFileId().GetOffset() == offset; };
+    auto it = std::find_if(methods.begin(), methods.end(), pred);
+    if (it != methods.end()) {
+        return &*it;
+    }
+    return nullptr;
+}
+
+void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CString &methodName)
+{
+    RegionFactory *factory = ecmaVm_->GetRegionFactory();
+    Span<const uint32_t> classIndexes = pf.GetClasses();
+    uint32_t numMethods = 0;
+
+    for (const uint32_t index : classIndexes) {
+        panda_file::File::EntityId classId(index);
+        if (pf.IsExternal(classId)) {
+            continue;
+        }
+        panda_file::ClassDataAccessor cda(pf, classId);
+        numMethods += cda.GetMethodsNumber();
+    }
+
+    auto methodsData = factory->AllocateBuffer(sizeof(JSMethod) * numMethods);
+    Span<JSMethod> methods {static_cast<JSMethod *>(methodsData), numMethods};
+    size_t methodIdx = 0;
+
+    panda_file::File::StringData sd = {static_cast<uint32_t>(methodName.size()),
+                                       reinterpret_cast<const uint8_t *>(methodName.c_str())};
+    for (const uint32_t index : classIndexes) {
+        panda_file::File::EntityId classId(index);
+        if (pf.IsExternal(classId)) {
+            continue;
+        }
+        panda_file::ClassDataAccessor cda(pf, classId);
+        cda.EnumerateMethods([this, &sd, &methods, &methodIdx, &pf](panda_file::MethodDataAccessor &mda) {
+            auto codeId = mda.GetCodeId();
+            ASSERT(codeId.has_value());
+
+            JSMethod *method = &methods[methodIdx++];
+            panda_file::CodeDataAccessor codeDataAccessor(pf, codeId.value());
+            uint32_t codeSize = codeDataAccessor.GetCodeSize();
+
+            if (mainMethodIndex_ == 0 && pf.GetStringData(mda.GetNameId()) == sd) {
+                mainMethodIndex_ = mda.GetMethodId().GetOffset();
+            }
+
+            panda_file::ProtoDataAccessor pda(pf, mda.GetProtoId());
+            InitializeMemory(method, nullptr, &pf, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
+                             mda.GetAccessFlags(), codeDataAccessor.GetNumArgs(), nullptr);
+            method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
+            const uint8_t *insns = codeDataAccessor.GetInstructions();
+            if (this->translated_code_.find(insns) == this->translated_code_.end()) {
+                this->translated_code_.insert(insns);
+                this->TranslateBytecode(codeSize, insns, pf, method);
+            }
+        });
+    }
+
+    SetMethods(methods, numMethods);
+}
+
+Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
+{
+    EcmaHandleScope handleScope(thread_);
+
+    JSHandle<Program> program = factory_->NewProgram();
+    JSHandle<EcmaString> location = factory_->NewFromStdString(pf.GetFilename());
+
+    // +1 for program
+    JSHandle<ConstantPool> constpool = factory_->NewConstantPool(constpoolIndex_ + 1);
+    program->SetConstantPool(thread_, constpool.GetTaggedValue());
+    program->SetLocation(thread_, location.GetTaggedValue());
+
+    JSHandle<GlobalEnv> env = ecmaVm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
+    JSHandle<JSHClass> normalDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutProto());
+    JSHandle<JSHClass> asyncDynclass = JSHandle<JSHClass>::Cast(env->GetAsyncFunctionClass());
+    JSHandle<JSHClass> generatorDynclass = JSHandle<JSHClass>::Cast(env->GetGeneratorFunctionClass());
+    JSHandle<JSHClass> classDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutName());
+
+    for (const auto &it : constpoolMap_) {
+        ConstPoolValue value(it.second);
+        if (value.GetConstpoolType() == ConstPoolType::STRING) {
+            panda_file::File::EntityId id(it.first);
+            auto foundStr = pf.GetStringData(id);
+            auto string = factory_->GetRawStringFromStringTable(foundStr.data, foundStr.utf16_length);
+            constpool->Set(thread_, value.GetConstpoolIndex(), JSTaggedValue(string));
+        } else if (value.GetConstpoolType() == ConstPoolType::BASE_FUNCTION) {
+            ASSERT(mainMethodIndex_ != it.first);
+            panda_file::File::EntityId id(it.first);
+            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            ASSERT(method != nullptr);
+
+            JSHandle<JSFunction> jsFunc =
+                factory_->NewJSFunctionByDynClass(method, dynclass, FunctionKind::BASE_CONSTRUCTOR);
+            constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
+            jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::NC_FUNCTION) {
+            ASSERT(mainMethodIndex_ != it.first);
+            panda_file::File::EntityId id(it.first);
+            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            ASSERT(method != nullptr);
+
+            JSHandle<JSFunction> jsFunc =
+                factory_->NewJSFunctionByDynClass(method, normalDynclass, FunctionKind::NORMAL_FUNCTION);
+            constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
+            jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::GENERATOR_FUNCTION) {
+            ASSERT(mainMethodIndex_ != it.first);
+            panda_file::File::EntityId id(it.first);
+            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            ASSERT(method != nullptr);
+
+            JSHandle<JSFunction> jsFunc =
+                factory_->NewJSFunctionByDynClass(method, generatorDynclass, FunctionKind::GENERATOR_FUNCTION);
+            // 26.3.4.3 prototype
+            // Whenever a GeneratorFunction instance is created another ordinary object is also created and
+            // is the initial value of the generator function's "prototype" property.
+            JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+            JSHandle<JSObject> initialGeneratorFuncPrototype =
+                factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+            JSObject::SetPrototype(thread_, initialGeneratorFuncPrototype, env->GetGeneratorPrototype());
+            jsFunc->SetProtoOrDynClass(thread_, initialGeneratorFuncPrototype);
+
+            constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
+            jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::ASYNC_FUNCTION) {
+            ASSERT(mainMethodIndex_ != it.first);
+            panda_file::File::EntityId id(it.first);
+            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            ASSERT(method != nullptr);
+
+            JSHandle<JSFunction> jsFunc =
+                factory_->NewJSFunctionByDynClass(method, asyncDynclass, FunctionKind::ASYNC_FUNCTION);
+            constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
+            jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::CLASS_FUNCTION) {
+            ASSERT(mainMethodIndex_ != it.first);
+            panda_file::File::EntityId id(it.first);
+            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            ASSERT(method != nullptr);
+            JSHandle<JSFunction> jsFunc =
+                factory_->NewJSFunctionByDynClass(method, classDynclass, FunctionKind::CLASS_CONSTRUCTOR);
+            constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
+            jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::METHOD) {
+            ASSERT(mainMethodIndex_ != it.first);
+            panda_file::File::EntityId id(it.first);
+            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            ASSERT(method != nullptr);
+
+            JSHandle<JSFunction> jsFunc =
+                factory_->NewJSFunctionByDynClass(method, normalDynclass, FunctionKind::NORMAL_FUNCTION);
+            constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
+            jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::OBJECT_LITERAL) {
+            size_t index = it.first;
+            JSMutableHandle<TaggedArray> elements(thread_, JSTaggedValue::Undefined());
+            JSMutableHandle<TaggedArray> properties(thread_, JSTaggedValue::Undefined());
+            LiteralDataExtractor::ExtractObjectDatas(thread_, &pf, index, elements, properties, this);
+            JSHandle<JSObject> obj = JSObject::CreateObjectFromProperties(thread_, properties);
+
+            JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
+            JSMutableHandle<JSTaggedValue> valueHandle(thread_, JSTaggedValue::Undefined());
+            size_t elementsLen = elements->GetLength();
+            for (size_t i = 0; i < elementsLen; i += 2) {  // 2: Each literal buffer contains a pair of key-value.
+                key.Update(elements->Get(i));
+                if (key->IsHole()) {
+                    break;
+                }
+                valueHandle.Update(elements->Get(i + 1));
+                JSObject::DefinePropertyByLiteral(thread_, obj, key, valueHandle);
+            }
+            constpool->Set(thread_, value.GetConstpoolIndex(), obj.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::ARRAY_LITERAL) {
+            size_t index = it.first;
+            JSHandle<TaggedArray> literal =
+                LiteralDataExtractor::GetDatasIgnoreType(thread_, &pf, static_cast<size_t>(index));
+            array_size_t length = literal->GetLength();
+
+            JSHandle<JSArray> arr(JSArray::ArrayCreate(thread_, JSTaggedNumber(length)));
+            JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
+            JSMutableHandle<JSTaggedValue> arrValue(thread_, JSTaggedValue::Undefined());
+            for (array_size_t i = 0; i < length; i++) {
+                key.Update(JSTaggedValue(static_cast<int32_t>(i)));
+                arrValue.Update(literal->Get(i));
+                JSObject::DefinePropertyByLiteral(thread_, JSHandle<JSObject>::Cast(arr), key, arrValue);
+            }
+            constpool->Set(thread_, value.GetConstpoolIndex(), arr.GetTaggedValue());
+        } else if (value.GetConstpoolType() == ConstPoolType::CLASS_LITERAL) {
+            size_t index = it.first;
+            JSHandle<TaggedArray> literal =
+                LiteralDataExtractor::GetDatasIgnoreType(thread_, &pf, static_cast<size_t>(index), this);
+            constpool->Set(thread_, value.GetConstpoolIndex(), literal.GetTaggedValue());
+        }
+    }
+    {
+        auto method = const_cast<JSMethod *>(FindMethods(mainMethodIndex_));
+        ASSERT(method != nullptr);
+        JSHandle<JSFunction> mainFunc =
+            factory_->NewJSFunctionByDynClass(method, dynclass, FunctionKind::BASE_CONSTRUCTOR);
+        mainFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+        program->SetMainFunction(thread_, mainFunc.GetTaggedValue());
+        program->SetMethodsData(methods_);
+        program->SetNumberMethods(numMethods_);
+        // link program
+        constpool->Set(thread_, constpoolIndex_, program.GetTaggedValue());
+    }
+
+    return *program;
+}
+
+void PandaFileTranslator::FixOpcode(uint8_t *pc) const
+{
+    auto opcode = static_cast<BytecodeInstruction::Opcode>(*pc);
+
+    constexpr size_t numBuiltinsFormat = 20;
+    std::array<uint32_t, numBuiltinsFormat> skipTable = {
+        // NOLINTNEXTLINE(readability-magic-numbers)
+        0U, 32U, 83U, 101U, 105U, 107U, 113U, 122U, 122U, 124U,
+        // NOLINTNEXTLINE(readability-magic-numbers)
+        129U, 133U, 139U, 139U, 140U, 141U, 147U, 148U, 150U, 152U
+    };
+
+    switch (opcode) {
+        case BytecodeInstruction::Opcode::MOV_V4_V4:
+            *pc = static_cast<uint8_t>(EcmaOpcode::MOV_V4_V4);
+            break;
+        case BytecodeInstruction::Opcode::MOV_DYN_V8_V8:
+            *pc = static_cast<uint8_t>(EcmaOpcode::MOV_DYN_V8_V8);
+            break;
+        case BytecodeInstruction::Opcode::MOV_DYN_V16_V16:
+            *pc = static_cast<uint8_t>(EcmaOpcode::MOV_DYN_V16_V16);
+            break;
+        case BytecodeInstruction::Opcode::LDA_STR_ID32:
+            *pc = static_cast<uint8_t>(EcmaOpcode::LDA_STR_ID32);
+            break;
+        case BytecodeInstruction::Opcode::JMP_IMM8:
+            *pc = static_cast<uint8_t>(EcmaOpcode::JMP_IMM8);
+            break;
+        case BytecodeInstruction::Opcode::JMP_IMM16:
+            *pc = static_cast<uint8_t>(EcmaOpcode::JMP_IMM16);
+            break;
+        case BytecodeInstruction::Opcode::JMP_IMM32:
+            *pc = static_cast<uint8_t>(EcmaOpcode::JMP_IMM32);
+            break;
+        case BytecodeInstruction::Opcode::JEQZ_IMM8:
+            *pc = static_cast<uint8_t>(EcmaOpcode::JEQZ_IMM8);
+            break;
+        case BytecodeInstruction::Opcode::JEQZ_IMM16:
+            *pc = static_cast<uint8_t>(EcmaOpcode::JEQZ_IMM16);
+            break;
+        case BytecodeInstruction::Opcode::JNEZ_IMM8:
+            *pc = static_cast<uint8_t>(EcmaOpcode::JNEZ_IMM8);
+            break;
+        case BytecodeInstruction::Opcode::JNEZ_IMM16:
+            *pc = static_cast<uint8_t>(EcmaOpcode::JNEZ_IMM16);
+            break;
+        case BytecodeInstruction::Opcode::LDA_DYN_V8:
+            *pc = static_cast<uint8_t>(EcmaOpcode::LDA_DYN_V8);
+            break;
+        case BytecodeInstruction::Opcode::STA_DYN_V8:
+            *pc = static_cast<uint8_t>(EcmaOpcode::STA_DYN_V8);
+            break;
+        case BytecodeInstruction::Opcode::LDAI_DYN_IMM32:
+            *pc = static_cast<uint8_t>(EcmaOpcode::LDAI_DYN_IMM32);
+            break;
+        case BytecodeInstruction::Opcode::FLDAI_DYN_IMM64:
+            *pc = static_cast<uint8_t>(EcmaOpcode::FLDAI_DYN_IMM64);
+            break;
+        case BytecodeInstruction::Opcode::RETURN_DYN:
+            *pc = static_cast<uint8_t>(EcmaOpcode::RETURN_DYN);
+            break;
+        case BytecodeInstruction::Opcode::BUILTIN_ACC_IMM8:
+        case BytecodeInstruction::Opcode::BUILTIN_BIN2_IMM8_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_TERN3_IMM8_V8_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_QUATERN4_IMM8_V8_V8_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_QUIN5_IMM8_V8_V8_V8_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_R2I_IMM8_IMM16_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_R3I_IMM8_IMM16_V8_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_R4I_IMM8_IMM16_V8_V8_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_ID_IMM8_ID32:
+        case BytecodeInstruction::Opcode::BUILTIN_MIDR_IMM8_ID16_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_IDI_IMM8_ID32_IMM16:
+        case BytecodeInstruction::Opcode::BUILTIN_IDR3I_IMM8_ID32_IMM16_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_IDR4I_IMM8_ID32_IMM16_V8_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_I2R3_IMM8_IMM16_IMM16_V8:
+        case BytecodeInstruction::Opcode::BUILTIN_I2R2_IMM8_IMM16_IMM16:
+        case BytecodeInstruction::Opcode::BUILTIN_IMM_IMM8_IMM16:
+        case BytecodeInstruction::Opcode::BUILTIN_IMR2_IMM8_ID16_IMM16_V8_V8: {
+            const int index =
+                static_cast<int32_t>(opcode) - static_cast<int32_t>(BytecodeInstruction::Opcode::BUILTIN_ACC_IMM8);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            auto builtinId = *(pc + 1);
+            builtinId += skipTable[index];
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            *pc = builtinId;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic, readability-magic-numbers)
+            *(pc + 1) = 0xFF;
+            break;
+        }
+        default:
+            LOG_ECMA(FATAL) << "Unsupported opcode: " << static_cast<uint16_t>(opcode);
+            UNREACHABLE();
+    }
+}
+
+void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[maybe_unused]] uint32_t index,
+                                             uint32_t fixOrder) const
+{
+    // NOLINTNEXTLINE(hicpp-use-auto)
+    auto pc = const_cast<uint8_t *>(inst.GetAddress());
+    switch (inst.GetFormat()) {
+        case BytecodeInstruction::Format::ID32: {
+            uint8_t size = sizeof(uint32_t);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (memcpy_s(pc + FixInstructionIndex::FIX_ONE, size, &index, size) != EOK) {
+                LOG_ECMA(FATAL) << "memcpy_s failed";
+                UNREACHABLE();
+            }
+            break;
+        }
+        case BytecodeInstruction::Format::IMM8_ID16_V8: {
+            uint16_t u16Index = index;
+            uint8_t size = sizeof(uint16_t);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &u16Index, size) != EOK) {
+                LOG_ECMA(FATAL) << "memcpy_s failed";
+                UNREACHABLE();
+            }
+            break;
+        }
+        case BytecodeInstruction::Format::IMM8_ID32:
+        case BytecodeInstruction::Format::IMM8_ID32_IMM16:
+        case BytecodeInstruction::Format::IMM8_ID32_IMM16_V8:
+        case BytecodeInstruction::Format::IMM8_ID32_IMM16_V8_V8: {
+            uint8_t size = sizeof(uint32_t);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &index, size) != EOK) {
+                LOG_ECMA(FATAL) << "memcpy_s failed";
+                UNREACHABLE();
+            }
+            break;
+        }
+        case BytecodeInstruction::Format::IMM8_IMM16: {
+            ASSERT(static_cast<uint16_t>(index) == index);
+            uint16_t u16Index = index;
+            uint8_t size = sizeof(uint16_t);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &u16Index, size) != EOK) {
+                LOG_ECMA(FATAL) << "memcpy_s failed";
+                UNREACHABLE();
+            }
+            break;
+        }
+        case BytecodeInstruction::Format::IMM8_ID16_IMM16_V8_V8: {
+            // Usually, we fix one part of instruction one time. But as for instruction DefineClassWithBuffer,
+            // which use both method id and literal buffer id.Using fixOrder indicates fix Location.
+            if (fixOrder == 0) {
+                uint8_t size = sizeof(uint16_t);
+                ASSERT(static_cast<uint16_t>(index) == index);
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &index, size) != EOK) {
+                    LOG_ECMA(FATAL) << "memcpy_s failed";
+                    UNREACHABLE();
+                }
+                break;
+            }
+            if (fixOrder == 1) {
+                ASSERT(static_cast<uint16_t>(index) == index);
+                uint16_t u16Index = index;
+                uint8_t size = sizeof(uint16_t);
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                if (memcpy_s(pc + FixInstructionIndex::FIX_FOUR, size, &u16Index, size) != EOK) {
+                    LOG_ECMA(FATAL) << "memcpy_s failed";
+                    UNREACHABLE();
+                }
+                break;
+            }
+            break;
+        }
+        default:
+            UNREACHABLE();
+    }
+}
+
+void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf,
+                                            const JSMethod *method)
+{
+    auto bcIns = BytecodeInstruction(insArr);
+    auto bcInsLast = bcIns.JumpTo(insSz);
+
+    while (bcIns.GetAddress() != bcInsLast.GetAddress()) {
+        {
+            if (bcIns.HasFlag(BytecodeInstruction::Flags::STRING_ID) &&
+                BytecodeInstruction::HasId(bcIns.GetFormat(), 0)) {
+                auto index = GetOrInsertConstantPool(ConstPoolType::STRING, bcIns.GetId().AsFileId().GetOffset());
+                FixInstructionId32(bcIns, index);
+            } else if (static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode()) ==
+                       BytecodeInstruction::Opcode::BUILTIN_MIDR_IMM8_ID16_V8) {
+                auto methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                switch (bcIns.template GetImm<BytecodeInstruction::Format::IMM8_ID16_V8>()) {
+                    uint32_t index;
+                    case SecondInstructionOfMidr::DEFINE_FUNC_DYN:
+                        index = GetOrInsertConstantPool(ConstPoolType::BASE_FUNCTION, methodId);
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    case SecondInstructionOfMidr::DEFINE_NC_FUNC_DYN:
+                        index = GetOrInsertConstantPool(ConstPoolType::NC_FUNCTION, methodId);
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    case SecondInstructionOfMidr::DEFINE_GENERATOR_FUNC_DYN:
+                        index = GetOrInsertConstantPool(ConstPoolType::GENERATOR_FUNCTION, methodId);
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    case SecondInstructionOfMidr::DEFINE_ASYNC_FUNC_DYN:
+                        index = GetOrInsertConstantPool(ConstPoolType::ASYNC_FUNCTION, methodId);
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    case SecondInstructionOfMidr::DEFINE_METHOD:
+                        index = GetOrInsertConstantPool(ConstPoolType::METHOD, methodId);
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    default:
+                        UNREACHABLE();
+                }
+            } else if (static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode()) ==
+                       BytecodeInstruction::Opcode::BUILTIN_IMM_IMM8_IMM16) {
+                switch (bcIns.template GetImm<BytecodeInstruction::Format::IMM8_IMM16>()) {
+                    uint32_t index;
+                    case 0:
+                    case 1:
+                        break;
+                    case SecondInstructionOfImm::CREATE_OBJECT_WITH_BUFFER:
+                        // createobjectwithbuffer
+                        index = GetOrInsertConstantPool(ConstPoolType::OBJECT_LITERAL,
+                                                        bcIns.GetImm<BytecodeInstruction::Format::IMM8_IMM16, 1>());
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    case SecondInstructionOfImm::CREATE_ARRAY_WITH_BUFFER:
+                        // createarraywithbuffer
+                        index = GetOrInsertConstantPool(ConstPoolType::ARRAY_LITERAL,
+                                                        bcIns.GetImm<BytecodeInstruction::Format::IMM8_IMM16, 1>());
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    case SecondInstructionOfImm::CREATE_OBJECT_HAVING_METHOD:
+                        // createobjecthavingmethod
+                        index = GetOrInsertConstantPool(ConstPoolType::OBJECT_LITERAL,
+                                                        bcIns.GetImm<BytecodeInstruction::Format::IMM8_IMM16, 1>());
+                        FixInstructionId32(bcIns, index);
+                        break;
+                    default:
+                        break;
+                }
+            } else if (static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode()) ==
+                       BytecodeInstruction::Opcode::BUILTIN_IMR2_IMM8_ID16_IMM16_V8_V8) {
+                if (bcIns.template GetImm<BytecodeInstruction::Format::IMM8_ID16_IMM16_V8_V8>() == 0) {
+                    // defineclasswithbuffer
+                    auto methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                    uint32_t index1 = GetOrInsertConstantPool(ConstPoolType::CLASS_FUNCTION, methodId);
+                    FixInstructionId32(bcIns, index1);
+
+                    uint32_t index2 =
+                        GetOrInsertConstantPool(ConstPoolType::CLASS_LITERAL,
+                                                bcIns.GetImm<BytecodeInstruction::Format::IMM8_ID16_IMM16_V8_V8, 1>());
+                    FixInstructionId32(bcIns, index2, 1);
+                }
+            }
+        }
+        // NOLINTNEXTLINE(hicpp-use-auto)
+        auto pc = const_cast<uint8_t *>(bcIns.GetAddress());
+        bcIns = bcIns.GetNext();
+        FixOpcode(pc);
+    }
+}
+
+uint32_t PandaFileTranslator::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset)
+{
+    auto it = constpoolMap_.find(offset);
+    if (it != constpoolMap_.cend()) {
+        ConstPoolValue value(it->second);
+        return value.GetConstpoolIndex();
+    }
+    ASSERT(constpoolIndex_ != UINT32_MAX);
+    uint32_t index = constpoolIndex_++;
+    ConstPoolValue value(type, index);
+    constpoolMap_.insert({offset, value.GetValue()});
+    return index;
+}
+
+JSHandle<JSFunction> PandaFileTranslator::DefineMethodById(uint32_t methodId, FunctionKind kind) const
+{
+    auto method = const_cast<JSMethod *>(FindMethods(methodId));
+    ASSERT(method != nullptr);
+
+    JSHandle<GlobalEnv> env = thread_->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSHClass> functionClass;
+    if (kind == FunctionKind::NORMAL_FUNCTION) {
+        functionClass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutProto());
+    } else {
+        functionClass = JSHandle<JSHClass>::Cast(env->GetGeneratorFunctionClass());
+    }
+    JSHandle<JSFunction> jsFunc = factory_->NewJSFunctionByDynClass(method, functionClass, kind);
+
+    if (kind == FunctionKind::GENERATOR_FUNCTION) {
+        JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+        JSHandle<JSObject> initialGeneratorFuncPrototype =
+            factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+        JSObject::SetPrototype(thread_, initialGeneratorFuncPrototype, env->GetGeneratorPrototype());
+        jsFunc->SetProtoOrDynClass(thread_, initialGeneratorFuncPrototype);
+    }
+    return jsFunc;
+}
+}  // namespace panda::ecmascript

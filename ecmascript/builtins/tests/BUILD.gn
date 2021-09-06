@@ -1,0 +1,585 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//ark/js_runtime/js_runtime_config.gni")
+import("//ark/js_runtime/test/test_helper.gni")
+import("//build/test.gni")
+
+module_output_path = "ark/js_runtime"
+
+host_unittest_action("BuiltinsArraybufferTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_arraybuffer_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsArrayTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_array_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsBooleanTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_boolean_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsDataviewTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_dataview_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsDateTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_date_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsErrorsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_errors_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsFunctionTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_function_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsIteratorTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_iterator_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsJsonTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_json_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsMapTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_map_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsMathTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_math_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsNumberTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_number_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsObjectTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_object_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsPromiseTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_promise_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsProxyTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_proxy_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsReflectTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_reflect_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsRegexpTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_regexp_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsSetTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_set_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsStringTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_string_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsSymbolTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_symbol_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsTypedarrayTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_typedarray_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsWeakMapTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_weak_map_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+host_unittest_action("BuiltinsWeakSetTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_weak_set_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    sdk_libc_secshared_dep,
+  ]
+}
+
+group("unittest") {
+  testonly = true
+
+  # deps file
+  deps = [
+    ":BuiltinsArrayTest",
+    ":BuiltinsArraybufferTest",
+    ":BuiltinsBooleanTest",
+    ":BuiltinsDataviewTest",
+    ":BuiltinsDateTest",
+    ":BuiltinsErrorsTest",
+    ":BuiltinsFunctionTest",
+    ":BuiltinsIteratorTest",
+    ":BuiltinsJsonTest",
+    ":BuiltinsMapTest",
+    ":BuiltinsMathTest",
+    ":BuiltinsNumberTest",
+    ":BuiltinsObjectTest",
+    ":BuiltinsPromiseTest",
+    ":BuiltinsProxyTest",
+    ":BuiltinsReflectTest",
+    ":BuiltinsRegexpTest",
+    ":BuiltinsSetTest",
+    ":BuiltinsStringTest",
+    ":BuiltinsSymbolTest",
+    ":BuiltinsTypedarrayTest",
+    ":BuiltinsWeakMapTest",
+    ":BuiltinsWeakSetTest",
+  ]
+}
+
+group("host_unittest") {
+  testonly = true
+
+  # deps file
+  deps = [
+    ":BuiltinsArrayTestAction(${host_toolchain})",
+    ":BuiltinsArraybufferTestAction(${host_toolchain})",
+    ":BuiltinsBooleanTestAction(${host_toolchain})",
+    ":BuiltinsDataviewTestAction(${host_toolchain})",
+    ":BuiltinsDateTestAction(${host_toolchain})",
+    ":BuiltinsErrorsTestAction(${host_toolchain})",
+    ":BuiltinsFunctionTestAction(${host_toolchain})",
+    ":BuiltinsIteratorTestAction(${host_toolchain})",
+    ":BuiltinsJsonTestAction(${host_toolchain})",
+    ":BuiltinsMapTestAction(${host_toolchain})",
+    ":BuiltinsMathTestAction(${host_toolchain})",
+    ":BuiltinsNumberTestAction(${host_toolchain})",
+    ":BuiltinsObjectTestAction(${host_toolchain})",
+    ":BuiltinsPromiseTestAction(${host_toolchain})",
+    ":BuiltinsProxyTestAction(${host_toolchain})",
+    ":BuiltinsReflectTestAction(${host_toolchain})",
+    ":BuiltinsRegexpTestAction(${host_toolchain})",
+    ":BuiltinsSetTestAction(${host_toolchain})",
+    ":BuiltinsStringTestAction(${host_toolchain})",
+    ":BuiltinsSymbolTestAction(${host_toolchain})",
+    ":BuiltinsTypedarrayTestAction(${host_toolchain})",
+    ":BuiltinsWeakMapTestAction(${host_toolchain})",
+    ":BuiltinsWeakSetTestAction(${host_toolchain})",
+  ]
+}

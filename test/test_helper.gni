@@ -1,0 +1,124 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//ark/js_runtime/js_runtime_config.gni")
+import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
+import("//build/ohos.gni")
+import("//build/test.gni")
+
+if (is_standard_system) {
+  icu_path = "i18n_standard"
+} else {
+  icu_path = "i18n"
+}
+
+template("host_unittest_action") {
+  _target_name_ = "${target_name}"
+  _deps_ = invoker.deps
+
+  _deps_ += [ "//ark/js_runtime:libark_jsruntime_static" ]
+
+  # unittest for phone running
+  ohos_unittest(_target_name_) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "target_name",
+                             "deps",
+                           ])
+    deps = _deps_
+  }
+
+  is_host_test = get_label_info(_target_name_, "toolchain") == host_toolchain
+  if (is_host_test) {
+    _module_out_path_ = invoker.module_out_path
+
+    # unittest for host running
+    action("${_target_name_}Action") {
+      testonly = true
+
+      deps = [ ":${_target_name_}(${host_toolchain})" ]
+
+      script = "//ark/js_runtime/test/run_ark_executable.py"
+
+      args = [
+        "--script-file",
+        rebase_path(
+            "$root_out_dir/tests/unittest/${_module_out_path_}/${_target_name_}"),
+        "--expect-output",
+        "0",
+        "--env-path",
+        rebase_path(root_out_dir) + "/ark/ark:" + rebase_path(root_out_dir) +
+            "/ark/ark_js_runtime:" + rebase_path(root_out_dir) +
+            "/global/${icu_path}:" +
+            rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
+      ]
+
+      inputs = [
+        "$root_out_dir/tests/unittest/${_module_out_path_}/${_target_name_}",
+      ]
+      outputs = [ "$target_out_dir/${_target_name_}/" ]
+    }
+  }
+}
+
+template("host_moduletest_action") {
+  _target_name_ = "${target_name}"
+  _deps_ = invoker.deps
+
+  _test_js_path_ = "./${_target_name_}.js"
+  _test_abc_path_ = "$target_out_dir/${_target_name_}.abc"
+  _test_expect_path_ = "./expect_output.txt"
+
+  ts2abc_gen_abc("gen_${_target_name_}_abc") {
+    extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
+    extra_dependencies = _deps_
+    src_js = rebase_path(_test_js_path_)
+    dst_file = rebase_path(_test_abc_path_)
+    extra_args = [ "--debug" ]
+
+    in_puts = [
+      _test_js_path_,
+      _test_expect_path_,
+    ]
+    out_puts = [ _test_abc_path_ ]
+  }
+
+  action("${_target_name_}_test") {
+    testonly = true
+    deps = [
+      ":gen_${_target_name_}_abc",
+      "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})",
+    ]
+
+    script = "//ark/js_runtime/test/run_ark_executable.py"
+
+    args = [
+      "--script-file",
+      rebase_path(root_out_dir) + "/ark/ark_js_runtime/ark_js_vm",
+      "--script-args",
+      rebase_path(_test_abc_path_) + " _GLOBAL::func_main_0",
+      "--expect-file",
+      rebase_path(_test_expect_path_),
+      "--env-path",
+      rebase_path(root_out_dir) + "/ark/ark:" + rebase_path(root_out_dir) +
+          "/ark/ark_js_runtime:" + rebase_path(root_out_dir) +
+          "/global/${icu_path}:" +
+          rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
+    ]
+
+    inputs = [ _test_abc_path_ ]
+
+    outputs = [ "$target_out_dir/${_target_name_}/" ]
+  }
+}

@@ -1,0 +1,54 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//ark/js_runtime/js_runtime_config.gni")
+import("//build/ohos.gni")
+
+snapshot_input_path = "//component_dist/aosp-x86_64/packages_to_install/ace_engine_full/ark_build/strip.native.min.abc"
+arkstdlib_abc_path = "//prebuilts/ark_tools/target/aex/arkstdlib.abc"
+snapshot_bin_output_path = "$target_gen_dir/snapshot"
+
+action("gen_snapshot_bin") {
+  visibility = [ ":*" ]
+
+  deps = [ "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})" ]
+
+  script = "$ark_root/tools/gen_snapshot.sh"
+
+  args = [
+    "./clang_x64/ark/ark_js_runtime/ark_js_vm ",
+    "--boot-class-spaces=core:ecmascript",
+    "--boot-intrinsic-spaces=core:ecmascript",
+    "--compiler-enable-jit=false",
+    "--gc-type=epsilon",
+    "--runtime-type=ecmascript",
+    "--snapshot-serialize-enabled=true",
+    "--snapshot-file=" + rebase_path(snapshot_bin_output_path),
+    rebase_path(snapshot_input_path),
+    "_GLOBAL::func_main_0",
+  ]
+
+  inputs = [
+    snapshot_input_path,
+    arkstdlib_abc_path,
+  ]
+  outputs = [ snapshot_bin_output_path ]
+}
+
+ohos_prebuilt_etc("gen_ark_snapshot_bin") {
+  deps = [ ":gen_snapshot_bin" ]
+  source = snapshot_bin_output_path
+
+  install_enable = true
+  subsystem_name = "ark"
+}

@@ -1,0 +1,20 @@
+{
+  "subsystem": "ark",
+  "parts": {
+    "ark_js_runtime": {
+      "variants": [
+        "phone"
+      ],
+      "module_list": [
+        "//ark/js_runtime:ark_js_packages",
+        "//ark/js_runtime:ark_js_host_linux_tools_packages"
+      ],
+      "inner_kits": [],
+      "system_kits": [],
+      "test_list": [
+        "//ark/js_runtime:ark_js_unittest",
+        "//ark/js_runtime:ark_js_host_unittest"
+      ]
+    }
+  }
+}

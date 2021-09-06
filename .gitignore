@@ -1,0 +1,14 @@
+**/compile_commands.json
+build
+build_*
+.vscode
+.idea
+*cmake-build-*
+cts-generated
+.dir-locals.el
+artifacts/
+cscope*
+tags
+.byebug_history
+.cache
+*.swp
