@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_JSON_STRINGIFY_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_JSON_STRINGIFY_INL_H
+#ifndef ECMASCRIPT_BASE_JSON_STRINGIFY_INL_H
+#define ECMASCRIPT_BASE_JSON_STRINGIFY_INL_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_handle.h"
@@ -79,4 +79,4 @@ private:
     JSMutableHandle<JSTaggedValue> handleValue_{};
 };
 }  // namespace panda::ecmascript::base
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_JSON_STRINGIFY_INL_H
+#endif  // ECMASCRIPT_BASE_JSON_STRINGIFY_INL_H

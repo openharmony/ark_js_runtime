@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_SPACE_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_SPACE_H
+#ifndef ECMASCRIPT_MEM_SPACE_H
+#define ECMASCRIPT_MEM_SPACE_H
 
 #include "mem/gc/bitmap.h"
 #include "ecmascript/mem/c_containers.h"
@@ -32,8 +32,9 @@ enum MemSpaceType {
     SEMI_SPACE,
     OLD_SPACE,
     NON_MOVABLE,
-    LARGE_OBJECT_SPACE,
+    HUGE_OBJECT_SPACE,
     SNAPSHOT_SPACE,
+    MACHINE_CODE_SPACE,
     SPACE_TYPE_LAST  // Count of different types
 };
 
@@ -41,7 +42,8 @@ enum TriggerGCType {
     SEMI_GC,
     OLD_GC,
     NON_MOVE_GC,
-    LARGE_GC,
+    HUGE_GC,
+    MACHINE_CODE_GC,
     COMPRESS_FULL_GC,
     GC_TYPE_LAST  // Count of different types
 };
@@ -139,13 +141,13 @@ public:
 
     size_t GetHeapObjectSize() const;
 
-    template <class Callback>
+    template<class Callback>
     void EnumerateRegions(const Callback &cb, Region *region = nullptr) const;
 
     void AddRegion(Region *region);
 
-    void SetUp();
-    void TearDown();
+    void Initialize();
+    void Destroy();
 
     void ReclaimRegions();
 
@@ -163,7 +165,7 @@ private:
 class SemiSpace : public Space {
 public:
     explicit SemiSpace(Heap *heap, size_t initialCapacity = DEFAULT_SEMI_SPACE_SIZE,
-                       size_t maximumCapacity = SEMI_SPACE_SIZE_4M);
+                       size_t maximumCapacity = SEMI_SPACE_SIZE_CAPACITY);
     ~SemiSpace() override = default;
     NO_COPY_SEMANTIC(SemiSpace);
     NO_MOVE_SEMANTIC(SemiSpace);
@@ -228,19 +230,29 @@ public:
     bool Expand(uintptr_t top);
 };
 
-class LargeObjectSpace : public Space {
+class HugeObjectSpace : public Space {
 public:
-    explicit LargeObjectSpace(Heap *heap, size_t initialCapacity = DEFAULT_OLD_SPACE_SIZE,
-                              size_t maximumCapacity = MAX_LARGE_OBJECT_SPACE_SIZE);
-    ~LargeObjectSpace() override = default;
-    NO_COPY_SEMANTIC(LargeObjectSpace);
-    NO_MOVE_SEMANTIC(LargeObjectSpace);
+    explicit HugeObjectSpace(Heap *heap, size_t initialCapacity = DEFAULT_OLD_SPACE_SIZE,
+                             size_t maximumCapacity = MAX_HUGE_OBJECT_SPACE_SIZE);
+    ~HugeObjectSpace() override = default;
+    NO_COPY_SEMANTIC(HugeObjectSpace);
+    NO_MOVE_SEMANTIC(HugeObjectSpace);
     uintptr_t Allocate(size_t objectSize);
     size_t GetHeapObjectSize() const;
     bool ContainObject(TaggedObject *object) const;
     bool IsLive(TaggedObject *object) const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 };
+
+class MachineCodeSpace : public Space {
+public:
+    explicit MachineCodeSpace(Heap *heap, size_t initialCapacity = DEFAULT_MACHINE_CODE_SPACE_SIZE,
+                              size_t maximumCapacity = MAX_MACHINE_CODE_SPACE_SIZE);
+    ~MachineCodeSpace() override = default;
+    NO_COPY_SEMANTIC(MachineCodeSpace);
+    NO_MOVE_SEMANTIC(MachineCodeSpace);
+    bool Expand();
+};
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_SPACE_H
+#endif  // ECMASCRIPT_MEM_SPACE_H

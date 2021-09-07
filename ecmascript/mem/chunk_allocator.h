@@ -19,7 +19,7 @@
 #include "ecmascript/mem/chunk.h"
 
 namespace panda::ecmascript {
-template <typename T>
+template<typename T>
 class ChunkAllocator {
 public:
     // used for std allocator
@@ -31,21 +31,21 @@ public:
     using size_type = size_t;
     using difference_type = ptrdiff_t;
 
-    template <typename U>
+    template<typename U>
     struct Rebind {
         using other = ChunkAllocator<U>;
     };
 
-    template <typename U>
+    template<typename U>
     using rebind = Rebind<U>;
 
     explicit ChunkAllocator(Chunk *chunk) : chunk_(chunk) {}
 
-    template <typename U>
+    template<typename U>
     ChunkAllocator(const ChunkAllocator<U> &other) : chunk_(other.chunk_)
     {
     }
-    template <typename U>
+    template<typename U>
     friend class ChunkAllocator;
 
     ChunkAllocator(const ChunkAllocator &) = default;
@@ -90,12 +90,12 @@ public:
     // NOLINTNEXTLINE(readability-identifier-naming)
     void deallocate([[maybe_unused]] pointer p, [[maybe_unused]] size_type n) {}
 
-    template <typename U, typename... Args>
+    template<typename U, typename... Args>
     void construct(U *p, Args &&... args)  // NOLINT(readability-identifier-naming)
     {
         ::new (static_cast<void *>(p)) U(std::forward<Args>(args)...);
     }
-    template <typename U>
+    template<typename U>
     void destroy(U *p)  // NOLINT(readability-identifier-naming)
     {
         if (p == nullptr) {
@@ -136,9 +136,7 @@ public:
         Free(ptr);
     }
 
-    void Free([[maybe_unused]] void *mem)
-    {
-    }
+    void Free([[maybe_unused]] void *mem) {}
 
     Chunk *chunk()
     {

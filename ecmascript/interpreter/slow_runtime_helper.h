@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_SLOW_RUNTIME_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_SLOW_RUNTIME_HELPER_H
+#ifndef ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_HELPER_H
+#define ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_HELPER_H
 
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
@@ -24,10 +24,10 @@ namespace panda::ecmascript {
 class SlowRuntimeHelper {
 public:
     static JSTaggedValue NewObject(JSThread *thread, JSHandle<JSTaggedValue> func, JSHandle<JSTaggedValue> newTarget,
-                                   JSHandle<TaggedArray> args);
+                                   uint32_t argc, const JSTaggedType argv[]);
 
     static JSTaggedValue CallBoundFunction(JSThread *thread, JSHandle<JSBoundFunction> boundFunc,
-                                           JSHandle<JSTaggedValue> obj, JSHandle<TaggedArray> args);
+                                           JSHandle<JSTaggedValue> obj);
 
     static void SaveFrameToContext(JSThread *thread, JSHandle<GeneratorContext> context);
 
@@ -36,4 +36,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_SLOW_RUNTIME_HELPER_H
+#endif  // ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_HELPER_H

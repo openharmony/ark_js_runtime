@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PROPERTIES_CACHE_H
-#define PANDA_RUNTIME_ECMASCRIPT_PROPERTIES_CACHE_H
+#ifndef ECMASCRIPT_IC_PROPERTIES_CACHE_H
+#define ECMASCRIPT_IC_PROPERTIES_CACHE_H
 
 #include <array>
 
@@ -60,4 +60,4 @@ private:
     friend class EcmaVM;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PROPERTIES_CACHE_H
+#endif  // ECMASCRIPT_IC_PROPERTIES_CACHE_H

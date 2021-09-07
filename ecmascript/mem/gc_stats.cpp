@@ -15,6 +15,7 @@
 
 #include "ecmascript/mem/gc_stats.h"
 
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
@@ -74,6 +75,15 @@ void GCStats::PrintStatisticResult()
             << " non move total free size: " << sizeToMB(compressNonMoveTotalFreeSize_) << "MB"
             << " non move total commit size: " << sizeToMB(compressNonMoveTotalCommitSize_) << "MB"
             << " non move free rate: " << float(compressNonMoveTotalFreeSize_) / compressNonMoveTotalCommitSize_;
+    }
+
+    if (heap_ != nullptr) {
+        RegionFactory *regionFactory = const_cast<RegionFactory *>(heap_->GetRegionFactory());
+        LOG(DEBUG, RUNTIME) << "pool statistic:: "
+                            << "anno memory usage size:" << regionFactory->GetAnnoMemoryUsage()
+                            << "anno memory max usage size:" << regionFactory->GetMaxAnnoMemoryUsage()
+                            << "native memory usage size:" << regionFactory->GetNativeMemoryUsage()
+                            << "native memory max usage size:" << regionFactory->GetMaxNativeMemoryUsage();
     }
 }
 

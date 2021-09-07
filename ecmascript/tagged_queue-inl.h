@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_QUEUE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_QUEUE_INL_H
+#ifndef ECMASCRIPT_TAGGED_QUEUE_INL_H
+#define ECMASCRIPT_TAGGED_QUEUE_INL_H
 
 #include "ecmascript/tagged_queue.h"
 
@@ -40,8 +40,9 @@ inline JSTaggedValue TaggedQueue::Pop(JSThread *thread)
     JSTaggedValue value = Get(start);
 
     array_size_t capacity = GetCapacity().GetArrayLength();
+    ASSERT(capacity != 0);
     SetStart(thread, JSTaggedValue((start + 1) % capacity));
     return value;
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_QUEUE_INL_H
+#endif  // ECMASCRIPT_TAGGED_QUEUE_INL_H

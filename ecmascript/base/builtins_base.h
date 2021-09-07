@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_BUILTINS_BASE_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_BUILTINS_BASE_H
+#ifndef ECMASCRIPT_BASE_BUILTINS_BASE_H
+#define ECMASCRIPT_BASE_BUILTINS_BASE_H
 
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/ecma_runtime_call_info.h"
@@ -76,10 +76,10 @@ public:
 
     static inline JSTaggedValue GetTaggedString(JSThread *thread, const char *str)
     {
-        return thread->GetEcmaVM()->GetFactory()->NewFromString(str).GetTaggedValue();
+        return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
     }
 };
 }  // namespace base
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_H
+#endif  // ECMASCRIPT_BASE_BUILTINS_BASE_H

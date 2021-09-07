@@ -17,6 +17,7 @@
 
 #include <algorithm>
 
+#include "ecmascript/base/config.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/js_object-inl.h"
@@ -26,8 +27,6 @@
 #include "ecmascript/weak_vector-inl.h"
 
 namespace panda::ecmascript {
-#define ENABLE_IC 0  // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-
 // class TransitionsDictionary
 TransitionsDictionary *TransitionsDictionary::PutIfAbsent(const JSThread *thread,
                                                           const JSHandle<TransitionsDictionary> &dictionary,
@@ -56,8 +55,8 @@ TransitionsDictionary *TransitionsDictionary::PutIfAbsent(const JSThread *thread
 int TransitionsDictionary::FindEntry(const JSTaggedValue &key, const JSTaggedValue &metaData)
 {
     size_t size = Size();
-    int count = 1;
-    int hash = TransitionsDictionary::Hash(key, metaData);
+    uint32_t count = 1;
+    uint32_t hash = TransitionsDictionary::Hash(key, metaData);
     // GrowHashTable will guarantee the hash table is never full.
     for (int entry = GetFirstPosition(hash, size);; entry = GetNextPosition(entry, count++, size)) {
         JSTaggedValue element = GetKey(entry);
@@ -174,7 +173,7 @@ void JSHClass::TransitionElementsToDictionary(const JSThread *thread, const JSHa
         JSObject::TransitionToDictionary(thread, obj);
     }
     obj->GetJSHClass()->SetIsDictionaryElement(true);
-    obj->GetJSHClass()->SetIsStableJSArray(false);
+    obj->GetJSHClass()->SetIsStableElements(false);
 }
 
 void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &key,
@@ -184,7 +183,7 @@ void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj
     JSHandle<JSHClass> jshclass(thread, obj->GetJSHClass());
     JSHClass *newDyn = jshclass->FindTransitions(key.GetTaggedValue(), JSTaggedValue(attr.GetPropertyMetaData()));
     if (newDyn != nullptr) {
-#if ENABLE_IC
+#if ECMASCRIPT_ENABLE_IC
         JSHClass::NotifyHclassChanged(thread, jshclass, JSHandle<JSHClass>(thread, newDyn));
 #endif
         obj->SetClass(newDyn);
@@ -226,7 +225,7 @@ void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj
     AddTransitions(thread, jshclass, newJshclass, key, attr);
 
     // 6. update hclass in object.
-#if ENABLE_IC
+#if ECMASCRIPT_ENABLE_IC
     JSHClass::NotifyHclassChanged(thread, jshclass, newJshclass);
 #endif
     obj->SetClass(*newJshclass);
@@ -333,7 +332,7 @@ void JSHClass::TransitionToDictionary(const JSThread *thread, const JSHandle<JSO
         newJshclass->SetIsDictionaryMode(true);
 
         // 3. Add newJshclass to ?
-#if ENABLE_IC
+#if ECMASCRIPT_ENABLE_IC
         JSHClass::NotifyHclassChanged(thread, JSHandle<JSHClass>(thread, obj->GetJSHClass()), newJshclass);
 #endif
         obj->SetClass(newJshclass);

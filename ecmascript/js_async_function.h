@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_ASYNC_FUNCTION_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_ASYNC_FUNCTION_H
+#ifndef ECMASCRIPT_JS_ASYNC_FUNCTION_H
+#define ECMASCRIPT_JS_ASYNC_FUNCTION_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
@@ -63,4 +63,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_ASYNC_FUNCTION_H
+#endif  // ECMASCRIPT_JS_ASYNC_FUNCTION_H

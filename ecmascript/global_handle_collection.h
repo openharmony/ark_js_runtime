@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_GLOBAL_HANDLE_COLLECTION_H
-#define PANDA_RUNTIME_ECMASCRIPT_GLOBAL_HANDLE_COLLECTION_H
+#ifndef ECMASCRIPT_GLOBAL_HANDLE_COLLECTION_H
+#define ECMASCRIPT_GLOBAL_HANDLE_COLLECTION_H
 
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
-template <typename T>
+template<typename T>
 class JSHandle;
 class GlobalHandleCollection {
 public:
@@ -30,16 +30,17 @@ public:
     DEFAULT_MOVE_SEMANTIC(GlobalHandleCollection);
     DEFAULT_COPY_SEMANTIC(GlobalHandleCollection);
 
-    template <typename T>
+    template<typename T>
     JSHandle<T> NewHandle(JSTaggedType value)
     {
-        uintptr_t addr = thread_->GetGlobalHandleStorage()->NewGlobalHandle(value);
+        uintptr_t addr = thread_->GetEcmaGlobalStorage()->NewGlobalHandle(value);
         return JSHandle<T>(addr);
     }
 
-    void Dispose(HandleBase handle)
+    template<typename T>
+    void Dispose(JSHandle<T> handle)
     {
-        thread_->GetGlobalHandleStorage()->DisposeGlobalHandle(handle.GetAddress());
+        thread_->GetEcmaGlobalStorage()->DisposeGlobalHandle(handle.GetAddress());
     }
 
 private:
@@ -47,4 +48,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_GLOBAL_HANDLE_COLLECTION_H
+#endif  // ECMASCRIPT_GLOBAL_HANDLE_COLLECTION_H

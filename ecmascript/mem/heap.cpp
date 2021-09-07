@@ -31,25 +31,29 @@
 namespace panda::ecmascript {
 Heap::Heap(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm), regionFactory_(ecmaVm->GetRegionFactory()) {}
 
-void Heap::SetUp()
+void Heap::Initialize()
 {
     memController_ = CreateMemController("no-gc-for-start-up");
-    if (GetMemController()->IsInAppStartup()) {
+
+    if (memController_->IsInAppStartup()) {
         toSpace_ = new SemiSpace(this, DEFAULT_SEMI_SPACE_SIZE, MAX_SEMI_SPACE_SIZE_STARTUP);
         fromSpace_ = new SemiSpace(this, DEFAULT_SEMI_SPACE_SIZE, MAX_SEMI_SPACE_SIZE_STARTUP);
     } else {
         toSpace_ = new SemiSpace(this);
         fromSpace_ = new SemiSpace(this);
     }
-    toSpace_->SetUp();
+
+    toSpace_->Initialize();
     // not set up from space
     oldSpace_ = new OldSpace(this);
     compressSpace_ = new OldSpace(this);
-    oldSpace_->SetUp();
+    oldSpace_->Initialize();
     nonMovableSpace_ = new NonMovableSpace(this);
-    nonMovableSpace_->SetUp();
+    nonMovableSpace_->Initialize();
     snapshotSpace_ = new SnapShotSpace(this);
-    largeObjectSpace_ = new LargeObjectSpace(this);
+    machineCodeSpace_ = new MachineCodeSpace(this);
+    machineCodeSpace_->Initialize();
+    hugeObjectSpace_ = new HugeObjectSpace(this);
     markStack_ = new MarkStack(this);
     weakProcessQueue_ = new ProcessQueue(this);
     bool paralledGc = ecmaVm_->GetOptions().IsEnableParalledYoungGc();
@@ -80,36 +84,39 @@ void Heap::FlipCompressSpace()
     compressSpace_ = oldSpace_;
     oldSpace_ = oldSpace;
 }
-void Heap::TearDown()
+void Heap::Destroy()
 {
     pool_->WaitTaskFinish();
-    toSpace_->TearDown();
+    toSpace_->Destroy();
     delete toSpace_;
     toSpace_ = nullptr;
-    fromSpace_->TearDown();
+    fromSpace_->Destroy();
     delete fromSpace_;
     fromSpace_ = nullptr;
 
-    oldSpace_->TearDown();
+    oldSpace_->Destroy();
     delete oldSpace_;
     oldSpace_ = nullptr;
-    compressSpace_->TearDown();
+    compressSpace_->Destroy();
     delete compressSpace_;
     compressSpace_ = nullptr;
-    nonMovableSpace_->TearDown();
+    nonMovableSpace_->Destroy();
     delete nonMovableSpace_;
     nonMovableSpace_ = nullptr;
-    snapshotSpace_->TearDown();
+    snapshotSpace_->Destroy();
     delete snapshotSpace_;
     snapshotSpace_ = nullptr;
-    markStack_->TearDown();
+    machineCodeSpace_->Destroy();
+    delete machineCodeSpace_;
+    machineCodeSpace_ = nullptr;
+    markStack_->Destroy();
     delete markStack_;
     markStack_ = nullptr;
-    largeObjectSpace_->TearDown();
-    delete largeObjectSpace_;
-    largeObjectSpace_ = nullptr;
+    hugeObjectSpace_->Destroy();
+    delete hugeObjectSpace_;
+    hugeObjectSpace_ = nullptr;
 
-    weakProcessQueue_->TearDown();
+    weakProcessQueue_->Destroy();
     delete weakProcessQueue_;
     weakProcessQueue_ = nullptr;
     delete semiSpaceCollector_;
@@ -141,8 +148,8 @@ void Heap::CollectGarbage(TriggerGCType gcType)
         case TriggerGCType::SEMI_GC:
             if (GetMemController()->IsInAppStartup()) {
                 semiSpaceCollector_->RunPhases();
-                SetFromSpaceMaximumCapacity(SEMI_SPACE_SIZE_4M);
-                SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_4M);
+                SetFromSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
+                SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
                 ResetAppStartup();
             } else {
                 semiSpaceCollector_->RunPhases();
@@ -157,7 +164,8 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             RecomputeLimits();
             break;
         case TriggerGCType::NON_MOVE_GC:
-        case TriggerGCType::LARGE_GC:
+        case TriggerGCType::HUGE_GC:
+        case TriggerGCType::MACHINE_CODE_GC:
             oldSpaceCollector_->RunPhases();
             RecomputeLimits();
             break;
@@ -201,7 +209,7 @@ size_t Heap::VerifyHeapObjects() const
 
     {
         VerifyObjectVisitor verifier(this, &failCount);
-        largeObjectSpace_->IterateOverObjects(verifier);
+        hugeObjectSpace_->IterateOverObjects(verifier);
     }
 
     return failCount;

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_GLOBAL_DICTIONARY_INL_H
-#define PANDA_RUNTIME_GLOBAL_DICTIONARY_INL_H
+#ifndef ECMASCRIPT_GLOBAL_DICTIONARY_INL_H
+#define ECMASCRIPT_GLOBAL_DICTIONARY_INL_H
 
 #include "ecmascript/global_dictionary.h"
 #include "ecmascript/ic/property_box.h"

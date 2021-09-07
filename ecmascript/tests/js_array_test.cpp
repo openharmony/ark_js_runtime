@@ -95,7 +95,7 @@ HWTEST_F_L0(JSArrayTest, DefineOwnProperty)
 
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(100)), true, true, true);
 
-    EcmaString *string1 = *factory->NewFromString("1");
+    EcmaString *string1 = *factory->NewFromCanBeCompressString("1");
     JSHandle<JSTaggedValue> key1(thread, static_cast<TaggedObject *>(string1));
     JSHandle<JSTaggedValue> index1(thread, JSTaggedValue(1));
     EXPECT_TRUE(JSArray::DefineOwnProperty(thread, JSHandle<JSObject>(obj), key1, desc));
@@ -106,7 +106,7 @@ HWTEST_F_L0(JSArrayTest, DefineOwnProperty)
     EXPECT_EQ(v.GetInt(), 100);
     EXPECT_EQ(JSArray::GetProperty(thread, obj, lengthKeyHandle).GetValue()->GetInt(), 2);
 
-    EcmaString *string100 = *factory->NewFromString("100");
+    EcmaString *string100 = *factory->NewFromCanBeCompressString("100");
     JSHandle<JSTaggedValue> key100(thread, static_cast<TaggedObject *>(string100));
     JSHandle<JSTaggedValue> index100(thread, JSTaggedValue(100));
 
@@ -115,7 +115,7 @@ HWTEST_F_L0(JSArrayTest, DefineOwnProperty)
     EXPECT_EQ(JSArray::GetProperty(thread, obj, index100).GetValue()->GetInt(), 100);
     EXPECT_EQ(JSArray::GetProperty(thread, obj, lengthKeyHandle).GetValue()->GetInt(), 101);
 
-    EcmaString *stringx = *factory->NewFromString("2147483646");
+    EcmaString *stringx = *factory->NewFromCanBeCompressString("2147483646");
     JSHandle<JSTaggedValue> keyx(thread, static_cast<TaggedObject *>(stringx));
     JSHandle<JSTaggedValue> indexx(thread, JSTaggedValue(2147483646U));  // 2147483646U
 

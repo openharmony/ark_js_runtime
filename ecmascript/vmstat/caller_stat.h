@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_CALLER_STAT_H
-#define PANDA_RUNTIME_CALLER_STAT_H
+#ifndef ECMASCRIPT_VMSTAT_CALLER_STAT_H
+#define ECMASCRIPT_VMSTAT_CALLER_STAT_H
 
 #include <cstdint>
 #include <string>

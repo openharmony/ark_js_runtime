@@ -70,7 +70,7 @@ HWTEST_F_L0(JSProxyTest, ProxyCreate)
     JSHandle<JSTaggedValue> targetHandle(
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>::Cast(dynclass), dynclass));
 
-    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, targetHandle, key, value);
     EXPECT_EQ(JSObject::GetProperty(thread, targetHandle, key).GetValue()->GetInt(), 1);
@@ -103,7 +103,7 @@ HWTEST_F_L0(JSProxyTest, GetProperty)
     JSHandle<JSTaggedValue> targetHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(targetHandle->IsECMAObject());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, targetHandle, key, value);
     EXPECT_EQ(JSObject::GetProperty(thread, targetHandle, key).GetValue()->GetInt(), 1);
@@ -125,7 +125,7 @@ HWTEST_F_L0(JSProxyTest, GetProperty)
 
     JSHandle<JSProxy> proxyHandle2(JSProxy::ProxyCreate(thread, targetHandle, handlerHandle));
     EXPECT_TRUE(*proxyHandle2 != nullptr);
-    JSHandle<JSTaggedValue> key2(factory->NewFromString("y"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("y"));
     EXPECT_EQ(JSProxy::GetProperty(thread, proxyHandle2, key2).GetValue()->GetInt(), 10);
 }
 
@@ -144,7 +144,7 @@ HWTEST_F_L0(JSProxyTest, GetOwnProperty)
     JSHandle<JSTaggedValue> targetHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(targetHandle->IsECMAObject());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, targetHandle, key, value);
     EXPECT_EQ(JSObject::GetProperty(thread, targetHandle, key).GetValue()->GetInt(), 1);
@@ -168,7 +168,7 @@ HWTEST_F_L0(JSProxyTest, GetOwnProperty)
 
     JSHandle<JSProxy> proxyHandle2 = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle2 != nullptr);
-    JSHandle<JSTaggedValue> key2(factory->NewFromString("y"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("y"));
     PropertyDescriptor desc2(thread);
     EXPECT_FALSE(JSProxy::GetOwnProperty(thread, proxyHandle2, key2, desc2));
 }
@@ -188,7 +188,7 @@ HWTEST_F_L0(JSProxyTest, SetProperty)
     JSHandle<JSTaggedValue> targetHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(targetHandle->IsECMAObject());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     JSHandle<JSTaggedValue> handlerHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
@@ -229,7 +229,7 @@ HWTEST_F_L0(JSProxyTest, DefineOwnProperty)
     JSHandle<JSTaggedValue> targetHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(targetHandle->IsECMAObject());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     JSHandle<JSTaggedValue> handlerHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
@@ -271,7 +271,7 @@ HWTEST_F_L0(JSProxyTest, DeleteProperty)
     JSHandle<JSTaggedValue> targetHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(targetHandle->IsECMAObject());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
     JSHandle<JSTaggedValue> handlerHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
@@ -467,7 +467,7 @@ HWTEST_F_L0(JSProxyTest, HasProperty)
     JSHandle<JSTaggedValue> targetHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(targetHandle->IsECMAObject());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)));
     JSObject::DefineOwnProperty(thread, JSHandle<JSObject>::Cast(targetHandle), key, desc);
 
@@ -508,7 +508,7 @@ HWTEST_F_L0(JSProxyTest, OwnPropertyKeys)
     JSHandle<JSTaggedValue> targetHandle(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
     EXPECT_TRUE(targetHandle->IsECMAObject());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)));
     JSObject::DefineOwnProperty(thread, JSHandle<JSObject>::Cast(targetHandle), key, desc);
 
@@ -558,8 +558,8 @@ HWTEST_F_L0(JSProxyTest, Call)
 
     JSHandle<JSProxy> proxyHandle = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle != nullptr);
-    JSHandle<TaggedArray> arg = factory->EmptyArray();
-    JSTaggedValue res = JSProxy::CallInternal(thread, proxyHandle, JSHandle<JSTaggedValue>::Cast(proxyHandle), arg);
+    JSTaggedValue res =
+        JSProxy::CallInternal(thread, proxyHandle, JSHandle<JSTaggedValue>::Cast(proxyHandle), 0, nullptr);
     JSHandle<JSTaggedValue> taggedRes(thread, res);
 
     EXPECT_TRUE(JSTaggedValue::SameValue(taggedRes.GetTaggedValue(), JSTaggedValue::True()));
@@ -571,9 +571,8 @@ HWTEST_F_L0(JSProxyTest, Call)
 
     JSHandle<JSProxy> proxyHandle2 = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle2 != nullptr);
-    JSHandle<TaggedArray> arg2 = factory->EmptyArray();
     JSTaggedValue res2 =
-        JSProxy::CallInternal(thread, proxyHandle2, JSHandle<JSTaggedValue>::Cast(proxyHandle2), arg2);
+        JSProxy::CallInternal(thread, proxyHandle2, JSHandle<JSTaggedValue>::Cast(proxyHandle2), 0, nullptr);
     JSHandle<JSTaggedValue> taggedRes2(thread, res2);
 
     EXPECT_TRUE(JSTaggedValue::SameValue(taggedRes2.GetTaggedValue(), JSTaggedValue::False()));
@@ -586,7 +585,7 @@ JSTaggedValue HandlerConstruct([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> dynclass(thread, JSObjectTestCreate(thread));
     JSHandle<JSTaggedValue> obj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(2))); // 2 : test case
     JSObject::DefineOwnProperty(argv->GetThread(), JSHandle<JSObject>::Cast(obj), key, desc);
     return JSTaggedValue(obj.GetTaggedValue());
@@ -598,7 +597,7 @@ JSTaggedValue HandlerConFunc([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> dynclass(thread, JSObjectTestCreate(thread));
     JSHandle<JSTaggedValue> obj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)));
     JSObject::DefineOwnProperty(argv->GetThread(), JSHandle<JSObject>::Cast(obj), key, desc);
     return JSTaggedValue(obj.GetTaggedValue());
@@ -620,10 +619,9 @@ HWTEST_F_L0(JSProxyTest, Construct)
 
     JSHandle<JSProxy> proxyHandle = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle != nullptr);
-    JSHandle<TaggedArray> arg = factory->EmptyArray();
-    JSTaggedValue res = JSProxy::ConstructInternal(thread, proxyHandle, arg, targetHandle);
+    JSTaggedValue res = JSProxy::ConstructInternal(thread, proxyHandle, 0, nullptr, targetHandle);
     JSHandle<JSTaggedValue> taggedRes(thread, res);
-    JSHandle<JSTaggedValue> key(factory->NewFromString("x"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("x"));
     EXPECT_EQ(JSObject::GetProperty(thread, taggedRes, key).GetValue()->GetInt(), 1);
 
     // 2. handler has "Construct"
@@ -633,8 +631,7 @@ HWTEST_F_L0(JSProxyTest, Construct)
 
     JSHandle<JSProxy> proxyHandle2 = JSProxy::ProxyCreate(thread, targetHandle, handlerHandle);
     EXPECT_TRUE(*proxyHandle2 != nullptr);
-    JSHandle<TaggedArray> arg2 = factory->EmptyArray();
-    JSTaggedValue res2 = JSProxy::ConstructInternal(thread, proxyHandle2, arg2, targetHandle);
+    JSTaggedValue res2 = JSProxy::ConstructInternal(thread, proxyHandle2, 0, nullptr, targetHandle);
     JSHandle<JSTaggedValue> taggedRes2(thread, res2);
     EXPECT_EQ(JSObject::GetProperty(thread, taggedRes2, key).GetValue()->GetInt(), 2);
 }

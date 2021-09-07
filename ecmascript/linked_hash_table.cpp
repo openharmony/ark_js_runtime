@@ -20,7 +20,7 @@
 #include "object_factory.h"
 
 namespace panda::ecmascript {
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 Derived *LinkedHashTable<Derived, HashObject>::Create(const JSThread *thread, int numberOfElements)
 {
     ASSERT_PRINT(numberOfElements > 0, "size must be a non-negative integer");
@@ -36,7 +36,7 @@ Derived *LinkedHashTable<Derived, HashObject>::Create(const JSThread *thread, in
     return table;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 Derived *LinkedHashTable<Derived, HashObject>::Insert(const JSThread *thread, const JSHandle<Derived> &table,
                                                       const JSHandle<JSTaggedValue> &key,
                                                       const JSHandle<JSTaggedValue> &value)
@@ -61,7 +61,7 @@ Derived *LinkedHashTable<Derived, HashObject>::Insert(const JSThread *thread, co
     return newTable;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 Derived *LinkedHashTable<Derived, HashObject>::InsertWeakRef(const JSThread *thread, const JSHandle<Derived> &table,
                                                              const JSHandle<JSTaggedValue> &key,
                                                              const JSHandle<JSTaggedValue> &value)
@@ -90,7 +90,7 @@ Derived *LinkedHashTable<Derived, HashObject>::InsertWeakRef(const JSThread *thr
     return newTable;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::Rehash(const JSThread *thread, Derived *newTable)
 {
     ASSERT_PRINT(newTable != nullptr && newTable->Capacity() > NumberOfElements(), "can not rehash to new table");
@@ -126,7 +126,7 @@ void LinkedHashTable<Derived, HashObject>::Rehash(const JSThread *thread, Derive
     newTable->SetNumberOfDeletedElements(thread, 0);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 Derived *LinkedHashTable<Derived, HashObject>::GrowCapacity(const JSThread *thread, const JSHandle<Derived> &table,
                                                             int numberOfAddedElements)
 {
@@ -139,7 +139,7 @@ Derived *LinkedHashTable<Derived, HashObject>::GrowCapacity(const JSThread *thre
     return newTable;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 Derived *LinkedHashTable<Derived, HashObject>::Remove(const JSThread *thread, const JSHandle<Derived> &table,
                                                       const JSHandle<JSTaggedValue> &key)
 {
@@ -152,7 +152,7 @@ Derived *LinkedHashTable<Derived, HashObject>::Remove(const JSThread *thread, co
     return Shrink(thread, table);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 Derived *LinkedHashTable<Derived, HashObject>::Shrink(const JSThread *thread, const JSHandle<Derived> &table,
                                                       int additionalCapacity)
 {

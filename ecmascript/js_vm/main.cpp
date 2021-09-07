@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "ecmascript/ecma_language_context.h"
+#include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "include/runtime.h"
@@ -45,7 +46,7 @@ void BlockSignals()
     }
 
     if (panda::os::native_stack::g_PandaThreadSigmask(SIG_BLOCK, &set, nullptr) != 0) {
-        LOG(ERROR, RUNTIME) << "PandaThreadSigmask failed";
+        LOG(ERROR, RUNTIME) << "g_PandaThreadSigmask failed";
     }
 #endif  // PANDA_TARGET_UNIX
 }

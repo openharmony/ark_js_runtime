@@ -31,6 +31,7 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/ic/proto_change_details.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_arguments.h"
@@ -40,34 +41,26 @@
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
-#include "ecmascript/js_float32_array.h"
-#include "ecmascript/js_float64_array.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_int16_array.h"
-#include "ecmascript/js_int32_array.h"
-#include "ecmascript/js_int8_array.h"
 #include "ecmascript/js_iterator.h"
-#include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_map.h"
+#include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
-#include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_set.h"
+#include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_string_iterator.h"
 #include "ecmascript/js_symbol.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/js_uint16_array.h"
-#include "ecmascript/js_uint32_array.h"
-#include "ecmascript/js_uint8_array.h"
-#include "ecmascript/js_uint8_clamped_array.h"
+#include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/linked_hash_table-inl.h"
@@ -98,7 +91,7 @@ JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(JSHClass *hclass, uint32_t siz
 {
     NewObjectHook();
     uint32_t classSize = JSHClass::SIZE;
-    auto *newClass = static_cast<JSHClass *>(heapHelper_.AllocateNonMovableOrLargeObject(hclass, classSize));
+    auto *newClass = static_cast<JSHClass *>(heapHelper_.AllocateNonMovableOrHugeObject(hclass, classSize));
     newClass->Initialize(thread_, size, type, JSTaggedValue::Null());
 
     return JSHandle<JSHClass>(thread_, newClass);
@@ -148,15 +141,16 @@ void ObjectFactory::ObtainRootClass([[maybe_unused]] const JSHandle<GlobalEnv> &
     prototypeHandlerClass_ = JSHClass::Cast(globalConst->GetPrototypeHandlerClass().GetTaggedObject());
     functionExtraInfo_ = JSHClass::Cast(globalConst->GetFunctionExtraInfoClass().GetTaggedObject());
     jsRealmClass_ = JSHClass::Cast(globalConst->GetJSRealmClass().GetTaggedObject());
+    machineCodeClass_ = JSHClass::Cast(globalConst->GetMachineCodeClass().GetTaggedObject());
 }
 
 void ObjectFactory::InitObjectFields(const TaggedObject *object)
 {
     auto *klass = object->GetClass();
-    auto objBodySize = klass->GetObjectSize() - TaggedObject::ObjectHeaderSize();
+    auto objBodySize = klass->GetObjectSize() - TaggedObject::TaggedObjectSize();
     ASSERT(objBodySize % JSTaggedValue::TaggedTypeSize() == 0);
     int numOfFields = static_cast<int>(objBodySize / JSTaggedValue::TaggedTypeSize());
-    size_t addr = reinterpret_cast<uintptr_t>(object) + TaggedObject::ObjectHeaderSize();
+    size_t addr = reinterpret_cast<uintptr_t>(object) + TaggedObject::TaggedObjectSize();
     for (int i = 0; i < numOfFields; i++) {
         auto *fieldAddr = reinterpret_cast<JSTaggedType *>(addr + i * JSTaggedValue::TaggedTypeSize());
         *fieldAddr = JSTaggedValue::Undefined().GetRawData();
@@ -172,16 +166,12 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
     JSTaggedValue data = array->GetArrayBufferData();
     if (data != JSTaggedValue::Undefined()) {
         auto *pointer = JSNativePointer::Cast(data.GetTaggedObject());
-        void *arr = pointer->GetExternalPointer();
-        if (arr != nullptr) {
-            vm_->GetRegionFactory()->FreeBuffer(arr);
-        }
         auto newData = vm_->GetRegionFactory()->AllocateBuffer(length * sizeof(uint8_t));
         if (memset_s(newData, length, 0, length) != EOK) {
             LOG_ECMA(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
-        pointer->SetExternalPointer(newData);
+        pointer->ResetExternalPointer(newData);
         return;
     }
 
@@ -190,7 +180,8 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
         LOG_ECMA(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
-    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData);
+    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, RegionFactory::FreeBufferFunc,
+                                                           vm_->GetRegionFactory());
     array->SetArrayBufferData(thread_, pointer.GetTaggedValue());
     vm_->PushToArrayDataList(*pointer);
 }
@@ -209,9 +200,8 @@ JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(int32_t length)
             LOG_ECMA(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
-        JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData);
-        pointer->SetDeleter(RegionFactory::FreeBufferFunc);
-        pointer->SetData(vm_->GetRegionFactory());
+        JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, RegionFactory::FreeBufferFunc,
+                                                               vm_->GetRegionFactory());
         arrayBuffer->SetArrayBufferData(thread_, pointer.GetTaggedValue());
         arrayBuffer->SetShared(thread_, JSTaggedValue::False());
         vm_->PushToArrayDataList(*pointer);
@@ -230,9 +220,7 @@ JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(void *buffer, int32_t le
     length = buffer == nullptr ? 0 : length;
     arrayBuffer->SetArrayBufferByteLength(thread_, JSTaggedValue(length));
     if (length > 0) {
-        JSHandle<JSNativePointer> pointer = NewJSNativePointer(buffer);
-        pointer->SetDeleter(deleter);
-        pointer->SetData(data);
+        JSHandle<JSNativePointer> pointer = NewJSNativePointer(buffer, deleter, data);
         arrayBuffer->SetArrayBufferData(thread_, pointer.GetTaggedValue());
         arrayBuffer->SetShared(thread_, JSTaggedValue(share));
         vm_->PushToArrayDataList(*pointer);
@@ -277,15 +265,11 @@ void ObjectFactory::NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, vo
     JSTaggedValue data = regexp->GetByteCodeBuffer();
     if (data != JSTaggedValue::Undefined()) {
         JSNativePointer *native = JSNativePointer::Cast(data.GetTaggedObject());
-        native->Destroy();
-        void *bufferPointer = native->GetExternalPointer();
-        if (bufferPointer != nullptr) {
-            vm_->GetRegionFactory()->FreeBuffer(bufferPointer);
-        }
-        native->SetExternalPointer(newBuffer);
+        native->ResetExternalPointer(newBuffer);
         return;
     }
-    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newBuffer);
+    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newBuffer, RegionFactory::FreeBufferFunc,
+                                                           vm_->GetRegionFactory());
     regexp->SetByteCodeBuffer(thread_, pointer.GetTaggedValue());
     regexp->SetLength(thread_, JSTaggedValue(static_cast<uint32_t>(size)));
 
@@ -305,8 +289,9 @@ JSHandle<JSObject> ObjectFactory::NewJSObject(const JSHandle<JSHClass> &jshclass
 {
     NewObjectHook();
     JSHandle<JSObject> obj(thread_, JSObject::Cast(NewDynObject(jshclass, JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
-    obj->SetElements(thread_, EmptyArray(), SKIP_BARRIER);
-    obj->SetProperties(thread_, EmptyArray(), SKIP_BARRIER);
+    JSHandle<TaggedArray> emptyArray = EmptyArray();
+    obj->SetElements(thread_, emptyArray, SKIP_BARRIER);
+    obj->SetProperties(thread_, emptyArray, SKIP_BARRIER);
     return obj;
 }
 
@@ -319,7 +304,7 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
     NewObjectHook();
     auto klass = old->GetClass();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(klass, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass, size);
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
 
@@ -335,7 +320,7 @@ JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object)
     NewObjectHook();
     auto klass = object->GetClass();
 
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(klass);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass);
     JSHandle<JSObject> cloneObject(thread_, JSObject::Cast(header));
 
     JSHandle<TaggedArray> elements(thread_, object->GetElements());
@@ -357,7 +342,7 @@ JSHandle<JSArray> ObjectFactory::CloneArrayLiteral(JSHandle<JSArray> object)
     NewObjectHook();
     auto klass = object->GetClass();
 
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(klass);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass);
     JSHandle<JSArray> cloneObject(thread_, JSObject::Cast(header));
 
     JSHandle<TaggedArray> elements(thread_, object->GetElements());
@@ -386,7 +371,7 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
     NewObjectHook();
     auto klass = old->GetClass();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(klass, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass, size);
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
 
@@ -412,7 +397,7 @@ JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object, 
     NewObjectHook();
     auto klass = object->GetClass();
 
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(klass);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass);
     JSHandle<JSObject> cloneObject(thread_, JSObject::Cast(header));
 
     JSHandle<TaggedArray> elements(thread_, object->GetElements());
@@ -452,6 +437,9 @@ JSHandle<JSFunction> ObjectFactory::CloneJSFuction(JSHandle<JSFunction> obj, Fun
         JSObject::SetPrototype(thread_, initialGeneratorFuncPrototype, env->GetGeneratorPrototype());
         cloneFunc->SetProtoOrDynClass(thread_, initialGeneratorFuncPrototype);
     }
+
+    JSTaggedValue length = obj->GetPropertyInlinedProps(JSFunction::LENGTH_INLINE_PROPERTY_INDEX);
+    cloneFunc->SetPropertyInlinedProps(thread_, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, length);
     return cloneFunc;
 }
 
@@ -543,7 +531,7 @@ JSHandle<JSHClass> ObjectFactory::CreateJSArrayInstanceClass(JSHandle<JSTaggedVa
         ASSERT(unusedInlinedProps >= fieldOrder);
         arrayDynclass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
     }
-    arrayDynclass->SetIsStableJSArray(true);
+    arrayDynclass->SetIsStableElements(true);
     arrayDynclass->SetHasConstructor(false);
 
     return arrayDynclass;
@@ -607,6 +595,7 @@ JSHandle<JSHClass> ObjectFactory::CreateJSArguments()
         ASSERT(unusedInlinedProps >= fieldOrder);
         argumentsDynclass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
     }
+    argumentsDynclass->SetIsStableElements(true);
     return argumentsDynclass;
 }
 
@@ -668,10 +657,9 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
     JSHandle<JSTaggedValue> nativePrototype(thread_, nativeFunc->GetFunctionPrototype());
     JSHandle<JSTaggedValue> ctorKey = globalConst->GetHandledConstructorString();
 
-    array_size_t length = 1;
-    JSHandle<TaggedArray> array = NewTaggedArray(length);
-    array->Set(thread_, 0, message.GetTaggedValue());
-    JSTaggedValue obj = JSFunction::Invoke(thread_, nativePrototype, ctorKey, array);
+    InternalCallParams *arguments = thread_->GetInternalCallParams();
+    arguments->MakeArgv(message.GetTaggedValue());
+    JSTaggedValue obj = JSFunction::Invoke(thread_, nativePrototype, ctorKey, 1, arguments->GetArgv());
     JSHandle<JSObject> handleNativeInstanceObj(thread_, obj);
     return handleNativeInstanceObj;
 }
@@ -703,6 +691,13 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_URI_ERROR:
             case JSType::JS_SYNTAX_ERROR:
             case JSType::JS_ITERATOR:
+            case JSType::JS_INTL:
+            case JSType::JS_LOCALE:
+            case JSType::JS_DATE_TIME_FORMAT:
+            case JSType::JS_NUMBER_FORMAT:
+            case JSType::JS_RELATIVE_TIME_FORMAT:
+            case JSType::JS_COLLATOR:
+            case JSType::JS_PLURAL_RULES:
                 break;
             case JSType::JS_ARRAY: {
                 JSArray::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
@@ -715,67 +710,19 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSDate::Cast(*obj)->SetLocalOffset(thread_, JSTaggedValue(JSDate::MAX_DOUBLE));
                 break;
             case JSType::JS_INT8_ARRAY:
-                JSInt8Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSInt8Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSInt8Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSInt8Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSInt8Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_UINT8_ARRAY:
-                JSUint8Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSUint8Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSUint8Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSUint8Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSUint8Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_UINT8_CLAMPED_ARRAY:
-                JSUint8ClampedArray::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSUint8ClampedArray::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSUint8ClampedArray::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSUint8ClampedArray::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSUint8ClampedArray::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_INT16_ARRAY:
-                JSInt16Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSInt16Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSInt16Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSInt16Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSInt16Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_UINT16_ARRAY:
-                JSUint16Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSUint16Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSUint16Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSUint16Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSUint16Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_INT32_ARRAY:
-                JSInt32Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSInt32Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSInt32Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSInt32Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSInt32Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_UINT32_ARRAY:
-                JSUint32Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSUint32Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSUint32Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSUint32Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSUint32Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_FLOAT32_ARRAY:
-                JSFloat32Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSFloat32Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSFloat32Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSFloat32Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSFloat32Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
-                break;
             case JSType::JS_FLOAT64_ARRAY:
-                JSFloat64Array::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
-                JSFloat64Array::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
-                JSFloat64Array::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
-                JSFloat64Array::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
-                JSFloat64Array::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
+                JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
+                JSTypedArray::Cast(*obj)->SetTypedArrayName(thread_, JSTaggedValue::Undefined());
+                JSTypedArray::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
+                JSTypedArray::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
+                JSTypedArray::Cast(*obj)->SetArrayLength(thread_, JSTaggedValue(0));
                 break;
             case JSType::JS_REG_EXP:
                 JSRegExp::Cast(*obj)->SetByteCodeBuffer(thread_, JSTaggedValue::Undefined());
@@ -868,7 +815,7 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
 
 TaggedObject *ObjectFactory::NewDynObject(const JSHandle<JSHClass> &dynclass, int inobjPropCount)
 {
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(*dynclass);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(*dynclass);
     if (inobjPropCount > 0) {
         InitializeExtraProperties(dynclass, header, inobjPropCount);
     }
@@ -877,7 +824,7 @@ TaggedObject *ObjectFactory::NewDynObject(const JSHandle<JSHClass> &dynclass, in
 
 TaggedObject *ObjectFactory::NewNonMovableDynObject(const JSHandle<JSHClass> &dynclass, int inobjPropCount)
 {
-    TaggedObject *header = heapHelper_.AllocateNonMovableOrLargeObject(*dynclass);
+    TaggedObject *header = heapHelper_.AllocateNonMovableOrHugeObject(*dynclass);
     if (inobjPropCount > 0) {
         InitializeExtraProperties(dynclass, header, inobjPropCount);
     }
@@ -945,7 +892,7 @@ JSHandle<JSHClass> ObjectFactory::CreateFunctionClass(FunctionKind kind, uint32_
     ASSERT(JSFunction::LENGTH_INLINE_PROPERTY_INDEX == fieldOrder);
     JSHandle<LayoutInfo> layoutInfoHandle = CreateLayoutInfo(JSFunction::LENGTH_OF_INLINE_PROPERTIES);
     {
-        PropertyAttributes attributes = PropertyAttributes::DefaultAccessor(false, false, true);
+        PropertyAttributes attributes = PropertyAttributes::Default(false, false, true);
         attributes.SetIsInlinedProps(true);
         attributes.SetRepresentation(Representation::MIXED);
         attributes.SetOffset(fieldOrder);
@@ -1044,6 +991,26 @@ JSHandle<JSBoundFunction> ObjectFactory::NewJSBoundFunction(const JSHandle<JSFun
     return bundleFunction;
 }
 
+JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(const void *nativeFunc, int functionLength)
+{
+    NewObjectHook();
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetJSIntlBoundFunctionClass());
+
+    JSHandle<JSIntlBoundFunction> intlBoundFunc = JSHandle<JSIntlBoundFunction>::Cast(NewJSObject(dynclass));
+    JSMethod *method = vm_->GetMethodForNativeFunction(nativeFunc);
+    intlBoundFunc->SetCallTarget(thread_, method);
+    JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(intlBoundFunc);
+    JSFunction::InitializeJSFunction(thread_, function, FunctionKind::NORMAL_FUNCTION);
+    JSFunction::SetFunctionLength(thread_, function, JSTaggedValue(functionLength));
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSTaggedValue> emptyString = globalConst->GetHandledEmptyString();
+    JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
+    PropertyDescriptor nameDesc(thread_, emptyString, false, false, true);
+    JSTaggedValue::DefinePropertyOrThrow(thread_, JSHandle<JSTaggedValue>::Cast(function), nameKey, nameDesc);
+    return intlBoundFunc;
+}
+
 JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHandle<JSProxy> &proxy,
                                                                       const void *nativeFunc)
 {
@@ -1131,7 +1098,7 @@ JSHandle<JSAsyncFuncObject> ObjectFactory::NewJSAsyncFuncObject()
 JSHandle<CompletionRecord> ObjectFactory::NewCompletionRecord(uint8_t type, JSHandle<JSTaggedValue> value)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(completionRecordClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(completionRecordClass_);
     JSHandle<CompletionRecord> obj(thread_, header);
     obj->SetType(thread_, JSTaggedValue(static_cast<int32_t>(type)));
     obj->SetValue(thread_, value);
@@ -1141,7 +1108,7 @@ JSHandle<CompletionRecord> ObjectFactory::NewCompletionRecord(uint8_t type, JSHa
 JSHandle<GeneratorContext> ObjectFactory::NewGeneratorContext()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(generatorContextClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(generatorContextClass_);
     JSHandle<GeneratorContext> obj(thread_, header);
     obj->SetRegsArray(thread_, JSTaggedValue::Undefined());
     obj->SetMethod(thread_, JSTaggedValue::Undefined());
@@ -1217,7 +1184,7 @@ JSHandle<GlobalEnv> ObjectFactory::NewGlobalEnv(JSHClass *globalEnvClass)
     NewObjectHook();
     // Note: Global env must be allocated in non-movable heap, since its getters will directly return
     //       the offsets of the properties as the address of Handles.
-    TaggedObject *header = heapHelper_.AllocateNonMovableOrLargeObject(globalEnvClass);
+    TaggedObject *header = heapHelper_.AllocateNonMovableOrHugeObject(globalEnvClass);
     InitObjectFields(header);
     return JSHandle<GlobalEnv>(thread_, GlobalEnv::Cast(header));
 }
@@ -1226,7 +1193,7 @@ JSHandle<LexicalEnv> ObjectFactory::NewLexicalEnv(int numSlots)
 {
     NewObjectHook();
     size_t size = LexicalEnv::ComputeSize(numSlots);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(envClass_, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(envClass_, size);
     JSHandle<LexicalEnv> array(thread_, header);
     array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), numSlots + LexicalEnv::RESERVED_ENV_LENGTH);
     return array;
@@ -1235,11 +1202,11 @@ JSHandle<LexicalEnv> ObjectFactory::NewLexicalEnv(int numSlots)
 JSHandle<JSSymbol> ObjectFactory::NewJSSymbol()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(symbolClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(symbolClass_);
     JSHandle<JSSymbol> obj(thread_, JSSymbol::Cast(header));
     obj->SetDescription(thread_, JSTaggedValue::Undefined());
     obj->SetFlags(thread_, JSTaggedValue(0));
-    auto result = JSTaggedValue(SymbolTable::Hash(obj.GetTaggedValue()));
+    auto result = JSTaggedValue(static_cast<int>(SymbolTable::Hash(obj.GetTaggedValue())));
     obj->SetHashField(thread_, result);
     return obj;
 }
@@ -1254,12 +1221,12 @@ JSHandle<JSSymbol> ObjectFactory::NewPrivateSymbol()
 JSHandle<JSSymbol> ObjectFactory::NewPrivateNameSymbol(const JSHandle<JSTaggedValue> &name)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(symbolClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(symbolClass_);
     JSHandle<JSSymbol> obj(thread_, JSSymbol::Cast(header));
     obj->SetFlags(thread_, JSTaggedValue(0));
     obj->SetPrivateNameSymbol(thread_);
     obj->SetDescription(thread_, name);
-    auto result = JSTaggedValue(SymbolTable::Hash(name.GetTaggedValue()));
+    auto result = JSTaggedValue(static_cast<int>(SymbolTable::Hash(name.GetTaggedValue())));
     obj->SetHashField(thread_, result);
     return obj;
 }
@@ -1267,12 +1234,12 @@ JSHandle<JSSymbol> ObjectFactory::NewPrivateNameSymbol(const JSHandle<JSTaggedVa
 JSHandle<JSSymbol> ObjectFactory::NewWellKnownSymbol(const JSHandle<JSTaggedValue> &name)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(symbolClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(symbolClass_);
     JSHandle<JSSymbol> obj(thread_, JSSymbol::Cast(header));
     obj->SetFlags(thread_, JSTaggedValue(0));
     obj->SetWellKnownSymbol(thread_);
     obj->SetDescription(thread_, name);
-    auto result = JSTaggedValue(SymbolTable::Hash(name.GetTaggedValue()));
+    auto result = JSTaggedValue(static_cast<int>(SymbolTable::Hash(name.GetTaggedValue())));
     obj->SetHashField(thread_, result);
     return obj;
 }
@@ -1280,11 +1247,11 @@ JSHandle<JSSymbol> ObjectFactory::NewWellKnownSymbol(const JSHandle<JSTaggedValu
 JSHandle<JSSymbol> ObjectFactory::NewPublicSymbol(const JSHandle<JSTaggedValue> &name)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(symbolClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(symbolClass_);
     JSHandle<JSSymbol> obj(thread_, JSSymbol::Cast(header));
     obj->SetFlags(thread_, JSTaggedValue(0));
     obj->SetDescription(thread_, name);
-    auto result = JSTaggedValue(SymbolTable::Hash(name.GetTaggedValue()));
+    auto result = JSTaggedValue(static_cast<int>(SymbolTable::Hash(name.GetTaggedValue())));
     obj->SetHashField(thread_, result);
     return obj;
 }
@@ -1338,7 +1305,7 @@ JSHandle<JSSymbol> ObjectFactory::NewSymbolWithTableWithChar(const char *descrip
 JSHandle<AccessorData> ObjectFactory::NewAccessorData()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(accessorDataClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(accessorDataClass_);
     JSHandle<AccessorData> acc(thread_, AccessorData::Cast(header));
     acc->SetGetter(thread_, JSTaggedValue::Undefined());
     acc->SetSetter(thread_, JSTaggedValue::Undefined());
@@ -1348,7 +1315,7 @@ JSHandle<AccessorData> ObjectFactory::NewAccessorData()
 JSHandle<AccessorData> ObjectFactory::NewInternalAccessor(void *setter, void *getter)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateNonMovableOrLargeObject(internalAccessorClass_);
+    TaggedObject *header = heapHelper_.AllocateNonMovableOrHugeObject(internalAccessorClass_);
     JSHandle<AccessorData> obj(thread_, AccessorData::Cast(header));
     if (setter != nullptr) {
         JSHandle<JSNativePointer> setFunc = NewJSNativePointer(setter, true);
@@ -1366,7 +1333,7 @@ JSHandle<AccessorData> ObjectFactory::NewInternalAccessor(void *setter, void *ge
 JSHandle<PromiseCapability> ObjectFactory::NewPromiseCapability()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(capabilityRecordClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(capabilityRecordClass_);
     JSHandle<PromiseCapability> obj(thread_, header);
     obj->SetPromise(thread_, JSTaggedValue::Undefined());
     obj->SetResolve(thread_, JSTaggedValue::Undefined());
@@ -1377,7 +1344,7 @@ JSHandle<PromiseCapability> ObjectFactory::NewPromiseCapability()
 JSHandle<PromiseReaction> ObjectFactory::NewPromiseReaction()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(reactionsRecordClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(reactionsRecordClass_);
     JSHandle<PromiseReaction> obj(thread_, header);
     obj->SetPromiseCapability(thread_, JSTaggedValue::Undefined());
     obj->SetHandler(thread_, JSTaggedValue::Undefined());
@@ -1389,7 +1356,7 @@ JSHandle<PromiseIteratorRecord> ObjectFactory::NewPromiseIteratorRecord(const JS
                                                                         const JSHandle<JSTaggedValue> &done)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(promiseIteratorRecordClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(promiseIteratorRecordClass_);
     JSHandle<PromiseIteratorRecord> obj(thread_, header);
     obj->SetIterator(thread_, itor.GetTaggedValue());
     obj->SetDone(thread_, done.GetTaggedValue());
@@ -1399,7 +1366,7 @@ JSHandle<PromiseIteratorRecord> ObjectFactory::NewPromiseIteratorRecord(const JS
 JSHandle<job::MicroJobQueue> ObjectFactory::NewMicroJobQueue()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateNonMovableOrLargeObject(microJobQueueClass_);
+    TaggedObject *header = heapHelper_.AllocateNonMovableOrHugeObject(microJobQueueClass_);
     JSHandle<job::MicroJobQueue> obj(thread_, header);
     obj->SetPromiseJobQueue(thread_, GetEmptyTaggedQueue().GetTaggedValue());
     obj->SetScriptJobQueue(thread_, GetEmptyTaggedQueue().GetTaggedValue());
@@ -1410,7 +1377,7 @@ JSHandle<job::PendingJob> ObjectFactory::NewPendingJob(const JSHandle<JSFunction
                                                        const JSHandle<TaggedArray> &argv)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(pendingJobClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(pendingJobClass_);
     JSHandle<job::PendingJob> obj(thread_, header);
     obj->SetJob(thread_, func.GetTaggedValue());
     obj->SetArguments(thread_, argv.GetTaggedValue());
@@ -1421,7 +1388,7 @@ JSHandle<JSFunctionExtraInfo> ObjectFactory::NewFunctionExtraInfo(const JSHandle
                                                                   const JSHandle<JSNativePointer> &data)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(functionExtraInfo_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(functionExtraInfo_);
     JSHandle<JSFunctionExtraInfo> obj(thread_, header);
     obj->SetCallback(thread_, callBack.GetTaggedValue());
     obj->SetData(thread_, data.GetTaggedValue());
@@ -1434,10 +1401,10 @@ JSHandle<JSProxy> ObjectFactory::NewJSProxy(const JSHandle<JSTaggedValue> &targe
     NewObjectHook();
     TaggedObject *header = nullptr;
     if (target->IsCallable()) {
-        header = target->IsConstructor() ? heapHelper_.AllocateYoungGenerationOrLargeObject(jsProxyConstructClass_)
-                                         : heapHelper_.AllocateYoungGenerationOrLargeObject(jsProxyCallableClass_);
+        header = target->IsConstructor() ? heapHelper_.AllocateYoungGenerationOrHugeObject(jsProxyConstructClass_)
+                                         : heapHelper_.AllocateYoungGenerationOrHugeObject(jsProxyCallableClass_);
     } else {
-        header = heapHelper_.AllocateYoungGenerationOrLargeObject(jsProxyOrdinaryClass_);
+        header = heapHelper_.AllocateYoungGenerationOrHugeObject(jsProxyOrdinaryClass_);
     }
 
     JSHandle<JSProxy> proxy(thread_, header);
@@ -1491,7 +1458,7 @@ JSHandle<TaggedArray> ObjectFactory::NewEmptyArray()
 {
     NewObjectHook();
 
-    auto header = heapHelper_.AllocateNonMovableOrLargeObject(arrayClass_, sizeof(TaggedArray));
+    auto header = heapHelper_.AllocateNonMovableOrHugeObject(arrayClass_, sizeof(TaggedArray));
     JSHandle<TaggedArray> array(thread_, header);
     array->SetLength(0);
     return array;
@@ -1516,13 +1483,13 @@ JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTagge
     TaggedObject *header = nullptr;
     switch (spaceType) {
         case MemSpaceType::SEMI_SPACE:
-            header = heapHelper_.AllocateYoungGenerationOrLargeObject(arrayClass_, size);
+            header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
             break;
         case MemSpaceType::OLD_SPACE:
-            header = heapHelper_.AllocateOldGenerationOrLargeObject(arrayClass_, size);
+            header = heapHelper_.AllocateOldGenerationOrHugeObject(arrayClass_, size);
             break;
         case MemSpaceType::NON_MOVABLE:
-            header = heapHelper_.AllocateNonMovableOrLargeObject(arrayClass_, size);
+            header = heapHelper_.AllocateNonMovableOrHugeObject(arrayClass_, size);
             break;
         default:
             UNREACHABLE();
@@ -1541,7 +1508,7 @@ JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTagge
     }
 
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(arrayClass_, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
     JSHandle<TaggedArray> array(thread_, header);
     array->InitializeWithSpecialValue(initVal, length);
     return array;
@@ -1554,7 +1521,7 @@ JSHandle<TaggedArray> ObjectFactory::NewDictionaryArray(array_size_t length)
     ASSERT(length > 0);
 
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(dictionaryClass_, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(dictionaryClass_, size);
     JSHandle<TaggedArray> array(thread_, header);
     array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
 
@@ -1568,7 +1535,7 @@ JSHandle<TaggedArray> ObjectFactory::ExtendArray(const JSHandle<TaggedArray> &ol
 
     NewObjectHook();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(arrayClass_, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(length);
 
@@ -1598,7 +1565,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyPartArray(const JSHandle<TaggedArray> &
 
     NewObjectHook();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(arrayClass_, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
 
@@ -1625,7 +1592,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyArray(const JSHandle<TaggedArray> &old,
 
     NewObjectHook();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(arrayClass_, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
 
@@ -1682,7 +1649,7 @@ JSHandle<ConstantPool> ObjectFactory::NewConstantPool(uint32_t capacity)
         return JSHandle<ConstantPool>::Cast(EmptyArray());
     }
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), capacity);
-    auto header = heapHelper_.AllocateNonMovableOrLargeObject(arrayClass_, size);
+    auto header = heapHelper_.AllocateNonMovableOrHugeObject(arrayClass_, size);
     JSHandle<ConstantPool> array(thread_, header);
     array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), capacity);
     return array;
@@ -1691,7 +1658,7 @@ JSHandle<ConstantPool> ObjectFactory::NewConstantPool(uint32_t capacity)
 JSHandle<Program> ObjectFactory::NewProgram()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(programClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(programClass_);
     JSHandle<Program> p(thread_, header);
     p->SetLocation(thread_, JSTaggedValue::Undefined());
     p->SetConstantPool(thread_, JSTaggedValue::Undefined());
@@ -1703,78 +1670,10 @@ JSHandle<Program> ObjectFactory::NewProgram()
 JSHandle<EcmaModule> ObjectFactory::NewEmptyEcmaModule()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(ecmaModuleClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(ecmaModuleClass_);
     JSHandle<EcmaModule> module(thread_, header);
     module->SetNameDictionary(thread_, JSTaggedValue::Undefined());
     return module;
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len)
-{
-    NewObjectHook();
-    return GetStringFromStringTable(utf8Data, utf8Len);
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
-{
-    NewObjectHook();
-    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    auto utf8Len = data.length();
-    return GetStringFromStringTable(utf8Data, utf8Len);
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
-{
-    return NewFromUtf8(reinterpret_cast<const uint8_t *>(data.c_str()), data.size());
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len)
-{
-    NewObjectHook();
-    return GetStringFromStringTable(utf16Data, utf16Len);
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromString(EcmaString *str)
-{
-    NewObjectHook();
-    return GetStringFromStringTable(str);
-}
-
-JSHandle<EcmaString> ObjectFactory::ConcatFromString(const JSHandle<EcmaString> &prefix,
-                                                     const JSHandle<EcmaString> &suffix)
-{
-    NewObjectHook();
-    EcmaString *concatString = EcmaString::Concat(prefix, suffix, vm_);
-    return GetStringFromStringTable(concatString);
-}
-
-JSHandle<EcmaString> ObjectFactory::ConcatFromChar(const char *prefix, const char *suffix)
-{
-    NewObjectHook();
-    CString const &concatString = CString(prefix) + CString(suffix);
-    char const *concatData = concatString.c_str();
-    auto utf8Data = reinterpret_cast<const uint8_t *>(concatData);
-    JSHandle<EcmaString> oldString = GetStringFromStringTable(utf8Data, base::utf_helper::Utf8ToUtf16Size(utf8Data));
-    return oldString;
-}
-
-JSHandle<EcmaString> ObjectFactory::SubString(const JSHandle<EcmaString> &src, uint32_t start, uint32_t utf16_length)
-{
-    NewObjectHook();
-    EcmaString *sub_string = EcmaString::FastSubString(src, start, utf16_length, vm_);
-    return GetStringFromStringTable(sub_string);
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromUtf8Literal(const uint8_t *utf8Data, uint32_t utf8Len)
-{
-    NewObjectHook();
-    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_));
-}
-
-JSHandle<EcmaString> ObjectFactory::NewFromUtf16Literal(const uint16_t *utf16Data, uint32_t utf16Len)
-{
-    NewObjectHook();
-    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_));
 }
 
 JSHandle<EcmaString> ObjectFactory::GetEmptyString() const
@@ -1791,28 +1690,30 @@ JSHandle<TaggedArray> ObjectFactory::EmptyArray() const
 JSHandle<ObjectWrapper> ObjectFactory::NewObjectWrapper(const JSHandle<JSTaggedValue> &value)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(objectWrapperClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(objectWrapperClass_);
     ObjectWrapper *obj = ObjectWrapper::Cast(header);
     obj->SetValue(thread_, value);
     return JSHandle<ObjectWrapper>(thread_, obj);
 }
 
-JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len) const
+JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len,
+                                                             bool canBeCompress) const
 {
     if (utf8Len == 0) {
         return GetEmptyString();
     }
     auto stringTable = vm_->GetEcmaStringTable();
-    return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(utf8Data, utf8Len));
+    return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(utf8Data, utf8Len, canBeCompress));
 }
 
-JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint16_t *utf16Data, uint32_t utf16Len) const
+JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint16_t *utf16Data, uint32_t utf16Len,
+                                                             bool canBeCompress) const
 {
     if (utf16Len == 0) {
         return GetEmptyString();
     }
     auto stringTable = vm_->GetEcmaStringTable();
-    return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(utf16Data, utf16Len));
+    return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(utf16Data, utf16Len, canBeCompress));
 }
 
 JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(EcmaString *string) const
@@ -1833,18 +1734,18 @@ EcmaString *ObjectFactory::GetRawStringFromStringTable(const uint8_t *mutf8Data,
     }
 
     if (utf::IsMUtf8OnlySingleBytes(mutf8Data)) {
-        return EcmaString::Cast(vm_->GetEcmaStringTable()->GetOrInternString(mutf8Data, utf16Len));
+        return EcmaString::Cast(vm_->GetEcmaStringTable()->GetOrInternString(mutf8Data, utf16Len, true));
     }
 
     CVector<uint16_t> utf16Data(utf16Len);
     auto len = utf::ConvertRegionMUtf8ToUtf16(mutf8Data, utf16Data.data(), utf::Mutf8Size(mutf8Data), utf16Len, 0);
-    return EcmaString::Cast(vm_->GetEcmaStringTable()->GetOrInternString(utf16Data.data(), len));
+    return EcmaString::Cast(vm_->GetEcmaStringTable()->GetOrInternString(utf16Data.data(), len, false));
 }
 
 JSHandle<PropertyBox> ObjectFactory::NewPropertyBox(const JSHandle<JSTaggedValue> &value)
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(PropertyBoxClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(PropertyBoxClass_);
     JSHandle<PropertyBox> box(thread_, header);
     box->SetValue(thread_, value);
     return box;
@@ -1853,7 +1754,7 @@ JSHandle<PropertyBox> ObjectFactory::NewPropertyBox(const JSHandle<JSTaggedValue
 JSHandle<ProtoChangeMarker> ObjectFactory::NewProtoChangeMarker()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(protoChangeMarkerClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(protoChangeMarkerClass_);
     JSHandle<ProtoChangeMarker> marker(thread_, header);
     marker->SetHasChanged(false);
     return marker;
@@ -1862,7 +1763,7 @@ JSHandle<ProtoChangeMarker> ObjectFactory::NewProtoChangeMarker()
 JSHandle<ProtoChangeDetails> ObjectFactory::NewProtoChangeDetails()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(protoChangeDetailsClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(protoChangeDetailsClass_);
     JSHandle<ProtoChangeDetails> protoInfo(thread_, header);
     protoInfo->SetChangeListener(thread_, JSTaggedValue(0));
     protoInfo->SetRegisterIndex(thread_, JSTaggedValue(ProtoChangeDetails::UNREGISTERED));
@@ -1875,7 +1776,7 @@ JSHandle<ProfileTypeInfo> ObjectFactory::NewProfileTypeInfo(uint32_t length)
     ASSERT(length > 0);
 
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
-    auto header = heapHelper_.AllocateYoungGenerationOrLargeObject(arrayClass_, size);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
     JSHandle<ProfileTypeInfo> array(thread_, header);
     array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
 
@@ -1885,7 +1786,7 @@ JSHandle<ProfileTypeInfo> ObjectFactory::NewProfileTypeInfo(uint32_t length)
 // static
 void ObjectFactory::NewObjectHook()
 {
-#if !defined(NDEBUG) || defined(FORCE_GC_TEST)
+#ifndef NDEBUG
     if (!isTriggerGc_) {
         return;
     }
@@ -2027,19 +1928,20 @@ EcmaString *ObjectFactory::InternString(const JSHandle<JSTaggedValue> &key)
     return stringTable->GetOrInternString(str);
 }
 
-TransitionHandler *ObjectFactory::NewTransitionHandler()
+JSHandle<TransitionHandler> ObjectFactory::NewTransitionHandler()
 {
     NewObjectHook();
     TransitionHandler *handler =
-        TransitionHandler::Cast(heapHelper_.AllocateYoungGenerationOrLargeObject(transitionHandlerClass_));
-    return handler;
+        TransitionHandler::Cast(heapHelper_.AllocateYoungGenerationOrHugeObject(transitionHandlerClass_));
+    return JSHandle<TransitionHandler>(thread_, handler);
 }
 
-PrototypeHandler *ObjectFactory::NewPrototypeHandler()
+JSHandle<PrototypeHandler> ObjectFactory::NewPrototypeHandler()
 {
     NewObjectHook();
-    PrototypeHandler *handler =
-        PrototypeHandler::Cast(heapHelper_.AllocateYoungGenerationOrLargeObject(prototypeHandlerClass_));
+    PrototypeHandler *header =
+        PrototypeHandler::Cast(heapHelper_.AllocateYoungGenerationOrHugeObject(prototypeHandlerClass_));
+    JSHandle<PrototypeHandler> handler(thread_, header);
     handler->SetHandlerInfo(thread_, JSTaggedValue::Undefined());
     handler->SetProtoCell(thread_, JSTaggedValue::Undefined());
     handler->SetHolder(thread_, JSTaggedValue::Undefined());
@@ -2049,7 +1951,7 @@ PrototypeHandler *ObjectFactory::NewPrototypeHandler()
 JSHandle<PromiseRecord> ObjectFactory::NewPromiseRecord()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(promiseRecordClass_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(promiseRecordClass_);
     JSHandle<PromiseRecord> obj(thread_, header);
     obj->SetValue(thread_, JSTaggedValue::Undefined());
     return obj;
@@ -2058,7 +1960,7 @@ JSHandle<PromiseRecord> ObjectFactory::NewPromiseRecord()
 JSHandle<ResolvingFunctionsRecord> ObjectFactory::NewResolvingFunctionsRecord()
 {
     NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrLargeObject(promiseResolvingFunctionsRecord_);
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(promiseResolvingFunctionsRecord_);
     JSHandle<ResolvingFunctionsRecord> obj(thread_, header);
     obj->SetResolveFunction(thread_, JSTaggedValue::Undefined());
     obj->SetRejectFunction(thread_, JSTaggedValue::Undefined());
@@ -2221,5 +2123,119 @@ JSHandle<JSNativeObject> ObjectFactory::NewJSNativeObject(void *externalPointer,
     nativeObject->SetJSNativePointer(thread_, pointer.GetTaggedValue());
     vm_->PushToArrayDataList(*pointer);
     return nativeObject;
+}
+
+JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const uint8_t *data)
+{
+    NewObjectHook();
+    TaggedObject *obj = heapHelper_.AllocateMachineCodeSpaceObject(machineCodeClass_, length + sizeof(MachineCode));
+    MachineCode *code = MachineCode::Cast(obj);
+    code->SetInstructionSizeInBytes(thread_, JSTaggedValue(static_cast<int>(length)));
+    if (data != nullptr) {
+        code->SetData(data, length);
+    }
+    JSHandle<MachineCode> codeObj(thread_, code);
+    return codeObj;
+}
+
+// ----------------------------------- new string ----------------------------------------
+JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
+{
+    NewObjectHook();
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
+    return GetStringFromStringTable(utf8Data, data.length(), canBeCompress);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromCanBeCompressString(const CString &data)
+{
+    NewObjectHook();
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    ASSERT(EcmaString::CanBeCompressed(utf8Data));
+    return GetStringFromStringTable(utf8Data, data.length(), true);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
+{
+    NewObjectHook();
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
+    return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromStdStringUnCheck(const std::string &data, bool canBeCompress)
+{
+    NewObjectHook();
+    auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
+    return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len)
+{
+    NewObjectHook();
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
+    return GetStringFromStringTable(utf8Data, utf8Len, canBeCompress);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf8UnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress)
+{
+    NewObjectHook();
+    return GetStringFromStringTable(utf8Data, utf8Len, canBeCompress);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len)
+{
+    NewObjectHook();
+    bool canBeCompress = EcmaString::CanBeCompressed(utf16Data, utf16Len);
+    return GetStringFromStringTable(utf16Data, utf16Len, canBeCompress);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16UnCheck(const uint16_t *utf16Data, uint32_t utf16Len,
+                                                        bool canBeCompress)
+{
+    NewObjectHook();
+    return GetStringFromStringTable(utf16Data, utf16Len, canBeCompress);
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf8Literal(const uint8_t *utf8Data, uint32_t utf8Len)
+{
+    NewObjectHook();
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
+    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_, canBeCompress));
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf8LiteralUnCheck(const uint8_t *utf8Data, uint32_t utf8Len,
+                                                              bool canBeCompress)
+{
+    NewObjectHook();
+    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_, canBeCompress));
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16Literal(const uint16_t *utf16Data, uint32_t utf16Len)
+{
+    NewObjectHook();
+    bool canBeCompress = EcmaString::CanBeCompressed(utf16Data, utf16Len);
+    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_, canBeCompress));
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromUtf16LiteralUnCheck(const uint16_t *utf16Data, uint32_t utf16Len,
+                                                               bool canBeCompress)
+{
+    NewObjectHook();
+    return JSHandle<EcmaString>(thread_, EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_, canBeCompress));
+}
+
+JSHandle<EcmaString> ObjectFactory::NewFromString(EcmaString *str)
+{
+    NewObjectHook();
+    return GetStringFromStringTable(str);
+}
+
+JSHandle<EcmaString> ObjectFactory::ConcatFromString(const JSHandle<EcmaString> &prefix,
+                                                     const JSHandle<EcmaString> &suffix)
+{
+    NewObjectHook();
+    EcmaString *concatString = EcmaString::Concat(prefix, suffix, vm_);
+    return GetStringFromStringTable(concatString);
 }
 }  // namespace panda::ecmascript

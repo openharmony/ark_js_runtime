@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_MACHINE_TYPE_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_MACHINE_TYPE_H
+#ifndef ECMASCRIPT_COMPILER_MACHINE_TYPE_H
+#define ECMASCRIPT_COMPILER_MACHINE_TYPE_H
 
 namespace kungfu {
 enum MachineType {
@@ -35,4 +35,4 @@ enum MachineType {
     FLOAT64_TYPE,
 };
 }  // namespace kungfu
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_MACHINE_TYPE_H
+#endif  // ECMASCRIPT_COMPILER_MACHINE_TYPE_H

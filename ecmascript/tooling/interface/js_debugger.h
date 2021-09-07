@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_JS_DEBUGGER_H
-#define PANDA_TOOLING_ECMASCRIPT_JS_DEBUGGER_H
+#ifndef ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_H
+#define ECMASCRIPT_TOOLING_INTERFACE_JS_DEBUGGER_H
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_method.h"
@@ -136,18 +136,18 @@ public:
     {
         return {};
     }
-    std::optional<Error> SetVariable(
-        PtThread thread, uint32_t frameDepth, int32_t regNumber, const PtValue &value) const override
+    std::optional<Error> SetVariable(PtThread thread, uint32_t frameDepth, int32_t regNumber,
+        const PtValue &value) const override
     {
         return {};
     }
-    std::optional<Error> GetVariable(
-        PtThread thread, uint32_t frameDepth, int32_t regNumber, PtValue *result) const override
+    std::optional<Error> GetVariable(PtThread thread, uint32_t frameDepth, int32_t regNumber,
+        PtValue *result) const override
     {
         return {};
     }
-    std::optional<Error> GetProperty(
-        [[maybe_unused]] PtObject object, [[maybe_unused]] PtProperty property, PtValue *value) const override
+    std::optional<Error> GetProperty([[maybe_unused]] PtObject object, [[maybe_unused]] PtProperty property,
+        PtValue *value) const override
     {
         return {};
     }
@@ -161,18 +161,18 @@ public:
     {
         return {};
     }
-    std::optional<Error> RetransformClasses(
-        [[maybe_unused]] int32_t classCount, [[maybe_unused]] const PtClass *classes) const override
+    std::optional<Error> RetransformClasses([[maybe_unused]] int32_t classCount,
+        [[maybe_unused]] const PtClass *classes) const override
     {
         return {};
     }
-    std::optional<Error> RedefineClasses(
-        [[maybe_unused]] int32_t classCount, [[maybe_unused]] const PandaClassDefinition *classes) const override
+    std::optional<Error> RedefineClasses([[maybe_unused]] int32_t classCount,
+        [[maybe_unused]] const PandaClassDefinition *classes) const override
     {
         return {};
     }
-    std::optional<Error> RestartFrame(
-        [[maybe_unused]] PtThread thread, [[maybe_unused]] uint32_t frameNumber) const override
+    std::optional<Error> RestartFrame([[maybe_unused]] PtThread thread,
+        [[maybe_unused]] uint32_t frameNumber) const override
     {
         return {};
     }
@@ -234,4 +234,4 @@ private:
 };
 }  // namespace panda::tooling::ecmascript
 
-#endif  // PANDA_TOOLING_ECMASCRIPT_JS_DEBUGGER_H
+#endif  // ECMASCRIPT_TOOLING_JS_DEBUGGER_H

@@ -31,13 +31,8 @@
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
-#include "ecmascript/js_float32_array.h"
-#include "ecmascript/js_float64_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
-#include "ecmascript/js_int16_array.h"
-#include "ecmascript/js_int32_array.h"
-#include "ecmascript/js_int8_array.h"
 #include "ecmascript/js_map.h"
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_object-inl.h"
@@ -50,10 +45,6 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
-#include "ecmascript/js_uint16_array.h"
-#include "ecmascript/js_uint32_array.h"
-#include "ecmascript/js_uint8_array.h"
-#include "ecmascript/js_uint8_clamped_array.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/lexical_env.h"
@@ -384,34 +375,16 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             JSArray::Cast(obj)->Dump(thread, os);
             break;
         case JSType::JS_TYPED_ARRAY:
-            JSTypedArray::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(obj)->Dump(thread, os);
+            JSTypedArray::Cast(obj)->Dump(thread, os);
             break;
         case JSType::JS_PROXY:
             JSProxy::Cast(obj)->Dump(thread, os);
@@ -959,140 +932,6 @@ void JSTypedArray::Dump(JSThread *thread, std::ostream &os) const
     JSObject::Dump(thread, os);
 }
 
-void JSInt8Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSUint8Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSUint8ClampedArray::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSInt16Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSUint16Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSInt32Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSUint32Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSFloat32Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-    JSObject::Dump(thread, os);
-}
-
-void JSFloat64Array::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
-    os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
-    os << " - byte-length: ";
-    GetByteLength().Dump(thread);
-    os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
-    os << " - array-length: ";
-    GetArrayLength().Dump(thread);
-}
-
 void JSRegExp::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - source: ";
@@ -1582,34 +1421,16 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::vector<std::pai
             JSArray::Cast(obj)->DumpForSnapshot(thread, vec);
             break;
         case JSType::JS_TYPED_ARRAY:
-            JSTypedArray::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(obj)->DumpForSnapshot(thread, vec);
-            break;
         case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(obj)->DumpForSnapshot(thread, vec);
+            JSTypedArray::Cast(obj)->DumpForSnapshot(thread, vec);
             break;
         case JSType::JS_PROXY:
             JSProxy::Cast(obj)->DumpForSnapshot(thread, vec);
@@ -1986,96 +1807,6 @@ void JSArrayIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 
 void JSTypedArray::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                    std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSInt8Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                  std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSUint8Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                   std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSUint8ClampedArray::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                          std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSInt16Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                   std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSUint16Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                    std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSInt32Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                   std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSUint32Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                    std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSFloat32Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                     std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
-    vec.push_back(std::make_pair(CString("array-length"), GetArrayLength()));
-}
-
-void JSFloat64Array::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                     std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("viewed-array-buffer"), GetViewedArrayBuffer()));
     vec.push_back(std::make_pair(CString("typed-array-name"), GetTypedArrayName()));

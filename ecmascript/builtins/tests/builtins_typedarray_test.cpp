@@ -27,11 +27,11 @@
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_int8_array.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/js_typed_array.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/object_operator.h"
 
@@ -181,13 +181,13 @@ JSTaggedValue CreateBuiltinsJSObject(JSThread *thread, const CString keyCStr)
     ObjectFactory *factory = ecmaVM->GetFactory();
 
     JSHandle<JSTaggedValue> obj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
-    JSHandle<JSTaggedValue> key(factory->NewFromString(&keyCStr[0]));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(&keyCStr[0]));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, obj, key, value);
     return obj.GetTaggedValue();
 }
 
-JSInt8Array *CreateTypedArrayFromList(JSThread *thread, const JSHandle<TaggedArray> &array)
+JSTypedArray *CreateTypedArrayFromList(JSThread *thread, const JSHandle<TaggedArray> &array)
 {
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
@@ -205,7 +205,7 @@ JSInt8Array *CreateTypedArrayFromList(JSThread *thread, const JSHandle<TaggedArr
     JSTaggedValue result = TypedArray::Int8ArrayConstructor(ecmaRuntimeCallInfo1.get());
 
     EXPECT_TRUE(result.IsECMAObject());
-    JSInt8Array *int8arr = JSInt8Array::Cast(reinterpret_cast<TaggedObject *>(result.GetRawData()));
+    JSTypedArray *int8arr = JSTypedArray::Cast(reinterpret_cast<TaggedObject *>(result.GetRawData()));
     return int8arr;
 }
 

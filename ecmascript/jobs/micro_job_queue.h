@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MICRO_JOB_QUEUE_H
-#define PANDA_RUNTIME_ECMASCRIPT_MICRO_JOB_QUEUE_H
+#ifndef ECMASCRIPT_JOBS_MICRO_JOB_QUEUE_H
+#define ECMASCRIPT_JOBS_MICRO_JOB_QUEUE_H
 
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string.h"
@@ -53,4 +53,4 @@ public:
     DECL_VISIT_OBJECT(PROMISE_JOB_QUEUE_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript::job
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MICRO_JOB_QUEUE_H
+#endif  // ECMASCRIPT_JOBS_MICRO_JOB_QUEUE_H

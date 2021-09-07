@@ -19,6 +19,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_promise.h"
@@ -58,12 +59,8 @@ void JSFunction::InitializeJSFunction(JSThread *thread, const JSHandle<JSFunctio
             func->SetPropertyInlinedProps(thread, PROTOTYPE_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
             accessor = globalConst->GetHandledFunctionNameAccessor();
             func->SetPropertyInlinedProps(thread, NAME_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
-            accessor = globalConst->GetHandledFunctionLengthAccessor();
-            func->SetPropertyInlinedProps(thread, LENGTH_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
         } else if (JSFunction::IsClassConstructor(kind)) {
             func->SetPropertyInlinedProps(thread, CLASS_PROTOTYPE_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
-            accessor = globalConst->GetHandledFunctionLengthAccessor();
-            func->SetPropertyInlinedProps(thread, LENGTH_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
         } else {
             PropertyDescriptor desc(thread, accessor, kind != FunctionKind::BUILTIN_CONSTRUCTOR, false, false);
             [[maybe_unused]] bool success = JSObject::DefineOwnProperty(thread, JSHandle<JSObject>(func),
@@ -73,8 +70,6 @@ void JSFunction::InitializeJSFunction(JSThread *thread, const JSHandle<JSFunctio
     } else if (kind == FunctionKind::NORMAL_FUNCTION) {
         JSHandle<JSTaggedValue> accessor = globalConst->GetHandledFunctionNameAccessor();
         func->SetPropertyInlinedProps(thread, NAME_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
-        accessor = globalConst->GetHandledFunctionLengthAccessor();
-        func->SetPropertyInlinedProps(thread, LENGTH_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
     }
 }
 
@@ -150,8 +145,7 @@ JSTaggedValue JSFunction::NameGetter(JSThread *thread, const JSHandle<JSObject> 
     if (target->GetPandaFile() == nullptr) {
         return JSTaggedValue::Undefined();
     }
-    CString funcName(
-        utf::Mutf8AsCString(target->GetStringDataAnnotation(JSMethod::AnnotationField::FUNCTION_NAME).data));
+    CString funcName = target->ParseFunctionName();
     if (funcName.empty()) {
         return thread->GlobalConstants()->GetEmptyString();
     }
@@ -164,15 +158,6 @@ JSTaggedValue JSFunction::NameGetter(JSThread *thread, const JSHandle<JSObject> 
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     return factory->NewFromString(funcName).GetTaggedValue();
-}
-
-JSTaggedValue JSFunction::LengthGetter([[maybe_unused]] JSThread *thread, const JSHandle<JSObject> &self)
-{
-    JSMethod *target = JSHandle<JSFunction>::Cast(self)->GetCallTarget();
-    if (target->GetPandaFile() == nullptr) {
-        return JSTaggedValue::Undefined();
-    }
-    return JSTaggedValue(target->GetNumericalAnnotation(Method::AnnotationField::FUNCTION_LENGTH));
 }
 
 bool JSFunction::OrdinaryHasInstance(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,
@@ -278,7 +263,7 @@ bool JSFunction::MakeClassConstructor(JSThread *thread, const JSHandle<JSTaggedV
 }
 
 JSTaggedValue JSFunction::Call(JSThread *thread, const JSHandle<JSTaggedValue> &func,
-                               const JSHandle<JSTaggedValue> &thisArg, const JSHandle<TaggedArray> &argv)
+                               const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[])
 {
     // 1. ReturnIfAbrupt(F).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -287,22 +272,24 @@ JSTaggedValue JSFunction::Call(JSThread *thread, const JSHandle<JSTaggedValue> &
     if (!func->IsCallable()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Callable is false", JSTaggedValue::Exception());
     }
+
     if (func->IsJSFunction()) {
-        return JSFunction::CallInternal(thread, JSHandle<JSFunction>(func), thisArg, argv);
+        return JSFunction::CallInternal(thread, JSHandle<JSFunction>(func), thisArg, argc, argv);
     }
-    // 4. Return F.[[Call]](V, argumentsList).
+
     if (func->IsBoundFunction()) {
-        return JSBoundFunction::CallInternal(thread, JSHandle<JSBoundFunction>(func), thisArg, argv);
+        return JSBoundFunction::CallInternal(thread, JSHandle<JSBoundFunction>(func));
     }
+
     if (func->IsJSProxy()) {
-        return JSProxy::CallInternal(thread, JSHandle<JSProxy>(func), thisArg, argv);
+        return JSProxy::CallInternal(thread, JSHandle<JSProxy>(func), thisArg, argc, argv);
     }
 
     THROW_TYPE_ERROR_AND_RETURN(thread, "Call NonCallable", JSTaggedValue::Exception());
 }
 
-JSTaggedValue JSFunction::Construct(JSThread *thread, const JSHandle<JSTaggedValue> &func,
-                                    const JSHandle<TaggedArray> &argv, const JSHandle<JSTaggedValue> &newTarget)
+JSTaggedValue JSFunction::Construct(JSThread *thread, const JSHandle<JSTaggedValue> &func, uint32_t argc,
+                                    const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget)
 {
     JSMutableHandle<JSTaggedValue> target(thread, newTarget.GetTaggedValue());
     if (target->IsUndefined()) {
@@ -312,28 +299,28 @@ JSTaggedValue JSFunction::Construct(JSThread *thread, const JSHandle<JSTaggedVal
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor is false", JSTaggedValue::Exception());
     }
     if (func->IsJSFunction()) {
-        return JSFunction::ConstructInternal(thread, JSHandle<JSFunction>(func), argv, target);
+        return JSFunction::ConstructInternal(thread, JSHandle<JSFunction>(func), argc, argv, target);
     }
     if (func->IsBoundFunction()) {
-        return JSBoundFunction::ConstructInternal(thread, JSHandle<JSBoundFunction>(func), argv, target);
+        return JSBoundFunction::ConstructInternal(thread, JSHandle<JSBoundFunction>(func), target);
     }
     if (func->IsJSProxy()) {
-        return JSProxy::ConstructInternal(thread, JSHandle<JSProxy>(func), argv, target);
+        return JSProxy::ConstructInternal(thread, JSHandle<JSProxy>(func), argc, argv, target);
     }
     THROW_TYPE_ERROR_AND_RETURN(thread, "Constructor NonConstructor", JSTaggedValue::Exception());
 }
 
 JSTaggedValue JSFunction::Invoke(JSThread *thread, const JSHandle<JSTaggedValue> &thisArg,
-                                 const JSHandle<JSTaggedValue> &key, const JSHandle<TaggedArray> &argv)
+                                 const JSHandle<JSTaggedValue> &key, uint32_t argc, const JSTaggedType argv[])
 {
     ASSERT(JSTaggedValue::IsPropertyKey(key));
     JSHandle<JSTaggedValue> func(JSTaggedValue::GetProperty(thread, thisArg, key).GetValue());
-    return JSFunction::Call(thread, func, thisArg, argv);
+    return JSFunction::Call(thread, func, thisArg, argc, argv);
 }
 
 // [[Call]]
 JSTaggedValue JSFunction::CallInternal(JSThread *thread, const JSHandle<JSFunction> &func,
-                                       const JSHandle<JSTaggedValue> &thisArg, const JSHandle<TaggedArray> &argv)
+                                       const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[])
 {
     if (!func->IsBuiltinsConstructor() && func->IsClassConstructor()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "class constructor cannot call", JSTaggedValue::Exception());
@@ -342,21 +329,14 @@ JSTaggedValue JSFunction::CallInternal(JSThread *thread, const JSHandle<JSFuncti
     params.callTarget = ECMAObject::Cast(*func);
     params.newTarget = JSTaggedValue::VALUE_UNDEFINED;
     params.thisArg = thisArg.GetTaggedType();
-    params.argc = argv->GetLength();
-    CVector<JSTaggedType> values;
-    values.reserve(params.argc);
-
-    for (array_size_t i = 0; i < params.argc; ++i) {
-        JSTaggedValue arg = argv->Get(i);
-        values.emplace_back(arg.GetRawData());
-    }
-    params.argv = values.data();
+    params.argc = argc;
+    params.argv = argv;
     return EcmaInterpreter::Execute(thread, params);
 }
 
 // [[Construct]]
-JSTaggedValue JSFunction::ConstructInternal(JSThread *thread, const JSHandle<JSFunction> &func,
-                                            const JSHandle<TaggedArray> &argv, const JSHandle<JSTaggedValue> &newTarget)
+JSTaggedValue JSFunction::ConstructInternal(JSThread *thread, const JSHandle<JSFunction> &func, uint32_t argc,
+                                            const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget)
 {
     ASSERT(newTarget->IsECMAObject());
     if (!func->IsConstructor()) {
@@ -373,15 +353,8 @@ JSTaggedValue JSFunction::ConstructInternal(JSThread *thread, const JSHandle<JSF
     params.callTarget = ECMAObject::Cast(*func);
     params.newTarget = newTarget.GetTaggedType();
     params.thisArg = obj.GetTaggedType();
-    params.argc = argv->GetLength();
-    CVector<JSTaggedType> values;
-    values.reserve(params.argc);
-
-    for (uint32_t i = 0; i < params.argc; ++i) {
-        JSTaggedValue arg = argv->Get(i);
-        values.emplace_back(arg.GetRawData());
-    }
-    params.argv = values.data();
+    params.argc = argc;
+    params.argv = argv;
 
     JSTaggedValue resultValue = EcmaInterpreter::Execute(thread, params);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -440,8 +413,8 @@ bool JSFunctionBase::SetFunctionName(JSThread *thread, const JSHandle<JSFunction
         if (description.IsUndefined()) {
             functionName = factory->GetEmptyString();
         } else {
-            JSHandle<EcmaString> leftBrackets = factory->NewFromString("[");
-            JSHandle<EcmaString> rightBrackets = factory->NewFromString("]");
+            JSHandle<EcmaString> leftBrackets = factory->NewFromCanBeCompressString("[");
+            JSHandle<EcmaString> rightBrackets = factory->NewFromCanBeCompressString("]");
             functionName = factory->ConcatFromString(leftBrackets, descriptionHandle);
             functionName = factory->ConcatFromString(functionName, rightBrackets);
         }
@@ -451,7 +424,7 @@ bool JSFunctionBase::SetFunctionName(JSThread *thread, const JSHandle<JSFunction
     EcmaString *newString;
     if (needPrefix) {
         JSHandle<EcmaString> handlePrefixString = JSTaggedValue::ToString(thread, prefix);
-        JSHandle<EcmaString> spaceString(factory->NewFromString(" "));
+        JSHandle<EcmaString> spaceString(factory->NewFromCanBeCompressString(" "));
         JSHandle<EcmaString> concatString = factory->ConcatFromString(handlePrefixString, spaceString);
         newString = *factory->ConcatFromString(concatString, functionName);
     } else {
@@ -477,32 +450,29 @@ bool JSFunction::SetFunctionLength(JSThread *thread, const JSHandle<JSFunction> 
     return JSTaggedValue::DefinePropertyOrThrow(thread, funcHandle, lengthKeyHandle, lengthDesc);
 }
 
-// 9.4.1.1[[Call]](thisArgument, argumentsList)
-JSTaggedValue JSBoundFunction::CallInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func,
-                                            [[maybe_unused]] const JSHandle<JSTaggedValue> &thisArg,
-                                            const JSHandle<TaggedArray> &argv)
+JSTaggedValue JSBoundFunction::CallInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func)
 {
     JSHandle<JSTaggedValue> target(thread, func->GetBoundTarget());
     JSHandle<JSTaggedValue> boundThis(thread, func->GetBoundThis());
-    JSHandle<TaggedArray> boundArgs(thread, func->GetBoundArguments());
-    JSHandle<TaggedArray> arguments = TaggedArray::Append(thread, boundArgs, argv);
-    return JSFunction::Call(thread, target, boundThis, arguments);
+
+    InternalCallParams *params = thread->GetInternalCallParams();
+    params->MakeBoundArgv(thread, func);
+    return JSFunction::Call(thread, target, boundThis, params->GetLength(), params->GetArgv());
 }
 
 // 9.4.1.2[[Construct]](argumentsList, newTarget)
 JSTaggedValue JSBoundFunction::ConstructInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func,
-                                                 const JSHandle<TaggedArray> &argv,
                                                  const JSHandle<JSTaggedValue> &newTarget)
 {
     JSHandle<JSTaggedValue> target(thread, func->GetBoundTarget());
     ASSERT(target->IsConstructor());
-    JSHandle<TaggedArray> boundArgs(thread, func->GetBoundArguments());
-    JSHandle<TaggedArray> arguments = TaggedArray::Append(thread, boundArgs, argv);
     JSMutableHandle<JSTaggedValue> newTargetMutable(thread, newTarget.GetTaggedValue());
     if (JSTaggedValue::SameValue(func.GetTaggedValue(), newTarget.GetTaggedValue())) {
         newTargetMutable.Update(target.GetTaggedValue());
     }
-    return JSFunction::Construct(thread, target, arguments, newTargetMutable);
+    InternalCallParams *params = thread->GetInternalCallParams();
+    params->MakeBoundArgv(thread, func);
+    return JSFunction::Construct(thread, target, params->GetLength(), params->GetArgv(), newTargetMutable);
 }
 
 void JSProxyRevocFunction::ProxyRevocFunctions(const JSThread *thread, const JSHandle<JSProxyRevocFunction> &revoker)
@@ -533,6 +503,11 @@ JSTaggedValue JSFunction::AccessCallerArgumentsThrowTypeError([[maybe_unused]] E
                                 JSTaggedValue::Exception());
 }
 
+JSTaggedValue JSIntlBoundFunction::IntlNameGetter(JSThread *thread, [[maybe_unused]] const JSHandle<JSObject> &self)
+{
+    return thread->GlobalConstants()->GetEmptyString();
+}
+
 void JSFunction::SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JSTaggedValue name)
 {
     ASSERT_PRINT(func->IsExtensible(), "Function must be extensible");
@@ -550,8 +525,8 @@ void JSFunction::SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JST
                 nameHandle.Update(thread->GlobalConstants()->GetEmptyString());
             } else {
                 JSHandle<EcmaString> concatName;
-                JSHandle<EcmaString> leftBrackets = factory->NewFromString("[");
-                JSHandle<EcmaString> rightBrackets = factory->NewFromString("]");
+                JSHandle<EcmaString> leftBrackets = factory->NewFromCanBeCompressString("[");
+                JSHandle<EcmaString> rightBrackets = factory->NewFromCanBeCompressString("]");
                 concatName = factory->ConcatFromString(
                     leftBrackets,
                     JSHandle<EcmaString>(thread, JSSymbol::Cast(nameBegin->GetHeapObject())->GetDescription()));
@@ -664,18 +639,6 @@ bool JSFunction::NameSetter(JSThread *thread, const JSHandle<JSObject> &self, co
         return self->UpdatePropertyInDictionary(thread, nameString.GetTaggedValue(), value.GetTaggedValue());
     }
     self->SetPropertyInlinedProps(thread, NAME_INLINE_PROPERTY_INDEX, value.GetTaggedValue());
-    return true;
-}
-
-bool JSFunction::LengthSetter(JSThread *thread, const JSHandle<JSObject> &self, const JSHandle<JSTaggedValue> &value,
-                              [[maybe_unused]] bool mayThrow)
-{
-    if (self->IsPropertiesDict()) {
-        // replace setter with value
-        JSHandle<JSTaggedValue> lengthString = thread->GlobalConstants()->GetHandledLengthString();
-        return self->UpdatePropertyInDictionary(thread, lengthString.GetTaggedValue(), value.GetTaggedValue());
-    }
-    self->SetPropertyInlinedProps(thread, LENGTH_INLINE_PROPERTY_INDEX, value.GetTaggedValue());
     return true;
 }
 }  // namespace panda::ecmascript

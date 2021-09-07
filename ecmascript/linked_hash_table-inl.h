@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_LINKED_HASH_TABLE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_LINKED_HASH_TABLE_INL_H
+#ifndef ECMASCRIPT_LINKED_HASH_TABLE_INL_H
+#define ECMASCRIPT_LINKED_HASH_TABLE_INL_H
 
 #include "linked_hash_table.h"
 #include "tagged_array-inl.h"
 #include "utils/bit_utils.h"
 
 namespace panda::ecmascript {
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetElement(int index) const
 {
     if (UNLIKELY((index < 0 || index > static_cast<int>(GetLength())))) {
@@ -30,7 +30,7 @@ JSTaggedValue LinkedHashTable<Derived, HashObject>::GetElement(int index) const
     return Get(index);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetElement(const JSThread *thread, int index, JSTaggedValue element)
 {
     if (UNLIKELY((index < 0 || index > static_cast<int>(GetLength())))) {
@@ -39,69 +39,69 @@ void LinkedHashTable<Derived, HashObject>::SetElement(const JSThread *thread, in
     Set(thread, index, element);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::NumberOfElements() const
 {
     return Get(NUMBER_OF_ELEMENTS_INDEX).GetInt();
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::NumberOfDeletedElements() const
 {
     return Get(NUMBER_OF_DELETED_ELEMENTS_INDEX).GetInt();
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::Capacity() const
 {
     return JSTaggedValue(Get(CAPACITY_INDEX)).GetInt();
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetNumberOfElements(const JSThread *thread, int nof)
 {
     Set(thread, NUMBER_OF_ELEMENTS_INDEX, JSTaggedValue(nof));
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetNumberOfDeletedElements(const JSThread *thread, int nod)
 {
     Set(thread, NUMBER_OF_DELETED_ELEMENTS_INDEX, JSTaggedValue(nod));
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetCapacity(const JSThread *thread, int capacity)
 {
     Set(thread, CAPACITY_INDEX, JSTaggedValue(capacity));
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetNextTable(const JSThread *thread, JSTaggedValue nextTable)
 {
     Set(thread, NEXT_TABLE_INDEX, nextTable);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetNextTable() const
 {
     return JSTaggedValue(Get(NEXT_TABLE_INDEX));
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::GetDeletedNum(int entry) const
 {
     ASSERT_PRINT(!GetNextTable().IsUndefined(), "function only execute after rehash");
     return GetNextEntry(entry).GetInt();
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetDeletedNum(const JSThread *thread, int entry, JSTaggedValue num)
 {
     ASSERT_PRINT(!GetNextTable().IsUndefined(), "function only execute after rehash");
     SetNextEntry(thread, entry, num);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::GetDeletedElementsAt(int entry) const
 {
     ASSERT_PRINT(!GetNextTable().IsUndefined(), "function only execute after rehash");
@@ -115,67 +115,67 @@ int LinkedHashTable<Derived, HashObject>::GetDeletedElementsAt(int entry) const
     return 0;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 uint32_t LinkedHashTable<Derived, HashObject>::HashToBucket(uint32_t hash) const
 {
     return hash & static_cast<uint32_t>(Capacity() - 1);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 uint32_t LinkedHashTable<Derived, HashObject>::BucketToIndex(uint32_t bucket)
 {
     return bucket + ELEMENTS_START_INDEX;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 uint32_t LinkedHashTable<Derived, HashObject>::EntryToIndex(uint32_t entry) const
 {
     return ELEMENTS_START_INDEX + Capacity() + entry * (HashObject::ENTRY_SIZE + 1);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetKey(const JSThread *thread, int entry, JSTaggedValue key)
 {
     int index = EntryToIndex(entry);
     SetElement(thread, index, key);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetKey(int entry) const
 {
     int index = EntryToIndex(entry);
     return GetElement(index);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetValue(int entry) const
 {
     int index = EntryToIndex(entry) + HashObject::ENTRY_VALUE_INDEX;
     return GetElement(index);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetValue(const JSThread *thread, int entry, JSTaggedValue value)
 {
     int index = EntryToIndex(entry) + HashObject::ENTRY_VALUE_INDEX;
     SetElement(thread, index, value);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetNextEntry(int entry) const
 {
     int index = EntryToIndex(entry) + HashObject::ENTRY_SIZE;
     return GetElement(index);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetNextEntry(const JSThread *thread, int entry, JSTaggedValue nextEntry)
 {
     int index = EntryToIndex(entry) + HashObject::ENTRY_SIZE;
     SetElement(thread, index, nextEntry);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::InsertNewEntry(const JSThread *thread, int bucket, int entry)
 {
     int bucketIndex = BucketToIndex(bucket);
@@ -184,7 +184,7 @@ void LinkedHashTable<Derived, HashObject>::InsertNewEntry(const JSThread *thread
     SetElement(thread, bucketIndex, JSTaggedValue(entry));
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::FindElement(JSTaggedValue key) const
 {
     if (!IsKey(key)) {
@@ -208,7 +208,7 @@ int LinkedHashTable<Derived, HashObject>::FindElement(JSTaggedValue key) const
     return -1;
 }  // namespace panda::ecmascript
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 bool LinkedHashTable<Derived, HashObject>::HasSufficientCapacity(int numOfAddElements) const
 {
     int numberOfElements = NumberOfElements();
@@ -227,7 +227,7 @@ bool LinkedHashTable<Derived, HashObject>::HasSufficientCapacity(int numOfAddEle
     return false;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::ComputeCapacity(uint32_t atLeastSpaceFor)
 {
     // Add 50% slack to make slot collisions sufficiently unlikely.
@@ -237,7 +237,7 @@ int LinkedHashTable<Derived, HashObject>::ComputeCapacity(uint32_t atLeastSpaceF
     return (capacity > MIN_CAPACITY) ? capacity : MIN_CAPACITY;
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::RemoveEntry(const JSThread *thread, int entry)
 {
     ASSERT_PRINT(entry >= 0 && entry < Capacity(), "entry must be a non-negative integer less than capacity");
@@ -249,7 +249,7 @@ void LinkedHashTable<Derived, HashObject>::RemoveEntry(const JSThread *thread, i
     SetNumberOfDeletedElements(thread, NumberOfDeletedElements() + 1);
 }
 
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 int LinkedHashTable<Derived, HashObject>::ComputeCapacityWithShrink(int currentCapacity, int atLeastSpaceFor)
 {
     // Shrink to fit the number of elements if only a quarter of the
@@ -272,4 +272,4 @@ bool LinkedHashMapObject::IsMatch(JSTaggedValue key, JSTaggedValue other)
     return JSTaggedValue::SameValueZero(key, other);
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_LINKED_HASH_TABLE_INL_H
+#endif  // ECMASCRIPT_LINKED_HASH_TABLE_INL_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_REMEMBERED_SET_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_REMEMBERED_SET_H
+#ifndef ECMASCRIPT_MEM_REMEMBERED_SET_H
+#define ECMASCRIPT_MEM_REMEMBERED_SET_H
 
 #include "ecmascript/mem/mem.h"
 #include "mem/gc/bitmap.h"
@@ -44,13 +44,13 @@ public:
         SetBit(AddrToBitOffset(address));
     }
 
-    template <typename VisitorType>
+    template<typename VisitorType>
     void IterateOverSetBits(VisitorType visitor)
     {
         IterateOverSetBitsInRange(0, Size(), visitor);
     }
 
-    template <typename MemVisitor>
+    template<typename MemVisitor>
     void IterateOverMarkedChunks(MemVisitor visitor)
     {
         IterateOverSetBits(
@@ -87,4 +87,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_REMEMBERED_SET_H
+#endif  // ECMASCRIPT_MEM_REMEMBERED_SET_H

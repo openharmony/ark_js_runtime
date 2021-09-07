@@ -13,18 +13,12 @@
  * limitations under the License.
  */
 
-#include "llvm_mcjit_compiler.h"
+#include "ecmascript/compiler/llvm_mcjit_compiler.h"
 
 #include <vector>
-
-#include "llvm-c/Analysis.h"
-#include "llvm-c/Core.h"
-#include "llvm-c/Disassembler.h"
-#include "llvm-c/DisassemblerTypes.h"
-#include "llvm-c/Target.h"
-#include "llvm-c/Transforms/PassManagerBuilder.h"
-#include "llvm-c/Transforms/Scalar.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/APInt.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/IR/Argument.h"
@@ -37,13 +31,23 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
-#include "llvm/IR/Verifier.h"
+#include "llvm/CodeGen/BuiltinGCs.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm-c/Analysis.h"
+#include "llvm-c/Core.h"
+#include "llvm-c/Target.h"
+#include "llvm-c/Transforms/PassManagerBuilder.h"
+#include "llvm-c/Transforms/Scalar.h"
+#include "llvm/CodeGen/BuiltinGCs.h"
+
+#include "llvm/Transforms/Scalar.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Host.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/TargetRegistry.h"
-#include "llvm/Support/TargetSelect.h"
+#include "llvm-c/Disassembler.h"
+#include "llvm-c/DisassemblerTypes.h"
+#include "llvm/IRReader/IRReader.h"
+
 
 namespace kungfu {
 static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, unsigned alignment, unsigned sectionID,
@@ -79,18 +83,18 @@ static void RoundTripDestroy(void *object)
 void LLVMMCJITCompiler::UseRoundTripSectionMemoryManager()
 {
     auto sectionMemoryManager = std::make_unique<llvm::SectionMemoryManager>();
-    m_options.MCJMM =
-        LLVMCreateSimpleMCJITMemoryManager(&compilerState, RoundTripAllocateCodeSection,
+    options_.MCJMM =
+        LLVMCreateSimpleMCJITMemoryManager(&compilerState_, RoundTripAllocateCodeSection,
             RoundTripAllocateDataSection, RoundTripFinalizeMemory, RoundTripDestroy);
 }
 
 bool LLVMMCJITCompiler::BuildMCJITEngine()
 {
     std::cout << " BuildMCJITEngine  - " << std::endl;
-    LLVMBool ret = LLVMCreateMCJITCompilerForModule(&m_engine, m_module, &m_options, sizeof(m_options), &m_error);
-    std::cout << " m_engine  " << m_engine << std::endl;
+    LLVMBool ret = LLVMCreateMCJITCompilerForModule(&engine_, module_, &options_, sizeof(options_), &error_);
+    std::cout << " engine_  " << engine_ << std::endl;
     if (ret) {
-        std::cout << "m_error : " << m_error << std::endl;
+        std::cout << "error_ : " << error_ << std::endl;
         return false;
     }
     std::cout << " BuildMCJITEngine  ++++++++++++ " << std::endl;
@@ -103,13 +107,15 @@ void LLVMMCJITCompiler::BuildAndRunPasses() const
     LLVMPassManagerRef pass = LLVMCreatePassManager();
     LLVMAddConstantPropagationPass(pass);
     LLVMAddInstructionCombiningPass(pass);
-    LLVMRunPassManager(pass, m_module);
+    llvm::unwrap(pass)->add(llvm::createRewriteStatepointsForGCLegacyPass());
+    LLVMDumpModule(module_);
+    LLVMRunPassManager(pass, module_);
     LLVMDisposePassManager(pass);
     std::cout << "BuildAndRunPasses  + " << std::endl;
 }
 
-LLVMMCJITCompiler::LLVMMCJITCompiler(LLVMModuleRef module): m_module(module), m_engine(nullptr),
-    m_hostTriple(""), m_error(nullptr)
+LLVMMCJITCompiler::LLVMMCJITCompiler(LLVMModuleRef module): module_(module), engine_(nullptr),
+    hostTriple_(""), error_(nullptr)
 {
     Initialize();
     InitMember();
@@ -117,10 +123,10 @@ LLVMMCJITCompiler::LLVMMCJITCompiler(LLVMModuleRef module): m_module(module), m_
 
 LLVMMCJITCompiler::~LLVMMCJITCompiler()
 {
-    m_module = nullptr;
-    m_engine = nullptr;
-    m_hostTriple = "";
-    m_error = nullptr;
+    module_ = nullptr;
+    engine_ = nullptr;
+    hostTriple_ = "";
+    error_ = nullptr;
 }
 
 void LLVMMCJITCompiler::Run()
@@ -141,10 +147,11 @@ void LLVMMCJITCompiler::Initialize()
     LLVMInitializeNativeAsmPrinter();
     LLVMInitializeNativeAsmParser();
     LLVMInitializeAllTargets();
-    LLVMInitializeMCJITCompilerOptions(&m_options, sizeof(m_options));
-    m_options.OptLevel = 2; // opt level 2
+    llvm::linkAllBuiltinGCs();
+    LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
+    options_.OptLevel = 2; // opt level 2
     // Just ensure that this field still exists.
-    m_options.NoFramePointerElim = false;
+    options_.NoFramePointerElim = true;
 }
 
 static const char *SymbolLookupCallback(void *disInfo, uint64_t referenceValue, uint64_t *referenceType,
@@ -154,11 +161,11 @@ static const char *SymbolLookupCallback(void *disInfo, uint64_t referenceValue, 
     return nullptr;
 }
 
-void LLVMMCJITCompiler::Disassemble() const
+void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) const
 {
     LLVMDisasmContextRef dcr = LLVMCreateDisasm("x86_64-unknown-linux-gnu", nullptr, 0, nullptr, SymbolLookupCallback);
     std::cout << "========================================================================" << std::endl;
-    for (auto it : compilerState.codeInfo) {
+    for (auto it : compilerState_.GetCodeInfo()) {
         uint8_t *byteSp;
         uintptr_t numBytes;
         byteSp = it.first;
@@ -177,7 +184,10 @@ void LLVMMCJITCompiler::Disassemble() const
                 byteSp += 4; // 4 sp offset
                 numBytes -= 4; // 4 num bytes
             }
-
+            uint64_t addr = reinterpret_cast<uint64_t>(byteSp);
+            if (addr2name.find(addr) != addr2name.end()) {
+                std::cout << addr2name[addr].c_str() << ":" << std::endl;
+            }
             fprintf(stderr, "%08x: %08x %s\n", pc, *reinterpret_cast<uint32_t *>(byteSp), outString);
             pc += InstSize;
             byteSp += InstSize;
@@ -189,9 +199,9 @@ void LLVMMCJITCompiler::Disassemble() const
 
 void LLVMMCJITCompiler::InitMember()
 {
-    if (m_module == nullptr) {
-        m_module = LLVMModuleCreateWithName("simple_module");
-        LLVMSetTarget(m_module, "x86_64-unknown-linux-gnu");
+    if (module_ == nullptr) {
+        module_ = LLVMModuleCreateWithName("simple_module");
+        LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
     }
 }
 }  // namespace kungfu

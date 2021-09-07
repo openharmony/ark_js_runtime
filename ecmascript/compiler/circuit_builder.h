@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
+#ifndef ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
+#define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
 
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate.h"
@@ -55,10 +55,13 @@ public:
     AddrShift NewArithMeticGate(OpCode opcode, AddrShift value);
     AddrShift NewLogicGate(OpCode opcode, AddrShift left, AddrShift right);
     AddrShift NewLogicGate(OpCode opcode, AddrShift value);
-    AddrShift NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target,
-        std::initializer_list<AddrShift> args);
-    AddrShift NewCallGate(StubInterfaceDescriptor *descriptor,  AddrShift target, AddrShift depend,
-        std::initializer_list<AddrShift> args);
+    AddrShift NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args);
+    AddrShift NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target, AddrShift depend,
+                          std::initializer_list<AddrShift> args);
+    AddrShift NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+                                 std::initializer_list<AddrShift> args);
+    AddrShift NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+                                 AddrShift depend, std::initializer_list<AddrShift> args);
     static OpCode GetLoadOpCodeFromMachineType(MachineType type);
     static OpCode GetStoreOpCodeFromMachineType(MachineType type);
     static OpCode GetSelectOpCodeFromMachineType(MachineType type);
@@ -69,4 +72,4 @@ private:
 };
 }  // namespace kungfu
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H
+#endif  // ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H

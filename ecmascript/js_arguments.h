@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSARGUMENTS_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSARGUMENTS_H
+#ifndef ECMASCRIPT_JSARGUMENTS_H
+#define ECMASCRIPT_JSARGUMENTS_H
 
 #include "ecmascript/js_object.h"
 #include "ecmascript/tagged_array.h"
@@ -70,4 +70,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSARGUMENTS_H
+#endif  // ECMASCRIPT_JSARGUMENTS_H

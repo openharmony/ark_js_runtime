@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_FORIN_ITERATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_FORIN_ITERATOR_H
+#ifndef ECMASCRIPT_JS_FORIN_ITERATOR_H
+#define ECMASCRIPT_JS_FORIN_ITERATOR_H
 
 #include <utility>
 #include "ecmascript/js_tagged_value-inl.h"
@@ -55,4 +55,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_FORIN_ITERATOR_H
+#endif  // ECMASCRIPT_JS_FORIN_ITERATOR_H

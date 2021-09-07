@@ -14,7 +14,9 @@
  */
 
 #include "ecmascript/builtins/builtins_promise_handler.h"
+
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_async_function.h"
@@ -171,7 +173,6 @@ JSTaggedValue BuiltinsPromiseHandler::ResolveElementFunction(EcmaRuntimeCallInfo
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSPromiseAllResolveElementFunction> func =
         JSHandle<JSPromiseAllResolveElementFunction>::Cast(GetConstructor(argv));
     // 1. Let alreadyCalled be the value of F's [[AlreadyCalled]] internal slot.
@@ -206,9 +207,9 @@ JSTaggedValue BuiltinsPromiseHandler::ResolveElementFunction(EcmaRuntimeCallInfo
         // b. Return Call(promiseCapability.[[Resolve]], undefined, «valuesArray»).
         JSHandle<JSTaggedValue> capaResolve(thread, capa->GetResolve());
         JSHandle<JSTaggedValue> undefine = globalConst->GetHandledUndefined();
-        JSHandle<TaggedArray> arg = factory->NewTaggedArray(1);
-        arg->Set(thread, 0, jsArrayValues);
-        return JSFunction::Call(thread, capaResolve, undefine, arg);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(jsArrayValues);
+        return JSFunction::Call(thread, capaResolve, undefine, 1, arguments->GetArgv());
     }
     // 11. Return undefined.
     return JSTaggedValue::Undefined();

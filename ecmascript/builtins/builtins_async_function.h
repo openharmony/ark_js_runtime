@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ASYNC_FUNCTION_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ASYNC_FUNCTION_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_ASYNC_FUNCTION_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_ASYNC_FUNCTION_H
 
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/base/builtins_base.h"
@@ -26,4 +26,4 @@ public:
     static JSTaggedValue AsyncFunctionConstructor(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ASYNC_FUNCTION_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_ASYNC_FUNCTION_H

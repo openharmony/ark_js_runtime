@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_INL_H
+#ifndef ECMASCRIPT_MEM_HEAP_INL_H
+#define ECMASCRIPT_MEM_HEAP_INL_H
 
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mem_controller.h"
@@ -23,42 +23,45 @@
 #include "ecmascript/mem/remembered_set.h"
 
 namespace panda::ecmascript {
-template <class Callback>
+template<class Callback>
 void Heap::EnumerateOldSpaceRegions(const Callback &cb, Region *region) const
 {
     oldSpace_->EnumerateRegions(cb, region);
     nonMovableSpace_->EnumerateRegions(cb);
-    largeObjectSpace_->EnumerateRegions(cb);
+    hugeObjectSpace_->EnumerateRegions(cb);
+    machineCodeSpace_->EnumerateRegions(cb);
 }
 
-template <class Callback>
+template<class Callback>
 void Heap::EnumerateSnapShotSpaceRegions(const Callback &cb) const
 {
     snapshotSpace_->EnumerateRegions(cb);
 }
 
-template <class Callback>
+template<class Callback>
 void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
 {
     toSpace_->EnumerateRegions(cb);
 }
 
-template <class Callback>
+template<class Callback>
 void Heap::EnumerateRegions(const Callback &cb) const
 {
     toSpace_->EnumerateRegions(cb);
     oldSpace_->EnumerateRegions(cb);
     snapshotSpace_->EnumerateRegions(cb);
     nonMovableSpace_->EnumerateRegions(cb);
-    largeObjectSpace_->EnumerateRegions(cb);
+    hugeObjectSpace_->EnumerateRegions(cb);
+    machineCodeSpace_->EnumerateRegions(cb);
 }
 
-template <class Callback>
+template<class Callback>
 void Heap::IteratorOverObjects(const Callback &cb) const
 {
     toSpace_->IterateOverObjects(cb);
     oldSpace_->IterateOverObjects(cb);
     nonMovableSpace_->IterateOverObjects(cb);
+    hugeObjectSpace_->IterateOverObjects(cb);
 }
 
 bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allowGc)
@@ -111,6 +114,20 @@ bool Heap::FillSnapShotSpace(BumpPointerAllocator *spaceAllocator)
     return result;
 }
 
+bool Heap::FillMachineCodeSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
+{
+    if (machineCodeSpace_->Expand()) {
+        spaceAllocator->AddFree(machineCodeSpace_->GetCurrentRegion());
+        return true;
+    }
+    if (allowGc) {
+        CollectGarbage(TriggerGCType::MACHINE_CODE_GC);
+        return true;
+    }
+    return false;
+}
+
+
 void Heap::OnAllocateEvent(uintptr_t address)
 {
     if (tracker_ != nullptr) {
@@ -140,7 +157,7 @@ void Heap::SetNewSpaceMaximumCapacity(size_t maximumCapacity)
 void Heap::InitializeFromSpace()
 {
     ASSERT(fromSpace_ != nullptr);
-    fromSpace_->SetUp();
+    fromSpace_->Initialize();
 }
 
 void Heap::SwapSpace()
@@ -186,4 +203,4 @@ void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeE
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_INL_H
+#endif  // ECMASCRIPT_MEM_HEAP_INL_H

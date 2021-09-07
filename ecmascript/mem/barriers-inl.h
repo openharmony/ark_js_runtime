@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_BARRIERS_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_BARRIERS_INL_H
+#ifndef ECMASCRIPT_MEM_BARRIERS_INL_H
+#define ECMASCRIPT_MEM_BARRIERS_INL_H
 
 #include "ecmascript/mem/barriers.h"
 #include "ecmascript/mem/space-inl.h"
@@ -37,7 +37,8 @@ static inline void MarkingBarrier(void *obj, size_t offset, JSTaggedType value)
 
 /* static */
 // CODECHECK-NOLINTNEXTLINE(C_RULE_ID_COMMENT_LOCATION)
-template <bool need_write_barrier /* = true */>
+// default value for need_write_barrier is true
+template<bool need_write_barrier>
 inline void Barriers::SetDynObject([[maybe_unused]] const JSThread *thread, void *obj, size_t offset,
                                    JSTaggedType value)
 {
@@ -47,4 +48,4 @@ inline void Barriers::SetDynObject([[maybe_unused]] const JSThread *thread, void
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_BARRIERS_INL_H
+#endif  // ECMASCRIPT_MEM_BARRIERS_INL_H

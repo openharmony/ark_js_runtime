@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_H
+#ifndef ECMASCRIPT_MEM_HEAP_H
+#define ECMASCRIPT_MEM_HEAP_H
 
 #include "ecmascript/thread/thread_pool.h"
 #include "ecmascript/mem/mark_stack.h"
@@ -38,8 +38,8 @@ public:
     ~Heap() = default;
     NO_COPY_SEMANTIC(Heap);
     NO_MOVE_SEMANTIC(Heap);
-    void SetUp();
-    void TearDown();
+    void Initialize();
+    void Destroy();
 
     const SemiSpace *GetNewSpace() const
     {
@@ -83,9 +83,14 @@ public:
         return nonMovableSpace_;
     }
 
-    LargeObjectSpace *GetLargeObjectSpace() const
+    const HugeObjectSpace *GetHugeObjectSpace() const
     {
-        return largeObjectSpace_;
+        return hugeObjectSpace_;
+    }
+
+    const MachineCodeSpace *GetMachineCodeSpace() const
+    {
+        return machineCodeSpace_;
     }
 
     MarkStack *GetMarkStack() const
@@ -127,19 +132,19 @@ public:
 
     void FlipCompressSpace();
 
-    template <class Callback>
+    template<class Callback>
     void EnumerateOldSpaceRegions(const Callback &cb, Region *region = nullptr) const;
 
-    template <class Callback>
+    template<class Callback>
     void EnumerateNewSpaceRegions(const Callback &cb) const;
 
-    template <class Callback>
+    template<class Callback>
     void EnumerateSnapShotSpaceRegions(const Callback &cb) const;
 
-    template <class Callback>
+    template<class Callback>
     void EnumerateRegions(const Callback &cb) const;
 
-    template <class Callback>
+    template<class Callback>
     void IteratorOverObjects(const Callback &cb) const;
 
     void CollectGarbage(TriggerGCType gcType);
@@ -148,6 +153,7 @@ public:
     inline bool FillOldSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc = true);
     inline bool FillNonMovableSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc = true);
     inline bool FillSnapShotSpace(BumpPointerAllocator *spaceAllocator);
+    inline bool FillMachineCodeSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc = true);
 
     void ThrowOutOfMemoryError(size_t size);
 
@@ -180,7 +186,7 @@ public:
 
     bool CheckAndTriggerNonMovableGC();
 
-    RegionFactory *GetRegionFactory() const
+    const RegionFactory *GetRegionFactory() const
     {
         return regionFactory_;
     }
@@ -208,8 +214,8 @@ public:
         if (nonMovableSpace_->IsLive(object)) {
             return true;
         }
-        // large object space
-        if (largeObjectSpace_->IsLive(object)) {
+        // huge object space
+        if (hugeObjectSpace_->IsLive(object)) {
             return true;
         }
         return false;
@@ -229,8 +235,8 @@ public:
         if (nonMovableSpace_->ContainObject(object)) {
             return true;
         }
-        // large object space
-        if (largeObjectSpace_->ContainObject(object)) {
+        // huge object space
+        if (hugeObjectSpace_->ContainObject(object)) {
             return true;
         }
 
@@ -256,28 +262,29 @@ public:
     inline void ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd);
 
 private:
-    EcmaVM *ecmaVm_{nullptr};
-    SemiSpace *fromSpace_{nullptr};
-    SemiSpace *toSpace_{nullptr};
-    OldSpace *oldSpace_{nullptr};
-    OldSpace *compressSpace_{nullptr};
-    LargeObjectSpace *largeObjectSpace_{nullptr};
-    SnapShotSpace *snapshotSpace_{nullptr};
-    NonMovableSpace *nonMovableSpace_{nullptr};
-    MarkStack *markStack_{nullptr};
-    ProcessQueue *weakProcessQueue_{nullptr};
-    SemiSpaceCollector *semiSpaceCollector_{nullptr};
-    OldSpaceCollector *oldSpaceCollector_{nullptr};
-    CompressCollector *compressCollector_{nullptr};
-    EcmaHeapManager *heapManager_{nullptr};
-    RegionFactory *regionFactory_{nullptr};
-    HeapTracker *tracker_{nullptr};
-    MemController *memController_{nullptr};
-    ThreadPool *pool_{nullptr};
-    size_t oldSpaceAllocLimit_{OLD_SPACE_LIMIT_BEGIN};
+    EcmaVM *ecmaVm_ {nullptr};
+    SemiSpace *fromSpace_ {nullptr};
+    SemiSpace *toSpace_ {nullptr};
+    OldSpace *oldSpace_ {nullptr};
+    OldSpace *compressSpace_ {nullptr};
+    HugeObjectSpace *hugeObjectSpace_ {nullptr};
+    SnapShotSpace *snapshotSpace_ {nullptr};
+    NonMovableSpace *nonMovableSpace_ {nullptr};
+    MachineCodeSpace *machineCodeSpace_ {nullptr};
+    MarkStack *markStack_ {nullptr};
+    ProcessQueue *weakProcessQueue_ {nullptr};
+    SemiSpaceCollector *semiSpaceCollector_ {nullptr};
+    OldSpaceCollector *oldSpaceCollector_ {nullptr};
+    CompressCollector *compressCollector_ {nullptr};
+    EcmaHeapManager *heapManager_ {nullptr};
+    RegionFactory *regionFactory_ {nullptr};
+    HeapTracker *tracker_ {nullptr};
+    MemController *memController_ {nullptr};
+    ThreadPool *pool_ {nullptr};
+    size_t oldSpaceAllocLimit_ {OLD_SPACE_LIMIT_BEGIN};
 
     inline void SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity);
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_H
+#endif  // ECMASCRIPT_MEM_HEAP_H

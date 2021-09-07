@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef RUNTIME_ECMASCRIPT_HPROF_HEAP_PROFILER_INTERFACE_H
-#define RUNTIME_ECMASCRIPT_HPROF_HEAP_PROFILER_INTERFACE_H
+#ifndef ECMASCRIPT_HPROF_HEAP_PROFILER_INTERFACE_H
+#define ECMASCRIPT_HPROF_HEAP_PROFILER_INTERFACE_H
 
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/js_thread.h"
@@ -39,4 +39,4 @@ public:
     NO_COPY_SEMANTIC(HeapProfilerInterface);
 };
 }  // namespace panda::ecmascript
-#endif  // RUNTIME_ECMASCRIPT_HPROF_HEAP_PROFILER_INTERFACE_H
+#endif  // ECMASCRIPT_HPROF_HEAP_PROFILER_INTERFACE_H

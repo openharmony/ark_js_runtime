@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_ECMALIST_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_ECMALIST_H
+#ifndef ECMASCRIPT_MEM_ECMALIST_H
+#define ECMASCRIPT_MEM_ECMALIST_H
 
 #include "ecmascript/mem/mem.h"
 
@@ -22,7 +22,7 @@ namespace panda::ecmascript {
 //  Invoking std::list will cause cross invoking, which is time-consuming.
 //  Therefore, we implement ecma list inside the vm.
 
-template <class T>
+template<class T>
 class EcmaList {
 public:
     EcmaList() : first_(nullptr), last_(nullptr) {}
@@ -136,4 +136,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_ECMALIST_H
+#endif  // ECMASCRIPT_MEM_ECMALIST_H

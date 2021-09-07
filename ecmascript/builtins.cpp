@@ -13,31 +13,39 @@
  * limitations under the License.
  */
 
+#include "ecmascript/builtins.h"
+
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/base/number_helper.h"
-#include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
 #include "ecmascript/builtins/builtins_boolean.h"
+#include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/builtins/builtins_date.h"
+#include "ecmascript/builtins/builtins_date_time_format.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_function.h"
 #include "ecmascript/builtins/builtins_generator.h"
 #include "ecmascript/builtins/builtins_global.h"
+#include "ecmascript/builtins/builtins_intl.h"
 #include "ecmascript/builtins/builtins_iterator.h"
 #include "ecmascript/builtins/builtins_json.h"
+#include "ecmascript/builtins/builtins_locale.h"
 #include "ecmascript/builtins/builtins_map.h"
 #include "ecmascript/builtins/builtins_math.h"
 #include "ecmascript/builtins/builtins_number.h"
+#include "ecmascript/builtins/builtins_number_format.h"
 #include "ecmascript/builtins/builtins_object.h"
+#include "ecmascript/builtins/builtins_plural_rules.h"
 #include "ecmascript/builtins/builtins_promise.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/builtins/builtins_promise_job.h"
 #include "ecmascript/builtins/builtins_proxy.h"
 #include "ecmascript/builtins/builtins_reflect.h"
 #include "ecmascript/builtins/builtins_regexp.h"
+#include "ecmascript/builtins/builtins_relative_time_format.h"
 #include "ecmascript/builtins/builtins_set.h"
 #include "ecmascript/builtins/builtins_string.h"
 #include "ecmascript/builtins/builtins_string_iterator.h"
@@ -46,35 +54,31 @@
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/ecma_runtime_call_info.h"
-
 #include "ecmascript/js_array.h"
-#include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
+#include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_async_function.h"
+#include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
-#include "ecmascript/js_float32_array.h"
-#include "ecmascript/js_float64_array.h"
+#include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_int16_array.h"
-#include "ecmascript/js_int32_array.h"
-#include "ecmascript/js_int8_array.h"
+#include "ecmascript/js_locale.h"
 #include "ecmascript/js_map.h"
 #include "ecmascript/js_map_iterator.h"
+#include "ecmascript/js_number_format.h"
+#include "ecmascript/js_plural_rules.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_string_iterator.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_typed_array.h"
-#include "ecmascript/js_uint16_array.h"
-#include "ecmascript/js_uint32_array.h"
-#include "ecmascript/js_uint8_array.h"
-#include "ecmascript/js_uint8_clamped_array.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/object_factory.h"
@@ -119,6 +123,13 @@ using BuiltinsPromiseHandler = builtins::BuiltinsPromiseHandler;
 using BuiltinsPromiseJob = builtins::BuiltinsPromiseJob;
 using ErrorType = base::ErrorType;
 using DataView = builtins::BuiltinsDataView;
+using Intl = builtins::BuiltinsIntl;
+using Locale = builtins::BuiltinsLocale;
+using DateTimeFormat = builtins::BuiltinsDateTimeFormat;
+using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
+using NumberFormat = builtins::BuiltinsNumberFormat;
+using Collator = builtins::BuiltinsCollator;
+using PluralRules = builtins::BuiltinsPluralRules;
 
 void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 {
@@ -257,7 +268,20 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializePromise(env, objFuncDynclass);
     InitializePromiseJob(env);
 
-    SetHwIcuDirectory();
+    RuntimeOptions options = vm_->GetOptions();
+    std::string icuPath = options.GetIcuDataPath();
+    if (icuPath == "default") {
+        SetHwIcuDirectory();
+    } else {
+        u_setDataDirectory(icuPath.c_str());
+    }
+    InitializeIntl(env, objFuncPrototypeVal);
+    InitializeLocale(env);
+    InitializeDateTimeFormat(env);
+    InitializeNumberFormat(env);
+    InitializeRelativeTimeFormat(env);
+    InitializeCollator(env);
+    InitializePluralRules(env);
 
     JSHandle<JSHClass> generatorFuncClass =
         factory_->CreateFunctionClass(FunctionKind::GENERATOR_FUNCTION, JSFunction::SIZE, JSType::JS_GENERATOR_FUNCTION,
@@ -273,7 +297,7 @@ void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHa
 
     // Global object test
     SetFunction(env, globalObject, "print", Global::PrintEntrypoint, 0);
-#ifdef PANDA_ECMASCRIPT_ENABLE_RUNTIME_STAT
+#if ECMASCRIPT_ENABLE_RUNTIME_STAT
     SetFunction(env, globalObject, "startRuntimeStat", Global::StartRuntimeStat, 0);
     SetFunction(env, globalObject, "stopRuntimeStat", Global::StopRuntimeStat, 0);
 #endif
@@ -331,6 +355,11 @@ void Builtins::InitializeFunction(const JSHandle<GlobalEnv> &env, const JSHandle
     JSHandle<JSHClass> normalFuncClass =
         factory_->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, env->GetFunctionPrototype());
     env->SetNormalFunctionClass(thread_, normalFuncClass);
+
+    JSHandle<JSHClass> jSIntlBoundFunctionClass =
+        factory_->CreateFunctionClass(FunctionKind::NORMAL_FUNCTION, JSIntlBoundFunction::SIZE,
+                                      JSType::JS_INTL_BOUND_FUNCTION, env->GetFunctionPrototype());
+    env->SetJSIntlBoundFunctionClass(thread_, jSIntlBoundFunctionClass);
 
     JSHandle<JSHClass> constructorFunctionClass =
         factory_->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, env->GetFunctionPrototype());
@@ -415,7 +444,7 @@ void Builtins::InitializeObject(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, objFuncPrototype, "createRealm", Object::CreateRealm, FunctionLength::ZERO);
 
     // B.2.2.1 Object.prototype.__proto__
-    JSHandle<JSTaggedValue> protoKey(factory_->NewFromString("__proto__"));
+    JSHandle<JSTaggedValue> protoKey(factory_->NewFromCanBeCompressString("__proto__"));
     JSHandle<JSTaggedValue> protoGetter = CreateGetter(env, Object::ProtoGetter, "__proto__", FunctionLength::ZERO);
     JSHandle<JSTaggedValue> protoSetter = CreateSetter(env, Object::ProtoSetter, "__proto__", FunctionLength::ONE);
     SetAccessor(objFuncPrototype, protoKey, protoGetter, protoSetter);
@@ -472,7 +501,7 @@ void Builtins::InitializeSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<J
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
-    JSHandle<JSTaggedValue> getterKey(factory_->NewFromString("description"));
+    JSHandle<JSTaggedValue> getterKey(factory_->NewFromCanBeCompressString("description"));
     JSHandle<JSTaggedValue> getter(factory_->NewJSFunction(env, reinterpret_cast<void *>(Symbol::DescriptionGetter)));
     SetGetter(symbolFuncPrototype, getterKey, getter);
 
@@ -554,7 +583,7 @@ void Builtins::InitializeSymbolWithRealm(const JSHandle<GlobalEnv> &realm,
 
     // symbol.prototype.description
     PropertyDescriptor descriptionDesc(thread_);
-    JSHandle<JSTaggedValue> getterKey(factory_->NewFromString("description"));
+    JSHandle<JSTaggedValue> getterKey(factory_->NewFromCanBeCompressString("description"));
     JSHandle<JSTaggedValue> getter(factory_->NewJSFunction(realm, reinterpret_cast<void *>(Symbol::DescriptionGetter)));
     SetGetter(symbolFuncPrototype, getterKey, getter);
 
@@ -618,6 +647,7 @@ void Builtins::InitializeNumber(const JSHandle<GlobalEnv> &env, const JSHandle<J
     // Number.prototype method
     SetFunction(env, numFuncPrototype, "toExponential", Number::ToExponential, FunctionLength::ONE);
     SetFunction(env, numFuncPrototype, "toFixed", Number::ToFixed, FunctionLength::ONE);
+    SetFunction(env, numFuncPrototype, "toLocaleString", Number::ToLocaleString, FunctionLength::ZERO);
     SetFunction(env, numFuncPrototype, "toPrecision", Number::ToPrecision, FunctionLength::ONE);
     SetFunction(env, numFuncPrototype, thread_->GlobalConstants()->GetHandledToStringString(), Number::ToString,
                 FunctionLength::ONE);
@@ -706,6 +736,9 @@ void Builtins::InitializeDate(const JSHandle<GlobalEnv> &env, const JSHandle<JSH
     SetFunction(env, dateFuncPrototype, "toDateString", Date::ToDateString, FunctionLength::ZERO);
     SetFunction(env, dateFuncPrototype, "toISOString", Date::ToISOString, FunctionLength::ZERO);
     SetFunction(env, dateFuncPrototype, "toJSON", Date::ToJSON, FunctionLength::ONE);
+    SetFunction(env, dateFuncPrototype, "toLocaleDateString", Date::ToLocaleDateString, FunctionLength::ZERO);
+    SetFunction(env, dateFuncPrototype, "toLocaleString", Date::ToLocaleString, FunctionLength::ZERO);
+    SetFunction(env, dateFuncPrototype, "toLocaleTimeString", Date::ToLocaleTimeString, FunctionLength::ZERO);
     SetFunction(env, dateFuncPrototype, thread_->GlobalConstants()->GetHandledToStringString(), Date::ToString,
                 FunctionLength::ZERO);
     SetFunction(env, dateFuncPrototype, "toTimeString", Date::ToTimeString, FunctionLength::ZERO);
@@ -1049,8 +1082,8 @@ void Builtins::InitializeSet(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
     // set.prototype.keys()
     SetFunction(env, setFuncPrototype, "values", BuiltinsSet::Values, FunctionLength::ZERO);
     // set.prototype.values()
-    JSHandle<JSTaggedValue> keys(factory_->NewFromString("keys"));
-    JSHandle<JSTaggedValue> values(factory_->NewFromString("values"));
+    JSHandle<JSTaggedValue> keys(factory_->NewFromCanBeCompressString("keys"));
+    JSHandle<JSTaggedValue> values(factory_->NewFromCanBeCompressString("values"));
     JSHandle<JSTaggedValue> valuesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(setFuncPrototype), values);
     PropertyDescriptor descriptor(thread_, valuesFunc, true, false, true);
@@ -1061,7 +1094,7 @@ void Builtins::InitializeSet(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
 
     // 23.1.3.10get Set.prototype.size
     JSHandle<JSTaggedValue> sizeGetter = CreateGetter(env, BuiltinsSet::GetSize, "size", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromString("size"));
+    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromCanBeCompressString("size"));
     SetGetter(setFuncPrototype, sizeKey, sizeGetter);
 
     // 23.1.2.2get Set [ @@species ]
@@ -1121,7 +1154,7 @@ void Builtins::InitializeMap(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
 
     // 23.1.3.10get Map.prototype.size
     JSHandle<JSTaggedValue> sizeGetter = CreateGetter(env, BuiltinsMap::GetSize, "size", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromString("size"));
+    JSHandle<JSTaggedValue> sizeKey(factory_->NewFromCanBeCompressString("size"));
     SetGetter(mapFuncPrototype, sizeKey, sizeGetter);
 
     // 23.1.2.2get Map [ @@species ]
@@ -1132,7 +1165,7 @@ void Builtins::InitializeMap(const JSHandle<GlobalEnv> &env, const JSHandle<JSHC
 
     // %MapPrototype% [ @@iterator ]
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
-    JSHandle<JSTaggedValue> entries(factory_->NewFromString("entries"));
+    JSHandle<JSTaggedValue> entries(factory_->NewFromCanBeCompressString("entries"));
     JSHandle<JSTaggedValue> entriesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(mapFuncPrototype), entries);
     PropertyDescriptor descriptor(thread_, entriesFunc, true, false, true);
@@ -1259,7 +1292,7 @@ void Builtins::InitializeMath(const JSHandle<GlobalEnv> &env, const JSHandle<JST
     SetConstant(mathObject, "SQRT1_2", JSTaggedValue(Math::SQRT1_2));
     SetConstant(mathObject, "SQRT2", JSTaggedValue(Math::SQRT2));
 
-    JSHandle<JSTaggedValue> mathString(factory_->NewFromString("Math"));
+    JSHandle<JSTaggedValue> mathString(factory_->NewFromCanBeCompressString("Math"));
     JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
     PropertyDescriptor mathDesc(thread_, JSHandle<JSTaggedValue>::Cast(mathObject), true, false, true);
     JSObject::DefineOwnProperty(thread_, globalObject, mathString, mathDesc);
@@ -1278,7 +1311,7 @@ void Builtins::InitializeJson(const JSHandle<GlobalEnv> &env, const JSHandle<JST
     SetFunction(env, jsonObject, "stringify", Json::Stringify, FunctionLength::THREE);
 
     PropertyDescriptor jsonDesc(thread_, JSHandle<JSTaggedValue>::Cast(jsonObject), true, false, true);
-    JSHandle<JSTaggedValue> jsonString(factory_->NewFromString("JSON"));
+    JSHandle<JSTaggedValue> jsonString(factory_->NewFromCanBeCompressString("JSON"));
     JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
     JSObject::DefineOwnProperty(thread_, globalObject, jsonString, jsonDesc);
     // @@ToStringTag
@@ -1316,6 +1349,7 @@ void Builtins::InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, stringFuncPrototype, "localeCompare", BuiltinsString::LocaleCompare, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "match", BuiltinsString::Match, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "repeat", BuiltinsString::Repeat, FunctionLength::ONE);
+    SetFunction(env, stringFuncPrototype, "normalize", BuiltinsString::Normalize, FunctionLength::ZERO);
     SetFunction(env, stringFuncPrototype, "replace", BuiltinsString::Replace, FunctionLength::TWO);
     SetFunction(env, stringFuncPrototype, "search", BuiltinsString::Search, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "slice", BuiltinsString::Slice, FunctionLength::TWO);
@@ -1323,6 +1357,8 @@ void Builtins::InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<J
     SetFunction(env, stringFuncPrototype, "startsWith", BuiltinsString::StartsWith, FunctionLength::ONE);
     SetFunction(env, stringFuncPrototype, "substring", BuiltinsString::Substring, FunctionLength::TWO);
     SetFunction(env, stringFuncPrototype, "substr", BuiltinsString::SubStr, FunctionLength::TWO);
+    SetFunction(env, stringFuncPrototype, "toLocaleLowerCase", BuiltinsString::ToLocaleLowerCase, FunctionLength::ZERO);
+    SetFunction(env, stringFuncPrototype, "toLocaleUpperCase", BuiltinsString::ToLocaleUpperCase, FunctionLength::ZERO);
     SetFunction(env, stringFuncPrototype, "toLowerCase", BuiltinsString::ToLowerCase, FunctionLength::ZERO);
     SetFunction(env, stringFuncPrototype, thread_->GlobalConstants()->GetHandledToStringString(),
                 BuiltinsString::ToString, FunctionLength::ZERO);
@@ -1340,7 +1376,7 @@ void Builtins::InitializeString(const JSHandle<GlobalEnv> &env, const JSHandle<J
 
     // String.prototype.length
     JSHandle<JSTaggedValue> lengthGetter = CreateGetter(env, BuiltinsString::GetLength, "length", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("length"));
     SetGetter(stringFuncPrototype, lengthKey, lengthGetter);
 
     env->SetStringFunction(thread_, stringFunction);
@@ -1465,37 +1501,37 @@ void Builtins::InitializeRegExp(const JSHandle<GlobalEnv> &env)
                 FunctionLength::ZERO);
 
     JSHandle<JSTaggedValue> flagsGetter = CreateGetter(env, RegExp::GetFlags, "flags", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> flagsKey(factory_->NewFromString("flags"));
+    JSHandle<JSTaggedValue> flagsKey(factory_->NewFromCanBeCompressString("flags"));
     SetGetter(regPrototype, flagsKey, flagsGetter);
 
     JSHandle<JSTaggedValue> sourceGetter = CreateGetter(env, RegExp::GetSource, "source", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> sourceKey(factory_->NewFromString("source"));
+    JSHandle<JSTaggedValue> sourceKey(factory_->NewFromCanBeCompressString("source"));
     SetGetter(regPrototype, sourceKey, sourceGetter);
 
     JSHandle<JSTaggedValue> globalGetter = CreateGetter(env, RegExp::GetGlobal, "global", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> globalKey(factory_->NewFromString("global"));
+    JSHandle<JSTaggedValue> globalKey(factory_->NewFromCanBeCompressString("global"));
     SetGetter(regPrototype, globalKey, globalGetter);
 
     JSHandle<JSTaggedValue> ignoreCaseGetter =
         CreateGetter(env, RegExp::GetIgnoreCase, "ignoreCase", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> ignoreCaseKey(factory_->NewFromString("ignoreCase"));
+    JSHandle<JSTaggedValue> ignoreCaseKey(factory_->NewFromCanBeCompressString("ignoreCase"));
     SetGetter(regPrototype, ignoreCaseKey, ignoreCaseGetter);
 
     JSHandle<JSTaggedValue> multilineGetter =
         CreateGetter(env, RegExp::GetMultiline, "multiline", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> multilineKey(factory_->NewFromString("multiline"));
+    JSHandle<JSTaggedValue> multilineKey(factory_->NewFromCanBeCompressString("multiline"));
     SetGetter(regPrototype, multilineKey, multilineGetter);
 
     JSHandle<JSTaggedValue> dotAllGetter = CreateGetter(env, RegExp::GetDotAll, "dotAll", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> dotAllKey(factory_->NewFromString("dotAll"));
+    JSHandle<JSTaggedValue> dotAllKey(factory_->NewFromCanBeCompressString("dotAll"));
     SetGetter(regPrototype, dotAllKey, dotAllGetter);
 
     JSHandle<JSTaggedValue> stickyGetter = CreateGetter(env, RegExp::GetSticky, "sticky", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> stickyKey(factory_->NewFromString("sticky"));
+    JSHandle<JSTaggedValue> stickyKey(factory_->NewFromCanBeCompressString("sticky"));
     SetGetter(regPrototype, stickyKey, stickyGetter);
 
     JSHandle<JSTaggedValue> unicodeGetter = CreateGetter(env, RegExp::GetUnicode, "unicode", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> unicodeKey(factory_->NewFromString("unicode"));
+    JSHandle<JSTaggedValue> unicodeKey(factory_->NewFromCanBeCompressString("unicode"));
     SetGetter(regPrototype, unicodeKey, unicodeGetter);
 
     // Set RegExp [ @@species ]
@@ -1581,7 +1617,7 @@ void Builtins::InitializeArray(const JSHandle<GlobalEnv> &env, const JSHandle<JS
     SetFunction(env, arrFuncPrototype, "values", BuiltinsArray::Values, FunctionLength::ZERO);
 
     // %ArrayPrototype% [ @@iterator ]
-    JSHandle<JSTaggedValue> values(factory_->NewFromString("values"));
+    JSHandle<JSTaggedValue> values(factory_->NewFromCanBeCompressString("values"));
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
     JSHandle<JSTaggedValue> valuesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(arrFuncPrototype), values);
@@ -1605,7 +1641,7 @@ void Builtins::InitializeArray(const JSHandle<GlobalEnv> &env, const JSHandle<JS
                                   false);
     JSObject::DefineOwnProperty(thread_, arrFuncPrototype, key_string, descriptor);
 
-    JSHandle<JSTaggedValue> valuesKey(factory_->NewFromString("values"));
+    JSHandle<JSTaggedValue> valuesKey(factory_->NewFromCanBeCompressString("values"));
     PropertyDescriptor desc(thread_);
     JSObject::GetOwnProperty(thread_, arrFuncPrototype, valuesKey, desc);
 
@@ -1666,22 +1702,22 @@ void Builtins::InitializeTypedArray(const JSHandle<GlobalEnv> &env, const JSHand
 
     JSHandle<JSTaggedValue> bufferGetter =
         CreateGetter(env, BuiltinsTypedArray::GetBuffer, "buffer", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromString("buffer"));
+    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromCanBeCompressString("buffer"));
     SetGetter(typedArrFuncPrototype, bufferKey, bufferGetter);
 
     JSHandle<JSTaggedValue> byteLengthGetter =
         CreateGetter(env, BuiltinsTypedArray::GetByteLength, "byteLength", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> byteLengthKey(factory_->NewFromString("byteLength"));
+    JSHandle<JSTaggedValue> byteLengthKey(factory_->NewFromCanBeCompressString("byteLength"));
     SetGetter(typedArrFuncPrototype, byteLengthKey, byteLengthGetter);
 
     JSHandle<JSTaggedValue> byteOffsetGetter =
         CreateGetter(env, BuiltinsTypedArray::GetByteOffset, "byteOffset", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> byteOffsetKey(factory_->NewFromString("byteOffset"));
+    JSHandle<JSTaggedValue> byteOffsetKey(factory_->NewFromCanBeCompressString("byteOffset"));
     SetGetter(typedArrFuncPrototype, byteOffsetKey, byteOffsetGetter);
 
     JSHandle<JSTaggedValue> lengthGetter =
         CreateGetter(env, BuiltinsTypedArray::GetLength, "length", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromString("length"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("length"));
     SetGetter(typedArrFuncPrototype, lengthKey, lengthGetter);
 
     // %TypedArray%.prototype.toString()
@@ -1693,7 +1729,7 @@ void Builtins::InitializeTypedArray(const JSHandle<GlobalEnv> &env, const JSHand
                                 toStringDesc);
 
     // %TypedArray%.prototype [ @@iterator ] ( )
-    JSHandle<JSTaggedValue> values(factory_->NewFromString("values"));
+    JSHandle<JSTaggedValue> values(factory_->NewFromCanBeCompressString("values"));
     JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
     JSHandle<JSTaggedValue> valuesFunc =
         JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>::Cast(typedArrFuncPrototype), values);
@@ -1746,7 +1782,7 @@ void Builtins::InitializeInt8Array(const JSHandle<GlobalEnv> &env, const JSHandl
 
     // Int8Array.prototype_or_dynclass
     JSHandle<JSHClass> int8ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSInt8Array::SIZE, JSType::JS_INT8_ARRAY, int8ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_INT8_ARRAY, int8ArrFuncPrototypeValue);
 
     // Int8Array = new Function()
     JSHandle<JSFunction> int8ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1770,7 +1806,7 @@ void Builtins::InitializeUint8Array(const JSHandle<GlobalEnv> &env, const JSHand
 
     // Uint8Array.prototype_or_dynclass
     JSHandle<JSHClass> uint8ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSUint8Array::SIZE, JSType::JS_UINT8_ARRAY, uint8ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_UINT8_ARRAY, uint8ArrFuncPrototypeValue);
 
     // Uint8Array = new Function()
     JSHandle<JSFunction> uint8ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1795,7 +1831,7 @@ void Builtins::InitializeUint8ClampedArray(const JSHandle<GlobalEnv> &env,
 
     // Uint8ClampedArray.prototype_or_dynclass
     JSHandle<JSHClass> uint8ClampedArrFuncInstanceDynclass =
-        factory_->NewEcmaDynClass(panda::ecmascript::JSUint8ClampedArray::SIZE, JSType::JS_UINT8_CLAMPED_ARRAY,
+        factory_->NewEcmaDynClass(panda::ecmascript::JSTypedArray::SIZE, JSType::JS_UINT8_CLAMPED_ARRAY,
                                   uint8ClampedArrFuncPrototypeValue);
 
     // Uint8ClampedArray = new Function()
@@ -1821,7 +1857,7 @@ void Builtins::InitializeInt16Array(const JSHandle<GlobalEnv> &env, const JSHand
 
     // Int16Array.prototype_or_dynclass
     JSHandle<JSHClass> int16ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSInt16Array::SIZE, JSType::JS_INT16_ARRAY, int16ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_INT16_ARRAY, int16ArrFuncPrototypeValue);
 
     // Int16Array = new Function()
     JSHandle<JSFunction> int16ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1845,7 +1881,7 @@ void Builtins::InitializeUint16Array(const JSHandle<GlobalEnv> &env, const JSHan
 
     // Uint16Array.prototype_or_dynclass
     JSHandle<JSHClass> uint16ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSUint16Array::SIZE, JSType::JS_UINT16_ARRAY, uint16ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_UINT16_ARRAY, uint16ArrFuncPrototypeValue);
 
     // Uint16Array = new Function()
     JSHandle<JSFunction> uint16ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1869,7 +1905,7 @@ void Builtins::InitializeInt32Array(const JSHandle<GlobalEnv> &env, const JSHand
 
     // Int32Array.prototype_or_dynclass
     JSHandle<JSHClass> int32ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSInt32Array::SIZE, JSType::JS_INT32_ARRAY, int32ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_INT32_ARRAY, int32ArrFuncPrototypeValue);
 
     // Int32Array = new Function()
     JSHandle<JSFunction> int32ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1893,7 +1929,7 @@ void Builtins::InitializeUint32Array(const JSHandle<GlobalEnv> &env, const JSHan
 
     // Uint32Array.prototype_or_dynclass
     JSHandle<JSHClass> uint32ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSUint32Array::SIZE, JSType::JS_UINT32_ARRAY, uint32ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_UINT32_ARRAY, uint32ArrFuncPrototypeValue);
 
     // Uint32Array = new Function()
     JSHandle<JSFunction> uint32ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1917,7 +1953,7 @@ void Builtins::InitializeFloat32Array(const JSHandle<GlobalEnv> &env, const JSHa
 
     // Float32Array.prototype_or_dynclass
     JSHandle<JSHClass> float32ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSFloat32Array::SIZE, JSType::JS_FLOAT32_ARRAY, float32ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_FLOAT32_ARRAY, float32ArrFuncPrototypeValue);
 
     // Float32Array = new Function()
     JSHandle<JSFunction> float32ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1941,7 +1977,7 @@ void Builtins::InitializeFloat64Array(const JSHandle<GlobalEnv> &env, const JSHa
 
     // Float64Array.prototype_or_dynclass
     JSHandle<JSHClass> float64ArrFuncInstanceDynclass = factory_->NewEcmaDynClass(
-        panda::ecmascript::JSFloat64Array::SIZE, JSType::JS_FLOAT64_ARRAY, float64ArrFuncPrototypeValue);
+        panda::ecmascript::JSTypedArray::SIZE, JSType::JS_FLOAT64_ARRAY, float64ArrFuncPrototypeValue);
 
     // Float64Array = new Function()
     JSHandle<JSFunction> float64ArrayFunction = factory_->NewSpecificTypedArrayFunction(
@@ -1989,7 +2025,7 @@ void Builtins::InitializeArrayBuffer(const JSHandle<GlobalEnv> &env, const JSHan
     // 24.1.4.1 get ArrayBuffer.prototype.byteLength
     JSHandle<JSTaggedValue> lengthGetter =
         CreateGetter(env, ArrayBuffer::GetByteLength, "byteLength", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromString("byteLength"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("byteLength"));
     SetGetter(arrayBufferFuncPrototype, lengthKey, lengthGetter);
 
     // 24.1.4.4 ArrayBuffer.prototype[@@toStringTag]
@@ -2021,7 +2057,7 @@ void Builtins::InitializeReflect(const JSHandle<GlobalEnv> &env,
     SetFunction(env, reflectObject, "set", Reflect::ReflectSet, FunctionLength::THREE);
     SetFunction(env, reflectObject, "setPrototypeOf", Reflect::ReflectSetPrototypeOf, FunctionLength::TWO);
 
-    JSHandle<JSTaggedValue> reflectString(factory_->NewFromString("Reflect"));
+    JSHandle<JSTaggedValue> reflectString(factory_->NewFromCanBeCompressString("Reflect"));
     JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
     PropertyDescriptor reflectDesc(thread_, JSHandle<JSTaggedValue>::Cast(reflectObject), true, false, true);
     JSObject::DefineOwnProperty(thread_, globalObject, reflectString, reflectDesc);
@@ -2113,18 +2149,18 @@ void Builtins::InitializeDataView(const JSHandle<GlobalEnv> &env, const JSHandle
 
     // 24.2.4.1 get DataView.prototype.buffer
     JSHandle<JSTaggedValue> bufferGetter = CreateGetter(env, DataView::GetBuffer, "buffer", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromString("buffer"));
+    JSHandle<JSTaggedValue> bufferKey(factory_->NewFromCanBeCompressString("buffer"));
     SetGetter(dataViewFuncPrototype, bufferKey, bufferGetter);
 
     // 24.2.4.2 get DataView.prototype.byteLength
     JSHandle<JSTaggedValue> lengthGetter =
         CreateGetter(env, DataView::GetByteLength, "byteLength", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromString("byteLength"));
+    JSHandle<JSTaggedValue> lengthKey(factory_->NewFromCanBeCompressString("byteLength"));
     SetGetter(dataViewFuncPrototype, lengthKey, lengthGetter);
 
     // 24.2.4.3 get DataView.prototype.byteOffset
     JSHandle<JSTaggedValue> offsetGetter = CreateGetter(env, DataView::GetOffset, "byteOffset", FunctionLength::ZERO);
-    JSHandle<JSTaggedValue> offsetKey(factory_->NewFromString("byteOffset"));
+    JSHandle<JSTaggedValue> offsetKey(factory_->NewFromCanBeCompressString("byteOffset"));
     SetGetter(dataViewFuncPrototype, offsetKey, offsetGetter);
 
     // 24.2.4.21 DataView.prototype[ @@toStringTag ]
@@ -2168,7 +2204,7 @@ void Builtins::SetFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObje
     JSObject::DefineOwnProperty(thread_, obj, key, descriptor);
 }
 
-template <int flag>
+template<int flag>
 void Builtins::SetFunctionAtSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj,
                                    const JSHandle<JSTaggedValue> &symbol, const char *name, EcmaEntrypoint func,
                                    int length) const
@@ -2273,10 +2309,10 @@ void Builtins::StrictModeForbiddenAccessCallerArguments(const JSHandle<GlobalEnv
     JSHandle<JSFunction> function =
         factory_->NewJSFunction(env, reinterpret_cast<void *>(JSFunction::AccessCallerArgumentsThrowTypeError));
 
-    JSHandle<JSTaggedValue> caller(factory_->NewFromString("caller"));
+    JSHandle<JSTaggedValue> caller(factory_->NewFromCanBeCompressString("caller"));
     SetAccessor(prototype, caller, JSHandle<JSTaggedValue>::Cast(function), JSHandle<JSTaggedValue>::Cast(function));
 
-    JSHandle<JSTaggedValue> arguments(factory_->NewFromString("arguments"));
+    JSHandle<JSTaggedValue> arguments(factory_->NewFromCanBeCompressString("arguments"));
     SetAccessor(prototype, arguments, JSHandle<JSTaggedValue>::Cast(function), JSHandle<JSTaggedValue>::Cast(function));
 }
 
@@ -2388,6 +2424,305 @@ void Builtins::SetGetter(const JSHandle<JSObject> &obj, const JSHandle<JSTaggedV
     accessor->SetGetter(thread_, getter);
     PropertyAttributes attr = PropertyAttributes::DefaultAccessor(false, false, true);
     JSObject::AddAccessor(thread_, JSHandle<JSTaggedValue>::Cast(obj), key, accessor, attr);
+}
+
+JSHandle<JSFunction> Builtins::NewIntlConstructor(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &prototype,
+                                                  EcmaEntrypoint ctorFunc, const char *name, int length)
+{
+    JSHandle<JSFunction> ctor =
+        factory_->NewJSFunction(env, reinterpret_cast<void *>(ctorFunc), FunctionKind::BUILTIN_CONSTRUCTOR);
+    InitializeIntlCtor(env, prototype, ctor, name, length);
+    return ctor;
+}
+
+void Builtins::InitializeIntlCtor(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &prototype,
+                                  const JSHandle<JSFunction> &ctor, const char *name, int length)
+{
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSFunction::SetFunctionLength(thread_, ctor, JSTaggedValue(length));
+    JSHandle<JSTaggedValue> nameString(factory_->NewFromString(name));
+    JSFunction::SetFunctionName(thread_, JSHandle<JSFunctionBase>(ctor), nameString,
+                                JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined()));
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    PropertyDescriptor descriptor1(thread_, JSHandle<JSTaggedValue>::Cast(ctor), true, false, true);
+    JSObject::DefineOwnProperty(thread_, prototype, constructorKey, descriptor1);
+
+    // set "prototype" in constructor.
+    ctor->SetFunctionPrototype(thread_, prototype.GetTaggedValue());
+
+    if (!JSTaggedValue::SameValue(nameString, thread_->GlobalConstants()->GetHandledAsyncFunctionString())) {
+        JSHandle<JSObject> intlObject(thread_, env->GetIntlFunction().GetTaggedValue());
+        PropertyDescriptor descriptor2(thread_, JSHandle<JSTaggedValue>::Cast(ctor), true, false, true);
+        JSObject::DefineOwnProperty(thread_, intlObject, nameString, descriptor2);
+    }
+}
+
+void Builtins::InitializeIntl(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeValue)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    JSHandle<JSHClass> intlDynclass = factory_->NewEcmaDynClass(JSObject::SIZE, JSType::JS_INTL, objFuncPrototypeValue);
+    JSHandle<JSObject> intlObject = factory_->NewJSObject(intlDynclass);
+
+    JSHandle<JSTaggedValue> initIntlSymbol(factory_->NewPublicSymbolWithChar("Symbol.IntlLegacyConstructedSymbol"));
+    SetNoneAttributeProperty(intlObject, "fallbackSymbol", initIntlSymbol);
+
+    SetFunction(env, intlObject, "getCanonicalLocales", Intl::GetCanonicalLocales, FunctionLength::ONE);
+
+    // initial value of the "Intl" property of the global object.
+    JSHandle<JSTaggedValue> intlString(factory_->NewFromString("Intl"));
+    JSHandle<JSObject> globalObject(thread_, env->GetGlobalObject());
+    PropertyDescriptor intlDesc(thread_, JSHandle<JSTaggedValue>::Cast(intlObject), true, false, true);
+    JSObject::DefineOwnProperty(thread_, globalObject, intlString, intlDesc);
+
+    SetStringTagSymbol(env, intlObject, "Intl");
+
+    env->SetIntlFunction(thread_, intlObject);
+}
+
+void Builtins::InitializeDateTimeFormat(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // DateTimeFormat.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> dtfPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> dtfPrototypeValue(dtfPrototype);
+
+    // DateTimeFormat.prototype_or_dynclass
+    JSHandle<JSHClass> dtfFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSDateTimeFormat::SIZE, JSType::JS_DATE_TIME_FORMAT, dtfPrototypeValue);
+
+    // DateTimeFormat = new Function()
+    // 13.4.1 Intl.DateTimeFormat.prototype.constructor
+    JSHandle<JSObject> dtfFunction(NewIntlConstructor(env, dtfPrototype, DateTimeFormat::DateTimeFormatConstructor,
+                                                      "DateTimeFormat", FunctionLength::ZERO));
+    JSHandle<JSFunction>(dtfFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*dtfFuncInstanceDynclass));
+
+    // 13.3.2 Intl.DateTimeFormat.supportedLocalesOf ( locales [ , options ] )
+    SetFunction(env, dtfFunction, "supportedLocalesOf", DateTimeFormat::SupportedLocalesOf, FunctionLength::ONE);
+
+    // DateTimeFormat.prototype method
+    // 13.4.2 Intl.DateTimeFormat.prototype [ @@toStringTag ]
+    SetStringTagSymbol(env, dtfPrototype, "Intl.DateTimeFormat");
+    env->SetDateTimeFormatFunction(thread_, dtfFunction);
+
+    // 13.4.3 get Intl.DateTimeFormat.prototype.format
+    JSHandle<JSTaggedValue> formatGetter = CreateGetter(env, DateTimeFormat::Format, "format", FunctionLength::ZERO);
+    JSHandle<JSTaggedValue> formatSetter(thread_, JSTaggedValue::Undefined());
+    SetAccessor(dtfPrototype, thread_->GlobalConstants()->GetHandledFormatString(), formatGetter, formatSetter);
+
+    // 13.4.4 Intl.DateTimeFormat.prototype.formatToParts ( date )
+    SetFunction(env, dtfPrototype, "formatToParts", DateTimeFormat::FormatToParts, FunctionLength::ONE);
+
+    // 13.4.5 Intl.DateTimeFormat.prototype.resolvedOptions ()
+    SetFunction(env, dtfPrototype, "resolvedOptions", DateTimeFormat::ResolvedOptions, FunctionLength::ZERO);
+
+    SetFunction(env, dtfPrototype, "formatRange", DateTimeFormat::FormatRange, FunctionLength::TWO);
+
+    SetFunction(env, dtfPrototype, "formatRangeToParts", DateTimeFormat::FormatRangeToParts, FunctionLength::TWO);
+}
+
+void Builtins::InitializeRelativeTimeFormat(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // RelativeTimeFormat.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> rtfPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> rtfPrototypeValue(rtfPrototype);
+
+    // RelativeTimeFormat.prototype_or_dynclass
+    JSHandle<JSHClass> rtfFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSRelativeTimeFormat::SIZE, JSType::JS_RELATIVE_TIME_FORMAT, rtfPrototypeValue);
+
+    // RelativeTimeFormat = new Function()
+    // 14.2.1 Intl.RelativeTimeFormat.prototype.constructor
+    JSHandle<JSObject> rtfFunction(NewIntlConstructor(env, rtfPrototype,
+                                                      RelativeTimeFormat::RelativeTimeFormatConstructor,
+                                                      "RelativeTimeFormat", FunctionLength::ZERO));
+    JSHandle<JSFunction>(rtfFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*rtfFuncInstanceDynclass));
+
+    // 14.3.2 Intl.RelativeTimeFormat.supportedLocalesOf ( locales [ , options ] )
+    SetFunction(env, rtfFunction, "supportedLocalesOf", RelativeTimeFormat::SupportedLocalesOf, FunctionLength::ONE);
+
+    // RelativeTimeFormat.prototype method
+    // 14.4.2 Intl.RelativeTimeFormat.prototype [ @@toStringTag ]
+    SetStringTagSymbol(env, rtfPrototype, "Intl.RelativeTimeFormat");
+    env->SetRelativeTimeFormatFunction(thread_, rtfFunction);
+
+    // 14.4.3 get Intl.RelativeTimeFormat.prototype.format
+    SetFunction(env, rtfPrototype, "format", RelativeTimeFormat::Format, FunctionLength::TWO);
+
+    // 14.4.4  Intl.RelativeTimeFormat.prototype.formatToParts( value, unit )
+    SetFunction(env, rtfPrototype, "formatToParts", RelativeTimeFormat::FormatToParts, FunctionLength::TWO);
+
+    // 14.4.5 Intl.RelativeTimeFormat.prototype.resolvedOptions ()
+    SetFunction(env, rtfPrototype, "resolvedOptions", RelativeTimeFormat::ResolvedOptions, FunctionLength::ZERO);
+}
+
+void Builtins::InitializeNumberFormat(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // NumberFormat.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> nfPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> nfPrototypeValue(nfPrototype);
+
+    // NumberFormat.prototype_or_dynclass
+    JSHandle<JSHClass> nfFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSNumberFormat::SIZE, JSType::JS_NUMBER_FORMAT, nfPrototypeValue);
+
+    // NumberFormat = new Function()
+    // 12.4.1 Intl.NumberFormat.prototype.constructor
+    JSHandle<JSObject> nfFunction(NewIntlConstructor(env, nfPrototype, NumberFormat::NumberFormatConstructor,
+                                                     "NumberFormat", FunctionLength::ZERO));
+    JSHandle<JSFunction>(nfFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*nfFuncInstanceDynclass));
+
+    // 12.3.2 Intl.NumberFormat.supportedLocalesOf ( locales [ , options ] )
+    SetFunction(env, nfFunction, "supportedLocalesOf", NumberFormat::SupportedLocalesOf, FunctionLength::ONE);
+
+    // NumberFormat.prototype method
+    // 12.4.2 Intl.NumberFormat.prototype [ @@toStringTag ]
+    SetStringTagSymbol(env, nfPrototype, "Intl.NumberFormat");
+    env->SetNumberFormatFunction(thread_, nfFunction);
+
+    // 12.4.3 get Intl.NumberFormat.prototype.format
+    JSHandle<JSTaggedValue> formatGetter = CreateGetter(env, NumberFormat::Format, "format", FunctionLength::ZERO);
+    JSHandle<JSTaggedValue> formatSetter(thread_, JSTaggedValue::Undefined());
+    SetAccessor(nfPrototype, thread_->GlobalConstants()->GetHandledFormatString(), formatGetter, formatSetter);
+
+    // 12.4.4 Intl.NumberFormat.prototype.formatToParts ( date )
+    SetFunction(env, nfPrototype, "formatToParts", NumberFormat::FormatToParts, FunctionLength::ONE);
+
+    // 12.4.5 Intl.NumberFormat.prototype.resolvedOptions ()
+    SetFunction(env, nfPrototype, "resolvedOptions", NumberFormat::ResolvedOptions, FunctionLength::ZERO);
+}
+
+void Builtins::InitializeLocale(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // Locale.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> localePrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> localePrototypeValue(localePrototype);
+
+    // Locale.prototype_or_dynclass
+    JSHandle<JSHClass> localeFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSLocale::SIZE, JSType::JS_LOCALE, localePrototypeValue);
+
+    // Locale = new Function()
+    JSHandle<JSObject> localeFunction(
+        NewIntlConstructor(env, localePrototype, Locale::LocaleConstructor, "Locale", FunctionLength::ONE));
+    JSHandle<JSFunction>(localeFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*localeFuncInstanceDynclass));
+
+    // Locale.prototype method
+    SetFunction(env, localePrototype, "maximize", Locale::Maximize, FunctionLength::ZERO);
+    SetFunction(env, localePrototype, "minimize", Locale::Minimize, FunctionLength::ZERO);
+    SetFunction(env, localePrototype, "toString", Locale::ToString, FunctionLength::ZERO);
+
+    JSHandle<JSTaggedValue> baseNameGetter = CreateGetter(env, Locale::GetBaseName, "baseName", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledBaseNameString(), baseNameGetter);
+
+    JSHandle<JSTaggedValue> calendarGetter = CreateGetter(env, Locale::GetCalendar, "calendar", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledCalendarString(), calendarGetter);
+
+    JSHandle<JSTaggedValue> caseFirstGetter =
+        CreateGetter(env, Locale::GetCaseFirst, "caseFirst", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledCaseFirstString(), caseFirstGetter);
+
+    JSHandle<JSTaggedValue> collationGetter =
+        CreateGetter(env, Locale::GetCollation, "collation", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledCollationString(), collationGetter);
+
+    JSHandle<JSTaggedValue> hourCycleGetter =
+        CreateGetter(env, Locale::GetHourCycle, "hourCycle", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledHourCycleString(), hourCycleGetter);
+
+    JSHandle<JSTaggedValue> numericGetter = CreateGetter(env, Locale::GetNumeric, "numeric", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledNumericString(), numericGetter);
+
+    JSHandle<JSTaggedValue> numberingSystemGetter =
+        CreateGetter(env, Locale::GetNumberingSystem, "numberingSystem", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledNumberingSystemString(), numberingSystemGetter);
+
+    JSHandle<JSTaggedValue> languageGetter = CreateGetter(env, Locale::GetLanguage, "language", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledLanguageString(), languageGetter);
+
+    JSHandle<JSTaggedValue> scriptGetter = CreateGetter(env, Locale::GetScript, "script", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledScriptString(), scriptGetter);
+
+    JSHandle<JSTaggedValue> regionGetter = CreateGetter(env, Locale::GetRegion, "region", FunctionLength::ZERO);
+    SetGetter(localePrototype, thread_->GlobalConstants()->GetHandledRegionString(), regionGetter);
+
+    // 10.3.2 Intl.Locale.prototype[ @@toStringTag ]
+    SetStringTagSymbol(env, localePrototype, "Intl.Locale");
+    env->SetLocaleFunction(thread_, localeFunction);
+}
+
+void Builtins::InitializeCollator(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // Collator.prototype
+    JSHandle<JSTaggedValue> objFun = env->GetObjectFunction();
+    JSHandle<JSObject> collatorPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> collatorPrototypeValue(collatorPrototype);
+
+    // Collator.prototype_or_dynclass
+    JSHandle<JSHClass> collatorFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSCollator::SIZE, JSType::JS_COLLATOR, collatorPrototypeValue);
+
+    // Collator = new Function()
+    // 11.1.2 Intl.Collator.prototype.constructor
+    JSHandle<JSObject> collatorFunction(
+        NewIntlConstructor(env, collatorPrototype, Collator::CollatorConstructor, "Collator", FunctionLength::ZERO));
+    JSHandle<JSFunction>(collatorFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*collatorFuncInstanceDynclass));
+
+    // 11.2.2 Intl.Collator.supportedLocalesOf ( locales [ , options ] )
+    SetFunction(env, collatorFunction, "supportedLocalesOf", Collator::SupportedLocalesOf, FunctionLength::ONE);
+
+    // Collator.prototype method
+    // 11.3.2 Intl.Collator.prototype [ @@toStringTag ]
+    SetStringTagSymbol(env, collatorPrototype, "Intl.Collator");
+    env->SetCollatorFunction(thread_, collatorFunction);
+
+    // 11.3.3 get Intl.Collator.prototype.compare
+    JSHandle<JSTaggedValue> compareGetter = CreateGetter(env, Collator::Compare, "compare", FunctionLength::ZERO);
+    JSHandle<JSTaggedValue> compareSetter(thread_, JSTaggedValue::Undefined());
+    SetAccessor(collatorPrototype, thread_->GlobalConstants()->GetHandledCompareString(), compareGetter, compareSetter);
+
+    // 11.3.4 Intl.Collator.prototype.resolvedOptions ()
+    SetFunction(env, collatorPrototype, "resolvedOptions", Collator::ResolvedOptions, FunctionLength::ZERO);
+}
+
+void Builtins::InitializePluralRules(const JSHandle<GlobalEnv> &env)
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // PluralRules.prototype
+    JSHandle<JSTaggedValue> objFun(env->GetObjectFunction());
+    JSHandle<JSObject> prPrototype = factory_->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    JSHandle<JSTaggedValue> prPrototypeValue(prPrototype);
+
+    // PluralRules.prototype_or_dynclass
+    JSHandle<JSHClass> prFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSPluralRules::SIZE, JSType::JS_PLURAL_RULES, prPrototypeValue);
+
+    // PluralRules = new Function()
+    // 15.2.1 Intl.PluralRules.prototype.constructor
+    JSHandle<JSObject> prFunction(
+        NewIntlConstructor(env, prPrototype, PluralRules::PluralRulesConstructor, "PluralRules", FunctionLength::ZERO));
+    JSHandle<JSFunction>(prFunction)->SetFunctionPrototype(thread_, JSTaggedValue(*prFuncInstanceDynclass));
+
+    // 15.3.2 Intl.PluralRules.supportedLocalesOf ( locales [ , options ] )
+    SetFunction(env, prFunction, "supportedLocalesOf", PluralRules::SupportedLocalesOf, FunctionLength::ONE);
+
+    // PluralRules.prototype method
+    // 15.4.2 Intl.PluralRules.prototype [ @@toStringTag ]
+    SetStringTagSymbol(env, prPrototype, "Intl.PluralRules");
+    env->SetPluralRulesFunction(thread_, prFunction);
+
+    // 15.4.3 get Intl.PluralRules.prototype.select
+    SetFunction(env, prPrototype, "select", PluralRules::Select, FunctionLength::ONE);
+
+    // 15.4.5 Intl.PluralRules.prototype.resolvedOptions ()
+    SetFunction(env, prPrototype, "resolvedOptions", PluralRules::ResolvedOptions, FunctionLength::ZERO);
 }
 
 void Builtins::InitializeJSNativeObject(const JSHandle<GlobalEnv> &env) const

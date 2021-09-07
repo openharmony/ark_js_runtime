@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_HELPER_H
+#ifndef ECMASCRIPT_NAPI_JSNAPI_HELPER_H
+#define ECMASCRIPT_NAPI_JSNAPI_HELPER_H
 
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_handle.h"
@@ -61,7 +61,7 @@
 namespace panda {
 class JSNApiHelper {
 public:
-    template <typename T>
+    template<typename T>
     static inline Local<T> ToLocal(ecmascript::JSHandle<ecmascript::JSTaggedValue> from);
 
     static inline ecmascript::JSTaggedValue ToJSTaggedValue(JSValueRef *from);
@@ -77,4 +77,4 @@ public:
     static ecmascript::JSTaggedValue RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCallInfo *info);
 };
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSNAPI_JSNAPI_HELPER_H
+#endif  // ECMASCRIPT_NAPI_JSNAPI_HELPER_H

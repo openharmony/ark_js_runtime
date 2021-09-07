@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_OBJECT_FACTORY_H
-#define PANDA_RUNTIME_ECMASCRIPT_OBJECT_FACTORY_H
+#ifndef ECMASCRIPT_OBJECT_FACTORY_H
+#define ECMASCRIPT_OBJECT_FACTORY_H
 
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/ecma_string.h"
@@ -24,6 +24,7 @@
 #include "ecmascript/js_native_object.h"
 #include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/ecma_heap_manager.h"
 #include "ecmascript/mem/region_factory.h"
 #include "ecmascript/object_wrapper.h"
@@ -81,6 +82,7 @@ class ConstantPool;
 class Program;
 class EcmaModule;
 class LayoutInfo;
+class JSIntlBoundFunction;
 class FreeObject;
 class JSNativePointer;
 
@@ -94,6 +96,7 @@ class PropertyBox;
 class ProtoChangeMarker;
 class ProtoChangeDetails;
 class ProfileTypeInfo;
+class MachineCode;
 
 enum class PrimitiveType : uint8_t;
 enum class IterationKind;
@@ -117,9 +120,9 @@ public:
 
     JSHandle<JSObject> NewJSError(const ErrorType &errorType, const JSHandle<EcmaString> &message);
 
-    TransitionHandler *NewTransitionHandler();
+    JSHandle<TransitionHandler> NewTransitionHandler();
 
-    PrototypeHandler *NewPrototypeHandler();
+    JSHandle<PrototypeHandler> NewPrototypeHandler();
 
     JSHandle<JSObject> NewEmptyJSObject();
 
@@ -141,6 +144,8 @@ public:
     JSHandle<JSBoundFunction> NewJSBoundFunction(const JSHandle<JSFunctionBase> &target,
                                                  const JSHandle<JSTaggedValue> &boundThis,
                                                  const JSHandle<TaggedArray> &args);
+
+    JSHandle<JSIntlBoundFunction> NewJSIntlBoundFunction(const void *nativeFunc = nullptr, int functionLength = 1);
 
     JSHandle<JSProxyRevocFunction> NewJSProxyRevocFunction(const JSHandle<JSProxy> &proxy,
                                                            const void *nativeFunc = nullptr);
@@ -247,26 +252,6 @@ public:
 
     JSHandle<LayoutInfo> CopyAndReSort(const JSHandle<LayoutInfo> &old, int end, int capacity);
 
-    JSHandle<EcmaString> NewFromString(const CString &data);
-
-    JSHandle<EcmaString> NewFromStdString(const std::string &data);
-
-    JSHandle<EcmaString> NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len);
-
-    JSHandle<EcmaString> NewFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len);
-
-    JSHandle<EcmaString> NewFromUtf8Literal(const uint8_t *utf8Data, uint32_t utf8Len);
-
-    JSHandle<EcmaString> NewFromUtf16Literal(const uint16_t *utf16Data, uint32_t utf16Len);
-
-    JSHandle<EcmaString> NewFromString(EcmaString *str);
-
-    JSHandle<EcmaString> ConcatFromString(const JSHandle<EcmaString> &prefix, const JSHandle<EcmaString> &suffix);
-
-    JSHandle<EcmaString> ConcatFromChar(const char *prefix, const char *suffix);
-
-    JSHandle<EcmaString> SubString(const JSHandle<EcmaString> &src, uint32_t start, uint32_t utf16_length);
-
     JSHandle<EcmaString> GetEmptyString() const;
 
     JSHandle<TaggedArray> EmptyArray() const;
@@ -321,14 +306,14 @@ public:
 
     void NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, void *buffer, size_t size);
 
-    template <typename T, typename S>
+    template<typename T, typename S>
     inline void NewJSIntlIcuData(const JSHandle<T> &obj, const S &icu, const DeleteEntryPoint &callback);
 
     EcmaString *InternString(const JSHandle<JSTaggedValue> &key);
 
     inline JSHandle<JSNativePointer> NewJSNativePointer(void *externalPointer, bool nonMovable = false);
-    inline JSHandle<JSNativePointer> NewJSNativePointer(void *externalPointer, DeleteEntryPoint callBack, void *data,
-                                                        bool nonMovable = false);
+    inline JSHandle<JSNativePointer> NewJSNativePointer(void *externalPointer, const DeleteEntryPoint &callBack,
+                                                        void *data, bool nonMovable = false);
 
     JSHandle<JSObject> NewJSObjectByClass(const JSHandle<TaggedArray> &keys, const JSHandle<TaggedArray> &values);
     JSHandle<JSObject> NewJSObjectByClass(const JSHandle<TaggedArray> &properties, size_t length);
@@ -350,10 +335,33 @@ public:
                                                 const JSHandle<JSTaggedValue> &newTarget);
 
     uintptr_t NewSpaceBySnapShotAllocator(size_t size);
+    JSHandle<MachineCode> NewMachineCodeObject(size_t length, const uint8_t *data);
     JSHandle<JSNativeObject> NewJSNativeObject(void *externalPointer);
     JSHandle<JSNativeObject> NewJSNativeObject(void *externalPointer, DeleteEntryPoint callback, void *data);
 
     ~ObjectFactory() = default;
+
+    // ----------------------------------- new string ----------------------------------------
+    JSHandle<EcmaString> NewFromString(const CString &data);
+    JSHandle<EcmaString> NewFromCanBeCompressString(const CString &data);
+
+    JSHandle<EcmaString> NewFromStdString(const std::string &data);
+    JSHandle<EcmaString> NewFromStdStringUnCheck(const std::string &data, bool canBeCompress);
+
+    JSHandle<EcmaString> NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len);
+    JSHandle<EcmaString> NewFromUtf8UnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
+
+    JSHandle<EcmaString> NewFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len);
+    JSHandle<EcmaString> NewFromUtf16UnCheck(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
+
+    JSHandle<EcmaString> NewFromUtf8Literal(const uint8_t *utf8Data, uint32_t utf8Len);
+    JSHandle<EcmaString> NewFromUtf8LiteralUnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
+
+    JSHandle<EcmaString> NewFromUtf16Literal(const uint16_t *utf16Data, uint32_t utf16Len);
+    JSHandle<EcmaString> NewFromUtf16LiteralUnCheck(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
+
+    JSHandle<EcmaString> NewFromString(EcmaString *str);
+    JSHandle<EcmaString> ConcatFromString(const JSHandle<EcmaString> &prefix, const JSHandle<EcmaString> &suffix);
 
 private:
     friend class GlobalEnv;
@@ -363,49 +371,50 @@ private:
 
     void InitObjectFields(const TaggedObject *object);
 
-    JSThread *thread_{nullptr};
-    bool isTriggerGc_{false};
-    bool triggerSemiGC_{false};
+    JSThread *thread_ {nullptr};
+    bool isTriggerGc_ {false};
+    bool triggerSemiGC_ {false};
     EcmaHeapManager heapHelper_;
 
-    JSHClass *hclassClass_{nullptr};
-    JSHClass *stringClass_{nullptr};
-    JSHClass *arrayClass_{nullptr};
-    JSHClass *dictionaryClass_{nullptr};
-    JSHClass *freeObjectWithNoneFieldClass_{nullptr};
-    JSHClass *freeObjectWithOneFieldClass_{nullptr};
-    JSHClass *freeObjectWithTwoFieldClass_{nullptr};
+    JSHClass *hclassClass_ {nullptr};
+    JSHClass *stringClass_ {nullptr};
+    JSHClass *arrayClass_ {nullptr};
+    JSHClass *dictionaryClass_ {nullptr};
+    JSHClass *freeObjectWithNoneFieldClass_ {nullptr};
+    JSHClass *freeObjectWithOneFieldClass_ {nullptr};
+    JSHClass *freeObjectWithTwoFieldClass_ {nullptr};
 
-    JSHClass *completionRecordClass_{nullptr};
-    JSHClass *generatorContextClass_{nullptr};
-    JSHClass *envClass_{nullptr};
-    JSHClass *symbolClass_{nullptr};
-    JSHClass *accessorDataClass_{nullptr};
-    JSHClass *internalAccessorClass_{nullptr};
-    JSHClass *capabilityRecordClass_{nullptr};
-    JSHClass *reactionsRecordClass_{nullptr};
-    JSHClass *promiseIteratorRecordClass_{nullptr};
-    JSHClass *microJobQueueClass_{nullptr};
-    JSHClass *pendingJobClass_{nullptr};
-    JSHClass *jsProxyOrdinaryClass_{nullptr};
-    JSHClass *jsProxyCallableClass_{nullptr};
-    JSHClass *jsProxyConstructClass_{nullptr};
-    JSHClass *objectWrapperClass_{nullptr};
-    JSHClass *PropertyBoxClass_{nullptr};
-    JSHClass *protoChangeDetailsClass_{nullptr};
-    JSHClass *protoChangeMarkerClass_{nullptr};
-    JSHClass *promiseRecordClass_{nullptr};
-    JSHClass *promiseResolvingFunctionsRecord_{nullptr};
-    JSHClass *jsNativePointerClass_{nullptr};
-    JSHClass *transitionHandlerClass_{nullptr};
-    JSHClass *prototypeHandlerClass_{nullptr};
-    JSHClass *functionExtraInfo_{nullptr};
-    JSHClass *jsRealmClass_{nullptr};
-    JSHClass *programClass_{nullptr};
-    JSHClass *ecmaModuleClass_{nullptr};
+    JSHClass *completionRecordClass_ {nullptr};
+    JSHClass *generatorContextClass_ {nullptr};
+    JSHClass *envClass_ {nullptr};
+    JSHClass *symbolClass_ {nullptr};
+    JSHClass *accessorDataClass_ {nullptr};
+    JSHClass *internalAccessorClass_ {nullptr};
+    JSHClass *capabilityRecordClass_ {nullptr};
+    JSHClass *reactionsRecordClass_ {nullptr};
+    JSHClass *promiseIteratorRecordClass_ {nullptr};
+    JSHClass *microJobQueueClass_ {nullptr};
+    JSHClass *pendingJobClass_ {nullptr};
+    JSHClass *jsProxyOrdinaryClass_ {nullptr};
+    JSHClass *jsProxyCallableClass_ {nullptr};
+    JSHClass *jsProxyConstructClass_ {nullptr};
+    JSHClass *objectWrapperClass_ {nullptr};
+    JSHClass *PropertyBoxClass_ {nullptr};
+    JSHClass *protoChangeDetailsClass_ {nullptr};
+    JSHClass *protoChangeMarkerClass_ {nullptr};
+    JSHClass *promiseRecordClass_ {nullptr};
+    JSHClass *promiseResolvingFunctionsRecord_ {nullptr};
+    JSHClass *jsNativePointerClass_ {nullptr};
+    JSHClass *transitionHandlerClass_ {nullptr};
+    JSHClass *prototypeHandlerClass_ {nullptr};
+    JSHClass *functionExtraInfo_ {nullptr};
+    JSHClass *jsRealmClass_ {nullptr};
+    JSHClass *programClass_ {nullptr};
+    JSHClass *machineCodeClass_ {nullptr};
+    JSHClass *ecmaModuleClass_ {nullptr};
 
-    EcmaVM *vm_{nullptr};
-    Heap *heap_{nullptr};
+    EcmaVM *vm_ {nullptr};
+    Heap *heap_ {nullptr};
 
     NO_COPY_SEMANTIC(ObjectFactory);
     NO_MOVE_SEMANTIC(ObjectFactory);
@@ -436,11 +445,12 @@ private:
     JSHandle<JSPrimitiveRef> NewJSPrimitiveRef(const JSHandle<JSHClass> &dynKlass,
                                                const JSHandle<JSTaggedValue> &object);
 
-    JSHandle<EcmaString> GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len) const;
+    JSHandle<EcmaString> GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress) const;
     // For MUtf-8 string data
     EcmaString *GetRawStringFromStringTable(const uint8_t *mutf8Data, uint32_t utf16Len) const;
 
-    JSHandle<EcmaString> GetStringFromStringTable(const uint16_t *utf16Data, uint32_t utf16Len) const;
+    JSHandle<EcmaString> GetStringFromStringTable(const uint16_t *utf16Data, uint32_t utf16Len,
+                                                  bool canBeCompress) const;
 
     JSHandle<EcmaString> GetStringFromStringTable(EcmaString *string) const;
 
@@ -452,10 +462,10 @@ private:
     JSHandle<JSHClass> CreateJSArrayInstanceClass(JSHandle<JSTaggedValue> proto);
     JSHandle<JSHClass> CreateJSRegExpInstanceClass(JSHandle<JSTaggedValue> proto);
 
-    friend class Builtins;                  // create builtins object need dynclass
-    friend class JSFunction;                // create prototype_or_dynclass need dynclass
-    friend class JSHClass;                  // HC transition need dynclass
-    friend class EcmaVM;                    // hold the factory instance
+    friend class Builtins;    // create builtins object need dynclass
+    friend class JSFunction;  // create prototype_or_dynclass need dynclass
+    friend class JSHClass;    // HC transition need dynclass
+    friend class EcmaVM;      // hold the factory instance
     friend class JsVerificationTest;
     friend class PandaFileTranslator;
     friend class LiteralDataExtractor;
@@ -463,8 +473,8 @@ private:
 
 class ClassLinkerFactory {
 private:
-    friend class GlobalEnv;                 // root class in class_linker need dynclass
-    friend class EcmaVM;                    // root class in class_linker need dynclass
+    friend class GlobalEnv;  // root class in class_linker need dynclass
+    friend class EcmaVM;     // root class in class_linker need dynclass
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_OBJECT_FACTORY_H
+#endif  // ECMASCRIPT_OBJECT_FACTORY_H

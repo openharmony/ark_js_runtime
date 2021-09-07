@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSGLOBALOBJECT_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSGLOBALOBJECT_H
+#ifndef ECMASCRIPT_JSGLOBALOBJECT_H
+#define ECMASCRIPT_JSGLOBALOBJECT_H
 
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
@@ -34,4 +34,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSGLOBALOBJECT_H
+#endif  // ECMASCRIPT_JSGLOBALOBJECT_H

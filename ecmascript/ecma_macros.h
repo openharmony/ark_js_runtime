@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_ECMA_MACROS_H
-#define PANDA_RUNTIME_ECMASCRIPT_ECMA_MACROS_H
+#ifndef ECMASCRIPT_ECMA_MACROS_H
+#define ECMASCRIPT_ECMA_MACROS_H
 
 #include "ecmascript/common.h"
 #include "ecmascript/ecma_vm.h"
@@ -55,7 +55,7 @@
         /*       dynamically-typed languages like JavaScript. So we simply skip the read-barrier.          */ \
         return JSTaggedValue(Barriers::GetDynValue<JSTaggedType>(this, offset));                              \
     }                                                                                                         \
-    template <typename T>                                                                                     \
+    template<typename T>                                                                                     \
     void Set##name(const JSThread *thread, JSHandle<T> value, BarrierMode mode = WRITE_BARRIER)               \
     {                                                                                                         \
         if (mode == WRITE_BARRIER) {                                                                          \
@@ -236,7 +236,7 @@
             THROW_TYPE_ERROR_AND_RETURN(thread, "Not a Date Object", JSTaggedValue::Exception());     \
         }                                                                                             \
         if (std::isnan(JSDate::Cast(msg->GetTaggedObject())->GetTimeValue().GetDouble())) {           \
-            return thread->GetEcmaVM()->GetFactory()->NewFromString("Invalid Date").GetTaggedValue(); \
+            return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Invalid Date").GetTaggedValue(); \
         }                                                                                             \
         return JSDate::Cast(msg->GetTaggedObject())->name(thread);                                    \
     }
@@ -313,34 +313,31 @@
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define RETURN_REJECT_PROMISE_IF_ABRUPT(thread, value, capability)                                   \
-    do {                                                                                             \
-        ObjectFactory *objectFactory = thread->GetEcmaVM()->GetFactory();                            \
-        const GlobalEnvConstants *globalConst = thread->GlobalConstants();                           \
-        if (value.GetTaggedValue().IsCompletionRecord()) {                                           \
-            JSHandle<CompletionRecord> record = JSHandle<CompletionRecord>::Cast(value);             \
-            if (record->IsThrow()) {                                                                 \
-                JSHandle<JSTaggedValue> reject(thread, capability->GetReject());                     \
-                array_size_t length = 1;                                                             \
-                JSHandle<TaggedArray> array = objectFactory->NewTaggedArray(length);                 \
-                array->Set(thread, 0, record->GetValue());                                           \
-                JSHandle<JSTaggedValue> undefine = globalConst->GetHandledUndefined();               \
-                JSTaggedValue taggedValue = JSFunction::Call(thread, reject, undefine, array);       \
-                RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, taggedValue);                              \
-                return capability->GetPromise();                                                     \
-            }                                                                                        \
-        }                                                                                            \
-        if (thread->HasPendingException()) {                                                         \
-            thread->ClearException();                                                                \
-            JSHandle<JSTaggedValue> reject(thread, capability->GetReject());                         \
-            array_size_t length = 1;                                                                 \
-            JSHandle<TaggedArray> array = objectFactory->NewTaggedArray(length);                     \
-            array->Set(thread, 0, value);                                                            \
-            JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();                  \
-            JSTaggedValue taggedValue = JSFunction::Call(thread, reject, undefined, array);          \
-            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, taggedValue);                                  \
-            return capability->GetPromise();                                                         \
-        }                                                                                            \
+#define RETURN_REJECT_PROMISE_IF_ABRUPT(thread, value, capability)                                 \
+    do {                                                                                           \
+        const GlobalEnvConstants *globalConst = thread->GlobalConstants();                         \
+        if (value.GetTaggedValue().IsCompletionRecord()) {                                         \
+            JSHandle<CompletionRecord> record = JSHandle<CompletionRecord>::Cast(value);           \
+            if (record->IsThrow()) {                                                               \
+                JSHandle<JSTaggedValue> reject(thread, capability->GetReject());                   \
+                JSHandle<JSTaggedValue> undefine = globalConst->GetHandledUndefined();             \
+                InternalCallParams *arg = thread->GetInternalCallParams();                         \
+                arg->MakeArgv(record->GetValue());                                                 \
+                JSTaggedValue res = JSFunction::Call(thread, reject, undefine, 1, arg->GetArgv()); \
+                RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, res);                                    \
+                return capability->GetPromise();                                                   \
+            }                                                                                      \
+        }                                                                                          \
+        if (thread->HasPendingException()) {                                                       \
+            thread->ClearException();                                                              \
+            JSHandle<JSTaggedValue> reject(thread, capability->GetReject());                       \
+            JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();                \
+            InternalCallParams *arg = thread->GetInternalCallParams();                             \
+            arg->MakeArgv(value);                                                                  \
+            JSTaggedValue res = JSFunction::Call(thread, reject, undefined, 1, arg->GetArgv());    \
+            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, res);                                        \
+            return capability->GetPromise();                                                       \
+        }                                                                                          \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -399,4 +396,4 @@
         visitor(this, ObjectSlot(ToUintPtr(this) + BEGIN_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE)); \
     }
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_ECMA_MACROS_H
+#endif  // ECMASCRIPT_ECMA_MACROS_H

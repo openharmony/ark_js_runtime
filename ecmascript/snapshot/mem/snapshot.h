@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMASCRIPT_MEM_SNAPSHOT_H
-#define PANDA_ECMASCRIPT_MEM_SNAPSHOT_H
+#ifndef ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_H
+#define ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_H
 
 #include "libpandabase/macros.h"
 #include "libpandafile/file.h"
@@ -52,4 +52,4 @@ private:
     EcmaVM *vm_;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_ECMASCRIPT_MEM_SNAPSHOT_H
+#endif  // ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_H

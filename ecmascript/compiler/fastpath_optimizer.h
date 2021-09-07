@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_FASTPATH_OPTIMIZER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_FASTPATH_OPTIMIZER_H
+#ifndef ECMASCRIPT_COMPILER_FASTPATH_OPTIMIZER_H
+#define ECMASCRIPT_COMPILER_FASTPATH_OPTIMIZER_H
 
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/compiler/stub_optimizer.h"
@@ -69,4 +69,4 @@ private:
     std::array<StubOptimizer *, FAST_STUB_MAXNUMBER> fastRuntimeOptimizers_;
 };
 }  // namespace kungfu
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_FASTPATH_OPTIMIZER_H
+#endif  // ECMASCRIPT_COMPILER_FASTPATH_OPTIMIZER_H

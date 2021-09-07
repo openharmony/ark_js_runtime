@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMA_VM_H
-#define PANDA_RUNTIME_ECMA_VM_H
+#ifndef ECMASCRIPT_ECMA_VM_H
+#define ECMASCRIPT_ECMA_VM_H
 
 #include <tuple>
 
@@ -55,7 +55,7 @@ namespace job {
 class MicroJobQueue;
 }  // namespace job
 
-template <typename T>
+template<typename T>
 class JSHandle;
 class JSArrayBuffer;
 class JSFunction;
@@ -253,7 +253,7 @@ public:
     JSHandle<ecmascript::JSTaggedValue> GetEcmaUncaughtException() const;
     void EnableUserUncaughtErrorHandler();
 
-    template <typename Callback>
+    template<typename Callback>
     void EnumeratePandaFiles(Callback cb) const
     {
         for (const auto &iter : pandaFileWithProgram_) {
@@ -263,7 +263,7 @@ public:
         }
     }
 
-    template <typename Callback>
+    template<typename Callback>
     void EnumerateProgram(Callback cb, std::string pandaFile) const
     {
         for (const auto &iter : pandaFileWithProgram_) {
@@ -318,11 +318,6 @@ public:
     ModuleManager *GetModuleManager() const
     {
         return moduleManager_;
-    }
-
-    CAddressAllocator<JSTaggedType> *GetCountAllocator() const
-    {
-        return allocator_;
     }
 
     static constexpr uint32_t GetGlobalEnvOffset()
@@ -388,7 +383,6 @@ private:
     EcmaStringTable *stringTable_;
     std::unique_ptr<RegionFactory> regionFactory_;
     Chunk chunk_;
-    CAddressAllocator<JSTaggedType> *allocator_{nullptr};
     ChunkVector<JSMethod *> nativeMethods_;
     bool icEnable_{true};
     GCStats *gcStats_ = nullptr;

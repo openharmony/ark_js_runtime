@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
+#ifndef ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
+#define ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
 
 #include "ecmascript/mem/semi_space_collector.h"
 #include "ecmascript/mem/mem.h"
@@ -84,4 +84,4 @@ bool SemiSpaceCollector::BlowAgeMark(uintptr_t address)
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
+#endif  // ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TRANSITIONS_DICTIONARY_H
-#define PANDA_RUNTIME_ECMASCRIPT_TRANSITIONS_DICTIONARY_H
+#ifndef ECMASCRIPT_TRANSITIONS_DICTIONARY_H
+#define ECMASCRIPT_TRANSITIONS_DICTIONARY_H
 
 #include "ecmascript/tagged_hash_table-inl.h"
 #include "ecmascript/js_symbol.h"

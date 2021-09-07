@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_GC_MARKER_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_GC_MARKER_INL_H
+#ifndef ECMASCRIPT_MEM_COMPRESS_GC_MARKER_INL_H
+#define ECMASCRIPT_MEM_COMPRESS_GC_MARKER_INL_H
 
 #include "ecmascript/mem/compress_collector.h"
 #include "ecmascript/mem/compress_gc_marker.h"
@@ -22,7 +22,7 @@
 #include "ecmascript/mem/tlab_allocator-inl.h"
 
 namespace panda::ecmascript {
-static constexpr int HEAD_SIZE = TaggedObject::ObjectHeaderSize();
+static constexpr int HEAD_SIZE = TaggedObject::TaggedObjectSize();
 
 inline CompressGCMarker::CompressGCMarker(CompressCollector *compressCollector) : collector_(compressCollector) {}
 
@@ -87,4 +87,4 @@ inline void CompressGCMarker::CopyObjectWithoutHeader(TaggedObject *object, uint
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_GC_MARKER_INL_H
+#endif  // ECMASCRIPT_MEM_COMPRESS_GC_MARKER_INL_H

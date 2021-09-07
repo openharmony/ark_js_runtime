@@ -12,13 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_STUB_INTERFACE_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_STUB_INTERFACE_H
+#ifndef ECMASCRIPT_COMPILER_STUB_INTERFACE_H
+#define ECMASCRIPT_COMPILER_STUB_INTERFACE_H
+
+#include <array>
+#include <memory>
 
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/compiler/machine_type.h"
-#include "ecmascript/js_handle.h"
-#include "ecmascript/mem/code.h"
+#include "libpandabase/macros.h"
 #include "llvm-c/Types.h"
 
 namespace kungfu {
@@ -28,32 +30,64 @@ enum ArgumentsOrder {
 
 class StubInterfaceDescriptor {
 public:
+    enum CallStubKind {
+        CODE_STUB,
+        RUNTIME_STUB,
+    };
     explicit StubInterfaceDescriptor(int flags, int paramCounter, ArgumentsOrder order, MachineType returnType)
         : flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
     {
     }
-    explicit StubInterfaceDescriptor(int flags, int paramCounter, ArgumentsOrder order, MachineType returnType,
-                                     MachineType *paramsType)
-        : flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
-    {
-        paramsType_ = paramsType;
-    }
     StubInterfaceDescriptor() = default;
-    ~StubInterfaceDescriptor()
+    ~StubInterfaceDescriptor() = default;
+    StubInterfaceDescriptor(StubInterfaceDescriptor const &other)
     {
-        if (paramsType_ != nullptr) {
-            delete paramsType_;
+        flags_ = other.flags_;
+        paramCounter_ = other.paramCounter_;
+        order_ = other.order_;
+        kind_ = other.kind_;
+        returnType_ = other.returnType_;
+        if (paramCounter_ > 0 && other.paramsType_ != nullptr) {
+            paramsType_ = std::make_unique<std::vector<MachineType>>(paramCounter_);
+            for (int i = 0; i < paramCounter_; i++) {
+                (*paramsType_)[i] = other.GetParametersType()[i];
+            }
         }
+    }
+
+    StubInterfaceDescriptor &operator=(StubInterfaceDescriptor const &other)
+    {
+        flags_ = other.flags_;
+        paramCounter_ = other.paramCounter_;
+        order_ = other.order_;
+        kind_ = other.kind_;
+        returnType_ = other.returnType_;
+        if (paramCounter_ > 0 && other.paramsType_ != nullptr) {
+            paramsType_ = std::make_unique<std::vector<MachineType>>(paramCounter_);
+            for (int i = 0; i < paramCounter_; i++) {
+                (*paramsType_)[i] = other.GetParametersType()[i];
+            }
+        }
+        return *this;
     }
 
     void SetParameters(MachineType *paramsType)
     {
-        paramsType_ = paramsType;
+        if (paramCounter_ > 0 && paramsType_ == nullptr) {
+            paramsType_ = std::make_unique<std::vector<MachineType>>(paramCounter_);
+            for (int i = 0; i < paramCounter_; i++) {
+                (*paramsType_)[i] = paramsType[i];
+            }
+        }
     }
 
     MachineType *GetParametersType() const
     {
-        return paramsType_;
+        if (paramsType_ != nullptr) {
+            return paramsType_->data();
+        } else {
+            return nullptr;
+        }
     }
 
     int GetParametersCount() const
@@ -76,39 +110,24 @@ public:
         return flags_;
     }
 
+    CallStubKind GetStubKind() const
+    {
+        return kind_;
+    }
+
+    void SetStubKind(CallStubKind kind)
+    {
+        kind_ = kind;
+    }
+
 private:
+    CallStubKind kind_{CODE_STUB};
     int flags_{0};
     int paramCounter_{0};
     ArgumentsOrder order_{DEFAULT_ORDER};
 
     MachineType returnType_{MachineType::NONE_TYPE};
-    MachineType *paramsType_{nullptr};
-};
-
-class StubInterface final {
-public:
-    explicit StubInterface(panda::ecmascript::JSHandle<panda::ecmascript::Code> code,
-                           StubInterfaceDescriptor *descriptor)
-        : code_(code), descriptor_(descriptor)
-    {
-    }
-    virtual ~StubInterface() = default;
-    DEFAULT_COPY_SEMANTIC(StubInterface);
-    DEFAULT_MOVE_SEMANTIC(StubInterface);
-
-    panda::ecmascript::JSHandle<panda::ecmascript::Code> GetCode() const
-    {
-        return code_;
-    }
-
-    StubInterfaceDescriptor *GetDescriptor() const
-    {
-        return descriptor_;
-    }
-
-private:
-    panda::ecmascript::JSHandle<panda::ecmascript::Code> code_;
-    StubInterfaceDescriptor *descriptor_;
+    std::unique_ptr<std::vector<MachineType>> paramsType_{nullptr};
 };
 
 class CallStubsImplement {
@@ -117,17 +136,10 @@ public:
     virtual ~CallStubsImplement() = default;
     NO_MOVE_SEMANTIC(CallStubsImplement);
     NO_COPY_SEMANTIC(CallStubsImplement);
-    enum CallStubName {
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEF_FAST_STUB(name, counter) NAME_##name,
-        CALL_STUB_LIST(DEF_FAST_STUB)
-#undef DEF_FAST_STUB
-            CALL_STUB_MAXCOUNT,
-    };
-
     virtual void Initialize() = 0;
     virtual void *GetFastStub(int index) = 0;
     virtual void SetFastStub(int index, void *code) = 0;
+    virtual void *GetRunTimeLLVMType(int index) = 0;
     virtual void *GetModule() = 0;
 };
 
@@ -140,6 +152,8 @@ public:
     void Initialize() override;
     void *GetFastStub(int index) override;
     void SetFastStub(int index, void *code) override;
+
+    void *GetRunTimeLLVMType(int index) override;
     void *GetModule() override
     {
         return reinterpret_cast<void *>(stubsModule_);
@@ -147,10 +161,11 @@ public:
 
 private:
     std::array<LLVMValueRef, CALL_STUB_MAXCOUNT> llvmCallStubs_{nullptr};
+    std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> llvm_fuction_type_{nullptr};
     LLVMModuleRef stubsModule_{nullptr};
 };
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FAST_STUB_ID(name) CallStubsImplement::NAME_##name
+#define FAST_STUB_ID(name) NAME_##name
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GET_STUBDESCRIPTOR(name) FastStubs::GetInstance().GetStubDescriptor(FAST_STUB_ID(name))
 
@@ -168,6 +183,11 @@ public:
     {
         InitializeStubDescriptors();
         stubsImpl_->Initialize();
+    }
+
+    void *GetRunTimeLLVMType(int index)
+    {
+        return stubsImpl_->GetRunTimeLLVMType(index);
     }
 
     void *GetFastStub(int index) const
@@ -200,7 +220,7 @@ private:
     NO_MOVE_SEMANTIC(FastStubs);
     NO_COPY_SEMANTIC(FastStubs);
     std::unique_ptr<CallStubsImplement> stubsImpl_{nullptr};
-    std::array<StubInterfaceDescriptor, CallStubsImplement::CALL_STUB_MAXCOUNT> callStubsDescriptor_{};
+    std::array<StubInterfaceDescriptor, CALL_STUB_MAXCOUNT> callStubsDescriptor_{};
 };
 }  // namespace kungfu
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_STUB_INTERFACE_H
+#endif  // ECMASCRIPT_COMPILER_STUB_INTERFACE_H

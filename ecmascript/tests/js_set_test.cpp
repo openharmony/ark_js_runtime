@@ -86,7 +86,7 @@ HWTEST_F_L0(JSSetTest, AddAndHas)
     // create jsSet
     JSHandle<JSSet> set(thread, CreateSet());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("key"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("key"));
     JSSet::Add(thread, set, key);
     EXPECT_TRUE(set->Has(key.GetTaggedValue()));
 }
@@ -101,14 +101,14 @@ HWTEST_F_L0(JSSetTest, DeleteAndGet)
     char keyArray[] = "key0";
     for (int i = 0; i < 40; i++) {
         keyArray[3] = '1' + i;
-        JSHandle<JSTaggedValue> key(factory->NewFromString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
         JSSet::Add(thread, set, key);
         EXPECT_TRUE(set->Has(key.GetTaggedValue()));
     }
     EXPECT_EQ(set->GetSize(), 40);
     // whether jsSet has delete key
     keyArray[3] = '1' + 8;
-    JSHandle<JSTaggedValue> deleteKey(factory->NewFromString(keyArray));
+    JSHandle<JSTaggedValue> deleteKey(factory->NewFromCanBeCompressString(keyArray));
     JSSet::Delete(thread, set, deleteKey);
     EXPECT_FALSE(set->Has(deleteKey.GetTaggedValue()));
     EXPECT_EQ(set->GetSize(), 39);

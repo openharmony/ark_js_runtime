@@ -97,9 +97,9 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
             for (uint32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> result = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<CallFrame> callFrame = CallFrame::Create(ecmaVm, result);
-                if (result.IsEmpty() || callFrame == nullptr) {
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<CallFrame> callFrame = CallFrame::Create(ecmaVm, resultValue);
+                if (resultValue.IsEmpty() || callFrame == nullptr) {
                     error += "'callFrames' format invalid;";
                 }
                 paused->callFrames_.emplace_back(std::move(callFrame));
@@ -137,8 +137,8 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
             for (uint32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> result = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                if (result.IsEmpty()) {
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                if (resultValue.IsEmpty()) {
                     error += "'hitBreakpoints' format invalid;";
                 }
                 breakPoints.emplace_back(DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString()));
@@ -171,8 +171,8 @@ Local<ObjectRef> Paused::ToObject(const EcmaVM *ecmaVm)
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reason")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, reason_.c_str())));
     if (data_) {
-        params->Set(
-            ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "data")), Local<JSValueRef>(data_.value()));
+        params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "data")),
+            Local<JSValueRef>(data_.value()));
     }
     if (hitBreakpoints_) {
         len = hitBreakpoints_->size();
@@ -301,8 +301,8 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     } else {
         error += "should contain 'hash';";
     }
-    result = Local<ObjectRef>(params)->Get(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
     if (!result.IsEmpty()) {
         if (result->IsObject()) {
             scriptEvent->execContextAuxData_ = Local<ObjectRef>(result);
@@ -384,15 +384,15 @@ Local<ObjectRef> ScriptFailedToParse::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")), IntegerRef::New(ecmaVm, startLine_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")),
+        IntegerRef::New(ecmaVm, startLine_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")),
         IntegerRef::New(ecmaVm, startColumn_));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")), IntegerRef::New(ecmaVm, endLine_));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")), IntegerRef::New(ecmaVm, endColumn_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")),
+        IntegerRef::New(ecmaVm, endLine_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")),
+        IntegerRef::New(ecmaVm, endColumn_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")),
         IntegerRef::New(ecmaVm, executionContextId_));
@@ -540,8 +540,8 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     } else {
         error += "should contain 'hash';";
     }
-    result = Local<ObjectRef>(params)->Get(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
     if (!result.IsEmpty()) {
         if (result->IsObject()) {
             scriptEvent->execContextAuxData_ = Local<ObjectRef>(result);
@@ -631,15 +631,15 @@ Local<ObjectRef> ScriptParsed::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, url_.c_str())));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")), IntegerRef::New(ecmaVm, startLine_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")),
+        IntegerRef::New(ecmaVm, startLine_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")),
         IntegerRef::New(ecmaVm, startColumn_));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")), IntegerRef::New(ecmaVm, endLine_));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")), IntegerRef::New(ecmaVm, endColumn_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")),
+        IntegerRef::New(ecmaVm, endLine_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")),
+        IntegerRef::New(ecmaVm, endColumn_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")),
         IntegerRef::New(ecmaVm, executionContextId_));

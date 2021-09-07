@@ -52,13 +52,13 @@ public:
         return reinterpret_cast<void *>(result);
     }
 
-    template <class T>
+    template<class T>
     [[nodiscard]] T *NewArray(size_t size)
     {
         return static_cast<T *>(Allocate(size * sizeof(T)));
     }
 
-    template <typename T, typename... Args>
+    template<typename T, typename... Args>
     [[nodiscard]] T *New(Args &&... args)
     {
         auto p = reinterpret_cast<void *>(Allocate(sizeof(T)));
@@ -66,7 +66,7 @@ public:
         return reinterpret_cast<T *>(p);
     }
 
-    template <class T>
+    template<class T>
     void Delete(T *ptr)
     {
         ASSERT(ptr != nullptr);

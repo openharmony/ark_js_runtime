@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMMON_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMMON_H
+#ifndef ECMASCRIPT_COMMON_H
+#define ECMASCRIPT_COMMON_H
 
 #include "libpandabase/macros.h"
 
@@ -27,11 +27,11 @@ constexpr size_t NUM_MANDATORY_JSFUNC_ARGS = 3;
 #define PUBLIC_API PANDA_PUBLIC_API
 
 #ifdef NDEBUG
-#define DUMP_API_ATTR
+#define DUMP_API_ATTR __attribute__((unused))
 #else
 #define DUMP_API_ATTR __attribute__((visibility ("default"), used))
 #endif
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMMON_H
+#endif  // ECMASCRIPT_COMMON_H

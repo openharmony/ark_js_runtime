@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSDATE_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSDATE_H
+#ifndef ECMASCRIPT_JSDATE_H
+#define ECMASCRIPT_JSDATE_H
 
 #include <array>
 
@@ -193,4 +193,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSDATE_H
+#endif  // ECMASCRIPT_JSDATE_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_INVOKE_H
-#define PANDA_RUNTIME_ECMASCRIPT_INVOKE_H
+#ifndef ECMASCRIPT_INVOKE_H
+#define ECMASCRIPT_INVOKE_H
 
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
@@ -41,13 +41,13 @@ public:
     NO_COPY_SEMANTIC(JsInvoker);
     NO_MOVE_SEMANTIC(JsInvoker);
 
-    template <class T>
+    template<class T>
     void AddArgument(const JSHandle<T> &arg)
     {
         args_.emplace_back(JSHandle<JSTaggedValue>(arg));
     }
 
-    template <class T>
+    template<class T>
     void AddArgument(JSHandle<T> &&arg)
     {
         args_.emplace_back(std::move(arg));
@@ -60,7 +60,7 @@ private:
 };
 
 JSTaggedValue InvokeJsFunction(JSThread *thread, const JSHandle<JSFunction> &func, const JSHandle<JSTaggedValue> &obj,
-                               const JSHandle<JSTaggedValue> &newTgt, const JSHandle<TaggedArray> &args);
+                               const JSHandle<JSTaggedValue> &newTgt, InternalCallParams *arguments);
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_INVOKE_H
+#endif  // ECMASCRIPT_INVOKE_H

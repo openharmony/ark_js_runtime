@@ -56,17 +56,17 @@ public:
 
 HWTEST_F_L0(JSPrimitiveRefTest, StringCreate)
 {
-    JSHandle<JSTaggedValue> hello(thread->GetEcmaVM()->GetFactory()->NewFromString("hello"));
+    JSHandle<JSTaggedValue> hello(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("hello"));
     JSHandle<JSObject> str(JSPrimitiveRef::StringCreate(thread, hello));
 
-    JSHandle<JSTaggedValue> idx(thread->GetEcmaVM()->GetFactory()->NewFromString("0"));
+    JSHandle<JSTaggedValue> idx(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0"));
     bool status = JSPrimitiveRef::HasProperty(thread, str, idx);
     ASSERT_TRUE(status);
 
     PropertyDescriptor desc(thread);
     status = JSPrimitiveRef::GetOwnProperty(thread, str, idx, desc);
     ASSERT_TRUE(status);
-    JSHandle<EcmaString> h = thread->GetEcmaVM()->GetFactory()->NewFromString("h");
+    JSHandle<EcmaString> h = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("h");
     JSHandle<EcmaString> h2 = JSTaggedValue::ToString(thread, desc.GetValue());
     ASSERT_TRUE(h->Compare(*h2) == 0);
 }

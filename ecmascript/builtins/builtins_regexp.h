@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_REGEXP_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_REGEXP_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_REGEXP_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_REGEXP_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/builtins/builtins_string.h"
@@ -160,4 +160,4 @@ private:
     static constexpr int ENTRY_SIZE = 5;
 };
 }  // namespace panda::ecmascript::builtins
-#endif  // PANDA_RUNTIME_ECMASCRIPT_REGEXP_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_REGEXP_H

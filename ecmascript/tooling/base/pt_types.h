@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_TYPES_H
-#define PANDA_TOOLING_ECMASCRIPT_TYPES_H
+#ifndef ECMASCRIPT_TOOLING_BASE_PT_TYPES_H
+#define ECMASCRIPT_TOOLING_BASE_PT_TYPES_H
 
 #include <memory>
 #include <optional>
@@ -386,8 +386,8 @@ public:
             .SetClassName(classname)
             .SetDescription(DescriptionForObject(ecmaVm, tagged));
     }
-    explicit ObjectRemoteObject(
-        const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const CString &classname, const CString &subtype)
+    explicit ObjectRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged, const CString &classname,
+        const CString &subtype)
     {
         SetType(RemoteObject::TypeName::Object)
             .SetSubType(subtype)
@@ -680,8 +680,8 @@ public:
     PropertyDescriptor() = default;
     ~PropertyDescriptor() override = default;
 
-    static std::unique_ptr<PropertyDescriptor> FromProperty(
-        const EcmaVM *ecmaVm, const Local<JSValueRef> &name, const PropertyAttribute &property);
+    static std::unique_ptr<PropertyDescriptor> FromProperty(const EcmaVM *ecmaVm, const Local<JSValueRef> &name,
+        const PropertyAttribute &property);
     static std::unique_ptr<PropertyDescriptor> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 

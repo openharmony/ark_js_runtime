@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_GLOBAL_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_GLOBAL_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_GLOBAL_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_GLOBAL_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/js_thread.h"
@@ -44,7 +44,7 @@ public:
     static JSTaggedValue PrintEntrypoint(EcmaRuntimeCallInfo *msg);
     static JSTaggedValue CallJsBoundFunction(EcmaRuntimeCallInfo *msg);
     static JSTaggedValue CallJsProxy(EcmaRuntimeCallInfo *msg);
-#ifdef PANDA_ECMASCRIPT_ENABLE_RUNTIME_STAT
+#if ECMASCRIPT_ENABLE_RUNTIME_STAT
     static JSTaggedValue StartRuntimeStat(EcmaRuntimeCallInfo *msg);
     static JSTaggedValue StopRuntimeStat(EcmaRuntimeCallInfo *msg);
 #endif
@@ -64,4 +64,4 @@ private:
 };
 }  // namespace panda::ecmascript::builtins
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ERROR_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_ERROR_H

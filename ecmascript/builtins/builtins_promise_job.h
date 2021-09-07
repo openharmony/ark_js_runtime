@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_PROMISE_JOB_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_PROMISE_JOB_H
+#ifndef ECMASCRIPT_JS_PROMISE_JOB_H
+#define ECMASCRIPT_JS_PROMISE_JOB_H
 
 #include "ecmascript/base/builtins_base.h"
 
@@ -25,4 +25,4 @@ public:
     static JSTaggedValue PromiseResolveThenableJob(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_PROMISE_JOB_H
+#endif  // ECMASCRIPT_JS_PROMISE_JOB_H

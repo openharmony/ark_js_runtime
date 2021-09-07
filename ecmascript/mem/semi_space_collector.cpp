@@ -280,6 +280,7 @@ void SemiSpaceCollector::SweepPhases()
         return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
     };
     stringTable->SweepWeakReference(gcUpdateWeak);
+    heap_->GetEcmaVM()->GetJSThread()->IterateWeakEcmaGlobalStorage(gcUpdateWeak);
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
 }
 }  // namespace panda::ecmascript

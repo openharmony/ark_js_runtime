@@ -12,8 +12,7 @@
       "inner_kits": [],
       "system_kits": [],
       "test_list": [
-        "//ark/js_runtime:ark_js_unittest",
-        "//ark/js_runtime:ark_js_host_unittest"
+        "//ark/js_runtime:ark_js_unittest"
       ]
     }
   }

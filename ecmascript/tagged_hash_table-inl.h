@@ -13,64 +13,64 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_HASH_TABLE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_HASH_TABLE_INL_H
+#ifndef ECMASCRIPT_TAGGED_HASH_TABLE_INL_H
+#define ECMASCRIPT_TAGGED_HASH_TABLE_INL_H
 
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/tagged_hash_table.h"
 
 namespace panda::ecmascript {
-template <typename Derived>
+template<typename Derived>
 int TaggedHashTable<Derived>::EntriesCount() const
 {
     return Get(NUMBER_OF_ENTRIES_INDEX).GetInt();
 }
 
-template <typename Derived>
+template<typename Derived>
 int TaggedHashTable<Derived>::HoleEntriesCount() const
 {
     return Get(NUMBER_OF_HOLE_ENTRIES_INDEX).GetInt();
 }
 
-template <typename Derived>
+template<typename Derived>
 int TaggedHashTable<Derived>::Size() const
 {
     return Get(SIZE_INDEX).GetInt();
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::IncreaseEntries(const JSThread *thread)
 {
     SetEntriesCount(thread, EntriesCount() + 1);
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::IncreaseHoleEntriesCount(const JSThread *thread, int number)
 {
     SetEntriesCount(thread, EntriesCount() - number);
     SetHoleEntriesCount(thread, HoleEntriesCount() + number);
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::SetEntriesCount(const JSThread *thread, int nof)
 {
     Set(thread, NUMBER_OF_ENTRIES_INDEX, JSTaggedValue(nof));
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::SetHoleEntriesCount(const JSThread *thread, int nod)
 {
     Set(thread, NUMBER_OF_HOLE_ENTRIES_INDEX, JSTaggedValue(nod));
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::SetHashTableSize(const JSThread *thread, int size)
 {
     Set(thread, SIZE_INDEX, JSTaggedValue(size));
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::GetAllKeys(const JSThread *thread, int offset, TaggedArray *keyArray) const
 {
     ASSERT_PRINT(offset + EntriesCount() <= static_cast<int>(keyArray->GetLength()),
@@ -87,7 +87,7 @@ void TaggedHashTable<Derived>::GetAllKeys(const JSThread *thread, int offset, Ta
 }
 
 // Find entry for key otherwise return -1.
-template <typename Derived>
+template<typename Derived>
 int TaggedHashTable<Derived>::FindEntry(const JSTaggedValue &key)
 {
     size_t size = Size();
@@ -111,7 +111,7 @@ int TaggedHashTable<Derived>::FindEntry(const JSTaggedValue &key)
 }
 
 // static
-template <typename Derived>
+template<typename Derived>
 int TaggedHashTable<Derived>::RecalculateTableSize(int currentSize, int atLeastSize)
 {
     // When the filled entries is greater than a quart of currentSize
@@ -130,7 +130,7 @@ int TaggedHashTable<Derived>::RecalculateTableSize(int currentSize, int atLeastS
 }
 
 // static
-template <typename Derived>
+template<typename Derived>
 Derived *TaggedHashTable<Derived>::Shrink(const JSThread *thread, const JSHandle<Derived> &table, int additionalSize)
 {
     int newSize = RecalculateTableSize(table->Size(), table->EntriesCount() + additionalSize);
@@ -144,7 +144,7 @@ Derived *TaggedHashTable<Derived>::Shrink(const JSThread *thread, const JSHandle
     return newTable;
 }
 
-template <typename Derived>
+template<typename Derived>
 bool TaggedHashTable<Derived>::IsNeedGrowHashTable(int numOfAddEntries)
 {
     int entriesCount = EntriesCount();
@@ -164,7 +164,7 @@ bool TaggedHashTable<Derived>::IsNeedGrowHashTable(int numOfAddEntries)
     return true;
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::AddElement(const JSThread *thread, int entry, const JSHandle<JSTaggedValue> &key,
                                           const JSHandle<JSTaggedValue> &value)
 {
@@ -173,7 +173,7 @@ void TaggedHashTable<Derived>::AddElement(const JSThread *thread, int entry, con
     this->IncreaseEntries(thread);
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::RemoveElement(const JSThread *thread, int entry)
 {
     JSTaggedValue defaultValue(JSTaggedValue::Hole());
@@ -182,7 +182,7 @@ void TaggedHashTable<Derived>::RemoveElement(const JSThread *thread, int entry)
     this->IncreaseHoleEntriesCount(thread);
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *TaggedHashTable<Derived>::Insert(const JSThread *thread, JSHandle<Derived> &table,
                                           const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
 {
@@ -199,7 +199,7 @@ Derived *TaggedHashTable<Derived>::Insert(const JSThread *thread, JSHandle<Deriv
     return newTable;
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *TaggedHashTable<Derived>::Remove(const JSThread *thread, JSHandle<Derived> &table,
                                           const JSHandle<JSTaggedValue> &key)
 {
@@ -212,7 +212,7 @@ Derived *TaggedHashTable<Derived>::Remove(const JSThread *thread, JSHandle<Deriv
     return Derived::Shrink(thread, table);
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::Rehash(const JSThread *thread, Derived *newTable)
 {
     if ((newTable == nullptr) || (newTable->Size() < EntriesCount())) {
@@ -240,7 +240,7 @@ void TaggedHashTable<Derived>::Rehash(const JSThread *thread, Derived *newTable)
 }
 
 // static
-template <typename Derived>
+template<typename Derived>
 int TaggedHashTable<Derived>::ComputeHashTableSize(uint32_t atLeastSize)
 {
     //  increase size for hash-collision
@@ -249,7 +249,7 @@ int TaggedHashTable<Derived>::ComputeHashTableSize(uint32_t atLeastSize)
     return (newSize > MIN_SIZE) ? newSize : MIN_SIZE;
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *TaggedHashTable<Derived>::GrowHashTable(const JSThread *thread, const JSHandle<Derived> &table,
                                                  int numOfAddedElements)
 {
@@ -264,7 +264,7 @@ Derived *TaggedHashTable<Derived>::GrowHashTable(const JSThread *thread, const J
     return newTable;
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *TaggedHashTable<Derived>::Create(const JSThread *thread, int entriesCount)
 {
     ASSERT_PRINT((entriesCount > 0), "the size must be greater than zero");
@@ -280,7 +280,7 @@ Derived *TaggedHashTable<Derived>::Create(const JSThread *thread, int entriesCou
     return table;
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::SetKey(const JSThread *thread, int entry, const JSTaggedValue &key)
 {
     int index = Derived::GetKeyIndex(entry);
@@ -290,7 +290,7 @@ void TaggedHashTable<Derived>::SetKey(const JSThread *thread, int entry, const J
     Set(thread, index, key);
 }
 
-template <typename Derived>
+template<typename Derived>
 JSTaggedValue TaggedHashTable<Derived>::GetKey(int entry) const
 {
     int index = Derived::GetKeyIndex(entry);
@@ -300,7 +300,7 @@ JSTaggedValue TaggedHashTable<Derived>::GetKey(int entry) const
     return Get(index);
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::SetValue(const JSThread *thread, int entry, const JSTaggedValue &value)
 {
     int index = Derived::GetValueIndex(entry);
@@ -310,7 +310,7 @@ void TaggedHashTable<Derived>::SetValue(const JSThread *thread, int entry, const
     Set(thread, index, value);
 }
 
-template <typename Derived>
+template<typename Derived>
 JSTaggedValue TaggedHashTable<Derived>::GetValue(int entry) const
 {
     int index = Derived::GetValueIndex(entry);
@@ -320,7 +320,7 @@ JSTaggedValue TaggedHashTable<Derived>::GetValue(int entry) const
     return Get(index);
 }
 
-template <typename Derived>
+template<typename Derived>
 int TaggedHashTable<Derived>::FindInsertIndex(int hash)
 {
     int size = Size();
@@ -333,7 +333,7 @@ int TaggedHashTable<Derived>::FindInsertIndex(int hash)
     }
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *OrderTaggedHashTable<Derived>::Create(const JSThread *thread, int numberOfElements)
 {
     Derived *dict = HashTableT::Create(thread, numberOfElements);
@@ -341,7 +341,7 @@ Derived *OrderTaggedHashTable<Derived>::Create(const JSThread *thread, int numbe
     return dict;
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *OrderTaggedHashTable<Derived>::PutIfAbsent(const JSThread *thread, const JSHandle<Derived> &table,
                                                     const JSHandle<JSTaggedValue> &key,
                                                     const JSHandle<JSTaggedValue> &value,
@@ -369,7 +369,7 @@ Derived *OrderTaggedHashTable<Derived>::PutIfAbsent(const JSThread *thread, cons
     return newTable;
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *OrderTaggedHashTable<Derived>::Put(const JSThread *thread, const JSHandle<Derived> &table,
                                             const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
                                             const PropertyAttributes &metaData)
@@ -395,7 +395,7 @@ Derived *OrderTaggedHashTable<Derived>::Put(const JSThread *thread, const JSHand
     return newTable;
 }
 
-template <typename Derived>
+template<typename Derived>
 void TaggedHashTable<Derived>::GetAllKeysIntoVector(const JSThread *thread, std::vector<JSTaggedValue> &vector) const
 {
     int capacity = Size();
@@ -407,7 +407,7 @@ void TaggedHashTable<Derived>::GetAllKeysIntoVector(const JSThread *thread, std:
     }
 }
 
-template <typename Derived>
+template<typename Derived>
 Derived *OrderTaggedHashTable<Derived>::Remove(const JSThread *thread, const JSHandle<Derived> &table, int entry)
 {
     if (!(table->IsKey(table->GetKey(entry)))) {
@@ -418,7 +418,7 @@ Derived *OrderTaggedHashTable<Derived>::Remove(const JSThread *thread, const JSH
     return Shrink(thread, table);
 }
 
-template <typename Derived>
+template<typename Derived>
 int OrderTaggedHashTable<Derived>::NextEnumerationIndex(const JSThread *thread)
 {
     int index = GetNextEnumerationIndex();
@@ -439,7 +439,7 @@ int OrderTaggedHashTable<Derived>::NextEnumerationIndex(const JSThread *thread)
     return index;
 }
 
-template <typename Derived>
+template<typename Derived>
 std::vector<int> OrderTaggedHashTable<Derived>::GetEnumerationOrder()
 {
     std::vector<int> result;
@@ -458,4 +458,4 @@ std::vector<int> OrderTaggedHashTable<Derived>::GetEnumerationOrder()
     return result;
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_HASH_TABLE_INL_H
+#endif  // ECMASCRIPT_TAGGED_HASH_TABLE_INL_H

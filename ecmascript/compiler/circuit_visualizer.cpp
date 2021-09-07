@@ -20,7 +20,7 @@ namespace kungfu {
 #ifndef NDEBUG
 void CircuitVisualizer::DumpDFG() {}
 
-void CircuitVisualizer::PrintGateVisit(const Gate *node, std::ostream &os, int depth, int indentation)
+void CircuitVisualizer::PrintGateVisit(Gate *node, std::ostream &os, int depth, int indentation)
 {
     for (int i = 0; i < indentation; ++i) {
         os << "---";
@@ -46,13 +46,13 @@ void CircuitVisualizer::PrintGateVisit(const Gate *node, std::ostream &os, int d
     }
 }
 
-void CircuitVisualizer::PrintGate(const Gate *node, int depth)
+void CircuitVisualizer::PrintGate(Gate *node, int depth)
 {
     PrintGateVisit(node, std::cout, depth, 0);
     std::flush(std::cout);
 }
 
-void CircuitVisualizer::PrintSingleGate(const Gate *node, std::ostream &os)
+void CircuitVisualizer::PrintSingleGate(Gate *node, std::ostream &os)
 {
     ASSERT(node != nullptr);
     (void)os;

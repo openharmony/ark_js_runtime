@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_FUNCTION_CACHE_H
-#define PANDA_RUNTIME_FUNCTION_CACHE_H
+#ifndef ECMASCRIPT_IC_FUNCTION_CACHE_H
+#define ECMASCRIPT_IC_FUNCTION_CACHE_H
 
 #include "ecmascript/js_function.h"
 #include "ecmascript/tagged_array.h"
+
 namespace panda {
 namespace ecmascript {
 class FunctionCache : public TaggedArray {
@@ -93,4 +94,4 @@ public:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_FUNCTION_CACHE_H
+#endif  // ECMASCRIPT_IC_FUNCTION_CACHE_H

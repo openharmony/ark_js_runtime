@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_WRAPPER_OBJECT_H
-#define PANDA_RUNTIME_ECMASCRIPT_WRAPPER_OBJECT_H
+#ifndef ECMASCRIPT_WRAPPER_OBJECT_H
+#define ECMASCRIPT_WRAPPER_OBJECT_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
@@ -28,10 +28,10 @@ public:
         return static_cast<ObjectWrapper *>(object);
     }
 
-    static constexpr size_t VALUE_OFFSET = ObjectHeaderSize();
+    static constexpr size_t VALUE_OFFSET = TaggedObjectSize();
     ACCESSORS(Value, VALUE_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT(VALUE_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_WRAPPER_OBJECT_H
+#endif  // ECMASCRIPT_WRAPPER_OBJECT_H

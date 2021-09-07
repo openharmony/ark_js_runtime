@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_DEBUG_TEST_TEST_UTIL_H
-#define PANDA_RUNTIME_DEBUG_TEST_TEST_UTIL_H
+#ifndef ECMASCRIPT_TOOLING_TEST_TEST_UTIL_H
+#define ECMASCRIPT_TOOLING_TEST_TEST_UTIL_H
 
 #include <climits>
 #include <cstdlib>
@@ -74,14 +74,14 @@ public:
 
     static bool WaitForExit()
     {
-        return WaitForEvent(
-            DebugEvent::VM_DEATH, []() REQUIRES(eventMutex_) { return lastEvent_ == DebugEvent::VM_DEATH; }, [] {});
+        return WaitForEvent(DebugEvent::VM_DEATH,
+            []() REQUIRES(eventMutex_) { return lastEvent_ == DebugEvent::VM_DEATH; }, [] {});
     }
 
     static bool WaitForInit()
     {
-        return WaitForEvent(
-            DebugEvent::VM_INITIALIZATION, []() REQUIRES(eventMutex_) { return initialized_; }, [] {});
+        return WaitForEvent(DebugEvent::VM_INITIALIZATION,
+            []() REQUIRES(eventMutex_) { return initialized_; }, [] {});
     }
 
     static void Event(DebugEvent event, PtThread ecmaVm = PtThread::NONE,
@@ -172,7 +172,7 @@ public:
     }
 
 private:
-    template <class Predicate, class OnSuccessAction>
+    template<class Predicate, class OnSuccessAction>
     static bool WaitForEvent(DebugEvent event, Predicate predicate, OnSuccessAction action)
     {
         os::memory::LockHolder holder(eventMutex_);
@@ -289,4 +289,4 @@ std::ostream &operator<<(std::ostream &out, std::nullptr_t);
         ASSERT_THREAD_VALID(suspended);                             \
     } while (0);
 }  // namespace panda::tooling::ecmascript::test
-#endif  // PANDA_RUNTIME_DEBUG_TEST_TEST_UTIL_H
+#endif  // ECMASCRIPT_TOOLING_TEST_TEST_UTIL_H

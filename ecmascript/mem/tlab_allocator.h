@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_TLAB_ALLOCATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_TLAB_ALLOCATOR_H
+#ifndef ECMASCRIPT_MEM_TLAB_ALLOCATOR_H
+#define ECMASCRIPT_MEM_TLAB_ALLOCATOR_H
 
 namespace panda::ecmascript {
 enum class SpaceAlloc : bool {
@@ -55,4 +55,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_TLAB_ALLOCATOR_H
+#endif  // ECMASCRIPT_MEM_TLAB_ALLOCATOR_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMA_RUNTIME_RUNTIME_STAT_H
-#define PANDA_ECMA_RUNTIME_RUNTIME_STAT_H
+#ifndef ECMASCRIPT_VMSTAT_RUNTIME_STAT_H
+#define ECMASCRIPT_VMSTAT_RUNTIME_STAT_H
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_thread.h"

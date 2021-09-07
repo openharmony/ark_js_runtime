@@ -28,7 +28,6 @@ using namespace panda::tooling::ecmascript;
 using namespace panda::tooling;
 
 namespace panda::test {
-
 class DebuggerCommandsTest : public testing::Test {
 public:
     static void SetUpTestCase()

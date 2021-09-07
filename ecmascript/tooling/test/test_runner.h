@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_DEBUG_TEST_TEST_RUNNER_H
-#define PANDA_RUNTIME_DEBUG_TEST_TEST_RUNNER_H
+#ifndef ECMASCRIPT_TOOLING_TEST_TEST_RUNNER_H
+#define ECMASCRIPT_TOOLING_TEST_TEST_RUNNER_H
 
 #include "ecmascript/tooling/test/test_util.h"
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
@@ -23,7 +23,7 @@
 namespace panda::tooling::ecmascript::test {
 class TestRunner : public PtHooks {
 public:
-    TestRunner(const char *test_name, EcmaVM *vm)
+    TestRunner(const char *test_name, const EcmaVM *vm)
     {
         backend_ = std::make_unique<JSBackend>(vm);
         test_name_ = test_name;
@@ -149,4 +149,4 @@ private:
 };
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // PANDA_RUNTIME_DEBUG_TEST_TEST_RUNNER_H
+#endif  // ECMASCRIPT_TOOLING_TEST_TEST_RUNNER_H

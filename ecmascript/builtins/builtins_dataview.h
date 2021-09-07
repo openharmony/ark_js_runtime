@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_DATAVIEW_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_DATAVIEW_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_DATAVIEW_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_DATAVIEW_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/js_dataview.h"
@@ -78,4 +78,4 @@ private:
 };
 }  // namespace panda::ecmascript::builtins
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BUILTINS_DATAVIEW_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_DATAVIEW_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_C_STRING_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_C_STRING_H
+#ifndef ECMASCRIPT_MEM_C_STRING_H
+#define ECMASCRIPT_MEM_C_STRING_H
 
 #include <sstream>
 #include <string>
@@ -44,7 +44,7 @@ CString ConvertToString(const std::string &str);
 CString ConvertToString(const ecmascript::EcmaString *s, StringConvertedUsage usage = StringConvertedUsage::PRINT);
 CString ConvertToString(ecmascript::JSTaggedValue key);
 
-template <class T>
+template<class T>
 std::enable_if_t<std::is_floating_point_v<T>, CString> FloatToCString(T number)
 {
     CStringStream strStream;
@@ -52,7 +52,7 @@ std::enable_if_t<std::is_floating_point_v<T>, CString> FloatToCString(T number)
     return strStream.str();
 }
 
-template <class T>
+template<class T>
 std::enable_if_t<std::is_integral_v<T>, CString> ToCString(T number)
 {
     if (number == 0) {
@@ -79,4 +79,4 @@ std::enable_if_t<std::is_integral_v<T>, CString> ToCString(T number)
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_C_STRING_H
+#endif  // ECMASCRIPT_MEM_C_STRING_H

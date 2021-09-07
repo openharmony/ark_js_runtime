@@ -13,20 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_FAST_RUNTIME_STUB_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_FAST_RUNTIME_STUB_INL_H
+#ifndef ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_INL_H
+#define ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_INL_H
 
 #include "ecmascript/interpreter/fast_runtime_stub.h"
 
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/object_factory-inl.h"
+#include "ecmascript/runtime_call_id.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 JSTaggedValue FastRuntimeStub::FastAdd(JSTaggedValue left, JSTaggedValue right)
@@ -106,7 +109,6 @@ JSTaggedValue FastRuntimeStub::FastEqual(JSTaggedValue left, JSTaggedValue right
     }
     if (left.IsNumber()) {
         if (left.IsInt() && right.IsInt()) {
-            // left != right
             return JSTaggedValue::False();
         }
     }
@@ -300,7 +302,7 @@ JSTaggedValue FastRuntimeStub::AddPropertyByIndex(JSThread *thread, JSTaggedValu
     return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
 }
 
-template <bool UseOwn>
+template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::GetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -346,7 +348,7 @@ JSTaggedValue FastRuntimeStub::GetPropertyByIndex(JSThread *thread, JSTaggedValu
     return JSTaggedValue::Undefined();
 }
 
-template <bool UseOwn>
+template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::GetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
     if (UNLIKELY(!key.IsNumber() && !key.IsStringOrSymbol())) {
@@ -371,9 +373,10 @@ JSTaggedValue FastRuntimeStub::GetPropertyByValue(JSThread *thread, JSTaggedValu
     return JSTaggedValue::Hole();
 }
 
-template <bool UseOwn>
+template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::GetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
+    INTERPRETER_TRACE(thread, GetPropertyByName);
     // no gc when return hole
     ASSERT(key.IsStringOrSymbol());
     JSTaggedValue holder = receiver;
@@ -425,7 +428,7 @@ JSTaggedValue FastRuntimeStub::GetPropertyByName(JSThread *thread, JSTaggedValue
     return JSTaggedValue::Undefined();
 }
 
-template <bool UseOwn>
+template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                                  JSTaggedValue value)
 {
@@ -497,7 +500,7 @@ JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue
     return AddPropertyByName(thread, receiver, key, value);
 }
 
-template <bool UseOwn>
+template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::SetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                   JSTaggedValue value)
 {
@@ -532,7 +535,7 @@ JSTaggedValue FastRuntimeStub::SetPropertyByIndex(JSThread *thread, JSTaggedValu
     return AddPropertyByIndex(thread, receiver, index, value);
 }
 
-template <bool UseOwn>
+template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::SetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                                   JSTaggedValue value)
 {
@@ -660,7 +663,7 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByValue(JSThread *thread, JSTagged
     return result;
 }
 
-template <bool UseHole>  // UseHole is only for Array::Sort() which requires Hole order
+template<bool UseHole>  // UseHole is only for Array::Sort() which requires Hole order
 JSTaggedValue FastRuntimeStub::FastGetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index)
 {
     JSTaggedValue result = GetPropertyByIndex(thread, receiver, index);
@@ -977,11 +980,10 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
         }
 
         JSHandle<JSTaggedValue> objHandle(thread, receiver);
-        JSHandle<JSTaggedValue> valueHandle(thread, value);
         JSHandle<JSTaggedValue> setFunc(thread, setter);
-        JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
-        args->Set(thread, 0, valueHandle);
-        JSFunction::Call(thread, setFunc, objHandle, args);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(value);
+        JSFunction::Call(thread, setFunc, objHandle, 1, arguments->GetArgv());
         // 10. ReturnIfAbrupt(setterResult).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
         return true;
@@ -1261,4 +1263,4 @@ JSTaggedValue FastRuntimeStub::HasOwnProperty(JSThread *thread, JSObject *obj, J
     return FastRuntimeStub::FindOwnProperty(thread, obj, key);
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_FAST_RUNTIME_STUB_INL_H
+#endif  // ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_INL_H

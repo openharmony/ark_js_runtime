@@ -60,7 +60,7 @@ double CStringToD(const CString &str)
     return result;
 }
 
-template <class T>
+template<class T>
 CString ConvertToString(T sp)
 {
     CString res;
@@ -96,7 +96,7 @@ CString ConvertToString(const EcmaString *s, StringConvertedUsage usage)
         return CString("");
     }
     if (s->IsUtf16()) {
-        // Should convert utf-16 to utf-8, because uint16_t likely greater than maxChar, will convert fail
+        // Should convert utf-16 to utf-8, because uint16_t likely great than maxChar, will convert fail
         bool modify = (usage != StringConvertedUsage::PRINT);
         size_t len = base::utf_helper::Utf16ToUtf8Size(s->GetDataUtf16(), s->GetLength(), modify) - 1;
         CVector<uint8_t> buf(len);

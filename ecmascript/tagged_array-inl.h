@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_ARRAY_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_ARRAY_INL_H
+#ifndef ECMASCRIPT_TAGGED_ARRAY_INL_H
+#define ECMASCRIPT_TAGGED_ARRAY_INL_H
 
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
@@ -53,7 +53,7 @@ inline array_size_t TaggedArray::GetIdx(const JSTaggedValue &value) const
     return TaggedArray::MAX_ARRAY_INDEX;
 }
 
-template <typename T>
+template<typename T>
 inline void TaggedArray::Set(const JSThread *thread, array_size_t idx, const JSHandle<T> &value)
 {
     ASSERT(idx < GetLength());
@@ -175,4 +175,4 @@ void TaggedArray::Trim(JSThread *thread, array_size_t newLength)
     SetLength(newLength);
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_ARRAY_INL_H
+#endif  // ECMASCRIPT_TAGGED_ARRAY_INL_H

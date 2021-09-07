@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cstdint>
 #include <filesystem>
 #include <unistd.h>
 
@@ -48,9 +49,9 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance {nullptr};
-    EcmaHandleScope *scope {nullptr};
-    JSThread *thread {nullptr};
+    PandaVM *instance{nullptr};
+    EcmaHandleScope *scope{nullptr};
+    JSThread *thread{nullptr};
 };
 
 HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
@@ -66,7 +67,7 @@ HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
         // 2 : parameter number
         LLVMAddFunction(module, "FastLoadElement", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
     LLVMDumpModule(module);
-    Environment fastEnv("FastLoadElement", 2); // 2 : parameter count
+    Environment fastEnv("FastLoadElement", 2);  // 2 : parameter count
     FastArrayLoadElementOptimizer optimizer(&fastEnv);
     optimizer.GenerateCircuit();
     auto netOfGates = fastEnv.GetCircuit();
@@ -118,12 +119,12 @@ public:
         StubOptimizerLabel ifFalse(env);
         StubOptimizerLabel next(env);
 
-        Branch(Word32Equal(*x, GetInteger32Constant(10)), &ifTrue, &ifFalse); // 10 : size of entry
+        Branch(Word32Equal(*x, GetInteger32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
         Bind(&ifTrue);
-        z = Int32Add(*x, GetInteger32Constant(10)); // 10 : size of entry
+        z = Int32Add(*x, GetInteger32Constant(10));  // 10 : size of entry
         Jump(&next);
-        Bind(&ifFalse);  // else
-        z = Int32Add(*x, GetInteger32Constant(100)); // 100 : size of entry
+        Bind(&ifFalse);                               // else
+        z = Int32Add(*x, GetInteger32Constant(100));  // 100 : size of entry
         Jump(&next);
         Bind(&next);
         Return(*z);
@@ -138,8 +139,7 @@ HWTEST_F_L0(StubOptimizerTest, PhiGateTest)
     LLVMTypeRef paramTys[] = {
         LLVMInt32Type(),
     };
-    LLVMValueRef function =
-        LLVMAddFunction(module, "PhiGateTest", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
+    LLVMValueRef function = LLVMAddFunction(module, "PhiGateTest", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
     Environment env("PhiGateTest", 1);
     StubPhiOptimizer optimizer(&env);
     optimizer.GenerateCircuit();
@@ -160,7 +160,7 @@ HWTEST_F_L0(StubOptimizerTest, PhiGateTest)
     auto engine = compiler.GetEngine();
     /* exec function */
     auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
-    auto val = fn(3); // 3 : size of array
+    auto val = fn(3);  // 3 : size of array
     auto val2 = fn(0);
     std::cout << "val = " << std::dec << val << std::endl;
     std::cout << "val2 = " << std::dec << val2 << std::endl;
@@ -183,7 +183,7 @@ public:
     {
         DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
         x = Int32Add(*x, GetInteger32Constant(1));
-        AddrShift callFoo = CallStub(&phi_descriptor_, GetWord64Constant(FAST_STUB_ID(PhiTest)), {*x});
+        AddrShift callFoo = CallStub(&phi_descriptor_, GetWord64Constant(0), {*x});
         Return(Int32Add(callFoo, GetInteger32Constant(1)));
     }
 
@@ -194,12 +194,16 @@ private:
 HWTEST_F_L0(StubOptimizerTest, CallPhiGateTest)
 {
     LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
-    LLVMValueRef function =  LLVMGetNamedFunction(module, "PhiTest");
+    LLVMTypeRef fooParamTys[] = {
+        LLVMInt32Type(),
+    };
+    LLVMValueRef function = LLVMAddFunction(module, "PhiTest", LLVMFunctionType(LLVMInt32Type(), fooParamTys, 1, 0));
     LLVMTypeRef barParamTys[] = {
         LLVMInt32Type(),
     };
-    LLVMValueRef barfunction = LLVMAddFunction(module, "CallPhiGateTest_bar",
-        LLVMFunctionType(LLVMInt32Type(), barParamTys, 1, 0));
+    FastStubs::GetInstance().SetFastStub(0, reinterpret_cast<void *>(function));
+    LLVMValueRef barfunction =
+        LLVMAddFunction(module, "CallPhiGateTest_bar", LLVMFunctionType(LLVMInt32Type(), barParamTys, 1, 0));
     Environment env("PhiTest", 1);
     StubPhiOptimizer optimizer(&env);
     optimizer.GenerateCircuit();
@@ -226,13 +230,13 @@ HWTEST_F_L0(StubOptimizerTest, CallPhiGateTest)
     LLVMMCJITCompiler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
-    auto *phiTestPointer = reinterpret_cast<int (*)(int)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+    auto *phiTestPointer =
+        reinterpret_cast<int (*)(int)>(reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
     LLVMAddGlobalMapping(engine, function, reinterpret_cast<void *>(phiTestPointer));
-    auto *barPointerbar = reinterpret_cast<int (*)(int)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, barfunction)));
-    std::cout << std::hex << "phiTestPointer:" << reinterpret_cast<uintptr_t>(phiTestPointer) <<
-        " barPointerbar:" << reinterpret_cast<uintptr_t>(barPointerbar) << std::endl;
+    auto *barPointerbar =
+        reinterpret_cast<int (*)(int)>(reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, barfunction)));
+    std::cout << std::hex << "phiTestPointer:" << reinterpret_cast<uintptr_t>(phiTestPointer)
+              << " barPointerbar:" << reinterpret_cast<uintptr_t>(barPointerbar) << std::endl;
     compiler.Disassemble();
     int result = barPointerbar(9);
     EXPECT_EQ(result, 21);
@@ -254,18 +258,18 @@ public:
         Label loopHead(env);
         Label loopEnd(env);
         Label afterLoop(env);
-        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopHead, &afterLoop); // 10 : size of entry
+        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
         LoopBegin(&loopHead);
         Label ifTrue(env);
         Label ifFalse(env);
         Label next(env);
-        Branch(Word32Equal(Int32Argument(0), GetInteger32Constant(9)), &ifTrue, &ifFalse); // 9 : size of entry
+        Branch(Word32Equal(Int32Argument(0), GetInteger32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
         Bind(&ifTrue);
-        z = Int32Add(*y, GetInteger32Constant(10)); // 10 : size of entry
+        z = Int32Add(*y, GetInteger32Constant(10));  // 10 : size of entry
         y = Int32Add(*z, GetInteger32Constant(1));
         Jump(&next);
         Bind(&ifFalse);
-        z = Int32Add(*y, GetInteger32Constant(100)); // 100 : size of entry
+        z = Int32Add(*y, GetInteger32Constant(100));  // 100 : size of entry
         Jump(&next);
         Bind(&next);
         y = Int32Add(*y, GetInteger32Constant(1));
@@ -307,8 +311,8 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest)
     /* exec function */
     auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
     auto resValid = fn(1);
-    auto resValid2 = fn(9); // 9 : size of array
-    auto resInvalid = fn(11); // 11 : size of array
+    auto resValid2 = fn(9);    // 9 : size of array
+    auto resInvalid = fn(11);  // 11 : size of array
     std::cout << "res for loop(1) = " << std::dec << resValid << std::endl;
     std::cout << "res for loop(9) = " << std::dec << resValid2 << std::endl;
     std::cout << "res for loop(11) = " << std::dec << resInvalid << std::endl;
@@ -329,18 +333,18 @@ public:
         Label loopHead(env);
         Label loopEnd(env);
         Label afterLoop(env);
-        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopHead, &afterLoop); // 10 : size of entry
+        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
         LoopBegin(&loopHead);
-        x = Int32Add(*z, GetInteger32Constant(3));   // 3 : size of entry
+        x = Int32Add(*z, GetInteger32Constant(3));  // 3 : size of entry
         Label ifTrue(env);
         Label next(env);
-        Branch(Word32Equal(*x, GetInteger32Constant(9)), &ifTrue, &next);   // 9 : size of entry
+        Branch(Word32Equal(*x, GetInteger32Constant(9)), &ifTrue, &next);  // 9 : size of entry
         Bind(&ifTrue);
         y = Int32Add(*z, *x);
         Jump(&next);
         Bind(&next);
         y = Int32Add(*y, GetInteger32Constant(1));
-        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopEnd, &afterLoop);   // 10 : size of entry
+        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
         Bind(&loopEnd);
         LoopEnd(&loopHead);
         Bind(&afterLoop);
@@ -377,8 +381,8 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest1)
     /* exec function */
     auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
     auto resValid = fn(1);
-    auto resValid2 = fn(9); // 9 : size of array
-    auto resInvalid = fn(11); // 11 : size of array
+    auto resValid2 = fn(9);    // 9 : size of array
+    auto resInvalid = fn(11);  // 11 : size of array
     std::cout << "res for loop1(1) = " << std::dec << resValid << std::endl;
     std::cout << "res for loop1(9) = " << std::dec << resValid2 << std::endl;
     std::cout << "res for loop1(11) = " << std::dec << resInvalid << std::endl;
@@ -395,6 +399,8 @@ public:
         auto env = GetEnvironment();
         AddrShift x = Int64Argument(0);
         AddrShift y = Int64Argument(1);
+        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
+        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
         StubOptimizerLabel ifTrue1(env);
         StubOptimizerLabel ifTrue2(env);
         StubOptimizerLabel ifFalse1(env);
@@ -423,8 +429,8 @@ public:
         intX = Int32Add(intX, intY);
         Jump(&next3);
         Bind(&ifFalse4);
-        AddrShift doubleY = TaggedCastToDouble(y);
-        AddrShift doubleX = CastInt32ToFloat64(intX);
+        doubleY = TaggedCastToDouble(y);
+        doubleX = CastInt32ToFloat64(intX);
         Jump(&next2);
         Bind(&ifFalse3);
         doubleX = TaggedCastToDouble(x);
@@ -443,8 +449,8 @@ public:
         Bind(&next1);
         Return(GetHoleConstant());
         Bind(&next2);
-        doubleX = DoubleAdd(doubleX, doubleY);
-        Return(DoubleBuildTagged(doubleX));
+        doubleX = DoubleAdd(*doubleX, *doubleY);
+        Return(DoubleBuildTagged(*doubleX));
         Bind(&next3);
         Return(IntBuildTagged(intX));
     }
@@ -481,8 +487,8 @@ HWTEST_F_L0(StubOptimizerTest, FastAddTest)
     /* exec function */
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
     auto resValid = fn(JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData());
-    auto resValid2 = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(2).GetRawData()); // 2 : test case
-    auto resInvalid = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData()); // 11 : test case
+    auto resValid2 = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(2).GetRawData());     // 2 : test case
+    auto resInvalid = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData());  // 11 : test case
     std::cout << "res for FastAdd(1, 1) = " << std::dec << resValid.GetNumber() << std::endl;
     std::cout << "res for FastAdd(2, 2) = " << std::dec << resValid2.GetNumber() << std::endl;
     std::cout << "res for FastAdd(11, 11) = " << std::dec << resInvalid.GetNumber() << std::endl;
@@ -499,6 +505,8 @@ public:
         auto env = GetEnvironment();
         AddrShift x = Int64Argument(0);
         AddrShift y = Int64Argument(1);
+        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
+        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
         StubOptimizerLabel ifTrue1(env);
         StubOptimizerLabel ifTrue2(env);
         StubOptimizerLabel ifFalse1(env);
@@ -527,8 +535,8 @@ public:
         intX = Int32Sub(intX, intY);
         Jump(&next3);
         Bind(&ifFalse4);
-        AddrShift doubleY = TaggedCastToDouble(y);
-        AddrShift doubleX = CastInt32ToFloat64(intX);
+        doubleY = TaggedCastToDouble(y);
+        doubleX = CastInt32ToFloat64(intX);
         Jump(&next2);
         Bind(&ifFalse3);
         doubleX = TaggedCastToDouble(x);
@@ -547,8 +555,8 @@ public:
         Bind(&next1);
         Return(GetHoleConstant());
         Bind(&next2);
-        doubleX = DoubleSub(doubleX, doubleY);
-        Return(DoubleBuildTagged(doubleX));
+        doubleX = DoubleSub(*doubleX, *doubleY);
+        Return(DoubleBuildTagged(*doubleX));
         Bind(&next3);
         Return(IntBuildTagged(intX));
     }
@@ -564,7 +572,7 @@ HWTEST_F_L0(StubOptimizerTest, FastSubTest)
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastSubTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
     LLVMDumpModule(module);
-    Environment env("FastSub", 2); // 2 : parameter
+    Environment env("FastSub", 2);  // 2 : parameter
     FastSubOptimizer optimizer(&env);
     optimizer.GenerateCircuit();
     auto netOfGates = env.GetCircuit();
@@ -584,9 +592,9 @@ HWTEST_F_L0(StubOptimizerTest, FastSubTest)
     auto engine = compiler.GetEngine();
     /* exec function */
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
-    auto resA = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(1).GetRawData()); // 2 : test case
-    auto resB = fn(JSTaggedValue(7).GetRawData(), JSTaggedValue(2).GetRawData()); // 7, 2 : test cases
-    auto resC = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData()); // 11 : test case
+    auto resA = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(1).GetRawData());    // 2 : test case
+    auto resB = fn(JSTaggedValue(7).GetRawData(), JSTaggedValue(2).GetRawData());    // 7, 2 : test cases
+    auto resC = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData());  // 11 : test case
     std::cout << "res for FastSub(2, 1) = " << std::dec << resA.GetNumber() << std::endl;
     std::cout << "res for FastSub(7, 2) = " << std::dec << resB.GetNumber() << std::endl;
     std::cout << "res for FastSub(11, 11) = " << std::dec << resC.GetNumber() << std::endl;
@@ -603,6 +611,8 @@ public:
         auto env = GetEnvironment();
         AddrShift x = Int64Argument(0);
         AddrShift y = Int64Argument(1);
+        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
+        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
         StubOptimizerLabel ifTrue1(env);
         StubOptimizerLabel ifTrue2(env);
         StubOptimizerLabel ifFalse1(env);
@@ -631,8 +641,8 @@ public:
         intX = Int32Mul(intX, intY);
         Jump(&next3);
         Bind(&ifFalse4);
-        AddrShift doubleY = TaggedCastToDouble(y);
-        AddrShift doubleX = CastInt32ToFloat64(intX);
+        doubleY = TaggedCastToDouble(y);
+        doubleX = CastInt32ToFloat64(intX);
         Jump(&next2);
         Bind(&ifFalse3);
         doubleX = TaggedCastToDouble(x);
@@ -651,8 +661,8 @@ public:
         Bind(&next1);
         Return(GetHoleConstant());
         Bind(&next2);
-        doubleX = DoubleMul(doubleX, doubleY);
-        Return(DoubleBuildTagged(doubleX));
+        doubleX = DoubleMul(*doubleX, *doubleY);
+        Return(DoubleBuildTagged(*doubleX));
         Bind(&next3);
         Return(IntBuildTagged(intX));
     }
@@ -668,7 +678,7 @@ HWTEST_F_L0(StubOptimizerTest, FastMulTest)
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastMulTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
     LLVMDumpModule(module);
-    Environment env("FastMul", 2); // 2 : parameter count
+    Environment env("FastMul", 2);  // 2 : parameter count
     FastMulOptimizer optimizer(&env);
     optimizer.GenerateCircuit();
     auto netOfGates = env.GetCircuit();
@@ -689,8 +699,8 @@ HWTEST_F_L0(StubOptimizerTest, FastMulTest)
 
     /* exec function */
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
-    auto resA = fn(JSTaggedValue(-2).GetRawData(), JSTaggedValue(1).GetRawData()); // -2 : test case
-    auto resB = fn(JSTaggedValue(-7).GetRawData(), JSTaggedValue(-2).GetRawData()); // -7, -2 : test case
+    auto resA = fn(JSTaggedValue(-2).GetRawData(), JSTaggedValue(1).GetRawData());   // -2 : test case
+    auto resB = fn(JSTaggedValue(-7).GetRawData(), JSTaggedValue(-2).GetRawData());  // -7, -2 : test case
     auto resC = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData());  // 11 : test case
     std::cout << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber() << std::endl;
     std::cout << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber() << std::endl;
@@ -708,6 +718,8 @@ public:
         auto env = GetEnvironment();
         AddrShift x = Int64Argument(0);
         AddrShift y = Int64Argument(1);
+        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
+        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
         StubOptimizerLabel ifTrue1(env);
         StubOptimizerLabel ifTrue2(env);
         StubOptimizerLabel ifFalse1(env);
@@ -732,7 +744,7 @@ public:
         Branch(TaggedIsInt(x), &ifTrue3, &ifFalse3);
         Bind(&ifTrue3);
         AddrShift intX = TaggedCastToInt32(x);
-        AddrShift doubleX = CastInt32ToFloat64(intX);
+        doubleX = CastInt32ToFloat64(intX);
         Jump(&next2);
         Bind(&ifFalse3);
         doubleX = TaggedCastToDouble(x);
@@ -747,31 +759,32 @@ public:
         Branch(TaggedIsInt(y), &ifTrue4, &ifFalse4);
         Bind(&ifTrue4);
         AddrShift intY = TaggedCastToInt32(y);
-        AddrShift doubleY = CastInt32ToFloat64(intY);
+        doubleY = CastInt32ToFloat64(intY);
         Jump(&next3);
         Bind(&ifFalse4);
         doubleY = TaggedCastToDouble(y);
         Jump(&next3);
         Bind(&next3);
-        Branch(DoubleEqual(doubleY, GetDoubleConstant(0.0)), &ifTrue5, &ifFalse5);
+        Branch(DoubleEqual(*doubleY, GetDoubleConstant(0.0)), &ifTrue5, &ifFalse5);
         Bind(&ifTrue5);
         // dLeft == 0.0 || std::isnan(dLeft)
-        Branch(TruncInt64ToInt1(Word64Or(SExtInt1ToInt64(DoubleEqual(doubleX, GetDoubleConstant(0.0))),
-            SExtInt32ToInt64(DoubleIsNAN(doubleX)))), &ifTrue6, &ifFalse6);
+        Branch(TruncInt64ToInt1(Word64Or(SExtInt1ToInt64(DoubleEqual(*doubleX, GetDoubleConstant(0.0))),
+                                         SExtInt32ToInt64(DoubleIsNAN(*doubleX)))),
+               &ifTrue6, &ifFalse6);
         Bind(&ifTrue6);
         Return(DoubleBuildTagged(GetDoubleConstant(base::NAN_VALUE)));
         Bind(&ifFalse6);
         Jump(&next4);
         Bind(&next4);
-        AddrShift taggedX = CastDoubleToInt64(doubleX);
-        AddrShift taggedY = CastDoubleToInt64(doubleY);
-        taggedX = Word64And(Word64Or(taggedX, taggedY), GetWord64Constant(base::DOUBLE_SIGN_MASK));
-        taggedX = Word64Or(taggedX, CastDoubleToInt64(GetDoubleConstant(base::POSITIVE_INFINITY)));
-        doubleX = TaggedCastToDouble(taggedX);
-        Return(DoubleBuildTagged(doubleX));
+        AddrShift intXTmp = CastDoubleToInt64(*doubleX);
+        AddrShift intYtmp = CastDoubleToInt64(*doubleY);
+        intXTmp = Word64And(Word64Xor(intXTmp, intYtmp), GetWord64Constant(base::DOUBLE_SIGN_MASK));
+        intXTmp = Word64Xor(intXTmp, CastDoubleToInt64(GetDoubleConstant(base::POSITIVE_INFINITY)));
+        doubleX = CastInt64ToFloat64(intXTmp);
+        Return(DoubleBuildTagged(*doubleX));
         Bind(&ifFalse5);
-        doubleX = DoubleDiv(doubleX, doubleY);
-        Return(DoubleBuildTagged(doubleX));
+        doubleX = DoubleDiv(*doubleX, *doubleY);
+        Return(DoubleBuildTagged(*doubleX));
     }
 };
 
@@ -1014,8 +1027,8 @@ public:
         Jump(&loopHead);
         LoopBegin(&loopHead);
         AddrShift objPtr = ChangeInt64ToPointer(receiver);
-        AddrShift callFindOwnElementVal = CallStub(&findOwnElementDescriptor,
-            GetWord64Constant(FAST_STUB_ID(FindOwnElement)), {objPtr, index});
+        AddrShift callFindOwnElementVal =
+            CallStub(&findOwnElementDescriptor, GetWord64Constant(FAST_STUB_ID(FindOwnElement)), {objPtr, index});
         Branch(TaggedIsHole(callFindOwnElementVal), &isHole, &notHole);
         Bind(&notHole);
         Return(callFindOwnElementVal);
@@ -1076,11 +1089,12 @@ public:
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
-        AddrShift elements = PtrArgument(0);
-        AddrShift index = Int32Argument(1);
-        AddrShift isDict = Int32Argument(2); // 2 : 3rd argument
-        AddrShift attr = PtrArgument(3); // 3 : 4th argument
-        AddrShift indexOrEntry = PtrArgument(4); // 4 : 5th argument
+        AddrShift thread = PtrArgument(0);
+        AddrShift elements = PtrArgument(1);
+        AddrShift index = Int32Argument(2);
+        AddrShift isDict = Int32Argument(3);
+        AddrShift attr = PtrArgument(4);
+        AddrShift indexOrEntry = PtrArgument(5);
         isDict = ZExtInt1ToInt32(isDict);
         Label notDictionary(env);
         Label isDictionary(env);
@@ -1088,8 +1102,8 @@ public:
         Branch(Word32Equal(isDict, GetInteger32Constant(0)), &notDictionary, &isDictionary);
         Bind(&notDictionary);
         {
-            AddrShift elementsLength = Load(UINT32_TYPE, elements,
-                GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
+            AddrShift elementsLength =
+                Load(UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
             Label outOfElements(env);
             Label notOutOfElements(env);
             Branch(Int32LessThanOrEqual(elementsLength, index), &outOfElements, &notOutOfElements);
@@ -1108,7 +1122,7 @@ public:
                 Bind(&notHole);
                 {
                     Store(UINT32_TYPE, attr, GetPtrConstant(0),
-                        GetInteger32Constant(PropertyAttributes::GetDefaultAttributes()));
+                          GetInteger32Constant(PropertyAttributes::GetDefaultAttributes()));
                     Store(UINT32_TYPE, indexOrEntry, GetPtrConstant(0), index);
                     Return(value);
                 }
@@ -1117,7 +1131,8 @@ public:
         Bind(&isDictionary);
         {
             Label afterFindElement(env);
-            AddrShift entry = FindElementFromNumberDictionary(elements, IntBuildTagged(index), &afterFindElement);
+            AddrShift entry =
+                FindElementFromNumberDictionary(thread, elements, IntBuildTagged(index), &afterFindElement);
             Label notNegtiveOne(env);
             Label negtiveOne(env);
             Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
@@ -1147,9 +1162,9 @@ public:
         AddrShift thread = PtrArgument(0);
         AddrShift receiver = PtrArgument(1);
         DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, receiver);
-        AddrShift index = Int32Argument(2); // 2 : 3rd argument
-        AddrShift value = Int64Argument(3); // 3 : 4th argument
-        AddrShift mayThrow = Int32Argument(4); // 4 : 5th argument
+        AddrShift index = Int32Argument(2);     // 2 : 3rd argument
+        AddrShift value = Int64Argument(3);     // 3 : 4th argument
+        AddrShift mayThrow = Int32Argument(4);  // 4 : 5th argument
         DEFVARIABLE(onPrototype, MachineType::BOOL_TYPE, FalseConstant());
 
         AddrShift pattr = Alloca(static_cast<int>(MachineRep::K_WORD32));
@@ -1162,7 +1177,7 @@ public:
             AddrShift isDictionary = IsDictionaryMode(elements);
             StubInterfaceDescriptor *findOwnElemnt2 = GET_STUBDESCRIPTOR(FindOwnElement2);
             AddrShift val = CallStub(findOwnElemnt2, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)),
-                                     {elements, index, isDictionary, pattr, pindexOrEntry});
+                                     {thread, elements, index, isDictionary, pattr, pindexOrEntry});
             Label notHole(env);
             Label isHole(env);
             Branch(TaggedIsNotHole(val), &notHole, &isHole);
@@ -1172,9 +1187,9 @@ public:
                 Label notOnProtoType(env);
                 Label afterOnProtoType(env);
                 Branch(*onPrototype, &isOnProtoType, &notOnProtoType);
-                Bind(&isOnProtoType);
-                Jump(&afterOnProtoType);
                 Bind(&notOnProtoType);
+                Jump(&afterOnProtoType);
+                Bind(&isOnProtoType);
                 {
                     Label isExtensible(env);
                     Label notExtensible(env);
@@ -1195,9 +1210,9 @@ public:
                     }
                     Bind(&nextExtensible);
                     StubInterfaceDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
-                    Return(CallStub(addElementInternal, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
-                                    {thread, receiver, index, value,
-                                     GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
+                    Return(CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
+                                       {thread, receiver, index, value,
+                                        GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
                 }
                 Bind(&afterOnProtoType);
                 {
@@ -1220,7 +1235,8 @@ public:
                             Bind(&notDict);
                             {
                                 StoreElement(elements, indexOrEntry, value);
-                                UpdateRepresention(LoadHClass(receiver), value);
+                                Label updateRepLabel(env);
+                                UpdateRepresention(LoadHClass(receiver), value, &updateRepLabel);
                                 Return(TrueConstant());
                             }
                             Bind(&isDict);
@@ -1244,8 +1260,8 @@ public:
                     {
                         StubInterfaceDescriptor *callsetter = GET_STUBDESCRIPTOR(CallSetter);
                         AddrShift setter = GetSetterFromAccessor(val);
-                        Return(CallStub(callsetter, GetWord64Constant(FAST_STUB_ID(CallSetter)),
-                            { thread, setter, receiver, value, TruncInt32ToInt1(mayThrow) }));
+                        Return(CallRuntime(callsetter, thread, GetWord64Constant(FAST_STUB_ID(CallSetter)),
+                                           {thread, setter, receiver, value, TruncInt32ToInt1(mayThrow)}));
                     }
                 }
             }
@@ -1278,9 +1294,10 @@ public:
                     Bind(&nextExtensible);
                     {
                         StubInterfaceDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
-                        Return(CallStub(addElementInternal, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
-                                        {thread, receiver, index, value,
-                                         GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
+                        Return(CallRuntime(addElementInternal, thread,
+                                           GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
+                                           {thread, receiver, index, value,
+                                            GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
                     }
                 }
                 Bind(&isHeapObj);
@@ -1291,8 +1308,9 @@ public:
                     Bind(&isJsProxy);
                     {
                         StubInterfaceDescriptor *setProperty = GET_STUBDESCRIPTOR(JSProxySetProperty);
-                        Return(CallStub(setProperty, GetWord64Constant(FAST_STUB_ID(JSProxySetProperty)),
-                            { thread, *holder, IntBuildTagged(index), value, receiver, TruncInt32ToInt1(mayThrow) }));
+                        Return(CallRuntime(
+                            setProperty, thread, GetWord64Constant(FAST_STUB_ID(JSProxySetProperty)),
+                            {thread, *holder, IntBuildTagged(index), value, receiver, TruncInt32ToInt1(mayThrow)}));
                     }
                     Bind(&notJsProxy);
                     onPrototype = TrueConstant();
@@ -1308,7 +1326,7 @@ HWTEST_F_L0(StubOptimizerTest, FastFindOwnElement2Stub)
     std::cout << " ------------------------FastFindOwnElement2Stub ---------------------" << std::endl;
     LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
     LLVMValueRef function = LLVMGetNamedFunction(module, "FindOwnElement2");
-    Environment env("FindOwnElement2", 5);
+    Environment env("FindOwnElement2", 6);
     FastFindOwnElement2Stub optimizer(&env);
     optimizer.GenerateCircuit();
     auto netOfGates = env.GetCircuit();
@@ -1325,6 +1343,548 @@ HWTEST_F_L0(StubOptimizerTest, FastFindOwnElement2Stub)
     llvmBuilder.Build();
     LLVMMCJITCompiler compiler(module);
     compiler.Run();
+    auto engine = compiler.GetEngine();
+    auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(JSThread *, TaggedArray *, uint32_t, bool,
+                                                                  PropertyAttributes *, uint32_t *)>(
+        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<JSObject> obj = factory->NewEmptyJSObject();
+    int x = 213;
+    int y = 10;
+    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
+    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
+    TaggedArray *elements = TaggedArray::Cast(obj->GetElements().GetHeapObject());
+    PropertyAttributes attr;
+    uint32_t indexOrEntry;
+    bool isDict = elements->IsDictionaryMode();
+    compiler.Disassemble();
+    JSTaggedValue resVal = findOwnElement2Ptr(thread, elements, 1, isDict, &attr, &indexOrEntry);
+    EXPECT_EQ(resVal.GetNumber(), x);
+    resVal = findOwnElement2Ptr(thread, elements, 10250, isDict, &attr, &indexOrEntry);
+    EXPECT_EQ(resVal.GetNumber(), y);
     std::cout << " ++++++++++++++++++++FastFindOwnElement2Stub ++++++++++++++++++" << std::endl;
+}
+
+HWTEST_F_L0(StubOptimizerTest, SetElementStub)
+{
+    LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
+    LLVMValueRef function = LLVMGetNamedFunction(module, "SetElement");
+    Environment env("SetElementStub", 5);
+    SetElementStub optimizer(&env);
+    optimizer.GenerateCircuit();
+    auto netOfGates = env.GetCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
+        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
+                  << std::endl;
+        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
+            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
+        }
+    }
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    llvmBuilder.Build();
+    LLVMMCJITCompiler compiler(module);
+    compiler.Run();
+}
+
+struct ThreadTy {
+    intptr_t magic; // 0x11223344
+    intptr_t fp;
+};
+class StubCallRunTimeThreadFpLock {
+public:
+    StubCallRunTimeThreadFpLock(struct ThreadTy *thread, intptr_t newFp): oldRbp_(thread->fp),
+        thread_(thread)
+    {
+        thread_->fp = *(reinterpret_cast<int64_t *>(newFp));
+        std::cout << "StubCallRunTimeThreadFpLock newFp: " << newFp << " oldRbp_ : " << oldRbp_
+            << " thread_->fp:" << thread_->fp <<std::endl;
+    }
+    ~StubCallRunTimeThreadFpLock()
+    {
+        std::cout << "~StubCallRunTimeThreadFpLock oldRbp_: " << oldRbp_ << " thread_->fp:" << thread_->fp << std::endl;
+        thread_->fp = oldRbp_;
+    }
+private:
+    intptr_t oldRbp_;
+    struct ThreadTy *thread_;
+};
+
+extern "C" {
+int64_t RuntimeFunc(struct ThreadTy *fpInfo)
+{
+    int64_t *rbp;
+    asm("mov %%rbp, %0" : "=rm"(rbp));
+    if (fpInfo->fp == *rbp) {
+        return 1;
+    }
+    return 0;
+}
+
+int64_t (*g_stub2Func)(struct ThreadTy *) = nullptr;
+
+int RuntimeFunc1(struct ThreadTy *fpInfo)
+{
+    std::cout << "RuntimeFunc1  -" << std::endl;
+    int64_t newRbp;
+    asm("mov %%rbp, %0" : "=rm"(newRbp));
+    StubCallRunTimeThreadFpLock lock(fpInfo, newRbp);
+
+    std::cout << std::hex << "g_stub2Func " << reinterpret_cast<uintptr_t>(g_stub2Func) << std::endl;
+    if (g_stub2Func != nullptr) {
+        g_stub2Func(fpInfo);
+    }
+    std::cout << "RuntimeFunc1  +" << std::endl;
+    return 0;
+}
+
+int RuntimeFunc2(struct ThreadTy *fpInfo)
+{
+    std::cout << "RuntimeFunc2  -" << std::endl;
+    // update thread.fp
+    int64_t newRbp;
+    asm("mov %%rbp, %0" : "=rm"(newRbp));
+    StubCallRunTimeThreadFpLock lock(fpInfo, newRbp);
+    auto rbp = reinterpret_cast<int64_t *>(fpInfo->fp);
+
+    std::cout << " RuntimeFunc2 rbp:" << rbp <<std::endl;
+    for (int i = 0; i < 40; i++) {
+        std::cout << std::hex << &(rbp[i]) << " :" << rbp[i] << std::endl;
+    }
+    /* walk back
+      stack frame:           0     pre rbp  <-- rbp
+                            -8     type
+                            -16    pre frame thread fp
+    */
+    int64_t *frameType = nullptr;
+    int64_t *gcFp = nullptr;
+    std::cout << "-----------------walkback----------------" << std::endl;
+    do {
+        frameType = rbp - 1;
+        if (*frameType == 1) {
+            gcFp = rbp - 2;
+        } else {
+            gcFp = rbp;
+        }
+        rbp = reinterpret_cast<intptr_t *>(*gcFp);
+        std::cout << std::hex << "frameType :" << *frameType << " gcFp:" << *gcFp << std::endl;
+    } while (*gcFp != 0);
+    std::cout << "+++++++++++++++++walkback++++++++++++++++" << std::endl;
+    std::cout << "call RuntimeFunc2 func ThreadTy fp: " << fpInfo->fp << " magic:" << fpInfo->magic << std::endl;
+    std::cout << "RuntimeFunc2  +" << std::endl;
+    return 0;
+}
+}
+
+/*
+c++:main
+  --> js (stub1(struct ThreadTy *))
+        stack frame:           0     pre rbp  <-- rbp
+                              -8     type
+                              -16    pre frame thread fp
+  --> c++(int RuntimeFunc1(struct ThreadTy *fpInfo))
+  --> js (int stub2(struct ThreadTy *))
+                                stack frame:           0     pre rbp  <-- rbp
+                                -8     type
+                                -16    pre frame thread fp
+  --> js (int stub3(struct ThreadTy *))
+                                stack frame:           0     pre rbp  <-- rbp
+                                -8     type
+  --> c++(int RuntimeFunc2(struct ThreadTy *fpInfo))
+
+result:
+-----------------walkback----------------
+frameType :0 gcFp:7fffffffd780
+frameType :1 gcFp:7fffffffd820
+frameType :1 gcFp:0
++++++++++++++++++walkback++++++++++++++++
+#0  __GI_raise (sig=sig@entry=6) at ../sysdeps/unix/sysv/linux/raise.c:40
+#1  0x00007ffff03778b1 in __GI_abort () at abort.c:79
+#2  0x0000555555610f1c in RuntimeFunc2 ()
+#3  0x00007fffebf7b1fb in stub3 ()
+#4  0x00007fffebf7b1ab in stub2 ()
+#5  0x0000555555610afe in RuntimeFunc1 ()
+#6  0x00007fffebf7b14e in stub1 ()
+#7  0x000055555561197c in panda::test::StubOptimizerTest_JSEntryTest_Test::TestBody() ()
+*/
+
+LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder)
+{
+    /* 0:calling 1:its caller */
+    std::vector<LLVMValueRef> args = {LLVMConstInt(LLVMInt32Type(), 0, false)};
+    auto fn = LLVMGetNamedFunction(module, "llvm.frameaddress.p0i8");
+    if (!fn) {
+        std::cout << "Could not find function " << std::endl;
+        return LLVMConstInt(LLVMInt64Type(), 0, false);
+    }
+    LLVMValueRef fAddrRet = LLVMBuildCall(builder, fn, args.data(), 1, "");
+    LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder, fAddrRet, LLVMInt64Type(), "cast_int64_t");
+    return frameAddr;
+}
+
+HWTEST_F_L0(StubOptimizerTest, JSEntryTest)
+{
+    std::cout << " ---------- JSEntryTest ------------- " << std::endl;
+    LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
+    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    LLVMContextRef context = LLVMGetGlobalContext();
+
+    /* init instrinsic function declare */
+    LLVMTypeRef paramTys1[] = {
+        LLVMInt32Type(),
+    };
+    auto llvmFnType = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0), paramTys1, 1, 0);
+    LLVMValueRef llvmFn = LLVMAddFunction(module, "llvm.frameaddress.p0i8", llvmFnType);
+    (void)llvmFn;
+
+    // struct ThreadTy
+    LLVMTypeRef llvmI32 = LLVMInt32TypeInContext(context);
+    LLVMTypeRef llvmI64 = LLVMInt64TypeInContext(context);
+    std::vector<LLVMTypeRef> elements_t {llvmI64, llvmI64};
+    LLVMTypeRef threadTy = LLVMStructTypeInContext(context, elements_t.data(), elements_t.size(), 0);
+    LLVMTypeRef threadTyPtr = LLVMPointerType(threadTy, 0);
+    LLVMTypeRef paramTys0[] = {
+        threadTyPtr
+    };
+    /* implement stub1 */
+    LLVMValueRef stub1 = LLVMAddFunction(module, "stub1", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
+    LLVMAddTargetDependentFunctionAttr(stub1, "frame-pointer", "all");
+    LLVMAddTargetDependentFunctionAttr(stub1, "js-stub-call", "1");
+
+    LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(stub1, "entry");
+    LLVMPositionBuilderAtEnd(builder, entryBb);
+    /* struct ThreadTy fpInfo;
+        fpInfo.magic = 0x11223344;
+        fpInfo.fp = calling frame address
+    */
+    LLVMValueRef value = LLVMGetParam(stub1, 0);
+    LLVMValueRef c0 = LLVMConstInt(LLVMInt32Type(), 0, false);
+    LLVMValueRef c1 = LLVMConstInt(LLVMInt32Type(), 1, false);
+    std::vector<LLVMValueRef> indexes1 = {c0, c0};
+    std::vector<LLVMValueRef> indexes2 = {c0, c1};
+    LLVMValueRef gep1 = LLVMBuildGEP2(builder, threadTy, value, indexes1.data(), indexes1.size(), "");
+
+    LLVMValueRef gep2 = LLVMBuildGEP2(builder, threadTy, value, indexes2.data(), indexes2.size(), "fpAddr");
+    LLVMBuildStore(builder, LLVMConstInt(LLVMInt64Type(), 0x11223344, false), gep1);
+    LLVMValueRef frameAddr = LLVMCallingFp(module, builder);
+    /* current frame
+         0     pre rbp  <-- rbp
+         -8    type
+        -16    pre frame thread fp
+    */
+    LLVMValueRef preFp = LLVMBuildLoad2(builder, LLVMInt64Type(), gep2, "thread.fp");
+    LLVMValueRef addr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(LLVMInt64Type(), 16, false), "");
+    LLVMValueRef preFpAddr = LLVMBuildIntToPtr(builder, addr, LLVMPointerType(LLVMInt64Type(), 0), "thread.fp.Addr");
+    LLVMBuildStore(builder, preFp, preFpAddr);
+
+    /* stub1 call RuntimeFunc1 */
+    std::vector<LLVMTypeRef> argsTy(1, threadTyPtr);
+    LLVMTypeRef funcType = LLVMFunctionType(llvmI32, argsTy.data(), argsTy.size(), 1);
+    LLVMValueRef runtimeFunc1 = LLVMAddFunction(module, "RuntimeFunc1", funcType);
+
+    std::vector<LLVMValueRef> argValue = {value};
+    LLVMBuildCall(builder, runtimeFunc1, argValue.data(), 1, "");
+    LLVMValueRef retVal = LLVMConstInt(LLVMInt64Type(), 1, false);
+    LLVMBuildRet(builder, retVal);
+
+    /* implement stub2 call stub3 */
+    LLVMValueRef stub2 = LLVMAddFunction(module, "stub2", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
+    LLVMAddTargetDependentFunctionAttr(stub2, "frame-pointer", "all");
+    LLVMAddTargetDependentFunctionAttr(stub2, "js-stub-call", "1");
+
+    entryBb = LLVMAppendBasicBlock(stub2, "entry");
+    LLVMPositionBuilderAtEnd(builder, entryBb);
+    LLVMValueRef value2 = LLVMGetParam(stub2, 0);
+    /* struct ThreadTy fpInfo;
+        fpInfo.fp = calling frame address
+    */
+    gep2 = LLVMBuildGEP2(builder, threadTy, value2, indexes2.data(), indexes2.size(), "fpAddr");
+    frameAddr = LLVMCallingFp(module, builder);
+    /* current frame
+         0     pre rbp  <-- rbp
+         -8    type
+        -16    pre frame thread fp
+    */
+    preFp = LLVMBuildLoad2(builder, LLVMInt64Type(), gep2, "thread.fp");
+    addr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(LLVMInt64Type(), 16, false), "");
+    preFpAddr = LLVMBuildIntToPtr(builder, addr, LLVMPointerType(LLVMInt64Type(), 0), "thread.fp.Addr");
+    LLVMBuildStore(builder, preFp, preFpAddr);
+
+    LLVMValueRef stub3 = LLVMAddFunction(module, "stub3", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
+    /* stub2 call stub3 */
+    argValue = {value2};
+
+    LLVMBuildCall(builder, stub3, argValue.data(), 1, "");
+    retVal = LLVMConstInt(LLVMInt64Type(), 2, false);
+    LLVMBuildRet(builder, retVal);
+
+    /* implement stub3 call RuntimeFunc2 */
+    LLVMAddTargetDependentFunctionAttr(stub3, "frame-pointer", "all");
+    LLVMAddTargetDependentFunctionAttr(stub3, "js-stub-call", "0");
+
+    entryBb = LLVMAppendBasicBlock(stub3, "entry");
+    LLVMPositionBuilderAtEnd(builder, entryBb);
+    LLVMValueRef value3 = LLVMGetParam(stub3, 0);
+    /* struct ThreadTy fpInfo;
+        fpInfo.fp = calling frame address
+    */
+    gep2 = LLVMBuildGEP2(builder, threadTy, value3, indexes2.data(), indexes2.size(), "fpAddr");
+    /* current frame
+         0     pre rbp  <-- rbp
+         -8    type
+    */
+    /* stub2 call RuntimeFunc2 */
+    LLVMValueRef runtimeFunc2 = LLVMAddFunction(module, "RuntimeFunc2", funcType);
+    argValue = {value3};
+    LLVMBuildCall(builder, runtimeFunc2, argValue.data(), 1, "");
+    retVal = LLVMConstInt(LLVMInt64Type(), 3, false);
+    LLVMBuildRet(builder, retVal);
+    LLVMDumpModule(module);
+    char* error = nullptr;
+    LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+
+    LLVMMCJITCompiler compiler(module);
+    compiler.Run();
+    auto engine = compiler.GetEngine();
+    uint64_t stub1Code = LLVMGetFunctionAddress(engine, "stub1");
+    uint64_t stub2Code = LLVMGetFunctionAddress(engine, "stub2");
+    uint64_t stub3Code = LLVMGetFunctionAddress(engine, "stub3");
+    std::map<uint64_t, std::string> addr2name = {
+        {stub1Code, "stub1"}, {stub2Code, "stub2"}, {stub3Code, "stub3"}
+    };
+    std::cout << std::endl << " stub1Code : " << stub1Code << std::endl;
+    std::cout << std::endl << " stub2Code : " << stub2Code << std::endl;
+    std::cout << std::endl << " stub3Code : " << stub3Code << std::endl;
+    compiler.Disassemble(addr2name);
+    struct ThreadTy parameters = {0x0, 0x0};
+    auto stub1Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub1Code);
+    g_stub2Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub2Code);
+    int64_t result = stub1Func(&parameters);
+    std::cout << std::endl << "parameters magic:" << parameters.magic
+        << " parameters.fp " << parameters.fp << std::endl;
+    EXPECT_EQ(parameters.fp, 0x0);
+    EXPECT_EQ(result, 1);
+    std::cout << " ++++++++++ JSEntryTest +++++++++++++ " << std::endl;
+}
+
+/*
+verify modify llvm prologue : call main ok means don't destory c abi
+test:
+main          push rbp
+              push type
+              push thread.fp  // reserved for modification
+    call bar
+              push rbp
+              push type
+*/
+HWTEST_F_L0(StubOptimizerTest, Prologue)
+{
+    std::cout << " ---------- Prologue ------------- " << std::endl;
+    LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
+    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    // struct ThreadTy
+    LLVMTypeRef paramTys0[] = {
+        LLVMInt64Type(),
+        LLVMInt64Type(),
+    };
+
+    /* implement main implement */
+    LLVMValueRef func = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMInt64Type(), nullptr, 0, 0));
+    LLVMAddTargetDependentFunctionAttr(func, "frame-pointer", "all");
+    LLVMAddTargetDependentFunctionAttr(func, "js-stub-call", "1");
+
+    LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(func, "entry");
+    LLVMPositionBuilderAtEnd(builder, entryBb);
+
+    /* implement main call RuntimeFunc */
+    LLVMBuilderRef builderBar = LLVMCreateBuilder();
+    LLVMValueRef bar = LLVMAddFunction(module, "bar", LLVMFunctionType(LLVMInt64Type(), paramTys0, 2, 0));
+    LLVMAddTargetDependentFunctionAttr(bar, "frame-pointer", "all");
+    LLVMAddTargetDependentFunctionAttr(bar, "js-stub-call", "0");
+    LLVMBasicBlockRef entryBbBar = LLVMAppendBasicBlock(bar, "entry");
+    LLVMPositionBuilderAtEnd(builderBar, entryBbBar);
+    LLVMValueRef value0Bar = LLVMGetParam(bar, 0);
+    LLVMValueRef value1Bar = LLVMGetParam(bar, 1);
+    LLVMValueRef retValBar = LLVMBuildAdd(builderBar, value0Bar, value1Bar, "");
+    LLVMBuildRet(builderBar, retValBar);
+
+    LLVMValueRef value0 = LLVMConstInt(LLVMInt64Type(), 1, false);
+    LLVMValueRef value1 = LLVMConstInt(LLVMInt64Type(), 2, false);
+    std::vector<LLVMValueRef> args = {value0, value1};
+    auto retVal = LLVMBuildCall(builder, bar, args.data(), 2, "");
+    LLVMBuildRet(builder, retVal);
+
+    LLVMDumpModule(module);
+    char* error = nullptr;
+    LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+
+    LLVMMCJITCompiler compiler(module);
+    compiler.Run();
+    auto engine = compiler.GetEngine();
+    uint64_t mainCode = LLVMGetFunctionAddress(engine, "main");
+    compiler.Disassemble();
+    auto mainFunc = reinterpret_cast<int64_t (*)(int64_t, int64_t)>(mainCode);
+    int64_t result = mainFunc(1, 2);
+    EXPECT_EQ(result, 3);
+    std::cout << " ++++++++++ Prologue +++++++++++++ " << std::endl;
+}
+
+/*
+verify llvm.frameaddress.p0i8 ok
+test:
+    js(stub):main
+        call RuntimeFunc
+*/
+HWTEST_F_L0(StubOptimizerTest, CEntryFp)
+{
+    std::cout << " ---------- CEntryFp ------------- " << std::endl;
+    LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
+    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    LLVMContextRef context = LLVMGetGlobalContext();
+
+    // struct ThreadTy
+    LLVMTypeRef llvmI64 = LLVMInt64TypeInContext(context);
+    std::vector<LLVMTypeRef> elements_t {llvmI64, llvmI64};
+    LLVMTypeRef threadTy = LLVMStructTypeInContext(context, elements_t.data(), elements_t.size(), 0);
+    LLVMTypeRef threadTyPtr = LLVMPointerType(threadTy, 0);
+    LLVMTypeRef paramTys0[] = {
+        threadTyPtr
+    };
+    /* implement main call RuntimeFunc */
+    LLVMValueRef func = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
+    LLVMAddTargetDependentFunctionAttr(func, "frame-pointer", "all");
+    LLVMAddTargetDependentFunctionAttr(func, "js-stub-call", "1");
+    LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(func, "entry");
+    LLVMPositionBuilderAtEnd(builder, entryBb);
+    /* struct ThreadTy fpInfo;
+        fpInfo.magic = 0x11223344;
+        fpInfo.fp = calling frame address
+    */
+    LLVMValueRef value = LLVMGetParam(func, 0);
+
+    LLVMValueRef c0 = LLVMConstInt(LLVMInt32Type(), 0, false);
+    LLVMValueRef c1 = LLVMConstInt(LLVMInt32Type(), 1, false);
+    std::vector<LLVMValueRef> indexes1 = {c0, c0};
+    std::vector<LLVMValueRef> indexes2 = {c0, c1};
+    LLVMValueRef gep1 = LLVMBuildGEP2(builder, threadTy, value, indexes1.data(), indexes1.size(), "");
+    LLVMDumpValue(gep1);
+    std::cout << std::endl;
+    LLVMValueRef gep2 = LLVMBuildGEP2(builder, threadTy, value, indexes2.data(), indexes2.size(), "fpAddr");
+    LLVMBuildStore(builder, LLVMConstInt(LLVMInt64Type(), 0x11223344, false), gep1);
+
+    LLVMTypeRef paramTys1[] = {
+        LLVMInt32Type(),
+    };
+    auto fnType = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0), paramTys1, 1, 0);
+    /* 0:calling 1:its caller */
+    std::vector<LLVMValueRef> args = {LLVMConstInt(LLVMInt32Type(), 0, false)};
+    LLVMValueRef fn = LLVMAddFunction(module, "llvm.frameaddress.p0i8", fnType);
+    LLVMValueRef fAddrRet = LLVMBuildCall(builder, fn, args.data(), 1, "");
+    LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder, fAddrRet, LLVMInt64Type(), "cast_int64_t");
+
+    LLVMBuildStore(builder, frameAddr, gep2);
+
+    /* main call RuntimeFunc */
+    std::vector<LLVMTypeRef> argsTy(1, threadTyPtr);
+    LLVMTypeRef funcType = LLVMFunctionType(llvmI64, argsTy.data(), argsTy.size(), 1);
+    LLVMValueRef runTimeFunc = LLVMAddFunction(module, "RuntimeFunc", funcType);
+
+    std::vector<LLVMValueRef> argValue = {value};
+    std::cout << std::endl;
+    LLVMValueRef retVal = LLVMBuildCall(builder, runTimeFunc, argValue.data(), 1, "");
+    LLVMBuildRet(builder, retVal);
+
+    LLVMDumpModule(module);
+    char* error = nullptr;
+    LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+
+    LLVMMCJITCompiler compiler(module);
+    compiler.Run();
+    auto engine = compiler.GetEngine();
+    uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
+    std::cout << std::endl << " nativeCode : " << nativeCode << std::endl;
+    compiler.Disassemble();
+    struct ThreadTy parameters = {0x0, 0x0};
+
+    auto mainFunc = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(nativeCode);
+    int64_t result = mainFunc(&parameters);
+    EXPECT_EQ(result, 1);
+    std::cout << " ++++++++++ CEntryFp +++++++++++++ " << std::endl;
+}
+
+HWTEST_F_L0(StubOptimizerTest, LoadGCIRTest)
+{
+    std::cout << "--------------LoadGCIRTest--------------------" << std::endl;
+    char *path = get_current_dir_name();
+    std::string filePath = std::string(path) + "/../../ark/js_runtime/ecmascript/compiler/tests/satepoint_GC_0.ll";
+
+    char resolvedPath[PATH_MAX];
+    char *res = realpath(filePath.c_str(), resolvedPath);
+    if (res == nullptr) {
+        std::cerr << "filePath :" << filePath.c_str() << "   is not exist !" << std::endl;
+        return;
+    }
+
+    llvm::SMDiagnostic err;
+    llvm::LLVMContext context;
+    llvm::StringRef inputFilename(resolvedPath);
+    // Load the input module...
+    std::unique_ptr<llvm::Module> rawModule =
+        parseIRFile(inputFilename, err, context);
+    if (!rawModule) {
+        std::cout << "parseIRFile :" << inputFilename.data() << " failed !" << std::endl;
+        return;
+    }
+    LLVMModuleRef module  = LLVMCloneModule(wrap(rawModule.get()));
+    LLVMMCJITCompiler compiler(module);
+    compiler.Run();
+    auto engine = compiler.GetEngine();
+    LLVMValueRef function =
+         LLVMGetNamedFunction(module, "main");
+    LLVMDumpValue(function);
+
+    auto *mainPtr = reinterpret_cast<int (*)()>(LLVMGetPointerToGlobal(engine, function));
+    uint8_t *ptr = compiler.GetStackMapsSection();
+    LLVMStackMapParse::GetInstance().CalculateStackMap(ptr);
+    LLVMStackMapParse::GetInstance().Print();
+
+    compiler.Disassemble();
+    LLVMDumpModule(module);
+    int value = reinterpret_cast<int (*)()>(mainPtr)();
+    std::cout << " value:" << value << std::endl;
+}
+extern "C" {
+void DoSafepoint()
+{
+    uintptr_t *rbp;
+    asm("mov %%rbp, %0" : "=rm" (rbp));
+    for (int i = 0; i < 3; i++) {
+        uintptr_t returnAddr =  *(rbp + 1);
+        uintptr_t *rsp = rbp + 2;
+        rbp = reinterpret_cast<uintptr_t *>(*rbp);
+        DwarfRegAndOffsetType info;
+        bool found = LLVMStackMapParse::GetInstance().StackMapByAddr(returnAddr, info);
+        if (found) {
+            uintptr_t **address = nullptr;
+            if (info.first == 7) {
+                address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
+            // rbp
+            } else if (info.first == 6) {
+                address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
+            }
+            std::cout << std::hex << "ref addr:" << address;
+            std::cout << "  value:" << *address;
+            std::cout << " *value :" << **address << std::endl;
+        }
+        std::cout << std::endl << std::endl;
+        std::cout << std::hex << "+++++++++++++++++++ returnAddr : 0x" << returnAddr << " rbp:" << rbp
+            << " rsp: " << rsp << std::endl;
+    }
+    std::cout << "do_safepoint +++ " << std::endl;
+}
 }
 }  // namespace panda::test

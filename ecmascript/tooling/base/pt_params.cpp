@@ -43,8 +43,8 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
     return paramsObject;
 }
 
-std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -82,8 +82,8 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(
         paramsObject->objectGroup_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
     }
 
-    result = Local<ObjectRef>(params)->Get(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "includeCommandLineAPI")));
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "includeCommandLineAPI")));
     if (!result.IsEmpty() && result->IsBoolean()) {
         paramsObject->includeCommandLineApi_ = result->IsTrue();
     }
@@ -117,8 +117,8 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(
     return paramsObject;
 }
 
-std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -174,8 +174,8 @@ std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Crea
     return paramsObject;
 }
 
-std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -204,8 +204,8 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(
     return paramsObject;
 }
 
-std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -261,8 +261,8 @@ std::unique_ptr<ResumeParams> ResumeParams::Create(const EcmaVM *ecmaVm, const L
     return paramsObject;
 }
 
-std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -291,8 +291,8 @@ std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Crea
     return paramsObject;
 }
 
-std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -333,8 +333,8 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(
     return paramsObject;
 }
 
-std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -403,8 +403,8 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(
     return paramsObject;
 }
 
-std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     ASSERT(ecmaVm);
     if (params.IsEmpty()) {
@@ -558,8 +558,8 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
             error += "'ownProperties' should be a Boolean;";
         }
     }
-    result = Local<ObjectRef>(params)->Get(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "accessorPropertiesOnly")));
+    result = Local<ObjectRef>(params)->Get(ecmaVm,
+        Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "accessorPropertiesOnly")));
     if (!result.IsEmpty()) {
         if (result->IsBoolean()) {
             paramsObject->accessorPropertiesOnly_ = result->IsTrue();

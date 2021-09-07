@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_FUNCTION_KIND_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_FUNCTION_KIND_H
+#ifndef ECMASCRIPT_JS_FUNCTION_KIND_H
+#define ECMASCRIPT_JS_FUNCTION_KIND_H
 
 #include <cstdint>
 
@@ -73,4 +73,4 @@ enum FunctionMode : uint8_t {
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_FUNCTION_KIND_H
+#endif  // ECMASCRIPT_JS_FUNCTION_KIND_H

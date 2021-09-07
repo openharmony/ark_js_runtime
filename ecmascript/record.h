@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_RECORD_H
-#define PANDA_RUNTIME_ECMASCRIPT_RECORD_H
+#ifndef ECMASCRIPT_RECORD_H
+#define ECMASCRIPT_RECORD_H
 
 #include "ecmascript/mem/tagged_object.h"
 
 namespace panda::ecmascript {
 class Record : public TaggedObject {
 public:
-    static constexpr size_t SIZE = sizeof(TaggedObject);
+    static constexpr size_t SIZE = TaggedObjectSize();
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_RECORD_H
+#endif  // ECMASCRIPT_RECORD_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_GENERATOR_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_GENERATOR_HELPER_H
+#ifndef ECMASCRIPT_GENERATOR_HELPER_H
+#define ECMASCRIPT_GENERATOR_HELPER_H
 
 #include <array>
 
@@ -44,4 +44,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_GENERATOR_HELPER_H
+#endif  // ECMASCRIPT_GENERATOR_HELPER_H

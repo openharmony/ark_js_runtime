@@ -83,7 +83,7 @@ HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorObject)
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
 
     JSHandle<JSObject> handleObj = factory->GetJSError(ErrorType::TYPE_ERROR);
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     /**
@@ -93,14 +93,14 @@ HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorObject)
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(handleObj), msgKey).GetValue());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(msgValue->GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(
-                      ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())),
+                      ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())),
               0);
     JSHandle<JSTaggedValue> nameValue(
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(handleObj), nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("TypeError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("TypeError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -113,20 +113,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorWithMessage)
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
 
     JSHandle<JSObject> handleObj = factory->GetJSError(ErrorType::TYPE_ERROR, "I am type error");
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
     JSHandle<JSTaggedValue> msgValue(
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(handleObj), msgKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("I am type error")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("I am type error")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
               0);
     JSHandle<JSTaggedValue> nameValue(
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(handleObj), nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("TypeError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("TypeError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -136,8 +136,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, GetJSErrorWithMessage)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -153,16 +151,18 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
-              0);
+    ASSERT_EQ(
+        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())
+            ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
+        0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("Error")).GetRawData())
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Error")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
               0);
 }
@@ -174,13 +174,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ErrorParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetErrorFunction());
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromString("Hello Error!"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Hello Error!"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*error), 6);
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
@@ -193,17 +191,18 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
 
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("Hello Error!")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Hello Error!")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
+              0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("Error")).GetRawData())
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Error")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
               0);
 }
@@ -215,46 +214,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ErrorNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
-
-    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
-    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
-    ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
-
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = Error::ToString(ecmaRuntimeCallInfo.get());
-
-    JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    EXPECT_TRUE(result.IsString());
-    EXPECT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("Error")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(*resultHandle)),
-              0);
-}
-
-/*
- * @tc.name: ErrorToString
- * @tc.desc: new Error("This is Error!").toString()
- * @tc.type: FUNC
- */
-HWTEST_F_L0(BuiltinsErrorsTest, ErrorToString)
-{
-    ASSERT_NE(thread, nullptr);
-
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
-
-    JSHandle<JSTaggedValue> errorObject = env->GetErrorFunction();
-    JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
-
-    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromString("message"));
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
-                          JSHandle<JSTaggedValue>(thread, factory->NewFromString("This is Error!").GetTaggedValue()));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -266,7 +230,40 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorToString)
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("Error: This is Error!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Error")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(*resultHandle)),
+              0);
+}
+
+/*
+ * @tc.name: ErrorToString
+ * @tc.desc: new Error("This is Error!").toString()
+ * @tc.type: FUNC
+ */
+HWTEST_F_L0(BuiltinsErrorsTest, ErrorToString)
+{
+    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
+    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+
+    JSHandle<JSTaggedValue> errorObject = env->GetErrorFunction();
+    JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
+
+    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromCanBeCompressString("message"));
+    JSObject::SetProperty(
+        thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
+        JSHandle<JSTaggedValue>(thread, factory->NewFromCanBeCompressString("This is Error!").GetTaggedValue()));
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = Error::ToString(ecmaRuntimeCallInfo.get());
+
+    JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
+    EXPECT_TRUE(result.IsString());
+    EXPECT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Error: This is Error!")).GetRawData())
                   ->Compare(*resultHandle),
               0);
 }
@@ -278,8 +275,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, ErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -295,18 +290,19 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(JSTaggedValue(msgValue.GetTaggedValue()).GetRawData())),
-              0);
-    JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
     ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("RangeError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(JSTaggedValue(nameValue.GetTaggedValue()).GetRawData())),
+        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())
+            ->Compare(reinterpret_cast<EcmaString *>(JSTaggedValue(msgValue.GetTaggedValue()).GetRawData())),
         0);
+    JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("RangeError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(JSTaggedValue(nameValue.GetTaggedValue()).GetRawData())),
+              0);
 }
 
 /*
@@ -316,13 +312,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetRangeErrorFunction());
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromString("Hello RangeError!"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Hello RangeError!"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*error), 6);
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
@@ -335,20 +329,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("Hello RangeError!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Hello RangeError!")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
               0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("RangeError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("RangeError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -358,8 +352,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -376,10 +368,10 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterToString)
 
     EXPECT_TRUE(result.IsString());
 
-    EXPECT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("RangeError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(resultHandle->GetRawData())),
-        0);
+    EXPECT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("RangeError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(resultHandle->GetRawData())),
+              0);
 }
 
 /*
@@ -389,17 +381,15 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetRangeErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
 
-    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromCanBeCompressString("message"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
-                          JSHandle<JSTaggedValue>(factory->NewFromString("This is RangeError!")));
+                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("This is RangeError!")));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -410,9 +400,10 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorToString)
 
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
-    EXPECT_EQ(factory->NewFromString("RangeError: This is RangeError!")->Compare(*resultHandle), 0);
+    EXPECT_EQ(factory->NewFromCanBeCompressString("RangeError: This is RangeError!")->Compare(*resultHandle), 0);
 }
 
+// new ReferenceError()
 /*
  * @tc.name: ReferenceErrorNoParameterConstructor
  * @tc.desc: new ReferenceError()
@@ -420,8 +411,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, RangeErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -436,17 +425,18 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
-              0);
+    ASSERT_EQ(
+        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())
+            ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
+        0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("ReferenceError")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("ReferenceError")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
               0);
 }
@@ -458,13 +448,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetReferenceErrorFunction());
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromString("Hello ReferenceError!"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Hello ReferenceError!"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*error), 6);
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
@@ -476,17 +464,17 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("Hello ReferenceError!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Hello ReferenceError!")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
               0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("ReferenceError")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("ReferenceError")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
               0);
 }
@@ -498,8 +486,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -515,7 +501,7 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterToString)
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("ReferenceError")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("ReferenceError")).GetRawData())
                   ->Compare(*resultHandle),
               0);
 }
@@ -527,17 +513,15 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetReferenceErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
 
-    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromCanBeCompressString("message"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
-                          JSHandle<JSTaggedValue>(factory->NewFromString("This is ReferenceError!")));
+                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("This is ReferenceError!")));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -547,7 +531,8 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorToString)
     JSTaggedValue result = ReferenceError::ToString(ecmaRuntimeCallInfo.get());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
-    EXPECT_EQ(factory->NewFromString("ReferenceError: This is ReferenceError!")->Compare(*resultHandle), 0);
+    EXPECT_EQ(factory->NewFromCanBeCompressString("ReferenceError: This is ReferenceError!")->Compare(*resultHandle),
+              0);
 }
 
 /*
@@ -557,8 +542,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, ReferenceErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -573,13 +556,14 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
-              0);
+    ASSERT_EQ(
+        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())
+            ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
+        0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(JSTaggedValue(nameValue.GetTaggedValue()).GetRawData())
@@ -594,13 +578,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetTypeErrorFunction());
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromString("Hello TypeError!"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Hello TypeError!"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*error), 6);
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
@@ -612,20 +594,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("Hello TypeError!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Hello TypeError!")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
               0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("TypeError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("TypeError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -635,8 +617,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -651,10 +631,10 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterToString)
     JSTaggedValue result = TypeError::ToString(ecmaRuntimeCallInfo.get());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
-    EXPECT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("TypeError")).GetRawData())
-            ->Compare(*resultHandle),
-        0);
+    EXPECT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("TypeError")).GetRawData())
+                  ->Compare(*resultHandle),
+              0);
 }
 
 /*
@@ -664,16 +644,14 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetTypeErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
 
-    JSHandle<JSTaggedValue> value(factory->NewFromString("This is TypeError!"));
-    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> value(factory->NewFromCanBeCompressString("This is TypeError!"));
+    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromCanBeCompressString("message"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(error), handleMsgKey, value);
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -684,7 +662,7 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorToString)
     JSTaggedValue result = TypeError::ToString(ecmaRuntimeCallInfo.get());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
-    EXPECT_EQ(factory->NewFromString("TypeError: This is TypeError!")->Compare(*resultHandle), 0);
+    EXPECT_EQ(factory->NewFromCanBeCompressString("TypeError: This is TypeError!")->Compare(*resultHandle), 0);
 }
 
 /*
@@ -694,8 +672,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, TypeErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -710,19 +686,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
-              0);
+    ASSERT_EQ(
+        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())
+            ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
+        0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("URIError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("URIError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -732,13 +709,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, URIErrorParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetURIErrorFunction());
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromString("Hello URIError!"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Hello URIError!"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*error), 6);
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
@@ -750,20 +725,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("Hello URIError!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Hello URIError!")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
               0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("URIError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("URIError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -773,48 +748,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, URIErrorNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetURIErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
-
-    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
-    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
-    ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
-
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    JSTaggedValue result = URIError::ToString(ecmaRuntimeCallInfo.get());
-    JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    EXPECT_TRUE(result.IsString());
-
-    EXPECT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("URIError")).GetRawData())
-            ->Compare(*resultHandle),
-        0);
-}
-
-/*
- * @tc.name: URIErrorToString
- * @tc.desc: new URIError("This is URIError!").toString()
- * @tc.type: FUNC
- */
-HWTEST_F_L0(BuiltinsErrorsTest, URIErrorToString)
-{
-    ASSERT_NE(thread, nullptr);
-
-    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
-    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
-
-    JSHandle<JSTaggedValue> errorObject = env->GetURIErrorFunction();
-    JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
-
-    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromString("message"));
-    JSObject::SetProperty(
-        thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
-        JSHandle<JSTaggedValue>(thread, factory->NewFromString("This is URIError!").GetTaggedValue()));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -826,9 +764,43 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorToString)
     EXPECT_TRUE(result.IsString());
 
     EXPECT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("URIError: This is URIError!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("URIError")).GetRawData())
                   ->Compare(*resultHandle),
               0);
+}
+
+/*
+ * @tc.name: URIErrorToString
+ * @tc.desc: new URIError("This is URIError!").toString()
+ * @tc.type: FUNC
+ */
+HWTEST_F_L0(BuiltinsErrorsTest, URIErrorToString)
+{
+    ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
+    JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
+
+    JSHandle<JSTaggedValue> errorObject = env->GetURIErrorFunction();
+    JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
+
+    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromCanBeCompressString("message"));
+    JSObject::SetProperty(
+        thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
+        JSHandle<JSTaggedValue>(thread, factory->NewFromCanBeCompressString("This is URIError!").GetTaggedValue()));
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue(*error));
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = URIError::ToString(ecmaRuntimeCallInfo.get());
+    JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
+    EXPECT_TRUE(result.IsString());
+
+    EXPECT_EQ(
+        reinterpret_cast<EcmaString *>(
+            ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("URIError: This is URIError!")).GetRawData())
+            ->Compare(*resultHandle),
+        0);
 }
 
 /*
@@ -838,8 +810,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, URIErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -854,19 +824,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
-              0);
+    ASSERT_EQ(
+        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())
+            ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
+        0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("SyntaxError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("SyntaxError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -876,13 +847,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetSyntaxErrorFunction());
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromString("Hello SyntaxError!"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Hello SyntaxError!"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*error), 6);
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
@@ -894,20 +863,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("Hello SyntaxError!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Hello SyntaxError!")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
               0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("SyntaxError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("SyntaxError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -917,8 +886,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -934,10 +901,10 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterToString)
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
 
-    EXPECT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("SyntaxError")).GetRawData())
-            ->Compare(*resultHandle),
-        0);
+    EXPECT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("SyntaxError")).GetRawData())
+                  ->Compare(*resultHandle),
+              0);
 }
 
 /*
@@ -947,17 +914,15 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetSyntaxErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
 
-    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromCanBeCompressString("message"));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
-                          JSHandle<JSTaggedValue>(factory->NewFromString("This is SyntaxError!")));
+                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("This is SyntaxError!")));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -968,7 +933,7 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorToString)
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
 
-    EXPECT_EQ(factory->NewFromString("SyntaxError: This is SyntaxError!")->Compare(*resultHandle), 0);
+    EXPECT_EQ(factory->NewFromCanBeCompressString("SyntaxError: This is SyntaxError!")->Compare(*resultHandle), 0);
 }
 
 /*
@@ -978,8 +943,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, SyntaxErrorToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
@@ -994,19 +957,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
-    ASSERT_EQ(reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("")).GetRawData())
-                  ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
-              0);
+    ASSERT_EQ(
+        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("")).GetRawData())
+            ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
+        0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("EvalError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("EvalError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -1016,13 +980,11 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorParameterConstructor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSFunction> error(env->GetEvalErrorFunction());
-    JSHandle<JSTaggedValue> paramMsg(factory->NewFromString("Hello EvalError!"));
+    JSHandle<JSTaggedValue> paramMsg(factory->NewFromCanBeCompressString("Hello EvalError!"));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue(*error), 6);
     ecmaRuntimeCallInfo->SetFunction(error.GetTaggedValue());
@@ -1034,20 +996,20 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorParameterConstructor)
     EXPECT_TRUE(result.IsECMAObject());
 
     JSHandle<JSTaggedValue> errorObject(thread, reinterpret_cast<TaggedObject *>(result.GetRawData()));
-    JSHandle<JSTaggedValue> msgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> msgKey(factory->NewFromCanBeCompressString("message"));
     JSHandle<JSTaggedValue> nameKey = thread->GlobalConstants()->GetHandledNameString();
 
     JSHandle<JSTaggedValue> msgValue(JSObject::GetProperty(thread, errorObject, msgKey).GetValue());
     ASSERT_EQ(reinterpret_cast<EcmaString *>(
-                  ecmascript::JSTaggedValue(*factory->NewFromString("Hello EvalError!")).GetRawData())
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("Hello EvalError!")).GetRawData())
                   ->Compare(reinterpret_cast<EcmaString *>(msgValue->GetRawData())),
               0);
 
     JSHandle<JSTaggedValue> nameValue(JSObject::GetProperty(thread, errorObject, nameKey).GetValue());
-    ASSERT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("EvalError")).GetRawData())
-            ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
-        0);
+    ASSERT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("EvalError")).GetRawData())
+                  ->Compare(reinterpret_cast<EcmaString *>(nameValue->GetRawData())),
+              0);
 }
 
 /*
@@ -1057,8 +1019,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorParameterConstructor)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
     JSHandle<JSTaggedValue> errorObject = env->GetEvalErrorFunction();
@@ -1072,10 +1032,10 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterToString)
     JSTaggedValue result = EvalError::ToString(ecmaRuntimeCallInfo.get());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
-    EXPECT_EQ(
-        reinterpret_cast<EcmaString *>(ecmascript::JSTaggedValue(*factory->NewFromString("EvalError")).GetRawData())
-            ->Compare(*resultHandle),
-        0);
+    EXPECT_EQ(reinterpret_cast<EcmaString *>(
+                  ecmascript::JSTaggedValue(*factory->NewFromCanBeCompressString("EvalError")).GetRawData())
+                  ->Compare(*resultHandle),
+              0);
 }
 
 /*
@@ -1085,18 +1045,16 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorNoParameterToString)
  */
 HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = EcmaVM::Cast(instance)->GetFactory();
     JSHandle<GlobalEnv> env = EcmaVM::Cast(instance)->GetGlobalEnv();
 
     JSHandle<JSTaggedValue> errorObject = env->GetEvalErrorFunction();
     JSHandle<JSObject> error = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(errorObject), errorObject);
 
-    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromString("message"));
+    JSHandle<JSTaggedValue> handleMsgKey(factory->NewFromCanBeCompressString("message"));
     JSObject::SetProperty(
         thread, JSHandle<JSTaggedValue>(error), handleMsgKey,
-        JSHandle<JSTaggedValue>(thread, factory->NewFromString("This is EvalError!").GetTaggedValue()));
+        JSHandle<JSTaggedValue>(thread, factory->NewFromCanBeCompressString("This is EvalError!").GetTaggedValue()));
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -1106,6 +1064,6 @@ HWTEST_F_L0(BuiltinsErrorsTest, EvalErrorToString)
     JSTaggedValue result = EvalError::ToString(ecmaRuntimeCallInfo.get());
     JSHandle<EcmaString> resultHandle(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
     EXPECT_TRUE(result.IsString());
-    EXPECT_EQ(factory->NewFromString("EvalError: This is EvalError!")->Compare(*resultHandle), 0);
+    EXPECT_EQ(factory->NewFromCanBeCompressString("EvalError: This is EvalError!")->Compare(*resultHandle), 0);
 }
 }  // namespace panda::test

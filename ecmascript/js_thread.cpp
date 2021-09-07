@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/global_env_constants-inl.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_thread.h"
 #include "include/panda_vm.h"
@@ -39,8 +40,9 @@ JSThread::JSThread(Runtime *runtime, PandaVM *vm)
                     Thread::ThreadType::THREAD_TYPE_MANAGED)
 {
     SetLanguageContext(runtime->GetLanguageContext(panda_file::SourceLang::ECMASCRIPT));
-    globalHandleStorage_ =
-        EcmaVM::Cast(vm)->GetChunk()->New<GlobalHandleStorage<JSTaggedType>>(runtime->GetInternalAllocator());
+    auto chunk = EcmaVM::Cast(vm)->GetChunk();
+    globalStorage_ = chunk->New<EcmaGlobalStorage>(chunk);
+    internalCallParams_ = new InternalCallParams();
 }
 
 JSThread::~JSThread()
@@ -51,11 +53,12 @@ JSThread::~JSThread()
     handleStorageNodes_.clear();
     currentHandleStorageIndex_ = -1;
     handleScopeStorageNext_ = handleScopeStorageEnd_ = nullptr;
-    EcmaVM::Cast(GetVM())->GetChunk()->Delete(globalHandleStorage_);
+    EcmaVM::Cast(GetVM())->GetChunk()->Delete(globalStorage_);
 
     GetRegionFactory()->Free(frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
     frameBase_ = nullptr;
     regionFactory_ = nullptr;
+    delete internalCallParams_;
 }
 
 EcmaVM *JSThread::GetEcmaVM() const
@@ -88,6 +91,8 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     globalConst_.Visitor(v1);
     // visit stack roots
     EcmaFrameHandler(currentFrame_).Iterate(v0, v1);
+    // visit internal call params
+    internalCallParams_->Iterate(v1);
 
     // visit tagged handle storage roots
     if (currentHandleStorageIndex_ != -1) {
@@ -100,12 +105,15 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
         }
     }
     // visit global handle storage roots
-    if (globalHandleStorage_->GetNodes()->empty()) {
+    if (globalStorage_->GetNodes()->empty()) {
         return;
     }
-    for (size_t i = 0; i < globalHandleStorage_->GetNodes()->size() - 1; i++) {
-        auto block = globalHandleStorage_->GetNodes()->at(i);
-        auto size = GlobalHandleStorage<JSTaggedType>::GLOBAL_BLOCK_SIZE;
+    for (size_t i = 0; i < globalStorage_->GetNodes()->size(); i++) {
+        auto block = globalStorage_->GetNodes()->at(i);
+        auto size = EcmaGlobalStorage::GLOBAL_BLOCK_SIZE;
+        if (i == globalStorage_->GetNodes()->size() - 1) {
+            size = globalStorage_->GetCount();
+        }
 
         for (auto j = 0; j < size; j++) {
             JSTaggedValue value(block->at(j).GetObject());
@@ -114,13 +122,33 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
             }
         }
     }
+}
 
-    auto block = globalHandleStorage_->GetNodes()->back();
-    auto size = globalHandleStorage_->GetCount();
-    for (auto j = 0; j < size; j++) {
-        JSTaggedValue value(block->at(j).GetObject());
-        if (value.IsHeapObject()) {
-            v0(ecmascript::Root::ROOT_HANDLE, ecmascript::ObjectSlot(block->at(j).GetObjectAddress()));
+void JSThread::IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor)
+{
+    if (globalStorage_->GetWeakNodes()->empty()) {
+        return;
+    }
+    for (size_t i = 0; i < globalStorage_->GetWeakNodes()->size(); i++) {
+        auto block = globalStorage_->GetWeakNodes()->at(i);
+        auto size = EcmaGlobalStorage::GLOBAL_BLOCK_SIZE;
+        if (i == globalStorage_->GetWeakNodes()->size() - 1) {
+            size = globalStorage_->GetWeakCount();
+        }
+
+        for (auto j = 0; j < size; j++) {
+            JSTaggedValue value(block->at(j).GetObject());
+            if (value.IsHeapObject()) {
+                auto object = value.GetTaggedObject();
+                auto fwd = visitor(object);
+                if (fwd == nullptr) {
+                    // undefind
+                    block->at(j).SetObject(JSTaggedValue::Undefined().GetRawData());
+                } else if (fwd != object) {
+                    // update
+                    block->at(j).SetObject(JSTaggedValue(fwd).GetRawData());
+                }
+            }
         }
     }
 }
@@ -159,18 +187,9 @@ uintptr_t *JSThread::ExpandHandleStorage()
     return result;
 }
 
-void JSThread::ShrunkHandleStorage(const JSTaggedType *end)
+void JSThread::ShrinkHandleStorage(int prevIndex)
 {
-    for (int32_t i = currentHandleStorageIndex_; i >= 0; i--) {
-        auto node = handleStorageNodes_[i];
-        auto currentEnd = &node->data()[NODE_BLOCK_SIZE];
-        if (end == currentEnd) {
-            currentHandleStorageIndex_ = i;
-            return;
-        }
-    }
-    ASSERT(end == nullptr);
-    currentHandleStorageIndex_ = -1;
+    currentHandleStorageIndex_ = prevIndex;
 }
 
 void JSThread::NotifyStableArrayElementsGuardians(JSHandle<JSObject> receiver)

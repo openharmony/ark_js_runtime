@@ -49,7 +49,7 @@ JSHandle<Program> PandaFileTranslator::TranslatePandaFile(EcmaVM *vm, const pand
     return JSHandle<Program>(translator.thread_, result);
 }
 
-template <class T, class... Args>
+template<class T, class... Args>
 static T *InitializeMemory(T *mem, Args... args)
 {
     return new (mem) T(std::forward<Args>(args)...);
@@ -125,7 +125,7 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
     EcmaHandleScope handleScope(thread_);
 
     JSHandle<Program> program = factory_->NewProgram();
-    JSHandle<EcmaString> location = factory_->NewFromStdString(pf.GetFilename());
+    JSHandle<EcmaString> location = factory_->NewFromStdStringUnCheck(pf.GetFilename(), true);
 
     // +1 for program
     JSHandle<ConstantPool> constpool = factory_->NewConstantPool(constpoolIndex_ + 1);
@@ -275,14 +275,6 @@ void PandaFileTranslator::FixOpcode(uint8_t *pc) const
 {
     auto opcode = static_cast<BytecodeInstruction::Opcode>(*pc);
 
-    constexpr size_t numBuiltinsFormat = 20;
-    std::array<uint32_t, numBuiltinsFormat> skipTable = {
-        // NOLINTNEXTLINE(readability-magic-numbers)
-        0U, 32U, 83U, 101U, 105U, 107U, 113U, 122U, 122U, 124U,
-        // NOLINTNEXTLINE(readability-magic-numbers)
-        129U, 133U, 139U, 139U, 140U, 141U, 147U, 148U, 150U, 152U
-    };
-
     switch (opcode) {
         case BytecodeInstruction::Opcode::MOV_V4_V4:
             *pc = static_cast<uint8_t>(EcmaOpcode::MOV_V4_V4);
@@ -332,38 +324,55 @@ void PandaFileTranslator::FixOpcode(uint8_t *pc) const
         case BytecodeInstruction::Opcode::RETURN_DYN:
             *pc = static_cast<uint8_t>(EcmaOpcode::RETURN_DYN);
             break;
-        case BytecodeInstruction::Opcode::BUILTIN_ACC_IMM8:
-        case BytecodeInstruction::Opcode::BUILTIN_BIN2_IMM8_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_TERN3_IMM8_V8_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_QUATERN4_IMM8_V8_V8_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_QUIN5_IMM8_V8_V8_V8_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_R2I_IMM8_IMM16_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_R3I_IMM8_IMM16_V8_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_R4I_IMM8_IMM16_V8_V8_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_ID_IMM8_ID32:
-        case BytecodeInstruction::Opcode::BUILTIN_MIDR_IMM8_ID16_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_IDI_IMM8_ID32_IMM16:
-        case BytecodeInstruction::Opcode::BUILTIN_IDR3I_IMM8_ID32_IMM16_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_IDR4I_IMM8_ID32_IMM16_V8_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_I2R3_IMM8_IMM16_IMM16_V8:
-        case BytecodeInstruction::Opcode::BUILTIN_I2R2_IMM8_IMM16_IMM16:
-        case BytecodeInstruction::Opcode::BUILTIN_IMM_IMM8_IMM16:
-        case BytecodeInstruction::Opcode::BUILTIN_IMR2_IMM8_ID16_IMM16_V8_V8: {
-            const int index =
-                static_cast<int32_t>(opcode) - static_cast<int32_t>(BytecodeInstruction::Opcode::BUILTIN_ACC_IMM8);
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto builtinId = *(pc + 1);
-            builtinId += skipTable[index];
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            *pc = builtinId;
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic, readability-magic-numbers)
+        default:
+            if (*pc != static_cast<uint8_t>(BytecodeInstruction::Opcode::ECMA_LDNAN_PREF_NONE)) {
+                LOG_ECMA(FATAL) << "Is not an Ecma Opcode opcode: " << static_cast<uint16_t>(opcode);
+                UNREACHABLE();
+            }
+            *pc = *(pc + 1);
             *(pc + 1) = 0xFF;
             break;
-        }
-        default:
-            LOG_ECMA(FATAL) << "Unsupported opcode: " << static_cast<uint16_t>(opcode);
-            UNREACHABLE();
     }
+}
+
+// reuse prefix 8bits to store slotid
+void PandaFileTranslator::UpdateICOffset(JSMethod *method, uint8_t *pc) const
+{
+    uint8_t offset = method->GetSlotSize();
+    if (UNLIKELY(offset == JSMethod::MAX_SLOT_SIZE)) {
+        return;
+    }
+
+    auto opcode = static_cast<EcmaOpcode>(*pc);
+    switch (opcode) {
+        case EcmaOpcode::TRYLDGLOBALBYNAME_PREF_ID32:
+        case EcmaOpcode::TRYSTGLOBALBYNAME_PREF_ID32:
+        case EcmaOpcode::LDGLOBALVAR_PREF_ID32:
+        case EcmaOpcode::STGLOBALVAR_PREF_ID32:
+            method->UpdateSlotSize(1);
+            break;
+        case EcmaOpcode::LDOBJBYVALUE_PREF_V8_V8:
+        case EcmaOpcode::STOBJBYVALUE_PREF_V8_V8:
+        case EcmaOpcode::STOWNBYVALUE_PREF_V8_V8:
+        case EcmaOpcode::LDOBJBYNAME_PREF_ID32_V8:
+        case EcmaOpcode::STOBJBYNAME_PREF_ID32_V8:
+        case EcmaOpcode::STOWNBYNAME_PREF_ID32_V8:
+        case EcmaOpcode::LDOBJBYINDEX_PREF_V8_IMM32:
+        case EcmaOpcode::STOBJBYINDEX_PREF_V8_IMM32:
+        case EcmaOpcode::STOWNBYINDEX_PREF_V8_IMM32:
+        case EcmaOpcode::LDSUPERBYVALUE_PREF_V8_V8:
+        case EcmaOpcode::STSUPERBYVALUE_PREF_V8_V8:
+        case EcmaOpcode::LDSUPERBYNAME_PREF_ID32_V8:
+        case EcmaOpcode::STSUPERBYNAME_PREF_ID32_V8:
+        case EcmaOpcode::LDMODVARBYNAME_PREF_ID32_V8:
+        case EcmaOpcode::STMODULEVAR_PREF_ID32:
+            method->UpdateSlotSize(2);
+            break;
+        default:
+            return;
+    }
+
+    *(pc + 1) = offset;
 }
 
 void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[maybe_unused]] uint32_t index,
@@ -381,7 +390,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[
             }
             break;
         }
-        case BytecodeInstruction::Format::IMM8_ID16_V8: {
+        case BytecodeInstruction::Format::PREF_ID16_IMM16_V8: {
             uint16_t u16Index = index;
             uint8_t size = sizeof(uint16_t);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -391,10 +400,9 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[
             }
             break;
         }
-        case BytecodeInstruction::Format::IMM8_ID32:
-        case BytecodeInstruction::Format::IMM8_ID32_IMM16:
-        case BytecodeInstruction::Format::IMM8_ID32_IMM16_V8:
-        case BytecodeInstruction::Format::IMM8_ID32_IMM16_V8_V8: {
+        case BytecodeInstruction::Format::PREF_ID32:
+        case BytecodeInstruction::Format::PREF_ID32_V8:
+        case BytecodeInstruction::Format::PREF_ID32_IMM8: {
             uint8_t size = sizeof(uint32_t);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             if (memcpy_s(pc + FixInstructionIndex::FIX_TWO, size, &index, size) != EOK) {
@@ -403,7 +411,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[
             }
             break;
         }
-        case BytecodeInstruction::Format::IMM8_IMM16: {
+        case BytecodeInstruction::Format::PREF_IMM16: {
             ASSERT(static_cast<uint16_t>(index) == index);
             uint16_t u16Index = index;
             uint8_t size = sizeof(uint16_t);
@@ -414,7 +422,7 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[
             }
             break;
         }
-        case BytecodeInstruction::Format::IMM8_ID16_IMM16_V8_V8: {
+        case BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8: {
             // Usually, we fix one part of instruction one time. But as for instruction DefineClassWithBuffer,
             // which use both method id and literal buffer id.Using fixOrder indicates fix Location.
             if (fixOrder == 0) {
@@ -452,86 +460,69 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
     auto bcInsLast = bcIns.JumpTo(insSz);
 
     while (bcIns.GetAddress() != bcInsLast.GetAddress()) {
-        {
-            if (bcIns.HasFlag(BytecodeInstruction::Flags::STRING_ID) &&
-                BytecodeInstruction::HasId(bcIns.GetFormat(), 0)) {
-                auto index = GetOrInsertConstantPool(ConstPoolType::STRING, bcIns.GetId().AsFileId().GetOffset());
-                FixInstructionId32(bcIns, index);
-            } else if (static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode()) ==
-                       BytecodeInstruction::Opcode::BUILTIN_MIDR_IMM8_ID16_V8) {
-                auto methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                switch (bcIns.template GetImm<BytecodeInstruction::Format::IMM8_ID16_V8>()) {
-                    uint32_t index;
-                    case SecondInstructionOfMidr::DEFINE_FUNC_DYN:
-                        index = GetOrInsertConstantPool(ConstPoolType::BASE_FUNCTION, methodId);
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    case SecondInstructionOfMidr::DEFINE_NC_FUNC_DYN:
-                        index = GetOrInsertConstantPool(ConstPoolType::NC_FUNCTION, methodId);
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    case SecondInstructionOfMidr::DEFINE_GENERATOR_FUNC_DYN:
-                        index = GetOrInsertConstantPool(ConstPoolType::GENERATOR_FUNCTION, methodId);
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    case SecondInstructionOfMidr::DEFINE_ASYNC_FUNC_DYN:
-                        index = GetOrInsertConstantPool(ConstPoolType::ASYNC_FUNCTION, methodId);
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    case SecondInstructionOfMidr::DEFINE_METHOD:
-                        index = GetOrInsertConstantPool(ConstPoolType::METHOD, methodId);
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    default:
-                        UNREACHABLE();
-                }
-            } else if (static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode()) ==
-                       BytecodeInstruction::Opcode::BUILTIN_IMM_IMM8_IMM16) {
-                switch (bcIns.template GetImm<BytecodeInstruction::Format::IMM8_IMM16>()) {
-                    uint32_t index;
-                    case 0:
-                    case 1:
-                        break;
-                    case SecondInstructionOfImm::CREATE_OBJECT_WITH_BUFFER:
-                        // createobjectwithbuffer
-                        index = GetOrInsertConstantPool(ConstPoolType::OBJECT_LITERAL,
-                                                        bcIns.GetImm<BytecodeInstruction::Format::IMM8_IMM16, 1>());
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    case SecondInstructionOfImm::CREATE_ARRAY_WITH_BUFFER:
-                        // createarraywithbuffer
-                        index = GetOrInsertConstantPool(ConstPoolType::ARRAY_LITERAL,
-                                                        bcIns.GetImm<BytecodeInstruction::Format::IMM8_IMM16, 1>());
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    case SecondInstructionOfImm::CREATE_OBJECT_HAVING_METHOD:
-                        // createobjecthavingmethod
-                        index = GetOrInsertConstantPool(ConstPoolType::OBJECT_LITERAL,
-                                                        bcIns.GetImm<BytecodeInstruction::Format::IMM8_IMM16, 1>());
-                        FixInstructionId32(bcIns, index);
-                        break;
-                    default:
-                        break;
-                }
-            } else if (static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode()) ==
-                       BytecodeInstruction::Opcode::BUILTIN_IMR2_IMM8_ID16_IMM16_V8_V8) {
-                if (bcIns.template GetImm<BytecodeInstruction::Format::IMM8_ID16_IMM16_V8_V8>() == 0) {
-                    // defineclasswithbuffer
-                    auto methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                    uint32_t index1 = GetOrInsertConstantPool(ConstPoolType::CLASS_FUNCTION, methodId);
-                    FixInstructionId32(bcIns, index1);
-
-                    uint32_t index2 =
-                        GetOrInsertConstantPool(ConstPoolType::CLASS_LITERAL,
-                                                bcIns.GetImm<BytecodeInstruction::Format::IMM8_ID16_IMM16_V8_V8, 1>());
-                    FixInstructionId32(bcIns, index2, 1);
-                }
+        if (bcIns.HasFlag(BytecodeInstruction::Flags::STRING_ID) &&
+            BytecodeInstruction::HasId(bcIns.GetFormat(), 0)) {
+            auto index = GetOrInsertConstantPool(ConstPoolType::STRING, bcIns.GetId().AsFileId().GetOffset());
+            FixInstructionId32(bcIns, index);
+        } else {
+            BytecodeInstruction::Opcode opcode = static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode());
+            switch (opcode) {
+                uint32_t index;
+                uint32_t methodId;
+                case BytecodeInstruction::Opcode::ECMA_DEFINEFUNCDYN_PREF_ID16_IMM16_V8:
+                    methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                    index = GetOrInsertConstantPool(ConstPoolType::BASE_FUNCTION, methodId);
+                    FixInstructionId32(bcIns, index);
+                    break;
+                case BytecodeInstruction::Opcode::ECMA_DEFINENCFUNCDYN_PREF_ID16_IMM16_V8:
+                    methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                    index = GetOrInsertConstantPool(ConstPoolType::NC_FUNCTION, methodId);
+                    FixInstructionId32(bcIns, index);
+                    break;
+                case BytecodeInstruction::Opcode::ECMA_DEFINEGENERATORFUNC_PREF_ID16_IMM16_V8:
+                    methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                    index = GetOrInsertConstantPool(ConstPoolType::GENERATOR_FUNCTION, methodId);
+                    FixInstructionId32(bcIns, index);
+                    break;
+                case BytecodeInstruction::Opcode::ECMA_DEFINEASYNCFUNC_PREF_ID16_IMM16_V8:
+                    methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                    index = GetOrInsertConstantPool(ConstPoolType::ASYNC_FUNCTION, methodId);
+                    FixInstructionId32(bcIns, index);
+                    break;
+                case BytecodeInstruction::Opcode::ECMA_DEFINEMETHOD_PREF_ID16_IMM16_V8:
+                    methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                    index = GetOrInsertConstantPool(ConstPoolType::METHOD, methodId);
+                    FixInstructionId32(bcIns, index);
+                    break;
+                case BytecodeInstruction::Opcode::ECMA_CREATEOBJECTWITHBUFFER_PREF_IMM16:
+                case BytecodeInstruction::Opcode::ECMA_CREATEOBJECTHAVINGMETHOD_PREF_IMM16:
+                    index = GetOrInsertConstantPool(ConstPoolType::OBJECT_LITERAL,
+                                                    bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>());
+                    FixInstructionId32(bcIns, index);
+                    break;
+                case BytecodeInstruction::Opcode::ECMA_CREATEARRAYWITHBUFFER_PREF_IMM16:
+                    index = GetOrInsertConstantPool(ConstPoolType::ARRAY_LITERAL,
+                                                    bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>());
+                    FixInstructionId32(bcIns, index);
+                    break;
+                case BytecodeInstruction::Opcode::ECMA_DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8:
+                    methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
+                    index = GetOrInsertConstantPool(ConstPoolType::CLASS_FUNCTION, methodId);
+                    FixInstructionId32(bcIns, index);
+                    index = GetOrInsertConstantPool(ConstPoolType::CLASS_LITERAL,
+                                                    bcIns.GetImm<BytecodeInstruction::Format::
+                                                    PREF_ID16_IMM16_IMM16_V8_V8>());
+                    FixInstructionId32(bcIns, index, 1);
+                    break;
+                default:
+                    break;
             }
         }
         // NOLINTNEXTLINE(hicpp-use-auto)
         auto pc = const_cast<uint8_t *>(bcIns.GetAddress());
         bcIns = bcIns.GetNext();
         FixOpcode(pc);
+        UpdateICOffset(const_cast<JSMethod *>(method), pc);
     }
 }
 
@@ -549,7 +540,8 @@ uint32_t PandaFileTranslator::GetOrInsertConstantPool(ConstPoolType type, uint32
     return index;
 }
 
-JSHandle<JSFunction> PandaFileTranslator::DefineMethodById(uint32_t methodId, FunctionKind kind) const
+JSHandle<JSFunction> PandaFileTranslator::DefineMethodInLiteral(JSThread *thread, uint32_t methodId, FunctionKind kind,
+                                                                uint16_t length) const
 {
     auto method = const_cast<JSMethod *>(FindMethods(methodId));
     ASSERT(method != nullptr);
@@ -570,6 +562,7 @@ JSHandle<JSFunction> PandaFileTranslator::DefineMethodById(uint32_t methodId, Fu
         JSObject::SetPrototype(thread_, initialGeneratorFuncPrototype, env->GetGeneratorPrototype());
         jsFunc->SetProtoOrDynClass(thread_, initialGeneratorFuncPrototype);
     }
+    jsFunc->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
     return jsFunc;
 }
 }  // namespace panda::ecmascript

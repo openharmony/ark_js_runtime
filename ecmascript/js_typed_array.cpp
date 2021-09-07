@@ -89,7 +89,7 @@ bool JSTypedArray::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> &
         JSTaggedValue numericIndex = JSTaggedValue::CanonicalNumericIndexString(thread, key);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
         if (!numericIndex.IsUndefined()) {
-            JSTaggedValue buffer = TypedArrayHelper::GetViewedArrayBuffer(typedarrayObj);
+            JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
             if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
                 THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", false);
             }
@@ -310,7 +310,7 @@ OperationResult JSTypedArray::IntegerIndexedElementGet(JSThread *thread, const J
     ASSERT(typedarray->IsTypedArray());
     // 3. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
     JSHandle<JSObject> typedarrayObj(typedarray);
-    JSTaggedValue buffer = TypedArrayHelper::GetViewedArrayBuffer(typedarrayObj);
+    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
     // 4. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer",
@@ -354,6 +354,44 @@ OperationResult JSTypedArray::IntegerIndexedElementGet(JSThread *thread, const J
 }
 
 // static
+bool JSTypedArray::FastCopyElementToArray(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
+                                          JSHandle<TaggedArray> &array)
+{
+    // 2. Assert: O is an Object that has [[ViewedArrayBuffer]], [[ArrayLength]], [[ByteOffset]], and
+    // [[TypedArrayName]] internal slots.
+    ASSERT(typedArray->IsTypedArray());
+    // 3. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
+    JSHandle<JSObject> typedarrayObj(typedArray);
+    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
+    // 4. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
+    if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", false);
+    }
+
+    // 7. Let length be the value of O’s [[ArrayLength]] internal slot.
+    // 8. If index < 0 or index ≥ length, return undefined.
+    int32_t arrLen = TypedArrayHelper::GetArrayLength(thread, typedarrayObj);
+    if (arrLen < 0) {
+        return false;
+    }
+
+    // 9. Let offset be the value of O’s [[ByteOffset]] internal slot.
+    int32_t offset = TypedArrayHelper::GetByteOffset(thread, typedarrayObj);
+    // 11. Let elementSize be the Number value of the Element Size value specified in Table 49 for arrayTypeName.
+    int32_t elementSize = TypedArrayHelper::GetElementSize(typedarrayObj);
+    // 13. Let elementType be the String value of the Element Type value in Table 49 for arrayTypeName.
+    DataViewType elementType = TypedArrayHelper::GetType(typedarrayObj);
+    for (int index = 0; index < arrLen; index++) {
+        // 12. Let indexedPosition = (index × elementSize) + offset.
+        int32_t byteIndex = index * elementSize + offset;
+        // 14. Return GetValueFromBuffer(buffer, indexedPosition, elementType).
+        JSTaggedValue result = BuiltinsArrayBuffer::GetValueFromBuffer(buffer, byteIndex, elementType, true);
+        array->Set(thread, index, result);
+    }
+    return true;
+}
+
+// static
 OperationResult JSTypedArray::FastElementGet(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray,
                                              uint32_t index)
 {
@@ -362,7 +400,7 @@ OperationResult JSTypedArray::FastElementGet(JSThread *thread, const JSHandle<JS
     ASSERT(typedarray->IsTypedArray());
     // 3. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
     JSHandle<JSObject> typedarrayObj(typedarray);
-    JSTaggedValue buffer = TypedArrayHelper::GetViewedArrayBuffer(typedarrayObj);
+    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
     // 4. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer",
@@ -404,7 +442,7 @@ bool JSTypedArray::IntegerIndexedElementSet(JSThread *thread, const JSHandle<JST
 
     // 5. Let buffer be the value of O’s [[ViewedArrayBuffer]] internal slot.
     JSHandle<JSObject> typedarrayObj(typedarray);
-    JSTaggedValue buffer = TypedArrayHelper::GetViewedArrayBuffer(typedarrayObj);
+    JSTaggedValue buffer = JSTypedArray::Cast(*typedarrayObj)->GetViewedArrayBuffer();
     // 6. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", false);

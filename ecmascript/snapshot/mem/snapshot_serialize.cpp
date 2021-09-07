@@ -20,24 +20,31 @@
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
 #include "ecmascript/builtins/builtins_boolean.h"
+#include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/builtins/builtins_date.h"
+#include "ecmascript/builtins/builtins_date_time_format.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_function.h"
 #include "ecmascript/builtins/builtins_generator.h"
 #include "ecmascript/builtins/builtins_global.h"
+#include "ecmascript/builtins/builtins_intl.h"
 #include "ecmascript/builtins/builtins_iterator.h"
 #include "ecmascript/builtins/builtins_json.h"
+#include "ecmascript/builtins/builtins_locale.h"
 #include "ecmascript/builtins/builtins_map.h"
 #include "ecmascript/builtins/builtins_math.h"
 #include "ecmascript/builtins/builtins_number.h"
+#include "ecmascript/builtins/builtins_number_format.h"
 #include "ecmascript/builtins/builtins_object.h"
+#include "ecmascript/builtins/builtins_plural_rules.h"
 #include "ecmascript/builtins/builtins_promise.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/builtins/builtins_promise_job.h"
 #include "ecmascript/builtins/builtins_proxy.h"
 #include "ecmascript/builtins/builtins_reflect.h"
 #include "ecmascript/builtins/builtins_regexp.h"
+#include "ecmascript/builtins/builtins_relative_time_format.h"
 #include "ecmascript/builtins/builtins_set.h"
 #include "ecmascript/builtins/builtins_string.h"
 #include "ecmascript/builtins/builtins_string_iterator.h"
@@ -96,9 +103,16 @@ using BuiltinsPromiseHandler = builtins::BuiltinsPromiseHandler;
 using BuiltinsPromiseJob = builtins::BuiltinsPromiseJob;
 using ErrorType = base::ErrorType;
 using DataView = builtins::BuiltinsDataView;
+using Intl = builtins::BuiltinsIntl;
+using Locale = builtins::BuiltinsLocale;
+using DateTimeFormat = builtins::BuiltinsDateTimeFormat;
+using NumberFormat = builtins::BuiltinsNumberFormat;
+using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
+using Collator = builtins::BuiltinsCollator;
+using PluralRules = builtins::BuiltinsPluralRules;
 
 constexpr int TAGGED_SIZE = JSTaggedValue::TaggedTypeSize();
-constexpr int OBJECT_HEADER_SIZE = TaggedObject::ObjectHeaderSize();
+constexpr int OBJECT_HEADER_SIZE = TaggedObject::TaggedObjectSize();
 constexpr int METHOD_SIZE = sizeof(JSMethod);
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
@@ -132,6 +146,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Number::NumberConstructor),
     reinterpret_cast<uintptr_t>(Number::ToExponential),
     reinterpret_cast<uintptr_t>(Number::ToFixed),
+    reinterpret_cast<uintptr_t>(Number::ToLocaleString),
     reinterpret_cast<uintptr_t>(Number::ToPrecision),
     reinterpret_cast<uintptr_t>(Number::ToString),
     reinterpret_cast<uintptr_t>(Number::ValueOf),
@@ -186,6 +201,9 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Date::ToDateString),
     reinterpret_cast<uintptr_t>(Date::ToISOString),
     reinterpret_cast<uintptr_t>(Date::ToJSON),
+    reinterpret_cast<uintptr_t>(Date::ToLocaleDateString),
+    reinterpret_cast<uintptr_t>(Date::ToLocaleString),
+    reinterpret_cast<uintptr_t>(Date::ToLocaleTimeString),
     reinterpret_cast<uintptr_t>(Date::ToString),
     reinterpret_cast<uintptr_t>(Date::ToTimeString),
     reinterpret_cast<uintptr_t>(Date::ToUTCString),
@@ -356,6 +374,7 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsString::LastIndexOf),
     reinterpret_cast<uintptr_t>(BuiltinsString::LocaleCompare),
     reinterpret_cast<uintptr_t>(BuiltinsString::Match),
+    reinterpret_cast<uintptr_t>(BuiltinsString::Normalize),
     reinterpret_cast<uintptr_t>(BuiltinsString::Repeat),
     reinterpret_cast<uintptr_t>(BuiltinsString::Replace),
     reinterpret_cast<uintptr_t>(BuiltinsString::Search),
@@ -364,6 +383,8 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(BuiltinsString::StartsWith),
     reinterpret_cast<uintptr_t>(BuiltinsString::Substring),
     reinterpret_cast<uintptr_t>(BuiltinsString::SubStr),
+    reinterpret_cast<uintptr_t>(BuiltinsString::ToLocaleLowerCase),
+    reinterpret_cast<uintptr_t>(BuiltinsString::ToLocaleUpperCase),
     reinterpret_cast<uintptr_t>(BuiltinsString::ToLowerCase),
     reinterpret_cast<uintptr_t>(BuiltinsString::ToString),
     reinterpret_cast<uintptr_t>(BuiltinsString::ToUpperCase),
@@ -482,12 +503,52 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Promise::GetSpecies),
     reinterpret_cast<uintptr_t>(BuiltinsPromiseJob::PromiseReactionJob),
     reinterpret_cast<uintptr_t>(BuiltinsPromiseJob::PromiseResolveThenableJob),
+    reinterpret_cast<uintptr_t>(Intl::GetCanonicalLocales),
+    reinterpret_cast<uintptr_t>(Locale::LocaleConstructor),
+    reinterpret_cast<uintptr_t>(Locale::Maximize),
+    reinterpret_cast<uintptr_t>(Locale::Minimize),
+    reinterpret_cast<uintptr_t>(Locale::ToString),
+    reinterpret_cast<uintptr_t>(Locale::GetBaseName),
+    reinterpret_cast<uintptr_t>(Locale::GetCalendar),
+    reinterpret_cast<uintptr_t>(Locale::GetCaseFirst),
+    reinterpret_cast<uintptr_t>(Locale::GetCollation),
+    reinterpret_cast<uintptr_t>(Locale::GetHourCycle),
+    reinterpret_cast<uintptr_t>(Locale::GetNumeric),
+    reinterpret_cast<uintptr_t>(Locale::GetNumberingSystem),
+    reinterpret_cast<uintptr_t>(Locale::GetLanguage),
+    reinterpret_cast<uintptr_t>(Locale::GetScript),
+    reinterpret_cast<uintptr_t>(Locale::GetRegion),
+    reinterpret_cast<uintptr_t>(DateTimeFormat::DateTimeFormatConstructor),
+    reinterpret_cast<uintptr_t>(DateTimeFormat::SupportedLocalesOf),
+    reinterpret_cast<uintptr_t>(DateTimeFormat::Format),
+    reinterpret_cast<uintptr_t>(DateTimeFormat::FormatToParts),
+    reinterpret_cast<uintptr_t>(DateTimeFormat::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(DateTimeFormat::FormatRange),
+    reinterpret_cast<uintptr_t>(DateTimeFormat::FormatRangeToParts),
+    reinterpret_cast<uintptr_t>(NumberFormat::NumberFormatConstructor),
+    reinterpret_cast<uintptr_t>(NumberFormat::SupportedLocalesOf),
+    reinterpret_cast<uintptr_t>(NumberFormat::Format),
+    reinterpret_cast<uintptr_t>(NumberFormat::FormatToParts),
+    reinterpret_cast<uintptr_t>(NumberFormat::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(NumberFormat::NumberFormatInternalFormatNumber),
+    reinterpret_cast<uintptr_t>(RelativeTimeFormat::RelativeTimeFormatConstructor),
+    reinterpret_cast<uintptr_t>(RelativeTimeFormat::SupportedLocalesOf),
+    reinterpret_cast<uintptr_t>(RelativeTimeFormat::Format),
+    reinterpret_cast<uintptr_t>(RelativeTimeFormat::FormatToParts),
+    reinterpret_cast<uintptr_t>(RelativeTimeFormat::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(Collator::CollatorConstructor),
+    reinterpret_cast<uintptr_t>(Collator::SupportedLocalesOf),
+    reinterpret_cast<uintptr_t>(Collator::Compare),
+    reinterpret_cast<uintptr_t>(Collator::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(PluralRules::PluralRulesConstructor),
+    reinterpret_cast<uintptr_t>(PluralRules::SupportedLocalesOf),
+    reinterpret_cast<uintptr_t>(PluralRules::Select),
+    reinterpret_cast<uintptr_t>(PluralRules::ResolvedOptions),
 
     // not builtins method
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeSetter),
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeGetter),
     reinterpret_cast<uintptr_t>(JSFunction::NameGetter),
-    reinterpret_cast<uintptr_t>(JSFunction::LengthGetter),
     reinterpret_cast<uintptr_t>(JSArray::LengthSetter),
     reinterpret_cast<uintptr_t>(JSArray::LengthGetter),
 };
@@ -527,7 +588,7 @@ void SnapShotSerialize::Serialize(TaggedObject *objectHeader, CQueue<TaggedObjec
     uint8_t objectType = SerializeHelper::GetObjectType(objectHeader);
     size_t objectSize = objectHeader->GetObjectSize();
     if (objectSize > MAX_REGULAR_HEAP_OBJECT_SIZE) {
-        LOG_ECMA_MEM(FATAL) << "It is a large object. Not Support.";
+        LOG_ECMA_MEM(FATAL) << "It is a huge object. Not Support.";
     }
 
     if (objectSize == 0) {
@@ -941,7 +1002,7 @@ void SnapShotSerialize::NativePointerDeserialize(uint64_t *objectHeader)
     if (native.GetObjectIndex() == MAX_OBJECT_INDEX) {
         return;
     }
-    JSNativePointer::Cast(object)->SetExternalPointer(NativePointerSlotBitToAddr(native));
+    JSNativePointer::Cast(object)->ResetExternalPointer(NativePointerSlotBitToAddr(native));
 }
 
 void SnapShotSerialize::JSObjectSerialize(TaggedObject *objectHeader, uintptr_t snapshotObj, size_t objectSize,

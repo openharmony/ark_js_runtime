@@ -46,6 +46,7 @@ void OldSpaceCollector::InitializePhase()
     auto heapManager = heap_->GetHeapManager();
     oldSpaceAllocator_.Swap(heapManager->GetOldSpaceAllocator());
     nonMovableAllocator_.Swap(heapManager->GetNonMovableSpaceAllocator());
+    machineCodeSpaceAllocator_.Swap(heapManager->GetMachineCodeSpaceAllocator());
     heap_->EnumerateRegions([](Region *current) {
         // ensure mark bitmap
         auto bitmap = current->GetMarkBitmap();
@@ -56,7 +57,7 @@ void OldSpaceCollector::InitializePhase()
         }
     });
     freeSize_ = 0;
-    largeSpaceFreeSize_ = 0;
+    hugeSpaceFreeSize_ = 0;
     oldSpaceCommitSize_ = heap_->GetOldSpace()->GetCommittedSize();
     nonMoveSpaceCommitSize_ = heap_->GetNonMovableSpace()->GetCommittedSize();
 }
@@ -69,6 +70,7 @@ void OldSpaceCollector::FinishPhase()
     auto heapManager = heap_->GetHeapManager();
     heapManager->GetOldSpaceAllocator().Swap(oldSpaceAllocator_);
     heapManager->GetNonMovableSpaceAllocator().Swap(nonMovableAllocator_);
+    heapManager->GetMachineCodeSpaceAllocator().Swap(machineCodeSpaceAllocator_);
 }
 
 void OldSpaceCollector::MarkingPhase()
@@ -148,7 +150,7 @@ void OldSpaceCollector::SweepSpace(Space *space, FreeListAllocator &allocator)
     });
 }
 
-void OldSpaceCollector::SweepSpace(LargeObjectSpace *space)
+void OldSpaceCollector::SweepSpace(HugeObjectSpace *space)
 {
     Region *currentRegion = space->GetRegionList().GetFirst();
 
@@ -159,7 +161,7 @@ void OldSpaceCollector::SweepSpace(LargeObjectSpace *space)
         markBitmap->IterateOverMarkedChunks([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
         if (!isMarked) {
             space->GetRegionList().RemoveNode(currentRegion);
-            largeSpaceFreeSize_ += currentRegion->GetCapacity();
+            hugeSpaceFreeSize_ += currentRegion->GetCapacity();
             space->ClearAndFreeRegion(currentRegion);
         }
         currentRegion = next;
@@ -200,10 +202,12 @@ void OldSpaceCollector::SweepPhases()
         return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
     };
     stringTable->SweepWeakReference(gcUpdateWeak);
+    heap_->GetEcmaVM()->GetJSThread()->IterateWeakEcmaGlobalStorage(gcUpdateWeak);
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
 
     SweepSpace(const_cast<OldSpace *>(heap_->GetOldSpace()), oldSpaceAllocator_);
     SweepSpace(const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace()), nonMovableAllocator_);
-    SweepSpace(heap_->GetLargeObjectSpace());
+    SweepSpace(const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace()));
+    SweepSpace(const_cast<MachineCodeSpace *>(heap_->GetMachineCodeSpace()), machineCodeSpaceAllocator_);
 }
 }  // namespace panda::ecmascript

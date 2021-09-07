@@ -157,7 +157,7 @@ JSTaggedValue CreateBuiltinsJSObject(JSThread *thread, const CString keyCStr)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     JSHandle<JSTaggedValue> obj(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dynclass), dynclass));
-    JSHandle<JSTaggedValue> key(factory->NewFromString(&keyCStr[0]));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(&keyCStr[0]));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSObject::SetProperty(thread, obj, key, value);
     return obj.GetTaggedValue();
@@ -1255,7 +1255,7 @@ HWTEST_F_L0(BuiltinsArrayTest, Join)
     PropertyDescriptor desc2(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(4)));
     JSArray::DefineOwnProperty(thread, JSHandle<JSObject>(obj), key2, desc2);
 
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("2,3,4");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2,3,4");
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(obj.GetTaggedValue());
@@ -1287,7 +1287,7 @@ HWTEST_F_L0(BuiltinsArrayTest, ToString)
     PropertyDescriptor desc2(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(4)));
     JSArray::DefineOwnProperty(thread, JSHandle<JSObject>(obj), key2, desc2);
 
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("2,3,4");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2,3,4");
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(obj.GetTaggedValue());

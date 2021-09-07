@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_GC_MARKER_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_GC_MARKER_H
+#ifndef ECMASCRIPT_MEM_COMPRESS_GC_MARKER_H
+#define ECMASCRIPT_MEM_COMPRESS_GC_MARKER_H
 
 #include "ecmascript/mem/slots.h"
 
@@ -41,4 +41,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_GC_MARKER_H
+#endif  // ECMASCRIPT_MEM_COMPRESS_GC_MARKER_H

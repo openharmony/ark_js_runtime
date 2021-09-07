@@ -28,16 +28,22 @@ void Space::AddRegion(Region *region)
     IncrementCommitted(region->GetCapacity());
 }
 
-void Space::SetUp()
+void Space::Initialize()
 {
-    Region *region = heap_->GetRegionFactory()->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region =
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     if (spaceType_ == MemSpaceType::SEMI_SPACE) {
         region->SetFlag(RegionFlags::IS_IN_YOUNG_GENERATION);
     } else if (spaceType_ == MemSpaceType::SNAPSHOT_SPACE) {
         region->SetFlag(RegionFlags::IS_IN_SNAPSHOT_GENERATION);
     } else if (spaceType_ == MemSpaceType::OLD_SPACE) {
         region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
+    } else if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
+        region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
+        int res = region->SetCodeExecutableAndReadable();
+        LOG_ECMA_MEM(DEBUG) << "Initialize SetCodeExecutableAndReadable" << res;
     }
+
     AddRegion(region);
 }
 
@@ -53,23 +59,23 @@ void Space::ClearAndFreeRegion(Region *region)
     if (region->GetMarkBitmap() != nullptr) {
         auto bitmap = region->GetMarkBitmap();
         auto size = RangeBitmap::GetBitMapSizeInByte(region->GetCapacity());
-        heap_->GetRegionFactory()->Free(bitmap->GetBitMap().Data(), size);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(bitmap->GetBitMap().Data(), size);
         delete bitmap;
     }
     if (region->GetCrossRegionRememberedSet() != nullptr) {
         auto rememberedSet = region->GetCrossRegionRememberedSet();
         auto size = RememberedSet::GetSizeInByte(region->GetCapacity());
-        heap_->GetRegionFactory()->Free(rememberedSet->GetBitMap().Data(), size);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(rememberedSet->GetBitMap().Data(), size);
         delete rememberedSet;
     }
     if (region->GetOldToNewRememberedSet() != nullptr) {
         auto rememberedSet = region->GetOldToNewRememberedSet();
         auto size = RememberedSet::GetSizeInByte(region->GetCapacity());
-        heap_->GetRegionFactory()->Free(rememberedSet->GetBitMap().Data(), size);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(rememberedSet->GetBitMap().Data(), size);
         delete rememberedSet;
     }
     DecrementCommitted(region->GetCapacity());
-    heap_->GetRegionFactory()->FreeRegion(region);
+    const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeRegion(region);
 }
 
 size_t Space::GetHeapObjectSize() const
@@ -99,7 +105,8 @@ bool SemiSpace::Expand(uintptr_t top)
         return false;
     }
     GetCurrentRegion()->SetHighWaterMark(top);
-    Region *region = heap->GetRegionFactory()->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region =
+        const_cast<RegionFactory *>(heap->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_YOUNG_GENERATION);
 
     AddRegion(region);
@@ -167,7 +174,8 @@ bool OldSpace::Expand()
         LOG_ECMA_MEM(FATAL) << "Committed size " << GetCommittedSize() << " of old space is too big. ";
         return false;
     }
-    Region *region = GetHeap()->GetRegionFactory()->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region =
+        const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
     AddRegion(region);
     return true;
@@ -225,7 +233,7 @@ size_t OldSpace::GetHeapObjectSize() const
     size_t availableSize = GetHeap()->GetHeapManager()->GetOldSpaceAllocator().GetAvailableSize();
     size_t regionSize = GetRegionList().GetLength() * DEFAULT_REGION_SIZE;
     result = regionSize - availableSize;
-    result += GetHeap()->GetLargeObjectSpace()->GetHeapObjectSize();
+    result += GetHeap()->GetHugeObjectSpace()->GetHeapObjectSize();
     return result;
 }
 
@@ -240,7 +248,8 @@ bool NonMovableSpace::Expand()
         LOG_ECMA_MEM(FATAL) << "Committed size " << GetCommittedSize() << " of non movable space is too big. ";
         return false;
     }
-    Region *region = GetHeap()->GetRegionFactory()->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region =
+        const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     AddRegion(region);
     return true;
 }
@@ -268,7 +277,8 @@ bool SnapShotSpace::Expand(uintptr_t top)
     if (current != nullptr) {
         current->SetHighWaterMark(top);
     }
-    Region *region = GetHeap()->GetRegionFactory()->AllocateAlignedRegion(this, DEFAULT_SNAPSHOT_SPACE_SIZE);
+    Region *region = const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->
+                        AllocateAlignedRegion(this, DEFAULT_SNAPSHOT_SPACE_SIZE);
     region->SetFlag(RegionFlags::IS_IN_SNAPSHOT_GENERATION);
     AddRegion(region);
     return true;
@@ -276,11 +286,11 @@ bool SnapShotSpace::Expand(uintptr_t top)
 
 RangeBitmap *Region::CreateMarkBitmap()
 {
-    size_t heapSize = IsFlagSet(RegionFlags::IS_LARGE_OBJECT) ? LARGE_BITMAP_MIN_SIZE : GetCapacity();
-    // Only one large object is stored in a region. The BitmapSize of a large region will always be 8 Bytes.
+    size_t heapSize = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ? LARGE_BITMAP_MIN_SIZE : GetCapacity();
+    // Only one huge object is stored in a region. The BitmapSize of a huge region will always be 8 Bytes.
     size_t bitmapSize = RangeBitmap::GetBitMapSizeInByte(heapSize);
 
-    auto bitmapData = space_->GetHeap()->GetRegionFactory()->Allocate(bitmapSize);
+    auto bitmapData = const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Allocate(bitmapSize);
     auto *ret = new RangeBitmap(this, heapSize, bitmapData);
 
     ret->ClearAllBits();
@@ -290,14 +300,14 @@ RangeBitmap *Region::CreateMarkBitmap()
 RememberedSet *Region::CreateRememberedSet()
 {
     auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
-    auto setAddr = space_->GetHeap()->GetRegionFactory()->Allocate(setSize);
+    auto setAddr = const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Allocate(setSize);
     uintptr_t setData = ToUintPtr(setAddr);
     auto ret = new RememberedSet(ToUintPtr(this), GetCapacity(), setData);
     ret->ClearAllBits();
     return ret;
 }
 
-void Space::TearDown()
+void Space::Destroy()
 {
     ReclaimRegions();
 }
@@ -348,30 +358,31 @@ bool NonMovableSpace::IsLive(TaggedObject *object) const
     return false;
 }
 
-LargeObjectSpace::LargeObjectSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
-    : Space(heap, MemSpaceType::LARGE_OBJECT_SPACE, initialCapacity, maximumCapacity)
+HugeObjectSpace::HugeObjectSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
+    : Space(heap, MemSpaceType::HUGE_OBJECT_SPACE, initialCapacity, maximumCapacity)
 {
 }
 
-uintptr_t LargeObjectSpace::Allocate(size_t objectSize)
+uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
 {
     if (GetCommittedSize() >= GetMaximumCapacity()) {
-        LOG_ECMA_MEM(FATAL) << "Committed size " << GetCommittedSize() << " of large object space is too big. "
+        LOG_ECMA_MEM(FATAL) << "Committed size " << GetCommittedSize() << " of huge object space is too big. "
                             << "length: " << GetRegionList().GetLength();
         return 0;
     }
     size_t alignedSize = AlignUp(objectSize + sizeof(Region), PANDA_POOL_ALIGNMENT_IN_BYTES);
-    if (UNLIKELY(alignedSize > MAX_LARGE_OBJECT_SIZE)) {
+    if (UNLIKELY(alignedSize > MAX_HUGE_OBJECT_SIZE)) {
         LOG_ECMA_MEM(FATAL) << "The size is too big for this allocator. Return nullptr.";
         return 0;
     }
-    Region *region = GetHeap()->GetRegionFactory()->AllocateAlignedRegion(this, alignedSize);
-    region->SetFlag(RegionFlags::IS_LARGE_OBJECT);
+    Region *region =
+        const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->AllocateAlignedRegion(this, alignedSize);
+    region->SetFlag(RegionFlags::IS_HUGE_OBJECT);
     AddRegion(region);
     return region->GetBegin();
 }
 
-bool LargeObjectSpace::ContainObject(TaggedObject *object) const
+bool HugeObjectSpace::ContainObject(TaggedObject *object) const
 {
     auto region = GetRegionList().GetFirst();
     while (region != nullptr) {
@@ -383,12 +394,12 @@ bool LargeObjectSpace::ContainObject(TaggedObject *object) const
     return false;
 }
 
-bool LargeObjectSpace::IsLive(TaggedObject *object) const
+bool HugeObjectSpace::IsLive(TaggedObject *object) const
 {
     return ContainObject(object);
 }
 
-size_t LargeObjectSpace::GetHeapObjectSize() const
+size_t HugeObjectSpace::GetHeapObjectSize() const
 {
     size_t result = 0;
     EnumerateRegions([&result](Region *current) {
@@ -398,11 +409,30 @@ size_t LargeObjectSpace::GetHeapObjectSize() const
     return result;
 }
 
-void LargeObjectSpace::IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const
+void HugeObjectSpace::IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const
 {
     EnumerateRegions([&](Region *region) {
         uintptr_t curPtr = region->GetBegin();
         objectVisitor(reinterpret_cast<TaggedObject *>(curPtr));
     });
+}
+
+MachineCodeSpace::MachineCodeSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
+    : Space(heap, MemSpaceType::MACHINE_CODE_SPACE, initialCapacity, maximumCapacity)
+{
+}
+
+bool MachineCodeSpace::Expand()
+{
+    if (GetCommittedSize() >= GetMaximumCapacity()) {
+        LOG_ECMA_MEM(FATAL) << "Committed size " << GetCommittedSize() << " of machine Code space is too big. ";
+        return false;
+    }
+    Region *region =
+        const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    AddRegion(region);
+    int res = region->SetCodeExecutableAndReadable();
+    LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;
+    return true;
 }
 }  // namespace panda::ecmascript

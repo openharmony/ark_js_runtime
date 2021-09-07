@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
+#ifndef ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
+#define ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
 
 #include "ecmascript/mem/compress_gc_marker.h"
 #include "ecmascript/mem/semi_space_collector.h"
@@ -50,7 +50,7 @@ private:
     uintptr_t AllocateOld(size_t size);
     void RecordWeakReference(uint32_t threadId, JSTaggedType *ref);
     void SweepSpace(Space *space, FreeListAllocator &allocator);
-    void SweepSpace(LargeObjectSpace *space);  // Only sweep large space.
+    void SweepSpace(HugeObjectSpace *space);  // Only sweep huge space.
     void FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart, uintptr_t freeEnd);
 
     Heap *heap_;
@@ -76,4 +76,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
+#endif  // ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H

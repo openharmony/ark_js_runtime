@@ -23,6 +23,7 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
@@ -292,24 +293,21 @@ JSTaggedValue JsonStringifier::GetSerializeValue(const JSHandle<JSTaggedValue> &
 
         // c. If IsCallable(toJSON) is true
         if (UNLIKELY(toJsonFun->IsCallable())) {
-            array_size_t length = 1;
-            JSHandle<TaggedArray> msg = factory_->NewTaggedArray(length);
-            msg->Set(thread_, 0, key.GetTaggedValue());
             // Let value be Call(toJSON, value, «key»).
-            tagValue = JSFunction::Call(thread_, toJsonFun, value, msg);
+            InternalCallParams *arguments = thread_->GetInternalCallParams();
+            arguments->MakeArgv(key);
+            tagValue = JSFunction::Call(thread_, toJsonFun, value, 1, arguments->GetArgv());
             // ii. ReturnIfAbrupt(value).
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
         }
     }
 
     if (UNLIKELY(replacer->IsCallable())) {
-        array_size_t length = 2;
         handleValue_.Update(tagValue);
-        JSHandle<TaggedArray> msg = factory_->NewTaggedArray(length);
-        msg->Set(thread_, 0, key);
-        msg->Set(thread_, 1, handleValue_);
         // a. Let value be Call(ReplacerFunction, holder, «key, value»).
-        tagValue = JSFunction::Call(thread_, replacer, object, msg);
+        InternalCallParams *arguments = thread_->GetInternalCallParams();
+        arguments->MakeArgv(key, handleValue_);
+        tagValue = JSFunction::Call(thread_, replacer, object, 2, arguments->GetArgv());  // 2: two args
         // b. ReturnIfAbrupt(value).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
     }
@@ -468,7 +466,7 @@ bool JsonStringifier::SerializeJSONObject(const JSHandle<JSTaggedValue> &value, 
             JSTaggedValue serializeValue = GetSerializeValue(value, propList_[i], handleValue_, replacer);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
             if (UNLIKELY(serializeValue.IsUndefined() || serializeValue.IsSymbol() ||
-                         (serializeValue.IsECMAObject() && serializeValue.IsCallable()))) {
+                (serializeValue.IsECMAObject() && serializeValue.IsCallable()))) {
                 continue;
             }
             handleValue_.Update(serializeValue);
@@ -757,7 +755,7 @@ bool JsonStringifier::AppendJsonString(const JSHandle<JSObject> &obj, const JSHa
     JSTaggedValue serializeValue = GetSerializeValue(JSHandle<JSTaggedValue>(obj), handleKey_, handleValue_, replacer);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
     if (UNLIKELY(serializeValue.IsUndefined() || serializeValue.IsSymbol() ||
-                 (serializeValue.IsECMAObject() && serializeValue.IsCallable()))) {
+        (serializeValue.IsECMAObject() && serializeValue.IsCallable()))) {
         return hasContent;
     }
     handleValue_.Update(serializeValue);

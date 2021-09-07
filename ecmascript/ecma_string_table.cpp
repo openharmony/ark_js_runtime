@@ -25,12 +25,12 @@
 namespace panda::ecmascript {
 EcmaStringTable::EcmaStringTable(const EcmaVM *vm) : vm_(vm) {}
 
-EcmaString *EcmaStringTable::GetString(const uint8_t *utf8Data, uint32_t utf8Len) const
+EcmaString *EcmaStringTable::GetString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress) const
 {
-    uint32_t hashCode = EcmaString::ComputeHashcodeUtf8(utf8Data);
+    uint32_t hashCode = EcmaString::ComputeHashcodeUtf8(utf8Data, canBeCompress);
     for (auto it = table_.find(hashCode); it != table_.end(); it++) {
         auto foundedString = it->second;
-        if (EcmaString::StringsAreEqualUtf8(foundedString, utf8Data, utf8Len)) {
+        if (EcmaString::StringsAreEqualUtf8(foundedString, utf8Data, utf8Len, canBeCompress)) {
             return foundedString;
         }
     }
@@ -75,31 +75,27 @@ void EcmaStringTable::InternEmptyString(EcmaString *emptyStr)
     InternString(emptyStr);
 }
 
-EcmaString *EcmaStringTable::GetOrInternString(const uint8_t *utf8Data, uint32_t utf8Len)
+EcmaString *EcmaStringTable::GetOrInternString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress)
 {
-    EcmaString *result = GetString(utf8Data, utf8Len);
+    EcmaString *result = GetString(utf8Data, utf8Len, canBeCompress);
     if (result != nullptr) {
         return result;
     }
 
-    result = EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_);
-
+    result = EcmaString::CreateFromUtf8(utf8Data, utf8Len, vm_, canBeCompress);
     InternString(result);
-
     return result;
 }
 
-EcmaString *EcmaStringTable::GetOrInternString(const uint16_t *utf16Data, uint32_t utf16Len)
+EcmaString *EcmaStringTable::GetOrInternString(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress)
 {
     EcmaString *result = GetString(utf16Data, utf16Len);
     if (result != nullptr) {
         return result;
     }
 
-    result = EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_);
-
+    result = EcmaString::CreateFromUtf16(utf16Data, utf16Len, vm_, canBeCompress);
     InternString(result);
-
     return result;
 }
 

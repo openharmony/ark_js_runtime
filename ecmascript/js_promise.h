@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PROMISE_H
-#define PANDA_RUNTIME_ECMASCRIPT_PROMISE_H
+#ifndef ECMASCRIPT_PROMISE_H
+#define ECMASCRIPT_PROMISE_H
 
 #include "js_object.h"
 #include "ecmascript/js_function.h"
@@ -156,4 +156,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PROMISE_H
+#endif  // ECMASCRIPT_PROMISE_H

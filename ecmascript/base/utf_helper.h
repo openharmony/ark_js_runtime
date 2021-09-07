@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_UTF_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_UTF_HELPER_H
+#ifndef ECMASCRIPT_BASE_UTF_HELPER_H
+#define ECMASCRIPT_BASE_UTF_HELPER_H
 
 #include <cstdint>
 #include <vector>
@@ -83,4 +83,4 @@ static inline uint32_t CombineTwoU16(uint16_t d0, uint16_t d1)
 }
 }  // namespace panda::ecmascript::base::utf_helper
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_UTF_HELPER_H
+#endif  // ECMASCRIPT_BASE_UTF_HELPER_H

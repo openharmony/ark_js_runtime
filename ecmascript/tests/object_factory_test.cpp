@@ -92,6 +92,7 @@ HWTEST_F_L0(ObjectFactoryTest, NewJSObjectByConstructor)
     auto *prototype = cls->GetPrototype().GetTaggedObject();
     [[maybe_unused]] JSHandle<JSObject> newObj2 =
         factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    // CompressGC not the same
     EXPECT_TRUE(prototype != newObjCls->GetPrototype().GetTaggedObject());
 }
 #endif

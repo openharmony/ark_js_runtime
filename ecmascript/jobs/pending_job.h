@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PENDING_JOB_H
-#define PANDA_RUNTIME_ECMASCRIPT_PENDING_JOB_H
+#ifndef ECMASCRIPT_JOBS_PENDING_JOB_H
+#define ECMASCRIPT_JOBS_PENDING_JOB_H
 
 #include "ecmascript/ecma_macros.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/record.h"
 #include "ecmascript/js_handle.h"
@@ -39,7 +40,9 @@ public:
         ASSERT(job->IsCallable());
         JSHandle<JSTaggedValue> thisValue(thread, JSTaggedValue::Undefined());
         JSHandle<TaggedArray> argv(thread, pendingJob->GetArguments());
-        return JSFunction::Call(thread, job, thisValue, argv);
+        InternalCallParams *args = thread->GetInternalCallParams();
+        args->MakeArgList(*argv);
+        return JSFunction::Call(thread, job, thisValue, argv->GetLength(), args->GetArgv());
     }
 
     static constexpr size_t JOB_OFFSET = Record::SIZE;
@@ -51,4 +54,4 @@ public:
     DECL_VISIT_OBJECT(JOB_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript::job
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PENDING_JOB_H
+#endif  // ECMASCRIPT_JOBS_PENDING_JOB_H

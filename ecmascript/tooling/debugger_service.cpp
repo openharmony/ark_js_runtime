@@ -20,7 +20,7 @@
 namespace panda::tooling::ecmascript {
 static std::unique_ptr<ProtocolHandler> g_handler = nullptr;  // NOLINT(fuchsia-statically-constructed-objects)
 
-void InitializeDebugger(const std::function<void(std::string)> &onResponse, void *vm)
+void InitializeDebugger(const std::function<void(std::string)> &onResponse, const EcmaVM *vm)
 {
     g_handler = std::make_unique<ProtocolHandler>(onResponse, vm);
 }

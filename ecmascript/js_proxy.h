@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSPROXY_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSPROXY_H
+#ifndef ECMASCRIPT_JSPROXY_H
+#define ECMASCRIPT_JSPROXY_H
 
 #include "ecmascript/tagged_array.h"
 #include "js_object.h"
@@ -93,10 +93,11 @@ public:
 
     // ES6 9.5.13 [[Call]] (thisArgument, argumentsList)
     static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSProxy> &proxy,
-                                      const JSHandle<JSTaggedValue> &thisArg, const JSHandle<TaggedArray> &argv);
+                                      const JSHandle<JSTaggedValue> &thisArg, uint32_t argc,
+                                      const JSTaggedType argv[]);
     // ES6 9.5.14 [[Construct]] ( argumentsList, newTarget)
-    static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSProxy> &proxy,
-                                           const JSHandle<TaggedArray> &argv, const JSHandle<JSTaggedValue> &newTarget);
+    static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSProxy> &proxy, uint32_t argc,
+                                           const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget);
 
     static constexpr size_t METHOD_OFFSET = ECMAObject::SIZE;
     SET_GET_NATIVE_FIELD(Method, JSMethod, METHOD_OFFSET, TARGET_OFFSET)
@@ -110,4 +111,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSPROXY_H
+#endif  // ECMASCRIPT_JSPROXY_H

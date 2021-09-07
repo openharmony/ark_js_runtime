@@ -16,6 +16,7 @@
 #include "js_proxy.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/object_factory.h"
@@ -68,9 +69,9 @@ JSTaggedValue JSProxy::GetPrototype(JSThread *thread, const JSHandle<JSProxy> &p
         return JSHandle<JSObject>(targetHandle)->GetPrototype(thread);
     }
     // 8. Let handlerProto be Call(trap, handler, «target»).
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
-    args->Set(thread, 0, targetHandle);
-    JSTaggedValue handlerProto = JSFunction::Call(thread, trap, handler, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle);
+    JSTaggedValue handlerProto = JSFunction::Call(thread, trap, handler, 1, arguments->GetArgv());
 
     // 9. ReturnIfAbrupt(handlerProto).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -126,11 +127,11 @@ bool JSProxy::SetPrototype(JSThread *thread, const JSHandle<JSProxy> &proxy, con
         return JSTaggedValue::SetPrototype(thread, targetHandle, proto);
     };
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(2);  // 2: target and proto
-    args->Set(thread, 0, targetHandle);
-    args->Set(thread, 1, proto);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle, proto);
+    JSTaggedValue trapResult =
+        JSFunction::Call(thread, trap, handlerTag, 2, arguments->GetArgv());  // 2: target and proto
 
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, V»)).
     // If booleanTrapResult is false, return false
     bool booleanTrapResult = trapResult.ToBoolean();
@@ -185,9 +186,9 @@ bool JSProxy::IsExtensible(JSThread *thread, const JSHandle<JSProxy> &proxy)
     // 8. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target»)).
     JSHandle<JSTaggedValue> newTgt(thread, JSTaggedValue::Undefined());
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
-    args->Set(thread, 0, targetHandle);
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle);
+    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, 1, arguments->GetArgv());
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 9. ReturnIfAbrupt(booleanTrapResult).
@@ -232,9 +233,9 @@ bool JSProxy::PreventExtensions(JSThread *thread, const JSHandle<JSProxy> &proxy
         return JSTaggedValue::PreventExtensions(thread, targetHandle);
     }
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
-    args->Set(thread, 0, targetHandle);
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle);
+    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, 1, arguments->GetArgv());
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 9. ReturnIfAbrupt(booleanTrapResult).
@@ -282,10 +283,11 @@ bool JSProxy::GetOwnProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, c
         return JSTaggedValue::GetOwnProperty(thread, targetHandle, key, desc);
     }
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(2);  // 2: target and key
-    args->Set(thread, 0, targetHandle);
-    args->Set(thread, 1, key);
-    JSTaggedValue trapResultObj = JSFunction::Call(thread, trap, handlerTag, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle, key);
+    JSTaggedValue trapResultObj =
+        JSFunction::Call(thread, trap, handlerTag, 2, arguments->GetArgv());  // 2: target and key
+
     JSHandle<JSTaggedValue> resultHandle(thread, trapResultObj);
 
     // 11. If Type(trapResultObj) is neither Object nor Undefined, throw a TypeError exception.
@@ -376,11 +378,10 @@ bool JSProxy::DefineOwnProperty(JSThread *thread, const JSHandle<JSProxy> &proxy
     // 9. Let descObj be FromPropertyDescriptor(Desc).
     JSHandle<JSTaggedValue> descObj = JSObject::FromPropertyDescriptor(thread, desc);
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(3);  // 3: target, key and desc
-    args->Set(thread, 0, targetHandle);
-    args->Set(thread, 1, key);
-    args->Set(thread, 2, descObj);  // 2: the third value is desc
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle, key, descObj);
+    JSTaggedValue trapResult =
+        JSFunction::Call(thread, trap, handlerTag, 3, arguments->GetArgv());  // 3: target, key and desc
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 11. ReturnIfAbrupt(booleanTrapResult).
@@ -461,10 +462,11 @@ bool JSProxy::HasProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, cons
 
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, P»)).
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(2);  // 2: target and key
-    args->Set(thread, 0, targetHandle);
-    args->Set(thread, 1, key);
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
+
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle, key);
+    JSTaggedValue trapResult =
+        JSFunction::Call(thread, trap, handlerTag, 2, arguments->GetArgv());  // 2: target and key
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 10. ReturnIfAbrupt(booleanTrapResult).
@@ -519,11 +521,10 @@ OperationResult JSProxy::GetProperty(JSThread *thread, const JSHandle<JSProxy> &
     }
     // 9. Let trapResult be Call(trap, handler, «target, P, Receiver»).
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(3);  // 3: «target, P, Receiver»
-    args->Set(thread, 0, targetHandle);
-    args->Set(thread, 1, key);
-    args->Set(thread, 2, receiver);  // 2: the third value is receiver
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle, key, receiver);
+    JSTaggedValue trapResult =
+        JSFunction::Call(thread, trap, handlerTag, 3, arguments->GetArgv());  // 3: «target, P, Receiver»
     JSHandle<JSTaggedValue> resultHandle(thread, trapResult);
 
     // 10. ReturnIfAbrupt(trapResult).
@@ -587,12 +588,10 @@ bool JSProxy::SetProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, cons
 
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, P, V, Receiver»))
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(4);  // 4: «target, P, V, Receiver»
-    args->Set(thread, 0, targetHandle);
-    args->Set(thread, 1, key);
-    args->Set(thread, 2, value);     // 2: the third value is value
-    args->Set(thread, 3, receiver);  // 3: the fourth value is receiver
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle, key, value, receiver);
+    JSTaggedValue trapResult =
+        JSFunction::Call(thread, trap, handlerTag, 4, arguments->GetArgv());  // 4: «target, P, V, Receiver»
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 11. ReturnIfAbrupt(booleanTrapResult).
@@ -645,10 +644,10 @@ bool JSProxy::DeleteProperty(JSThread *thread, const JSHandle<JSProxy> &proxy, c
     // 9. Let booleanTrapResult be ToBoolean(Call(trap, handler, «target, P»)).
     JSHandle<JSTaggedValue> newTgt(thread, JSTaggedValue::Undefined());
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(2);  // 2: target and key
-    args->Set(thread, 0, targetHandle);
-    args->Set(thread, 1, key);
-    JSTaggedValue trapResult = JSFunction::Call(thread, trap, handlerTag, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle, key);
+    JSTaggedValue trapResult =
+        JSFunction::Call(thread, trap, handlerTag, 2, arguments->GetArgv());  // 2: target and key
 
     bool booleanTrapResult = trapResult.ToBoolean();
     // 11. ReturnIfAbrupt(booleanTrapResult).
@@ -706,9 +705,9 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
 
     // 8.Let trapResultArray be Call(trap, handler, «target»).
     JSHandle<JSFunction> tagFunc(targetHandle);
-    JSHandle<TaggedArray> callArgs = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
-    callArgs->Set(thread, 0, targetHandle);
-    JSTaggedValue res = JSFunction::Call(thread, trap, handlerHandle, callArgs);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(targetHandle);
+    JSTaggedValue res = JSFunction::Call(thread, trap, handlerHandle, 1, arguments->GetArgv());
     JSHandle<JSTaggedValue> trap_res_arr(thread, res);
 
     // 9.Let trapResult be CreateListFromArrayLike(trapResultArray, «String, Symbol»).
@@ -822,7 +821,8 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
 
 // ES6 9.5.13 [[Call]] (thisArgument, argumentsList)
 JSTaggedValue JSProxy::CallInternal(JSThread *thread, const JSHandle<JSProxy> &proxy,
-                                    const JSHandle<JSTaggedValue> &thisArg, const JSHandle<TaggedArray> &argv)
+                                    const JSHandle<JSTaggedValue> &thisArg, uint32_t argc,
+                                    const JSTaggedType argv[])
 {
     // step 1 ~ 4 get ProxyHandler and ProxyTarget
     JSHandle<JSTaggedValue> handler(thread, proxy->GetHandler());
@@ -841,23 +841,25 @@ JSTaggedValue JSProxy::CallInternal(JSThread *thread, const JSHandle<JSProxy> &p
     // 7.If trap is undefined, then
     //   a.Return Call(target, thisArgument, argumentsList).
     if (method->IsUndefined()) {
-        return JSFunction::Call(thread, target, thisArg, argv);
+        return JSFunction::Call(thread, target, thisArg, argc, argv);
     }
     // 8.Let argArray be CreateArrayFromList(argumentsList).
-    JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, argv);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
+    for (array_size_t index = 0; index < argc; ++index) {
+        taggedArray->Set(thread, index, JSTaggedValue(argv[index]));
+    }
+    JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
 
     // 9.Return Call(trap, handler, «target, thisArgument, argArray»).
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> nextArgv(factory->NewTaggedArray(3));  // 3: «target, thisArgument, argArray»
-    nextArgv->Set(thread, 0, target.GetTaggedValue());
-    nextArgv->Set(thread, 1, thisArg.GetTaggedValue());
-    nextArgv->Set(thread, 2, arrHandle.GetTaggedValue());  // 2: the third value is an args-array
-    return JSFunction::Call(thread, method, handler, nextArgv);
+    InternalCallParams *proxyArgv = thread->GetInternalCallParams();
+    proxyArgv->MakeArgv(target, thisArg, arrHandle);
+    return JSFunction::Call(thread, method, handler, 3, proxyArgv->GetArgv());  // 3: «target, thisArgument, argArray»
 }
 
 // ES6 9.5.14 [[Construct]] ( argumentsList, newTarget)
-JSTaggedValue JSProxy::ConstructInternal(JSThread *thread, const JSHandle<JSProxy> &proxy,
-                                         const JSHandle<TaggedArray> &argv, const JSHandle<JSTaggedValue> &newTarget)
+JSTaggedValue JSProxy::ConstructInternal(JSThread *thread, const JSHandle<JSProxy> &proxy, uint32_t argc,
+                                         const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget)
 {
     // step 1 ~ 4 get ProxyHandler and ProxyTarget
     JSHandle<JSTaggedValue> handler(thread, proxy->GetHandler());
@@ -878,19 +880,22 @@ JSTaggedValue JSProxy::ConstructInternal(JSThread *thread, const JSHandle<JSProx
     //   b.Return Construct(target, argumentsList, newTarget).
     if (method->IsUndefined()) {
         ASSERT(target->IsConstructor());
-        return JSFunction::Construct(thread, target, argv, newTarget);
+        return JSFunction::Construct(thread, target, argc, argv, newTarget);
     }
 
     // 8.Let argArray be CreateArrayFromList(argumentsList).
-    JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, argv);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
+    for (array_size_t index = 0; index < argc; ++index) {
+        taggedArray->Set(thread, index, JSTaggedValue(argv[index]));
+    }
+    JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
 
     // step 8 ~ 9 Call(trap, handler, «target, argArray, newTarget »).
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> nextArgv(factory->NewTaggedArray(3));  // 3: «target, argArray, newTarget »
-    nextArgv->Set(thread, 0, target.GetTaggedValue());
-    nextArgv->Set(thread, 1, arrHandle.GetTaggedValue());
-    nextArgv->Set(thread, 2, newTarget.GetTaggedValue());  // 2: the third value is newTarget
-    JSTaggedValue newObj = JSFunction::Call(thread, method, handler, nextArgv);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(target, arrHandle, newTarget);
+    JSTaggedValue newObj =
+        JSFunction::Call(thread, method, handler, 3, arguments->GetArgv());  // 3: «target, argArray, newTarget »
     // 10.ReturnIfAbrupt(newObj).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 11.If Type(newObj) is not Object, throw a TypeError exception.

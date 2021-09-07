@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_STRING_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_STRING_INL_H
+#ifndef ECMASCRIPT_STRING_INL_H
+#define ECMASCRIPT_STRING_INL_H
 
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
@@ -47,14 +47,14 @@ inline EcmaString *EcmaString::CreateEmptyString(const EcmaVM *vm)
 }
 
 /* static */
-inline EcmaString *EcmaString::CreateFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len, const EcmaVM *vm)
+inline EcmaString *EcmaString::CreateFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len, const EcmaVM *vm,
+                                              bool canBeCompress)
 {
     if (utf8Len == 0) {
         return vm->GetFactory()->GetEmptyString().GetObject<EcmaString>();
     }
-    bool canBeCompressed = CanBeCompressed(utf8Data);
     EcmaString *string = nullptr;
-    if (canBeCompressed) {
+    if (canBeCompress) {
         string = AllocStringObject(utf8Len, true, vm);
         ASSERT(string != nullptr);
 
@@ -75,16 +75,16 @@ inline EcmaString *EcmaString::CreateFromUtf8(const uint8_t *utf8Data, uint32_t 
     return string;
 }
 
-inline EcmaString *EcmaString::CreateFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len, const EcmaVM *vm)
+inline EcmaString *EcmaString::CreateFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len, const EcmaVM *vm,
+                                               bool canBeCompress)
 {
     if (utf16Len == 0) {
         return vm->GetFactory()->GetEmptyString().GetObject<EcmaString>();
     }
-    bool canBeCompressed = CanBeCompressed(utf16Data, utf16Len);
-    auto string = AllocStringObject(utf16Len, canBeCompressed, vm);
+    auto string = AllocStringObject(utf16Len, canBeCompress, vm);
     ASSERT(string != nullptr);
 
-    if (canBeCompressed) {
+    if (canBeCompress) {
         CopyUtf16AsUtf8(utf16Data, string->GetDataUtf8Writable(), utf16Len);
     } else {
         uint32_t len = utf16Len * (sizeof(uint16_t) / sizeof(uint8_t));
@@ -97,7 +97,7 @@ inline EcmaString *EcmaString::CreateFromUtf16(const uint16_t *utf16Data, uint32
     return string;
 }
 
-template <bool verify>
+template<bool verify>
 inline uint16_t EcmaString::At(int32_t index) const
 {
     int32_t length = GetLength();

@@ -66,8 +66,8 @@ JSTaggedValue BuiltinsStringIterator::Next(EcmaRuntimeCallInfo *argv)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     if (position + 1 == len || first < base::utf_helper::DECODE_LEAD_LOW ||
         first > base::utf_helper::DECODE_LEAD_HIGH) {
-        std::vector<uint16_t> resultString{first, 0x0};
-        result.Update(factory->NewFromUtf16(resultString.data(), 1).GetTaggedValue());
+        std::vector<uint16_t> resultString {first, 0x0};
+        result.Update(factory->NewFromUtf16UnCheck(resultString.data(), 1, true).GetTaggedValue());
     } else {
         // 11. Else,
         // a. Let second be the code unit value at index position+1 in the String S.
@@ -76,11 +76,12 @@ JSTaggedValue BuiltinsStringIterator::Next(EcmaRuntimeCallInfo *argv)
         // c. Else, let resultString be the string consisting of the code unit first followed by the code unit second.
         uint16_t second = string.GetObject<EcmaString>()->At<false>(position + 1);
         if (second < base::utf_helper::DECODE_TRAIL_LOW || second > base::utf_helper::DECODE_TRAIL_HIGH) {
-            std::vector<uint16_t> resultString{first, 0x0};
-            result.Update(factory->NewFromUtf16(resultString.data(), 1).GetTaggedValue());
+            std::vector<uint16_t> resultString {first, 0x0};
+            result.Update(factory->NewFromUtf16UnCheck(resultString.data(), 1, false).GetTaggedValue());
         } else {
-            std::vector<uint16_t> resultString{first, second, 0x0};
-            result.Update(factory->NewFromUtf16(resultString.data(), 2).GetTaggedValue());  // 2: two bytes
+            std::vector<uint16_t> resultString {first, second, 0x0};
+            result.Update(
+                factory->NewFromUtf16UnCheck(resultString.data(), 2, false).GetTaggedValue());  // 2: two bytes
             resultSize = 2;  // 2: 2 means that two bytes represent a character string
         }
     }

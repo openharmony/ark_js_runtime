@@ -29,7 +29,7 @@ namespace panda::ecmascript {
 HeapProfiler::~HeapProfiler()
 {
     ClearSnapShot();
-    allocator_->Finalize(jsonSerializer_);
+    const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(jsonSerializer_);
     jsonSerializer_ = nullptr;
 }
 
@@ -144,7 +144,6 @@ CString HeapProfiler::GetTimeStamp()
 
 bool HeapProfiler::ForceFullGC(JSThread *thread)
 {
-    ASSERT(thread != nullptr);
     auto vm = thread->GetEcmaVM();
     if (vm->IsInitialized()) {
         const_cast<Heap *>(vm->GetHeap())->CollectGarbage(TriggerGCType::SEMI_GC);
@@ -160,7 +159,7 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
     DISALLOW_GARBAGE_COLLECTION;
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
-            auto *snapShot = allocator_->New<HeapSnapShot>(thread, allocator_);
+            auto *snapShot = const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_);
             if (snapShot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
@@ -170,7 +169,7 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
             return snapShot;
         }
         case SampleType::REAL_TIME: {
-            auto *snapShot = allocator_->New<HeapSnapShot>(thread, allocator_);
+            auto *snapShot = const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_);
             if (snapShot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
@@ -196,7 +195,7 @@ void HeapProfiler::AddSnapShot(HeapSnapShot *snapshot)
 void HeapProfiler::ClearSnapShot()
 {
     for (auto *snapshot : hprofs_) {
-        allocator_->Finalize(snapshot);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(snapshot);
     }
     hprofs_.clear();
 }

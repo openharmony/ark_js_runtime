@@ -57,7 +57,6 @@ public:
 
 HWTEST_F_L0(BuiltinsTest, ObjectInit)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -67,7 +66,6 @@ HWTEST_F_L0(BuiltinsTest, ObjectInit)
 
 HWTEST_F_L0(BuiltinsTest, FunctionInit)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -77,7 +75,6 @@ HWTEST_F_L0(BuiltinsTest, FunctionInit)
 
 HWTEST_F_L0(BuiltinsTest, NumberInit)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -87,7 +84,6 @@ HWTEST_F_L0(BuiltinsTest, NumberInit)
 
 HWTEST_F_L0(BuiltinsTest, SetInit)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -97,7 +93,6 @@ HWTEST_F_L0(BuiltinsTest, SetInit)
 
 HWTEST_F_L0(BuiltinsTest, MapInit)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -107,7 +102,6 @@ HWTEST_F_L0(BuiltinsTest, MapInit)
 
 HWTEST_F_L0(BuiltinsTest, StrictModeForbiddenAccess)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -115,8 +109,8 @@ HWTEST_F_L0(BuiltinsTest, StrictModeForbiddenAccess)
 
     JSHandle<JSFunction> function = factory->NewJSFunction(env, static_cast<void *>(nullptr));
 
-    JSHandle<JSTaggedValue> callerKey(factory->NewFromString("caller"));
-    JSHandle<JSTaggedValue> argumentsKey(factory->NewFromString("arguments"));
+    JSHandle<JSTaggedValue> callerKey(factory->NewFromCanBeCompressString("caller"));
+    JSHandle<JSTaggedValue> argumentsKey(factory->NewFromCanBeCompressString("arguments"));
 
     JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(function), callerKey);
     ASSERT_EQ(thread->HasPendingException(), true);

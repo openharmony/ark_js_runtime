@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSNATIVEOBJECT_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSNATIVEOBJECT_H
+#ifndef ECMASCRIPT_JSNATIVEOBJECT_H
+#define ECMASCRIPT_JSNATIVEOBJECT_H
 
 #include "js_object.h"
 #include "js_native_pointer.h"
@@ -75,4 +75,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSNATIVEOBJECT_H
+#endif  // ECMASCRIPT_JSNATIVEOBJECT_H

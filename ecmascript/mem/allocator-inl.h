@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_ALLOCATOR_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_ALLOCATOR_INL_H
+#ifndef ECMASCRIPT_MEM_ALLOCATOR_INL_H
+#define ECMASCRIPT_MEM_ALLOCATOR_INL_H
 
 #include <cstdlib>
 
@@ -86,7 +86,7 @@ void FreeListAllocator::AddFree(Region *region)
 
 uintptr_t FreeListAllocator::Allocate(size_t size)
 {
-    if (UNLIKELY(size < static_cast<size_t>(TaggedObject::ObjectHeaderSize()))) {
+    if (UNLIKELY(size < static_cast<size_t>(TaggedObject::TaggedObjectSize()))) {
         return 0;
     }
     auto ret = bpAllocator_.Allocate(size);
@@ -134,4 +134,4 @@ void FreeListAllocator::RebuildFreeList()
     freeList_->Rebuild();
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_ALLOCATOR_INL_H
+#endif  // ECMASCRIPT_MEM_ALLOCATOR_INL_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_TEST_JS_BREAKPOINT_TEST_H
-#define PANDA_TOOLING_TEST_JS_BREAKPOINT_TEST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_JS_BREAKPOINT_TEST_H
+#define ECMASCRIPT_TOOLING_TEST_JS_BREAKPOINT_TEST_H
 
 #include "ecmascript/tooling/test/test_util.h"
 #include "ecmascript/mem/c_string.h"
@@ -72,9 +72,7 @@ public:
     {
         return {panda_file_, entry_point_};
     }
-
     ~JsBreakpointTest() = default;
-
 private:
     CString panda_file_ = "/data/app/Sample.abc";
     CString entry_point_ = "_GLOBAL::func_main_0";
@@ -89,4 +87,4 @@ std::unique_ptr<ApiTest> GetJsBreakpointTest()
 }
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // PANDA_TOOLING_TEST_JS_BREAKPOINT_TEST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_JS_BREAKPOINT_TEST_H

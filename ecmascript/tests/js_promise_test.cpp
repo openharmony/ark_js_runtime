@@ -13,16 +13,16 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tests/test_helper.h"
-
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/tests/test_helper.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::base;
@@ -98,7 +98,6 @@ HWTEST_F_L0(JSPromiseTest, FullFillPromise)
 {
     EcmaVM *ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
-    ObjectFactory *factory = ecmaVM->GetFactory();
     JSHandle<JSTaggedValue> promise = env->GetPromiseFunction();
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promise);
     JSHandle<JSPromise> newPromise(thread, capbility->GetPromise());
@@ -107,12 +106,11 @@ HWTEST_F_L0(JSPromiseTest, FullFillPromise)
               true);
     EXPECT_EQ(newPromise->GetPromiseResult().IsUndefined(), true);
 
-    array_size_t length = 1;
-    JSHandle<TaggedArray> array = factory->NewTaggedArray(length);
-    array->Set(thread, 0, JSTaggedValue(33));
     JSHandle<JSTaggedValue> resolve(thread, capbility->GetResolve());
     JSHandle<JSTaggedValue> undefined(thread, JSTaggedValue::Undefined());
-    JSFunction::Call(thread, resolve, undefined, array);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(JSTaggedValue(33));
+    JSFunction::Call(thread, resolve, undefined, 1, arguments->GetArgv());
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseState(),
                                        JSTaggedValue(static_cast<int32_t>(PromiseStatus::FULFILLED))),
               true);
@@ -123,7 +121,6 @@ HWTEST_F_L0(JSPromiseTest, RejectPromise)
 {
     EcmaVM *ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
-    ObjectFactory *factory = ecmaVM->GetFactory();
     JSHandle<JSTaggedValue> promise = env->GetPromiseFunction();
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promise);
     JSHandle<JSPromise> newPromise(thread, capbility->GetPromise());
@@ -132,12 +129,11 @@ HWTEST_F_L0(JSPromiseTest, RejectPromise)
               true);
     EXPECT_EQ(newPromise->GetPromiseResult().IsUndefined(), true);
 
-    array_size_t length = 1;
-    JSHandle<TaggedArray> array = factory->NewTaggedArray(length);
-    array->Set(thread, 0, JSTaggedValue(44));
     JSHandle<JSTaggedValue> reject(thread, capbility->GetReject());
     JSHandle<JSTaggedValue> undefined(thread, JSTaggedValue::Undefined());
-    JSFunction::Call(thread, reject, undefined, array);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(JSTaggedValue(44));
+    JSFunction::Call(thread, reject, undefined, 1, arguments->GetArgv());
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseState(),
                                        JSTaggedValue(static_cast<int32_t>(PromiseStatus::REJECTED))),
               true);

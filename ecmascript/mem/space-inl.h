@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_SPACE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_SPACE_INL_H
+#ifndef ECMASCRIPT_MEM_SPACE_INL_H
+#define ECMASCRIPT_MEM_SPACE_INL_H
 
 #include "ecmascript/mem/space.h"
 #include "ecmascript/mem/remembered_set.h"
 
 namespace panda::ecmascript {
-template <class Callback>
+template<class Callback>
 void Space::EnumerateRegions(const Callback &cb, Region *region) const
 {
     Region *current = regionList_.GetFirst();
@@ -51,4 +51,4 @@ void Region::InsertOldToNewRememberedSet(uintptr_t addr)
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_SPACE_INL_H
+#endif  // ECMASCRIPT_MEM_SPACE_INL_H

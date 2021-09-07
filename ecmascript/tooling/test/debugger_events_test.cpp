@@ -28,7 +28,6 @@ using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
 
 namespace panda::test {
-
 class DebuggerEventsTest : public testing::Test {
 public:
     static void SetUpTestCase()
@@ -911,5 +910,4 @@ HWTEST_F_L0(DebuggerEventsTest, ScriptParsedToObjectTest)
     ASSERT_TRUE(!result.IsEmpty());
     EXPECT_EQ("hh", Local<StringRef>(result)->ToString());
 }
-
 }  // namespace panda::test

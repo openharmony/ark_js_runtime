@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_HPROF_HEAP_TRACKER_H
-#define PANDA_RUNTIME_ECMASCRIPT_HPROF_HEAP_TRACKER_H
+#ifndef ECMASCRIPT_HPROF_HEAP_TRACKER_H
+#define ECMASCRIPT_HPROF_HEAP_TRACKER_H
 
 #include <atomic>
 #include <cstdint>
@@ -89,4 +89,4 @@ private:
     HeapTrackerSample sample_;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_HPROF_HEAP_TRACKER_H
+#endif  // ECMASCRIPT_HPROF_HEAP_TRACKER_H

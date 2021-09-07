@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
+#ifndef ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
+#define ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
 
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/mem.h"
@@ -100,4 +100,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
+#endif  // ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H

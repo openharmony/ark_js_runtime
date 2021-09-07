@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_JS_BACKEND_H
-#define PANDA_TOOLING_ECMASCRIPT_JS_BACKEND_H
+#ifndef ECMASCRIPT_TOOLING_AGENT_JS_BACKEND_H
+#define ECMASCRIPT_TOOLING_AGENT_JS_BACKEND_H
 
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 #include "ecmascript/tooling/base/pt_types.h"
@@ -64,7 +64,7 @@ public:
      *
      * @return: true means matched and callback execute success
      */
-    template <class Callback>
+    template<class Callback>
     bool MatchScripts(const Callback &cb, const CString &matchStr, ScriptMatchType type) const
     {
         for (const auto &script : scripts_) {

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_WORD_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_WORD_H
+#ifndef ECMASCRIPT_MEM_MARK_WORD_H
+#define ECMASCRIPT_MEM_MARK_WORD_H
 
 #include <cstdint>
 #include <atomic>
@@ -73,4 +73,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_WORD_H
+#endif  // ECMASCRIPT_MEM_MARK_WORD_H

@@ -23,7 +23,7 @@ double MemController::CalculateAllocLimit(size_t currentSize, size_t minSize, si
 {
     const uint64_t limit = std::max(static_cast<uint64_t>(currentSize * factor),
                                     static_cast<uint64_t>(currentSize) + MIN_AllOC_LIMIT_GROWING_STEP) +
-                           SEMI_SPACE_SIZE_4M;
+                           SEMI_SPACE_SIZE_CAPACITY;
 
     const uint64_t limitAboveMinSize = std::max<uint64_t>(limit, minSize);
     const uint64_t halfToMaxSize = (static_cast<uint64_t>(currentSize) + maxSize) / 2;

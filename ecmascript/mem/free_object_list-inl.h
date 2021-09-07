@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_FREE_OBJECT_LIST_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_FREE_OBJECT_LIST_INL_H
+#ifndef ECMASCRIPT_MEM_FREE_OBJECT_LIST_INL_H
+#define ECMASCRIPT_MEM_FREE_OBJECT_LIST_INL_H
 
 #include "ecmascript/mem/free_object_list.h"
 
@@ -54,4 +54,4 @@ inline size_t FreeObjectList::CalcNextNoneEmptyIndex(KindType start)
     return __builtin_ffsll(noneEmptyKindBitMap_ >> static_cast<uint32_t>(start)) + start - 1;
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_FREE_OBJECT_LIST_INL_H
+#endif  // ECMASCRIPT_MEM_FREE_OBJECT_LIST_INL_H

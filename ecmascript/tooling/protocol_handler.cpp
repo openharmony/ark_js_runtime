@@ -20,8 +20,8 @@
 #include "utils/logger.h"
 
 namespace panda::tooling::ecmascript {
-ProtocolHandler::ProtocolHandler(std::function<void(std::string)> callback, const void *vm)
-    : callback_(std::move(callback)), vm_(static_cast<const EcmaVM *>(vm))
+ProtocolHandler::ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm)
+    : callback_(std::move(callback)), vm_(vm)
 {
     dispatcher_ = std::make_unique<Dispatcher>(this);
 }
@@ -75,16 +75,15 @@ void ProtocolHandler::SendCommand(const CString &msg)
     queueLock_.Unlock();
 }
 
-void ProtocolHandler::SendResponse(
-    const DispatchRequest &request, const DispatchResponse &response, std::unique_ptr<PtBaseReturns> result)
+void ProtocolHandler::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
+    std::unique_ptr<PtBaseReturns> result)
 {
     LOG(INFO, DEBUGGER) << "ProtocolHandler::SendResponse: "
                         << (response.IsOk() ? "success" : "failed: " + response.GetMessage());
     const EcmaVM *ecmaVm = request.GetEcmaVM();
 
     Local<ObjectRef> reply = PtBaseTypes::NewObject(ecmaVm);
-    reply->Set(
-        ecmaVm, StringRef::NewFromUtf8(ecmaVm, "id"), IntegerRef::New(ecmaVm, request.GetCallId()));
+    reply->Set(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "id"), IntegerRef::New(ecmaVm, request.GetCallId()));
     Local<ObjectRef> resultObj;
     if (response.IsOk() && result != nullptr) {
         resultObj = result->ToObject(ecmaVm);

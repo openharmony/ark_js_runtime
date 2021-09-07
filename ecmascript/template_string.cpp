@@ -51,7 +51,7 @@ JSHandle<JSTaggedValue> TemplateString::GetTemplateObject(JSThread *thread, JSHa
     }
     JSObject::SetIntegrityLevel(thread, rawObj, IntegrityLevel::FROZEN);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> raw(factory->NewFromString("raw"));
+    JSHandle<JSTaggedValue> raw(factory->NewFromCanBeCompressString("raw"));
     PropertyDescriptor desc(thread, rawArr, false, false, false);
     JSArray::DefineOwnProperty(thread, templateObj, raw, desc);
     JSObject::SetIntegrityLevel(thread, templateObj, IntegrityLevel::FROZEN);

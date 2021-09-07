@@ -28,6 +28,14 @@ namespace kungfu {
     };                                                                \
     LLVMValueRef LLVM##name##Stub::InitializeFunction(LLVMModuleRef module)
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define LLVM_STUB_GETFUCTION_TYPE(name)              \
+    class LLVM##name##Stub##Type final {             \
+    public:                                          \
+        static LLVMTypeRef InitializeFunctionType(); \
+    };                                               \
+    LLVMTypeRef LLVM##name##Stub##Type::InitializeFunctionType()
+
 LLVM_STUB_GETFUCTION(FastAdd)
 {
     (void)module;
@@ -192,67 +200,203 @@ LLVM_STUB_GETFUCTION(FindOwnProperty2)
 
 LLVM_STUB_GETFUCTION(FindOwnElement2)
 {
-    // 5 : 5 input parameters
-    std::array<LLVMTypeRef, 5> paramTys = {
-        LLVMInt64Type(), LLVMInt32Type(), LLVMInt1Type(), LLVMInt64Type(), LLVMInt64Type(),
+    // 6 : 6 input parameters
+    std::array<LLVMTypeRef, 6> paramTys = {
+        LLVMInt64Type(), LLVMInt64Type(), LLVMInt32Type(), LLVMInt1Type(), LLVMInt64Type(), LLVMInt64Type(),
     };
-    // 5 : 5 input parameters
-    return LLVMAddFunction(module, "FindOwnElement2", LLVMFunctionType(LLVMInt64Type(), paramTys.data(), 5, 0));
+    // 6 : 6 input parameters
+    return LLVMAddFunction(module, "FindOwnElement2", LLVMFunctionType(LLVMInt64Type(), paramTys.data(), 6, 0));
 }
 
-LLVM_STUB_GETFUCTION(AddElementInternal)
+LLVM_STUB_GETFUCTION_TYPE(FastAdd)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastSub)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastMul)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastDiv)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastMod)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastEqual)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastTypeOf)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastStrictEqual)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(IsSpecialIndexedObjForSet)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(IsSpecialIndexedObjForGet)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(GetElement)
+{
+    // 2 : 2 input parameters
+    std::array<LLVMTypeRef, 2> paramTys = {
+        LLVMInt64Type(),
+        LLVMInt32Type(),
+    };
+    return LLVMFunctionType(LLVMInt64Type(), paramTys.data(), 2, 0);  // 2 : 2  parameters number
+}
+
+LLVM_STUB_GETFUCTION_TYPE(SetElement)
 {
     // 5 : 5 input parameters
     std::array<LLVMTypeRef, 5> paramTys = {
         LLVMInt64Type(), LLVMInt64Type(), LLVMInt32Type(), LLVMInt64Type(), LLVMInt32Type(),
     };
-    return LLVMAddFunction(module, "_ZN5panda10ecmascript11RuntimeStub18AddElementInternalEmmjmj",
-                           LLVMFunctionType(LLVMInt1Type(), paramTys.data(), 5, 0));  // 5 : 5 input parameters
+    return LLVMFunctionType(LLVMInt1Type(), paramTys.data(), 5, 0);  // 5 : 5 parameters number
 }
 
-LLVM_STUB_GETFUCTION(CallSetter)
+LLVM_STUB_GETFUCTION_TYPE(SetPropertyByName)
 {
-    // 5 : 5 input parameters
-    std::array<LLVMTypeRef, 5> paramTys = {
-        LLVMInt64Type(), LLVMInt64Type(), LLVMInt64Type(), LLVMInt64Type(), LLVMInt1Type(),
-    };
-    return LLVMAddFunction(module, "_ZN5panda10ecmascript11RuntimeStub10CallSetterEmmmmb",
-                           LLVMFunctionType(LLVMInt1Type(), paramTys.data(), 5, 0));  // 5 : 5 input parameters
+    return nullptr;
 }
 
-LLVM_STUB_GETFUCTION(ThrowTypeError)
+LLVM_STUB_GETFUCTION_TYPE(GetPropertyByName)
 {
-    // 2 : 2 input parameter
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(SetGlobalOwnProperty)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(GetGlobalOwnProperty)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(SetOwnPropertyByName)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(SetOwnElement)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastSetProperty)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FastGetProperty)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FindOwnProperty)
+{
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FindOwnElement)
+{
+    // 2 : 2 parameters number
     std::array<LLVMTypeRef, 2> paramTys = {
         LLVMInt64Type(),
         LLVMInt32Type(),
     };
-    return LLVMAddFunction(module, " _ZN5panda10ecmascript11RuntimeStub14ThrowTypeErrorEmi",
-                           LLVMFunctionType(LLVMVoidType(), paramTys.data(), 2, 0));  // 2 : 2 input parameters
+    return LLVMFunctionType(LLVMInt64Type(), paramTys.data(), 2, 0);  // 2 : 2  parameters number
 }
 
-LLVM_STUB_GETFUCTION(JSProxySetProperty)
+LLVM_STUB_GETFUCTION_TYPE(NewLexicalEnvDyn)
 {
-    // 6 : 6 input parameters
+    return nullptr;
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FindOwnProperty2)
+{
+    // 5 : 5 parameters number
+    std::array<LLVMTypeRef, 5> paramTys = {
+        LLVMInt64Type(), LLVMInt32Type(), LLVMInt1Type(), LLVMInt64Type(), LLVMInt64Type(),
+    };
+    return LLVMFunctionType(LLVMInt64Type(), paramTys.data(), 5, 0);  // 5 : 5 parameters number
+}
+
+LLVM_STUB_GETFUCTION_TYPE(FindOwnElement2)
+{
+    // 5 : 5 parameters number
+    std::array<LLVMTypeRef, 5> paramTys = {
+        LLVMInt64Type(), LLVMInt32Type(), LLVMInt1Type(), LLVMInt64Type(), LLVMInt64Type(),
+    };
+    return LLVMFunctionType(LLVMInt64Type(), paramTys.data(), 5, 0);  // 5 : 5 parameters number
+}
+
+LLVM_STUB_GETFUCTION_TYPE(AddElementInternal)
+{
+    // 5 : 5 parameters number
+    std::array<LLVMTypeRef, 5> paramTys = {
+        LLVMInt64Type(), LLVMInt64Type(), LLVMInt32Type(), LLVMInt64Type(), LLVMInt32Type(),
+    };
+    return LLVMFunctionType(LLVMInt1Type(), paramTys.data(), 5, 0);  // 5 : 5 parameters number
+}
+
+LLVM_STUB_GETFUCTION_TYPE(CallSetter)
+{
+    // 5 : 5 parameters number
+    std::array<LLVMTypeRef, 5> paramTys = {
+        LLVMInt64Type(), LLVMInt64Type(), LLVMInt64Type(), LLVMInt64Type(), LLVMInt1Type(),
+    };
+    return LLVMFunctionType(LLVMInt1Type(), paramTys.data(), 5, 0);  // 5 : 5 parameters number
+}
+
+LLVM_STUB_GETFUCTION_TYPE(ThrowTypeError)
+{
+    // 2 : 2 parameters number
+    std::array<LLVMTypeRef, 2> paramTys = {
+        LLVMInt64Type(),
+        LLVMInt32Type(),
+    };
+    return LLVMFunctionType(LLVMVoidType(), paramTys.data(), 2, 0);  // 2 : 2 parameters number
+}
+
+LLVM_STUB_GETFUCTION_TYPE(JSProxySetProperty)
+{
+    // 6 : 6 parameters number
     std::array<LLVMTypeRef, 6> paramTys = {
         LLVMInt64Type(), LLVMInt64Type(), LLVMInt64Type(), LLVMInt64Type(), LLVMInt64Type(), LLVMInt1Type(),
     };
-    return LLVMAddFunction(module, "_ZN5panda10ecmascript11RuntimeStub18JSProxySetPropertyEmmmmmb",
-                           LLVMFunctionType(LLVMInt1Type(), paramTys.data(), 6, 0));  // 6 : 6 input parameters
+    return LLVMFunctionType(LLVMInt1Type(), paramTys.data(), 6, 0);  // 6 : 6 parameters number
 }
 
-LLVM_STUB_GETFUCTION(GetHash32)
+LLVM_STUB_GETFUCTION_TYPE(GetHash32)
 {
-    std::array<LLVMTypeRef, 2> paramTys = {  // 2 : 2 input parameters
-                                           LLVMInt64Type(), LLVMInt32Type()};
-    return LLVMAddFunction(module, "_ZN5panda9GetHash32EPKhm",
-                           LLVMFunctionType(LLVMInt32Type(), paramTys.data(), 2, 0));  // 2 : 2 input parameters
-}
-
-LLVM_STUB_GETFUCTION(PhiTest)
-{
-    std::array<LLVMTypeRef, 1> paramTys = {LLVMInt32Type()};
-    return LLVMAddFunction(module, "PhiTest", LLVMFunctionType(LLVMInt32Type(), paramTys.data(), 1, 0));
+    // 2 : 2 parameters number
+    std::array<LLVMTypeRef, 2> paramTys = {LLVMInt64Type(), LLVMInt32Type()};
+    return LLVMFunctionType(LLVMInt32Type(), paramTys.data(), 2, 0);  // 2 : 2 parameters number
 }
 
 LLVMStubsImplement::LLVMStubsImplement()
@@ -269,6 +413,16 @@ void LLVMStubsImplement::Initialize()
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INITIALIZE_CALL_STUB(name, argcounts) \
     llvmCallStubs_[DEF_CALL_STUB(name)] = LLVM##name##Stub::InitializeFunction(stubsModule_);
+    FAST_RUNTIME_STUB_LIST(INITIALIZE_CALL_STUB)
+#undef INITIALIZE_CALL_STUB
+#undef DEF_CALL_STUB
+
+// Intialize Stubs Function
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DEF_CALL_STUB(name) NAME_##name
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define INITIALIZE_CALL_STUB(name, argcounts) \
+    llvm_fuction_type_[DEF_CALL_STUB(name)] = LLVM##name##Stub##Type::InitializeFunctionType();
     CALL_STUB_LIST(INITIALIZE_CALL_STUB)
 #undef INITIALIZE_CALL_STUB
 #undef DEF_CALL_STUB
@@ -284,6 +438,12 @@ void LLVMStubsImplement::SetFastStub(int index, void *code)
 {
     ASSERT(index < CALL_STUB_MAXCOUNT && index >= 0);
     llvmCallStubs_[index] = reinterpret_cast<LLVMValueRef>(code);
+}
+
+void *LLVMStubsImplement::GetRunTimeLLVMType(int index)
+{
+    ASSERT(index < CALL_STUB_MAXCOUNT && index >= 0);
+    return reinterpret_cast<void *>(llvm_fuction_type_[index]);
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -347,13 +507,14 @@ CALL_STUB_INIT_DESCRIPTOR(FindOwnElement2)
     // 5 : 5 input parameters
     static StubInterfaceDescriptor findOwnElement2(0, 5, DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = findOwnElement2;
-    auto params = new std::array<MachineType, 5>();  // 5 : 5 input parameters
-    (*params)[0] = MachineType::UINT64_TYPE;
-    (*params)[1] = MachineType::UINT32_TYPE;
-    (*params)[2] = MachineType::BOOL_TYPE;    // 2 : 3rd para
-    (*params)[3] = MachineType::UINT64_TYPE;  // 3 : 4th para
-    (*params)[4] = MachineType::UINT64_TYPE;  // 4 : 5th para
-    descriptor->SetParameters(params->data());
+    std::array<MachineType, 5> params = {  // 5 : 5 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+        MachineType::BOOL_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
 }
 
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
@@ -361,13 +522,15 @@ CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
     // 5 : 5 input parameters
     static StubInterfaceDescriptor addElementInternal(0, 5, DEFAULT_ORDER, BOOL_TYPE);
     *descriptor = addElementInternal;
-    auto params = new std::array<MachineType, 5>();  // 5 : 5 input parameters
-    (*params)[0] = MachineType::UINT64_TYPE;
-    (*params)[1] = MachineType::UINT64_TYPE;
-    (*params)[2] = MachineType::UINT32_TYPE;  // 2 : 3rd para
-    (*params)[3] = MachineType::UINT64_TYPE;  // 3 : 4th para
-    (*params)[4] = MachineType::UINT32_TYPE;  // 4 : 5th para
-    descriptor->SetParameters(params->data());
+    std::array<MachineType, 5> params = {  // 5 : 5 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubInterfaceDescriptor::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(CallSetter)
@@ -375,13 +538,15 @@ CALL_STUB_INIT_DESCRIPTOR(CallSetter)
     // 5 : 5 input parameters
     static StubInterfaceDescriptor callSetter(0, 5, DEFAULT_ORDER, NONE_TYPE);
     *descriptor = callSetter;
-    auto params = new std::array<MachineType, 5>();  // 5 : 5 input parameters
-    (*params)[0] = MachineType::UINT64_TYPE;
-    (*params)[1] = MachineType::UINT64_TYPE;
-    (*params)[2] = MachineType::UINT64_TYPE;  // 2 : 3rd para
-    (*params)[3] = MachineType::UINT64_TYPE;  // 3 : 4th para
-    (*params)[4] = MachineType::BOOL_TYPE;    // 4 : 5th para
-    descriptor->SetParameters(params->data());
+    std::array<MachineType, 5> params = { // 5 : 5 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::BOOL_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubInterfaceDescriptor::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(ThrowTypeError)
@@ -389,10 +554,12 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowTypeError)
     // 2 : 2 input parameters
     static StubInterfaceDescriptor throwTypeError(0, 2, DEFAULT_ORDER, NONE_TYPE);
     *descriptor = throwTypeError;
-    auto params = new std::array<MachineType, 2>();  // 2 : 2 input parameters
-    (*params)[0] = MachineType::UINT64_TYPE;
-    (*params)[1] = MachineType::UINT32_TYPE;
-    descriptor->SetParameters(params->data());
+    std::array<MachineType, 2> params = {  // 2 : 2 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubInterfaceDescriptor::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(JSProxySetProperty)
@@ -400,14 +567,16 @@ CALL_STUB_INIT_DESCRIPTOR(JSProxySetProperty)
     // 6 : 6 input parameters
     static StubInterfaceDescriptor jsproxySetproperty(0, 6, DEFAULT_ORDER, BOOL_TYPE);
     *descriptor = jsproxySetproperty;
-    auto params = new std::array<MachineType, 6>();  // 6 : 6 input parameters
-    (*params)[0] = MachineType::UINT64_TYPE;
-    (*params)[1] = MachineType::UINT64_TYPE;
-    (*params)[2] = MachineType::UINT64_TYPE;  // 2 : 3rd para
-    (*params)[3] = MachineType::UINT64_TYPE;  // 3 : 4th para
-    (*params)[4] = MachineType::UINT64_TYPE;  // 4 : 5th para
-    (*params)[5] = MachineType::BOOL_TYPE;    // 5 : 6th para
-    descriptor->SetParameters(params->data());
+    std::array<MachineType, 6> params = {  // 6 : 6 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::BOOL_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubInterfaceDescriptor::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(GetHash32)
@@ -415,18 +584,18 @@ CALL_STUB_INIT_DESCRIPTOR(GetHash32)
     // 2 : 2 input parameters
     static StubInterfaceDescriptor getHash32(0, 2, DEFAULT_ORDER, UINT32_TYPE);
     *descriptor = getHash32;
-    auto params = new std::array<MachineType, 2>();  // 2 : 2 input parameters
-    (*params)[0] = MachineType::POINTER_TYPE;
-    (*params)[1] = MachineType::UINT32_TYPE;
-    descriptor->SetParameters(params->data());
+    std::array<MachineType, 2> params = {  // 2 : 2 input parameters
+        MachineType::POINTER_TYPE,
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubInterfaceDescriptor::RUNTIME_STUB);
 }
-
-CALL_STUB_INIT_DESCRIPTOR(PhiTest) {}
 
 void FastStubs::InitializeStubDescriptors()
 {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEF_CALL_STUB(name) CallStubsImplement::NAME_##name
+#define DEF_CALL_STUB(name) NAME_##name
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INITIALIZE_CALL_STUB_DESCRIPTOR(name, argcounts) \
     Stub##name##InterfaceDescriptor::Initialize(&callStubsDescriptor_[DEF_CALL_STUB(name)]);

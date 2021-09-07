@@ -61,8 +61,8 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
     std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> outInternalDescs;
     std::optional<CVector<std::unique_ptr<PrivatePropertyDescriptor>>> outPrivateProperties;
     std::optional<std::unique_ptr<ExceptionDetails>> outExceptionDetails;
-    DispatchResponse response = runtime_->GetProperties(
-        std::move(params), &outPropertyDesc, &outInternalDescs, &outPrivateProperties, &outExceptionDetails);
+    DispatchResponse response = runtime_->GetProperties(std::move(params), &outPropertyDesc, &outInternalDescs,
+        &outPrivateProperties, &outExceptionDetails);
     if (outExceptionDetails) {
         LOG(WARNING, DEBUGGER) << "GetProperties thrown an exception";
     }

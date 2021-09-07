@@ -179,4 +179,10 @@ std::optional<Error> DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const P
 {
     return debugger->RemoveBreakpoint(location);
 }
+
+// JSMethod
+CString DebuggerApi::ParseFunctionName(const JSMethod *method)
+{
+    return method->ParseFunctionName();
+}
 }  // namespace panda::tooling::ecmascript

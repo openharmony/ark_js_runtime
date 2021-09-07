@@ -591,8 +591,7 @@ void RegExpExecutor::DumpResult(std::ostream &out) const
         CaptureState *captureState = &captureResultList_[i];
         int32_t len = captureState->captureEnd - captureState->captureStart;
         if ((captureState->captureStart != nullptr && captureState->captureEnd != nullptr) && (len >= 0)) {
-            out << i << ":\t" << CString(reinterpret_cast<const char *>(captureState->captureStart), len)
-                << std::endl;
+            out << i << ":\t" << CString(reinterpret_cast<const char *>(captureState->captureStart), len) << std::endl;
         } else {
             out << i << ":\t"
                 << "undefined" << std::endl;
@@ -622,8 +621,8 @@ MatchResult RegExpExecutor::GetResult(const JSThread *thread, bool isSuccess) co
                 pair.first = false;
                 if (isWideChar_) {
                     // create utf-16 string
-                    pair.second =
-                        factory->NewFromUtf16(reinterpret_cast<const uint16_t *>(captureState->captureStart), len / 2);
+                    pair.second = factory->NewFromUtf16UnCheck(
+                        reinterpret_cast<const uint16_t *>(captureState->captureStart), len / 2, false);
                 } else {
                     // create utf-8 string
                     CVector<uint8_t> buffer(len + 1);
@@ -634,7 +633,8 @@ MatchResult RegExpExecutor::GetResult(const JSThread *thread, bool isSuccess) co
                         UNREACHABLE();
                     }
                     dest[len] = '\0';  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                    pair.second = factory->NewFromUtf8(reinterpret_cast<const uint8_t *>(buffer.data()), len);
+                    pair.second =
+                        factory->NewFromUtf8UnCheck(reinterpret_cast<const uint8_t *>(buffer.data()), len, true);
                 }
             } else {
                 // undefined

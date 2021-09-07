@@ -18,6 +18,7 @@
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass.h"
@@ -95,8 +96,8 @@ JSTaggedValue BuiltinsRegExp::RegExpConstructor(EcmaRuntimeCallInfo *argv)
         }
         // 6. Else if patternIsRegExp is true
     } else if (patternIsRegExp) {
-        JSHandle<JSTaggedValue> sourceString(factory->NewFromString("source"));
-        JSHandle<JSTaggedValue> flagsString(factory->NewFromString("flags"));
+        JSHandle<JSTaggedValue> sourceString(factory->NewFromCanBeCompressString("source"));
+        JSHandle<JSTaggedValue> flagsString(factory->NewFromCanBeCompressString("flags"));
         // disable gc
         [[maybe_unused]] DisallowGarbageCollection noGc;
         // 6.a Let P be Get(pattern, "source").
@@ -203,8 +204,8 @@ JSTaggedValue BuiltinsRegExp::ToString(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "this is not Object", JSTaggedValue::Exception());
     }
     ObjectFactory *factory = ecmaVm->GetFactory();
-    JSHandle<JSTaggedValue> sourceString(factory->NewFromString("source"));
-    JSHandle<JSTaggedValue> flagsString(factory->NewFromString("flags"));
+    JSHandle<JSTaggedValue> sourceString(factory->NewFromCanBeCompressString("source"));
+    JSHandle<JSTaggedValue> flagsString(factory->NewFromCanBeCompressString("flags"));
     // 3. Let pattern be ToString(Get(R, "source")).
     JSHandle<JSTaggedValue> getSource(JSObject::GetProperty(thread, thisObj, sourceString).GetValue());
     JSHandle<JSTaggedValue> getFlags(JSObject::GetProperty(thread, thisObj, flagsString).GetValue());
@@ -215,7 +216,7 @@ JSTaggedValue BuiltinsRegExp::ToString(EcmaRuntimeCallInfo *argv)
     JSHandle<EcmaString> flagsStrHandle = JSTaggedValue::ToString(thread, getFlags);
     // 4. ReturnIfAbrupt(flags).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<EcmaString> slashStr = factory->NewFromString("/");
+    JSHandle<EcmaString> slashStr = factory->NewFromCanBeCompressString("/");
     // 7. Let result be the String value formed by concatenating "/", pattern, and "/", and flags.
     JSHandle<EcmaString> tempStr = factory->ConcatFromString(slashStr, sourceStrHandle);
     JSHandle<EcmaString> resultTemp = factory->ConcatFromString(tempStr, slashStr);
@@ -256,7 +257,7 @@ JSTaggedValue BuiltinsRegExp::GetGlobal(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> thisObj = GetThis(argv);
 
-    JSHandle<EcmaString> gString = thread->GetEcmaVM()->GetFactory()->NewFromString("g");
+    JSHandle<EcmaString> gString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("g");
     bool result = GetFlagsInternal(thread, thisObj, gString);
     return GetTaggedBoolean(result);
 }
@@ -268,7 +269,7 @@ JSTaggedValue BuiltinsRegExp::GetIgnoreCase(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> thisObj = GetThis(argv);
-    JSHandle<EcmaString> iString = thread->GetEcmaVM()->GetFactory()->NewFromString("i");
+    JSHandle<EcmaString> iString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("i");
     bool result = GetFlagsInternal(thread, thisObj, iString);
     return GetTaggedBoolean(result);
 }
@@ -280,7 +281,7 @@ JSTaggedValue BuiltinsRegExp::GetMultiline(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> thisObj = GetThis(argv);
-    JSHandle<EcmaString> mString = thread->GetEcmaVM()->GetFactory()->NewFromString("m");
+    JSHandle<EcmaString> mString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("m");
     bool result = GetFlagsInternal(thread, thisObj, mString);
     return GetTaggedBoolean(result);
 }
@@ -291,7 +292,7 @@ JSTaggedValue BuiltinsRegExp::GetDotAll(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> thisObj = GetThis(argv);
-    JSHandle<EcmaString> sString = thread->GetEcmaVM()->GetFactory()->NewFromString("s");
+    JSHandle<EcmaString> sString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("s");
     bool result = GetFlagsInternal(thread, thisObj, sString);
     return GetTaggedBoolean(result);
 }
@@ -331,7 +332,7 @@ JSTaggedValue BuiltinsRegExp::GetSticky(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> thisObj = GetThis(argv);
-    JSHandle<EcmaString> yString = thread->GetEcmaVM()->GetFactory()->NewFromString("y");
+    JSHandle<EcmaString> yString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("y");
     bool result = GetFlagsInternal(thread, thisObj, yString);
     return GetTaggedBoolean(result);
 }
@@ -343,7 +344,7 @@ JSTaggedValue BuiltinsRegExp::GetUnicode(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> thisObj = GetThis(argv);
-    JSHandle<EcmaString> uString = thread->GetEcmaVM()->GetFactory()->NewFromString("u");
+    JSHandle<EcmaString> uString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("u");
     bool result = GetFlagsInternal(thread, thisObj, uString);
     return GetTaggedBoolean(result);
 }
@@ -376,7 +377,7 @@ JSTaggedValue BuiltinsRegExp::Match(EcmaRuntimeCallInfo *argv)
     }
     // 5. Let global be ToBoolean(Get(rx, "global")).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> global(factory->NewFromString("global"));
+    JSHandle<JSTaggedValue> global(factory->NewFromCanBeCompressString("global"));
     auto globalValue = JSObject::GetProperty(thread, thisObj, global).GetValue();
     // 6. ReturnIfAbrupt(global).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -389,7 +390,7 @@ JSTaggedValue BuiltinsRegExp::Match(EcmaRuntimeCallInfo *argv)
     }
     // 8. Else global is true
     // a. Let fullUnicode be ToBoolean(Get(rx, "unicode")).
-    JSHandle<JSTaggedValue> unicode(factory->NewFromString("unicode"));
+    JSHandle<JSTaggedValue> unicode(factory->NewFromCanBeCompressString("unicode"));
     JSHandle<JSTaggedValue> unicodeHandle = JSObject::GetProperty(thread, thisObj, unicode).GetValue();
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     bool fullUnicode = unicodeHandle->ToBoolean();
@@ -423,7 +424,7 @@ JSTaggedValue BuiltinsRegExp::Match(EcmaRuntimeCallInfo *argv)
         }
         // iv. Else result is not null,
         // 1. Let matchStr be ToString(Get(result, "0")).
-        JSHandle<JSTaggedValue> zoreString(factory->NewFromString("0"));
+        JSHandle<JSTaggedValue> zoreString(factory->NewFromCanBeCompressString("0"));
         JSHandle<JSTaggedValue> matchStr(JSObject::GetProperty(thread, result, zoreString).GetValue());
         JSHandle<EcmaString> matchString = JSTaggedValue::ToString(thread, matchStr);
         // 2. ReturnIfAbrupt(matchStr).
@@ -585,7 +586,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> lastIndex(thread->GlobalConstants()->GetHandledLastIndexString());
     // 8. Let global be ToBoolean(Get(rx, "global")).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> global(factory->NewFromString("global"));
+    JSHandle<JSTaggedValue> global(factory->NewFromCanBeCompressString("global"));
     auto globalValue = JSObject::GetProperty(thread, thisObj, global).GetValue();
     // 9. ReturnIfAbrupt(global).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -594,7 +595,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
     bool fullUnicode = false;
     if (isGlobal) {
         // a. Let fullUnicode be ToBoolean(Get(rx, "unicode")).
-        JSHandle<JSTaggedValue> unicode(factory->NewFromString("unicode"));
+        JSHandle<JSTaggedValue> unicode(factory->NewFromCanBeCompressString("unicode"));
         JSHandle<JSTaggedValue> fullUnicodeHandle = JSObject::GetProperty(thread, thisObj, unicode).GetValue();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         fullUnicode = fullUnicodeHandle->ToBoolean();
@@ -615,7 +616,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
         }
     }
 
-    JSHandle<JSTaggedValue> matchedStr(factory->NewFromString("0"));
+    JSHandle<JSTaggedValue> matchedStr(factory->NewFromCanBeCompressString("0"));
     // 11. Let results be a new empty List.
     JSHandle<JSObject> resultsList(JSArray::ArrayCreate(thread, JSTaggedNumber(0)));
     int resultsIndex = 0;
@@ -684,7 +685,7 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
         // f. Let matchLength be the number of code units in matched.
         uint32_t matchLength = matchString->GetLength();
         // g. Let position be ToInteger(Get(result, "index")).
-        JSHandle<JSTaggedValue> resultIndex(factory->NewFromString("index"));
+        JSHandle<JSTaggedValue> resultIndex(factory->NewFromCanBeCompressString("index"));
         JSHandle<JSTaggedValue> positionHandle = JSObject::GetProperty(thread, resultValues, resultIndex).GetValue();
         uint32_t position = JSTaggedValue::ToUint32(thread, positionHandle);
         // h. ReturnIfAbrupt(position).
@@ -734,7 +735,10 @@ JSTaggedValue BuiltinsRegExp::Replace(EcmaRuntimeCallInfo *argv)
             replacerArgs->Set(thread, index + 2, inputStr.GetTaggedValue());  // 2: position of string
             // iv. Let replValue be Call(replaceValue, undefined, replacerArgs).
             JSHandle<JSTaggedValue> undefined(thread, JSTaggedValue::Undefined());
-            JSTaggedValue replaceResult = JSFunction::Call(thread, inputReplaceValue, undefined, replacerArgs);
+            ecmascript::InternalCallParams *args = thread->GetInternalCallParams();
+            args->MakeArgList(*replacerArgs);
+            JSTaggedValue replaceResult =
+                JSFunction::Call(thread, inputReplaceValue, undefined, replacerArgs->GetLength(), args->GetArgv());
             JSHandle<JSTaggedValue> replValue(thread, replaceResult);
             // v. Let replacement be ToString(replValue).
             JSHandle<EcmaString> replacementString = JSTaggedValue::ToString(thread, replValue);
@@ -820,7 +824,7 @@ JSTaggedValue BuiltinsRegExp::Search(EcmaRuntimeCallInfo *argv)
     }
     // 10. Return ? Get(result, "index").
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> index(factory->NewFromString("index"));
+    JSHandle<JSTaggedValue> index(factory->NewFromCanBeCompressString("index"));
     return JSObject::GetProperty(thread, result, index).GetValue().GetTaggedValue();
 }
 
@@ -855,7 +859,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 7. Let flags be ToString(Get(rx, "flags")).
     ObjectFactory *factory = ecmaVm->GetFactory();
-    JSHandle<JSTaggedValue> flagsString(factory->NewFromString("flags"));
+    JSHandle<JSTaggedValue> flagsString(factory->NewFromCanBeCompressString("flags"));
     JSHandle<JSTaggedValue> taggedFlags = JSObject::GetProperty(thread, thisObj, flagsString).GetValue();
     JSHandle<EcmaString> flags;
 
@@ -868,16 +872,16 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9. If flags contains "u", let unicodeMatching be true.
     // 10. Else, let unicodeMatching be false.
-    JSHandle<EcmaString> uStringHandle(factory->NewFromString("u"));
+    JSHandle<EcmaString> uStringHandle(factory->NewFromCanBeCompressString("u"));
     bool unicodeMatching = base::StringHelper::Contains(*flags, *uStringHandle);
     // 11. If flags contains "y", let newFlags be flags.
     JSHandle<EcmaString> newFlagsHandle;
-    JSHandle<EcmaString> yStringHandle(factory->NewFromString("y"));
+    JSHandle<EcmaString> yStringHandle(factory->NewFromCanBeCompressString("y"));
     if (base::StringHelper::Contains(*flags, *yStringHandle)) {
         newFlagsHandle = flags;
     } else {
         // 12. Else, let newFlags be the string that is the concatenation of flags and "y".
-        JSHandle<EcmaString> yStr = factory->NewFromString("y");
+        JSHandle<EcmaString> yStr = factory->NewFromCanBeCompressString("y");
         newFlagsHandle = factory->ConcatFromString(flags, yStr);
     }
 
@@ -906,10 +910,10 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
     // 13. Let splitter be Construct(C, «rx, newFlags»).
     JSHandle<JSObject> globalObject(thread, thread->GetEcmaVM()->GetGlobalEnv()->GetGlobalObject());
     JSHandle<JSTaggedValue> undefined(thread, JSTaggedValue::Undefined());
-    JSHandle<TaggedArray> arguments = factory->NewTaggedArray(2);  // 2: «rx, newFlags»
-    arguments->Set(thread, 0, thisObj.GetTaggedValue());
-    arguments->Set(thread, 1, newFlagsHandle.GetTaggedValue());
-    JSTaggedValue taggedSplitter = JSFunction::Construct(thread, constructor, arguments, undefined);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(thisObj, newFlagsHandle);
+    JSTaggedValue taggedSplitter =
+        JSFunction::Construct(thread, constructor, 2, arguments->GetArgv(), undefined);  // 2: two args
     // 14. ReturnIfAbrupt(splitter).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
@@ -995,7 +999,7 @@ JSTaggedValue BuiltinsRegExp::Split(EcmaRuntimeCallInfo *argv)
                 // 6. Let p be e.
                 startIndex = lastIndex;
                 // 7. Let numberOfCaptures be ToLength(Get(z, "length")).
-                JSHandle<JSTaggedValue> lengthString(factory->NewFromString("length"));
+                JSHandle<JSTaggedValue> lengthString(factory->NewFromCanBeCompressString("length"));
                 JSHandle<JSTaggedValue> capturesHandle =
                     JSObject::GetProperty(thread, execResult, lengthString).GetValue();
                 JSTaggedNumber numberOfCapturesNumber = JSTaggedValue::ToLength(thread, capturesHandle);
@@ -1115,17 +1119,17 @@ JSHandle<JSTaggedValue> BuiltinsRegExp::ConcatFlags(JSThread *thread, const JSHa
     if (exist) {
         JSHandle<EcmaString> temp = factory->GetEmptyString();
         if (CString("global") == name) {
-            temp = factory->NewFromString("g");
+            temp = factory->NewFromCanBeCompressString("g");
         } else if (CString("ignoreCase") == name) {
-            temp = factory->NewFromString("i");
+            temp = factory->NewFromCanBeCompressString("i");
         } else if (CString("multiline") == name) {
-            temp = factory->NewFromString("m");
+            temp = factory->NewFromCanBeCompressString("m");
         } else if (CString("dotAll") == name) {
-            temp = factory->NewFromString("s");
+            temp = factory->NewFromCanBeCompressString("s");
         } else if (CString("unicode") == name) {
-            temp = factory->NewFromString("u");
+            temp = factory->NewFromCanBeCompressString("u");
         } else if (CString("sticky") == name) {
-            temp = factory->NewFromString("y");
+            temp = factory->NewFromCanBeCompressString("y");
         }
         JSHandle<EcmaString> thisString(string);
         return JSHandle<JSTaggedValue>(factory->ConcatFromString(thisString, temp));
@@ -1170,10 +1174,10 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
     JSTaggedNumber lastIndexNumber = JSTaggedValue::ToLength(thread, lastIndexResult);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     int32_t lastIndex = lastIndexNumber.GetNumber();
-    JSHandle<JSTaggedValue> globalHandle(factory->NewFromString("global"));
+    JSHandle<JSTaggedValue> globalHandle(factory->NewFromCanBeCompressString("global"));
     bool global = JSObject::GetProperty(thread, regexp, globalHandle).GetValue()->ToBoolean();
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> stickyHandle(factory->NewFromString("sticky"));
+    JSHandle<JSTaggedValue> stickyHandle(factory->NewFromCanBeCompressString("sticky"));
     bool sticky = JSObject::GetProperty(thread, regexp, stickyHandle).GetValue()->ToBoolean();
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (!global && !sticky) {
@@ -1181,7 +1185,7 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
     }
     JSHandle<JSRegExp> regexpObj(thread, JSRegExp::Cast(regexp->GetTaggedObject()));
     auto flagsStr = static_cast<EcmaString *>(regexpObj->GetOriginalFlags().GetTaggedObject());
-    JSHandle<EcmaString> uString = factory->NewFromString("u");
+    JSHandle<EcmaString> uString = factory->NewFromCanBeCompressString("u");
     [[maybe_unused]] bool fullUnicode = base::StringHelper::Contains(flagsStr, *uString);
     if (lastIndex > length) {
         JSHandle<JSTaggedValue> lastIndexValue(thread, JSTaggedValue(0));
@@ -1225,11 +1229,11 @@ JSTaggedValue BuiltinsRegExp::RegExpBuiltinExec(JSThread *thread, const JSHandle
     JSHandle<JSObject> results(JSArray::ArrayCreate(thread, JSTaggedNumber(capturesSize)));
     uint32_t matchIndex = matchResult.index_;
     // 24. Perform CreateDataProperty(A, "index", matchIndex).
-    JSHandle<JSTaggedValue> indexKey(factory->NewFromString("index"));
+    JSHandle<JSTaggedValue> indexKey(factory->NewFromCanBeCompressString("index"));
     JSHandle<JSTaggedValue> indexValue(thread, JSTaggedValue(matchIndex));
     JSObject::CreateDataProperty(thread, results, indexKey, indexValue);
     // 25. Perform CreateDataProperty(A, "input", S).
-    JSHandle<JSTaggedValue> inputKey(factory->NewFromString("input"));
+    JSHandle<JSTaggedValue> inputKey(factory->NewFromCanBeCompressString("input"));
 
     JSHandle<JSTaggedValue> inputValue(thread, static_cast<EcmaString *>(inputStr->GetTaggedObject()));
     JSObject::CreateDataProperty(thread, results, inputKey, inputValue);
@@ -1278,9 +1282,9 @@ JSTaggedValue BuiltinsRegExp::RegExpExec(JSThread *thread, const JSHandle<JSTagg
             return RegExpBuiltinExec(thread, regexp, inputString);
         }
         JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>::Cast(thisObj);
-        JSHandle<TaggedArray> arguments = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
-        arguments->Set(thread, 0, inputStr.GetTaggedValue());
-        JSTaggedValue result = JSFunction::Call(thread, exec, obj, arguments);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(inputStr.GetTaggedValue());
+        JSTaggedValue result = JSFunction::Call(thread, exec, obj, 1, arguments->GetArgv());
         // b. ReturnIfAbrupt(result).
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         if (!result.IsECMAObject() && !result.IsNull()) {

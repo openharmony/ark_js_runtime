@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_HASH_TABLE_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_HASH_TABLE_H
+#ifndef ECMASCRIPT_TAGGED_HASH_TABLE_H
+#define ECMASCRIPT_TAGGED_HASH_TABLE_H
 
 #include <vector>
 
@@ -22,7 +22,7 @@
 #include "tagged_array.h"
 
 namespace panda::ecmascript {
-template <typename Derived>
+template<typename Derived>
 class TaggedHashTable : public TaggedArray {
 public:
     inline int EntriesCount() const;
@@ -115,7 +115,7 @@ protected:
     void Rehash(const JSThread *thread, Derived *newTable);
 };
 
-template <typename Derived>
+template<typename Derived>
 class OrderTaggedHashTable : public TaggedHashTable<Derived> {
 public:
     using HashTableT = TaggedHashTable<Derived>;
@@ -158,4 +158,4 @@ public:
     static constexpr int TABLE_HEADER_SIZE = 4;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_NEW_HASH_TABLE_H
+#endif  // ECMASCRIPT_NEW_HASH_TABLE_H
