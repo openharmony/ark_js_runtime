@@ -41,12 +41,12 @@ ohos_shared_library("libark_jsoptimizer") {
     "gate.cpp",
     "llvm_ir_builder.cpp",
     "llvm_mcjit_compiler.cpp",
+    "llvm_stackmap_parse.cpp",
     "scheduler.cpp",
     "stub_interface.cpp",
     "stub_optimizer.cpp",
     "type.cpp",
     "verifier.cpp",
-    "llvm_stackmap_parse.cpp"
   ]
 
   configs = [
