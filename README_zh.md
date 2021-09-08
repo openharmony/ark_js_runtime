@@ -69,7 +69,7 @@ LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clan
 
 ## 相关仓<a name="section1371113476307"></a>
 
-[方舟运行时子系统](docs/方舟运行时子系统.md)
+[方舟运行时子系统](docs/ARK-Runtime-Subsystem-zh.md)
 
 [ark/runtime\_core](https://gitee.com/openharmony/ark_runtime_core/blob/master/README_zh.md)
 
