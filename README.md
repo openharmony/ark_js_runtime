@@ -63,15 +63,15 @@ To run bytecodes:
 
 cd out/release
 
-LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
+LD\_LIBRARY\_PATH=clang\_x64/ark/ark\_js\_runtime:clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
 
-./clang\_x64/ark/ark/ark\_js\_vm helloworld.abc
+./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc
 
 ## Repositories Involved<a name="section1371113476307"></a>
 
 [ARK Runtime Subsystem](docs/ARK-Runtime-Subsystem.md)
 
-[ark/runtime_core](https://gitee.com/openharmony/ark_runtime_core/blob/master/README.md)
+[ark/runtime\_core](https://gitee.com/openharmony/ark_runtime_core/blob/master/README.md)
 
 **[ark/js\_runtime](README.md)**
 
