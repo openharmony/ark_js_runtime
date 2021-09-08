@@ -63,7 +63,7 @@ JS生成字节码参考[工具链使用](docs/using-the-toolchain-zh.md)
 
 cd out/release
 
-LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
+LD\_LIBRARY\_PATH=clang\_x64/ark/ark\_js\_runtime:clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
 
 ./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc
 
