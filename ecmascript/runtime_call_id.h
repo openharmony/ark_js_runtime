@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMA_RUNTIME_CALL_ID_H
-#define PANDA_RUNTIME_ECMA_RUNTIME_CALL_ID_H
+#ifndef ECMASCRIPT_RUNTIME_CALL_ID_H
+#define ECMASCRIPT_RUNTIME_CALL_ID_H
+
+#include "ecmascript/base/config.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -123,6 +125,16 @@ namespace panda::ecmascript {
     V(CloseIterator)                \
     V(StArraySpread)                \
     V(GetCallSpreadArgs)            \
+    V(TryLoadICByName)              \
+    V(LoadICByName)                 \
+    V(GetPropertyByName)            \
+    V(TryLoadICByValue)             \
+    V(LoadICByValue)                \
+    V(TryStoreICByName)             \
+    V(StoreICByName)                \
+    V(TryStoreICByValue)            \
+    V(StoreICByValue)               \
+    V(NotifyInlineCache)            \
     V(GetIteratorNext)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -435,7 +447,7 @@ enum EcmaRuntimeCallerId {
     RUNTIME_CALLER_NUMBER,
 };
 
-#ifdef PANDA_ECMASCRIPT_ENABLE_RUNTIME_STAT
+#if ECMASCRIPT_ENABLE_RUNTIME_STAT
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INTERPRETER_TRACE(thread, name)                                                        \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
@@ -458,6 +470,6 @@ enum EcmaRuntimeCallerId {
 #define INTERPRETER_TRACE(thread, name) static_cast<void>(0)  // NOLINT(cppcoreguidelines-macro-usage)
 #define BUILTINS_API_TRACE(thread, class, name) static_cast<void>(0)  // NOLINT(cppcoreguidelines-macro-usage)
 #define ABSTRACT_OPERATION_TRACE(thread, class, name) static_cast<void>(0)  // NOLINT(cppcoreguidelines-macro-usage)
-#endif  // PANDA_ECMASCRIPT_ENABLE_RUNTIME_STAT
+#endif  // ECMASCRIPT_ENABLE_RUNTIME_STAT
 }  // namespace panda::ecmascript
 #endif

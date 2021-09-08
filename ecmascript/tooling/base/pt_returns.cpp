@@ -130,8 +130,8 @@ Local<ObjectRef> SetBreakpointReturns::ToObject(const EcmaVM *ecmaVm)
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, breakpointId_.c_str())));
 
     Local<ObjectRef> location = location_->ToObject(ecmaVm);
-    result->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "actualLocation")), Local<JSValueRef>(location));
+    result->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "actualLocation")),
+        Local<JSValueRef>(location));
 
     return result;
 }

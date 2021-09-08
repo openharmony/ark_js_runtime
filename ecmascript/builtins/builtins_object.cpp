@@ -16,6 +16,7 @@
 #include "ecmascript/builtins/builtins_object.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
@@ -25,7 +26,7 @@
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript::builtins {
-// 19.1.1.1Object ( [ value ] )
+// 19.1.1.1 Object ( [ value ] )
 JSTaggedValue BuiltinsObject::ObjectConstructor(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
@@ -56,7 +57,7 @@ JSTaggedValue BuiltinsObject::ObjectConstructor(EcmaRuntimeCallInfo *argv)
     return JSTaggedValue::ToObject(thread, value).GetTaggedValue();
 }
 
-// 19.1.2.1Object.assign ( target, ...sources )
+// 19.1.2.1 Object.assign ( target, ...sources )
 JSTaggedValue BuiltinsObject::Assign(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
@@ -98,8 +99,8 @@ JSTaggedValue BuiltinsObject::Assign(EcmaRuntimeCallInfo *argv)
             //      2.ReturnIfAbrupt(propValue).
             //      3.Let status be Set(to, nextKey, propValue, true).
             //      4.ReturnIfAbrupt(status).
-            array_size_t keys_len = keys->GetLength();
-            for (array_size_t j = 0; j < keys_len; j++) {
+            array_size_t keysLen = keys->GetLength();
+            for (array_size_t j = 0; j < keysLen; j++) {
                 PropertyDescriptor desc(thread);
                 key.Update(keys->Get(j));
                 bool success = JSTaggedValue::GetOwnProperty(thread, JSHandle<JSTaggedValue>::Cast(from), key, desc);
@@ -164,10 +165,10 @@ JSTaggedValue BuiltinsObject::ObjectDefineProperties(JSThread *thread, const JSH
     //     iii.Let desc be ToPropertyDescriptor(descObj).
     //     iv.ReturnIfAbrupt(desc).
     //     v.Append the pair (a two element List) consisting of nextKey and desc to the end of descriptors.
+    JSMutableHandle<JSTaggedValue> handleKey(thread, JSTaggedValue::Undefined());
     for (array_size_t i = 0; i < length; i++) {
         PropertyDescriptor propDesc(thread);
-
-        JSHandle<JSTaggedValue> handleKey(thread, handleKeys->Get(i));
+        handleKey.Update(handleKeys->Get(i));
 
         bool success = JSTaggedValue::GetOwnProperty(thread, JSHandle<JSTaggedValue>::Cast(props), handleKey, propDesc);
         // ReturnIfAbrupt(propDesc)
@@ -201,7 +202,7 @@ JSTaggedValue BuiltinsObject::ObjectDefineProperties(JSThread *thread, const JSH
     return obj.GetTaggedValue();
 }
 
-// 19.1.2.2Object.create ( O [ , Properties ] )
+// 19.1.2.2 Object.create ( O [ , Properties ] )
 JSTaggedValue BuiltinsObject::Create(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
@@ -230,7 +231,7 @@ JSTaggedValue BuiltinsObject::Create(EcmaRuntimeCallInfo *argv)
     return objCreate.GetTaggedValue();
 }
 
-// 19.1.2.3Object.defineProperties ( O, Properties )
+// 19.1.2.3 Object.defineProperties ( O, Properties )
 JSTaggedValue BuiltinsObject::DefineProperties(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
@@ -241,7 +242,7 @@ JSTaggedValue BuiltinsObject::DefineProperties(EcmaRuntimeCallInfo *argv)
     return ObjectDefineProperties(thread, GetCallArg(argv, 0), GetCallArg(argv, 1));
 }
 
-// 19.1.2.4Object.defineProperty ( O, P, Attributes )
+// 19.1.2.4 Object.defineProperty ( O, P, Attributes )
 JSTaggedValue BuiltinsObject::DefineProperty(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
@@ -278,7 +279,7 @@ JSTaggedValue BuiltinsObject::DefineProperty(EcmaRuntimeCallInfo *argv)
     return obj.GetTaggedValue();
 }
 
-// 19.1.2.5Object.freeze ( O )
+// 19.1.2.5 Object.freeze ( O )
 JSTaggedValue BuiltinsObject::Freeze(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
@@ -743,7 +744,11 @@ JSTaggedValue BuiltinsObject::ToLocaleString(EcmaRuntimeCallInfo *argv)
 
     // 2. Return Invoke(O, "toString").
     JSHandle<JSTaggedValue> calleeKey = thread->GlobalConstants()->GetHandledToStringString();
-    return JSFunction::Invoke(thread, object, calleeKey, BuiltinsBase::GetArgsArray(argv));
+
+    JSHandle<TaggedArray> argsList = GetArgsArray(argv);
+    ecmascript::InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgList(*argsList);
+    return JSFunction::Invoke(thread, object, calleeKey, argsList->GetLength(), arguments->GetArgv());
 }
 
 JSTaggedValue BuiltinsObject::GetBuiltinTag(JSThread *thread, const JSHandle<JSObject> &object)
@@ -754,32 +759,33 @@ JSTaggedValue BuiltinsObject::GetBuiltinTag(JSThread *thread, const JSHandle<JSO
     // 5. ReturnIfAbrupt(isArray).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    JSHandle<EcmaString> builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Object");
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<EcmaString> builtinTag = factory->NewFromCanBeCompressString("Object");
     // 6. If isArray is true, let builtinTag be "Array".
     if (isArray) {
-        builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Array");
+        builtinTag = factory->NewFromCanBeCompressString("Array");
     } else if (object->IsJSPrimitiveRef()) {
         // 7. Else, if O is an exotic String object, let builtinTag be "String".
         JSPrimitiveRef *primitiveRef = JSPrimitiveRef::Cast(*object);
         if (primitiveRef->IsString()) {
-            builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("String");
+            builtinTag = factory->NewFromCanBeCompressString("String");
         } else if (primitiveRef->IsBoolean()) {
             // 11. Else, if O has a [[BooleanData]] internal slot, let builtinTag be "Boolean".
-            builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Boolean");
+            builtinTag = factory->NewFromCanBeCompressString("Boolean");
         } else if (primitiveRef->IsNumber()) {
             // 12. Else, if O has a [[NumberData]] internal slot, let builtinTag be "Number".
-            builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Number");
+            builtinTag = factory->NewFromCanBeCompressString("Number");
         }
     } else if (object->IsArguments()) {
-        builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Arguments");
+        builtinTag = factory->NewFromCanBeCompressString("Arguments");
     } else if (object->IsCallable()) {
-        builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Function");
+        builtinTag = factory->NewFromCanBeCompressString("Function");
     } else if (object->IsJSError()) {
-        builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Error");
+        builtinTag = factory->NewFromCanBeCompressString("Error");
     } else if (object->IsDate()) {
-        builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("Date");
+        builtinTag = factory->NewFromCanBeCompressString("Date");
     } else if (object->IsJSRegExp()) {
-        builtinTag = thread->GetEcmaVM()->GetFactory()->NewFromString("RegExp");
+        builtinTag = factory->NewFromCanBeCompressString("RegExp");
     }
     // 15. Else, let builtinTag be "Object".
     return builtinTag.GetTaggedValue();
@@ -824,8 +830,8 @@ JSTaggedValue BuiltinsObject::ToString(EcmaRuntimeCallInfo *argv)
     }
 
     // 19. Return the String that is the result of concatenating "[object ", tag, and "]".
-    JSHandle<EcmaString> leftString(factory->NewFromString("[object "));
-    JSHandle<EcmaString> rightString(factory->NewFromString("]"));
+    JSHandle<EcmaString> leftString(factory->NewFromCanBeCompressString("[object "));
+    JSHandle<EcmaString> rightString(factory->NewFromCanBeCompressString("]"));
 
     JSHandle<EcmaString> newLeftStringHandle =
         factory->ConcatFromString(leftString, JSTaggedValue::ToString(thread, tag));
@@ -863,6 +869,7 @@ JSTaggedValue BuiltinsObject::ProtoGetter(EcmaRuntimeCallInfo *argv)
     // 3.Return obj.[[GetPrototypeOf]]().
     return obj->GetPrototype(thread);
 }
+
 JSTaggedValue BuiltinsObject::ProtoSetter(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);

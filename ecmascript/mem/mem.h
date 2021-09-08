@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_MEM_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_MEM_H
+#ifndef ECMASCRIPT_MEM_MEM_H
+#define ECMASCRIPT_MEM_MEM_H
 
 #include <cstdint>
 
@@ -34,9 +34,14 @@ enum class MemAlignment : uint8_t {
 
 static constexpr size_t DEFAULT_SEMI_SPACE_SIZE = 1024 * 1024;
 static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 2 * 1024 * 1024;
-static constexpr size_t SEMI_SPACE_SIZE_4M = 4 * 1024 * 1024;
-static constexpr size_t SEMI_SPACE_SIZE_8M = 8 * 1024 * 1024;
+
+#if defined(IS_STANDARD_SYSTEM)
+static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 3 * 1024 * 1024;
+static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 3 * 1024 * 1024;
+#else
+static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 4 * 1024 * 1024;
 static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 16 * 1024 * 1024;
+#endif
 
 static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 10 * 1024 * 1024;
 
@@ -51,6 +56,9 @@ static constexpr size_t REGION_SIZE_LOG2 = 18U;
 static constexpr size_t DEFAULT_SNAPSHOT_SPACE_SIZE = 1U << REGION_SIZE_LOG2;
 static constexpr size_t MAX_SNAPSHOT_SPACE_SIZE = 8 * 1024 * 1024;
 
+static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_SIZE = 1024 * 1024;
+static constexpr size_t MAX_MACHINE_CODE_SPACE_SIZE = 8 * 1024 * 1024;
+
 static constexpr size_t MAX_HEAP_SIZE = 256 * 1024 * 1024;
 
 static constexpr size_t DEFAULT_REGION_SIZE = 1U << REGION_SIZE_LOG2;
@@ -58,14 +66,14 @@ static constexpr size_t DEFAULT_REGION_MASK = DEFAULT_REGION_SIZE - 1;
 
 static constexpr size_t DEFAULT_MARK_STACK_SIZE = 4 * 1024;
 
-// Objects which are larger than half of the region size are large objects.
+// Objects which are larger than half of the region size are huge objects.
 // Regular objects will be allocated on regular regions and migrated on spaces.
-// They will never be moved to large object space. So we take half of a regular
+// They will never be moved to huge object space. So we take half of a regular
 // region as the border of regular objects.
 static constexpr size_t MAX_32BIT_OBJECT_SPACE_SIZE = 1 * 1024 * 1024 * 1024;
 static constexpr size_t MAX_REGULAR_HEAP_OBJECT_SIZE = 1U << (REGION_SIZE_LOG2 - 1);
-static constexpr size_t MAX_LARGE_OBJECT_SIZE = 256 * 1024 * 1024;
-static constexpr size_t MAX_LARGE_OBJECT_SPACE_SIZE = 256 * 1024 * 1024;
+static constexpr size_t MAX_HUGE_OBJECT_SIZE = 256 * 1024 * 1024;
+static constexpr size_t MAX_HUGE_OBJECT_SPACE_SIZE = 256 * 1024 * 1024;
 static constexpr size_t LARGE_BITMAP_MIN_SIZE = static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)
                                                 << mem::Bitmap::LOG_BITSPERWORD;
 
@@ -81,13 +89,13 @@ static constexpr uintptr_t PANDA_32BITS_HEAP_START_ADDRESS_256 = 256_KB;
 
 static os::memory::Mutex staticResourceLock_;
 
-template <typename T>
+template<typename T>
 constexpr inline bool IsAligned(T value, size_t alignment)
 {
     return (value & (alignment - 1U)) == 0;
 }
 
-template <typename T>
+template<typename T>
 inline T AlignDown(T x, size_t alignment)
 {
     ASSERT(std::is_integral<T>::value);
@@ -96,7 +104,7 @@ inline T AlignDown(T x, size_t alignment)
     return x & ~(alignment - 1U);
 }
 
-template <typename T>
+template<typename T>
 inline T AlignUp(T x, size_t alignment)
 {
     ASSERT(std::is_integral<T>::value);
@@ -104,4 +112,4 @@ inline T AlignUp(T x, size_t alignment)
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_MEM_H
+#endif  // ECMASCRIPT_MEM_MEM_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PROGRAM_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_PROGRAM_INL_H
+#ifndef ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
+#define ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
 
 #include "program_object.h"
 #include "ecmascript/mem/region_factory.h"
@@ -39,4 +39,4 @@ void Program::FreeMethodData(RegionFactory *factory)
 }
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PROGRAM_INL_H
+#endif  // ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H

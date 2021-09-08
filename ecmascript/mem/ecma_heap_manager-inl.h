@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_MANAGER_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_MANAGER_INL_H
+#ifndef ECMASCRIPT_MEM_HEAP_MANAGER_INL_H
+#define ECMASCRIPT_MEM_HEAP_MANAGER_INL_H
 
 #include "ecmascript/mem/ecma_heap_manager.h"
 
@@ -27,16 +27,16 @@
 #include "ecmascript/js_hclass.h"
 
 namespace panda::ecmascript {
-TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrLargeObject(JSHClass *hclass)
+TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass)
 {
     size_t size = hclass->GetObjectSize();
-    return AllocateYoungGenerationOrLargeObject(hclass, size);
+    return AllocateYoungGenerationOrHugeObject(hclass, size);
 }
 
-TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrLargeObject(JSHClass *hclass, size_t size)
+TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass, size_t size)
 {
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
-        return AllocateLargeObject(hclass, size);
+        return AllocateHugeObject(hclass, size);
     }
     // regular objects
     auto object = reinterpret_cast<TaggedObject *>(newSpaceAllocator_.Allocate(size));
@@ -78,10 +78,10 @@ TaggedObject *EcmaHeapManager::TryAllocateYoungGeneration(size_t size)
     return reinterpret_cast<TaggedObject *>(newSpaceAllocator_.Allocate(size));
 }
 
-TaggedObject *EcmaHeapManager::AllocateNonMovableOrLargeObject(JSHClass *hclass, size_t size)
+TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size)
 {
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
-        return AllocateLargeObject(hclass, size);
+        return AllocateHugeObject(hclass, size);
     }
     auto object = reinterpret_cast<TaggedObject *>(nonMovableAllocator_.Allocate(size));
     if (UNLIKELY(object == nullptr)) {
@@ -128,17 +128,17 @@ void EcmaHeapManager::SetClass(TaggedObject *header, JSHClass *hclass)
     header->SetClass(hclass);
 }
 
-TaggedObject *EcmaHeapManager::AllocateNonMovableOrLargeObject(JSHClass *hclass)
+TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass)
 {
     size_t size = hclass->GetObjectSize();
-    return AllocateNonMovableOrLargeObject(hclass, size);
+    return AllocateNonMovableOrHugeObject(hclass, size);
 }
 
-TaggedObject *EcmaHeapManager::AllocateOldGenerationOrLargeObject(JSHClass *hclass, size_t size)
+TaggedObject *EcmaHeapManager::AllocateOldGenerationOrHugeObject(JSHClass *hclass, size_t size)
 {
     ASSERT(size > 0);
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
-        return AllocateLargeObject(hclass, size);
+        return AllocateHugeObject(hclass, size);
     }
     auto object = reinterpret_cast<TaggedObject *>(oldSpaceAllocator_.Allocate(size));
     if (UNLIKELY(object == nullptr)) {
@@ -163,15 +163,17 @@ TaggedObject *EcmaHeapManager::AllocateOldGenerationOrLargeObject(JSHClass *hcla
     return object;
 }
 
-TaggedObject *EcmaHeapManager::AllocateLargeObject(JSHClass *hclass, size_t size)
+TaggedObject *EcmaHeapManager::AllocateHugeObject(JSHClass *hclass, size_t size)
 {
     ASSERT(size > MAX_REGULAR_HEAP_OBJECT_SIZE);
     // large objects
     heap_->CheckAndTriggerOldGC();
-    auto *object = reinterpret_cast<TaggedObject *>(heap_->GetLargeObjectSpace()->Allocate(size));
+    auto *object =
+        reinterpret_cast<TaggedObject *>(const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace())->Allocate(size));
     if (UNLIKELY(object == nullptr)) {
-        heap_->CollectGarbage(TriggerGCType::LARGE_GC);
-        object = reinterpret_cast<TaggedObject *>(heap_->GetLargeObjectSpace()->Allocate(size));
+        heap_->CollectGarbage(TriggerGCType::HUGE_GC);
+        object = reinterpret_cast<TaggedObject *>(
+                    const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace())->Allocate(size));
         if (UNLIKELY(object == nullptr)) {
             heap_->ThrowOutOfMemoryError(size);
             UNREACHABLE();
@@ -181,6 +183,24 @@ TaggedObject *EcmaHeapManager::AllocateLargeObject(JSHClass *hclass, size_t size
     heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
     return object;
 }
+
+TaggedObject *EcmaHeapManager::AllocateMachineCodeSpaceObject(JSHClass *hclass, size_t size)
+{
+    auto object = reinterpret_cast<TaggedObject *>(machineCodeSpaceAllocator_.Allocate(size));
+    if (UNLIKELY(object == nullptr)) {
+        if (!heap_->FillMachineCodeSpaceAndTryGC(&machineCodeSpaceAllocator_)) {
+            return nullptr;
+        }
+        object = reinterpret_cast<TaggedObject *>(machineCodeSpaceAllocator_.Allocate(size));
+        if (UNLIKELY(object == nullptr)) {
+            heap_->ThrowOutOfMemoryError(size);
+            return nullptr;
+        }
+    }
+    SetClass(object, hclass);
+    heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
+}
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_MANAGER_INL_H
+#endif  // ECMASCRIPT_MEM_HEAP_MANAGER_INL_H

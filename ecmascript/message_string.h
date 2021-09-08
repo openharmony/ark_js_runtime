@@ -13,30 +13,30 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MESSAGE_STRING_H
-#define PANDA_RUNTIME_ECMASCRIPT_MESSAGE_STRING_H
+#ifndef ECMASCRIPT_MESSAGE_STRING_H
+#define ECMASCRIPT_MESSAGE_STRING_H
 
 #include <string>
 
-namespace kungfu {
+namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MESSAGE_STRING_LIST(V)                                                    \
-    V(SetReadOnlyProperty, "Cannot set readonly property")                        \
+#define MESSAGE_STRING_LIST(V)                             \
+    V(SetReadOnlyProperty, "Cannot set readonly property") \
     V(SetPropertyWhenNotExtensible, "Cannot add property in prevent extensions ")
 
 class MessageString {
 public:
     enum MessageId {
-        // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+    // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEF_MESSAGE_ID(name, string) Message_##name,
         MESSAGE_STRING_LIST(DEF_MESSAGE_ID)
 #undef DEF_MESSAGE_ID
-        MAX_MESSAGE_COUNT
+            MAX_MESSAGE_COUNT
     };
-    static std::string GetMessageString(int id);
+    static const std::string& GetMessageString(int id);
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GET_MESSAGE_STRING_ID(name) static_cast<int>((MessageString::MessageId::Message_##name))
-}  // namespace kungfu
-#endif
+}  // namespace panda::ecmascript
+#endif  // ECMASCRIPT_MESSAGE_STRING_H

@@ -38,15 +38,18 @@ void ICRuntime::UpdateLoadHandler(const ObjectOperator &op, JSHandle<JSTaggedVal
     if (IsNamedIC(GetICKind())) {
         key = JSHandle<JSTaggedValue>();
     }
-    JSTaggedValue handlerValue;
+    JSHandle<JSTaggedValue> handlerValue;
     JSHandle<JSHClass> hclass(GetThread(), JSHandle<JSObject>::Cast(receiver)->GetClass());
     if (op.IsElement()) {
-        handlerValue = LoadHandler::LoadElement();
+        if (!op.IsFound() && hclass->IsDictionaryElement()) {
+            return;
+        }
+        handlerValue = LoadHandler::LoadElement(thread_);
     } else {
         if (!op.IsFound()) {
             handlerValue = PrototypeHandler::LoadPrototype(thread_, op, hclass);
         } else if (!op.IsOnPrototype()) {
-            handlerValue = LoadHandler::LoadProperty(op);
+            handlerValue = LoadHandler::LoadProperty(thread_, op);
         } else {
             // do not support global prototype ic
             if (IsGlobalLoadIC(GetICKind())) {
@@ -56,17 +59,16 @@ void ICRuntime::UpdateLoadHandler(const ObjectOperator &op, JSHandle<JSTaggedVal
         }
     }
 
-    auto handler = JSHandle<JSTaggedValue>(thread_, handlerValue);
     if (key.IsEmpty()) {
-        icAccessor_.AddHandlerWithoutKey(JSHandle<JSTaggedValue>::Cast(hclass), handler);
+        icAccessor_.AddHandlerWithoutKey(JSHandle<JSTaggedValue>::Cast(hclass), handlerValue);
     } else if (op.IsElement()) {
         // do not support global element ic
         if (IsGlobalLoadIC(GetICKind())) {
             return;
         }
-        icAccessor_.AddElementHandler(JSHandle<JSTaggedValue>::Cast(hclass), handler);
+        icAccessor_.AddElementHandler(JSHandle<JSTaggedValue>::Cast(hclass), handlerValue);
     } else {
-        icAccessor_.AddHandlerWithKey(key, JSHandle<JSTaggedValue>::Cast(hclass), handler);
+        icAccessor_.AddHandlerWithKey(key, JSHandle<JSTaggedValue>::Cast(hclass), handlerValue);
     }
 }
 
@@ -79,9 +81,9 @@ void ICRuntime::UpdateStoreHandler(const ObjectOperator &op, JSHandle<JSTaggedVa
     if (IsNamedIC(GetICKind())) {
         key = JSHandle<JSTaggedValue>();
     }
-    JSTaggedValue handlerValue;
+    JSHandle<JSTaggedValue> handlerValue;
     if (op.IsElement()) {
-        handlerValue = StoreHandler::StoreElement(receiver);
+        handlerValue = StoreHandler::StoreElement(thread_, receiver);
     } else {
         ASSERT(op.IsFound());
         if (op.IsOnPrototype()) {
@@ -89,26 +91,25 @@ void ICRuntime::UpdateStoreHandler(const ObjectOperator &op, JSHandle<JSTaggedVa
             if (IsGlobalStoreIC(GetICKind())) {
                 return;
             }
-            JSHandle<JSHClass> hclass(GetThread(), JSHandle<JSObject>::Cast(receiver)->GetClass());
+            JSHandle<JSHClass> hclass(thread_, JSHandle<JSObject>::Cast(receiver)->GetClass());
             handlerValue = PrototypeHandler::StorePrototype(thread_, op, hclass);
         } else if (op.IsTransition()) {
             handlerValue = TransitionHandler::StoreTransition(thread_, op);
         } else {
-            handlerValue = StoreHandler::StoreProperty(op);
+            handlerValue = StoreHandler::StoreProperty(thread_, op);
         }
     }
 
-    auto handler = JSHandle<JSTaggedValue>(thread_, handlerValue);
     if (key.IsEmpty()) {
-        icAccessor_.AddHandlerWithoutKey(receiverHClass_, handler);
+        icAccessor_.AddHandlerWithoutKey(receiverHClass_, handlerValue);
     } else if (op.IsElement()) {
         // do not support global element ic
         if (IsGlobalStoreIC(GetICKind())) {
             return;
         }
-        icAccessor_.AddElementHandler(receiverHClass_, handler);
+        icAccessor_.AddElementHandler(receiverHClass_, handlerValue);
     } else {
-        icAccessor_.AddHandlerWithKey(key, receiverHClass_, handler);
+        icAccessor_.AddHandlerWithKey(key, receiverHClass_, handlerValue);
     }
 }
 
@@ -132,11 +133,11 @@ void ICRuntime::TraceIC([[maybe_unused]] JSHandle<JSTaggedValue> receiver,
 
 JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle<JSTaggedValue> key)
 {
-    if (!receiver->IsJSObject()) {
+    if (receiver->IsTypedArray() || !receiver->IsJSObject()) {
         return JSTaggedValue::GetProperty(GetThread(), receiver, key).GetValue().GetTaggedValue();
     }
     ObjectOperator op(GetThread(), receiver, key);
-    auto result = JSObject::GetProperty(GetThread(), &op);
+    auto result = JSHandle<JSTaggedValue>(thread_, JSObject::GetProperty(GetThread(), &op));
     if (!op.IsFound() && GetICKind() == ICKind::NamedGlobalLoadIC) {
         return SlowRuntimeStub::ThrowReferenceError(GetThread(), key.GetTaggedValue(), " is not defined");
     }
@@ -144,7 +145,7 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
     // ic-switch
     if (!GetThread()->GetEcmaVM()->ICEnable()) {
         icAccessor_.SetAsMega();
-        return result;
+        return result.GetTaggedValue();
     }
 #ifndef NDEBUG
     TraceIC(receiver, key);
@@ -152,17 +153,17 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
     // do not cache element
     if (!op.IsFastMode() && op.IsFound()) {
         icAccessor_.SetAsMega();
-        return result;
+        return result.GetTaggedValue();
     }
 
     UpdateLoadHandler(op, key, receiver);
-    return result;
+    return result.GetTaggedValue();
 }
 
 JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHandle<JSTaggedValue> key,
                                         JSHandle<JSTaggedValue> value)
 {
-    if (!receiver->IsJSObject()) {
+    if (receiver->IsTypedArray() || !receiver->IsJSObject()) {
         bool success = JSTaggedValue::SetProperty(GetThread(), receiver, key, value, true);
         return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
     }
@@ -185,7 +186,10 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
         icAccessor_.SetAsMega();
         return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
     }
-    UpdateStoreHandler(op, key, receiver);
-    return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
+    if (success) {
+        UpdateStoreHandler(op, key, receiver);
+        return JSTaggedValue::Undefined();
+    }
+    return JSTaggedValue::Exception();
 }
 }  // namespace panda::ecmascript

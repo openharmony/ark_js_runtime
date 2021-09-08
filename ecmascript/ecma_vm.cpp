@@ -25,8 +25,8 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/global_handle_collection.h"
 #include "ecmascript/ic/properties_cache-inl.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_for_in_iterator.h"
@@ -36,6 +36,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
+#include "ecmascript/runtime_trampolines.h"
 #include "ecmascript/snapshot/mem/slot_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
@@ -99,11 +100,9 @@ EcmaVM::EcmaVM(RuntimeOptions options)
       stringTable_(new EcmaStringTable(this)),
       regionFactory_(std::make_unique<RegionFactory>()),
       chunk_(regionFactory_.get()),
-      allocator_(new CAddressAllocator<JSTaggedType>()),
       nativeMethods_(&chunk_)
 {
     icEnable_ = options_.IsIcEnable();
-    gcStats_ = chunk_.New<GCStats>();
     rendezvous_ = chunk_.New<EmptyRendezvous>();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
     if (!snapshotSerializeEnable_) {
@@ -115,15 +114,17 @@ EcmaVM::EcmaVM(RuntimeOptions options)
 
 bool EcmaVM::Initialize()
 {
-    ASSERT(thread_ != nullptr);
     trace::ScopedTrace scoped_trace("EcmaVM::Initialize");
+
+    RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
 
     auto globalConst = const_cast<GlobalEnvConstants *>(thread_->GlobalConstants());
 
     propertiesCache_ = new PropertiesCache();
     regExpParserCache_ = new RegExpParserCache();
     heap_ = new Heap(this);
-    heap_->SetUp();
+    heap_->Initialize();
+    gcStats_ = chunk_.New<GCStats>(heap_);
     factory_ = chunk_.New<ObjectFactory>(thread_, heap_);
     if (UNLIKELY(factory_ == nullptr)) {
         LOG_ECMA(FATAL) << "alloc factory_ failed";
@@ -196,7 +197,7 @@ void EcmaVM::InitializeEcmaScriptRunStat()
         BUITINS_API_LIST(BUILTINS_API_NAME)
 #undef BUILTINS_API_NAME
 #define ABSTRACT_OPERATION_NAME(class, name) "AbstractOperation::" #class "_" #name,
-        ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_NAME)
+            ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_NAME)
 #undef ABSTRACT_OPERATION_NAME
     };
     runtimeStat_ = chunk_.New<EcmaRuntimeStat>(runtimeCallerNames, ecmascript::RUNTIME_CALLER_NUMBER);
@@ -238,8 +239,14 @@ EcmaVM::~EcmaVM()
     // clear c_address: c++ pointer delete
     ClearBufferData();
 
+    if (gcStats_ != nullptr) {
+        gcStats_->PrintStatisticResult();
+        chunk_.Delete(gcStats_);
+        gcStats_ = nullptr;
+    }
+
     if (heap_ != nullptr) {
-        heap_->TearDown();
+        heap_->Destroy();
         delete heap_;
         heap_ = nullptr;
     }
@@ -253,12 +260,6 @@ EcmaVM::~EcmaVM()
     if (factory_ != nullptr) {
         chunk_.Delete(factory_);
         factory_ = nullptr;
-    }
-
-    if (gcStats_ != nullptr) {
-        gcStats_->PrintStatisticResult();
-        chunk_.Delete(gcStats_);
-        gcStats_ = nullptr;
     }
 
     if (stringTable_ != nullptr) {
@@ -279,11 +280,6 @@ EcmaVM::~EcmaVM()
     if (thread_ != nullptr) {
         delete thread_;
         thread_ = nullptr;
-    }
-
-    if (allocator_ != nullptr) {
-        delete allocator_;
-        allocator_ = nullptr;
     }
 
     extractorCache_.clear();
@@ -316,7 +312,7 @@ bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view
         return false;
     }
     const panda_file::File *pf_ptr = pf.get();
-    AddPandaFile(pf.release(), false);  // Store here from being automatically cleared
+    AddPandaFile(pf.release(), false);  // Store here prevent from being automatically cleared
 
     return Execute(*pf_ptr, entryPoint, args);
 }
@@ -410,7 +406,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
         if (&pf != frameworkPandaFile_) {
             program = PandaFileTranslator::TranslatePandaFile(this, pf, methodName);
         } else {
-            JSHandle<EcmaString> string = factory_->NewFromStdString(pf.GetFilename());
+            JSHandle<EcmaString> string = factory_->NewFromStdStringUnCheck(pf.GetFilename(), true);
             program = JSHandle<Program>(thread_, frameworkProgram_);
             program->SetLocation(thread_, string);
             RedirectMethod(pf);
@@ -433,7 +429,9 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
         jsargs->Set(thread_, i++, strobj);
     }
 
-    panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, jsargs);
+    InternalCallParams *params = thread_->GetInternalCallParams();
+    params->MakeArgList(*jsargs);
+    panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::Cast(microJobQueue_.GetTaggedObject())->ExecutePendingJob(thread_);
     }
@@ -735,5 +733,4 @@ void EcmaVM::SetupRegExpResultCache()
 {
     regexpCache_ = builtins::RegExpExecResultCache::CreateCacheTable(thread_);
 }
-
 }  // namespace panda::ecmascript

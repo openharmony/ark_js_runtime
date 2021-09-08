@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMASCRIPT_THREAD_THREAD_POOL_H
-#define PANDA_ECMASCRIPT_THREAD_THREAD_POOL_H
+#ifndef ECMASCRIPT_THREAD_THREAD_POOL_H
+#define ECMASCRIPT_THREAD_THREAD_POOL_H
 
 #include <functional>
 #include <thread>
@@ -127,4 +127,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_ECMASCRIPT_THREAD_THREAD_POOL_H
+#endif  // ECMASCRIPT_THREAD_THREAD_POOL_H

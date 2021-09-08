@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMA_EXCEPTIONS_H
-#define PANDA_RUNTIME_ECMA_EXCEPTIONS_H
+#ifndef ECMASCRIPT_ECMA_EXCEPTIONS_H
+#define ECMASCRIPT_ECMA_EXCEPTIONS_H
 
 /* Do not add ecma special header's here */
 #include "ecmascript/js_thread.h"
@@ -26,4 +26,4 @@ static constexpr const char *REFERENCE_ERROR_STRING = "Lecma/ReferenceError;";
 void ThrowException(JSThread *thread, const char *name, const char *msg);
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMA_EXCEPTIONS_H
+#endif  // ECMASCRIPT_ECMA_EXCEPTIONS_H

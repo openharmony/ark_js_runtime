@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
+#ifndef ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
+#define ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
 
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/js_hclass.h"
@@ -30,15 +30,15 @@ public:
     NO_COPY_SEMANTIC(EcmaHeapManager);
     NO_MOVE_SEMANTIC(EcmaHeapManager);
 
-    inline TaggedObject *AllocateYoungGenerationOrLargeObject(JSHClass *hclass);
+    inline TaggedObject *AllocateYoungGenerationOrHugeObject(JSHClass *hclass);
     inline TaggedObject *TryAllocateYoungGeneration(size_t size);
-    inline TaggedObject *AllocateYoungGenerationOrLargeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateYoungGenerationOrHugeObject(JSHClass *hclass, size_t size);
 
-    inline TaggedObject *AllocateNonMovableOrLargeObject(JSHClass *hclass, size_t size);
-    inline TaggedObject *AllocateNonMovableOrLargeObject(JSHClass *hclass);
-    inline TaggedObject *AllocateLargeObject(JSHClass *hclass, size_t size);
-    inline TaggedObject *AllocateOldGenerationOrLargeObject(JSHClass *hclass, size_t size);
-
+    inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass);
+    inline TaggedObject *AllocateHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateOldGenerationOrHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateMachineCodeSpaceObject(JSHClass *hclass, size_t size);
     inline uintptr_t AllocateSnapShotSpace(size_t size);
 
     inline void SetClass(TaggedObject *header, JSHClass *hclass);
@@ -68,13 +68,19 @@ public:
         return snapshotSpaceAllocator_;
     }
 
+    FreeListAllocator &GetMachineCodeSpaceAllocator()
+    {
+        return machineCodeSpaceAllocator_;
+    }
+
 private:
     Heap *heap_{nullptr};
     BumpPointerAllocator newSpaceAllocator_;
     FreeListAllocator nonMovableAllocator_;
     FreeListAllocator oldSpaceAllocator_;
     BumpPointerAllocator snapshotSpaceAllocator_;
+    FreeListAllocator machineCodeSpaceAllocator_;
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
+#endif  // ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H

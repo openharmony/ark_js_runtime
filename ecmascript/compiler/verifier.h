@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_VERIFIER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_VERIFIER_H
+#ifndef ECMASCRIPT_COMPILER_VERIFIER_H
+#define ECMASCRIPT_COMPILER_VERIFIER_H
 
 #include <algorithm>
 #include <deque>
@@ -52,4 +52,4 @@ public:
 };
 }  // namespace kungfu
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_VERIFIER_H
+#endif  // ECMASCRIPT_COMPILER_VERIFIER_H

@@ -375,7 +375,7 @@ HWTEST_F_L0(JSNApiTests, ArrayBufferWithBuffer)
     };
     {
         LocalScope scope(vm_);
-        uint8_t *buffer = new uint8_t[length];
+        uint8_t *buffer = new uint8_t[length]();
         Local<ArrayBufferRef> arrayBuffer = ArrayBufferRef::New(vm_, buffer, length, deleter, data);
         ASSERT_TRUE(arrayBuffer->IsArrayBuffer());
         ASSERT_EQ(arrayBuffer->ByteLength(vm_), length);

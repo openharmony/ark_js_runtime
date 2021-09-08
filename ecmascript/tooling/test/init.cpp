@@ -26,7 +26,7 @@ static std::thread g_debuggerThread;
 
 static std::unique_ptr<TestRunner> g_runner{nullptr};
 
-extern "C" int32_t StartDebugger(EcmaVM *vm)
+extern "C" int32_t StartDebugger(const EcmaVM *vm)
 {
     const char *testName = GetCurrentTestName();
     g_runner = std::make_unique<TestRunner>(testName, vm);

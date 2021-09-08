@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_PARAMS_H
-#define PANDA_TOOLING_ECMASCRIPT_PARAMS_H
+#ifndef ECMASCRIPT_TOOLING_BASE_PT_PARAMS_H
+#define ECMASCRIPT_TOOLING_BASE_PT_PARAMS_H
 
 #include "ecmascript/tooling/base/pt_types.h"
 

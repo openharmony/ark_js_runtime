@@ -30,7 +30,7 @@ JSTaggedValue JsInvoker::Invoke(JSThread *thread)
 }
 
 JSTaggedValue InvokeJsFunction(JSThread *thread, const JSHandle<JSFunction> &func, const JSHandle<JSTaggedValue> &obj,
-                               const JSHandle<JSTaggedValue> &newTgt, const JSHandle<TaggedArray> &args)
+                               const JSHandle<JSTaggedValue> &newTgt, InternalCallParams *arguments)
 {
     ASSERT(func->GetCallTarget() != nullptr);
 
@@ -38,16 +38,8 @@ JSTaggedValue InvokeJsFunction(JSThread *thread, const JSHandle<JSFunction> &fun
     params.callTarget = ECMAObject::Cast(*func);
     params.newTarget = newTgt.GetTaggedType();
     params.thisArg = obj.GetTaggedType();
-    params.argc = args->GetLength();
-    CVector<JSTaggedType> values;
-    values.reserve(params.argc);
-
-    for (uint32_t i = 0; i < params.argc; ++i) {
-        JSTaggedValue arg = args->Get(thread, i);
-        values.emplace_back(arg.GetRawData());
-    }
-
-    params.argv = values.data();
+    params.argc = arguments->GetLength();
+    params.argv = arguments->GetArgv();
     return EcmaInterpreter::Execute(thread, params);
 }
 }  // namespace panda::ecmascript

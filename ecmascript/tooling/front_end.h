@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_FRONT_END_H
-#define PANDA_TOOLING_ECMASCRIPT_FRONT_END_H
+#ifndef ECMASCRIPT_TOOLING_FRONT_END_H
+#define ECMASCRIPT_TOOLING_FRONT_END_H
 
 #include "libpandabase/macros.h"
 #include "ecmascript/tooling/base/pt_events.h"

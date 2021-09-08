@@ -13,12 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_VISUALIZER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_VISUALIZER_H
+#ifndef ECMASCRIPT_COMPILER_CIRCUIT_VISUALIZER_H
+#define ECMASCRIPT_COMPILER_CIRCUIT_VISUALIZER_H
 
 #include <ostream>
 #include <fstream>
 #include <string>
+#include <map>
+#include "circuit.h"
+#include "gate.h"
 
 namespace kungfu {
 #ifndef NDEBUG

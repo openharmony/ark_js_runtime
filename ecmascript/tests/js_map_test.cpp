@@ -85,7 +85,7 @@ HWTEST_F_L0(JSMapTest, AddAndHas)
     // create jsMap
     JSHandle<JSMap> map(thread, CreateMap());
 
-    JSHandle<JSTaggedValue> key(factory->NewFromString("key"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("key"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
     JSMap::Set(thread, map, key, value);
     EXPECT_TRUE(map->Has(key.GetTaggedValue()));
@@ -101,7 +101,7 @@ HWTEST_F_L0(JSMapTest, DeleteAndGet)
     char keyArray[] = "key0";
     for (int i = 0; i < 40; i++) {
         keyArray[3] = '1' + i;
-        JSHandle<JSTaggedValue> key(factory->NewFromString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
         JSMap::Set(thread, map, key, value);
         EXPECT_TRUE(map->Has(key.GetTaggedValue()));
@@ -109,7 +109,7 @@ HWTEST_F_L0(JSMapTest, DeleteAndGet)
     EXPECT_EQ(map->GetSize(), 40);
     // whether jsMap has delete key
     keyArray[3] = '1' + 8;
-    JSHandle<JSTaggedValue> deleteKey(factory->NewFromString(keyArray));
+    JSHandle<JSTaggedValue> deleteKey(factory->NewFromCanBeCompressString(keyArray));
     EXPECT_EQ(map->GetValue(8), JSTaggedValue(8));
     JSMap::Delete(thread, map, deleteKey);
     EXPECT_FALSE(map->Has(deleteKey.GetTaggedValue()));

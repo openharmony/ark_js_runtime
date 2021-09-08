@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_TYPED_ARRAY_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_TYPED_ARRAY_H
+#ifndef ECMASCRIPT_JS_TYPED_ARRAY_H
+#define ECMASCRIPT_JS_TYPED_ARRAY_H
 
 #include "ecmascript/tagged_array.h"
 #include "js_object.h"
@@ -24,7 +24,7 @@ class JSTypedArray : public JSObject {
 public:
     static JSTypedArray *Cast(ObjectHeader *object)
     {
-        ASSERT(JSTaggedValue(object).IsJSTypedArray());
+        ASSERT(JSTaggedValue(object).IsTypedArray() || JSTaggedValue(object).IsJSTypedArray());
         return static_cast<JSTypedArray *>(object);
     }
 
@@ -70,6 +70,8 @@ public:
     static OperationResult IntegerIndexedElementGet(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray,
                                                     JSTaggedValue index);
     static OperationResult FastElementGet(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray, uint32_t index);
+    static bool FastCopyElementToArray(JSThread *thread, const JSHandle<JSTaggedValue> &typedArray,
+                                       JSHandle<TaggedArray> &array);
     // 9.4.5.9 IntegerIndexedElementSet ( O, index, value )
     static bool IntegerIndexedElementSet(JSThread *thread, const JSHandle<JSTaggedValue> &typedarray,
                                          JSTaggedValue index, const JSHandle<JSTaggedValue> &value);
@@ -87,4 +89,4 @@ public:
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, VIEWED_ARRAY_BUFFER_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_TYPED_ARRAY_H
+#endif  // ECMASCRIPT_JS_TYPED_ARRAY_H

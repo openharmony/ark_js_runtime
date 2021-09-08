@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_PROPERTY_BOX_H
-#define PANDA_RUNTIME_PROPERTY_BOX_H
+#ifndef ECMASCRIPT_IC_PROPERTY_BOX_H
+#define ECMASCRIPT_IC_PROPERTY_BOX_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_hclass.h"
@@ -38,7 +38,7 @@ public:
         return GetValue().IsHole();
     }
 
-    static constexpr size_t VALUE_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t VALUE_OFFSET = TaggedObjectSize();
     ACCESSORS(Value, VALUE_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT(VALUE_OFFSET, SIZE)

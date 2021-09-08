@@ -19,6 +19,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_tagged_number.h"
@@ -50,8 +51,7 @@ bool ArrayHelper::IsConcatSpreadable(JSThread *thread, const JSHandle<JSTaggedVa
 }
 
 int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue> &callbackfnHandle,
-                                 const JSHandle<JSTaggedValue> &valueX, const JSHandle<JSTaggedValue> &valueY,
-                                 const JSHandle<TaggedArray> &argv)
+                                 const JSHandle<JSTaggedValue> &valueX, const JSHandle<JSTaggedValue> &valueY)
 {
     // 1. If x and y are both undefined, return +0.
     if (valueX->IsHole()) {
@@ -81,9 +81,10 @@ int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue>
     // d. Return v.
     if (!callbackfnHandle->IsUndefined()) {
         JSHandle<JSTaggedValue> thisArgHandle(thread, JSTaggedValue::Undefined());
-        argv->Set(thread, 0, valueX);
-        argv->Set(thread, 1, valueY);
-        JSTaggedValue callResult = JSFunction::Call(thread, callbackfnHandle, thisArgHandle, argv);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(valueX, valueY);
+        JSTaggedValue callResult =
+            JSFunction::Call(thread, callbackfnHandle, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
         if (callResult.IsInt()) {
             return callResult.GetInt();
         }

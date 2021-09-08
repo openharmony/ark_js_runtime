@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_LEXICALENV_H
-#define PANDA_RUNTIME_ECMASCRIPT_LEXICALENV_H
+#ifndef ECMASCRIPT_LEXICALENV_H
+#define ECMASCRIPT_LEXICALENV_H
 
 #include "ecmascript/js_object.h"
 
@@ -58,4 +58,4 @@ public:
     DECL_DUMP()
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_LEXICALENV_H
+#endif  // ECMASCRIPT_LEXICALENV_H

@@ -15,6 +15,8 @@
 
 #include "ecmascript/compiler/scheduler.h"
 
+#include <cmath>
+
 #include "ecmascript/compiler/verifier.h"
 
 namespace kungfu {
@@ -119,7 +121,7 @@ std::vector<std::vector<AddrShift>> Scheduler::Run(const Circuit *circuit)
     for (size_t idx = 1; idx < immDom.size(); idx++) {
         sonList[immDom[idx]].push_back(idx);
     }
-    const size_t sizeLog = ceil(log2(static_cast<double>(result.size())) + 1);
+    const size_t sizeLog = std::ceil(std::log2(static_cast<double>(result.size())) + 1);
     std::vector<size_t> timeIn(result.size());
     std::vector<size_t> timeOut(result.size());
     std::vector<std::vector<size_t>> jumpUp;

@@ -84,7 +84,7 @@ bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
                 while (!curOut->IsNextOutNull()) {
                     curOut = curOut->GetNextOutConst();
                     if (!(circuit->GetSpaceDataStartPtrConst() < curOut &&
-                            curOut < circuit->GetSpaceDataEndPtrConst())) {
+                        curOut < circuit->GetSpaceDataEndPtrConst())) {
                         std::cerr << "[Verifier][Error] Circuit data is corrupted (corrupted out list)" << std::endl;
                         std::cerr << "id: " << std::dec << circuit->GetId(gate) << std::endl;
                         return false;
@@ -421,7 +421,7 @@ bool Verifier::Run(const Circuit *circuit)
     for (size_t idx = 1; idx < immDom.size(); idx++) {
         sonList[immDom[idx]].push_back(idx);
     }
-    const size_t sizeLog = ceil(log2(static_cast<double>(bbGatesList.size())) + 1);
+    const size_t sizeLog = std::ceil(std::log2(static_cast<double>(bbGatesList.size())) + 1);
     std::vector<size_t> timeIn(bbGatesList.size());
     std::vector<size_t> timeOut(bbGatesList.size());
     std::vector<std::vector<size_t>> jumpUp;

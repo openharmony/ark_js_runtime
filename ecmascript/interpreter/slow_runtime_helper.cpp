@@ -15,6 +15,7 @@
 
 #include "slow_runtime_helper.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_generator_object.h"
@@ -24,37 +25,23 @@
 #include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript {
-JSTaggedValue SlowRuntimeHelper::CallBoundFunction(JSThread *thread, JSHandle<JSBoundFunction> boundFunc,
-                                                   JSHandle<JSTaggedValue> obj, JSHandle<TaggedArray> args)
+JSTaggedValue SlowRuntimeHelper::CallBoundFunction(JSThread *thread,
+                                                   JSHandle<JSBoundFunction> boundFunc, JSHandle<JSTaggedValue> obj)
 {
-    uint32_t numArgsReal = args->GetLength();
-
-    JSHandle<TaggedArray> argsBound(thread, boundFunc->GetBoundArguments());
-    uint32_t numArgsBound = argsBound->GetLength();
-
     JSHandle<JSFunction> targetFunc(thread, boundFunc->GetBoundTarget());
     if (targetFunc->IsClassConstructor()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "class constructor cannot called without 'new'",
                                     JSTaggedValue::Exception());
     }
 
-    uint32_t arraySize = numArgsBound + numArgsReal;
-    JSHandle<TaggedArray> argsNew = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(arraySize);
-
-    uint32_t idx = 0;
-    for (uint32_t i = 0; i < numArgsBound; i++) {
-        argsNew->Set(thread, idx++, argsBound->Get(i));
-    }
-    for (uint32_t i = 0; i < numArgsReal; i++) {
-        argsNew->Set(thread, idx++, args->Get(i));
-    }
-
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeBoundArgv(thread, boundFunc);
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    return InvokeJsFunction(thread, targetFunc, obj, newTarget, argsNew);
+    return InvokeJsFunction(thread, targetFunc, obj, newTarget, arguments);
 }
 
 JSTaggedValue SlowRuntimeHelper::NewObject(JSThread *thread, JSHandle<JSTaggedValue> func,
-                                           JSHandle<JSTaggedValue> newTarget, JSHandle<TaggedArray> args)
+                                           JSHandle<JSTaggedValue> newTarget, uint32_t argc, const JSTaggedType argv[])
 {
     if (!func->IsHeapObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "function is nullptr", JSTaggedValue::Exception());
@@ -63,13 +50,13 @@ JSTaggedValue SlowRuntimeHelper::NewObject(JSThread *thread, JSHandle<JSTaggedVa
     if (!func->IsJSFunction()) {
         if (func->IsBoundFunction()) {
             JSTaggedValue result =
-                JSBoundFunction::ConstructInternal(thread, JSHandle<JSBoundFunction>::Cast(func), args, newTarget);
+                JSBoundFunction::ConstructInternal(thread, JSHandle<JSBoundFunction>::Cast(func), newTarget);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             return result;
         }
 
         if (func->IsJSProxy()) {
-            JSTaggedValue jsObj = JSProxy::ConstructInternal(thread, JSHandle<JSProxy>(func), args, newTarget);
+            JSTaggedValue jsObj = JSProxy::ConstructInternal(thread, JSHandle<JSProxy>(func), argc, argv, newTarget);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             return jsObj;
         }
@@ -83,12 +70,12 @@ JSTaggedValue SlowRuntimeHelper::NewObject(JSThread *thread, JSHandle<JSTaggedVa
     if (jsFunc->GetCallTarget()->IsNative()) {
         if (jsFunc->IsBuiltinsConstructor()) {
             return InvokeJsFunction(thread, jsFunc, JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()),
-                                    newTarget, args);
+                                    newTarget, thread->GetInternalCallParams());
         }
         THROW_TYPE_ERROR_AND_RETURN(thread, "Constructed NonConstructable", JSTaggedValue::Exception());
     }
 
-    JSTaggedValue result = JSFunction::ConstructInternal(thread, jsFunc, args, newTarget);
+    JSTaggedValue result = JSFunction::ConstructInternal(thread, jsFunc, argc, argv, newTarget);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return result;
 }
@@ -241,12 +228,10 @@ JSTaggedValue ConstructProxy(JSThread *thread, JSHandle<JSProxy> ctor, JSHandle<
     }
 
     // step 8 ~ 9 Call(trap, handler, «target, argArray, newTarget »).
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> nextArgv(factory->NewTaggedArray(3));  // 3: «target, argArray, newTarget »
-    nextArgv->Set(thread, 0, target.GetTaggedValue());
-    nextArgv->Set(thread, 1, args.GetTaggedValue());
-    nextArgv->Set(thread, 2, newTgt.GetTaggedValue());  // 2: the third arg is new target
-    JSTaggedValue newObjValue = JSFunction::Call(thread, method, handler, nextArgv);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(target, JSHandle<JSTaggedValue>(args), newTgt);
+    JSTaggedValue newObjValue =
+        JSFunction::Call(thread, method, handler, 3, arguments->GetArgv());  // 3: «target, argArray, newTarget »
     // 10.ReturnIfAbrupt(newObj).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 11.If Type(newObj) is not Object, throw a TypeError exception.

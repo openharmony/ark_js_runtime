@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSNATIVEPOINTER_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSNATIVEPOINTER_H
+#ifndef ECMASCRIPT_JSNATIVEPOINTER_H
+#define ECMASCRIPT_JSNATIVEPOINTER_H
 
 #include "include/coretypes/native_pointer.h"
 
@@ -27,6 +27,23 @@ public:
     {
         ASSERT(JSTaggedValue(object).IsJSNativePointer());
         return reinterpret_cast<JSNativePointer *>(object);
+    }
+
+    inline void ResetExternalPointer(void *externalPointer)
+    {
+        ClearExternalPointer();
+        SetExternalPointer(externalPointer);
+    }
+
+    inline void ClearExternalPointer()
+    {
+        if (GetExternalPointer() == nullptr) {
+            return;
+        }
+        if (deleter_ != nullptr) {
+            deleter_(GetExternalPointer(), data_);
+        }
+        SetExternalPointer(nullptr);
     }
 
     inline void SetDeleter(DeleteEntryPoint deleter)
@@ -46,11 +63,9 @@ public:
 
     inline void Destroy()
     {
-        if (deleter_ == nullptr || GetExternalPointer() == nullptr) {
-            return;
-        }
-        deleter_(GetExternalPointer(), data_);
-        SetExternalPointer(nullptr);
+        ClearExternalPointer();
+        SetDeleter(nullptr);
+        SetData(nullptr);
     }
 
 private:
@@ -59,4 +74,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSNATIVEPOINTER_H
+#endif  // ECMASCRIPT_JSNATIVEPOINTER_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_NUMBER_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_NUMBER_HELPER_H
+#ifndef ECMASCRIPT_BASE_NUMBER_HELPER_H
+#define ECMASCRIPT_BASE_NUMBER_HELPER_H
 
 #include <cstdint>
 #include "ecmascript/ecma_string.h"
@@ -99,4 +99,4 @@ private:
     static bool GotoNonspace(uint8_t **ptr, const uint8_t *end);
 };
 }  // namespace panda::ecmascript::base
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_NUMBER_HELPER_H
+#endif  // ECMASCRIPT_BASE_NUMBER_HELPER_H

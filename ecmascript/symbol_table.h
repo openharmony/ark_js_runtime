@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_SYMBOL_TABLE_H
-#define PANDA_RUNTIME_ECMASCRIPT_SYMBOL_TABLE_H
+#ifndef ECMASCRIPT_SYMBOL_TABLE_H
+#define ECMASCRIPT_SYMBOL_TABLE_H
 
 #include "ecmascript/tagged_hash_table.h"
 #include "ecmascript/ecma_string.h"
@@ -45,7 +45,7 @@ public:
         return ENTRY_SIZE;
     }
     static inline bool IsMatch(const JSTaggedValue &name, const JSTaggedValue &other);
-    static inline int Hash(const JSTaggedValue &obj);
+    static inline uint32_t Hash(const JSTaggedValue &obj);
 
     static const int DEFAULT_ELEMENTS_NUMBER = 64;
     static SymbolTable *Create(JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
@@ -63,4 +63,4 @@ public:
     static constexpr int ENTRY_SIZE = 2;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_SYMBOL_TABLE_H
+#endif  // ECMASCRIPT_SYMBOL_TABLE_H

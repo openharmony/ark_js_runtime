@@ -31,7 +31,7 @@
 #include "ecmascript/mem/chunk_allocator.h"
 
 namespace panda::ecmascript {
-template <typename T>
+template<typename T>
 class ChunkVector : public std::vector<T, ChunkAllocator<T>> {
 public:
     explicit ChunkVector(Chunk *chunk) : std::vector<T, ChunkAllocator<T>>(ChunkAllocator<T>(chunk)) {}
@@ -47,7 +47,7 @@ public:
     NO_MOVE_SEMANTIC(ChunkVector);
 };
 
-template <typename K, typename V, typename Compare = std::less<K>>
+template<typename K, typename V, typename Compare = std::less<K>>
 class ChunkMap : public std::map<K, V, Compare, ChunkAllocator<std::pair<const K, V>>> {
 public:
     // Constructs an empty map.
@@ -61,7 +61,7 @@ public:
     NO_MOVE_SEMANTIC(ChunkMap);
 };
 
-template <typename K, typename V, typename Hash = std::hash<K>, typename KeyEqual = std::equal_to<K>>
+template<typename K, typename V, typename Hash = std::hash<K>, typename KeyEqual = std::equal_to<K>>
 class ChunkUnorderedMap : public std::unordered_map<K, V, Hash, KeyEqual, ChunkAllocator<std::pair<const K, V>>> {
 public:
     // NOLINTNEXTLINE(readability-magic-numbers)
@@ -75,7 +75,7 @@ public:
     NO_MOVE_SEMANTIC(ChunkUnorderedMap);
 };
 
-template <typename K, typename V, typename Compare = std::less<K>>
+template<typename K, typename V, typename Compare = std::less<K>>
 class ChunkMultimap : public std::multimap<K, V, Compare, ChunkAllocator<std::pair<const K, V>>> {
 public:
     // Constructs an empty multimap.

@@ -352,4 +352,14 @@ void Circuit::SetSpaceDataSize(size_t sz)
 {
     return this->space.resize(sz);
 }
+
+panda::ecmascript::FrameType Circuit::GetFrameType() const
+{
+    return this->frameType;
+}
+
+void Circuit::SetFrameType(panda::ecmascript::FrameType type)
+{
+    this->frameType = type;
+}
 }  // namespace kungfu

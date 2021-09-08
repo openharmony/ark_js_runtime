@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_TEST_JS_SINGLE_STEP_TEST_H
-#define PANDA_TOOLING_TEST_JS_SINGLE_STEP_TEST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_JS_SINGLE_STEP_TEST_H
+#define ECMASCRIPT_TOOLING_TEST_JS_SINGLE_STEP_TEST_H
 
 #include "ecmascript/tooling/test/test_util.h"
 
@@ -99,4 +99,4 @@ std::unique_ptr<ApiTest> GetJsSingleStepTest()
 }
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // PANDA_TOOLING_TEST_JS_SINGLE_STEP_TEST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_JS_SINGLE_STEP_TEST_H

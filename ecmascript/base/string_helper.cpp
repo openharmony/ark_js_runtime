@@ -42,7 +42,7 @@ bool StringHelper::CheckDuplicate(EcmaString *string)
     return false;
 }
 
-EcmaString *StringHelper::Repeat(JSThread *thread, const std::u16string &thisStr, int32_t repeatLen)
+EcmaString *StringHelper::Repeat(JSThread *thread, const std::u16string &thisStr, int32_t repeatLen, bool canBeCompress)
 {
     ecmascript::ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     if (repeatLen == 0) {
@@ -56,7 +56,7 @@ EcmaString *StringHelper::Repeat(JSThread *thread, const std::u16string &thisStr
     auto *char16tData = const_cast<char16_t *>(constChar16tData);
     auto *uint16tData = reinterpret_cast<uint16_t *>(char16tData);
     int32_t length = tmpStr.size();
-    return *factory->NewFromUtf16(uint16tData, length);
+    return *factory->NewFromUtf16UnCheck(uint16tData, length, canBeCompress);
 }
 
 EcmaString *StringHelper::Trim(JSThread *thread, const std::u16string &thisStr)

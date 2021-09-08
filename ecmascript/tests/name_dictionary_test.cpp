@@ -87,7 +87,7 @@ HWTEST_F_L0(NameDictionaryTest, addKeyAndValue)
     EXPECT_TRUE(*jsObject != nullptr);
 
     char keyArray[] = "hello";
-    JSHandle<EcmaString> stringKey1 = thread->GetEcmaVM()->GetFactory()->NewFromString(keyArray);
+    JSHandle<EcmaString> stringKey1 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> taggedkey1(stringKey1);
     JSHandle<JSTaggedValue> value1(
@@ -95,7 +95,7 @@ HWTEST_F_L0(NameDictionaryTest, addKeyAndValue)
     PropertyAttributes metaData1;
 
     char key2Array[] = "hello2";
-    JSHandle<EcmaString> stringKey2 = thread->GetEcmaVM()->GetFactory()->NewFromString(key2Array);
+    JSHandle<EcmaString> stringKey2 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
     JSHandle<JSTaggedValue> taggedkey2(stringKey2);
     JSHandle<JSTaggedValue> value2(
@@ -136,7 +136,7 @@ HWTEST_F_L0(NameDictionaryTest, GrowCapacity)
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
 
-        JSHandle<EcmaString> stringKey = thread->GetEcmaVM()->GetFactory()->NewFromString(keyArray);
+        JSHandle<EcmaString> stringKey = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(keyArray);
         ecmascript::JSHandle<JSTaggedValue> key(stringKey);
         JSHandle<JSTaggedValue> keyHandle(key);
         ecmascript::JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
@@ -167,7 +167,7 @@ HWTEST_F_L0(NameDictionaryTest, ShrinkCapacity)
         keyArray[5] = '0' + i;
         keyArray[6] = 0;
 
-        JSHandle<JSTaggedValue> key(thread, stringTable->GetOrInternString(keyArray, utf::Mutf8Size(keyArray)));
+        JSHandle<JSTaggedValue> key(thread, stringTable->GetOrInternString(keyArray, utf::Mutf8Size(keyArray), true));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
         PropertyAttributes metaData;
 
@@ -177,7 +177,8 @@ HWTEST_F_L0(NameDictionaryTest, ShrinkCapacity)
 
     keyArray[5] = '2';
     keyArray[6] = 0;
-    JSHandle<JSTaggedValue> arrayHandle(thread, stringTable->GetOrInternString(keyArray, utf::Mutf8Size(keyArray)));
+    JSHandle<JSTaggedValue> arrayHandle(thread,
+                                        stringTable->GetOrInternString(keyArray, utf::Mutf8Size(keyArray), true));
 
     int entry = dictHandle->FindEntry(arrayHandle.GetTaggedValue());
     EXPECT_NE(entry, -1);

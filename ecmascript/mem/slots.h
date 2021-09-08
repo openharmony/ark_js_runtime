@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_SLOTS_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_SLOTS_H
+#ifndef ECMASCRIPT_MEM_SLOTS_H
+#define ECMASCRIPT_MEM_SLOTS_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/mem.h"
@@ -99,4 +99,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_SLOTS_H
+#endif  // ECMASCRIPT_MEM_SLOTS_H

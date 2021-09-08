@@ -13,52 +13,52 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_STACK_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_STACK_INL_H
+#ifndef ECMASCRIPT_MEM_MARK_STACK_INL_H
+#define ECMASCRIPT_MEM_MARK_STACK_INL_H
 
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
-template <class T>
+template<class T>
 void ContinuousStack<T>::BeginMarking(Heap *heap, ContinuousStack<T> *other)
 {
     heap_ = heap;
     currentArea_ = other->currentArea_;
     if (currentArea_ == nullptr) {
-        currentArea_ = heap_->GetRegionFactory()->AllocateArea(DEFAULT_MARK_STACK_SIZE);
+        currentArea_ = const_cast<RegionFactory *>(heap_->GetRegionFactory())->AllocateArea(DEFAULT_MARK_STACK_SIZE);
     }
     ResetBegin(currentArea_->GetBegin(), currentArea_->GetEnd());
 }
 
-template <class T>
+template<class T>
 void ContinuousStack<T>::FinishMarking(ContinuousStack<T> *other)
 {
     other->currentArea_ = currentArea_;
 
     while (!unusedList_.IsEmpty()) {
         Area *node = unusedList_.PopBack();
-        heap_->GetRegionFactory()->FreeArea(node);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeArea(node);
     }
 }
 
-template <class T>
+template<class T>
 void ContinuousStack<T>::Extend()
 {
-    auto area = heap_->GetRegionFactory()->AllocateArea(DEFAULT_MARK_STACK_SIZE);
+    auto area = const_cast<RegionFactory *>(heap_->GetRegionFactory())->AllocateArea(DEFAULT_MARK_STACK_SIZE);
     areaList_.AddNode(currentArea_);
     currentArea_ = area;
     ResetBegin(currentArea_->GetBegin(), currentArea_->GetEnd());
 }
 
-template <class T>
-void ContinuousStack<T>::TearDown()
+template<class T>
+void ContinuousStack<T>::Destroy()
 {
     if (currentArea_ != nullptr) {
-        heap_->GetRegionFactory()->FreeArea(currentArea_);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeArea(currentArea_);
         currentArea_ = nullptr;
     }
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_STACK_INL_H
+#endif  // ECMASCRIPT_MEM_MARK_STACK_INL_H

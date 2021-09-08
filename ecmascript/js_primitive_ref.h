@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSPRIMITIVEREF_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSPRIMITIVEREF_H
+#ifndef ECMASCRIPT_JSPRIMITIVEREF_H
+#define ECMASCRIPT_JSPRIMITIVEREF_H
 
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_object.h"
@@ -42,6 +42,11 @@ public:
     bool IsNumber() const
     {
         return GetValue().IsNumber();
+    }
+
+    bool IsInt() const
+    {
+        return GetValue().IsInt();
     }
 
     bool IsBoolean() const
@@ -80,4 +85,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSPRIMITIVEREF_H
+#endif  // ECMASCRIPT_JSPRIMITIVEREF_H

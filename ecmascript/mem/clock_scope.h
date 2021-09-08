@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_CLOCK_SCOPE_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_CLOCK_SCOPE_H
+#ifndef ECMASCRIPT_MEM_CLOCK_SCOPE_H
+#define ECMASCRIPT_MEM_CLOCK_SCOPE_H
 
 #include "time.h"
 #include "chrono"
@@ -55,4 +55,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_CLOCK_SCOPE_H
+#endif  // ECMASCRIPT_MEM_CLOCK_SCOPE_H

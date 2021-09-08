@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSARRAYBUFFER_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSARRAYBUFFER_H
+#ifndef ECMASCRIPT_JSARRAYBUFFER_H
+#define ECMASCRIPT_JSARRAYBUFFER_H
 
 #include "ecmascript/js_object.h"
 
@@ -47,4 +47,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSARRAYBUFFER_H
+#endif  // ECMASCRIPT_JSARRAYBUFFER_H

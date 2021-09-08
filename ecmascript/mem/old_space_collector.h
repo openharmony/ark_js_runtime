@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
+#ifndef ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
+#define ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
 
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/heap.h"
@@ -57,20 +57,21 @@ private:
     inline void FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart, uintptr_t freeEnd);
     inline void RecordWeakReference(JSTaggedType *ref);
     void SweepSpace(Space *space, FreeListAllocator &allocator);
-    void SweepSpace(LargeObjectSpace *space);  // Only sweep large space.
+    void SweepSpace(HugeObjectSpace *space);  // Only sweep huge space.
 
     Heap *heap_;
     HeapRootManager rootManager_;
     MarkStack markStack_;
     ProcessQueue weakProcessQueue_;
-    FreeListAllocator oldSpaceAllocator_{};
-    FreeListAllocator nonMovableAllocator_{};
+    FreeListAllocator oldSpaceAllocator_ {};
+    FreeListAllocator nonMovableAllocator_ {};
+    FreeListAllocator machineCodeSpaceAllocator_ {};
     size_t freeSize_{0};
-    size_t largeSpaceFreeSize_ = 0;
+    size_t hugeSpaceFreeSize_ = 0;
     size_t oldSpaceCommitSize_ = 0;
     size_t nonMoveSpaceCommitSize_ = 0;
 };
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
+#endif  // ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H

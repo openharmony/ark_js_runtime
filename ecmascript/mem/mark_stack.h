@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_STACK_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_STACK_H
+#ifndef ECMASCRIPT_MEM_MARK_STACK_H
+#define ECMASCRIPT_MEM_MARK_STACK_H
 
 #include "ecmascript/mem/ecma_list.h"
 #include "ecmascript/mem/space.h"
@@ -85,7 +85,7 @@ public:
     }
 
 private:
-    template <class T>
+    template<class T>
     friend class ContinuousStack;
     friend class WorkNode;
     uintptr_t begin_{0};
@@ -93,7 +93,7 @@ private:
     uintptr_t *top_{nullptr};
 };
 
-template <class T>
+template<class T>
 class ContinuousStack : public Stack {
 public:
     ContinuousStack() = default;
@@ -128,7 +128,7 @@ public:
         PushBackUnchecked(ToUintPtr(obj));
     }
 
-    inline void TearDown();
+    inline void Destroy();
 
 private:
     inline void Extend();
@@ -144,4 +144,4 @@ using ProcessQueue = ContinuousStack<JSTaggedType>;
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_MARK_STACK_H
+#endif  // ECMASCRIPT_MEM_MARK_STACK_H

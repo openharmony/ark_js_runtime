@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_DISPATCHER_H
-#define PANDA_TOOLING_ECMASCRIPT_DISPATCHER_H
+#ifndef ECMASCRIPT_TOOLING_DISPATCHER_H
+#define ECMASCRIPT_TOOLING_DISPATCHER_H
 
 #include <map>
 #include <memory>
@@ -77,6 +77,8 @@ public:
         return ecmaVm_;
     }
 
+    ~DispatchRequest() = default;
+
 private:
     const EcmaVM *ecmaVm_ {nullptr};
     int32_t callId_ {-1};
@@ -109,6 +111,8 @@ public:
     static DispatchResponse Ok();
     static DispatchResponse Fail(const CString &message);
 
+    ~DispatchResponse() = default;
+
 private:
     DispatchResponse() = default;
 
@@ -130,7 +134,7 @@ protected:
                       std::unique_ptr<PtBaseReturns> result);
 
 private:
-    FrontEnd *frontend_{nullptr};
+    FrontEnd *frontend_ {nullptr};
 
     NO_COPY_SEMANTIC(DispatcherBase);
     NO_MOVE_SEMANTIC(DispatcherBase);

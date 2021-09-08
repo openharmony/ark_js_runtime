@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_MCJINT_COMPILER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_MCJINT_COMPILER_H
+#ifndef ECMASCRIPT_COMPILER_LLVM_MCJINT_COMPILER_H
+#define ECMASCRIPT_COMPILER_LLVM_MCJINT_COMPILER_H
 
 #include <iostream>
 #include <list>
+#include <map>
 #include <sys/mman.h>
 #include <vector>
 
@@ -37,7 +38,7 @@ using ByteBuffer = std::vector<uint8_t>;
 using BufferList = std::list<ByteBuffer>;
 using StringList = std::list<std::string>;
 struct CompilerState {
-    CompilerState(): machineCode(nullptr), codeBufferPos(0)
+    CompilerState(): machineCode(nullptr), codeBufferPos(0), stackMapsSection_(nullptr)
     {
         Reset();
         static constexpr int prot = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
@@ -64,7 +65,7 @@ struct CompilerState {
         codeSectionNames_.push_back(sectionName);
         addr = machineCode + codeBufferPos;
         std::cout << "AllocaCodeSection addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) << std::endl;
-        codeInfo.push_back({addr, size});
+        codeInfo_.push_back({addr, size});
         return addr;
     }
 
@@ -75,20 +76,30 @@ struct CompilerState {
         dataSectionList_.back().resize(size);
         dataSectionNames_.push_back(sectionName);
         addr = static_cast<uint8_t *>(dataSectionList_.back().data());
+        if (!strcmp(sectionName, ".llvm_stackmaps")) {
+            std::cout << "llvm_stackmaps : " << addr << std::endl;
+            stackMapsSection_ = addr;
+        }
         return addr;
     }
 
     void Reset()
     {
-        codeInfo.clear();
+        stackMapsSection_ = nullptr;
+        codeInfo_.clear();
         dataSectionList_.clear();
         dataSectionNames_.clear();
         codeSectionNames_.clear();
         codeBufferPos = 0;
     }
-public:
-    /* <addr, size > for asssembler */
-    std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo {};
+    uint8_t* GetStackMapsSection() const
+    {
+        return stackMapsSection_;
+    }
+    std::vector<std::pair<uint8_t *, uintptr_t>> GetCodeInfo() const
+    {
+        return  codeInfo_;
+    }
 private:
     BufferList dataSectionList_ {};
     StringList dataSectionNames_ {};
@@ -96,6 +107,10 @@ private:
     uint8_t *machineCode;
     const size_t MAX_MACHINE_CODE_SIZE = (1 << 20); // 1M
     int codeBufferPos = 0;
+    /* <addr, size > for asssembler */
+    std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo_ {};
+    /* stack map */
+    uint8_t*  stackMapsSection_ {nullptr};
 };
 class LLVMMCJITCompiler {
 public:
@@ -104,9 +119,13 @@ public:
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
     {
-        return m_engine;
+        return engine_;
     }
-    void Disassemble() const;
+    void Disassemble(std::map<uint64_t, std::string> addr2name = std::map<uint64_t, std::string>()) const;
+    uint8_t *GetStackMapsSection() const
+    {
+        return compilerState_.GetStackMapsSection();
+    }
 
 private:
     void UseRoundTripSectionMemoryManager();
@@ -116,12 +135,12 @@ private:
     void Initialize();
     void InitMember();
 
-    LLVMMCJITCompilerOptions m_options;
-    LLVMModuleRef m_module;
-    LLVMExecutionEngineRef m_engine;
-    std::string m_hostTriple;
-    char *m_error;
-    struct CompilerState compilerState;
+    LLVMMCJITCompilerOptions options_;
+    LLVMModuleRef module_;
+    LLVMExecutionEngineRef engine_;
+    std::string hostTriple_;
+    char *error_;
+    struct CompilerState compilerState_;
 };
 
 #endif

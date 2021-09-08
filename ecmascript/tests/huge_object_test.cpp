@@ -25,7 +25,7 @@
 using namespace panda::ecmascript;
 
 namespace panda::test {
-class LargeObjectTest : public testing::Test {
+class HugeObjectTest : public testing::Test {
 public:
     static void SetUpTestCase()
     {
@@ -76,7 +76,7 @@ static TaggedArray *LargeArrayTestCreate(JSThread *thread)
 }
 #endif
 
-HWTEST_F_L0(LargeObjectTest, LargeArrayKeep)
+HWTEST_F_L0(HugeObjectTest, LargeArrayKeep)
 {
 #if !defined(NDEBUG)
     TaggedArray *array = LargeArrayTestCreate(thread);
@@ -87,13 +87,13 @@ HWTEST_F_L0(LargeObjectTest, LargeArrayKeep)
     auto ecmaVm = thread->GetEcmaVM();
     EXPECT_EQ(*arrayHandle, reinterpret_cast<TaggedObject *>(array));
     ecmaVm->CollectGarbage(TriggerGCType::SEMI_GC);   // Trigger GC.
-    ecmaVm->CollectGarbage(TriggerGCType::LARGE_GC);  // Trigger GC.
+    ecmaVm->CollectGarbage(TriggerGCType::HUGE_GC);  // Trigger GC.
     EXPECT_EQ(*newObj, array->Get(0).GetTaggedObject());
     EXPECT_EQ(*arrayHandle, reinterpret_cast<TaggedObject *>(array));
 #endif
 }
 
-HWTEST_F_L0(LargeObjectTest, MultipleArrays)
+HWTEST_F_L0(HugeObjectTest, MultipleArrays)
 {
 #if !defined(NDEBUG)
     auto ecmaVm = thread->GetEcmaVM();
@@ -101,7 +101,6 @@ HWTEST_F_L0(LargeObjectTest, MultipleArrays)
     Region *firstPage = nullptr;
     Region *secondPage = nullptr;
     Region *thirdPage = nullptr;
-
     JSHandle<TaggedArray> array1(thread, LargeArrayTestCreate(thread));
     firstPage = Region::ObjectAddressToRange(*array1);
     {
@@ -115,13 +114,13 @@ HWTEST_F_L0(LargeObjectTest, MultipleArrays)
     EXPECT_EQ(firstPage->GetNext(), secondPage);
     EXPECT_EQ(secondPage->GetNext(), thirdPage);
 
-    ecmaVm->CollectGarbage(TriggerGCType::LARGE_GC);  // Trigger GC.
+    ecmaVm->CollectGarbage(TriggerGCType::HUGE_GC);  // Trigger GC.
 
     EXPECT_EQ(firstPage->GetNext(), thirdPage);
 
     size_t failCount = 0;
     VerifyObjectVisitor objVerifier(heap, &failCount);
-    heap->GetLargeObjectSpace()->IterateOverObjects(objVerifier);  // newspace reference the old space
+    heap->GetHugeObjectSpace()->IterateOverObjects(objVerifier);  // newspace reference the old space
     EXPECT_TRUE(failCount == 0);
 #endif
 }

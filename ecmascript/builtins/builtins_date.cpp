@@ -18,6 +18,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_date.h"
+#include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -173,9 +174,8 @@ JSTaggedValue BuiltinsDate::ToJSON(EcmaRuntimeCallInfo *argv)
             return JSTaggedValue::Null();
         }
     }
-    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromString("toISOString"));
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    return JSFunction::Invoke(thread, objectHandle, calleeKey, factory->EmptyArray());
+    JSHandle<JSTaggedValue> calleeKey(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("toISOString"));
+    return JSFunction::Invoke(thread, objectHandle, calleeKey, 0, nullptr);
 }
 
 // 20.4.4.44
@@ -208,12 +208,12 @@ JSTaggedValue BuiltinsDate::ToPrimitive(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> hint = GetCallArg(argv, 0);
     PreferredPrimitiveType tryFirst = PREFER_STRING;
     if (hint->IsString()) {
-        JSHandle<EcmaString> numberStrHandle = factory->NewFromString("number");
+        JSHandle<EcmaString> numberStrHandle = factory->NewFromCanBeCompressString("number");
         if (EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *numberStrHandle)) {
             tryFirst = PREFER_NUMBER;
         } else {
-            JSHandle<EcmaString> stringStrHandle = factory->NewFromString("string");
-            JSHandle<EcmaString> defaultStrHandle = factory->NewFromString("default");
+            JSHandle<EcmaString> stringStrHandle = factory->NewFromCanBeCompressString("string");
+            JSHandle<EcmaString> defaultStrHandle = factory->NewFromCanBeCompressString("default");
             if (EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *stringStrHandle) ||
                 EcmaString::StringsAreEqual(hint.GetObject<EcmaString>(), *defaultStrHandle)) {
                 tryFirst = PREFER_STRING;
@@ -225,5 +225,134 @@ JSTaggedValue BuiltinsDate::ToPrimitive(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "This is not an primitiveType.", JSTaggedValue::Exception());
     }
     return JSTaggedValue::OrdinaryToPrimitive(thread, object, tryFirst);
+}
+
+// ecma 402 16.4.1 Date.prototype.toLocaleString ( [ locales [ , options ] ] )
+JSTaggedValue BuiltinsDate::ToLocaleString(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // Let x be ? thisTimeValue(this value).
+    JSHandle<JSTaggedValue> msg = GetThis(argv);
+    if (!msg->IsDate()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Not a Date Object", JSTaggedValue::Exception());
+    }
+    JSTaggedValue value = JSDate::Cast(msg->GetTaggedObject())->GetTime();
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // If x is NaN, return "Invalid Date".
+    double x = value.GetNumber();
+    if (std::isnan(x)) {
+        return thread->GlobalConstants()->GetInvalidDateString();
+    }
+
+    // Let options be ? ToDateTimeOptions(options, "any", "all").
+    JSHandle<JSTaggedValue> locales = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> options = GetCallArg(argv, 1);
+    JSHandle<JSObject> dateTimeOptions =
+        JSDateTimeFormat::ToDateTimeOptions(thread, options, RequiredOption::ANY, DefaultsOption::ALL);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // Let dateFormat be ? Construct(%DateTimeFormat%, « locales, options »).
+    JSHandle<JSTaggedValue> ctor = env->GetDateTimeFormatFunction();
+    JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(ctor), ctor);
+    JSHandle<JSDateTimeFormat> dtf = JSDateTimeFormat::InitializeDateTimeFormat(
+        thread, JSHandle<JSDateTimeFormat>::Cast(obj), locales, JSHandle<JSTaggedValue>::Cast(dateTimeOptions));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // Return ? FormatDateTime(dateFormat, x).
+    JSHandle<EcmaString> result = JSDateTimeFormat::FormatDateTime(thread, dtf, x);
+    return result.GetTaggedValue();
+}
+
+// ecma 402 16.4.1 Date.prototype.toLocaleString ( [ locales [ , options ] ] )
+JSTaggedValue BuiltinsDate::ToLocaleDateString(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // Let x be ? thisTimeValue(this value).
+    JSHandle<JSTaggedValue> msg = GetThis(argv);
+    if (!msg->IsDate()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Not a Date Object", JSTaggedValue::Exception());
+    }
+    JSTaggedValue value = JSDate::Cast(msg->GetTaggedObject())->GetTime();
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // If x is NaN, return "Invalid Date".
+    double x = value.GetNumber();
+    if (std::isnan(x)) {
+        return thread->GlobalConstants()->GetInvalidDateString();
+    }
+
+    // Let options be ? ToDateTimeOptions(options, "any", "all").
+    JSHandle<JSTaggedValue> locales = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> options = GetCallArg(argv, 1);
+    JSHandle<JSObject> dateTimeOptions =
+        JSDateTimeFormat::ToDateTimeOptions(thread, options, RequiredOption::DATE, DefaultsOption::DATE);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // Let dateFormat be ? Construct(%DateTimeFormat%, « locales, options »).
+    JSHandle<JSTaggedValue> ctor = env->GetDateTimeFormatFunction();
+    JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(ctor), ctor);
+    JSHandle<JSDateTimeFormat> dtf = JSDateTimeFormat::InitializeDateTimeFormat(
+        thread, JSHandle<JSDateTimeFormat>::Cast(obj), locales, JSHandle<JSTaggedValue>::Cast(dateTimeOptions));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // Return ? FormatDateTime(dateFormat, x).
+    JSHandle<EcmaString> result = JSDateTimeFormat::FormatDateTime(thread, dtf, x);
+    return result.GetTaggedValue();
+}
+
+// ecma 402 16.4.1 Date.prototype.toLocaleString ( [ locales [ , options ] ] )
+JSTaggedValue BuiltinsDate::ToLocaleTimeString(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<GlobalEnv> env = ecmaVm->GetGlobalEnv();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // Let x be ? thisTimeValue(this value).
+    JSHandle<JSTaggedValue> msg = GetThis(argv);
+    if (!msg->IsDate()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Not a Date Object", JSTaggedValue::Exception());
+    }
+    JSTaggedValue value = JSDate::Cast(msg->GetTaggedObject())->GetTime();
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // If x is NaN, return "Invalid Date".
+    double x = value.GetNumber();
+    if (std::isnan(x)) {
+        return thread->GlobalConstants()->GetInvalidDateString();
+    }
+
+    // Let options be ? ToDateTimeOptions(options, "any", "all").
+    JSHandle<JSTaggedValue> locales = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> options = GetCallArg(argv, 1);
+    JSHandle<JSObject> dateTimeOptions =
+        JSDateTimeFormat::ToDateTimeOptions(thread, options, RequiredOption::TIME, DefaultsOption::TIME);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // Let dateFormat be ? Construct(%DateTimeFormat%, « locales, options »).
+    JSHandle<JSTaggedValue> ctor = env->GetDateTimeFormatFunction();
+    JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(ctor), ctor);
+    JSHandle<JSDateTimeFormat> dtf = JSDateTimeFormat::InitializeDateTimeFormat(
+        thread, JSHandle<JSDateTimeFormat>::Cast(obj), locales, JSHandle<JSTaggedValue>::Cast(dateTimeOptions));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // Return ? FormatDateTime(dateFormat, x).
+    JSHandle<EcmaString> result = JSDateTimeFormat::FormatDateTime(thread, dtf, x);
+    return result.GetTaggedValue();
 }
 }  // namespace panda::ecmascript::builtins

@@ -66,21 +66,18 @@ void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason rea
     if (location.has_value()) {
         BreakpointDetails detail;
         PtJSExtractor *extractor = nullptr;
-        if (!MatchScripts([this, &extractor, &detail](PtScript *script) -> bool {
+        auto scriptFunc = [this, &extractor, &detail](PtScript *script) -> bool {
             detail.url_ = script->GetUrl();
             extractor = GetExtractor(detail.url_);
             return true;
-            },
-            location.value().GetPandaFile(),
-            ScriptMatchType::FILE_NAME) ||
-            extractor == nullptr ||
-            !extractor->MatchWithOffset([&detail](int32_t line) -> bool {
+        };
+        auto offsetFunc = [&detail](int32_t line) -> bool {
             detail.line_ = line;
             return true;
-            },
-            location.value().GetMethodId(),
-            location.value().GetBytecodeOffset())) {
-            LOG(ERROR, DEBUGGER) << "NotifyPaused: unknown " << location.value().GetPandaFile();
+        };
+        if (!MatchScripts(scriptFunc, location->GetPandaFile(), ScriptMatchType::FILE_NAME) || extractor == nullptr ||
+            !extractor->MatchWithOffset(offsetFunc, location->GetMethodId(), location->GetBytecodeOffset())) {
+            LOG(ERROR, DEBUGGER) << "NotifyPaused: unknown " << location->GetPandaFile();
             return;
         }
         detail.column_ = 0;
@@ -110,9 +107,10 @@ void JSBackend::NotifyResume()
 
 bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
 {
-    if (MatchScripts([]([[maybe_unused]] PtScript *script) -> bool { return true; },
-        fileName,
-        ScriptMatchType::FILE_NAME)) {
+    auto scriptFunc = []([[maybe_unused]] PtScript *script) -> bool {
+        return true;
+    };
+    if (MatchScripts(scriptFunc, fileName, ScriptMatchType::FILE_NAME)) {
         LOG(WARNING, DEBUGGER) << "NotifyScriptParsed: already loaded: " << fileName;
         return false;
     }
@@ -182,16 +180,15 @@ bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
 bool JSBackend::StepComplete(const PtLocation &location)
 {
     PtJSExtractor *extractor = nullptr;
-    if (MatchScripts([this, &extractor](PtScript *script) -> bool {
+    auto scriptFunc = [this, &extractor](PtScript *script) -> bool {
         extractor = GetExtractor(script->GetUrl());
         return true;
-        },
-        location.GetPandaFile(),
-        ScriptMatchType::FILE_NAME) &&
-        extractor != nullptr &&
-        extractor->MatchWithOffset([](int32_t line) -> bool { return line == SPECIAL_LINE_MARK; },
-        location.GetMethodId(),
-        location.GetBytecodeOffset())) {
+    };
+    auto offsetFunc = [](int32_t line) -> bool {
+        return line == SPECIAL_LINE_MARK;
+    };
+    if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) && extractor != nullptr &&
+        extractor->MatchWithOffset(offsetFunc, location.GetMethodId(), location.GetBytecodeOffset())) {
         LOG(INFO, DEBUGGER) << "StepComplete: skip -1";
         return false;
     }
@@ -206,21 +203,23 @@ bool JSBackend::StepComplete(const PtLocation &location)
     return false;
 }
 
-std::optional<Error> JSBackend::GetPossibleBreakpoints(
-    Location *start, [[maybe_unused]] Location *end, CVector<std::unique_ptr<BreakLocation>> *locations)
+std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_unused]] Location *end,
+    CVector<std::unique_ptr<BreakLocation>> *locations)
 {
     PtJSExtractor *extractor = nullptr;
-    if (!MatchScripts([this, &extractor](PtScript *script) -> bool {
+    auto scriptFunc = [this, &extractor](PtScript *script) -> bool {
         extractor = GetExtractor(script->GetUrl());
         return true;
-        },
-        start->GetScriptId(),
-        ScriptMatchType::SCRIPT_ID) || extractor == nullptr) {
+    };
+    if (!MatchScripts(scriptFunc, start->GetScriptId(), ScriptMatchType::SCRIPT_ID) || extractor == nullptr) {
         return Error(Error::Type::INVALID_BREAKPOINT, "extractor not found");
     }
 
     int32_t line = start->GetLine();
-    if (extractor->MatchWithLine([](File::EntityId, uint32_t) -> bool { return true; }, line)) {
+    auto lineFunc = []([[maybe_unused]] File::EntityId id, [[maybe_unused]] uint32_t offset) -> bool {
+        return true;
+    };
+    if (extractor->MatchWithLine(lineFunc, line)) {
         std::unique_ptr<BreakLocation> location = std::make_unique<BreakLocation>();
         location->SetScriptId(start->GetScriptId()).SetLine(line).SetColumn(0);
         locations->emplace_back(std::move(location));
@@ -240,24 +239,23 @@ std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, int32_t l
 
     CString scriptId;
     CString fileName;
-    if (!MatchScripts([&scriptId, &fileName](PtScript *script) -> bool {
+    auto scriptFunc = [&scriptId, &fileName](PtScript *script) -> bool {
         scriptId = script->GetScriptId();
         fileName = script->GetFileName();
         return true;
-        },
-        url,
-        ScriptMatchType::URL)) {
+    };
+    if (!MatchScripts(scriptFunc, url, ScriptMatchType::URL)) {
         LOG(ERROR, DEBUGGER) << "SetBreakpointByUrl: Unknown url: " << url;
         return Error(Error::Type::INVALID_BREAKPOINT, "Url not found");
     }
 
     std::optional<Error> ret = std::nullopt;
-    if (!extractor->MatchWithLine([this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
+    auto lineFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
         PtLocation location {fileName.c_str(), id, offset};
         ret = DebuggerApi::SetBreakpoint(debugger_, location);
         return true;
-        },
-        lineNumber)) {
+    };
+    if (!extractor->MatchWithLine(lineFunc, lineNumber)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint line number: " << lineNumber;
         return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
     }
@@ -283,23 +281,22 @@ std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaDa
     }
 
     CString fileName;
-    if (!MatchScripts([&fileName](PtScript *script) -> bool {
+    auto scriptFunc = [&fileName](PtScript *script) -> bool {
         fileName = script->GetFileName();
         return true;
-        },
-        metaData.url_,
-        ScriptMatchType::URL)) {
+    };
+    if (!MatchScripts(scriptFunc, metaData.url_, ScriptMatchType::URL)) {
         LOG(ERROR, DEBUGGER) << "RemoveBreakpoint: Unknown url: " << metaData.url_;
         return Error(Error::Type::INVALID_BREAKPOINT, "Url not found");
     }
 
     std::optional<Error> ret = std::nullopt;
-    if (!extractor->MatchWithLine([this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
+    auto lineFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
         PtLocation location {fileName.c_str(), id, offset};
         ret = DebuggerApi::RemoveBreakpoint(debugger_, location);
         return true;
-        },
-        metaData.line_)) {
+    };
+    if (!extractor->MatchWithLine(lineFunc, metaData.line_)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint line number: " << metaData.line_;
         return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
     }
@@ -367,21 +364,21 @@ std::optional<Error> JSBackend::StepOut()
     return {};
 }
 
-std::optional<Error> JSBackend::EvaluateValue(
-    const CString &callFrameId, const CString &expression, std::unique_ptr<RemoteObject> *result)
+std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const CString &expression,
+    std::unique_ptr<RemoteObject> *result)
 {
     JSMethod *method = DebuggerApi::GetMethod(ecmaVm_);
     if (method->IsNative()) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: Native Frame not support";
-        *result = RemoteObject::FromTagged(
-            ecmaVm_, Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
+        *result = RemoteObject::FromTagged(ecmaVm_,
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
         return Error(Error::Type::METHOD_NOT_FOUND, "Native Frame not support");
     }
     DebugInfoExtractor *extractor = GetExtractor(method->GetPandaFile());
     if (extractor == nullptr) {
         LOG(ERROR, DEBUGGER) << "EvaluateValue: extractor is null";
-        *result = RemoteObject::FromTagged(
-            ecmaVm_, Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
+        *result = RemoteObject::FromTagged(ecmaVm_,
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Runtime internal error")));
         return Error(Error::Type::METHOD_NOT_FOUND, "Extractor not found");
     }
     CString varName = expression;
@@ -399,8 +396,8 @@ std::optional<Error> JSBackend::EvaluateValue(
         }
     }
     if (regIndex == -1) {
-        *result = RemoteObject::FromTagged(
-            ecmaVm_, Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unknow input params")));
+        *result = RemoteObject::FromTagged(ecmaVm_,
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unknow input params")));
         return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport expression");
     }
     if (varValue.empty()) {
@@ -461,24 +458,24 @@ PtJSExtractor *JSBackend::GetExtractor(const CString &url)
 bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)
 {
     int32_t callFrameId = 0;
-    return DebuggerApi::StackWalker(
-        ecmaVm_, [this, &callFrameId, &callFrames](const EcmaFrameHandler *frameHandler) -> StackState {
-            JSMethod *method = DebuggerApi::GetMethod(frameHandler);
-            if (method->IsNative()) {
-                LOG(INFO, DEBUGGER) << "GenerateCallFrames: Skip CFrame and Native method";
-                return StackState::CONTINUE;
+    auto walkerFunc = [this, &callFrameId, &callFrames](const EcmaFrameHandler *frameHandler) -> StackState {
+        JSMethod *method = DebuggerApi::GetMethod(frameHandler);
+        if (method->IsNative()) {
+            LOG(INFO, DEBUGGER) << "GenerateCallFrames: Skip CFrame and Native method";
+            return StackState::CONTINUE;
+        }
+        std::unique_ptr<CallFrame> callFrame = std::make_unique<CallFrame>();
+        if (!GenerateCallFrame(callFrame.get(), frameHandler, callFrameId)) {
+            if (callFrameId == 0) {
+                return StackState::FAILED;
             }
-            std::unique_ptr<CallFrame> callFrame = std::make_unique<CallFrame>();
-            if (!GenerateCallFrame(callFrame.get(), frameHandler, callFrameId)) {
-                if (callFrameId == 0) {
-                    return StackState::FAILED;
-                }
-            }
+        } else {
             callFrames->emplace_back(std::move(callFrame));
             callFrameId++;
-            return StackState::CONTINUE;
-        });
-    return true;
+        }
+        return StackState::CONTINUE;
+    };
+    return DebuggerApi::StackWalker(ecmaVm_, walkerFunc);
 }
 
 bool JSBackend::GenerateCallFrame(CallFrame *callFrame, const EcmaFrameHandler *frameHandler, int32_t callFrameId)
@@ -494,21 +491,19 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame, const EcmaFrameHandler *
     // location
     std::unique_ptr<Location> location = std::make_unique<Location>();
     CString url = extractor->GetSourceFile(method->GetFileId());
-    if (!MatchScripts([&location](PtScript *script) -> bool {
+    auto scriptFunc = [&location](PtScript *script) -> bool {
         location->SetScriptId(script->GetScriptId());
         return true;
-        },
-        url,
-        ScriptMatchType::URL)) {
+    };
+    if (!MatchScripts(scriptFunc, url, ScriptMatchType::URL)) {
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: Unknown url: " << url;
         return false;
     }
-    if (!extractor->MatchWithOffset([&location](int32_t line) -> bool {
+    auto offsetFunc = [&location](int32_t line) -> bool {
         location->SetLine(line);
         return true;
-        },
-        method->GetFileId(),
-        DebuggerApi::GetBytecodeOffset(frameHandler))) {
+    };
+    if (!extractor->MatchWithOffset(offsetFunc, method->GetFileId(), DebuggerApi::GetBytecodeOffset(frameHandler))) {
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: unknown offset: " << DebuggerApi::GetBytecodeOffset(frameHandler);
         return false;
     }
@@ -522,9 +517,7 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame, const EcmaFrameHandler *
     scopeChain.emplace_back(GetGlobalScopeChain());
 
     // functionName
-    panda_file::MethodDataAccessor mda(*pf, method->GetFileId());
-    CString functionName = CString(utf::Mutf8AsCString(pf->GetStringData(
-        panda_file::File::EntityId(mda.GetNumericalAnnotation(JSMethod::AnnotationField::FUNCTION_NAME))).data));
+    CString functionName = DebuggerApi::ParseFunctionName(method);
 
     callFrame->SetCallFrameId(DebuggerApi::ToCString(callFrameId))
         .SetFunctionName(functionName)
@@ -535,8 +528,8 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame, const EcmaFrameHandler *
     return true;
 }
 
-std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(
-    const EcmaFrameHandler *frameHandler, std::unique_ptr<RemoteObject> *thisObj)
+std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const EcmaFrameHandler *frameHandler,
+    std::unique_ptr<RemoteObject> *thisObj)
 {
     auto localScope = std::make_unique<Scope>();
 
@@ -574,17 +567,16 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(
     const panda_file::LineNumberTable &lines = extractor->GetLineNumberTable(methodId);
     std::unique_ptr<Location> startLoc = std::make_unique<Location>();
     std::unique_ptr<Location> endLoc = std::make_unique<Location>();
-    if (MatchScripts([&startLoc, &endLoc, lines](PtScript *script) -> bool {
+    auto scriptFunc = [&startLoc, &endLoc, lines](PtScript *script) -> bool {
         startLoc->SetScriptId(script->GetScriptId())
-        .SetLine(static_cast<int32_t>(lines.front().line))
-        .SetColumn(0);
+            .SetLine(static_cast<int32_t>(lines.front().line))
+            .SetColumn(0);
         endLoc->SetScriptId(script->GetScriptId())
-        .SetLine(static_cast<int32_t>(lines.back().line))
-        .SetColumn(0);
+            .SetLine(static_cast<int32_t>(lines.back().line))
+            .SetColumn(0);
         return true;
-        },
-        extractor->GetSourceFile(methodId),
-        ScriptMatchType::URL)) {
+    };
+    if (MatchScripts(scriptFunc, extractor->GetSourceFile(methodId), ScriptMatchType::URL)) {
         localScope->SetType(Scope::Type::Local())
             .SetObject(std::move(local))
             .SetStartLocation(std::move(startLoc))
@@ -613,8 +605,8 @@ void JSBackend::SetPauseOnException(bool flag)
     pauseOnException_ = flag;
 }
 
-std::optional<Error> JSBackend::SetValue(
-    int32_t regIndex, std::unique_ptr<RemoteObject> *result, const CString &varValue)
+std::optional<Error> JSBackend::SetValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
+    const CString &varValue)
 {
     Local<JSValueRef> taggedValue;
     if (varValue == "false") {
@@ -631,8 +623,8 @@ std::optional<Error> JSBackend::SetValue(
         auto end = begin + varValue.length();  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         double d = DebuggerApi::StringToDouble(begin, end, 0);
         if (std::isnan(d)) {
-            *result = RemoteObject::FromTagged(
-                ecmaVm_, Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport value")));
+            *result = RemoteObject::FromTagged(ecmaVm_,
+                Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport value")));
             return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport value");
         }
         taggedValue = NumberRef::New(ecmaVm_, d);

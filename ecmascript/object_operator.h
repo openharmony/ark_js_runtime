@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_OBJECT_OPERATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_OBJECT_OPERATOR_H
+#ifndef ECMASCRIPT_OBJECT_OPERATOR_H
+#define ECMASCRIPT_OBJECT_OPERATOR_H
 
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_object.h"
@@ -304,4 +304,4 @@ private:
     uint32_t metaData_{0};
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_OBJECT_OPERATOR_H
+#endif  // ECMASCRIPT_OBJECT_OPERATOR_H

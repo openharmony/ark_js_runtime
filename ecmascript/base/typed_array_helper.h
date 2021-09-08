@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_TYPED_ARRAY_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_TYPED_ARRAY_HELPER_H
+#ifndef ECMASCRIPT_BASE_TYPED_ARRAY_HELPER_H
+#define ECMASCRIPT_BASE_TYPED_ARRAY_HELPER_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/js_dataview.h"
@@ -35,9 +35,9 @@ public:
                                                  const JSHandle<JSTaggedValue> &constructorName,
                                                  const JSHandle<JSTaggedValue> &newTarget, int32_t length);
     static JSHandle<JSObject> TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSObject> &obj,
-                                                      const JSHandle<TaggedArray> &argumentList);
+                                                      uint32_t argc, const JSTaggedType argv[]);
     static JSHandle<JSObject> TypedArrayCreate(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,
-                                               const JSHandle<TaggedArray> &argumentList);
+                                               uint32_t argc, const JSTaggedType argv[]);
     static JSTaggedValue ValidateTypedArray(JSThread *thread, const JSHandle<JSTaggedValue> &value);
     inline static DataViewType GetType(const JSHandle<JSObject> &obj);
     inline static int32_t GetElementSize(const JSHandle<JSObject> &obj);
@@ -46,14 +46,11 @@ public:
     inline static JSHandle<JSFunction> GetConstructorFromName(JSThread *thread,
                                                               const JSHandle<JSTaggedValue> &typeName);
     inline static int32_t GetSizeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName);
-    inline static JSTaggedValue GetViewedArrayBuffer(const JSHandle<JSObject> &obj);
-    inline static JSHandle<JSTaggedValue> GetTypedArrayName(JSThread *thread, const JSHandle<JSObject> &obj);
-    inline static int32_t GetByteLength(JSThread *thread, const JSHandle<JSObject> &obj);
     inline static int32_t GetByteOffset(JSThread *thread, const JSHandle<JSObject> &obj);
     inline static int32_t GetArrayLength(JSThread *thread, const JSHandle<JSObject> &obj);
     static int32_t SortCompare(JSThread *thread, const JSHandle<JSTaggedValue> &callbackfnHandle,
-                               const JSHandle<JSTaggedValue> &buffer, const JSHandle<JSTaggedValue> &x,
-                               const JSHandle<JSTaggedValue> &y);
+                               const JSHandle<JSTaggedValue> &buffer, const JSHandle<JSTaggedValue> &firstValue,
+                               const JSHandle<JSTaggedValue> &secondValue);
 
 private:
     static JSTaggedValue CreateFromOrdinaryObject(EcmaRuntimeCallInfo *argv, const JSHandle<JSObject> &obj);
@@ -63,14 +60,7 @@ private:
                                                const JSHandle<JSTaggedValue> &constructorName);
     static JSHandle<JSObject> AllocateTypedArrayBuffer(JSThread *thread, EcmaVM *ecmaVm, const JSHandle<JSObject> &obj,
                                                        double length);
-    inline static void SetViewedArrayBuffer(JSThread *thread, const JSHandle<JSObject> &obj,
-                                            JSTaggedValue viewedArrayBuffer);
-    inline static void SetTypedArrayName(JSThread *thread, const JSHandle<JSObject> &obj,
-                                         const JSHandle<JSTaggedValue> &typedArrayName);
-    inline static void SetByteLength(JSThread *thread, const JSHandle<JSObject> &obj, int32_t byteLength);
-    inline static void SetByteOffset(JSThread *thread, const JSHandle<JSObject> &obj, int32_t byteOffset);
-    inline static void SetArrayLength(JSThread *thread, const JSHandle<JSObject> &obj, int32_t arrayLength);
 };
 }  // namespace panda::ecmascript::base
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_TYPED_ARRAY_HELPER_H
+#endif  // ECMASCRIPT_BASE_TYPED_ARRAY_HELPER_H

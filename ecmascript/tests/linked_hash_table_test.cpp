@@ -87,12 +87,12 @@ HWTEST_F_L0(LinkedHashTableTest, addKeyAndValue)
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
     char keyArray[] = "hello";
-    JSHandle<EcmaString> stringKey1 = factory->NewFromString(keyArray);
+    JSHandle<EcmaString> stringKey1 = factory->NewFromCanBeCompressString(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> value1(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
     char key2Array[] = "hello2";
-    JSHandle<EcmaString> stringKey2 = factory->NewFromString(key2Array);
+    JSHandle<EcmaString> stringKey2 = factory->NewFromCanBeCompressString(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
     JSHandle<JSTaggedValue> value2(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
@@ -129,12 +129,12 @@ HWTEST_F_L0(LinkedHashTableTest, SetaddKeyAndValue)
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
     char keyArray[] = "hello";
-    JSHandle<EcmaString> stringKey1 = factory->NewFromString(keyArray);
+    JSHandle<EcmaString> stringKey1 = factory->NewFromCanBeCompressString(keyArray);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> value1(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
     char key2Array[] = "hello2";
-    JSHandle<EcmaString> stringKey2 = factory->NewFromString(key2Array);
+    JSHandle<EcmaString> stringKey2 = factory->NewFromCanBeCompressString(key2Array);
     JSHandle<JSTaggedValue> key2(stringKey2);
     JSHandle<JSTaggedValue> value2(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
@@ -169,7 +169,7 @@ HWTEST_F_L0(LinkedHashTableTest, GrowCapacity)
         JSHandle<LinkedHashMap> dictHandle(thread, dict);
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<JSTaggedValue> key(factory->NewFromString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
 
         // test insert()
@@ -182,7 +182,7 @@ HWTEST_F_L0(LinkedHashTableTest, GrowCapacity)
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         // test insert()
         EXPECT_EQ(i, dictHandle->FindElement(stringKey.GetTaggedValue()));
     }
@@ -204,7 +204,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetGrowCapacity)
 
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         JSHandle<JSTaggedValue> key(stringKey);
 
         // test insert()
@@ -217,7 +217,7 @@ HWTEST_F_L0(LinkedHashTableTest, SetGrowCapacity)
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         // test insert()
         EXPECT_EQ(i, setHandle->FindElement(stringKey.GetTaggedValue()));
     }
@@ -237,7 +237,7 @@ HWTEST_F_L0(LinkedHashTableTest, ShrinkCapacity)
         JSHandle<LinkedHashMap> dictHandle(thread, dict);
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<JSTaggedValue> key(factory->NewFromString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
 
         // test insert()
@@ -245,14 +245,14 @@ HWTEST_F_L0(LinkedHashTableTest, ShrinkCapacity)
     }
     JSHandle<LinkedHashMap> dictHandle(thread, dict);
     keyArray[5] = '1' + 9;
-    JSHandle<JSTaggedValue> key(factory->NewFromString(keyArray));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
     dict = LinkedHashMap::Cast(LinkedHashMap::Delete(thread, dictHandle, key).GetTaggedObject());
     JSHandle<LinkedHashMap> handle(thread, dict);
     // test order
     for (int i = 0; i < 9; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         // test insert()
         EXPECT_EQ(i, handle->FindElement(stringKey.GetTaggedValue()));
     }
@@ -273,21 +273,21 @@ HWTEST_F_L0(LinkedHashTableTest, SetShrinkCapacity)
         JSHandle<LinkedHashSet> setHandle(thread, set);
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<JSTaggedValue> key(factory->NewFromString(keyArray));
+        JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
 
         // test insert()
         set = LinkedHashSet::Cast(LinkedHashSet::Add(thread, setHandle, key).GetTaggedObject());
     }
     JSHandle<LinkedHashSet> setHandle(thread, set);
     keyArray[5] = '1' + 9;
-    JSHandle<JSTaggedValue> keyHandle(factory->NewFromString(keyArray));
+    JSHandle<JSTaggedValue> keyHandle(factory->NewFromCanBeCompressString(keyArray));
     set = LinkedHashSet::Cast(LinkedHashSet::Delete(thread, setHandle, keyHandle).GetTaggedObject());
     JSHandle<LinkedHashSet> handle(thread, set);
     // test order
     for (int i = 0; i < 9; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
-        JSHandle<EcmaString> stringKey = factory->NewFromString(keyArray);
+        JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         // test insert()
         EXPECT_EQ(i, handle->FindElement(stringKey.GetTaggedValue()));
     }

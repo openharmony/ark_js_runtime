@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_LAYOUT_INFO_H
-#define PANDA_RUNTIME_ECMASCRIPT_LAYOUT_INFO_H
+#ifndef ECMASCRIPT_LAYOUT_INFO_H
+#define ECMASCRIPT_LAYOUT_INFO_H
 
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/property_attributes.h"
@@ -88,4 +88,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_LAYOUT_INFO_H
+#endif  // ECMASCRIPT_LAYOUT_INFO_H

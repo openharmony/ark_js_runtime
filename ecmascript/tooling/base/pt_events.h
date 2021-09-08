@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_EVENTS_H
-#define PANDA_TOOLING_ECMASCRIPT_EVENTS_H
+#ifndef ECMASCRIPT_TOOLING_BASE_PT_EVENTS_H
+#define ECMASCRIPT_TOOLING_BASE_PT_EVENTS_H
 
 #include <memory>
 #include <optional>

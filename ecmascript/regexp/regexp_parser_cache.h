@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMA_REGEXP_PARSER_CACHE_H
-#define PANDA_RUNTIME_ECMA_REGEXP_PARSER_CACHE_H
+#ifndef ECMASCRIPT_REGEXP_PARSER_CACHE_H
+#define ECMASCRIPT_REGEXP_PARSER_CACHE_H
 
 #include <array>
 
@@ -46,4 +46,4 @@ private:
     std::array<ParserKey, CACHE_SIZE> info_{};
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMA_REGEXP_PARSER_CACHE_H
+#endif  // ECMASCRIPT_REGEXP_PARSER_CACHE_H

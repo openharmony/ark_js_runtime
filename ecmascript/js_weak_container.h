@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_WEAK_CONTAINER_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_WEAK_CONTAINER_H
+#ifndef ECMASCRIPT_JS_WEAK_CONTAINER_H
+#define ECMASCRIPT_JS_WEAK_CONTAINER_H
 
 #include <limits>
 #include "ecmascript/js_object.h"
@@ -69,4 +69,4 @@ public:
     DECL_DUMP()
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_WEAK_CONTAINER_H
+#endif  // ECMASCRIPT_JS_WEAK_CONTAINER_H

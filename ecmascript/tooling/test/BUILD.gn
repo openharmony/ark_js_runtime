@@ -87,6 +87,7 @@ ohos_shared_library("jsdebugtest") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "//ark/js_runtime:libark_js_intl_static",
     "//ark/js_runtime:libark_jsruntime_static",
     "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
   ]
@@ -195,7 +196,7 @@ group("unittest") {
 
   # deps file
   deps = [
-    # ":DebuggerCommandsTest",
+    ":DebuggerCommandsTest",
     ":DebuggerEventsTest",
     ":DebuggerTypesTest",
     ":EcmaDebugApiTest",
@@ -207,7 +208,7 @@ group("host_unittest") {
 
   # deps file
   deps = [
-    # ":DebuggerCommandsTestAction(${host_toolchain})",
+    ":DebuggerCommandsTestAction(${host_toolchain})",
     ":DebuggerEventsTestAction(${host_toolchain})",
     ":DebuggerTypesTestAction(${host_toolchain})",
   ]

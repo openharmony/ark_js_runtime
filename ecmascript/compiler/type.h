@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_TYPE_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_TYPE_H
+#ifndef ECMASCRIPT_COMPILER_TYPE_H
+#define ECMASCRIPT_COMPILER_TYPE_H
 
 #include <cstdint>
 
@@ -58,4 +58,4 @@ private:
 };
 }  // namespace kungfu
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_TYPE_H
+#endif  // ECMASCRIPT_COMPILER_TYPE_H

@@ -184,7 +184,9 @@ void DebuggerImpl::DispatcherImpl::SetBlackboxPatterns(const DispatchRequest &re
 
 DispatchResponse DebuggerImpl::Enable([[maybe_unused]] std::unique_ptr<EnableParams> params, UniqueDebuggerId *id)
 {
-    ASSERT(id != nullptr);
+    if (id == nullptr) {
+        return DispatchResponse::Fail("id is nullptr!");
+    }
     *id = "0";
     return DispatchResponse::Ok();
 }
@@ -208,12 +210,11 @@ DispatchResponse DebuggerImpl::GetPossibleBreakpoints(std::unique_ptr<GetPossibl
 
 DispatchResponse DebuggerImpl::GetScriptSource(std::unique_ptr<GetScriptSourceParams> params, CString *source)
 {
-    if (!backend_->MatchScripts(
-            [source](PtScript *script) -> bool {
-                *source = script->GetScriptSource();
-                return true;
-            },
-            params->GetScriptId(), ScriptMatchType::SCRIPT_ID)) {
+    auto scriptFunc = [source](PtScript *script) -> bool {
+        *source = script->GetScriptSource();
+        return true;
+    };
+    if (!backend_->MatchScripts(scriptFunc, params->GetScriptId(), ScriptMatchType::SCRIPT_ID)) {
         *source = "";
         return DispatchResponse::Fail("unknown script id: " + params->GetScriptId());
     }

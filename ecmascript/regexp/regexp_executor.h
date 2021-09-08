@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_REGEXP_EXECUTOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_REGEXP_EXECUTOR_H
+#ifndef ECMASCRIPT_REGEXP_REGEXP_EXECUTOR_H
+#define ECMASCRIPT_REGEXP_REGEXP_EXECUTOR_H
 
 #include "ecmascript/regexp/regexp_parser.h"
 #include "ecmascript/mem/chunk.h"
@@ -367,4 +367,4 @@ private:
     Chunk *chunk_ = nullptr;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_REGEXP_EXECUTOR_H
+#endif  // ECMASCRIPT_REGEXP_REGEXP_EXECUTOR_H

@@ -19,7 +19,7 @@
 #include "ecmascript/mem/chunk.h"
 
 namespace panda::ecmascript {
-template <typename T>
+template<typename T>
 class CAddressAllocator {
 public:
     // using by std allocator
@@ -31,17 +31,17 @@ public:
     using size_type = size_t;
     using difference_type = ptrdiff_t;
 
-    template <typename U>
+    template<typename U>
     struct Rebind {
         using other = CAddressAllocator<U>;
     };
 
-    template <typename U>
+    template<typename U>
     using rebind = Rebind<U>;
 
     CAddressAllocator() = default;
 
-    template <typename U>
+    template<typename U>
     explicit CAddressAllocator(const CAddressAllocator<U> &other [[maybe_unused]])
     {
     }
@@ -81,7 +81,7 @@ public:
         Free(static_cast<void *>(p));
     }
 
-    template <typename U, typename... Args>
+    template<typename U, typename... Args>
     void construct(U *p, Args &&... args)  // NOLINT(readability-identifier-naming)
     {
         if (p == nullptr) {
@@ -89,7 +89,7 @@ public:
         }
         ::new (static_cast<void *>(p)) U(std::forward<Args>(args)...);
     }
-    template <typename U>
+    template<typename U>
     void destroy(U *p)  // NOLINT(readability-identifier-naming)
     {
         if (p == nullptr) {
@@ -113,7 +113,7 @@ public:
         return ptr;
     }
 
-    template <typename S, typename... Args>
+    template<typename S, typename... Args>
     [[nodiscard]] S *New(Args &&... args)
     {
         auto p = reinterpret_cast<void *>(Allocate(sizeof(S)));
@@ -121,7 +121,7 @@ public:
         return reinterpret_cast<S *>(p);
     }
 
-    template <class S>
+    template<class S>
     void Finalize(S *ptr)
     {
         ASSERT(ptr != nullptr);

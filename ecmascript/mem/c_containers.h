@@ -31,32 +31,32 @@
 #include "ecmascript/mem/caddress_allocator.h"
 
 namespace panda::ecmascript {
-template <class T>
+template<class T>
 using CVector = std::vector<T, CAddressAllocator<T>>;
 
-template <class T>
+template<class T>
 using CList = std::list<T, CAddressAllocator<T>>;
 
-template <class Key, class T, class Compare = std::less<>>
+template<class Key, class T, class Compare = std::less<>>
 using CMap = std::map<Key, T, Compare, CAddressAllocator<std::pair<const Key, T>>>;
 
-template <class Key, class T, class Compare = std::less<>>
+template<class Key, class T, class Compare = std::less<>>
 using CMultiMap = std::multimap<Key, T, Compare, CAddressAllocator<std::pair<const Key, T>>>;
 
-template <class Key, class Value, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+template<class Key, class Value, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedMultiMap =
     std::unordered_multimap<Key, Value, Hash, KeyEqual, CAddressAllocator<std::pair<const Key, Value>>>;
 
-template <class T>
+template<class T>
 using CDeque = std::deque<T, CAddressAllocator<T>>;
 
-template <class T, class Container = CDeque<T>>
+template<class T, class Container = CDeque<T>>
 using CQueue = std::queue<T, Container>;
 
-template <class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+template<class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedMap = std::unordered_map<Key, T, Hash, KeyEqual, CAddressAllocator<std::pair<const Key, T>>>;
 
-template <class Key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+template<class Key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedSet = std::unordered_set<Key, Hash, KeyEqual, CAddressAllocator<Key>>;
 }  // namespace panda::ecmascript
 

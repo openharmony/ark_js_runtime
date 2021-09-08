@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_HCLASS_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_HCLASS_INL_H
+#ifndef ECMASCRIPT_JS_HCLASS_INL_H
+#define ECMASCRIPT_JS_HCLASS_INL_H
 
 #include "ecmascript/js_hclass.h"
 
@@ -160,6 +160,9 @@ inline size_t JSHClass::SizeFromJSHClass(JSType type, TaggedObject *header)
     if (type == JSType::STRING) {
         return reinterpret_cast<EcmaString *>(header)->ObjectSize();
     }
+    if (type == JSType::MACHINE_CODE_OBJECT) {
+        return reinterpret_cast<MachineCode *>(header)->GetMachineCodeObjectSize();
+    }
     ASSERT(GetObjectSize() != 0);
     return GetObjectSize();
 }
@@ -174,4 +177,4 @@ inline void JSHClass::Copy(const JSThread *thread, const JSHClass *jshcalss)
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_HCLASS_INL_H
+#endif  // ECMASCRIPT_JS_HCLASS_INL_H

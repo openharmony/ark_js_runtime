@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSMAP_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSMAP_H
+#ifndef ECMASCRIPT_JSMAP_H
+#define ECMASCRIPT_JSMAP_H
 
 #include <limits>
 #include "js_object.h"
@@ -52,4 +52,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSMAP_H
+#endif  // ECMASCRIPT_JSMAP_H

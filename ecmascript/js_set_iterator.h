@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_SET_ITERATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_SET_ITERATOR_H
+#ifndef ECMASCRIPT_JS_SET_ITERATOR_H
+#define ECMASCRIPT_JS_SET_ITERATOR_H
 
 #include "js_object.h"
 #include "js_iterator.h"
@@ -46,4 +46,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_SET_ITERATOR_H
+#endif  // ECMASCRIPT_JS_SET_ITERATOR_H

@@ -140,8 +140,8 @@ std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, con
         return std::make_unique<ObjectRemoteObject>(ecmaVm, tagged, ObjectClassName::Promise, ObjectSubType::Promise);
     }
     if (tagged->IsArrayBuffer()) {
-        return std::make_unique<ObjectRemoteObject>(
-            ecmaVm, tagged, ObjectClassName::Arraybuffer, ObjectSubType::Arraybuffer);
+        return std::make_unique<ObjectRemoteObject>(ecmaVm, tagged, ObjectClassName::Arraybuffer,
+            ObjectSubType::Arraybuffer);
     }
     if (tagged->IsArrayIterator()) {
         return std::make_unique<ObjectRemoteObject>(ecmaVm, tagged, ObjectClassName::ArrayIterator);
@@ -150,12 +150,12 @@ std::unique_ptr<RemoteObject> RemoteObject::FromTagged(const EcmaVM *ecmaVm, con
         return std::make_unique<ObjectRemoteObject>(ecmaVm, tagged, ObjectClassName::StringIterator);
     }
     if (tagged->IsSetIterator()) {
-        return std::make_unique<ObjectRemoteObject>(
-            ecmaVm, tagged, ObjectClassName::SetIterator, ObjectSubType::Iterator);
+        return std::make_unique<ObjectRemoteObject>(ecmaVm, tagged, ObjectClassName::SetIterator,
+            ObjectSubType::Iterator);
     }
     if (tagged->IsMapIterator()) {
-        return std::make_unique<ObjectRemoteObject>(
-            ecmaVm, tagged, ObjectClassName::MapIterator, ObjectSubType::Iterator);
+        return std::make_unique<ObjectRemoteObject>(ecmaVm, tagged, ObjectClassName::MapIterator,
+            ObjectSubType::Iterator);
     }
     if (tagged->IsObject()) {
         return std::make_unique<ObjectRemoteObject>(ecmaVm, tagged, ObjectClassName::Object);
@@ -529,10 +529,10 @@ Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "text")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, text_.c_str())));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")), IntegerRef::New(ecmaVm, line_));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")), IntegerRef::New(ecmaVm, column_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
+        IntegerRef::New(ecmaVm, line_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
+        IntegerRef::New(ecmaVm, column_));
     if (scriptId_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
@@ -558,8 +558,8 @@ Local<ObjectRef> ExceptionDetails::ToObject(const EcmaVM *ecmaVm)
     return params;
 }
 
-std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {
         LOG(ERROR, DEBUGGER) << "InternalPropertyDescriptor::Create params is nullptr";
@@ -617,8 +617,8 @@ Local<ObjectRef> InternalPropertyDescriptor::ToObject(const EcmaVM *ecmaVm)
     return params;
 }
 
-std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
+std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &params)
 {
     if (params.IsEmpty() || !params->IsObject()) {
         LOG(ERROR, DEBUGGER) << "PrivatePropertyDescriptor::Create params is nullptr";
@@ -714,8 +714,8 @@ Local<ObjectRef> PrivatePropertyDescriptor::ToObject(const EcmaVM *ecmaVm)
     return params;
 }
 
-std::unique_ptr<PropertyDescriptor> PropertyDescriptor::FromProperty(
-    const EcmaVM *ecmaVm, const Local<JSValueRef> &name, const PropertyAttribute &property)
+std::unique_ptr<PropertyDescriptor> PropertyDescriptor::FromProperty(const EcmaVM *ecmaVm,
+    const Local<JSValueRef> &name, const PropertyAttribute &property)
 {
     std::unique_ptr<PropertyDescriptor> debuggerProperty = std::make_unique<PropertyDescriptor>();
 
@@ -906,8 +906,8 @@ Local<ObjectRef> PropertyDescriptor::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "configurable")),
         BooleanRef::New(ecmaVm, configurable_));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "enumerable")), BooleanRef::New(ecmaVm, enumerable_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "enumerable")),
+        BooleanRef::New(ecmaVm, enumerable_));
     if (wasThrown_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "wasThrown")),
@@ -981,8 +981,8 @@ Local<ObjectRef> Location::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")), IntegerRef::New(ecmaVm, line_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
+        IntegerRef::New(ecmaVm, line_));
     if (column_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
@@ -1034,11 +1034,10 @@ Local<ObjectRef> ScriptPosition::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")), IntegerRef::New(ecmaVm, line_));
-
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")), IntegerRef::New(ecmaVm, column_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
+        IntegerRef::New(ecmaVm, line_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
+        IntegerRef::New(ecmaVm, column_));
 
     return params;
 }
@@ -1087,8 +1086,8 @@ Local<ObjectRef> SearchMatch::ToObject(const EcmaVM *ecmaVm)
 {
     Local<ObjectRef> params = NewObject(ecmaVm);
 
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")), IntegerRef::New(ecmaVm, lineNumber_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
+        IntegerRef::New(ecmaVm, lineNumber_));
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineContent")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, lineContent_.c_str())));
@@ -1165,8 +1164,8 @@ Local<ObjectRef> LocationRange::ToObject(const EcmaVM *ecmaVm)
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")),
         Local<JSValueRef>(start_->ToObject(ecmaVm)));
     ASSERT(end_ != nullptr);
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")), Local<JSValueRef>(end_->ToObject(ecmaVm)));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")),
+        Local<JSValueRef>(end_->ToObject(ecmaVm)));
 
     return params;
 }
@@ -1237,8 +1236,8 @@ Local<ObjectRef> BreakLocation::ToObject(const EcmaVM *ecmaVm)
     params->Set(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")),
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, scriptId_.c_str())));
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")), IntegerRef::New(ecmaVm, line_));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")),
+        IntegerRef::New(ecmaVm, line_));
     if (column_) {
         params->Set(ecmaVm,
             Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")),
@@ -1444,9 +1443,9 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
             for (uint32_t i = 0; i < len; ++i) {
                 key = IntegerRef::New(ecmaVm, i);
-                Local<JSValueRef> result = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
-                std::unique_ptr<Scope> scope = Scope::Create(ecmaVm, result);
-                if (result.IsEmpty() || scope == nullptr) {
+                Local<JSValueRef> resultValue = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
+                std::unique_ptr<Scope> scope = Scope::Create(ecmaVm, resultValue);
+                if (resultValue.IsEmpty() || scope == nullptr) {
                     error += "'scopeChain' format invalid;";
                 }
                 callFrame->scopeChain_.emplace_back(std::move(scope));
@@ -1524,8 +1523,8 @@ Local<ObjectRef> CallFrame::ToObject(const EcmaVM *ecmaVm)
     }
     params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scopeChain")), values);
     ASSERT(this_ != nullptr);
-    params->Set(
-        ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "this")), Local<JSValueRef>(this_->ToObject(ecmaVm)));
+    params->Set(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "this")),
+        Local<JSValueRef>(this_->ToObject(ecmaVm)));
     if (returnValue_) {
         ASSERT(returnValue_.value() != nullptr);
         params->Set(ecmaVm,

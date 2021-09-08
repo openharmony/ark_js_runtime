@@ -13,16 +13,17 @@
  * limitations under the License.
  */
 
+#include "ecmascript/mem/semi_space_marker.h"
+
 #include "ecmascript/free_object.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/semi_space_collector-inl.h"
-#include "ecmascript/mem/semi_space_marker.h"
 #include "ecmascript/mem/semi_space_worker.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 
 namespace panda::ecmascript {
-constexpr int HEAD_SIZE = TaggedObject::ObjectHeaderSize();
+constexpr int HEAD_SIZE = TaggedObject::TaggedObjectSize();
 
 SemiSpaceMarker::SemiSpaceMarker(SemiSpaceCollector *semiSpaceCollector) : collector_(semiSpaceCollector) {}
 

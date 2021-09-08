@@ -14,8 +14,8 @@
  */
 
 #include "ecmascript/ecma_string-inl.h"
+#include "ecmascript/ecma_global_storage-inl.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/global_handle_collection.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
@@ -48,112 +48,50 @@ public:
     PandaVM *instance {nullptr};
     ecmascript::EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
-
-    CVector<JSHandle<EcmaString>> TestGlobalHandleNewBlock(GlobalHandleCollection global);
-    void TestGlobalHandleFree(GlobalHandleCollection global);
 };
 
-CVector<JSHandle<EcmaString>> JSHandleTest::TestGlobalHandleNewBlock(GlobalHandleCollection global)
+HWTEST_F_L0(JSHandleTest, NewGlobalHandle)
 {
-    ecmascript::EcmaHandleScope scope(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    CString test = "test";
-    CVector<JSHandle<EcmaString>> vec;
-    // 10 : test case
-    for (int i = 0; i < 10; i++) {
-        test.append(ToCString(i));
-        vec.push_back(global.NewHandle<EcmaString>(factory->NewFromString(test).GetTaggedType()));
-    }
+    auto global = thread->GetEcmaGlobalStorage();
 
-    [[maybe_unused]] auto storage = thread->GetGlobalHandleStorage();
-    ASSERT(storage->GetNodes()->size() == 1);
-    return vec;
-}
-
-HWTEST_F_L0(JSHandleTest, GlobalHandleNewBlock)
-{
-    GlobalHandleCollection global(thread);
-    CVector<JSHandle<EcmaString>> vec = TestGlobalHandleNewBlock(global);
-
-    // trigger GC
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    factory->NewFromString("trigger gc");
-
-    for (auto v : vec) {
-        global.Dispose(v);
-    }
-}
-
-void JSHandleTest::TestGlobalHandleFree(GlobalHandleCollection global)
-{
-    EcmaHandleScope scope(thread);
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    CString test = "test";
-    // 10 : test case
-    for (int i = 0; i < 10; i++) {
-        test.append(ToCString(i));
-        JSHandle<EcmaString> str = global.NewHandle<EcmaString>(factory->NewFromString(test).GetTaggedType());
-        global.Dispose(str);
-    }
-
-    [[maybe_unused]] auto storage = thread->GetGlobalHandleStorage();
-    ASSERT(storage->GetNodes()->size() == 1);
-}
-
-HWTEST_F_L0(JSHandleTest, GlobalHandleFree)
-{
-    GlobalHandleCollection global(thread);
-    TestGlobalHandleFree(global);
-}
-
-HWTEST_F_L0(JSHandleTest, HandleScopeFree)
-{
-    // enable this check after add zapfree in ecma handlescope
-    JSHandle<EcmaString> string = thread->GetEcmaVM()->GetFactory()->NewFromString("test1");
+    uintptr_t globalString = 0;
     {
-        ecmascript::EcmaHandleScope scope(thread);
-        JSHandle<EcmaString> string2 = thread->GetEcmaVM()->GetFactory()->NewFromString("test2");
-        string = string2;
+        [[maybe_unused]] EcmaHandleScope scope(thread);
+        auto string1 = factory->NewFromString("test1");
+        globalString = global->NewGlobalHandle(string1.GetTaggedType());
     }
+    // trigger GC
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+
+    // check result
+    EXPECT_TRUE(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)) == 0);
 }
 
-HWTEST_F_L0(JSHandleTest, NewHandle)
+HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle)
 {
-    JSHandle<EcmaString> string = thread->GetEcmaVM()->GetFactory()->NewFromString("test1");
-    JSHandle<EcmaString> string2(string);
-    JSHandle<EcmaString> string3 = thread->GetEcmaVM()->GetFactory()->NewFromString("test2");
-    string = string3;
-    ASSERT_TRUE(string2.GetTaggedValue().GetTaggedObject() != string.GetTaggedValue().GetTaggedObject());
-    JSMutableHandle<EcmaString> mutable_string(
-        thread, thread->GetEcmaVM()->GetFactory()->NewFromString("test1").GetTaggedValue());
-    JSHandle<EcmaString> mutable_string2(mutable_string);
-    JSHandle<EcmaString> mutable_string3 = thread->GetEcmaVM()->GetFactory()->NewFromString("test2");
-    mutable_string.Update(mutable_string3.GetTaggedValue());
-    ASSERT_TRUE(mutable_string.GetTaggedValue().GetTaggedObject() ==
-                mutable_string2.GetTaggedValue().GetTaggedObject());
-}
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    auto global = thread->GetEcmaGlobalStorage();
 
-HWTEST_F_L0(JSHandleTest, NewHandleScope)
-{
-    EcmaHandleScope scope(thread);
+    uintptr_t globalString = 0;
+    {
+        [[maybe_unused]] EcmaHandleScope scope(thread);
+        auto string1 = factory->NewFromString("test1");
+        globalString = global->NewGlobalHandle(string1.GetTaggedType());
+        globalString = global->SetWeak(globalString);
 
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("test");
-    for (int32_t i = 10; i > 0; i--) {
-        JSHandle<EcmaString>(thread, str.GetTaggedValue());
+        // trigger GC
+        thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+
+        // check result
+        EXPECT_TRUE(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)) == 0);
+        EXPECT_TRUE(global->IsWeak(globalString));
     }
+    // trigger GC
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
 
-    for (int i = 5; i > 0; i--) {
-        int32_t loop = 2;
-        while (loop) {
-            ecmascript::EcmaHandleScope scope2(thread);
-
-            JSHandle<EcmaString> str2 = thread->GetEcmaVM()->GetFactory()->NewFromString("test2");
-            for (int32_t i = 1024; i > 0; i--) {
-                JSHandle<EcmaString>(thread, str.GetTaggedValue());
-            }
-            str2 = thread->GetEcmaVM()->GetFactory()->NewFromString("test3");
-            loop--;
-        }
-    }
+    // check weak reference
+    JSTaggedType result = *reinterpret_cast<JSTaggedType *>(globalString);
+    EXPECT_TRUE(result == JSTaggedValue::Undefined().GetRawData());
 }
 }  // namespace panda::test

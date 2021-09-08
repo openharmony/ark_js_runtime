@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_HCLASS_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_HCLASS_H
+#ifndef ECMASCRIPT_JS_HCLASS_H
+#define ECMASCRIPT_JS_HCLASS_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
@@ -127,6 +127,7 @@ class ProtoChangeDetails;
         PENDING_JOB,     /* /////////////////////////////////////////////////////////////////////////////-PADDING */   \
         FUNCTION_EXTRA_INFO, /* ////////////////////////////////////////////////////////////////////////-PADDING */    \
         COMPLETION_RECORD, /* JS_RECORD_END /////////////////////////////////////////////////////////////////////// */ \
+        MACHINE_CODE_OBJECT,                                                                                           \
         ECMA_MODULE, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_TYPE_LAST = ECMA_MODULE, /* ////////////////////////////////////////////////////////////////////-PADDING */ \
                                                                                                                        \
@@ -166,16 +167,17 @@ public:
     using IsPrototypeBit = ExtensibleBit::NextFlag;
     using ElementRepresentationBits = IsPrototypeBit::NextField<Representation, 3>;        // 3 means next 3 bit
     using DictionaryElementBits = ElementRepresentationBits::NextFlag;                     // 16
-    using NumberOfUnusedInlinedPropsBits = DictionaryElementBits::NextField<uint32_t, 3>;  // 3 means next 3 bit
+    using IsDictionaryBit = DictionaryElementBits::NextFlag;
+    using IsStableElementsBit = IsDictionaryBit::NextFlag;
+    using NumberOfUnusedInlinedPropsBits = IsStableElementsBit::NextField<uint32_t, 3>;    // 3 means next 3 bit
     // the max value is 1024, need 11 bits
     using NumberOfUnusedNonInlinedPropsBits =
-        NumberOfUnusedInlinedPropsBits::NextField<uint32_t, PropertyAttributes::OFFSET_BITFIELD_NUM>;  // 29
-    using IsLiteralBit = NumberOfUnusedNonInlinedPropsBits::NextFlag;
+        NumberOfUnusedInlinedPropsBits::NextField<uint32_t, PropertyAttributes::OFFSET_BITFIELD_NUM>;  // 31
+
+    using HasConstructorBits = NumberOfUnusedNonInlinedPropsBits::NextFlag;
+    using IsLiteralBit = HasConstructorBits::NextFlag;
     using ClassConstructorBit = IsLiteralBit::NextFlag;
     using ClassPrototypeBit = ClassConstructorBit::NextFlag;
-    using IsDictionaryBit = ClassPrototypeBit::NextFlag;
-    using IsStableJSArrayBit = IsDictionaryBit::NextFlag;
-    using HasConstructorBits = IsStableJSArrayBit::NextFlag;
 
     static constexpr int DEFAULT_CAPACITY_OF_IN_OBJECTS = 4;
     static constexpr int DEFAULT_CAPACITY_OF_OUT_OBJECTS =
@@ -421,6 +423,11 @@ public:
         return GetObjectType() == JSType::JS_BOUND_FUNCTION;
     }
 
+    inline bool IsJSIntlBoundFunction() const
+    {
+        return GetObjectType() == JSType::JS_INTL_BOUND_FUNCTION;
+    }
+
     inline bool IsJSProxyRevocFunction() const
     {
         return GetObjectType() == JSType::JS_PROXY_REVOC_FUNCTION;
@@ -520,6 +527,41 @@ public:
     inline bool IsJSProxy() const
     {
         return GetObjectType() == JSType::JS_PROXY;
+    }
+
+    inline bool IsJSLocale() const
+    {
+        return GetObjectType() == JSType::JS_LOCALE;
+    }
+
+    inline bool IsJSIntl() const
+    {
+        return GetObjectType() == JSType::JS_INTL;
+    }
+
+    inline bool IsJSDateTimeFormat() const
+    {
+        return GetObjectType() == JSType::JS_DATE_TIME_FORMAT;
+    }
+
+    inline bool IsJSRelativeTimeFormat() const
+    {
+        return GetObjectType() == JSType::JS_RELATIVE_TIME_FORMAT;
+    }
+
+    inline bool IsJSNumberFormat() const
+    {
+        return GetObjectType() == JSType::JS_NUMBER_FORMAT;
+    }
+
+    inline bool IsJSCollator() const
+    {
+        return GetObjectType() == JSType::JS_COLLATOR;
+    }
+
+    inline bool IsJSPluralRules() const
+    {
+        return GetObjectType() == JSType::JS_PLURAL_RULES;
     }
 
     inline bool IsAccessorData() const
@@ -752,6 +794,11 @@ public:
         return GetObjectType() == JSType::FREE_OBJECT_WITH_TWO_FIELD;
     }
 
+    inline bool IsMachineCodeObject() const
+    {
+        return GetObjectType() == JSType::MACHINE_CODE_OBJECT;
+    }
+
     inline void SetElementRepresentation(Representation representation)
     {
         uint64_t bits = GetBitField();
@@ -780,16 +827,26 @@ public:
     {
         return DictionaryElementBits::Decode(GetBitField());
     }
-    inline void SetIsStableJSArray(bool value)
+    inline void SetIsStableElements(bool value)
     {
-        ASSERT(!value || (IsJSArray() && !IsDictionaryElement()));
-        JSTaggedType newVal = IsStableJSArrayBit::Update(GetBitField(), value);
+        JSTaggedType newVal = IsStableElementsBit::Update(GetBitField(), value);
         SetBitField(newVal);
+    }
+    inline bool IsStableElements() const
+    {
+        return IsStableElementsBit::Decode(GetBitField());
+    }
+    inline bool IsStableJSArguments() const
+    {
+        uint64_t bits = GetBitField();
+        auto type = ObjectTypeBits::Decode(bits);
+        return IsStableElementsBit::Decode(bits) && (type == JSType::JS_ARGUMENTS);
     }
     inline bool IsStableJSArray() const
     {
-        ASSERT(!IsStableJSArrayBit::Decode(GetBitField()) || (IsJSArray() && !IsDictionaryElement()));
-        return IsStableJSArrayBit::Decode(GetBitField());
+        uint64_t bits = GetBitField();
+        auto type = ObjectTypeBits::Decode(bits);
+        return IsStableElementsBit::Decode(bits) && (type == JSType::JS_ARRAY);
     }
     inline void SetHasConstructor(bool value)
     {
@@ -850,7 +907,7 @@ public:
 
     JSTaggedValue GetAccessor(const JSTaggedValue &key);
 
-    static constexpr size_t BIT_FIELD_OFFSET = sizeof(TaggedObject) + sizeof(HClass);
+    static constexpr size_t BIT_FIELD_OFFSET = TaggedObjectSize();
     SET_GET_PRIMITIVE_FIELD(BitField, uint64_t, BIT_FIELD_OFFSET, OBJECT_SIZE_OFFSET);
     SET_GET_PRIMITIVE_FIELD(ObjectSize, uint64_t, OBJECT_SIZE_OFFSET, PROTOTYPE_OFFSET);
     ACCESSORS(Proto, PROTOTYPE_OFFSET, ATTRIBUTES_OFFSET);
@@ -897,4 +954,4 @@ private:
 static_assert(JSHClass::BIT_FIELD_OFFSET % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT) == 0);
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_HCLASS_H
+#endif  // ECMASCRIPT_JS_HCLASS_H

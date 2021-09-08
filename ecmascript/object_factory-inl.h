@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_OBJECT_FACTORY_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_OBJECT_FACTORY_INL_H
+#ifndef ECMASCRIPT_OBJECT_FACTORY_INL_H
+#define ECMASCRIPT_OBJECT_FACTORY_INL_H
 
 #include "object_factory.h"
 #include "ecmascript/mem/ecma_heap_manager-inl.h"
@@ -24,21 +24,21 @@
 namespace panda::ecmascript {
 EcmaString *ObjectFactory::AllocNonMovableStringObject(size_t size)
 {
-    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateNonMovableOrLargeObject(stringClass_, size));
+    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateNonMovableOrHugeObject(stringClass_, size));
 }
 
 EcmaString *ObjectFactory::AllocStringObject(size_t size)
 {
-    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateYoungGenerationOrLargeObject(stringClass_, size));
+    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateYoungGenerationOrHugeObject(stringClass_, size));
 }
 
 JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointer, bool nonMovable)
 {
     TaggedObject *header;
     if (nonMovable) {
-        header = heapHelper_.AllocateNonMovableOrLargeObject(jsNativePointerClass_);
+        header = heapHelper_.AllocateNonMovableOrHugeObject(jsNativePointerClass_);
     } else {
-        header = heapHelper_.AllocateYoungGenerationOrLargeObject(jsNativePointerClass_);
+        header = heapHelper_.AllocateYoungGenerationOrHugeObject(jsNativePointerClass_);
     }
     JSHandle<JSNativePointer> obj(thread_, header);
     obj->SetExternalPointer(externalPointer);
@@ -48,15 +48,15 @@ JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointe
 }
 
 JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointer,
-                                                            DeleteEntryPoint callBack,
+                                                            const DeleteEntryPoint &callBack,
                                                             void *data,
                                                             bool nonMovable)
 {
     TaggedObject *header;
     if (nonMovable) {
-        header = heapHelper_.AllocateNonMovableOrLargeObject(jsNativePointerClass_);
+        header = heapHelper_.AllocateNonMovableOrHugeObject(jsNativePointerClass_);
     } else {
-        header = heapHelper_.AllocateYoungGenerationOrLargeObject(jsNativePointerClass_);
+        header = heapHelper_.AllocateYoungGenerationOrHugeObject(jsNativePointerClass_);
     }
     JSHandle<JSNativePointer> obj(thread_, header);
     obj->SetExternalPointer(externalPointer);
@@ -78,7 +78,7 @@ LexicalEnv *ObjectFactory::InlineNewLexicalEnv(int numSlots)
     return array;
 }
 
-template <typename T, typename S>
+template<typename T, typename S>
 void ObjectFactory::NewJSIntlIcuData(const JSHandle<T> &obj, const S &icu, const DeleteEntryPoint &callback)
 {
     S *icuPoint = vm_->GetRegionFactory()->New<S>(icu);
@@ -86,20 +86,13 @@ void ObjectFactory::NewJSIntlIcuData(const JSHandle<T> &obj, const S &icu, const
     JSTaggedValue data = obj->GetIcuField();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {
         JSNativePointer *native = JSNativePointer::Cast(data.GetTaggedObject());
-        void *pointer = native->GetExternalPointer();
-        if (pointer != nullptr) {
-            native->Destroy();
-            vm_->GetRegionFactory()->FreeBuffer(native->GetExternalPointer());
-        }
-        native->SetExternalPointer(icuPoint);
+        native->ResetExternalPointer(icuPoint);
         return;
     }
-    JSHandle<JSNativePointer> pointer(thread_, NewJSNativePointer(icuPoint).GetTaggedValue());
-    pointer->SetDeleter(callback);
-    pointer->SetData(vm_);
+    JSHandle<JSNativePointer> pointer(thread_, NewJSNativePointer(icuPoint, callback, vm_).GetTaggedValue());
     obj->SetIcuField(thread_, pointer.GetTaggedValue());
     // push uint8_t* to ecma array_data_list
     vm_->PushToArrayDataList(*pointer);
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_OBJECT_FACTORY_INL_H
+#endif  // ECMASCRIPT_OBJECT_FACTORY_INL_H

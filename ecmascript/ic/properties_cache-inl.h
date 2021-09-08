@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PROPERTIES_CACHE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_PROPERTIES_CACHE_INL_H
+#ifndef ECMASCRIPT_IC_PROPERTIES_CACHE_INL_H
+#define ECMASCRIPT_IC_PROPERTIES_CACHE_INL_H
 
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -53,4 +53,4 @@ int PropertiesCache::Hash(JSHClass *cls, JSTaggedValue key)
     return static_cast<int>((clsHash ^ keyHash) & CACHE_LENGTH_MASK);
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PROPERTIES_CACHE_INL_H
+#endif  // ECMASCRIPT_IC_PROPERTIES_CACHE_INL_H

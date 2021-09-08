@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Taken from panda-tools/panda-debugger/debugger
-#ifndef PANDA_RUNTIME_DEBUG_TEST_DEBUG_INFO_EXTRACTOR_H
-#define PANDA_RUNTIME_DEBUG_TEST_DEBUG_INFO_EXTRACTOR_H
+
+#ifndef ECMASCRIPT_TOOLING_TEST_DEBUG_INFO_EXTRACTOR_H
+#define ECMASCRIPT_TOOLING_TEST_DEBUG_INFO_EXTRACTOR_H
 
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
@@ -58,4 +58,4 @@ public:
 };
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // PANDA_RUNTIME_DEBUG_TEST_DEBUG_INFO_EXTRACTOR_H
+#endif  // ECMASCRIPT_TOOLING_TEST_DEBUG_INFO_EXTRACTOR_H

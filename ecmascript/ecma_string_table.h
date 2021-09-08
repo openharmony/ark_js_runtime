@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_STRING_TABLE_H
-#define PANDA_RUNTIME_ECMASCRIPT_STRING_TABLE_H
+#ifndef ECMASCRIPT_STRING_TABLE_H
+#define ECMASCRIPT_STRING_TABLE_H
 
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/heap_roots.h"
@@ -32,8 +32,8 @@ public:
     }
 
     void InternEmptyString(EcmaString *emptyStr);
-    EcmaString *GetOrInternString(const uint8_t *utf8Data, uint32_t utf8Len);
-    EcmaString *GetOrInternString(const uint16_t *utf16Data, uint32_t utf16Len);
+    EcmaString *GetOrInternString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
+    EcmaString *GetOrInternString(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
     EcmaString *GetOrInternString(EcmaString *string);
 
     void SweepWeakReference(const WeakRootVisitor &visitor);
@@ -42,7 +42,7 @@ private:
     NO_COPY_SEMANTIC(EcmaStringTable);
     NO_MOVE_SEMANTIC(EcmaStringTable);
 
-    EcmaString *GetString(const uint8_t *utf8Data, uint32_t utf8Len) const;
+    EcmaString *GetString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress) const;
     EcmaString *GetString(const uint16_t *utf16Data, uint32_t utf16Len) const;
     EcmaString *GetString(EcmaString *string) const;
 
@@ -62,4 +62,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_STRING_TABLE_H
+#endif  // ECMASCRIPT_STRING_TABLE_H

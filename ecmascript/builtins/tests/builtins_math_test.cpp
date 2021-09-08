@@ -112,7 +112,7 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_3)
 // Math.abs("hello")
 HWTEST_F_L0(BuiltinsMathTest, Abs_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("helloworld");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("helloworld");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -269,7 +269,7 @@ HWTEST_F_L0(BuiltinsMathTest, Abs_13)
 // Math.abs("100.12")
 HWTEST_F_L0(BuiltinsMathTest, Abs_14)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("100.12");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("100.12");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -390,7 +390,7 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_6)
 // Math.acos("0.1")
 HWTEST_F_L0(BuiltinsMathTest, Acos_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -406,7 +406,7 @@ HWTEST_F_L0(BuiltinsMathTest, Acos_7)
 // Math.acos("")
 HWTEST_F_L0(BuiltinsMathTest, Acos_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -557,7 +557,7 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_7)
 // Math.acosh("1")
 HWTEST_F_L0(BuiltinsMathTest, Acosh_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -573,7 +573,7 @@ HWTEST_F_L0(BuiltinsMathTest, Acosh_8)
 // Math.acosh("")
 HWTEST_F_L0(BuiltinsMathTest, Acosh_9)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -709,7 +709,7 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_6)
 // Math.asin(""")
 HWTEST_F_L0(BuiltinsMathTest, Asin_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -725,7 +725,7 @@ HWTEST_F_L0(BuiltinsMathTest, Asin_7)
 // Math.asin("1")
 HWTEST_F_L0(BuiltinsMathTest, Asin_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -848,7 +848,7 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_6)
 // Math.asinh("")
 HWTEST_F_L0(BuiltinsMathTest, Asinh_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -864,7 +864,7 @@ HWTEST_F_L0(BuiltinsMathTest, Asinh_7)
 // Math.asinh("-5.7")
 HWTEST_F_L0(BuiltinsMathTest, Asinh_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-5.7");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-5.7");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -985,7 +985,7 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_6)
 // Math.atan("")
 HWTEST_F_L0(BuiltinsMathTest, Atan_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString(" ");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" ");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1001,7 +1001,7 @@ HWTEST_F_L0(BuiltinsMathTest, Atan_7)
 // Math.atan("-1")
 HWTEST_F_L0(BuiltinsMathTest, Atan_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1122,7 +1122,7 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_6)
 // Math.atanh("")
 HWTEST_F_L0(BuiltinsMathTest, Atanh_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString(" ");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" ");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1138,7 +1138,7 @@ HWTEST_F_L0(BuiltinsMathTest, Atanh_7)
 // Math.atanh("-1")
 HWTEST_F_L0(BuiltinsMathTest, Atanh_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1298,8 +1298,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_8)
 // Math.atan2("-1","")
 HWTEST_F_L0(BuiltinsMathTest, Atan2_9)
 {
-    JSHandle<EcmaString> test_1 = thread_->GetEcmaVM()->GetFactory()->NewFromString("-1");
-    JSHandle<EcmaString> test_2 = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test_1 = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-1");
+    JSHandle<EcmaString> test_2 = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1316,8 +1316,8 @@ HWTEST_F_L0(BuiltinsMathTest, Atan2_9)
 // Math.atan2("0.23","0.72")
 HWTEST_F_L0(BuiltinsMathTest, Atan2_10)
 {
-    JSHandle<EcmaString> test_1 = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.23");
-    JSHandle<EcmaString> test_2 = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.72");
+    JSHandle<EcmaString> test_1 = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.23");
+    JSHandle<EcmaString> test_2 = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.72");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1455,7 +1455,7 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_6)
 // Math.cbrt("")
 HWTEST_F_L0(BuiltinsMathTest, Cbrt_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString(" ");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" ");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1471,7 +1471,7 @@ HWTEST_F_L0(BuiltinsMathTest, Cbrt_7)
 // Math.cbrt("1.23")
 HWTEST_F_L0(BuiltinsMathTest, Cbrt_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("1.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1607,7 +1607,7 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_6)
 // Math.ceil("")
 HWTEST_F_L0(BuiltinsMathTest, Ceil_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1623,7 +1623,7 @@ HWTEST_F_L0(BuiltinsMathTest, Ceil_7)
 // Math.ceil("3.23")
 HWTEST_F_L0(BuiltinsMathTest, Ceil_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1744,7 +1744,7 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_5)
 // Math.cos("")
 HWTEST_F_L0(BuiltinsMathTest, Cos_6)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1760,7 +1760,7 @@ HWTEST_F_L0(BuiltinsMathTest, Cos_6)
 // Math.cos("3.23")
 HWTEST_F_L0(BuiltinsMathTest, Cos_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1866,7 +1866,7 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_5)
 // Math.cosh("")
 HWTEST_F_L0(BuiltinsMathTest, Cosh_6)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString(" ");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" ");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1882,7 +1882,7 @@ HWTEST_F_L0(BuiltinsMathTest, Cosh_6)
 // Math.cosh("3.23")
 HWTEST_F_L0(BuiltinsMathTest, Cosh_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -1988,7 +1988,7 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_5)
 // Math.exp("")
 HWTEST_F_L0(BuiltinsMathTest, Exp_6)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2004,7 +2004,7 @@ HWTEST_F_L0(BuiltinsMathTest, Exp_6)
 // Math.exp("-3.23")
 HWTEST_F_L0(BuiltinsMathTest, Exp_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2126,7 +2126,7 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_6)
 // Math.expm1("")
 HWTEST_F_L0(BuiltinsMathTest, Expm1_7)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString(" ");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" ");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2142,7 +2142,7 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_7)
 // Math.expm1("-3.23")
 HWTEST_F_L0(BuiltinsMathTest, Expm1_8)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2158,7 +2158,7 @@ HWTEST_F_L0(BuiltinsMathTest, Expm1_8)
 // Math.expm1("0x12")
 HWTEST_F_L0(BuiltinsMathTest, Expm1_9)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("0x12");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0x12");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2234,7 +2234,7 @@ HWTEST_F_L0(BuiltinsMathTest, Floor_3)
 // Math.floor("-3.23")
 HWTEST_F_L0(BuiltinsMathTest, Floor_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2310,7 +2310,7 @@ HWTEST_F_L0(BuiltinsMathTest, Log_3)
 // Math.log("-3.23")
 HWTEST_F_L0(BuiltinsMathTest, Log_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2401,7 +2401,7 @@ HWTEST_F_L0(BuiltinsMathTest, Log1p_3)
 // Math.log1p("-3.23")
 HWTEST_F_L0(BuiltinsMathTest, Log1p_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-3.23");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-3.23");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2492,7 +2492,7 @@ HWTEST_F_L0(BuiltinsMathTest, Log10_3)
 // Math.Log10("2")
 HWTEST_F_L0(BuiltinsMathTest, Log10_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("2");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2583,7 +2583,7 @@ HWTEST_F_L0(BuiltinsMathTest, Log2_3)
 // Math.log2("2")
 HWTEST_F_L0(BuiltinsMathTest, Log2_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("2");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2645,7 +2645,7 @@ HWTEST_F_L0(BuiltinsMathTest, Max_1)
 // Math.Max("3",100,2.5)
 HWTEST_F_L0(BuiltinsMathTest, Max_2)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("3");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("3");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2663,7 +2663,7 @@ HWTEST_F_L0(BuiltinsMathTest, Max_2)
 // Math.Max(3,"100",-101.5)
 HWTEST_F_L0(BuiltinsMathTest, Max_3)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("100");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("100");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2681,7 +2681,7 @@ HWTEST_F_L0(BuiltinsMathTest, Max_3)
 // Math.Max(-3,"-100",true)
 HWTEST_F_L0(BuiltinsMathTest, Max_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-100");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-100");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2730,7 +2730,7 @@ HWTEST_F_L0(BuiltinsMathTest, Min_1)
 // Math.min("3",100,2.5)
 HWTEST_F_L0(BuiltinsMathTest, Min_2)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("3");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("3");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2748,7 +2748,7 @@ HWTEST_F_L0(BuiltinsMathTest, Min_2)
 // Math.min(3,"100",-101.5)
 HWTEST_F_L0(BuiltinsMathTest, Min_3)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("100");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("100");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -2783,7 +2783,7 @@ HWTEST_F_L0(BuiltinsMathTest, Min_4)
 // Math.pow(2,"-2")
 HWTEST_F_L0(BuiltinsMathTest, Pow)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-2");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-2");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -3212,7 +3212,7 @@ HWTEST_F_L0(BuiltinsMathTest, Imul)
 // Math.Imul("-2",9.256)
 HWTEST_F_L0(BuiltinsMathTest, Imul_1)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-2");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-2");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 8);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -3336,7 +3336,7 @@ HWTEST_F_L0(BuiltinsMathTest, Sin_5)
 // Math.sin("0.1")
 HWTEST_F_L0(BuiltinsMathTest, Sin_6)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -3457,7 +3457,7 @@ HWTEST_F_L0(BuiltinsMathTest, Sinh_4)
 // Math.sinh("0.1")
 HWTEST_F_L0(BuiltinsMathTest, Sinh_5)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -3563,7 +3563,7 @@ HWTEST_F_L0(BuiltinsMathTest, Sqrt_3)
 // Math.sqrt("0.1")
 HWTEST_F_L0(BuiltinsMathTest, Sqrt_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -3669,7 +3669,7 @@ HWTEST_F_L0(BuiltinsMathTest, Tan_3)
 // Math.tan("0.1")
 HWTEST_F_L0(BuiltinsMathTest, Tan_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -3775,7 +3775,7 @@ HWTEST_F_L0(BuiltinsMathTest, Tanh_3)
 // Math.tanh("0.1")
 HWTEST_F_L0(BuiltinsMathTest, Tanh_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("0.1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -3881,7 +3881,7 @@ HWTEST_F_L0(BuiltinsMathTest, Trunc_3)
 // Math.trunc("-0.1")
 HWTEST_F_L0(BuiltinsMathTest, Trunc_4)
 {
-    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromString("-0.1");
+    JSHandle<EcmaString> test = thread_->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-0.1");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread_, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());

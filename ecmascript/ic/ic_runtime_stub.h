@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_FAST_IC_RUNTIME_STUB_H
-#define PANDA_RUNTIME_ECMASCRIPT_FAST_IC_RUNTIME_STUB_H
+#ifndef ECMASCRIPT_IC_IC_RUNTIME_STUB_H_
+#define ECMASCRIPT_IC_IC_RUNTIME_STUB_H_
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/property_attributes.h"
@@ -29,6 +29,11 @@ public:
                                                     JSTaggedValue value, uint32_t slotId);
     static inline JSTaggedValue LoadICByName(JSThread *thread, ProfileTypeInfo *profileTypeInfo,
                                              JSTaggedValue receiver, JSTaggedValue key, uint32_t slotId);
+    static inline JSTaggedValue TryLoadICByName(JSThread *thread, JSTaggedValue receiver,
+                                                JSTaggedValue firstValue, JSTaggedValue secondValue);
+    static inline JSTaggedValue TryStoreICByName(JSThread *thread, JSTaggedValue receiver,
+                                                 JSTaggedValue firstValue, JSTaggedValue secondValue,
+                                                 JSTaggedValue value);
     static inline JSTaggedValue StoreICByName(JSThread *thread, ProfileTypeInfo *profileTypeInfo,
                                               JSTaggedValue receiver, JSTaggedValue key,
                                               JSTaggedValue value, uint32_t slotId);
@@ -47,8 +52,13 @@ public:
     static inline JSTaggedValue StoreGlobal(JSThread *thread, JSTaggedValue value, JSTaggedValue handler);
     static inline JSTaggedValue LoadPrototype(JSThread *thread, JSTaggedValue receiver, JSTaggedValue handler);
 
+    static inline JSTaggedValue TryLoadICByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
+                                                 JSTaggedValue firstValue, JSTaggedValue secondValue);
     static inline JSTaggedValue LoadICByValue(JSThread *thread, ProfileTypeInfo *profileTypeInfo,
                                               JSTaggedValue receiver, JSTaggedValue key, uint32_t slotId);
+    static inline JSTaggedValue TryStoreICByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
+                                                  JSTaggedValue firstValue, JSTaggedValue secondValue,
+                                                  JSTaggedValue value);
     static inline JSTaggedValue StoreICByValue(JSThread *thread, ProfileTypeInfo *profileTypeInfo,
                                                JSTaggedValue receiver, JSTaggedValue key, JSTaggedValue value,
                                                uint32_t slotId);
@@ -59,4 +69,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_FAST_IC_RUNTIME_STUB_H
+#endif  // ECMASCRIPT_IC_IC_RUNTIME_STUB_H_

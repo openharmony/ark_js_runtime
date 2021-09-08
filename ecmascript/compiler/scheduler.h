@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_SCHEDULER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_SCHEDULER_H
+#ifndef ECMASCRIPT_COMPILER_SCHEDULER_H
+#define ECMASCRIPT_COMPILER_SCHEDULER_H
 
 #include <algorithm>
 #include <deque>
@@ -40,4 +40,4 @@ public:
 };
 };  // namespace kungfu
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_SCHEDULER_H
+#endif  // ECMASCRIPT_COMPILER_SCHEDULER_H

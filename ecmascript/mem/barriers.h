@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_BARRIERS_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_BARRIERS_H
+#ifndef ECMASCRIPT_MEM_BARRIERS_H
+#define ECMASCRIPT_MEM_BARRIERS_H
 
 #include "ecmascript/mem/mark_word.h"
 
 namespace panda::ecmascript {
 class Barriers {
 public:
-    template <class T>
+    template<class T>
     static inline void SetDynPrimitive(void *obj, size_t offset, T value)
     {
         auto *addr = reinterpret_cast<T *>(ToUintPtr(obj) + offset);
@@ -29,7 +29,7 @@ public:
         *addr = value;
     }
 
-    template <class T>
+    template<class T>
     static inline bool AtomicSetDynPrimitive(volatile void *obj, size_t offset, T oldValue, T value)
     {
         volatile auto atomicField = reinterpret_cast<volatile std::atomic<T> *>(ToUintPtr(obj) + offset);
@@ -37,10 +37,10 @@ public:
                                                             std::memory_order_relaxed);
     }
 
-    template <bool need_write_barrier = true>
+    template<bool need_write_barrier = true>
     static inline void SetDynObject(const JSThread *thread, void *obj, size_t offset, JSTaggedType value);
 
-    template <class T>
+    template<class T>
     static inline T GetDynValue(const void *obj, size_t offset)
     {
         auto *addr = reinterpret_cast<T *>(ToUintPtr(obj) + offset);
@@ -49,4 +49,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_BARRIERS_H
+#endif  // ECMASCRIPT_MEM_BARRIERS_H

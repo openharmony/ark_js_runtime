@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
+#ifndef ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
+#define ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
 
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/compiler/circuit.h"
@@ -478,9 +478,21 @@ public:
         return env_->GetCircuitBuilder().NewCallGate(descriptor, target, args);
     }
     AddrShift CallStub(StubInterfaceDescriptor *descriptor, AddrShift target, AddrShift depend,
-        std::initializer_list<AddrShift> args)
+                       std::initializer_list<AddrShift> args)
     {
         return env_->GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+    }
+
+    AddrShift CallRuntime(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+                          std::initializer_list<AddrShift> args)
+    {
+        return env_->GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, args);
+    }
+
+    AddrShift CallRuntime(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target, AddrShift depend,
+                          std::initializer_list<AddrShift> args)
+    {
+        return env_->GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
     }
 
     // memory
@@ -605,7 +617,12 @@ public:
     {
         return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_AND), x, y);
     }
-    AddrShift Word64Xor(AddrShift x, AddrShift y);
+
+    AddrShift Word64Xor(AddrShift x, AddrShift y)
+    {
+        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_XOR), x, y);
+    }
+
     AddrShift Word32Not(AddrShift x);
     AddrShift Word64Not(AddrShift x)
     {
@@ -688,10 +705,10 @@ public:
         return TruncInt32ToInt1(WordLogicAnd(
             SExtInt1ToInt32(
                 Word64Equal(Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
-                            GetWord64Constant(0))),
+                            GetWord64Constant(0))), 
             WordLogicOr(SExtInt1ToInt32(Word64NotEqual(
-                Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
-                GetWord64Constant(0))),
+                            Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
+                            GetWord64Constant(0))),
                         SExtInt1ToInt32(TaggedIsHole(x)))));
     }
 
@@ -706,11 +723,13 @@ public:
         AddrShift diff = DoubleEqual(x, x);
         return Word32NotEqual(SExtInt1ToInt32(diff), GetInteger32Constant(0));
     }
+
     AddrShift IntBuildTagged(AddrShift x)
     {
         AddrShift val = ZExtInt32ToInt64(x);
         return Word64Or(val, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_INT));
     }
+
     AddrShift DoubleBuildTagged(AddrShift x)
     {
         AddrShift val = CastDoubleToInt64(x);
@@ -742,6 +761,7 @@ public:
     {
         return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_EQ), x, y);
     }
+
     AddrShift Word64NotEqual(AddrShift x, AddrShift y)
     {
         return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_NE), x, y);
@@ -871,7 +891,7 @@ public:
     // object operation
     AddrShift LoadHClass(AddrShift object)
     {
-        return ChangeInt32ToPointer(Load(UINT32_TYPE, object, GetPtrConstant(panda::ObjectHeader::GetClassOffset())));
+        return ChangeInt32ToPointer(Load(UINT32_TYPE, object));
     }
 
     AddrShift GetObjectType(AddrShift object)
@@ -924,9 +944,10 @@ public:
     AddrShift IsAcesscor(AddrShift attr)
     {
         return Word32NotEqual(
-            Word32And(Word32LSR(attr, GetInteger32Constant(
-                panda::ecmascript::PropertyAttributes::IsAccessorField::START_BIT)),
-                      GetInteger32Constant((1LLU << panda::ecmascript::PropertyAttributes::IsAccessorField::SIZE) - 1)),
+            Word32And(
+                Word32LSR(attr,
+                          GetInteger32Constant(panda::ecmascript::PropertyAttributes::IsAccessorField::START_BIT)),
+                GetInteger32Constant((1LLU << panda::ecmascript::PropertyAttributes::IsAccessorField::SIZE) - 1)),
             GetInteger32Constant(0));
     }
 
@@ -973,42 +994,43 @@ public:
               Word64Or(Word64And(oldValue,
                                  GetWord64Constant(~panda::ecmascript::JSHClass::ElementRepresentationBits::Mask())),
                        Word64LSR(value, GetWord64Constant(
-                           panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
+                                            panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
     }
 
     void UpdateValueAndDetails(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)
     {
-        AddrShift arrayIndex = Int32Add(GetInteger32Constant(panda::ecmascript::NameDictionary::TABLE_HEADER_SIZE),
-            Int32Mul(index, GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_SIZE)));
-        AddrShift valueIndex = Int32Add(arrayIndex,
-            GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_VALUE_INDEX));
-        AddrShift attributesIndex = Int32Add(arrayIndex,
-            GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_DETAILS_INDEX));
+        AddrShift arrayIndex =
+            Int32Add(GetInteger32Constant(panda::ecmascript::NameDictionary::TABLE_HEADER_SIZE),
+                     Int32Mul(index, GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_SIZE)));
+        AddrShift valueIndex =
+            Int32Add(arrayIndex, GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_VALUE_INDEX));
+        AddrShift attributesIndex =
+            Int32Add(arrayIndex, GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_DETAILS_INDEX));
         StoreElement(elements, valueIndex, value);
         StoreElement(elements, attributesIndex, IntBuildTagged(attr));
     }
 
-    void UpdateRepresention(AddrShift hclass, AddrShift value);
+    void UpdateAndStoreRepresention(AddrShift hclass, AddrShift value, Label *next);
 
     AddrShift UpdateRepresention(AddrShift oldRep, AddrShift value, Label *next);
 
     AddrShift GetDetailsFromDictionary(AddrShift elements, AddrShift entry)
     {
-        AddrShift arrayIndex = Int32Add(
-            GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
-            Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
-        AddrShift attributesIndex = Int32Add(arrayIndex,
-            GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_DETAILS_INDEX));
+        AddrShift arrayIndex =
+            Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
+                     Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
+        AddrShift attributesIndex =
+            Int32Add(arrayIndex, GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_DETAILS_INDEX));
         return GetValueFromTaggedArray(elements, attributesIndex);
     }
 
     AddrShift GetValueFromDictionary(AddrShift elements, AddrShift entry)
     {
-        AddrShift arrayIndex = Int32Add(
-            GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
-            Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
-        AddrShift valueIndex = Int32Add(arrayIndex,
-            GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_VALUE_INDEX));
+        AddrShift arrayIndex =
+            Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
+                     Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
+        AddrShift valueIndex =
+            Int32Add(arrayIndex, GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_VALUE_INDEX));
         return GetValueFromTaggedArray(elements, valueIndex);
     }
 
@@ -1016,7 +1038,7 @@ public:
 
     AddrShift IsMatchInNumberDictionary(AddrShift key, AddrShift other, Label *next);
 
-    AddrShift FindElementFromNumberDictionary(AddrShift elements, AddrShift key, Label *next);
+    AddrShift FindElementFromNumberDictionary(AddrShift thread, AddrShift elements, AddrShift key, Label *next);
 
     AddrShift TaggedCastToInt32(AddrShift x)
     {
@@ -1027,12 +1049,17 @@ public:
     AddrShift TaggedCastToDouble(AddrShift x)
     {
         AddrShift val = Int64Sub(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::DOUBLE_ENCODE_OFFSET));
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_TO_FLOAT64), val);
+        return CastInt64ToFloat64(val);
     }
 
     AddrShift CastInt32ToFloat64(AddrShift x)
     {
         return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_TO_FLOAT64), x);
+    }
+
+    AddrShift CastInt64ToFloat64(AddrShift x)
+    {
+        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_TO_FLOAT64), x);
     }
 
     AddrShift SExtInt32ToInt64(AddrShift x)
@@ -1090,4 +1117,4 @@ private:
     uint32_t varibial_id_{0};
 };
 }  // namespace kungfu
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
+#endif  // ECMASCRIPT_COMPILER_STUBOPTIMIZER_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_STRING_HELP_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_STRING_HELP_H
+#ifndef ECMASCRIPT_BASE_STRING_HELP_H
+#define ECMASCRIPT_BASE_STRING_HELP_H
 
 #include <algorithm>
 #include <codecvt>
@@ -153,7 +153,7 @@ public:
         return idx;
     }
 
-    static EcmaString *Repeat(JSThread *thread, const std::u16string &thisStr, int32_t repeatLen);
+    static EcmaString *Repeat(JSThread *thread, const std::u16string &thisStr, int32_t repeatLen, bool canBeCompress);
 
     static EcmaString *Trim(JSThread *thread, const std::u16string &thisStr);
 
@@ -181,4 +181,4 @@ public:
     }
 };
 }  // namespace panda::ecmascript::base
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_STRING_HELP_H
+#endif  // ECMASCRIPT_BASE_STRING_HELP_H

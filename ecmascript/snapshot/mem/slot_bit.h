@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMASCRIPT_MEM_SLOT_BIT_H
-#define PANDA_ECMASCRIPT_MEM_SLOT_BIT_H
+#ifndef ECMASCRIPT_SNAPSHOT_MEM_SLOT_BIT_H
+#define ECMASCRIPT_SNAPSHOT_MEM_SLOT_BIT_H
 
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/slots.h"
@@ -131,4 +131,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_ECMASCRIPT_MEM_SLOT_BIT_H
+#endif  // ECMASCRIPT_SNAPSHOT_MEM_SLOT_BIT_H

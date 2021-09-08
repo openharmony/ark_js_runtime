@@ -22,18 +22,10 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_float32_array.h"
-#include "ecmascript/js_float64_array.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_int16_array.h"
-#include "ecmascript/js_int32_array.h"
-#include "ecmascript/js_int8_array.h"
 #include "ecmascript/js_regexp.h"
 #include "ecmascript/js_set.h"
-#include "ecmascript/js_uint16_array.h"
-#include "ecmascript/js_uint32_array.h"
-#include "ecmascript/js_uint8_array.h"
-#include "ecmascript/js_uint8_clamped_array.h"
+#include "ecmascript/js_typed_array.h"
 #include "ecmascript/linked_hash_table-inl.h"
 #include "libpandabase/mem/mem.h"
 #include "securec.h"
@@ -253,17 +245,18 @@ bool JSSerializer::WriteIfSerialized(uintptr_t addr)
 }
 
 // Write HeapObject
-bool JSSerializer::WriteTaggedObject(const JSHandle<JSTaggedValue> &objValue)
+bool JSSerializer::WriteTaggedObject(const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSObject> obj = JSHandle<JSObject>::Cast(objValue);
-    uintptr_t addr = reinterpret_cast<uintptr_t>(*obj);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(value.GetTaggedValue().GetTaggedObject());
     bool serialized = IsSerialized(addr);
     if (serialized) {
         return WriteIfSerialized(addr);
     }
     referenceMap_.insert(std::pair(addr, objectId_));
     objectId_++;
-    JSType type = obj->GetJSHClass()->GetObjectType();
+
+    TaggedObject *taggedObject = value->GetTaggedObject();
+    JSType type = taggedObject->GetClass()->GetObjectType();
     switch (type) {
         case JSType::JS_ERROR:
         case JSType::JS_EVAL_ERROR:
@@ -272,58 +265,58 @@ bool JSSerializer::WriteTaggedObject(const JSHandle<JSTaggedValue> &objValue)
         case JSType::JS_TYPE_ERROR:
         case JSType::JS_URI_ERROR:
         case JSType::JS_SYNTAX_ERROR:
-            return WriteJSError(obj);
+            return WriteJSError(value);
         case JSType::JS_DATE:
-            return WriteJSDate(obj);
+            return WriteJSDate(value);
         case JSType::JS_ARRAY:
-            return WriteJSArray(obj);
+            return WriteJSArray(value);
         case JSType::JS_MAP:
-            return WriteJSMap(obj);
+            return WriteJSMap(value);
         case JSType::JS_SET:
-            return WriteJSSet(obj);
+            return WriteJSSet(value);
         case JSType::JS_REG_EXP:
-            return WriteJSRegExp(obj);
+            return WriteJSRegExp(value);
         case JSType::JS_INT8_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_INT8_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_INT8_ARRAY);
         case JSType::JS_UINT8_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_UINT8_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_UINT8_ARRAY);
         case JSType::JS_UINT8_CLAMPED_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_UINT8_CLAMPED_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_UINT8_CLAMPED_ARRAY);
         case JSType::JS_INT16_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_INT16_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_INT16_ARRAY);
         case JSType::JS_UINT16_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_UINT16_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_UINT16_ARRAY);
         case JSType::JS_INT32_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_INT32_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_INT32_ARRAY);
         case JSType::JS_UINT32_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_UINT32_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_UINT32_ARRAY);
         case JSType::JS_FLOAT32_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_FLOAT32_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_FLOAT32_ARRAY);
         case JSType::JS_FLOAT64_ARRAY:
-            return WriteJSTypedArray(obj, SerializationUID::JS_FLOAT64_ARRAY);
+            return WriteJSTypedArray(value, SerializationUID::JS_FLOAT64_ARRAY);
         case JSType::JS_ARRAY_BUFFER:
-            return WriteJSArrayBuffer(objValue);
+            return WriteJSArrayBuffer(value);
         case JSType::STRING:
-            return WriteEcmaString(objValue);
+            return WriteEcmaString(value);
         case JSType::JS_OBJECT:
-            return WritePlainObject(obj);
+            return WritePlainObject(value);
         default:
             break;
     }
     return false;
 }
 
-bool JSSerializer::WriteJSError(const JSHandle<JSObject> &obj)
+bool JSSerializer::WriteJSError(const JSHandle<JSTaggedValue> &value)
 {
     size_t oldSize = bufferSize_;
-    JSType errorType = obj->GetJSHClass()->GetObjectType();
+    TaggedObject *taggedObject = value->GetTaggedObject();
+    JSType errorType = taggedObject->GetClass()->GetObjectType();
     if (!WriteJSErrorHeader(errorType)) {
         return false;
     }
     auto globalConst = thread_->GlobalConstants();
     JSHandle<JSTaggedValue> handleMsg = globalConst->GetHandledMessageString();
-    JSHandle<JSTaggedValue> msg =
-        JSObject::GetProperty(thread_, JSHandle<JSTaggedValue>::Cast(obj), handleMsg).GetValue();
+    JSHandle<JSTaggedValue> msg = JSObject::GetProperty(thread_, value, handleMsg).GetValue();
     // Write error message
     if (!SerializeJSTaggedValue(msg)) {
         bufferSize_ = oldSize;
@@ -355,14 +348,14 @@ bool JSSerializer::WriteJSErrorHeader(JSType type)
     return false;
 }
 
-bool JSSerializer::WriteJSDate(const JSHandle<JSObject> &obj)
+bool JSSerializer::WriteJSDate(const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSDate> date = JSHandle<JSDate>::Cast(obj);
+    JSHandle<JSDate> date = JSHandle<JSDate>::Cast(value);
     size_t oldSize = bufferSize_;
     if (!WriteType(SerializationUID::JS_DATE)) {
         return false;
     }
-    if (!WritePlainObject(JSHandle<JSObject>::Cast(date))) {
+    if (!WritePlainObject(value)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -379,14 +372,14 @@ bool JSSerializer::WriteJSDate(const JSHandle<JSObject> &obj)
     return true;
 }
 
-bool JSSerializer::WriteJSArray(const JSHandle<JSObject> &obj)
+bool JSSerializer::WriteJSArray(const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSArray> array = JSHandle<JSArray>::Cast(obj);
+    JSHandle<JSArray> array = JSHandle<JSArray>::Cast(value);
     size_t oldSize = bufferSize_;
     if (!WriteType(SerializationUID::JS_ARRAY)) {
         return false;
     }
-    if (!WritePlainObject(JSHandle<JSObject>::Cast(array))) {
+    if (!WritePlainObject(value)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -419,14 +412,14 @@ bool JSSerializer::WriteEcmaString(const JSHandle<JSTaggedValue> &value)
     return true;
 }
 
-bool JSSerializer::WriteJSMap(const JSHandle<JSObject> &obj)
+bool JSSerializer::WriteJSMap(const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSMap> map = JSHandle<JSMap>::Cast(obj);
+    JSHandle<JSMap> map = JSHandle<JSMap>::Cast(value);
     size_t oldSize = bufferSize_;
     if (!WriteType(SerializationUID::JS_MAP)) {
         return false;
     }
-    if (!WritePlainObject(JSHandle<JSObject>::Cast(map))) {
+    if (!WritePlainObject(value)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -441,8 +434,8 @@ bool JSSerializer::WriteJSMap(const JSHandle<JSObject> &obj)
             bufferSize_ = oldSize;
             return false;
         }
-        JSHandle<JSTaggedValue> value(thread_, map->GetValue(i));
-        if (!SerializeJSTaggedValue(value)) {
+        JSHandle<JSTaggedValue> val(thread_, map->GetValue(i));
+        if (!SerializeJSTaggedValue(val)) {
             bufferSize_ = oldSize;
             return false;
         }
@@ -450,14 +443,14 @@ bool JSSerializer::WriteJSMap(const JSHandle<JSObject> &obj)
     return true;
 }
 
-bool JSSerializer::WriteJSSet(const JSHandle<JSObject> &obj)
+bool JSSerializer::WriteJSSet(const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSSet> set = JSHandle<JSSet>::Cast(obj);
+    JSHandle<JSSet> set = JSHandle<JSSet>::Cast(value);
     size_t oldSize = bufferSize_;
     if (!WriteType(SerializationUID::JS_SET)) {
         return false;
     }
-    if (!WritePlainObject(JSHandle<JSObject>::Cast(set))) {
+    if (!WritePlainObject(value)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -467,8 +460,8 @@ bool JSSerializer::WriteJSSet(const JSHandle<JSObject> &obj)
         return false;
     }
     for (int i = 0; i < size; i++) {
-        JSHandle<JSTaggedValue> value(thread_, set->GetValue(i));
-        if (!SerializeJSTaggedValue(value)) {
+        JSHandle<JSTaggedValue> val(thread_, set->GetValue(i));
+        if (!SerializeJSTaggedValue(val)) {
             bufferSize_ = oldSize;
             return false;
         }
@@ -476,14 +469,14 @@ bool JSSerializer::WriteJSSet(const JSHandle<JSObject> &obj)
     return true;
 }
 
-bool JSSerializer::WriteJSRegExp(const JSHandle<JSObject> &obj)
+bool JSSerializer::WriteJSRegExp(const JSHandle<JSTaggedValue> &value)
 {
-    JSHandle<JSRegExp> regExp = JSHandle<JSRegExp>::Cast(obj);
+    JSHandle<JSRegExp> regExp = JSHandle<JSRegExp>::Cast(value);
     size_t oldSize = bufferSize_;
     if (!WriteType(SerializationUID::JS_REG_EXP)) {
         return false;
     }
-    if (!WritePlainObject(obj)) {
+    if (!WritePlainObject(value)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -515,14 +508,14 @@ bool JSSerializer::WriteJSRegExp(const JSHandle<JSObject> &obj)
     return true;
 }
 
-bool JSSerializer::WriteJSTypedArray(const JSHandle<JSObject> &obj, SerializationUID uId)
+bool JSSerializer::WriteJSTypedArray(const JSHandle<JSTaggedValue> &value, SerializationUID uId)
 {
-    JSHandle<JSTypedArray> typedArray = JSHandle<JSTypedArray>::Cast(obj);
+    JSHandle<JSTypedArray> typedArray = JSHandle<JSTypedArray>::Cast(value);
     size_t oldSize = bufferSize_;
     if (!WriteType(uId)) {
         return false;
     }
-    if (!WritePlainObject(obj)) {
+    if (!WritePlainObject(value)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -620,7 +613,7 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
     }
 
     // write obj properties
-    if (!WritePlainObject(JSHandle<JSObject>::Cast(value))) {
+    if (!WritePlainObject(value)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -628,8 +621,9 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
     return true;
 }
 
-bool JSSerializer::WritePlainObject(const JSHandle<JSObject> &obj)
+bool JSSerializer::WritePlainObject(const JSHandle<JSTaggedValue> &objValue)
 {
+    JSHandle<JSObject> obj = JSHandle<JSObject>::Cast(objValue);
     size_t oldSize = bufferSize_;
     if (!WriteType(SerializationUID::JS_PLAIN_OBJECT)) {
         return false;
@@ -1107,81 +1101,47 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSTypedArray(SerializationUID uid)
     switch (uid) {
         case SerializationUID::JS_INT8_ARRAY: {
             target = env->GetInt8ArrayFunction();
-            JSHandle<JSInt8Array> int8Array =
-                JSHandle<JSInt8Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(int8Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
             break;
         }
         case SerializationUID::JS_UINT8_ARRAY: {
             target = env->GetUint8ArrayFunction();
-            JSHandle<JSUint8Array> uint8Array =
-                JSHandle<JSUint8Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(uint8Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
             break;
         }
         case SerializationUID::JS_UINT8_CLAMPED_ARRAY: {
             target = env->GetUint8ClampedArrayFunction();
-            JSHandle<JSObject> constructor = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target);
-            JSHandle<JSUint8ClampedArray> uint8ClampedArray = JSHandle<JSUint8ClampedArray>::Cast(constructor);
-            obj = JSHandle<JSObject>::Cast(uint8ClampedArray);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
             break;
         }
         case SerializationUID::JS_INT16_ARRAY: {
             target = env->GetInt16ArrayFunction();
-            JSHandle<JSInt16Array> int16Array =
-                JSHandle<JSInt16Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(int16Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
             break;
         }
         case SerializationUID::JS_UINT16_ARRAY: {
             target = env->GetUint16ArrayFunction();
-            JSHandle<JSUint16Array> uint16Array =
-                JSHandle<JSUint16Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(uint16Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
             break;
         }
         case SerializationUID::JS_INT32_ARRAY: {
             target = env->GetInt32ArrayFunction();
-            JSHandle<JSInt32Array> int32Array =
-                JSHandle<JSInt32Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(int32Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
             break;
         }
         case SerializationUID::JS_UINT32_ARRAY: {
             target = env->GetUint32ArrayFunction();
-            JSHandle<JSUint32Array> uint32Array =
-                JSHandle<JSUint32Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(uint32Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
             break;
         }
         case SerializationUID::JS_FLOAT32_ARRAY: {
             target = env->GetFloat32ArrayFunction();
-            JSHandle<JSFloat32Array> float32Array =
-                JSHandle<JSFloat32Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(float32Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
-            referenceMap_.insert(std::pair(objectId_++, objTag));
             break;
         }
         case SerializationUID::JS_FLOAT64_ARRAY: {
-            target = env->GetFloat32ArrayFunction();
-            JSHandle<JSFloat64Array> float64Array =
-                JSHandle<JSFloat64Array>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
-            obj = JSHandle<JSObject>::Cast(float64Array);
-            objTag = JSHandle<JSTaggedValue>::Cast(obj);
-            referenceMap_.insert(std::pair(objectId_++, objTag));
+            target = env->GetFloat64ArrayFunction();
             break;
         }
         default:
             UNREACHABLE();
     }
+    JSHandle<JSTypedArray> typedArray =
+        JSHandle<JSTypedArray>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(target), target));
+    obj = JSHandle<JSObject>::Cast(typedArray);
+    objTag = JSHandle<JSTaggedValue>::Cast(obj);
     referenceMap_.insert(std::pair(objectId_++, objTag));
     if (!JudgeType(SerializationUID::JS_PLAIN_OBJECT) || !DefinePropertiesAndElements(objTag)) {
         return JSHandle<JSTaggedValue>();
@@ -1191,31 +1151,31 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSTypedArray(SerializationUID uid)
     if (viewedArrayBuffer.IsEmpty()) {
         return JSHandle<JSTaggedValue>();
     }
-    SetViewedArrayBuffer(obj, viewedArrayBuffer.GetTaggedValue());
+    typedArray->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
 
     JSHandle<JSTaggedValue> typedArrayName = DeserializeJSTaggedValue();
     if (typedArrayName.IsEmpty()) {
         return JSHandle<JSTaggedValue>();
     }
-    SetTypedArrayName(obj, typedArrayName);
+    typedArray->SetTypedArrayName(thread_, typedArrayName);
 
     JSTaggedValue byteLength;
     if (!ReadJSTaggedValue(&byteLength) || !byteLength.IsNumber()) {
         return JSHandle<JSTaggedValue>();
     }
-    SetByteLength(obj, JSTaggedValue::ToInt32(thread_, JSHandle<JSTaggedValue>(thread_, byteLength)));
+    typedArray->SetByteLength(thread_, byteLength);
 
     JSTaggedValue byteOffset;
     if (!ReadJSTaggedValue(&byteOffset) || !byteOffset.IsNumber()) {
         return JSHandle<JSTaggedValue>();
     }
-    SetByteOffset(obj, JSTaggedValue::ToInt32(thread_, JSHandle<JSTaggedValue>(thread_, byteOffset)));
+    typedArray->SetByteOffset(thread_, byteOffset);
 
     JSTaggedValue arrayLength;
     if (!ReadJSTaggedValue(&arrayLength) || !byteOffset.IsNumber()) {
         return JSHandle<JSTaggedValue>();
     }
-    SetArrayLength(obj, JSTaggedValue::ToInt32(thread_, JSHandle<JSTaggedValue>(thread_, arrayLength)));
+    typedArray->SetArrayLength(thread_, arrayLength);
     return objTag;
 }
 
@@ -1418,189 +1378,6 @@ bool JSDeserializer::ReadBoolean(bool *value)
         return true;
     }
     return false;
-}
-
-void JSDeserializer::SetViewedArrayBuffer(const JSHandle<JSObject> &obj, JSTaggedValue viewedArrayBuffer)
-{
-    JSType type = obj->GetJSHClass()->GetObjectType();
-    switch (type) {
-        case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(*obj)->SetViewedArrayBuffer(thread_, viewedArrayBuffer);
-            break;
-        default:
-            break;
-    }
-}
-
-void JSDeserializer::SetTypedArrayName(const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &typedArrayName)
-{
-    JSType type = obj->GetJSHClass()->GetObjectType();
-    switch (type) {
-        case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(*obj)->SetTypedArrayName(thread_, typedArrayName);
-            break;
-        default:
-            break;
-    }
-}
-
-void JSDeserializer::SetByteLength(const JSHandle<JSObject> &obj, int32_t byteLength)
-{
-    auto byteLengthValue = JSTaggedValue(byteLength);
-    JSType type = obj->GetJSHClass()->GetObjectType();
-    switch (type) {
-        case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(*obj)->SetByteLength(thread_, byteLengthValue);
-            break;
-        default:
-            break;
-    }
-}
-
-void JSDeserializer::SetByteOffset(const JSHandle<JSObject> &obj, int32_t byteOffset)
-{
-    auto byteOffsetValue = JSTaggedValue(byteOffset);
-    JSType type = obj->GetJSHClass()->GetObjectType();
-    switch (type) {
-        case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(*obj)->SetByteOffset(thread_, byteOffsetValue);
-            break;
-        default:
-            break;
-    }
-}
-
-void JSDeserializer::SetArrayLength(const JSHandle<JSObject> &obj, int32_t arrayLength)
-{
-    auto arrayLengthValue = JSTaggedValue(arrayLength);
-    JSType type = obj->GetJSHClass()->GetObjectType();
-    switch (type) {
-        case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(*obj)->SetArrayLength(thread_, arrayLengthValue);
-            break;
-        default:
-            break;
-    }
 }
 
 bool Serializer::WriteValue(

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H
+#ifndef ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H
+#define ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H
 
 #include <cstdlib>
 
@@ -148,4 +148,4 @@ bool TlabAllocator::ExpandOld()
     return true;
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H
+#endif  // ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H

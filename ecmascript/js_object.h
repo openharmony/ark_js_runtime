@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSOBJECT_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSOBJECT_H
+#ifndef ECMASCRIPT_JSOBJECT_H
+#define ECMASCRIPT_JSOBJECT_H
 
 #include <vector>
 
@@ -29,6 +29,7 @@
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/object_operator.h"
 #include "ecmascript/property_attributes.h"
+#include "ecmascript/runtime_trampolines.h"
 #include "ecmascript/tagged_array.h"
 
 namespace panda {
@@ -333,20 +334,21 @@ public:
     bool IsCallable() const;
     JSMethod *GetCallTarget() const;
 
-    static constexpr size_t HASH_OFFSET = sizeof(TaggedObject);
-    static constexpr size_t SIZE = HASH_OFFSET + sizeof(TaggedObject);
-    void SetHash(int32_t hash)
-    {
-        Barriers::SetDynPrimitive<int32_t>(this, HASH_OFFSET, hash);
-    }
-    int32_t GetHash() const
-    {
-        return Barriers::GetDynValue<int32_t>(this, HASH_OFFSET);
-    }
+    static constexpr size_t HASH_OFFSET = TaggedObjectSize();
+    static constexpr size_t SIZE = HASH_OFFSET + sizeof(JSTaggedType);
 
-    void Visitor([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
+    void SetHash(int32_t hash);
+    int32_t GetHash() const;
+
+    void* GetNativePointerField(int32_t index) const;
+    void SetNativePointerField(int32_t index, void *data);
+    int32_t GetNativePointerFieldCount() const;
+    void SetNativePointerFieldCount(int32_t count);
+
+    void Visitor(const EcmaObjectRangeVisitor &visitor) const
     {
-        // no field in this object
+        TaggedObject *object = const_cast<TaggedObject *>(reinterpret_cast<const TaggedObject *>(this));
+        visitor(object, ObjectSlot(ToUintPtr(this) + HASH_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE));
     }
 
     void VisitObjects([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
@@ -419,7 +421,7 @@ public:
     static JSHandle<JSTaggedValue> SpeciesConstructor(JSThread *thread, const JSHandle<JSObject> &obj,
                                                       const JSHandle<JSTaggedValue> &defaultConstructort);
     // 7.3.17
-    template <ElementTypes types = ElementTypes::ALLTYPES>
+    template<ElementTypes types = ElementTypes::ALLTYPES>
     static JSHandle<JSTaggedValue> CreateListFromArrayLike(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
 
     // emca6 9.1
@@ -535,6 +537,7 @@ public:
     bool IsJSRegExp() const;
     bool IsJSFunction() const;
     bool IsBoundFunction() const;
+    bool IsJSIntlBoundFunction() const;
     bool IsProxyRevocFunction() const;
     bool IsAccessorData() const;
     bool IsJSGlobalEnv() const;
@@ -621,6 +624,7 @@ private:
     friend class StoreICRuntime;
     friend class FastRuntimeStub;
     friend class ICRuntimeStub;
+    friend class RuntimeTrampolines;
 
     static bool AddElementInternal(
         JSThread *thread, const JSHandle<JSObject> &receiver, uint32_t index, const JSHandle<JSTaggedValue> &value,

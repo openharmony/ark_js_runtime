@@ -15,31 +15,32 @@
 
 #include "ecmascript/hprof/heap_profiler.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
 void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath)
 {
-    auto allocator = thread->GetEcmaVM()->GetCountAllocator();
-    auto *hprof = allocator->New<HeapProfiler>(allocator);
+    const Heap *heap = thread->GetEcmaVM()->GetHeap();
+    auto *hprof = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<HeapProfiler>(heap);
     if (UNLIKELY(hprof == nullptr)) {
         LOG_ECMA(FATAL) << "alloc hprof failed";
         UNREACHABLE();
     }
     hprof->DumpHeapSnapShot(thread, dumpFormat, filePath);
-    allocator->Finalize(hprof);
+    const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(hprof);
 }
 
 HeapProfilerInterface *HeapProfilerInterface::CreateHeapProfiler(JSThread *thread)
 {
-    auto allocator = thread->GetEcmaVM()->GetCountAllocator();
-    auto *hprof = allocator->New<HeapProfiler>(allocator);
+    const Heap *heap = thread->GetEcmaVM()->GetHeap();
+    auto *hprof = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<HeapProfiler>(heap);
     ASSERT(hprof != nullptr);
     return hprof;
 }
 
 void HeapProfilerInterface::Destory(JSThread *thread, HeapProfilerInterface *heapProfiler)
 {
-    auto allocator = thread->GetEcmaVM()->GetCountAllocator();
-    allocator->Finalize(heapProfiler);
+    const Heap *heap = thread->GetEcmaVM()->GetHeap();
+    const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(heapProfiler);
 }
 }  // namespace panda::ecmascript

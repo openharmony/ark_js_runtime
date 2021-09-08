@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TEMPLATE_MAP_H
-#define PANDA_RUNTIME_ECMASCRIPT_TEMPLATE_MAP_H
+#ifndef ECMASCRIPT_TEMPLATE_MAP_H
+#define ECMASCRIPT_TEMPLATE_MAP_H
 
 #include "ecmascript/tagged_hash_table-inl.h"
 #include "ecmascript/js_array.h"
@@ -64,4 +64,4 @@ public:
     static const int ENTRY_VALUE_INDEX = 1;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TEMPLATE_MAP_H
+#endif  // ECMASCRIPT_TEMPLATE_MAP_H

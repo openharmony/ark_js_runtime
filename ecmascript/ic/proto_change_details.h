@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_PROTOTYPE_CHANGE_DETAILS_H
-#define PANDA_RUNTIME_PROTOTYPE_CHANGE_DETAILS_H
+#ifndef ECMASCRIPT_IC_PROTOTYPE_CHANGE_DETAILS_H
+#define ECMASCRIPT_IC_PROTOTYPE_CHANGE_DETAILS_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_handle.h"
@@ -33,7 +33,7 @@ public:
         return static_cast<ProtoChangeMarker *>(object);
     }
 
-    static constexpr size_t HAS_CHANGED_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t HAS_CHANGED_OFFSET = TaggedObjectSize();
     SET_GET_PRIMITIVE_FIELD(HasChanged, bool, HAS_CHANGED_OFFSET, SIZE);
 };
 
@@ -46,7 +46,7 @@ public:
         return static_cast<ProtoChangeDetails *>(object);
     }
 
-    static constexpr size_t CHANGE_LISTENER_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t CHANGE_LISTENER_OFFSET = TaggedObjectSize();
     ACCESSORS(ChangeListener, CHANGE_LISTENER_OFFSET, REGISTER_INDEX_OFFSET);
     ACCESSORS(RegisterIndex, REGISTER_INDEX_OFFSET, SIZE);
 
@@ -70,4 +70,4 @@ public:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_PROTOTYPE_CHANGE_DETAILS_H
+#endif  // ECMASCRIPT_IC_PROTOTYPE_CHANGE_DETAILS_H

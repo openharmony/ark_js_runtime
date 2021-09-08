@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_OBJECT_HEADER_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_OBJECT_HEADER_INL_H
+#ifndef ECMASCRIPT_TAGGED_OBJECT_HEADER_INL_H
+#define ECMASCRIPT_TAGGED_OBJECT_HEADER_INL_H
 
 #include "ecmascript/mem/tagged_object.h"
 
 #include <atomic>
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_handle.h"
+#include "heap.h"
 
 namespace panda::ecmascript {
 inline void TaggedObject::SetClass(JSHClass *hclass)
@@ -49,6 +50,14 @@ inline JSHClass *TaggedObject::SynchronizedGetClass() const
     return reinterpret_cast<JSHClass *>(
         reinterpret_cast<std::atomic<MarkWordType> *>(ToUintPtr(this))->load(std::memory_order_acquire));
 }
+
+inline JSThread *TaggedObject::GetJSThread() const
+{
+    Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ToUintPtr(this)));
+    ASSERT(region != nullptr);
+    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    return vm->GetAssociatedJSThread();
+}
 }  //  namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_OBJECT_HEADER_INL_H
+#endif  // ECMASCRIPT_TAGGED_OBJECT_HEADER_INL_H

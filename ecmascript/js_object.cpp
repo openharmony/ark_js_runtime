@@ -17,6 +17,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_thread.h"
@@ -68,11 +69,11 @@ JSMethod *ECMAObject::GetCallTarget() const
 JSHandle<TaggedArray> JSObject::GrowElementsCapacity(const JSThread *thread, const JSHandle<JSObject> &obj,
                                                      uint32_t capacity)
 {
-    capacity = ComputeElementCapacity(capacity);
+    uint32_t newCapacity = ComputeElementCapacity(capacity);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> oldElements(thread, obj->GetElements());
     array_size_t oldLength = oldElements->GetLength();
-    JSHandle<TaggedArray> newElements = factory->CopyArray(oldElements, oldLength, capacity);
+    JSHandle<TaggedArray> newElements = factory->CopyArray(oldElements, oldLength, newCapacity);
 
     obj->SetElements(thread, newElements);
     return newElements;
@@ -218,7 +219,7 @@ bool JSObject::AddElementInternal(JSThread *thread, const JSHandle<JSObject> &re
 void JSObject::DeletePropertyInternal(JSThread *thread, const JSHandle<JSObject> &obj,
                                       const JSHandle<JSTaggedValue> &key, uint32_t index)
 {
-    JSMutableHandle<TaggedArray> array(thread, obj->GetProperties());
+    JSHandle<TaggedArray> array(thread, obj->GetProperties());
 
     if (obj->IsJSGlobalObject()) {
         JSHandle<GlobalDictionary> dictHandle(thread, obj->GetProperties());
@@ -426,6 +427,7 @@ bool JSObject::GlobalSetProperty(JSThread *thread, const JSHandle<JSTaggedValue>
     }
     return SetProperty(&op, value, mayThrow);
 }
+
 uint32_t JSObject::GetNumberOfElements()
 {
     DISALLOW_GARBAGE_COLLECTION;
@@ -620,9 +622,10 @@ bool JSObject::CallSetter(JSThread *thread, const AccessorData &accessor, const 
     }
 
     JSHandle<JSTaggedValue> func(thread, setter);
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(1);
-    args->Set(thread, 0, value);
-    JSFunction::Call(thread, func, receiver, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(value);
+    JSFunction::Call(thread, func, receiver, 1, arguments->GetArgv());
+
     // 10. ReturnIfAbrupt(setterResult).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
 
@@ -639,8 +642,7 @@ JSTaggedValue JSObject::CallGetter(JSThread *thread, const AccessorData *accesso
     }
 
     JSHandle<JSTaggedValue> func(thread, getter);
-    JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->EmptyArray();
-    JSTaggedValue res = JSFunction::Call(thread, func, receiver, args);
+    JSTaggedValue res = JSFunction::Call(thread, func, receiver, 0, nullptr);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return res;
 }
@@ -1271,12 +1273,12 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
     if (tagObj->IsJSObject() && !tagObj->IsTypedArray()) {
         uint32_t numOfKeys = obj->GetNumberOfKeys();
         uint32_t numOfElements = obj->GetNumberOfElements();
-        JSHandle<TaggedArray> keyArray;
         JSHandle<TaggedArray> elementArray;
         if (numOfElements > 0) {
             elementArray = JSObject::GetEnumElementKeys(thread, obj, 0, numOfElements, &copyLength);
         }
 
+        JSHandle<TaggedArray> keyArray;
         if (numOfKeys > 0) {
             keyArray = JSObject::GetAllEnumKeys(thread, obj, 0, numOfKeys, &copyLength);
         }
@@ -1293,7 +1295,7 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
         return keys;
     }
 
-    keys = JSTaggedValue::GetOwnPropertyKeys(thread, JSHandle<JSTaggedValue>(obj));
+    keys = JSTaggedValue::GetOwnPropertyKeys(thread, tagObj);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
     array_size_t length = keys->GetLength();
 
@@ -1312,8 +1314,7 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
         }
     }
 
-    JSHandle<TaggedArray> resultList = factory->CopyArray(names, length, copyLength);
-    return resultList;
+    return factory->CopyArray(names, length, copyLength);
 }
 
 JSHandle<TaggedArray> JSObject::EnumerableOwnPropertyNames(JSThread *thread, const JSHandle<JSObject> &obj,
@@ -1428,9 +1429,10 @@ bool JSObject::InstanceOf(JSThread *thread, const JSHandle<JSTaggedValue> &objec
     // 4. If instOfHandler is not undefined, then
     if (!instOfHandler->IsUndefined()) {
         // a. Return ! ToBoolean(? Call(instOfHandler, target, «object»)).
-        JSHandle<TaggedArray> arguments = vm->GetFactory()->NewTaggedArray(1);
-        arguments->Set(thread, 0, object.GetTaggedValue());
-        JSTaggedValue tagged = JSFunction::Call(thread, instOfHandler, target, arguments);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(object);
+        JSTaggedValue tagged = JSFunction::Call(thread, instOfHandler, target, 1, arguments->GetArgv());
+
         return tagged.ToBoolean();
     }
 
@@ -1900,5 +1902,86 @@ bool JSObject::UpdatePropertyInDictionary(const JSThread *thread, JSTaggedValue 
     }
     dict->UpdateValue(thread, entry, value);
     return true;
+}
+
+void ECMAObject::SetHash(int32_t hash)
+{
+    JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
+    JSTaggedValue value(hashField);
+    if (value.IsHeapObject()) {
+        JSThread *thread = this->GetJSThread();
+        ASSERT(value.IsTaggedArray());
+        TaggedArray *array = TaggedArray::Cast(value.GetHeapObject());
+        array->Set(thread, 0, JSTaggedValue(hash));
+    } else {
+        Barriers::SetDynPrimitive<JSTaggedType>(this, HASH_OFFSET, JSTaggedValue(hash).GetRawData());
+    }
+}
+
+int32_t ECMAObject::GetHash() const
+{
+    JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
+    JSTaggedValue value(hashField);
+    if (value.IsHeapObject()) {
+        TaggedArray *array = TaggedArray::Cast(value.GetHeapObject());
+        return array->Get(0).GetInt();
+    }
+    JSThread *thread = this->GetJSThread();
+    JSHandle<JSTaggedValue> valueHandle(thread, value);
+    return JSTaggedValue::ToInt32(thread, valueHandle);
+}
+
+void *ECMAObject::GetNativePointerField(int32_t index) const
+{
+    JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
+    JSTaggedValue value(hashField);
+    if (value.IsHeapObject()) {
+        JSThread *thread = this->GetJSThread();
+        JSHandle<TaggedArray> array(thread, value);
+        if (static_cast<int32_t>(array->GetLength()) > index + 1) {
+            JSHandle<JSNativePointer> pointer(thread, array->Get(index + 1));
+            return pointer->GetExternalPointer();
+        }
+    }
+    return nullptr;
+}
+
+void ECMAObject::SetNativePointerField(int32_t index, void *data)
+{
+    JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
+    JSTaggedValue value(hashField);
+    if (value.IsHeapObject()) {
+        JSThread *thread = this->GetJSThread();
+        JSHandle<TaggedArray> array(thread, value);
+        if (static_cast<int32_t>(array->GetLength()) > index + 1) {
+            JSHandle<JSNativePointer> pointer = thread->GetEcmaVM()->GetFactory()->NewJSNativePointer(data);
+            array->Set(thread, index + 1, pointer.GetTaggedValue());
+        }
+    }
+}
+
+int32_t ECMAObject::GetNativePointerFieldCount() const
+{
+    int32_t len = 0;
+    JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
+    JSTaggedValue value(hashField);
+    if (value.IsHeapObject()) {
+        TaggedArray *array = TaggedArray::Cast(value.GetHeapObject());
+        len = array->GetLength() - 1;
+    }
+    return len;
+}
+
+void ECMAObject::SetNativePointerFieldCount(int32_t count)
+{
+    JSTaggedType hashField = Barriers::GetDynValue<JSTaggedType>(this, HASH_OFFSET);
+    JSTaggedValue value(hashField);
+    if (!value.IsHeapObject()) {
+        JSThread *thread = this->GetJSThread();
+        JSHandle<ECMAObject> obj(thread, this);
+        JSHandle<TaggedArray> newArray = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(count + 1);
+        newArray->Set(thread, 0, value);
+        Barriers::SetDynObject<true>(thread, *obj, HASH_OFFSET, newArray.GetTaggedValue().GetRawData());
+    }
 }
 }  // namespace panda::ecmascript

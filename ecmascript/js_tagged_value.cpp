@@ -17,6 +17,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_primitive_ref.h"
@@ -33,12 +34,12 @@ JSHandle<EcmaString> GetTypeString(JSThread *thread, PreferredPrimitiveType type
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     if (type == NO_PREFERENCE) {
-        return factory->NewFromString("default");
+        return factory->NewFromCanBeCompressString("default");
     }
     if (type == PREFER_NUMBER) {
-        return factory->NewFromString("number");
+        return factory->NewFromCanBeCompressString("number");
     }
-    return factory->NewFromString("string");
+    return factory->NewFromCanBeCompressString("string");
 }
 
 JSHandle<JSTaggedValue> JSTaggedValue::ToPropertyKey(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
@@ -267,11 +268,10 @@ JSTaggedValue JSTaggedValue::ToPrimitive(JSThread *thread, const JSHandle<JSTagg
         JSHandle<JSTaggedValue> exoticToprim = JSObject::GetProperty(thread, object, keyString).GetValue();
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
         if (!exoticToprim->IsUndefined()) {
-            ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-            JSHandle<TaggedArray> argv = factory->NewTaggedArray(1);
             JSTaggedValue value = GetTypeString(thread, type).GetTaggedValue();
-            argv->Set(thread, 0, value);
-            JSTaggedValue valueResult = JSFunction::Call(thread, exoticToprim, tagged, argv);
+            InternalCallParams *arguments = thread->GetInternalCallParams();
+            arguments->MakeArgv(value);
+            JSTaggedValue valueResult = JSFunction::Call(thread, exoticToprim, tagged, 1, arguments->GetArgv());
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
             if (!valueResult.IsECMAObject()) {
                 return valueResult;
@@ -300,8 +300,7 @@ JSTaggedValue JSTaggedValue::OrdinaryToPrimitive(JSThread *thread, const JSHandl
         }
         JSHandle<JSTaggedValue> entryfunc = JSObject::GetProperty(thread, tagged, keyString).GetValue();
         if (entryfunc->IsCallable()) {
-            ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-            JSTaggedValue valueResult = JSFunction::Call(thread, entryfunc, tagged, factory->EmptyArray());
+            JSTaggedValue valueResult = JSFunction::Call(thread, entryfunc, tagged, 0, nullptr);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
             if (!valueResult.IsECMAObject()) {
                 return valueResult;
@@ -355,7 +354,7 @@ JSHandle<EcmaString> JSTaggedValue::ToString(JSThread *thread, const JSHandle<JS
 
 JSTaggedValue JSTaggedValue::CanonicalNumericIndexString(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
 {
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("-0");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-0");
     if (tagged->IsString()) {
         if (EcmaString::StringsAreEqual(static_cast<EcmaString *>(tagged->GetTaggedObject()), *str)) {
             return JSTaggedValue(-0.0);

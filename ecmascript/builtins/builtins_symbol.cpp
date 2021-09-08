@@ -101,16 +101,16 @@ JSTaggedValue BuiltinsSymbol::SymbolDescriptiveString(JSThread *thread, JSTagged
     // If desc is undefined, let desc be the empty string.
 
     if (descHandle->IsUndefined()) {
-        JSHandle<EcmaString> leftHandle(factory->NewFromString("Symbol("));
-        JSHandle<EcmaString> rightHandle(factory->NewFromString(")"));
+        JSHandle<EcmaString> leftHandle(factory->NewFromCanBeCompressString("Symbol("));
+        JSHandle<EcmaString> rightHandle(factory->NewFromCanBeCompressString(")"));
         JSHandle<EcmaString> str = factory->ConcatFromString(leftHandle, rightHandle);
         return str.GetTaggedValue();
     }
     // Assert: Type(desc) is String.
     ASSERT(descHandle->IsString());
     // Return the result of concatenating the strings "Symbol(", desc, and ")".
-    JSHandle<EcmaString> leftHandle(factory->NewFromString("Symbol("));
-    JSHandle<EcmaString> rightHandle(factory->NewFromString(")"));
+    JSHandle<EcmaString> leftHandle(factory->NewFromCanBeCompressString("Symbol("));
+    JSHandle<EcmaString> rightHandle(factory->NewFromCanBeCompressString(")"));
     JSHandle<EcmaString> stringLeft =
         factory->ConcatFromString(leftHandle, JSTaggedValue::ToString(thread, descHandle));
     JSHandle<EcmaString> str = factory->ConcatFromString(stringLeft, rightHandle);

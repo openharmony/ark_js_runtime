@@ -22,6 +22,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_number.h"
@@ -111,7 +112,6 @@ JSTaggedValue BuiltinsArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // 1. Let O be the this value.
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
     // 2. If Type(O) is not Object, throw a TypeError exception.
@@ -172,9 +172,9 @@ JSTaggedValue BuiltinsArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 15. Let new be Construct(ctor, «newLen»).
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    JSHandle<TaggedArray> arguments = factory->NewTaggedArray(1);
-    arguments->Set(thread, 0, JSTaggedValue(newLen));
-    JSTaggedValue taggedNewArrBuf = JSFunction::Construct(thread, constructor, arguments, undefined);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(JSTaggedValue(newLen));
+    JSTaggedValue taggedNewArrBuf = JSFunction::Construct(thread, constructor, 1, arguments->GetArgv(), undefined);
     JSHandle<JSTaggedValue> newArrBuf(thread, taggedNewArrBuf);
     // 16. ReturnIfAbrupt(new).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -400,7 +400,7 @@ JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSTaggedValue arrBuf, int32_
     return JSTaggedValue::Undefined();
 }
 
-template <typename T>
+template<typename T>
 void BuiltinsArrayBuffer::SetTypeData(uint8_t *block, T value, int32_t index)
 {
     int32_t sizeCount = sizeof(T);
@@ -411,57 +411,41 @@ void BuiltinsArrayBuffer::SetTypeData(uint8_t *block, T value, int32_t index)
 }
 
 template <typename T>
-T BuiltinsArrayBuffer::TransformIntToBigEndian(T liValue)
+T BuiltinsArrayBuffer::LittleEndianToBigEndian(T liValue)
 {
     uint8_t sizeCount = sizeof(T);
     T biValue;
-    if (sizeCount == 2) {                                // 2:2 means size of T
-        biValue = ((liValue & 0x00FF) << BITS_EIGHT)     // NOLINT
-                  | ((liValue & 0xFF00) >> BITS_EIGHT);  // NOLINT
-    } else {
-        biValue = ((liValue & 0x000000FF) << BITS_TWENTY_FOUR)     // NOLINT
-                  | ((liValue & 0x0000FF00) << BITS_EIGHT)         // NOLINT
-                  | ((liValue & 0x00FF0000) >> BITS_EIGHT)         // NOLINT
-                  | ((liValue & 0xFF000000) >> BITS_TWENTY_FOUR);  // NOLINT
+    switch (sizeCount) {
+        case NumberSize::UINT16:
+            biValue = ((liValue & 0x00FF) << BITS_EIGHT)     // NOLINT
+                      | ((liValue & 0xFF00) >> BITS_EIGHT);  // NOLINT
+            break;
+        case NumberSize::UINT32:
+            biValue = ((liValue & 0x000000FF) << BITS_TWENTY_FOUR)     // NOLINT
+                      | ((liValue & 0x0000FF00) << BITS_EIGHT)         // NOLINT
+                      | ((liValue & 0x00FF0000) >> BITS_EIGHT)         // NOLINT
+                      | ((liValue & 0xFF000000) >> BITS_TWENTY_FOUR);  // NOLINT
+            break;
+        default:
+            UNREACHABLE();
+            break;
     }
     return biValue;
 }
 
-template <typename T>
-T BuiltinsArrayBuffer::TransformFloatToBigEndian(T fValue)
+uint64_t BuiltinsArrayBuffer::LittleEndianToBigEndianUint64(uint64_t liValue)
 {
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "T must be float type");
-    constexpr int32_t size = sizeof(T);
-    uint8_t s[size];  // NOLINT
-    uint8_t t[size];  // NOLINT
-    if (memcpy_s(s, size, &fValue, size) != EOK) {
-        LOG_ECMA(FATAL) << "memcpy_s failed";
-        UNREACHABLE();
-    }
-    for (int i = 0, j = size - 1; i < size && j >= 0; i++, j--) {
-        t[i] = s[j];
-    }
-    T res;
-    if (memcpy_s(&res, size, t, size) != EOK) {
-        LOG_ECMA(FATAL) << "memset_s failed";
-        UNREACHABLE();
-    }
-    return res;
+    return ((liValue & 0x00000000000000FF) << BITS_FIFTY_SIX)      // NOLINT
+           | ((liValue & 0x000000000000FF00) << BITS_FORTY)        // NOLINT
+           | ((liValue & 0x0000000000FF0000) << BITS_TWENTY_FOUR)  // NOLINT
+           | ((liValue & 0x00000000FF000000) << BITS_EIGHT)        // NOLINT
+           | ((liValue & 0x000000FF00000000) >> BITS_EIGHT)        // NOLINT
+           | ((liValue & 0x0000FF0000000000) >> BITS_TWENTY_FOUR)  // NOLINT
+           | ((liValue & 0x00FF000000000000) >> BITS_FORTY)        // NOLINT
+           | ((liValue & 0xFF00000000000000) >> BITS_FIFTY_SIX);   // NOLINT
 }
 
-template <typename T>
-T BuiltinsArrayBuffer::TransformByteToNumber(uint8_t *block, int32_t index, uint8_t *tmpArr, int32_t size)
-{
-    if (memcpy_s(tmpArr, size, block + index, size) != EOK) {  // NOLINT
-        LOG_ECMA(FATAL) << "memcpy_s failed";
-        UNREACHABLE();
-    }
-    auto *arr = reinterpret_cast<T *>(tmpArr);
-    T res = *arr;
-    return res;
-}
-
-template <typename T, BuiltinsArrayBuffer::NumberSize size>
+template<typename T, BuiltinsArrayBuffer::NumberSize size>
 JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForInteger(uint8_t *block, int32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_integral_v<T>, "T must be integral");
@@ -469,11 +453,9 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForInteger(uint8_t *block, 
     static_assert(sizeof(T) >= sizeof(uint16_t), "T must have a size more than uint8");
 
     ASSERT(size >= NumberSize::UINT16 || size <= NumberSize::FLOAT64);
-    uint8_t tmpArr[size];  // NOLINT
-    int32_t capacity = sizeof(T);
-    auto res = TransformByteToNumber<T>(block, byteIndex, tmpArr, capacity);
+    T res = *reinterpret_cast<T *>(block + byteIndex);
     if (!littleEndian) {
-        res = TransformIntToBigEndian(res);
+        res = LittleEndianToBigEndian(res);
     }
 
     // uint32_t maybe overflow with TaggedInt
@@ -487,34 +469,37 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForInteger(uint8_t *block, 
     return GetTaggedInt(res);
 }
 
-template <typename T, BuiltinsArrayBuffer::NumberSize size>
+template<typename T, BuiltinsArrayBuffer::NumberSize size>
 JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForFloat(uint8_t *block, int32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "T must be float type");
     static_assert(sizeof(T) == size, "Invalid number size");
-    uint8_t tmpArr[size];  // NOLINT
-    int32_t capacity = sizeof(T);
-    auto tmp = TransformByteToNumber<T>(block, byteIndex, tmpArr, capacity);
+    T tmp = *reinterpret_cast<T *>(block + byteIndex);
 
     // NOLINTNEXTLINE(readability-braces-around-statements)
     if constexpr (std::is_same_v<T, float>) {
         if (std::isnan(tmp)) {
             return GetTaggedDouble(tmp);
         }
+        if (!littleEndian) {
+            uint32_t res = bit_cast<uint32_t>(tmp);
+            res = LittleEndianToBigEndian(res);
+            return GetTaggedDouble(bit_cast<T>(res));
+        }
     } else if constexpr (std::is_same_v<T, double>) {  // NOLINTNEXTLINE(readability-braces-around-statements)
         if (std::isnan(tmp) && !JSTaggedValue::IsImpureNaN(tmp)) {
             return GetTaggedDouble(tmp);
         }
-    }
-
-    if (!littleEndian) {
-        T res = TransformFloatToBigEndian(tmp);
-        return GetTaggedDouble(res);
+        if (!littleEndian) {
+            uint64_t res = bit_cast<uint64_t>(tmp);
+            res = LittleEndianToBigEndianUint64(res);
+            return GetTaggedDouble(bit_cast<T>(res));
+        }
     }
     return GetTaggedDouble(tmp);
 }
 
-template <typename T>
+template<typename T>
 void BuiltinsArrayBuffer::SetValueInBufferForByte(double val, uint8_t *block, int32_t byteIndex)
 {
     static_assert(std::is_same_v<T, uint8_t> || std::is_same_v<T, int8_t>, "T must be int8/uint8");
@@ -545,7 +530,7 @@ void BuiltinsArrayBuffer::SetValueInBufferForUint8Clamped(double val, uint8_t *b
     SetTypeData(block, res, byteIndex);
 }
 
-template <typename T>
+template<typename T>
 void BuiltinsArrayBuffer::SetValueInBufferForInteger(double val, uint8_t *block, int32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_integral_v<T>, "T must be integral");
@@ -568,12 +553,12 @@ void BuiltinsArrayBuffer::SetValueInBufferForInteger(double val, uint8_t *block,
     }
 
     if (!littleEndian) {
-        res = TransformIntToBigEndian<T>(res);
+        res = LittleEndianToBigEndian<T>(res);
     }
     SetTypeData(block, res, byteIndex);
 }
 
-template <typename T>
+template<typename T>
 void BuiltinsArrayBuffer::SetValueInBufferForFloat(double val, uint8_t *block, int32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "T must be float type");
@@ -583,9 +568,13 @@ void BuiltinsArrayBuffer::SetValueInBufferForFloat(double val, uint8_t *block, i
         return;
     }
     if (!littleEndian) {
-        auto res = TransformFloatToBigEndian<T>(data);
-        SetTypeData(block, res, byteIndex);
-        return;
+        if constexpr (std::is_same_v<T, float>) {
+            uint32_t res = bit_cast<uint32_t>(data);
+            data = bit_cast<T>(LittleEndianToBigEndian(res));
+        } else if constexpr (std::is_same_v<T, double>) {
+            uint64_t res = bit_cast<uint64_t>(data);
+            data = bit_cast<T>(LittleEndianToBigEndianUint64(res));
+        }
     }
     SetTypeData(block, data, byteIndex);
 }

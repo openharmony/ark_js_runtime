@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_STRING_H
-#define PANDA_RUNTIME_ECMASCRIPT_STRING_H
+#ifndef ECMASCRIPT_STRING_H
+#define ECMASCRIPT_STRING_H
 
 #include <cstddef>
 #include <cstdint>
@@ -27,7 +27,7 @@
 
 namespace panda {
 namespace ecmascript {
-template <typename T>
+template<typename T>
 class JSHandle;
 class EcmaVM;
 
@@ -37,14 +37,15 @@ public:
     static const EcmaString *ConstCast(const TaggedObject *object);
 
     static EcmaString *CreateEmptyString(const EcmaVM *vm);
-    static EcmaString *CreateFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len, const EcmaVM *vm);
-    static EcmaString *CreateFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len, const EcmaVM *vm);
+    static EcmaString *CreateFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len, const EcmaVM *vm, bool canBeCompress);
+    static EcmaString *CreateFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len, const EcmaVM *vm,
+                                       bool canBeCompress);
     static EcmaString *Concat(const JSHandle<EcmaString> &str1Handle, const JSHandle<EcmaString> &str2Handle,
                               const EcmaVM *vm);
     static EcmaString *FastSubString(const JSHandle<EcmaString> &src, uint32_t start, uint32_t utf16Len,
                                      const EcmaVM *vm);
 
-    template <bool verify = true>
+    template<bool verify = true>
     uint16_t At(int32_t index) const;
 
     int32_t Compare(const EcmaString *rhs) const;
@@ -170,8 +171,8 @@ public:
     inline std::unique_ptr<char[]> GetCString()
     {
         auto length = GetUtf8Length();
-        char* buf = new char[length];
-        CopyDataUtf8(reinterpret_cast<uint8_t*>(buf), length);
+        char *buf = new char[length]();
+        CopyDataUtf8(reinterpret_cast<uint8_t *>(buf), length);
         // NOLINTNEXTLINE(modernize-avoid-c-arrays)
         return std::unique_ptr<char[]>(buf);
     }
@@ -231,12 +232,13 @@ public:
     /**
      * Compares strings by bytes, It doesn't check canonical unicode equivalence.
      */
-    static bool StringsAreEqualUtf8(const EcmaString *str1, const uint8_t *utf8Data, uint32_t utf8Len);
+    static bool StringsAreEqualUtf8(const EcmaString *str1, const uint8_t *utf8Data, uint32_t utf8Len,
+                                    bool canBeCompress);
     /**
      * Compares strings by bytes, It doesn't check canonical unicode equivalence.
      */
     static bool StringsAreEqualUtf16(const EcmaString *str1, const uint16_t *utf16Data, uint32_t utf16Len);
-    static uint32_t ComputeHashcodeUtf8(const uint8_t *utf8Data);
+    static uint32_t ComputeHashcodeUtf8(const uint8_t *utf8Data, bool canBeCompress);
     static uint32_t ComputeHashcodeUtf16(const uint16_t *utf16Data, uint32_t length);
 
     static void SetCompressedStringsEnabled(bool val)
@@ -250,6 +252,9 @@ public:
     }
 
     static EcmaString *AllocStringObject(size_t length, bool compressed, const EcmaVM *vm);
+
+    static bool CanBeCompressed(const uint8_t *utf8Data);
+    static bool CanBeCompressed(const uint16_t *utf16Data, uint32_t utf16Len);
 
 private:
     void SetLength(uint32_t length, bool compressed = false)
@@ -277,8 +282,6 @@ private:
     }
 
     uint32_t ComputeHashcode() const;
-    static bool CanBeCompressed(const uint8_t *utf8Data);
-    static bool CanBeCompressed(const uint16_t *utf16Data, uint32_t utf16Len);
     static void CopyUtf16AsUtf8(const uint16_t *utf16From, uint8_t *utf8To, uint32_t utf16Len);
 
     static bool compressedStringsEnabled;
@@ -301,19 +304,19 @@ private:
      */
     static bool IsUtf8EqualsUtf16(const uint8_t *utf8Data, const uint16_t *utf16Data, uint32_t utf16Len);
 
-    template <typename T>
+    template<typename T>
     /**
      * Check that two spans are equal. Should have the same length.
      */
     static bool StringsAreEquals(Span<const T> &str1, Span<const T> &str2);
 
-    template <typename T>
+    template<typename T>
     /**
      * Copy String from src to dst
      * */
     static bool StringCopy(Span<T> &dst, size_t dstMax, Span<const T> &src, size_t count);
 
-    template <typename T1, typename T2>
+    template<typename T1, typename T2>
     static int32_t IndexOf(Span<const T1> &lhsSp, Span<const T2> &rhsSp, int32_t pos, int32_t max);
 
     // In last bit of length_ we store if this string is compressed or not.
@@ -325,4 +328,4 @@ private:
 };
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_STRING_H
+#endif  // ECMASCRIPT_STRING_H

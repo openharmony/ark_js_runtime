@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_ASSERT_SCOPE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_ASSERT_SCOPE_INL_H
+#ifndef ECMASCRIPT_MEM_ASSERT_SCOPE_INL_H
+#define ECMASCRIPT_MEM_ASSERT_SCOPE_INL_H
 
 #include "assert_scope.h"
 
@@ -23,7 +23,7 @@ namespace panda::ecmascript {
 // NOLINTNEXTLINE(hicpp-signed-bitwise)
 static thread_local size_t currentAssertData(~0);
 
-template <AssertType type, bool isAllow>
+template<AssertType type, bool isAllow>
 AssertScopeT<type, isAllow, true>::AssertScopeT() : oldData_(currentAssertData)
 {
     switch (type) {
@@ -38,7 +38,7 @@ AssertScopeT<type, isAllow, true>::AssertScopeT() : oldData_(currentAssertData)
     }
 }
 
-template <AssertType type, bool isAllow>
+template<AssertType type, bool isAllow>
 AssertScopeT<type, isAllow, true>::~AssertScopeT()
 {
     if (!oldData_.has_value()) {
@@ -50,7 +50,7 @@ AssertScopeT<type, isAllow, true>::~AssertScopeT()
 }
 
 // static
-template <AssertType type, bool isAllow>
+template<AssertType type, bool isAllow>
 bool AssertScopeT<type, isAllow, true>::IsAllowed()
 {
     switch (type) {
@@ -64,4 +64,4 @@ bool AssertScopeT<type, isAllow, true>::IsAllowed()
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_ASSERT_SCOPE_INL_H
+#endif  // ECMASCRIPT_MEM_ASSERT_SCOPE_INL_H

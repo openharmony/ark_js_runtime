@@ -13,12 +13,14 @@
  * limitations under the License.
  */
 
-#include "ecmascript/base/number_helper.h"
 #include "ecmascript/builtins/builtins_number.h"
+
+#include "ecmascript/base/number_helper.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
+#include "ecmascript/js_number_format.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_tagged_number.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -290,6 +292,31 @@ JSTaggedValue BuiltinsNumber::ToFixed(EcmaRuntimeCallInfo *argv)
     }
 
     return NumberHelper::DoubleToFixed(thread, valueNumber, static_cast<int>(digit));
+}
+
+// 20.1.3.4
+JSTaggedValue BuiltinsNumber::ToLocaleString(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    BUILTINS_API_TRACE(thread, Number, ToLocaleString);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    // 1. Let x be thisNumberValue(this value).
+    JSTaggedNumber x = ThisNumberValue(argv);
+    // 2. Let numberFormat be ? Construct(%NumberFormat%, « locales, options »).
+    JSHandle<JSTaggedValue> func = thread->GetEcmaVM()->GetGlobalEnv()->GetNumberFormatFunction();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSNumberFormat> numberFormat =
+        JSHandle<JSNumberFormat>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(func), func));
+    JSHandle<JSTaggedValue> locales = GetCallArg(argv, 0);
+    JSHandle<JSTaggedValue> options = GetCallArg(argv, 1);
+    JSNumberFormat::InitializeNumberFormat(thread, numberFormat, locales, options);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // Return ? FormatNumeric(numberFormat, x).
+    JSHandle<JSTaggedValue> result = JSNumberFormat::FormatNumeric(thread, numberFormat, x);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return result.GetTaggedValue();
 }
 
 // 20.1.3.5

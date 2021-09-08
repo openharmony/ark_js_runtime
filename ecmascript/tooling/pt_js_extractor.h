@@ -21,6 +21,7 @@
 #include "ecmascript/mem/c_containers.h"
 #include "libpandafile/debug_info_extractor.h"
 #include "libpandabase/macros.h"
+#include "include/tooling/debug_interface.h"
 
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::CList;
@@ -62,7 +63,7 @@ public:
     explicit PtJSExtractor(const File *pf) : DebugInfoExtractor(pf) {}
     virtual ~PtJSExtractor() = default;
 
-    template <class Callback>
+    template<class Callback>
     bool MatchWithLine(const Callback &cb, int32_t line)
     {
         auto methods = GetMethodIdList();
@@ -77,7 +78,7 @@ public:
         return false;
     }
 
-    template <class Callback>
+    template<class Callback>
     bool MatchWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
     {
         auto table = GetLineNumberTable(methodId);

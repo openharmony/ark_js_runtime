@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#ifndef ECMASCRIPT_TESTS_TEST_HELPER_H
+#define ECMASCRIPT_TESTS_TEST_HELPER_H
+
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_runtime_call_info.h"
@@ -44,7 +47,7 @@ public:
         // argvLength includes number of int64_t to store value and tag of function, 'this' and call args
         // It doesn't include new.target argument
         uint32_t numActualArgs = argvLength / testDecodedSize + 1;
-        JSTaggedType *sp = thread->GetCurrentSPFrame();
+        JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         size_t frameSize = ecmascript::FRAME_STATE_SIZE + numActualArgs;
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
@@ -56,7 +59,7 @@ public:
 
     static JSTaggedType *SetupFrame(JSThread *thread, EcmaRuntimeCallInfo *info)
     {
-        JSTaggedType *sp = thread->GetCurrentSPFrame();
+        JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         size_t frameSize = ecmascript::FRAME_STATE_SIZE + info->GetArgsNumber() + NUM_MANDATORY_JSFUNC_ARGS;
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
@@ -105,3 +108,4 @@ public:
     }
 };
 }  // namespace panda::test
+#endif  // ECMASCRIPT_TESTS_TEST_HELPER_H

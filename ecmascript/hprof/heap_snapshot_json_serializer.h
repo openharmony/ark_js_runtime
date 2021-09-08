@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef RUNTIME_ECMASCRIPT_HPROF_HEAP_SNAPSHOT_SERIALIZER_H
-#define RUNTIME_ECMASCRIPT_HPROF_HEAP_SNAPSHOT_SERIALIZER_H
+#ifndef ECMASCRIPT_HPROF_HEAP_SNAPSHOT_SERIALIZER_H
+#define ECMASCRIPT_HPROF_HEAP_SNAPSHOT_SERIALIZER_H
 
 #include <fstream>
 #include <sstream>
@@ -53,4 +53,4 @@ private:
     stringstream stringBuffer_;
 };
 }  // namespace panda::ecmascript
-#endif  // RUNTIME_ECMASCRIPT_HPROF_HEAP_SNAPSHOT_SERIALIZER_H
+#endif  // ECMASCRIPT_HPROF_HEAP_SNAPSHOT_SERIALIZER_H

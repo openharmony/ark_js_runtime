@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_IC_IC_RUNTIME_H
-#define PANDA_RUNTIME_ECMASCRIPT_IC_IC_RUNTIME_H
+#ifndef ECMASCRIPT_IC_IC_RUNTIME_H
+#define ECMASCRIPT_IC_IC_RUNTIME_H
 
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/accessor_data.h"
@@ -88,4 +88,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_IC_IC_RUNTIME_H
+#endif  // ECMASCRIPT_IC_IC_RUNTIME_H

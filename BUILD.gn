@@ -92,8 +92,48 @@ config("ark_jsruntime_public_config") {
   ]
 }
 
-config("ark_jsruntime_config") {
+ohos_static_library("libark_js_intl_static") {
+  sources = [
+    "ecmascript/builtins/builtins_collator.cpp",
+    "ecmascript/builtins/builtins_date_time_format.cpp",
+    "ecmascript/builtins/builtins_intl.cpp",
+    "ecmascript/builtins/builtins_locale.cpp",
+    "ecmascript/builtins/builtins_number_format.cpp",
+    "ecmascript/builtins/builtins_plural_rules.cpp",
+    "ecmascript/builtins/builtins_relative_time_format.cpp",
+    "ecmascript/js_collator.cpp",
+    "ecmascript/js_date_time_format.cpp",
+    "ecmascript/js_locale.cpp",
+    "ecmascript/js_number_format.cpp",
+    "ecmascript/js_plural_rules.cpp",
+    "ecmascript/js_relative_time_format.cpp",
+  ]
+
+  configs = [
+    ":ark_jsruntime_public_config",
+    ":ark_jsruntime_common_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    ":libark_jsruntime_static",
+    "$ark_root/libpandabase:libarkbase",
+    "$ark_root/libpandafile:libarkfile",
+    "//third_party/icu/icu4c:shared_icui18n",
+    "//third_party/icu/icu4c:shared_icuuc",
+    sdk_libc_secshared_dep,
+  ]
+
+  output_extension = "a"
+  subsystem_name = "ark"
+}
+
+config("ark_jsruntime_common_config") {
   defines = [ "PANDA_ENABLE_LTO" ]
+
+  if (is_standard_system) {
+    defines += [ "IS_STANDARD_SYSTEM" ]
+  }
 
   if (is_linux) {
     defines += [
@@ -118,6 +158,9 @@ config("ark_jsruntime_config") {
       "PANDA_TARGET_UNIX",
       "PANDA_USE_FUTEX",
     ]
+    if (!is_standard_system && (current_cpu != "arm" || is_wearable_product)) {
+      defines += [ "PANDA_TARGET_MOBILE" ]
+    }
   }
 
   cflags_cc = [
@@ -127,9 +170,10 @@ config("ark_jsruntime_config") {
     "-pipe",
     "-Wdate-time",
     "-Wformat=2",
-
-    #"-Wshadow",
+    "-flto",
   ]
+
+  ldflags = [ "-flto" ]
 
   if (is_debug) {
     cflags_cc += [
@@ -163,6 +207,11 @@ config("ark_jsruntime_config") {
       "PANDA_USE_32_BIT_POINTER",
     ]
   }
+}
+
+config("ark_jsruntime_config") {
+  configs = [ ":ark_jsruntime_common_config" ]
+  cflags_cc = [ "-Wshadow" ]
 }
 
 # ecmascript unit testcase config
@@ -236,6 +285,7 @@ ecma_source = [
   "ecmascript/ic/ic_runtime.cpp",
   "ecmascript/ic/property_box.cpp",
   "ecmascript/ic/proto_change_details.cpp",
+  "ecmascript/internal_call_params.cpp",
   "ecmascript/interpreter/frame_handler.cpp",
   "ecmascript/interpreter/slow_runtime_helper.cpp",
   "ecmascript/interpreter/slow_runtime_stub.cpp",
@@ -255,6 +305,7 @@ ecma_source = [
   "ecmascript/js_iterator.cpp",
   "ecmascript/js_map.cpp",
   "ecmascript/js_map_iterator.cpp",
+  "ecmascript/js_method.cpp",
   "ecmascript/js_object.cpp",
   "ecmascript/js_primitive_ref.cpp",
   "ecmascript/js_promise.cpp",
@@ -270,6 +321,7 @@ ecma_source = [
   "ecmascript/js_weak_container.cpp",
   "ecmascript/linked_hash_table.cpp",
   "ecmascript/literal_data_extractor.cpp",
+  "ecmascript/message_string.cpp",
   "ecmascript/mem/c_string.cpp",
   "ecmascript/mem/chunk.cpp",
   "ecmascript/mem/compress_collector.cpp",
@@ -296,6 +348,7 @@ ecma_source = [
   "ecmascript/regexp/regexp_opcode.cpp",
   "ecmascript/regexp/regexp_parser.cpp",
   "ecmascript/regexp/regexp_parser_cache.cpp",
+  "ecmascript/runtime_trampolines.cpp",
   "ecmascript/snapshot/mem/slot_bit.cpp",
   "ecmascript/snapshot/mem/snapshot.cpp",
   "ecmascript/snapshot/mem/snapshot_serialize.cpp",
@@ -323,8 +376,6 @@ ohos_static_library("libark_jsruntime_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//third_party/icu/icu4c:shared_icui18n",
-    "//third_party/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
   ]
 
@@ -340,7 +391,12 @@ ohos_static_library("libark_jsruntime_static") {
 }
 
 ohos_shared_library("libark_jsruntime") {
-  deps = [ ":libark_jsruntime_static" ]
+  deps = [
+    ":libark_js_intl_static",
+    ":libark_jsruntime_static",
+    "//third_party/icu/icu4c:shared_icui18n",
+    "//third_party/icu/icu4c:shared_icuuc",
+  ]
 
   install_enable = true
   part_name = "ark_js_runtime"

@@ -1,0 +1,564 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+prefixes:
+  - name: ecma
+    description: Extension for ecma support.
+
+groups:
+  - title: Ecma extension intrunctions
+    description: Ecma extension intrunctions with prefix ecam
+    verification:
+      - none
+    exceptions:
+      - x_none
+    properties:
+      - acc_read
+      - acc_write
+    namespace: ecmascript
+    pseudo: |
+      acc = ecma_op(acc, operand_0, ..., operands_n)
+    semantics: |
+      skip
+    instructions:
+      - sig: ecma.ldnan
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldinfinity
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldglobalthis
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldundefined
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldnull
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldsymbol
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldglobal
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldtrue
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldfalse
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.throwdyn
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.typeofdyn
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldlexenvdyn
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.poplexenvdyn
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.getunmappedargs
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.getpropiterator
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.asyncfunctionenter
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldhole
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.returnundefined
+        acc: none
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.createemptyobject
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.createemptyarray
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.getiterator
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.throwthrownotexists
+        acc: none
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.throwpatternnoncoercible
+        acc: none
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.ldhomeobject
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.throwdeletesuperproperty
+        acc: none
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.debugger
+        acc: none
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.add2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.sub2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.mul2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.div2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.mod2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.eqdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.noteqdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.lessdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.lesseqdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.greaterdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.greatereqdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.shl2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.shr2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.ashr2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.and2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.or2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.xor2dyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.tonumber v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.negdyn v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.notdyn v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.incdyn v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.decdyn v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.expdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.isindyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.instanceofdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.strictnoteqdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.stricteqdyn v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.resumegenerator v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.getresumemode v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.creategeneratorobj v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.throwconstassignment v:in:top
+        acc: none
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.gettemplateobject v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.getnextpropname v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.callarg0dyn v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.throwifnotobject v:in:top
+        acc: none
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.iternext v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.closeiterator v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.copymodule v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.supercallspread v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v_8]
+      - sig: ecma.delobjprop v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.newobjspreaddyn v1:in:top, v2:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.createiterresultobj v1:in:top, v2:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.suspendgenerator v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.asyncfunctionawaituncaught v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.throwundefinedifhole v1:in:top, v2:in:top
+        acc: none
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.callarg1dyn v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.copydataproperties v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.starrayspread v1:in:top, v2:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.getiteratornext v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.setobjectwithproto v1:in:top, v2:in:top
+        acc: none
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.ldobjbyvalue v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.stobjbyvalue v1:in:top, v2:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.stownbyvalue v1:in:top, v2:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.ldsuperbyvalue v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.stsuperbyvalue v1:in:top, v2:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.ldobjbyindex v:in:top, imm
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v_8_imm_32]
+      - sig: ecma.stobjbyindex v:in:top, imm
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_v_8_imm_32]
+      - sig: ecma.stownbyindex v:in:top, imm
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_v_8_imm_32]
+      - sig: ecma.callspreaddyn v1:in:top, v2:in:top, v3:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8_v3_8]
+      - sig: ecma.asyncfunctionresolve v1:in:top, v2:in:top, v3:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8_v3_8]
+      - sig: ecma.asyncfunctionreject v1:in:top, v2:in:top, v3:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8_v3_8]
+      - sig: ecma.callargs2dyn v1:in:top, v2:in:top, v3:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8_v3_8]
+      - sig: ecma.callargs3dyn v1:in:top, v2:in:top, v3:in:top, v4:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8_v3_8_v4_8]
+      - sig: ecma.definegettersetterbyvalue v1:in:top, v2:in:top, v3:in:top, v4:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8_v3_8_v4_8]
+      - sig: ecma.newobjdynrange imm, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16_v_8]
+      - sig: ecma.callirangedyn imm, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16_v_8]
+      - sig: ecma.callithisrangedyn imm, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16_v_8]
+      - sig: ecma.supercall imm, v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_imm_16_v_8]
+      - sig: ecma.createobjectwithexcludedkeys imm, v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16_v1_8_v2_8]
+      - sig: ecma.definefuncdyn method_id, imm, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_16_imm_16_v_8]
+        properties: [method_id]
+      - sig: ecma.definencfuncdyn method_id, imm, v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_id_16_imm_16_v_8]
+        properties: [method_id]
+      - sig: ecma.definegeneratorfunc method_id, imm, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_16_imm_16_v_8]
+        properties: [method_id]
+      - sig: ecma.defineasyncfunc method_id, imm, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_16_imm_16_v_8]
+        properties: [method_id]
+      - sig: ecma.definemethod method_id, imm, v:in:top
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_id_16_imm_16_v_8]
+        properties: [method_id]
+      - sig: ecma.newlexenvdyn imm
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16]
+      - sig: ecma.copyrestargs imm
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16]
+      - sig: ecma.createarraywithbuffer imm
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16]
+      - sig: ecma.createobjecthavingmethod imm
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_imm_16]
+      - sig: ecma.throwifsupernotcorrectcall imm
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_imm_16]
+      - sig: ecma.createobjectwithbuffer imm
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm_16]
+      - sig: ecma.ldlexvardyn imm1, imm2
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_4_imm2_4]
+      - sig: ecma.ldlexvardyn imm1, imm2
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_8_imm2_8]
+      - sig: ecma.ldlexvardyn imm1, imm2
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_16_imm2_16]
+      - sig: ecma.stlexvardyn imm1, imm2, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_4_imm2_4_v_8]
+      - sig: ecma.stlexvardyn imm1, imm2, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_8_imm2_8_v_8]
+      - sig: ecma.stlexvardyn imm1, imm2, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_16_imm2_16_v_8]
+      - sig: ecma.defineclasswithbuffer method_id, imm1, imm2, v1:in:top, v2:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_16_imm1_16_imm2_16_v1_8_v2_8]
+        properties: [method_id]
+      - sig: ecma.importmodule string_id
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.stmodulevar string_id
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.tryldglobalbyname string_id
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.trystglobalbyname string_id
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.ldglobalvar string_id
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.stglobalvar string_id
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.ldobjbyname string_id, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_32_v_8]
+        properties: [string_id]
+      - sig: ecma.stobjbyname string_id, v:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32_v_8]
+        properties: [string_id]
+      - sig: ecma.stownbyname string_id, v:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32_v_8]
+        properties: [string_id]
+      - sig: ecma.ldsuperbyname string_id, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_32_v_8]
+        properties: [string_id]
+      - sig: ecma.stsuperbyname string_id, v:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32_v_8]
+        properties: [string_id]
+      - sig: ecma.ldmodvarbyname string_id, v:in:top
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_32_v_8]
+        properties: [string_id]
+      - sig: ecma.createregexpwithliteral string_id, imm
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_id_32_imm_8]
+        properties: [string_id]
+      - sig: ecma.istrue
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_none]
+      - sig: ecma.isfalse
+        acc: inout:top
+        prefix: ecma
+        format: [pref_op_none]

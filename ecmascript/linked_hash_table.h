@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_LINKED_HASH_TABLE_H
-#define PANDA_RUNTIME_ECMASCRIPT_LINKED_HASH_TABLE_H
+#ifndef ECMASCRIPT_LINKED_HASH_TABLE_H
+#define ECMASCRIPT_LINKED_HASH_TABLE_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "js_handle.h"
@@ -30,7 +30,7 @@ namespace panda::ecmascript {
  * 3.array[3+capacity+1,3+capacity + capacity*(entry_size+1)] is the entry stored in order, the last element of an entry
  * is a number which point to next entry.
  * */
-template <typename Derived, typename HashObject>
+template<typename Derived, typename HashObject>
 class LinkedHashTable : public TaggedArray {
 public:
     static const int MIN_CAPACITY = 4;
@@ -218,4 +218,4 @@ public:
     DECL_DUMP()
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_LINKED_HASH_TABLE_H
+#endif  // ECMASCRIPT_LINKED_HASH_TABLE_H

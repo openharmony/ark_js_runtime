@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_GATE_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_GATE_H
+#ifndef ECMASCRIPT_COMPILER_GATE_H
+#define ECMASCRIPT_COMPILER_GATE_H
 
 #include <array>
 #include <iostream>
@@ -386,4 +386,4 @@ private:
 };
 }  // namespace kungfu
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_GATE_H
+#endif  // ECMASCRIPT_COMPILER_GATE_H

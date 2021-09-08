@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
+#ifndef ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
+#define ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
 
 namespace kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -22,12 +22,8 @@ namespace kungfu {
     V(AddElementInternal, 5)         \
     V(CallSetter, 2)                 \
     V(ThrowTypeError, 2)             \
-    V(JSProxySetProperty, 6)
-
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define EXTERNAL_REFRENCE_STUB_LIST(V) \
-    V(GetHash32, 2)                    \
-    V(PhiTest, 1)
+    V(JSProxySetProperty, 6)         \
+    V(GetHash32, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
@@ -54,13 +50,21 @@ namespace kungfu {
     V(FindOwnProperty, 6)           \
     V(FindOwnElement, 2)            \
     V(NewLexicalEnvDyn, 4)          \
-    V(FindOwnProperty2, 3)          \
-    V(FindOwnElement2, 5)
+    V(FindOwnProperty2, 6)          \
+    V(FindOwnElement2, 6)
 
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_STUB_LIST(V)          \
-    FAST_RUNTIME_STUB_LIST(V)      \
-    EXTERNAL_REFRENCE_STUB_LIST(V) \
+#define CALL_STUB_LIST(V)     \
+    FAST_RUNTIME_STUB_LIST(V) \
     EXTERNAL_RUNTIMESTUB_LIST(V)
+
+enum CallStubId {
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DEF_FAST_STUB(name, counter) NAME_##name,
+    FAST_RUNTIME_STUB_LIST(DEF_FAST_STUB) FAST_STUB_MAXCOUNT,
+    EXTERNAL_RUNTIME_STUB_BEGIN = FAST_STUB_MAXCOUNT - 1,
+    EXTERNAL_RUNTIMESTUB_LIST(DEF_FAST_STUB) EXTERN_RUNTIME_STUB_MAXCOUNT,
+#undef DEF_FAST_STUB
+    CALL_STUB_MAXCOUNT = EXTERN_RUNTIME_STUB_MAXCOUNT,
+};
 }  // namespace kungfu
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
+#endif  // ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H

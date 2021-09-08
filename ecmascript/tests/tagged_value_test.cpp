@@ -192,7 +192,7 @@ HWTEST_F_L0(JSTaggedValueTest, ToBoolean)
     EXPECT_TRUE(JSTaggedValue::True().ToBoolean());
 
     EXPECT_FALSE(thread->GetEcmaVM()->GetFactory()->GetEmptyString().GetTaggedValue().ToBoolean());
-    EXPECT_TRUE(thread->GetEcmaVM()->GetFactory()->NewFromString("test").GetTaggedValue().ToBoolean());
+    EXPECT_TRUE(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test").GetTaggedValue().ToBoolean());
 }
 
 HWTEST_F_L0(JSTaggedValueTest, ToNumber)
@@ -227,127 +227,127 @@ HWTEST_F_L0(JSTaggedValueTest, ToNumber)
     result = JSTaggedValue::ToNumber(thread, JSHandle<JSTaggedValue>(thread, trueV));
     EXPECT_EQ(result.GetNumber(), 1);
 
-    JSHandle<JSTaggedValue> stringV0(thread->GetEcmaVM()->GetFactory()->NewFromString(" 1234 "));
+    JSHandle<JSTaggedValue> stringV0(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 1234 "));
     result = JSTaggedValue::ToNumber(thread, stringV0);
     EXPECT_EQ(result.GetNumber(), 1234);
 
-    JSHandle<JSTaggedValue> stringV1(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0b1010 "));
+    JSHandle<JSTaggedValue> stringV1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0b1010 "));
     result = JSTaggedValue::ToNumber(thread, stringV1);
     EXPECT_EQ(result.GetNumber(), 10);
 
-    JSHandle<JSTaggedValue> stringV2(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0O11 "));
+    JSHandle<JSTaggedValue> stringV2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0O11 "));
     result = JSTaggedValue::ToNumber(thread, stringV2);
     EXPECT_EQ(result.GetNumber(), 9);
 
-    JSHandle<JSTaggedValue> stringV3(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0x2d "));
+    JSHandle<JSTaggedValue> stringV3(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0x2d "));
     result = JSTaggedValue::ToNumber(thread, stringV3);
     EXPECT_EQ(result.GetNumber(), 45);
 
-    JSHandle<JSTaggedValue> stringV4(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0.000001 "));
+    JSHandle<JSTaggedValue> stringV4(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0.000001 "));
     result = JSTaggedValue::ToNumber(thread, stringV4);
     EXPECT_EQ(result.GetNumber(), 0.000001);
 
-    JSHandle<JSTaggedValue> stringV5(thread->GetEcmaVM()->GetFactory()->NewFromString(" 1.23 "));
+    JSHandle<JSTaggedValue> stringV5(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 1.23 "));
     result = JSTaggedValue::ToNumber(thread, stringV5);
     EXPECT_EQ(result.GetNumber(), 1.23);
 
-    JSHandle<JSTaggedValue> stringV6(thread->GetEcmaVM()->GetFactory()->NewFromString(" -1.23e2  "));
+    JSHandle<JSTaggedValue> stringV6(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" -1.23e2  "));
     result = JSTaggedValue::ToNumber(thread, stringV6);
     EXPECT_EQ(result.GetNumber(), -123);
 
-    JSHandle<JSTaggedValue> stringV7(thread->GetEcmaVM()->GetFactory()->NewFromString(" -123e-2"));
+    JSHandle<JSTaggedValue> stringV7(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" -123e-2"));
     result = JSTaggedValue::ToNumber(thread, stringV7);
     EXPECT_EQ(result.GetNumber(), -1.23);
 
-    JSHandle<JSTaggedValue> stringV8(thread->GetEcmaVM()->GetFactory()->NewFromString("  Infinity "));
+    JSHandle<JSTaggedValue> stringV8(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("  Infinity "));
     result = JSTaggedValue::ToNumber(thread, stringV8);
     EXPECT_TRUE(std::isinf(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV9(thread->GetEcmaVM()->GetFactory()->NewFromString("100e307"));
+    JSHandle<JSTaggedValue> stringV9(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("100e307"));
     result = JSTaggedValue::ToNumber(thread, stringV9);
     EXPECT_TRUE(std::isinf(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV10(thread->GetEcmaVM()->GetFactory()->NewFromString("  ."));
+    JSHandle<JSTaggedValue> stringV10(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("  ."));
     result = JSTaggedValue::ToNumber(thread, stringV10);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV11(thread->GetEcmaVM()->GetFactory()->NewFromString("12e+"));
+    JSHandle<JSTaggedValue> stringV11(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("12e+"));
     result = JSTaggedValue::ToNumber(thread, stringV11);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV12(thread->GetEcmaVM()->GetFactory()->NewFromString(".e3"));
+    JSHandle<JSTaggedValue> stringV12(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(".e3"));
     result = JSTaggedValue::ToNumber(thread, stringV12);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV13(thread->GetEcmaVM()->GetFactory()->NewFromString("23eE"));
+    JSHandle<JSTaggedValue> stringV13(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("23eE"));
     result = JSTaggedValue::ToNumber(thread, stringV13);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV14(thread->GetEcmaVM()->GetFactory()->NewFromString("a"));
+    JSHandle<JSTaggedValue> stringV14(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("a"));
     result = JSTaggedValue::ToNumber(thread, stringV14);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV15(thread->GetEcmaVM()->GetFactory()->NewFromString("0o12e3"));
+    JSHandle<JSTaggedValue> stringV15(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0o12e3"));
     result = JSTaggedValue::ToNumber(thread, stringV15);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV16(thread->GetEcmaVM()->GetFactory()->NewFromString("0x12.3"));
+    JSHandle<JSTaggedValue> stringV16(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0x12.3"));
     result = JSTaggedValue::ToNumber(thread, stringV16);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV17(thread->GetEcmaVM()->GetFactory()->NewFromString(" 12.4."));
+    JSHandle<JSTaggedValue> stringV17(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 12.4."));
     result = JSTaggedValue::ToNumber(thread, stringV17);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV18(thread->GetEcmaVM()->GetFactory()->NewFromString("123test"));
+    JSHandle<JSTaggedValue> stringV18(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("123test"));
     result = JSTaggedValue::ToNumber(thread, stringV18);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV19(thread->GetEcmaVM()->GetFactory()->NewFromString("123test"));
+    JSHandle<JSTaggedValue> stringV19(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("123test"));
     result = JSTaggedValue::ToNumber(thread, stringV19);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV20(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0b "));
+    JSHandle<JSTaggedValue> stringV20(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0b "));
     result = JSTaggedValue::ToNumber(thread, stringV20);
     EXPECT_TRUE(std::isnan(result.GetNumber()));
 
-    JSHandle<JSTaggedValue> stringV21(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0b0000 "));
+    JSHandle<JSTaggedValue> stringV21(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0b0000 "));
     result = JSTaggedValue::ToNumber(thread, stringV21);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV22(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0o0000 "));
+    JSHandle<JSTaggedValue> stringV22(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0o0000 "));
     result = JSTaggedValue::ToNumber(thread, stringV22);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV23(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0X0000 "));
+    JSHandle<JSTaggedValue> stringV23(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0X0000 "));
     result = JSTaggedValue::ToNumber(thread, stringV23);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV24(thread->GetEcmaVM()->GetFactory()->NewFromString(" 000.00000 "));
+    JSHandle<JSTaggedValue> stringV24(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 000.00000 "));
     result = JSTaggedValue::ToNumber(thread, stringV24);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV25(thread->GetEcmaVM()->GetFactory()->NewFromString(""));
+    JSHandle<JSTaggedValue> stringV25(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(""));
     result = JSTaggedValue::ToNumber(thread, stringV25);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV26(thread->GetEcmaVM()->GetFactory()->NewFromString("   "));
+    JSHandle<JSTaggedValue> stringV26(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("   "));
     result = JSTaggedValue::ToNumber(thread, stringV26);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV27(thread->GetEcmaVM()->GetFactory()->NewFromString("0"));
+    JSHandle<JSTaggedValue> stringV27(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0"));
     result = JSTaggedValue::ToNumber(thread, stringV27);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV28(thread->GetEcmaVM()->GetFactory()->NewFromString(" 0 "));
+    JSHandle<JSTaggedValue> stringV28(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 0 "));
     result = JSTaggedValue::ToNumber(thread, stringV28);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV29(thread->GetEcmaVM()->GetFactory()->NewFromString("00000000"));
+    JSHandle<JSTaggedValue> stringV29(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("00000000"));
     result = JSTaggedValue::ToNumber(thread, stringV29);
     EXPECT_EQ(result.GetNumber(), 0);
 
-    JSHandle<JSTaggedValue> stringV30(thread->GetEcmaVM()->GetFactory()->NewFromString(" 00000000 "));
+    JSHandle<JSTaggedValue> stringV30(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(" 00000000 "));
     result = JSTaggedValue::ToNumber(thread, stringV30);
     EXPECT_EQ(result.GetNumber(), 0);
 
@@ -767,7 +767,7 @@ HWTEST_F_L0(JSTaggedValueTest, ToUint8Clamp)
 HWTEST_F_L0(JSTaggedValueTest, ToPropertyKey)
 {
     JSTaggedValue result;
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("null");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("null");
     JSTaggedValue key = str.GetTaggedValue();
     result = JSTaggedValue::ToPropertyKey(thread, JSHandle<JSTaggedValue>(thread, key)).GetTaggedValue();
     EXPECT_TRUE(key == result);
@@ -776,7 +776,7 @@ HWTEST_F_L0(JSTaggedValueTest, ToPropertyKey)
 void CheckOkString(JSThread *thread, const JSHandle<JSTaggedValue> &tagged, CString &rightCStr)
 {
     JSHandle<EcmaString> result = JSTaggedValue::ToString(thread, tagged);
-    JSHandle<EcmaString> rightString = thread->GetEcmaVM()->GetFactory()->NewFromString(rightCStr);
+    JSHandle<EcmaString> rightString = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(rightCStr);
     EXPECT_TRUE(EcmaString::StringsAreEqual(EcmaString::Cast(result.GetObject<EcmaString>()),
                                             EcmaString::Cast(rightString.GetObject<EcmaString>())));
 }
@@ -799,8 +799,9 @@ HWTEST_F_L0(JSTaggedValueTest, ToString)
     CheckOkString(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue::False()), rightCStr);
 
     rightCStr = "hello world";
-    CheckOkString(thread, JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromString(rightCStr)),
-                    rightCStr);
+    CheckOkString(thread,
+                  JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(rightCStr)),
+                  rightCStr);
 
     double num = 1;
     JSTaggedNumber numberNum = JSTaggedNumber(num);
@@ -831,7 +832,7 @@ HWTEST_F_L0(JSTaggedValueTest, ToString)
 HWTEST_F_L0(JSTaggedValueTest, CanonicalNumericIndexString)
 {
     JSTaggedValue result;
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("-0");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-0");
     JSTaggedValue tmpStr = str.GetTaggedValue();
     result = JSTaggedValue::CanonicalNumericIndexString(thread, JSHandle<JSTaggedValue>(thread, tmpStr));
     EXPECT_EQ(result.GetDouble(), -0.0);
@@ -864,14 +865,14 @@ HWTEST_F_L0(JSTaggedValueTest, ToObject)
         JSTaggedValue(JSHandle<JSPrimitiveRef>::Cast(JSTaggedValue::ToObject(thread, value3))->GetValue());
     EXPECT_EQ(tagged3.GetRawData(), JSTaggedValue::True().GetRawData());
 
-    JSHandle<JSTaggedValue> value4(factory->NewFromString("aaa"));
+    JSHandle<JSTaggedValue> value4(factory->NewFromCanBeCompressString("aaa"));
     JSTaggedValue tagged4 =
         JSTaggedValue(JSHandle<JSPrimitiveRef>::Cast(JSTaggedValue::ToObject(thread, value4))->GetValue());
     EXPECT_TRUE(tagged4.IsString());
     EXPECT_EQ(reinterpret_cast<EcmaString *>(tagged4.GetRawData())->Compare(value4.GetObject<EcmaString>()), 0);
 
     JSHandle<JSSymbol> symbol = factory->NewPublicSymbolWithChar("bbb");
-    JSHandle<EcmaString> str = factory->NewFromString("bbb");
+    JSHandle<EcmaString> str = factory->NewFromCanBeCompressString("bbb");
     JSHandle<JSTaggedValue> value5(symbol);
     JSTaggedValue tagged5 =
         JSTaggedValue(JSHandle<JSPrimitiveRef>::Cast(JSTaggedValue::ToObject(thread, value5))->GetValue());
@@ -947,7 +948,8 @@ HWTEST_F_L0(JSTaggedValueTest, IsArray)
     ASSERT_TRUE(jsObj->IsJSArray());
     ASSERT_FALSE(JSTaggedValue(1).IsArray(thread));
 
-    ASSERT_FALSE(thread->GetEcmaVM()->GetFactory()->NewFromString("test").GetTaggedValue().IsArray(thread));
+    ASSERT_FALSE(
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test").GetTaggedValue().IsArray(thread));
 }
 
 HWTEST_F_L0(JSTaggedValueTest, IsCallable_IsConstructor_IsExtensible)
@@ -988,18 +990,18 @@ HWTEST_F_L0(JSTaggedValueTest, IsInteger)
     ASSERT_FALSE(JSTaggedValue::Null().IsInteger());
     ASSERT_FALSE(JSTaggedValue::False().IsInteger());
     ASSERT_FALSE(JSTaggedValue::Hole().IsInteger());
-    ASSERT_FALSE(thread->GetEcmaVM()->GetFactory()->NewFromString("test").GetTaggedValue().IsInteger());
+    ASSERT_FALSE(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test").GetTaggedValue().IsInteger());
 }
 
 HWTEST_F_L0(JSTaggedValueTest, IsPropertyKey)
 {
     ASSERT_TRUE(JSTaggedValue::IsPropertyKey(
-        JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromString("test"))));
+        JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test"))));
 }
 
 HWTEST_F_L0(JSTaggedValueTest, IsRegExp)
 {
-    JSHandle<EcmaString> string = thread->GetEcmaVM()->GetFactory()->NewFromString("test");
+    JSHandle<EcmaString> string = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test");
     JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>::Cast(string);
     ASSERT_FALSE(JSObject::IsRegExp(thread, obj));
 }
@@ -1009,16 +1011,15 @@ HWTEST_F_L0(JSTaggedValueTest, SameValue)
     EcmaVM *ecma = thread->GetEcmaVM();
     JSHandle<JSTaggedValue> objectFun = ecma->GetGlobalEnv()->GetObjectFunction();
 
-    JSHandle<JSObject> jsObj =
-        ecma->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFun), objectFun);
+    JSHandle<JSObject> jsObj = ecma->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>(objectFun), objectFun);
 
     // not same type
     ASSERT_FALSE(JSTaggedValue::SameValue(JSTaggedValue(1), JSTaggedValue::False()));
     ASSERT_FALSE(JSTaggedValue::SameValue(JSTaggedValue(1.0), JSTaggedValue::True()));
-    ASSERT_FALSE(
-        JSTaggedValue::SameValue(JSTaggedValue(1), ecma->GetFactory()->NewFromString("test").GetTaggedValue()));
+    ASSERT_FALSE(JSTaggedValue::SameValue(JSTaggedValue(1),
+                                          ecma->GetFactory()->NewFromCanBeCompressString("test").GetTaggedValue()));
     ASSERT_FALSE(JSTaggedValue::SameValue(JSTaggedValue(1), JSTaggedValue(*jsObj)));
-    JSHandle<JSTaggedValue> test(ecma->GetFactory()->NewFromString("test"));
+    JSHandle<JSTaggedValue> test(ecma->GetFactory()->NewFromCanBeCompressString("test"));
     ASSERT_FALSE(JSTaggedValue::SameValue(test.GetTaggedValue(), JSTaggedValue(*jsObj)));
 
     // number compare
@@ -1035,7 +1036,7 @@ HWTEST_F_L0(JSTaggedValueTest, SameValue)
     ASSERT_FALSE(JSTaggedValue::SameValue(JSTaggedValue(1.0), JSTaggedValue(-1.0)));
 
     // string compare
-    JSHandle<JSTaggedValue> test1(ecma->GetFactory()->NewFromString("test1"));
+    JSHandle<JSTaggedValue> test1(ecma->GetFactory()->NewFromCanBeCompressString("test1"));
     ASSERT_FALSE(JSTaggedValue::SameValue(test.GetTaggedValue(), test1.GetTaggedValue()));
     ASSERT_TRUE(JSTaggedValue::SameValue(test.GetTaggedValue(), test.GetTaggedValue()));
 
@@ -1063,9 +1064,9 @@ HWTEST_F_L0(JSTaggedValueTest, SameValueZero)
 
 HWTEST_F_L0(JSTaggedValueTest, Less)
 {
-    JSHandle<JSTaggedValue> test(thread->GetEcmaVM()->GetFactory()->NewFromString("test"));
-    JSHandle<JSTaggedValue> test1(thread->GetEcmaVM()->GetFactory()->NewFromString("test1"));
-    JSHandle<JSTaggedValue> test2(thread->GetEcmaVM()->GetFactory()->NewFromString("test2"));
+    JSHandle<JSTaggedValue> test(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test"));
+    JSHandle<JSTaggedValue> test1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test1"));
+    JSHandle<JSTaggedValue> test2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test2"));
 
     ASSERT_TRUE(JSTaggedValue::Less(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1.0)),
                                     JSHandle<JSTaggedValue>(thread, JSTaggedValue(2.0))));
@@ -1079,11 +1080,12 @@ HWTEST_F_L0(JSTaggedValueTest, Less)
     ASSERT_FALSE(JSTaggedValue::Less(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)), test1));
     ASSERT_FALSE(JSTaggedValue::Less(thread, test2, JSHandle<JSTaggedValue>(thread, JSTaggedValue(2))));
 
-    ASSERT_TRUE(JSTaggedValue::Less(thread,
-                                    JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromString("1")),
-                                    JSHandle<JSTaggedValue>(thread, JSTaggedValue(2))));
-    ASSERT_TRUE(JSTaggedValue::Less(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)),
-                                    JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromString("2"))));
+    ASSERT_TRUE(JSTaggedValue::Less(
+        thread, JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1")),
+        JSHandle<JSTaggedValue>(thread, JSTaggedValue(2))));
+    ASSERT_TRUE(JSTaggedValue::Less(
+        thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1)),
+        JSHandle<JSTaggedValue>(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2"))));
 
     ASSERT_TRUE(JSTaggedValue::Less(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue::False()),
                                     JSHandle<JSTaggedValue>(thread, JSTaggedValue::True())));
@@ -1134,16 +1136,16 @@ HWTEST_F_L0(JSTaggedValueTest, Equal)
     ASSERT_FALSE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(0)),
                                       JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null())));
 
-    JSHandle<JSTaggedValue> test(thread->GetEcmaVM()->GetFactory()->NewFromString("test"));
-    JSHandle<JSTaggedValue> test1(thread->GetEcmaVM()->GetFactory()->NewFromString("test1"));
-    JSHandle<JSTaggedValue> empty(thread->GetEcmaVM()->GetFactory()->NewFromString(""));
-    JSHandle<JSTaggedValue> char0(thread->GetEcmaVM()->GetFactory()->NewFromString("0"));
-    JSHandle<JSTaggedValue> char0Point0(thread->GetEcmaVM()->GetFactory()->NewFromString("0.0"));
-    JSHandle<JSTaggedValue> char1(thread->GetEcmaVM()->GetFactory()->NewFromString("1"));
-    JSHandle<JSTaggedValue> char1Point0(thread->GetEcmaVM()->GetFactory()->NewFromString("1.0"));
-    JSHandle<JSTaggedValue> charM1(thread->GetEcmaVM()->GetFactory()->NewFromString("-1"));
-    JSHandle<JSTaggedValue> charM0Point0(thread->GetEcmaVM()->GetFactory()->NewFromString("-0.0"));
-    JSHandle<JSTaggedValue> charM0Point1(thread->GetEcmaVM()->GetFactory()->NewFromString("-0.1"));
+    JSHandle<JSTaggedValue> test(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test"));
+    JSHandle<JSTaggedValue> test1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("test1"));
+    JSHandle<JSTaggedValue> empty(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(""));
+    JSHandle<JSTaggedValue> char0(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0"));
+    JSHandle<JSTaggedValue> char0Point0(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("0.0"));
+    JSHandle<JSTaggedValue> char1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1"));
+    JSHandle<JSTaggedValue> char1Point0(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1.0"));
+    JSHandle<JSTaggedValue> charM1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-1"));
+    JSHandle<JSTaggedValue> charM0Point0(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-0.0"));
+    JSHandle<JSTaggedValue> charM0Point1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("-0.1"));
 
     ASSERT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(0)), char0));
     ASSERT_TRUE(JSTaggedValue::Equal(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(0.0)), char0));
@@ -1157,7 +1159,6 @@ HWTEST_F_L0(JSTaggedValueTest, Equal)
     ASSERT_FALSE(JSTaggedValue::Equal(thread, test, test1));
     ASSERT_FALSE(JSTaggedValue::Equal(thread, test, empty));
     ASSERT_TRUE(JSTaggedValue::Equal(thread, empty, empty));
-
 
     ASSERT_TRUE(JSTaggedValue::Equal(thread, char1, JSHandle<JSTaggedValue>(thread, JSTaggedValue(1))));
     ASSERT_TRUE(JSTaggedValue::Equal(thread, char1, JSHandle<JSTaggedValue>(thread, JSTaggedValue::True())));

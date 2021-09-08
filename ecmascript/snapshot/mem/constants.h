@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMASCRIPT_MEM_CONSTANTS_H
-#define PANDA_ECMASCRIPT_MEM_CONSTANTS_H
+#ifndef ECMASCRIPT_SNAPSHOT_MEM_CONSTANTS_H
+#define ECMASCRIPT_SNAPSHOT_MEM_CONSTANTS_H
 
 // slot bit
 static constexpr int OBJECT_INDEX_BIT_NUMBER = 13;          // object index
@@ -47,4 +47,4 @@ static constexpr int NATIVE_METHOD_SIZE = 427;
 
 static constexpr size_t MANAGED_OBJECT_OFFSET = 16;
 
-#endif  // PANDA_ECMASCRIPT_MEM_CONSTANTS_H
+#endif  // ECMASCRIPT_SNAPSHOT_MEM_CONSTANTS_H

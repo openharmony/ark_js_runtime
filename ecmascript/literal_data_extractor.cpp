@@ -42,9 +42,11 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const panda_file
     array_size_t epos = 0;
     array_size_t ppos = 0;
     const uint8_t pairSize = 2;
+    uint32_t methodId;
+    FunctionKind kind;
     lda.EnumerateLiteralVals(
-        index, [elements, properties, &epos, &ppos, factory, thread, pft](const LiteralValue &value,
-                                                                          const LiteralTag &tag) {
+        index, [elements, properties, &epos, &ppos, factory, thread, pft, &methodId, &kind](const LiteralValue &value,
+                                                                                            const LiteralTag &tag) {
         JSTaggedValue jt = JSTaggedValue::Null();
         bool flag = false;
         switch (tag) {
@@ -72,15 +74,20 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const panda_file
             }
             case LiteralTag::METHOD: {
                 ASSERT(pft != nullptr);
-                uint32_t methodId = std::get<uint32_t>(value);
-                JSHandle<JSFunction> jsFunc = pft->DefineMethodById(methodId, FunctionKind::NORMAL_FUNCTION);
-                jt = jsFunc.GetTaggedValue();
+                methodId = std::get<uint32_t>(value);
+                kind = FunctionKind::NORMAL_FUNCTION;
                 break;
             }
             case LiteralTag::GENERATORMETHOD: {
                 ASSERT(pft != nullptr);
-                uint32_t methodId = std::get<uint32_t>(value);
-                JSHandle<JSFunction> jsFunc = pft->DefineMethodById(methodId, FunctionKind::GENERATOR_FUNCTION);
+                methodId = std::get<uint32_t>(value);
+                kind = FunctionKind::GENERATOR_FUNCTION;
+                break;
+            }
+            case LiteralTag::METHODAFFILIATE: {
+                ASSERT(pft != nullptr);
+                uint16_t length = std::get<uint16_t>(value);
+                JSHandle<JSFunction> jsFunc = pft->DefineMethodInLiteral(thread, methodId, kind, length);
                 jt = jsFunc.GetTaggedValue();
                 break;
             }
@@ -97,10 +104,12 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const panda_file
                 break;
             }
         }
-        if (epos % pairSize == 0 && !flag) {
-            properties->Set(thread, ppos++, jt);
-        } else {
-            elements->Set(thread, epos++, jt);
+        if (tag != LiteralTag::METHOD && tag != LiteralTag::GENERATORMETHOD) {
+            if (epos % pairSize == 0 && !flag) {
+                properties->Set(thread, ppos++, jt);
+            } else {
+                elements->Set(thread, epos++, jt);
+            }
         }
     });
 }
@@ -117,9 +126,12 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
     uint32_t num = lda.GetLiteralValsNum(index) / 2;  // 2: half
     JSHandle<TaggedArray> literals = factory->NewTaggedArray(num);
     array_size_t pos = 0;
+    uint32_t methodId;
+    FunctionKind kind;
     lda.EnumerateLiteralVals(
-        index, [literals, &pos, factory, thread, pft](const panda_file::LiteralDataAccessor::LiteralValue &value,
-                                                      const LiteralTag &tag) {
+        index, [literals, &pos, factory, thread, pft,
+                &methodId, &kind](const panda_file::LiteralDataAccessor::LiteralValue &value,
+                                  const LiteralTag &tag) {
             JSTaggedValue jt = JSTaggedValue::Null();
             switch (tag) {
                 case LiteralTag::INTEGER: {
@@ -142,15 +154,20 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
                 }
                 case LiteralTag::METHOD: {
                     ASSERT(pft != nullptr);
-                    uint32_t methodId = std::get<uint32_t>(value);
-                    JSHandle<JSFunction> jsFunc = pft->DefineMethodById(methodId, FunctionKind::NORMAL_FUNCTION);
-                    jt = jsFunc.GetTaggedValue();
+                    methodId = std::get<uint32_t>(value);
+                    kind = FunctionKind::NORMAL_FUNCTION;
                     break;
                 }
                 case LiteralTag::GENERATORMETHOD: {
                     ASSERT(pft != nullptr);
-                    uint32_t methodId = std::get<uint32_t>(value);
-                    JSHandle<JSFunction> jsFunc = pft->DefineMethodById(methodId, FunctionKind::GENERATOR_FUNCTION);
+                    methodId = std::get<uint32_t>(value);
+                    kind = FunctionKind::GENERATOR_FUNCTION;
+                    break;
+                }
+                case LiteralTag::METHODAFFILIATE: {
+                    ASSERT(pft != nullptr);
+                    uint16_t length = std::get<uint16_t>(value);
+                    JSHandle<JSFunction> jsFunc = pft->DefineMethodInLiteral(thread, methodId, kind, length);
                     jt = jsFunc.GetTaggedValue();
                     break;
                 }
@@ -167,7 +184,12 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
                     break;
                 }
             }
-            literals->Set(thread, pos++, jt);
+            if (tag != LiteralTag::METHOD && tag != LiteralTag::GENERATORMETHOD) {
+                literals->Set(thread, pos++, jt);
+            } else {
+                array_size_t oldLength = literals->GetLength();
+                literals->Trim(thread, oldLength - 1);
+            }
         });
     return literals;
 }

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_REGION_FACTORY_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_REGION_FACTORY_H
+#ifndef ECMASCRIPT_MEM_REGION_FACTORY_H
+#define ECMASCRIPT_MEM_REGION_FACTORY_H
 
 #include <atomic>
 
@@ -42,8 +42,6 @@ public:
     void FreeRegion(Region *region);
     Area *AllocateArea(size_t capacity);
     void FreeArea(Area *area);
-    void *AllocateWithMMap(size_t size);
-    void FreeWithMMap(void *mem, size_t size);
     void *Allocate(size_t size);
     void Free(void *mem, size_t size);
     void *AllocateBuffer(size_t size);
@@ -52,7 +50,7 @@ public:
     static void FreeBufferFunc(void* buffer, void* data);
 
     // implemented by AllocateBuffer
-    template <typename T, typename... Args>
+    template<typename T, typename... Args>
     std::enable_if_t<!std::is_array_v<T>, T *> New(Args &&... args)
     {
         void *p = AllocateBuffer(sizeof(T));
@@ -63,27 +61,63 @@ public:
         return reinterpret_cast<T *>(p);
     }
 
-    void IncreaseMemoryUsage(size_t bytes)
+    template<class T>
+    void Delete(T *ptr)
     {
-        size_t current = memoryUsage_.fetch_add(bytes, std::memory_order_relaxed) + bytes;
-        size_t max = maxMemoryUsage_.load(std::memory_order_relaxed);
-        while (current > max && !maxMemoryUsage_.compare_exchange_weak(max, current, std::memory_order_relaxed)) {
+        if (ptr == nullptr) {
+            return;
+        }
+        // NOLINTNEXTLINE(readability-braces-around-statements,bugprone-suspicious-semicolon)
+        if constexpr (std::is_class_v<T>) {
+            ptr->~T();
+        }
+        FreeBuffer(ptr);
+    }
+
+    void IncreaseAnnoMemoryUsage(size_t bytes)
+    {
+        size_t current = annoMemoryUsage_.fetch_add(bytes, std::memory_order_relaxed) + bytes;
+        size_t max = maxAnnoMemoryUsage_.load(std::memory_order_relaxed);
+        while (current > max && !maxAnnoMemoryUsage_.compare_exchange_weak(max, current, std::memory_order_relaxed)) {
         }
     }
 
-    void DecreaseMemoryUsage(size_t bytes)
+    void DecreaseAnnoMemoryUsage(size_t bytes)
     {
-        memoryUsage_.fetch_sub(bytes, std::memory_order_relaxed);
+        annoMemoryUsage_.fetch_sub(bytes, std::memory_order_relaxed);
     }
 
-    size_t GetCurrentMemoryUsage() const
+    size_t GetAnnoMemoryUsage() const
     {
-        return memoryUsage_.load(std::memory_order_relaxed);
+        return annoMemoryUsage_.load(std::memory_order_relaxed);
     }
 
-    size_t GetMaxMemoryUsage() const
+    size_t GetMaxAnnoMemoryUsage() const
     {
-        return maxMemoryUsage_.load(std::memory_order_relaxed);
+        return maxAnnoMemoryUsage_.load(std::memory_order_relaxed);
+    }
+
+    void IncreaseNativeMemoryUsage(size_t bytes)
+    {
+        size_t current = nativeMemoryUsage_.fetch_add(bytes, std::memory_order_relaxed) + bytes;
+        size_t max = maxNativeMemoryUsage_.load(std::memory_order_relaxed);
+        while (current > max && !maxNativeMemoryUsage_.compare_exchange_weak(max, current, std::memory_order_relaxed)) {
+        }
+    }
+
+    void DecreaseNativeMemoryUsage(size_t bytes)
+    {
+        nativeMemoryUsage_.fetch_sub(bytes, std::memory_order_relaxed);
+    }
+
+    size_t GetNativeMemoryUsage() const
+    {
+        return nativeMemoryUsage_.load(std::memory_order_relaxed);
+    }
+
+    size_t GetMaxNativeMemoryUsage() const
+    {
+        return maxNativeMemoryUsage_.load(std::memory_order_relaxed);
     }
 
 private:
@@ -91,9 +125,11 @@ private:
     NO_MOVE_SEMANTIC(RegionFactory);
 
     Area *cachedArea_{nullptr};
-    std::atomic<size_t> memoryUsage_{0};
-    std::atomic<size_t> maxMemoryUsage_{0};
+    std::atomic<size_t> annoMemoryUsage_{0};
+    std::atomic<size_t> maxAnnoMemoryUsage_{0};
+    std::atomic<size_t> nativeMemoryUsage_{0};
+    std::atomic<size_t> maxNativeMemoryUsage_{0};
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_REGION_FACTORY_H
+#endif  // ECMASCRIPT_MEM_REGION_FACTORY_H

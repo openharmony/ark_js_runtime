@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_FUNCTION_INFO_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_FUNCTION_INFO_H
+#ifndef ECMASCRIPT_JS_FUNCTION_INFO_H
+#define ECMASCRIPT_JS_FUNCTION_INFO_H
 
 #include "utils/bit_field.h"
 #include "ecmascript/ecma_macros.h"
@@ -31,7 +31,7 @@ public:
         return static_cast<JSFunctionExtraInfo *>(object);
     }
 
-    static constexpr size_t CALL_BACK_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t CALL_BACK_OFFSET = TaggedObjectSize();
     ACCESSORS(Callback, CALL_BACK_OFFSET, DATA_OFFSET);
     ACCESSORS(Data, DATA_OFFSET, SIZE);
 

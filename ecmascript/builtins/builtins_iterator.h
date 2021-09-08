@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ITERATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ITERATOR_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_ITERATOR_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_ITERATOR_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/ecma_runtime_call_info.h"
@@ -33,4 +33,4 @@ public:
     static JSTaggedValue GetIteratorObj(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ITERATOR_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_ITERATOR_H

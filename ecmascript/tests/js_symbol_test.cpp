@@ -27,7 +27,7 @@ using LexicalEnv = panda::ecmascript::LexicalEnv;
 using JSHClass = panda::ecmascript::JSHClass;
 using ObjectFactory = panda::ecmascript::ObjectFactory;
 
-template <typename T>
+template<typename T>
 using JSHandle = panda::ecmascript::JSHandle<T>;
 
 namespace panda::test {

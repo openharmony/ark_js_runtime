@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_DEBUG_TEST_TEST_LIST_H
-#define PANDA_RUNTIME_DEBUG_TEST_TEST_LIST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_TEST_LIST_H
+#define ECMASCRIPT_TOOLING_TEST_TEST_LIST_H
 
 #include <utility>
 #include <vector>
@@ -32,4 +32,4 @@ void SetCurrentTestName(const char *testName);
 std::pair<CString, CString> GetTestEntryPoint(const char *testName);
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // PANDA_RUNTIME_DEBUG_TEST_TEST_LIST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_TEST_LIST_H

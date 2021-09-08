@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMA_ACCESSOR_DATA_H
-#define PANDA_RUNTIME_ECMA_ACCESSOR_DATA_H
+#ifndef ECMASCRIPT_ACCESSOR_DATA_H
+#define ECMASCRIPT_ACCESSOR_DATA_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_hclass.h"
@@ -83,7 +83,7 @@ public:
         return JSTaggedValue::SameValue(this->GetType(), JSTaggedValue(static_cast<int32_t>(THROW)));
     }
 
-    static constexpr size_t TYPE_OFFSET = ObjectHeaderSize();
+    static constexpr size_t TYPE_OFFSET = Record::SIZE;
     ACCESSORS(Type, TYPE_OFFSET, VALUE_OFFSET);
     ACCESSORS(Value, VALUE_OFFSET, SIZE);
 
@@ -92,4 +92,4 @@ public:
     DECL_VISIT_OBJECT(TYPE_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMA_ACCESSOR_DATA_H
+#endif  // ECMASCRIPT_ACCESSOR_DATA_H

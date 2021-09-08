@@ -37,7 +37,8 @@ void Worker::Finish(size_t &aliveSize)
     }
 
     while (!unuseSpace_.empty()) {
-        heap_->GetRegionFactory()->FreeBuffer(reinterpret_cast<void *>(unuseSpace_.back()));
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeBuffer(reinterpret_cast<void *>(
+            unuseSpace_.back()));
         unuseSpace_.pop_back();
     }
 }
@@ -97,7 +98,8 @@ WorkNode *Worker::AllocalWorkNode()
             begin = atomicField->load(std::memory_order_acquire);
             if (begin + totalSize >= markSpaceEnd_) {
                 unuseSpace_.emplace_back(markSpace_);
-                markSpace_ = ToUintPtr(heap_->GetRegionFactory()->AllocateBuffer(SPACE_SIZE));
+                markSpace_ =
+                    ToUintPtr(const_cast<RegionFactory *>(heap_->GetRegionFactory())->AllocateBuffer(SPACE_SIZE));
                 spaceTop_ = markSpace_;
                 markSpaceEnd_ = markSpace_ + SPACE_SIZE;
                 begin = spaceTop_;
@@ -118,17 +120,17 @@ Worker::Worker(Heap *heap, uint32_t threadNum)
     for (uint32_t i = 0; i < threadNum_; i++) {
         continuousQueue_[i] = new ProcessQueue(heap);
     }
-    markSpace_ = ToUintPtr(heap_->GetRegionFactory()->AllocateBuffer(SPACE_SIZE));
+    markSpace_ = ToUintPtr(const_cast<RegionFactory *>(heap_->GetRegionFactory())->AllocateBuffer(SPACE_SIZE));
 }
 
 Worker::~Worker()
 {
     for (uint32_t i = 0; i < threadNum_; i++) {
-        continuousQueue_[i]->TearDown();
+        continuousQueue_[i]->Destroy();
         delete continuousQueue_[i];
         continuousQueue_[i] = nullptr;
     }
-    heap_->GetRegionFactory()->FreeBuffer(reinterpret_cast<void *>(markSpace_));
+    const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeBuffer(reinterpret_cast<void *>(markSpace_));
 }
 
 SemiSpaceWorker::~SemiSpaceWorker() = default;

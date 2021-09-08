@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PROGRAM_H
-#define PANDA_RUNTIME_ECMASCRIPT_PROGRAM_H
+#ifndef ECMASCRIPT_CLASS_LINKER_PROGRAM_H
+#define ECMASCRIPT_CLASS_LINKER_PROGRAM_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -28,7 +28,7 @@ class Program : public ECMAObject {
 public:
     DECL_CAST(Program)
 
-    static constexpr size_t LOCATION_OFFSET = sizeof(ECMAObject);
+    static constexpr size_t LOCATION_OFFSET = ECMAObject::SIZE;
     ACCESSORS(Location, LOCATION_OFFSET, CONSTANT_POOL_OFFSET)
     ACCESSORS(ConstantPool, CONSTANT_POOL_OFFSET, MAIN_FUNCTION_OFFSET)
     ACCESSORS(MainFunction, MAIN_FUNCTION_OFFSET, METHODS_DATA_OFFSET)
@@ -57,7 +57,7 @@ public:
 
     inline const uint8_t *GetInstructions() const;
 
-    static constexpr size_t NAME_OFFSET = sizeof(ECMAObject);
+    static constexpr size_t NAME_OFFSET = ECMAObject::SIZE;
     ACCESSORS(Name, NAME_OFFSET, NUMBER_VREGS_OFFSET)
     ACCESSORS(NumberVRegs, NUMBER_VREGS_OFFSET, NUMBER_IC_SLOTS_OFFSET)
     ACCESSORS(NumberICSlots, NUMBER_IC_SLOTS_OFFSET, BYTECODE_OFFSET)
@@ -80,4 +80,4 @@ public:
 };
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PROGRAM_H
+#endif  // ECMASCRIPT_CLASS_LINKER_PROGRAM_H

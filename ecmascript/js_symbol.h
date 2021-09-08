@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSSYMBOL_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSSYMBOL_H
+#ifndef ECMASCRIPT_JSSYMBOL_H
+#define ECMASCRIPT_JSSYMBOL_H
 
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/js_object.h"
@@ -152,7 +152,7 @@ public:
     }
 
 public:
-    static constexpr size_t HASHFIELD_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t HASHFIELD_OFFSET = TaggedObjectSize();
     ACCESSORS(HashField, HASHFIELD_OFFSET, FLAGS_OFFSET)
     ACCESSORS(Flags, FLAGS_OFFSET, DESCRIPTION_OFFSET)
     ACCESSORS(Description, DESCRIPTION_OFFSET, SIZE)
@@ -163,4 +163,4 @@ public:
 };
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_NAME_H
+#endif  // ECMASCRIPT_NAME_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_ITERATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_ITERATOR_H
+#ifndef ECMASCRIPT_JS_ITERATOR_H
+#define ECMASCRIPT_JS_ITERATOR_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "tagged_array-inl.h"
@@ -48,4 +48,4 @@ public:
     static JSHandle<JSObject> CreateIterResultObject(JSThread *thread, const JSHandle<JSTaggedValue> &value, bool done);
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_ITERATOR_H
+#endif  // ECMASCRIPT_JS_ITERATOR_H

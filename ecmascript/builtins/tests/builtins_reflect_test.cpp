@@ -81,12 +81,12 @@ JSTaggedValue TestReflectApply(EcmaRuntimeCallInfo *argv)
 
     JSTaggedValue testA =
         JSObject::GetProperty(thread, thisValue,
-                              JSHandle<JSTaggedValue>(factory->NewFromString("test_reflect_apply_a")))
+                              JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_reflect_apply_a")))
             .GetValue()
             .GetTaggedValue();
     JSTaggedValue testB =
         JSObject::GetProperty(thread, thisValue,
-                              JSHandle<JSTaggedValue>(factory->NewFromString("test_reflect_apply_b")))
+                              JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_reflect_apply_b")))
             .GetValue()
             .GetTaggedValue();
 
@@ -97,7 +97,6 @@ JSTaggedValue TestReflectApply(EcmaRuntimeCallInfo *argv)
 // Reflect.apply (target, thisArgument, argumentsList)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectApply)
 {
-    ASSERT_NE(thread, nullptr);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -108,10 +107,10 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectApply)
     JSHandle<JSObject> thisArgument =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArgument),
-                          JSHandle<JSTaggedValue>(factory->NewFromString("test_reflect_apply_a")),
+                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_reflect_apply_a")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(11)));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(thisArgument),
-                          JSHandle<JSTaggedValue>(factory->NewFromString("test_reflect_apply_b")),
+                          JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_reflect_apply_b")),
                           JSHandle<JSTaggedValue>(thread, JSTaggedValue(22)));
     // argumentsList
     JSHandle<JSObject> argumentsList(JSArray::ArrayCreate(thread, JSTaggedNumber(2)));
@@ -133,15 +132,14 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectApply)
     ASSERT_EQ(result.GetRawData(), JSTaggedValue(110).GetRawData());
 
     JSObject::DeleteProperty(thread, (thisArgument),
-                             JSHandle<JSTaggedValue>(factory->NewFromString("test_reflect_apply_a")));
+                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_reflect_apply_a")));
     JSObject::DeleteProperty(thread, (thisArgument),
-                             JSHandle<JSTaggedValue>(factory->NewFromString("test_reflect_apply_b")));
+                             JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("test_reflect_apply_b")));
 }
 
 // Reflect.construct (target, argumentsList [ , newTarget])
 HWTEST_F_L0(BuiltinsReflectTest, ReflectConstruct)
 {
-    ASSERT_NE(thread, nullptr);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -150,7 +148,8 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectConstruct)
     JSHandle<JSFunction> target = JSHandle<JSFunction>::Cast(env->GetStringFunction());
     // argumentsList
     JSHandle<JSObject> argumentsList(JSArray::ArrayCreate(thread, JSTaggedNumber(1)));
-    PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>::Cast(factory->NewFromString("ReflectConstruct")));
+    PropertyDescriptor desc(thread,
+                            JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("ReflectConstruct")));
     JSArray::DefineOwnProperty(thread, argumentsList, JSHandle<JSTaggedValue>(thread, JSTaggedValue(0)), desc);
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 8);
@@ -165,22 +164,20 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectConstruct)
     ASSERT_TRUE(result.IsECMAObject());
     JSHandle<JSTaggedValue> taggedResult(thread, result);
     JSHandle<JSPrimitiveRef> refResult = JSHandle<JSPrimitiveRef>::Cast(taggedResult);
-    JSHandle<EcmaString> ruler = factory->NewFromString("ReflectConstruct");
+    JSHandle<EcmaString> ruler = factory->NewFromCanBeCompressString("ReflectConstruct");
     ASSERT_EQ(EcmaString::Cast(refResult->GetValue().GetTaggedObject())->Compare(*ruler), 0);
 }
 
 // Reflect.defineProperty (target, propertyKey, attributes)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectDefineProperty)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
     JSHandle<JSObject> target =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
     // propertyKey
-    JSHandle<JSTaggedValue> key(factory->NewFromString("test_reflect_define_property"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("test_reflect_define_property"));
     // attributes
     JSHandle<JSObject> attributes =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
@@ -224,15 +221,13 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectDefineProperty)
 // Reflect.deleteProperty (target, propertyKey)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectDeleteProperty)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
     JSHandle<JSObject> target =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
     // propertyKey
-    JSHandle<JSTaggedValue> key(factory->NewFromString("test_reflect_delete_property"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("test_reflect_delete_property"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(101));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(target), key, value);
 
@@ -254,15 +249,13 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectDeleteProperty)
 // Reflect.get (target, propertyKey [ , receiver])
 HWTEST_F_L0(BuiltinsReflectTest, ReflectGet)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
     JSHandle<JSObject> target =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
     // propertyKey
-    JSHandle<JSTaggedValue> key(factory->NewFromString("test_reflect_get"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("test_reflect_get"));
     // set property
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(101.5));
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(target), key, value);
@@ -283,15 +276,13 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectGet)
 // Reflect.getOwnPropertyDescriptor ( target, propertyKey )
 HWTEST_F_L0(BuiltinsReflectTest, ReflectGetOwnPropertyDescriptor)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
     JSHandle<JSObject> target =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
     // propertyKey
-    JSHandle<JSTaggedValue> key(factory->NewFromString("test_reflect_get_property_descriptor"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("test_reflect_get_property_descriptor"));
     PropertyDescriptor desc(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(102)), true, false, true);
     ASSERT_EQ(JSTaggedValue::DefinePropertyOrThrow(thread, JSHandle<JSTaggedValue>(target), key, desc), true);
 
@@ -329,8 +320,6 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectGetOwnPropertyDescriptor)
 // Reflect.getPrototypeOf (target)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectGetPrototypeOf)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     JSHandle<JSObject> target =
@@ -355,15 +344,13 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectGetPrototypeOf)
 // Reflect.has (target, propertyKey)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectHas)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
     JSHandle<JSObject> target =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
     // propertyKey
-    JSHandle<JSTaggedValue> key(factory->NewFromString("test_reflect_has"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("test_reflect_has"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(103));
     ASSERT_EQ(JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(target), key, value), true);
 
@@ -382,8 +369,6 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectHas)
 // Reflect.isExtensible (target)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectIsExtensible)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
@@ -405,17 +390,15 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectIsExtensible)
 // Reflect.ownKeys (target)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectOwnKeys)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
     JSHandle<JSObject> target =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
-    JSHandle<JSTaggedValue> key0(factory->NewFromString("test_reflect_own_keys1"));
+    JSHandle<JSTaggedValue> key0(factory->NewFromCanBeCompressString("test_reflect_own_keys1"));
     JSHandle<JSTaggedValue> value0(thread, JSTaggedValue(104));
     ASSERT_EQ(JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(target), key0, value0), true);
-    JSHandle<JSTaggedValue> key1(factory->NewFromString("test_reflect_own_keys2"));
+    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("test_reflect_own_keys2"));
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(105));
     ASSERT_EQ(JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(target), key1, value1), true);
 
@@ -454,8 +437,6 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectOwnKeys)
 // Reflect.preventExtensions (target)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectPreventExtensions)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
@@ -478,15 +459,13 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectPreventExtensions)
 // Reflect.set (target, propertyKey, V [ , receiver])
 HWTEST_F_L0(BuiltinsReflectTest, ReflectSet)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // target
     JSHandle<JSObject> target =
         factory->NewJSObjectByConstructor(TestObjectCreate(thread), JSHandle<JSTaggedValue>(TestObjectCreate(thread)));
     // propertyKey
-    JSHandle<JSTaggedValue> key(factory->NewFromString("test_reflect_set"));
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("test_reflect_set"));
     // value
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(106));
 
@@ -509,8 +488,6 @@ HWTEST_F_L0(BuiltinsReflectTest, ReflectSet)
 // Reflect.setPrototypeOf (target, proto)
 HWTEST_F_L0(BuiltinsReflectTest, ReflectSetPrototypeOf)
 {
-    ASSERT_NE(thread, nullptr);
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     JSHandle<JSObject> target =

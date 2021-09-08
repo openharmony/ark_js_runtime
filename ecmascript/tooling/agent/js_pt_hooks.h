@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_JS_PT_HOOKS_H
-#define PANDA_TOOLING_ECMASCRIPT_JS_PT_HOOKS_H
+#ifndef ECMASCRIPT_TOOLING_AGENT_JS_PT_HOOKS_H
+#define ECMASCRIPT_TOOLING_AGENT_JS_PT_HOOKS_H
 
 #include "libpandabase/macros.h"
 #include "ecmascript/tooling/pt_js_extractor.h"

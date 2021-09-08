@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_ECMA_MODULE_H
-#define PANDA_RUNTIME_ECMASCRIPT_ECMA_MODULE_H
+#ifndef ECMASCRIPT_ECMA_MODULE_H
+#define ECMASCRIPT_ECMA_MODULE_H
 
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value-inl.h"

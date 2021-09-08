@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef RUNTIME_ECMASCRIPT_HPROF_HEAP_SNAPSHOT_H
-#define RUNTIME_ECMASCRIPT_HPROF_HEAP_SNAPSHOT_H
+#ifndef ECMASCRIPT_HPROF_HEAP_SNAPSHOT_H
+#define ECMASCRIPT_HPROF_HEAP_SNAPSHOT_H
 
 #include <atomic>
 #include <cstdint>
@@ -57,7 +57,7 @@ public:
           isLive_(isLive)
     {
     }
-    uint64_t GetId()
+    uint64_t GetId() const
     {
         return id_;
     }
@@ -65,23 +65,24 @@ public:
     {
         index_ = index;
     }
-    uint64_t GetIndex()
+    uint64_t GetIndex() const
     {
         return index_;
     }
-    CString *GetName()
+
+    const CString *GetName() const
     {
         return name_;
     }
-    NodeType GetType()
+    NodeType GetType() const
     {
         return type_;
     }
-    size_t GetSelfSize()
+    size_t GetSelfSize() const
     {
         return size_;
     }
-    size_t GetEdgeCount()
+    size_t GetEdgeCount() const
     {
         return edgeCount_;
     }
@@ -89,15 +90,15 @@ public:
     {
         edgeCount_++;
     }
-    uint64_t GetStackTraceId()
+    uint64_t GetStackTraceId() const
     {
         return traceId_;
     }
-    Address GetAddress()
+    Address GetAddress() const
     {
         return address_;
     }
-    bool IsLive()
+    bool IsLive() const
     {
         return isLive_;
     }
@@ -105,9 +106,9 @@ public:
     {
         isLive_ = isLive;
     }
-    static Node *NewNode(size_t id, size_t index, CString *name, NodeType type, size_t size, TaggedObject *entry,
-                         bool isLive = true);
-    template <typename T>
+    static Node *NewNode(const Heap *heap, size_t id, size_t index, CString *name, NodeType type, size_t size,
+                         TaggedObject *entry, bool isLive = true);
+    template<typename T>
     static Address NewAddress(T *addr)
     {
         return reinterpret_cast<Address>(addr);
@@ -140,15 +141,15 @@ public:
     {
         return edgeType_;
     }
-    Node *GetFrom() const
+    const Node *GetFrom() const
     {
         return from_;
     }
-    Node *GetTo() const
+    const Node *GetTo() const
     {
         return to_;
     }
-    CString *GetName() const
+    const CString *GetName() const
     {
         return name_;
     }
@@ -164,7 +165,7 @@ public:
     {
         to_ = node;
     }
-    static Edge *NewEdge(uint64_t id, EdgeType type, Node *from, Node *to, CString *name);
+    static Edge *NewEdge(const Heap *heap, uint64_t id, EdgeType type, Node *from, Node *to, CString *name);
     static constexpr int EDGE_FIELD_COUNT = 3;
     ~Edge() = default;
 private:
@@ -183,12 +184,12 @@ public:
     DEFAULT_MOVE_SEMANTIC(TimeStamp);
     DEFAULT_COPY_SEMANTIC(TimeStamp);
 
-    int GetLastSequenceId()
+    int GetLastSequenceId() const
     {
         return lastSequenceId_;
     }
 
-    int64_t GetTimeStamp()
+    int64_t GetTimeStamp() const
     {
         return timeStampUs_;
     }
@@ -215,11 +216,11 @@ public:
     Node *FindOrInsertNode(Node *node);
     Node *FindAndEraseNode(Address addr);
     Node *FindEntry(Address addr);
-    size_t GetCapcity()
+    size_t GetCapcity() const
     {
         return nodesMap_.size();
     }
-    size_t GetEntryCount()
+    size_t GetEntryCount() const
     {
         return nodeEntryCount_;
     }
@@ -235,11 +236,9 @@ public:
     static constexpr int SEQ_STEP = 2;
     NO_MOVE_SEMANTIC(HeapSnapShot);
     NO_COPY_SEMANTIC(HeapSnapShot);
-    explicit HeapSnapShot(JSThread *thread, CAddressAllocator<JSTaggedType> *allocator)
-        : stringTable_(allocator), thread_(thread)
+    explicit HeapSnapShot(JSThread *thread, const Heap *heap)
+        : stringTable_(heap), thread_(thread), heap_(heap)
     {
-        allocator_ = allocator;
-        ASSERT(allocator_ != nullptr);
     }
     ~HeapSnapShot();
     bool BuildUp(JSThread *thread);
@@ -252,20 +251,20 @@ public:
     void RecordSampleTime();
     bool FinishSnapShot();
 
-    CVector<TimeStamp> &GetTimeStamps()
+    const CVector<TimeStamp> &GetTimeStamps() const
     {
         return timeStamps_;
     }
 
-    size_t GetNodeCount()
+    size_t GetNodeCount() const
     {
         return nodeCount_;
     }
-    size_t GetEdgeCount()
+    size_t GetEdgeCount() const
     {
         return edgeCount_;
     }
-    size_t GetTotalNodeSize()
+    size_t GetTotalNodeSize() const
     {
         return totalNodesSize_;
     }
@@ -279,20 +278,19 @@ public:
     }
     CString *GenerateNodeName(JSThread *thread, TaggedObject *entry);
     NodeType GenerateNodeType(TaggedObject *entry);
-    CList<Node *> *GetNodes()
+    const CList<Node *> *GetNodes() const
     {
         return &nodes_;
     }
-    CVector<Edge *> *GetEdges()
+    const CVector<Edge *> *GetEdges() const
     {
         return &edges_;
     }
-    StringHashMap *GetEcmaStringTable()
+    const StringHashMap *GetEcmaStringTable() const
     {
         return &stringTable_;
     }
 
-    static CAddressAllocator<JSTaggedType> *GetAllocator();
     CString *GetString(const CString &as);
 
 private:
@@ -310,7 +308,6 @@ private:
     Node *InsertNodeAt(size_t pos, Node *node);
     Edge *InsertEdgeAt(size_t pos, Edge *edge);
 
-    static CAddressAllocator<JSTaggedType> *allocator_;
     StringHashMap stringTable_;
     CList<Node *> nodes_{};
     CVector<Edge *> edges_{};
@@ -322,6 +319,7 @@ private:
     HeapEntryMap entryMap_;
     panda::ecmascript::HeapRootVisitor rootVisitor_;
     JSThread *thread_;
+    const Heap *heap_;
 };
 
 class EntryVisitor {
@@ -363,4 +361,4 @@ public:
     static FrontType Convert(NodeType type);
 };
 }  // namespace panda::ecmascript
-#endif  // RUNTIME_ECMASCRIPT_HPROF_HEAP_SNAPSHOT_H
+#endif  // ECMASCRIPT_HPROF_HEAP_SNAPSHOT_H
