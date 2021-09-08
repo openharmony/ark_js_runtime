@@ -57,7 +57,7 @@ ARK-JS Runtime主要由四个部分组成：
 
 ## 相关仓<a name="section1371113476307"></a>
 
-**[方舟运行时子系统](方舟运行时子系统.md)**
+**[方舟运行时子系统](ARK-Runtime-Subsystem-zh.md)**
 
 [ark/runtime\_core](https://gitee.com/openharmony/ark_runtime_core/blob/master/README_zh.md)
 
