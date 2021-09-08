@@ -57,7 +57,7 @@ NAPI接口说明参考[NAPI组件](https://gitee.com/openharmony/ace_napi/blob/m
 
 ### 使用说明<a name="section129654513264"></a>
 
-JS生成字节码参考[工具链使用](docs/工具链使用.md)
+JS生成字节码参考[工具链使用](docs/using-the-toolchain-zh.md)
 
 字节码执行
 
