@@ -32,7 +32,7 @@ template("host_unittest_action") {
   ]
 
   if (!is_standard_system) {
-    _deps_ += [ "//ark/runtime/runtime:libarkruntime" ]
+    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
   }
 
   # unittest for phone running
