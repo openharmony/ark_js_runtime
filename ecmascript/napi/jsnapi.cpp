@@ -744,7 +744,22 @@ Local<FunctionRef> FunctionRef::New(EcmaVM *vm, FunctionCallback nativeFunc, voi
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
 }
 
-Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, void *data)
+Local<FunctionRef> FunctionRef::New(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter, void *data)
+{
+    JSThread *thread = vm->GetJSThread();
+    ObjectFactory *factory = vm->GetFactory();
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
+    JSHandle<JSFunction> current(factory->NewJSFunction(env, reinterpret_cast<void *>(Callback::RegisterCallback)));
+    JSHandle<JSNativePointer> funcCallback = factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc));
+    JSHandle<JSNativePointer> dataCaddress = factory->NewJSNativePointer(data, deleter, nullptr);
+    vm->PushToArrayDataList(*dataCaddress);
+    JSHandle<JSFunctionExtraInfo> extraInfo(factory->NewFunctionExtraInfo(funcCallback, dataCaddress));
+    current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
+    return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
+}
+
+Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, Deleter deleter,
+    void *data)
 {
     JSThread *thread = vm->GetJSThread();
     ObjectFactory *factory = vm->GetFactory();
@@ -755,7 +770,13 @@ Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWit
     JSHandle<JSFunction> current =
         factory->NewJSFunctionByDynClass(method, dynclass, ecmascript::FunctionKind::CLASS_CONSTRUCTOR);
     JSHandle<JSNativePointer> funcCallback = factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc));
-    JSHandle<JSNativePointer> dataCaddress = factory->NewJSNativePointer(data);
+    JSHandle<JSNativePointer> dataCaddress(thread, JSTaggedValue::Undefined());
+    if (deleter == nullptr) {
+        dataCaddress = factory->NewJSNativePointer(data);
+    } else {
+        dataCaddress = factory->NewJSNativePointer(data, deleter, nullptr);
+        vm->PushToArrayDataList(*dataCaddress);
+    }
     JSHandle<JSFunctionExtraInfo> extraInfo(factory->NewFunctionExtraInfo(funcCallback, dataCaddress));
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
 
