@@ -46,6 +46,7 @@ namespace ecmascript {
 class EcmaVM;
 }  // namespace ecmascript
 
+using Deleter = void (*)(void *buffer, void *data);
 using EcmaVM = ecmascript::EcmaVM;
 using JSTaggedType = uint64_t;
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
@@ -514,7 +515,9 @@ using FunctionCallbackWithNewTarget =
 class PUBLIC_API FunctionRef : public ObjectRef {
 public:
     static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, void *data);
-    static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, void *data);
+    static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter, void *data);
+    static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, Deleter deleter,
+        void *data);
     Local<JSValueRef> Call(const EcmaVM *vm, Local<JSValueRef> thisObj, const Local<JSValueRef> argv[],
         int32_t length);
     Local<JSValueRef> Constructor(const EcmaVM *vm, const Local<JSValueRef> argv[], int32_t length);
@@ -547,7 +550,6 @@ public:
     Local<PromiseRef> GetPromise(const EcmaVM *vm);
 };
 
-using Deleter = void (*)(void *buffer, void *data);
 class PUBLIC_API ArrayBufferRef : public ObjectRef {
 public:
     static Local<ArrayBufferRef> New(const EcmaVM *vm, int32_t length);
