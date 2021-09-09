@@ -301,7 +301,7 @@ OpCode CircuitBuilder::GetCallOpCodeFromMachineType(MachineType type)
     }
 }
 
-AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target,
+AddrShift CircuitBuilder::NewCallGate(StubDescriptor *descriptor, AddrShift target,
                                       std::initializer_list<AddrShift> args)
 {
     std::vector<AddrShift> inputs;
@@ -316,7 +316,7 @@ AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor, AddrS
     return circuit_->NewGate(opcode, args.size() + 1, inputs, TypeCode::JS_ANY);
 }
 
-AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target, AddrShift depend,
+AddrShift CircuitBuilder::NewCallGate(StubDescriptor *descriptor, AddrShift target, AddrShift depend,
                                       std::initializer_list<AddrShift> args)
 {
     std::vector<AddrShift> inputs;
@@ -329,10 +329,10 @@ AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor, AddrS
     return circuit_->NewGate(opcode, args.size() + 1, inputs, TypeCode::JS_ANY);
 }
 
-AddrShift CircuitBuilder::NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+AddrShift CircuitBuilder::NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                              std::initializer_list<AddrShift> args)
 {
-    ASSERT(descriptor->GetStubKind() == StubInterfaceDescriptor::RUNTIME_STUB);
+    ASSERT(descriptor->GetStubKind() == StubDescriptor::RUNTIME_STUB);
     std::vector<AddrShift> inputs;
     auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
     inputs.push_back(dependEntry);
@@ -346,10 +346,10 @@ AddrShift CircuitBuilder::NewCallRuntimeGate(StubInterfaceDescriptor *descriptor
     return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::JS_ANY);
 }
 
-AddrShift CircuitBuilder::NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+AddrShift CircuitBuilder::NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                              AddrShift depend, std::initializer_list<AddrShift> args)
 {
-    ASSERT(descriptor->GetStubKind() == StubInterfaceDescriptor::RUNTIME_STUB);
+    ASSERT(descriptor->GetStubKind() == StubDescriptor::RUNTIME_STUB);
     std::vector<AddrShift> inputs;
     inputs.push_back(depend);
     inputs.push_back(target);

@@ -30,23 +30,24 @@ public:
     static bool RunDataIntegrityCheck(const Circuit *circuit);
     static bool RunStateGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList);
     static bool RunCFGSoundnessCheck(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList,
-        const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx);
+                                     const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx);
     static bool RunCFGIsDAGCheck(const Circuit *circuit);
     static bool RunCFGReducibilityCheck(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList,
-        const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
-        const std::function<bool(size_t, size_t)> &isAncestor);
+                                        const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
+                                        const std::function<bool(size_t, size_t)> &isAncestor);
     static bool RunFixedGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &fixedGatesList);
     static bool RunFixedGatesRelationsCheck(const Circuit *circuit, const std::vector<AddrShift> &fixedGatesList,
-        const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
-        const std::function<bool(size_t, size_t)> &isAncestor);
+                                            const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
+                                            const std::function<bool(size_t, size_t)> &isAncestor);
     static bool RunFlowCyclesFind(const Circuit *circuit, std::vector<AddrShift> *schedulableGatesListPtr,
-        const std::vector<AddrShift> &bbGatesList, const std::vector<AddrShift> &fixedGatesList);
+                                  const std::vector<AddrShift> &bbGatesList,
+                                  const std::vector<AddrShift> &fixedGatesList);
     static bool RunSchedulableGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &schedulableGatesList);
     static bool RunPrologGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &schedulableGatesList);
     static bool RunSchedulingBoundsCheck(const Circuit *circuit, const std::vector<AddrShift> &schedulableGatesList,
-        const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
-        const std::function<bool(size_t, size_t)> &isAncestor,
-        const std::function<size_t(size_t, size_t)> &lowestCommonAncestor);
+                                         const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
+                                         const std::function<bool(size_t, size_t)> &isAncestor,
+                                         const std::function<size_t(size_t, size_t)> &lowestCommonAncestor);
     static std::vector<AddrShift> FindFixedGates(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList);
     static bool Run(const Circuit *circuit);
 };

@@ -17,6 +17,7 @@
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/stub_module.h"
 #include "include/panda_vm.h"
 
 namespace panda::ecmascript {
@@ -31,7 +32,6 @@ JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
     jsThread->currentFrame_ = jsThread->frameBase_ + MAX_STACK_SIZE;
     JSThread::SetCurrent(jsThread);
     EcmaInterpreter::InitStackFrame(jsThread);
-
     return jsThread;
 }
 
@@ -210,5 +210,16 @@ void JSThread::NotifyStableArrayElementsGuardians(JSHandle<JSObject> receiver)
 void JSThread::ResetGuardians()
 {
     stableArrayElementsGuardians_ = true;
+}
+
+void JSThread::LoadFastStubModule(const char *moduleFile)
+{
+    StubModule stubModule;
+    std::string fileName(moduleFile);
+    stubModule.Load(this, fileName);
+    for (int i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
+        fastStubEntires_[i] = stubModule.GetStubEntry(i);
+    }
+    stubCode_ = stubModule.GetCode();
 }
 }  // namespace panda::ecmascript

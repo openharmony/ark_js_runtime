@@ -13,320 +13,355 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
-#define ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
+#ifndef ECMASCRIPT_COMPILER_Stub_H
+#define ECMASCRIPT_COMPILER_Stub_H
 
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/gate.h"
-#include "ecmascript/compiler/stub_interface.h"
+#include "ecmascript/compiler/stub_descriptor.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/tagged_dictionary.h"
 
 namespace kungfu {
-class CompilerOptions;
-class Environment;
-class StubOptimizerLabel;
-class StubVariable;
-class CallerDescriptor;
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEFVARIABLE(varname, type, val) StubVariable varname(GetEnvironment(), type, NextVariableId(), val)
 
-class StubOptimizerLabel {
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DEFVARIABLE(varname, type, val) Stub::StubVariable varname(GetEnvironment(), type, NextVariableId(), val)
+
+class Stub {
 public:
-    class StubOptimizerLabelImplement {
+    class Environment;
+    class StubLabel;
+    class StubVariable;
+    using Label = StubLabel;
+    using Variable = StubVariable;
+
+    class StubLabel {
     public:
-        StubOptimizerLabelImplement(Environment *env, AddrShift control)
-            : env_(env), control_(control), predeControl_(-1), isSealed_(false)
+        class StubLabelImpl {
+        public:
+            StubLabelImpl(Environment *env, AddrShift control)
+                : env_(env), control_(control), predeControl_(-1), isSealed_(false)
+            {
+            }
+
+            ~StubLabelImpl() = default;
+
+            NO_MOVE_SEMANTIC(StubLabelImpl);
+            NO_COPY_SEMANTIC(StubLabelImpl);
+            using Variable = StubVariable;
+            void Seal();
+            void WriteVariable(Variable *var, AddrShift value);
+            AddrShift ReadVariable(Variable *var);
+            void Bind();
+            void MergeAllControl();
+            void AppendPredecessor(StubLabelImpl *predecessor);
+            std::vector<StubLabelImpl *> GetPredecessors() const
+            {
+                return predecessors;
+            }
+
+            void SetControl(AddrShift control)
+            {
+                control_ = control;
+            }
+
+            void SetPreControl(AddrShift control)
+            {
+                predeControl_ = control;
+            }
+
+            void MergeControl(AddrShift control)
+            {
+                if (predeControl_ == -1) {
+                    predeControl_ = control;
+                    control_ = predeControl_;
+                } else {
+                    otherPredeControls_.push_back(control);
+                }
+            }
+
+            AddrShift GetControl() const
+            {
+                return control_;
+            }
+
+        private:
+            bool IsNeedSeal() const;
+            bool IsSealed() const
+            {
+                return isSealed_;
+            }
+            bool IsLoopHead() const;
+            AddrShift ReadVariableRecursive(Variable *var);
+            Environment *env_;
+            AddrShift control_;
+            AddrShift predeControl_;
+            std::vector<AddrShift> otherPredeControls_;
+            bool isSealed_;
+            std::map<StubVariable *, AddrShift> valueMap_;
+            std::vector<AddrShift> phi;
+            std::vector<StubLabelImpl *> predecessors;
+            std::map<StubVariable *, AddrShift> incompletePhis_;
+        };
+        explicit StubLabel() = default;
+        explicit StubLabel(Environment *env);
+        explicit StubLabel(StubLabelImpl *impl) : impl_(impl) {}
+        ~StubLabel() = default;
+        using Variable = StubVariable;
+        StubLabel(StubLabel const &label) = default;
+        StubLabel &operator=(StubLabel const &label) = default;
+        StubLabel(StubLabel &&label) = default;
+        StubLabel &operator=(StubLabel &&label) = default;
+
+        void Seal()
         {
+            return impl_->Seal();
         }
 
-        ~StubOptimizerLabelImplement() = default;
-
-        NO_MOVE_SEMANTIC(StubOptimizerLabelImplement);
-        NO_COPY_SEMANTIC(StubOptimizerLabelImplement);
-        using Variable = StubVariable;
-        void Seal();
-        void WriteVariable(Variable *var, AddrShift value);
-        AddrShift ReadVariable(Variable *var);
-        void Bind();
-        void MergeAllControl();
-        void AppendPredecessor(StubOptimizerLabelImplement *predecessor);
-        std::vector<StubOptimizerLabelImplement *> GetPredecessors() const
+        void WriteVariable(Variable *var, AddrShift value)
         {
-            return predecessors;
+            impl_->WriteVariable(var, value);
+        }
+
+        AddrShift ReadVariable(Variable *var)
+        {
+            return impl_->ReadVariable(var);
+        }
+
+        void Bind()
+        {
+            impl_->Bind();
+        }
+
+        void MergeAllControl()
+        {
+            impl_->MergeAllControl();
+        }
+
+        void AppendPredecessor(const StubLabel *predecessor)
+        {
+            impl_->AppendPredecessor(predecessor->GetRawLabel());
+        }
+
+        std::vector<StubLabel> GetPredecessors() const
+        {
+            std::vector<StubLabel> labels;
+            for (auto rawlabel : impl_->GetPredecessors()) {
+                labels.emplace_back(StubLabel(rawlabel));
+            }
+            return labels;
         }
 
         void SetControl(AddrShift control)
         {
-            control_ = control;
+            impl_->SetControl(control);
         }
 
         void SetPreControl(AddrShift control)
         {
-            predeControl_ = control;
+            impl_->SetPreControl(control);
         }
 
         void MergeControl(AddrShift control)
         {
-            if (predeControl_ == -1) {
-                predeControl_ = control;
-                control_ = predeControl_;
-            } else {
-                otherPredeControls_.push_back(control);
-            }
+            impl_->MergeControl(control);
         }
 
         AddrShift GetControl() const
         {
-            return control_;
+            return impl_->GetControl();
         }
 
     private:
-        bool IsNeedSeal() const;
-        bool IsSealed() const
+        friend class Environment;
+        StubLabelImpl *GetRawLabel() const
         {
-            return isSealed_;
+            return impl_;
         }
-        bool IsLoopHead() const;
-        AddrShift ReadVariableRecursive(Variable *var);
-        Environment *env_;
-        AddrShift control_;
-        AddrShift predeControl_;
-        std::vector<AddrShift> otherPredeControls_;
-        bool isSealed_;
-        std::map<StubVariable *, AddrShift> valueMap_;
-        std::vector<AddrShift> phi;
-        std::vector<StubOptimizerLabelImplement *> predecessors;
-        std::map<StubVariable *, AddrShift> incompletePhis_;
+        StubLabelImpl *impl_ {nullptr};
     };
-    explicit StubOptimizerLabel() = default;
-    explicit StubOptimizerLabel(Environment *env);
-    explicit StubOptimizerLabel(StubOptimizerLabelImplement *impl) : impl_(impl) {}
-    ~StubOptimizerLabel() = default;
-    using Variable = StubVariable;
-    StubOptimizerLabel(StubOptimizerLabel const &label) = default;
-    StubOptimizerLabel &operator=(StubOptimizerLabel const &label) = default;
-    StubOptimizerLabel(StubOptimizerLabel &&label) = default;
-    StubOptimizerLabel &operator=(StubOptimizerLabel &&label) = default;
 
-    void Seal()
-    {
-        return impl_->Seal();
-    }
-
-    void WriteVariable(Variable *var, AddrShift value)
-    {
-        impl_->WriteVariable(var, value);
-    }
-
-    AddrShift ReadVariable(Variable *var)
-    {
-        return impl_->ReadVariable(var);
-    }
-
-    void Bind()
-    {
-        impl_->Bind();
-    }
-
-    void MergeAllControl()
-    {
-        impl_->MergeAllControl();
-    }
-
-    void AppendPredecessor(const StubOptimizerLabel *predecessor)
-    {
-        impl_->AppendPredecessor(predecessor->GetRawLabel());
-    }
-
-    std::vector<StubOptimizerLabel> GetPredecessors() const
-    {
-        std::vector<StubOptimizerLabel> labels;
-        for (auto rawlabel : impl_->GetPredecessors()) {
-            labels.emplace_back(StubOptimizerLabel(rawlabel));
+    class Environment {
+    public:
+        using StubLabelImpl = StubLabel::StubLabelImpl;
+        explicit Environment(size_t arguments, Circuit *circuit);
+        ~Environment();
+        NO_COPY_SEMANTIC(Environment);
+        NO_MOVE_SEMANTIC(Environment);
+        StubLabel *GetCurrentLabel() const
+        {
+            return currentLabel_;
         }
-        return labels;
-    }
+        void SetCurrentLabel(StubLabel *label)
+        {
+            currentLabel_ = label;
+        }
+        CircuitBuilder &GetCircuitBuilder()
+        {
+            return builder_;
+        }
+        AddrShift GetArgument(size_t index) const
+        {
+            return arguments_.at(index);
+        }
+        Circuit *GetCircuit()
+        {
+            return circuit_;
+        }
 
-    void SetControl(AddrShift control)
-    {
-        impl_->SetControl(control);
-    }
+        StubLabel GetLabelFromSelector(AddrShift sel)
+        {
+            StubLabelImpl *rawlabel = phi_to_labels[sel];
+            return StubLabel(rawlabel);
+        }
 
-    void SetPreControl(AddrShift control)
-    {
-        impl_->SetPreControl(control);
-    }
+        void AddSelectorToLabel(AddrShift sel, StubLabel label)
+        {
+            phi_to_labels[sel] = label.GetRawLabel();
+        }
 
-    void MergeControl(AddrShift control)
-    {
-        impl_->MergeControl(control);
-    }
+        StubLabelImpl *NewStubLabel(Environment *env, AddrShift control = -1)
+        {
+            auto impl = new StubLabelImpl(env, control);
+            rawlabels_.push_back(impl);
+            return impl;
+        }
 
-    AddrShift GetControl() const
-    {
-        return impl_->GetControl();
-    }
+        void PushCurrentLabel(StubLabel *entry)
+        {
+            AddrShift control = currentLabel_->GetControl();
+            if (currentLabel_ != nullptr) {
+                stack_.push(currentLabel_);
+                currentLabel_ = entry;
+                currentLabel_->SetControl(control);
+            }
+        }
 
-private:
-    friend class Environment;
-    StubOptimizerLabelImplement *GetRawLabel() const
-    {
-        return impl_;
-    }
-    StubOptimizerLabelImplement *impl_{nullptr};
-};
+        void PopCurrentLabel()
+        {
+            AddrShift control = currentLabel_->GetControl();
+            if (!stack_.empty()) {
+                currentLabel_ = stack_.top();
+                currentLabel_->SetControl(control);
+                stack_.pop();
+            }
+        }
 
-class Environment {
-public:
-    using StubOptimizerLabelImplement = StubOptimizerLabel::StubOptimizerLabelImplement;
-    Environment(const char *name, size_t arguments);
-    ~Environment();
-    Environment(Environment const &env);             // copy constructor
-    Environment &operator=(Environment const &env);  // copy constructor
+    private:
+        StubLabel *currentLabel_ {nullptr};
+        Circuit *circuit_;
+        CircuitBuilder builder_;
+        std::unordered_map<AddrShift, StubLabelImpl *> phi_to_labels;
+        std::vector<AddrShift> arguments_;
+        StubLabel entry_;
+        std::vector<StubLabelImpl *> rawlabels_;
+        std::stack<StubLabel *> stack_;
+    };
 
-    NO_MOVE_SEMANTIC(Environment);
-    StubOptimizerLabel *GetCurrentLabel() const
-    {
-        return currentLabel_;
-    }
-    void SetCurrentLabel(StubOptimizerLabel *label)
-    {
-        currentLabel_ = label;
-    }
-    CircuitBuilder &GetCircuitBuilder()
-    {
-        return builder_;
-    }
-    AddrShift GetArgument(size_t index) const
-    {
-        return arguments_.at(index);
-    }
-    Circuit &GetCircuit()
-    {
-        return circuit_;
-    }
+    class StubVariable {
+    public:
+        StubVariable(Environment *env, MachineType type, uint32_t id, AddrShift value) : id_(id), type_(type), env_(env)
+        {
+            Bind(value);
+            env_->GetCurrentLabel()->WriteVariable(this, value);
+        }
+        ~StubVariable() = default;
+        NO_MOVE_SEMANTIC(StubVariable);
+        NO_COPY_SEMANTIC(StubVariable);
+        void Bind(AddrShift value)
+        {
+            currentValue_ = value;
+        }
+        AddrShift Value() const
+        {
+            return currentValue_;
+        }
+        MachineType Type() const
+        {
+            return type_;
+        }
+        bool IsBound() const
+        {
+            return currentValue_ != 0;
+        }
+        StubVariable &operator=(const AddrShift value)
+        {
+            env_->GetCurrentLabel()->WriteVariable(this, value);
+            Bind(value);
+            return *this;
+        }
 
-    StubOptimizerLabel GetLabelFromSelector(AddrShift sel)
-    {
-        StubOptimizerLabelImplement *rawlabel = phi_to_labels[sel];
-        return StubOptimizerLabel(rawlabel);
-    }
+        AddrShift operator*()
+        {
+            return env_->GetCurrentLabel()->ReadVariable(this);
+        }
 
-    void AddSelectorToLabel(AddrShift sel, StubOptimizerLabel label)
-    {
-        phi_to_labels[sel] = label.GetRawLabel();
-    }
+        AddrShift AddPhiOperand(AddrShift val);
+        AddrShift AddOperandToSelector(AddrShift val, size_t idx, AddrShift in);
+        AddrShift TryRemoveTrivialPhi(AddrShift phi);
+        void RerouteOuts(const std::vector<Out *> &outs, Gate *newGate);
 
-    StubOptimizerLabelImplement *NewStubOptimizerLabel(Environment *env, AddrShift control = -1)
-    {
-        auto impl = new StubOptimizerLabelImplement(env, control);
-        rawlabels_.push_back(impl);
-        return impl;
-    }
+        bool IsSelector(AddrShift gate) const
+        {
+            return env_->GetCircuit()->IsSelector(gate);
+        }
 
-private:
-    StubOptimizerLabel *currentLabel_{nullptr};
-    Circuit circuit_;
-    CircuitBuilder builder_;
-    std::map<AddrShift, StubOptimizerLabelImplement *> phi_to_labels;
-    std::vector<AddrShift> arguments_;
-    std::string method_name_;
-    StubOptimizerLabel entry_;
-    std::vector<StubOptimizerLabelImplement *> rawlabels_;
-};
+        bool IsSelector(const Gate *gate) const
+        {
+            return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS && gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+        }
 
-class StubVariable {
-public:
-    StubVariable(Environment *env, MachineType type, uint32_t id, AddrShift value) : id_(id), type_(type), env_(env)
-    {
-        Bind(value);
-        env_->GetCurrentLabel()->WriteVariable(this, value);
-    }
-    ~StubVariable() = default;
-    NO_MOVE_SEMANTIC(StubVariable);
-    NO_COPY_SEMANTIC(StubVariable);
-    void Bind(AddrShift value)
-    {
-        currentValue_ = value;
-    }
-    AddrShift Value() const
-    {
-        return currentValue_;
-    }
-    MachineType Type() const
-    {
-        return type_;
-    }
-    bool IsBound() const
-    {
-        return currentValue_ != 0;
-    }
-    StubVariable &operator=(const AddrShift value)
-    {
-        env_->GetCurrentLabel()->WriteVariable(this, value);
-        Bind(value);
-        return *this;
-    }
+        uint32_t GetId() const
+        {
+            return id_;
+        }
 
-    AddrShift operator*()
+    private:
+        uint32_t id_;
+        MachineType type_;
+        AddrShift currentValue_ {0};
+        Environment *env_;
+    };
+
+    class SubCircuitScope {
+    public:
+        explicit SubCircuitScope(Environment *env, StubLabel *entry) : env_(env)
+        {
+            env_->PushCurrentLabel(entry);
+        }
+        ~SubCircuitScope()
+        {
+            env_->PopCurrentLabel();
+        }
+
+    private:
+        Environment *env_;
+    };
+
+    explicit Stub(const char *name, int argCount, Circuit *circuit) 
+        : env_(argCount, circuit), methodName_(name)
     {
-        return env_->GetCurrentLabel()->ReadVariable(this);
     }
-
-    AddrShift AddPhiOperand(AddrShift val);
-    AddrShift AddOperandToSelector(AddrShift val, size_t idx, AddrShift in);
-    AddrShift TryRemoveTrivialPhi(AddrShift phi);
-    void RerouteOuts(const std::vector<Out *> &outs, Gate *newGate);
-
-    bool IsSelector(AddrShift gate) const
-    {
-        return env_->GetCircuit().IsSelector(gate);
-    }
-
-    bool IsSelector(const Gate *gate) const
-    {
-        return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS && gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
-    }
-
-    uint32_t GetId() const
-    {
-        return id_;
-    }
-
-private:
-    uint32_t id_;
-    MachineType type_;
-    AddrShift currentValue_{0};
-    Environment *env_;
-};
-
-class StubOptimizer {
-public:
-    using Label = StubOptimizerLabel;
-    using Variable = StubVariable;
-
-    explicit StubOptimizer(Environment *env) : env_(env) {}
-    virtual ~StubOptimizer() = default;
-    NO_MOVE_SEMANTIC(StubOptimizer);
-    NO_COPY_SEMANTIC(StubOptimizer);
+    virtual ~Stub() = default;
+    NO_MOVE_SEMANTIC(Stub);
+    NO_COPY_SEMANTIC(Stub);
     virtual void GenerateCircuit() = 0;
 
-    Environment *GetEnvironment() const
+    Environment *GetEnvironment()
     {
-        return env_;
+        return &env_;
     }
     // constant
     AddrShift GetInteger32Constant(int32_t value)
     {
-        return env_->GetCircuitBuilder().NewIntegerConstant(value);
+        return env_.GetCircuitBuilder().NewIntegerConstant(value);
     };
     AddrShift GetWord64Constant(uint64_t value)
     {
-        return env_->GetCircuitBuilder().NewInteger64Constant(value);
+        return env_.GetCircuitBuilder().NewInteger64Constant(value);
     };
 
     AddrShift GetPtrConstant(uint32_t value)
@@ -373,47 +408,47 @@ public:
 
     AddrShift GetBooleanConstant(bool value)
     {
-        return env_->GetCircuitBuilder().NewBooleanConstant(value);
+        return env_.GetCircuitBuilder().NewBooleanConstant(value);
     }
 
     AddrShift GetDoubleConstant(double value)
     {
-        return env_->GetCircuitBuilder().NewDoubleConstant(value);
+        return env_.GetCircuitBuilder().NewDoubleConstant(value);
     }
 
     AddrShift GetUndefinedConstant()
     {
-        return env_->GetCircuitBuilder().UndefineConstant();
+        return env_.GetCircuitBuilder().UndefineConstant();
     }
 
     AddrShift GetHoleConstant()
     {
-        return env_->GetCircuitBuilder().HoleConstant();
+        return env_.GetCircuitBuilder().HoleConstant();
     }
     // parameter
     AddrShift Argument(size_t index)
     {
-        return env_->GetArgument(index);
+        return env_.GetArgument(index);
     }
 
     AddrShift Int1Argument(size_t index)
     {
         AddrShift argument = Argument(index);
-        env_->GetCircuit().SetOpCode(argument, OpCode(OpCode::INT1_ARG));
+        env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::INT1_ARG));
         return argument;
     }
 
     AddrShift Int32Argument(size_t index)
     {
         AddrShift argument = Argument(index);
-        env_->GetCircuit().SetOpCode(argument, OpCode(OpCode::INT32_ARG));
+        env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::INT32_ARG));
         return argument;
     }
 
     AddrShift Int64Argument(size_t index)
     {
         AddrShift argument = Argument(index);
-        env_->GetCircuit().SetOpCode(argument, OpCode(OpCode::INT64_ARG));
+        env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::INT64_ARG));
         return argument;
     }
 
@@ -421,9 +456,9 @@ public:
     {
         AddrShift argument = Argument(index);
         if (PtrValueCode() == INT64) {
-            env_->GetCircuit().SetOpCode(argument, OpCode(OpCode::INT64_ARG));
+            env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::INT64_ARG));
         } else if (PtrValueCode() == INT32) {
-            env_->GetCircuit().SetOpCode(argument, OpCode(OpCode::INT32_ARG));
+            env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::INT32_ARG));
         } else {
             UNREACHABLE();
         }
@@ -433,33 +468,33 @@ public:
     AddrShift Float32Argument(size_t index)
     {
         AddrShift argument = Argument(index);
-        env_->GetCircuit().SetOpCode(argument, OpCode(OpCode::FLOAT32_ARG));
+        env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::FLOAT32_ARG));
         return argument;
     }
 
     AddrShift Float64Argument(size_t index)
     {
         AddrShift argument = Argument(index);
-        env_->GetCircuit().SetOpCode(argument, OpCode(OpCode::FLOAT64_ARG));
+        env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::FLOAT64_ARG));
         return argument;
     }
 
     AddrShift Alloca(int size)
     {
-        return env_->GetCircuitBuilder().Alloca(size);
+        return env_.GetCircuitBuilder().Alloca(size);
     }
 
     // control flow
     AddrShift Return(AddrShift value)
     {
-        auto control = env_->GetCurrentLabel()->GetControl();
-        return env_->GetCircuitBuilder().Return(control, value);
+        auto control = env_.GetCurrentLabel()->GetControl();
+        return env_.GetCircuitBuilder().Return(control, value);
     }
 
     void Bind(Label *label)
     {
         label->Bind();
-        env_->SetCurrentLabel(label);
+        env_.SetCurrentLabel(label);
     }
     void Jump(Label *label);
     void Branch(AddrShift condition, Label *trueLabel, Label *falseLabel);
@@ -473,26 +508,26 @@ public:
     void LoopEnd(Label *loopHead);
 
     // call operation
-    AddrShift CallStub(StubInterfaceDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args)
+    AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args)
     {
-        return env_->GetCircuitBuilder().NewCallGate(descriptor, target, args);
+        return env_.GetCircuitBuilder().NewCallGate(descriptor, target, args);
     }
-    AddrShift CallStub(StubInterfaceDescriptor *descriptor, AddrShift target, AddrShift depend,
+    AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, AddrShift depend,
                        std::initializer_list<AddrShift> args)
     {
-        return env_->GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        return env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
     }
 
-    AddrShift CallRuntime(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+    AddrShift CallRuntime(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                           std::initializer_list<AddrShift> args)
     {
-        return env_->GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, args);
+        return env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, args);
     }
 
-    AddrShift CallRuntime(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target, AddrShift depend,
+    AddrShift CallRuntime(StubDescriptor *descriptor, AddrShift thread, AddrShift target, AddrShift depend,
                           std::initializer_list<AddrShift> args)
     {
-        return env_->GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        return env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
     }
 
     // memory
@@ -500,18 +535,18 @@ public:
     {
         if (PtrValueCode() == ValueCode::INT64) {
             AddrShift val = Int64Add(base, offset);
-            return env_->GetCircuitBuilder().NewLoadGate(type, val);
+            return env_.GetCircuitBuilder().NewLoadGate(type, val);
         }
         if (PtrValueCode() == ValueCode::INT32) {
             AddrShift val = Int32Add(base, offset);
-            return env_->GetCircuitBuilder().NewLoadGate(type, val);
+            return env_.GetCircuitBuilder().NewLoadGate(type, val);
         }
         UNREACHABLE();
     }
 
     AddrShift Load(MachineType type, AddrShift base)
     {
-        return env_->GetCircuitBuilder().NewLoadGate(type, base);
+        return env_.GetCircuitBuilder().NewLoadGate(type, base);
     }
 
     AddrShift LoadFromObject(MachineType type, AddrShift object, AddrShift offset);
@@ -520,11 +555,11 @@ public:
     {
         if (PtrValueCode() == ValueCode::INT64) {
             AddrShift ptr = Int64Add(base, offset);
-            return env_->GetCircuitBuilder().NewStoreGate(type, ptr, value);
+            return env_.GetCircuitBuilder().NewStoreGate(type, ptr, value);
         }
         if (PtrValueCode() == ValueCode::INT32) {
             AddrShift ptr = Int32Add(base, offset);
-            return env_->GetCircuitBuilder().NewStoreGate(type, ptr, value);
+            return env_.GetCircuitBuilder().NewStoreGate(type, ptr, value);
         }
         UNREACHABLE();
     }
@@ -532,17 +567,17 @@ public:
     // arithmetic
     AddrShift Int32Add(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_ADD), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_ADD), x, y);
     }
 
     AddrShift Int64Add(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_ADD), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_ADD), x, y);
     }
 
     AddrShift DoubleAdd(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_ADD), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_ADD), x, y);
     }
 
     AddrShift PtrAdd(AddrShift x, AddrShift y)
@@ -563,37 +598,37 @@ public:
 
     AddrShift Int32Sub(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_SUB), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_SUB), x, y);
     }
 
     AddrShift Int64Sub(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_SUB), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_SUB), x, y);
     }
 
     AddrShift DoubleSub(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_SUB), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_SUB), x, y);
     }
 
     AddrShift Int32Mul(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_MUL), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_MUL), x, y);
     }
 
     AddrShift Int64Mul(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_MUL), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_MUL), x, y);
     }
 
     AddrShift DoubleMul(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_MUL), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_MUL), x, y);
     }
 
     AddrShift DoubleDiv(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_DIV), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_DIV), x, y);
     }
     AddrShift Int32Div(AddrShift x, AddrShift y);
     AddrShift Int64Div(AddrShift x, AddrShift y);
@@ -602,7 +637,7 @@ public:
     AddrShift Word32Or(AddrShift x, AddrShift y);
     AddrShift Word32And(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_AND), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_AND), x, y);
     }
     AddrShift Word32Xor(AddrShift x, AddrShift y);
 
@@ -610,55 +645,55 @@ public:
 
     AddrShift Word64Or(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_OR), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_OR), x, y);
     }
 
     AddrShift Word64And(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_AND), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_AND), x, y);
     }
 
     AddrShift Word64Xor(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_XOR), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_XOR), x, y);
     }
 
     AddrShift Word32Not(AddrShift x);
     AddrShift Word64Not(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_REV), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_REV), x);
     }
 
     AddrShift WordLogicOr(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_OR), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_OR), x, y);
     }
 
     AddrShift WordLogicAnd(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_AND), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_AND), x, y);
     }
 
     AddrShift WordLogicNot(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_REV), x);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_REV), x);
     }
 
     AddrShift Word32LSL(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_LSL), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_LSL), x, y);
     }
     AddrShift Word64LSL(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_LSL), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_LSL), x, y);
     }
     AddrShift Word32LSR(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_LSR), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_LSR), x, y);
     }
     AddrShift Word64LSR(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_LSR), x, y);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_LSR), x, y);
     }
     AddrShift Word32Sar(AddrShift x, AddrShift y);
     AddrShift Word64Sar(AddrShift x, AddrShift y);
@@ -738,125 +773,125 @@ public:
 
     AddrShift CastDoubleToInt64(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_TO_INT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_TO_INT64), x);
     }
 
     // compare operation
     AddrShift Word32Equal(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_EQ), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_EQ), x, y);
     }
 
     AddrShift Word32NotEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_NE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_NE), x, y);
     }
 
     AddrShift Word64Equal(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_EQ), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_EQ), x, y);
     }
 
     AddrShift DoubleEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_EQ), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_EQ), x, y);
     }
 
     AddrShift Word64NotEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_NE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_NE), x, y);
     }
 
     AddrShift Int32GreaterThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SGT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SGT), x, y);
     }
 
     AddrShift Int32LessThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SLT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SLT), x, y);
     }
 
     AddrShift Int32GreaterThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SGE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SGE), x, y);
     }
 
     AddrShift Int32LessThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SLE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_SLE), x, y);
     }
 
     AddrShift Word32GreaterThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_UGT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_UGT), x, y);
     }
 
     AddrShift Word32LessThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_ULT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_ULT), x, y);
     }
 
     AddrShift Word32LessThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_ULE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_ULE), x, y);
     }
 
     AddrShift Word32GreaterThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_UGE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_UGE), x, y);
     }
 
     AddrShift Int64GreaterThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SGT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SGT), x, y);
     }
 
     AddrShift Int64LessThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SLT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SLT), x, y);
     }
 
     AddrShift Int64LessThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SLE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SLE), x, y);
     }
 
     AddrShift Int64GreaterThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SGE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_SGE), x, y);
     }
 
     AddrShift Word64GreaterThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_UGT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_UGT), x, y);
     }
 
     AddrShift Word64LessThan(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_ULT), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_ULT), x, y);
     }
 
     AddrShift Word64LessThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_ULE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_ULE), x, y);
     }
 
     AddrShift Word64GreaterThanOrEqual(AddrShift x, AddrShift y)
     {
-        return env_->GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_UGE), x, y);
+        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_UGE), x, y);
     }
 
     // cast operation
     AddrShift ChangeInt64ToInt32(AddrShift val)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), val);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), val);
     }
 
     AddrShift ChangeInt64ToPointer(AddrShift val)
     {
         if (PtrValueCode() == ValueCode::INT32) {
-            return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), val);
+            return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), val);
         }
         return val;
     }
@@ -888,22 +923,25 @@ public:
         return Load(MachineType::UINT64_TYPE, object, elementsOffset);
     }
 
+    AddrShift GetLengthofElements(AddrShift elements)
+    {
+        return Load(UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
+    }
+
     // object operation
     AddrShift LoadHClass(AddrShift object)
     {
         return ChangeInt32ToPointer(Load(UINT32_TYPE, object));
     }
 
-    AddrShift GetObjectType(AddrShift object)
+    AddrShift GetObjectType(AddrShift hclass)
     {
-        AddrShift hclass = LoadHClass(object);
         AddrShift bitfieldOffset = GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET);
 
         AddrShift bitfield = Load(INT64_TYPE, hclass, bitfieldOffset);
 
         return ChangeInt64ToInt32(
-            Word64And(Word64LSR(bitfield, GetWord64Constant(panda::ecmascript::JSHClass::ExtensibleBit::START_BIT)),
-                      GetWord64Constant((1LLU << panda::ecmascript::JSHClass::ExtensibleBit::SIZE) - 1)));
+            Word64And(bitfield, GetWord64Constant((1LLU << panda::ecmascript::JSHClass::ObjectTypeBits::SIZE) - 1)));
     }
 
     AddrShift IsDictionaryMode(AddrShift object)
@@ -911,6 +949,19 @@ public:
         return Word32NotEqual(Word32And(Load(UINT32_TYPE, LoadHClass(object), GetPtrConstant(0)),
                                         GetInteger32Constant(panda::HClass::IS_DICTIONARY_ARRAY)),
                               GetInteger32Constant(0));
+    }
+
+    AddrShift IsDictionaryElement(AddrShift hclass)
+    {
+        AddrShift bitfieldOffset = GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET);
+
+        AddrShift bitfield = Load(INT64_TYPE, hclass, bitfieldOffset);
+        // decode
+        return Word64NotEqual(
+            Word64And(
+                Word64LSR(bitfield, GetWord64Constant(panda::ecmascript::JSHClass::DictionaryElementBits::START_BIT)),
+                GetWord64Constant((1LLU << panda::ecmascript::JSHClass::DictionaryElementBits::SIZE) - 1)),
+            GetWord64Constant(0));
     }
 
     AddrShift IsExtensible(AddrShift object)
@@ -928,7 +979,7 @@ public:
 
     AddrShift IsJsProxy(AddrShift obj)
     {
-        AddrShift objectType = GetObjectType(obj);
+        AddrShift objectType = GetObjectType(LoadHClass(obj));
         return Word32Equal(objectType, GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::JS_PROXY)));
     }
 
@@ -975,7 +1026,7 @@ public:
         return Load(TAGGED_TYPE, elements, dataOffset);
     }
 
-    AddrShift TaggedToRepresentation(AddrShift value, Label *next);
+    AddrShift TaggedToRepresentation(AddrShift value);
 
     AddrShift GetElementRepresentation(AddrShift hclass)
     {
@@ -997,7 +1048,7 @@ public:
                                             panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
     }
 
-    void UpdateValueAndDetails(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)
+    void UpdateValueAndAttributes(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)
     {
         AddrShift arrayIndex =
             Int32Add(GetInteger32Constant(panda::ecmascript::NameDictionary::TABLE_HEADER_SIZE),
@@ -1010,11 +1061,23 @@ public:
         StoreElement(elements, attributesIndex, IntBuildTagged(attr));
     }
 
-    void UpdateAndStoreRepresention(AddrShift hclass, AddrShift value, Label *next);
+    AddrShift IsSpecialIndexedObj(AddrShift jsType)
+    {
+        return Int32GreaterThan(jsType,
+                                GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::JS_ARRAY)));
+    }
 
-    AddrShift UpdateRepresention(AddrShift oldRep, AddrShift value, Label *next);
+    AddrShift IsAccessorInternal(AddrShift value)
+    {
+        return Word32Equal(GetObjectType(LoadHClass(value)),
+                           GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::INTERNAL_ACCESSOR)));
+    }
 
-    AddrShift GetDetailsFromDictionary(AddrShift elements, AddrShift entry)
+    void UpdateAndStoreRepresention(AddrShift hclass, AddrShift value);
+
+    AddrShift UpdateRepresention(AddrShift oldRep, AddrShift value);
+
+    AddrShift GetAttributesFromDictionary(AddrShift elements, AddrShift entry)
     {
         AddrShift arrayIndex =
             Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
@@ -1034,11 +1097,11 @@ public:
         return GetValueFromTaggedArray(elements, valueIndex);
     }
 
-    AddrShift GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry, Label *next);
+    AddrShift GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry);
 
-    AddrShift IsMatchInNumberDictionary(AddrShift key, AddrShift other, Label *next);
+    AddrShift IsMatchInNumberDictionary(AddrShift key, AddrShift other);
 
-    AddrShift FindElementFromNumberDictionary(AddrShift thread, AddrShift elements, AddrShift key, Label *next);
+    AddrShift FindElementFromNumberDictionary(AddrShift thread, AddrShift elements, AddrShift key);
 
     AddrShift TaggedCastToInt32(AddrShift x)
     {
@@ -1054,67 +1117,68 @@ public:
 
     AddrShift CastInt32ToFloat64(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_TO_FLOAT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_TO_FLOAT64), x);
     }
 
     AddrShift CastInt64ToFloat64(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_TO_FLOAT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_TO_FLOAT64), x);
     }
 
     AddrShift SExtInt32ToInt64(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT32_TO_INT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT32_TO_INT64), x);
     }
 
     AddrShift SExtInt1ToInt64(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT1_TO_INT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT1_TO_INT64), x);
     }
 
     AddrShift SExtInt1ToInt32(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT1_TO_INT32), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT1_TO_INT32), x);
     }
 
     AddrShift ZExtInt32ToInt64(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT32_TO_INT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT32_TO_INT64), x);
     }
 
     AddrShift ZExtInt1ToInt64(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT1_TO_INT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT1_TO_INT64), x);
     }
 
     AddrShift ZExtInt1ToInt32(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT1_TO_INT32), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT1_TO_INT32), x);
     }
 
     AddrShift TruncInt64ToInt32(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), x);
     }
 
     AddrShift TruncInt64ToInt1(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT1), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT1), x);
     }
 
     AddrShift TruncInt32ToInt1(AddrShift x)
     {
-        return env_->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT32_TO_INT1), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT32_TO_INT1), x);
     }
 
-    uint32_t NextVariableId()
+    int NextVariableId() 
     {
-        return varibial_id_++;
+        return nextVariableId_++;
     }
 
 private:
-    Environment *env_;
-    uint32_t varibial_id_{0};
+    Environment env_;
+    std::string methodName_;
+    int nextVariableId_ {0};
 };
 }  // namespace kungfu
-#endif  // ECMASCRIPT_COMPILER_STUBOPTIMIZER_H
+#endif  // ECMASCRIPT_COMPILER_Stub_H

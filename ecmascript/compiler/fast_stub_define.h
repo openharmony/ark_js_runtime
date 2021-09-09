@@ -20,7 +20,9 @@ namespace kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define EXTERNAL_RUNTIMESTUB_LIST(V) \
     V(AddElementInternal, 5)         \
-    V(CallSetter, 2)                 \
+    V(CallSetter, 4)                 \
+    V(CallGetter, 4)                 \
+    V(AccessorGetter, 4)             \
     V(ThrowTypeError, 2)             \
     V(JSProxySetProperty, 6)         \
     V(GetHash32, 2)
@@ -66,5 +68,8 @@ enum CallStubId {
 #undef DEF_FAST_STUB
     CALL_STUB_MAXCOUNT = EXTERN_RUNTIME_STUB_MAXCOUNT,
 };
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define FAST_STUB_ID(name) kungfu::CallStubId::NAME_##name
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H

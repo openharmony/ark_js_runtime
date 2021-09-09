@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/compiler/stub_optimizer.h"
+#include "ecmascript/compiler/stub.h"
 
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/js_object.h"
@@ -21,17 +21,17 @@
 #include "libpandabase/macros.h"
 
 namespace kungfu {
-using StubOPtimizerLabelImplement = StubOptimizerLabel::StubOptimizerLabelImplement;
+using StubLabelImpl = Stub::StubLabel::StubLabelImpl;
 
-StubOptimizerLabel::StubOptimizerLabel(Environment *env)
+Stub::StubLabel::StubLabel(Environment *env)
 {
-    impl_ = env->NewStubOptimizerLabel(env);
+    impl_ = env->NewStubLabel(env);
 }
 
-AddrShift StubVariable::AddPhiOperand(AddrShift val)
+AddrShift Stub::StubVariable::AddPhiOperand(AddrShift val)
 {
     ASSERT(IsSelector(val));
-    StubOptimizerLabel label = env_->GetLabelFromSelector(val);
+    StubLabel label = env_->GetLabelFromSelector(val);
     size_t idx = 0;
     for (auto pred : label.GetPredecessors()) {
         idx++;
@@ -41,15 +41,15 @@ AddrShift StubVariable::AddPhiOperand(AddrShift val)
     return TryRemoveTrivialPhi(val);
 }
 
-AddrShift StubVariable::AddOperandToSelector(AddrShift val, size_t idx, AddrShift in)
+AddrShift Stub::StubVariable::AddOperandToSelector(AddrShift val, size_t idx, AddrShift in)
 {
-    env_->GetCircuit().NewIn(val, idx, in);
+    env_->GetCircuit()->NewIn(val, idx, in);
     return val;
 }
 
-AddrShift StubVariable::TryRemoveTrivialPhi(AddrShift phiVal)
+AddrShift Stub::StubVariable::TryRemoveTrivialPhi(AddrShift phiVal)
 {
-    Gate *phi = env_->GetCircuit().LoadGatePtr(phiVal);
+    Gate *phi = env_->GetCircuit()->LoadGatePtr(phiVal);
     Gate *same = nullptr;
     for (size_t i = 1; i < phi->GetNumIns(); ++i) {
         In *phiIn = phi->GetIn(i);
@@ -64,7 +64,7 @@ AddrShift StubVariable::TryRemoveTrivialPhi(AddrShift phiVal)
     }
     if (same == nullptr) {
         // the phi is unreachable or in the start block
-        same = env_->GetCircuit().LoadGatePtr(env_->GetCircuitBuilder().UndefineConstant());
+        same = env_->GetCircuit()->LoadGatePtr(env_->GetCircuitBuilder().UndefineConstant());
     }
 
     // remove the trivial phi
@@ -91,14 +91,14 @@ AddrShift StubVariable::TryRemoveTrivialPhi(AddrShift phiVal)
     // try to recursiveby remove all phi users, which might have vecome trivial
     for (auto out : outs) {
         if (IsSelector(out->GetGate())) {
-            auto out_addr_shift = env_->GetCircuit().SaveGatePtr(out->GetGate());
+            auto out_addr_shift = env_->GetCircuit()->SaveGatePtr(out->GetGate());
             TryRemoveTrivialPhi(out_addr_shift);
         }
     }
-    return env_->GetCircuit().SaveGatePtr(same);
+    return env_->GetCircuit()->SaveGatePtr(same);
 }
 
-void StubVariable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGate)
+void Stub::StubVariable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGate)
 {
     // reroute all outs to new node
     for (auto out : outs) {
@@ -107,7 +107,7 @@ void StubVariable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGate)
     }
 }
 
-void StubOPtimizerLabelImplement::Seal()
+void StubLabelImpl::Seal()
 {
     for (auto &[variable, gate] : incompletePhis_) {
         variable->AddPhiOperand(gate);
@@ -115,12 +115,12 @@ void StubOPtimizerLabelImplement::Seal()
     isSealed_ = true;
 }
 
-void StubOPtimizerLabelImplement::WriteVariable(StubVariable *var, AddrShift value)
+void StubLabelImpl::WriteVariable(StubVariable *var, AddrShift value)
 {
     valueMap_[var] = value;
 }
 
-AddrShift StubOPtimizerLabelImplement::ReadVariable(StubVariable *var)
+AddrShift StubLabelImpl::ReadVariable(StubVariable *var)
 {
     if (valueMap_.find(var) != valueMap_.end()) {
         return valueMap_.at(var);
@@ -128,7 +128,7 @@ AddrShift StubOPtimizerLabelImplement::ReadVariable(StubVariable *var)
     return ReadVariableRecursive(var);
 }
 
-AddrShift StubOPtimizerLabelImplement::ReadVariableRecursive(StubVariable *var)
+AddrShift StubLabelImpl::ReadVariableRecursive(StubVariable *var)
 {
     AddrShift val;
     OpCode opcode = CircuitBuilder::GetSelectOpCodeFromMachineType(var->Type());
@@ -137,13 +137,13 @@ AddrShift StubOPtimizerLabelImplement::ReadVariableRecursive(StubVariable *var)
         int valueCounts = static_cast<int>(this->predecessors.size()) + 1;
 
         val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, valueCounts);
-        env_->AddSelectorToLabel(val, StubOptimizerLabel(this));
+        env_->AddSelectorToLabel(val, StubLabel(this));
         incompletePhis_[var] = val;
     } else if (predecessors.size() == 1) {
         val = predecessors[0]->ReadVariable(var);
     } else {
         val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, this->predecessors.size());
-        env_->AddSelectorToLabel(val, StubOptimizerLabel(this));
+        env_->AddSelectorToLabel(val, StubLabel(this));
         WriteVariable(var, val);
         val = var->AddPhiOperand(val);
     }
@@ -151,7 +151,7 @@ AddrShift StubOPtimizerLabelImplement::ReadVariableRecursive(StubVariable *var)
     return val;
 }
 
-void StubOPtimizerLabelImplement::Bind()
+void StubLabelImpl::Bind()
 {
     ASSERT(!predecessors.empty());
     if (IsNeedSeal()) {
@@ -160,7 +160,7 @@ void StubOPtimizerLabelImplement::Bind()
     }
 }
 
-void StubOPtimizerLabelImplement::MergeAllControl()
+void StubLabelImpl::MergeAllControl()
 {
     if (predecessors.size() < 2) {  // 2 : Loop Head only support two predecessors
         return;
@@ -169,7 +169,7 @@ void StubOPtimizerLabelImplement::MergeAllControl()
     if (IsLoopHead()) {
         ASSERT(predecessors.size() == 2);  // 2 : Loop Head only support two predecessors
         ASSERT(otherPredeControls_.size() == 1);
-        env_->GetCircuit().NewIn(predeControl_, 1, otherPredeControls_[0]);
+        env_->GetCircuit()->NewIn(predeControl_, 1, otherPredeControls_[0]);
         return;
     }
 
@@ -188,139 +188,117 @@ void StubOPtimizerLabelImplement::MergeAllControl()
     control_ = merge;
 }
 
-void StubOPtimizerLabelImplement::AppendPredecessor(StubOptimizerLabelImplement *predecessor)
+void StubLabelImpl::AppendPredecessor(StubLabelImpl *predecessor)
 {
     if (predecessor != nullptr) {
         predecessors.push_back(predecessor);
     }
 }
 
-bool StubOPtimizerLabelImplement::IsNeedSeal() const
+bool StubLabelImpl::IsNeedSeal() const
 {
-    auto control = env_->GetCircuit().LoadGatePtr(predeControl_);
+    auto control = env_->GetCircuit()->LoadGatePtr(predeControl_);
     auto numsInList = control->GetOpCode().GetOpCodeNumInsArray(control->GetBitField());
     return predecessors.size() >= numsInList[0];
 }
 
-bool StubOPtimizerLabelImplement::IsLoopHead() const
+bool StubLabelImpl::IsLoopHead() const
 {
-    return env_->GetCircuit().IsLoopHead(predeControl_);
+    return env_->GetCircuit()->IsLoopHead(predeControl_);
 }
 
-Environment::Environment(const char *name, size_t arguments)
-    : builder_(&circuit_), arguments_(arguments), method_name_(name)
+Stub::Environment::Environment(size_t arguments, Circuit *circuit)
+    : circuit_(circuit), builder_(circuit), arguments_(arguments)
 {
     for (size_t i = 0; i < arguments; i++) {
         arguments_[i] = builder_.NewArguments(i);
     }
-    entry_ = StubOptimizerLabel(NewStubOptimizerLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
+    entry_ = StubLabel(NewStubLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
     currentLabel_ = &entry_;
     currentLabel_->Seal();
 }
 
-Environment::Environment(Environment const &env)
-    : circuit_(env.circuit_), builder_(&circuit_), arguments_(env.arguments_), method_name_(env.method_name_)
-{
-    entry_ = StubOptimizerLabel(NewStubOptimizerLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
-    currentLabel_ = &entry_;
-    currentLabel_->Seal();
-}
-
-Environment &Environment::operator=(const Environment &env)
-{
-    if (&env != this) {
-        this->circuit_ = env.circuit_;
-        this->arguments_ = env.arguments_;
-        this->method_name_ = env.method_name_;
-
-        entry_ = StubOptimizerLabel(NewStubOptimizerLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
-        currentLabel_ = &entry_;
-        currentLabel_->Seal();
-    }
-    return *this;
-}
-
-Environment::~Environment()
+Stub::Environment::~Environment()
 {
     for (auto label : rawlabels_) {
         delete label;
     }
 }
 
-void StubOptimizer::Jump(Label *label)
+void Stub::Jump(Label *label)
 {
     ASSERT(label);
-    auto currentLabel = env_->GetCurrentLabel();
+    auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    auto jump = env_->GetCircuitBuilder().Goto(currentControl);
+    auto jump = env_.GetCircuitBuilder().Goto(currentControl);
     currentLabel->SetControl(jump);
     label->AppendPredecessor(currentLabel);
     label->MergeControl(currentLabel->GetControl());
 
-    env_->SetCurrentLabel(nullptr);
+    env_.SetCurrentLabel(nullptr);
 }
 
-void StubOptimizer::Branch(AddrShift condition, Label *trueLabel, Label *falseLabel)
+void Stub::Branch(AddrShift condition, Label *trueLabel, Label *falseLabel)
 {
-    auto currentLabel = env_->GetCurrentLabel();
+    auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    AddrShift ifBranch = env_->GetCircuitBuilder().Branch(currentControl, condition);
+    AddrShift ifBranch = env_.GetCircuitBuilder().Branch(currentControl, condition);
     currentLabel->SetControl(ifBranch);
-    AddrShift ifTrue = env_->GetCircuitBuilder().NewIfTrue(ifBranch);
-    trueLabel->AppendPredecessor(env_->GetCurrentLabel());
+    AddrShift ifTrue = env_.GetCircuitBuilder().NewIfTrue(ifBranch);
+    trueLabel->AppendPredecessor(env_.GetCurrentLabel());
     trueLabel->MergeControl(ifTrue);
-    AddrShift ifFalse = env_->GetCircuitBuilder().NewIfFalse(ifBranch);
-    falseLabel->AppendPredecessor(env_->GetCurrentLabel());
+    AddrShift ifFalse = env_.GetCircuitBuilder().NewIfFalse(ifBranch);
+    falseLabel->AppendPredecessor(env_.GetCurrentLabel());
     falseLabel->MergeControl(ifFalse);
-    env_->SetCurrentLabel(nullptr);
+    env_.SetCurrentLabel(nullptr);
 }
 
-void StubOptimizer::Switch(AddrShift index, Label *defaultLabel, int32_t *keysValue, Label *keysLabel, int numberOfKeys)
+void Stub::Switch(AddrShift index, Label *defaultLabel, int32_t *keysValue, Label *keysLabel, int numberOfKeys)
 {
-    auto currentLabel = env_->GetCurrentLabel();
+    auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    AddrShift switchBranch = env_->GetCircuitBuilder().SwitchBranch(currentControl, index, numberOfKeys);
+    AddrShift switchBranch = env_.GetCircuitBuilder().SwitchBranch(currentControl, index, numberOfKeys);
     currentLabel->SetControl(switchBranch);
     for (int i = 0; i < numberOfKeys; i++) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        AddrShift switchCase = env_->GetCircuitBuilder().NewSwitchCase(switchBranch, keysValue[i]);
+        AddrShift switchCase = env_.GetCircuitBuilder().NewSwitchCase(switchBranch, keysValue[i]);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         keysLabel[i].AppendPredecessor(currentLabel);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         keysLabel[i].MergeControl(switchCase);
     }
 
-    AddrShift defaultCase = env_->GetCircuitBuilder().NewDefaultCase(switchBranch);
+    AddrShift defaultCase = env_.GetCircuitBuilder().NewDefaultCase(switchBranch);
     defaultLabel->AppendPredecessor(currentLabel);
     defaultLabel->MergeControl(defaultCase);
-    env_->SetCurrentLabel(nullptr);
+    env_.SetCurrentLabel(nullptr);
 }
 
-void StubOptimizer::LoopBegin(Label *loopHead)
+void Stub::LoopBegin(Label *loopHead)
 {
     ASSERT(loopHead);
-    auto loopControl = env_->GetCircuitBuilder().LoopBegin(loopHead->GetControl());
+    auto loopControl = env_.GetCircuitBuilder().LoopBegin(loopHead->GetControl());
     loopHead->SetControl(loopControl);
     loopHead->SetPreControl(loopControl);
     loopHead->Bind();
-    env_->SetCurrentLabel(loopHead);
+    env_.SetCurrentLabel(loopHead);
 }
 
-void StubOptimizer::LoopEnd(Label *loopHead)
+void Stub::LoopEnd(Label *loopHead)
 {
     ASSERT(loopHead);
-    auto currentLabel = env_->GetCurrentLabel();
+    auto currentLabel = env_.GetCurrentLabel();
     auto currentControl = currentLabel->GetControl();
-    auto loopend = env_->GetCircuitBuilder().LoopEnd(currentControl);
+    auto loopend = env_.GetCircuitBuilder().LoopEnd(currentControl);
     currentLabel->SetControl(loopend);
     loopHead->AppendPredecessor(currentLabel);
     loopHead->MergeControl(loopend);
     loopHead->Seal();
     loopHead->MergeAllControl();
-    env_->SetCurrentLabel(nullptr);
+    env_.SetCurrentLabel(nullptr);
 }
 
-AddrShift StubOptimizer::FixLoadType(AddrShift x)
+AddrShift Stub::FixLoadType(AddrShift x)
 {
     if (PtrValueCode() == ValueCode::INT64) {
         return SExtInt32ToInt64(x);
@@ -331,7 +309,7 @@ AddrShift StubOptimizer::FixLoadType(AddrShift x)
     UNREACHABLE();
 }
 
-AddrShift StubOptimizer::LoadFromObject(MachineType type, AddrShift object, AddrShift offset)
+AddrShift Stub::LoadFromObject(MachineType type, AddrShift object, AddrShift offset)
 {
     AddrShift elementsOffset = GetInteger32Constant(panda::ecmascript::JSObject::ELEMENTS_OFFSET);
     if (PtrValueCode() == ValueCode::INT64) {
@@ -349,11 +327,13 @@ AddrShift StubOptimizer::LoadFromObject(MachineType type, AddrShift object, Addr
     return Load(type, ChangeInt64ToPointer(elements), dataOffset);
 }
 
-AddrShift StubOptimizer::FindElementFromNumberDictionary(AddrShift thread, AddrShift elements, AddrShift key,
-                                                         Label *next)
+AddrShift Stub::FindElementFromNumberDictionary(AddrShift thread, AddrShift elements, AddrShift key)
 {
     auto env = GetEnvironment();
+    Label subentry(env);
+    [[maybe_unused]] SubCircuitScope subCircuit(env, &subentry);
     DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
+    Label exit(env);
     AddrShift capcityoffset =
         PtrMul(GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()),
                GetPtrConstant(panda::ecmascript::TaggedHashTable<panda::ecmascript::NumberDictionary>::SIZE_INDEX));
@@ -363,7 +343,7 @@ AddrShift StubOptimizer::FindElementFromNumberDictionary(AddrShift thread, AddrS
 
     AddrShift pKey = Alloca(static_cast<int>(MachineRep::K_WORD32));
     AddrShift keyStore = Store(INT32_TYPE, pKey, GetPtrConstant(0), TaggedCastToInt32(key));
-    StubInterfaceDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
+    StubDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
     AddrShift len = GetInteger32Constant(sizeof(int) / sizeof(uint8_t));
     AddrShift hash =
         CallRuntime(getHash32Descriptor, thread, GetWord64Constant(FAST_STUB_ID(GetHash32)), keyStore, {pKey, len});
@@ -373,8 +353,7 @@ AddrShift StubOptimizer::FindElementFromNumberDictionary(AddrShift thread, AddrS
     Label afterLoop(env);
     Jump(&loopHead);
     LoopBegin(&loopHead);
-    Label afterGetKey(env);
-    AddrShift element = GetKeyFromNumberDictionary(elements, *entry, &afterGetKey);
+    AddrShift element = GetKeyFromNumberDictionary(elements, *entry);
     Label isHole(env);
     Label notHole(env);
     Branch(TaggedIsHole(element), &isHole, &notHole);
@@ -386,28 +365,30 @@ AddrShift StubOptimizer::FindElementFromNumberDictionary(AddrShift thread, AddrS
     Branch(TaggedIsUndefined(element), &isUndefined, &notUndefined);
     Bind(&isUndefined);
     result = GetInteger32Constant(-1);
-    Jump(next);
+    Jump(&exit);
     Bind(&notUndefined);
-    Label afterIsMatch(env);
     Label isMatch(env);
     Label notMatch(env);
-    Branch(IsMatchInNumberDictionary(key, element, &afterIsMatch), &isMatch, &notMatch);
+    Branch(IsMatchInNumberDictionary(key, element), &isMatch, &notMatch);
     Bind(&isMatch);
     result = *entry;
-    Jump(next);
+    Jump(&exit);
     Bind(&notMatch);
     Jump(&loopEnd);
     Bind(&loopEnd);
     entry = Word32And(Int32Add(*entry, *count), Int32Sub(capacity, GetInteger32Constant(1)));
     count = Int32Add(*count, GetInteger32Constant(1));
     LoopEnd(&loopHead);
-    Bind(next);
+    Bind(&exit);
     return *result;
 }
 
-AddrShift StubOptimizer::IsMatchInNumberDictionary(AddrShift key, AddrShift other, Label *next)
+AddrShift Stub::IsMatchInNumberDictionary(AddrShift key, AddrShift other)
 {
     auto env = GetEnvironment();
+    Label entry(env);
+    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    Label exit(env);
     DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
     Label isHole(env);
     Label notHole(env);
@@ -415,11 +396,11 @@ AddrShift StubOptimizer::IsMatchInNumberDictionary(AddrShift key, AddrShift othe
     Label notUndefined(env);
     Branch(TaggedIsHole(key), &isHole, &notHole);
     Bind(&isHole);
-    Jump(next);
+    Jump(&exit);
     Bind(&notHole);
     Branch(TaggedIsUndefined(key), &isUndefined, &notUndefined);
     Bind(&isUndefined);
-    Jump(next);
+    Jump(&exit);
     Bind(&notUndefined);
     Label keyIsInt(env);
     Label keyNotInt(env);
@@ -430,18 +411,21 @@ AddrShift StubOptimizer::IsMatchInNumberDictionary(AddrShift key, AddrShift othe
     Branch(TaggedIsInt(other), &otherIsInt, &otherNotInt);
     Bind(&otherIsInt);
     result = Word32Equal(TaggedCastToInt32(key), TaggedCastToInt32(other));
-    Jump(next);
+    Jump(&exit);
     Bind(&otherNotInt);
-    Jump(next);
+    Jump(&exit);
     Bind(&keyNotInt);
-    Jump(next);
-    Bind(next);
+    Jump(&exit);
+    Bind(&exit);
     return *result;
 }
 
-AddrShift StubOptimizer::GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry, Label *next)
+AddrShift Stub::GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry)
 {
     auto env = GetEnvironment();
+    Label subentry(env);
+    [[maybe_unused]] SubCircuitScope subCircuit(env, &subentry);
+    Label exit(env);
     DEFVARIABLE(result, TAGGED_TYPE, GetUndefinedConstant());
     Label ltZero(env);
     Label notLtZero(env);
@@ -453,29 +437,32 @@ AddrShift StubOptimizer::GetKeyFromNumberDictionary(AddrShift elements, AddrShif
                  Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
     Branch(Int32LessThan(arrayIndex, GetInteger32Constant(0)), &ltZero, &notLtZero);
     Bind(&ltZero);
-    Jump(next);
+    Jump(&exit);
     Bind(&notLtZero);
     Branch(Int32GreaterThan(arrayIndex, dictionaryLength), &gtLength, &notGtLength);
     Bind(&gtLength);
-    Jump(next);
+    Jump(&exit);
     Bind(&notGtLength);
     result = GetValueFromTaggedArray(elements, arrayIndex);
-    Jump(next);
-    Bind(next);
+    Jump(&exit);
+    Bind(&exit);
     return *result;
 }
 
-void StubOptimizer::ThrowTypeAndReturn(AddrShift thread, int messageId, AddrShift val)
+void Stub::ThrowTypeAndReturn(AddrShift thread, int messageId, AddrShift val)
 {
-    StubInterfaceDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
+    StubDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
     AddrShift taggedId = IntBuildTagged(GetInteger32Constant(messageId));
     CallStub(throwTypeError, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), {thread, taggedId});
     Return(val);
 }
 
-AddrShift StubOptimizer::TaggedToRepresentation(AddrShift value, Label *next)
+AddrShift Stub::TaggedToRepresentation(AddrShift value)
 {
     auto env = GetEnvironment();
+    Label entry(env);
+    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    Label exit(env);
     DEFVARIABLE(resultRep, INT64_TYPE,
                 GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::OBJECT)));
     Label isInt(env);
@@ -485,7 +472,7 @@ AddrShift StubOptimizer::TaggedToRepresentation(AddrShift value, Label *next)
     Bind(&isInt);
     {
         resultRep = GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::INT));
-        Jump(next);
+        Jump(&exit);
     }
     Bind(&notInt);
     {
@@ -495,32 +482,34 @@ AddrShift StubOptimizer::TaggedToRepresentation(AddrShift value, Label *next)
         Bind(&isDouble);
         {
             resultRep = GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::DOUBLE));
-            Jump(next);
+            Jump(&exit);
         }
         Bind(&notDouble);
         {
             resultRep = GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::OBJECT));
-            Jump(next);
+            Jump(&exit);
         }
     }
-    Bind(next);
+    Bind(&exit);
     return *resultRep;
 }
 
-AddrShift StubOptimizer::UpdateRepresention(AddrShift oldRep, AddrShift value, Label *next)
+AddrShift Stub::UpdateRepresention(AddrShift oldRep, AddrShift value)
 {
     auto env = GetEnvironment();
+    Label entry(env);
+    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    Label exit(env);
     DEFVARIABLE(resultRep, INT64_TYPE, oldRep);
     Label isMixedRep(env);
     Label notMiexedRep(env);
     Branch(Word64Equal(oldRep, GetWord64Constant(static_cast<int64_t>(panda::ecmascript::Representation::MIXED))),
            &isMixedRep, &notMiexedRep);
     Bind(&isMixedRep);
-    Jump(next);
+    Jump(&exit);
     Bind(&notMiexedRep);
     {
-        Label newRepLabel(env);
-        AddrShift newRep = TaggedToRepresentation(value, &newRepLabel);
+        AddrShift newRep = TaggedToRepresentation(value);
         Label isNoneRep(env);
         Label notNoneRep(env);
         Branch(Word64Equal(oldRep, GetWord64Constant(static_cast<int64_t>(panda::ecmascript::Representation::NONE))),
@@ -528,7 +517,7 @@ AddrShift StubOptimizer::UpdateRepresention(AddrShift oldRep, AddrShift value, L
         Bind(&isNoneRep);
         {
             resultRep = newRep;
-            Jump(next);
+            Jump(&exit);
         }
         Bind(&notNoneRep);
         {
@@ -538,7 +527,7 @@ AddrShift StubOptimizer::UpdateRepresention(AddrShift oldRep, AddrShift value, L
             Bind(&isEqaulNewRep);
             {
                 resultRep = newRep;
-                Jump(next);
+                Jump(&exit);
             }
             Bind(&notEqaualNewRep);
             {
@@ -577,31 +566,31 @@ AddrShift StubOptimizer::UpdateRepresention(AddrShift oldRep, AddrShift value, L
                     Bind(&notObjectNewRep);
                     {
                         resultRep = GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::NUMBER));
-                        Jump(next);
+                        Jump(&exit);
                     }
                     Bind(&isObjectNewRep);
                     {
                         resultRep = GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::MIXED));
-                        Jump(next);
+                        Jump(&exit);
                     }
                 }
                 Bind(&objectLabel);
                 {
                     resultRep = GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::MIXED));
-                    Jump(next);
+                    Jump(&exit);
                 }
                 Bind(&defaultLabel);
-                Jump(next);
+                Jump(&exit);
             }
         }
     }
-    Bind(next);
+    Bind(&exit);
     return *resultRep;
 }
 
-void StubOptimizer::UpdateAndStoreRepresention(AddrShift hclass, AddrShift value, Label *next)
+void Stub::UpdateAndStoreRepresention(AddrShift hclass, AddrShift value)
 {
-    AddrShift newRep = UpdateRepresention(GetElementRepresentation(hclass), value, next);
+    AddrShift newRep = UpdateRepresention(GetElementRepresentation(hclass), value);
     SetElementRepresentation(hclass, newRep);
 }
 }  // namespace kungfu

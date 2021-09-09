@@ -18,14 +18,14 @@
 #include <string>
 
 #include "ecmascript/compiler/circuit.h"
-#include "ecmascript/compiler/fastpath_optimizer.h"
+#include "ecmascript/compiler/fast_stub.h"
 #include "ecmascript/compiler/gate.h"
-#include "ecmascript/compiler/stub_interface.h"
+#include "ecmascript/compiler/stub_descriptor.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_thread.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/Host.h"
-#include "llvm_mcjit_compiler.h"
+#include "llvm_mcjit_engine.h"
 #include "securec.h"
 #include "utils/logger.h"
 
@@ -49,6 +49,17 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                              LLVMModuleRef module, LLVMValueRef function)
     : schedule_(schedule), circuit_(circuit), module_(module), function_(function)
+{
+    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
+    builder_ = LLVMCreateBuilder();
+    context_ = LLVMGetGlobalContext();
+    bbIdMapBb_.clear();
+}
+
+LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
+                             LLVMStubModule *module, LLVMValueRef function)
+    : schedule_(schedule), circuit_(circuit), module_(module->GetModule()),
+      function_(function), stubModule_(module)
 {
     LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
     builder_ = LLVMCreateBuilder();
@@ -360,9 +371,12 @@ void LLVMIRBuilder::Build()
                     VisitStore(gate, MachineRep::K_WORD64, ins[2], ins[1]);  // 2:baseAddr gate, 1:data gate
                     break;
                 }
-                case OpCode::INT32_TO_FLOAT64:  // no break, fall through
+                case OpCode::INT32_TO_FLOAT64: {
+                    VisitCastInt32ToDouble(gate, ins[0]);
+                    break;
+                }
                 case OpCode::INT64_TO_FLOAT64: {
-                    VisitCastIntToDouble(gate, ins[0]);
+                    VisitCastInt64ToDouble(gate, ins[0]);
                     break;
                 }
                 case OpCode::FLOAT64_TO_INT64: {
@@ -554,11 +568,14 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
 {
     int paraStartIndex = 2;
     int index = circuit_->GetBitField(inList[1]);
-    LLVMValueRef callee = reinterpret_cast<LLVMValueRef>(FastStubs::GetInstance().GetFastStub(index));
-    StubInterfaceDescriptor *callee_descriptor = FastStubs::GetInstance().GetStubDescriptor(index);
+    ASSERT(stubModule_ != nullptr);
+    LLVMValueRef callee;
+    StubDescriptor *callee_descriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
     // runtime case
-    if (callee_descriptor->GetStubKind() == StubInterfaceDescriptor::RUNTIME_STUB) {
-        LLVMTypeRef rtfuncType = reinterpret_cast<LLVMTypeRef>(FastStubs::GetInstance().GetRunTimeLLVMType(index));
+    if (callee_descriptor->GetStubKind() == StubDescriptor::RUNTIME_STUB) {
+        std::cout << "external refrence index " << index << std::endl;
+        LLVMTypeRef rtfuncType = stubModule_->GetExternalFunctionType(index);
+        LLVMDumpType(rtfuncType);
         LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
         LLVMValueRef thread = g_values[inList[2]];  // 2 : 2 means skip two input gates (target thread )
         LLVMValueRef rtoffset = LLVMConstInt(LLVMInt64Type(),
@@ -575,6 +592,8 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
         std::cout << std::endl;
         LLVMDumpValue(callee);
         paraStartIndex += 1;
+    } else {
+        callee = stubModule_->GetStubFunction(index);
     }
     // 16 : params limit
     LLVMValueRef params[16];
@@ -1031,7 +1050,7 @@ void LLVMIRBuilder::VisitCastIntXToIntY(AddrShift gate, AddrShift e1, MachineRep
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
-void LLVMIRBuilder::VisitCastIntToDouble(AddrShift gate, AddrShift e1) const
+void LLVMIRBuilder::VisitCastInt32ToDouble(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "int cast2 double gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
@@ -1041,13 +1060,93 @@ void LLVMIRBuilder::VisitCastIntToDouble(AddrShift gate, AddrShift e1) const
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
+void LLVMIRBuilder::VisitCastInt64ToDouble(AddrShift gate, AddrShift e1) const
+{
+    LOG_ECMA(INFO) << "int cast2 double gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildBitCast(builder_, e1Value, LLVMDoubleType(), "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
 void LLVMIRBuilder::VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "double cast2 int gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
     LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
-    LLVMValueRef result = LLVMBuildFPToSI(builder_, e1Value, LLVMInt64Type(), "");
+    LLVMValueRef result = LLVMBuildBitCast(builder_, e1Value, LLVMInt64Type(), "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
+
+LLVMStubModule::LLVMStubModule(const char *name)
+{
+     module_ = LLVMModuleCreateWithName("fast_stubs");
+#ifdef PANDA_TARGET_AMD64
+     LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
+#endif
+}
+
+void LLVMStubModule::Initialize()
+{
+    uint32_t i;
+    for (i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i);
+        if (!stubDescriptor->GetName().empty()) {
+            stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
+        }
+    }
+    for (i = 0; i < MAX_EXTERNAL_FUNCTION_COUNT; i++) {
+        std::cout << "external index " << i + EXTERNAL_FUNCTION_OFFSET << std::endl;
+        auto externalDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + EXTERNAL_FUNCTION_OFFSET);
+        if (!externalDescriptor->GetName().empty()) {
+            externalFuctionType_[i] = GetLLVMFunctionTypeStubDescriptor(externalDescriptor);
+        }
+    }
+}
+
+LLVMValueRef LLVMStubModule::GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor)
+{
+    auto funcType = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
+    return LLVMAddFunction(module_, stubDescriptor->GetName().c_str(), funcType);
+}
+
+LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor)
+{
+    LLVMTypeRef returnType = ConvertLLVMTypeFromMachineType(stubDescriptor->GetReturnType());
+    LLVMDumpType(returnType);
+    std::vector<LLVMTypeRef> paramTys;
+    auto paramCount = stubDescriptor->GetParametersCount();
+    for (int i = 0; i < paramCount; i++) {
+        auto paramsType = stubDescriptor->GetParametersType();
+        paramTys.push_back(ConvertLLVMTypeFromMachineType(paramsType[i]));
+    }
+    for(auto type : paramTys) {
+        LLVMDumpType(type);
+    }
+    auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount, 0);
+    LLVMDumpType(functype);
+    return functype;
+}
+
+LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
+{
+    static std::map<MachineType, LLVMTypeRef> machineTypeMap = {
+        {MachineType::NONE_TYPE,        LLVMVoidType()},
+        {MachineType::BOOL_TYPE,        LLVMInt1Type()},
+        {MachineType::INT8_TYPE,        LLVMInt8Type()},
+        {MachineType::INT16_TYPE,       LLVMInt16Type()},
+        {MachineType::INT32_TYPE,       LLVMInt32Type()},
+        {MachineType::INT64_TYPE,       LLVMInt64Type()},
+        {MachineType::UINT8_TYPE,       LLVMInt8Type()},
+        {MachineType::UINT16_TYPE,      LLVMInt16Type()},
+        {MachineType::UINT32_TYPE,      LLVMInt32Type()},
+        {MachineType::UINT64_TYPE,      LLVMInt64Type()},
+        {MachineType::FLOAT32_TYPE,     LLVMFloatType()},
+        {MachineType::FLOAT64_TYPE,     LLVMDoubleType()},
+    };
+    return machineTypeMap[type];
+}
+
 }  // namespace kungfu

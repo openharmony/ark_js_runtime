@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <unordered_set>
+#include <cmath>
 
 #include "ecmascript/compiler/scheduler.h"
 

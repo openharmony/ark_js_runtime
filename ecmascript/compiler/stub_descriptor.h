@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ECMASCRIPT_COMPILER_STUB_INTERFACE_H
-#define ECMASCRIPT_COMPILER_STUB_INTERFACE_H
+#ifndef ECMASCRIPT_COMPILER_STUB_DESCRIPTOR_H
+#define ECMASCRIPT_COMPILER_STUB_DESCRIPTOR_H
 
 #include <array>
 #include <memory>
@@ -28,20 +28,22 @@ enum ArgumentsOrder {
     DEFAULT_ORDER,  // Push Arguments in stack from right -> left
 };
 
-class StubInterfaceDescriptor {
+class StubDescriptor {
 public:
     enum CallStubKind {
         CODE_STUB,
         RUNTIME_STUB,
     };
-    explicit StubInterfaceDescriptor(int flags, int paramCounter, ArgumentsOrder order, MachineType returnType)
-        : flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
+    explicit StubDescriptor(std::string name, int flags, int paramCounter, ArgumentsOrder order,
+                                     MachineType returnType)
+        : name_(name), flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
     {
     }
-    StubInterfaceDescriptor() = default;
-    ~StubInterfaceDescriptor() = default;
-    StubInterfaceDescriptor(StubInterfaceDescriptor const &other)
+    StubDescriptor() = default;
+    ~StubDescriptor() = default;
+    StubDescriptor(StubDescriptor const &other)
     {
+        name_ = other.name_;
         flags_ = other.flags_;
         paramCounter_ = other.paramCounter_;
         order_ = other.order_;
@@ -55,8 +57,9 @@ public:
         }
     }
 
-    StubInterfaceDescriptor &operator=(StubInterfaceDescriptor const &other)
+    StubDescriptor &operator=(StubDescriptor const &other)
     {
+        name_ = other.name_;
         flags_ = other.flags_;
         paramCounter_ = other.paramCounter_;
         order_ = other.order_;
@@ -120,107 +123,49 @@ public:
         kind_ = kind;
     }
 
-private:
-    CallStubKind kind_{CODE_STUB};
-    int flags_{0};
-    int paramCounter_{0};
-    ArgumentsOrder order_{DEFAULT_ORDER};
-
-    MachineType returnType_{MachineType::NONE_TYPE};
-    std::unique_ptr<std::vector<MachineType>> paramsType_{nullptr};
-};
-
-class CallStubsImplement {
-public:
-    CallStubsImplement() = default;
-    virtual ~CallStubsImplement() = default;
-    NO_MOVE_SEMANTIC(CallStubsImplement);
-    NO_COPY_SEMANTIC(CallStubsImplement);
-    virtual void Initialize() = 0;
-    virtual void *GetFastStub(int index) = 0;
-    virtual void SetFastStub(int index, void *code) = 0;
-    virtual void *GetRunTimeLLVMType(int index) = 0;
-    virtual void *GetModule() = 0;
-};
-
-class LLVMStubsImplement : public CallStubsImplement {
-public:
-    LLVMStubsImplement();
-    ~LLVMStubsImplement() override = default;
-    NO_MOVE_SEMANTIC(LLVMStubsImplement);
-    NO_COPY_SEMANTIC(LLVMStubsImplement);
-    void Initialize() override;
-    void *GetFastStub(int index) override;
-    void SetFastStub(int index, void *code) override;
-
-    void *GetRunTimeLLVMType(int index) override;
-    void *GetModule() override
+    const std::string &GetName()
     {
-        return reinterpret_cast<void *>(stubsModule_);
+        return name_;
     }
 
 private:
-    std::array<LLVMValueRef, CALL_STUB_MAXCOUNT> llvmCallStubs_{nullptr};
-    std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> llvm_fuction_type_{nullptr};
-    LLVMModuleRef stubsModule_{nullptr};
-};
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FAST_STUB_ID(name) NAME_##name
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GET_STUBDESCRIPTOR(name) FastStubs::GetInstance().GetStubDescriptor(FAST_STUB_ID(name))
+    std::string name_;
+    CallStubKind kind_ {CODE_STUB};
+    int flags_ {0};
+    int paramCounter_ {0};
+    ArgumentsOrder order_ {DEFAULT_ORDER};
 
-class FastStubs {
+    MachineType returnType_ {MachineType::NONE_TYPE};
+    std::unique_ptr<std::vector<MachineType>> paramsType_ {nullptr};
+};
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define GET_STUBDESCRIPTOR(name) FastStubDescriptors::GetInstance().GetStubDescriptor(FAST_STUB_ID(name))
+
+class FastStubDescriptors {
 public:
-    static FastStubs &GetInstance()
+    static FastStubDescriptors &GetInstance()
     {
-        static FastStubs instance;
+        static FastStubDescriptors instance;
         return instance;
     }
 
     void InitializeStubDescriptors();
 
-    void InitializeFastStubs()
-    {
-        InitializeStubDescriptors();
-        stubsImpl_->Initialize();
-    }
-
-    void *GetRunTimeLLVMType(int index)
-    {
-        return stubsImpl_->GetRunTimeLLVMType(index);
-    }
-
-    void *GetFastStub(int index) const
-    {
-        return stubsImpl_->GetFastStub(index);
-    }
-
-    void SetFastStub(int index, void *code)
-    {
-        return stubsImpl_->SetFastStub(index, code);
-    }
-
-    void *GetModule() const
-    {
-        return stubsImpl_->GetModule();
-    }
-
-    StubInterfaceDescriptor *GetStubDescriptor(int index)
+    StubDescriptor *GetStubDescriptor(int index)
     {
         return &callStubsDescriptor_[index];
     }
 
 private:
-    FastStubs()
+    FastStubDescriptors()
     {
-        stubsImpl_ = std::make_unique<LLVMStubsImplement>();
-        InitializeFastStubs();
+        InitializeStubDescriptors();
     }
-    ~FastStubs() {}
-    NO_MOVE_SEMANTIC(FastStubs);
-    NO_COPY_SEMANTIC(FastStubs);
-    std::unique_ptr<CallStubsImplement> stubsImpl_{nullptr};
-    std::array<StubInterfaceDescriptor, CALL_STUB_MAXCOUNT> callStubsDescriptor_{};
+    ~FastStubDescriptors() {}
+    NO_MOVE_SEMANTIC(FastStubDescriptors);
+    NO_COPY_SEMANTIC(FastStubDescriptors);
+    std::array<StubDescriptor, CALL_STUB_MAXCOUNT> callStubsDescriptor_ {};
 };
 }  // namespace kungfu
-#endif  // ECMASCRIPT_COMPILER_STUB_INTERFACE_H
+#endif  // ECMASCRIPT_COMPILER_STUB_DESCRIPTOR_H

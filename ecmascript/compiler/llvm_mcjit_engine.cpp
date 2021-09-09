@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/compiler/llvm_mcjit_compiler.h"
+#include "ecmascript/compiler/llvm_mcjit_engine.h"
 
 #include <vector>
 #include "llvm/IR/LegacyPassManager.h"
@@ -54,7 +54,7 @@ static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, unsig
                                              const char *sectionName)
 {
     std::cout << "RoundTripAllocateCodeSection object " << object << " - " << std::endl;
-    struct CompilerState& state = *static_cast<struct CompilerState*>(object);
+    struct CodeState& state = *static_cast<struct CodeState*>(object);
     uint8_t *addr = state.AllocaCodeSection(size, sectionName);
     std::cout << "RoundTripAllocateCodeSection  addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) << addr
               << " size:0x" << size << " +" << std::endl;
@@ -64,7 +64,7 @@ static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, unsig
 static uint8_t *RoundTripAllocateDataSection(void *object, uintptr_t size, unsigned alignment, unsigned sectionID,
                                              const char *sectionName, LLVMBool isReadOnly)
 {
-    struct CompilerState& state = *static_cast<struct CompilerState*>(object);
+    struct CodeState& state = *static_cast<struct CodeState*>(object);
     return state.AllocaDataSection(size, sectionName);
 }
 
@@ -77,18 +77,18 @@ static LLVMBool RoundTripFinalizeMemory(void *object, char **errMsg)
 static void RoundTripDestroy(void *object)
 {
     std::cout << "RoundTripDestroy object " << object << " - " << std::endl;
-    delete static_cast<struct CompilerState *>(object);
+    delete static_cast<struct CodeState *>(object);
 }
 
-void LLVMMCJITCompiler::UseRoundTripSectionMemoryManager()
+void LLVMMcJitEngine::UseRoundTripSectionMemoryManager()
 {
     auto sectionMemoryManager = std::make_unique<llvm::SectionMemoryManager>();
     options_.MCJMM =
-        LLVMCreateSimpleMCJITMemoryManager(&compilerState_, RoundTripAllocateCodeSection,
+        LLVMCreateSimpleMCJITMemoryManager(&codeState_, RoundTripAllocateCodeSection,
             RoundTripAllocateDataSection, RoundTripFinalizeMemory, RoundTripDestroy);
 }
 
-bool LLVMMCJITCompiler::BuildMCJITEngine()
+bool LLVMMcJitEngine::BuildMCJITEngine()
 {
     std::cout << " BuildMCJITEngine  - " << std::endl;
     LLVMBool ret = LLVMCreateMCJITCompilerForModule(&engine_, module_, &options_, sizeof(options_), &error_);
@@ -101,7 +101,7 @@ bool LLVMMCJITCompiler::BuildMCJITEngine()
     return true;
 }
 
-void LLVMMCJITCompiler::BuildAndRunPasses() const
+void LLVMMcJitEngine::BuildAndRunPasses() const
 {
     std::cout << "BuildAndRunPasses  - " << std::endl;
     LLVMPassManagerRef pass = LLVMCreatePassManager();
@@ -114,14 +114,14 @@ void LLVMMCJITCompiler::BuildAndRunPasses() const
     std::cout << "BuildAndRunPasses  + " << std::endl;
 }
 
-LLVMMCJITCompiler::LLVMMCJITCompiler(LLVMModuleRef module): module_(module), engine_(nullptr),
+LLVMMcJitEngine::LLVMMcJitEngine(LLVMModuleRef module): module_(module), engine_(nullptr),
     hostTriple_(""), error_(nullptr)
 {
     Initialize();
     InitMember();
 }
 
-LLVMMCJITCompiler::~LLVMMCJITCompiler()
+LLVMMcJitEngine::~LLVMMcJitEngine()
 {
     module_ = nullptr;
     engine_ = nullptr;
@@ -129,7 +129,7 @@ LLVMMCJITCompiler::~LLVMMCJITCompiler()
     error_ = nullptr;
 }
 
-void LLVMMCJITCompiler::Run()
+void LLVMMcJitEngine::Run()
 {
     UseRoundTripSectionMemoryManager();
     if (!BuildMCJITEngine()) {
@@ -138,7 +138,7 @@ void LLVMMCJITCompiler::Run()
     BuildAndRunPasses();
 }
 
-void LLVMMCJITCompiler::Initialize()
+void LLVMMcJitEngine::Initialize()
 {
 #if defined(PANDA_TARGET_AMD64)
     LLVMInitializeX86TargetInfo();
@@ -163,11 +163,11 @@ static const char *SymbolLookupCallback(void *disInfo, uint64_t referenceValue, 
     return nullptr;
 }
 
-void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) const
+void LLVMMcJitEngine::Disassemble(std::map<uint64_t, std::string> addr2name) const
 {
     LLVMDisasmContextRef dcr = LLVMCreateDisasm("x86_64-unknown-linux-gnu", nullptr, 0, nullptr, SymbolLookupCallback);
     std::cout << "========================================================================" << std::endl;
-    for (auto it : compilerState_.GetCodeInfo()) {
+    for (auto it : codeState_.GetCodeInfo()) {
         uint8_t *byteSp;
         uintptr_t numBytes;
         byteSp = it.first;
@@ -199,7 +199,7 @@ void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) c
     std::cout << "========================================================================" << std::endl;
 }
 
-void LLVMMCJITCompiler::InitMember()
+void LLVMMcJitEngine::InitMember()
 {
     if (module_ == nullptr) {
         module_ = LLVMModuleCreateWithName("simple_module");

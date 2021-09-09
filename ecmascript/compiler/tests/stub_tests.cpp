@@ -17,18 +17,20 @@
 #include <unistd.h>
 
 #include "gtest/gtest.h"
-#include "ecmascript/compiler/fastpath_optimizer.h"
+#include "ecmascript/compiler/fast_stub.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
-#include "ecmascript/compiler/llvm_mcjit_compiler.h"
+#include "ecmascript/compiler/llvm_mcjit_engine.h"
 #include "ecmascript/compiler/llvm_stackmap_parse.h"
 #include "ecmascript/compiler/scheduler.h"
-#include "ecmascript/compiler/stub_interface.h"
+#include "ecmascript/compiler/stub_descriptor.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/tests/test_helper.h"
 
+#include "llvm/Support/SourceMgr.h"
+#include "llvm/IRReader/IRReader.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/Host.h"
@@ -39,11 +41,12 @@ using namespace panda::coretypes;
 using namespace panda::ecmascript;
 using namespace kungfu;
 
-class StubOptimizerTest : public testing::Test {
+class StubTest : public testing::Test {
 public:
     void SetUp() override
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        stubModule.Initialize();
     }
 
     void TearDown() override
@@ -51,12 +54,18 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance{nullptr};
-    EcmaHandleScope *scope{nullptr};
-    JSThread *thread{nullptr};
+    JSTaggedValue FastMul2(JSTaggedValue x, JSTaggedValue y)
+    {
+        return FastRuntimeStub::FastMul(x, y);
+    }
+
+    PandaVM *instance {nullptr};
+    EcmaHandleScope *scope {nullptr};
+    JSThread *thread {nullptr};
+    LLVMStubModule stubModule{"fast_stub"};
 };
 
-HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
+HWTEST_F_L0(StubTest, FastLoadElement)
 {
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
@@ -69,10 +78,9 @@ HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
         // 2 : parameter number
         LLVMAddFunction(module, "FastLoadElement", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
     LLVMDumpModule(module);
-    Environment fastEnv("FastLoadElement", 2);  // 2 : parameter count
-    FastArrayLoadElementOptimizer optimizer(&fastEnv);
+    Circuit netOfGates;
+    FastArrayLoadElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = fastEnv.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -84,7 +92,7 @@ HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -106,20 +114,20 @@ HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
     std::cerr << "valUndefine = " << std::hex << valUndefine << std::endl;
 }
 
-class StubPhiOptimizer : public StubOptimizer {
+class PhiStub : public Stub {
 public:
-    explicit StubPhiOptimizer(Environment *env) : StubOptimizer(env) {}
-    ~StubPhiOptimizer() = default;
-    NO_MOVE_SEMANTIC(StubPhiOptimizer);
-    NO_COPY_SEMANTIC(StubPhiOptimizer);
+    explicit PhiStub(Circuit *circuit) : Stub("Phi", 1, circuit) {}
+    ~PhiStub() = default;
+    NO_MOVE_SEMANTIC(PhiStub);
+    NO_COPY_SEMANTIC(PhiStub);
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
         DEFVARIABLE(z, MachineType::INT32_TYPE, GetInteger32Constant(0));
         DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
-        StubOptimizerLabel ifTrue(env);
-        StubOptimizerLabel ifFalse(env);
-        StubOptimizerLabel next(env);
+        StubLabel ifTrue(env);
+        StubLabel ifFalse(env);
+        StubLabel next(env);
 
         Branch(Word32Equal(*x, GetInteger32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
         Bind(&ifTrue);
@@ -133,7 +141,7 @@ public:
     }
 };
 
-HWTEST_F_L0(StubOptimizerTest, PhiGateTest)
+HWTEST_F_L0(StubTest, PhiGateTest)
 {
     std::cout << "---------------------PhiGateTest-----------------------------------------------------" << std::endl;
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
@@ -142,10 +150,9 @@ HWTEST_F_L0(StubOptimizerTest, PhiGateTest)
         LLVMInt32Type(),
     };
     LLVMValueRef function = LLVMAddFunction(module, "PhiGateTest", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
-    Environment env("PhiGateTest", 1);
-    StubPhiOptimizer optimizer(&env);
+    Circuit netOfGates;
+    PhiStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -157,7 +164,7 @@ HWTEST_F_L0(StubOptimizerTest, PhiGateTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -169,18 +176,18 @@ HWTEST_F_L0(StubOptimizerTest, PhiGateTest)
     std::cout << "+++++++++++++++++++++PhiGateTest+++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 }
 
-class StubCallPhiOptimizer : public StubOptimizer {
+class CallPhiStub : public Stub {
 public:
-    explicit StubCallPhiOptimizer(Environment *env)
-        : StubOptimizer(env), phi_descriptor_(0, 1, DEFAULT_ORDER, MachineType::INT32_TYPE)
+    explicit CallPhiStub(Circuit *circuit)
+        : Stub("CallPhi", 1, circuit), phi_descriptor_("phi", 0, 1, DEFAULT_ORDER, MachineType::INT32_TYPE)
     {
         std::array<MachineType, 1> *params = new std::array<MachineType, 1>();
         (*params)[0] = MachineType::INT32_TYPE;
         phi_descriptor_.SetParameters(params->data());
     }
-    ~StubCallPhiOptimizer() = default;
-    NO_MOVE_SEMANTIC(StubCallPhiOptimizer);
-    NO_COPY_SEMANTIC(StubCallPhiOptimizer);
+    ~CallPhiStub() = default;
+    NO_MOVE_SEMANTIC(CallPhiStub);
+    NO_COPY_SEMANTIC(CallPhiStub);
     void GenerateCircuit() override
     {
         DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
@@ -190,68 +197,15 @@ public:
     }
 
 private:
-    StubInterfaceDescriptor phi_descriptor_;
+    StubDescriptor phi_descriptor_;
 };
 
-HWTEST_F_L0(StubOptimizerTest, CallPhiGateTest)
-{
-    LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
-    LLVMTypeRef fooParamTys[] = {
-        LLVMInt32Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "PhiTest", LLVMFunctionType(LLVMInt32Type(), fooParamTys, 1, 0));
-    LLVMTypeRef barParamTys[] = {
-        LLVMInt32Type(),
-    };
-    FastStubs::GetInstance().SetFastStub(0, reinterpret_cast<void *>(function));
-    LLVMValueRef barfunction =
-        LLVMAddFunction(module, "CallPhiGateTest_bar", LLVMFunctionType(LLVMInt32Type(), barParamTys, 1, 0));
-    Environment env("PhiTest", 1);
-    StubPhiOptimizer optimizer(&env);
-    optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
-    netOfGates.PrintAllGates();
-    auto cfg = Scheduler::Run(&netOfGates);
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
-    llvmBuilder.Build();
-    Environment barEnv("CallPhiGateTest_bar", 1);
-    StubCallPhiOptimizer callphiOptimizer(&barEnv);
-    callphiOptimizer.GenerateCircuit();
-    auto callNetOfGates = barEnv.GetCircuit();
-    callNetOfGates.PrintAllGates();
-    auto callCfg = Scheduler::Run(&callNetOfGates);
-    for (size_t bbIdx = 0; bbIdx < callCfg.size(); bbIdx++) {
-        std::cout << (callNetOfGates.GetOpCode(callCfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = callCfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            callNetOfGates.Print(callCfg[bbIdx][instIdx - 1]);
-        }
-    }
-    LLVMIRBuilder barllvmBuilder(&callCfg, &callNetOfGates, module, barfunction);
-    barllvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
-    auto *phiTestPointer =
-        reinterpret_cast<int (*)(int)>(reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
-    LLVMAddGlobalMapping(engine, function, reinterpret_cast<void *>(phiTestPointer));
-    auto *barPointerbar =
-        reinterpret_cast<int (*)(int)>(reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, barfunction)));
-    std::cout << std::hex << "phiTestPointer:" << reinterpret_cast<uintptr_t>(phiTestPointer)
-              << " barPointerbar:" << reinterpret_cast<uintptr_t>(barPointerbar) << std::endl;
-    compiler.Disassemble();
-    int result = barPointerbar(9);
-    EXPECT_EQ(result, 21);
-    result = barPointerbar(10);
-    EXPECT_EQ(result, 112);
-}
-
-class LoopOptimizer : public StubOptimizer {
+class LoopStub : public Stub {
 public:
-    explicit LoopOptimizer(Environment *env) : StubOptimizer(env) {}
-    ~LoopOptimizer() = default;
-    NO_MOVE_SEMANTIC(LoopOptimizer);
-    NO_COPY_SEMANTIC(LoopOptimizer);
+    explicit LoopStub(Circuit *circuit) : Stub("loop", 1, circuit) {}
+    ~LoopStub() = default;
+    NO_MOVE_SEMANTIC(LoopStub);
+    NO_COPY_SEMANTIC(LoopStub);
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
@@ -283,7 +237,7 @@ public:
     }
 };
 
-HWTEST_F_L0(StubOptimizerTest, LoopTest)
+HWTEST_F_L0(StubTest, LoopTest)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
     LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
@@ -291,10 +245,9 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest)
         LLVMInt32Type(),
     };
     LLVMValueRef function = LLVMAddFunction(module, "LoopTest", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
-    Environment env("loop", 1);
-    LoopOptimizer optimizer(&env);
+    Circuit netOfGates;
+    LoopStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -306,7 +259,7 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
 
@@ -320,12 +273,12 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest)
     std::cout << "res for loop(11) = " << std::dec << resInvalid << std::endl;
 }
 
-class LoopOptimizer1 : public StubOptimizer {
+class LoopStub1 : public Stub {
 public:
-    explicit LoopOptimizer1(Environment *env) : StubOptimizer(env) {}
-    ~LoopOptimizer1() = default;
-    NO_MOVE_SEMANTIC(LoopOptimizer1);
-    NO_COPY_SEMANTIC(LoopOptimizer1);
+    explicit LoopStub1(Circuit *circuit) : Stub("loop1", 1, circuit) {}
+    ~LoopStub1() = default;
+    NO_MOVE_SEMANTIC(LoopStub1);
+    NO_COPY_SEMANTIC(LoopStub1);
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
@@ -355,7 +308,7 @@ public:
     }
 };
 
-HWTEST_F_L0(StubOptimizerTest, LoopTest1)
+HWTEST_F_L0(StubTest, LoopTest1)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
     LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
@@ -363,10 +316,9 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest1)
         LLVMInt32Type(),
     };
     LLVMValueRef function = LLVMAddFunction(module, "LoopTest1", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
-    Environment env("loop1", 1);
-    LoopOptimizer1 optimizer(&env);
+    Circuit netOfGates;
+    LoopStub1 optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -377,7 +329,7 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest1)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -390,75 +342,7 @@ HWTEST_F_L0(StubOptimizerTest, LoopTest1)
     std::cout << "res for loop1(11) = " << std::dec << resInvalid << std::endl;
 }
 
-class FastAddOptimizer : public StubOptimizer {
-public:
-    explicit FastAddOptimizer(Environment *env) : StubOptimizer(env) {}
-    ~FastAddOptimizer() = default;
-    NO_MOVE_SEMANTIC(FastAddOptimizer);
-    NO_COPY_SEMANTIC(FastAddOptimizer);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift x = Int64Argument(0);
-        AddrShift y = Int64Argument(1);
-        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
-        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
-        StubOptimizerLabel ifTrue1(env);
-        StubOptimizerLabel ifTrue2(env);
-        StubOptimizerLabel ifFalse1(env);
-        StubOptimizerLabel ifFalse2(env);
-        StubOptimizerLabel ifTrue3(env);
-        StubOptimizerLabel ifTrue4(env);
-        StubOptimizerLabel ifTrue5(env);
-        StubOptimizerLabel ifFalse3(env);
-        StubOptimizerLabel ifFalse4(env);
-        StubOptimizerLabel ifFalse5(env);
-        StubOptimizerLabel next1(env);
-        StubOptimizerLabel next2(env);
-        StubOptimizerLabel next3(env);
-        // if x is number
-        Branch(TaggedIsNumber(x), &ifTrue1, &ifFalse1);
-        Bind(&ifTrue1);
-        // if y is number
-        Branch(TaggedIsNumber(y), &ifTrue2, &ifFalse2);
-        Bind(&ifTrue2);
-        Branch(TaggedIsInt(x), &ifTrue3, &ifFalse3);
-        Bind(&ifTrue3);
-        AddrShift intX = TaggedCastToInt32(x);
-        Branch(TaggedIsInt(y), &ifTrue4, &ifFalse4);
-        Bind(&ifTrue4);
-        AddrShift intY = TaggedCastToInt32(y);
-        intX = Int32Add(intX, intY);
-        Jump(&next3);
-        Bind(&ifFalse4);
-        doubleY = TaggedCastToDouble(y);
-        doubleX = CastInt32ToFloat64(intX);
-        Jump(&next2);
-        Bind(&ifFalse3);
-        doubleX = TaggedCastToDouble(x);
-        Branch(TaggedIsInt(y), &ifTrue5, &ifFalse5);
-        Bind(&ifTrue5);
-        intY = TaggedCastToInt32(y);
-        doubleY = CastInt32ToFloat64(intY);
-        Jump(&next2);
-        Bind(&ifFalse5);
-        doubleY = TaggedCastToDouble(y);
-        Jump(&next2);
-        Bind(&ifFalse2);
-        Jump(&next1);
-        Bind(&ifFalse1);
-        Jump(&next1);
-        Bind(&next1);
-        Return(GetHoleConstant());
-        Bind(&next2);
-        doubleX = DoubleAdd(*doubleX, *doubleY);
-        Return(DoubleBuildTagged(*doubleX));
-        Bind(&next3);
-        Return(IntBuildTagged(intX));
-    }
-};
-
-HWTEST_F_L0(StubOptimizerTest, FastAddTest)
+HWTEST_F_L0(StubTest, FastAddTest)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("fast_add_module");
     LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
@@ -468,10 +352,9 @@ HWTEST_F_L0(StubOptimizerTest, FastAddTest)
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastAddTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
     LLVMDumpModule(module);
-    Environment env("FastAdd", 2);  // 2 : parameter count
-    FastAddOptimizer optimizer(&env);
+    Circuit netOfGates;
+    FastAddStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -483,7 +366,7 @@ HWTEST_F_L0(StubOptimizerTest, FastAddTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -494,77 +377,14 @@ HWTEST_F_L0(StubOptimizerTest, FastAddTest)
     std::cout << "res for FastAdd(1, 1) = " << std::dec << resValid.GetNumber() << std::endl;
     std::cout << "res for FastAdd(2, 2) = " << std::dec << resValid2.GetNumber() << std::endl;
     std::cout << "res for FastAdd(11, 11) = " << std::dec << resInvalid.GetNumber() << std::endl;
+    int x1 = 2147483647;
+    int y1 = 15;
+    auto resG = fn(JSTaggedValue(x1).GetRawData(), JSTaggedValue(y1).GetRawData());
+    auto expectedG = FastRuntimeStub::FastAdd(JSTaggedValue(x1), JSTaggedValue(y1));
+    EXPECT_EQ(resG, expectedG);
 }
 
-class FastSubOptimizer : public StubOptimizer {
-public:
-    explicit FastSubOptimizer(Environment *env) : StubOptimizer(env) {}
-    ~FastSubOptimizer() = default;
-    NO_MOVE_SEMANTIC(FastSubOptimizer);
-    NO_COPY_SEMANTIC(FastSubOptimizer);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift x = Int64Argument(0);
-        AddrShift y = Int64Argument(1);
-        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
-        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
-        StubOptimizerLabel ifTrue1(env);
-        StubOptimizerLabel ifTrue2(env);
-        StubOptimizerLabel ifFalse1(env);
-        StubOptimizerLabel ifFalse2(env);
-        StubOptimizerLabel ifTrue3(env);
-        StubOptimizerLabel ifTrue4(env);
-        StubOptimizerLabel ifTrue5(env);
-        StubOptimizerLabel ifFalse3(env);
-        StubOptimizerLabel ifFalse4(env);
-        StubOptimizerLabel ifFalse5(env);
-        StubOptimizerLabel next1(env);
-        StubOptimizerLabel next2(env);
-        StubOptimizerLabel next3(env);
-        // if x is number
-        Branch(TaggedIsNumber(x), &ifTrue1, &ifFalse1);
-        Bind(&ifTrue1);
-        // if y is number
-        Branch(TaggedIsNumber(y), &ifTrue2, &ifFalse2);
-        Bind(&ifTrue2);
-        Branch(TaggedIsInt(x), &ifTrue3, &ifFalse3);
-        Bind(&ifTrue3);
-        AddrShift intX = TaggedCastToInt32(x);
-        Branch(TaggedIsInt(y), &ifTrue4, &ifFalse4);
-        Bind(&ifTrue4);
-        AddrShift intY = TaggedCastToInt32(y);
-        intX = Int32Sub(intX, intY);
-        Jump(&next3);
-        Bind(&ifFalse4);
-        doubleY = TaggedCastToDouble(y);
-        doubleX = CastInt32ToFloat64(intX);
-        Jump(&next2);
-        Bind(&ifFalse3);
-        doubleX = TaggedCastToDouble(x);
-        Branch(TaggedIsInt(y), &ifTrue5, &ifFalse5);
-        Bind(&ifTrue5);
-        intY = TaggedCastToInt32(y);
-        doubleY = CastInt32ToFloat64(intY);
-        Jump(&next2);
-        Bind(&ifFalse5);
-        doubleY = TaggedCastToDouble(y);
-        Jump(&next2);
-        Bind(&ifFalse2);
-        Jump(&next1);
-        Bind(&ifFalse1);
-        Jump(&next1);
-        Bind(&next1);
-        Return(GetHoleConstant());
-        Bind(&next2);
-        doubleX = DoubleSub(*doubleX, *doubleY);
-        Return(DoubleBuildTagged(*doubleX));
-        Bind(&next3);
-        Return(IntBuildTagged(intX));
-    }
-};
-
-HWTEST_F_L0(StubOptimizerTest, FastSubTest)
+HWTEST_F_L0(StubTest, FastSubTest)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("fast_sub_module");
     LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
@@ -574,10 +394,9 @@ HWTEST_F_L0(StubOptimizerTest, FastSubTest)
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastSubTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
     LLVMDumpModule(module);
-    Environment env("FastSub", 2);  // 2 : parameter
-    FastSubOptimizer optimizer(&env);
+    Circuit netOfGates;
+    FastSubStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -589,7 +408,7 @@ HWTEST_F_L0(StubOptimizerTest, FastSubTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -602,75 +421,7 @@ HWTEST_F_L0(StubOptimizerTest, FastSubTest)
     std::cout << "res for FastSub(11, 11) = " << std::dec << resC.GetNumber() << std::endl;
 }
 
-class FastMulOptimizer : public StubOptimizer {
-public:
-    explicit FastMulOptimizer(Environment *env) : StubOptimizer(env) {}
-    ~FastMulOptimizer() = default;
-    NO_MOVE_SEMANTIC(FastMulOptimizer);
-    NO_COPY_SEMANTIC(FastMulOptimizer);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift x = Int64Argument(0);
-        AddrShift y = Int64Argument(1);
-        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
-        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
-        StubOptimizerLabel ifTrue1(env);
-        StubOptimizerLabel ifTrue2(env);
-        StubOptimizerLabel ifFalse1(env);
-        StubOptimizerLabel ifFalse2(env);
-        StubOptimizerLabel ifTrue3(env);
-        StubOptimizerLabel ifTrue4(env);
-        StubOptimizerLabel ifTrue5(env);
-        StubOptimizerLabel ifFalse3(env);
-        StubOptimizerLabel ifFalse4(env);
-        StubOptimizerLabel ifFalse5(env);
-        StubOptimizerLabel next1(env);
-        StubOptimizerLabel next2(env);
-        StubOptimizerLabel next3(env);
-        // if x is number
-        Branch(TaggedIsNumber(x), &ifTrue1, &ifFalse1);
-        Bind(&ifTrue1);
-        // if y is number
-        Branch(TaggedIsNumber(y), &ifTrue2, &ifFalse2);
-        Bind(&ifTrue2);
-        Branch(TaggedIsInt(x), &ifTrue3, &ifFalse3);
-        Bind(&ifTrue3);
-        AddrShift intX = TaggedCastToInt32(x);
-        Branch(TaggedIsInt(y), &ifTrue4, &ifFalse4);
-        Bind(&ifTrue4);
-        AddrShift intY = TaggedCastToInt32(y);
-        intX = Int32Mul(intX, intY);
-        Jump(&next3);
-        Bind(&ifFalse4);
-        doubleY = TaggedCastToDouble(y);
-        doubleX = CastInt32ToFloat64(intX);
-        Jump(&next2);
-        Bind(&ifFalse3);
-        doubleX = TaggedCastToDouble(x);
-        Branch(TaggedIsInt(y), &ifTrue5, &ifFalse5);
-        Bind(&ifTrue5);
-        intY = TaggedCastToInt32(y);
-        doubleY = CastInt32ToFloat64(intY);
-        Jump(&next2);
-        Bind(&ifFalse5);
-        doubleY = TaggedCastToDouble(y);
-        Jump(&next2);
-        Bind(&ifFalse2);
-        Jump(&next1);
-        Bind(&ifFalse1);
-        Jump(&next1);
-        Bind(&next1);
-        Return(GetHoleConstant());
-        Bind(&next2);
-        doubleX = DoubleMul(*doubleX, *doubleY);
-        Return(DoubleBuildTagged(*doubleX));
-        Bind(&next3);
-        Return(IntBuildTagged(intX));
-    }
-};
-
-HWTEST_F_L0(StubOptimizerTest, FastMulTest)
+HWTEST_F_L0(StubTest, FastMulTest)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("fast_mul_module");
     LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
@@ -680,10 +431,9 @@ HWTEST_F_L0(StubOptimizerTest, FastMulTest)
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastMulTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
     LLVMDumpModule(module);
-    Environment env("FastMul", 2);  // 2 : parameter count
-    FastMulOptimizer optimizer(&env);
+    Circuit netOfGates;
+    FastMulStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -695,7 +445,7 @@ HWTEST_F_L0(StubOptimizerTest, FastMulTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
 
@@ -707,90 +457,29 @@ HWTEST_F_L0(StubOptimizerTest, FastMulTest)
     std::cout << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber() << std::endl;
     std::cout << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber() << std::endl;
     std::cout << "res for FastMul(11, 11) = " << std::dec << resC.GetNumber() << std::endl;
+    int x = 7;
+    double y = 1125899906842624;
+    auto resD = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    JSTaggedValue expectedD = FastRuntimeStub::FastMul(JSTaggedValue(x), JSTaggedValue(y));
+    EXPECT_EQ(resD, expectedD);
+    x = -1;
+    y = 1.7976931348623157e+308;
+    auto resE = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    JSTaggedValue expectedE = FastRuntimeStub::FastMul(JSTaggedValue(x), JSTaggedValue(y));
+    EXPECT_EQ(resE, expectedE);
+    x = -1;
+    y = -1 * std::numeric_limits<double>::infinity();
+    auto resF = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    JSTaggedValue expectedF = FastRuntimeStub::FastMul(JSTaggedValue(x), JSTaggedValue(y));
+    EXPECT_EQ(resF, expectedF);
+    int x1 = 2147483647;
+    int y1 = 15;
+    auto resG = fn(JSTaggedValue(x1).GetRawData(), JSTaggedValue(y1).GetRawData());
+    auto expectedG = FastRuntimeStub::FastMul(JSTaggedValue(x1), JSTaggedValue(y1));
+    EXPECT_EQ(resG, expectedG);
 }
 
-class FastDivOptimizer : public StubOptimizer {
-public:
-    explicit FastDivOptimizer(Environment *env) : StubOptimizer(env) {}
-    ~FastDivOptimizer() = default;
-    NO_MOVE_SEMANTIC(FastDivOptimizer);
-    NO_COPY_SEMANTIC(FastDivOptimizer);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift x = Int64Argument(0);
-        AddrShift y = Int64Argument(1);
-        DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
-        DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
-        StubOptimizerLabel ifTrue1(env);
-        StubOptimizerLabel ifTrue2(env);
-        StubOptimizerLabel ifFalse1(env);
-        StubOptimizerLabel ifFalse2(env);
-        StubOptimizerLabel ifTrue3(env);
-        StubOptimizerLabel ifTrue4(env);
-        StubOptimizerLabel ifTrue5(env);
-        StubOptimizerLabel ifTrue6(env);
-        StubOptimizerLabel ifFalse3(env);
-        StubOptimizerLabel ifFalse4(env);
-        StubOptimizerLabel ifFalse5(env);
-        StubOptimizerLabel ifFalse6(env);
-        StubOptimizerLabel next1(env);
-        StubOptimizerLabel next2(env);
-        StubOptimizerLabel next3(env);
-        StubOptimizerLabel next4(env);
-        Branch(TaggedIsNumber(x), &ifTrue1, &ifFalse1);
-        Bind(&ifTrue1);
-        // if right.IsNumber()
-        Branch(TaggedIsNumber(y), &ifTrue2, &ifFalse2);
-        Bind(&ifTrue2);
-        Branch(TaggedIsInt(x), &ifTrue3, &ifFalse3);
-        Bind(&ifTrue3);
-        AddrShift intX = TaggedCastToInt32(x);
-        doubleX = CastInt32ToFloat64(intX);
-        Jump(&next2);
-        Bind(&ifFalse3);
-        doubleX = TaggedCastToDouble(x);
-        Jump(&next2);
-        Bind(&ifFalse2);
-        Jump(&next1);
-        Bind(&ifFalse1);
-        Jump(&next1);
-        Bind(&next1);
-        Return(GetHoleConstant());
-        Bind(&next2);
-        Branch(TaggedIsInt(y), &ifTrue4, &ifFalse4);
-        Bind(&ifTrue4);
-        AddrShift intY = TaggedCastToInt32(y);
-        doubleY = CastInt32ToFloat64(intY);
-        Jump(&next3);
-        Bind(&ifFalse4);
-        doubleY = TaggedCastToDouble(y);
-        Jump(&next3);
-        Bind(&next3);
-        Branch(DoubleEqual(*doubleY, GetDoubleConstant(0.0)), &ifTrue5, &ifFalse5);
-        Bind(&ifTrue5);
-        // dLeft == 0.0 || std::isnan(dLeft)
-        Branch(TruncInt64ToInt1(Word64Or(SExtInt1ToInt64(DoubleEqual(*doubleX, GetDoubleConstant(0.0))),
-                                         SExtInt32ToInt64(DoubleIsNAN(*doubleX)))),
-               &ifTrue6, &ifFalse6);
-        Bind(&ifTrue6);
-        Return(DoubleBuildTagged(GetDoubleConstant(base::NAN_VALUE)));
-        Bind(&ifFalse6);
-        Jump(&next4);
-        Bind(&next4);
-        AddrShift intXTmp = CastDoubleToInt64(*doubleX);
-        AddrShift intYtmp = CastDoubleToInt64(*doubleY);
-        intXTmp = Word64And(Word64Xor(intXTmp, intYtmp), GetWord64Constant(base::DOUBLE_SIGN_MASK));
-        intXTmp = Word64Xor(intXTmp, CastDoubleToInt64(GetDoubleConstant(base::POSITIVE_INFINITY)));
-        doubleX = CastInt64ToFloat64(intXTmp);
-        Return(DoubleBuildTagged(*doubleX));
-        Bind(&ifFalse5);
-        doubleX = DoubleDiv(*doubleX, *doubleY);
-        Return(DoubleBuildTagged(*doubleX));
-    }
-};
-
-HWTEST_F_L0(StubOptimizerTest, FastDivTest)
+HWTEST_F_L0(StubTest, FastDivTest)
 {
     LLVMModuleRef module = LLVMModuleCreateWithName("fast_div_module");
     LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
@@ -799,10 +488,9 @@ HWTEST_F_L0(StubOptimizerTest, FastDivTest)
         LLVMInt64Type(),
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastDiv", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
-    Environment env("FastDiv", 2);
-    FastDivOptimizer optimizer(&env);
+    Circuit netOfGates;
+    FastDivStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -814,7 +502,7 @@ HWTEST_F_L0(StubOptimizerTest, FastDivTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
@@ -825,165 +513,13 @@ HWTEST_F_L0(StubOptimizerTest, FastDivTest)
     std::cout << "res for FastDiv(50, 25) = " << res.GetRawData() << std::endl;
 }
 
-class FastFindOwnElementStub : public StubOptimizer {
-public:
-    explicit FastFindOwnElementStub(Environment *env) : StubOptimizer(env) {}
-    ~FastFindOwnElementStub() = default;
-    NO_MOVE_SEMANTIC(FastFindOwnElementStub);
-    NO_COPY_SEMANTIC(FastFindOwnElementStub);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift obj = PtrArgument(0);
-        AddrShift index = Int32Argument(1);
-
-        StubOptimizerLabel notDict(env);
-        StubOptimizerLabel lessOrEqual1(env);
-        StubOptimizerLabel greaterThan1(env);
-        StubOptimizerLabel isHole1(env);
-        StubOptimizerLabel isHole2(env);
-        StubOptimizerLabel isHole3(env);
-        StubOptimizerLabel notHole1(env);
-        StubOptimizerLabel notHole2(env);
-        StubOptimizerLabel notHole3(env);
-        StubOptimizerLabel isDict(env);
-        StubOptimizerLabel lessThan(env);
-        StubOptimizerLabel greaterOrEqual(env);
-        StubOptimizerLabel greaterThan2(env);
-        StubOptimizerLabel lessOrEqual2(env);
-        StubOptimizerLabel isUndef1(env);
-        StubOptimizerLabel isUndef2(env);
-        StubOptimizerLabel notUndef1(env);
-        StubOptimizerLabel notUndef2(env);
-        StubOptimizerLabel indexIsInt(env);
-        StubOptimizerLabel indexIsNotInt(env);
-        StubOptimizerLabel equal1(env);
-        StubOptimizerLabel equal2(env);
-        StubOptimizerLabel notEqual1(env);
-        StubOptimizerLabel notEqual2(env);
-        StubOptimizerLabel lessThanZero(env);
-        StubOptimizerLabel greaterOrEqualZero(env);
-        StubOptimizerLabel greaterThanLength(env);
-        StubOptimizerLabel elelmentIsInt(env);
-        StubOptimizerLabel elelmentIsNotInt(env);
-        StubOptimizerLabel notGreaterThanLength(env);
-        StubOptimizerLabel next1(env);
-        AddrShift elements = Load(POINTER_TYPE, obj, GetPtrConstant(JSObject::ELEMENTS_OFFSET));
-
-        Branch(IsDictionaryMode(elements), &isDict, &notDict);
-        Bind(&notDict);
-        AddrShift arrayLength = Load(UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
-
-        Branch(Int32LessThanOrEqual(arrayLength, index), &lessOrEqual1, &greaterThan1);
-        Bind(&lessOrEqual1);
-        Jump(&next1);
-        Bind(&greaterThan1);
-        AddrShift offset = PtrMul(ChangeInt32ToPointer(index), GetPtrConstant(JSTaggedValue::TaggedTypeSize()));
-        AddrShift dataIndex = PtrAdd(offset, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
-        AddrShift value = Load(TAGGED_TYPE, elements, dataIndex);
-
-        Branch(TaggedIsHole(value), &isHole1, &notHole1);
-        Bind(&isHole1);
-        Jump(&next1);
-        Bind(&notHole1);
-        Return(value);
-        Bind(&next1);
-        Return(GetHoleConstant());
-        // IsDictionary
-        Bind(&isDict);
-        offset = PtrMul(GetPtrConstant(JSTaggedValue::TaggedTypeSize()),
-                        GetPtrConstant(GetInteger32Constant(panda::ecmascript::NumberDictionary::SIZE_INDEX)));
-        AddrShift data = Load(POINTER_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
-        AddrShift capacity = TaggedCastToInt32(Load(TAGGED_TYPE, data, offset));
-        AddrShift count = GetInteger32Constant(1);
-        AddrShift taggedIndex = IntBuildTagged(index);
-        // 15 : size of entry
-        AddrShift entry = Word32And(GetInteger32Constant(15), Int32Sub(capacity, GetInteger32Constant(1)));
-        AddrShift dictionaryLength =
-            Load(INT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
-        Label loopHead(env);
-        Label loopEnd(env);
-        Label afterLoop(env);
-        Jump(&loopHead);
-        LoopBegin(&loopHead);
-        AddrShift arrayIndex =
-            Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
-                     Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
-
-        Branch(Int32LessThan(arrayIndex, GetInteger32Constant(0)), &lessThan, &greaterOrEqual);
-        Bind(&lessThan);
-        Return(GetHoleConstant());
-        Bind(&greaterOrEqual);
-        Branch(Int32GreaterThan(arrayIndex, dictionaryLength), &greaterThan2, &lessOrEqual2);
-        Bind(&greaterThan2);
-        Return(GetHoleConstant());
-        Bind(&lessOrEqual2);
-        offset = PtrMul(ChangeInt32ToPointer(arrayIndex), GetPtrConstant(JSTaggedValue::TaggedTypeSize()));
-        data = Load(POINTER_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
-        AddrShift element = Load(TAGGED_TYPE, data, offset);
-        Branch(TaggedIsHole(element), &isHole2, &notHole2);
-        Bind(&isHole2);
-        Jump(&loopEnd);
-        // if element is undefined
-        Bind(&notHole2);
-        Branch(TaggedIsUndefined(element), &isUndef1, &notUndef1);
-        Bind(&isUndef1);
-        Return(GetHoleConstant());
-        Bind(&notUndef1);
-        Branch(TaggedIsHole(taggedIndex), &isHole3, &notHole3);
-        Bind(&isHole3);
-        Jump(&loopEnd);
-        Bind(&notHole3);
-        Branch(TaggedIsUndefined(taggedIndex), &isUndef2, &notUndef2);
-        Bind(&isUndef2);
-        Jump(&loopEnd);
-        Bind(&notUndef2);
-        Branch(TaggedIsInt(taggedIndex), &indexIsInt, &indexIsNotInt);
-        Bind(&indexIsNotInt);
-        Jump(&loopEnd);
-        Bind(&indexIsInt);
-        Branch(TaggedIsInt(element), &elelmentIsInt, &elelmentIsNotInt);
-        Bind(&elelmentIsNotInt);
-        Jump(&loopEnd);
-        Bind(&elelmentIsInt);
-        Branch(Word32Equal(TaggedCastToInt32(taggedIndex), TaggedCastToInt32(element)), &equal1, &notEqual1);
-        Bind(&notEqual1);
-        Jump(&loopEnd);
-        Bind(&equal1);
-        Branch(Word32Equal(entry, GetInteger32Constant(-1)), &equal2, &notEqual2);
-        Bind(&equal2);
-        Return(GetHoleConstant());
-        Bind(&notEqual2);
-        entry =
-            Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_VALUE_INDEX),
-                     Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
-                              Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE))));
-        Branch(Int32LessThan(entry, GetInteger32Constant(0)), &lessThanZero, &greaterOrEqualZero);
-        Bind(&lessThanZero);
-        Return(GetUndefinedConstant());
-        Bind(&greaterOrEqualZero);
-        Branch(Int32GreaterThan(entry, dictionaryLength), &greaterThanLength, &notGreaterThanLength);
-        Bind(&greaterThanLength);
-        Return(GetUndefinedConstant());
-        Bind(&notGreaterThanLength);
-        offset = PtrMul(ChangeInt32ToPointer(arrayIndex), GetPtrConstant(JSTaggedValue::TaggedTypeSize()));
-        data = Load(POINTER_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
-        Return(Load(TAGGED_TYPE, data, offset));
-        Bind(&loopEnd);
-        entry = Word32And(Int32Add(entry, count), Int32Sub(capacity, GetInteger32Constant(1)));
-        count = Int32Add(count, GetInteger32Constant(1));
-        LoopEnd(&loopHead);
-    }
-};
-
-HWTEST_F_L0(StubOptimizerTest, FastFindOwnElementStub)
+HWTEST_F_L0(StubTest, FastFindOwnElementStub)
 {
-    LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
+    auto module = stubModule.GetModule();
     LLVMValueRef findFunction = LLVMGetNamedFunction(module, "FindOwnElement");
-    Environment env("FastFindOwnElementStub", 2);
-    FastFindOwnElementStub optimizer(&env);
+    Circuit netOfGates;
+    FastFindOwnElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -993,67 +529,19 @@ HWTEST_F_L0(StubOptimizerTest, FastFindOwnElementStub)
             netOfGates.Print(cfg[bbIdx][instIdx - 1]);
         }
     }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, findFunction);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
 }
-class FastGetElementStub : public StubOptimizer {
-public:
-    explicit FastGetElementStub(Environment *env)
-        // 2 : parameter number
-        : StubOptimizer(env), findOwnElementDescriptor(0, 2, DEFAULT_ORDER, MachineType::TAGGED_TYPE)
-    {
-        // 2 : 2 means that there are 2 cases in total.
-        std::array<MachineType, 2> *params = new std::array<MachineType, 2>();
-        (*params)[0] = MachineType::POINTER_TYPE;
-        (*params)[1] = MachineType::UINT32_TYPE;
-        findOwnElementDescriptor.SetParameters(params->data());
-    }
-    ~FastGetElementStub() = default;
-    NO_MOVE_SEMANTIC(FastGetElementStub);
-    NO_COPY_SEMANTIC(FastGetElementStub);
 
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift receiver = Int64Argument(0);
-        AddrShift index = Int64Argument(1);
-        StubOptimizerLabel isHole(env);
-        StubOptimizerLabel notHole(env);
-        Label loopHead(env);
-        Label loopEnd(env);
-        Label afterLoop(env);
-        Label notHeapObj(env);
-
-        Jump(&loopHead);
-        LoopBegin(&loopHead);
-        AddrShift objPtr = ChangeInt64ToPointer(receiver);
-        AddrShift callFindOwnElementVal =
-            CallStub(&findOwnElementDescriptor, GetWord64Constant(FAST_STUB_ID(FindOwnElement)), {objPtr, index});
-        Branch(TaggedIsHole(callFindOwnElementVal), &isHole, &notHole);
-        Bind(&notHole);
-        Return(callFindOwnElementVal);
-        Bind(&isHole);
-        receiver = Load(TAGGED_TYPE, LoadHClass(objPtr), GetPtrConstant(JSHClass::PROTOTYPE_OFFSET));
-        Branch(TaggedIsHeapObject(receiver), &loopEnd, &notHeapObj);
-        Bind(&notHeapObj);
-        Return(GetUndefinedConstant());
-        Bind(&loopEnd);
-        LoopEnd(&loopHead);
-    }
-
-    StubInterfaceDescriptor findOwnElementDescriptor;
-};
-
-HWTEST_F_L0(StubOptimizerTest, FastGetElementStub)
+HWTEST_F_L0(StubTest, FastGetElementStub)
 {
-    LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
+    auto module = stubModule.GetModule();
     LLVMValueRef findFunction = LLVMGetNamedFunction(module, "FindOwnElement");
-    Environment findFuncEnv("FastFindOwnElement_Foo", 2);
-    FastFindOwnElementStub findOptimizer(&findFuncEnv);
+    Circuit netOfGates;
+    FastFindOwnElementStub findOptimizer(&netOfGates);
     findOptimizer.GenerateCircuit();
-    auto netOfGates = findFuncEnv.GetCircuit();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
         std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
@@ -1062,12 +550,11 @@ HWTEST_F_L0(StubOptimizerTest, FastGetElementStub)
             netOfGates.Print(cfg[bbIdx][instIdx - 1]);
         }
     }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, findFunction);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    Environment getFuncEnv("FastGetElement", 2);
-    FastGetElementStub getOptimizer(&getFuncEnv);
+    Circuit getNetOfGates;
+    FastGetElementStub getOptimizer(&getNetOfGates);
     getOptimizer.GenerateCircuit();
-    auto getNetOfGates = getFuncEnv.GetCircuit();
     getNetOfGates.PrintAllGates();
     auto getCfg = Scheduler::Run(&getNetOfGates);
     for (size_t bbIdx = 0; bbIdx < getCfg.size(); bbIdx++) {
@@ -1078,260 +565,18 @@ HWTEST_F_L0(StubOptimizerTest, FastGetElementStub)
         }
     }
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
 }
 
-class FastFindOwnElement2Stub : public StubOptimizer {
-public:
-    explicit FastFindOwnElement2Stub(Environment *env) : StubOptimizer(env) {}
-    ~FastFindOwnElement2Stub() = default;
-    NO_MOVE_SEMANTIC(FastFindOwnElement2Stub);
-    NO_COPY_SEMANTIC(FastFindOwnElement2Stub);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift thread = PtrArgument(0); // 0 : 1st para
-        AddrShift elements = PtrArgument(1); // 1 : 2nd para
-        AddrShift index = Int32Argument(2); // 2 : 3rd para
-        AddrShift isDict = Int32Argument(3); // 3 : 4th para
-        AddrShift attr = PtrArgument(4); // 4: 5th para
-        AddrShift indexOrEntry = PtrArgument(5); // 5: 6th para
-        isDict = ZExtInt1ToInt32(isDict);
-        Label notDictionary(env);
-        Label isDictionary(env);
-        Label end(env);
-        Branch(Word32Equal(isDict, GetInteger32Constant(0)), &notDictionary, &isDictionary);
-        Bind(&notDictionary);
-        {
-            AddrShift elementsLength =
-                Load(UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
-            Label outOfElements(env);
-            Label notOutOfElements(env);
-            Branch(Int32LessThanOrEqual(elementsLength, index), &outOfElements, &notOutOfElements);
-            Bind(&outOfElements);
-            {
-                Return(GetHoleConstant());
-            }
-            Bind(&notOutOfElements);
-            {
-                AddrShift value = GetValueFromTaggedArray(elements, index);
-                Label isHole(env);
-                Label notHole(env);
-                Branch(TaggedIsHole(value), &isHole, &notHole);
-                Bind(&isHole);
-                Jump(&end);
-                Bind(&notHole);
-                {
-                    Store(UINT32_TYPE, attr, GetPtrConstant(0),
-                          GetInteger32Constant(PropertyAttributes::GetDefaultAttributes()));
-                    Store(UINT32_TYPE, indexOrEntry, GetPtrConstant(0), index);
-                    Return(value);
-                }
-            }
-        }
-        Bind(&isDictionary);
-        {
-            Label afterFindElement(env);
-            AddrShift entry =
-                FindElementFromNumberDictionary(thread, elements, IntBuildTagged(index), &afterFindElement);
-            Label notNegtiveOne(env);
-            Label negtiveOne(env);
-            Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
-            Bind(&notNegtiveOne);
-            {
-                Store(UINT32_TYPE, attr, GetPtrConstant(0), GetDetailsFromDictionary(elements, entry));
-                Store(UINT32_TYPE, indexOrEntry, GetPtrConstant(0), entry);
-                Return(GetValueFromDictionary(elements, entry));
-            }
-            Bind(&negtiveOne);
-            Jump(&end);
-        }
-        Bind(&end);
-        Return(GetHoleConstant());
-    }
-};
-
-class SetElementStub : public StubOptimizer {
-public:
-    explicit SetElementStub(Environment *env) : StubOptimizer(env) {}
-    ~SetElementStub() = default;
-    NO_MOVE_SEMANTIC(SetElementStub);
-    NO_COPY_SEMANTIC(SetElementStub);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift thread = PtrArgument(0);
-        AddrShift receiver = PtrArgument(1);
-        DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, receiver);
-        AddrShift index = Int32Argument(2);     // 2 : 3rd argument
-        AddrShift value = Int64Argument(3);     // 3 : 4th argument
-        AddrShift mayThrow = Int32Argument(4);  // 4 : 5th argument
-        DEFVARIABLE(onPrototype, MachineType::BOOL_TYPE, FalseConstant());
-
-        AddrShift pattr = Alloca(static_cast<int>(MachineRep::K_WORD32));
-        AddrShift pindexOrEntry = Alloca(static_cast<int>(MachineRep::K_WORD32));
-        Label loopHead(env);
-        Jump(&loopHead);
-        LoopBegin(&loopHead);
-        {
-            AddrShift elements = GetElements(*holder);
-            AddrShift isDictionary = IsDictionaryMode(elements);
-            StubInterfaceDescriptor *findOwnElemnt2 = GET_STUBDESCRIPTOR(FindOwnElement2);
-            AddrShift val = CallStub(findOwnElemnt2, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)),
-                                     {thread, elements, index, isDictionary, pattr, pindexOrEntry});
-            Label notHole(env);
-            Label isHole(env);
-            Branch(TaggedIsNotHole(val), &notHole, &isHole);
-            Bind(&notHole);
-            {
-                Label isOnProtoType(env);
-                Label notOnProtoType(env);
-                Label afterOnProtoType(env);
-                Branch(*onPrototype, &isOnProtoType, &notOnProtoType);
-                Bind(&notOnProtoType);
-                Jump(&afterOnProtoType);
-                Bind(&isOnProtoType);
-                {
-                    Label isExtensible(env);
-                    Label notExtensible(env);
-                    Label nextExtensible(env);
-                    Branch(IsExtensible(receiver), &isExtensible, &notExtensible);
-                    Bind(&isExtensible);
-                    Jump(&nextExtensible);
-                    Bind(&notExtensible);
-                    {
-                        Label isThrow(env);
-                        Label notThrow(env);
-                        Branch(Word32NotEqual(mayThrow, GetInteger32Constant(0)), &isThrow, &notThrow);
-                        Bind(&isThrow);
-                        ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible),
-                                           FalseConstant());
-                        Bind(&notThrow);
-                        Return(FalseConstant());
-                    }
-                    Bind(&nextExtensible);
-                    StubInterfaceDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
-                    Return(CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
-                                       {thread, receiver, index, value,
-                                        GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
-                }
-                Bind(&afterOnProtoType);
-                {
-                    AddrShift attr = Load(INT32_TYPE, pattr);
-                    Label isAccessor(env);
-                    Label notAccessor(env);
-                    Branch(IsAcesscor(attr), &isAccessor, &notAccessor);
-                    Bind(&notAccessor);
-                    {
-                        Label isWritable(env);
-                        Label notWritable(env);
-                        Branch(IsWritable(attr), &isWritable, &notWritable);
-                        Bind(&isWritable);
-                        {
-                            AddrShift elements = GetElements(receiver);
-                            Label isDict(env);
-                            Label notDict(env);
-                            AddrShift indexOrEntry = Load(INT32_TYPE, pindexOrEntry);
-                            Branch(isDictionary, &isDict, &notDict);
-                            Bind(&notDict);
-                            {
-                                StoreElement(elements, indexOrEntry, value);
-                                Label updateRepLabel(env);
-                                UpdateRepresention(LoadHClass(receiver), value, &updateRepLabel);
-                                Return(TrueConstant());
-                            }
-                            Bind(&isDict);
-                            {
-                                UpdateValueAndDetails(elements, indexOrEntry, value, attr);
-                                Return(TrueConstant());
-                            }
-                        }
-                        Bind(&notWritable);
-                        {
-                            Label isThrow(env);
-                            Label notThrow(env);
-                            Branch(Word32NotEqual(mayThrow, GetInteger32Constant(0)), &isThrow, &notThrow);
-                            Bind(&isThrow);
-                            ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetReadOnlyProperty), FalseConstant());
-                            Bind(&notThrow);
-                            Return(FalseConstant());
-                        }
-                    }
-                    Bind(&isAccessor);
-                    {
-                        StubInterfaceDescriptor *callsetter = GET_STUBDESCRIPTOR(CallSetter);
-                        AddrShift setter = GetSetterFromAccessor(val);
-                        Return(CallRuntime(callsetter, thread, GetWord64Constant(FAST_STUB_ID(CallSetter)),
-                                           {thread, setter, receiver, value, TruncInt32ToInt1(mayThrow)}));
-                    }
-                }
-            }
-            Bind(&isHole);
-            {
-                // holder equals to JSObject::Cast(holder)->GetJSHClass()->GetPrototype();
-                holder = GetPrototypeFromHClass(LoadHClass(*holder));
-                Label isHeapObj(env);
-                Label notHeapObj(env);
-                Branch(TaggedIsObject(*holder), &isHeapObj, &notHeapObj);
-                Bind(&notHeapObj);
-                {
-                    Label isExtensible(env);
-                    Label notExtensible(env);
-                    Label nextExtensible(env);
-                    Branch(IsExtensible(receiver), &isExtensible, &notExtensible);
-                    Bind(&isExtensible);
-                    Jump(&nextExtensible);
-                    Bind(&notExtensible);
-                    {
-                        Label isThrow(env);
-                        Label notThrow(env);
-                        Branch(Word32NotEqual(mayThrow, GetInteger32Constant(0)), &isThrow, &notThrow);
-                        Bind(&isThrow);
-                        ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible),
-                                           FalseConstant());
-                        Bind(&notThrow);
-                        Return(FalseConstant());
-                    }
-                    Bind(&nextExtensible);
-                    {
-                        StubInterfaceDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
-                        Return(CallRuntime(addElementInternal, thread,
-                                           GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
-                                           {thread, receiver, index, value,
-                                            GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
-                    }
-                }
-                Bind(&isHeapObj);
-                {
-                    Label isJsProxy(env);
-                    Label notJsProxy(env);
-                    Branch(IsJsProxy(*holder), &isJsProxy, &notJsProxy);
-                    Bind(&isJsProxy);
-                    {
-                        StubInterfaceDescriptor *setProperty = GET_STUBDESCRIPTOR(JSProxySetProperty);
-                        Return(CallRuntime(
-                            setProperty, thread, GetWord64Constant(FAST_STUB_ID(JSProxySetProperty)),
-                            {thread, *holder, IntBuildTagged(index), value, receiver, TruncInt32ToInt1(mayThrow)}));
-                    }
-                    Bind(&notJsProxy);
-                    onPrototype = TrueConstant();
-                }
-            }
-        }
-        LoopEnd(&loopHead);
-    }
-};
-
-HWTEST_F_L0(StubOptimizerTest, FastFindOwnElement2Stub)
+HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
 {
     std::cout << " ------------------------FastFindOwnElement2Stub ---------------------" << std::endl;
-    LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
+    auto module = stubModule.GetModule();
     LLVMValueRef function = LLVMGetNamedFunction(module, "FindOwnElement2");
-    Environment env("FindOwnElement2", 6);
-    FastFindOwnElement2Stub optimizer(&env);
+    Circuit netOfGates;
+    FastFindOwnElement2Stub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -1341,9 +586,9 @@ HWTEST_F_L0(StubOptimizerTest, FastFindOwnElement2Stub)
             netOfGates.Print(cfg[bbIdx][instIdx - 1]);
         }
     }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(JSThread *, TaggedArray *, uint32_t, bool,
@@ -1367,14 +612,13 @@ HWTEST_F_L0(StubOptimizerTest, FastFindOwnElement2Stub)
     std::cout << " ++++++++++++++++++++FastFindOwnElement2Stub ++++++++++++++++++" << std::endl;
 }
 
-HWTEST_F_L0(StubOptimizerTest, SetElementStub)
+HWTEST_F_L0(StubTest, SetElementStub)
 {
-    LLVMModuleRef module = static_cast<LLVMModuleRef>(FastStubs::GetInstance().GetModule());
+    auto module = stubModule.GetModule();
     LLVMValueRef function = LLVMGetNamedFunction(module, "SetElement");
-    Environment env("SetElementStub", 5);
-    SetElementStub optimizer(&env);
+    Circuit netOfGates;
+    FastSetElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
-    auto netOfGates = env.GetCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -1384,30 +628,30 @@ HWTEST_F_L0(StubOptimizerTest, SetElementStub)
             netOfGates.Print(cfg[bbIdx][instIdx - 1]);
         }
     }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
 }
 
 struct ThreadTy {
-    intptr_t magic; // 0x11223344
+    intptr_t magic;  // 0x11223344
     intptr_t fp;
 };
 class StubCallRunTimeThreadFpLock {
 public:
-    StubCallRunTimeThreadFpLock(struct ThreadTy *thread, intptr_t newFp): oldRbp_(thread->fp),
-        thread_(thread)
+    StubCallRunTimeThreadFpLock(struct ThreadTy *thread, intptr_t newFp) : oldRbp_(thread->fp), thread_(thread)
     {
         thread_->fp = *(reinterpret_cast<int64_t *>(newFp));
         std::cout << "StubCallRunTimeThreadFpLock newFp: " << newFp << " oldRbp_ : " << oldRbp_
-            << " thread_->fp:" << thread_->fp <<std::endl;
+                  << " thread_->fp:" << thread_->fp << std::endl;
     }
     ~StubCallRunTimeThreadFpLock()
     {
         std::cout << "~StubCallRunTimeThreadFpLock oldRbp_: " << oldRbp_ << " thread_->fp:" << thread_->fp << std::endl;
         thread_->fp = oldRbp_;
     }
+
 private:
     intptr_t oldRbp_;
     struct ThreadTy *thread_;
@@ -1487,7 +731,7 @@ frameType :1 gcFp:0
 #4  0x00007fffebf7b1ab in stub2 ()
 #5  0x0000555555610afe in RuntimeFunc1 ()
 #6  0x00007fffebf7b14e in stub1 ()
-#7  0x000055555561197c in panda::test::StubOptimizerTest_JSEntryTest_Test::TestBody() ()
+#7  0x000055555561197c in panda::test::StubTest_JSEntryTest_Test::TestBody() ()
 */
 
 LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder)
@@ -1504,7 +748,8 @@ LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder)
     return frameAddr;
 }
 
-HWTEST_F_L0(StubOptimizerTest, JSEntryTest)
+#ifdef LLVM_SUPPORT_GC
+HWTEST_F_L0(StubTest, JSEntryTest)
 {
     std::cout << " ---------- JSEntryTest ------------- " << std::endl;
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
@@ -1526,9 +771,7 @@ HWTEST_F_L0(StubOptimizerTest, JSEntryTest)
     std::vector<LLVMTypeRef> elements_t {llvmI64, llvmI64};
     LLVMTypeRef threadTy = LLVMStructTypeInContext(context, elements_t.data(), elements_t.size(), 0);
     LLVMTypeRef threadTyPtr = LLVMPointerType(threadTy, 0);
-    LLVMTypeRef paramTys0[] = {
-        threadTyPtr
-    };
+    LLVMTypeRef paramTys0[] = {threadTyPtr};
     /* implement stub1 */
     LLVMValueRef stub1 = LLVMAddFunction(module, "stub1", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
     LLVMAddTargetDependentFunctionAttr(stub1, "frame-pointer", "all");
@@ -1623,18 +866,16 @@ HWTEST_F_L0(StubOptimizerTest, JSEntryTest)
     retVal = LLVMConstInt(LLVMInt64Type(), 3, false);
     LLVMBuildRet(builder, retVal);
     LLVMDumpModule(module);
-    char* error = nullptr;
+    char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     uint64_t stub1Code = LLVMGetFunctionAddress(engine, "stub1");
     uint64_t stub2Code = LLVMGetFunctionAddress(engine, "stub2");
     uint64_t stub3Code = LLVMGetFunctionAddress(engine, "stub3");
-    std::map<uint64_t, std::string> addr2name = {
-        {stub1Code, "stub1"}, {stub2Code, "stub2"}, {stub3Code, "stub3"}
-    };
+    std::map<uint64_t, std::string> addr2name = {{stub1Code, "stub1"}, {stub2Code, "stub2"}, {stub3Code, "stub3"}};
     std::cout << std::endl << " stub1Code : " << stub1Code << std::endl;
     std::cout << std::endl << " stub2Code : " << stub2Code << std::endl;
     std::cout << std::endl << " stub3Code : " << stub3Code << std::endl;
@@ -1643,8 +884,8 @@ HWTEST_F_L0(StubOptimizerTest, JSEntryTest)
     auto stub1Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub1Code);
     g_stub2Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub2Code);
     int64_t result = stub1Func(&parameters);
-    std::cout << std::endl << "parameters magic:" << parameters.magic
-        << " parameters.fp " << parameters.fp << std::endl;
+    std::cout << std::endl
+              << "parameters magic:" << parameters.magic << " parameters.fp " << parameters.fp << std::endl;
     EXPECT_EQ(parameters.fp, 0x0);
     EXPECT_EQ(result, 1);
     std::cout << " ++++++++++ JSEntryTest +++++++++++++ " << std::endl;
@@ -1660,7 +901,7 @@ main          push rbp
               push rbp
               push type
 */
-HWTEST_F_L0(StubOptimizerTest, Prologue)
+HWTEST_F_L0(StubTest, Prologue)
 {
     std::cout << " ---------- Prologue ------------- " << std::endl;
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
@@ -1699,10 +940,10 @@ HWTEST_F_L0(StubOptimizerTest, Prologue)
     LLVMBuildRet(builder, retVal);
 
     LLVMDumpModule(module);
-    char* error = nullptr;
+    char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     uint64_t mainCode = LLVMGetFunctionAddress(engine, "main");
@@ -1719,7 +960,7 @@ test:
     js(stub):main
         call RuntimeFunc
 */
-HWTEST_F_L0(StubOptimizerTest, CEntryFp)
+HWTEST_F_L0(StubTest, CEntryFp)
 {
     std::cout << " ---------- CEntryFp ------------- " << std::endl;
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
@@ -1732,9 +973,7 @@ HWTEST_F_L0(StubOptimizerTest, CEntryFp)
     std::vector<LLVMTypeRef> elements_t {llvmI64, llvmI64};
     LLVMTypeRef threadTy = LLVMStructTypeInContext(context, elements_t.data(), elements_t.size(), 0);
     LLVMTypeRef threadTyPtr = LLVMPointerType(threadTy, 0);
-    LLVMTypeRef paramTys0[] = {
-        threadTyPtr
-    };
+    LLVMTypeRef paramTys0[] = {threadTyPtr};
     /* implement main call RuntimeFunc */
     LLVMValueRef func = LLVMAddFunction(module, "main", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
     LLVMAddTargetDependentFunctionAttr(func, "frame-pointer", "all");
@@ -1780,10 +1019,10 @@ HWTEST_F_L0(StubOptimizerTest, CEntryFp)
     LLVMBuildRet(builder, retVal);
 
     LLVMDumpModule(module);
-    char* error = nullptr;
+    char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMMCJITCompiler compiler(module);
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
@@ -1797,7 +1036,7 @@ HWTEST_F_L0(StubOptimizerTest, CEntryFp)
     std::cout << " ++++++++++ CEntryFp +++++++++++++ " << std::endl;
 }
 
-HWTEST_F_L0(StubOptimizerTest, LoadGCIRTest)
+HWTEST_F_L0(StubTest, LoadGCIRTest)
 {
     std::cout << "--------------LoadGCIRTest--------------------" << std::endl;
     char *path = get_current_dir_name();
@@ -1814,18 +1053,16 @@ HWTEST_F_L0(StubOptimizerTest, LoadGCIRTest)
     llvm::LLVMContext context;
     llvm::StringRef inputFilename(resolvedPath);
     // Load the input module...
-    std::unique_ptr<llvm::Module> rawModule =
-        parseIRFile(inputFilename, err, context);
+    std::unique_ptr<llvm::Module> rawModule = parseIRFile(inputFilename, err, context);
     if (!rawModule) {
         std::cout << "parseIRFile :" << inputFilename.data() << " failed !" << std::endl;
         return;
     }
-    LLVMModuleRef module  = LLVMCloneModule(wrap(rawModule.get()));
-    LLVMMCJITCompiler compiler(module);
+    LLVMModuleRef module = LLVMCloneModule(wrap(rawModule.get()));
+    LLVMMcJitEngine compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
-    LLVMValueRef function =
-         LLVMGetNamedFunction(module, "main");
+    LLVMValueRef function = LLVMGetNamedFunction(module, "main");
     LLVMDumpValue(function);
 
     auto *mainPtr = reinterpret_cast<int (*)()>(LLVMGetPointerToGlobal(engine, function));
@@ -1838,6 +1075,8 @@ HWTEST_F_L0(StubOptimizerTest, LoadGCIRTest)
     int value = reinterpret_cast<int (*)()>(mainPtr)();
     std::cout << " value:" << value << std::endl;
 }
+#endif
+
 extern "C" {
 void DoSafepoint()
 {
@@ -1863,9 +1102,144 @@ void DoSafepoint()
         }
         std::cout << std::endl << std::endl;
         std::cout << std::hex << "+++++++++++++++++++ returnAddr : 0x" << returnAddr << " rbp:" << rbp
-            << " rsp: " << rsp << std::endl;
+                  << " rsp: " << rsp << std::endl;
     }
     std::cout << "do_safepoint +++ " << std::endl;
 }
+}
+
+class FastGetPropertyByIndexStub : public Stub {
+public:
+    explicit FastGetPropertyByIndexStub(Circuit *circuit) : Stub("FastGetPropertyByIndex", 3, circuit) {}
+    ~FastGetPropertyByIndexStub() = default;
+    NO_MOVE_SEMANTIC(FastGetPropertyByIndexStub);
+    NO_COPY_SEMANTIC(FastGetPropertyByIndexStub);
+    void GenerateCircuit() override
+    {
+        auto env = GetEnvironment();
+        AddrShift thread = PtrArgument(0);
+        AddrShift receiver = PtrArgument(1);
+        AddrShift index = Int32Argument(2); /* 2 : 3rd paramter is index */
+
+        DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, receiver);
+        Label loopHead(env);
+        Label loopEnd(env);
+        Label loopExit(env);
+        Label afterLoop(env);
+        Jump(&loopHead);
+        LoopBegin(&loopHead);
+        {
+            AddrShift hclass = LoadHClass(*holder);
+            AddrShift jsType = GetObjectType(hclass);
+            Label isSpecialIndexed(env);
+            Label notSpecialIndexed(env);
+            Label loopEnd(env);
+            Branch(IsSpecialIndexedObj(jsType), &isSpecialIndexed, &notSpecialIndexed);
+            Bind(&isSpecialIndexed);
+            {
+                Return(GetHoleConstant());
+            }
+            Bind(&notSpecialIndexed);
+            {
+                AddrShift elements = GetElements(*holder);
+                Label isDictionaryElement(env);
+                Label notDictionaryElement(env);
+                Branch(IsDictionaryElement(hclass), &isDictionaryElement, &notDictionaryElement);
+                Bind(&notDictionaryElement);
+                {
+                    Label lessThanLength(env);
+                    Label notLessThanLength(env);
+                    Branch(Word32LessThan(index, GetLengthofElements(elements)), &lessThanLength, &notLessThanLength);
+                    Bind(&lessThanLength);
+                    {
+                        Label notHole(env);
+                        Label isHole(env);
+                        AddrShift value = GetValueFromTaggedArray(elements, index);
+                        Branch(TaggedIsNotHole(value), &notHole, &isHole);
+                        Bind(&notHole);
+                        {
+                            Return(value);
+                        }
+                        Bind(&isHole);
+                        {
+                            Jump(&loopExit);
+                        }
+                    }
+                    Bind(&notLessThanLength);
+                    {
+                        Return(GetHoleConstant());
+                    }
+                }
+                Bind(&isDictionaryElement);
+                {
+                    AddrShift entry =
+                        FindElementFromNumberDictionary(thread, elements, IntBuildTagged(index));
+                    Label notNegtiveOne(env);
+                    Label negtiveOne(env);
+                    Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                    Bind(&notNegtiveOne);
+                    {
+                        AddrShift attr = GetAttributesFromDictionary(elements, entry);
+                        AddrShift value = GetValueFromDictionary(elements, entry);
+                        Label isAccessor(env);
+                        Label notAccessor(env);
+                        Branch(IsAcesscor(attr), &isAccessor, &notAccessor);
+                        Bind(&isAccessor);
+                        {
+                            Label isInternal(env);
+                            Label notInternal(env);
+                            Branch(IsAccessorInternal(value), &isInternal, &notInternal);
+                            Bind(&isInternal);
+                            {
+                                StubDescriptor *callAccessorGetter = GET_STUBDESCRIPTOR(AccessorGetter);
+                                Return(CallRuntime(callAccessorGetter, thread,
+                                                   GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
+                                                   {thread, *holder, value}));
+                            }
+                            Bind(&notInternal);
+                            {
+                                StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
+                                Return(CallRuntime(callGetter, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
+                                                   {thread, receiver, value}));
+                            }
+                        }
+                        Bind(&notAccessor);
+                        {
+                            Return(value);
+                        }
+                    }
+                    Bind(&negtiveOne);
+                    Jump(&loopExit);
+                }
+                Bind(&loopExit);
+                {
+                    holder = GetPrototypeFromHClass(LoadHClass(*holder));
+                    Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
+                }
+            }
+            Bind(&loopEnd);
+            LoopEnd(&loopHead);
+            Bind(&afterLoop);
+            {
+                Return(GetUndefinedConstant());
+            }
+        }
+    }
+};
+
+HWTEST_F_L0(StubTest, FastGetPropertyByIndexStub)
+{
+    Circuit netOfGates;
+    FastGetPropertyByIndexStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
+        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
+                  << std::endl;
+        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
+            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
+        }
+    }
 }
 }  // namespace panda::test

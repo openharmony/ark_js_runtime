@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "ecmascript/compiler/circuit.h"
+#include "ecmascript/compiler/stub_descriptor.h"
 #include "ecmascript/compiler/gate.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Types.h"
@@ -78,11 +79,12 @@ public:
         }
     }
     ~BasicBlock() = default;
+
 private:
-    std::vector<BasicBlock *> predecessors_{};
-    std::vector<BasicBlock *> successors_{};
-    int id_{-1};
-    void *impl_{nullptr};
+    std::vector<BasicBlock *> predecessors_ {};
+    std::vector<BasicBlock *> successors_ {};
+    int id_ {-1};
+    void *impl_ {nullptr};
 };
 
 struct NotMergedPhiDesc {
@@ -100,14 +102,52 @@ struct LLVMTFBuilderBasicBlockImpl {
     std::vector<NotMergedPhiDesc> not_merged_phis;
 };
 
+class LLVMStubModule {
+public:
+    explicit LLVMStubModule(const char *name);
+    ~LLVMStubModule() = default;
+
+    void Initialize();
+
+    LLVMModuleRef GetModule() const
+    {
+        return module_;
+    }
+
+    LLVMTypeRef GetExternalFunctionType(int index) const
+    {
+        ASSERT(index < MAX_EXTERNAL_FUNCTION_COUNT);
+        return externalFuctionType_[index - EXTERNAL_FUNCTION_OFFSET];
+    }
+
+    LLVMValueRef GetStubFunction(int index)
+    {
+        ASSERT(index < FAST_STUB_MAXCOUNT);
+        return stubFunctions_[index];
+    }
+
+private:
+    LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
+    LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
+    LLVMTypeRef ConvertLLVMTypeFromMachineType(MachineType type);
+    static constexpr uint32_t MAX_EXTERNAL_FUNCTION_COUNT =
+        kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT - kungfu::EXTERNAL_RUNTIME_STUB_BEGIN - 1;
+    static constexpr uint32_t EXTERNAL_FUNCTION_OFFSET = kungfu::EXTERNAL_RUNTIME_STUB_BEGIN + 1;
+    std::array<LLVMValueRef, FAST_STUB_MAXCOUNT> stubFunctions_ {nullptr};
+    std::array<LLVMTypeRef, MAX_EXTERNAL_FUNCTION_COUNT> externalFuctionType_ {nullptr};
+    LLVMModuleRef module_;
+};
+
 class LLVMIRBuilder {
 public:
-    LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit);
-    LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit, LLVMModuleRef module,
-                  LLVMValueRef function);
-
+    explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit);
+    explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
+                           LLVMModuleRef module, LLVMValueRef function);
+    explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
+                           LLVMStubModule *module, LLVMValueRef function);
     void Build();
     ~LLVMIRBuilder() = default;
+
 private:
     void VisitCall(AddrShift gate, const std::vector<AddrShift> &inList);
     void VisitAlloca(AddrShift gate);
@@ -142,7 +182,8 @@ private:
     void VisitPhi(AddrShift gate, const std::vector<AddrShift> &srcGates, MachineRep rep);
     void VisitReturn(AddrShift gate, AddrShift popCount, const std::vector<AddrShift> &operands) const;
     void VisitCastIntXToIntY(AddrShift gate, AddrShift e1, MachineRep rep) const;
-    void VisitCastIntToDouble(AddrShift gate, AddrShift e1) const;
+    void VisitCastInt32ToDouble(AddrShift gate, AddrShift e1) const;
+    void VisitCastInt64ToDouble(AddrShift gate, AddrShift e1) const;
     void VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const;
     void VisitCastInt64ToPointer(AddrShift gate, AddrShift e1) const;
 
@@ -174,6 +215,7 @@ private:
     BasicBlockMap bbIdMapBb_;
 
     std::vector<BasicBlock *> phiRebuildWorklist_;
+    LLVMStubModule *stubModule_ {nullptr};
 };
-#endif
 }  // namespace kungfu
+#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H
