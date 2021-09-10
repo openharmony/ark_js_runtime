@@ -105,24 +105,11 @@ int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue>
     // 9. If xString < yString, return -1.
     // 10. If xString > yString, return 1.
     // 11. Return +0.
-    if (valueX->IsInt() && valueY->IsInt()) {
-        auto xNumber = JSTaggedNumber(valueX.GetTaggedValue());
-        auto yNumber = JSTaggedNumber(valueY.GetTaggedValue());
-        return xNumber.GetInt() > yNumber.GetInt() ? 1 : 0;
-    }
-    ComparisonResult compareResult;
-    if (valueX->IsDouble() && valueY->IsDouble() && !std::isinf(valueX->GetDouble()) &&
-        !std::isinf(valueY->GetDouble())) {
-        auto xNumber = JSTaggedNumber(valueX.GetTaggedValue());
-        auto yNumber = JSTaggedNumber(valueY.GetTaggedValue());
-        compareResult = JSTaggedValue::StrictNumberCompare(xNumber.GetDouble(), yNumber.GetDouble());
-        return compareResult == ComparisonResult::GREAT ? 1 : 0;
-    }
     JSHandle<JSTaggedValue> xValueHandle(JSTaggedValue::ToString(thread, valueX));
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
     JSHandle<JSTaggedValue> yValueHandle(JSTaggedValue::ToString(thread, valueY));
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
-    compareResult = JSTaggedValue::Compare(thread, xValueHandle, yValueHandle);
+    ComparisonResult compareResult = JSTaggedValue::Compare(thread, xValueHandle, yValueHandle);
     return compareResult == ComparisonResult::GREAT ? 1 : 0;
 }
 
