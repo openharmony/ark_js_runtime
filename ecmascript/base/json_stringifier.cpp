@@ -41,7 +41,7 @@ constexpr int FOUR_HEX = 4;
 
 bool JsonStringifier::IsFastValueToQuotedString(const char *value)
 {
-    if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr) {
+    if (strpbrk(value, "\"\\\b\f\n\r\t") != nullptr) {
         return false;
     }
     while (*value != '\0') {
