@@ -135,6 +135,9 @@ namespace panda::ecmascript {
     V(TryStoreICByValue)            \
     V(StoreICByValue)               \
     V(NotifyInlineCache)            \
+    V(CompressCollector_RunPhases)  \
+    V(OldSpaceCollector_RunPhases)  \
+    V(SemiSpaceCollector_RunPhases) \
     V(GetIteratorNext)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
