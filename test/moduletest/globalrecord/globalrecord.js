@@ -23,7 +23,7 @@ print(View);
 
 class myString extends String{}
 var view = new myString("extends String");
-print(View);
+print(view);
 
 print(a);
 a = "a"
