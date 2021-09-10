@@ -2631,14 +2631,20 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 #endif
 
         bool found = false;
-        JSTaggedValue result = FastRuntimeStub::GetGlobalOwnProperty(globalObj, prop, &found);
+        // order: 1. global record 2. global object
+        JSTaggedValue result = SlowRuntimeStub::LdGlobalRecord(thread, prop, &found);
         if (found) {
             SET_ACC(result);
         } else {
-            // slow path
+            JSTaggedValue globalResult = FastRuntimeStub::GetGlobalOwnProperty(globalObj, prop, &found);
+            if (found) {
+                SET_ACC(globalResult);
+            } else {
+                // slow path
             JSTaggedValue res = SlowRuntimeStub::TryLdGlobalByName(thread, globalObj, prop);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             SET_ACC(res);
+            }
         }
 
         DISPATCH(BytecodeInstruction::Format::PREF_ID32);
@@ -2666,12 +2672,21 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 #endif
 
         bool found = false;
-        FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey, &found);
-        if (!found) {
-            // slow path will throw exception
-            JSTaggedValue res = SlowRuntimeStub::TryStGlobalByName(thread, propKey);
+        SlowRuntimeStub::LdGlobalRecord(thread, propKey, &found);
+        // 1. find from global record
+        if (found) {
+            JSTaggedValue value = GET_ACC();
+            SAVE_ACC();
+            JSTaggedValue res = SlowRuntimeStub::TryUpdateGlobalRecord(thread, propKey, value);
             INTERPRETER_RETURN_IF_ABRUPT(res);
-        } else {
+            RESTORE_ACC();
+        }
+        else {
+            // 2. find from global object
+            FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey, &found);
+            if (!found) {
+                SlowRuntimeStub::ThrowReferenceError(thread, propKey, " is not defined");
+            }
             JSTaggedValue value = GET_ACC();
             SAVE_ACC();
             JSTaggedValue res = SlowRuntimeStub::StGlobalVar(thread, propKey, value);
@@ -2680,6 +2695,49 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
         DISPATCH(BytecodeInstruction::Format::PREF_ID32);
     }
+
+    HANDLE_OPCODE(HANDLE_STCONSTTOGLOBALRECORD_PREF_ID32) {
+        uint32_t stringId = READ_INST_32_1();
+        JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
+        LOG_INST() << "intrinsics::stconsttoglobalrecord"
+                   << " stringId:" << stringId << ", " << ConvertToString(EcmaString::Cast(propKey.GetTaggedObject()));
+
+        JSTaggedValue value = GET_ACC();
+        SAVE_ACC();
+        JSTaggedValue res = SlowRuntimeStub::StGlobalRecord(thread, propKey, value, true);
+        INTERPRETER_RETURN_IF_ABRUPT(res);
+        RESTORE_ACC();
+        DISPATCH(BytecodeInstruction::Format::PREF_ID32);
+    }
+
+    HANDLE_OPCODE(HANDLE_STLETTOGLOBALRECORD_PREF_ID32) {
+        uint32_t stringId = READ_INST_32_1();
+        JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
+        LOG_INST() << "intrinsics::stlettoglobalrecord"
+                   << " stringId:" << stringId << ", " << ConvertToString(EcmaString::Cast(propKey.GetTaggedObject()));
+
+        JSTaggedValue value = GET_ACC();
+        SAVE_ACC();
+        JSTaggedValue res = SlowRuntimeStub::StGlobalRecord(thread, propKey, value, false);
+        INTERPRETER_RETURN_IF_ABRUPT(res);
+        RESTORE_ACC();
+        DISPATCH(BytecodeInstruction::Format::PREF_ID32);
+    }
+
+    HANDLE_OPCODE(HANDLE_STCLASSTOGLOBALRECORD_PREF_ID32) {
+        uint32_t stringId = READ_INST_32_1();
+        JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
+        LOG_INST() << "intrinsics::stclasstoglobalrecord"
+                   << " stringId:" << stringId << ", " << ConvertToString(EcmaString::Cast(propKey.GetTaggedObject()));
+
+        JSTaggedValue value = GET_ACC();
+        SAVE_ACC();
+        JSTaggedValue res = SlowRuntimeStub::StGlobalRecord(thread, propKey, value, false);
+        INTERPRETER_RETURN_IF_ABRUPT(res);
+        RESTORE_ACC();
+        DISPATCH(BytecodeInstruction::Format::PREF_ID32);
+    }
+
     HANDLE_OPCODE(HANDLE_LDGLOBALVAR_PREF_ID32) {
         uint32_t stringId = READ_INST_32_1();
         JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);

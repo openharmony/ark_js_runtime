@@ -121,6 +121,9 @@ public:
     static JSTaggedValue TryStGlobalByName(JSThread *thread, JSTaggedValue prop);
     static JSTaggedValue LdGlobalVar(JSThread *thread, JSTaggedValue global, JSTaggedValue prop);
     static JSTaggedValue StGlobalVar(JSThread *thread, JSTaggedValue prop, JSTaggedValue value);
+    static JSTaggedValue StGlobalRecord(JSThread *thread, JSTaggedValue prop, JSTaggedValue value, bool isConst);
+    static JSTaggedValue LdGlobalRecord(JSThread *thread, JSTaggedValue key, bool *found);
+    static JSTaggedValue TryUpdateGlobalRecord(JSThread *thread, JSTaggedValue prop, JSTaggedValue value);
     static JSTaggedValue StArraySpread(JSThread *thread, JSTaggedValue dst, JSTaggedValue index, JSTaggedValue src);
 
     static JSTaggedValue DefineGeneratorFunc(JSThread *thread, JSFunction *func);
@@ -145,6 +148,7 @@ public:
 
 private:
     static JSTaggedValue ThrowTypeError(JSThread *thread, const char *message);
+    static JSTaggedValue ThrowSyntaxError(JSThread *thread, const char *message);
     static JSTaggedValue GetCallSpreadArgs(JSThread *thread, JSTaggedValue array);
 };
 }  // namespace panda::ecmascript

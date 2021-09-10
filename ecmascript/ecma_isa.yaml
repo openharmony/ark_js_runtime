@@ -562,3 +562,18 @@ groups:
         acc: inout:top
         prefix: ecma
         format: [pref_op_none]
+      - sig: ecma.stconsttoglobalrecord string_id
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.stlettoglobalrecord string_id
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]
+      - sig: ecma.stclasstoglobalrecord string_id
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32]
+        properties: [string_id]

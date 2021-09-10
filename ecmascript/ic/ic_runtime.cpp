@@ -25,7 +25,7 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/object_factory-inl.h"
-
+#include "ecmascript/tagged_dictionary.h"
 namespace panda::ecmascript {
 #define TRACE_IC 0  // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 
@@ -134,12 +134,17 @@ void ICRuntime::TraceIC([[maybe_unused]] JSHandle<JSTaggedValue> receiver,
 JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle<JSTaggedValue> key)
 {
     if (receiver->IsTypedArray() || !receiver->IsJSObject()) {
-        return JSTaggedValue::GetProperty(GetThread(), receiver, key).GetValue().GetTaggedValue();
+        return JSTaggedValue::GetProperty(thread_, receiver, key).GetValue().GetTaggedValue();
     }
     ObjectOperator op(GetThread(), receiver, key);
     auto result = JSHandle<JSTaggedValue>(thread_, JSObject::GetProperty(GetThread(), &op));
     if (!op.IsFound() && GetICKind() == ICKind::NamedGlobalLoadIC) {
-        return SlowRuntimeStub::ThrowReferenceError(GetThread(), key.GetTaggedValue(), " is not defined");
+        bool found = false;
+        JSTaggedValue res = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
+        if (!found) {
+            return SlowRuntimeStub::ThrowReferenceError(GetThread(), key.GetTaggedValue(), " is not definded");
+        }
+        return res;
     }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(GetThread());
     // ic-switch
