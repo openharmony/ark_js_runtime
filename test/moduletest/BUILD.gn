@@ -21,8 +21,8 @@ group("ark_js_moduletest") {
     "fortest:fortest_test(${host_toolchain})",
     "generator:generator_test(${host_toolchain})",
     "getunmappedargs:getunmappedargs_test(${host_toolchain})",
-    "helloworld:helloworld_test(${host_toolchain})",
     "globalrecord:globalrecord_test(${host_toolchain})",
+    "helloworld:helloworld_test(${host_toolchain})",
     "lexicalenv:lexicalenv_test(${host_toolchain})",
 
     # "module:module_test(${host_toolchain})",
