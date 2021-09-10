@@ -2685,7 +2685,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             // 2. find from global object
             FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey, &found);
             if (!found) {
-                SlowRuntimeStub::ThrowReferenceError(thread, propKey, " is not defined");
+                auto result = SlowRuntimeStub::ThrowReferenceError(thread, propKey, " is not defined");
+                INTERPRETER_RETURN_IF_ABRUPT(result);
             }
             JSTaggedValue value = GET_ACC();
             SAVE_ACC();
