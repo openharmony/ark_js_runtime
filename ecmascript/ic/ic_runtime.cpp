@@ -141,7 +141,6 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
         bool found = false;
         JSTaggedValue res = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
         if (found) {
-            icAccessor_.SetAsMega();
             return res;
         }
     }
@@ -184,7 +183,6 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
         if (found) {
             SlowRuntimeStub::TryUpdateGlobalRecord(thread_, key.GetTaggedValue(), value.GetTaggedValue());
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
-            icAccessor_.SetAsMega();
             return JSTaggedValue::Undefined();
         }
     }
