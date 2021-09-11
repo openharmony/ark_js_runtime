@@ -16,11 +16,17 @@ import("//ark/js_runtime/test/test_helper.gni")
 import("//build/test.gni")
 
 config("include_llvm_config") {
-  include_dirs = [
-    "//third_party/llvm-project/llvm/include/",
-    "//third_party/llvm-project/build/include",
-    "//third_party/llvm-project/llvm/build/include",
-  ]
+  if (compile_llvm_online) {
+    include_dirs = [
+      "//third_party/llvm-project/build/include",
+      "//third_party/llvm-project/llvm/include/",
+    ]
+  } else {
+    include_dirs = [
+      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/llvm/include",
+      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/include",
+    ]
+  }
 }
 
 module_output_path = "ark/js_runtime"
@@ -40,13 +46,15 @@ host_unittest_action("StubOptimizerTest") {
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
-  lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+  if (compile_llvm_online) {
+    lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+  } else {
+    lib_dirs = [ "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
+  }
 
   libs = [
     "stdc++",
     "z",
-    "tinfo",
-    "LTO",
     "LLVMTarget",
     "LLVMObject",
     "LLVMMC",
@@ -67,7 +75,6 @@ host_unittest_action("StubOptimizerTest") {
     "LLVMScalarOpts",
     "LLVMTransformUtils",
     "LLVMBitReader",
-    "LLVMSystemZInfo",
     "LLVMAsmPrinter",
     "LLVMProfileData",
     "LLVMBitstreamReader",
@@ -82,77 +89,22 @@ host_unittest_action("StubOptimizerTest") {
     "LLVMDebugInfoCodeView",
     "LLVMAggressiveInstCombine",
     "LLVMAsmParser",
-    "LLVMMipsAsmParser",
     "LLVMMCParser",
     "LLVMMIRParser",
-    "LLVMMSP430AsmParser",
     "LLVMX86Info",
     "LLVMAArch64Info",
-    "LLVMLanaiInfo",
-    "LLVMAMDGPUInfo",
-    "LLVMARMInfo",
-    "LLVMHexagonInfo",
-    "LLVMNVPTXInfo",
-    "LLVMRISCVInfo",
-    "LLVMSparcInfo",
-    "LLVMMipsInfo",
-    "LLVMWebAssemblyInfo",
-    "LLVMBPFInfo",
-    "LLVMMSP430Info",
-    "LLVMPowerPCInfo",
-    "LLVMXCoreInfo",
     "LLVMARMDesc",
     "LLVMAArch64Desc",
-    "LLVMSparcDesc",
-    "LLVMAMDGPUDesc",
-    "LLVMXCoreDesc",
-    "LLVMWebAssemblyDesc",
-    "LLVMNVPTXDesc",
-    "LLVMMSP430Desc",
-    "LLVMPowerPCDesc",
-    "LLVMMipsDesc",
-    "LLVMRISCVDesc",
-    "LLVMLanaiDesc",
-    "LLVMSystemZDesc",
-    "LLVMHexagonDesc",
     "LLVMX86Desc",
-    "LLVMBPFDesc",
-    "LLVMSparcDisassembler",
-    "LLVMRISCVDisassembler",
-    "LLVMMipsDisassembler",
-    "LLVMXCoreDisassembler",
-    "LLVMPowerPCDisassembler",
     "LLVMX86Disassembler",
-    "LLVMMSP430Disassembler",
     "LLVMARMDisassembler",
-    "LLVMLanaiDisassembler",
     "LLVMAArch64Disassembler",
-    "LLVMBPFDisassembler",
-    "LLVMSystemZDisassembler",
     "LLVMMCDisassembler",
-    "LLVMWebAssemblyDisassembler",
-    "LLVMHexagonDisassembler",
-    "LLVMAMDGPUDisassembler",
-    "LLVMXCoreCodeGen",
-    "LLVMPowerPCCodeGen",
-    "LLVMNVPTXCodeGen",
     "LLVMAArch64CodeGen",
-    "LLVMMSP430CodeGen",
     "LLVMARMCodeGen",
-    "LLVMMipsCodeGen",
-    "LLVMSparcCodeGen",
-    "LLVMBPFCodeGen",
-    "LLVMHexagonCodeGen",
-    "LLVMAMDGPUCodeGen",
-    "LLVMRISCVCodeGen",
-    "LLVMWebAssemblyCodeGen",
-    "LLVMSystemZCodeGen",
     "LLVMCodeGen",
     "LLVMX86CodeGen",
-    "LLVMLanaiCodeGen",
     "LLVMX86AsmParser",
-    "LLVMAMDGPUUtils",
-    "LLVMRISCVUtils",
     "LLVMTransformUtils",
     "LLVMAArch64Utils",
     "LLVMARMUtils",
@@ -163,8 +115,8 @@ host_unittest_action("StubOptimizerTest") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/runtime:libarkruntime",
-    "//ark/js_runtime:libark_jsruntime_test",
     "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})",
+    "//third_party/googletest:gtest_main",
     sdk_libc_secshared_dep,
   ]
 }

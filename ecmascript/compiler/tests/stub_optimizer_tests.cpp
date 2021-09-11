@@ -14,13 +14,13 @@
  */
 
 #include <cstdint>
-#include <filesystem>
 #include <unistd.h>
 
 #include "gtest/gtest.h"
 #include "ecmascript/compiler/fastpath_optimizer.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/llvm_mcjit_compiler.h"
+#include "ecmascript/compiler/llvm_stackmap_parse.h"
 #include "ecmascript/compiler/scheduler.h"
 #include "ecmascript/compiler/stub_interface.h"
 #include "ecmascript/ecma_vm.h"
@@ -30,7 +30,9 @@
 #include "ecmascript/tests/test_helper.h"
 
 #include "llvm/IR/Instructions.h"
+#include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/Host.h"
+#include "llvm/Support/SourceMgr.h"
 
 namespace panda::test {
 using namespace panda::coretypes;
@@ -100,8 +102,8 @@ HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
     // 6 : size of array
     auto valUndefine = fn(arr, 6);
     EXPECT_EQ(valUndefine, 0xa);
-    std::cout << "valValid = " << std::hex << valValid << std::endl;
-    std::cout << "valUndefine = " << std::hex << valUndefine << std::endl;
+    std::cerr << "valValid = " << std::hex << valValid << std::endl;
+    std::cerr << "valUndefine = " << std::hex << valUndefine << std::endl;
 }
 
 class StubPhiOptimizer : public StubOptimizer {
@@ -1089,12 +1091,12 @@ public:
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
-        AddrShift thread = PtrArgument(0);
-        AddrShift elements = PtrArgument(1);
-        AddrShift index = Int32Argument(2);
-        AddrShift isDict = Int32Argument(3);
-        AddrShift attr = PtrArgument(4);
-        AddrShift indexOrEntry = PtrArgument(5);
+        AddrShift thread = PtrArgument(0); // 0 : 1st para
+        AddrShift elements = PtrArgument(1); // 1 : 2nd para
+        AddrShift index = Int32Argument(2); // 2 : 3rd para
+        AddrShift isDict = Int32Argument(3); // 3 : 4th para
+        AddrShift attr = PtrArgument(4); // 4: 5th para
+        AddrShift indexOrEntry = PtrArgument(5); // 5: 6th para
         isDict = ZExtInt1ToInt32(isDict);
         Label notDictionary(env);
         Label isDictionary(env);
@@ -1449,30 +1451,9 @@ int RuntimeFunc2(struct ThreadTy *fpInfo)
     auto rbp = reinterpret_cast<int64_t *>(fpInfo->fp);
 
     std::cout << " RuntimeFunc2 rbp:" << rbp <<std::endl;
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 40; i++) { // print 40 ptr value for debug
         std::cout << std::hex << &(rbp[i]) << " :" << rbp[i] << std::endl;
     }
-    /* walk back
-      stack frame:           0     pre rbp  <-- rbp
-                            -8     type
-                            -16    pre frame thread fp
-    */
-    int64_t *frameType = nullptr;
-    int64_t *gcFp = nullptr;
-    std::cout << "-----------------walkback----------------" << std::endl;
-    do {
-        frameType = rbp - 1;
-        if (*frameType == 1) {
-            gcFp = rbp - 2;
-        } else {
-            gcFp = rbp;
-        }
-        rbp = reinterpret_cast<intptr_t *>(*gcFp);
-        std::cout << std::hex << "frameType :" << *frameType << " gcFp:" << *gcFp << std::endl;
-    } while (*gcFp != 0);
-    std::cout << "+++++++++++++++++walkback++++++++++++++++" << std::endl;
-    std::cout << "call RuntimeFunc2 func ThreadTy fp: " << fpInfo->fp << " magic:" << fpInfo->magic << std::endl;
-    std::cout << "RuntimeFunc2  +" << std::endl;
     return 0;
 }
 }
@@ -1862,18 +1843,18 @@ void DoSafepoint()
 {
     uintptr_t *rbp;
     asm("mov %%rbp, %0" : "=rm" (rbp));
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) { // 3: call back depth
         uintptr_t returnAddr =  *(rbp + 1);
-        uintptr_t *rsp = rbp + 2;
+        uintptr_t *rsp = rbp + 2;  // move 2 steps from rbp to get rsp
         rbp = reinterpret_cast<uintptr_t *>(*rbp);
         DwarfRegAndOffsetType info;
         bool found = LLVMStackMapParse::GetInstance().StackMapByAddr(returnAddr, info);
         if (found) {
             uintptr_t **address = nullptr;
-            if (info.first == 7) {
+            if (info.first == 7) { // 7: x86_64 dwarf register num, representing rsp
                 address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
             // rbp
-            } else if (info.first == 6) {
+            } else if (info.first == 6) { // 6: x86_64 dwarf register num, representing rbp
                 address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
             }
             std::cout << std::hex << "ref addr:" << address;

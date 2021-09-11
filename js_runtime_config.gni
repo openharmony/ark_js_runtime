@@ -13,6 +13,7 @@
 
 ark_root = "//ark/runtime_core"
 js_root = "//ark/js_runtime"
+compile_llvm_online = false
 
 # For OpenHarmony build, always link with the static lib:
 sdk_libc_secshared_dep = "//utils/native/base:utilsecurec"

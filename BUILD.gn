@@ -31,10 +31,8 @@ group("ark_js_host_linux_tools_packages") {
     deps += [
       "//ark/js_runtime:libark_jsruntime(${host_toolchain})",
       "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})",
-
-      #"//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})",
     ]
-    if (current_cpu == "x86_64" || current_cpu == "x64") {
+    if (is_standard_system) {
       deps += [ "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})" ]
     }
   }
@@ -70,8 +68,8 @@ group("ark_js_host_unittest") {
       "//ark/js_runtime/ecmascript/tests:host_unittest",
       "//ark/js_runtime/ecmascript/tooling/test:host_unittest",
     ]
-    if (current_cpu == "x86_64" || current_cpu == "x64") {
-      deps += [ "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})" ]
+    if (is_standard_system) {
+      deps += [ "//ark/js_runtime/ecmascript/compiler/tests:host_unittest" ]
     }
 
     # js bytecode test
