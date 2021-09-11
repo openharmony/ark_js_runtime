@@ -23,12 +23,16 @@
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space-inl.h"
+#include "ecmascript/runtime_call_id.h"
+#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 OldSpaceCollector::OldSpaceCollector(Heap *heap) : heap_(heap), rootManager_(heap->GetEcmaVM()) {}
 
 void OldSpaceCollector::RunPhases()
 {
+    [[maybe_unused]] ecmascript::JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
+    INTERPRETER_TRACE(thread, OldSpaceCollector_RunPhases);
     trace::ScopedTrace scoped_trace("OldSpaceCollector::RunPhases");
     [[maybe_unused]] ClockScope clock("OldSpaceCollector::RunPhases");
     InitializePhase();

@@ -24,6 +24,8 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
+#include "ecmascript/runtime_call_id.h"
+#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 SemiSpaceCollector::SemiSpaceCollector(Heap *heap, bool parallelGc)
@@ -42,6 +44,8 @@ SemiSpaceCollector::~SemiSpaceCollector()
 
 void SemiSpaceCollector::RunPhases()
 {
+    [[maybe_unused]] ecmascript::JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
+    INTERPRETER_TRACE(thread, SemiSpaceCollector_RunPhases);
     trace::ScopedTrace scoped_trace("SemiSpaceCollector::RunPhases");
     [[maybe_unused]] ClockScope clock("SemiSpaceCollector::RunPhases");
     InitializePhase();

@@ -22,6 +22,8 @@
 #include "ecmascript/mem/heap_roots-inl.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem.h"
+#include "ecmascript/runtime_call_id.h"
+#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 CompressCollector::CompressCollector(Heap *heap, bool parallelGc)
@@ -40,6 +42,8 @@ CompressCollector::~CompressCollector()
 
 void CompressCollector::RunPhases()
 {
+    [[maybe_unused]] ecmascript::JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
+    INTERPRETER_TRACE(thread, CompressCollector_RunPhases);
     trace::ScopedTrace scoped_trace("CompressCollector::RunPhases");
     [[maybe_unused]] ClockScope clock("CompressCollector::RunPhases");
     InitializePhase();
