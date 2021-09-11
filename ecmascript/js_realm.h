@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSREALM_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSREALM_H
+#ifndef ECMASCRIPT_JSREALM_H
+#define ECMASCRIPT_JSREALM_H
 
 #include "js_global_object.h"
 
@@ -26,10 +26,10 @@ public:
         return static_cast<JSRealm *>(object);
     }
 
-    static constexpr size_t VALUE_OFFSET = ObjectHeaderSize();
+    static constexpr size_t VALUE_OFFSET = JSObject::SIZE;
     ACCESSORS(Value, VALUE_OFFSET, GLOBAL_ENV_OFFSET)
     ACCESSORS(GlobalEnv, GLOBAL_ENV_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSREALM_H
+#endif  // ECMASCRIPT_JSREALM_H

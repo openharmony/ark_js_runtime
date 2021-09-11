@@ -13,19 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_GC_STATS_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_GC_STATS_H
+#ifndef ECMASCRIPT_MEM_GC_STATS_H
+#define ECMASCRIPT_MEM_GC_STATS_H
 
 #include "time.h"
 #include "chrono"
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
+class Heap;
 class GCStats {
     using Duration = std::chrono::duration<uint64_t, std::nano>;
 
 public:
-    GCStats() = default;
+    GCStats(const Heap *heap) : heap_(heap) {};
     ~GCStats() = default;
 
     void PrintStatisticResult();
@@ -78,6 +79,8 @@ private:
     size_t compressNonMoveTotalFreeSize_ = 0;
     size_t compressNonMoveTotalCommitSize_ = 0;
 
+    const Heap *heap_;
+
     static constexpr uint32_t MILLION_TIME = 1000;
     static constexpr uint32_t MB = 1 * 1024 * 1024;
 
@@ -86,4 +89,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_GC_STATS_H
+#endif  // ECMASCRIPT_MEM_GC_STATS_H

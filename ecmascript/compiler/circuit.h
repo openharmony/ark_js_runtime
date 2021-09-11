@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_H
+#ifndef ECMASCRIPT_COMPILER_CIRCUIT_H
+#define ECMASCRIPT_COMPILER_CIRCUIT_H
 
 #include <algorithm>
 #include <iostream>
@@ -25,6 +25,8 @@
 #include "ecmascript/compiler/gate.h"
 #include "libpandabase/macros.h"
 #include "securec.h"
+#include "ecmascript/frames.h"
+
 
 namespace kungfu {
 const size_t INITIAL_SPACE = 1U << 0U;  // this should be tuned
@@ -83,6 +85,8 @@ public:
     [[nodiscard]] uint8_t *GetDataPtr(size_t offset);
     [[nodiscard]] size_t GetSpaceDataSize() const;
     void SetSpaceDataSize(size_t sz);
+    panda::ecmascript::FrameType GetFrameType() const;
+    void SetFrameType(panda::ecmascript::FrameType type);
 
 private:
     uint8_t *AllocateSpace(size_t gateSize);
@@ -94,7 +98,8 @@ private:
     size_t gateCounter;
     TimeStamp time;
     std::vector<uint8_t> dataSection;
+    panda::ecmascript::FrameType frameType {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
 };
 }  // namespace kungfu
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_CIRCUIT_H
+#endif  // ECMASCRIPT_COMPILER_CIRCUIT_H

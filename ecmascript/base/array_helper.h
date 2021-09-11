@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_ARRAY_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_ARRAY_HELPER_H
+#ifndef ECMASCRIPT_BASE_ARRAY_HELPER_H
+#define ECMASCRIPT_BASE_ARRAY_HELPER_H
 
 #include <limits>
 #include <string>
@@ -26,11 +26,10 @@ class ArrayHelper {
 public:
     static bool IsConcatSpreadable(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
     static int32_t SortCompare(JSThread *thread, const JSHandle<JSTaggedValue> &callbackfnHandle,
-                               const JSHandle<JSTaggedValue> &valueX, const JSHandle<JSTaggedValue> &valueY,
-                               const JSHandle<TaggedArray> &arg);
+                               const JSHandle<JSTaggedValue> &valueX, const JSHandle<JSTaggedValue> &valueY);
     static double GetLength(JSThread *thread, const JSHandle<JSTaggedValue> &thisHandle);
     static double GetArrayLength(JSThread *thread, const JSHandle<JSTaggedValue> &thisHandle);
 };
 }  // namespace panda::ecmascript::base
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_ARRAY_HELPER_H
+#endif  // ECMASCRIPT_BASE_ARRAY_HELPER_H

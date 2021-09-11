@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_FRAME_HANDLER_H
-#define PANDA_RUNTIME_ECMASCRIPT_FRAME_HANDLER_H
+#ifndef ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H
+#define ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H
 
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
@@ -70,4 +70,4 @@ private:
 };
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_FRAME_HANDLER_H
+#endif  // ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H

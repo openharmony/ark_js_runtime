@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_AREA_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_AREA_H
+#ifndef ECMASCRIPT_MEM_AREA_H
+#define ECMASCRIPT_MEM_AREA_H
 
 namespace panda::ecmascript {
 class Area {
@@ -54,7 +54,7 @@ public:
     }
 
 private:
-    template <class T>
+    template<class T>
     friend class EcmaList;
     friend class Worker;
     Area *GetPrev() const
@@ -73,4 +73,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_AREA_H
+#endif  // ECMASCRIPT_MEM_AREA_H

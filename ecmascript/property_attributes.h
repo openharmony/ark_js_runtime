@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PROPERTY_ATTRIBUTES_H
-#define PANDA_RUNTIME_ECMASCRIPT_PROPERTY_ATTRIBUTES_H
+#ifndef ECMASCRIPT_PROPERTY_ATTRIBUTES_H
+#define ECMASCRIPT_PROPERTY_ATTRIBUTES_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "utils/bit_field.h"
@@ -297,4 +297,4 @@ private:
     uint32_t value_{0};
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PROPERTY_ATTRIBUTES_H
+#endif  // ECMASCRIPT_PROPERTY_ATTRIBUTES_H

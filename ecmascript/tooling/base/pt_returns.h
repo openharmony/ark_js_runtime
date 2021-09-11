@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_RETURNS_H
-#define PANDA_TOOLING_ECMASCRIPT_RETURNS_H
+#ifndef ECMASCRIPT_TOOLING_BASE_PT_RETURNS_H
+#define ECMASCRIPT_TOOLING_BASE_PT_RETURNS_H
 
 #include "ecmascript/tooling/base/pt_types.h"
 

@@ -21,6 +21,7 @@
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/ecma_macros.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
 #include "ecmascript/js_invoker.h"
 #include "ecmascript/mem/c_containers.h"
@@ -499,17 +500,12 @@ JSTaggedValue BuiltinsGlobal::CallJsBoundFunction(EcmaRuntimeCallInfo *msg)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     // msg contains jsfunc, this, arg1,...
 
-    uint32_t numArgs = msg->GetArgsNumber();
     JSHandle<JSBoundFunction> boundFunc(GetConstructor(msg));
     JSHandle<JSTaggedValue> thisObj(thread, boundFunc->GetBoundThis());
 
-    JSHandle<TaggedArray> newArgs = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(numArgs);
-
-    for (uint32_t i = 0; i < numArgs; i++) {
-        newArgs->Set(thread, i, GetCallArg(msg, i).GetTaggedValue());
-    }
-
-    return SlowRuntimeHelper::CallBoundFunction(thread, boundFunc, thisObj, newArgs);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(msg, 0);
+    return SlowRuntimeHelper::CallBoundFunction(thread, boundFunc, thisObj);
 }
 
 JSTaggedValue BuiltinsGlobal::CallJsProxy(EcmaRuntimeCallInfo *msg)
@@ -518,7 +514,6 @@ JSTaggedValue BuiltinsGlobal::CallJsProxy(EcmaRuntimeCallInfo *msg)
     BUILTINS_API_TRACE(thread, Global, CallJsProxy);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     // msg contains js_proxy, this, arg1,...
-    int32_t numArgs = msg->GetArgsNumber();
     JSHandle<JSProxy> proxy(GetConstructor(msg));
     if (!proxy->IsCallable()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Proxy target is not callable", JSTaggedValue::Undefined());
@@ -527,16 +522,13 @@ JSTaggedValue BuiltinsGlobal::CallJsProxy(EcmaRuntimeCallInfo *msg)
     // Calling proxy directly should transfer 'undefined' as this
     JSHandle<JSTaggedValue> thisObj(GetThis(msg));
 
-    JSHandle<TaggedArray> array = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(numArgs);
-
-    for (int32_t i = 0; i < numArgs; i++) {
-        array->Set(thread, i, GetCallArg(msg, i).GetTaggedValue());
-    }
-
-    return JSProxy::CallInternal(thread, proxy, thisObj, array);
+    JSHandle<TaggedArray> argsList = GetArgsArray(msg);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgList(*argsList);
+    return JSProxy::CallInternal(thread, proxy, thisObj, argsList->GetLength(), arguments->GetArgv());
 }
 
-#ifdef PANDA_ECMASCRIPT_ENABLE_RUNTIME_STAT
+#if ECMASCRIPT_ENABLE_RUNTIME_STAT
 JSTaggedValue BuiltinsGlobal::StartRuntimeStat(EcmaRuntimeCallInfo *msg)
 {
     JSThread *thread = msg->GetThread();

@@ -434,12 +434,12 @@ host_unittest_action("JsVerificationTest") {
   ]
 }
 
-host_unittest_action("JargeObjectTest") {
+host_unittest_action("HugeObjectTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
-    "large_object_test.cpp",
+    "huge_object_test.cpp",
   ]
 
   configs = [
@@ -456,7 +456,7 @@ host_unittest_action("JargeObjectTest") {
   ]
 }
 
-host_unittest_action("JexicalEnvTest") {
+host_unittest_action("LexicalEnvTest") {
   module_out_path = module_output_path
 
   sources = [
@@ -478,7 +478,7 @@ host_unittest_action("JexicalEnvTest") {
   ]
 }
 
-host_unittest_action("JinkedHashTableTest") {
+host_unittest_action("LinkedHashTableTest") {
   module_out_path = module_output_path
 
   sources = [
@@ -686,9 +686,7 @@ group("unittest") {
     ":DumpTest",
     ":GcTest",
     ":GlueRegsTest",
-    ":JargeObjectTest",
-    ":JexicalEnvTest",
-    ":JinkedHashTableTest",
+    ":HugeObjectTest",
     ":JsArrayTest",
     ":JsDateTest",
     ":JsForinIteratorTest",
@@ -700,12 +698,13 @@ group("unittest") {
     ":JsPrimitiveRefTest",
     ":JsPromiseTest",
     ":JsProxyTest",
-
-    # ":JsSerializerTest",
+    ":JsSerializerTest",
     ":JsSetTest",
     ":JsSymbolTest",
     ":JsTaggedQueueTest",
     ":JsVerificationTest",
+    ":LexicalEnvTest",
+    ":LinkedHashTableTest",
     ":NameDictionaryTest",
     ":NativePointerTest",
     ":ObjectFactoryTest",
@@ -725,9 +724,7 @@ group("host_unittest") {
     ":DumpTestAction(${host_toolchain})",
     ":GcTestAction(${host_toolchain})",
     ":GlueRegsTestAction(${host_toolchain})",
-    ":JargeObjectTestAction(${host_toolchain})",
-    ":JexicalEnvTestAction(${host_toolchain})",
-    ":JinkedHashTableTestAction(${host_toolchain})",
+    ":HugeObjectTestAction(${host_toolchain})",
     ":JsArrayTestAction(${host_toolchain})",
     ":JsDateTestAction(${host_toolchain})",
     ":JsForinIteratorTestAction(${host_toolchain})",
@@ -739,12 +736,13 @@ group("host_unittest") {
     ":JsPrimitiveRefTestAction(${host_toolchain})",
     ":JsPromiseTestAction(${host_toolchain})",
     ":JsProxyTestAction(${host_toolchain})",
-
-    # ":JsSerializerTestAction(${host_toolchain})",
+    ":JsSerializerTestAction(${host_toolchain})",
     ":JsSetTestAction(${host_toolchain})",
     ":JsSymbolTestAction(${host_toolchain})",
     ":JsTaggedQueueTestAction(${host_toolchain})",
     ":JsVerificationTestAction(${host_toolchain})",
+    ":LexicalEnvTestAction(${host_toolchain})",
+    ":LinkedHashTableTestAction(${host_toolchain})",
     ":NameDictionaryTestAction(${host_toolchain})",
     ":NativePointerTestAction(${host_toolchain})",
     ":ObjectFactoryTestAction(${host_toolchain})",

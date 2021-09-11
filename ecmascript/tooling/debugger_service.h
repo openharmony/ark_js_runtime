@@ -13,13 +13,17 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_DEBUGGER_SERVICE_H
-#define PANDA_TOOLING_ECMASCRIPT_DEBUGGER_SERVICE_H
+#ifndef ECMASCRIPT_TOOLING_DEBUGGER_SERVICE_H
+#define ECMASCRIPT_TOOLING_DEBUGGER_SERVICE_H
 
 #include <functional>
 #include <string>
 
 #include "ecmascript/common.h"
+
+namespace panda::ecmascript {
+class EcmaVM;
+}  // panda::ecmascript
 
 namespace panda::tooling::ecmascript {
 #ifdef __cplusplus
@@ -28,7 +32,8 @@ extern "C" {
 #endif
 #endif /* End of #ifdef __cplusplus */
 
-PUBLIC_API void InitializeDebugger(const std::function<void(std::string)> &on_response, void *vm);
+PUBLIC_API void InitializeDebugger(const std::function<void(std::string)> &on_response,
+    const ::panda::ecmascript::EcmaVM *vm);
 
 PUBLIC_API void UninitializeDebugger();
 

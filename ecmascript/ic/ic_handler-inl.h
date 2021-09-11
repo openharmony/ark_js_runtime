@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_IC_HANDLER_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_IC_HANDLER_INL_H
+#ifndef ECMASCRIPT_IC_IC_HANDLER_INL_H
+#define ECMASCRIPT_IC_IC_HANDLER_INL_H
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
@@ -22,26 +22,26 @@
 #include "ic_handler.h"
 
 namespace panda::ecmascript {
-JSTaggedValue LoadHandler::LoadElement()
+JSHandle<JSTaggedValue> LoadHandler::LoadElement(const JSThread *thread)
 {
     uint32_t handler = 0;
     KindBit::Set<uint32_t>(HandlerKind::ELEMENT, &handler);
-    return JSTaggedValue(handler);
+    return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
 }
 
-JSTaggedValue LoadHandler::LoadProperty(const ObjectOperator &op)
+JSHandle<JSTaggedValue> LoadHandler::LoadProperty(const JSThread *thread, const ObjectOperator &op)
 {
     uint32_t handler = 0;
     ASSERT(!op.IsElement());
     if (!op.IsFound()) {
         KindBit::Set<uint32_t>(HandlerKind::NON_EXIST, &handler);
-        return JSTaggedValue(handler);
+        return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
     }
     ASSERT(op.IsFastMode());
 
     JSTaggedValue val = op.GetValue();
     if (val.IsPropertyBox()) {
-        return val;
+        return JSHandle<JSTaggedValue>(thread, val);
     }
     bool hasAccessor = op.IsAccessorDescriptor();
     AccessorBit::Set<uint32_t>(hasAccessor, &handler);
@@ -54,44 +54,46 @@ JSTaggedValue LoadHandler::LoadProperty(const ObjectOperator &op)
         JSHandle<JSObject> holder = JSHandle<JSObject>::Cast(op.GetHolder());
         auto index = holder->GetPropertyInObjectIndex(op.GetIndex());
         OffsetBit::Set<uint32_t>(index, &handler);
-        return JSTaggedValue(handler);
+        return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
     }
     if (op.IsFastMode()) {
         OffsetBit::Set<uint32_t>(op.GetIndex(), &handler);
-        return JSTaggedValue(handler);
+        return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
     }
     UNREACHABLE();
 }
 
-inline JSTaggedValue PrototypeHandler::LoadPrototype(const JSThread *thread, const ObjectOperator &op,
-                                                     const JSHandle<JSHClass> &hclass)
+JSHandle<JSTaggedValue> PrototypeHandler::LoadPrototype(const JSThread *thread,
+                                                        const ObjectOperator &op,
+                                                        const JSHandle<JSHClass> &hclass)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSTaggedValue handlerInfo = LoadHandler::LoadProperty(op);
-    PrototypeHandler *handler = factory->NewPrototypeHandler();
+    JSHandle<JSTaggedValue> handlerInfo = LoadHandler::LoadProperty(thread, op);
+    JSHandle<PrototypeHandler> handler = factory->NewPrototypeHandler();
     handler->SetHandlerInfo(thread, handlerInfo);
     if (op.IsFound()) {
         handler->SetHolder(thread, op.GetHolder());
     }
     auto result = JSHClass::EnableProtoChangeMarker(thread, hclass);
     handler->SetProtoCell(thread, result);
-    return JSTaggedValue(handler);
+    return JSHandle<JSTaggedValue>::Cast(handler);
 }
 
-inline JSTaggedValue PrototypeHandler::StorePrototype(const JSThread *thread, const ObjectOperator &op,
-                                                      const JSHandle<JSHClass> &hclass)
+JSHandle<JSTaggedValue> PrototypeHandler::StorePrototype(const JSThread *thread,
+                                                         const ObjectOperator &op,
+                                                         const JSHandle<JSHClass> &hclass)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    PrototypeHandler *handler = factory->NewPrototypeHandler();
-    JSTaggedValue handlerInfo = StoreHandler::StoreProperty(op);
+    JSHandle<PrototypeHandler> handler = factory->NewPrototypeHandler();
+    JSHandle<JSTaggedValue> handlerInfo = StoreHandler::StoreProperty(thread, op);
     handler->SetHandlerInfo(thread, handlerInfo);
     handler->SetHolder(thread, op.GetHolder());
     auto result = JSHClass::EnableProtoChangeMarker(thread, hclass);
     handler->SetProtoCell(thread, result);
-    return JSTaggedValue(handler);
+    return JSHandle<JSTaggedValue>::Cast(handler);
 }
 
-JSTaggedValue StoreHandler::StoreElement(JSHandle<JSTaggedValue> receiver)
+JSHandle<JSTaggedValue> StoreHandler::StoreElement(const JSThread *thread, JSHandle<JSTaggedValue> receiver)
 {
     uint32_t handler = 0;
     KindBit::Set<uint32_t>(HandlerKind::ELEMENT, &handler);
@@ -99,16 +101,16 @@ JSTaggedValue StoreHandler::StoreElement(JSHandle<JSTaggedValue> receiver)
     if (receiver->IsJSArray()) {
         IsJSArrayBit::Set<uint32_t>(true, &handler);
     }
-    return JSTaggedValue(handler);
+    return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
 }
 
-JSTaggedValue StoreHandler::StoreProperty(const ObjectOperator &op)
+JSHandle<JSTaggedValue> StoreHandler::StoreProperty(const JSThread *thread, const ObjectOperator &op)
 {
     ASSERT(!op.IsElement());
     uint32_t handler = 0;
     JSTaggedValue val = op.GetValue();
     if (val.IsPropertyBox()) {
-        return val;
+        return JSHandle<JSTaggedValue>(thread, val);
     }
     bool hasSetter = op.IsAccessorDescriptor();
     AccessorBit::Set<uint32_t>(hasSetter, &handler);
@@ -120,23 +122,23 @@ JSTaggedValue StoreHandler::StoreProperty(const ObjectOperator &op)
         JSHandle<JSObject> receiver = JSHandle<JSObject>::Cast(op.GetReceiver());
         auto index = receiver->GetPropertyInObjectIndex(op.GetIndex());
         OffsetBit::Set<uint32_t>(index, &handler);
-        return JSTaggedValue(handler);
+        return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
     }
     ASSERT(op.IsFastMode());
     OffsetBit::Set<uint32_t>(op.GetIndex(), &handler);
-    return JSTaggedValue(handler);
+    return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
 }
 
-inline JSTaggedValue TransitionHandler::StoreTransition(const JSThread *thread, const ObjectOperator &op)
+JSHandle<JSTaggedValue> TransitionHandler::StoreTransition(const JSThread *thread, const ObjectOperator &op)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    TransitionHandler *handler = factory->NewTransitionHandler();
-    JSTaggedValue handlerInfo = StoreHandler::StoreProperty(op);
+    JSHandle<TransitionHandler> handler = factory->NewTransitionHandler();
+    JSHandle<JSTaggedValue> handlerInfo = StoreHandler::StoreProperty(thread, op);
     handler->SetHandlerInfo(thread, handlerInfo);
     auto hclass = JSObject::Cast(op.GetReceiver()->GetHeapObject())->GetJSHClass();
     handler->SetTransitionHClass(thread, JSTaggedValue(hclass));
-    return JSTaggedValue(handler);
+    return JSHandle<JSTaggedValue>::Cast(handler);
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_IC_HANDLER_INL_H
+#endif  // ECMASCRIPT_IC_IC_HANDLER_INL_H

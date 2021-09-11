@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSSET_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSSET_H
+#ifndef ECMASCRIPT_JSSET_H
+#define ECMASCRIPT_JSSET_H
 
 #include <limits>
 #include "js_object.h"
@@ -48,4 +48,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSSET_H
+#endif  // ECMASCRIPT_JSSET_H

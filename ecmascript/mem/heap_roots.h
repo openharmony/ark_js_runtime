@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_ROOTS_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_ROOTS_H
+#ifndef ECMASCRIPT_MEM_HEAP_ROOTS_H
+#define ECMASCRIPT_MEM_HEAP_ROOTS_H
 
 #include <cstdint>
 #include "ecmascript/mem/slots.h"
@@ -28,6 +28,7 @@ enum class Root {
     ROOT_HANDLE,
     ROOT_VM,
     ROOT_STRING,
+    ROOT_INTERNAL_CALL_PARAMS,
 };
 
 enum class GCType : size_t { SEMI_GC, OLD_GC };
@@ -45,7 +46,7 @@ public:
     ~HeapRootManager() = default;
 
     inline void VisitVMRoots(const RootVisitor &visitor, const RootRangeVisitor &range_visitor) const;
-    template <GCType gc_type>
+    template<GCType gc_type>
     inline void MarkObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor);
 
 private:
@@ -53,4 +54,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_ROOTS_H
+#endif  // ECMASCRIPT_MEM_HEAP_ROOTS_H

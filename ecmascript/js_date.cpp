@@ -646,7 +646,7 @@ JSTaggedValue JSDate::ToDateString(JSThread *thread) const
     CString year = StrToTargetLength(ToCString(fields[YEAR]), STR_LENGTH_YEAR);
     CString day = StrToTargetLength(ToCString(fields[DAYS]), STR_LENGTH_OTHERS);
     CString str = weekdayName[fields[WEEKDAY]] + SPACE + monthName[fields[MONTH]] + SPACE + day + SPACE + year;
-    JSHandle<EcmaString> result = thread->GetEcmaVM()->GetFactory()->NewFromString(str);
+    JSHandle<EcmaString> result = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str);
     return result.GetTaggedValue();
 }
 
@@ -712,7 +712,7 @@ JSTaggedValue JSDate::ToISOString(JSThread *thread) const
     CString ms = StrToTargetLength(ToCString(fields[MS]), STR_LENGTH_OTHERS + 1);
     CString str =
         year + NEG + month + NEG + day + FLAG_TIME + hour + COLON + minute + COLON + second + POINT + ms + FLAG_UTC;
-    return thread->GetEcmaVM()->GetFactory()->NewFromString(str).GetTaggedValue();
+    return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
 }
 
 CString JSDate::GetLocaleTimeStr(const std::array<int64_t, DATE_LENGTH> &fields) const
@@ -756,7 +756,7 @@ JSTaggedValue JSDate::ToLocaleDateString(JSThread *thread) const
         return JSTaggedValue(base::NAN_VALUE);
     }
     CString str = GetLocaleDateStr(fields);
-    return thread->GetEcmaVM()->GetFactory()->NewFromString(str).GetTaggedValue();
+    return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
 }
 
 // 20.4.4.39
@@ -768,7 +768,7 @@ JSTaggedValue JSDate::ToLocaleString(JSThread *thread) const
     }
     CString strDate = GetLocaleDateStr(fields);
     CString strTime = GetLocaleTimeStr(fields);
-    return thread->GetEcmaVM()->GetFactory()->NewFromString(strDate + SPACE + strTime).GetTaggedValue();
+    return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(strDate + SPACE + strTime).GetTaggedValue();
 }
 
 // 20.4.4.40
@@ -779,7 +779,7 @@ JSTaggedValue JSDate::ToLocaleTimeString(JSThread *thread) const
         return JSTaggedValue(base::NAN_VALUE);
     }
     CString str = GetLocaleTimeStr(fields);
-    return thread->GetEcmaVM()->GetFactory()->NewFromString(str).GetTaggedValue();
+    return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
 }
 
 // 20.4.4.41
@@ -819,7 +819,7 @@ JSTaggedValue JSDate::ToString(JSThread *thread) const
     CString second = StrToTargetLength(ToCString(fields[SEC]), STR_LENGTH_OTHERS);
     CString str = weekday + SPACE + month + SPACE + day + SPACE + year + SPACE + hour + COLON + minute + COLON +
                   second + SPACE + "GMT" + localTime;
-    return thread->GetEcmaVM()->GetFactory()->NewFromString(str).GetTaggedValue();
+    return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
 }
 
 // 20.4.4.42
@@ -848,7 +848,7 @@ JSTaggedValue JSDate::ToTimeString(JSThread *thread) const
     CString minute = StrToTargetLength(ToCString(fields[MIN]), STR_LENGTH_OTHERS);
     CString second = StrToTargetLength(ToCString(fields[SEC]), STR_LENGTH_OTHERS);
     CString str = hour + COLON + minute + COLON + second + SPACE + "GMT" + localTime;
-    return thread->GetEcmaVM()->GetFactory()->NewFromString(str).GetTaggedValue();
+    return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
 }
 
 // 20.4.4.43
@@ -874,7 +874,7 @@ JSTaggedValue JSDate::ToUTCString(JSThread *thread) const
     CString ms = StrToTargetLength(ToCString(fields[MS]), STR_LENGTH_OTHERS);
     CString str = weekday + COMMA + SPACE + day + SPACE + month + SPACE + year + SPACE + hour + COLON + minute + COLON +
                   second + SPACE + "GMT";
-    return thread->GetEcmaVM()->GetFactory()->NewFromString(str).GetTaggedValue();
+    return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str).GetTaggedValue();
 }
 
 // 20.4.4.44

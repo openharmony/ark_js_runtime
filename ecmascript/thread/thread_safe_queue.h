@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMASCRIPT_THREAD_THREAD_SAFE_QUEUE_H
-#define PANDA_ECMASCRIPT_THREAD_THREAD_SAFE_QUEUE_H
+#ifndef ECMASCRIPT_THREAD_THREAD_SAFE_QUEUE_H
+#define ECMASCRIPT_THREAD_THREAD_SAFE_QUEUE_H
 
 #include "os/mutex.h"
 #include <queue>
 
 namespace panda::ecmascript {
-template <typename T>
+template<typename T>
 class ThreadSafeQueue {
 public:
     explicit ThreadSafeQueue() = default;
@@ -65,4 +65,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_ECMASCRIPT_THREAD_THREAD_SAFE_QUEUE_H
+#endif  // ECMASCRIPT_THREAD_THREAD_SAFE_QUEUE_H

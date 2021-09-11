@@ -31,13 +31,13 @@ CString *StringHashMap::FindOrInsertString(CString *string)
     }
 }
 
-StringId StringHashMap::GetStringId(CString *string)
+StringId StringHashMap::GetStringId(const CString *string) const
 {
     auto it = indexMap_.find(GenerateStringKey(string));
     return it != indexMap_.end() ? it->second : 1;  // ""
 }
 
-CString *StringHashMap::GetStringByKey(StringKey key)
+CString *StringHashMap::GetStringByKey(StringKey key) const
 {
     auto it = hashmap_.find(key);
     if (it != hashmap_.end()) {
@@ -46,7 +46,7 @@ CString *StringHashMap::GetStringByKey(StringKey key)
     return nullptr;
 }
 
-CString *StringHashMap::FormatString(CString *string)
+CString *StringHashMap::FormatString(CString *string) const
 {
     // remove "\"" | "\r\n" | "\\" | "\t" | "\f"
     int length = string->length();
@@ -73,17 +73,17 @@ CString *StringHashMap::FormatString(CString *string)
     return string;
 }
 
-StringKey StringHashMap::GenerateStringKey(CString *string)
+StringKey StringHashMap::GenerateStringKey(const CString *string) const
 {
     return std::hash<std::string>{}(std::string(*string));
 }
 
 CString *StringHashMap::GetString(CString as)
 {
-    auto *tempString = allocator_->New<CString>(std::move(as));
+    auto *tempString = const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<CString>(std::move(as));
     CString *oldString = FindOrInsertString(tempString);
     if (tempString != oldString) {
-        allocator_->Finalize(tempString);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(tempString);
         return oldString;
     }
     return tempString;
@@ -93,7 +93,7 @@ void StringHashMap::Clear()
 {
     for (auto it : hashmap_) {
         if (it.second != nullptr) {
-            allocator_->Finalize(it.second);
+            const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(it.second);
         }
     }
 }

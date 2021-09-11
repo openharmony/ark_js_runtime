@@ -79,7 +79,7 @@ JSTaggedValue ErrorHelper::ErrorCommonToString(EcmaRuntimeCallInfo *argv, const 
     }
 
     // 13. Return the result of concatenating name, the code unit 0x003A (COLON), the code unit 0x0020 (SPACE), and msg.
-    JSHandle<EcmaString> space = factory->NewFromString(": ");
+    JSHandle<EcmaString> space = factory->NewFromCanBeCompressString(": ");
     JSHandle<EcmaString> jsHandleName = JSHandle<EcmaString>::Cast(name);
     JSHandle<EcmaString> jsHandleMsg = JSHandle<EcmaString>::Cast(msg);
     JSHandle<EcmaString> handleNameSpace = factory->ConcatFromString(jsHandleName, space);
@@ -172,9 +172,8 @@ JSTaggedValue ErrorHelper::ErrorCommonConstructor(EcmaRuntimeCallInfo *argv,
     return nativeInstanceObj.GetTaggedValue();
 }
 
-CString ErrorHelper::DecodeFunctionName(const char *methodName)
+CString ErrorHelper::DecodeFunctionName(const CString &name)
 {
-    CString name(methodName);
     if (name.empty()) {
         return "anonymous";
     }
@@ -200,8 +199,7 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             data += INTRINSIC_METHOD_NAME;
         } else {
             data.append("    at ");
-            data += DecodeFunctionName(
-                utf::Mutf8AsCString(method->GetStringDataAnnotation(Method::AnnotationField::FUNCTION_NAME).data));
+            data += DecodeFunctionName(method->ParseFunctionName());
             data.append(" (");
             // source file
             PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());

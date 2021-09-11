@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_WEAK_VECTOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_WEAK_VECTOR_H
+#ifndef ECMASCRIPT_WEAK_VECTOR_H
+#define ECMASCRIPT_WEAK_VECTOR_H
 
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_thread.h"
@@ -61,4 +61,4 @@ private:
     inline void SetEnd(const JSThread *thread, array_size_t end);
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_WEAK_VECTOR_H
+#endif  // ECMASCRIPT_WEAK_VECTOR_H

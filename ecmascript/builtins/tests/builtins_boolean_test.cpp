@@ -59,7 +59,6 @@ public:
 // new Boolean(123)
 HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor)
 {
-    ASSERT_NE(thread, nullptr);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
     JSHandle<JSFunction> boolean(env->GetBooleanFunction());
@@ -80,7 +79,6 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor)
 // new Boolean(undefined)
 HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor1)
 {
-    ASSERT_NE(thread, nullptr);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
     JSHandle<JSFunction> boolean(env->GetBooleanFunction());
@@ -101,12 +99,11 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor1)
 // Boolean("helloworld")
 HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor2)
 {
-    ASSERT_NE(thread, nullptr);
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
 
     JSHandle<JSFunction> boolean(env->GetBooleanFunction());
     JSHandle<JSObject> globalObject(thread, env->GetGlobalObject());
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("helloworld");
+    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("helloworld");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(boolean.GetTaggedValue());
@@ -123,8 +120,6 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanConstructor2)
 // false.toString()
 HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeToString)
 {
-    ASSERT_NE(thread, nullptr);
-
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::False());
@@ -133,14 +128,13 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeToString)
     JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeToString(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    auto ruler = thread->GetEcmaVM()->GetFactory()->NewFromString("false");
+    auto ruler = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("false");
     ASSERT_EQ(res->Compare(*ruler), 0);
 }
 
 // (new Boolean(true)).toString()
 HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeToString1)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -156,15 +150,13 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeToString1)
     JSTaggedValue result = BuiltinsBoolean::BooleanPrototypeToString(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
     JSHandle<EcmaString> res(thread, reinterpret_cast<EcmaString *>(result.GetRawData()));
-    auto ruler = thread->GetEcmaVM()->GetFactory()->NewFromString("true");
+    auto ruler = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("true");
     ASSERT_EQ(res->Compare(*ruler), 0);
 }
 
 // true.valueOf()
 HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeValueOf)
 {
-    ASSERT_NE(thread, nullptr);
-
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::True());
@@ -179,7 +171,6 @@ HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeValueOf)
 // (new Boolean(false)).valueOf()
 HWTEST_F_L0(BuiltinsBooleanTest, BooleanPrototypeValueOf1)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 

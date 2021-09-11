@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_VALUE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_VALUE_INL_H
+#ifndef ECMASCRIPT_TAGGED_VALUE_INL_H
+#define ECMASCRIPT_TAGGED_VALUE_INL_H
 
 #include "ecmascript/js_tagged_value.h"
 
@@ -472,6 +472,41 @@ inline bool JSTaggedValue::IsPromiseRecord() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsPromiseRecord();
 }
 
+inline bool JSTaggedValue::IsJSLocale() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSLocale();
+}
+
+inline bool JSTaggedValue::IsJSIntl() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSIntl();
+}
+
+inline bool JSTaggedValue::IsJSDateTimeFormat() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSDateTimeFormat();
+}
+
+inline bool JSTaggedValue::IsJSRelativeTimeFormat() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSRelativeTimeFormat();
+}
+
+inline bool JSTaggedValue::IsJSNumberFormat() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSNumberFormat();
+}
+
+inline bool JSTaggedValue::IsJSCollator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSCollator();
+}
+
+inline bool JSTaggedValue::IsJSPluralRules() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPluralRules();
+}
+
 inline bool JSTaggedValue::IsPromiseIteratorRecord() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsPromiseIteratorRecord();
@@ -536,6 +571,18 @@ inline bool JSTaggedValue::IsJSArray() const
 inline bool JSTaggedValue::IsStableJSArray(JSThread *thread) const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsStableJSArray() &&
+           !thread->IsStableArrayElementsGuardiansInvalid();
+}
+
+inline bool JSTaggedValue::IsStableJSArguments(JSThread *thread) const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsStableJSArguments() &&
+           !thread->IsStableArrayElementsGuardiansInvalid();
+}
+
+inline bool JSTaggedValue::HasStableElements(JSThread *thread) const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsStableElements() &&
            !thread->IsStableArrayElementsGuardiansInvalid();
 }
 
@@ -632,6 +679,11 @@ inline bool JSTaggedValue::IsJSFunctionBase() const
 inline bool JSTaggedValue::IsBoundFunction() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJsBoundFunction();
+}
+
+inline bool JSTaggedValue::IsJSIntlBoundFunction() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSIntlBoundFunction();
 }
 
 inline bool JSTaggedValue::IsProxyRevocFunction() const
@@ -787,6 +839,11 @@ inline bool JSTaggedValue::IsJSGlobalObject() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSGlobalObject();
 }
 
+inline bool JSTaggedValue::IsMachineCodeObject() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsMachineCodeObject();
+}
+
 inline double JSTaggedValue::ExtractNumber() const
 {
     ASSERT(IsNumber());
@@ -905,4 +962,4 @@ inline uint32_t JSTaggedValue::GetKeyHashCode() const
     return static_cast<uint32_t>(JSSymbol::Cast(GetTaggedObject())->GetHashField().GetInt());
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_VALUE__INL_H
+#endif  // ECMASCRIPT_TAGGED_VALUE__INL_H

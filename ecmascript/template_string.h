@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TEMPLATE_STRING_H
-#define PANDA_RUNTIME_ECMASCRIPT_TEMPLATE_STRING_H
+#ifndef ECMASCRIPT_TEMPLATE_STRING_H
+#define ECMASCRIPT_TEMPLATE_STRING_H
 
 #include "ecmascript/js_array.h"
 
@@ -24,4 +24,4 @@ public:
     static JSHandle<JSTaggedValue> GetTemplateObject(JSThread *thread, JSHandle<JSTaggedValue> templateLiteral);
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TEMPLATE_STRING_H
+#endif  // ECMASCRIPT_TEMPLATE_STRING_H

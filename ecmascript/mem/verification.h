@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_VERIFICATION_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_VERIFICATION_H
+#ifndef ECMASCRIPT_MEM_HEAP_VERIFICATION_H
+#define ECMASCRIPT_MEM_HEAP_VERIFICATION_H
 
 #include <cstdint>
 
@@ -76,4 +76,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_VERIFICATION_H
+#endif  // ECMASCRIPT_MEM_HEAP_VERIFICATION_H

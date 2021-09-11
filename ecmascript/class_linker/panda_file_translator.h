@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_PANDA_FILE_TRANSLATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_PANDA_FILE_TRANSLATOR_H
+#ifndef ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
+#define ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_function.h"
@@ -51,7 +51,8 @@ public:
     NO_MOVE_SEMANTIC(PandaFileTranslator);
     static JSHandle<Program> TranslatePandaFile(EcmaVM *vm, const panda_file::File &pf,
                                                 const CString &methodName);
-    JSHandle<JSFunction> DefineMethodById(uint32_t methodId, FunctionKind kind) const;
+    JSHandle<JSFunction> DefineMethodInLiteral(JSThread *thread, uint32_t methodId, FunctionKind kind,
+                                               uint16_t length) const;
 
 private:
     enum class ConstPoolType : uint8_t {
@@ -109,6 +110,7 @@ private:
     void TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf, const JSMethod *method);
     void FixInstructionId32(const BytecodeInstruction &inst, uint32_t index, uint32_t fixOrder = 0) const;
     void FixOpcode(uint8_t *pc) const;
+    void UpdateICOffset(JSMethod *method, uint8_t *pc) const;
 
     void SetMethods(Span<JSMethod> methods, const uint32_t numMethods)
     {
@@ -133,4 +135,4 @@ private:
     std::set<const uint8_t *> translated_code_;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_PANDA_FILE_TRANSLATOR_H
+#endif  // ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H

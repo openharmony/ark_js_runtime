@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMA_REGEXP_OPCODE_H
-#define PANDA_RUNTIME_ECMA_REGEXP_OPCODE_H
+#ifndef ECMASCRIPT_REGEXP_OPCODE_H
+#define ECMASCRIPT_REGEXP_OPCODE_H
 
 #include <list>
 

@@ -349,12 +349,14 @@ AddrShift StubOptimizer::LoadFromObject(MachineType type, AddrShift object, Addr
     return Load(type, ChangeInt64ToPointer(elements), dataOffset);
 }
 
-AddrShift StubOptimizer::FindElementFromNumberDictionary(AddrShift elements, AddrShift key, Label *next)
+AddrShift StubOptimizer::FindElementFromNumberDictionary(AddrShift thread, AddrShift elements, AddrShift key,
+                                                         Label *next)
 {
     auto env = GetEnvironment();
     DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
-    AddrShift capcityoffset = PtrMul(GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()),
-        GetPtrConstant(panda::ecmascript::TaggedHashTable<panda::ecmascript::NumberDictionary>::SIZE_INDEX));
+    AddrShift capcityoffset =
+        PtrMul(GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()),
+               GetPtrConstant(panda::ecmascript::TaggedHashTable<panda::ecmascript::NumberDictionary>::SIZE_INDEX));
     AddrShift dataoffset = GetPtrConstant(panda::coretypes::Array::GetDataOffset());
     AddrShift capacity = TaggedCastToInt32(Load(TAGGED_TYPE, elements, PtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, INT32_TYPE, GetInteger32Constant(1));
@@ -363,7 +365,8 @@ AddrShift StubOptimizer::FindElementFromNumberDictionary(AddrShift elements, Add
     AddrShift keyStore = Store(INT32_TYPE, pKey, GetPtrConstant(0), TaggedCastToInt32(key));
     StubInterfaceDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
     AddrShift len = GetInteger32Constant(sizeof(int) / sizeof(uint8_t));
-    AddrShift hash = CallStub(getHash32Descriptor, GetWord64Constant(FAST_STUB_ID(GetHash32)), keyStore, {pKey, len});
+    AddrShift hash =
+        CallRuntime(getHash32Descriptor, thread, GetWord64Constant(FAST_STUB_ID(GetHash32)), keyStore, {pKey, len});
     DEFVARIABLE(entry, INT32_TYPE, Word32And(hash, Int32Sub(capacity, GetInteger32Constant(1))));
     Label loopHead(env);
     Label loopEnd(env);
@@ -445,9 +448,9 @@ AddrShift StubOptimizer::GetKeyFromNumberDictionary(AddrShift elements, AddrShif
     Label gtLength(env);
     Label notGtLength(env);
     AddrShift dictionaryLength = Load(INT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
-    AddrShift arrayIndex = Int32Add(
-        GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
-        Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
+    AddrShift arrayIndex =
+        Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
+                 Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
     Branch(Int32LessThan(arrayIndex, GetInteger32Constant(0)), &ltZero, &notLtZero);
     Bind(&ltZero);
     Jump(next);
@@ -569,7 +572,7 @@ AddrShift StubOptimizer::UpdateRepresention(AddrShift oldRep, AddrShift value, L
                     Label isObjectNewRep(env);
                     Label notObjectNewRep(env);
                     Branch(Word64NotEqual(newRep, GetWord64Constant(
-                        static_cast<int32_t>(panda::ecmascript::Representation::OBJECT))),
+                                                      static_cast<int32_t>(panda::ecmascript::Representation::OBJECT))),
                            &notObjectNewRep, &isObjectNewRep);
                     Bind(&notObjectNewRep);
                     {
@@ -596,11 +599,9 @@ AddrShift StubOptimizer::UpdateRepresention(AddrShift oldRep, AddrShift value, L
     return *resultRep;
 }
 
-void StubOptimizer::UpdateRepresention(AddrShift hclass, AddrShift value)
+void StubOptimizer::UpdateAndStoreRepresention(AddrShift hclass, AddrShift value, Label *next)
 {
-    auto env = GetEnvironment();
-    Label updateRepLabel(env);
-    AddrShift newRep = UpdateRepresention(GetElementRepresentation(hclass), value, &updateRepLabel);
+    AddrShift newRep = UpdateRepresention(GetElementRepresentation(hclass), value, next);
     SetElementRepresentation(hclass, newRep);
 }
 }  // namespace kungfu

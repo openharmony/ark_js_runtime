@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_SLOW_RUNTIME_STUB_H
-#define PANDA_RUNTIME_ECMASCRIPT_SLOW_RUNTIME_STUB_H
+#ifndef ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H
+#define ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
@@ -79,7 +79,7 @@ public:
     static void ThrowDeleteSuperProperty(JSThread *thread);
 
     static JSTaggedValue StOwnByName(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop, JSTaggedValue value);
-    static JSTaggedValue StOwnByIndex(JSThread *thread, JSTaggedValue obj, JSTaggedValue idx, JSTaggedValue value);
+    static JSTaggedValue StOwnByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, JSTaggedValue value);
     static JSTaggedValue StOwnByValue(JSThread *thread, JSTaggedValue obj, JSTaggedValue key, JSTaggedValue value);
     static JSTaggedValue CreateEmptyArray(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv);
     static JSTaggedValue CreateEmptyObject(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv);
@@ -102,14 +102,15 @@ public:
     static void StModuleVar(JSThread *thread, JSTaggedValue exportName, JSTaggedValue exportObj);
     static void CopyModule(JSThread *thread, JSTaggedValue srcModule);
     static JSTaggedValue LdModvarByName(JSThread *thread, JSTaggedValue moduleObj, JSTaggedValue itemName);
+    static JSTaggedValue CreateRegExpWithLiteral(JSThread *thread, JSTaggedValue pattern, uint8_t flags);
     static JSTaggedValue GetIteratorNext(JSThread *thread, JSTaggedValue obj, JSTaggedValue method);
 
     static JSTaggedValue DefineGetterSetterByValue(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop,
                                                    JSTaggedValue getter, JSTaggedValue setter, bool flag);
 
-    static JSTaggedValue LdObjByIndex(JSThread *thread, JSTaggedValue obj, JSTaggedValue idx, bool callGetter,
+    static JSTaggedValue LdObjByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, bool callGetter,
                                       JSTaggedValue receiver);
-    static JSTaggedValue StObjByIndex(JSThread *thread, JSTaggedValue obj, JSTaggedValue idx, JSTaggedValue value);
+    static JSTaggedValue StObjByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, JSTaggedValue value);
     static JSTaggedValue LdObjByName(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop, bool callGetter,
                                      JSTaggedValue receiver);
     static JSTaggedValue StObjByName(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop, JSTaggedValue value);
@@ -147,4 +148,4 @@ private:
     static JSTaggedValue GetCallSpreadArgs(JSThread *thread, JSTaggedValue array);
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_SLOW_RUNTIME_STUB_H
+#endif  // ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H

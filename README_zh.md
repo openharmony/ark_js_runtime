@@ -57,19 +57,19 @@ NAPI接口说明参考[NAPI组件](https://gitee.com/openharmony/ace_napi/blob/m
 
 ### 使用说明<a name="section129654513264"></a>
 
-JS生成字节码参考[工具链使用](docs/工具链使用.md)
+JS生成字节码参考[工具链使用](docs/using-the-toolchain-zh.md)
 
 字节码执行
 
 cd out/release
 
-LD\_LIBRARY\_PATH=clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
+LD\_LIBRARY\_PATH=clang\_x64/ark/ark\_js\_runtime:clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
 
 ./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc
 
 ## 相关仓<a name="section1371113476307"></a>
 
-[方舟运行时子系统](docs/方舟运行时子系统.md)
+[方舟运行时子系统](docs/ARK-Runtime-Subsystem-zh.md)
 
 [ark/runtime\_core](https://gitee.com/openharmony/ark_runtime_core/blob/master/README_zh.md)
 

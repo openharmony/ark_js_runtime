@@ -16,6 +16,7 @@
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_invoker.h"
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_weak_container.h"
@@ -58,7 +59,7 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "iterable is not object", JSTaggedValue::Exception());
     }
     // Let adder be Get(weakMap, "set").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromString("set"));
+    JSHandle<JSTaggedValue> adderKey(factory->NewFromCanBeCompressString("set"));
     JSHandle<JSTaggedValue> adder =
         JSObject::GetProperty(thread, JSHandle<JSTaggedValue>(weakMap), adderKey).GetValue();
     // ReturnIfAbrupt(adder).
@@ -83,7 +84,6 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
         JSHandle<JSTaggedValue> nextValue(JSIterator::IteratorValue(thread, next));
         // ReturnIfAbrupt(nextValue).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
-        JSHandle<TaggedArray> array(factory->NewTaggedArray(2));  // 2: key and value pair
         // If Type(nextItem) is not Object
         if (!nextValue->IsECMAObject()) {
             JSHandle<JSObject> typeError = factory->GetJSError(ErrorType::TYPE_ERROR, "nextItem is not Object");
@@ -101,7 +101,7 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
         if (thread->HasPendingException()) {
             return JSIterator::IteratorCloseAndReturn(thread, iter, key);
         }
-        array->Set(thread, 0, key);
+
         // Let v be Get(nextItem, "1").
         JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
         // If v is an abrupt completion, return IteratorClose(iter, v).
@@ -109,9 +109,11 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
             return JSIterator::IteratorCloseAndReturn(thread, iter, value);
         }
 
-        array->Set(thread, 1, value);
         // Let status be Call(adder, weakMap, «nextValue.[[value]]»).
-        JSTaggedValue ret = JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(weakMap), array);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(key, value);
+        JSTaggedValue ret = JSFunction::Call(thread,
+            adder, JSHandle<JSTaggedValue>(weakMap), 2, arguments->GetArgv());  // 2: key and value pair
 
         status.Update(ret);
         // If status is an abrupt completion, return IteratorClose(iter, status).

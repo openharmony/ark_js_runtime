@@ -22,7 +22,7 @@
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-EcmaRuntimeStat::EcmaRuntimeStat(const char * const runtimeCallerNames[], int count)
+EcmaRuntimeStat::EcmaRuntimeStat(const char *const runtimeCallerNames[], int count)
 {
     for (int i = 0; i < count; i++) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -55,7 +55,7 @@ void EcmaRuntimeStat::Print() const
     if (currentTimer_ != nullptr) {
         currentTimer_->Snapshot();
     }
-    LOG_ECMA(INFO) << GetAllStats();
+    LOG_ECMA(ERROR) << GetAllStats();
 }
 
 void EcmaRuntimeStat::ResetAllCount()

@@ -79,8 +79,8 @@ void HeapSnapShotJSONSerializer::SerializeSnapShotHeader()
 
 void HeapSnapShotJSONSerializer::SerializeNodes()
 {
-    CList<Node *> *nodes = snapShot_->GetNodes();
-    StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
+    const CList<Node *> *nodes = snapShot_->GetNodes();
+    const StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
     ASSERT(nodes != nullptr);
     stringBuffer_ << "\"nodes\":[";  // Section Header
     size_t i = 0;
@@ -106,8 +106,8 @@ void HeapSnapShotJSONSerializer::SerializeNodes()
 
 void HeapSnapShotJSONSerializer::SerializeEdges()
 {
-    CVector<Edge *> *edges = snapShot_->GetEdges();
-    StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
+    const CVector<Edge *> *edges = snapShot_->GetEdges();
+    const StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
     ASSERT(edges != nullptr);
     stringBuffer_ << "\"edges\":[";
     size_t i = 0;
@@ -121,7 +121,7 @@ void HeapSnapShotJSONSerializer::SerializeEdges()
         if (i == edges->size() - 1) {  // add comma at last the line
             stringBuffer_ << edge->GetTo()->GetIndex() * Node::NODE_FIELD_COUNT << "],\n";  // 3.
         } else {
-            stringBuffer_ << edge->GetTo()->GetIndex() * Node::NODE_FIELD_COUNT << "\n";  // 3.
+            stringBuffer_ << edge->GetTo()->GetIndex() * Node::NODE_FIELD_COUNT << "\n";    // 3.
         }
         i++;
     }
@@ -140,7 +140,7 @@ void HeapSnapShotJSONSerializer::SerializeTraceTree()
 void HeapSnapShotJSONSerializer::SerializeSamples()
 {
     stringBuffer_ << "\"samples\":[";
-    CVector<TimeStamp> &timeStamps = snapShot_->GetTimeStamps();
+    const CVector<TimeStamp> &timeStamps = snapShot_->GetTimeStamps();
     if (!timeStamps.empty()) {
         auto firstTimeStamp = timeStamps[0];
         bool isFirst = true;
@@ -164,7 +164,7 @@ void HeapSnapShotJSONSerializer::SerializeLocations()
 
 void HeapSnapShotJSONSerializer::SerializeStringTable()
 {
-    StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
+    const StringHashMap *stringTable = snapShot_->GetEcmaStringTable();
     ASSERT(stringTable != nullptr);
     stringBuffer_ << "\"strings\":[\"<dummy>\",\n";
     stringBuffer_ << "\"\",\n";
@@ -172,7 +172,7 @@ void HeapSnapShotJSONSerializer::SerializeStringTable()
     // StringId Range from 3
     size_t capcity = stringTable->GetCapcity();
     size_t i = 0;
-    for (auto key : *(stringTable->GetOrderedKeyStorage())) {
+    for (auto key : stringTable->GetOrderedKeyStorage()) {
         if (i == capcity - 1) {
             stringBuffer_ << "\"" << *(stringTable->GetStringByKey(key)) << "\"\n";  // No Comma for the last line
         } else {

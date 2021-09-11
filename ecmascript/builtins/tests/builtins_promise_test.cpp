@@ -106,7 +106,7 @@ JSTaggedValue TestPromiseThenOnResolved(EcmaRuntimeCallInfo *argv)
 {
     auto factory = argv->GetThread()->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> result = BuiltinsBase::GetCallArg(argv, 0);
-    auto expect = factory->NewFromString("resolve");
+    auto expect = factory->NewFromCanBeCompressString("resolve");
     EXPECT_EQ(JSTaggedValue::SameValue(result.GetTaggedValue(), expect.GetTaggedValue()), true);
     return JSTaggedValue::Undefined();
 }
@@ -116,7 +116,7 @@ JSTaggedValue TestPromiseThenOnRejected(EcmaRuntimeCallInfo *argv)
 {
     auto factory = argv->GetThread()->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> result = BuiltinsBase::GetCallArg(argv, 0);
-    auto expect = factory->NewFromString("reject");
+    auto expect = factory->NewFromCanBeCompressString("reject");
     EXPECT_EQ(JSTaggedValue::SameValue(result.GetTaggedValue(), expect.GetTaggedValue()), true);
     return JSTaggedValue::Undefined();
 }
@@ -162,7 +162,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, Reject2)
 
     // constructor promise1
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
-    JSHandle<JSTaggedValue> paramMsg1 = JSHandle<JSTaggedValue>::Cast(factory->NewFromString("Promise reject"));
+    JSHandle<JSTaggedValue> paramMsg1 =
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("Promise reject"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.reject("Promise reject")
@@ -241,7 +242,8 @@ HWTEST_F_L0(BuiltinsPromiseTest, Resolve2)
 
     // constructor promise1
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
-    JSHandle<JSTaggedValue> paramMsg1 = JSHandle<JSTaggedValue>::Cast(factory->NewFromString("Promise reject"));
+    JSHandle<JSTaggedValue> paramMsg1 =
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("Promise reject"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.reject("Promise reject")
@@ -350,7 +352,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race1)
     EXPECT_EQ(racePromise->GetPromiseResult().IsUndefined(), true);
 }
 
-/**
+/*
  * @tc.name: Race2
  * @tc.desc: The Race method receives an array, uses the Then method to save the task in the task queue, and outputs
  * the execution result of the queue.
@@ -619,7 +621,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
     auto factory = EcmaVM::Cast(instance)->GetFactory();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
-    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromString("resolve"));
+    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("resolve"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.resolve("resolve")
@@ -677,7 +679,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenReject)
     auto factory = EcmaVM::Cast(instance)->GetFactory();
 
     JSHandle<JSFunction> promise = JSHandle<JSFunction>::Cast(env->GetPromiseFunction());
-    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromString("reject"));
+    JSHandle<JSTaggedValue> paramMsg = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("reject"));
 
     /**
      * @tc.steps: step1. var p1 = Promise.Reject(5)

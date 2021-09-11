@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_LAYOUT_INFO_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_LAYOUT_INFO_INL_H
+#ifndef ECMASCRIPT_LAYOUT_INFO_INL_H
+#define ECMASCRIPT_LAYOUT_INFO_INL_H
 
 #include "ecmascript/layout_info.h"
 #include "ecmascript/tagged_array-inl.h"
@@ -171,4 +171,4 @@ inline int LayoutInfo::BinarySearch(JSTaggedValue key, int propertiesNumber)
     return -1;
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_LAYOUT_INFO_INL_H
+#endif  // ECMASCRIPT_LAYOUT_INFO_INL_H

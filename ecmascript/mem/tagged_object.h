@@ -13,16 +13,17 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_OBJECT_HEADER_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_OBJECT_HEADER_H
+#ifndef ECMASCRIPT_TAGGED_OBJECT_HEADER_H
+#define ECMASCRIPT_TAGGED_OBJECT_HEADER_H
 
 #include "ecmascript/mem/mark_word.h"
 #include "include/object_header.h"
 
 namespace panda::ecmascript {
 class JSHClass;
-template <typename T>
+template<typename T>
 class JSHandle;
+class JSThread;
 
 class TaggedObject : public ObjectHeader {
 public:
@@ -41,12 +42,14 @@ public:
     size_t GetObjectSize();
 
     // Size of object header
-    static constexpr int ObjectHeaderSize()
+    static constexpr int TaggedObjectSize()
     {
         return sizeof(TaggedObject);
     }
+
+    JSThread* GetJSThread() const;
 };
-static_assert(TaggedObject::ObjectHeaderSize() == sizeof(MarkWordType));
+static_assert(TaggedObject::TaggedObjectSize() == sizeof(MarkWordType));
 }  //  namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_OBJECT_HEADER_H
+#endif  // ECMASCRIPT_TAGGED_OBJECT_HEADER_H

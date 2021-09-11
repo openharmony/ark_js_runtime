@@ -20,6 +20,7 @@
 #include "ecmascript/base/utf_helper.h"
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/ecma_string.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
@@ -33,6 +34,7 @@ constexpr unsigned int NUMBER_TEN = 10;
 constexpr unsigned int NUMBER_SIXTEEN = 16;
 
 constexpr unsigned char CODE_SPACE = 0x20;
+constexpr unsigned char ASCII_END = 0X7F;
 JSHandle<JSTaggedValue> JsonParser::Parse(Text begin, Text end)
 {
     end_ = end - 1;
@@ -52,20 +54,21 @@ JSHandle<JSTaggedValue> JsonParser::Parse(EcmaString *str)
 {
     ASSERT(str != nullptr);
     if (UNLIKELY(str->IsUtf16())) {
-        size_t len = base::utf_helper::Utf16ToUtf8Size(str->GetDataUtf16(), str->GetLength()) - 1;
-        CVector<uint8_t> buf(len);
-        len = base::utf_helper::ConvertRegionUtf16ToUtf8(str->GetDataUtf16(), buf.data(), str->GetLength(), len, 0);
-        Text begin = buf.data();
-        return Parse(begin, begin + len);
+        uint32_t len = str->GetLength();
+        std::u16string u16str = StringHelper::Utf16ToU16String(str->GetDataUtf16(), len);
+        std::string u8str = StringHelper::U16stringToString(u16str);
+        Text begin = reinterpret_cast<Text>(u8str.c_str());
+        return Parse(begin, begin + u8str.length());
     }
 
+    isAsciiString_ = true;
     CVector<uint8_t> buf(str->GetUtf8Length());
     str->CopyDataUtf8(buf.data(), str->GetUtf8Length());
     Text begin = buf.data();
     return Parse(begin, begin + str->GetLength());
 }
 
-template <bool inObjorArr>
+template<bool inObjorArr>
 JSTaggedValue JsonParser::ParseJSONText()
 {
     SkipStartWhiteSpace();
@@ -122,7 +125,6 @@ JsonParser::Tokens JsonParser::ParseToken()
     }
 }
 
-
 void JsonParser::SkipEndWhiteSpace()
 {
     while (current_ != end_) {
@@ -145,10 +147,17 @@ void JsonParser::SkipStartWhiteSpace()
     }
 }
 
+void JsonParser::GetNextNonSpaceChar()
+{
+    current_++;
+    SkipStartWhiteSpace();
+}
+
 JSTaggedValue JsonParser::ParseLiteral(CString str, Tokens literalToken)
 {
     uint32_t strLen = str.size() - 1;
-    if (UNLIKELY(range_ - current_ < strLen)) {
+    uint32_t remainingLength = range_ - current_;
+    if (UNLIKELY(remainingLength < strLen)) {
         THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Text in JSON", JSTaggedValue::Exception());
     }
 
@@ -182,13 +191,19 @@ bool JsonParser::MatchText(CString str, uint32_t matchLen)
     return true;
 }
 
-template <bool inObjOrArr>
+template<bool inObjOrArr>
 JSTaggedValue JsonParser::ParseNumber()
 {
     if (inObjOrArr) {
-        bool isNumber = ReadNumberRange();
+        bool isFast = true;
+        bool isNumber = ReadNumberRange(isFast);
         if (!isNumber) {
             THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
+        }
+        if (isFast) {
+            double result = NumberHelper::StringToDouble(current_, end_ + 1, 0, 0);
+            current_ = end_;
+            return JSTaggedValue(result);
         }
     }
 
@@ -200,35 +215,12 @@ JSTaggedValue JsonParser::ParseNumber()
         }
     }
     if (*current_ == '0') {
-        if (current_++ != end_) {
-            if (*current_ == '.') {
-                if (!IsDecimalsLegal(hasExponent)) {
-                    THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
-                }
-            } else if (*current_ == 'e' || *current_ == 'E') {
-                if (!IsExponentLegal(hasExponent)) {
-                    THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
-                }
-            } else {
-                THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
-            }
+        if (!CheckZeroBeginNumber(hasExponent)) {
+            THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
         }
     } else if (*current_ >= '1' && *current_ <= '9') {
-        while (current_ != end_) {
-            current_++;
-            if (IsNumberCharacter(*current_)) {
-                continue;
-            } else if (*current_ == '.') {
-                if (!IsDecimalsLegal(hasExponent)) {
-                    THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
-                }
-            } else if (*current_ == 'e' || *current_ == 'E') {
-                if (!IsExponentLegal(hasExponent)) {
-                    THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
-                }
-            } else {
-                THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
-            }
+        if (!CheckNonZeroBeginNumber(hasExponent)) {
+            THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
         }
     } else {
         THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Number in JSON", JSTaggedValue::Exception());
@@ -239,11 +231,68 @@ JSTaggedValue JsonParser::ParseNumber()
     return JSTaggedValue(result);
 }
 
-bool JsonParser::ReadNumberRange()
+bool JsonParser::CheckZeroBeginNumber(bool &hasExponent)
+{
+    if (current_++ != end_) {
+        if (*current_ == '.') {
+            if (!IsDecimalsLegal(hasExponent)) {
+                return false;
+            }
+        } else if (*current_ == 'e' || *current_ == 'E') {
+            if (!IsExponentLegal(hasExponent)) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool JsonParser::CheckNonZeroBeginNumber(bool &hasExponent)
+{
+    while (current_ != end_) {
+        current_++;
+        if (IsNumberCharacter(*current_)) {
+            continue;
+        } else if (*current_ == '.') {
+            if (!IsDecimalsLegal(hasExponent)) {
+                return false;
+            }
+        } else if (*current_ == 'e' || *current_ == 'E') {
+            if (!IsExponentLegal(hasExponent)) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool JsonParser::ReadNumberRange(bool &isFast)
 {
     Text current = current_;
+    if (*current == '0') {
+        isFast = false;
+        current++;
+    } else if (*current == '-') {
+        current++;
+        if (*current == '0') {
+            isFast = false;
+            current++;
+        }
+    }
+
     while (current != range_) {
-        if (!(IsNumberCharacter(*current)) && !IsNumberSignalCharacter(*current)) {
+        if (IsNumberCharacter(*current)) {
+            current++;
+            continue;
+        } else if (IsNumberSignalCharacter(*current)) {
+            isFast = false;
+            current++;
+            continue;
+        } else {
             Text end = current;
             while (current != range_) {
                 if (*current == ' ' || *current == '\r' || *current == '\n' || *current == '\t') {
@@ -257,9 +306,8 @@ bool JsonParser::ReadNumberRange()
             }
             return false;
         }
-        end_ = range_ - 1;
-        current++;
     }
+    end_ = range_ - 1;
     return true;
 }
 
@@ -336,66 +384,112 @@ bool JsonParser::IsExponentLegal(bool &hasExponent)
     return true;
 }
 
-bool JsonParser::ReadStringRange(bool &isFast)
+bool JsonParser::ReadStringRange(bool &isFast, bool &isAscii)
 {
     uint8_t c = 0;
     Text current = current_;
-    if (current == range_) {
-        return false;
-    }
+
     while (current != range_) {
         c = *current;
         if (c == '"') {
             end_ = current;
             return true;
-        } else if (UNLIKELY(c < CODE_SPACE)) {
-            return false;
-        } else if (UNLIKELY(c == base::utf_helper::UTF8_2B_FIRST)) {
-            uint8_t next = *(current + 1);
-            if (next == base::utf_helper::UTF8_2B_SECOND) {  // special case for U+0000 => C0 80
-                return false;
+        } else if (UNLIKELY(c == '\\')) {
+            if (*(current + 1) == '"') {
+                current++;
             }
-        } else if (c == '\\') {
             isFast = false;
         }
-
+        if (!IsLegalAsciiCharacter(c, isAscii)) {
+            return false;
+        }
         current++;
     }
     return false;
 }
 
-template <bool inObjorArr>
+bool JsonParser::ReadAsciiStringRange(bool &isFast)
+{
+    uint8_t c = 0;
+    Text current = current_;
+
+    while (current != range_) {
+        c = *current;
+        if (c == '"') {
+            end_ = current;
+            return true;
+        } else if (UNLIKELY(c == '\\')) {
+            if (*(current + 1) == '"') {
+                current++;
+            }
+            isFast = false;
+        } else if (UNLIKELY(c < CODE_SPACE)) {
+            return false;
+        }
+        current++;
+    }
+    return false;
+}
+
+inline bool JsonParser::IsLegalAsciiCharacter(uint8_t c, bool &isAscii)
+{
+    if (c <= ASCII_END) {
+        if (c >= CODE_SPACE) {
+            return true;
+        }
+        return false;
+    }
+    isAscii = false;
+    return true;
+}
+
+template<bool inObjorArr>
 JSTaggedValue JsonParser::ParseString()
 {
     bool isFast = true;
+    bool isAscii = true;
+    bool isLegal = true;
     if (inObjorArr) {
         current_++;
-        bool isString = ReadStringRange(isFast);
-        if (!isString) {
+        if (isAsciiString_) {
+            isLegal = ReadAsciiStringRange(isFast);
+        } else {
+            isLegal = ReadStringRange(isFast, isAscii);
+        }
+        if (!isLegal) {
             THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected end Text in JSON", JSTaggedValue::Exception());
         }
         if (isFast) {
             CString value(current_, end_);
             current_ = end_;
-
-            return factory_->NewFromString(value).GetTaggedValue();
+            if (isAscii) {
+                return factory_->NewFromUtf8LiteralUnCheck(reinterpret_cast<Text>(value.c_str()), value.length(), true)
+                    .GetTaggedValue();
+            }
+            return factory_->NewFromUtf8LiteralUnCheck(reinterpret_cast<Text>(value.c_str()), value.length(), false)
+                .GetTaggedValue();
         }
     } else {
         if (*end_ != '"' || current_ == end_) {
             THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected end Text in JSON", JSTaggedValue::Exception());
         }
         current_++;
-        Text current = current_;
-        while (current != end_) {
-            if (UNLIKELY(*current < CODE_SPACE)) {
-                THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Text in JSON", JSTaggedValue::Exception());
-            }
-            current++;
+        if (isAsciiString_) {
+            isLegal = IsFastParseString(isFast, isAscii);
+        } else {
+            isLegal = IsFastParseAsciiString(isFast);
         }
-        CString value(current_, end_);
-        isFast = IsFastParseString(value);
+        if (!isLegal) {
+            THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected end Text in JSON", JSTaggedValue::Exception());
+        }
         if (LIKELY(isFast)) {
-            return factory_->NewFromString(value).GetTaggedValue();
+            CString value(current_, end_);
+            if (isAscii) {
+                return factory_->NewFromUtf8LiteralUnCheck(reinterpret_cast<Text>(value.c_str()), value.length(), true)
+                    .GetTaggedValue();
+            }
+            return factory_->NewFromUtf8LiteralUnCheck(reinterpret_cast<Text>(value.c_str()), value.length(), false)
+                .GetTaggedValue();
         }
     }
     end_--;
@@ -449,20 +543,42 @@ JSTaggedValue JsonParser::ParseString()
         }
         current_++;
     }
-    return factory_->NewFromString(res).GetTaggedValue();
+    return factory_->NewFromUtf8Literal(reinterpret_cast<Text>(res.c_str()), res.length()).GetTaggedValue();
 }
 
-bool JsonParser::IsFastParseString(CString &value)
+bool JsonParser::IsFastParseString(bool &isFast, bool &isAscii)
 {
-    if (strpbrk(value.c_str(), "\"\\/\b\f\n\r\t") != nullptr) {
-        return false;
+    Text current = current_;
+    while (current != end_) {
+        if (!IsLegalAsciiCharacter(*current, isAscii)) {
+            return false;
+        }
+        if (*current == '\\') {
+            isFast = false;
+        }
+        current++;
+    }
+    return true;
+}
+
+bool JsonParser::IsFastParseAsciiString(bool &isFast)
+{
+    Text current = current_;
+    while (current != end_) {
+        if (*current < CODE_SPACE) {
+            return false;
+        } else if (*current == '\\') {
+            isFast = false;
+        }
+        current++;
     }
     return true;
 }
 
 bool JsonParser::ConvertStringUnicode(CVector<uint16_t> &vec)
 {
-    if (end_ - current_ < UNICODE_DIGIT_LENGTH) {
+    uint32_t remainingLength = end_ - current_;
+    if (remainingLength < UNICODE_DIGIT_LENGTH) {
         return false;
     }
     uint16_t res = 0;
@@ -483,17 +599,17 @@ bool JsonParser::ConvertStringUnicode(CVector<uint16_t> &vec)
     if (res < CODE_SPACE) {
         return false;
     }
-    current_++;
+
     vec.emplace_back(res);
 
-    if (*(current_ + 1) == '\\' && *(current_ + 2) == 'u') { // 2: next two chars
-        current_ += 2; // 2: point moves backwards by two digits
+    if (*(current_ + 1) == '\\' && *(current_ + 2) == 'u') {  // 2: next two chars
+        current_ += 2;                                        // 2: point moves backwards by two digits
         return ConvertStringUnicode(vec);
     }
     return true;
 }
 
-template <bool inObjorArr>
+template<bool inObjorArr>
 JSTaggedValue JsonParser::ParseArray()
 {
     if (UNLIKELY(*range_ != ']' && !inObjorArr)) {
@@ -506,14 +622,13 @@ JSTaggedValue JsonParser::ParseArray()
         return arr.GetTaggedValue();
     }
 
-    JSMutableHandle<JSTaggedValue> valueHandle(thread_, JSTaggedValue::Undefined());
+    JSTaggedValue value;
     uint32_t index = 0;
     while (current_ <= range_) {
-        valueHandle.Update(ParseJSONText<true>());
+        value = ParseJSONText<true>();
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
-        FastRuntimeStub::SetPropertyByIndex<true>(thread_, arr.GetTaggedValue(), index++, valueHandle.GetTaggedValue());
-        current_++;
-        SkipStartWhiteSpace();
+        FastRuntimeStub::SetPropertyByIndex<true>(thread_, arr.GetTaggedValue(), index++, value);
+        GetNextNonSpaceChar();
         if (*current_ == ',') {
             current_++;
         } else if (*current_ == ']') {
@@ -527,7 +642,7 @@ JSTaggedValue JsonParser::ParseArray()
     THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Array in JSON", JSTaggedValue::Exception());
 }
 
-template <bool inObjorArr>
+template<bool inObjorArr>
 JSTaggedValue JsonParser::ParseObject()
 {
     if (UNLIKELY(*range_ != '}' && !inObjorArr)) {
@@ -542,7 +657,7 @@ JSTaggedValue JsonParser::ParseObject()
     }
 
     JSMutableHandle<JSTaggedValue> keyHandle(thread_, JSTaggedValue::Undefined());
-    JSMutableHandle<JSTaggedValue> valueHandle(thread_, JSTaggedValue::Undefined());
+    JSTaggedValue value;
     while (current_ <= range_) {
         SkipStartWhiteSpace();
         if (*current_ == '"') {
@@ -553,18 +668,15 @@ JSTaggedValue JsonParser::ParseObject()
             }
             THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Object in JSON", JSTaggedValue::Exception());
         }
-        current_++;
-        SkipStartWhiteSpace();
+        GetNextNonSpaceChar();
         if (*current_ == ':') {
             current_++;
         } else {
             THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected Object in JSON", JSTaggedValue::Exception());
         }
-        valueHandle.Update(ParseJSONText<true>());
-        FastRuntimeStub::SetPropertyByValue<true>(thread_, result.GetTaggedValue(), keyHandle.GetTaggedValue(),
-                                                  valueHandle.GetTaggedValue());
-        current_++;
-        SkipStartWhiteSpace();
+        value = ParseJSONText<true>();
+        FastRuntimeStub::SetPropertyByValue<true>(thread_, result.GetTaggedValue(), keyHandle.GetTaggedValue(), value);
+        GetNextNonSpaceChar();
         if (*current_ == ',') {
             current_++;
         } else if (*current_ == '}') {
@@ -610,19 +722,16 @@ JSHandle<JSTaggedValue> JsonParser::InternalizeJsonProperty(const JSHandle<JSObj
             JSMutableHandle<JSTaggedValue> keyName(thread_, JSTaggedValue::Undefined());
             for (array_size_t i = 0; i < namesLength; i++) {
                 keyName.Update(JSTaggedValue::GetProperty(thread_, JSHandle<JSTaggedValue>(ownerNames), i)
-                    .GetValue()
-                    .GetTaggedValue());
+                    .GetValue().GetTaggedValue());
                 RecurseAndApply(obj, keyName, receiver);
             }
         }
     }
 
     // Return ? Call(receiver, holder, « name, val »).
-    array_size_t length = 2;
-    JSHandle<TaggedArray> msg = factory_->NewTaggedArray(length);
-    msg->Set(thread_, 0, name);
-    msg->Set(thread_, 1, val);
-    JSTaggedValue result = JSFunction::Call(thread_, receiver, objHandle, msg);
+    InternalCallParams *arguments = thread_->GetInternalCallParams();
+    arguments->MakeArgv(name, val);
+    JSTaggedValue result = JSFunction::Call(thread_, receiver, objHandle, 2, arguments->GetArgv());  // 2: two args
     return JSHandle<JSTaggedValue>(thread_, result);
 }
 

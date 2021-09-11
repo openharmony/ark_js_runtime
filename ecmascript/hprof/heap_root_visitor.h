@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef RUNTIME_ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H
-#define RUNTIME_ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H
+#ifndef ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H
+#define ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H
 
 #include "ecmascript/mem/heap_roots.h"
 
@@ -33,4 +33,4 @@ private:
     EcmaVM *GetVMInstance(JSThread *thread) const;
 };
 }  // namespace panda::ecmascript
-#endif  // RUNTIME_ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H
+#endif  // ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H

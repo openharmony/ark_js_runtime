@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMA_INIT_H
-#define PANDA_RUNTIME_ECMA_INIT_H
+#ifndef ECMASCRIPT_BUILTINS_H
+#define ECMASCRIPT_BUILTINS_H
 
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_function.h"
@@ -108,6 +108,19 @@ private:
 
     void InitializeRegExp(const JSHandle<GlobalEnv> &env);
 
+    // for Intl.
+    JSHandle<JSFunction> NewIntlConstructor(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &prototype,
+                                            EcmaEntrypoint ctorFunc, const char *name, int length);
+    void InitializeIntlCtor(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &prototype,
+                            const JSHandle<JSFunction> &ctor, const char *name, int length);
+    void InitializeIntl(const JSHandle<GlobalEnv> &env, const JSHandle<JSTaggedValue> &objFuncPrototypeValue);
+    void InitializeLocale(const JSHandle<GlobalEnv> &env);
+    void InitializeDateTimeFormat(const JSHandle<GlobalEnv> &env);
+    void InitializeRelativeTimeFormat(const JSHandle<GlobalEnv> &env);
+    void InitializeNumberFormat(const JSHandle<GlobalEnv> &env);
+    void InitializeCollator(const JSHandle<GlobalEnv> &env);
+    void InitializePluralRules(const JSHandle<GlobalEnv> &env);
+
     void GeneralUpdateError(ErrorParameter *error, EcmaEntrypoint constructor, EcmaEntrypoint method, const char *name,
                             JSType type) const;
 
@@ -167,7 +180,7 @@ private:
     void SetFuncToObjAndGlobal(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &globalObject,
                                const JSHandle<JSObject> &obj, const char *key, EcmaEntrypoint func, int length);
 
-    template <int type = JSSymbol::SYMBOL_DEFAULT_TYPE>
+    template<int type = JSSymbol::SYMBOL_DEFAULT_TYPE>
     void SetFunctionAtSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj,
                              const JSHandle<JSTaggedValue> &symbol, const char *name, EcmaEntrypoint func,
                              int length) const;
@@ -198,4 +211,4 @@ private:
     void InitializeJSNativeObject(const JSHandle<GlobalEnv> &env) const;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMA_INIT_H
+#endif  // ECMASCRIPT_BUILTINS_H

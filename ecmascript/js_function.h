@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSFUCNTION_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSFUCNTION_H
+#ifndef ECMASCRIPT_JSFUCNTION_H
+#define ECMASCRIPT_JSFUCNTION_H
 
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/ecma_macros.h"
@@ -88,20 +88,22 @@ public:
 
     // ecma6 9.2
     // 7.3.12 Call(F, V, argumentsList)
+
     static JSTaggedValue Call(JSThread *thread, const JSHandle<JSTaggedValue> &func,
-                              const JSHandle<JSTaggedValue> &thisArg, const JSHandle<TaggedArray> &argv);
-    static JSTaggedValue Construct(JSThread *thread, const JSHandle<JSTaggedValue> &func,
-                                   const JSHandle<TaggedArray> &argv, const JSHandle<JSTaggedValue> &newTarget);
+                              const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[]);
+
+    static JSTaggedValue Construct(JSThread *thread, const JSHandle<JSTaggedValue> &func, uint32_t argc,
+                                   const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget);
     static JSTaggedValue Invoke(JSThread *thread, const JSHandle<JSTaggedValue> &thisArg,
-                                const JSHandle<JSTaggedValue> &key, const JSHandle<TaggedArray> &argv);
+                                 const JSHandle<JSTaggedValue> &key, uint32_t argc, const JSTaggedType argv[]);
     // 9.2.1[[Call]](thisArgument, argumentsList)
     // 9.3.1[[Call]](thisArgument, argumentsList)
     static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSFunction> &func,
-                                      const JSHandle<JSTaggedValue> &thisArg, const JSHandle<TaggedArray> &argv);
+                                      const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[]);
     // 9.2.2[[Construct]](argumentsList, newTarget)
     // 9.3.2[[Construct]](argumentsList, newTarget)
-    static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSFunction> &func,
-                                           const JSHandle<TaggedArray> &argv, const JSHandle<JSTaggedValue> &newTarget);
+    static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSFunction> &func, uint32_t argc,
+                                            const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget);
 
     static bool AddRestrictedFunctionProperties(const JSHandle<JSFunction> &func, const JSHandle<JSTaggedValue> &realm);
     static bool MakeConstructor(JSThread *thread, const JSHandle<JSFunction> &func,
@@ -123,9 +125,6 @@ public:
     static JSTaggedValue NameGetter(JSThread *thread, const JSHandle<JSObject> &self);
     static bool NameSetter(JSThread *thread, const JSHandle<JSObject> &self, const JSHandle<JSTaggedValue> &value,
                            bool mayThrow);
-    static JSTaggedValue LengthGetter(JSThread *thread, const JSHandle<JSObject> &self);
-    static bool LengthSetter(JSThread *thread, const JSHandle<JSObject> &self, const JSHandle<JSTaggedValue> &value,
-                             bool mayThrow);
     static void SetFunctionNameNoPrefix(JSThread *thread, JSFunction *func, JSTaggedValue name);
     static JSHandle<DynClass> GetInstanceDynClass(JSThread *thread, JSHandle<JSFunction> constructor,
                                                   JSHandle<JSTaggedValue> newTarget);
@@ -326,11 +325,11 @@ public:
     }
 
     // 9.4.1.1[[Call]](thisArgument, argumentsList)
-    static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func,
-                                      const JSHandle<JSTaggedValue> &thisArg, const JSHandle<TaggedArray> &argv);
+    static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func);
+
     // 9.4.1.2[[Construct]](argumentsList, newTarget)
     static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func,
-                                           const JSHandle<TaggedArray> &argv, const JSHandle<JSTaggedValue> &newTarget);
+                                           const JSHandle<JSTaggedValue> &newTarget);
 
     static constexpr size_t BOUND_TARGET_OFFSET = JSFunctionBase::SIZE;
     ACCESSORS(BoundTarget, BOUND_TARGET_OFFSET, BOUND_THIS_OFFSET);
@@ -414,6 +413,25 @@ public:
 
     DECL_DUMP()
 };
+
+class JSIntlBoundFunction : public JSFunction {
+public:
+    static JSIntlBoundFunction *Cast(ObjectHeader *object)
+    {
+        ASSERT(JSTaggedValue(object).IsJSIntlBoundFunction());
+        return static_cast<JSIntlBoundFunction *>(object);
+    }
+
+    static JSTaggedValue IntlNameGetter(JSThread *thread, const JSHandle<JSObject> &self);
+
+    static constexpr size_t NUMBER_FORMAT_OFFSET = JSFunction::SIZE;
+
+    ACCESSORS(NumberFormat, NUMBER_FORMAT_OFFSET, DATETIME_FORMAT_OFFSET);
+    ACCESSORS(DateTimeFormat, DATETIME_FORMAT_OFFSET, COLLATOR_OFFSET);
+    ACCESSORS(Collator, COLLATOR_OFFSET, SIZE);
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunction, NUMBER_FORMAT_OFFSET, SIZE)
+};
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSFUCNTION_H
+#endif  // ECMASCRIPT_JSFUCNTION_H

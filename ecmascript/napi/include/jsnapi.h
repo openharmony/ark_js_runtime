@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_H
-#define PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_H
+#ifndef ECMASCRIPT_NAPI_INCLUDE_JSNAPI_H
+#define ECMASCRIPT_NAPI_INCLUDE_JSNAPI_H
 
 #include <cassert>
 #include <cstdint>
@@ -27,7 +27,7 @@
 namespace panda {
 class JSNApiHelper;
 class EscapeLocalScope;
-template <typename T>
+template<typename T>
 class Global;
 class JSNApi;
 class PrimitiveRef;
@@ -37,6 +37,7 @@ class ObjectRef;
 class FunctionRef;
 class NumberRef;
 class BooleanRef;
+class NativePointerRef;
 namespace test {
 class JSNApiTests;
 }  // namespace test
@@ -45,6 +46,7 @@ namespace ecmascript {
 class EcmaVM;
 }  // namespace ecmascript
 
+using Deleter = void (*)(void *buffer, void *data);
 using EcmaVM = ecmascript::EcmaVM;
 using JSTaggedType = uint64_t;
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
@@ -59,12 +61,15 @@ static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
     className(className &&) = delete; \
     className &operator=(className &&) = delete
 
-template <typename T>
+template<typename T>
 class PUBLIC_API Local {  // NOLINT(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
 public:
     inline Local() = default;
 
-    template <typename S>
+    // Non-empty initial value.
+    explicit Local(const EcmaVM *vm);
+
+    template<typename S>
     inline Local(const Local<S> &current) : address_(reinterpret_cast<uintptr_t>(*current))
     {
         // Check
@@ -115,12 +120,15 @@ private:
     friend EscapeLocalScope;
 };
 
-template <typename T>
+template<typename T>
 class PUBLIC_API Global {  // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions
 public:
     inline Global() = default;
 
-    template <typename S>
+    // Non-empty initial value.
+    explicit Global(const EcmaVM *vm);
+
+    template<typename S>
     Global(const EcmaVM *vm, const Local<S> &current);
     ~Global() = default;
 
@@ -152,6 +160,10 @@ public:
         return IsEmpty() || GetAddress()->IsException();
     }
 
+    void SetWeak();
+
+    bool IsWeak() const;
+
 private:
     inline T *GetAddress() const
     {
@@ -173,6 +185,7 @@ protected:
 private:
     void *prevNext_ = nullptr;
     void *prevEnd_ = nullptr;
+    int prevHandleStorageIndex_{-1};
     void *thread_ = nullptr;
 };
 
@@ -184,7 +197,7 @@ public:
     DISALLOW_COPY(EscapeLocalScope);
     DISALLOW_MOVE(EscapeLocalScope);
 
-    template <typename T>
+    template<typename T>
     inline Local<T> Escape(Local<T> current)
     {
         ASSERT(!alreadyEscape_);
@@ -227,6 +240,7 @@ public:
     Local<BooleanRef> ToBoolean(const EcmaVM *vm);
     Local<StringRef> ToString(const EcmaVM *vm);
     Local<ObjectRef> ToObject(const EcmaVM *vm);
+    Local<NativePointerRef> ToNativePointer(const EcmaVM *vm);
 
     bool IsUndefined();
     bool IsNull();
@@ -271,6 +285,11 @@ public:
     bool IsUint32Array();
     bool IsFloat32Array();
     bool IsFloat64Array();
+    bool IsJSPrimitiveRef();
+    bool IsJSPrimitiveNumber();
+    bool IsJSPrimitiveInt();
+    bool IsJSPrimitiveBoolean();
+    bool IsJSPrimitiveString();
 
     bool IsStrictEquals(const EcmaVM *vm, Local<JSValueRef> value);
     Local<StringRef> Typeof(const EcmaVM *vm);
@@ -279,9 +298,9 @@ public:
 private:
     JSTaggedType value_;
     friend JSNApi;
-    template <typename T>
+    template<typename T>
     friend class Global;
-    template <typename T>
+    template<typename T>
     friend class Local;
 };
 
@@ -291,6 +310,7 @@ class PUBLIC_API PrimitiveRef : public JSValueRef {
 class PUBLIC_API IntegerRef : public PrimitiveRef {
 public:
     static Local<IntegerRef> New(const EcmaVM *vm, int input);
+    static Local<IntegerRef> NewFromUnsigned(const EcmaVM *vm, unsigned int input);
     int Value();
 };
 
@@ -480,7 +500,11 @@ public:
 
     bool Delete(const EcmaVM *vm, Local<JSValueRef> key);
     bool Delete(const EcmaVM *vm, uint32_t key);
-    // Private
+
+    void SetNativePointerFieldCount(int32_t count);
+    int32_t GetNativePointerFieldCount();
+    void *GetNativePointerField(int32_t index);
+    void SetNativePointerField(int32_t index, void *data);
 };
 
 using FunctionCallback = Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>,
@@ -491,7 +515,9 @@ using FunctionCallbackWithNewTarget =
 class PUBLIC_API FunctionRef : public ObjectRef {
 public:
     static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, void *data);
-    static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, void *data);
+    static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter, void *data);
+    static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, Deleter deleter,
+        void *data);
     Local<JSValueRef> Call(const EcmaVM *vm, Local<JSValueRef> thisObj, const Local<JSValueRef> argv[],
         int32_t length);
     Local<JSValueRef> Constructor(const EcmaVM *vm, const Local<JSValueRef> argv[], int32_t length);
@@ -505,6 +531,8 @@ class PUBLIC_API ArrayRef : public ObjectRef {
 public:
     static Local<ArrayRef> New(const EcmaVM *vm, int32_t length = 0);
     int32_t Length(const EcmaVM *vm);
+    static bool SetValueAt(const EcmaVM *vm, Local<JSValueRef> obj, uint32_t index, Local<JSValueRef> value);
+    static Local<JSValueRef> GetValueAt(const EcmaVM *vm, Local<JSValueRef> obj, uint32_t index);
 };
 
 class PUBLIC_API PromiseRef : public ObjectRef {
@@ -522,7 +550,6 @@ public:
     Local<PromiseRef> GetPromise(const EcmaVM *vm);
 };
 
-using Deleter = void (*)(void *buffer, void *data);
 class PUBLIC_API ArrayBufferRef : public ObjectRef {
 public:
     static Local<ArrayBufferRef> New(const EcmaVM *vm, int32_t length);
@@ -776,22 +803,32 @@ private:
 
     static uintptr_t GetHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
     static uintptr_t GetGlobalHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
+    static uintptr_t SetWeak(const EcmaVM *vm, uintptr_t localAddress);
+    static bool IsWeak(const EcmaVM *vm, uintptr_t localAddress);
     static void DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr);
-    template <typename T>
+    static uintptr_t GetGlobalUndefinedAddr(const EcmaVM *vm);
+    template<typename T>
     friend class Global;
-    template <typename T>
+    template<typename T>
     friend class Local;
     friend class test::JSNApiTests;
 };
 
-template <typename T>
-template <typename S>
+
+template<typename T>
+Global<T>::Global(const EcmaVM *vm)
+{
+    address_ = JSNApi::GetGlobalUndefinedAddr(vm);
+}
+
+template<typename T>
+template<typename S>
 Global<T>::Global(const EcmaVM *vm, const Local<S> &current) : vm_(vm)
 {
     address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
 }
 
-template <typename T>
+template<typename T>
 void Global<T>::FreeGlobalHandleAddr()
 {
     if (address_ == 0) {
@@ -801,11 +838,29 @@ void Global<T>::FreeGlobalHandleAddr()
     address_ = 0;
 }
 
+template<typename T>
+void Global<T>::SetWeak()
+{
+    address_ = JSNApi::SetWeak(vm_, address_);
+}
+
+template<typename T>
+bool Global<T>::IsWeak() const
+{
+    return JSNApi::IsWeak(vm_, address_);
+}
+
 // ---------------------------------- Local --------------------------------------------
-template <typename T>
+template<typename T>
+Local<T>::Local(const EcmaVM *vm)
+{
+    address_ = JSNApi::GetGlobalUndefinedAddr(vm);
+}
+
+template<typename T>
 Local<T>::Local(const EcmaVM *vm, const Global<T> &current)
 {
     address_ = JSNApi::GetHandleAddr(vm, reinterpret_cast<uintptr_t>(*current));
 }
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSNAPI_JSNAPI_H
+#endif  // ECMASCRIPT_NAPI_INCLUDE_JSNAPI_H

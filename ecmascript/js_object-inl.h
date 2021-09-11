@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSOBJECT_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSOBJECT_INL_H
+#ifndef ECMASCRIPT_JSOBJECT_INL_H
+#define ECMASCRIPT_JSOBJECT_INL_H
 
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/js_typed_array.h"
 #include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript {
@@ -129,6 +130,11 @@ inline bool JSObject::IsJSFunction() const
 inline bool JSObject::IsBoundFunction() const
 {
     return GetJSHClass()->IsJsBoundFunction();
+}
+
+inline bool JSObject::IsJSIntlBoundFunction() const
+{
+    return GetJSHClass()->IsJSIntlBoundFunction();
 }
 
 inline bool JSObject::IsProxyRevocFunction() const
@@ -272,7 +278,7 @@ inline uint32_t JSObject::ComputePropertyCapacity(uint32_t oldCapacity)
 }
 
 // static
-template <ElementTypes types>
+template<ElementTypes types>
 JSHandle<JSTaggedValue> JSObject::CreateListFromArrayLike(JSThread *thread, const JSHandle<JSTaggedValue> &obj)
 {
     // 3. If Type(obj) is not Object, throw a TypeError exception.
@@ -296,6 +302,12 @@ JSHandle<JSTaggedValue> JSObject::CreateListFromArrayLike(JSThread *thread, cons
     // 6. Let list be an empty List.
     JSHandle<TaggedArray> array = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(len);
 
+    if (obj->IsTypedArray()) {
+        JSTypedArray::FastCopyElementToArray(thread, obj, array);
+        // c. ReturnIfAbrupt(next).
+        RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
+        return JSHandle<JSTaggedValue>(array);
+    }
     // 8. Repeat while index < len
     for (uint32_t i = 0; i < len; i++) {
         JSTaggedValue next = JSTaggedValue::GetProperty(thread, obj, i).GetValue().GetTaggedValue();
@@ -314,4 +326,4 @@ JSHandle<JSTaggedValue> JSObject::CreateListFromArrayLike(JSThread *thread, cons
     return JSHandle<JSTaggedValue>(array);
 }
 }  //  namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSOBJECT_INL_H
+#endif  // ECMASCRIPT_JSOBJECT_INL_H

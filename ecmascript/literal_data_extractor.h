@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H
+#ifndef ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H
+#define ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H
 
 #include "ecmascript/class_linker/panda_file_translator.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -39,4 +39,4 @@ public:
                                                     PandaFileTranslator *pft = nullptr);
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H
+#endif  // ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H

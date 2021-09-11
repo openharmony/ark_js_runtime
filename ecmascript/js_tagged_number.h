@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_NUMBER_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_NUMBER_H
+#ifndef ECMASCRIPT_JS_NUMBER_H
+#define ECMASCRIPT_JS_NUMBER_H
 
 #include "ecmascript/base/number_helper.h"
 
@@ -171,4 +171,4 @@ private:
 };
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_NUMBER_H
+#endif  // ECMASCRIPT_JS_NUMBER_H

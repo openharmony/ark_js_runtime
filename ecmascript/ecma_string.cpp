@@ -83,7 +83,7 @@ EcmaString *EcmaString::FastSubString(const JSHandle<EcmaString> &src, uint32_t 
         return vm->GetFactory()->GetEmptyString().GetObject<EcmaString>();
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    bool canBeCompressed = !src->IsUtf16() || CanBeCompressed(src->GetDataUtf16() + start, utf16Len);
+    bool canBeCompressed = !src->IsUtf16();
 
     // allocator may trig gc and move src, need to hold it
     auto string = AllocStringObject(utf16Len, canBeCompressed, vm);
@@ -108,7 +108,7 @@ EcmaString *EcmaString::FastSubString(const JSHandle<EcmaString> &src, uint32_t 
     return string;
 }
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 int32_t CompareStringSpan(Span<T1> &lhsSp, Span<T2> &rhsSp, int32_t count)
 {
     for (int32_t i = 0; i < count; ++i) {
@@ -164,7 +164,7 @@ int32_t EcmaString::Compare(const EcmaString *rhs) const
 }
 
 /* static */
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 int32_t EcmaString::IndexOf(Span<const T1> &lhsSp, Span<const T2> &rhsSp, int32_t pos, int32_t max)
 {
     ASSERT(rhsSp.size() > 0);
@@ -172,7 +172,9 @@ int32_t EcmaString::IndexOf(Span<const T1> &lhsSp, Span<const T2> &rhsSp, int32_
     int32_t i;
     for (i = pos; i <= max; i++) {
         if (static_cast<int32_t>(lhsSp[i]) != first) {
-            while (++i <= max && static_cast<int32_t>(lhsSp[i]) != first) {
+            i++;
+            while (i <= max && static_cast<int32_t>(lhsSp[i]) != first) {
+                i++;
             }
         }
         /* Found first character, now look at the rest of rhsSp */
@@ -212,6 +214,9 @@ int32_t EcmaString::IndexOf(const EcmaString *rhs, int32_t pos) const
     }
 
     int32_t max = lhsCount - rhsCount;
+    if (max < 0) {
+        return -1;
+    }
     if (rhs->IsUtf8() && lhs->IsUtf8()) {
         Span<const uint8_t> lhsSp(lhs->GetDataUtf8(), lhsCount);
         Span<const uint8_t> rhsSp(rhs->GetDataUtf8(), rhsCount);
@@ -300,24 +305,22 @@ bool EcmaString::StringsAreEqual(EcmaString *str1, EcmaString *str2)
 }
 
 /* static */
-bool EcmaString::StringsAreEqualUtf8(const EcmaString *str1, const uint8_t *utf8Data, uint32_t utf8Len)
+bool EcmaString::StringsAreEqualUtf8(const EcmaString *str1, const uint8_t *utf8Data, uint32_t utf8Len,
+                                     bool canBeCompress)
 {
-    bool str1CanBeCompressed = str1->IsUtf8();
-    if (str1CanBeCompressed && str1->GetLength() != utf8Len) {
+    if (canBeCompress != str1->IsUtf8()) {
         return false;
     }
 
-    bool str2CanBeCompressed = EcmaString::CanBeCompressed(utf8Data);
-    if (str1CanBeCompressed != str2CanBeCompressed) {
+    if (canBeCompress && str1->GetLength() != utf8Len) {
         return false;
     }
 
-    if (str1CanBeCompressed) {
-        Span<const uint8_t> data1(str1->GetDataUtf8(), str1->GetLength());
+    if (canBeCompress) {
+        Span<const uint8_t> data1(str1->GetDataUtf8(), utf8Len);
         Span<const uint8_t> data2(utf8Data, utf8Len);
         return EcmaString::StringsAreEquals(data1, data2);
     }
-
     return IsUtf8EqualsUtf16(utf8Data, str1->GetDataUtf16(), str1->GetLength());
 }
 
@@ -338,7 +341,7 @@ bool EcmaString::StringsAreEqualUtf16(const EcmaString *str1, const uint16_t *ut
 }
 
 /* static */
-template <typename T>
+template<typename T>
 bool EcmaString::StringsAreEquals(Span<const T> &str1, Span<const T> &str2)
 {
     ASSERT(str1.Size() <= str2.Size());
@@ -354,7 +357,7 @@ bool EcmaString::StringsAreEquals(Span<const T> &str1, Span<const T> &str2)
     return !memcmp(str1.data(), str2.data(), size);
 }
 
-template <typename T>
+template<typename T>
 bool EcmaString::StringCopy(Span<T> &dst, size_t dstMax, Span<const T> &src, size_t count)
 {
     ASSERT(dstMax >= count);
@@ -372,7 +375,7 @@ bool EcmaString::StringCopy(Span<T> &dst, size_t dstMax, Span<const T> &src, siz
     return true;
 }
 
-template <class T>
+template<class T>
 static int32_t ComputeHashForData(const T *data, size_t size)
 {
     uint32_t hash = 0;
@@ -419,11 +422,10 @@ uint32_t EcmaString::ComputeHashcode() const
 }
 
 /* static */
-uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data)
+uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, bool canBeCompress)
 {
-    bool canBeCompressed = EcmaString::CanBeCompressed(utf8Data);
     uint32_t hash;
-    if (canBeCompressed) {
+    if (canBeCompress) {
         hash = ComputeHashForUtf8(utf8Data);
     } else {
         auto utf16Len = base::utf_helper::Utf8ToUtf16Size(utf8Data);

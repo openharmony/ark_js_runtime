@@ -16,6 +16,7 @@
 #include "builtins_weak_set.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_invoker.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_weak_container.h"
@@ -56,7 +57,7 @@ JSTaggedValue BuiltinsWeakSet::WeakSetConstructor(EcmaRuntimeCallInfo *argv)
         return weakSet.GetTaggedValue();
     }
     // Let adder be Get(weakset, "add").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromString("add"));
+    JSHandle<JSTaggedValue> adderKey(factory->NewFromCanBeCompressString("add"));
     JSHandle<JSTaggedValue> weakSetHandle(weakSet);
     JSHandle<JSTaggedValue> adder = JSObject::GetProperty(thread, weakSetHandle, adderKey).GetValue();
     // ReturnIfAbrupt(adder).
@@ -82,13 +83,14 @@ JSTaggedValue BuiltinsWeakSet::WeakSetConstructor(EcmaRuntimeCallInfo *argv)
         JSHandle<JSTaggedValue> nextValue(JSIterator::IteratorValue(thread, next));
         // ReturnIfAbrupt(nextValue).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, nextValue.GetTaggedValue());
-        JSHandle<TaggedArray> array(factory->NewTaggedArray(1));
-        array->Set(thread, 0, nextValue);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(nextValue);
         if (nextValue->IsArray(thread)) {
             auto prop = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
-            array->Set(thread, 0, prop);
+            arguments->MakeArgv(prop);
         }
-        JSTaggedValue ret = JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(weakSet), array);
+        JSTaggedValue ret = JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(weakSet), 1, arguments->GetArgv());
+
         // Let status be Call(adder, weakset, «nextValue.[[value]]»).
         status.Update(ret);
         // If status is an abrupt completion, return IteratorClose(iter, status).

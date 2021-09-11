@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ARRAYBUFFER_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ARRAYBUFFER_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_ARRAYBUFFER_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_ARRAYBUFFER_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/base/number_helper.h"
@@ -24,6 +24,8 @@ namespace panda::ecmascript::builtins {
 static constexpr double NUMBER_HALF = 0.5;
 static constexpr uint32_t BITS_EIGHT = 8;
 static constexpr uint32_t BITS_TWENTY_FOUR = 24;
+static constexpr uint32_t BITS_FORTY = 40;
+static constexpr uint32_t BITS_FIFTY_SIX = 56;
 using DataViewType = ecmascript::DataViewType;
 class BuiltinsArrayBuffer : public base::BuiltinsBase {
 public:
@@ -56,34 +58,30 @@ public:
 
 private:
     template <typename T>
-    static T TransformIntToBigEndian(T liValue);
+    static T LittleEndianToBigEndian(T liValue);
 
-    template <typename T>
-    static T TransformFloatToBigEndian(T fValue);
+    static uint64_t LittleEndianToBigEndianUint64(uint64_t liValue);
 
-    template <typename T>
-    static T TransformByteToNumber(uint8_t *block, int32_t index, uint8_t *tmpArr, int32_t size);
-
-    template <typename T>
+    template<typename T>
     static void SetTypeData(uint8_t *block, T value, int32_t index);
 
-    template <typename T, NumberSize size>
+    template<typename T, NumberSize size>
     static JSTaggedValue GetValueFromBufferForInteger(uint8_t *block, int32_t byteIndex, bool littleEndian);
 
-    template <typename T, NumberSize size>
+    template<typename T, NumberSize size>
     static JSTaggedValue GetValueFromBufferForFloat(uint8_t *block, int32_t byteIndex, bool littleEndian);
 
-    template <typename T>
+    template<typename T>
     static void SetValueInBufferForByte(double val, uint8_t *block, int32_t byteIndex);
 
     static void SetValueInBufferForUint8Clamped(double val, uint8_t *block, int32_t byteIndex);
 
-    template <typename T>
+    template<typename T>
     static void SetValueInBufferForInteger(double val, uint8_t *block, int32_t byteIndex, bool littleEndian);
 
-    template <typename T>
+    template<typename T>
     static void SetValueInBufferForFloat(double val, uint8_t *block, int32_t byteIndex, bool littleEndian);
 };
 }  // namespace panda::ecmascript::builtins
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BUILTINS_ARRAYBUFFER_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_ARRAYBUFFER_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_DICTIONARY_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_DICTIONARY_H
+#ifndef ECMASCRIPT_TAGGED_DICTIONARY_H
+#define ECMASCRIPT_TAGGED_DICTIONARY_H
 
 #include "ecmascript/tagged_hash_table.h"
 
@@ -118,4 +118,4 @@ public:
     static constexpr int ENTRY_SIZE = 3;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_NEW_DICTIONARY_H
+#endif  // ECMASCRIPT_NEW_DICTIONARY_H

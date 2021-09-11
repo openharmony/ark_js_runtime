@@ -22,43 +22,45 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/stub_interface.h"
 #include "ecmascript/js_array.h"
+#include "ecmascript/js_thread.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/Host.h"
 #include "llvm_mcjit_compiler.h"
 #include "securec.h"
+#include "utils/logger.h"
 
 namespace kungfu {
 std::unordered_map<int, LLVMValueRef> g_values = {};
 
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit)
-    : m_schedule(schedule), m_circuit(circuit)
+    : schedule_(schedule), circuit_(circuit)
 {
-    m_module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(m_module, "x86_64-unknown-linux-gnu");
-    m_builder = LLVMCreateBuilder();
-    m_context = LLVMGetGlobalContext();
+    module_ = LLVMModuleCreateWithName("simple_module");
+    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
+    builder_ = LLVMCreateBuilder();
+    context_ = LLVMGetGlobalContext();
     LLVMTypeRef paramTys[] = {
         LLVMInt32Type(),
     };
-    m_function = LLVMAddFunction(m_module, "foo", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
-    m_bbIdMapBb.clear();
+    function_ = LLVMAddFunction(module_, "foo", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
+    bbIdMapBb_.clear();
 }
 
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                              LLVMModuleRef module, LLVMValueRef function)
-    : m_schedule(schedule), m_circuit(circuit), m_module(module), m_function(function)
+    : schedule_(schedule), circuit_(circuit), module_(module), function_(function)
 {
-    LLVMSetTarget(m_module, "x86_64-unknown-linux-gnu");
-    m_builder = LLVMCreateBuilder();
-    m_context = LLVMGetGlobalContext();
-    m_bbIdMapBb.clear();
+    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
+    builder_ = LLVMCreateBuilder();
+    context_ = LLVMGetGlobalContext();
+    bbIdMapBb_.clear();
 }
 
 int LLVMIRBuilder::FindBasicBlock(AddrShift gate) const
 {
-    for (size_t bbIdx = 0; bbIdx < m_schedule->size(); bbIdx++) {
-        for (size_t instIdx = (*m_schedule)[bbIdx].size(); instIdx > 0; instIdx--) {
-            AddrShift tmp = (*m_schedule)[bbIdx][instIdx - 1];
+    for (size_t bbIdx = 0; bbIdx < schedule_->size(); bbIdx++) {
+        for (size_t instIdx = (*schedule_)[bbIdx].size(); instIdx > 0; instIdx--) {
+            AddrShift tmp = (*schedule_)[bbIdx][instIdx - 1];
             if (tmp == gate) {
                 return bbIdx;
             }
@@ -69,37 +71,37 @@ int LLVMIRBuilder::FindBasicBlock(AddrShift gate) const
 
 void LLVMIRBuilder::Build()
 {
-    std::cout << "LLVM IR Builder Create Id Map of Blocks..." << std::endl;
-    for (size_t bbIdx = 0; bbIdx < m_schedule->size(); bbIdx++) {
-        for (size_t instIdx = (*m_schedule)[bbIdx].size(); instIdx > 0; instIdx--) {
-            GateId gateId = m_circuit->GetId((*m_schedule)[bbIdx][instIdx - 1]);
-            m_instIdMapBbId[gateId] = bbIdx;
+    LOG_ECMA(INFO) << "LLVM IR Builder Create Id Map of Blocks...";
+    for (size_t bbIdx = 0; bbIdx < schedule_->size(); bbIdx++) {
+        for (size_t instIdx = (*schedule_)[bbIdx].size(); instIdx > 0; instIdx--) {
+            GateId gateId = circuit_->GetId((*schedule_)[bbIdx][instIdx - 1]);
+            instIdMapBbId_[gateId] = bbIdx;
         }
     }
 
-    std::cout << "LLVM IR Builder Visit Gate..." << std::endl;
-    for (size_t bbIdx = 0; bbIdx < (*m_schedule).size(); bbIdx++) {
+    LOG_ECMA(INFO) << "LLVM IR Builder Visit Gate...";
+    for (size_t bbIdx = 0; bbIdx < (*schedule_).size(); bbIdx++) {
         OperandsVector predecessors;
-        for (auto in : m_circuit->GetInVector((*m_schedule)[bbIdx][0])) {
-            if (!m_circuit->GetOpCode(in).IsState()) {
+        for (auto in : circuit_->GetInVector((*schedule_)[bbIdx][0])) {
+            if (!circuit_->GetOpCode(in).IsState()) {
                 continue;
             }
-            predecessors.insert(m_instIdMapBbId[m_circuit->GetId(in)]);
+            predecessors.insert(instIdMapBbId_[circuit_->GetId(in)]);
         }
         VisitBlock(bbIdx, predecessors);
 
-        for (size_t instIdx = (*m_schedule)[bbIdx].size(); instIdx > 0; instIdx--) {
-            AddrShift gate = (*m_schedule)[bbIdx][instIdx - 1];
-            std::vector<AddrShift> ins = m_circuit->GetInVector(gate);
-            std::vector<AddrShift> outs = m_circuit->GetOutVector(gate);
-            switch (m_circuit->GetOpCode(gate)) {
+        for (size_t instIdx = (*schedule_)[bbIdx].size(); instIdx > 0; instIdx--) {
+            AddrShift gate = (*schedule_)[bbIdx][instIdx - 1];
+            std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+            std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+            switch (circuit_->GetOpCode(gate)) {
                 case OpCode::NOP:
                     break;
                 case OpCode::CIRCUIT_ROOT:
                     break;
                 case OpCode::STATE_ENTRY: {
-                    int block = m_instIdMapBbId[m_circuit->GetId(gate)];
-                    int bbOut = m_instIdMapBbId[m_circuit->GetId(outs[0])];
+                    int block = instIdMapBbId_[circuit_->GetId(gate)];
+                    int bbOut = instIdMapBbId_[circuit_->GetId(outs[0])];
                     VisitGoto(block, bbOut);
                     break;
                 }
@@ -123,10 +125,10 @@ void LLVMIRBuilder::Build()
                 case OpCode::THROW:
                     break;
                 case OpCode::IF_BRANCH: {
-                    AddrShift bTrue = (m_circuit->GetOpCode(outs[0]) == OpCode::IF_TRUE) ? outs[0] : outs[1];
-                    AddrShift bFalse = (m_circuit->GetOpCode(outs[0]) == OpCode::IF_FALSE) ? outs[0] : outs[1];
-                    int bbTrue = m_instIdMapBbId[m_circuit->GetId(bTrue)];
-                    int bbFalse = m_instIdMapBbId[m_circuit->GetId(bFalse)];
+                    AddrShift bTrue = (circuit_->GetOpCode(outs[0]) == OpCode::IF_TRUE) ? outs[0] : outs[1];
+                    AddrShift bFalse = (circuit_->GetOpCode(outs[0]) == OpCode::IF_FALSE) ? outs[0] : outs[1];
+                    int bbTrue = instIdMapBbId_[circuit_->GetId(bTrue)];
+                    int bbFalse = instIdMapBbId_[circuit_->GetId(bFalse)];
                     VisitBranch(gate, ins[1], bbTrue, bbFalse);
                     break;
                 }
@@ -139,32 +141,32 @@ void LLVMIRBuilder::Build()
                 case OpCode::IF_FALSE:
                 case OpCode::SWITCH_CASE:
                 case OpCode::DEFAULT_CASE: {
-                    int block = m_instIdMapBbId[m_circuit->GetId(gate)];
-                    int bbOut = m_instIdMapBbId[m_circuit->GetId(outs[0])];
+                    int block = instIdMapBbId_[circuit_->GetId(gate)];
+                    int bbOut = instIdMapBbId_[circuit_->GetId(outs[0])];
                     VisitGoto(block, bbOut);
                     break;
                 }
                 case OpCode::MERGE: {
-                    int block = m_instIdMapBbId[m_circuit->GetId(gate)];
+                    int block = instIdMapBbId_[circuit_->GetId(gate)];
                     int bbOut;
                     for (int i = 0; i < static_cast<int>(outs.size()); i++) {
-                        bbOut = m_instIdMapBbId[m_circuit->GetId(outs[i])];
+                        bbOut = instIdMapBbId_[circuit_->GetId(outs[i])];
                         VisitGoto(block, bbOut);
                     }
                     break;
                 }
                 case OpCode::LOOP_BEGIN: {
-                    int block = m_instIdMapBbId[m_circuit->GetId(gate)];
+                    int block = instIdMapBbId_[circuit_->GetId(gate)];
                     int bbOut;
                     for (int i = 0; i < static_cast<int>(outs.size()); i++) {
-                        bbOut = m_instIdMapBbId[m_circuit->GetId(outs[i])];
+                        bbOut = instIdMapBbId_[circuit_->GetId(outs[i])];
                         VisitGoto(block, bbOut);
                     }
                     break;
                 }
                 case OpCode::LOOP_BACK: {
-                    int block = m_instIdMapBbId[m_circuit->GetId(gate)];
-                    int bbOut = m_instIdMapBbId[m_circuit->GetId(outs[0])];
+                    int block = instIdMapBbId_[circuit_->GetId(gate)];
+                    int bbOut = instIdMapBbId_[circuit_->GetId(outs[0])];
                     VisitGoto(block, bbOut);
                     break;
                 }
@@ -199,25 +201,25 @@ void LLVMIRBuilder::Build()
                     VisitAlloca(gate);
                     break;
                 }
-                case OpCode::INT1_ARG: // no break, fall through
+                case OpCode::INT1_ARG:   // no break, fall through
                 case OpCode::INT32_ARG:  // no break, fall through
                 case OpCode::INT64_ARG: {
                     VisitParameter(gate);
                     break;
                 }
                 case OpCode::INT32_CONSTANT: {
-                    int32_t value = m_circuit->GetBitField(gate);
+                    int32_t value = circuit_->GetBitField(gate);
                     VisitInt32Constant(gate, value);
                     break;
                 }
-                case OpCode::JS_CONSTANT: // no break, fall through
+                case OpCode::JS_CONSTANT:  // no break, fall through
                 case OpCode::INT64_CONSTANT: {
-                    int64_t value = m_circuit->GetBitField(gate);
+                    int64_t value = circuit_->GetBitField(gate);
                     VisitInt64Constant(gate, value);
                     break;
                 }
                 case OpCode::FLOAT64_CONSTANT: {
-                    int64_t value = m_circuit->GetBitField(gate);
+                    int64_t value = circuit_->GetBitField(gate);
                     VisitFloat64Constant(gate, value);
                     break;
                 }
@@ -297,7 +299,11 @@ void LLVMIRBuilder::Build()
                     VisitIntOr(gate, ins[0], ins[1]);
                     break;
                 }
-                case OpCode::INT32_LSR: // no break, fall through
+                case OpCode::INT64_XOR: {
+                    VisitIntXor(gate, ins[0], ins[1]);
+                    break;
+                }
+                case OpCode::INT32_LSR:  // no break, fall through
                 case OpCode::INT64_LSR: {
                     VisitIntLsr(gate, ins[0], ins[1]);
                     break;
@@ -328,7 +334,7 @@ void LLVMIRBuilder::Build()
                     break;
                 }
                 case OpCode::FLOAT64_EQ: {
-                    VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealUEQ);
+                    VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOEQ);
                     break;
                 }
                 case OpCode::INT32_NE:  // no break, fall through
@@ -347,14 +353,14 @@ void LLVMIRBuilder::Build()
                     break;
                 }
                 case OpCode::INT32_STORE: {
-                    VisitStore(gate, MachineRep::K_WORD32, ins[2], ins[1]); // 2:baseAddr gate, 1:data gate
+                    VisitStore(gate, MachineRep::K_WORD32, ins[2], ins[1]);  // 2:baseAddr gate, 1:data gate
                     break;
                 }
                 case OpCode::INT64_STORE: {
-                    VisitStore(gate, MachineRep::K_WORD64, ins[2], ins[1]); // 2:baseAddr gate, 1:data gate
+                    VisitStore(gate, MachineRep::K_WORD64, ins[2], ins[1]);  // 2:baseAddr gate, 1:data gate
                     break;
                 }
-                case OpCode::INT32_TO_FLOAT64: // no break, fall through
+                case OpCode::INT32_TO_FLOAT64:  // no break, fall through
                 case OpCode::INT64_TO_FLOAT64: {
                     VisitCastIntToDouble(gate, ins[0]);
                     break;
@@ -364,8 +370,8 @@ void LLVMIRBuilder::Build()
                     break;
                 }
                 default: {
-                    std::cout << "The gate below need to be translated " << std::endl;
-                    m_circuit->Print(gate);
+                    LOG_ECMA(ERROR) << "The gate below need to be translated ";
+                    circuit_->Print(gate);
                     UNREACHABLE();
                 }
             }
@@ -377,12 +383,12 @@ void LLVMIRBuilder::Build()
 BasicBlock *LLVMIRBuilder::EnsurBasicBlock(int id)
 {
     BasicBlock *bb = nullptr;
-    if (m_bbIdMapBb.count(id) == 0) {
+    if (bbIdMapBb_.count(id) == 0) {
         auto newBB = std::make_unique<BasicBlock>(id);
         bb = newBB.get();
-        m_bbIdMapBb[id] = std::move(newBB);
+        bbIdMapBb_[id] = std::move(newBB);
     } else {
-        bb = m_bbIdMapBb[id].get();
+        bb = bbIdMapBb_[id].get();
     }
     return bb;
 }
@@ -392,50 +398,49 @@ void LLVMIRBuilder::StartLLVMBuilder(BasicBlock *bb) const
     EnsureLLVMBB(bb);
     LLVMTFBuilderBasicBlockImpl *impl = bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     if ((impl == nullptr) || (impl->llvm_bb_ == nullptr)) {
-        std::cerr << "StartLLVMBuilder failed " << std::endl;
+        LOG_ECMA(ERROR) << "StartLLVMBuilder failed ";
         return;
     }
     impl->started = true;
     bb->SetImpl(impl);
-    std::cout << "Basicblock id :" << bb->GetId() <<
-        "impl:" << bb->GetImpl<LLVMTFBuilderBasicBlockImpl>() << std::endl;
-    LLVMPositionBuilderAtEnd(m_builder, impl->llvm_bb_);
+    LOG_ECMA(DEBUG) << "Basicblock id :" << bb->GetId() << "impl:" << bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
+    LLVMPositionBuilderAtEnd(builder_, impl->llvm_bb_);
 }
 
 void LLVMIRBuilder::ProcessPhiWorkList()
 {
-    for (BasicBlock *bb : m_phiRebuildWorklist) {
+    for (BasicBlock *bb : phiRebuildWorklist_) {
         auto impl = bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
         for (auto &e : impl->not_merged_phis) {
             BasicBlock *pred = e.pred;
             if (impl->started == 0) {
-                std::cerr << " ProcessPhiWorkList error hav't start " << std::endl;
+                LOG_ECMA(ERROR) << " ProcessPhiWorkList error hav't start ";
                 return;
             }
             LLVMValueRef value = g_values[e.operand];
             if (LLVMTypeOf(value) != LLVMTypeOf(e.phi)) {
-                std::cerr << " ProcessPhiWorkList LLVMTypeOf don't match error " << std::endl;
+                LOG_ECMA(ERROR) << " ProcessPhiWorkList LLVMTypeOf don't match error ";
             }
             LLVMBasicBlockRef llvmBB = EnsureLLVMBB(pred);
             LLVMAddIncoming(e.phi, &value, &llvmBB, 1);
         }
         impl->not_merged_phis.clear();
     }
-    m_phiRebuildWorklist.clear();
+    phiRebuildWorklist_.clear();
 }
 
 void LLVMIRBuilder::EndCurrentBlock() const
 {
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
+    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     impl->ended = true;
 }
 
 void LLVMIRBuilder::End()
 {
-    ASSERT(!!m_currentBb);
+    ASSERT(!!currentBb_);
     EndCurrentBlock();
     ProcessPhiWorkList();
-    for (auto &it: m_bbIdMapBb) {
+    for (auto &it : bbIdMapBb_) {
         it.second->ResetImpl<LLVMTFBuilderBasicBlockImpl>();
     }
 }
@@ -450,6 +455,63 @@ LLVMTFBuilderBasicBlockImpl *LLVMIRBuilder::EnsureLLVMBBImpl(BasicBlock *bb) con
     return bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
 }
 
+void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builder)
+{
+    auto frameType = circuit_->GetFrameType();
+    LLVMAddTargetDependentFunctionAttr(function_, "frame-pointer", "all");
+
+    if (frameType == panda::ecmascript::FrameType::OPTIMIZED_FRAME) {
+        LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "0");
+    } else if (frameType == panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME) {
+        LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "1");
+    } else {
+        LOG_ECMA(DEBUG) << "frameType interpret type error !";
+    }
+
+    if (frameType != panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME) {
+        return;
+    }
+
+    LLVMValueRef baseAddr = LLVMCallingFp(module_, builder_);
+    /* current frame
+        0     pre rbp  <-- rbp
+        -8    type
+        -16    pre frame thread fp
+    */
+    LLVMValueRef thread = LLVMGetParam(function_, 0);
+    LLVMValueRef rtoffset = LLVMConstInt(LLVMInt64Type(),
+                                         panda::ecmascript::JSThread::GetCurrentFrameOffset(),
+                                         0);
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, thread, rtoffset, "");
+
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(LLVMInt64Type(), 0), "");
+    LLVMValueRef threadFpValue = LLVMBuildLoad(builder_, rtbaseAddr, "");
+    LLVMValueRef value = LLVMBuildStore(builder_, threadFpValue, baseAddr);
+    LOG_ECMA(INFO) << "store value:" << value << " "
+                << "value type" << LLVMTypeOf(value);
+}
+
+LLVMValueRef LLVMIRBuilder::LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder)
+{
+    /* 0:calling 1:its caller */
+    std::vector<LLVMValueRef> args = {LLVMConstInt(LLVMInt32Type(), 0, false)};
+    auto fn = LLVMGetNamedFunction(module, "llvm.frameaddress.p0i8");
+    if (!fn) {
+        /* init instrinsic function declare */
+        LLVMTypeRef paramTys1[] = {
+            LLVMInt32Type(),
+        };
+        auto fnTy = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0), paramTys1, 1, 0);
+        fn = LLVMAddFunction(module, "llvm.frameaddress.p0i8", fnTy);
+    }
+    LLVMValueRef fAddrRet = LLVMBuildCall(builder, fn, args.data(), 1, "");
+    LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder, fAddrRet, LLVMInt64Type(), "cast_int64_t");
+    LLVMValueRef addr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(LLVMInt64Type(),
+        16, false), ""); // 16:thread fp offset
+    LLVMValueRef preFpAddr = LLVMBuildIntToPtr(builder, addr, LLVMPointerType(LLVMInt64Type(), 0), "thread.fp.Addr");
+    return preFpAddr;
+}
+
 LLVMBasicBlockRef LLVMIRBuilder::EnsureLLVMBB(BasicBlock *bb) const
 {
     LLVMTFBuilderBasicBlockImpl *impl = EnsureLLVMBBImpl(bb);
@@ -457,12 +519,11 @@ LLVMBasicBlockRef LLVMIRBuilder::EnsureLLVMBB(BasicBlock *bb) const
         return impl->llvm_bb_;
     }
     std::string buf = "B" + std::to_string(bb->GetId());
-    LLVMBasicBlockRef llvmBB = LLVMAppendBasicBlock(m_function, buf.c_str());
+    LLVMBasicBlockRef llvmBB = LLVMAppendBasicBlock(function_, buf.c_str());
     impl->llvm_bb_ = llvmBB;
     impl->continuation = llvmBB;
     bb->SetImpl(impl);
-    std::cout << std::endl
-              << "create LLVMBB = " << buf << " impl:" << bb->GetImpl<LLVMTFBuilderBasicBlockImpl>() << std::endl;
+    LOG_ECMA(DEBUG) << "create LLVMBB = " << buf << " impl:" << bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     return llvmBB;
 }
 
@@ -471,19 +532,19 @@ LLVMTypeRef LLVMIRBuilder::GetMachineRepType(MachineRep rep) const
     LLVMTypeRef dstType;
     switch (rep) {
         case MachineRep::K_BIT:
-            dstType = LLVMInt1TypeInContext(m_context);
+            dstType = LLVMInt1TypeInContext(context_);
             break;
         case MachineRep::K_WORD8:
-            dstType = LLVMInt8TypeInContext(m_context);
+            dstType = LLVMInt8TypeInContext(context_);
             break;
         case MachineRep::K_WORD32:
-            dstType = LLVMInt32TypeInContext(m_context);
+            dstType = LLVMInt32TypeInContext(context_);
             break;
         case MachineRep::K_FLOAT64:
-            dstType = LLVMDoubleTypeInContext(m_context);
+            dstType = LLVMDoubleTypeInContext(context_);
             break;
-        default: // 64bit int goes to default scenario
-            dstType = LLVMInt64TypeInContext(m_context);
+        default:  // 64bit int goes to default scenario
+            dstType = LLVMInt64TypeInContext(context_);
             break;
     }
     return dstType;
@@ -491,61 +552,79 @@ LLVMTypeRef LLVMIRBuilder::GetMachineRepType(MachineRep rep) const
 
 void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inList)
 {
-    constexpr int paraStartIndex = 2;
-    int index = m_circuit->GetBitField(inList[1]);
+    int paraStartIndex = 2;
+    int index = circuit_->GetBitField(inList[1]);
     LLVMValueRef callee = reinterpret_cast<LLVMValueRef>(FastStubs::GetInstance().GetFastStub(index));
-    LLVMValueRef params[16]; // 16: number of param
+    StubInterfaceDescriptor *callee_descriptor = FastStubs::GetInstance().GetStubDescriptor(index);
+    // runtime case
+    if (callee_descriptor->GetStubKind() == StubInterfaceDescriptor::RUNTIME_STUB) {
+        LLVMTypeRef rtfuncType = reinterpret_cast<LLVMTypeRef>(FastStubs::GetInstance().GetRunTimeLLVMType(index));
+        LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
+        LLVMValueRef thread = g_values[inList[2]];  // 2 : 2 means skip two input gates (target thread )
+        LLVMValueRef rtoffset = LLVMConstInt(LLVMInt64Type(),
+                                             panda::ecmascript::JSThread::GetRuntimeFunctionsOffset() +
+                                                 (index - FAST_STUB_MAXCOUNT) * sizeof(uintptr_t),
+                                             0);
+        LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, thread, rtoffset, "");
+        LLVMDumpValue(thread);
+        LLVMDumpValue(rtoffset);
+        LLVMDumpValue(rtbaseoffset);
+        LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(LLVMInt64Type(), 0), "");
+        LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
+        callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
+        std::cout << std::endl;
+        LLVMDumpValue(callee);
+        paraStartIndex += 1;
+    }
+    // 16 : params limit
+    LLVMValueRef params[16];
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
         AddrShift gateTmp = inList[paraIdx];
         params[paraIdx - paraStartIndex] = g_values[gateTmp];
-        m_circuit->Print(gateTmp);
-        std::cout << "arg" << paraIdx - paraStartIndex << " th " << std::endl;
-        LLVMDumpValue(params[paraIdx - paraStartIndex]);
-        std::cout << std::endl;
+        circuit_->Print(gateTmp);
+        LOG_ECMA(INFO) << "arg" << paraIdx - paraStartIndex << ": "
+                       << LLVMPrintValueToString(params[paraIdx - paraStartIndex]);
     }
     if (callee == nullptr) {
-        std::cout << "callee nullptr" << std::endl;
+        LOG_ECMA(ERROR) << "callee nullptr";
         return;
     }
-    g_values[gate] = LLVMBuildCall(m_builder, callee, params, inList.size() - paraStartIndex, "");
+    g_values[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
     return;
 }
 
 void LLVMIRBuilder::VisitAlloca(AddrShift gate)
 {
-    std::cout << " VisitAlloca " << std::endl;
-    uint64_t sizeEnum = m_circuit->GetBitField(gate);
+    uint64_t sizeEnum = circuit_->GetBitField(gate);
     LLVMTypeRef sizeType = GetMachineRepType(static_cast<MachineRep>(sizeEnum));
-    std::cout << LLVMGetTypeKind(sizeType) << std::endl;
-    g_values[gate] = LLVMBuildPtrToInt(m_builder, LLVMBuildAlloca(m_builder, sizeType, ""),
-        LLVMInt64Type(), ""); // NOTE: pointer val is currently viewed as 64bits
+    LOG_ECMA(INFO) << LLVMGetTypeKind(sizeType);
+    g_values[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, sizeType, ""), LLVMInt64Type(),
+                                       "");  // NOTE: pointer val is currently viewed as 64bits
     return;
 }
 
 void LLVMIRBuilder::VisitPhi(AddrShift gate, const std::vector<AddrShift> &srcGates, MachineRep rep)
 {
-    std::cout << "--------------- VisitPhi ------------------------" << std::endl;
     LLVMTypeRef type = GetMachineRepType(rep);
-    LLVMValueRef phi = LLVMBuildPhi(m_builder, type, "");
-    std::vector<AddrShift> relMergeIns = m_circuit->GetInVector(srcGates[0]);
+    LLVMValueRef phi = LLVMBuildPhi(builder_, type, "");
+    std::vector<AddrShift> relMergeIns = circuit_->GetInVector(srcGates[0]);
     bool addToPhiRebuildList = false;
     for (int i = 1; i < static_cast<int>(srcGates.size()); i++) {
-        GateId gateId = m_circuit->GetId(relMergeIns[i - 1]);
-        int bbIdx = m_instIdMapBbId[gateId];
-        std::cout << "srcGate: " << srcGates[i] << " dominated gateId:" << gateId << "dominated bbIdx: " << bbIdx
-                  << std::endl;
-        int cnt = m_bbIdMapBb.count(bbIdx);
+        GateId gateId = circuit_->GetId(relMergeIns[i - 1]);
+        int bbIdx = instIdMapBbId_[gateId];
+        LOG_ECMA(INFO) << "srcGate: " << srcGates[i] << " dominated gateId:" << gateId << "dominated bbIdx: " << bbIdx;
+        int cnt = bbIdMapBb_.count(bbIdx);
         // if cnt = 0 means bb with current bbIdx hasn't been created
         if (cnt > 0) {
-            BasicBlock *bb = m_bbIdMapBb[bbIdx].get();
-            std::cout << "bb : " << bb << std::endl;
+            BasicBlock *bb = bbIdMapBb_[bbIdx].get();
+            LOG_ECMA(INFO) << "bb : " << bb;
             if (bb == nullptr) {
-                std::cerr << "VisitPhi failed BasicBlock nullptr" << std::endl;
+                LOG_ECMA(ERROR) << "VisitPhi failed BasicBlock nullptr";
                 return;
             }
             LLVMTFBuilderBasicBlockImpl *impl = bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
             if (impl == nullptr) {
-                std::cerr << "VisitPhi failed impl nullptr" << std::endl;
+                LOG_ECMA(ERROR) << "VisitPhi failed impl nullptr";
                 return;
             }
             LLVMBasicBlockRef llvmBB = EnsureLLVMBB(bb);  // The llvm bb
@@ -554,7 +633,7 @@ void LLVMIRBuilder::VisitPhi(AddrShift gate, const std::vector<AddrShift> &srcGa
                 LLVMAddIncoming(phi, &value, &llvmBB, 1);
             } else {
                 addToPhiRebuildList = true;
-                impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
+                impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
                 impl->not_merged_phis.emplace_back();
                 auto &not_merged_phi = impl->not_merged_phis.back();
                 not_merged_phi.phi = phi;
@@ -565,50 +644,48 @@ void LLVMIRBuilder::VisitPhi(AddrShift gate, const std::vector<AddrShift> &srcGa
             addToPhiRebuildList = true;
         }
         if (addToPhiRebuildList == true) {
-            m_phiRebuildWorklist.push_back(m_currentBb);
+            phiRebuildWorklist_.push_back(currentBb_);
         }
         g_values[gate] = phi;
     }
-    std::cout << "+++++++++++++++ VisitPhi ++++++++++++++++++++++++" << std::endl;
 }
 
 void LLVMIRBuilder::VisitReturn(AddrShift gate, AddrShift popCount, const std::vector<AddrShift> &operands) const
 {
     // [STATE] [DEPEND] [VALUE] [RETURN_LIST]
-    std::cout << "VisitReturn  -" << std::endl;
-    AddrShift operand = operands[2]; // 2: skip 2 in gate that are not data gate
-    std::cout << "VisitReturn gate: " << gate << " popCount: " << popCount << std::endl;
-    std::cout << "VisitReturn return: " << operand << " gateId: " << m_circuit->GetId(operand) << std::endl;
+    AddrShift operand = operands[2];  // 2: skip 2 in gate that are not data gate
+    LOG_ECMA(INFO) << " gate: " << gate << " popCount: " << popCount;
+    LOG_ECMA(INFO) << " return: " << operand << " gateId: " << circuit_->GetId(operand);
     LLVMValueRef returnValue = g_values[operand];
-    LLVMDumpValue(returnValue);
-    std::cout << std::endl;
-    LLVMBuildRet(m_builder, returnValue);
-    std::cout << "VisitReturn  +" << std::endl;
+    LOG_ECMA(INFO) << LLVMPrintValueToString(returnValue);
+    LLVMBuildRet(builder_, returnValue);
 }
 
 void LLVMIRBuilder::VisitBlock(int gate, const OperandsVector &predecessors)  // NOLINTNEXTLINE(misc-unused-parameters)
 {
-    std::cout << "VisitBlock BBIdx:" << gate << "  -" << std::endl;
+    LOG_ECMA(INFO) << " BBIdx:" << gate;
     BasicBlock *bb = EnsurBasicBlock(gate);
     if (bb == nullptr) {
-        std::cerr << "StartLLVMBuilder failed " << std::endl;
+        LOG_ECMA(ERROR) << " block create failed ";
         return;
     }
-    m_currentBb = bb;
+    currentBb_ = bb;
     LLVMBasicBlockRef llvmbb = EnsureLLVMBB(bb);
     StartLLVMBuilder(bb);
-    std::cout << "predecessors :";
+    LOG_ECMA(INFO) << "predecessors :";
     for (int predecessor : predecessors) {
         BasicBlock *pre = EnsurBasicBlock(predecessor);
         if (pre == nullptr) {
-            std::cerr << "StartLLVMBuilder failed  predecessor:%d nullptr" << predecessor << std::endl;
+            LOG_ECMA(ERROR) << " block setup failed, predecessor:%d nullptr" << predecessor;
             return;
         }
         LLVMBasicBlockRef llvmpre = EnsureLLVMBB(pre);
-        std::cout << "  " << predecessor;
+        LOG_ECMA(INFO) << "  " << predecessor;
         LLVMMoveBasicBlockBefore(llvmpre, llvmbb);
     }
-    std::cout << "VisitBlock BBIdx:" << gate << "  +" << std::endl;
+    if (gate == 0) { // insert prologue
+        PrologueHandle(module_, builder_);
+    }
 }
 
 void LLVMIRBuilder::VisitGoto(int block, int bbOut)
@@ -618,11 +695,11 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
     }
     BasicBlock *bb = EnsurBasicBlock(bbOut);
     if (bb == nullptr) {
-        std::cerr << "StartLLVMBuilder failed " << std::endl;
+        LOG_ECMA(ERROR) << " block is nullptr ";
         return;
     }
-    llvm::BasicBlock *self = llvm::unwrap(EnsureLLVMBB(m_bbIdMapBb[block].get()));
-    llvm::BasicBlock *out = llvm::unwrap(EnsureLLVMBB(m_bbIdMapBb[bbOut].get()));
+    llvm::BasicBlock *self = llvm::unwrap(EnsureLLVMBB(bbIdMapBb_[block].get()));
+    llvm::BasicBlock *out = llvm::unwrap(EnsureLLVMBB(bbIdMapBb_[bbOut].get()));
     llvm::BranchInst::Create(out, self);
     EndCurrentBlock();
 }
@@ -630,65 +707,60 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
 void LLVMIRBuilder::VisitInt32Constant(AddrShift gate, int32_t value) const
 {
     LLVMValueRef llvmValue = LLVMConstInt(LLVMInt32Type(), value, 0);
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
+    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     impl->values_[gate] = llvmValue;
     g_values[gate] = llvmValue;
     char *str = LLVMPrintValueToString(llvmValue);
-    std::cout << "VisitInt32Constant set gate:" << gate << "  value:" << value << " impl:" << impl << std::endl;
-    std::cout << "VisitInt32Constant " << str << std::endl;
+    LOG_ECMA(INFO) << "VisitInt32Constant set gate:" << gate << "  value:" << value;
+    LOG_ECMA(INFO) << "VisitInt32Constant " << str;
 }
 
 void LLVMIRBuilder::VisitInt64Constant(AddrShift gate, int64_t value) const
 {
     LLVMValueRef llvmValue = LLVMConstInt(LLVMInt64Type(), value, 0);
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
+    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     impl->values_[gate] = llvmValue;
     g_values[gate] = llvmValue;
     char *str = LLVMPrintValueToString(llvmValue);
-    std::cout << "VisitInt64Constant set gate:" << gate << "  value:" << value << " impl:" << impl << std::endl;
-    std::cout << "VisitInt64Constant " << str << std::endl;
+    LOG_ECMA(INFO) << "VisitInt64Constant set gate:" << gate << "  value:" << value;
+    LOG_ECMA(INFO) << "VisitInt64Constant " << str;
 }
 
 void LLVMIRBuilder::VisitFloat64Constant(AddrShift gate, int64_t value) const
 {
     LLVMValueRef llvmValue = LLVMConstReal(LLVMDoubleType(), value);
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
+    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     impl->values_[gate] = llvmValue;
     g_values[gate] = llvmValue;
     char *str = LLVMPrintValueToString(llvmValue);
-    std::cout << "VisitFloat64Constant set gate:" << gate << "  value:" << value << " impl:" << impl << std::endl;
-    std::cout << "VisitFloat64Constant " << str << std::endl;
+    LOG_ECMA(INFO) << "VisitFloat64Constant set gate:" << gate << "  value:" << value;
+    LOG_ECMA(INFO) << "VisitFloat64Constant " << str;
 }
 
 void LLVMIRBuilder::VisitParameter(AddrShift gate) const
 {
-    int argth = m_circuit->LoadGatePtrConst(gate)->GetBitField();
-    std::cout << "VisitParameter " << argth << "th parameter -" << std::endl;
-    LLVMValueRef value = LLVMGetParam(m_function, argth);
-    LLVMDumpValue(value);
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
+    int argth = circuit_->LoadGatePtrConst(gate)->GetBitField();
+    LOG_ECMA(INFO) << " Parameter value" << argth;
+    LLVMValueRef value = LLVMGetParam(function_, argth);
+    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
     impl->values_[gate] = value;
     g_values[gate] = value;
-    std::cout << "VisitParameter set gate:" << gate << "  value:" << value << " impl:" << impl << std::endl;
+    LOG_ECMA(INFO) << "VisitParameter set gate:" << gate << "  value:" << value;
     // NOTE: caller put args, otherwise crash
     if (value == nullptr) {
-        std::cerr << "VisitParameter arg" << argth << "th nullptr" << std::endl;
+        LOG_ECMA(ERROR) << "generate LLVM IR for para: " << argth << "fail";
         return;
     }
-    LLVMDumpValue(value);
     char *str = LLVMPrintValueToString(value);
-    if (str != nullptr) {
-        std::cout << "VisitParameter arg" << argth << "th value = " << str << std::endl;
-    }
-    std::cout << "VisitParameter " << argth << "th parameter +" << std::endl;
+    LOG_ECMA(INFO) << "para arg:" << argth << "value IR:" << str;
 }
 
 void LLVMIRBuilder::VisitBranch(AddrShift gate, AddrShift cmp, int btrue, int bfalse)
 {
-    std::cout << "VisitBranch  -  cmp:" << cmp << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = EnsureLLVMBBImpl(m_currentBb);
+    LOG_ECMA(INFO) << "cmp gate:" << cmp;
+    LLVMTFBuilderBasicBlockImpl *impl = EnsureLLVMBBImpl(currentBb_);
     if ((impl->values_.count(cmp) == 0) && (g_values.count(cmp) == 0)) {
-        std::cerr << "VisitBranch cmp empty !" << std::endl;
+        LOG_ECMA(ERROR) << "Branch condition gate is nullptr!";
         return;
     }
     LLVMValueRef cond = g_values[cmp];
@@ -700,364 +772,282 @@ void LLVMIRBuilder::VisitBranch(AddrShift gate, AddrShift cmp, int btrue, int bf
 
     LLVMBasicBlockRef llvmTrueBB = trueBB->GetImpl<LLVMTFBuilderBasicBlockImpl>()->llvm_bb_;
     LLVMBasicBlockRef llvmFalseBB = falseBB->GetImpl<LLVMTFBuilderBasicBlockImpl>()->llvm_bb_;
-    LLVMValueRef result = LLVMBuildCondBr(m_builder, cond, llvmTrueBB, llvmFalseBB);
+    LLVMValueRef result = LLVMBuildCondBr(builder_, cond, llvmTrueBB, llvmFalseBB);
     EndCurrentBlock();
     g_values[gate] = result;
-    std::cout << "VisitBranch  + " << std::endl;
 }
 
 void LLVMIRBuilder::VisitSwitch(AddrShift gate, AddrShift input, const std::vector<AddrShift> &outList)
 {
-    std::cout << "VisitSwitch  - " << std::endl;
     LLVMValueRef cond = g_values[input];
     unsigned caseNum = outList.size();
     BasicBlock *curOutBB = nullptr;
     LLVMBasicBlockRef llvmDefaultOutBB = nullptr;
     for (int i = 0; i < static_cast<int>(caseNum); i++) {
-        curOutBB = EnsurBasicBlock(m_instIdMapBbId[m_circuit->GetId(outList[i])]);
+        curOutBB = EnsurBasicBlock(instIdMapBbId_[circuit_->GetId(outList[i])]);
         EnsureLLVMBB(curOutBB);
-        if (m_circuit->GetOpCode(outList[i]) == OpCode::DEFAULT_CASE) {
+        if (circuit_->GetOpCode(outList[i]) == OpCode::DEFAULT_CASE) {
             llvmDefaultOutBB = curOutBB->GetImpl<LLVMTFBuilderBasicBlockImpl>()->llvm_bb_;
         }
     }
-    LLVMValueRef result = LLVMBuildSwitch(m_builder, cond, llvmDefaultOutBB, caseNum - 1);
+    LLVMValueRef result = LLVMBuildSwitch(builder_, cond, llvmDefaultOutBB, caseNum - 1);
     LLVMBasicBlockRef llvmCurOutBB = nullptr;
     for (int i = 0; i < static_cast<int>(caseNum - 1); i++) {
-        if (m_circuit->GetOpCode(outList[i]) == OpCode::DEFAULT_CASE) {
+        if (circuit_->GetOpCode(outList[i]) == OpCode::DEFAULT_CASE) {
             continue;
         }
-        curOutBB = EnsurBasicBlock(m_instIdMapBbId[m_circuit->GetId(outList[i])]);
+        curOutBB = EnsurBasicBlock(instIdMapBbId_[circuit_->GetId(outList[i])]);
         llvmCurOutBB = curOutBB->GetImpl<LLVMTFBuilderBasicBlockImpl>()->llvm_bb_;
-        LLVMAddCase(result, LLVMConstInt(LLVMInt64Type(), m_circuit->GetBitField(outList[i]), 0), llvmCurOutBB);
+        LLVMAddCase(result, LLVMConstInt(LLVMInt64Type(), circuit_->GetBitField(outList[i]), 0), llvmCurOutBB);
     }
     EndCurrentBlock();
     g_values[gate] = result;
-    std::cout << "VisitSwitch  + " << std::endl;
 }
 
 void LLVMIRBuilder::VisitLoad(AddrShift gate, MachineRep rep, AddrShift base) const
 {
-    std::cout << "VisitLoad base:" << base << std::endl;
-
+    LOG_ECMA(INFO) << "Load base gate:" << base;
     LLVMValueRef baseAddr = g_values[base];
     if (LLVMGetTypeKind(LLVMTypeOf(baseAddr)) == LLVMIntegerTypeKind) {
-        baseAddr = LLVMBuildIntToPtr(m_builder, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
+        baseAddr = LLVMBuildIntToPtr(builder_, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
     }
-    baseAddr = LLVMBuildPointerCast(m_builder, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
-    LLVMValueRef value = LLVMBuildLoad(m_builder, baseAddr, "");
+    baseAddr = LLVMBuildPointerCast(builder_, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
+    LLVMValueRef value = LLVMBuildLoad(builder_, baseAddr, "");
     g_values[gate] = value;
-    std::cout << "VisitLoad value:" << value << " "
-              << "value type" << LLVMTypeOf(value) << std::endl;
+    LOG_ECMA(INFO) << "Load value:" << value << " "
+                   << "value type" << LLVMTypeOf(value);
 }
 
 void LLVMIRBuilder::VisitStore(AddrShift gate, MachineRep rep, AddrShift base, AddrShift dataToStore) const
 {
-    std::cout << "VisitStore base:" << base << std::endl;
+    LOG_ECMA(INFO) << "store base gate:" << base;
     LLVMValueRef baseAddr = g_values[base];
     if (LLVMGetTypeKind(LLVMTypeOf(baseAddr)) == LLVMIntegerTypeKind) {
-        baseAddr = LLVMBuildIntToPtr(m_builder, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
+        baseAddr = LLVMBuildIntToPtr(builder_, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
     }
-    baseAddr = LLVMBuildPointerCast(m_builder, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
-    LLVMValueRef value = LLVMBuildStore(m_builder, g_values[dataToStore], baseAddr);
+    baseAddr = LLVMBuildPointerCast(builder_, baseAddr, LLVMPointerType(GetMachineRepType(rep), 0), "");
+    LLVMValueRef value = LLVMBuildStore(builder_, g_values[dataToStore], baseAddr);
     g_values[gate] = value;
-    std::cout << "VisitStore value:" << value << " "
-              << "value type" << LLVMTypeOf(value) << std::endl;
+    LOG_ECMA(INFO) << "store value:" << value << " "
+                   << "value type" << LLVMTypeOf(value);
 }
+
 void LLVMIRBuilder::VisitIntOrUintCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMIntPredicate opcode) const
 {
-    std::cout << "VisitIntOrUintCmp  -" << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    std::cout << "VisitIntOrUintCmp get gate:" << e1 << "  value:" << g_values[e1] << " impl:" << impl << std::endl;
-
+    LOG_ECMA(INFO) << "cmp gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
-
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildICmp(m_builder, opcode, e1Value, e2Value, "");
-
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildICmp(builder_, opcode, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitIntOrUintCmp set gate:" << gate << "  value:" << result << " impl:" << impl << std::endl;
-    std::cout << "VisitIntOrUintCmp  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatOrDoubleCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMRealPredicate opcode) const
 {
-    std::cout << "VisitFloatOrDoubleCmp  -" << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    std::cout << "VisitFloatOrDouble get gate:" << e1 << "  value:" << g_values[e1] << " impl:" << impl << std::endl;
+    LOG_ECMA(INFO) << "cmp gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildFCmp(m_builder, opcode, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildFCmp(builder_, opcode, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitFloatOrDoubleCmp set gate:" << gate << "  value:" << result << " impl:" << impl << std::endl;
-    std::cout << "VisitFloatOrDoubleCmp  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntRev(AddrShift gate, AddrShift e1) const
 {
-    std::cout << "VisitIntRev  -" << std::endl;
-    std::cout << "VisitIntRev get gate:" << e1 << " value:" << std::endl;
+    LOG_ECMA(INFO) << "int sign invert gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << std::endl;
-    LLVMValueRef result = LLVMBuildNeg(m_builder, e1Value, "");
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildNeg(builder_, e1Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << std::endl;
-    std::cout << "VisitIntRev set gate:" << gate << " value:" << result << std::endl;
-    std::cout << "VisitIntRev  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntAdd(AddrShift gate, AddrShift e1, AddrShift e2, MachineRep rep) const
 {
-    std::cout << "VisitIntAdd  -" << std::endl;
-    std::cout << "VisitIntAdd get gate:" << e1 << std::endl;
+    LOG_ECMA(INFO) << "int add gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
     if (LLVMGetTypeKind(LLVMTypeOf(e1Value)) == LLVMPointerTypeKind) {  // for scenario: pointer + offset
-        e1Value = LLVMBuildPtrToInt(m_builder, e1Value, GetMachineRepType(rep), "");
+        e1Value = LLVMBuildPtrToInt(builder_, e1Value, GetMachineRepType(rep), "");
     }
-    LLVMValueRef result = LLVMBuildAdd(m_builder, e1Value, e2Value, "");
+    LLVMValueRef result = LLVMBuildAdd(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitIntAdd set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitIntAdd  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatAdd(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitFloatAdd  -" << std::endl;
-    std::cout << "VisitFloatAdd get gate:" << e1 << std::endl;
+    LOG_ECMA(INFO) << "float add gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildFAdd(m_builder, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildFAdd(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitFloatAdd set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitFloatAdd  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatSub(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitFloatSub  -" << std::endl;
-    std::cout << "VisitFloatSub get gate:" << gate << std::endl;
-    std::cout << " LLVMDumpValue e1 " << std::endl;
+    LOG_ECMA(INFO) << "float sub gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildFSub(m_builder, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildFSub(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitFloatSub set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitFloatSub  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatMul(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitFloatMul  -" << std::endl;
-    std::cout << "VisitFloatMul get gate:" << gate << std::endl;
-    std::cout << " LLVMDumpValue e1 " << std::endl;
+    LOG_ECMA(INFO) << "float mul gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildFMul(m_builder, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildFMul(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitFloatMul set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitFloatMul  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatDiv(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitFloatDiv  -" << std::endl;
-    std::cout << "VisitFloatDiv get gate:" << gate << std::endl;
-    std::cout << " LLVMDumpValue e1 " << std::endl;
+    LOG_ECMA(INFO) << "float div gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildFDiv(m_builder, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildFDiv(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitFloatDiv set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitFloatDiv  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntSub(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitIntSub  -" << std::endl;
-    std::cout << "VisitIntSub get gate:" << e1 << std::endl;
+    LOG_ECMA(INFO) << "int sub gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildSub(m_builder, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildSub(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitIntSub set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitIntSub  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntMul(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitIntMul  -" << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    std::cout << "VisitIntMul get gate:" << e1 << "  value:" << (impl->values_[e1]) << " impl:" << impl << std::endl;
-
+    LOG_ECMA(INFO) << "int mul gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
-
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildMul(m_builder, e1Value, e2Value, "");
-
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildMul(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitIntMul set gate:" << gate << "  value:" << result << " impl:" << impl << std::endl;
-    std::cout << "VisitIntMul  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntOr(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitIntOr  -" << std::endl;
-    std::cout << "VisitIntOr get gate:" << e1 << std::endl;
-    std::cout << " LLVMDumpValue e1 " << std::endl;
+    LOG_ECMA(INFO) << "int or gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildOr(m_builder, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildOr(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitIntOr set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitIntOr  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntAnd(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitIntAnd  -" << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    std::cout << "VisitIntAnd get gate:" << e1 << "  value:" << (impl->values_[e1]) << " impl:" << impl << std::endl;
-
+    LOG_ECMA(INFO) << "int and gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
-
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildAnd(m_builder, e1Value, e2Value, "");
-
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildAnd(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitIntAnd set gate:" << gate << "  value:" << result << " impl:" << impl << std::endl;
-    std::cout << "VisitIntAnd  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::VisitIntXor(AddrShift gate, AddrShift e1, AddrShift e2) const
+{
+    LOG_ECMA(INFO) << "int xor gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef e2Value = g_values[e2];
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildXor(builder_, e1Value, e2Value, "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntLsr(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
-    std::cout << "VisitIntLsr  -" << std::endl;
-    std::cout << "VisitIntLsr get gate:" << e1 << std::endl;
-    std::cout << " LLVMDumpValue e1 " << std::endl;
+    LOG_ECMA(INFO) << "int lsr gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    std::cout << " LLVMDumpValue e2 " << std::endl;
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LLVMDumpValue(e2Value);
-    LLVMValueRef result = LLVMBuildLShr(m_builder, e1Value, e2Value, "");
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildLShr(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitIntLsr set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitIntLsr  +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
+
 void LLVMIRBuilder::VisitZExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const
 {
-    std::cout << "VisitZExtInt -" << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    std::cout << "VisitZExtInt get gate:" << e1 << "value:" << (impl->values_[e1]) << std::endl;
-
+    LOG_ECMA(INFO) << "int zero extension gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    LLVMValueRef result = LLVMBuildZExt(m_builder, e1Value, GetMachineRepType(rep), "");
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildZExt(builder_, e1Value, GetMachineRepType(rep), "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitZExtInt set gate:" << gate << "  value:" << result << " impl:" << impl << std::endl;
-    std::cout << "VisitZExtInt +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitSExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const
 {
-    std::cout << "VisitSExtInt -" << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    std::cout << "VisitSExtInt get gate:" << e1 << "value:" << (impl->values_[e1]) << std::endl;
-
+    LOG_ECMA(INFO) << "int sign extension gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    LLVMValueRef result = LLVMBuildSExt(m_builder, e1Value, GetMachineRepType(rep), "");
-
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildSExt(builder_, e1Value, GetMachineRepType(rep), "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitSExtInt set gate:" << gate << "  value:" << result << " impl:" << impl << std::endl;
-    std::cout << "VisitSExtInt +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitCastIntXToIntY(AddrShift gate, AddrShift e1, MachineRep rep) const
 {
-    std::cout << "VisitCastIntXToIntY -" << std::endl;
-    LLVMTFBuilderBasicBlockImpl *impl = m_currentBb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    std::cout << "VisitCastIntXToIntY get gate:" << e1 << "value:" << (impl->values_[e1]) << std::endl;
-
+    LOG_ECMA(INFO) << "int cast2 int gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    LLVMValueRef result = LLVMBuildIntCast2(m_builder, e1Value, GetMachineRepType(rep), 1, "");
-
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildIntCast2(builder_, e1Value, GetMachineRepType(rep), 1, "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitCastIntXToIntY set gate:" << gate << "  value:" << result << " impl:" << impl << std::endl;
-    std::cout << "VisitCastIntXToIntY +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitCastIntToDouble(AddrShift gate, AddrShift e1) const
 {
-    std::cout << "VisitCastIntToDouble -" << std::endl;
+    LOG_ECMA(INFO) << "int cast2 double gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    LLVMValueRef result = LLVMBuildSIToFP(m_builder, e1Value, LLVMDoubleType(), "");
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildSIToFP(builder_, e1Value, LLVMDoubleType(), "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitCastIntToDouble set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitCastIntToDouble +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const
 {
-    std::cout << "VisitCastDoubleToInt -" << std::endl;
+    LOG_ECMA(INFO) << "double cast2 int gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LLVMDumpValue(e1Value);
-    LLVMValueRef result = LLVMBuildFPToSI(m_builder, e1Value, LLVMInt64Type(), "");
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildFPToSI(builder_, e1Value, LLVMInt64Type(), "");
     g_values[gate] = result;
-    LLVMDumpValue(result);
-    std::cout << "VisitCastDoubleToInt set gate:" << gate << "  value:" << result << std::endl;
-    std::cout << "VisitCastDoubleToInt +" << std::endl;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 }  // namespace kungfu

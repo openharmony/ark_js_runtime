@@ -23,7 +23,6 @@ using SourceLang = panda_file::SourceLang;
 
 bool EcmaClassLinkerExtension::InitializeImpl(bool cmpStrEnabled)
 {
-    EcmaString::SetCompressedStringsEnabled(cmpStrEnabled);
     return true;
 }
 
@@ -44,7 +43,7 @@ void EcmaClassLinkerExtension::InitClasses(EcmaVM *vm)
     if (objClass == nullptr) {
         return;
     }
-    objClass->SetObjectSize(TaggedObject::ObjectHeaderSize());
+    objClass->SetObjectSize(TaggedObject::TaggedObjectSize());
     objClass->SetSourceLang(SourceLang::ECMASCRIPT);
     objClass->SetState(Class::State::LOADED);
     Runtime::GetCurrent()->GetClassLinker()->AddClassRoot(ClassRoot::OBJECT, objClass);

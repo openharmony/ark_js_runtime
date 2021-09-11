@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_ROOTS_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_ROOTS_INL_H
+#ifndef ECMASCRIPT_MEM_HEAP_ROOTS_INL_H
+#define ECMASCRIPT_MEM_HEAP_ROOTS_INL_H
 
 #include <cstdint>
 #include "ecmascript/class_linker/program_object.h"
@@ -32,30 +32,26 @@
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
-#include "ecmascript/js_float32_array.h"
-#include "ecmascript/js_float64_array.h"
+#include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_int16_array.h"
-#include "ecmascript/js_int32_array.h"
-#include "ecmascript/js_int8_array.h"
+#include "ecmascript/js_intl.h"
+#include "ecmascript/js_locale.h"
 #include "ecmascript/js_map.h"
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_native_object.h"
+#include "ecmascript/js_number_format.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_string_iterator.h"
 #include "ecmascript/js_typed_array.h"
-#include "ecmascript/js_uint16_array.h"
-#include "ecmascript/js_uint32_array.h"
-#include "ecmascript/js_uint8_array.h"
-#include "ecmascript/js_uint8_clamped_array.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "ecmascript/mem/mem.h"
@@ -67,7 +63,7 @@ void HeapRootManager::VisitVMRoots(const RootVisitor &visitor, const RootRangeVi
     ecmaVm_->GetJSThread()->Iterate(visitor, rangeVisitor);
 }
 
-template <GCType gc_type>
+template<GCType gc_type>
 // NOLINTNEXTLINE(readability-function-size)
 void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor)
 {
@@ -173,34 +169,16 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
             JSArray::Cast(object)->Visitor(visitor);
             break;
         case JSType::JS_TYPED_ARRAY:
-            JSTypedArray::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_INT8_ARRAY:
-            JSInt8Array::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_UINT8_ARRAY:
-            JSUint8Array::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_UINT8_CLAMPED_ARRAY:
-            JSUint8ClampedArray::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_INT16_ARRAY:
-            JSInt16Array::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_UINT16_ARRAY:
-            JSUint16Array::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_INT32_ARRAY:
-            JSInt32Array::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_UINT32_ARRAY:
-            JSUint32Array::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_FLOAT32_ARRAY:
-            JSFloat32Array::Cast(object)->Visitor(visitor);
-            break;
         case JSType::JS_FLOAT64_ARRAY:
-            JSFloat64Array::Cast(object)->Visitor(visitor);
+            JSTypedArray::Cast(object)->Visitor(visitor);
             break;
         case JSType::JS_PRIMITIVE_REF:
             JSPrimitiveRef::Cast(object)->Visitor(visitor);
@@ -290,6 +268,24 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
         case JSType::LEXICAL_FUNCTION:
             LexicalFunction::Cast(object)->Visitor(visitor);
             break;
+        case JSType::JS_INTL:
+            JSIntl::Cast(object)->Visitor(visitor);
+            break;
+        case JSType::JS_NUMBER_FORMAT:
+            JSNumberFormat::Cast(object)->Visitor(visitor);
+            break;
+        case JSType::JS_LOCALE:
+            JSLocale::Cast(object)->Visitor(visitor);
+            break;
+        case JSType::JS_DATE_TIME_FORMAT:
+            JSDateTimeFormat::Cast(object)->Visitor(visitor);
+            break;
+        case JSType::JS_RELATIVE_TIME_FORMAT:
+            JSRelativeTimeFormat::Cast(object)->Visitor(visitor);
+            break;
+        case JSType::JS_INTL_BOUND_FUNCTION:
+            JSIntlBoundFunction::Cast(object)->Visitor(visitor);
+            break;
         case JSType::JS_NATIVE_OBJECT:
             JSNativeObject::Cast(object)->Visitor(visitor);
             break;
@@ -299,4 +295,4 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_HEAP_ROOTS_INL_H
+#endif  // ECMASCRIPT_MEM_HEAP_ROOTS_INL_H

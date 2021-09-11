@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_MAP_ITERATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_MAP_ITERATOR_H
+#ifndef ECMASCRIPT_JS_MAP_ITERATOR_H
+#define ECMASCRIPT_JS_MAP_ITERATOR_H
 
 #include "js_iterator.h"
 #include "js_object.h"
+
 namespace panda::ecmascript {
 class JSMapIterator : public JSObject {
 public:
@@ -43,4 +44,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_MAP_ITERATOR_H
+#endif  // ECMASCRIPT_JS_MAP_ITERATOR_H

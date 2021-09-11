@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_GENERATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_GENERATOR_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_GENERATOR_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_GENERATOR_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -38,4 +38,4 @@ public:
 };
 }  // namespace panda::ecmascript::builtins
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BUILTINS_GENERATOR_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_GENERATOR_H

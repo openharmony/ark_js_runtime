@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_DEBUGGER_API_H
-#define PANDA_TOOLING_ECMASCRIPT_DEBUGGER_API_H
+#ifndef ECMASCRIPT_TOOLING_INTERFACE_DEBUGGER_API_H
+#define ECMASCRIPT_TOOLING_INTERFACE_DEBUGGER_API_H
 
 #include <functional>
 
@@ -87,7 +87,10 @@ public:
     static std::optional<Error> RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
     static std::optional<Error> SetBreakpoint(JSDebugger *debugger, const PtLocation &location);
     static std::optional<Error> RemoveBreakpoint(JSDebugger *debugger, const PtLocation &location);
+
+    // JSMehthod
+    static CString ParseFunctionName(const JSMethod *method);
 };
 }  // namespace panda::tooling::ecmascript
 
-#endif  // PANDA_TOOLING_ECMASCRIPT_DEBUGGER_API_H
+#endif  // ECMASCRIPT_TOOLING_DEBUGGER_API_H

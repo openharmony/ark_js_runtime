@@ -24,7 +24,7 @@
 namespace panda::ecmascript {
 // Forward Declaration
 class ObjectFactory;
-template <typename T>
+template<typename T>
 class JSHandle;
 class JSHClass;
 class JSThread;
@@ -66,7 +66,8 @@ class JSThread;
     V(JSTaggedValue, JSProxyCallableClass, JS_PROXY_CALLABLE_CLASS_INDEX, ecma_roots_class)                           \
     V(JSTaggedValue, JSProxyConstructClass, JS_PROXY_CONSTRUCT_CLASS_INDEX, ecma_roots_class)                         \
     V(JSTaggedValue, JSRealmClass, JS_REALM_CLASS_INDEX, ecma_roots_class)                                            \
-    V(JSTaggedValue, JSRegExpClass, JS_REGEXP_CLASS_INDEX, ecma_roots_class)
+    V(JSTaggedValue, JSRegExpClass, JS_REGEXP_CLASS_INDEX, ecma_roots_class)                                          \
+    V(JSTaggedValue, MachineCodeClass, MACHINE_CODE_CLASS_INDEX, ecma_roots_class)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_SPECIAL(V)                               \
@@ -263,6 +264,23 @@ class JSThread;
     V(JSTaggedValue, IgnorePunctuationString, IGNORE_PUNCTUATION_INDEX, ignorePunctuation)                            \
     V(JSTaggedValue, CardinalString, CARDINAL_INDEX, cardinal)                                                        \
     V(JSTaggedValue, OrdinalString, ORDINAL_INDEX, ordinal)                                                           \
+    V(JSTaggedValue, PluralCategoriesString, PLURAL_CATEGORIES_INDEX, pluralCategories)                               \
+    V(JSTaggedValue, SortString, SORT_INDEX, sort)                                                                    \
+    V(JSTaggedValue, SearchString, SEARCH_INDEX, search)                                                              \
+    V(JSTaggedValue, BaseString, BASE_INDEX, base)                                                                    \
+    V(JSTaggedValue, AccentString, ACCENT_INDEX, accent)                                                              \
+    V(JSTaggedValue, CaseString, CASE_INDEX, Case)                                                                    \
+    V(JSTaggedValue, VariantString, VARIANT_INDEX, variant)                                                           \
+    V(JSTaggedValue, EnUsPosixString, EN_US_POSIX_STRING_INDEX, en - US - POSIX)                                      \
+    V(JSTaggedValue, UpperString, UPPER_INDEX, upper)                                                                 \
+    V(JSTaggedValue, LowerString, LOWER_INDEX, lower)                                                                 \
+    V(JSTaggedValue, DefaultString, DEFAULT_INDEX, Default)                                                           \
+    V(JSTaggedValue, SharedString, SHARED_INDEX, shared)                                                              \
+    V(JSTaggedValue, StartRangeString, START_RANGE_INDEX, startRange)                                                 \
+    V(JSTaggedValue, EndRangeString, END_RANGE_INDEX, endRange)                                                       \
+    V(JSTaggedValue, Iso8601String, ISO8601_INDEX, iso8601)                                                           \
+    V(JSTaggedValue, GregoryString, GREGORY_INDEX, gregory)                                                           \
+    V(JSTaggedValue, EthioaaString, ETHIOAA_INDEX, ethioaa)                                                           \
     /* for regexp. */                                                                                                 \
     V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
     V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)
@@ -271,7 +289,6 @@ class JSThread;
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \
     V(JSTaggedValue, FunctionPrototypeAccessor, FUNCTION_PROTOTYPE_ACCESSOR, ecma_roots_accessor) \
     V(JSTaggedValue, FunctionNameAccessor, FUNCTION_NAME_ACCESSOR, ecma_roots_accessor)           \
-    V(JSTaggedValue, FunctionLengthAccessor, FUNCTION_LENGTH_ACCESSOR, ecma_roots_accessor)       \
     V(JSTaggedValue, ArrayLengthAccessor, ARRAY_LENGTH_ACCESSOR, ecma_roots_accessor)
 /* RealmConstant */
 
@@ -314,6 +331,8 @@ public:
     void InitGlobalUndefined();
 
     void SetConstant(ConstantIndex index, JSTaggedValue value);
+
+    uintptr_t GetGlobalConstantAddr(ConstantIndex index) const;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECL_GET(Type, Name, Index, Desc) \

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_WEAK_VECTOR_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_WEAK_VECTOR_INL_H
+#ifndef ECMASCRIPT_WEAK_VECTOR_INL_H
+#define ECMASCRIPT_WEAK_VECTOR_INL_H
 
 #include "weak_vector.h"
 #include "tagged_array-inl.h"
@@ -58,4 +58,4 @@ void WeakVector::SetEnd(const JSThread *thread, array_size_t end)
     TaggedArray::Set(thread, END_INDEX, JSTaggedValue(end));
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_WEAK_VECTOR_INL_H
+#endif  // ECMASCRIPT_WEAK_VECTOR_INL_H

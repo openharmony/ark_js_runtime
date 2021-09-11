@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_GLOBAL_ENV_H
-#define PANDA_RUNTIME_ECMASCRIPT_GLOBAL_ENV_H
+#ifndef ECMASCRIPT_GLOBAL_ENV_H
+#define ECMASCRIPT_GLOBAL_ENV_H
 
-#include "ecmascript/global_env_constants-inl.h"
-#include "ecmascript/js_function.h"
 #include "ecmascript/js_global_object.h"
-#include "ecmascript/js_handle.h"
+#include "ecmascript/js_function.h"
 #include "ecmascript/lexical_env.h"
+#include "ecmascript/js_handle.h"
+#include "ecmascript/global_env_constants-inl.h"
 
 namespace panda::ecmascript {
 class JSThread;
@@ -175,7 +175,7 @@ public:
         JSHandle<type> result(address);                                                                 \
         return result;                                                                                  \
     }                                                                                                   \
-    template <typename T>                                                                               \
+    template<typename T>                                                                               \
     inline void Set##name(const JSThread *thread, JSHandle<T> value, BarrierMode mode = WRITE_BARRIER)  \
     {                                                                                                   \
         int offset = HEADER_SIZE + index * JSTaggedValue::TaggedTypeSize();                             \
@@ -197,7 +197,7 @@ public:
     GLOBAL_ENV_FIELDS(GLOBAL_ENV_FIELD_ACCESSORS)
 #undef GLOBAL_ENV_FIELD_ACCESSORS
 
-    static constexpr size_t HEADER_SIZE = sizeof(TaggedObject);
+    static constexpr size_t HEADER_SIZE = TaggedObjectSize();
     static constexpr size_t SIZE = HEADER_SIZE + FINAL_INDEX * JSTaggedValue::TaggedTypeSize();
 
     DECL_DUMP()
@@ -209,4 +209,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_GLOBAL_ENV_H
+#endif  // ECMASCRIPT_GLOBAL_ENV_H

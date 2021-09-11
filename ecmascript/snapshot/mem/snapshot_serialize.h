@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMASCRIPT_MEM_SNAPSHOT_SERIALIZE_H
-#define PANDA_ECMASCRIPT_MEM_SNAPSHOT_SERIALIZE_H
+#ifndef ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_SERIALIZE_H
+#define ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_SERIALIZE_H
 
 #include <iostream>
 #include <fstream>
@@ -92,7 +92,7 @@ private:
         *addr = value;
     }
 
-    template <typename T>
+    template<typename T>
     T GetAddress(size_t index)
     {
         return *reinterpret_cast<T *>(addressSlot_ + index * ADDRESS_SIZE);
@@ -115,4 +115,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_ECMASCRIPT_MEM_SNAPSHOT_SERIALIZE_H
+#endif  // ECMASCRIPT_SNAPSHOT_MEM_SNAPSHOT_SERIALIZE_H

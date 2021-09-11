@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
+#ifndef ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
+#define ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
 
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/slots.h"
@@ -235,4 +235,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
+#endif  // ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H

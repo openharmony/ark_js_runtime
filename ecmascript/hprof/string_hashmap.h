@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef RUNTIME_ECMASCRIPT_HPROF_STRING_HASHMAP_H
-#define RUNTIME_ECMASCRIPT_HPROF_STRING_HASHMAP_H
+#ifndef ECMASCRIPT_HPROF_STRING_HASHMAP_H
+#define ECMASCRIPT_HPROF_STRING_HASHMAP_H
 
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
+#include "ecmascript/mem/heap.h"
 #include "os/mem.h"
 
 namespace panda::ecmascript {
@@ -29,9 +30,9 @@ using StringId = uint64_t;
 // To make sure when using String, it still stays where it was.
 class StringHashMap {
 public:
-    explicit StringHashMap(CAddressAllocator<JSTaggedType> *allocator) : allocator_(allocator)
+    explicit StringHashMap(const Heap *heap) : heap_(heap)
     {
-        ASSERT(allocator_ != nullptr);
+        ASSERT(heap_ != nullptr);
     }
     ~StringHashMap()
     {
@@ -42,19 +43,19 @@ public:
     /*
      * The ID is the seat number in JSON file Range from 0~string_table_.size()
      */
-    StringId GetStringId(CString *string);
+    StringId GetStringId(const CString *string) const;
     /*
      * Get all keys sorted by insert order
      */
-    CVector<StringKey> *GetOrderedKeyStorage()
+    const CVector<StringKey> &GetOrderedKeyStorage() const
     {
-        return &orderedKey_;
+        return orderedKey_;
     }
     /*
      * Get string by its hash key
      */
-    CString *GetStringByKey(StringKey key);
-    size_t GetCapcity()
+    CString *GetStringByKey(StringKey key) const;
+    size_t GetCapcity() const
     {
         ASSERT(orderedKey_.size() == hashmap_.size());
         return orderedKey_.size();
@@ -65,18 +66,18 @@ public:
     CString *GetString(CString as);
 
 private:
-    StringKey GenerateStringKey(CString *string);
+    StringKey GenerateStringKey(const CString *string) const;
     CString *FindOrInsertString(CString *string);
-    CString *FormatString(CString *string);
+    CString *FormatString(CString *string) const;
     /*
      * Free all memory
      */
     void Clear();
-    CAddressAllocator<JSTaggedType> *allocator_{nullptr};
+    const Heap *heap_;
     CVector<StringKey> orderedKey_;  // Used for Serialize Order
     size_t index_{2};                       // 2: Offset the String-Table Header
     CUnorderedMap<StringKey, StringId> indexMap_;
     CUnorderedMap<StringKey, CString *> hashmap_;
 };
 }  // namespace panda::ecmascript
-#endif  // RUNTIME_ECMASCRIPT_HPROF_STRING_HASHMAP_H
+#endif  // ECMASCRIPT_HPROF_STRING_HASHMAP_H

@@ -16,6 +16,7 @@
 #include "builtins_set.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_invoker.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
@@ -57,7 +58,7 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
         return set.GetTaggedValue();
     }
     // Let adder be Get(set, "add").
-    JSHandle<JSTaggedValue> adderKey(factory->NewFromString("add"));
+    JSHandle<JSTaggedValue> adderKey(factory->NewFromCanBeCompressString("add"));
     JSHandle<JSTaggedValue> setHandle(set);
     JSHandle<JSTaggedValue> adder = JSObject::GetProperty(thread, setHandle, adderKey).GetValue();
     // ReturnIfAbrupt(adder).
@@ -74,6 +75,7 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
     // jsarray
     JSHandle<JSTaggedValue> valueIndex(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> next = JSIterator::IteratorStep(thread, iter);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
     while (!next->IsFalse()) {
         // ReturnIfAbrupt(next).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, next.GetTaggedValue());
@@ -81,13 +83,12 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
         JSHandle<JSTaggedValue> nextValue(JSIterator::IteratorValue(thread, next));
         // ReturnIfAbrupt(nextValue).
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, nextValue.GetTaggedValue());
-        JSHandle<TaggedArray> array(factory->NewTaggedArray(1));
-        array->Set(thread, 0, nextValue);
+        arguments->MakeArgv(nextValue);
         if (nextValue->IsArray(thread)) {
             auto prop = JSObject::GetProperty(thread, nextValue, valueIndex).GetValue();
-            array->Set(thread, 0, prop);
+            arguments->MakeArgv(prop);
         }
-        JSTaggedValue ret = JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(set), array);
+        JSTaggedValue ret = JSFunction::Call(thread, adder, JSHandle<JSTaggedValue>(set), 1, arguments->GetArgv());
         // Let status be Call(adder, set, «nextValue.[[value]]»).
         JSHandle<JSTaggedValue> status(thread, ret);
 
@@ -199,18 +200,15 @@ JSTaggedValue BuiltinsSet::ForEach([[maybe_unused]] EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 1);
 
     // composed arguments
-    int argumentsLength = 3;
-    JSHandle<TaggedArray> array(factory->NewTaggedArray(argumentsLength));
     JSHandle<JSTaggedValue> iter(factory->NewJSSetIterator(set, IterationKind::KEY));
     JSHandle<JSTaggedValue> result = JSIterator::IteratorStep(thread, iter);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
     while (!result->IsFalse()) {
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result.GetTaggedValue());
         JSHandle<JSTaggedValue> value = JSIterator::IteratorValue(thread, result);
-        array->Set(thread, 0, value);
-        array->Set(thread, 1, value);
-        array->Set(thread, 2, set);  // 2: the third value is set
         // Let funcResult be Call(callbackfn, T, «e, e, S»).
-        JSTaggedValue ret = JSFunction::Call(thread, func, thisArg, array);
+        arguments->MakeArgv(value, value, JSHandle<JSTaggedValue>(set));
+        JSTaggedValue ret = JSFunction::Call(thread, func, thisArg, 3, arguments->GetArgv());  // 3: three args
         // returnIfAbrupt
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ret);
         result = JSIterator::IteratorStep(thread, iter);

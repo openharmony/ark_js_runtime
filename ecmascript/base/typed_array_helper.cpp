@@ -22,22 +22,14 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_float32_array.h"
-#include "ecmascript/js_float64_array.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_int16_array.h"
-#include "ecmascript/js_int32_array.h"
-#include "ecmascript/js_int8_array.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_typed_array.h"
-#include "ecmascript/js_uint16_array.h"
-#include "ecmascript/js_uint32_array.h"
-#include "ecmascript/js_uint8_array.h"
-#include "ecmascript/js_uint8_clamped_array.h"
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript::base {
@@ -188,7 +180,7 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     JSHandle<JSTaggedValue> srcArray = BuiltinsBase::GetCallArg(argv, 0);
     JSHandle<JSObject> srcObj(srcArray);
     // 6. Let srcData be srcArray.[[ViewedArrayBuffer]].
-    JSHandle<JSTaggedValue> srcData(thread, TypedArrayHelper::GetViewedArrayBuffer(srcObj));
+    JSHandle<JSTaggedValue> srcData(thread, JSTypedArray::Cast(*srcObj)->GetViewedArrayBuffer());
     // 7. If IsDetachedBuffer(srcData) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(srcData.GetTaggedValue())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "The srcData is detached buffer.", JSTaggedValue::Exception());
@@ -200,7 +192,7 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     // 11. Let srcType be the Element Type value in Table 61 for srcName.
     // 12. Let srcElementSize be the Element Size value specified in Table 61 for srcName.
     int32_t elementLength = TypedArrayHelper::GetArrayLength(thread, srcObj);
-    JSHandle<JSTaggedValue> srcName = TypedArrayHelper::GetTypedArrayName(thread, srcObj);
+    JSHandle<JSTaggedValue> srcName(thread, JSTypedArray::Cast(*srcObj)->GetTypedArrayName());
     DataViewType srcType = TypedArrayHelper::GetTypeFromName(thread, srcName);
     int32_t srcElementSize = TypedArrayHelper::GetSizeFromName(thread, srcName);
     // 13. Let srcByteOffset be srcArray.[[ByteOffset]].
@@ -257,10 +249,10 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     // 20. Set O’s [[ByteLength]] internal slot to byteLength.
     // 21. Set O’s [[ByteOffset]] internal slot to 0.
     // 22. Set O’s [[ArrayLength]] internal slot to elementLength.
-    TypedArrayHelper::SetViewedArrayBuffer(thread, obj, data);
-    TypedArrayHelper::SetByteLength(thread, obj, byteLength);
-    TypedArrayHelper::SetByteOffset(thread, obj, 0);
-    TypedArrayHelper::SetArrayLength(thread, obj, elementLength);
+    JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread, data);
+    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(byteLength));
+    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(0));
+    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(elementLength));
     // 23. Return O.
     return obj.GetTaggedValue();
 }
@@ -329,10 +321,10 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
     // 14. Set O.[[ByteLength]] to newByteLength.
     // 15. Set O.[[ByteOffset]] to offset.
     // 16. Set O.[[ArrayLength]] to newByteLength / elementSize.
-    TypedArrayHelper::SetViewedArrayBuffer(thread, obj, buffer.GetTaggedValue());
-    TypedArrayHelper::SetByteLength(thread, obj, newByteLength);
-    TypedArrayHelper::SetByteOffset(thread, obj, offset);
-    TypedArrayHelper::SetArrayLength(thread, obj, newByteLength / elementSize);
+    JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread, buffer);
+    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(newByteLength));
+    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(offset));
+    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(newByteLength / elementSize));
     // 17. Return O.
     return obj.GetTaggedValue();
 }
@@ -355,10 +347,10 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArray(ObjectFactory *factory, 
     //   a. Set obj.[[ByteLength]] to 0.
     //   b. Set obj.[[ByteOffset]] to 0.
     //   c. Set obj.[[ArrayLength]] to 0.
-    TypedArrayHelper::SetTypedArrayName(thread, obj, constructorName);
-    TypedArrayHelper::SetByteLength(thread, obj, 0);
-    TypedArrayHelper::SetByteOffset(thread, obj, 0);
-    TypedArrayHelper::SetArrayLength(thread, obj, 0);
+    JSTypedArray::Cast(*obj)->SetTypedArrayName(thread, constructorName);
+    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(0));
+    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(0));
+    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(0));
     // 9. Return obj.
     return obj;
 }  // namespace panda::ecmascript::base
@@ -377,7 +369,7 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArray(ObjectFactory *factory, 
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 3. Assert: obj.[[ViewedArrayBuffer]] is undefined.
     // 4. Set obj.[[TypedArrayName]] to constructorName.
-    TypedArrayHelper::SetTypedArrayName(thread, obj, constructorName);
+    JSTypedArray::Cast(*obj)->SetTypedArrayName(thread, constructorName);
     // 7. If length is not present, then
     // 8. Else,
     //   a. Perform ? AllocateTypedArrayBuffer(obj, length).
@@ -402,7 +394,7 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArrayBuffer(JSThread *thread, 
         THROW_RANGE_ERROR_AND_RETURN(thread, "array length must less than 2^32 - 1", exception);
     }
     // 4. Let constructorName be the String value of O.[[TypedArrayName]].
-    JSHandle<JSTaggedValue> constructorName = TypedArrayHelper::GetTypedArrayName(thread, obj);
+    JSHandle<JSTaggedValue> constructorName(thread, JSTypedArray::Cast(*obj)->GetTypedArrayName());
     // 5. Let elementSize be the Element Size value specified in Table 61 for constructorName.
     int32_t elementSize = TypedArrayHelper::GetSizeFromName(thread, constructorName);
     // 6. Let byteLength be elementSize × length.
@@ -415,17 +407,17 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArrayBuffer(JSThread *thread, 
     // 9. Set O.[[ByteLength]] to byteLength.
     // 10. Set O.[[ByteOffset]] to 0.
     // 11. Set O.[[ArrayLength]] to length.
-    TypedArrayHelper::SetViewedArrayBuffer(thread, obj, data);
-    TypedArrayHelper::SetByteLength(thread, obj, byteLength);
-    TypedArrayHelper::SetByteOffset(thread, obj, 0);
-    TypedArrayHelper::SetArrayLength(thread, obj, length);
+    JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread, data);
+    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(byteLength));
+    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(0));
+    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(length));
     // 12. Return O.
     return obj;
 }
 
 // es11 22.2.4.7 TypedArraySpeciesCreate ( exemplar, argumentList )
 JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, const JSHandle<JSObject> &obj,
-                                                             const JSHandle<TaggedArray> &argumentList)
+                                                             uint32_t argc, const JSTaggedType argv[])
 {
     // 1. Assert: exemplar is an Object that has [[TypedArrayName]] and [[ContentType]] internal slots.
     // 2. Let defaultConstructor be the intrinsic object listed in column one of Table 61 for
@@ -435,18 +427,17 @@ JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, c
     JSHandle<JSTaggedValue> thisConstructor = JSObject::SpeciesConstructor(thread, obj, defaultConstructor);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 4. Let result be ? TypedArrayCreate(constructor, argumentList).
-    return TypedArrayHelper::TypedArrayCreate(thread, thisConstructor, argumentList);
+    return TypedArrayHelper::TypedArrayCreate(thread, thisConstructor, argc, argv);
 }
 
 // es11 22.2.4.6 TypedArrayCreate ( constructor, argumentList )
 JSHandle<JSObject> TypedArrayHelper::TypedArrayCreate(JSThread *thread, const JSHandle<JSTaggedValue> &constructor,
-                                                      const JSHandle<TaggedArray> &argumentList)
+                                                      uint32_t argc, const JSTaggedType argv[])
 {
     // 1. Let newTypedArray be ? Construct(constructor, argumentList).
-    JSTaggedValue taggedArray = JSFunction::Construct(thread, constructor, argumentList,
+    JSTaggedValue taggedArray = JSFunction::Construct(thread, constructor, argc, argv,
                                                       JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
-    [[maybe_unused]] JSType type = taggedArray.GetTaggedObject()->GetClass()->GetObjectType();
     if (!taggedArray.IsECMAObject()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Failed to construct the Typedarray.",
                                     JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
@@ -458,9 +449,9 @@ JSHandle<JSObject> TypedArrayHelper::TypedArrayCreate(JSThread *thread, const JS
     JSHandle<JSObject> newTypedArray(taggedArrayHandle);
     // 3. If argumentList is a List of a single Number, then
     //   a. If newTypedArray.[[ArrayLength]] < argumentList[0], throw a TypeError exception.
-    if (argumentList->GetLength() == 1) {
+    if (argc == 1) {
         if (TypedArrayHelper::GetArrayLength(thread, newTypedArray) <
-            JSTaggedValue::ToInt32(thread, JSHandle<JSTaggedValue>(thread, argumentList->Get(0)))) {
+            JSTaggedValue::ToInt32(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue(argv[0])))) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "the length of newTypedArray is not a correct value.",
                                         JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
         }
@@ -479,7 +470,7 @@ JSTaggedValue TypedArrayHelper::ValidateTypedArray(JSThread *thread, const JSHan
     }
     // 3. Let buffer be O.[[ViewedArrayBuffer]].
     // 4. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
-    JSTaggedValue buffer = TypedArrayHelper::GetViewedArrayBuffer(JSHandle<JSObject>::Cast(value));
+    JSTaggedValue buffer = JSHandle<JSTypedArray>::Cast(value)->GetViewedArrayBuffer();
     if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "The ViewedArrayBuffer of O is detached buffer.",
                                     JSTaggedValue::Exception());
@@ -489,12 +480,12 @@ JSTaggedValue TypedArrayHelper::ValidateTypedArray(JSThread *thread, const JSHan
 }
 
 int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue> &callbackfnHandle,
-                                      const JSHandle<JSTaggedValue> &buffer, const JSHandle<JSTaggedValue> &x,
-                                      const JSHandle<JSTaggedValue> &y)
+                                      const JSHandle<JSTaggedValue> &buffer, const JSHandle<JSTaggedValue> &firstValue,
+                                      const JSHandle<JSTaggedValue> &secondValue)
 {
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     // 1. Assert: Both Type(x) and Type(y) is Number.
-    ASSERT(x->IsNumber() && y->IsNumber());
+    ASSERT(firstValue->IsNumber() && secondValue->IsNumber());
     // 2. If the argument comparefn is not undefined, then
     //   a. Let v be Call(comparefn, undefined, «x, y»).
     //   b. ReturnIfAbrupt(v).
@@ -502,12 +493,11 @@ int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedV
     //   d. If v is NaN, return +0.
     //   e. Return v.
     if (!callbackfnHandle->IsUndefined()) {
-        const array_size_t LEN = 2;
-        JSHandle<TaggedArray> msg = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(LEN);
         JSHandle<JSTaggedValue> thisArgHandle = globalConst->GetHandledUndefined();
-        msg->Set(thread, 0, x);
-        msg->Set(thread, 1, y);
-        JSTaggedValue callResult = JSFunction::Call(thread, callbackfnHandle, thisArgHandle, msg);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(firstValue, secondValue);
+        JSTaggedValue callResult =
+            JSFunction::Call(thread, callbackfnHandle, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
         if (BuiltinsArrayBuffer::IsDetachedBuffer(buffer.GetTaggedValue())) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "The buffer is detached buffer.", 0);
@@ -522,18 +512,18 @@ int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedV
         return value;
     }
     // 3. If x and y are both NaN, return +0.
-    if (NumberHelper::IsNaN(x.GetTaggedValue())) {
-        if (NumberHelper::IsNaN(y.GetTaggedValue())) {
+    if (NumberHelper::IsNaN(firstValue.GetTaggedValue())) {
+        if (NumberHelper::IsNaN(secondValue.GetTaggedValue())) {
             return +0;
         }
         // 4. If x is NaN, return 1.
         return 1;
     }
     // 5. If y is NaN, return -1.
-    if (NumberHelper::IsNaN(y.GetTaggedValue())) {
+    if (NumberHelper::IsNaN(secondValue.GetTaggedValue())) {
         return -1;
     }
-    ComparisonResult compareResult = JSTaggedValue::Compare(thread, x, y);
+    ComparisonResult compareResult = JSTaggedValue::Compare(thread, firstValue, secondValue);
     // 6. If x < y, return -1.
     // 7. If x > y, return 1.
     // 8. If x is -0 and y is +0, return -1.
@@ -545,8 +535,8 @@ int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedV
     if (compareResult == ComparisonResult::GREAT) {
         return 1;
     }
-    JSTaggedNumber xNumber = JSTaggedValue::ToNumber(thread, x);
-    JSTaggedNumber yNumber = JSTaggedValue::ToNumber(thread, y);
+    JSTaggedNumber xNumber = JSTaggedValue::ToNumber(thread, firstValue);
+    JSTaggedNumber yNumber = JSTaggedValue::ToNumber(thread, secondValue);
     double eZeroTemp = -0.0;
     auto eZero = JSTaggedNumber(eZeroTemp);
     double pZeroTemp = +0.0;

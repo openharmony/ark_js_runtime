@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_FAST_RUNTIME_STUB_H
-#define PANDA_RUNTIME_ECMASCRIPT_FAST_RUNTIME_STUB_H
+#ifndef ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_H
+#define ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_H
 
 #include "ecmascript/js_tagged_value.h"
 
@@ -67,19 +67,19 @@ public:
     /* -------------- Special API For Multi-Language VM End ----------------- */
     /* -------------- Common API End, Don't change those interface!!! ----------------- */
 
-    template <bool UseOwn = false>
+    template<bool UseOwn = false>
     static inline JSTaggedValue GetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
-    template <bool UseOwn = false>
+    template<bool UseOwn = false>
     static inline JSTaggedValue GetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
-    template <bool UseOwn = false>
+    template<bool UseOwn = false>
     static inline JSTaggedValue GetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index);
-    template <bool UseOwn = false>
+    template<bool UseOwn = false>
     static inline JSTaggedValue SetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                                   JSTaggedValue value);
-    template <bool UseOwn = false>
+    template<bool UseOwn = false>
     static inline JSTaggedValue SetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                                    JSTaggedValue value);
-    template <bool UseOwn = false>
+    template<bool UseOwn = false>
     static inline JSTaggedValue SetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                    JSTaggedValue value);
 
@@ -89,7 +89,7 @@ public:
                                               JSTaggedValue value);
     static inline JSTaggedValue FastGetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
     static inline JSTaggedValue FastGetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
-    template <bool UseHole = false>
+    template<bool UseHole = false>
     static inline JSTaggedValue FastGetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index);
 
 private:
@@ -110,4 +110,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_OBJECT_OPERATOR_INL_H
+#endif  // ECMASCRIPT_INTERPRETER_OBJECT_OPERATOR_INL_H

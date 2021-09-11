@@ -34,25 +34,16 @@
 #include "ecmascript/tagged_dictionary.h"
 
 namespace panda::ecmascript {
-// NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
-CAddressAllocator<JSTaggedType> *HeapSnapShot::allocator_ = nullptr;
-
-CAddressAllocator<JSTaggedType> *HeapSnapShot::GetAllocator()
-{
-    ASSERT(allocator_ != nullptr);
-    return allocator_;
-}
-
 CString *HeapSnapShot::GetString(const CString &as)
 {
     return stringTable_.GetString(as);
 }
 
-Node *Node::NewNode(size_t id, size_t index, CString *name, NodeType type, size_t size, TaggedObject *entry,
-                    bool isLive)
+Node *Node::NewNode(const Heap *heap, size_t id, size_t index, CString *name, NodeType type, size_t size,
+                    TaggedObject *entry, bool isLive)
 {
-    auto node = HeapSnapShot::GetAllocator()->New<Node>(id, index, name, type, size, 0, NewAddress<TaggedObject>(entry),
-                                                        isLive);
+    auto node = const_cast<RegionFactory *>(
+        heap->GetRegionFactory())->New<Node>(id, index, name, type, size, 0, NewAddress<TaggedObject>(entry), isLive);
     if (UNLIKELY(node == nullptr)) {
         LOG_ECMA(FATAL) << "internal allocator failed";
         UNREACHABLE();
@@ -60,9 +51,9 @@ Node *Node::NewNode(size_t id, size_t index, CString *name, NodeType type, size_
     return node;
 }
 
-Edge *Edge::NewEdge(uint64_t id, EdgeType type, Node *from, Node *to, CString *name)
+Edge *Edge::NewEdge(const Heap *heap, uint64_t id, EdgeType type, Node *from, Node *to, CString *name)
 {
-    auto edge = HeapSnapShot::GetAllocator()->New<Edge>(id, type, from, to, name);
+    auto edge = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<Edge>(id, type, from, to, name);
     if (UNLIKELY(edge == nullptr)) {
         LOG_ECMA(FATAL) << "internal allocator failed";
         UNREACHABLE();
@@ -72,11 +63,12 @@ Edge *Edge::NewEdge(uint64_t id, EdgeType type, Node *from, Node *to, CString *n
 
 HeapSnapShot::~HeapSnapShot()
 {
+    const Heap *heap = thread_->GetEcmaVM()->GetHeap();
     for (Node *node : nodes_) {
-        HeapSnapShot::GetAllocator()->Finalize(node);
+        const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(node);
     }
     for (Edge *edge : edges_) {
-        HeapSnapShot::GetAllocator()->Finalize(edge);
+        const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(edge);
     }
     nodes_.clear();
     edges_.clear();
@@ -198,6 +190,8 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             name = GetString("JSFunctionBase");
         } else if (hCls->IsJsBoundFunction()) {
             name = GetString("JsBoundFunction");
+        } else if (hCls->IsJSIntlBoundFunction()) {
+            name = GetString("JSIntlBoundFunction");
         } else if (hCls->IsJSProxyRevocFunction()) {
             name = GetString("JSProxyRevocFunction");
         } else if (hCls->IsJSAsyncFunction()) {
@@ -238,6 +232,16 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             name = GetString("JSRegExp");
         } else if (hCls->IsJSProxy()) {
             name = GetString("JSProxy");
+        } else if (hCls->IsJSLocale()) {
+            name = GetString("JSLocale");
+        } else if (hCls->IsJSIntl()) {
+            name = GetString("JSIntl");
+        } else if (hCls->IsJSDateTimeFormat()) {
+            name = GetString("JSDateTimeFormat");
+        } else if (hCls->IsJSRelativeTimeFormat()) {
+            name = GetString("JSRelativeTimeFormat");
+        } else if (hCls->IsJSNumberFormat()) {
+            name = GetString("JSNumberFormat");
         } else if (hCls->IsAccessorData()) {
             name = GetString("AccessorData");
         } else if (hCls->IsInternalAccessor()) {
@@ -383,7 +387,7 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
         TaggedObject *obj = entry.GetTaggedObject();
         auto *baseClass = obj->GetClass();
         if (baseClass != nullptr) {
-            node = Node::NewNode(sequenceId, nodeCount_, GenerateNodeName(thread, obj), GenerateNodeType(obj),
+            node = Node::NewNode(heap_, sequenceId, nodeCount_, GenerateNodeName(thread, obj), GenerateNodeType(obj),
                                  obj->GetObjectSize(), obj);
             Node *existNode = entryMap_.FindOrInsertNode(node);  // Fast Index
             if (existNode == node) {
@@ -395,7 +399,7 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
             } else {
                 existNode->SetLive(true);
                 ASSERT(entryMap_.FindEntry(node->GetAddress())->GetAddress() == node->GetAddress());
-                HeapSnapShot::GetAllocator()->Finalize(node);
+                const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(node);
                 return nullptr;
             }
         }
@@ -425,7 +429,8 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
             primitiveName.append("Illegal_Primitive");
         }
 
-        node = Node::NewNode(sequenceId, nodeCount_, GetString(primitiveName), NodeType::JS_PRIMITIVE_REF, 0, obj);
+        node = Node::NewNode(heap_, sequenceId, nodeCount_, GetString(primitiveName), NodeType::JS_PRIMITIVE_REF, 0,
+                             obj);
         Node *existNode = entryMap_.FindOrInsertNode(node);  // Fast Index
         if (existNode == node) {
             if (sequenceId == sequenceId_ + SEQ_STEP) {
@@ -433,7 +438,7 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
             }
             InsertNodeUnique(node);
         } else {
-            allocator_->Finalize(node);
+            const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(node);
             node = nullptr;
             existNode->SetLive(true);
         }
@@ -448,7 +453,7 @@ Node *HeapSnapShot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
     size_t selfsize = originStr->ObjectSize();
     CString strContent;
     strContent.append(EntryVisitor::ConvertKey(entry));
-    node = Node::NewNode(sequenceId, nodeCount_, GetString(strContent), NodeType::PRIM_STRING, selfsize,
+    node = Node::NewNode(heap_, sequenceId, nodeCount_, GetString(strContent), NodeType::PRIM_STRING, selfsize,
                          entry.GetTaggedObject());
     Node *existNode = entryMap_.FindOrInsertNode(node);  // Fast Index
     if (existNode == node) {
@@ -461,7 +466,7 @@ Node *HeapSnapShot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
     }
     ASSERT(entryMap_.FindEntry(node->GetAddress())->GetAddress() == node->GetAddress());
     if (existNode != node) {
-        HeapSnapShot::GetAllocator()->Finalize(node);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(node);
         return nullptr;
     }
     return node;
@@ -484,7 +489,7 @@ void HeapSnapShot::FillEdges(JSThread *thread)
                 entryTo = GenerateNode(thread, it.second);
             }
             if (entryTo != nullptr) {
-                Edge *edge = Edge::NewEdge(edgeCount_, EdgeType::DEFAULT, *iter, entryTo, GetString(it.first));
+                Edge *edge = Edge::NewEdge(heap_, edgeCount_, EdgeType::DEFAULT, *iter, entryTo, GetString(it.first));
                 InsertEdgeUnique(edge);
                 (*iter)->IncEdgeCount();  // Update Node's edgeCount_ here
             }
@@ -505,7 +510,7 @@ void HeapSnapShot::FillEdges(JSThread *thread)
             } else {
                 valueName.append("NaN");
             }
-            Edge *edge = Edge::NewEdge(edgeCount_, EdgeType::DEFAULT, (*iter), (*iter), GetString(valueName));
+            Edge *edge = Edge::NewEdge(heap_, edgeCount_, EdgeType::DEFAULT, (*iter), (*iter), GetString(valueName));
             InsertEdgeUnique(edge);
             (*iter)->IncEdgeCount();  // Update Node's edgeCount_ here
         }
@@ -560,7 +565,8 @@ Edge *HeapSnapShot::InsertEdgeUnique(Edge *edge)
 
 void HeapSnapShot::AddSyntheticRoot(JSThread *thread)
 {
-    Node *syntheticRoot = Node::NewNode(1, nodeCount_, GetString("SyntheticRoot"), NodeType::SYNTHETIC, 0, nullptr);
+    Node *syntheticRoot = Node::NewNode(heap_, 1, nodeCount_, GetString("SyntheticRoot"), NodeType::SYNTHETIC, 0,
+                                        nullptr);
     InsertNodeAt(0, syntheticRoot);
 
     int edgeOffset = 0;
@@ -572,7 +578,7 @@ void HeapSnapShot::AddSyntheticRoot(JSThread *thread)
         Node *rootNode = entryMap_.FindEntry(Node::NewAddress(root));                                           \
         if (rootNode != nullptr) {                                                                              \
             Edge *edge =                                                                                        \
-                Edge::NewEdge(edgeCount_, EdgeType::SHORTCUT, syntheticRoot, rootNode, GetString("-subroot-")); \
+                Edge::NewEdge(heap_, edgeCount_, EdgeType::SHORTCUT, syntheticRoot, rootNode, GetString("-subroot-")); \
             InsertEdgeAt(edgeOffset, edge);                                                                     \
             edgeOffset++;                                                                                       \
             syntheticRoot->IncEdgeCount();                                                                      \

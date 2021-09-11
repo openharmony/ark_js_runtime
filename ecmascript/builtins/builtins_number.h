@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_NUMBER_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_NUMBER_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_NUMBER_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_NUMBER_H
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/js_tagged_value.h"
@@ -56,4 +56,4 @@ private:
     static JSTaggedNumber ThisNumberValue(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins
-#endif  // PANDA_RUNTIME_ECMASCRIPT_NUBMER_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_NUBMER_H

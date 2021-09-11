@@ -13,15 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_HANDLE_SCOPE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_HANDLE_SCOPE_INL_H
+#ifndef ECMASCRIPT_HANDLE_SCOPE_INL_H
+#define ECMASCRIPT_HANDLE_SCOPE_INL_H
 
 #include "ecmascript/ecma_handle_scope.h"
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
 inline EcmaHandleScope::EcmaHandleScope(JSThread *thread)
-    : thread_(thread), prevNext_(thread->handleScopeStorageNext_), prevEnd_(thread->handleScopeStorageEnd_)
+    : thread_(thread), prevNext_(thread->handleScopeStorageNext_), prevEnd_(thread->handleScopeStorageEnd_),
+      prevHandleStorageIndex_(thread->currentHandleStorageIndex_)
 {
 }
 
@@ -30,7 +31,7 @@ inline EcmaHandleScope::~EcmaHandleScope()
     thread_->handleScopeStorageNext_ = prevNext_;
     if (thread_->handleScopeStorageEnd_ != prevEnd_) {
         thread_->handleScopeStorageEnd_ = prevEnd_;
-        thread_->ShrunkHandleStorage(prevEnd_);
+        thread_->ShrinkHandleStorage(prevHandleStorageIndex_);
     }
 }
 
@@ -46,4 +47,4 @@ uintptr_t EcmaHandleScope::NewHandle(JSThread *thread, JSTaggedType value)
     return reinterpret_cast<uintptr_t>(result);
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_HANDLE_SCOPE_INL_H
+#endif  // ECMASCRIPT_HANDLE_SCOPE_INL_H

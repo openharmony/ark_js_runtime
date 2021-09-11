@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_SERIALIZER_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_SERIALIZER_H
+#ifndef ECMASCRIPT_JS_SERIALIZER_H
+#define ECMASCRIPT_JS_SERIALIZER_H
 
 #include <map>
 
@@ -92,7 +92,7 @@ public:
     std::pair<uint8_t *, size_t> ReleaseBuffer();
 
 private:
-    bool WriteTaggedObject(const JSHandle<JSTaggedValue> &obj);
+    bool WriteTaggedObject(const JSHandle<JSTaggedValue> &value);
     bool WritePrimitiveValue(const JSHandle<JSTaggedValue> &value);
     bool WriteInt(int32_t value);
     bool WriteInt(uint32_t value);
@@ -102,16 +102,16 @@ private:
     bool AllocateBuffer(size_t bytes);
     bool ExpandBuffer(size_t requestedSize);
     bool WriteBoolean(bool value);
-    bool WriteJSError(const JSHandle<JSObject> &obj);
+    bool WriteJSError(const JSHandle<JSTaggedValue> &value);
     bool WriteJSErrorHeader(JSType type);
-    bool WriteJSDate(const JSHandle<JSObject> &obj);
-    bool WriteJSArray(const JSHandle<JSObject> &obj);
-    bool WriteJSMap(const JSHandle<JSObject> &obj);
-    bool WriteJSSet(const JSHandle<JSObject> &obj);
-    bool WriteJSRegExp(const JSHandle<JSObject> &obj);
+    bool WriteJSDate(const JSHandle<JSTaggedValue> &value);
+    bool WriteJSArray(const JSHandle<JSTaggedValue> &value);
+    bool WriteJSMap(const JSHandle<JSTaggedValue> &value);
+    bool WriteJSSet(const JSHandle<JSTaggedValue> &value);
+    bool WriteJSRegExp(const JSHandle<JSTaggedValue> &value);
     bool WriteEcmaString(const JSHandle<JSTaggedValue> &value);
-    bool WriteJSTypedArray(const JSHandle<JSObject> &obj, SerializationUID uId);
-    bool WritePlainObject(const JSHandle<JSObject> &obj);
+    bool WriteJSTypedArray(const JSHandle<JSTaggedValue> &value, SerializationUID uId);
+    bool WritePlainObject(const JSHandle<JSTaggedValue> &value);
     bool WriteLength(uint32_t length);
     bool WriteNativeFunctionPointer(const JSHandle<JSTaggedValue> &value);
     bool WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value);
@@ -166,11 +166,6 @@ private:
     bool DefinePropertiesAndElements(const JSHandle<JSTaggedValue> &obj);
     bool ReadDesc(PropertyDescriptor *desc);
     bool ReadBoolean(bool *value);
-    void SetViewedArrayBuffer(const JSHandle<JSObject> &obj, JSTaggedValue viewedArrayBuffer);
-    void SetTypedArrayName(const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &typedArrayName);
-    void SetByteLength(const JSHandle<JSObject> &obj, int32_t byteLength);
-    void SetByteOffset(const JSHandle<JSObject> &obj, int32_t byteOffset);
-    void SetArrayLength(const JSHandle<JSObject> &obj, int32_t arrayLength);
 
     NO_MOVE_SEMANTIC(JSDeserializer);
     NO_COPY_SEMANTIC(JSDeserializer);
@@ -249,4 +244,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif // PANDA_RUNTIME_ECMASCRIPT_JS_SERIALIZER_H
+#endif // ECMASCRIPT_JS_SERIALIZER_H

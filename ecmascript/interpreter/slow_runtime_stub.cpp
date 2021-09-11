@@ -16,11 +16,12 @@
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 
 #include "ecmascript/base/number_helper.h"
-
+#include "ecmascript/builtins/builtins_regexp.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/ic/profile_type_info.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
 #include "ecmascript/js_arguments.h"
@@ -55,9 +56,10 @@ JSTaggedValue SlowRuntimeStub::CallSpreadDyn(JSThread *thread, JSTaggedValue fun
     JSHandle<JSTaggedValue> taggedObj(thread, obj);
 
     JSHandle<TaggedArray> coretypesArray(thread, GetCallSpreadArgs(thread, jsArray.GetTaggedValue()));
-
+    InternalCallParams *params = thread->GetInternalCallParams();
+    params->MakeArgList(*coretypesArray);
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    JSTaggedValue res = InvokeJsFunction(thread, jsFunc, taggedObj, newTarget, coretypesArray);
+    JSTaggedValue res = InvokeJsFunction(thread, jsFunc, taggedObj, newTarget, params);
 
     return res;
 }
@@ -177,7 +179,7 @@ void SlowRuntimeStub::ThrowConstAssignment(JSThread *thread, JSTaggedValue value
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     JSHandle<EcmaString> name(thread, value.GetTaggedObject());
-    JSHandle<EcmaString> info = factory->NewFromString("Assignment to const variable ");
+    JSHandle<EcmaString> info = factory->NewFromCanBeCompressString("Assignment to const variable ");
 
     JSHandle<EcmaString> msg = factory->ConcatFromString(info, name);
     THROW_NEW_ERROR_AND_RETURN(thread, factory->NewJSError(base::ErrorType::TYPE_ERROR, msg).GetTaggedValue());
@@ -619,7 +621,6 @@ JSTaggedValue SlowRuntimeStub::AsyncFunctionResolveOrReject(JSThread *thread, JS
     INTERPRETER_TRACE(thread, AsyncFunctionResolveOrReject);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSAsyncFuncObject> asyncFuncObjHandle(thread, asyncFuncObj);
     JSHandle<JSPromise> promise(thread, asyncFuncObjHandle->GetPromise());
     JSHandle<JSTaggedValue> valueHandle(thread, value);
@@ -628,15 +629,15 @@ JSTaggedValue SlowRuntimeStub::AsyncFunctionResolveOrReject(JSThread *thread, JS
     JSHandle<ResolvingFunctionsRecord> reactions = JSPromise::CreateResolvingFunctions(thread, promise);
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     JSHandle<JSTaggedValue> thisArg = globalConst->GetHandledUndefined();
-    JSHandle<TaggedArray> args = factory->NewTaggedArray(1);
-    args->Set(thread, 0, value);
     JSHandle<JSTaggedValue> activeFunc;
     if (is_resolve) {
         activeFunc = JSHandle<JSTaggedValue>(thread, reactions->GetResolveFunction());
     } else {
         activeFunc = JSHandle<JSTaggedValue>(thread, reactions->GetRejectFunction());
     }
-    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(thread, activeFunc, thisArg, args);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(valueHandle);
+    [[maybe_unused]] JSTaggedValue res = JSFunction::Call(thread, activeFunc, thisArg, 1, arguments->GetArgv());
 
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return promise.GetTaggedValue();
@@ -663,7 +664,9 @@ JSTaggedValue SlowRuntimeStub::NewObjSpreadDyn(JSThread *thread, JSTaggedValue f
         argsArray->Set(thread, i, prop);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     }
-    auto tagged = SlowRuntimeHelper::NewObject(thread, funcHandle, newTargetHandle, argsArray);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgList(*argsArray);
+    auto tagged = SlowRuntimeHelper::NewObject(thread, funcHandle, newTargetHandle, length, arguments->GetArgv());
     return tagged;
 }
 
@@ -673,7 +676,7 @@ void SlowRuntimeStub::ThrowUndefinedIfHole(JSThread *thread, JSTaggedValue obj)
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<EcmaString> name(thread, obj);
-    JSHandle<EcmaString> info = factory->NewFromString(" is not initialized");
+    JSHandle<EcmaString> info = factory->NewFromCanBeCompressString(" is not initialized");
 
     JSHandle<EcmaString> msg = factory->ConcatFromString(info, name);
     THROW_NEW_ERROR_AND_RETURN(thread, factory->NewJSError(base::ErrorType::REFERENCE_ERROR, msg).GetTaggedValue());
@@ -736,13 +739,13 @@ JSTaggedValue SlowRuntimeStub::StOwnByName(JSThread *thread, JSTaggedValue obj, 
     return JSTaggedValue::True();
 }
 
-JSTaggedValue SlowRuntimeStub::StOwnByIndex(JSThread *thread, JSTaggedValue obj, JSTaggedValue idx, JSTaggedValue value)
+JSTaggedValue SlowRuntimeStub::StOwnByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, StOwnByIdDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
     JSHandle<JSTaggedValue> objHandle(thread, obj);
-    JSHandle<JSTaggedValue> idxHandle(thread, idx);
+    JSHandle<JSTaggedValue> idxHandle(thread, JSTaggedValue(idx));
     JSHandle<JSTaggedValue> valueHandle(thread, value);
 
     // property in class is non-enumerable
@@ -917,6 +920,45 @@ JSTaggedValue SlowRuntimeStub::LdModvarByName([[maybe_unused]] JSThread *thread,
     return moduleVar.GetTaggedValue();
 }
 
+JSTaggedValue SlowRuntimeStub::CreateRegExpWithLiteral(JSThread *thread, JSTaggedValue pattern, uint8_t flags)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSTaggedValue> patternHandle(thread, pattern);
+    uint8_t *flagsStr = new uint8_t[7]; // 7: maximum 6 flags + '\0'
+    size_t flagsLen = 0;
+    if (flags & RegExpParser::FLAG_GLOBAL) {
+        flagsStr[flagsLen] = 'g';
+        flagsLen++;
+    }
+    if (flags & RegExpParser::FLAG_IGNORECASE) {
+        flagsStr[flagsLen] = 'i';
+        flagsLen++;
+    }
+    if (flags & RegExpParser::FLAG_MULTILINE) {
+        flagsStr[flagsLen] = 'm';
+        flagsLen++;
+    }
+    if (flags & RegExpParser::FLAG_DOTALL) {
+        flagsStr[flagsLen] = 's';
+        flagsLen++;
+    }
+    if (flags & RegExpParser::FLAG_UTF16) {
+        flagsStr[flagsLen] = 'u';
+        flagsLen++;
+    }
+    if (flags & RegExpParser::FLAG_STICKY) {
+        flagsStr[flagsLen] = 'y';
+        flagsLen++;
+    }
+    flagsStr[flagsLen] = '\0';
+    JSHandle<JSTaggedValue> flagsHandle(factory->NewFromUtf8(flagsStr, flagsLen));
+    delete[] flagsStr;
+
+    return builtins::BuiltinsRegExp::RegExpCreate(thread, patternHandle, flagsHandle);
+}
+
 JSTaggedValue SlowRuntimeStub::CreateArrayWithBuffer(JSThread *thread, ObjectFactory *factory, JSArray *literal)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -981,14 +1023,11 @@ JSTaggedValue SlowRuntimeStub::GetIteratorNext(JSThread *thread, JSTaggedValue o
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-
     JSHandle<JSTaggedValue> iter(thread, obj);
     JSHandle<JSTaggedValue> next(thread, method);
 
-    JSHandle<TaggedArray> argv(factory->EmptyArray());
     ASSERT(next->IsCallable());
-    JSTaggedValue ret = JSFunction::Call(thread, next, iter, argv);
+    JSTaggedValue ret = JSFunction::Call(thread, next, iter, 0, nullptr);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     if (!ret.IsECMAObject()) {
         return ThrowTypeError(thread, "the Iterator is not an ecmaobject.");
@@ -1077,8 +1116,9 @@ JSTaggedValue SlowRuntimeStub::GetIterator(JSThread *thread, JSTaggedValue obj)
         return valuesFunc.GetTaggedValue();
     }
     JSHandle<JSTaggedValue> newTarget(thread, JSTaggedValue::Undefined());
-    JSHandle<TaggedArray> args = vm->GetFactory()->EmptyArray();
-    JSTaggedValue res = InvokeJsFunction(thread, JSHandle<JSFunction>(valuesFunc), objHandle, newTarget, args);
+    InternalCallParams *params = thread->GetInternalCallParams();
+    params->MakeEmptyArgv();
+    JSTaggedValue res = InvokeJsFunction(thread, JSHandle<JSFunction>(valuesFunc), objHandle, newTarget, params);
 
     return res;
 }
@@ -1140,7 +1180,7 @@ JSTaggedValue SlowRuntimeStub::DefineGetterSetterByValue(JSThread *thread, JSTag
     return objHandle.GetTaggedValue();
 }
 
-JSTaggedValue SlowRuntimeStub::LdObjByIndex(JSThread *thread, JSTaggedValue obj, JSTaggedValue idx, bool callGetter,
+JSTaggedValue SlowRuntimeStub::LdObjByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, bool callGetter,
                                             JSTaggedValue receiver)
 {
     INTERPRETER_TRACE(thread, LdObjByIndexDyn);
@@ -1151,18 +1191,18 @@ JSTaggedValue SlowRuntimeStub::LdObjByIndex(JSThread *thread, JSTaggedValue obj,
     if (callGetter) {
         res = JSObject::CallGetter(thread, AccessorData::Cast(receiver.GetTaggedObject()), objHandle);
     } else {
-        res = JSTaggedValue::GetProperty(thread, objHandle, idx.GetArrayLength()).GetValue().GetTaggedValue();
+        res = JSTaggedValue::GetProperty(thread, objHandle, idx).GetValue().GetTaggedValue();
     }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return res;
 }
 
-JSTaggedValue SlowRuntimeStub::StObjByIndex(JSThread *thread, JSTaggedValue obj, JSTaggedValue idx, JSTaggedValue value)
+JSTaggedValue SlowRuntimeStub::StObjByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, StObjByIndexDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSTaggedValue::SetProperty(thread, JSHandle<JSTaggedValue>(thread, obj), idx.GetArrayLength(),
+    JSTaggedValue::SetProperty(thread, JSHandle<JSTaggedValue>(thread, obj), idx,
                                JSHandle<JSTaggedValue>(thread, value), true);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return JSTaggedValue::True();
@@ -1531,8 +1571,7 @@ JSTaggedValue SlowRuntimeStub::DefineClass(JSThread *thread, JSFunction *func, T
     if (!JSTaggedValue::HasOwnProperty(thread, cls, globalConst->GetHandledNameString())) {
         JSMethod *clsTarget = JSHandle<JSFunction>::Cast(cls)->GetCallTarget();
         ASSERT(clsTarget != nullptr);
-        CString clsName(
-            utf::Mutf8AsCString(clsTarget->GetStringDataAnnotation(Method::AnnotationField::FUNCTION_NAME).data));
+        CString clsName = clsTarget->ParseFunctionName();
         if (!clsName.empty()) {
             success =
                 success && JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(cls),
@@ -1566,7 +1605,9 @@ JSTaggedValue SlowRuntimeStub::SuperCall(JSThread *thread, JSTaggedValue func, J
     for (size_t i = 0; i < length; ++i) {
         argv->Set(thread, i, frameHandler.GetVRegValue(firstVRegIdx + i));
     }
-    JSTaggedValue result = JSFunction::Construct(thread, superFunc, argv, newTargetHandle);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgList(*argv);
+    JSTaggedValue result = JSFunction::Construct(thread, superFunc, length, arguments->GetArgv(), newTargetHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return result;
@@ -1586,7 +1627,10 @@ JSTaggedValue SlowRuntimeStub::SuperCallSpread(JSThread *thread, JSTaggedValue f
     ASSERT(superFunc->IsJSFunction());
 
     JSHandle<TaggedArray> argv(thread, GetCallSpreadArgs(thread, jsArray.GetTaggedValue()));
-    JSTaggedValue result = JSFunction::Construct(thread, superFunc, argv, newTargetHandle);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgList(*argv);
+    JSTaggedValue result =
+        JSFunction::Construct(thread, superFunc, argv->GetLength(), arguments->GetArgv(), newTargetHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return result;
@@ -1692,15 +1736,14 @@ void SlowRuntimeStub::ThrowDeleteSuperProperty(JSThread *thread)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<EcmaString> info = factory->NewFromString("Can not delete super property");
+    JSHandle<EcmaString> info = factory->NewFromCanBeCompressString("Can not delete super property");
     JSHandle<JSObject> errorObj = factory->NewJSError(base::ErrorType::REFERENCE_ERROR, info);
     THROW_NEW_ERROR_AND_RETURN(thread, errorObj.GetTaggedValue());
 }
 
 JSTaggedValue SlowRuntimeStub::NotifyInlineCache(JSThread *thread, JSFunction *func, JSMethod *method)
 {
-    // use vtable index as ic Size
-    uint32_t icSlotSize = method->GetNumericalAnnotation(JSMethod::AnnotationField::IC_SIZE);
+    uint32_t icSlotSize = method->GetSlotSize();
     if (icSlotSize > 0 && icSlotSize < ProfileTypeInfo::INVALID_SLOT_INDEX) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         [[maybe_unused]] EcmaHandleScope handleScope(thread);

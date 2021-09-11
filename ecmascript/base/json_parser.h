@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_JSON_PARSE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_JSON_PARSE_INL_H
+#ifndef ECMASCRIPT_BASE_JSON_PARSE_INL_H
+#define ECMASCRIPT_BASE_JSON_PARSE_INL_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_handle.h"
@@ -48,39 +48,47 @@ private:
         TOKEN_ILLEGAL,
     };
 
-    template <bool inObjorArr = false>
+    template<bool inObjorArr = false>
     JSTaggedValue ParseJSONText();
 
-    template <bool inObjOrArr = false>
+    template<bool inObjOrArr = false>
     JSTaggedValue ParseNumber();
 
-    template <bool inObjorArr = false>
+    template<bool inObjorArr = false>
     JSTaggedValue ParseString();
 
-    template <bool inObjorArr = false>
+    template<bool inObjorArr = false>
     JSTaggedValue ParseArray();
 
-    template <bool inObjorArr = false>
+    template<bool inObjorArr = false>
     JSTaggedValue ParseObject();
 
     void SkipEndWhiteSpace();
     void SkipStartWhiteSpace();
+    void GetNextNonSpaceChar();
     JsonParser::Tokens ParseToken();
     JSTaggedValue ParseLiteral(CString str, Tokens literalToken);
     bool MatchText(CString str, uint32_t matchLen);
-    bool ReadNumberRange();
+    bool ReadNumberRange(bool &isFast);
     bool IsNumberCharacter(uint8_t ch);
     bool IsNumberSignalCharacter(uint8_t ch);
     bool IsExponentNumber();
     bool IsDecimalsLegal(bool &hasExponent);
     bool IsExponentLegal(bool &hasExponent);
-    bool ReadStringRange(bool &isFast);
-    bool IsFastParseString(CString &value);
+    bool ReadStringRange(bool &isFast, bool &isAscii);
+    bool ReadAsciiStringRange(bool &isFast);
+    bool IsFastParseString(bool &isFast, bool &isAscii);
+    bool IsFastParseAsciiString(bool &isFast);
     bool ConvertStringUnicode(CVector<uint16_t> &vec);
+    bool CheckZeroBeginNumber(bool &hasExponent);
+    bool CheckNonZeroBeginNumber(bool &hasExponent);
 
     bool RecurseAndApply(const JSHandle<JSObject> &holder, const JSHandle<JSTaggedValue> &name,
                          const JSHandle<JSTaggedValue> &receiver);
 
+    inline bool IsLegalAsciiCharacter(uint8_t c, bool &isAscii);
+
+    bool isAsciiString_{false};
     Text end_{nullptr};
     Text current_{nullptr};
     Text range_{nullptr};
@@ -90,4 +98,4 @@ private:
 };
 }  // namespace panda::ecmascript::base
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_JSON_PARSE_INL_H
+#endif  // ECMASCRIPT_BASE_JSON_PARSE_INL_H

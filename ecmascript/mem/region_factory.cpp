@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MM_REGION_FACTORY_H
-#define PANDA_RUNTIME_ECMASCRIPT_MM_REGION_FACTORY_H
+#ifndef ECMASCRIPT_MM_REGION_FACTORY_H
+#define ECMASCRIPT_MM_REGION_FACTORY_H
 
 #include "ecmascript/mem/region_factory.h"
+
+#include <malloc.h>
 
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/region.h"
@@ -39,7 +41,7 @@ Region *RegionFactory::AllocateAlignedRegion(Space *space, size_t capacity)
         LOG_ECMA_MEM(FATAL) << "pool is empty";
         UNREACHABLE();
     }
-    IncreaseMemoryUsage(capacity);
+    IncreaseAnnoMemoryUsage(capacity);
 
     uintptr_t mem = ToUintPtr(mapMem);
     // Check that the address is 256K byte aligned
@@ -55,7 +57,7 @@ Region *RegionFactory::AllocateAlignedRegion(Space *space, size_t capacity)
 void RegionFactory::FreeRegion(Region *region)
 {
     auto size = region->GetCapacity();
-    DecreaseMemoryUsage(size);
+    DecreaseAnnoMemoryUsage(size);
     PoolManager::GetMmapMemPool()->FreePool(ToVoidPtr(region->GetAllocateBase()), size);
 }
 
@@ -77,7 +79,7 @@ Area *RegionFactory::AllocateArea(size_t capacity)
         LOG_ECMA_MEM(FATAL) << "malloc failed";
         UNREACHABLE();
     }
-    IncreaseMemoryUsage(capacity);
+    IncreaseNativeMemoryUsage(capacity);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     uintptr_t begin = reinterpret_cast<uintptr_t>(mem) + headerSize;
     capacity -= headerSize;
@@ -94,29 +96,10 @@ void RegionFactory::FreeArea(Area *area)
         return;
     }
     auto size = area->GetSize() + sizeof(Area);
-    DecreaseMemoryUsage(size);
+    DecreaseNativeMemoryUsage(size);
     os::memory::LockHolder lock(staticResourceLock_);
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(reinterpret_cast<std::byte *>(area));
-}
-
-void *RegionFactory::AllocateWithMMap(size_t size)
-{
-    size = AlignUp(size, CHUNK_ALIGN_SIZE);
-    void *mem = panda::os::mem::MapRWAnonymousRaw(size);
-    if (mem == nullptr) {
-        LOG_ECMA_MEM(FATAL) << "mem is nullptr";
-        UNREACHABLE();
-    }
-    ASAN_UNPOISON_MEMORY_REGION(mem, size);
-    IncreaseMemoryUsage(size);
-    return mem;
-}
-
-void RegionFactory::FreeWithMMap(void *mem, size_t size)
-{
-    DecreaseMemoryUsage(size);
-    os::mem::MmapDeleter(reinterpret_cast<std::byte *>(mem), size);
 }
 
 void *RegionFactory::Allocate(size_t size)
@@ -131,7 +114,7 @@ void *RegionFactory::Allocate(size_t size)
         LOG_ECMA_MEM(FATAL) << "malloc failed";
         UNREACHABLE();
     }
-    IncreaseMemoryUsage(size);
+    IncreaseNativeMemoryUsage(size);
     return ptr;
 }
 
@@ -140,7 +123,7 @@ void RegionFactory::Free(void *mem, size_t size)
     if (mem == nullptr) {
         return;
     }
-    DecreaseMemoryUsage(size);
+    DecreaseNativeMemoryUsage(size);
     os::memory::LockHolder lock(staticResourceLock_);
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);
@@ -158,6 +141,7 @@ void *RegionFactory::AllocateBuffer(size_t size)
         LOG_ECMA_MEM(FATAL) << "malloc failed";
         UNREACHABLE();
     }
+    IncreaseNativeMemoryUsage(size);
     return ptr;
 }
 
@@ -166,6 +150,7 @@ void RegionFactory::FreeBuffer(void *mem)
     if (mem == nullptr) {
         return;
     }
+    DecreaseNativeMemoryUsage(malloc_usable_size(mem));
     os::memory::LockHolder lock(staticResourceLock_);
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);
@@ -181,4 +166,4 @@ void RegionFactory::FreeBufferFunc(void *buffer, void* data)
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MM_REGION_FACTORY_H
+#endif  // ECMASCRIPT_MM_REGION_FACTORY_H

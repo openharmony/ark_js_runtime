@@ -67,7 +67,6 @@ public:
 // new Symbol.toString()
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolNoParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
 
     JSHandle<JSSymbol> symbol = ecmaVM->GetFactory()->NewJSSymbol();
@@ -88,7 +87,6 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolNoParameterToString)
 // new Symbol("aaa").toString()
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterToString)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
 
     JSHandle<JSSymbol> symbol = ecmaVM->GetFactory()->NewPublicSymbolWithChar("aaa");
@@ -109,7 +107,6 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterToString)
 // new Symbol().valueOf()
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolNoParameterValueOf)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -143,7 +140,6 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolNoParameterValueOf)
 // new Symbol("bbb").valueOf()
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterValueOf)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -177,13 +173,12 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterValueOf)
 // new Symbol().for
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterFor)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
     JSHandle<SymbolTable> tableHandle(env->GetRegisterSymbols());
 
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromString("ccc");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ccc");
     ASSERT_EQ(string->GetLength(), 3);
     JSHandle<JSTaggedValue> string_handle(string);
     ASSERT_EQ(tableHandle->ContainsKey(thread, string_handle.GetTaggedValue()), false);
@@ -207,7 +202,6 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolWithParameterFor)
 // Symbol.keyFor (sym)
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -223,7 +217,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result.GetRawData(), JSTaggedValue::VALUE_UNDEFINED);
 
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromString("ccc");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ccc");
     ASSERT_EQ(string->GetLength(), 3);
 
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -253,7 +247,6 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolKeyFor)
 // Symbol.ToPrimitive()
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolToPrimitive)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = ecmaVM->GetGlobalEnv();
 
@@ -287,7 +280,6 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolToPrimitive)
 // constructor
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolConstructor)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
@@ -302,7 +294,7 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolConstructor)
     JSSymbol *sym = reinterpret_cast<JSSymbol *>(result.GetRawData());
     ASSERT_EQ(sym->GetDescription().IsUndefined(), true);
 
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromString("ddd");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("ddd");
 
     auto otherEcmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     otherEcmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
@@ -319,11 +311,10 @@ HWTEST_F_L0(BuiltinsSymbolTest, SymbolConstructor)
 
 HWTEST_F_L0(BuiltinsSymbolTest, SymbolGetter)
 {
-    ASSERT_NE(thread, nullptr);
     auto ecmaVM = thread->GetEcmaVM();
 
     JSHandle<JSSymbol> symbol = ecmaVM->GetFactory()->NewPublicSymbolWithChar("");
-    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromString("");
+    JSHandle<EcmaString> string = ecmaVM->GetFactory()->NewFromCanBeCompressString("");
 
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());

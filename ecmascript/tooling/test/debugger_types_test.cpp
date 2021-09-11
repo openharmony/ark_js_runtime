@@ -1780,5 +1780,4 @@ HWTEST_F_L0(DebuggerTypesTest, CallFrameToObjectTest)
     ASSERT_TRUE(!subResult.IsEmpty());
     EXPECT_EQ(std::string(ObjectSubType::I64.c_str()), Local<StringRef>(subResult)->ToString());
 }
-
 }  // namespace panda::test

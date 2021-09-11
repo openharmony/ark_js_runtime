@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BASE_ERROR_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_BASE_ERROR_HELPER_H
+#ifndef ECMASCRIPT_BASE_ERROR_HELPER_H
+#define ECMASCRIPT_BASE_ERROR_HELPER_H
 
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/ecma_runtime_call_info.h"
@@ -34,7 +34,7 @@ public:
     static CString BuildNativeEcmaStackTrace(JSThread *thread);
 
 private:
-    static CString DecodeFunctionName(const char *methodName);
+    static CString DecodeFunctionName(const CString &name);
     static JSHandle<EcmaString> BuildEcmaStackTrace(JSThread *thread);
 
     static JSHandle<JSTaggedValue> GetErrorName(JSThread *thread, const JSHandle<JSTaggedValue> &name,
@@ -42,4 +42,4 @@ private:
 };
 }  // namespace panda::ecmascript::base
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BASE_ERROR_HELPER_H
+#endif  // ECMASCRIPT_BASE_ERROR_HELPER_H

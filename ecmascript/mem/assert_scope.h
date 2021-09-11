@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_ASSERT_SCOPE_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_ASSERT_SCOPE_H
+#ifndef ECMASCRIPT_MEM_ASSERT_SCOPE_H
+#define ECMASCRIPT_MEM_ASSERT_SCOPE_H
 
 #include <optional>
 
@@ -33,7 +33,7 @@ constexpr bool IS_ALLOW_CHECK = false;
 
 enum class AssertType : uint8_t { GARBAGE_COLLECTION_ASSERT = 0, HEAP_ALLOC_ASSERT, LAST_ASSERT_TYPE };
 
-template <AssertType type, bool isAllow, bool IsDebug = IS_ALLOW_CHECK>
+template<AssertType type, bool isAllow, bool IsDebug = IS_ALLOW_CHECK>
 class AssertScopeT {
 public:
     static bool IsAllowed()
@@ -42,7 +42,7 @@ public:
     }
 };
 
-template <AssertType type, bool isAllow>
+template<AssertType type, bool isAllow>
 class AssertScopeT<type, isAllow, true> {
 public:
     AssertScopeT();
@@ -86,4 +86,4 @@ using AllowHeapAlloc = AssertScopeT<AssertType::HEAP_ALLOC_ASSERT, true, IS_ALLO
 #define CHECK_NO_HEAP_ALLOC (AllowHeapAlloc::IsAllowed(), "disallow execute heap alloc.");
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_ASSERT_SCOPE_H
+#endif  // ECMASCRIPT_MEM_ASSERT_SCOPE_H

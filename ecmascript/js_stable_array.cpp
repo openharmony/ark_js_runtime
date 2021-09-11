@@ -59,8 +59,129 @@ JSTaggedValue JSStableArray::Pop(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo
     array_size_t capacity = elements->GetLength();
     array_size_t index = length - 1;
     auto result = elements->Get(index);
-    if (JSObject::ShouldTransToDict(capacity, index)) {
-        elements->Trim(thread, length);
+    if (TaggedArray::ShouldTrim(capacity, index)) {
+        elements->Trim(thread, index);
+    } else {
+        elements->Set(thread, index, JSTaggedValue::Hole());
+    }
+    receiver->SetArrayLength(thread, index);
+    return result;
+}
+
+JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo *argv,
+                                    double start, double insertCount, double actualDeleteCount)
+{
+    JSThread *thread = argv->GetThread();
+    uint32_t len = receiver->GetArrayLength();
+    array_size_t argc = argv->GetArgsNumber();
+
+    JSHandle<JSObject> thisObjHandle(receiver);
+    JSTaggedValue newArray = JSArray::ArraySpeciesCreate(thread, thisObjHandle, JSTaggedNumber(actualDeleteCount));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSObject> newArrayHandle(thread, newArray);
+
+    JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
+    JSHandle<JSTaggedValue> lengthKey = thread->GlobalConstants()->GetHandledLengthString();
+    TaggedArray *srcElements = TaggedArray::Cast(thisObjHandle->GetElements().GetTaggedObject());
+    JSHandle<TaggedArray> srcElementsHandle(thread, srcElements);
+    if (newArray.IsStableJSArray(thread)) {
+        TaggedArray *destElements = TaggedArray::Cast(newArrayHandle->GetElements().GetTaggedObject());
+        if (actualDeleteCount > destElements->GetLength()) {
+            destElements = *JSObject::GrowElementsCapacity(thread, newArrayHandle, actualDeleteCount);
+        }
+
+        for (array_size_t idx = 0; idx < actualDeleteCount; idx++) {
+            destElements->Set(thread, idx, srcElementsHandle->Get(start + idx));
+        }
+        JSHandle<JSArray>::Cast(newArrayHandle)->SetArrayLength(thread, actualDeleteCount);
+    } else {
+        JSMutableHandle<JSTaggedValue> fromKey(thread, JSTaggedValue::Undefined());
+        JSMutableHandle<JSTaggedValue> toKey(thread, JSTaggedValue::Undefined());
+        double k = 0;
+        while (k < actualDeleteCount) {
+            double from = start + k;
+            fromKey.Update(JSTaggedValue(from));
+            bool exists = JSTaggedValue::HasProperty(thread, thisObjVal, fromKey);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            if (exists) {
+                JSHandle<JSTaggedValue> fromValue = JSArray::FastGetPropertyByValue(thread, thisObjVal, fromKey);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                toKey.Update(JSTaggedValue(k));
+                if (newArrayHandle->IsJSProxy()) {
+                    toKey.Update(JSTaggedValue::ToString(thread, toKey).GetTaggedValue());
+                }
+                JSObject::CreateDataPropertyOrThrow(thread, newArrayHandle, toKey, fromValue);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            }
+            k++;
+        }
+
+        JSHandle<JSTaggedValue> deleteCount(thread, JSTaggedValue(actualDeleteCount));
+        JSTaggedValue::SetProperty(thread, JSHandle<JSTaggedValue>::Cast(newArrayHandle), lengthKey, deleteCount,
+                                   true);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    }
+
+    array_size_t oldCapacity = srcElementsHandle->GetLength();
+    array_size_t newCapacity = len - actualDeleteCount + insertCount;
+    if (insertCount < actualDeleteCount) {
+        for (array_size_t idx = start; idx < len - actualDeleteCount; idx++) {
+            auto element = srcElementsHandle->Get(idx + actualDeleteCount);
+            element = element.IsHole() ? JSTaggedValue::Undefined() : element;
+            srcElementsHandle->Set(thread, idx + insertCount, element);
+        }
+
+        if (TaggedArray::ShouldTrim(oldCapacity, newCapacity)) {
+            srcElementsHandle->Trim(thread, newCapacity);
+        } else {
+            for (array_size_t idx = newCapacity; idx < len; idx++) {
+                srcElementsHandle->Set(thread, idx, JSTaggedValue::Hole());
+            }
+        }
+    } else {
+        if (newCapacity > oldCapacity) {
+            srcElementsHandle = JSObject::GrowElementsCapacity(thread, thisObjHandle, newCapacity);
+        }
+        for (array_size_t idx = len - actualDeleteCount; idx > start; idx--) {
+            auto element = srcElementsHandle->Get(idx + actualDeleteCount - 1);
+            element = element.IsHole() ? JSTaggedValue::Undefined() : element;
+            srcElementsHandle->Set(thread, idx + insertCount - 1, element);
+        }
+    }
+
+    for (array_size_t i = 2, idx = start; i < argc; i++, idx++) {
+        srcElementsHandle->Set(thread, idx, argv->GetCallArg(i));
+    }
+
+    JSHandle<JSTaggedValue> newLenHandle(thread, JSTaggedValue(newCapacity));
+    JSTaggedValue::SetProperty(thread, thisObjVal, lengthKey, newLenHandle, true);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return newArrayHandle.GetTaggedValue();
+}
+
+JSTaggedValue JSStableArray::Shift(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo *argv)
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    JSThread *thread = argv->GetThread();
+    uint32_t length = receiver->GetArrayLength();
+    if (length == 0) {
+        return JSTaggedValue::Undefined();
+    }
+
+    TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
+    auto result = elements->Get(0);
+    for (array_size_t k = 1; k < length; k++) {
+        auto kValue = elements->Get(k);
+        if (kValue.IsHole()) {
+            elements->Set(thread, k - 1, JSTaggedValue::Undefined());
+        } else {
+            elements->Set(thread, k - 1, kValue);
+        }
+    }
+    array_size_t capacity = elements->GetLength();
+    array_size_t index = length - 1;
+    if (TaggedArray::ShouldTrim(capacity, index)) {
+        elements->Trim(thread, index);
     } else {
         elements->Set(thread, index, JSTaggedValue::Hole());
     }

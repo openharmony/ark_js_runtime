@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_FREE_OBJECT_H
-#define PANDA_RUNTIME_ECMASCRIPT_FREE_OBJECT_H
+#ifndef ECMASCRIPT_FREE_OBJECT_H
+#define ECMASCRIPT_FREE_OBJECT_H
 
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/mem/barriers.h"
@@ -67,9 +67,9 @@ public:
                                        hclass->IsFreeObjectWithNoneField());
     }
 
-    static constexpr size_t NEXT_OFFSET = TaggedObject::ObjectHeaderSize();
+    static constexpr size_t NEXT_OFFSET = TaggedObjectSize();
     SET_GET_NATIVE_FIELD(Next, FreeObject, NEXT_OFFSET, SIZE_OFFSET);
     SET_GET_PRIMITIVE_FIELD(Size, size_t, SIZE_OFFSET, SIZE);
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_FREE_OBJECT_H
+#endif  // ECMASCRIPT_MEM_FREE_OBJECT_H

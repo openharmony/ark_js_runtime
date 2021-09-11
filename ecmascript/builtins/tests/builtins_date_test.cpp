@@ -649,9 +649,9 @@ void SetAll2(JSThread *thread, const JSHandle<JSDate> &jsDate)
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 10);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(jsDate.GetTaggedValue());
-    ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(1901))); // 1901 : test case
+    ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(1901)));  // 1901 : test case
     ecmaRuntimeCallInfo->SetCallArg(1, JSTaggedValue(static_cast<double>(0)));
-    ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<double>(1))); // 2 : test case
+    ecmaRuntimeCallInfo->SetCallArg(2, JSTaggedValue(static_cast<double>(1)));  // 2 : test case
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     BuiltinsDate::SetFullYear(ecmaRuntimeCallInfo.get());
@@ -662,9 +662,9 @@ void SetAll2(JSThread *thread, const JSHandle<JSDate> &jsDate)
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(jsDate.GetTaggedValue());
     ecmaRuntimeCallInfo1->SetCallArg(0, JSTaggedValue(static_cast<double>(0)));
-    ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(static_cast<double>(3))); // 3 : test case
-    ecmaRuntimeCallInfo1->SetCallArg(2, JSTaggedValue(static_cast<double>(21))); // 2, 21 : test case
-    ecmaRuntimeCallInfo1->SetCallArg(3, JSTaggedValue(static_cast<double>(129))); // 3, 129 : test case
+    ecmaRuntimeCallInfo1->SetCallArg(1, JSTaggedValue(static_cast<double>(3)));    // 3 : test case
+    ecmaRuntimeCallInfo1->SetCallArg(2, JSTaggedValue(static_cast<double>(21)));   // 2, 21 : test case
+    ecmaRuntimeCallInfo1->SetCallArg(3, JSTaggedValue(static_cast<double>(129)));  // 3, 129 : test case
 
     prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo1.get());
     BuiltinsDate::SetHours(ecmaRuntimeCallInfo1.get());
@@ -673,7 +673,8 @@ void SetAll2(JSThread *thread, const JSHandle<JSDate> &jsDate)
 
 HWTEST_F_L0(BuiltinsDateTest, parse)
 {
-    JSHandle<EcmaString> str = thread->GetEcmaVM()->GetFactory()->NewFromString("2020-11-19T12:18:18.132Z");
+    JSHandle<EcmaString> str =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2020-11-19T12:18:18.132Z");
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
@@ -683,7 +684,7 @@ HWTEST_F_L0(BuiltinsDateTest, parse)
     JSTaggedValue result1 = BuiltinsDate::Parse(ecmaRuntimeCallInfo.get());
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(static_cast<double>(1605788298132)).GetRawData());
 
-    JSHandle<EcmaString> str1 = thread->GetEcmaVM()->GetFactory()->NewFromString("2020-11-19Z");
+    JSHandle<EcmaString> str1 = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2020-11-19Z");
     auto ecmaRuntimeCallInfo1 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo1->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo1->SetThis(JSTaggedValue::Undefined());
@@ -694,7 +695,8 @@ HWTEST_F_L0(BuiltinsDateTest, parse)
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(static_cast<double>(1605744000000)).GetRawData());
 
-    JSHandle<EcmaString> str2 = thread->GetEcmaVM()->GetFactory()->NewFromString("2020-11T12:18:17.231+08:00");
+    JSHandle<EcmaString> str2 =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2020-11T12:18:17.231+08:00");
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo2->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo2->SetThis(JSTaggedValue::Undefined());
@@ -705,7 +707,8 @@ HWTEST_F_L0(BuiltinsDateTest, parse)
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(static_cast<double>(1604204297231)).GetRawData());
 
-    JSHandle<EcmaString> str3 = thread->GetEcmaVM()->GetFactory()->NewFromString("Thu Nov 19 2020 20:18:18 GMT+0800");
+    JSHandle<EcmaString> str3 =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Thu Nov 19 2020 20:18:18 GMT+0800");
     auto ecmaRuntimeCallInfo3 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo3->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo3->SetThis(JSTaggedValue::Undefined());
@@ -716,7 +719,8 @@ HWTEST_F_L0(BuiltinsDateTest, parse)
     TestHelper::TearDownFrame(thread, prev);
     ASSERT_EQ(result1.GetRawData(), JSTaggedValue(static_cast<double>(1605788298000)).GetRawData());
 
-    JSHandle<EcmaString> str4 = thread->GetEcmaVM()->GetFactory()->NewFromString("Thu 03 Jun 2093 04:18 GMT");
+    JSHandle<EcmaString> str4 =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Thu 03 Jun 2093 04:18 GMT");
     auto ecmaRuntimeCallInfo4 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
     ecmaRuntimeCallInfo4->SetFunction(JSTaggedValue::Undefined());
     ecmaRuntimeCallInfo4->SetThis(JSTaggedValue::Undefined());
@@ -740,7 +744,8 @@ HWTEST_F_L0(BuiltinsDateTest, parse)
 
 HWTEST_F_L0(BuiltinsDateTest, ToDateString)
 {
-    JSHandle<EcmaString> expect_value = thread->GetEcmaVM()->GetFactory()->NewFromString("Tue Nov 06 2018");
+    JSHandle<EcmaString> expect_value =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Tue Nov 06 2018");
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
     SetAllYearAndHours(thread, jsDate);
 
@@ -758,7 +763,8 @@ HWTEST_F_L0(BuiltinsDateTest, ToDateString)
 
 HWTEST_F_L0(BuiltinsDateTest, ToISOString)
 {
-    JSHandle<EcmaString> expect_value = thread->GetEcmaVM()->GetFactory()->NewFromString("2020-11-19T12:18:18.132Z");
+    JSHandle<EcmaString> expect_value =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2020-11-19T12:18:18.132Z");
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
     JSDate::Cast(jsDate.GetTaggedValue().GetTaggedObject())->SetTimeValue(thread, JSTaggedValue(1605788298132.0));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -774,7 +780,8 @@ HWTEST_F_L0(BuiltinsDateTest, ToISOString)
 
 HWTEST_F_L0(BuiltinsDateTest, ToISOStringMinus)
 {
-    JSHandle<EcmaString> expect_value = thread->GetEcmaVM()->GetFactory()->NewFromString("1831-12-02T21:47:18.382Z");
+    JSHandle<EcmaString> expect_value =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1831-12-02T21:47:18.382Z");
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
     JSDate::Cast(jsDate.GetTaggedValue().GetTaggedObject())->SetTimeValue(thread, JSTaggedValue(-4357419161618.0));
 
@@ -792,7 +799,8 @@ HWTEST_F_L0(BuiltinsDateTest, ToISOStringMinus)
 // test toJSON and toPrimitive
 HWTEST_F_L0(BuiltinsDateTest, ToJSON)
 {
-    JSHandle<EcmaString> expect_value = thread->GetEcmaVM()->GetFactory()->NewFromString("2020-11-19T12:18:18.132Z");
+    JSHandle<EcmaString> expect_value =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("2020-11-19T12:18:18.132Z");
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
     jsDate->SetTimeValue(thread, JSTaggedValue(1605788298132.0));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -808,7 +816,8 @@ HWTEST_F_L0(BuiltinsDateTest, ToJSON)
 
 HWTEST_F_L0(BuiltinsDateTest, ToJSONMinus)
 {
-    JSHandle<EcmaString> expect_value = thread->GetEcmaVM()->GetFactory()->NewFromString("1831-12-02T21:47:18.382Z");
+    JSHandle<EcmaString> expect_value =
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("1831-12-02T21:47:18.382Z");
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
     jsDate->SetTimeValue(thread, JSTaggedValue(-4357419161618.0));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -853,7 +862,7 @@ HWTEST_F_L0(BuiltinsDateTest, ToString)
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> result1_val(thread, reinterpret_cast<EcmaString *>(result1.GetRawData()));
     CString str = "Tue Nov 06 2018 18:10:06 GMT" + localTime;
-    JSHandle<EcmaString> str_handle = thread->GetEcmaVM()->GetFactory()->NewFromString(str);
+    JSHandle<EcmaString> str_handle = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str);
     ASSERT_TRUE(EcmaString::StringsAreEqual(*result1_val, *str_handle));
 
     JSHandle<JSDate> js_date1 = JSDateCreateTest(thread);
@@ -883,7 +892,7 @@ HWTEST_F_L0(BuiltinsDateTest, ToString)
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> result2_val(thread, reinterpret_cast<EcmaString *>(result2.GetRawData()));
     str = "Mon Dec 31 1900 23:54:16 GMT" + localTime;
-    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromString(str);
+    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str);
     ASSERT_TRUE(EcmaString::StringsAreEqual(*result2_val, *str_handle));
 
     JSHandle<JSDate> js_date2 = JSDateCreateTest(thread);
@@ -913,7 +922,7 @@ HWTEST_F_L0(BuiltinsDateTest, ToString)
     TestHelper::TearDownFrame(thread, prev);
     JSHandle<EcmaString> result3_val(thread, reinterpret_cast<EcmaString *>(result3.GetRawData()));
     str = "Tue Jan 01 1901 00:03:21 GMT" + localTime;
-    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromString(str);
+    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str);
     ASSERT_TRUE(EcmaString::StringsAreEqual(*result3_val, *str_handle));
 }
 
@@ -948,7 +957,7 @@ HWTEST_F_L0(BuiltinsDateTest, ToTimeString)
     ASSERT_TRUE(result1.IsString());
     JSHandle<EcmaString> result1_val(thread, reinterpret_cast<EcmaString *>(result1.GetRawData()));
     CString str = "18:10:06 GMT" + localTime;
-    JSHandle<EcmaString> str_handle = thread->GetEcmaVM()->GetFactory()->NewFromString(str);
+    JSHandle<EcmaString> str_handle = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str);
     ASSERT_TRUE(EcmaString::StringsAreEqual(*result1_val, *str_handle));
 
     JSHandle<JSDate> js_date1 = JSDateCreateTest(thread);
@@ -976,7 +985,7 @@ HWTEST_F_L0(BuiltinsDateTest, ToTimeString)
     ASSERT_TRUE(result2.IsString());
     JSHandle<EcmaString> result2_val(thread, reinterpret_cast<EcmaString *>(result2.GetRawData()));
     str = "23:54:16 GMT" + localTime;
-    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromString(str);
+    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str);
     ASSERT_TRUE(EcmaString::StringsAreEqual(*result2_val, *str_handle));
     JSHandle<JSDate> js_date2 = JSDateCreateTest(thread);
     auto ecmaRuntimeCallInfo2 = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -1003,14 +1012,14 @@ HWTEST_F_L0(BuiltinsDateTest, ToTimeString)
     ASSERT_TRUE(result3.IsString());
     JSHandle<EcmaString> result3_val(thread, reinterpret_cast<EcmaString *>(result3.GetRawData()));
     str = "00:03:21 GMT" + localTime;
-    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromString(str);
+    str_handle = thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(str);
     ASSERT_TRUE(EcmaString::StringsAreEqual(*result3_val, *str_handle));
 }
 
 HWTEST_F_L0(BuiltinsDateTest, ToUTCString)
 {
     JSHandle<EcmaString> expect_value =
-        thread->GetEcmaVM()->GetFactory()->NewFromString("Thu, 19 Nov 2020 12:18:18 GMT");
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Thu, 19 Nov 2020 12:18:18 GMT");
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
     JSDate::Cast(jsDate.GetTaggedValue().GetTaggedObject())->SetTimeValue(thread, JSTaggedValue(1605788298132.0));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);
@@ -1026,7 +1035,7 @@ HWTEST_F_L0(BuiltinsDateTest, ToUTCString)
 HWTEST_F_L0(BuiltinsDateTest, ToUTCStringMinus)
 {
     JSHandle<EcmaString> expect_value =
-        thread->GetEcmaVM()->GetFactory()->NewFromString("Fri, 02 Dec 1831 21:47:18 GMT");
+        thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Fri, 02 Dec 1831 21:47:18 GMT");
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
     JSDate::Cast(jsDate.GetTaggedValue().GetTaggedObject())->SetTimeValue(thread, JSTaggedValue(-4357419161618.0));
     auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 4);

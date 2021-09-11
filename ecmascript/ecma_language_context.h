@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_LANGUAGE_CONTEXT_H
-#define PANDA_RUNTIME_ECMASCRIPT_LANGUAGE_CONTEXT_H
+#ifndef ECMASCRIPT_LANGUAGE_CONTEXT_H
+#define ECMASCRIPT_LANGUAGE_CONTEXT_H
 
 #include "ecmascript/common.h"
 #include "include/language_context.h"
@@ -264,4 +264,4 @@ public:
 };
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_LANGUAGE_CONTEXT_H
+#endif  // ECMASCRIPT_LANGUAGE_CONTEXT_H

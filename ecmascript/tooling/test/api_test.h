@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_DEBUG_TEST_API_TEST_H
-#define PANDA_RUNTIME_DEBUG_TEST_API_TEST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_API_TEST_H
+#define ECMASCRIPT_TOOLING_TEST_API_TEST_H
 
 #include <utility>
 #include "ecmascript/tooling/agent/js_backend.h"
@@ -68,4 +68,4 @@ struct ApiTest {
 };
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // PANDA_RUNTIME_DEBUG_TEST_API_TEST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_API_TEST_H

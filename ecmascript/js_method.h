@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_METHOD_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_METHOD_H
+#ifndef ECMASCRIPT_JS_METHOD_H
+#define ECMASCRIPT_JS_METHOD_H
 
+#include "ecmascript/mem/c_string.h"
 #include "include/method.h"
 #include "libpandafile/file.h"
 
@@ -26,6 +27,8 @@ class Class;
 namespace panda::ecmascript {
 class JSMethod : public Method {
 public:
+    static constexpr uint8_t MAX_SLOT_SIZE = 0xFF;
+
     static JSMethod *Cast(Method *method)
     {
         return static_cast<JSMethod *>(method);
@@ -40,6 +43,7 @@ public:
     }
 
     JSMethod() = delete;
+    ~JSMethod() = default;
     JSMethod(const JSMethod &) = delete;
     JSMethod(JSMethod &&) = delete;
     JSMethod &operator=(const JSMethod &) = delete;
@@ -65,10 +69,28 @@ public:
         bytecodeArray_ = bc;
     }
 
+    uint8_t GetSlotSize() const
+    {
+        return slotSize_;
+    }
+
+    void UpdateSlotSize (uint8_t size)
+    {
+        uint16_t end = GetSlotSize() + size;
+        if (end >= MAX_SLOT_SIZE) {
+            slotSize_ = MAX_SLOT_SIZE;
+            return;
+        }
+        slotSize_ = static_cast<uint8_t>(end);
+    }
+
+    CString ParseFunctionName() const;
+
 private:
     const uint8_t *bytecodeArray_ {nullptr};
     uint32_t bytecodeArraySize_ {0};
+    uint8_t slotSize_{0};
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_METHOD_H
+#endif  // ECMASCRIPT_JS_METHOD_H

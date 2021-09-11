@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_PROXY_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_PROXY_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_PROXY_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_PROXY_H
 
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/base/builtins_base.h"
@@ -34,4 +34,4 @@ public:
     static JSTaggedValue InvalidateProxyFunction(EcmaRuntimeCallInfo *argv);
 };
 }  // namespace panda::ecmascript::builtins
-#endif  // PANDA_RUNTIME_ECMASCRIPT_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_PROXYH

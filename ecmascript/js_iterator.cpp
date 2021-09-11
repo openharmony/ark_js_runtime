@@ -17,6 +17,7 @@
 #include "ecma_macros.h"
 #include "ecma_vm.h"
 #include "ecmascript/accessor_data.h"
+#include "ecmascript/internal_call_params.h"
 #include "global_env.h"
 #include "js_invoker.h"
 #include "js_symbol.h"
@@ -60,12 +61,10 @@ JSHandle<JSTaggedValue> JSIterator::GetIterator(JSThread *thread, const JSHandle
 JSHandle<JSTaggedValue> JSIterator::GetIterator(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                                 const JSHandle<JSTaggedValue> &method)
 {
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // 1.ReturnIfAbrupt(obj).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, obj);
     // 3.Let iterator be Call(method,obj).
-    JSHandle<TaggedArray> array(factory->EmptyArray());
-    JSTaggedValue ret = JSFunction::Call(thread, method, obj, array);
+    JSTaggedValue ret = JSFunction::Call(thread, method, obj, 0, nullptr);
     JSHandle<JSTaggedValue> iter(thread, ret);
     // 4.ReturnIfAbrupt(iterator).
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, iter);
@@ -80,13 +79,10 @@ JSHandle<JSTaggedValue> JSIterator::GetIterator(JSThread *thread, const JSHandle
 JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JSTaggedValue> &iter)
 {
     // 1.If value was not passed, then Let result be Invoke(iterator, "next", «‍ »).
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-
-    JSHandle<TaggedArray> argv(factory->EmptyArray());
     JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
     ASSERT(next->IsCallable());
-    JSTaggedValue ret = JSFunction::Call(thread, next, iter, argv);
+    JSTaggedValue ret = JSFunction::Call(thread, next, iter, 0, nullptr);
     JSHandle<JSObject> result(thread, ret);
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
@@ -100,14 +96,14 @@ JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JST
 JSHandle<JSObject> JSIterator::IteratorNext(JSThread *thread, const JSHandle<JSTaggedValue> &iter,
                                             const JSHandle<JSTaggedValue> &value)
 {
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // 2.Let result be Invoke(iterator, "next", «‍value»).
-    JSHandle<TaggedArray> argv(factory->NewTaggedArray(1));
-    argv->Set(thread, 0, value);
     JSHandle<JSTaggedValue> key(thread->GlobalConstants()->GetHandledNextString());
     JSHandle<JSTaggedValue> next(JSObject::GetMethod(thread, iter, key));
     ASSERT(next->IsCallable());
-    JSTaggedValue ret = JSFunction::Call(thread, next, iter, argv);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(value);
+    JSTaggedValue ret = JSFunction::Call(thread, next, iter, 1, arguments->GetArgv());
+
     JSHandle<JSObject> result(thread, ret);
     // 3.ReturnIfAbrupt(result)
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, result);
@@ -160,8 +156,6 @@ JSHandle<JSTaggedValue> JSIterator::IteratorClose(JSThread *thread, const JSHand
 {
     // 1.Assert: Type(iterator) is Object.
     ASSERT_PRINT(iter->IsECMAObject(), "iter must be JSObject");
-    auto ecmaVm = thread->GetEcmaVM();
-    ObjectFactory *factory = ecmaVm->GetFactory();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     JSHandle<JSTaggedValue> exceptionOnThread;
     if (thread->HasPendingException()) {
@@ -181,7 +175,7 @@ JSHandle<JSTaggedValue> JSIterator::IteratorClose(JSThread *thread, const JSHand
         return completion;
     }
     // 6.Let innerResult be Call(return, iterator, «‍ »).
-    JSTaggedValue ret = JSFunction::Call(thread, returnFunc, iter, factory->EmptyArray());
+    JSTaggedValue ret = JSFunction::Call(thread, returnFunc, iter, 0, nullptr);
     if (!exceptionOnThread.IsEmpty()) {
         thread->SetException(exceptionOnThread.GetTaggedValue());
     }

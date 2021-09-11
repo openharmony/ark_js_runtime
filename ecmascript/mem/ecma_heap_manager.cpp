@@ -21,7 +21,8 @@ EcmaHeapManager::EcmaHeapManager(Heap *heap)
     : heap_(heap),
       newSpaceAllocator_(heap->GetNewSpace()),
       nonMovableAllocator_(heap->GetNonMovableSpace()),
-      oldSpaceAllocator_(heap->GetOldSpace())
+      oldSpaceAllocator_(heap->GetOldSpace()),
+      machineCodeSpaceAllocator_(heap->GetMachineCodeSpace())
 {
     ASSERT(heap != nullptr);
     heap->SetHeapManager(this);

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_FREE_OBJECT_KIND_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_FREE_OBJECT_KIND_H
+#ifndef ECMASCRIPT_MEM_FREE_OBJECT_KIND_H
+#define ECMASCRIPT_MEM_FREE_OBJECT_KIND_H
 
 #include <cstdint>
 
@@ -65,4 +65,4 @@ private:
     friend class FreeObjectList;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_FREE_OBJECT_LIST_H
+#endif  // ECMASCRIPT_MEM_FREE_OBJECT_LIST_H

@@ -61,15 +61,15 @@ AddrShift CircuitBuilder::NewBooleanConstant(bool val)
 AddrShift CircuitBuilder::NewDoubleConstant(double val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::FLOAT64_CONSTANT), bit_cast<int64_t>(val),
-        {constantList}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::FLOAT64_CONSTANT), bit_cast<int64_t>(val), {constantList},
+                             TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::UndefineConstant()
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     return circuit_->NewGate(OpCode(OpCode::INT64_CONSTANT), panda::coretypes::TaggedValue::VALUE_UNDEFINED,
-        {constantList}, TypeCode::NOTYPE);
+                             {constantList}, TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::HoleConstant()
@@ -316,7 +316,7 @@ AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor, AddrS
     return circuit_->NewGate(opcode, args.size() + 1, inputs, TypeCode::JS_ANY);
 }
 
-AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor,  AddrShift target, AddrShift depend,
+AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target, AddrShift depend,
                                       std::initializer_list<AddrShift> args)
 {
     std::vector<AddrShift> inputs;
@@ -328,6 +328,40 @@ AddrShift CircuitBuilder::NewCallGate(StubInterfaceDescriptor *descriptor,  Addr
     OpCode opcode = GetCallOpCodeFromMachineType(descriptor->GetReturnType());
     return circuit_->NewGate(opcode, args.size() + 1, inputs, TypeCode::JS_ANY);
 }
+
+AddrShift CircuitBuilder::NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+                                             std::initializer_list<AddrShift> args)
+{
+    ASSERT(descriptor->GetStubKind() == StubInterfaceDescriptor::RUNTIME_STUB);
+    std::vector<AddrShift> inputs;
+    auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
+    inputs.push_back(dependEntry);
+    inputs.push_back(target);
+    inputs.push_back(thread);
+    for (auto arg : args) {
+        inputs.push_back(arg);
+    }
+    OpCode opcode = GetCallOpCodeFromMachineType(descriptor->GetReturnType());
+    // 2 : 2 means extra two input gates (target thread )
+    return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::JS_ANY);
+}
+
+AddrShift CircuitBuilder::NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+                                             AddrShift depend, std::initializer_list<AddrShift> args)
+{
+    ASSERT(descriptor->GetStubKind() == StubInterfaceDescriptor::RUNTIME_STUB);
+    std::vector<AddrShift> inputs;
+    inputs.push_back(depend);
+    inputs.push_back(target);
+    inputs.push_back(thread);
+    for (auto arg : args) {
+        inputs.push_back(arg);
+    }
+    OpCode opcode = GetCallOpCodeFromMachineType(descriptor->GetReturnType());
+    // 2 : 2 means extra two input gates (target thread )
+    return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::JS_ANY);
+}
+
 AddrShift CircuitBuilder::Alloca(int size)
 {
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));

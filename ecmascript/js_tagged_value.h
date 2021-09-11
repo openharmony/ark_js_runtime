@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_VALUE_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_VALUE_H
+#ifndef ECMASCRIPT_JS_TAGGED_VALUE_H
+#define ECMASCRIPT_JS_TAGGED_VALUE_H
 
 #include "ecmascript/mem/c_string.h"
 #include "include/coretypes/tagged_value.h"
@@ -22,7 +22,7 @@
 namespace panda::ecmascript {
 class JSObject;
 class JSTaggedNumber;
-template <typename T>
+template<typename T>
 class JSHandle;
 class TaggedArray;
 class LinkedHashMap;
@@ -242,6 +242,8 @@ public:
     bool IsArray(JSThread *thread) const;
     bool IsJSArray() const;
     bool IsStableJSArray(JSThread *thread) const;
+    bool IsStableJSArguments(JSThread *thread) const;
+    bool HasStableElements(JSThread *thread) const;
     bool IsTypedArray() const;
     bool IsJSTypedArray() const;
     bool IsJSInt8Array() const;
@@ -256,6 +258,7 @@ public:
     bool IsArguments() const;
     bool IsDate() const;
     bool IsBoundFunction() const;
+    bool IsJSIntlBoundFunction() const;
     bool IsProxyRevocFunction() const;
     bool IsJSAsyncFunction() const;
     bool IsJSAsyncAwaitStatusFunction() const;
@@ -303,12 +306,20 @@ public:
     bool IsJSFunctionExtraInfo() const;
     bool IsMicroJobQueue() const;
     bool IsPendingJob() const;
+    bool IsJSLocale() const;
+    bool IsJSDateTimeFormat() const;
+    bool IsJSRelativeTimeFormat() const;
+    bool IsJSIntl() const;
+    bool IsJSNumberFormat() const;
+    bool IsJSCollator() const;
+    bool IsJSPluralRules() const;
 
     bool IsPrototypeHandler() const;
     bool IsTransitionHandler() const;
     bool IsPropertyBox() const;
     bool IsProtoChangeMarker() const;
     bool IsProtoChangeDetails() const;
+    bool IsMachineCodeObject() const;
     static bool IsSameTypeOrHClass(JSTaggedValue x, JSTaggedValue y);
 
     static ComparisonResult Compare(JSThread *thread, const JSHandle<JSTaggedValue> &x,
@@ -333,4 +344,4 @@ private:
     void DumpHeapObjectType([[maybe_unused]] JSThread *thread, std::ostream &os) const;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_VALUE_H
+#endif  // ECMASCRIPT_JS_TAGGED_VALUE_H

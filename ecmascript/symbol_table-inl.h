@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_SYMBOL_TABLE_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_SYMBOL_TABLE_INL_H
+#ifndef ECMASCRIPT_SYMBOL_TABLE_INL_H
+#define ECMASCRIPT_SYMBOL_TABLE_INL_H
 
 #include "symbol_table.h"
 #include "js_symbol.h"
@@ -22,14 +22,14 @@
 #include "libpandabase/utils/hash.h"
 
 namespace panda::ecmascript {
-int SymbolTable::Hash(const JSTaggedValue &obj)
+uint32_t SymbolTable::Hash(const JSTaggedValue &obj)
 {
     if (obj.IsHeapObject()) {
         if (obj.IsString()) {
             auto *nameString = static_cast<EcmaString *>(obj.GetTaggedObject());
-            return static_cast<int>(nameString->GetHashcode());
+            return nameString->GetHashcode();
         }
-        return static_cast<int>(JSSymbol::ComputeHash());
+        return JSSymbol::ComputeHash();
     }
     UNREACHABLE();
 }
@@ -70,4 +70,4 @@ JSTaggedValue SymbolTable::FindSymbol(JSThread *thread, const JSTaggedValue &val
     return JSTaggedValue::Undefined();
 }
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_SYMBOL_TABLE_INL_H
+#endif  // ECMASCRIPT_SYMBOL_TABLE_INL_H

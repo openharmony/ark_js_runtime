@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_BUILTINS_PROMISE_H
-#define PANDA_RUNTIME_ECMASCRIPT_BUILTINS_PROMISE_H
+#ifndef ECMASCRIPT_BUILTINS_BUILTINS_PROMISE_H
+#define ECMASCRIPT_BUILTINS_BUILTINS_PROMISE_H
 
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/base/builtins_base.h"
@@ -60,4 +60,4 @@ private:
                                                          const JSHandle<JSTaggedValue> &constructor);
 };
 }  // namespace panda::ecmascript::builtins
-#endif  // PANDA_RUNTIME_ECMASCRIPT_BUILTINS_PROMISE_H
+#endif  // ECMASCRIPT_BUILTINS_BUILTINS_PROMISE_H

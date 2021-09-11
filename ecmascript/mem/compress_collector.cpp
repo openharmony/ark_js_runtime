@@ -56,7 +56,7 @@ void CompressCollector::InitializePhase()
     heap_->GetThreadPool()->WaitTaskFinish();
     auto compressSpace = const_cast<OldSpace *>(heap_->GetCompressSpace());
     if (compressSpace->GetCommittedSize() == 0) {
-        compressSpace->SetUp();
+        compressSpace->Initialize();
     }
     auto fromSpace = const_cast<SemiSpace *>(heap_->GetFromSpace());
     if (fromSpace->GetCommittedSize() == 0) {
@@ -84,7 +84,7 @@ void CompressCollector::InitializePhase()
     };
     heap_->GetNonMovableSpace()->EnumerateRegions(callback);
     heap_->GetSnapShotSpace()->EnumerateRegions(callback);
-    heap_->GetLargeObjectSpace()->EnumerateRegions(callback);
+    heap_->GetHugeObjectSpace()->EnumerateRegions(callback);
 
     heap_->FlipCompressSpace();
     heap_->FlipNewSpace();
@@ -223,13 +223,14 @@ void CompressCollector::SweepPhases()
         return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
     };
     stringTable->SweepWeakReference(gcUpdateWeak);
+    heap_->GetEcmaVM()->GetJSThread()->IterateWeakEcmaGlobalStorage(gcUpdateWeak);
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
 
     SweepSpace(const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace()), nonMovableAllocator_);
-    SweepSpace(heap_->GetLargeObjectSpace());
+    SweepSpace(const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace()));
 }
 
-void CompressCollector::SweepSpace(LargeObjectSpace *space)
+void CompressCollector::SweepSpace(HugeObjectSpace *space)
 {
     Region *currentRegion = space->GetRegionList().GetFirst();
     while (currentRegion != nullptr) {

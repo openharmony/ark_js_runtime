@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_HELPER_INL_H
-#define PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_HELPER_INL_H
+#ifndef ECMASCRIPT_NAPI_JSNAPI_HELPER_INL_H
+#define ECMASCRIPT_NAPI_JSNAPI_HELPER_INL_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "jsnapi_helper.h"
 #include "libpandabase/macros.h"
 
 namespace panda {
-template <typename T>
+template<typename T>
 Local<T> JSNApiHelper::ToLocal(ecmascript::JSHandle<ecmascript::JSTaggedValue> from)
 {
     return Local<T>(from.GetAddress());
@@ -45,4 +45,4 @@ ecmascript::JSHandle<ecmascript::JSTaggedValue> JSNApiHelper::ToJSHandle(JSValue
     return ecmascript::JSHandle<ecmascript::JSTaggedValue>(reinterpret_cast<uintptr_t>(from));
 }
 }  // namespace panda
-#endif  // PANDA_RUNTIME_ECMASCRIPT_NAPI_JSNAPI_HELPER_INL_H
+#endif  // ECMASCRIPT_NAPI_JSNAPI_HELPER_INL_H

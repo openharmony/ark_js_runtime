@@ -86,20 +86,19 @@ std::unique_ptr<PtJSExtractor::SingleStepper> PtJSExtractor::GetStepOutStepper(c
 
 CList<PtStepRange> PtJSExtractor::GetStepRanges(File::EntityId methodId, uint32_t offset)
 {
-    CList<PtStepRange> ranges;
+    CList<PtStepRange> ranges {};
     auto table = GetLineNumberTable(methodId);
-    MatchWithOffset(
-        [table, &ranges](int32_t line) -> bool {
-            for (auto it = table.begin(); it != table.end();) {
-                auto next = it + 1;
-                if (static_cast<int32_t>(it->line) == line) {
-                    ranges.push_back({it->offset, next != table.end() ? next->offset : UINT32_MAX});
-                }
-                it = next;
+    auto offsetFunc = [table, &ranges](int32_t line) -> bool {
+        for (auto it = table.begin(); it != table.end(); ++it) {
+            auto next = it + 1;
+            if (static_cast<int32_t>(it->line) == line) {
+                PtStepRange range {it->offset, next != table.end() ? next->offset : UINT32_MAX};
+                ranges.push_back(range);
             }
-            return true;
-        },
-        methodId, offset);
+        }
+        return true;
+    };
+    MatchWithOffset(offsetFunc, methodId, offset);
 
     return ranges;
 }

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JS_GENERATOR_OBJECT_H
-#define PANDA_RUNTIME_ECMASCRIPT_JS_GENERATOR_OBJECT_H
+#ifndef ECMASCRIPT_JS_GENERATOR_OBJECT_H
+#define ECMASCRIPT_JS_GENERATOR_OBJECT_H
 
 #include "ecmascript/js_function.h"
 
@@ -36,7 +36,7 @@ public:
         return static_cast<GeneratorContext *>(object);
     }
 
-    static constexpr size_t GENERATOR_REGS_ARRAY_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t GENERATOR_REGS_ARRAY_OFFSET = TaggedObjectSize();
     ACCESSORS(RegsArray, GENERATOR_REGS_ARRAY_OFFSET, GENERATOR_METHOD_OFFSET)
     ACCESSORS(Method, GENERATOR_METHOD_OFFSET, GENERATOR_ACC_OFFSET)
     ACCESSORS(Acc, GENERATOR_ACC_OFFSET, GENERATOR_NREGS_OFFSET)
@@ -102,4 +102,4 @@ public:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JS_GENERATOR_OBJECT_H
+#endif  // ECMASCRIPT_JS_GENERATOR_OBJECT_H

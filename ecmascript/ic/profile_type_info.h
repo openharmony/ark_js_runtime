@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_PROFILE_TYPE_INFO_H
-#define PANDA_RUNTIME_PROFILE_TYPE_INFO_H
+#ifndef ECMASCRIPT_IC_PROFILE_TYPE_INFO_H
+#define ECMASCRIPT_IC_PROFILE_TYPE_INFO_H
 
 #include "ecmascript/js_function.h"
 #include "ecmascript/tagged_array.h"
@@ -141,4 +141,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_PROFILE_TYPE_INFO_H
+#endif  // ECMASCRIPT_IC_PROFILE_TYPE_INFO_H

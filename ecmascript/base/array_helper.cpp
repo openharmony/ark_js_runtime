@@ -19,6 +19,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_tagged_number.h"
@@ -50,8 +51,7 @@ bool ArrayHelper::IsConcatSpreadable(JSThread *thread, const JSHandle<JSTaggedVa
 }
 
 int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue> &callbackfnHandle,
-                                 const JSHandle<JSTaggedValue> &valueX, const JSHandle<JSTaggedValue> &valueY,
-                                 const JSHandle<TaggedArray> &argv)
+                                 const JSHandle<JSTaggedValue> &valueX, const JSHandle<JSTaggedValue> &valueY)
 {
     // 1. If x and y are both undefined, return +0.
     if (valueX->IsHole()) {
@@ -81,9 +81,10 @@ int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue>
     // d. Return v.
     if (!callbackfnHandle->IsUndefined()) {
         JSHandle<JSTaggedValue> thisArgHandle(thread, JSTaggedValue::Undefined());
-        argv->Set(thread, 0, valueX);
-        argv->Set(thread, 1, valueY);
-        JSTaggedValue callResult = JSFunction::Call(thread, callbackfnHandle, thisArgHandle, argv);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(valueX, valueY);
+        JSTaggedValue callResult =
+            JSFunction::Call(thread, callbackfnHandle, thisArgHandle, 2, arguments->GetArgv());  // 2: two args
         if (callResult.IsInt()) {
             return callResult.GetInt();
         }
@@ -104,24 +105,11 @@ int32_t ArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedValue>
     // 9. If xString < yString, return -1.
     // 10. If xString > yString, return 1.
     // 11. Return +0.
-    if (valueX->IsInt() && valueY->IsInt()) {
-        auto xNumber = JSTaggedNumber(valueX.GetTaggedValue());
-        auto yNumber = JSTaggedNumber(valueY.GetTaggedValue());
-        return xNumber.GetInt() > yNumber.GetInt() ? 1 : 0;
-    }
-    ComparisonResult compareResult;
-    if (valueX->IsDouble() && valueY->IsDouble() && !std::isinf(valueX->GetDouble()) &&
-        !std::isinf(valueY->GetDouble())) {
-        auto xNumber = JSTaggedNumber(valueX.GetTaggedValue());
-        auto yNumber = JSTaggedNumber(valueY.GetTaggedValue());
-        compareResult = JSTaggedValue::StrictNumberCompare(xNumber.GetDouble(), yNumber.GetDouble());
-        return compareResult == ComparisonResult::GREAT ? 1 : 0;
-    }
     JSHandle<JSTaggedValue> xValueHandle(JSTaggedValue::ToString(thread, valueX));
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
     JSHandle<JSTaggedValue> yValueHandle(JSTaggedValue::ToString(thread, valueY));
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, 0);
-    compareResult = JSTaggedValue::Compare(thread, xValueHandle, yValueHandle);
+    ComparisonResult compareResult = JSTaggedValue::Compare(thread, xValueHandle, yValueHandle);
     return compareResult == ComparisonResult::GREAT ? 1 : 0;
 }
 

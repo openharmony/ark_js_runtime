@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSARRAY_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSARRAY_H
+#ifndef ECMASCRIPT_JSARRAY_H
+#define ECMASCRIPT_JSARRAY_H
 
 #include <limits>
 #include "ecmascript/js_object.h"
@@ -96,4 +96,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSARRAY_H
+#endif  // ECMASCRIPT_JSARRAY_H

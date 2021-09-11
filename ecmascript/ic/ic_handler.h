@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_IC_HANDLER_H
-#define PANDA_RUNTIME_ECMASCRIPT_IC_HANDLER_H
+#ifndef ECMASCRIPT_IC_IC_HANDLER_H
+#define ECMASCRIPT_IC_IC_HANDLER_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -95,14 +95,15 @@ public:
 
 class LoadHandler final : public HandlerBase {
 public:
-    static inline JSTaggedValue LoadProperty(const ObjectOperator &op);
-    static inline JSTaggedValue LoadElement();
+    static inline JSHandle<JSTaggedValue> LoadProperty(const JSThread *thread, const ObjectOperator &op);
+    static inline JSHandle<JSTaggedValue> LoadElement(const JSThread *thread);
 };
 
 class StoreHandler final : public HandlerBase {
 public:
-    static inline JSTaggedValue StoreProperty(const ObjectOperator &op);
-    static inline JSTaggedValue StoreElement(JSHandle<JSTaggedValue> receiver);
+    static inline JSHandle<JSTaggedValue> StoreProperty(const JSThread *thread, const ObjectOperator &op);
+    static inline JSHandle<JSTaggedValue> StoreElement(const JSThread *thread,
+                                                       JSHandle<JSTaggedValue> receiver);
 };
 
 class TransitionHandler : public TaggedObject {
@@ -113,9 +114,9 @@ public:
         return static_cast<TransitionHandler *>(object);
     }
 
-    static inline JSTaggedValue StoreTransition(const JSThread *thread, const ObjectOperator &op);
+    static inline JSHandle<JSTaggedValue> StoreTransition(const JSThread *thread, const ObjectOperator &op);
 
-    static constexpr size_t HANDLER_INFO_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t HANDLER_INFO_OFFSET = TaggedObjectSize();
     ACCESSORS(HandlerInfo, HANDLER_INFO_OFFSET, TRANSITION_HCLASS_OFFSET)
 
     ACCESSORS(TransitionHClass, TRANSITION_HCLASS_OFFSET, SIZE)
@@ -131,12 +132,12 @@ public:
         return static_cast<PrototypeHandler *>(object);
     }
 
-    static inline JSTaggedValue LoadPrototype(const JSThread *thread, const ObjectOperator &op,
-                                              const JSHandle<JSHClass> &hclass);
-    static inline JSTaggedValue StorePrototype(const JSThread *thread, const ObjectOperator &op,
-                                               const JSHandle<JSHClass> &hclass);
+    static inline JSHandle<JSTaggedValue> LoadPrototype(const JSThread *thread, const ObjectOperator &op,
+                                                        const JSHandle<JSHClass> &hclass);
+    static inline JSHandle<JSTaggedValue> StorePrototype(const JSThread *thread, const ObjectOperator &op,
+                                                         const JSHandle<JSHClass> &hclass);
 
-    static constexpr size_t HANDLER_INFO_OFFSET = sizeof(TaggedObject);
+    static constexpr size_t HANDLER_INFO_OFFSET = TaggedObjectSize();
 
     ACCESSORS(HandlerInfo, HANDLER_INFO_OFFSET, PROTO_CELL_OFFSET)
 
@@ -147,4 +148,4 @@ public:
     DECL_VISIT_OBJECT(HANDLER_INFO_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_IC_HANDLER_H
+#endif  // ECMASCRIPT_IC_IC_HANDLER_H

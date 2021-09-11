@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_PROTOCOL_HANDLER_H
-#define PANDA_TOOLING_ECMASCRIPT_PROTOCOL_HANDLER_H
+#ifndef ECMASCRIPT_TOOLING_PROTOCOL_HANDLER_H
+#define ECMASCRIPT_TOOLING_PROTOCOL_HANDLER_H
 
 #include <functional>
 #include <queue>
@@ -25,7 +25,7 @@
 namespace panda::tooling::ecmascript {
 class ProtocolHandler final : public FrontEnd {
 public:
-    explicit ProtocolHandler(std::function<void(std::string)> callback, const void *vm);
+    explicit ProtocolHandler(std::function<void(std::string)> callback, const EcmaVM *vm);
     ~ProtocolHandler() override = default;
 
     void WaitForDebugger(const EcmaVM *ecmaVm) override;
@@ -35,7 +35,7 @@ public:
     void SendResponse(const DispatchRequest &request, const DispatchResponse &response,
                       std::unique_ptr<PtBaseReturns> result) override;
     void SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events) override;
-    const EcmaVM *GetEcmaVM()
+    const EcmaVM *GetEcmaVM() const
     {
         return vm_;
     }

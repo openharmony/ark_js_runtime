@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_TOOLING_ECMASCRIPT_DEBUGGER_SCRIPT_H
-#define PANDA_TOOLING_ECMASCRIPT_DEBUGGER_SCRIPT_H
+#ifndef ECMASCRIPT_TOOLING_BASE_PT_SCRIPT_H
+#define ECMASCRIPT_TOOLING_BASE_PT_SCRIPT_H
 
 #include "libpandabase/macros.h"
 #include "ecmascript/mem/c_string.h"

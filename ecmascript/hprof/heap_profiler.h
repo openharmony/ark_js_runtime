@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef RUNTIME_ECMASCRIPT_HPROF_HEAP_PROFILER_H
-#define RUNTIME_ECMASCRIPT_HPROF_HEAP_PROFILER_H
+#ifndef ECMASCRIPT_HPROF_HEAP_PROFILER_H
+#define ECMASCRIPT_HPROF_HEAP_PROFILER_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/hprof/heap_profiler_interface.h"
 #include "ecmascript/hprof/heap_snapshot_json_serializer.h"
 #include "ecmascript/hprof/heap_tracker.h"
 #include "ecmascript/mem/c_containers.h"
+#include "ecmascript/mem/heap.h"
 #include "os/mem.h"
 
 namespace panda::ecmascript {
@@ -29,10 +30,9 @@ class HeapProfiler : public HeapProfilerInterface {
 public:
     NO_MOVE_SEMANTIC(HeapProfiler);
     NO_COPY_SEMANTIC(HeapProfiler);
-    explicit HeapProfiler(CAddressAllocator<JSTaggedType> *allocator) : allocator_(allocator)
+    explicit HeapProfiler(const Heap *heap) : heap_(heap)
     {
-        ASSERT(allocator != nullptr);
-        jsonSerializer_ = allocator->New<HeapSnapShotJSONSerializer>();
+        jsonSerializer_ = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<HeapSnapShotJSONSerializer>();
         if (UNLIKELY(jsonSerializer_ == nullptr)) {
             LOG_ECMA(FATAL) << "alloc snapshot json serializer failed";
             UNREACHABLE();
@@ -66,10 +66,10 @@ private:
     void ClearSnapShot();
 
     const size_t MAX_NUM_HPROF = 5;  // ~10MB
-    CAddressAllocator<JSTaggedType> *allocator_{nullptr};
     CVector<HeapSnapShot *> hprofs_;
     HeapSnapShotJSONSerializer *jsonSerializer_{nullptr};
     std::unique_ptr<HeapTracker> heapTracker_;
+    const Heap *heap_;
 };
 }  // namespace panda::ecmascript
-#endif  // RUNTIME_ECMASCRIPT_HPROF_HEAP_PROFILER_H
+#endif  // ECMASCRIPT_HPROF_HEAP_PROFILER_H

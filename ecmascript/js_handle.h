@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_JSHANDLE_H
-#define PANDA_RUNTIME_ECMASCRIPT_JSHANDLE_H
+#ifndef ECMASCRIPT_JSHANDLE_H
+#define ECMASCRIPT_JSHANDLE_H
 
 #include <type_traits>
 
@@ -32,7 +32,7 @@ class LinkedHashMap;
 class LinkedHashSet;
 class NameDictionary;
 
-template <typename T>
+template<typename T>
 class JSHandle : public HandleBase {
 public:
     inline explicit JSHandle() : HandleBase(reinterpret_cast<uintptr_t>(nullptr)) {}
@@ -55,12 +55,12 @@ public:
         address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), JSTaggedValue(value).GetRawData());
     }
 
-    template <typename S>
+    template<typename S>
     explicit JSHandle(const JSHandle<S> &handle) : HandleBase(handle.GetAddress())
     {
     }
 
-    template <typename S>
+    template<typename S>
     inline static JSHandle<T> Cast(const JSHandle<S> &handle)
     {
         T::Cast(handle.GetTaggedValue().GetTaggedObject());
@@ -104,7 +104,7 @@ public:
         return GetAddress() == 0U;
     }
 
-    template <typename R>
+    template<typename R>
     R *GetObject() const
     {
         return reinterpret_cast<R *>(GetTaggedValue().GetTaggedObject());
@@ -132,31 +132,31 @@ private:
     friend class GlobalHandleCollection;
 };
 
-template <>
+template<>
 inline JSTaggedValue *JSHandle<JSTaggedValue>::operator->() const
 {
     return reinterpret_cast<JSTaggedValue *>(GetAddress());
 }
 
-template <>
+template<>
 inline JSTaggedValue *JSHandle<JSTaggedValue>::operator*() const
 {
     return reinterpret_cast<JSTaggedValue *>(GetAddress());
 }
 
-template <>
+template<>
 inline JSTaggedNumber *JSHandle<JSTaggedNumber>::operator->() const
 {
     return reinterpret_cast<JSTaggedNumber *>(GetAddress());
 }
 
-template <>
+template<>
 inline JSTaggedNumber *JSHandle<JSTaggedNumber>::operator*() const
 {
     return reinterpret_cast<JSTaggedNumber *>(GetAddress());
 }
 
-template <typename T>
+template<typename T>
 class JSMutableHandle : public JSHandle<T> {
 public:
     JSMutableHandle() = default;
@@ -167,7 +167,7 @@ public:
     explicit JSMutableHandle(const JSThread *thread, JSTaggedValue value) : JSHandle<T>(thread, value) {}
     explicit JSMutableHandle(const JSThread *thread, const TaggedArray *value) : JSHandle<T>(thread, value) {}
 
-    template <typename S>
+    template<typename S>
     explicit JSMutableHandle(const JSHandle<S> &handle) : JSHandle<T>(handle)
     {
     }
@@ -180,4 +180,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_JSHANDLE_H
+#endif  // ECMASCRIPT_JSHANDLE_H

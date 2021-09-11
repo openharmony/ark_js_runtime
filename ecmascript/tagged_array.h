@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_ARRAY_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_ARRAY_H
+#ifndef ECMASCRIPT_TAGGED_ARRAY_H
+#define ECMASCRIPT_TAGGED_ARRAY_H
 
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_tagged_value.h"
@@ -26,6 +26,7 @@ class ObjectFactory;
 class TaggedArray : public TaggedObject {
 public:
     static constexpr array_size_t MAX_ARRAY_INDEX = std::numeric_limits<array_size_t>::max();
+    static constexpr array_size_t MAX_END_UNUSED = 4;
 
     inline static TaggedArray *Cast(ObjectHeader *obj)
     {
@@ -39,7 +40,7 @@ public:
 
     array_size_t GetIdx(const JSTaggedValue &value) const;
 
-    template <typename T>
+    template<typename T>
     void Set(const JSThread *thread, array_size_t idx, const JSHandle<T> &value);
 
     JSTaggedValue Get(const JSThread *thread, array_size_t idx) const;
@@ -93,6 +94,10 @@ public:
 
     inline void InitializeWithSpecialValue(JSTaggedValue initValue, array_size_t length);
 
+    static inline bool ShouldTrim(array_size_t oldLength, array_size_t newLength)
+    {
+        return oldLength - newLength > MAX_END_UNUSED;
+    }
     inline void Trim(JSThread *thread, array_size_t newLength);
     void Visitor(const EcmaObjectRangeVisitor &v)
     {
@@ -114,4 +119,4 @@ private:
     __extension__ alignas(sizeof(JSTaggedType)) JSTaggedType data_[0];  // NOLINT(modernize-avoid-c-arrays)
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_ARRAY_H
+#endif  // ECMASCRIPT_TAGGED_ARRAY_H

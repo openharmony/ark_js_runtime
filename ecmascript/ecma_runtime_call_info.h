@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_ECMASCRIPT_ECMA_RUNTIM_CALL_INFO_H
-#define PANDA_ECMASCRIPT_ECMA_RUNTIM_CALL_INFO_H
+#ifndef ECMASCRIPT_ECMA_RUNTIM_CALL_INFO_H
+#define ECMASCRIPT_ECMA_RUNTIM_CALL_INFO_H
 
 #include <algorithm>
 
@@ -125,4 +125,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_ECMASCRIPT_ECMA_RUNTIM_CALL_INFO_H
+#endif  // ECMASCRIPT_ECMA_RUNTIM_CALL_INFO_H

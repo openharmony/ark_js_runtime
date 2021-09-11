@@ -59,9 +59,9 @@ HWTEST_F_L0(JSForinIteratorTest, Create)
 
     JSHandle<JSObject> son = JSObject::ObjectCreate(thread, father);
 
-    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromString("key1"));
-    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromString("key2"));
-    JSHandle<JSTaggedValue> key3(thread->GetEcmaVM()->GetFactory()->NewFromString("key3"));
+    JSHandle<JSTaggedValue> key1(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key1"));
+    JSHandle<JSTaggedValue> key2(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key2"));
+    JSHandle<JSTaggedValue> key3(thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("key3"));
     JSHandle<JSTaggedValue> key1Value(thread, JSTaggedValue(1));
     JSHandle<JSTaggedValue> key2Value(thread, JSTaggedValue(2));
     JSHandle<JSTaggedValue> key3Value(thread, JSTaggedValue(3));

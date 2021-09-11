@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_TAGGED_QUEUE_H
-#define PANDA_RUNTIME_ECMASCRIPT_TAGGED_QUEUE_H
+#ifndef ECMASCRIPT_TAGGED_QUEUE_H
+#define ECMASCRIPT_TAGGED_QUEUE_H
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
@@ -82,6 +82,7 @@ public:
     {
         array_size_t end = queue->GetEnd().GetArrayLength();
         array_size_t capacity = queue->GetCapacity().GetArrayLength();
+        ASSERT(capacity != 0);
         queue->Set(thread, end, value.GetTaggedValue());
         queue->SetEnd(thread, JSTaggedValue((end + 1) % capacity));
     }
@@ -177,4 +178,4 @@ private:
     static TaggedQueue *Create(JSThread *thread, array_size_t capacity, JSTaggedValue initVal = JSTaggedValue::Hole());
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_TAGGED_QUEUE_H
+#endif  // ECMASCRIPT_TAGGED_QUEUE_H

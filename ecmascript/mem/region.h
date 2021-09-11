@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_REGION_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_REGION_H
+#ifndef ECMASCRIPT_MEM_REGION_H
+#define ECMASCRIPT_MEM_REGION_H
 
 #include "ecmascript/mem/mem.h"
 #include "mem/gc/bitmap.h"
@@ -37,7 +37,7 @@ enum RegionFlags {
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_SNAPSHOT_GENERATION = 1 << 4,
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
-    IS_LARGE_OBJECT = 1 << 5,
+    IS_HUGE_OBJECT = 1 << 5,
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_OLD_GENERATION = 1 << 6,
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
@@ -213,6 +213,13 @@ public:
         highWaterMark_ = mark;
     }
 
+    int SetCodeExecutableAndReadable()
+    {
+        // NOLINT(hicpp-signed-bitwise)
+        int res = mprotect(reinterpret_cast<void *>(allocateBase_), GetCapacity(), PROT_EXEC | PROT_READ | PROT_WRITE);
+        return res;
+    }
+
 private:
     Space *space_;
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now
@@ -230,4 +237,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_REGION_H
+#endif  // ECMASCRIPT_MEM_REGION_H

@@ -19,6 +19,7 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
@@ -68,14 +69,12 @@ JSTaggedValue BuiltinsPromise::PromiseConstructor([[maybe_unused]] EcmaRuntimeCa
     // 8. Let resolvingFunctions be CreateResolvingFunctions(promise).
     JSHandle<ResolvingFunctionsRecord> resolvingFunction = JSPromise::CreateResolvingFunctions(thread, instancePromise);
     // 9. Let completion be Call(executor, undefined, «resolvingFunctions.[[Resolve]], resolvingFunctions.[[reject]])
-    JSHandle<TaggedArray> arguments = factory->NewTaggedArray(2);  // 2: 2 means two args stored in array
-    auto result = resolvingFunction->GetResolveFunction();
-    arguments->Set(thread, 0, result);
-    result = resolvingFunction->GetRejectFunction();
-    arguments->Set(thread, 1, result);
-
+    auto resolveFunc = resolvingFunction->GetResolveFunction();
+    auto rejectFunc = resolvingFunction->GetRejectFunction();
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(resolveFunc, rejectFunc);
     JSHandle<JSTaggedValue> thisValue = globalConst->GetHandledUndefined();
-    JSTaggedValue taggedValue = JSFunction::Call(thread, executor, thisValue, arguments);
+    JSTaggedValue taggedValue = JSFunction::Call(thread, executor, thisValue, 2, arguments->GetArgv());  // 2: two args
     JSHandle<JSTaggedValue> completionValue(thread, taggedValue);
 
     // 10. If completion is an abrupt completion, then
@@ -84,11 +83,9 @@ JSTaggedValue BuiltinsPromise::PromiseConstructor([[maybe_unused]] EcmaRuntimeCa
     if (thread->HasPendingException()) {
         completionValue = JSPromise::IfThrowGetThrowValue(thread);
         thread->ClearException();
-        array_size_t length = 1;
-        JSHandle<TaggedArray> arrayCompletion = factory->NewTaggedArray(length);
-        arrayCompletion->Set(thread, 0, completionValue);
         JSHandle<JSTaggedValue> reject(thread, resolvingFunction->GetRejectFunction());
-        JSFunction::Call(thread, reject, thisValue, arrayCompletion);
+        arguments->MakeArgv(completionValue);
+        JSFunction::Call(thread, reject, thisValue, 1, arguments->GetArgv());
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     }
 
@@ -236,9 +233,7 @@ JSTaggedValue BuiltinsPromise::Resolve(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    auto ecmaVm = thread->GetEcmaVM();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    ObjectFactory *factory = ecmaVm->GetFactory();
     // 1. Let C be the this value.
     JSHandle<JSTaggedValue> thisValue = GetThis(argv);
     // 2. If Type(C) is not Object, throw a TypeError exception.
@@ -266,12 +261,11 @@ JSTaggedValue BuiltinsPromise::Resolve(EcmaRuntimeCallInfo *argv)
 
     // 6. Let resolveResult be Call(promiseCapability.[[Resolve]], undefined, «x»).
     // 7. ReturnIfAbrupt(resolveResult).
-    array_size_t length = 1;
-    JSHandle<TaggedArray> arrayCompletion = factory->NewTaggedArray(length);
-    arrayCompletion->Set(thread, 0, xValue);
     JSHandle<JSTaggedValue> resolve(thread, promiseCapability->GetResolve());
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    JSFunction::Call(thread, resolve, undefined, arrayCompletion);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(xValue);
+    JSFunction::Call(thread, resolve, undefined, 1, arguments->GetArgv());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 8. Return promiseCapability.[[Promise]].
@@ -286,9 +280,7 @@ JSTaggedValue BuiltinsPromise::Reject(EcmaRuntimeCallInfo *argv)
     BUILTINS_API_TRACE(argv->GetThread(), Promise, Reject);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto ecmaVm = thread->GetEcmaVM();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    ObjectFactory *factory = ecmaVm->GetFactory();
 
     // 1. Let C be the this value.
     // 2. If Type(C) is not Object, throw a TypeError exception.
@@ -305,12 +297,11 @@ JSTaggedValue BuiltinsPromise::Reject(EcmaRuntimeCallInfo *argv)
     // 5. Let rejectResult be Call(promiseCapability.[[Reject]], undefined, «r»).
     // 6. ReturnIfAbrupt(rejectResult).
     JSHandle<JSTaggedValue> reason = GetCallArg(argv, 0);
-    array_size_t length = 1;
-    JSHandle<TaggedArray> arrayCompletion = factory->NewTaggedArray(length);
-    arrayCompletion->Set(thread, 0, reason);
     JSHandle<JSTaggedValue> reject(thread, promiseCapability->GetReject());
     JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();
-    JSFunction::Call(thread, reject, undefined, arrayCompletion);
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(reason);
+    JSFunction::Call(thread, reject, undefined, 1, arguments->GetArgv());
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     // 7. Return promiseCapability.[[Promise]].
@@ -334,17 +325,14 @@ JSTaggedValue BuiltinsPromise::Catch(EcmaRuntimeCallInfo *argv)
     BUILTINS_API_TRACE(argv->GetThread(), Promise, Catch);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto ecmaVm = thread->GetEcmaVM();
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSTaggedValue> promise = GetThis(argv);
     JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
     JSHandle<JSTaggedValue> reject = GetCallArg(argv, 0);
-    array_size_t length = 2;
-    JSHandle<TaggedArray> arrayList = factory->NewTaggedArray(length);
-    arrayList->Set(thread, 0, globalConst->GetHandledUndefined());
-    arrayList->Set(thread, 1, reject);
-    return JSFunction::Invoke(thread, promise, thenKey, arrayList);
+
+    InternalCallParams *arguments = thread->GetInternalCallParams();
+    arguments->MakeArgv(globalConst->GetHandledUndefined(), reject);
+    return JSFunction::Invoke(thread, promise, thenKey, 2, arguments->GetArgv());  // 2: two args
 }
 
 // 25.4.5.3 Promise.prototype.then ( onFulfilled , onRejected )
@@ -485,18 +473,17 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
                     JSArray::CreateArrayFromList(thread, JSHandle<TaggedArray>(thread, values->GetValue()));
                 // 2. Let resolveResult be Call(resultCapability.[[Resolve]], undefined, «valuesArray»).
                 JSHandle<JSTaggedValue> resCapaFunc(thread, capa->GetResolve());
-                JSHandle<TaggedArray> argv = factory->NewTaggedArray(1);
-                argv->Set(thread, 0, jsArrayValues.GetTaggedValue());
+                InternalCallParams *arguments = thread->GetInternalCallParams();
+                arguments->MakeArgv(jsArrayValues.GetTaggedValue());
                 JSTaggedValue resolveRes =
-                    JSFunction::Call(thread, resCapaFunc, globalConst->GetHandledUndefined(), argv);
+                    JSFunction::Call(thread, resCapaFunc, globalConst->GetHandledUndefined(), 1, arguments->GetArgv());
                 // 3. ReturnIfAbrupt(resolveResult)
                 JSHandle<JSTaggedValue> resolveAbrupt(thread, resolveRes);
                 RETURN_COMPLETION_IF_ABRUPT(thread, resolveAbrupt);
             }
             // iv. Return resultCapability.[[Promise]].
             JSHandle<CompletionRecord> resRecord = factory->NewCompletionRecord(
-                CompletionRecord::NORMAL,
-                JSHandle<JSTaggedValue>(thread, capa->GetPromise()));
+                CompletionRecord::NORMAL, JSHandle<JSTaggedValue>(thread, capa->GetPromise()));
             return resRecord;
         }
         // e. Let nextValue be IteratorValue(next).
@@ -523,9 +510,9 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         values->SetValue(thread, valuesArray);
         // i. Let nextPromise be Invoke(constructor, "resolve", «‍nextValue»).
         JSHandle<JSTaggedValue> resolveKey = globalConst->GetHandledPromiseResolveString();
-        JSHandle<TaggedArray> nextValueArray = factory->NewTaggedArray(1);
-        nextValueArray->Set(thread, 0, nextVal);
-        JSTaggedValue taggedNextPromise = JSFunction::Invoke(thread, ctor, resolveKey, nextValueArray);
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(nextVal);
+        JSTaggedValue taggedNextPromise = JSFunction::Invoke(thread, ctor, resolveKey, 1, arguments->GetArgv());
         // j. ReturnIfAbrupt(nextPromise).
         JSHandle<JSTaggedValue> nextPromise(thread, taggedNextPromise);
         RETURN_COMPLETION_IF_ABRUPT(thread, nextPromise);
@@ -549,10 +536,10 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         remainCnt->SetValue(thread, ++JSTaggedNumber(remainCnt->GetValue()));
         // r. Let result be Invoke(nextPromise, "then", «‍resolveElement, resultCapability.[[Reject]]»).
         JSHandle<JSTaggedValue> thenKey = globalConst->GetHandledPromiseThenString();
-        JSHandle<TaggedArray> arg = factory->NewTaggedArray(2);  // 2: 2 means two args stored in array
-        arg->Set(thread, 0, resoleveElement);
-        arg->Set(thread, 1, capa->GetReject());
-        JSTaggedValue taggedResult = JSFunction::Invoke(thread, nextPromise, thenKey, arg);
+        arguments->MakeArgv(resoleveElement.GetTaggedValue(), capa->GetReject());
+        JSTaggedValue taggedResult =
+            JSFunction::Invoke(thread, nextPromise, thenKey, 2, arguments->GetArgv());  // 2: two args
+
         JSHandle<JSTaggedValue> result(thread, taggedResult);
         // s. ReturnIfAbrupt(result).
         RETURN_COMPLETION_IF_ABRUPT(thread, result);
@@ -606,10 +593,11 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseRace(JSThread *thread,
         }
         RETURN_COMPLETION_IF_ABRUPT(thread, nextValue);
         JSHandle<JSTaggedValue> resolveStr = globalConst->GetHandledPromiseResolveString();
-        array_size_t length = 1;
-        JSHandle<TaggedArray> array = factory->NewTaggedArray(length);
-        array->Set(thread, 0, nextValue);
-        JSTaggedValue result = JSFunction::Invoke(thread, constructor, resolveStr, array);
+
+        InternalCallParams *arguments = thread->GetInternalCallParams();
+        arguments->MakeArgv(nextValue);
+        JSTaggedValue result = JSFunction::Invoke(thread, constructor, resolveStr, 1, arguments->GetArgv());
+
         JSHandle<JSTaggedValue> nextPromise(thread, result);
         if (thread->HasPendingException()) {
             nextPromise = JSPromise::IfThrowGetThrowValue(thread);
@@ -617,11 +605,9 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseRace(JSThread *thread,
         RETURN_COMPLETION_IF_ABRUPT(thread, nextPromise);
 
         JSHandle<JSTaggedValue> thenStr = globalConst->GetHandledPromiseThenString();
-        length = 2;  // 2: 2 means two args stored in array
-        array = factory->NewTaggedArray(length);
-        array->Set(thread, 0, capability->GetResolve());
-        array->Set(thread, 1, capability->GetReject());
-        result = JSFunction::Invoke(thread, nextPromise, thenStr, array);
+        arguments->MakeArgv(capability->GetResolve(), capability->GetReject());
+        result = JSFunction::Invoke(thread, nextPromise, thenStr, 2, arguments->GetArgv());  // 2: two args
+
         JSHandle<JSTaggedValue> handleResult(thread, result);
         if (thread->HasPendingException()) {
             handleResult = JSPromise::IfThrowGetThrowValue(thread);

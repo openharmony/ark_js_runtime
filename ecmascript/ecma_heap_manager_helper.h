@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_HEAPMANAGER_HELPER_H
-#define PANDA_RUNTIME_ECMASCRIPT_HEAPMANAGER_HELPER_H
+#ifndef ECMASCRIPT_HEAPMANAGER_HELPER_H
+#define ECMASCRIPT_HEAPMANAGER_HELPER_H
 
 namespace panda::ecmascript {
 class EcmaHeapManagerHelper {
@@ -62,4 +62,4 @@ private:
     JSThread *thread_;
 };
 }  // namespace panda::ecmascript
-#endif  // PANDA_RUNTIME_ECMASCRIPT_HEAPMANAGER_HELPER_H
+#endif  // ECMASCRIPT_HEAPMANAGER_HELPER_H

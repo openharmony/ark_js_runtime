@@ -26,7 +26,14 @@ template("host_unittest_action") {
   _target_name_ = "${target_name}"
   _deps_ = invoker.deps
 
-  _deps_ += [ "//ark/js_runtime:libark_jsruntime_static" ]
+  _deps_ += [
+    "//ark/js_runtime:libark_jsruntime_static",
+    "//ark/js_runtime:libark_js_intl_static",
+  ]
+
+  if (!is_standard_system) {
+    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+  }
 
   # unittest for phone running
   ohos_unittest(_target_name_) {
@@ -107,7 +114,7 @@ template("host_moduletest_action") {
       "--script-file",
       rebase_path(root_out_dir) + "/ark/ark_js_runtime/ark_js_vm",
       "--script-args",
-      rebase_path(_test_abc_path_) + " _GLOBAL::func_main_0",
+      rebase_path(_test_abc_path_),
       "--expect-file",
       rebase_path(_test_expect_path_),
       "--env-path",

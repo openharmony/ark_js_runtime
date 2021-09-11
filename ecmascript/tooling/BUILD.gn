@@ -68,8 +68,6 @@ ohos_shared_library("libark_ecma_debugger") {
   part_name = "ark_js_runtime"
 
   output_extension = "so"
-  if (!is_standard_system) {
-    relative_install_dir = "ark"
-  }
+  relative_install_dir = "ark"
   subsystem_name = "ark"
 }

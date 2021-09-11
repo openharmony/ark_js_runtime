@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_ALLOCATOR_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_ALLOCATOR_H
+#ifndef ECMASCRIPT_MEM_ALLOCATOR_H
+#define ECMASCRIPT_MEM_ALLOCATOR_H
 
 #include <memory>
 
@@ -116,4 +116,4 @@ private:
 };
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_ALLOCATOR_H
+#endif  // ECMASCRIPT_MEM_ALLOCATOR_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H
-#define PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H
+#ifndef ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H
+#define ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H
 
 #include <map>
 #include <memory>
@@ -58,7 +58,7 @@ public:
         return id_;
     }
 
-    template <class T>
+    template<class T>
     inline T *GetImpl() const
     {
         return static_cast<T *>(impl_);
@@ -69,7 +69,7 @@ public:
         impl_ = impl;
     }
 
-    template <class T>
+    template<class T>
     inline void ResetImpl()
     {
         if (impl_) {
@@ -94,7 +94,6 @@ struct NotMergedPhiDesc {
 struct LLVMTFBuilderBasicBlockImpl {
     LLVMBasicBlockRef llvm_bb_ = nullptr;
     LLVMBasicBlockRef continuation = nullptr;
-    LLVMBuilderRef llvm_builder_ = nullptr;
     std::unordered_map<int, LLVMValueRef> values_ = {};
     bool started = false;
     bool ended = false;
@@ -132,6 +131,7 @@ private:
     void VisitIntMul(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitIntOr(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitIntAnd(AddrShift gate, AddrShift e1, AddrShift e2) const;
+    void VisitIntXor(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitIntLsr(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitInt32LessThanOrEqual(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitIntOrUintCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMIntPredicate opcode) const;
@@ -147,6 +147,8 @@ private:
     void VisitCastInt64ToPointer(AddrShift gate, AddrShift e1) const;
 
     BasicBlock *EnsurBasicBlock(int id);
+    LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder);
+    void PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builder);
     LLVMBasicBlockRef EnsureLLVMBB(BasicBlock *bb) const;
     LLVMTFBuilderBasicBlockImpl *EnsureLLVMBBImpl(BasicBlock *bb) const;
     void StartLLVMBuilder(BasicBlock *bb) const;
@@ -159,19 +161,19 @@ private:
     void ProcessPhiWorkList();
 
 private:
-    const std::vector<std::vector<AddrShift>> *m_schedule {nullptr};
-    const Circuit *m_circuit {nullptr};
-    BasicBlock *m_currentBb {nullptr};
-    int m_lineNumber {0};
+    const std::vector<std::vector<AddrShift>> *schedule_ {nullptr};
+    const Circuit *circuit_ {nullptr};
+    BasicBlock *currentBb_ {nullptr};
+    int lineNumber_ {0};
 
-    LLVMModuleRef m_module {nullptr};
-    LLVMContextRef m_context;
-    LLVMValueRef m_function {nullptr};
-    LLVMBuilderRef m_builder {nullptr};
-    std::map<GateId, int> m_instIdMapBbId;
-    BasicBlockMap m_bbIdMapBb;
+    LLVMModuleRef module_ {nullptr};
+    LLVMContextRef context_;
+    LLVMValueRef function_ {nullptr};
+    LLVMBuilderRef builder_ {nullptr};
+    std::map<GateId, int> instIdMapBbId_;
+    BasicBlockMap bbIdMapBb_;
 
-    std::vector<BasicBlock *> m_phiRebuildWorklist;
+    std::vector<BasicBlock *> phiRebuildWorklist_;
 };
 #endif
 }  // namespace kungfu

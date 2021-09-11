@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_GC_WRITE_BARRIER_H
-#define PANDA_RUNTIME_ECMASCRIPT_MEM_GC_WRITE_BARRIER_H
+#ifndef ECMASCRIPT_MEM_GC_WRITE_BARRIER_H
+#define ECMASCRIPT_MEM_GC_WRITE_BARRIER_H
 
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/region.h"
@@ -32,4 +32,4 @@ static inline void MarkingBarrier(void *obj, size_t offset, TaggedObject *value)
 }
 }  // namespace panda::ecmascript
 
-#endif  // PANDA_RUNTIME_ECMASCRIPT_MEM_GC_WRITE_BARRIER_H
+#endif  // ECMASCRIPT_MEM_GC_WRITE_BARRIER_H

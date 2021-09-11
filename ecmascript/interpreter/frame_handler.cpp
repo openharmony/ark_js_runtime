@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-#include "frame_handler.h"
+#include "ecmascript/interpreter/frame_handler.h"
+
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_thread.h"
 #include "libpandafile/bytecode_instruction-inl.h"
@@ -21,7 +22,7 @@
 namespace panda::ecmascript {
 EcmaFrameHandler::EcmaFrameHandler(const JSThread *thread)
 {
-    sp_ = thread->GetCurrentSPFrame();
+    sp_ = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
 }
 
 bool EcmaFrameHandler::HasFrame() const
@@ -183,7 +184,7 @@ void EcmaFrameHandler::DumpStack(std::ostream &os) const
     EcmaFrameHandler frameHandler(sp_);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
         os << "[" << i++
-           << "]:" << frameHandler.GetMethod()->GetStringDataAnnotation(Method::AnnotationField::FUNCTION_NAME).data
+           << "]:" << frameHandler.GetMethod()->ParseFunctionName()
            << "\n";
     }
 }

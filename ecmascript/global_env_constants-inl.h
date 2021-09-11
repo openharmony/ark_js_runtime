@@ -37,6 +37,11 @@ inline void GlobalEnvConstants::SetConstant(ConstantIndex index, JSTaggedValue v
     constants_[static_cast<int>(index)] = value;
 }
 
+inline uintptr_t GlobalEnvConstants::GetGlobalConstantAddr(ConstantIndex index) const
+{
+    return ToUintPtr(this) + sizeof(JSTaggedValue) * static_cast<int>(index);
+}
+
 // clang-format off
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECL_GET_IMPL(Type, Name, Index, Desc)                               \
