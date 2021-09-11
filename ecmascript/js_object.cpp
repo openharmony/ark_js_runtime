@@ -1152,15 +1152,15 @@ bool JSObject::CreateMethodProperty(JSThread *thread, const JSHandle<JSObject> &
 JSHandle<JSTaggedValue> JSObject::GetMethod(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                             const JSHandle<JSTaggedValue> &key)
 {
-    JSHandle<JSTaggedValue> func = JSTaggedValue::GetProperty(thread, obj, key).GetValue();
-    if (func->IsUndefined() || func->IsNull()) {
+    JSTaggedValue func = FastRuntimeStub::FastGetProperty(thread, obj.GetTaggedValue(), key.GetTaggedValue());
+    if (func.IsUndefined() || func.IsNull()) {
         return JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined());
     }
 
-    if (!func->IsCallable()) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not Callable", func);
+    if (!func.IsCallable()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not Callable", JSHandle<JSTaggedValue>(thread, func));
     }
-    return func;
+    return JSHandle<JSTaggedValue>(thread, func);
 }
 
 // 7.3.14 SetIntegrityLevel (O, level)
