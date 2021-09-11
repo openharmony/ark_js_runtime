@@ -178,7 +178,7 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
         return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
     }
     // 1. find from global record
-     if (GetICKind() == ICKind::NamedGlobalStoreIC) {
+    if (GetICKind() == ICKind::NamedGlobalStoreIC) {
         bool found = false;
         SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
         if (found) {
