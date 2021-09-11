@@ -76,7 +76,7 @@ public:
     static constexpr uint32_t NORMAL_ATTR_BITS = 18;
     using NormalAttrField = BitField<int, 0, NORMAL_ATTR_BITS>;
     using SortedIndexField = OffsetField::NextField<uint32_t, OFFSET_BITFIELD_NUM>;  // 28
-
+    using IsConstPropsField = SortedIndexField::NextFlag;                            // 29
     // dictionary mode, include global
     using PropertyBoxTypeField = PropertyMetaDataField::NextField<PropertyBoxType, 2>;              // 2: 2 bits, 5-6
     using DictionaryOrderField = PropertyBoxTypeField::NextField<uint32_t, DICTIONARY_ORDER_NUM>;  // 26
@@ -215,6 +215,16 @@ public:
     inline bool IsInlinedProps() const
     {
         return IsInlinedPropsField::Get(value_);
+    }
+
+    inline void SetIsConstProps(bool flag)
+    {
+        IsConstPropsField::Set<uint32_t>(flag, &value_);
+    }
+
+    inline bool IsConstProps() const
+    {
+        return IsConstPropsField::Get(value_);
     }
 
     inline void SetRepresentation(Representation representation)
