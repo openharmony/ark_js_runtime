@@ -274,8 +274,8 @@ JSTaggedValue SlowRuntimeStub::Div2Dyn(JSThread *thread, JSTaggedValue left, JST
         if (dLeft == 0 || std::isnan(dLeft)) {
             return JSTaggedValue(base::NAN_VALUE);
         }
-        bool positive = ((bit_cast<uint64_t>(dRight) & base::DOUBLE_SIGN_MASK) ==
-                         (bit_cast<uint64_t>(dLeft) & base::DOUBLE_SIGN_MASK));
+        bool positive = (((bit_cast<uint64_t>(dRight)) & base::DOUBLE_SIGN_MASK) ==
+                         ((bit_cast<uint64_t>(dLeft)) & base::DOUBLE_SIGN_MASK));
         return JSTaggedValue(positive ? base::POSITIVE_INFINITY : -base::POSITIVE_INFINITY);
     }
     return JSTaggedValue(dLeft / dRight);
@@ -493,7 +493,7 @@ JSTaggedValue SlowRuntimeStub::ExpDyn(JSThread *thread, JSTaggedValue base, JSTa
         return JSTaggedValue(base::NAN_VALUE);
     }
 
-    if ((doubleBase == 0 && (bit_cast<uint64_t>(doubleBase) & base::DOUBLE_SIGN_MASK) == base::DOUBLE_SIGN_MASK) &&
+    if (((doubleBase == 0) && (bit_cast<uint64_t>(doubleBase) & base::DOUBLE_SIGN_MASK) == base::DOUBLE_SIGN_MASK) &&
         std::isfinite(doubleExponent) && base::NumberHelper::TruncateDouble(doubleExponent) == doubleExponent &&
         base::NumberHelper::TruncateDouble(doubleExponent / 2) + base::HALF == (doubleExponent / 2)) {  // 2: half
         if (doubleExponent > 0) {
@@ -1336,7 +1336,6 @@ JSTaggedValue SlowRuntimeStub::TryUpdateGlobalRecord(JSThread *thread, JSTaggedV
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
     int entry = dict->FindEntry(prop);
-
     if (dict->GetAttributes(entry).IsConstProps()) {
         return ThrowSyntaxError(thread, " const can not be modified");
     }
@@ -1345,21 +1344,19 @@ JSTaggedValue SlowRuntimeStub::TryUpdateGlobalRecord(JSThread *thread, JSTaggedV
     return JSTaggedValue::True();
 }
 
-JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue key, bool *found) {
-
+JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue key, bool *found)
+{
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
     EcmaVM *vm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
-
     int entry = dict->FindEntry(key);
     if (entry != -1) {
         *found = true;
         return dict->GetValue(entry);
     }
     return JSTaggedValue::Undefined();
-
 }
 
 JSTaggedValue SlowRuntimeStub::StGlobalRecord(JSThread *thread, JSTaggedValue prop, JSTaggedValue value, bool isConst)

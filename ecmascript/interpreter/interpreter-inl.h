@@ -2680,8 +2680,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             JSTaggedValue res = SlowRuntimeStub::TryUpdateGlobalRecord(thread, propKey, value);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             RESTORE_ACC();
-        }
-        else {
+        } else {
             // 2. find from global object
             FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey, &found);
             if (!found) {
