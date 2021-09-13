@@ -19,16 +19,20 @@ class View{}
 let a = "a";
 const b = "b";
 
-print(View);
+print(View.name);
 
 class myString extends String{}
 var view = new myString("extends String");
 print(view);
 
 print(a);
-a = "aa"
+a = "aa";
 print(a);
 
 print(b);
-b = "bb"
+try {
+    b = "bb";   
+} catch (error) {
+    print("const can not be modified");
+}
 print(b);

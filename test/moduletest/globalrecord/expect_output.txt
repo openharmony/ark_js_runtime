@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Not support function toString() due to Runtime can not obtain Source Code yet.
+View
 extends String
 a
 aa
+b
+const can not be modified
 b
