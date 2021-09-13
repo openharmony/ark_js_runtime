@@ -26,7 +26,7 @@ var view = new myString("extends String");
 print(view);
 
 print(a);
-a = "a"
+a = "aa"
 print(a);
 
 print(b);

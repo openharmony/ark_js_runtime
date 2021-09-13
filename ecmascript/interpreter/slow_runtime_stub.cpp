@@ -1280,22 +1280,14 @@ JSTaggedValue SlowRuntimeStub::TryLdGlobalByName(JSThread *thread, JSTaggedValue
 {
     INTERPRETER_TRACE(thread, Trygetobjprop);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-
+ 
     JSHandle<JSTaggedValue> obj(thread, global.GetTaggedObject()->GetClass()->GetPrototype());
     JSHandle<JSTaggedValue> propHandle(thread, prop);
     OperationResult res = JSTaggedValue::GetProperty(thread, obj, propHandle);
-    if (res.GetPropertyMetaData().IsFound()) {
-        return res.GetValue().GetTaggedValue();
-    }
-
-    EcmaVM *vm = thread->GetEcmaVM();
-    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
-    NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
-    int entry = dict->FindEntry(propHandle.GetTaggedValue());
-    if (entry == -1) {
+    if (!res.GetPropertyMetaData().IsFound()) {
         return ThrowReferenceError(thread, prop, " is not defined");
     }
-    return dict->GetValue(entry);
+    return res.GetValue().GetTaggedValue();
 }
 
 JSTaggedValue SlowRuntimeStub::TryStGlobalByName(JSThread *thread, JSTaggedValue prop)
