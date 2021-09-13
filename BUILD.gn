@@ -385,7 +385,7 @@ ohos_static_library("libark_jsruntime_static") {
   ]
 
   if (is_standard_system) {
-    # cflags_cc = [ "-fvisibility=hidden" ]
+    cflags_cc = [ "-fvisibility=hidden" ]
     deps += [ "$ark_root/runtime:libarkruntime_static" ]
   } else {
     deps += [ "$ark_root/runtime:libarkruntime" ]

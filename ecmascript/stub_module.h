@@ -16,12 +16,14 @@
 #ifndef ECMASCRIPT_STUB_MODULE_H
 #define ECMASCRIPT_STUB_MODULE_H
 
+#include "ecmascript/common.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/machine_code.h"
+#include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
 using Address = uintptr_t;
-class StubModule {
+class PUBLIC_API StubModule {
 public:
     Address GetStubEntry(int index)
     {
