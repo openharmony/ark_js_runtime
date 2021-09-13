@@ -2641,9 +2641,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 SET_ACC(globalResult);
             } else {
                 // slow path
-            JSTaggedValue res = SlowRuntimeStub::TryLdGlobalByName(thread, globalObj, prop);
-            INTERPRETER_RETURN_IF_ABRUPT(res);
-            SET_ACC(res);
+                JSTaggedValue res = SlowRuntimeStub::TryLdGlobalByName(thread, globalObj, prop);
+                INTERPRETER_RETURN_IF_ABRUPT(res);
+                SET_ACC(res);
             }
         }
 
