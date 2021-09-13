@@ -1280,7 +1280,7 @@ JSTaggedValue SlowRuntimeStub::TryLdGlobalByName(JSThread *thread, JSTaggedValue
 {
     INTERPRETER_TRACE(thread, Trygetobjprop);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
- 
+
     JSHandle<JSTaggedValue> obj(thread, global.GetTaggedObject()->GetClass()->GetPrototype());
     JSHandle<JSTaggedValue> propHandle(thread, prop);
     OperationResult res = JSTaggedValue::GetProperty(thread, obj, propHandle);
