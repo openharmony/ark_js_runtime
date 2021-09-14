@@ -69,13 +69,17 @@ public:
 
     inline JSTaggedValue GetTaggedValue() const
     {
-        ASSERT(GetAddress() != 0U);
+        if (GetAddress() == 0U) {
+            return JSTaggedValue::Undefined();
+        }
         return *(reinterpret_cast<JSTaggedValue *>(GetAddress()));  // NOLINT(clang-analyzer-core.NullDereference)
     }
 
     inline JSTaggedType GetTaggedType() const
     {
-        ASSERT(GetAddress() != 0U);
+        if (GetAddress() == 0U) {
+            return JSTaggedValue::Undefined().GetRawData();
+        }
         return *reinterpret_cast<JSTaggedType *>(GetAddress());  // NOLINT(clang-analyzer-core.NullDereference)
     }
 
