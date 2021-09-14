@@ -84,13 +84,13 @@ public:
             []() REQUIRES(eventMutex_) { return initialized_; }, [] {});
     }
 
-    static void Event(DebugEvent event, PtThread ecmaVm = PtThread::NONE,
+    static void Event(DebugEvent event, PtThread thread = PtThread::NONE,
                       PtLocation location = PtLocation("", EntityId(0), 0))
     {
-        LOG(DEBUG, DEBUGGER) << "Occured event " << event << " in ecmaVm with id " << ecmaVm.GetId();
+        LOG(DEBUG, DEBUGGER) << "Occured event " << event << " in thread with id " << thread.GetId();
         os::memory::LockHolder holder(eventMutex_);
         lastEvent_ = event;
-        lastEventThread_ = ecmaVm;
+        lastEventThread_ = thread;
         lastEventLocation_ = location;
         if (event == DebugEvent::VM_INITIALIZATION) {
             initialized_ = true;
@@ -142,15 +142,15 @@ public:
 
     static int32_t GetValueRegister(JSMethod *method, const char *varName);
 
-    static bool SuspendUntilContinue(DebugEvent reason, PtThread ecmaVm, PtLocation location)
+    static bool SuspendUntilContinue(DebugEvent reason, PtThread thread, PtLocation location)
     {
         {
             os::memory::LockHolder lock(suspendMutex_);
             suspended_ = true;
         }
 
-        // Notify the debugger ecmaVm about the suspend event
-        Event(reason, ecmaVm, location);
+        // Notify the debugger thread about the suspend event
+        Event(reason, thread, location);
 
         // Wait for continue
         {
