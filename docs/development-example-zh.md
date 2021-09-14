@@ -1,13 +1,21 @@
 # 开发实例<a name="ZH-CN_TOPIC_0000001128096218"></a>
 
--   [HelloWorld](#section105987593810)
--   [运行Test262测试用例](#section118471435115815)
+- [开发实例<a name="ZH-CN_TOPIC_0000001128096218"></a>](#开发实例)
+  - [HelloWorld<a name="section105987593810"></a>](#helloworld)
+    - [运行前准备](#运行前准备)
+    - [运行hello-world.js](#运行hello-worldjs)
+    - [反汇编hello-world.abc](#反汇编hello-worldabc)
+  - [运行Test262测试用例<a name="section118471435115815"></a>](#运行test262测试用例)
+    - [运行前准备](#运行前准备-1)
+    - [运行Test262](#运行test262)
+    - [测试运行示例](#测试运行示例)
+    - [测试输出](#测试输出)
 
 本章节将介绍基于方舟运行时的开发测试实例。
 
 ## HelloWorld<a name="section105987593810"></a>
 
-运行前准备
+### 运行前准备
 
 1.  编译方舟运行时，编译命令：
 
@@ -15,15 +23,15 @@
 ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
 ```
 
-1.  编译方舟前端，编译命令：
+2.  编译方舟前端，编译命令：
 
 ```
 ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc_build
 ```
 
-_注：编译命令执行路径为项目根目录。_
+**说明**：编译命令执行路径为项目根目录。
 
-运行hello-world.js
+### 运行hello-world.js
 
 新建hello-world.js文件，写入以下源码：
 
@@ -60,10 +68,9 @@ _注：编译命令执行路径为项目根目录。_
 
 
 
->![](public_sys-resources/icon-note.gif) **说明：** 
->此处“_your code path_”为源码目录路径。
+**说明**：此处“_your code path_”为源码目录路径。
 
-反汇编hello-world.abc
+### 反汇编hello-world.abc
 
 执行如下命令，结果输出到output文件中：
 
@@ -110,7 +117,7 @@ hello-world.abc反汇编结果如下：
 
 ## 运行Test262测试用例<a name="section118471435115815"></a>
 
-运行前准备
+### 运行前准备
 
 1.  编译方舟运行时，编译命令：
 
@@ -124,9 +131,9 @@ hello-world.abc反汇编结果如下：
 ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc_build
 ```
 
-_注：编译命令执行路径为项目根目录。_
+**说明**：编译命令执行路径为项目根目录。
 
-运行Test262
+### 运行Test262
 
 运行run\_test262.py脚本，下载及运行Test262用例。
 
@@ -228,7 +235,7 @@ python3 test262/run_test262.py [options]
 </tbody>
 </table>
 
-测试运行示例
+### 测试运行示例
 
 -   运行ES51测试用例：
 
@@ -268,7 +275,7 @@ python3 test262/run_test262.py [options]
     ```
 
 
-测试输出
+### 测试输出
 
 Test262所有用例的测试结果位于项目根目录/ark/ts2abc/out下。shell中测试输出结果如下：
 

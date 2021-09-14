@@ -2,7 +2,7 @@
 
 The ARK front-end tools use the command line interaction mode and convert JS code into ARK bytecodes that can run on ARK runtime. The toolchain supports Windows, Linux, and macOS.
 
-JS Bytecode Compiler
+## JS Bytecode Compiler
 
 Converts a JS file into ARK bytecodes.
 
@@ -137,7 +137,7 @@ node --expose-gc index.js [option] file.js
 </tbody>
 </table>
 
-Assembler ark\_asm
+## Assembler ark\_asm
 
 The ark\_asm assembler converts the text ARK bytecode file into a bytecode file in binary format.
 
@@ -191,7 +191,7 @@ Input file: ARK bytecodes in text format
 
 Output file: ARK bytecodes in binary format
 
-Disassembler ark\_disasm
+## Disassembler ark\_disasm
 
 The ark\_disasm disassembler converts binary ARK bytecodes into readable text ARK bytecodes.
 
