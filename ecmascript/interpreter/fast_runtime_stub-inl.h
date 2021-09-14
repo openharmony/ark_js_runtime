@@ -690,13 +690,13 @@ JSTaggedValue FastRuntimeStub::NewLexicalEnvDyn(JSThread *thread, ObjectFactory 
 // Those interface below is discarded
 bool FastRuntimeStub::IsSpecialIndexedObjForGet(JSTaggedValue obj)
 {
-    JSType jsType = obj.GetHeapObject()->ClassAddr<JSHClass>()->GetObjectType();
+    JSType jsType = obj.GetTaggedObject()->GetClass()->GetObjectType();
     return jsType > JSType::JS_ARRAY && jsType <= JSType::JS_PRIMITIVE_REF;
 }
 
 bool FastRuntimeStub::IsSpecialIndexedObjForSet(JSTaggedValue obj)
 {
-    JSType jsType = obj.GetHeapObject()->ClassAddr<JSHClass>()->GetObjectType();
+    JSType jsType = obj.GetTaggedObject()->GetClass()->GetObjectType();
     return jsType >= JSType::JS_ARRAY && jsType <= JSType::JS_PRIMITIVE_REF;
 }
 

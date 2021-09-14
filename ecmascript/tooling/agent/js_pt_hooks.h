@@ -30,12 +30,12 @@ public:
     explicit JSPtHooks(JSBackend *backend) : backend_(backend) {}
     ~JSPtHooks() override = default;
 
-    void Breakpoint(PtThread ecmaVm, const PtLocation &location) override;
+    void Breakpoint(PtThread thread, const PtLocation &location) override;
     void LoadModule(std::string_view pandaFileName) override;
     void Paused(PauseReason reason) override;
-    void Exception(PtThread ecmaVm, const PtLocation &location, PtObject exceptionObject,
+    void Exception(PtThread thread, const PtLocation &location, PtObject exceptionObject,
                    const PtLocation &catchLocation) override;
-    void SingleStep(PtThread ecmaVm, const PtLocation &location) override;
+    void SingleStep(PtThread thread, const PtLocation &location) override;
 
     void ThreadStart(PtThread) override {}
     void ThreadEnd(PtThread) override {}

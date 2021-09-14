@@ -81,10 +81,10 @@ private:
                                  const JSHandle<EcmaString> &flag);
     // 21.2.5.2.2 Runtime Semantics: RegExpBuiltinExec ( R, S )
     static JSTaggedValue RegExpBuiltinExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
-                                           const JSHandle<JSTaggedValue> &inputStr);
+                                           const JSHandle<JSTaggedValue> &inputStr, bool isCached);
     // 21.2.5.2.1 Runtime Semantics: RegExpExec ( R, S )
     static JSTaggedValue RegExpExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
-                                    const JSHandle<JSTaggedValue> &inputString);
+                                    const JSHandle<JSTaggedValue> &inputString, bool isCached);
     // 21.2.3.2.1 Runtime Semantics: RegExpAlloc ( newTarget )
     static JSTaggedValue RegExpAlloc(JSThread *thread, const JSHandle<JSTaggedValue> &newTarget);
 
@@ -105,6 +105,8 @@ public:
     enum CacheType {
         REPLACE_TYPE,
         SPLIT_TYPE,
+        MATCH_TYPE,
+        EXEC_TYPE
     };
     static RegExpExecResultCache *Cast(TaggedObject *object)
     {
@@ -113,12 +115,14 @@ public:
     static JSTaggedValue CreateCacheTable(JSThread *thread);
     JSTaggedValue FindCachedResult(JSThread *thread, const JSHandle<JSTaggedValue> &patten,
                                    const JSHandle<JSTaggedValue> &flag, const JSHandle<JSTaggedValue> &input,
-                                   CacheType type);
+                                   CacheType type, const JSHandle<JSTaggedValue> &regexp);
     void AddResultInCache(JSThread *thread, const JSHandle<JSTaggedValue> &patten, const JSHandle<JSTaggedValue> &flag,
-                          const JSHandle<JSTaggedValue> &input, JSTaggedValue resultArray, CacheType type);
+                          const JSHandle<JSTaggedValue> &input, JSTaggedValue resultArray, CacheType type,
+                          uint32_t lastIndex);
 
     void ClearEntry(JSThread *thread, int entry);
-    void SetEntry(JSThread *thread, int entry, JSTaggedValue &patten, JSTaggedValue &flag, JSTaggedValue &input);
+    void SetEntry(JSThread *thread, int entry, JSTaggedValue &patten, JSTaggedValue &flag, JSTaggedValue &input,
+                  JSTaggedValue &lastIndexValue);
     void UpdateResultArray(JSThread *thread, int entry, JSTaggedValue resultArray, CacheType type);
     bool Match(int entry, JSTaggedValue &pattenStr, JSTaggedValue &flagStr, JSTaggedValue &inputStr);
     inline void SetHitCount(JSThread *thread, int hitCount)
@@ -147,17 +151,55 @@ public:
         std::cout << "cache hit count: " << GetHitCount() << std::endl;
     }
 
+    inline void SetLargeStrCount(JSThread *thread, uint32_t newCount)
+    {
+        Set(thread, LARGE_STRING_COUNT_INDEX, JSTaggedValue(newCount));
+    }
+
+    inline void SetConflictCount(JSThread *thread, uint32_t newCount)
+    {
+        Set(thread, CONFLICT_COUNT_INDEX, JSTaggedValue(newCount));
+    }
+
+    inline void SetStrLenThreshold(JSThread *thread, uint32_t newThreshold)
+    {
+        Set(thread, STRING_LENGTH_THRESHOLD_INDEX, JSTaggedValue(newThreshold));
+    }
+
+    inline uint32_t GetLargeStrCount()
+    {
+        return Get(LARGE_STRING_COUNT_INDEX).GetInt();
+    }
+
+    inline uint32_t GetConflictCount()
+    {
+        return Get(CONFLICT_COUNT_INDEX).GetInt();
+    }
+
+    inline uint32_t GetStrLenThreshold()
+    {
+        return Get(STRING_LENGTH_THRESHOLD_INDEX).GetInt();
+    }
+
 private:
+    static constexpr int DEFAULT_LARGE_STRING_COUNT = 10;
+    static constexpr int DEFAULT_CONFLICT_COUNT = 100;
     static constexpr int DEFAULT_CACHE_NUMBER = 0x1000;
     static constexpr int CACHE_COUNT_INDEX = 0;
     static constexpr int CACHE_HIT_COUNT_INDEX = 1;
-    static constexpr int CACHE_TABLE_HEADER_SIZE = 2;
+    static constexpr int LARGE_STRING_COUNT_INDEX = 2;
+    static constexpr int CONFLICT_COUNT_INDEX = 3;
+    static constexpr int STRING_LENGTH_THRESHOLD_INDEX = 4;
+    static constexpr int CACHE_TABLE_HEADER_SIZE = 5;
     static constexpr int PATTERN_INDEX = 0;
     static constexpr int FLAG_INDEX = 1;
     static constexpr int INPUT_STRING_INDEX = 2;
-    static constexpr int RESULT_REPLACE_INDEX = 3;
-    static constexpr int RESULT_SPLIT_INDEX = 4;
-    static constexpr int ENTRY_SIZE = 5;
+    static constexpr int LAST_INDEX_INDEX = 3;
+    static constexpr int RESULT_REPLACE_INDEX = 4;
+    static constexpr int RESULT_SPLIT_INDEX = 5;
+    static constexpr int RESULT_MATCH_INDEX = 6;
+    static constexpr int RESULT_EXEC_INDEX = 7;
+    static constexpr int ENTRY_SIZE = 8;
 };
 }  // namespace panda::ecmascript::builtins
 #endif  // ECMASCRIPT_BUILTINS_BUILTINS_REGEXP_H

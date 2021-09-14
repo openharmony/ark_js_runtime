@@ -283,7 +283,13 @@ class JSThread;
     V(JSTaggedValue, EthioaaString, ETHIOAA_INDEX, ethioaa)                                                           \
     /* for regexp. */                                                                                                 \
     V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
-    V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)
+    V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)                                                    \
+    V(JSTaggedValue, StickyString, STICKY_INDEX, sticky)                                                              \
+    V(JSTaggedValue, UString, U_INDEX, u)                                                                             \
+    V(JSTaggedValue, IndexString, INDEX_INDEX, index)                                                                 \
+    V(JSTaggedValue, InputString, INPUT_INDEX, input)                                                                 \
+    V(JSTaggedValue, UnicodeString, UNICODE_INDEX, unicode)                                                           \
+    V(JSTaggedValue, ZeroString, ZERO_INDEX, zero)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \

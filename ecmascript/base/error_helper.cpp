@@ -194,6 +194,9 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
     CString data;
     EcmaFrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+        if (frameHandler.IsBreakFrame()) {
+            continue;
+        }
         auto method = frameHandler.GetMethod();
         if (method->IsNative()) {
             data += INTRINSIC_METHOD_NAME;
@@ -211,13 +214,11 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             }
             data.push_back(':');
             // line number
-            if (debugExtractor->MatchWithOffset(
-                    [&data](int line) -> bool {
-                        data += ToCString(line + 1);
-                        return true;
-                    },
-                    method->GetFileId(), frameHandler.GetBytecodeOffset())) {
-            } else {
+            auto lineFunc = [&data](int line) -> bool {
+                data += ToCString(line + 1);
+                return true;
+            };
+            if (!debugExtractor->MatchWithOffset(lineFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
                 data.push_back('?');
             }
             data.push_back(')');

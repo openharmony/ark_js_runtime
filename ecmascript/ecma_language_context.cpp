@@ -36,6 +36,9 @@ std::pair<Method *, uint32_t> EcmaLanguageContext::GetCatchMethodAndOffset(Metho
     auto jsThread = static_cast<JSThread *>(thread);
     EcmaFrameHandler frameHandler(jsThread);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+        if (frameHandler.IsBreakFrame()) {
+            continue;
+        }
         catchMethod = frameHandler.GetMethod();
         if (catchMethod->IsNative()) {
             continue;

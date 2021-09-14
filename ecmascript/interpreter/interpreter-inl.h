@@ -443,6 +443,9 @@ void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
 {
     EcmaFrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+        if (frameHandler.IsBreakFrame()) {
+            continue;
+        }
         JSMethod *method = frameHandler.GetMethod();
         // Skip builtins method
         if (method->IsNative()) {
@@ -755,7 +758,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                             JSTaggedValue arg = GET_VREG_VALUE(reg);
                             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             newSp[ActualNumArgsOfCall::CALLARG1 - 1] = arg.GetRawData();
-                            [[fallthrough]];
+                            break;
                         }
                         case ActualNumArgsOfCall::CALLARG0: {
                             break;
@@ -824,20 +827,24 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                     newSp[startIdx] = JSTaggedValue::VALUE_UNDEFINED;
                     switch (actualNumArgs) {
-                        case ActualNumArgsOfCall::CALLARGS3:
+                        case ActualNumArgsOfCall::CALLARGS3: {
                             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             newSp[numVregs + ActualNumArgsOfCall::CALLARGS3 - 1] = sp[READ_INST_8_4()];
                             [[fallthrough]];
-                        case ActualNumArgsOfCall::CALLARGS2:
+                        }
+                        case ActualNumArgsOfCall::CALLARGS2: {
                             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             newSp[numVregs + ActualNumArgsOfCall::CALLARGS2 - 1] = sp[READ_INST_8_3()];
                             [[fallthrough]];
-                        case ActualNumArgsOfCall::CALLARG1:
+                        }
+                        case ActualNumArgsOfCall::CALLARG1: {
                             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             newSp[numVregs + ActualNumArgsOfCall::CALLARG1 - 1] = sp[READ_INST_8_2()];
-                            [[fallthrough]];
-                        case ActualNumArgsOfCall::CALLARG0:
                             break;
+                        }
+                        case ActualNumArgsOfCall::CALLARG0: {
+                            break;
+                        }
                         default:
                             UNREACHABLE();
                     }
@@ -3104,6 +3111,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         EcmaFrameHandler frameHandler(sp);
         uint32_t pcOffset = panda_file::INVALID_OFFSET;
         for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+            if (frameHandler.IsBreakFrame()) {
+                return;
+            }
             auto method = frameHandler.GetMethod();
             pcOffset = FindCatchBlock(method, frameHandler.GetBytecodeOffset());
             if (pcOffset != panda_file::INVALID_OFFSET) {

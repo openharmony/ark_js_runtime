@@ -1,16 +1,19 @@
 # 方舟JS运行时组件<a name="ZH-CN_TOPIC_0000001183610495"></a>
 
--   [目录](#section161941989596)
--   [约束](#section119744591305)
--   [编译构建](#section137768191623)
-    -   [接口说明](#section175841548124517)
-    -   [使用说明](#section129654513264)
-
--   [相关仓](#section1371113476307)
+- [方舟JS运行时组件<a name="ZH-CN_TOPIC_0000001183610495"></a>](#方舟js运行时组件)
+    - [简介<a name="section190813718209"></a>](#简介)
+  - [目录<a name="section161941989596"></a>](#目录)
+  - [约束<a name="section119744591305"></a>](#约束)
+  - [编译构建<a name="section137768191623"></a>](#编译构建)
+    - [接口说明<a name="section175841548124517"></a>](#接口说明)
+    - [使用说明<a name="section129654513264"></a>](#使用说明)
+  - [相关仓<a name="section1371113476307"></a>](#相关仓)
 
 ### 简介<a name="section190813718209"></a>
 
 方舟JS运行时（ARK JavaScript Runtime）是OpenHarmony上JS应用使用的运行时。包含JS对象的分配器以及垃圾回收器（GC）、符合ECMAScript规范的标准库、用于运行ARK前端组件生成的方舟字节码（ARK Bytecode，abc）的解释器、用于存储隐藏类的内联缓存、方舟JS运行时对外的函数接口（AFFI）等模块。
+
+更多信息请参考：[方舟运行时子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/ARK-Runtime-Subsystem-zh.md)
 
 **方舟JS运行时组件架构图：**
 
@@ -49,7 +52,9 @@
 
 ## 编译构建<a name="section137768191623"></a>
 
+```
 ./build.sh --product-name Hi3516DV300 --build-target ark\_js\_runtime
+```
 
 ### 接口说明<a name="section175841548124517"></a>
 
@@ -59,21 +64,21 @@ NAPI接口说明参考[NAPI组件](https://gitee.com/openharmony/ace_napi/blob/m
 
 JS生成字节码参考[工具链使用](docs/using-the-toolchain-zh.md)
 
-字节码执行
-
+字节码执行：
+```
 cd out/release
 
 LD\_LIBRARY\_PATH=clang\_x64/ark/ark\_js\_runtime:clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
 
 ./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc
+```
+
+更多使用说明请参考：[方舟运行时使用指南](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide-zh.md)
 
 ## 相关仓<a name="section1371113476307"></a>
 
-[方舟运行时子系统](docs/ARK-Runtime-Subsystem-zh.md)
+[ark\_runtime\_core](https://gitee.com/openharmony/ark_runtime_core)
 
-[ark/runtime\_core](https://gitee.com/openharmony/ark_runtime_core/blob/master/README_zh.md)
+**[ark\_js\_runtime](https://gitee.com/openharmony/ark_js_runtime)**
 
-**[ark/js\_runtime](README_zh.md)**
-
-[ark/ts2abc](https://gitee.com/openharmony/ark_ts2abc/blob/master/README_zh.md)
-
+[ark\_ts2abc](https://gitee.com/openharmony/ark_ts2abc)

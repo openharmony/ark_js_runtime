@@ -36,7 +36,7 @@ pushd ark/ts2abc
 
     pushd report
         es2015_fail=`grep FAIL result_es2015_${time}.txt | wc -l`
-        threshold=9
+        threshold=0
         if [ ${es2015_fail} -gt ${threshold} ];then
             echo 'test262 fail case over thresgold'
             exit 1;

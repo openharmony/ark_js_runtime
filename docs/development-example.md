@@ -7,7 +7,7 @@ This section describes how to develop and test ARK runtime.
 
 ## HelloWorld<a name="section105987593810"></a>
 
-Preparations
+### Preparations
 
 1.  Run the following command to compile ARK runtime:
 
@@ -15,15 +15,15 @@ Preparations
 ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
 ```
 
-1.  Run the following command to compile the ARK frontend:
+2.  Run the following command to compile the ARK frontend:
 
 ```
 ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc_build
 ```
 
-Note: Run the compilation commands in the project root directory.
+**NOTE**:  Run the compilation commands in the project root directory.
 
-Running  **hello-world.js**
+### Running  **hello-world.js**
 
 Create the  **hello-world.js**  file and write the following source code into the file:
 
@@ -58,12 +58,9 @@ Run the  **hello-world.js**  file.
         Hello World!!!
         ```
 
+**NOTE**:  In the preceding command,  _your code path_  indicates the source code directory.
 
-
->![](public_sys-resources/icon-note.gif) **NOTE:** 
->In the preceding command,  _your code path_  indicates the source code directory.
-
-Disassembling  **hello-world.abc**
+### Disassembling  **hello-world.abc**
 
 Run the following command to export the result to the  **output**  file:
 
@@ -110,7 +107,7 @@ The output is as follows:
 
 ## Performing Test Case Test262<a name="section118471435115815"></a>
 
-Preparations
+### Preparations
 
 1.  Run the following command to compile ARK runtime:
 
@@ -118,15 +115,15 @@ Preparations
 ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
 ```
 
-1.  Run the following command to compile the ARK frontend:
+2.  Run the following command to compile the ARK frontend:
 
 ```
 ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc_build
 ```
 
-Note: Run the compilation commands in the project root directory.
+**NOTE**:  Run the compilation commands in the project root directory.
 
-Running Test262
+### Running Test262
 
 Run the  **run\_test262.py**  script to download and run the Test262 test case.
 
@@ -231,7 +228,7 @@ Run the script in  _Project root directory_**/ark/ts2abc**.
 </tbody>
 </table>
 
-Example
+### Example
 
 -   Run test case ES51.
 
@@ -271,7 +268,7 @@ Example
     ```
 
 
-Test Output
+### Test Output
 
 The results of all Test262 test cases are available in the  **_Project root directory_/ark/ts2abc/out**. The test result in the shell is as follows:
 

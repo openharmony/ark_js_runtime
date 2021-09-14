@@ -31,11 +31,11 @@ public:
             return true;
         };
 
-        breakpoint = [this](PtThread ecmaVm, const PtLocation &location) {
+        breakpoint = [this](PtThread thread, const PtLocation &location) {
             ASSERT_TRUE(location.GetMethodId().IsValid());
             ASSERT_LOCATION_EQ(location, location_);
             ++breakpoint_counter_;
-            TestUtil::SuspendUntilContinue(DebugEvent::BREAKPOINT, ecmaVm, location);
+            TestUtil::SuspendUntilContinue(DebugEvent::BREAKPOINT, thread, location);
             return true;
         };
 

@@ -27,17 +27,13 @@ EcmaFrameHandler::EcmaFrameHandler(const JSThread *thread)
 
 bool EcmaFrameHandler::HasFrame() const
 {
-    if (sp_ == nullptr) {
-        return false;
-    }
-
-    // Should not be a break frame
-    return !IsBreakFrame();
+    // Breakframe also is a frame
+    return sp_ != nullptr;
 }
 
 bool EcmaFrameHandler::IsBreakFrame() const
 {
-    ASSERT(sp_ != nullptr);
+    ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
     return state->sp == nullptr;
