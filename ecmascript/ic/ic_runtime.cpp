@@ -25,7 +25,7 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/object_factory-inl.h"
-
+#include "ecmascript/tagged_dictionary.h"
 namespace panda::ecmascript {
 #define TRACE_IC 0  // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 
@@ -134,12 +134,21 @@ void ICRuntime::TraceIC([[maybe_unused]] JSHandle<JSTaggedValue> receiver,
 JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle<JSTaggedValue> key)
 {
     if (receiver->IsTypedArray() || !receiver->IsJSObject()) {
-        return JSTaggedValue::GetProperty(GetThread(), receiver, key).GetValue().GetTaggedValue();
+        return JSTaggedValue::GetProperty(thread_, receiver, key).GetValue().GetTaggedValue();
     }
+    // 1. find from global record
+    if (GetICKind() == ICKind::NamedGlobalLoadIC) {
+        bool found = false;
+        JSTaggedValue res = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
+        if (found) {
+            return res;
+        }
+    }
+    // 2. find from global object
     ObjectOperator op(GetThread(), receiver, key);
     auto result = JSHandle<JSTaggedValue>(thread_, JSObject::GetProperty(GetThread(), &op));
     if (!op.IsFound() && GetICKind() == ICKind::NamedGlobalLoadIC) {
-        return SlowRuntimeStub::ThrowReferenceError(GetThread(), key.GetTaggedValue(), " is not defined");
+        return SlowRuntimeStub::ThrowReferenceError(GetThread(), key.GetTaggedValue(), " is not definded");
     }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(GetThread());
     // ic-switch
@@ -167,7 +176,18 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
         bool success = JSTaggedValue::SetProperty(GetThread(), receiver, key, value, true);
         return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
     }
+    // 1. find from global record
+    if (GetICKind() == ICKind::NamedGlobalStoreIC) {
+        bool found = false;
+        SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
+        if (found) {
+            SlowRuntimeStub::TryUpdateGlobalRecord(thread_, key.GetTaggedValue(), value.GetTaggedValue());
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
+            return JSTaggedValue::Undefined();
+        }
+    }
     UpdateReceiverHClass(JSHandle<JSTaggedValue>(GetThread(), JSHandle<JSObject>::Cast(receiver)->GetClass()));
+    // 2. find from global object
     ObjectOperator op(GetThread(), receiver, key);
     bool success = JSObject::SetProperty(&op, value, true);
     if (!success && GetICKind() == ICKind::NamedGlobalStoreIC) {

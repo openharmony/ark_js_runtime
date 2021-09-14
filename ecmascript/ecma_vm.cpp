@@ -33,6 +33,7 @@
 #include "ecmascript/js_invoker.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
@@ -152,6 +153,7 @@ bool EcmaVM::Initialize()
         globalEnv->SetEmptyArray(thread_, factory_->NewEmptyArray());
         globalEnv->SetEmptyLayoutInfo(thread_, factory_->CreateLayoutInfo(0));
         globalEnv->SetRegisterSymbols(thread_, JSTaggedValue(SymbolTable::Create(thread_)));
+        globalEnv->SetGlobalRecord(thread_, JSTaggedValue(NameDictionary::Create(thread_)));
         JSTaggedValue emptyStr = thread_->GlobalConstants()->GetEmptyString();
         stringTable_->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
         globalEnv->SetEmptyTaggedQueue(thread_, factory_->NewTaggedQueue(0));

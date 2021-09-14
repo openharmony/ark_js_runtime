@@ -37,6 +37,7 @@
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
 #include "ecmascript/vmstat/runtime_stat.h"
@@ -273,8 +274,8 @@ JSTaggedValue SlowRuntimeStub::Div2Dyn(JSThread *thread, JSTaggedValue left, JST
         if (dLeft == 0 || std::isnan(dLeft)) {
             return JSTaggedValue(base::NAN_VALUE);
         }
-        bool positive = ((bit_cast<uint64_t>(dRight) & base::DOUBLE_SIGN_MASK) ==
-                         (bit_cast<uint64_t>(dLeft) & base::DOUBLE_SIGN_MASK));
+        bool positive = (((bit_cast<uint64_t>(dRight)) & base::DOUBLE_SIGN_MASK) ==
+                         ((bit_cast<uint64_t>(dLeft)) & base::DOUBLE_SIGN_MASK));
         return JSTaggedValue(positive ? base::POSITIVE_INFINITY : -base::POSITIVE_INFINITY);
     }
     return JSTaggedValue(dLeft / dRight);
@@ -492,7 +493,7 @@ JSTaggedValue SlowRuntimeStub::ExpDyn(JSThread *thread, JSTaggedValue base, JSTa
         return JSTaggedValue(base::NAN_VALUE);
     }
 
-    if ((doubleBase == 0 && (bit_cast<uint64_t>(doubleBase) & base::DOUBLE_SIGN_MASK) == base::DOUBLE_SIGN_MASK) &&
+    if (((doubleBase == 0) && ((bit_cast<uint64_t>(doubleBase)) & base::DOUBLE_SIGN_MASK) == base::DOUBLE_SIGN_MASK) &&
         std::isfinite(doubleExponent) && base::NumberHelper::TruncateDouble(doubleExponent) == doubleExponent &&
         base::NumberHelper::TruncateDouble(doubleExponent / 2) + base::HALF == (doubleExponent / 2)) {  // 2: half
         if (doubleExponent > 0) {
@@ -1319,6 +1320,59 @@ JSTaggedValue SlowRuntimeStub::StGlobalVar(JSThread *thread, JSTaggedValue prop,
     return JSTaggedValue::True();
 }
 
+JSTaggedValue SlowRuntimeStub::TryUpdateGlobalRecord(JSThread *thread, JSTaggedValue prop, JSTaggedValue value)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    EcmaVM *vm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
+    NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
+    int entry = dict->FindEntry(prop);
+    if (dict->GetAttributes(entry).IsConstProps()) {
+        return ThrowSyntaxError(thread, " const can not be modified");
+    }
+    dict->UpdateValue(thread, entry, value);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return JSTaggedValue::True();
+}
+
+JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue key, bool *found)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    EcmaVM *vm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
+    NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
+    int entry = dict->FindEntry(key);
+    if (entry != -1) {
+        *found = true;
+        return dict->GetValue(entry);
+    }
+    return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue SlowRuntimeStub::StGlobalRecord(JSThread *thread, JSTaggedValue prop, JSTaggedValue value, bool isConst)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    EcmaVM *vm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
+    NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
+
+    int entry = dict->FindEntry(prop);
+    if (entry != -1) {
+        return ThrowReferenceError(thread, prop, " is not defined");
+    }
+    PropertyAttributes attributes;
+    attributes.SetIsConstProps(isConst);
+    JSHandle<JSTaggedValue> propHandle(thread, prop);
+    JSHandle<JSTaggedValue> valueHandle(thread, value);
+    JSHandle<NameDictionary> dictHandle(thread, dict);
+    dict->PutIfAbsent(thread, dictHandle, propHandle, valueHandle, attributes);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return JSTaggedValue::True();
+}
+
 JSTaggedValue SlowRuntimeStub::ThrowReferenceError(JSThread *thread, JSTaggedValue prop, const char *desc)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -1337,6 +1391,13 @@ JSTaggedValue SlowRuntimeStub::ThrowTypeError(JSThread *thread, const char *mess
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     ASSERT_NO_ABRUPT_COMPLETION(thread);
     THROW_TYPE_ERROR_AND_RETURN(thread, message, JSTaggedValue::Exception());
+}
+
+JSTaggedValue SlowRuntimeStub::ThrowSyntaxError(JSThread *thread, const char *message)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    ASSERT_NO_ABRUPT_COMPLETION(thread);
+    THROW_SYNTAX_ERROR_AND_RETURN(thread, message, JSTaggedValue::Exception());
 }
 
 JSTaggedValue SlowRuntimeStub::StArraySpread(JSThread *thread, JSTaggedValue dst, JSTaggedValue index,
