@@ -314,11 +314,6 @@ void JSNApi::DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr)
     vm->GetJSThread()->GetEcmaGlobalStorage()->DisposeGlobalHandle(addr);
 }
 
-uintptr_t JSNApi::GetGlobalUndefinedAddr(const EcmaVM *vm)
-{
-    return vm->GetJSThread()->GlobalConstants()->GetGlobalConstantAddr(ecmascript::ConstantIndex::UNDEFINED_INDEX);
-}
-
 void *JSNApi::SerializeValue(const EcmaVM *vm, Local<JSValueRef> value, Local<JSValueRef> transfer)
 {
     ecmascript::JSThread *thread = vm->GetJSThread();

@@ -66,9 +66,6 @@ class PUBLIC_API Local {  // NOLINT(cppcoreguidelines-special-member-functions, 
 public:
     inline Local() = default;
 
-    // Non-empty initial value.
-    explicit Local(const EcmaVM *vm);
-
     template<typename S>
     inline Local(const Local<S> &current) : address_(reinterpret_cast<uintptr_t>(*current))
     {
@@ -125,6 +122,27 @@ class PUBLIC_API Global {  // NOLINTNEXTLINE(cppcoreguidelines-special-member-fu
 public:
     inline Global() = default;
 
+    inline Global(const Global &that) {
+        address_ = that.address_;
+        vm_ = that.vm_;
+    }
+
+    inline Global &operator=(const Global &that)
+    {
+        Update(that);
+        return *this;
+    }
+
+    inline Global(Global &&that) {
+        address_ = that.address_;
+        vm_ = that.vm_;
+    }
+
+    inline Global &operator=(Global &&that)
+    {
+        Update(that);
+        return *this;
+    }
     // Non-empty initial value.
     explicit Global(const EcmaVM *vm);
 
@@ -169,6 +187,7 @@ private:
     {
         return reinterpret_cast<T *>(address_);
     };
+    inline void Update(const Global &that);
     uintptr_t address_ = 0U;
     const EcmaVM *vm_{nullptr};
 };
@@ -350,9 +369,7 @@ using NativePointerCallback = void (*)(void* value, void* hint);
 class PUBLIC_API NativePointerRef : public JSValueRef {
 public:
     static Local<NativePointerRef> New(const EcmaVM *vm, void *nativePointer);
-    static Local<NativePointerRef> New(const EcmaVM *vm,
-                                       void *nativePointer,
-                                       NativePointerCallback callBack,
+    static Local<NativePointerRef> New(const EcmaVM *vm, void *nativePointer, NativePointerCallback callBack,
                                        void *data);
     void *Value();
 };
@@ -806,7 +823,6 @@ private:
     static uintptr_t SetWeak(const EcmaVM *vm, uintptr_t localAddress);
     static bool IsWeak(const EcmaVM *vm, uintptr_t localAddress);
     static void DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr);
-    static uintptr_t GetGlobalUndefinedAddr(const EcmaVM *vm);
     template<typename T>
     friend class Global;
     template<typename T>
@@ -816,16 +832,20 @@ private:
 
 
 template<typename T>
-Global<T>::Global(const EcmaVM *vm)
-{
-    address_ = JSNApi::GetGlobalUndefinedAddr(vm);
-}
-
-template<typename T>
 template<typename S>
 Global<T>::Global(const EcmaVM *vm, const Local<S> &current) : vm_(vm)
 {
     address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
+}
+
+template<typename T>
+void Global<T>::Update(const Global &that)
+{
+    if (address_ != 0) {
+        JSNApi::DisposeGlobalHandleAddr(vm_, address_);
+    }
+    address_ = that.address_;
+    vm_ = that.vm_;
 }
 
 template<typename T>
@@ -851,12 +871,6 @@ bool Global<T>::IsWeak() const
 }
 
 // ---------------------------------- Local --------------------------------------------
-template<typename T>
-Local<T>::Local(const EcmaVM *vm)
-{
-    address_ = JSNApi::GetGlobalUndefinedAddr(vm);
-}
-
 template<typename T>
 Local<T>::Local(const EcmaVM *vm, const Global<T> &current)
 {
