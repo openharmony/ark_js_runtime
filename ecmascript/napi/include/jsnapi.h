@@ -835,7 +835,9 @@ template<typename T>
 template<typename S>
 Global<T>::Global(const EcmaVM *vm, const Local<S> &current) : vm_(vm)
 {
-    address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
+    if (!current.IsEmpty()) {
+        address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
+    }
 }
 
 template<typename T>
