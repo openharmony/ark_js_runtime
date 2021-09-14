@@ -777,7 +777,12 @@ Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWit
 
     JSHandle<JSObject> clsPrototype =
         JSObject::ObjectCreate(thread, JSHandle<JSObject>(env->GetObjectFunctionPrototype()));
-    current->SetFunctionPrototype(thread, clsPrototype.GetTaggedValue());
+    clsPrototype.GetTaggedValue().GetTaggedObject()->GetClass()->SetClassPrototype(true);
+    JSHandle<JSTaggedValue>::Cast(current)->GetTaggedObject()->GetClass()->SetClassConstructor(true);
+    current->SetClassConstructor(thread, true);
+    JSHandle<JSTaggedValue> parent = env->GetFunctionPrototype();
+    JSObject::SetPrototype(thread, JSHandle<JSObject>::Cast(current), parent);
+    JSFunction::MakeClassConstructor(thread, JSHandle<JSTaggedValue>::Cast(current), clsPrototype);
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
 }
 
