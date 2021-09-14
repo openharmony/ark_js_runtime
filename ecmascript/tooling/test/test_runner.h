@@ -42,10 +42,10 @@ public:
         }
     }
 
-    void Breakpoint(PtThread ecmaVm, const PtLocation &location) override
+    void Breakpoint(PtThread thread, const PtLocation &location) override
     {
         if (test_->breakpoint) {
-            test_->breakpoint(ecmaVm, location);
+            test_->breakpoint(thread, location);
         }
     }
 
@@ -63,25 +63,25 @@ public:
         }
     };
 
-    void Exception(PtThread ecmaVm, const PtLocation &location, [[maybe_unused]] PtObject exceptionObject,
+    void Exception(PtThread thread, const PtLocation &location, [[maybe_unused]] PtObject exceptionObject,
                    [[maybe_unused]] const PtLocation &catchLocation) override
     {
         if (test_->exception) {
-            test_->exception(ecmaVm, location);
+            test_->exception(thread, location);
         }
     }
 
-    void MethodEntry(PtThread ecmaVm, PtMethod method) override
+    void MethodEntry(PtThread thread, PtMethod method) override
     {
         if (test_->method_entry) {
-            test_->method_entry(ecmaVm, method);
+            test_->method_entry(thread, method);
         }
     }
 
-    void SingleStep(PtThread ecmaVm, const PtLocation &location) override
+    void SingleStep(PtThread thread, const PtLocation &location) override
     {
         if (test_->single_step) {
-            test_->single_step(ecmaVm, location);
+            test_->single_step(thread, location);
         }
     }
 
@@ -93,7 +93,7 @@ public:
         TestUtil::Event(DebugEvent::VM_DEATH);
     }
 
-    void VmInitialization([[maybe_unused]] PtThread ecmaVm) override
+    void VmInitialization([[maybe_unused]] PtThread thread) override
     {
         if (test_->vm_init) {
             test_->vm_init();

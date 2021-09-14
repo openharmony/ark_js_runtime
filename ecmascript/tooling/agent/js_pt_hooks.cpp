@@ -17,10 +17,10 @@
 #include "ecmascript/tooling/agent/js_backend.h"
 
 namespace panda::tooling::ecmascript {
-void JSPtHooks::Breakpoint([[maybe_unused]] PtThread ecmaVm, const PtLocation &location)
+void JSPtHooks::Breakpoint([[maybe_unused]] PtThread thread, const PtLocation &location)
 {
-    if (ecmaVm.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
-        // Skip none-js ecmaVm
+    if (thread.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
+        // Skip none-js thread
         return;
     }
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Breakpoint => " << location.GetMethodId() << ": "
@@ -38,11 +38,11 @@ void JSPtHooks::Paused(PauseReason reason)
     backend_->NotifyPaused({}, reason);
 }
 
-void JSPtHooks::Exception([[maybe_unused]] PtThread ecmaVm, [[maybe_unused]] const PtLocation &location,
+void JSPtHooks::Exception(PtThread thread, [[maybe_unused]] const PtLocation &location,
                           [[maybe_unused]] PtObject exceptionObject, [[maybe_unused]] const PtLocation &catchLocation)
 {
-    if (ecmaVm.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
-        // Skip none-js ecmaVm
+    if (thread.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
+        // Skip none-js thread
         return;
     }
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Exception";
@@ -58,10 +58,10 @@ void JSPtHooks::Exception([[maybe_unused]] PtThread ecmaVm, [[maybe_unused]] con
     }
 }
 
-void JSPtHooks::SingleStep([[maybe_unused]] PtThread ecmaVm, const PtLocation &location)
+void JSPtHooks::SingleStep(PtThread thread, const PtLocation &location)
 {
-    if (ecmaVm.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
-        // Skip none-js ecmaVm
+    if (thread.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
+        // Skip none-js thread
         return;
     }
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
