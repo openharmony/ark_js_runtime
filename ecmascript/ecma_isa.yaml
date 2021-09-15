@@ -577,3 +577,12 @@ groups:
         prefix: ecma
         format: [pref_op_id_32]
         properties: [string_id]
+      - sig: ecma.stownbyvaluewithnameset v1:in:top, v2:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_v1_8_v2_8]
+      - sig: ecma.stownbynamewithnameset string_id, v:in:top
+        acc: in:top
+        prefix: ecma
+        format: [pref_op_id_32_v_8]
+        properties: [string_id]

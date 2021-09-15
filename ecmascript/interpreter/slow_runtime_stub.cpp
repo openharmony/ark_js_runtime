@@ -739,6 +739,31 @@ JSTaggedValue SlowRuntimeStub::StOwnByName(JSThread *thread, JSTaggedValue obj, 
     }
     return JSTaggedValue::True();
 }
+JSTaggedValue SlowRuntimeStub::StOwnByNameWithNameSet(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop,
+                                                      JSTaggedValue value)
+{
+    INTERPRETER_TRACE(thread, StOwnByNameDyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> objHandle(thread, obj);
+    JSHandle<JSTaggedValue> propHandle(thread, prop);
+    JSHandle<JSTaggedValue> valueHandle(thread, value);
+    ASSERT(propHandle->IsStringOrSymbol());
+
+    JSHandle<JSTaggedValue> propKey = JSTaggedValue::ToPropertyKey(thread, propHandle);
+
+    // property in class is non-enumerable
+    bool enumerable = !(objHandle->IsClassPrototype() || objHandle->IsClassConstructor());
+
+    PropertyDescriptor desc(thread, valueHandle, true, enumerable, true);
+    bool ret = JSTaggedValue::DefineOwnProperty(thread, objHandle, propHandle, desc);
+    if (!ret) {
+        return ThrowTypeError(thread, "SetOwnByNameWithNameSet failed");
+    }
+    JSFunctionBase::SetFunctionName(thread, JSHandle<JSFunctionBase>::Cast(valueHandle), propKey,
+                                    JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
+    return JSTaggedValue::True();
+}
 
 JSTaggedValue SlowRuntimeStub::StOwnByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, JSTaggedValue value)
 {
@@ -763,6 +788,7 @@ JSTaggedValue SlowRuntimeStub::StOwnByIndex(JSThread *thread, JSTaggedValue obj,
 JSTaggedValue SlowRuntimeStub::StOwnByValue(JSThread *thread, JSTaggedValue obj, JSTaggedValue key, JSTaggedValue value)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
     INTERPRETER_TRACE(thread, StOwnByValueDyn);
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     JSHandle<JSTaggedValue> objHandle(thread, obj);
@@ -787,6 +813,37 @@ JSTaggedValue SlowRuntimeStub::StOwnByValue(JSThread *thread, JSTaggedValue obj,
         if (propKey->IsNumber()) {
             propKey.Update(base::NumberHelper::NumberToString(thread, propKey.GetTaggedValue()).GetTaggedValue());
         }
+    }
+    return JSTaggedValue::True();
+}
+JSTaggedValue SlowRuntimeStub::StOwnByValueWithNameSet(JSThread *thread, JSTaggedValue obj, JSTaggedValue key,
+                                                       JSTaggedValue value)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    INTERPRETER_TRACE(thread, StOwnByValueDyn);
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    JSHandle<JSTaggedValue> objHandle(thread, obj);
+    JSHandle<JSTaggedValue> keyHandle(thread, key);
+    JSHandle<JSTaggedValue> valueHandle(thread, value);
+
+    if (objHandle->IsClassConstructor() &&
+        JSTaggedValue::SameValue(keyHandle, globalConst->GetHandledPrototypeString())) {
+        return ThrowTypeError(thread, "In a class, static property named 'prototype' throw a TypeError");
+    }
+
+    // property in class is non-enumerable
+    bool enumerable = !(objHandle->IsClassPrototype() || objHandle->IsClassConstructor());
+
+    PropertyDescriptor desc(thread, valueHandle, true, enumerable, true);
+    JSMutableHandle<JSTaggedValue> propKey(JSTaggedValue::ToPropertyKey(thread, keyHandle));
+    bool ret = JSTaggedValue::DefineOwnProperty(thread, objHandle, propKey, desc);
+    if (!ret) {
+        return ThrowTypeError(thread, "StOwnByValueWithNameSet failed");
+    }
+    if (valueHandle->IsJSFunction()) {
+        if (propKey->IsNumber()) {
+            propKey.Update(base::NumberHelper::NumberToString(thread, propKey.GetTaggedValue()).GetTaggedValue());
+        }
         JSFunctionBase::SetFunctionName(thread, JSHandle<JSFunctionBase>::Cast(valueHandle), propKey,
                                         JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
     }
@@ -796,7 +853,6 @@ JSTaggedValue SlowRuntimeStub::StOwnByValue(JSThread *thread, JSTaggedValue obj,
 JSTaggedValue SlowRuntimeStub::CreateEmptyArray(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-
     JSHandle<JSFunction> builtinObj(globalEnv->GetArrayFunction());
     JSHandle<JSObject> arr = factory->NewJSObjectByConstructor(builtinObj, JSHandle<JSTaggedValue>(builtinObj));
     return arr.GetTaggedValue();
