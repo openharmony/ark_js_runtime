@@ -224,9 +224,9 @@ public:
     {
         return nodeEntryCount_;
     }
+    void InsertEntry(Node *node);
 
 private:
-    void InsertEntry(Node *node);
     size_t nodeEntryCount_{0};
     CUnorderedMap<Address, Node *> nodesMap_{};
 };

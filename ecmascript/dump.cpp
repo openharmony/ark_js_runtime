@@ -1348,13 +1348,10 @@ static void DumpArrayClass([[maybe_unused]] JSThread *thread, const TaggedArray 
 {
     DISALLOW_GARBAGE_COLLECTION;
     array_size_t len = arr->GetLength();
-
     for (array_size_t i = 0; i < len; i++) {
         JSTaggedValue val(arr->Get(i));
-        if (!val.IsHole()) {
-            CString str = ToCString(i);
-            vec.push_back(std::make_pair(str, val));
-        }
+        CString str = ToCString(i);
+        vec.push_back(std::make_pair(str, val));
     }
 }
 
@@ -1376,6 +1373,7 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::vector<std::pai
             DumpDynClass(thread, obj, vec);
             break;
         case JSType::TAGGED_ARRAY:
+        case JSType::TAGGED_DICTIONARY:
             DumpArrayClass(thread, TaggedArray::Cast(obj), vec);
             break;
         case JSType::STRING:
@@ -1529,15 +1527,24 @@ static inline void EcmaStringToStd(CString &res, EcmaString *str)
     res.append(string);
 }
 
-static inline void KeyToStd(CString &res, JSTaggedValue key)
+static void KeyToStd(CString &res, JSTaggedValue key)
 {
-    if (key.IsString()) {
-        EcmaStringToStd(res, EcmaString::Cast(key.GetTaggedObject()));
-    } else if (key.IsSymbol()) {
-        JSSymbol *sym = JSSymbol::Cast(key.GetTaggedObject());
-        EcmaStringToStd(res, EcmaString::Cast(sym->GetDescription().GetTaggedObject()));
-    } else {
-        UNREACHABLE();
+    if (key.IsInt()) {
+        res = std::to_string(key.GetInt());
+    } else if (key.IsDouble()) {
+        res = std::to_string(key.GetDouble());
+    } else if (key.IsBoolean()) {
+        res = key.IsTrue() ? "true" : "false";
+    } else if (key.IsHeapObject()) {
+        if (key.IsWeak()) {
+            key.RemoveWeakTag();
+        }
+        if (key.IsString()) {
+            EcmaStringToStd(res, EcmaString::Cast(key.GetTaggedObject()));
+        } else if (key.IsSymbol()) {
+            JSSymbol *sym = JSSymbol::Cast(key.GetTaggedObject());
+            EcmaStringToStd(res, EcmaString::Cast(sym->GetDescription().GetTaggedObject()));
+        }
     }
 }
 
@@ -1557,7 +1564,7 @@ void NumberDictionary::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     int size = Size();
     for (int hashIndex = 0; hashIndex < size; hashIndex++) {
         JSTaggedValue key(GetKey(hashIndex));
-        if (!key.IsUndefined() && !key.IsHole()) {
+        if (!key.IsUndefined() && !key.IsHole() && !key.IsNull()) {
             JSTaggedValue val(GetValue(hashIndex));
             CString str = ToCString(static_cast<uint32_t>(JSTaggedNumber(key).GetNumber()));
             vec.push_back(std::make_pair(str, val));
@@ -1572,9 +1579,8 @@ void NameDictionary::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     int size = Size();
     for (int hashIndex = 0; hashIndex < size; hashIndex++) {
         JSTaggedValue key(GetKey(hashIndex));
-        if (!key.IsUndefined() && !key.IsHole()) {
+        if (!key.IsUndefined() && !key.IsHole() && !key.IsNull()) {
             JSTaggedValue val(GetValue(hashIndex));
-
             CString str;
             KeyToStd(str, key);
             vec.push_back(std::make_pair(str, val));
@@ -1589,12 +1595,10 @@ void GlobalDictionary::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     int size = Size();
     for (int hashIndex = 0; hashIndex < size; hashIndex++) {
         JSTaggedValue key(GetKey(hashIndex));
-        if (!key.IsUndefined() && !key.IsHole()) {
-            PropertyBox *box = PropertyBox::Cast(key.GetTaggedObject());
-
+        if (!key.IsUndefined() && !key.IsHole() && !key.IsNull()) {
             CString str;
             KeyToStd(str, key);
-            JSTaggedValue val = box->GetValue();
+            JSTaggedValue val = GetValue(hashIndex);
             vec.push_back(std::make_pair(str, val));
         }
     }
@@ -1607,7 +1611,7 @@ void LinkedHashSet::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     int capacity = NumberOfElements() + NumberOfDeletedElements();
     for (int hashIndex = 0; hashIndex < capacity; hashIndex++) {
         JSTaggedValue key(GetKey(hashIndex));
-        if (!key.IsUndefined() && !key.IsHole()) {
+        if (!key.IsUndefined() && !key.IsHole() && !key.IsNull()) {
             CString str;
             KeyToStd(str, key);
             vec.push_back(std::make_pair(str, JSTaggedValue::Hole()));
@@ -1622,8 +1626,8 @@ void LinkedHashMap::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     int capacity = NumberOfElements() + NumberOfDeletedElements();
     for (int hashIndex = 0; hashIndex < capacity; hashIndex++) {
         JSTaggedValue key(GetKey(hashIndex));
-        if (!key.IsUndefined() && !key.IsHole()) {
-            JSTaggedValue val(GetValue(hashIndex));
+        if (!key.IsUndefined() && !key.IsHole() && !key.IsNull()) {
+            JSTaggedValue val = GetValue(hashIndex);
             CString str;
             KeyToStd(str, key);
             vec.push_back(std::make_pair(str, val));

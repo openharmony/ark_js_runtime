@@ -37,6 +37,10 @@ bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, con
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(thread);
     ASSERT(heapClean);
+    auto heap = thread->GetEcmaVM()->GetHeap();
+    size_t heapSize = heap->GetNewSpace()->GetHeapObjectSize() + heap->GetOldSpace()->GetHeapObjectSize()
+                         + heap->GetNonMovableSpace()->GetHeapObjectSize();
+    LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
     HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::ONE_SHOT);
     ASSERT(snapShot != nullptr);
     std::pair<bool, CString> realPath = FilePathValid(filePath);
@@ -148,7 +152,6 @@ bool HeapProfiler::ForceFullGC(JSThread *thread)
     if (vm->IsInitialized()) {
         const_cast<Heap *>(vm->GetHeap())->CollectGarbage(TriggerGCType::SEMI_GC);
         const_cast<Heap *>(vm->GetHeap())->CollectGarbage(TriggerGCType::OLD_GC);
-        const_cast<Heap *>(vm->GetHeap())->CollectGarbage(TriggerGCType::NON_MOVE_GC);
         return true;
     }
     return false;
@@ -156,6 +159,7 @@ bool HeapProfiler::ForceFullGC(JSThread *thread)
 
 HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sampleType)
 {
+    LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapShot";
     DISALLOW_GARBAGE_COLLECTION;
     switch (sampleType) {
         case SampleType::ONE_SHOT: {

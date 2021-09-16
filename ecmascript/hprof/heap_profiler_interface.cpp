@@ -20,6 +20,7 @@
 namespace panda::ecmascript {
 void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath)
 {
+    LOG(ERROR, RUNTIME) << "HeapProfilerInterface::DumpHeapSnapshot";
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
     auto *hprof = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<HeapProfiler>(heap);
     if (UNLIKELY(hprof == nullptr)) {
