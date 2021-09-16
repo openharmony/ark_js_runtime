@@ -359,7 +359,7 @@ public:
 
 class JSObject : public ECMAObject {
 public:
-    static constexpr int MIN_ELEMENTS_LENGTH = 16;
+    static constexpr int MIN_ELEMENTS_LENGTH = 3;
     static constexpr int MIN_PROPERTIES_LENGTH = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS;
     static constexpr int PROPERTIES_GROW_SIZE = 4;
     static constexpr int FAST_ELEMENTS_FACTOR = 3;

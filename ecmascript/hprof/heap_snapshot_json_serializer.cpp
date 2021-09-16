@@ -22,6 +22,7 @@ namespace panda::ecmascript {
 bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, const CString &fileName)
 {
     // Serialize Node/Edge/String-Table
+    LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::Serialize begin";
     snapShot_ = snapShot;
     ASSERT(snapShot_->GetNodes() != nullptr && snapShot_->GetEdges() != nullptr &&
            snapShot_->GetEcmaStringTable() != nullptr);
@@ -38,6 +39,7 @@ bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, const CString
     SerializerSnapShotClosure();   // 9.
 
     WriteJSON(fileName);           // 10.
+    LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::Serialize exit";
     return true;
 }
 
@@ -191,6 +193,7 @@ void HeapSnapShotJSONSerializer::SerializerSnapShotClosure()
 void HeapSnapShotJSONSerializer::WriteJSON(const CString &fileName)
 {
     std::string fName(fileName);
+    LOG(ERROR, RUNTIME) << "HeapSnapShotJSONSerializer::WriteJSON" << fName;
     outputStream_.open(fName, std::ios::out);
     if (!outputStream_.good()) {
         LOG_ECMA(ERROR) << "open file failed";

@@ -22,6 +22,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/hprof/heap_root_visitor.h"
 #include "ecmascript/ic/property_box.h"
+#include "ecmascript/js_array.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_object-inl.h"
@@ -144,10 +145,17 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
     CString *name = GetString("UnKnownType");
     auto *hCls = entry->GetClass();
     if (hCls->IsTaggedArray()) {
+        CString arrayName;
         TaggedArray *array = TaggedArray::Cast(entry);
-        CString arrayName("Array[");
-        arrayName.append(ToCString(array->GetLength()));
-        arrayName.append("]");
+        if (hCls->IsDictionary()) {
+            arrayName = "TaggedDict[";
+            arrayName.append(ToCString(array->GetLength()));
+            arrayName.append("]");
+        } else {
+            arrayName = "TaggedArray[";
+            arrayName.append(ToCString(array->GetLength()));
+            arrayName.append("]");
+        }
         name = GetString(arrayName);  // String type was handled singly, see#GenerateStringNode
     } else if (hCls->IsHClass()) {
         name = GetString("HiddenClass");
@@ -161,7 +169,11 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
         } else if (hCls->IsJSSymbol()) {
             name = GetString("JSSymbol");
         } else if (hCls->IsJSArray()) {
-            name = GetString("JSArray");
+            JSArray *jsArray = JSArray::Cast(entry);
+            CString arrayName("JSArray[");
+            arrayName.append(ToCString(jsArray->GetLength().GetInt()));
+            arrayName.append("]");
+            name = GetString(arrayName);
         } else if (hCls->IsTypedArray()) {
             name = GetString("TypedArray");
         } else if (hCls->IsJSTypedArray()) {
@@ -352,7 +364,7 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
 
 NodeType HeapSnapShot::GenerateNodeType(TaggedObject *entry)
 {
-    NodeType nodeType;
+    NodeType nodeType = NodeType::INVALID;
     auto *hCls = entry->GetClass();
     if (hCls->IsTaggedArray()) {
         nodeType = NodeType::JS_ARRAY;
@@ -381,8 +393,14 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
         sequenceId = sequenceId_ + SEQ_STEP;
     }
     if (entry.IsHeapObject()) {
+        if (entry.IsWeak()) {
+            entry.RemoveWeakTag();
+        }
         if (entry.IsString()) {
-            return GenerateStringNode(entry, sequenceId);
+            node = GenerateStringNode(entry, sequenceId);
+            if (node == nullptr) {
+                LOG(ERROR, RUNTIME) << "string node nullptr";
+            }
         }
         TaggedObject *obj = entry.GetTaggedObject();
         auto *baseClass = obj->GetClass();
@@ -404,44 +422,36 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
             }
         }
     } else {
-        auto *obj = reinterpret_cast<TaggedObject *>(entry.GetRawData());
         CString primitiveName;
-        JSTaggedValue primitiveObj(obj);
-        if (primitiveObj.IsInt()) {
-            primitiveName.append("Int:");
-        } else if (primitiveObj.IsDouble()) {
+        // A primitive value with tag will be regarded as a pointer
+        auto *obj = reinterpret_cast<TaggedObject *>(entry.GetRawData());
+        if (entry.IsInt()) {
+            primitiveName.append("Int:" + ToCString(entry.GetInt()));
+        } else if (entry.IsDouble()) {
             primitiveName.append("Double:");
-        } else if (primitiveObj.IsSpecial()) {
-            if (primitiveObj.IsHole()) {
-                primitiveName.append("Hole");
-            } else if (primitiveObj.IsNull()) {
-                primitiveName.append("Null");
-            } else if (primitiveObj.IsTrue()) {
-                primitiveName.append("Boolean:true");
-            } else if (primitiveObj.IsFalse()) {
-                primitiveName.append("Boolean:false");
-            } else if (primitiveObj.IsException()) {
-                primitiveName.append("Exception");
-            } else if (primitiveObj.IsUndefined()) {
-                primitiveName.append("Undefined");
-            }
+        } else if (entry.IsHole()) {
+            primitiveName.append("Hole");
+        } else if (entry.IsNull()) {
+            primitiveName.append("Null");
+        } else if (entry.IsTrue()) {
+            primitiveName.append("Boolean:true");
+        } else if (entry.IsFalse()) {
+            primitiveName.append("Boolean:false");
+        } else if (entry.IsException()) {
+            primitiveName.append("Exception");
+        } else if (entry.IsUndefined()) {
+            primitiveName.append("Undefined");
         } else {
             primitiveName.append("Illegal_Primitive");
         }
 
         node = Node::NewNode(heap_, sequenceId, nodeCount_, GetString(primitiveName), NodeType::JS_PRIMITIVE_REF, 0,
                              obj);
-        Node *existNode = entryMap_.FindOrInsertNode(node);  // Fast Index
-        if (existNode == node) {
-            if (sequenceId == sequenceId_ + SEQ_STEP) {
-                sequenceId_ = sequenceId;  // Odd Digit
-            }
-            InsertNodeUnique(node);
-        } else {
-            const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(node);
-            node = nullptr;
-            existNode->SetLive(true);
+        entryMap_.InsertEntry(node);  // Fast Index
+        if (sequenceId == sequenceId_ + SEQ_STEP) {
+            sequenceId_ = sequenceId;  // Odd Digit
         }
+        InsertNodeUnique(node);
     }
     return node;
 }
@@ -482,11 +492,16 @@ void HeapSnapShot::FillEdges(JSThread *thread)
         auto *objFrom = reinterpret_cast<TaggedObject *>((*iter)->GetAddress());
         std::vector<std::pair<CString, JSTaggedValue>> nameResources;
         JSTaggedValue(objFrom).DumpForSnapshot(thread, nameResources);
+        JSTaggedValue objValue(objFrom);
         for (auto const &it : nameResources) {
-            auto *to = reinterpret_cast<TaggedObject *>(it.second.GetRawData());
-            Node *entryTo = entryMap_.FindEntry(Node::NewAddress(to));
+            JSTaggedValue toValue = it.second;
+            Node *entryTo = nullptr;
+            if (toValue.IsHeapObject()) {
+                auto *to = reinterpret_cast<TaggedObject *>(toValue.GetHeapObject());
+                entryTo = entryMap_.FindEntry(Node::NewAddress(to));
+            }
             if (entryTo == nullptr) {
-                entryTo = GenerateNode(thread, it.second);
+                entryTo = GenerateNode(thread, toValue);
             }
             if (entryTo != nullptr) {
                 Edge *edge = Edge::NewEdge(heap_, edgeCount_, EdgeType::DEFAULT, *iter, entryTo, GetString(it.first));
@@ -565,8 +580,8 @@ Edge *HeapSnapShot::InsertEdgeUnique(Edge *edge)
 
 void HeapSnapShot::AddSyntheticRoot(JSThread *thread)
 {
-    Node *syntheticRoot = Node::NewNode(heap_, 1, nodeCount_, GetString("SyntheticRoot"), NodeType::SYNTHETIC, 0,
-                                        nullptr);
+    Node *syntheticRoot = Node::NewNode(heap_, 1, nodeCount_, GetString("SyntheticRoot"),
+                                        NodeType::SYNTHETIC, 0, nullptr);
     InsertNodeAt(0, syntheticRoot);
 
     int edgeOffset = 0;
@@ -632,7 +647,7 @@ CString EntryVisitor::ConvertKey(JSTaggedValue key)
         keyString = EcmaString::Cast(symbol->GetDescription().GetTaggedObject());
     }
     // convert, expensive but safe
-    int length;
+    int length = 0;
     if (keyString->IsUtf8()) {
         length = keyString->GetUtf8Length();
         std::vector<uint8_t> buffer(length);
@@ -687,7 +702,7 @@ void HeapEntryMap::InsertEntry(Node *node)
 
 FrontType NodeTypeConverter::Convert(NodeType type)
 {
-    FrontType fType;
+    FrontType  fType = FrontType::DEFAULT;
     if (type == NodeType::PROPERTY_BOX) {
         fType = FrontType::HIDDEN;
     } else if (type == NodeType::JS_ARRAY || type == NodeType::JS_TYPED_ARRAY) {
