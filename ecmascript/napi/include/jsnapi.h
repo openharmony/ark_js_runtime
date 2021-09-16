@@ -787,6 +787,7 @@ private:
 class PUBLIC_API JSNApi {
 public:
     // JSVM
+    enum class PUBLIC_API TRIGGER_GC_TYPE : uint8_t { SEMI_GC, OLD_GC, COMPRESS_FULL_GC };
     static EcmaVM *CreateJSVM(const RuntimeOption &option);
     static void DestoryJSVM(EcmaVM *ecmaVm);
 
@@ -801,8 +802,7 @@ public:
     static void ExecutePendingJob(const EcmaVM *vm);
 
     // Memory
-    static void TriggerGC(const EcmaVM *vm);
-
+    static void TriggerGC(const EcmaVM *vm, TRIGGER_GC_TYPE gcType = TRIGGER_GC_TYPE::SEMI_GC);
     // Exception
     static void ThrowException(const EcmaVM *vm, Local<JSValueRef> error);
     static Local<ObjectRef> GetUncaughtException(const EcmaVM *vm);
