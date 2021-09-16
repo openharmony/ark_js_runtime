@@ -40,6 +40,7 @@ namespace panda::ecmascript {
 JSTaggedValue ICRuntimeStub::LoadGlobalICByName(JSThread *thread, ProfileTypeInfo *profileTypeInfo,
                                                 JSTaggedValue globalValue, JSTaggedValue key, uint32_t slotId)
 {
+    INTERPRETER_TRACE(thread, LoadGlobalICByName);
     JSTaggedValue handler = profileTypeInfo->Get(slotId);
     if (handler.IsHeapObject()) {
         auto result = LoadGlobal(handler);
@@ -61,6 +62,7 @@ JSTaggedValue ICRuntimeStub::StoreGlobalICByName(JSThread *thread, ProfileTypeIn
                                                  JSTaggedValue globalValue, JSTaggedValue key,
                                                  JSTaggedValue value, uint32_t slotId)
 {
+    INTERPRETER_TRACE(thread, StoreGlobalICByName);
     JSTaggedValue handler = profileTypeInfo->Get(slotId);
     if (handler.IsHeapObject()) {
         auto result = StoreGlobal(thread, value, handler);
@@ -232,6 +234,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::StoreICWithHandler(JSThread *thread, JST
                                                            JSTaggedValue holder,
                                                            JSTaggedValue value, JSTaggedValue handler)
 {
+    INTERPRETER_TRACE(thread, StoreICWithHandler);
     if (handler.IsInt()) {
         auto handlerInfo = static_cast<uint32_t>(handler.GetInt());
         if (HandlerBase::IsField(handlerInfo)) {
@@ -258,6 +261,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::StoreICWithHandler(JSThread *thread, JST
 JSTaggedValue ICRuntimeStub::StorePrototype(JSThread *thread, JSTaggedValue receiver,
                                             JSTaggedValue value, JSTaggedValue handler)
 {
+    INTERPRETER_TRACE(thread, StorePrototype);
     ASSERT(handler.IsPrototypeHandler());
     PrototypeHandler *prototypeHandler = PrototypeHandler::Cast(handler.GetTaggedObject());
     auto cellValue = prototypeHandler->GetProtoCell();
@@ -274,6 +278,7 @@ JSTaggedValue ICRuntimeStub::StorePrototype(JSThread *thread, JSTaggedValue rece
 void ICRuntimeStub::StoreWithTransition(JSThread *thread, JSObject *receiver, JSTaggedValue value,
                                         JSTaggedValue handler)
 {
+    INTERPRETER_TRACE(thread, StoreWithTransition);
     TransitionHandler *transitionHandler = TransitionHandler::Cast(handler.GetTaggedObject());
     JSHClass *newHClass = JSHClass::Cast(transitionHandler->GetTransitionHClass().GetTaggedObject());
     receiver->SetClass(newHClass);
@@ -309,6 +314,7 @@ void ICRuntimeStub::StoreWithTransition(JSThread *thread, JSObject *receiver, JS
 
 ARK_INLINE void ICRuntimeStub::StoreField(JSThread *thread, JSObject *receiver, JSTaggedValue value, uint32_t handler)
 {
+    INTERPRETER_TRACE(thread, StoreField);
     int index = HandlerBase::GetOffset(handler);
     if (HandlerBase::IsInlinedProps(handler)) {
         SET_VALUE_WITH_BARRIER(thread, receiver, index * JSTaggedValue::TaggedTypeSize(), value);
@@ -342,6 +348,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadGlobal(JSTaggedValue handler)
 
 ARK_INLINE JSTaggedValue ICRuntimeStub::StoreGlobal(JSThread *thread, JSTaggedValue value, JSTaggedValue handler)
 {
+    INTERPRETER_TRACE(thread, StoreGlobal);
     ASSERT(handler.IsPropertyBox());
     PropertyBox *cell = PropertyBox::Cast(handler.GetHeapObject());
     if (cell->IsInvalid()) {
@@ -354,6 +361,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::StoreGlobal(JSThread *thread, JSTaggedVa
 
 JSTaggedValue ICRuntimeStub::LoadPrototype(JSThread *thread, JSTaggedValue receiver, JSTaggedValue handler)
 {
+    INTERPRETER_TRACE(thread, LoadPrototype);
     ASSERT(handler.IsPrototypeHandler());
     PrototypeHandler *prototypeHandler = PrototypeHandler::Cast(handler.GetTaggedObject());
     auto cellValue = prototypeHandler->GetProtoCell();
@@ -370,6 +378,7 @@ JSTaggedValue ICRuntimeStub::LoadPrototype(JSThread *thread, JSTaggedValue recei
 ARK_INLINE JSTaggedValue ICRuntimeStub::LoadICWithHandler(JSThread *thread, JSTaggedValue receiver,
                                                           JSTaggedValue holder, JSTaggedValue handler)
 {
+    INTERPRETER_TRACE(thread, LoadICWithHandler);
     if (LIKELY(handler.IsInt())) {
         auto handlerInfo = static_cast<uint32_t>(handler.GetInt());
         if (LIKELY(HandlerBase::IsField(handlerInfo))) {
@@ -410,6 +419,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadElement(JSObject *receiver, JSTagged
 JSTaggedValue ICRuntimeStub::StoreElement(JSThread *thread, JSObject *receiver, JSTaggedValue key,
                                           JSTaggedValue value, uint32_t handlerInfo)
 {
+    INTERPRETER_TRACE(thread, StoreElement);
     ASSERT(HandlerBase::IsElement(handlerInfo));
     auto index = TryToElementsIndex(key);
     if (index < 0) {
