@@ -184,6 +184,7 @@ int32_t FastRuntimeStub::TryToElementsIndex(JSTaggedValue key)
 JSTaggedValue FastRuntimeStub::CallGetter(JSThread *thread, JSTaggedValue receiver, JSTaggedValue holder,
                                           JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, CallGetter);
     // Accessor
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     AccessorData *accessor = AccessorData::Cast(value.GetTaggedObject());
@@ -198,6 +199,7 @@ JSTaggedValue FastRuntimeStub::CallGetter(JSThread *thread, JSTaggedValue receiv
 JSTaggedValue FastRuntimeStub::CallSetter(JSThread *thread, JSTaggedValue receiver, JSTaggedValue value,
                                           JSTaggedValue accessorValue)
 {
+    INTERPRETER_TRACE(thread, CallSetter);
     // Accessor
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> objHandle(thread, receiver);
@@ -223,6 +225,7 @@ bool FastRuntimeStub::ShouldCallSetter(JSTaggedValue receiver, JSTaggedValue hol
 JSTaggedValue FastRuntimeStub::AddPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                                  JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, AddPropertyByName);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     if (UNLIKELY(!JSObject::Cast(receiver)->IsExtensible())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot add property in prevent extensions ", JSTaggedValue::Exception());
@@ -292,6 +295,7 @@ JSTaggedValue FastRuntimeStub::AddPropertyByName(JSThread *thread, JSTaggedValue
 JSTaggedValue FastRuntimeStub::AddPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                   JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, AddPropertyByIndex);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     if (UNLIKELY(!JSObject::Cast(receiver)->IsExtensible())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot add property in prevent extensions ", JSTaggedValue::Exception());
@@ -305,6 +309,7 @@ JSTaggedValue FastRuntimeStub::AddPropertyByIndex(JSThread *thread, JSTaggedValu
 template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::GetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index)
 {
+    INTERPRETER_TRACE(thread, GetPropertyByIndex);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSTaggedValue holder = receiver;
     do {
@@ -351,6 +356,7 @@ JSTaggedValue FastRuntimeStub::GetPropertyByIndex(JSThread *thread, JSTaggedValu
 template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::GetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
+    INTERPRETER_TRACE(thread, GetPropertyByValue);
     if (UNLIKELY(!key.IsNumber() && !key.IsStringOrSymbol())) {
         return JSTaggedValue::Hole();
     }
@@ -432,6 +438,7 @@ template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                                  JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, SetPropertyByName);
     // property
     JSTaggedValue holder = receiver;
     do {
@@ -504,6 +511,7 @@ template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::SetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                   JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, SetPropertyByIndex);
     JSTaggedValue holder = receiver;
     do {
         auto *hclass = holder.GetTaggedObject()->GetClass();
@@ -539,6 +547,7 @@ template<bool UseOwn>
 JSTaggedValue FastRuntimeStub::SetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                                   JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, SetPropertyByValue);
     if (UNLIKELY(!key.IsNumber() && !key.IsStringOrSymbol())) {
         return JSTaggedValue::Hole();
     }
@@ -579,6 +588,7 @@ JSTaggedValue FastRuntimeStub::GetGlobalOwnProperty(JSTaggedValue receiver, JSTa
 
 JSTaggedValue FastRuntimeStub::FastTypeOf(JSThread *thread, JSTaggedValue obj)
 {
+    INTERPRETER_TRACE(thread, FastTypeOf);
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     switch (obj.GetRawData()) {
         case JSTaggedValue::VALUE_TRUE:
@@ -611,6 +621,7 @@ JSTaggedValue FastRuntimeStub::FastTypeOf(JSThread *thread, JSTaggedValue obj)
 bool FastRuntimeStub::FastSetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                              JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, FastSetPropertyByIndex);
     JSTaggedValue result = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
     if (!result.IsHole()) {
         return result != JSTaggedValue::Exception();
@@ -622,6 +633,7 @@ bool FastRuntimeStub::FastSetPropertyByIndex(JSThread *thread, JSTaggedValue rec
 bool FastRuntimeStub::FastSetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                              JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, FastSetPropertyByValue);
     JSTaggedValue result = FastRuntimeStub::SetPropertyByValue(thread, receiver, key, value);
     if (!result.IsHole()) {
         return result != JSTaggedValue::Exception();
@@ -634,6 +646,7 @@ bool FastRuntimeStub::FastSetPropertyByValue(JSThread *thread, JSTaggedValue rec
 // must not use for interpreter
 JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
+    INTERPRETER_TRACE(thread, FastGetPropertyByName);
     ASSERT(key.IsStringOrSymbol());
     if (key.IsString() && !EcmaString::Cast(key.GetTaggedObject())->IsInternString()) {
         JSHandle<JSTaggedValue> receiverHandler(thread, receiver);
@@ -653,6 +666,7 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedV
 
 JSTaggedValue FastRuntimeStub::FastGetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
+    INTERPRETER_TRACE(thread, FastGetPropertyByValue);
     JSTaggedValue result = FastRuntimeStub::GetPropertyByValue(thread, receiver, key);
     if (result.IsHole()) {
         return JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(thread, receiver),
@@ -666,6 +680,7 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByValue(JSThread *thread, JSTagged
 template<bool UseHole>  // UseHole is only for Array::Sort() which requires Hole order
 JSTaggedValue FastRuntimeStub::FastGetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index)
 {
+    INTERPRETER_TRACE(thread, FastGetPropertyByIndex);
     JSTaggedValue result = GetPropertyByIndex(thread, receiver, index);
     if (result.IsHole() && !UseHole) {
         return JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(thread, receiver), index)
@@ -677,6 +692,7 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByIndex(JSThread *thread, JSTagged
 
 JSTaggedValue FastRuntimeStub::NewLexicalEnvDyn(JSThread *thread, ObjectFactory *factory, uint16_t numVars)
 {
+    INTERPRETER_TRACE(thread, NewLexicalEnvDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     LexicalEnv *newEnv = factory->InlineNewLexicalEnv(numVars);
     if (UNLIKELY(newEnv == nullptr)) {
@@ -736,6 +752,7 @@ JSTaggedValue FastRuntimeStub::GetElementWithArray(JSTaggedValue receiver, uint3
 bool FastRuntimeStub::SetElement(JSThread *thread, JSTaggedValue receiver, uint32_t index, JSTaggedValue value,
                                  bool mayThrow)
 {
+    INTERPRETER_TRACE(thread, SetElement);
     JSTaggedValue holder = receiver;
     bool onPrototype = false;
 
@@ -808,6 +825,7 @@ bool FastRuntimeStub::SetElement(JSThread *thread, JSTaggedValue receiver, uint3
 bool FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                         JSTaggedValue value, bool mayThrow)
 {
+    INTERPRETER_TRACE(thread, SetPropertyByName);
     // property
     JSTaggedValue holder = receiver;
     bool onPrototype = false;
@@ -930,6 +948,7 @@ bool FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue receiver
 bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                            JSTaggedValue value, bool mayThrow)
 {
+    INTERPRETER_TRACE(thread, SetGlobalOwnProperty);
     uint32_t index = 0;
     if (JSTaggedValue::ToElementIndex(key, &index)) {
         return SetElement(thread, receiver, index, value, mayThrow);
@@ -1011,6 +1030,7 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
 void FastRuntimeStub::SetOwnPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
                                            JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, SetOwnPropertyByName);
     TaggedArray *properties = TaggedArray::Cast(JSObject::Cast(receiver)->GetProperties().GetHeapObject());
     PropertyAttributes attr;
     uint32_t indexOrEntry;
@@ -1045,6 +1065,7 @@ void FastRuntimeStub::SetOwnPropertyByName(JSThread *thread, JSTaggedValue recei
 // set element that is not accessor and is writable
 bool FastRuntimeStub::SetOwnElement(JSThread *thread, JSTaggedValue receiver, uint32_t index, JSTaggedValue value)
 {
+    INTERPRETER_TRACE(thread, SetOwnElement);
     PropertyAttributes attr;
     uint32_t indexOrEntry;
     TaggedArray *elements = TaggedArray::Cast(JSObject::Cast(receiver)->GetElements().GetHeapObject());
@@ -1068,6 +1089,7 @@ bool FastRuntimeStub::SetOwnElement(JSThread *thread, JSTaggedValue receiver, ui
 bool FastRuntimeStub::FastSetProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key, JSTaggedValue value,
                                       bool mayThrow)
 {
+    INTERPRETER_TRACE(thread, FastSetProperty);
     if (receiver.IsJSObject() && !receiver.IsTypedArray() && (key.IsStringOrSymbol())) {
         uint32_t index = 0;
         if (UNLIKELY(JSTaggedValue::ToElementIndex(key, &index))) {
@@ -1090,6 +1112,7 @@ bool FastRuntimeStub::FastSetProperty(JSThread *thread, JSTaggedValue receiver, 
 
 JSTaggedValue FastRuntimeStub::FastGetProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
+    INTERPRETER_TRACE(thread, FastGetProperty);
     JSTaggedValue result;
     if (receiver.IsJSObject() && !receiver.IsTypedArray() && (key.IsStringOrSymbol())) {
         uint32_t index = 0;
@@ -1123,6 +1146,7 @@ JSTaggedValue FastRuntimeStub::FastGetProperty(JSThread *thread, JSTaggedValue r
 JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, TaggedArray *properties,
                                                JSTaggedValue key, PropertyAttributes *attr, uint32_t *indexOrEntry)
 {
+    INTERPRETER_TRACE(thread, FindOwnProperty);
     if (!properties->IsDictionaryMode()) {
         JSHClass *cls = obj->GetJSHClass();
         JSTaggedValue attrs = cls->GetAttributes();
@@ -1194,6 +1218,7 @@ JSTaggedValue FastRuntimeStub::FindOwnElement(TaggedArray *elements, uint32_t in
 
 JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, JSTaggedValue key)
 {
+    INTERPRETER_TRACE(thread, FindOwnProperty);
     TaggedArray *array = TaggedArray::Cast(obj->GetProperties().GetHeapObject());
     if (!array->IsDictionaryMode()) {
         JSHClass *cls = obj->GetJSHClass();
@@ -1255,6 +1280,7 @@ JSTaggedValue FastRuntimeStub::FindOwnElement(JSObject *obj, uint32_t index)
 
 JSTaggedValue FastRuntimeStub::HasOwnProperty(JSThread *thread, JSObject *obj, JSTaggedValue key)
 {
+    INTERPRETER_TRACE(thread, HasOwnProperty);
     uint32_t index = 0;
     if (UNLIKELY(JSTaggedValue::ToElementIndex(key, &index))) {
         return FastRuntimeStub::FindOwnElement(obj, index);

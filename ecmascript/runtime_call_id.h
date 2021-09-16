@@ -83,7 +83,7 @@ namespace panda::ecmascript {
     V(RefeqDyn)                     \
     V(TypeofDyn)                    \
     V(LdnewobjrangeDyn)             \
-    V(IsinDyn)                      \
+    V(IsInDyn)                      \
     V(InstanceofDyn)                \
     V(NewobjspreadDyn)              \
     V(CallArg0Dyn)                  \
@@ -97,7 +97,6 @@ namespace panda::ecmascript {
     V(StlexvarDyn)                  \
     V(LdlexvarDyn)                  \
     V(LdlexenvDyn)                  \
-    V(GetUnmappedArgs)              \
     V(GetPropIterator)              \
     V(CreateIterResultObj)          \
     V(DefineGeneratorFunc)          \
@@ -138,6 +137,76 @@ namespace panda::ecmascript {
     V(CompressCollector_RunPhases)  \
     V(OldSpaceCollector_RunPhases)  \
     V(SemiSpaceCollector_RunPhases) \
+    V(LoadGlobalICByName)           \
+    V(StoreGlobalICByName)          \
+    V(StoreICWithHandler)           \
+    V(StorePrototype)               \
+    V(StoreWithTransition)          \
+    V(StoreField)                   \
+    V(StoreGlobal)                  \
+    V(LoadPrototype)                \
+    V(LoadICWithHandler)            \
+    V(StoreElement)                 \
+    V(CallGetter)                   \
+    V(CallSetter)                   \
+    V(AddPropertyByName)            \
+    V(AddPropertyByIndex)           \
+    V(GetPropertyByIndex)           \
+    V(GetPropertyByValue)           \
+    V(SetPropertyByName)            \
+    V(SetPropertyByIndex)           \
+    V(SetPropertyByValue)           \
+    V(FastTypeOf)                   \
+    V(FastSetPropertyByIndex)       \
+    V(FastSetPropertyByValue)       \
+    V(FastGetPropertyByName)        \
+    V(FastGetPropertyByValue)       \
+    V(FastGetPropertyByIndex)       \
+    V(NewLexicalEnvDyn)             \
+    V(SetElement)                   \
+    V(SetGlobalOwnProperty)         \
+    V(SetOwnPropertyByName)         \
+    V(SetOwnElement)                \
+    V(FastSetProperty)              \
+    V(FastGetProperty)              \
+    V(FindOwnProperty)              \
+    V(HasOwnProperty)               \
+    V(ExecuteNative)                \
+    V(Execute)                      \
+    V(ToJSTaggedValueWithInt32)     \
+    V(ToJSTaggedValueWithUint32)    \
+    V(ThrowIfSuperNotCorrectCall)   \
+    V(CreateEmptyArray)             \
+    V(CreateEmptyObject)            \
+    V(CreateObjectWithBuffer)       \
+    V(CreateObjectHavingMethod)     \
+    V(SetObjectWithProto)           \
+    V(ImportModule)                 \
+    V(StModuleVar)                  \
+    V(CopyModule)                   \
+    V(LdModvarByName)               \
+    V(CreateRegExpWithLiteral)      \
+    V(CreateArrayWithBuffer)        \
+    V(GetNextPropName)              \
+    V(CopyDataProperties)           \
+    V(GetUnmapedArgs)               \
+    V(TryStGlobalByName)            \
+    V(LdGlobalVar)                  \
+    V(StGlobalVar)                  \
+    V(TryUpdateGlobalRecord)        \
+    V(LdGlobalRecord)               \
+    V(StGlobalRecord)               \
+    V(ThrowReferenceError)          \
+    V(ThrowTypeError)               \
+    V(ThrowSyntaxError)             \
+    V(NewClassFunc)                 \
+    V(DefineClass)                  \
+    V(SuperCall)                    \
+    V(SuperCallSpread)              \
+    V(DefineMethod)                 \
+    V(LdSuperByValue)               \
+    V(StSuperByValue)               \
+    V(ThrowDeleteSuperProperty)     \
     V(GetIteratorNext)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

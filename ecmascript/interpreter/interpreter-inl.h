@@ -205,6 +205,7 @@ namespace panda::ecmascript {
 
 JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams& params)
 {
+    INTERPRETER_TRACE(thread, ExecuteNative);
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     JSMethod *methodToCall = params.callTarget->GetCallTarget();
     ASSERT(methodToCall->GetNumVregs() == 0);
@@ -242,6 +243,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
 
 JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& params)
 {
+    INTERPRETER_TRACE(thread, Execute);
     JSMethod *method = params.callTarget->GetCallTarget();
     ASSERT(thread->IsEcmaInterpreter());
     if (method->IsNative()) {
