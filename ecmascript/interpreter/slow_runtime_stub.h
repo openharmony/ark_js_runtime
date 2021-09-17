@@ -79,8 +79,12 @@ public:
     static void ThrowDeleteSuperProperty(JSThread *thread);
 
     static JSTaggedValue StOwnByName(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop, JSTaggedValue value);
+    static JSTaggedValue StOwnByNameWithNameSet(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop,
+                                                JSTaggedValue value);
     static JSTaggedValue StOwnByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, JSTaggedValue value);
     static JSTaggedValue StOwnByValue(JSThread *thread, JSTaggedValue obj, JSTaggedValue key, JSTaggedValue value);
+    static JSTaggedValue StOwnByValueWithNameSet(JSThread *thread, JSTaggedValue obj, JSTaggedValue key,
+                                                 JSTaggedValue value);
     static JSTaggedValue CreateEmptyArray(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv);
     static JSTaggedValue CreateEmptyObject(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv);
     static JSTaggedValue CreateObjectWithBuffer(JSThread *thread, ObjectFactory *factory, JSObject *literal);
