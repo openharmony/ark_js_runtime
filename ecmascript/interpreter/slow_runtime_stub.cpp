@@ -739,6 +739,7 @@ JSTaggedValue SlowRuntimeStub::StOwnByName(JSThread *thread, JSTaggedValue obj, 
     }
     return JSTaggedValue::True();
 }
+
 JSTaggedValue SlowRuntimeStub::StOwnByNameWithNameSet(JSThread *thread, JSTaggedValue obj, JSTaggedValue prop,
                                                       JSTaggedValue value)
 {
@@ -809,13 +810,9 @@ JSTaggedValue SlowRuntimeStub::StOwnByValue(JSThread *thread, JSTaggedValue obj,
     if (!ret) {
         return ThrowTypeError(thread, "StOwnByValue failed");
     }
-    if (valueHandle->IsJSFunction()) {
-        if (propKey->IsNumber()) {
-            propKey.Update(base::NumberHelper::NumberToString(thread, propKey.GetTaggedValue()).GetTaggedValue());
-        }
-    }
     return JSTaggedValue::True();
 }
+
 JSTaggedValue SlowRuntimeStub::StOwnByValueWithNameSet(JSThread *thread, JSTaggedValue obj, JSTaggedValue key,
                                                        JSTaggedValue value)
 {
@@ -853,6 +850,7 @@ JSTaggedValue SlowRuntimeStub::StOwnByValueWithNameSet(JSThread *thread, JSTagge
 JSTaggedValue SlowRuntimeStub::CreateEmptyArray(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
     JSHandle<JSFunction> builtinObj(globalEnv->GetArrayFunction());
     JSHandle<JSObject> arr = factory->NewJSObjectByConstructor(builtinObj, JSHandle<JSTaggedValue>(builtinObj));
     return arr.GetTaggedValue();
