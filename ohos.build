@@ -6,8 +6,7 @@
         "phone"
       ],
       "module_list": [
-        "//ark/js_runtime:ark_js_packages",
-        "//ark/js_runtime:ark_js_host_linux_tools_packages"
+        "//ark/js_runtime:ark_js_packages"
       ],
       "inner_kits": [],
       "system_kits": [],
