@@ -95,7 +95,8 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpConstructor1)
 
     JSHandle<JSRegExp> jsRegexp(thread, JSRegExp::Cast(regexpObject->GetTaggedObject()));
     JSHandle<JSTaggedValue> originalSource(thread, jsRegexp->GetOriginalSource());
-    JSHandle<JSTaggedValue> originalFlags(thread, jsRegexp->GetOriginalFlags());
+    uint8_t flagsBits = static_cast<uint8_t>(jsRegexp->GetOriginalFlags().GetInt());
+    JSHandle<JSTaggedValue> originalFlags(thread, BuiltinsRegExp::FlagsBitsToString(thread, flagsBits));
     ASSERT_EQ(static_cast<EcmaString *>(originalSource->GetTaggedObject())->Compare(*pattern), 0);
     ASSERT_EQ(static_cast<EcmaString *>(originalFlags->GetTaggedObject())->Compare(*flags), 0);
 }
@@ -128,7 +129,8 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpConstructor2)
 
     JSHandle<JSRegExp> jsRegexp(thread, JSRegExp::Cast(regexpObject->GetTaggedObject()));
     JSHandle<JSTaggedValue> originalSource(thread, jsRegexp->GetOriginalSource());
-    JSHandle<JSTaggedValue> originalFlags(thread, jsRegexp->GetOriginalFlags());
+    uint8_t flagsBits = static_cast<uint8_t>(jsRegexp->GetOriginalFlags().GetInt());
+    JSHandle<JSTaggedValue> originalFlags(thread, BuiltinsRegExp::FlagsBitsToString(thread, flagsBits));
     ASSERT_EQ(static_cast<EcmaString *>(originalSource->GetTaggedObject())->Compare(*pattern), 0);
     ASSERT_EQ(static_cast<EcmaString *>(originalFlags->GetTaggedObject())->Compare(*flags), 0);
 }
@@ -162,7 +164,8 @@ HWTEST_F_L0(BuiltinsRegExpTest, RegExpConstructor3)
 
     JSHandle<JSRegExp> jsRegexp(thread, JSRegExp::Cast(regexpObject->GetTaggedObject()));
     JSHandle<JSTaggedValue> originalSource(thread, jsRegexp->GetOriginalSource());
-    JSHandle<JSTaggedValue> originalFlags(thread, jsRegexp->GetOriginalFlags());
+    uint8_t flagsBits = static_cast<uint8_t>(jsRegexp->GetOriginalFlags().GetInt());
+    JSHandle<JSTaggedValue> originalFlags(thread, BuiltinsRegExp::FlagsBitsToString(thread, flagsBits));
     ASSERT_EQ(static_cast<EcmaString *>(originalSource->GetTaggedObject())->Compare(*pattern1), 0);
     ASSERT_EQ(static_cast<EcmaString *>(originalFlags->GetTaggedObject())->Compare(*flags2), 0);
 }
