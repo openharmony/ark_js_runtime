@@ -20,7 +20,8 @@ Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 2.  Compile an ARK runtime after the first compilation:
 
     ```
-    ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
+    ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime  # arm platform
+    ./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # host side running tool
     ```
 
 3.  Compile the ARK frontend after the first compilation:

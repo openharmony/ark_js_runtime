@@ -20,7 +20,8 @@
 1.  编译方舟运行时，编译命令：
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
+./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime  # arm平台
+./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # host端运行工具
 ```
 
 2.  编译方舟前端，编译命令：
@@ -122,7 +123,7 @@ hello-world.abc反汇编结果如下：
 1.  编译方舟运行时，编译命令：
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
+./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages
 ```
 
 1.  编译方舟前端，编译命令：

@@ -12,7 +12,8 @@ This section describes how to develop and test ARK runtime.
 1.  Run the following command to compile ARK runtime:
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
+./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime  # arm platform
+./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # host side running tool
 ```
 
 2.  Run the following command to compile the ARK frontend:
@@ -112,7 +113,7 @@ The output is as follows:
 1.  Run the following command to compile ARK runtime:
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
+./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages
 ```
 
 2.  Run the following command to compile the ARK frontend:
