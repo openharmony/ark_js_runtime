@@ -152,7 +152,12 @@ void Heap::CollectGarbage(TriggerGCType gcType)
                 SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
                 ResetAppStartup();
             } else {
-                semiSpaceCollector_->RunPhases();
+                if (CheckAndTriggerCompressGC()) {
+                    compressCollector_->RunPhases();
+                    RecomputeLimits();
+                } else {
+                    semiSpaceCollector_->RunPhases();
+                }
             }
             break;
         case TriggerGCType::OLD_GC:
