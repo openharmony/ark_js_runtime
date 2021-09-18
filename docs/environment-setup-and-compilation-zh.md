@@ -20,7 +20,8 @@ Ubuntu版本要求18.04或20.04，详细环境搭建参考：
 2.  首次编译后增量编译方舟运行时：
 
     ```
-    ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
+    ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime  # arm平台
+    ./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # host端运行工具
     ```
 
 3.  首次编译后增量编译方舟前端：
