@@ -120,7 +120,19 @@ CALL_STUB_INIT_DESCRIPTOR(SetElement)
 
 CALL_STUB_INIT_DESCRIPTOR(SetPropertyByName) {}
 
-CALL_STUB_INIT_DESCRIPTOR(GetPropertyByName) {}
+CALL_STUB_INIT_DESCRIPTOR(GetPropertyByName)
+{
+        // 3 : 3 input parameters
+    static StubDescriptor getPropertyByName("GetPropertyByName", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = getPropertyByName;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
 
 CALL_STUB_INIT_DESCRIPTOR(SetGlobalOwnProperty) {}
 
@@ -291,6 +303,32 @@ CALL_STUB_INIT_DESCRIPTOR(GetHash32)
     std::array<MachineType, 2> params = {
         MachineType::UINT64_TYPE,
         MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(FindElementWithCache)
+{
+    // 4 : 4 input parameters
+    static StubDescriptor findElementWithCache("FindElementWithCache", 0, 4, ArgumentsOrder::DEFAULT_ORDER, INT32_TYPE);
+    *descriptor = findElementWithCache;
+    std::array<MachineType, 4> params = {  // 4 : 4 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
+{
+    static StubDescriptor stringGetHashCode("StringGetHashCode", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
+    *descriptor = stringGetHashCode;
+    std::array<MachineType, 1> params = {
+        MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);

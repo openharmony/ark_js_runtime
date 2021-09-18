@@ -203,6 +203,7 @@ public:
     {
         IsAccessorField::Set<uint32_t>(flag, &value_);
     }
+
     inline bool IsAccessor() const
     {
         return IsAccessorField::Get(value_);
@@ -212,6 +213,7 @@ public:
     {
         IsInlinedPropsField::Set<uint32_t>(flag, &value_);
     }
+
     inline bool IsInlinedProps() const
     {
         return IsInlinedPropsField::Get(value_);

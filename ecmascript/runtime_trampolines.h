@@ -46,6 +46,8 @@ public:
     static bool JSProxySetProperty(uint64_t argThread, uint64_t argProxy, uint64_t argKey, uint64_t argValue,
                                    uint64_t argReceiver, bool argMayThrow);
     static uint32_t GetHash32(uint64_t key, uint64_t len);
+    static int32_t FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num);
+    static uint32_t StringGetHashCode(uint64_t ecmaString);
 };
 }  // namespace panda::ecmascript
 #endif

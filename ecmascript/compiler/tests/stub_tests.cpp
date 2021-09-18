@@ -78,7 +78,6 @@ HWTEST_F_L0(StubTest, FastLoadElement)
     LLVMValueRef function =
         // 2 : parameter number
         LLVMAddFunction(module, "FastLoadElement", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
-    LLVMDumpModule(module);
     Circuit netOfGates;
     FastArrayLoadElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -355,7 +354,6 @@ HWTEST_F_L0(StubTest, FastAddTest)
         LLVMInt64Type(),
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastAddTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
-    LLVMDumpModule(module);
     Circuit netOfGates;
     FastAddStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -397,7 +395,6 @@ HWTEST_F_L0(StubTest, FastSubTest)
         LLVMInt64Type(),
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastSubTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
-    LLVMDumpModule(module);
     Circuit netOfGates;
     FastSubStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -434,7 +431,6 @@ HWTEST_F_L0(StubTest, FastMulTest)
         LLVMInt64Type(),
     };
     LLVMValueRef function = LLVMAddFunction(module, "FastMulTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
-    LLVMDumpModule(module);
     Circuit netOfGates;
     FastMulStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -1186,5 +1182,46 @@ HWTEST_F_L0(StubTest, FastSetPropertyByIndexStub)
         EXPECT_EQ(JSTaggedValue(i),
                   JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
+}
+
+HWTEST_F_L0(StubTest, FastGetPropertyByNameStub)
+{
+    auto module = stubModule.GetModule();
+    LLVMValueRef function = LLVMGetNamedFunction(module, "GetPropertyByName");
+    Circuit netOfGates;
+    FastGetPropertyByNameStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    bool result = Verifier::Run(&netOfGates);
+    ASSERT_TRUE(result);
+    auto cfg = Scheduler::Run(&netOfGates);
+    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
+        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
+                  << std::endl;
+        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
+            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
+        }
+    }
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
+    auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
+        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<JSObject> obj = factory->NewEmptyJSObject();
+    int x = 213;
+    int y = 10;
+    JSHandle<JSTaggedValue> strA(factory->NewFromCanBeCompressString("a"));
+    JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
+    FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x));
+    FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y));
+    assembler.Disassemble();
+    JSTaggedValue resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(),
+        strA.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resVal.GetNumber(), x);
+    resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(), strBig.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resVal.GetNumber(), y);
 }
 }  // namespace panda::test

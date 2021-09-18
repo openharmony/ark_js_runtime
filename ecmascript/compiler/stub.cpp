@@ -496,6 +496,144 @@ AddrShift Stub::GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry)
     return *result;
 }
 
+// int TaggedHashTable<Derived>::FindEntry(const JSTaggedValue &key) in tagged_hash_table-inl.h
+AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements, AddrShift key)
+{
+    auto env = GetEnvironment();
+    Label funcEntry(env);
+    [[maybe_unused]] SubCircuitScope subCircuit(env, &funcEntry);
+    Label exit(env);
+    DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
+    AddrShift capcityoffset =
+        PtrMul(GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()),
+               GetPtrConstant(panda::ecmascript::TaggedHashTable<panda::ecmascript::NumberDictionary>::SIZE_INDEX));
+    AddrShift dataoffset = GetPtrConstant(panda::coretypes::Array::GetDataOffset());
+    AddrShift capacity = TaggedCastToInt32(Load(TAGGED_TYPE, elements, PtrAdd(dataoffset, capcityoffset)));
+    DEFVARIABLE(count, INT32_TYPE, GetInteger32Constant(1));
+    DEFVARIABLE(hash, INT32_TYPE, GetInteger32Constant(0));
+    // NameDictionary::hash
+    Label isSymbol(env);
+    Label notSymbol(env);
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label afterLoop(env);
+    Label beforeDefineHash(env);
+    Branch(IsSymbol(key), &isSymbol, &notSymbol);
+    Bind(&isSymbol);
+    {
+        hash = TaggedCastToInt32(Load(TAGGED_TYPE, key, GetPtrConstant(panda::ecmascript::JSSymbol::HASHFIELD_OFFSET)));
+        Jump(&beforeDefineHash);
+    }
+    Bind(&notSymbol);
+    {
+        Label isString(env);
+        Label notString(env);
+        Branch(IsString(key), &isString, &notString);
+        Bind(&isString);
+        {
+            StubDescriptor *stringGetHashCode = GET_STUBDESCRIPTOR(StringGetHashCode);
+            hash = CallRuntime(stringGetHashCode, thread, GetWord64Constant(FAST_STUB_ID(StringGetHashCode)), {key});
+            Jump(&beforeDefineHash);
+        }
+        Bind(&notString);
+        {
+            Jump(&beforeDefineHash);
+        }
+    }
+    Bind(&beforeDefineHash);
+    // GetFirstPosition(hash, size)
+    DEFVARIABLE(entry, INT32_TYPE, Word32And(*hash, Int32Sub(capacity, GetInteger32Constant(1))));
+    Jump(&loopHead);
+    LoopBegin(&loopHead);
+    {
+        AddrShift element = GetKeyFromNumberDictionary(elements, *entry);
+        Label isHole(env);
+        Label notHole(env);
+        Branch(TaggedIsHole(element), &isHole, &notHole);
+        {
+            Bind(&isHole);
+            {
+                Jump(&loopEnd);
+            }
+            Bind(&notHole);
+            {
+                Label isUndefined(env);
+                Label notUndefined(env);
+                Branch(TaggedIsUndefined(element), &isUndefined, &notUndefined);
+                {
+                    Bind(&isUndefined);
+                    {
+                        result = GetInteger32Constant(-1);
+                        Jump(&exit);
+                    }
+                    Bind(&notUndefined);
+                    {
+                        Label isMatch(env);
+                        Label notMatch(env);
+                        Branch(Word64Equal(key, element), &isMatch, &notMatch);
+                        {
+                            Bind(&isMatch);
+                            {
+                                result = *entry;
+                                Jump(&exit);
+                            }
+                            Bind(&notMatch);
+                            {
+                                Jump(&loopEnd);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Bind(&loopEnd);
+        {
+            entry = Word32And(Int32Add(*entry, *count), Int32Sub(capacity, GetInteger32Constant(1)));
+            count = Int32Add(*count, GetInteger32Constant(1));
+            LoopEnd(&loopHead);
+        }
+    }
+    Bind(&exit);
+    return *result;
+}
+
+AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift attr)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    Label exit(env);
+    DEFVARIABLE(result, TAGGED_TYPE, GetUndefinedConstant());
+    Label inlinedProp(env);
+    Label notInlinedProp(env);
+    AddrShift attrOffset = PropAttrGetOffset(attr);
+    Branch(IsInlinedProperty(attr), &inlinedProp, &notInlinedProp);
+    {
+        Bind(&inlinedProp);
+        {
+            // GetPropertyInlinedProps
+            AddrShift hClassObjectSize = GetObjectSizeFromHClass(hClass);
+            AddrShift propOffset = Int32Sub(
+                ChangeInt64ToInt32(hClassObjectSize),
+                Int32Mul(Int32Sub(
+                    GetInteger32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS), attrOffset),
+                    GetInteger32Constant(panda::ecmascript::JSTaggedValue::TaggedTypeSize())));
+            result = Int64BuildTagged(Load(UINT64_TYPE, obj, ZExtInt32ToInt64(propOffset)));
+            Jump(&exit);
+        }
+        Bind(&notInlinedProp);
+        {
+            // compute outOfLineProp offset, get it and return
+            AddrShift array = Load(UINT64_TYPE, obj, GetPtrConstant(panda::ecmascript::JSObject::PROPERTIES_OFFSET));
+            result = GetValueFromTaggedArray(array, Int32Sub(attrOffset,
+                GetInteger32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
+            Jump(&exit);
+        }
+    }
+    Bind(&exit);
+    return *result;
+}
+
 void Stub::ThrowTypeAndReturn(AddrShift thread, int messageId, AddrShift val)
 {
     StubDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
