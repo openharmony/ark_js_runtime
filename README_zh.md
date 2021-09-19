@@ -66,11 +66,9 @@ JS生成字节码参考[工具链使用](docs/using-the-toolchain-zh.md)
 
 字节码执行：
 ```
-cd out/release
-
-LD\_LIBRARY\_PATH=clang\_x64/ark/ark\_js\_runtime:clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
-
-./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc
+$ cd out/release
+$ export LD_LIBRARY_PATH=clang_x64/ark/ark_js_runtime:clang_x64/ark/ark:clang_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86_64/llvm/lib/
+$ ./clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
 ```
 
 更多使用说明请参考：[方舟运行时使用指南](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide-zh.md)
