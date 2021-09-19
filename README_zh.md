@@ -53,7 +53,7 @@
 ## 编译构建<a name="section137768191623"></a>
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark\_js\_runtime
+$ ./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
 ```
 
 ### 接口说明<a name="section175841548124517"></a>
