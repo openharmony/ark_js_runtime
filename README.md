@@ -53,7 +53,7 @@ For more infomation, see: [ARK Runtime Subsystem](https://gitee.com/openharmony/
 ## Build<a name="section137768191623"></a>
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark\_js\_runtime
+./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime
 ```
 
 ### Available APIs<a name="section175841548124517"></a>
@@ -66,9 +66,9 @@ For details about how to generate JS bytecodes, see  [Using the Toolchain](docs/
 
 To run bytecodes: 
 ```
-cd out/release
-LD\_LIBRARY\_PATH=clang\_x64/ark/ark\_js\_runtime:clang\_x64/ark/ark:clang\_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86\_64/llvm/lib/
-./clang\_x64/ark/ark\_js\_runtime/ark\_js\_vm helloworld.abc
+$ cd out/release
+$ export LD_LIBRARY_PATH=clang_x64/ark/ark_js_runtime:clang_x64/ark/ark:clang_x64/global/i18n:../../prebuilts/clang/ohos/linux-x86_64/llvm/lib/
+$ ./clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
 ```
 
 For more infomation, please see: [ARK-Runtime-Usage-Guide](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide.md).
