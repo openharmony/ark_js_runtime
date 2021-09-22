@@ -46,5 +46,5 @@ group("unittest") {
 
 group("host_unittest") {
   testonly = true
-  deps = [ ":JsnapiTestAction(${host_toolchain})" ]
+  deps = [ ":JsnapiTestAction" ]
 }

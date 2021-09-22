@@ -72,7 +72,7 @@ group("unittest") {
 group("host_unittest") {
   testonly = true
   deps = [
-    ":HeapTrackerTestAction(${host_toolchain})",
-    ":HprofTestAction(${host_toolchain})",
+    ":HeapTrackerTestAction",
+    ":HprofTestAction",
   ]
 }

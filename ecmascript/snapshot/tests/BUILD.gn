@@ -46,5 +46,5 @@ group("unittest") {
 
 group("host_unittest") {
   testonly = true
-  deps = [ ":SnapshotTestAction(${host_toolchain})" ]
+  deps = [ ":SnapshotTestAction" ]
 }
