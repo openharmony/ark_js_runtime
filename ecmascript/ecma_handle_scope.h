@@ -42,7 +42,7 @@ private:
     JSThread *thread_;
     JSTaggedType *prevNext_;
     JSTaggedType *prevEnd_;
-    int prevHandleStorageIndex_{-1};
+    int prevHandleStorageIndex_ {-1};
 
     NO_COPY_SEMANTIC(EcmaHandleScope);
     NO_MOVE_SEMANTIC(EcmaHandleScope);

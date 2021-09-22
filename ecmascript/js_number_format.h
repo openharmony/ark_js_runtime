@@ -41,13 +41,15 @@ struct FractionDigitsOption {
     int32_t mxfdDefault = 0;
 };
 
-static const std::set<std::string> sanctionedUnit({ "acre", "bit", "byte", "celsius", "centimeter", "day", "degree",
-                                                  "fahrenheit", "fluid-ounce", "foot", "gallon", "gigabit", "gigabyte",
-                                                  "gram", "hectare", "hour", "inch", "kilobit", "kilobyte", "kilogram",
-                                                  "kilometer", "liter", "megabit", "megabyte", "meter", "mile",
-                                                  "mile-scandinavian", "millimeter", "milliliter", "millisecond",
-                                                  "minute", "month", "ounce", "percent", "petabyte", "pound", "second",
-                                                  "stone", "terabit", "terabyte", "week", "yard", "year" });
+static const std::set<std::string> sanctionedUnit({
+    "acre", "bit", "byte", "celsius", "centimeter", "day", "degree",
+    "fahrenheit", "fluid-ounce", "foot", "gallon", "gigabit", "gigabyte",
+    "gram", "hectare", "hour", "inch", "kilobit", "kilobyte", "kilogram",
+    "kilometer", "liter", "megabit", "megabyte", "meter", "mile",
+    "mile-scandinavian", "millimeter", "milliliter", "millisecond",
+    "minute", "month", "ounce", "percent", "petabyte", "pound", "second",
+    "stone", "terabit", "terabyte", "week", "yard", "year"
+});
 
 class JSNumberFormat : public JSObject {
 public:

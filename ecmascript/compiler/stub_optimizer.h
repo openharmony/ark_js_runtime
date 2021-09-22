@@ -707,9 +707,8 @@ public:
                 Word64Equal(Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
                             GetWord64Constant(0))), 
             WordLogicOr(SExtInt1ToInt32(Word64NotEqual(
-                            Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
-                            GetWord64Constant(0))),
-                        SExtInt1ToInt32(TaggedIsHole(x)))));
+                Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
+                GetWord64Constant(0))), SExtInt1ToInt32(TaggedIsHole(x)))));
     }
 
     AddrShift TaggedIsHeapObject(AddrShift x)
@@ -994,7 +993,7 @@ public:
               Word64Or(Word64And(oldValue,
                                  GetWord64Constant(~panda::ecmascript::JSHClass::ElementRepresentationBits::Mask())),
                        Word64LSR(value, GetWord64Constant(
-                                            panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
+                            panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
     }
 
     void UpdateValueAndDetails(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)
