@@ -938,7 +938,7 @@ void JSRegExp::Dump(JSThread *thread, std::ostream &os) const
     DumpStringClass(EcmaString::Cast(GetOriginalSource().GetTaggedObject()), os);
     os << "\n";
     os << " - flags: ";
-    DumpStringClass(EcmaString::Cast(GetOriginalFlags().GetTaggedObject()), os);
+    os << GetOriginalFlags().GetInt();
     os << "\n";
     JSObject::Dump(thread, os);
 }

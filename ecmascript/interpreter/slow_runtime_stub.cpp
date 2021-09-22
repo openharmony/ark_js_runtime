@@ -1005,37 +1005,8 @@ JSTaggedValue SlowRuntimeStub::CreateRegExpWithLiteral(JSThread *thread, JSTagge
     INTERPRETER_TRACE(thread, CreateRegExpWithLiteral);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> patternHandle(thread, pattern);
-    uint8_t *flagsStr = new uint8_t[7]; // 7: maximum 6 flags + '\0'
-    size_t flagsLen = 0;
-    if (flags & RegExpParser::FLAG_GLOBAL) {
-        flagsStr[flagsLen] = 'g';
-        flagsLen++;
-    }
-    if (flags & RegExpParser::FLAG_IGNORECASE) {
-        flagsStr[flagsLen] = 'i';
-        flagsLen++;
-    }
-    if (flags & RegExpParser::FLAG_MULTILINE) {
-        flagsStr[flagsLen] = 'm';
-        flagsLen++;
-    }
-    if (flags & RegExpParser::FLAG_DOTALL) {
-        flagsStr[flagsLen] = 's';
-        flagsLen++;
-    }
-    if (flags & RegExpParser::FLAG_UTF16) {
-        flagsStr[flagsLen] = 'u';
-        flagsLen++;
-    }
-    if (flags & RegExpParser::FLAG_STICKY) {
-        flagsStr[flagsLen] = 'y';
-        flagsLen++;
-    }
-    flagsStr[flagsLen] = '\0';
-    JSHandle<JSTaggedValue> flagsHandle(factory->NewFromUtf8(flagsStr, flagsLen));
-    delete[] flagsStr;
+    JSHandle<JSTaggedValue> flagsHandle(thread, JSTaggedValue(flags));
 
     return builtins::BuiltinsRegExp::RegExpCreate(thread, patternHandle, flagsHandle);
 }

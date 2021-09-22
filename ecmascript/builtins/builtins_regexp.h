@@ -64,6 +64,7 @@ public:
     // 21.2.3.2.3 Runtime Semantics: RegExpCreate ( P, F )
     static JSTaggedValue RegExpCreate(JSThread *thread, const JSHandle<JSTaggedValue> &pattern,
                                       const JSHandle<JSTaggedValue> &flags);
+    static JSTaggedValue FlagsBitsToString(JSThread *thread, uint8_t flags);
 
 private:
     static constexpr uint32_t MIN_REPLACE_STRING_LENGTH = 1000;
@@ -74,11 +75,9 @@ private:
     // 21.2.5.2.3 AdvanceStringIndex ( S, index, unicode )
     static uint32_t AdvanceStringIndex(JSThread *thread, const JSHandle<JSTaggedValue> &inputStr, uint32_t index,
                                        bool unicode);
-    static JSHandle<JSTaggedValue> ConcatFlags(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
-                                               const JSHandle<JSTaggedValue> &string, const char *name);
 
     static bool GetFlagsInternal(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
-                                 const JSHandle<EcmaString> &flag);
+                                 const uint8_t mask);
     // 21.2.5.2.2 Runtime Semantics: RegExpBuiltinExec ( R, S )
     static JSTaggedValue RegExpBuiltinExec(JSThread *thread, const JSHandle<JSTaggedValue> &regexp,
                                            const JSHandle<JSTaggedValue> &inputStr, bool isCached);
@@ -95,7 +94,7 @@ private:
                                           const JSHandle<JSTaggedValue> &pattern, const JSHandle<JSTaggedValue> &flags);
     // 21.2.3.2.4 Runtime Semantics: EscapeRegExpPattern ( P, F )
     static EcmaString *EscapeRegExpPattern(JSThread *thread, const JSHandle<JSTaggedValue> &src,
-                                           const JSHandle<JSTaggedValue> &flag);
+                                           const JSHandle<JSTaggedValue> &flags);
     static JSTaggedValue RegExpReplaceFast(JSThread *thread, JSHandle<JSTaggedValue> &regexp,
                                            JSHandle<EcmaString> inputString, uint32_t inputLength);
 };
@@ -114,17 +113,17 @@ public:
     }
     static JSTaggedValue CreateCacheTable(JSThread *thread);
     JSTaggedValue FindCachedResult(JSThread *thread, const JSHandle<JSTaggedValue> &patten,
-                                   const JSHandle<JSTaggedValue> &flag, const JSHandle<JSTaggedValue> &input,
+                                   const JSHandle<JSTaggedValue> &flags, const JSHandle<JSTaggedValue> &input,
                                    CacheType type, const JSHandle<JSTaggedValue> &regexp);
-    void AddResultInCache(JSThread *thread, const JSHandle<JSTaggedValue> &patten, const JSHandle<JSTaggedValue> &flag,
+    void AddResultInCache(JSThread *thread, const JSHandle<JSTaggedValue> &patten, const JSHandle<JSTaggedValue> &flags,
                           const JSHandle<JSTaggedValue> &input, JSTaggedValue resultArray, CacheType type,
                           uint32_t lastIndex);
 
     void ClearEntry(JSThread *thread, int entry);
-    void SetEntry(JSThread *thread, int entry, JSTaggedValue &patten, JSTaggedValue &flag, JSTaggedValue &input,
+    void SetEntry(JSThread *thread, int entry, JSTaggedValue &patten, JSTaggedValue &flags, JSTaggedValue &input,
                   JSTaggedValue &lastIndexValue);
     void UpdateResultArray(JSThread *thread, int entry, JSTaggedValue resultArray, CacheType type);
-    bool Match(int entry, JSTaggedValue &pattenStr, JSTaggedValue &flagStr, JSTaggedValue &inputStr);
+    bool Match(int entry, JSTaggedValue &pattenStr, JSTaggedValue &flagsStr, JSTaggedValue &inputStr);
     inline void SetHitCount(JSThread *thread, int hitCount)
     {
         Set(thread, CACHE_HIT_COUNT_INDEX, JSTaggedValue(hitCount));
