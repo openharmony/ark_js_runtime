@@ -15,9 +15,11 @@
 
 #ifndef ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H
 #define ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H
-#include <vector>
-#include <set>
+
 #include <iostream>
+#include <memory>
+#include <set>
+#include <vector>
 
 namespace kungfu {
 using OffsetType = int32_t;
@@ -205,7 +207,7 @@ private:
     const uint8_t *stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
     std::vector<Fun2InfoType> callSiteInfos_;
-    std::unique_ptr<DataInfo> dataInfo_;
+    [[maybe_unused]] std::unique_ptr<DataInfo> dataInfo_;
 };
 } // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H

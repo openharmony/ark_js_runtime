@@ -140,13 +140,15 @@ void LLVMMCJITCompiler::Run()
 
 void LLVMMCJITCompiler::Initialize()
 {
-    LLVMInitializeAllTargetInfos();
-    LLVMInitializeAllTargetMCs();
-    LLVMInitializeAllDisassemblers();
+#if defined(PANDA_TARGET_AMD64)
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86Disassembler();
     /* this method must be called, ohterwise "Target does not support MC emission" */
-    LLVMInitializeNativeAsmPrinter();
-    LLVMInitializeNativeAsmParser();
-    LLVMInitializeAllTargets();
+    LLVMInitializeX86AsmPrinter();
+    LLVMInitializeX86AsmParser();
+    LLVMInitializeX86Target();
+#endif
     llvm::linkAllBuiltinGCs();
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
     options_.OptLevel = 2; // opt level 2

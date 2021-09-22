@@ -21,11 +21,17 @@ action("build_llvm_libs") {
 }
 
 config("include_llvm") {
-  include_dirs = [
-    "//third_party/llvm-project/llvm/include/",
-    "//third_party/llvm-project/build/include",
-    "//third_party/llvm-project/llvm/build/include",
-  ]
+  if (compile_llvm_online) {
+    include_dirs = [
+      "//third_party/llvm-project/build/include",
+      "//third_party/llvm-project/llvm/include/",
+    ]
+  } else {
+    include_dirs = [
+      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/llvm/include",
+      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/include",
+    ]
+  }
 }
 
 config("ark_jsruntime_compiler_config") {
@@ -56,13 +62,15 @@ ohos_shared_library("libark_jsoptimizer") {
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
-  lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+  if (compile_llvm_online) {
+    lib_dirs = [ "//third_party/llvm-project/build/lib" ]
+  } else {
+    lib_dirs = [ "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
+  }
 
   libs = [
     "stdc++",
     "z",
-    "tinfo",
-    "LTO",
     "LLVMTarget",
     "LLVMObject",
     "LLVMMC",
@@ -83,7 +91,6 @@ ohos_shared_library("libark_jsoptimizer") {
     "LLVMScalarOpts",
     "LLVMTransformUtils",
     "LLVMBitReader",
-    "LLVMSystemZInfo",
     "LLVMAsmPrinter",
     "LLVMProfileData",
     "LLVMBitstreamReader",
@@ -98,88 +105,37 @@ ohos_shared_library("libark_jsoptimizer") {
     "LLVMDebugInfoCodeView",
     "LLVMAggressiveInstCombine",
     "LLVMAsmParser",
-    "LLVMMipsAsmParser",
     "LLVMMCParser",
     "LLVMMIRParser",
-    "LLVMMSP430AsmParser",
     "LLVMX86Info",
     "LLVMAArch64Info",
-    "LLVMLanaiInfo",
-    "LLVMAMDGPUInfo",
-    "LLVMARMInfo",
-    "LLVMHexagonInfo",
-    "LLVMNVPTXInfo",
-    "LLVMRISCVInfo",
-    "LLVMSparcInfo",
-    "LLVMMipsInfo",
-    "LLVMWebAssemblyInfo",
-    "LLVMBPFInfo",
-    "LLVMMSP430Info",
-    "LLVMPowerPCInfo",
-    "LLVMXCoreInfo",
     "LLVMARMDesc",
     "LLVMAArch64Desc",
-    "LLVMSparcDesc",
-    "LLVMAMDGPUDesc",
-    "LLVMXCoreDesc",
-    "LLVMWebAssemblyDesc",
-    "LLVMNVPTXDesc",
-    "LLVMMSP430Desc",
-    "LLVMPowerPCDesc",
-    "LLVMMipsDesc",
-    "LLVMRISCVDesc",
-    "LLVMLanaiDesc",
-    "LLVMSystemZDesc",
-    "LLVMHexagonDesc",
     "LLVMX86Desc",
-    "LLVMBPFDesc",
-    "LLVMSparcDisassembler",
-    "LLVMRISCVDisassembler",
-    "LLVMMipsDisassembler",
-    "LLVMXCoreDisassembler",
-    "LLVMPowerPCDisassembler",
     "LLVMX86Disassembler",
-    "LLVMMSP430Disassembler",
     "LLVMARMDisassembler",
-    "LLVMLanaiDisassembler",
     "LLVMAArch64Disassembler",
-    "LLVMBPFDisassembler",
-    "LLVMSystemZDisassembler",
     "LLVMMCDisassembler",
-    "LLVMWebAssemblyDisassembler",
-    "LLVMHexagonDisassembler",
-    "LLVMAMDGPUDisassembler",
-    "LLVMXCoreCodeGen",
-    "LLVMPowerPCCodeGen",
-    "LLVMNVPTXCodeGen",
     "LLVMAArch64CodeGen",
-    "LLVMMSP430CodeGen",
     "LLVMARMCodeGen",
-    "LLVMMipsCodeGen",
-    "LLVMSparcCodeGen",
-    "LLVMBPFCodeGen",
-    "LLVMHexagonCodeGen",
-    "LLVMAMDGPUCodeGen",
-    "LLVMRISCVCodeGen",
-    "LLVMWebAssemblyCodeGen",
-    "LLVMSystemZCodeGen",
     "LLVMCodeGen",
     "LLVMX86CodeGen",
-    "LLVMLanaiCodeGen",
     "LLVMX86AsmParser",
-    "LLVMAMDGPUUtils",
-    "LLVMRISCVUtils",
     "LLVMTransformUtils",
     "LLVMAArch64Utils",
     "LLVMARMUtils",
     "LLVMX86Utils",
+    "LLVMIRReader",
   ]
 
   deps = [
-    ":build_llvm_libs",
     "$ark_root/libpandabase:libarkbase",
     "//ark/js_runtime:libark_jsruntime",
   ]
+
+  if (compile_llvm_online) {
+    deps += [ ":build_llvm_libs" ]
+  }
 
   output_extension = "so"
   relative_install_dir = "ark"
