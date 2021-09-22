@@ -14,22 +14,22 @@
 group("ark_js_moduletest") {
   testonly = true
   deps = [
-    "async:async_test(${host_toolchain})",
-    "bitwiseop:bitwiseop_test(${host_toolchain})",
-    "class:class_test(${host_toolchain})",
-    "dyninstruction:dyninstruction_test(${host_toolchain})",
-    "fortest:fortest_test(${host_toolchain})",
-    "generator:generator_test(${host_toolchain})",
-    "getunmappedargs:getunmappedargs_test(${host_toolchain})",
-    "globalrecord:globalrecord_test(${host_toolchain})",
-    "helloworld:helloworld_test(${host_toolchain})",
-    "lexicalenv:lexicalenv_test(${host_toolchain})",
+    "async:asyncAction",
+    "bitwiseop:bitwiseopAction",
+    "class:classAction",
+    "dyninstruction:dyninstructionAction",
+    "fortest:fortestAction",
+    "generator:generatorAction",
+    "getunmappedargs:getunmappedargsAction",
+    "globalrecord:globalrecordAction",
+    "helloworld:helloworldAction",
+    "lexicalenv:lexicalenvAction",
 
-    # "module:module_test(${host_toolchain})",
-    "multiargs:multiargs_test(${host_toolchain})",
-    "newobjdynrange:newobjdynrange_test(${host_toolchain})",
-    "promise:promise_test(${host_toolchain})",
-    "throwdyn:throwdyn_test(${host_toolchain})",
-    "yieldstar:yieldstar_test(${host_toolchain})",
+    # "module:moduleAction",
+    "multiargs:multiargsAction",
+    "newobjdynrange:newobjdynrangeAction",
+    "promise:promiseAction",
+    "throwdyn:throwdynAction",
+    "yieldstar:yieldstarAction",
   ]
 }

@@ -209,8 +209,8 @@ group("host_unittest") {
 
   # deps file
   deps = [
-    ":DebuggerCommandsTestAction(${host_toolchain})",
-    ":DebuggerEventsTestAction(${host_toolchain})",
-    ":DebuggerTypesTestAction(${host_toolchain})",
+    ":DebuggerCommandsTestAction",
+    ":DebuggerEventsTestAction",
+    ":DebuggerTypesTestAction",
   ]
 }

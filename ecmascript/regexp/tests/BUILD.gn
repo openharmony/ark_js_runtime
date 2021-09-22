@@ -72,7 +72,7 @@ group("unittest") {
 group("host_unittest") {
   testonly = true
   deps = [
-    ":DynChunkTestAction(${host_toolchain})",
-    ":RegexpTestAction(${host_toolchain})",
+    ":DynChunkTestAction",
+    ":RegexpTestAction",
   ]
 }
