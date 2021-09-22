@@ -51,7 +51,8 @@ group("ark_js_unittest") {
       "//ark/js_runtime/ecmascript/regexp/tests:unittest",
       "//ark/js_runtime/ecmascript/snapshot/tests:unittest",
       "//ark/js_runtime/ecmascript/tests:unittest",
-      "//ark/js_runtime/ecmascript/tooling/test:unittest",
+
+      #      "//ark/js_runtime/ecmascript/tooling/test:unittest",
     ]
   }
 }
@@ -68,7 +69,8 @@ group("ark_js_host_unittest") {
       "//ark/js_runtime/ecmascript/regexp/tests:host_unittest",
       "//ark/js_runtime/ecmascript/snapshot/tests:host_unittest",
       "//ark/js_runtime/ecmascript/tests:host_unittest",
-      "//ark/js_runtime/ecmascript/tooling/test:host_unittest",
+
+      #      "//ark/js_runtime/ecmascript/tooling/test:host_unittest",
     ]
     if (current_cpu == "x86_64" || current_cpu == "x64") {
       deps += [ "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})" ]

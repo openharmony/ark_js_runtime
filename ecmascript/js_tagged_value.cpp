@@ -261,11 +261,10 @@ JSTaggedValue JSTaggedValue::ToPrimitive(JSThread *thread, const JSHandle<JSTagg
                                          PreferredPrimitiveType type)
 {
     if (tagged->IsECMAObject()) {
-        JSHandle<JSObject> object(tagged);
         EcmaVM *vm = thread->GetEcmaVM();
         JSHandle<JSTaggedValue> keyString = vm->GetGlobalEnv()->GetToPrimitiveSymbol();
 
-        JSHandle<JSTaggedValue> exoticToprim = JSObject::GetProperty(thread, object, keyString).GetValue();
+        JSHandle<JSTaggedValue> exoticToprim = GetProperty(thread, tagged, keyString).GetValue();
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
         if (!exoticToprim->IsUndefined()) {
             JSTaggedValue value = GetTypeString(thread, type).GetTaggedValue();
@@ -298,7 +297,7 @@ JSTaggedValue JSTaggedValue::OrdinaryToPrimitive(JSThread *thread, const JSHandl
         } else {
             keyString = globalConst->GetHandledValueOfString();
         }
-        JSHandle<JSTaggedValue> entryfunc = JSObject::GetProperty(thread, tagged, keyString).GetValue();
+        JSHandle<JSTaggedValue> entryfunc = GetProperty(thread, tagged, keyString).GetValue();
         if (entryfunc->IsCallable()) {
             JSTaggedValue valueResult = JSFunction::Call(thread, entryfunc, tagged, 0, nullptr);
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());

@@ -580,7 +580,7 @@ Local<JSValueRef> ObjectRef::Get(const EcmaVM *vm, Local<JSValueRef> key)
     OperationResult ret = JSTaggedValue::GetProperty(thread, obj, keyValue);
     RETURN_VALUE_IF_ABRUPT(thread, JSValueRef::Exception(vm));
     if (!ret.GetPropertyMetaData().IsFound()) {
-        return Local<JSValueRef>();
+        return JSValueRef::Undefined(vm);
     }
     return JSNApiHelper::ToLocal<JSValueRef>(ret.GetValue());
 }

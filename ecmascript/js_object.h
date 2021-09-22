@@ -357,7 +357,6 @@ public:
 
     void VisitObjects([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
     {
-        // no field in this object
         Visitor(visitor);
     }
 };
