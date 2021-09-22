@@ -65,9 +65,7 @@ public:
         return length * sizeof(dataUtf16_[0]);
     }
 
-    /**
-     * Methods for uncompressed strings (UTF16):
-     */
+    // Methods for uncompressed strings (UTF16):
     static size_t ComputeSizeUtf16(uint32_t utf16Len)
     {
         return sizeof(EcmaString) + ComputeDataSizeUtf16(utf16Len);
@@ -79,17 +77,13 @@ public:
         return dataUtf16_;
     }
 
-    /**
-     * Methods for compresses strings (UTF8 or LATIN1):
-     */
+    // Methods for compresses strings (UTF8 or LATIN1):
     static size_t ComputeSizeUtf8(uint32_t utf8Len)
     {
         return sizeof(EcmaString) + utf8Len;
     }
 
-    /**
-     * It's Utf8 format, but without 0 in the end.
-     */
+    // It's Utf8 format, but without 0 in the end.
     const uint8_t *GetDataUtf8() const
     {
         LOG_IF(IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf8 for utf16 string";

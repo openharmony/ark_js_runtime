@@ -80,7 +80,7 @@ inline void CompressGCMarker::EvacuateObject(uint32_t threadId, TaggedObject *ob
 inline void CompressGCMarker::CopyObjectWithoutHeader(TaggedObject *object, uintptr_t address, size_t size)
 {
     if (memcpy_s(ToVoidPtr(address + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
-                 size - HEAD_SIZE) != EOK) {
+        size - HEAD_SIZE) != EOK) {
         LOG_ECMA(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }

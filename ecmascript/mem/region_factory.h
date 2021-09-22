@@ -124,11 +124,11 @@ private:
     NO_COPY_SEMANTIC(RegionFactory);
     NO_MOVE_SEMANTIC(RegionFactory);
 
-    Area *cachedArea_{nullptr};
-    std::atomic<size_t> annoMemoryUsage_{0};
-    std::atomic<size_t> maxAnnoMemoryUsage_{0};
-    std::atomic<size_t> nativeMemoryUsage_{0};
-    std::atomic<size_t> maxNativeMemoryUsage_{0};
+    Area *cachedArea_ {nullptr};
+    std::atomic<size_t> annoMemoryUsage_ {0};
+    std::atomic<size_t> maxAnnoMemoryUsage_ {0};
+    std::atomic<size_t> nativeMemoryUsage_ {0};
+    std::atomic<size_t> maxNativeMemoryUsage_ {0};
 };
 }  // namespace panda::ecmascript
 

@@ -111,10 +111,10 @@ public:
     }
 
 private:
-    std::vector<std::string> data_{};
-    array_size_t length_{0};
-    array_size_t curIdx_{0};
-    icu::Locale locale_{};
+    std::vector<std::string> data_ {};
+    array_size_t length_ {0};
+    array_size_t curIdx_ {0};
+    icu::Locale locale_ {};
 };
 
 struct ResolvedLocale {

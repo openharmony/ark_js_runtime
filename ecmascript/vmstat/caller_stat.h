@@ -66,10 +66,10 @@ public:
     }
 
 private:
-    CString name_{};
-    uint64_t totalCount_{0};
-    uint64_t totalTime_{0};
-    uint64_t maxTime_{0};
+    CString name_ {};
+    uint64_t totalCount_ {0};
+    uint64_t totalTime_ {0};
+    uint64_t maxTime_ {0};
 };
 
 class PandaRuntimeTimer {
@@ -109,10 +109,10 @@ private:
     PandaRuntimeTimer *Stop();
     void Pause(uint64_t now);
     void Resume(uint64_t now);
-    PandaRuntimeCallerStat *callerStat_{nullptr};
-    PandaRuntimeTimer *parent_{nullptr};
-    uint64_t start_{0};
-    uint64_t elapsed_{0};
+    PandaRuntimeCallerStat *callerStat_ {nullptr};
+    PandaRuntimeTimer *parent_ {nullptr};
+    uint64_t start_ {0};
+    uint64_t elapsed_ {0};
 
     friend class EcmaRuntimeStat;
 };

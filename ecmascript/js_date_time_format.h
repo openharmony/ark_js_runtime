@@ -79,7 +79,7 @@ public:
     }
 
 private:
-    std::vector<IcuPatternDesc> data{};
+    std::vector<IcuPatternDesc> data {};
     NO_COPY_SEMANTIC(Pattern);
     NO_MOVE_SEMANTIC(Pattern);
 };

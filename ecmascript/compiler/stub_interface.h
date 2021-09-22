@@ -121,13 +121,13 @@ public:
     }
 
 private:
-    CallStubKind kind_{CODE_STUB};
-    int flags_{0};
-    int paramCounter_{0};
-    ArgumentsOrder order_{DEFAULT_ORDER};
+    CallStubKind kind_ {CODE_STUB};
+    int flags_ {0};
+    int paramCounter_ {0};
+    ArgumentsOrder order_ {DEFAULT_ORDER};
 
-    MachineType returnType_{MachineType::NONE_TYPE};
-    std::unique_ptr<std::vector<MachineType>> paramsType_{nullptr};
+    MachineType returnType_ {MachineType::NONE_TYPE};
+    std::unique_ptr<std::vector<MachineType>> paramsType_ {nullptr};
 };
 
 class CallStubsImplement {
@@ -160,9 +160,9 @@ public:
     }
 
 private:
-    std::array<LLVMValueRef, CALL_STUB_MAXCOUNT> llvmCallStubs_{nullptr};
-    std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> llvm_fuction_type_{nullptr};
-    LLVMModuleRef stubsModule_{nullptr};
+    std::array<LLVMValueRef, CALL_STUB_MAXCOUNT> llvmCallStubs_ {nullptr};
+    std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> llvm_fuction_type_ {nullptr};
+    LLVMModuleRef stubsModule_ {nullptr};
 };
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_STUB_ID(name) NAME_##name
@@ -219,8 +219,8 @@ private:
     ~FastStubs() {}
     NO_MOVE_SEMANTIC(FastStubs);
     NO_COPY_SEMANTIC(FastStubs);
-    std::unique_ptr<CallStubsImplement> stubsImpl_{nullptr};
-    std::array<StubInterfaceDescriptor, CALL_STUB_MAXCOUNT> callStubsDescriptor_{};
+    std::unique_ptr<CallStubsImplement> stubsImpl_ {nullptr};
+    std::array<StubInterfaceDescriptor, CALL_STUB_MAXCOUNT> callStubsDescriptor_ {};
 };
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_INTERFACE_H

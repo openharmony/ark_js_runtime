@@ -213,11 +213,11 @@ private:
         variable_data_.insert(variable_data_.begin(), val.GetRawData());
     }
 
-    std::array<JSTaggedType, RESERVE_INTERNAL_CALL_PARAMS_FIXED_LENGTH> fixed_data_{};
-    CVector<JSTaggedType> variable_data_{};
-    uint32_t fixed_length_{0};
-    uint32_t variable_length_{0};
-    bool variable_mode_{false};
+    std::array<JSTaggedType, RESERVE_INTERNAL_CALL_PARAMS_FIXED_LENGTH> fixed_data_ {};
+    CVector<JSTaggedType> variable_data_ {};
+    uint32_t fixed_length_ {0};
+    uint32_t variable_length_ {0};
+    bool variable_mode_ {false};
 };
 }  // namespace panda::ecmascript
 
