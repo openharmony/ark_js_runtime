@@ -1142,5 +1142,4 @@ LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
     };
     return machineTypeMap[type];
 }
-
 }  // namespace kungfu

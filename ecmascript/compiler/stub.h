@@ -310,8 +310,8 @@ public:
 
         bool IsSelector(const Gate *gate) const
         {
-            return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS && 
-                   gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+            return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS
+                   && gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
         }
 
         uint32_t GetId() const
@@ -341,7 +341,7 @@ public:
         Environment *env_;
     };
 
-    explicit Stub(const char *name, int argCount, Circuit *circuit) 
+    explicit Stub(const char *name, int argCount, Circuit *circuit)
         : env_(argCount, circuit), methodName_(name)
     {
     }
@@ -1040,11 +1040,11 @@ public:
     {
         AddrShift bitfieldOffset = GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET);
         AddrShift oldValue = Load(INT64_TYPE, hclass, bitfieldOffset);
-        Store(INT64_TYPE, hclass, bitfieldOffset,
-            Word64Or(Word64And(oldValue,
-                GetWord64Constant(~panda::ecmascript::JSHClass::ElementRepresentationBits::Mask())),
-                    Word64LSR(value, GetWord64Constant(
-                        panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
+        AddrShift oldWithMask = Word64And(oldValue,
+            GetWord64Constant(~panda::ecmascript::JSHClass::ElementRepresentationBits::Mask()));
+        AddrShift newValue = Word64LSR(value, GetWord64Constant(
+            panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT));
+        Store(INT64_TYPE, hclass, bitfieldOffset, Word64Or(oldWithMask, newValue));
     }
 
     void UpdateValueAndAttributes(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)
@@ -1169,7 +1169,7 @@ public:
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT32_TO_INT1), x);
     }
 
-    int NextVariableId() 
+    int NextVariableId()
     {
         return nextVariableId_++;
     }
