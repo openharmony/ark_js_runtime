@@ -4,12 +4,20 @@
 
 ## JS字节码编译工具概述
 
-将JS文件转换为方舟字节码。
+使用前端工具将JS文件转换为方舟字节码文件。方舟前端工具在linux平台上可通过全量编译或指定编译前端工具链获取。
 
-命令行格式：
+构建编译：
 
 ```
-node --expose-gc index.js [选项] file.js
+$ ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc
+```
+
+安装`node`和`npm`后, 使用前端工具：
+
+```
+$ cd out/ohos-arm-release/clang_x64/ark/ark/build
+$ npm install
+$ node --expose-gc src/index.js [选项] file.js
 ```
 
 <a name="table18706114344420"></a>

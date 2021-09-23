@@ -4,12 +4,20 @@ The ARK front-end tools use the command line interaction mode and convert JS cod
 
 ## JS Bytecode Compiler
 
-Converts a JS file into ARK bytecodes.
+Front-end tools, converting JS source code into ARK bytecode, can be built by specifing the `--build-target` with `ark_ts2abc`.
 
-Command:
+Build tools:
 
 ```
-node --expose-gc index.js [option] file.js
+$ ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc
+```
+
+Install `node` and `npm`, then use tools:
+
+```
+$ cd out/ohos-arm-release/clang_x64/ark/ark/build
+$ npm install
+$ node --expose-gc src/index.js [option] file.js
 ```
 
 <a name="table18706114344420"></a>
