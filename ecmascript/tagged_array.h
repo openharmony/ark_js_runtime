@@ -99,7 +99,7 @@ public:
         return oldLength - newLength > MAX_END_UNUSED;
     }
     inline void Trim(JSThread *thread, array_size_t newLength);
-    void Visitor(const EcmaObjectRangeVisitor &v)
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
     {
         uintptr_t dataAddr = ToUintPtr(this) + TaggedArray::GetDataOffset();
         v(this, ObjectSlot(dataAddr), ObjectSlot(dataAddr + GetLength() * JSTaggedValue::TaggedTypeSize()));

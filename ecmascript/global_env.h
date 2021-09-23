@@ -203,7 +203,7 @@ public:
 
     DECL_DUMP()
 
-    inline void Visitor(const EcmaObjectRangeVisitor &v)
+    inline void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
     {
         v(this, ObjectSlot(ToUintPtr(this) + HEADER_SIZE), ObjectSlot(ToUintPtr(this) + SIZE));
     }

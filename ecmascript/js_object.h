@@ -339,13 +339,17 @@ public:
 
     void SetHash(int32_t hash);
     int32_t GetHash() const;
+    void InitializeHash()
+    {
+        Barriers::SetDynPrimitive<JSTaggedType>(this, ECMAObject::HASH_OFFSET, JSTaggedValue(0).GetRawData());
+    }
 
     void* GetNativePointerField(int32_t index) const;
     void SetNativePointerField(int32_t index, void *data);
     int32_t GetNativePointerFieldCount() const;
     void SetNativePointerFieldCount(int32_t count);
 
-    void Visitor(const EcmaObjectRangeVisitor &visitor) const
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor) const
     {
         TaggedObject *object = const_cast<TaggedObject *>(reinterpret_cast<const TaggedObject *>(this));
         visitor(object, ObjectSlot(ToUintPtr(this) + HASH_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE));
@@ -354,6 +358,7 @@ public:
     void VisitObjects([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
     {
         // no field in this object
+        VisitRangeSlot(visitor);
     }
 };
 

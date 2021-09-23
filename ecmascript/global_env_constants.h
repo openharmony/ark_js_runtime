@@ -350,7 +350,7 @@ public:
     GLOBAL_ENV_CONSTANT_ACCESSOR(DECL_GET)
 #undef DECL_GET
 
-    void Visitor(const RootRangeVisitor &visitor)
+    void VisitRangeSlot(const RootRangeVisitor &visitor)
     {
         visitor(ecmascript::Root::ROOT_VM, ObjectSlot(ToUintPtr(BeginSlot())), ObjectSlot(ToUintPtr(EndSlot())));
     }
