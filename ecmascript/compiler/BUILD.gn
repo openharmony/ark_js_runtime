@@ -42,7 +42,6 @@ ohos_shared_library("libark_jsoptimizer") {
   sources = [
     "circuit.cpp",
     "circuit_builder.cpp",
-    "circuit_visualizer.cpp",
     "fast_stub.cpp",
     "gate.cpp",
     "llvm_codegen.cpp",
