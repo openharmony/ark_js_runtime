@@ -115,7 +115,7 @@ void StubAotCompiler::BuildStubModule(panda::ecmascript::StubModule *module)
             pipeline.RunPass<LLVMCodegenPass>(i);
         }
     }
-    
+
     LLVMModuleAssembler assembler(&stubModule);
     assembler.AssembleModule();
     assembler.CopyAssembleCodeToModule(module);

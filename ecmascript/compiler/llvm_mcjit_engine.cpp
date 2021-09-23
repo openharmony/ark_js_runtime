@@ -50,8 +50,8 @@
 
 
 namespace kungfu {
-static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, unsigned alignment, unsigned sectionID,
-                                             const char *sectionName)
+static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
+                                             [[maybe_unused]] unsigned sectionID, const char *sectionName)
 {
     std::cout << "RoundTripAllocateCodeSection object " << object << " - " << std::endl;
     struct CodeState& state = *static_cast<struct CodeState*>(object);
@@ -61,14 +61,15 @@ static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, unsig
     return addr;
 }
 
-static uint8_t *RoundTripAllocateDataSection(void *object, uintptr_t size, unsigned alignment, unsigned sectionID,
-                                             const char *sectionName, LLVMBool isReadOnly)
+static uint8_t *RoundTripAllocateDataSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
+                                             [[maybe_unused]] unsigned sectionID, const char *sectionName,
+                                             [[maybe_unused]] LLVMBool isReadOnly)
 {
     struct CodeState& state = *static_cast<struct CodeState*>(object);
     return state.AllocaDataSection(size, sectionName);
 }
 
-static LLVMBool RoundTripFinalizeMemory(void *object, char **errMsg)
+static LLVMBool RoundTripFinalizeMemory(void *object, [[maybe_unused]] char **errMsg)
 {
     std::cout << "RoundTripFinalizeMemory object " << object << " - " << std::endl;
     return 0;
@@ -156,8 +157,9 @@ void LLVMMcJitEngine::Initialize()
     options_.NoFramePointerElim = true;
 }
 
-static const char *SymbolLookupCallback(void *disInfo, uint64_t referenceValue, uint64_t *referenceType,
-                                        uint64_t referencePC, const char **referenceName)
+static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_unused]] uint64_t referenceValue,
+                                        uint64_t *referenceType, [[maybe_unused]]uint64_t referencePC,
+                                        [[maybe_unused]] const char **referenceName)
 {
     *referenceType = LLVMDisassembler_ReferenceType_InOut_None;
     return nullptr;
@@ -190,7 +192,7 @@ void LLVMMcJitEngine::Disassemble(std::map<uint64_t, std::string> addr2name) con
             if (addr2name.find(addr) != addr2name.end()) {
                 std::cout << addr2name[addr].c_str() << ":" << std::endl;
             }
-            fprintf(stderr, "%08x: %08x %s\n", pc, *reinterpret_cast<uint32_t *>(byteSp), outString);
+            (void)fprintf(stderr, "%08x: %08x %s\n", pc, *reinterpret_cast<uint32_t *>(byteSp), outString);
             pc += InstSize;
             byteSp += InstSize;
             numBytes -= InstSize;

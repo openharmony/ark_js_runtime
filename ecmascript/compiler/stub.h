@@ -26,7 +26,6 @@
 #include "ecmascript/tagged_dictionary.h"
 
 namespace kungfu {
-
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEFVARIABLE(varname, type, val) Stub::StubVariable varname(GetEnvironment(), type, NextVariableId(), val)
 
@@ -311,7 +310,8 @@ public:
 
         bool IsSelector(const Gate *gate) const
         {
-            return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS && gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+            return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS && 
+                   gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
         }
 
         uint32_t GetId() const
@@ -740,11 +740,10 @@ public:
         return TruncInt32ToInt1(WordLogicAnd(
             SExtInt1ToInt32(
                 Word64Equal(Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
-                            GetWord64Constant(0))), 
-            WordLogicOr(SExtInt1ToInt32(Word64NotEqual(
-                            Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
                             GetWord64Constant(0))),
-                        SExtInt1ToInt32(TaggedIsHole(x)))));
+            WordLogicOr(SExtInt1ToInt32(Word64NotEqual(
+                Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
+                GetWord64Constant(0))), SExtInt1ToInt32(TaggedIsHole(x)))));
     }
 
     AddrShift TaggedIsHeapObject(AddrShift x)
@@ -1042,10 +1041,10 @@ public:
         AddrShift bitfieldOffset = GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET);
         AddrShift oldValue = Load(INT64_TYPE, hclass, bitfieldOffset);
         Store(INT64_TYPE, hclass, bitfieldOffset,
-              Word64Or(Word64And(oldValue,
-                                 GetWord64Constant(~panda::ecmascript::JSHClass::ElementRepresentationBits::Mask())),
-                       Word64LSR(value, GetWord64Constant(
-                                            panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
+            Word64Or(Word64And(oldValue,
+                GetWord64Constant(~panda::ecmascript::JSHClass::ElementRepresentationBits::Mask())),
+                    Word64LSR(value, GetWord64Constant(
+                        panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
     }
 
     void UpdateValueAndAttributes(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)

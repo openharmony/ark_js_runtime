@@ -31,7 +31,7 @@ public:
     }
     void Save(const std::string &filename);
     void Load(JSThread *thread, const std::string &filename);
-    void SetCode(MachineCode *code)\
+    void SetCode(MachineCode *code)
     {
         code_ = code;
     }

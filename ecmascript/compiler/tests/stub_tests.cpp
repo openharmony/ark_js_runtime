@@ -179,7 +179,8 @@ HWTEST_F_L0(StubTest, PhiGateTest)
 class CallPhiStub : public Stub {
 public:
     explicit CallPhiStub(Circuit *circuit)
-        : Stub("CallPhi", 1, circuit), phi_descriptor_("phi", 0, 1, DEFAULT_ORDER, MachineType::INT32_TYPE)
+        : Stub("CallPhi", 1, circuit),
+          phi_descriptor_("phi", 0, 1, ArgumentsOrder::DEFAULT_ORDER, MachineType::INT32_TYPE)
     {
         std::array<MachineType, 1> *params = new std::array<MachineType, 1>();
         (*params)[0] = MachineType::INT32_TYPE;

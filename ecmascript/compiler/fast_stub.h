@@ -42,6 +42,7 @@ public:
 
 class FastSubStub : public Stub {
 public:
+    // 2 : 2 means argument counts
     explicit FastSubStub(Circuit *circuit) : Stub("FastSub", 2, circuit) {}
     ~FastSubStub() = default;
     NO_MOVE_SEMANTIC(FastSubStub);
@@ -51,6 +52,7 @@ public:
 
 class FastMulStub : public Stub {
 public:
+    // 2 : 2 means argument counts
     explicit FastMulStub(Circuit *circuit) : Stub("FastMul", 2, circuit) {}
     ~FastMulStub() = default;
     NO_MOVE_SEMANTIC(FastMulStub);
@@ -60,6 +62,7 @@ public:
 
 class FastDivStub : public Stub {
 public:
+    // 2 : 2 means argument counts
     explicit FastDivStub(Circuit *circuit) : Stub("FastDiv", 2, circuit) {}
     ~FastDivStub() = default;
     NO_MOVE_SEMANTIC(FastDivStub);
@@ -69,6 +72,7 @@ public:
 
 class FastFindOwnElementStub : public Stub {
 public:
+    // 3 : 3 means argument counts
     explicit FastFindOwnElementStub(Circuit *circuit) : Stub("FastFindOwnElement", 3, circuit) {}
     ~FastFindOwnElementStub() = default;
     NO_MOVE_SEMANTIC(FastFindOwnElementStub);
@@ -78,6 +82,7 @@ public:
 
 class FastGetElementStub : public Stub {
 public:
+    // 3 : 3 means argument counts
     explicit FastGetElementStub(Circuit *circuit) : Stub("FastGetElement", 3, circuit) {}
     ~FastGetElementStub() = default;
     NO_MOVE_SEMANTIC(FastGetElementStub);
@@ -87,6 +92,7 @@ public:
 
 class FastFindOwnElement2Stub : public Stub {
 public:
+    // 6 : 6 means argument counts
     explicit FastFindOwnElement2Stub(Circuit *circuit) : Stub("FastFindOwnElement2", 6, circuit) {}
     ~FastFindOwnElement2Stub() = default;
     NO_MOVE_SEMANTIC(FastFindOwnElement2Stub);
@@ -96,6 +102,7 @@ public:
 
 class FastSetElementStub : public Stub {
 public:
+    // 5 : 5 means argument counts
     explicit FastSetElementStub(Circuit *circuit) : Stub("FastSetElement", 5, circuit) {}
     ~FastSetElementStub() = default;
     NO_MOVE_SEMANTIC(FastSetElementStub);

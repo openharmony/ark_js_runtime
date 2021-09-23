@@ -24,13 +24,13 @@
 #include "llvm-c/Types.h"
 
 namespace kungfu {
-enum ArgumentsOrder {
+enum class ArgumentsOrder {
     DEFAULT_ORDER,  // Push Arguments in stack from right -> left
 };
 
 class StubDescriptor {
 public:
-    enum CallStubKind {
+    enum class CallStubKind {
         CODE_STUB,
         RUNTIME_STUB,
     };
@@ -130,10 +130,10 @@ public:
 
 private:
     std::string name_;
-    CallStubKind kind_ {CODE_STUB};
+    CallStubKind kind_ {CallStubKind::CODE_STUB};
     int flags_ {0};
     int paramCounter_ {0};
-    ArgumentsOrder order_ {DEFAULT_ORDER};
+    ArgumentsOrder order_ {ArgumentsOrder::DEFAULT_ORDER};
 
     MachineType returnType_ {MachineType::NONE_TYPE};
     std::unique_ptr<std::vector<MachineType>> paramsType_ {nullptr};

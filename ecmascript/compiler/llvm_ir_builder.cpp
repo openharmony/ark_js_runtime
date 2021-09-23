@@ -572,8 +572,7 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
     LLVMValueRef callee;
     StubDescriptor *callee_descriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
     // runtime case
-    if (callee_descriptor->GetStubKind() == StubDescriptor::RUNTIME_STUB) {
-        std::cout << "external refrence index " << index << std::endl;
+    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         LLVMTypeRef rtfuncType = stubModule_->GetExternalFunctionType(index);
         LLVMDumpType(rtfuncType);
         LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
@@ -1082,9 +1081,9 @@ void LLVMIRBuilder::VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const
 
 LLVMStubModule::LLVMStubModule(const char *name)
 {
-     module_ = LLVMModuleCreateWithName("fast_stubs");
+    module_ = LLVMModuleCreateWithName("fast_stubs");
 #ifdef PANDA_TARGET_AMD64
-     LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
+    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
 #endif
 }
 
@@ -1098,7 +1097,6 @@ void LLVMStubModule::Initialize()
         }
     }
     for (i = 0; i < MAX_EXTERNAL_FUNCTION_COUNT; i++) {
-        std::cout << "external index " << i + EXTERNAL_FUNCTION_OFFSET << std::endl;
         auto externalDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + EXTERNAL_FUNCTION_OFFSET);
         if (!externalDescriptor->GetName().empty()) {
             externalFuctionType_[i] = GetLLVMFunctionTypeStubDescriptor(externalDescriptor);
@@ -1115,15 +1113,11 @@ LLVMValueRef LLVMStubModule::GetLLVMFunctionByStubDescriptor(StubDescriptor *stu
 LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor)
 {
     LLVMTypeRef returnType = ConvertLLVMTypeFromMachineType(stubDescriptor->GetReturnType());
-    LLVMDumpType(returnType);
     std::vector<LLVMTypeRef> paramTys;
     auto paramCount = stubDescriptor->GetParametersCount();
     for (int i = 0; i < paramCount; i++) {
         auto paramsType = stubDescriptor->GetParametersType();
         paramTys.push_back(ConvertLLVMTypeFromMachineType(paramsType[i]));
-    }
-    for(auto type : paramTys) {
-        LLVMDumpType(type);
     }
     auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount, 0);
     LLVMDumpType(functype);

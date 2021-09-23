@@ -30,7 +30,7 @@ namespace kungfu {
 CALL_STUB_INIT_DESCRIPTOR(FastAdd)
 {
     // 2 : 2 input parameters
-    static StubDescriptor fastAdd("FastAdd", 0, 2, DEFAULT_ORDER, UINT64_TYPE);
+    static StubDescriptor fastAdd("FastAdd", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = fastAdd;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {
@@ -43,7 +43,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastAdd)
 CALL_STUB_INIT_DESCRIPTOR(FastSub)
 {
     // 2 : 2 input parameters
-    static StubDescriptor fastSub("FastSub", 0, 2, DEFAULT_ORDER, UINT64_TYPE);
+    static StubDescriptor fastSub("FastSub", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = fastSub;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {
@@ -56,7 +56,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastSub)
 CALL_STUB_INIT_DESCRIPTOR(FastMul)
 {
     // 2 : 2 input parameters
-    static StubDescriptor fastMul("FastMul", 0, 2, DEFAULT_ORDER, UINT64_TYPE);
+    static StubDescriptor fastMul("FastMul", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = fastMul;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {
@@ -69,7 +69,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastMul)
 CALL_STUB_INIT_DESCRIPTOR(FastDiv)
 {
     // 2 : 2 input parameters
-    static StubDescriptor fastDiv("FastDiv", 0, 2, DEFAULT_ORDER, UINT64_TYPE);
+    static StubDescriptor fastDiv("FastDiv", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = fastDiv;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {
@@ -94,7 +94,7 @@ CALL_STUB_INIT_DESCRIPTOR(IsSpecialIndexedObjForGet) {}
 CALL_STUB_INIT_DESCRIPTOR(GetElement)
 {
     // 3 : 3 input parameters
-    static StubDescriptor getElement("GetElement", 0, 3, DEFAULT_ORDER, UINT64_TYPE);
+    static StubDescriptor getElement("GetElement", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = getElement;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -108,7 +108,7 @@ CALL_STUB_INIT_DESCRIPTOR(GetElement)
 CALL_STUB_INIT_DESCRIPTOR(SetElement)
 {
     // 5 : 5 input parameters
-    static StubDescriptor setElement("SetElement", 0, 5, DEFAULT_ORDER, BOOL_TYPE);
+    static StubDescriptor setElement("SetElement", 0, 5, ArgumentsOrder::DEFAULT_ORDER, BOOL_TYPE);
     *descriptor = setElement;
     // 5 : 5 input parameters
     std::array<MachineType, 5> params = {
@@ -139,7 +139,7 @@ CALL_STUB_INIT_DESCRIPTOR(FindOwnProperty) {}
 CALL_STUB_INIT_DESCRIPTOR(FindOwnElement)
 {
     // 3 : 3 input parameters
-    static StubDescriptor findOwnElement("FindOwnElement", 0, 3, DEFAULT_ORDER, UINT64_TYPE);
+    static StubDescriptor findOwnElement("FindOwnElement", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = findOwnElement;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -157,7 +157,7 @@ CALL_STUB_INIT_DESCRIPTOR(FindOwnProperty2) {}
 CALL_STUB_INIT_DESCRIPTOR(FindOwnElement2)
 {
     // 6 : 6 input parameters
-    static StubDescriptor findOwnElement2("FindOwnElement2", 0, 6, DEFAULT_ORDER, UINT64_TYPE);
+    static StubDescriptor findOwnElement2("FindOwnElement2", 0, 6, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = findOwnElement2;
     // 6 : 6 input parameters
     std::array<MachineType, 6> params = {
@@ -170,7 +170,7 @@ CALL_STUB_INIT_DESCRIPTOR(FindOwnElement2)
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 {
     // 5 : 5 input parameters
-    static StubDescriptor addElementInternal("AddElementInternal", 0, 5, DEFAULT_ORDER, BOOL_TYPE);
+    static StubDescriptor addElementInternal("AddElementInternal", 0, 5, ArgumentsOrder::DEFAULT_ORDER, BOOL_TYPE);
     *descriptor = addElementInternal;
     // 5 : 5 input parameters
     std::array<MachineType, 5> params = {
@@ -178,13 +178,13 @@ CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
         MachineType::UINT64_TYPE, MachineType::UINT32_TYPE,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(CallSetter)
 {
     // 5 : 5 input parameters
-    static StubDescriptor callSetter("CallSetter", 0, 5, DEFAULT_ORDER, NONE_TYPE);
+    static StubDescriptor callSetter("CallSetter", 0, 5, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
     *descriptor = callSetter;
     // 5 : 5 input parameters
     std::array<MachineType, 5> params = {
@@ -192,13 +192,13 @@ CALL_STUB_INIT_DESCRIPTOR(CallSetter)
         MachineType::UINT64_TYPE, MachineType::BOOL_TYPE,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(CallGetter)
 {
     // 3 : 3 input parameters
-    static StubDescriptor callGetter("CallGetter", 0, 3, DEFAULT_ORDER, NONE_TYPE);
+    static StubDescriptor callGetter("CallGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
     *descriptor = callGetter;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -207,13 +207,13 @@ CALL_STUB_INIT_DESCRIPTOR(CallGetter)
         MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(AccessorGetter)
 {
     // 3 : 3 input parameters
-    static StubDescriptor accessorGetter("AccessorGetter", 0, 3, DEFAULT_ORDER, NONE_TYPE);
+    static StubDescriptor accessorGetter("AccessorGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
     *descriptor = accessorGetter;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -222,13 +222,13 @@ CALL_STUB_INIT_DESCRIPTOR(AccessorGetter)
         MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(ThrowTypeError)
 {
     // 2 : 2 input parameters
-    static StubDescriptor throwTypeError("ThrowTypeError", 0, 2, DEFAULT_ORDER, NONE_TYPE);
+    static StubDescriptor throwTypeError("ThrowTypeError", 0, 2, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
     *descriptor = throwTypeError;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {
@@ -236,13 +236,13 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowTypeError)
         MachineType::UINT32_TYPE,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(JSProxySetProperty)
 {
     // 6 : 6 input parameters
-    static StubDescriptor jsproxySetproperty("JSProxySetProperty", 0, 6, DEFAULT_ORDER, BOOL_TYPE);
+    static StubDescriptor jsproxySetproperty("JSProxySetProperty", 0, 6, ArgumentsOrder::DEFAULT_ORDER, BOOL_TYPE);
     *descriptor = jsproxySetproperty;
     // 6 : 6 input parameters
     std::array<MachineType, 6> params = {
@@ -250,13 +250,13 @@ CALL_STUB_INIT_DESCRIPTOR(JSProxySetProperty)
         MachineType::UINT64_TYPE, MachineType::UINT64_TYPE, MachineType::BOOL_TYPE,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(GetHash32)
 {
     // 2 : 2 input parameters
-    static StubDescriptor getHash32("GetHash32", 0, 2, DEFAULT_ORDER, UINT32_TYPE);
+    static StubDescriptor getHash32("GetHash32", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
     *descriptor = getHash32;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {
@@ -264,7 +264,7 @@ CALL_STUB_INIT_DESCRIPTOR(GetHash32)
         MachineType::UINT32_TYPE,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 void FastStubDescriptors::InitializeStubDescriptors()
