@@ -230,7 +230,7 @@ void Heap::RecomputeLimits()
 
 bool Heap::CheckAndTriggerOldGC()
 {
-    if (oldSpace_->GetCommittedSize() <= oldSpaceAllocLimit_) {
+    if ((oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize()) <= oldSpaceAllocLimit_) {
         return false;
     }
     CollectGarbage(TriggerGCType::OLD_GC);
@@ -239,7 +239,7 @@ bool Heap::CheckAndTriggerOldGC()
 
 bool Heap::CheckAndTriggerCompressGC()
 {
-    if (oldSpace_->GetCommittedSize() <= oldSpaceAllocLimit_) {
+    if ((oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize()) <= oldSpaceAllocLimit_) {
         return false;
     }
     CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
