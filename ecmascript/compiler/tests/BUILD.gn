@@ -108,7 +108,6 @@ host_unittest_action("StubTest") {
     "LLVMTransformUtils",
     "LLVMAArch64Utils",
     "LLVMARMUtils",
-    #"LLVMX86Utils",
     "LLVMIRReader",
   ]
 

@@ -49,8 +49,8 @@ ohos_shared_library("libark_jsoptimizer") {
     "llvm_mcjit_engine.cpp",
     "llvm_stackmap_parse.cpp",
     "scheduler.cpp",
-    "stub_descriptor.cpp",
     "stub.cpp",
+    "stub_descriptor.cpp",
     "type.cpp",
     "verifier.cpp",
   ]
