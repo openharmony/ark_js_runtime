@@ -12,7 +12,7 @@
 $ ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc
 ```
 
-使用前端工具：
+安装`node`和`npm`后, 使用前端工具：
 
 ```
 $ cd out/ohos-arm-release/clang_x64/ark/ark/build
