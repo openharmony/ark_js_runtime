@@ -92,7 +92,7 @@ HWTEST_F_L0(StubTest, FastLoadElement)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -125,9 +125,9 @@ public:
         auto env = GetEnvironment();
         DEFVARIABLE(z, MachineType::INT32_TYPE, GetInteger32Constant(0));
         DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
-        StubLabel ifTrue(env);
-        StubLabel ifFalse(env);
-        StubLabel next(env);
+        Label ifTrue(env);
+        Label ifFalse(env);
+        Label next(env);
 
         Branch(Word32Equal(*x, GetInteger32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
         Bind(&ifTrue);
@@ -164,7 +164,7 @@ HWTEST_F_L0(StubTest, PhiGateTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -260,7 +260,7 @@ HWTEST_F_L0(StubTest, LoopTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
 
@@ -330,7 +330,7 @@ HWTEST_F_L0(StubTest, LoopTest1)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -367,7 +367,7 @@ HWTEST_F_L0(StubTest, FastAddTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -409,7 +409,7 @@ HWTEST_F_L0(StubTest, FastSubTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     /* exec function */
@@ -446,7 +446,7 @@ HWTEST_F_L0(StubTest, FastMulTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
 
@@ -503,7 +503,7 @@ HWTEST_F_L0(StubTest, FastDivTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
@@ -532,7 +532,7 @@ HWTEST_F_L0(StubTest, FastFindOwnElementStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
 }
 
@@ -566,7 +566,7 @@ HWTEST_F_L0(StubTest, FastGetElementStub)
         }
     }
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
 }
 
@@ -589,7 +589,7 @@ HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(JSThread *, TaggedArray *, uint32_t, bool,
@@ -631,7 +631,7 @@ HWTEST_F_L0(StubTest, SetElementStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
 }
 
@@ -870,7 +870,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     uint64_t stub1Code = LLVMGetFunctionAddress(engine, "stub1");
@@ -944,7 +944,7 @@ HWTEST_F_L0(StubTest, Prologue)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     uint64_t mainCode = LLVMGetFunctionAddress(engine, "main");
@@ -1023,7 +1023,7 @@ HWTEST_F_L0(StubTest, CEntryFp)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
@@ -1060,7 +1060,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
         return;
     }
     LLVMModuleRef module = LLVMCloneModule(wrap(rawModule.get()));
-    LLVMMcJitEngine compiler(module);
+    LLVMAssembler compiler(module);
     compiler.Run();
     auto engine = compiler.GetEngine();
     LLVMValueRef function = LLVMGetNamedFunction(module, "main");

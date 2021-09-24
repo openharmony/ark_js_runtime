@@ -34,11 +34,11 @@
 #include "llvm-c/Transforms/Scalar.h"
 
 namespace kungfu {
-using ByteBuffer = std::vector<uint8_t>;
-using BufferList = std::list<ByteBuffer>;
-using StringList = std::list<std::string>;
-struct CodeState {
-    CodeState() : machineCode(nullptr), codeBufferPos(0), stackMapsSection_(nullptr)
+struct CodeInfo {
+    using ByteBuffer = std::vector<uint8_t>;
+    using BufferList = std::list<ByteBuffer>;
+    using StringList = std::list<std::string>;
+    CodeInfo() : machineCode(nullptr), codeBufferPos(0), stackMapsSection_(nullptr)
     {
         Reset();
         static constexpr int prot = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
@@ -46,7 +46,7 @@ struct CodeState {
         machineCode = static_cast<uint8_t *>(mmap(nullptr, MAX_MACHINE_CODE_SIZE, prot, flags, -1, 0));
         std::cerr << std::hex << "machineCode : " << reinterpret_cast<std::uintptr_t>(machineCode) << std::endl;
     }
-    ~CodeState()
+    ~CodeInfo()
     {
         Reset();
         munmap(machineCode, MAX_MACHINE_CODE_SIZE);
@@ -125,10 +125,10 @@ private:
     /* stack map */
     uint8_t *stackMapsSection_ {nullptr};
 };
-class LLVMMcJitEngine {
+class LLVMAssembler {
 public:
-    explicit LLVMMcJitEngine(LLVMModuleRef module);
-    virtual ~LLVMMcJitEngine();
+    explicit LLVMAssembler(LLVMModuleRef module);
+    virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
     {
@@ -137,16 +137,16 @@ public:
     void Disassemble(std::map<uint64_t, std::string> addr2name = std::map<uint64_t, std::string>()) const;
     uint8_t *GetStackMapsSection() const
     {
-        return codeState_.GetStackMapsSection();
+        return codeInfo_.GetStackMapsSection();
     }
 
     int GetCodeSize() const
     {
-        return codeState_.GetCodeSize();
+        return codeInfo_.GetCodeSize();
     }
     uint8_t *GetCodeBuffer() const
     {
-        return codeState_.GetCodeBuff();
+        return codeInfo_.GetCodeBuff();
     }
 
 private:
@@ -162,7 +162,7 @@ private:
     LLVMExecutionEngineRef engine_;
     std::string hostTriple_;
     char *error_;
-    struct CodeState codeState_;
+    struct CodeInfo codeInfo_;
 };
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_MCJINT_ENGINE_H

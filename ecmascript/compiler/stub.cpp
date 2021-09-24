@@ -21,17 +21,17 @@
 #include "libpandabase/macros.h"
 
 namespace kungfu {
-using StubLabelImpl = Stub::StubLabel::StubLabelImpl;
+using LabelImpl = Stub::Label::LabelImpl;
 
-Stub::StubLabel::StubLabel(Environment *env)
+Stub::Label::Label(Environment *env)
 {
-    impl_ = env->NewStubLabel(env);
+    impl_ = env->NewLabel(env);
 }
 
-AddrShift Stub::StubVariable::AddPhiOperand(AddrShift val)
+AddrShift Stub::Variable::AddPhiOperand(AddrShift val)
 {
     ASSERT(IsSelector(val));
-    StubLabel label = env_->GetLabelFromSelector(val);
+    Label label = env_->GetLabelFromSelector(val);
     size_t idx = 0;
     for (auto pred : label.GetPredecessors()) {
         idx++;
@@ -41,13 +41,13 @@ AddrShift Stub::StubVariable::AddPhiOperand(AddrShift val)
     return TryRemoveTrivialPhi(val);
 }
 
-AddrShift Stub::StubVariable::AddOperandToSelector(AddrShift val, size_t idx, AddrShift in)
+AddrShift Stub::Variable::AddOperandToSelector(AddrShift val, size_t idx, AddrShift in)
 {
     env_->GetCircuit()->NewIn(val, idx, in);
     return val;
 }
 
-AddrShift Stub::StubVariable::TryRemoveTrivialPhi(AddrShift phiVal)
+AddrShift Stub::Variable::TryRemoveTrivialPhi(AddrShift phiVal)
 {
     Gate *phi = env_->GetCircuit()->LoadGatePtr(phiVal);
     Gate *same = nullptr;
@@ -98,7 +98,7 @@ AddrShift Stub::StubVariable::TryRemoveTrivialPhi(AddrShift phiVal)
     return env_->GetCircuit()->SaveGatePtr(same);
 }
 
-void Stub::StubVariable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGate)
+void Stub::Variable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGate)
 {
     // reroute all outs to new node
     for (auto out : outs) {
@@ -107,7 +107,7 @@ void Stub::StubVariable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGa
     }
 }
 
-void StubLabelImpl::Seal()
+void LabelImpl::Seal()
 {
     for (auto &[variable, gate] : incompletePhis_) {
         variable->AddPhiOperand(gate);
@@ -115,12 +115,12 @@ void StubLabelImpl::Seal()
     isSealed_ = true;
 }
 
-void StubLabelImpl::WriteVariable(StubVariable *var, AddrShift value)
+void LabelImpl::WriteVariable(Variable *var, AddrShift value)
 {
     valueMap_[var] = value;
 }
 
-AddrShift StubLabelImpl::ReadVariable(StubVariable *var)
+AddrShift LabelImpl::ReadVariable(Variable *var)
 {
     if (valueMap_.find(var) != valueMap_.end()) {
         return valueMap_.at(var);
@@ -128,7 +128,7 @@ AddrShift StubLabelImpl::ReadVariable(StubVariable *var)
     return ReadVariableRecursive(var);
 }
 
-AddrShift StubLabelImpl::ReadVariableRecursive(StubVariable *var)
+AddrShift LabelImpl::ReadVariableRecursive(Variable *var)
 {
     AddrShift val;
     OpCode opcode = CircuitBuilder::GetSelectOpCodeFromMachineType(var->Type());
@@ -137,13 +137,13 @@ AddrShift StubLabelImpl::ReadVariableRecursive(StubVariable *var)
         int valueCounts = static_cast<int>(this->predecessors.size()) + 1;
 
         val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, valueCounts);
-        env_->AddSelectorToLabel(val, StubLabel(this));
+        env_->AddSelectorToLabel(val, Label(this));
         incompletePhis_[var] = val;
     } else if (predecessors.size() == 1) {
         val = predecessors[0]->ReadVariable(var);
     } else {
         val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, this->predecessors.size());
-        env_->AddSelectorToLabel(val, StubLabel(this));
+        env_->AddSelectorToLabel(val, Label(this));
         WriteVariable(var, val);
         val = var->AddPhiOperand(val);
     }
@@ -151,7 +151,7 @@ AddrShift StubLabelImpl::ReadVariableRecursive(StubVariable *var)
     return val;
 }
 
-void StubLabelImpl::Bind()
+void LabelImpl::Bind()
 {
     ASSERT(!predecessors.empty());
     if (IsNeedSeal()) {
@@ -160,7 +160,7 @@ void StubLabelImpl::Bind()
     }
 }
 
-void StubLabelImpl::MergeAllControl()
+void LabelImpl::MergeAllControl()
 {
     if (predecessors.size() < 2) {  // 2 : Loop Head only support two predecessors
         return;
@@ -188,21 +188,21 @@ void StubLabelImpl::MergeAllControl()
     control_ = merge;
 }
 
-void StubLabelImpl::AppendPredecessor(StubLabelImpl *predecessor)
+void LabelImpl::AppendPredecessor(LabelImpl *predecessor)
 {
     if (predecessor != nullptr) {
         predecessors.push_back(predecessor);
     }
 }
 
-bool StubLabelImpl::IsNeedSeal() const
+bool LabelImpl::IsNeedSeal() const
 {
     auto control = env_->GetCircuit()->LoadGatePtr(predeControl_);
     auto numsInList = control->GetOpCode().GetOpCodeNumInsArray(control->GetBitField());
     return predecessors.size() >= numsInList[0];
 }
 
-bool StubLabelImpl::IsLoopHead() const
+bool LabelImpl::IsLoopHead() const
 {
     return env_->GetCircuit()->IsLoopHead(predeControl_);
 }
@@ -213,7 +213,7 @@ Stub::Environment::Environment(size_t arguments, Circuit *circuit)
     for (size_t i = 0; i < arguments; i++) {
         arguments_[i] = builder_.NewArguments(i);
     }
-    entry_ = StubLabel(NewStubLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
+    entry_ = Label(NewLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
     currentLabel_ = &entry_;
     currentLabel_->Seal();
 }

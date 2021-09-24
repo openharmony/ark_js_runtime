@@ -38,13 +38,13 @@ private:
 
 class LLVMModuleAssembler {
 public:
-    explicit LLVMModuleAssembler(LLVMStubModule *module) : stubmodule_(module), compiler_(module->GetModule()) {}
+    explicit LLVMModuleAssembler(LLVMStubModule *module) : stubmodule_(module), assembler_(module->GetModule()) {}
     void AssembleModule();
     void CopyAssembleCodeToModule(panda::ecmascript::StubModule *module);
 
 private:
     LLVMStubModule *stubmodule_;
-    LLVMMcJitEngine compiler_;
+    LLVMAssembler assembler_;
 };
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_CODEGEN_H

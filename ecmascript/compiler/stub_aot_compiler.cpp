@@ -24,18 +24,18 @@
 #include "verifier.h"
 
 namespace kungfu {
-class PipeLineData {
+class PassPayLoad {
 public:
-    explicit PipeLineData(Circuit *circuit, LLVMStubModule *module) : circuit_(circuit), module_(module) {}
-    ~PipeLineData() = default;
+    explicit PassPayLoad(Circuit *circuit, LLVMStubModule *module) : circuit_(circuit), module_(module) {}
+    ~PassPayLoad() = default;
     const ControlFlowGraph &GetScheduleResult() const
     {
-        return cfg;
+        return cfg_;
     }
 
     void SetScheduleResult(const ControlFlowGraph &result)
     {
-        cfg = result;
+        cfg_ = result;
     }
 
     Circuit *GetCircuit() const
@@ -51,13 +51,13 @@ public:
 private:
     Circuit *circuit_;
     LLVMStubModule *module_;
-    ControlFlowGraph cfg;
+    ControlFlowGraph cfg_;
 };
 
-class KungfuPipeLine {
+class PassRunner {
 public:
-    explicit KungfuPipeLine(PipeLineData *data) : data_(data) {}
-    ~KungfuPipeLine() = default;
+    explicit PassRunner(PassPayLoad *data) : data_(data) {}
+    ~PassRunner() = default;
     template <typename T, typename... Args>
     bool RunPass(Args... args)
     {
@@ -66,12 +66,12 @@ public:
     }
 
 private:
-    PipeLineData *data_;
+    PassPayLoad *data_;
 };
 
 class VerifierPass {
 public:
-    bool Run(PipeLineData *data)
+    bool Run(PassPayLoad *data)
     {
         Verifier::Run(data->GetCircuit());
         return true;
@@ -80,7 +80,7 @@ public:
 
 class SchedulerPass {
 public:
-    bool Run(PipeLineData *data)
+    bool Run(PassPayLoad *data)
     {
         data->SetScheduleResult(Scheduler::Run(data->GetCircuit()));
         return true;
@@ -89,7 +89,7 @@ public:
 
 class LLVMCodegenPass {
 public:
-    bool Run(PipeLineData *data, int index)
+    bool Run(PassPayLoad *data, int index)
     {
         auto stubModule = data->GetStubModule();
         LLVMCodeGeneratorImpl llvmImpl(stubModule);
@@ -108,8 +108,8 @@ void StubAotCompiler::BuildStubModule(panda::ecmascript::StubModule *module)
         if (Stub != nullptr) {
             Stub->GenerateCircuit();
             auto circuit = Stub->GetEnvironment()->GetCircuit();
-            PipeLineData data(circuit, &stubModule);
-            KungfuPipeLine pipeline(&data);
+            PassPayLoad data(circuit, &stubModule);
+            PassRunner pipeline(&data);
             pipeline.RunPass<VerifierPass>();
             pipeline.RunPass<SchedulerPass>();
             pipeline.RunPass<LLVMCodegenPass>(i);

@@ -27,37 +27,34 @@
 
 namespace kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEFVARIABLE(varname, type, val) Stub::StubVariable varname(GetEnvironment(), type, NextVariableId(), val)
+#define DEFVARIABLE(varname, type, val) Stub::Variable varname(GetEnvironment(), type, NextVariableId(), val)
 
 class Stub {
 public:
     class Environment;
-    class StubLabel;
-    class StubVariable;
-    using Label = StubLabel;
-    using Variable = StubVariable;
+    class Label;
+    class Variable;
 
-    class StubLabel {
+    class Label {
     public:
-        class StubLabelImpl {
+        class LabelImpl {
         public:
-            StubLabelImpl(Environment *env, AddrShift control)
+            LabelImpl(Environment *env, AddrShift control)
                 : env_(env), control_(control), predeControl_(-1), isSealed_(false)
             {
             }
 
-            ~StubLabelImpl() = default;
+            ~LabelImpl() = default;
 
-            NO_MOVE_SEMANTIC(StubLabelImpl);
-            NO_COPY_SEMANTIC(StubLabelImpl);
-            using Variable = StubVariable;
+            NO_MOVE_SEMANTIC(LabelImpl);
+            NO_COPY_SEMANTIC(LabelImpl);
             void Seal();
             void WriteVariable(Variable *var, AddrShift value);
             AddrShift ReadVariable(Variable *var);
             void Bind();
             void MergeAllControl();
-            void AppendPredecessor(StubLabelImpl *predecessor);
-            std::vector<StubLabelImpl *> GetPredecessors() const
+            void AppendPredecessor(LabelImpl *predecessor);
+            std::vector<LabelImpl *> GetPredecessors() const
             {
                 return predecessors;
             }
@@ -100,20 +97,19 @@ public:
             AddrShift predeControl_;
             std::vector<AddrShift> otherPredeControls_;
             bool isSealed_;
-            std::map<StubVariable *, AddrShift> valueMap_;
+            std::map<Variable *, AddrShift> valueMap_;
             std::vector<AddrShift> phi;
-            std::vector<StubLabelImpl *> predecessors;
-            std::map<StubVariable *, AddrShift> incompletePhis_;
+            std::vector<LabelImpl *> predecessors;
+            std::map<Variable *, AddrShift> incompletePhis_;
         };
-        explicit StubLabel() = default;
-        explicit StubLabel(Environment *env);
-        explicit StubLabel(StubLabelImpl *impl) : impl_(impl) {}
-        ~StubLabel() = default;
-        using Variable = StubVariable;
-        StubLabel(StubLabel const &label) = default;
-        StubLabel &operator=(StubLabel const &label) = default;
-        StubLabel(StubLabel &&label) = default;
-        StubLabel &operator=(StubLabel &&label) = default;
+        explicit Label() = default;
+        explicit Label(Environment *env);
+        explicit Label(LabelImpl *impl) : impl_(impl) {}
+        ~Label() = default;
+        Label(Label const &label) = default;
+        Label &operator=(Label const &label) = default;
+        Label(Label &&label) = default;
+        Label &operator=(Label &&label) = default;
 
         void Seal()
         {
@@ -140,16 +136,16 @@ public:
             impl_->MergeAllControl();
         }
 
-        void AppendPredecessor(const StubLabel *predecessor)
+        void AppendPredecessor(const Label *predecessor)
         {
             impl_->AppendPredecessor(predecessor->GetRawLabel());
         }
 
-        std::vector<StubLabel> GetPredecessors() const
+        std::vector<Label> GetPredecessors() const
         {
-            std::vector<StubLabel> labels;
+            std::vector<Label> labels;
             for (auto rawlabel : impl_->GetPredecessors()) {
-                labels.emplace_back(StubLabel(rawlabel));
+                labels.emplace_back(Label(rawlabel));
             }
             return labels;
         }
@@ -176,25 +172,25 @@ public:
 
     private:
         friend class Environment;
-        StubLabelImpl *GetRawLabel() const
+        LabelImpl *GetRawLabel() const
         {
             return impl_;
         }
-        StubLabelImpl *impl_ {nullptr};
+        LabelImpl *impl_ {nullptr};
     };
 
     class Environment {
     public:
-        using StubLabelImpl = StubLabel::StubLabelImpl;
+        using LabelImpl = Label::LabelImpl;
         explicit Environment(size_t arguments, Circuit *circuit);
         ~Environment();
         NO_COPY_SEMANTIC(Environment);
         NO_MOVE_SEMANTIC(Environment);
-        StubLabel *GetCurrentLabel() const
+        Label *GetCurrentLabel() const
         {
             return currentLabel_;
         }
-        void SetCurrentLabel(StubLabel *label)
+        void SetCurrentLabel(Label *label)
         {
             currentLabel_ = label;
         }
@@ -211,25 +207,25 @@ public:
             return circuit_;
         }
 
-        StubLabel GetLabelFromSelector(AddrShift sel)
+        Label GetLabelFromSelector(AddrShift sel)
         {
-            StubLabelImpl *rawlabel = phi_to_labels[sel];
-            return StubLabel(rawlabel);
+            LabelImpl *rawlabel = phi_to_labels[sel];
+            return Label(rawlabel);
         }
 
-        void AddSelectorToLabel(AddrShift sel, StubLabel label)
+        void AddSelectorToLabel(AddrShift sel, Label label)
         {
             phi_to_labels[sel] = label.GetRawLabel();
         }
 
-        StubLabelImpl *NewStubLabel(Environment *env, AddrShift control = -1)
+        LabelImpl *NewLabel(Environment *env, AddrShift control = -1)
         {
-            auto impl = new StubLabelImpl(env, control);
+            auto impl = new LabelImpl(env, control);
             rawlabels_.push_back(impl);
             return impl;
         }
 
-        void PushCurrentLabel(StubLabel *entry)
+        void PushCurrentLabel(Label *entry)
         {
             AddrShift control = currentLabel_->GetControl();
             if (currentLabel_ != nullptr) {
@@ -250,26 +246,26 @@ public:
         }
 
     private:
-        StubLabel *currentLabel_ {nullptr};
+        Label *currentLabel_ {nullptr};
         Circuit *circuit_;
         CircuitBuilder builder_;
-        std::unordered_map<AddrShift, StubLabelImpl *> phi_to_labels;
+        std::unordered_map<AddrShift, LabelImpl *> phi_to_labels;
         std::vector<AddrShift> arguments_;
-        StubLabel entry_;
-        std::vector<StubLabelImpl *> rawlabels_;
-        std::stack<StubLabel *> stack_;
+        Label entry_;
+        std::vector<LabelImpl *> rawlabels_;
+        std::stack<Label *> stack_;
     };
 
-    class StubVariable {
+    class Variable {
     public:
-        StubVariable(Environment *env, MachineType type, uint32_t id, AddrShift value) : id_(id), type_(type), env_(env)
+        Variable(Environment *env, MachineType type, uint32_t id, AddrShift value) : id_(id), type_(type), env_(env)
         {
             Bind(value);
             env_->GetCurrentLabel()->WriteVariable(this, value);
         }
-        ~StubVariable() = default;
-        NO_MOVE_SEMANTIC(StubVariable);
-        NO_COPY_SEMANTIC(StubVariable);
+        ~Variable() = default;
+        NO_MOVE_SEMANTIC(Variable);
+        NO_COPY_SEMANTIC(Variable);
         void Bind(AddrShift value)
         {
             currentValue_ = value;
@@ -286,7 +282,7 @@ public:
         {
             return currentValue_ != 0;
         }
-        StubVariable &operator=(const AddrShift value)
+        Variable &operator=(const AddrShift value)
         {
             env_->GetCurrentLabel()->WriteVariable(this, value);
             Bind(value);
@@ -328,7 +324,7 @@ public:
 
     class SubCircuitScope {
     public:
-        explicit SubCircuitScope(Environment *env, StubLabel *entry) : env_(env)
+        explicit SubCircuitScope(Environment *env, Label *entry) : env_(env)
         {
             env_->PushCurrentLabel(entry);
         }

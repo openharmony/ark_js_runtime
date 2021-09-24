@@ -29,13 +29,13 @@ void LLVMCodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlF
 
 void LLVMModuleAssembler::AssembleModule()
 {
-    compiler_.Run();
+    assembler_.Run();
 }
 
 void LLVMModuleAssembler::CopyAssembleCodeToModule(StubModule *module)
 {
-    auto codeBuff = reinterpret_cast<Address>(compiler_.GetCodeBuffer());
-    auto engine = compiler_.GetEngine();
+    auto codeBuff = reinterpret_cast<Address>(assembler_.GetCodeBuffer());
+    auto engine = assembler_.GetEngine();
     for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
         auto stubfunction = stubmodule_->GetStubFunction(i);
         if (stubfunction != nullptr) {
@@ -44,7 +44,7 @@ void LLVMModuleAssembler::CopyAssembleCodeToModule(StubModule *module)
         }
     }
 
-    auto codeSize = compiler_.GetCodeSize();
+    auto codeSize = assembler_.GetCodeSize();
 
     MachineCode *code = reinterpret_cast<MachineCode *>(new char(sizeof(MachineCode) + codeSize));
     code->SetInstructionSizeInBytes(nullptr, JSTaggedValue(codeSize), SKIP_BARRIER);
