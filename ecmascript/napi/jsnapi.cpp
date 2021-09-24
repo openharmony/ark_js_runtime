@@ -1186,9 +1186,15 @@ EXCEPTION_ERROR_ALL(EXCEPTION_ERROR_NEW)
 Local<JSValueRef> JSON::Parse(const EcmaVM *vm, Local<StringRef> string)
 {
     JSThread *thread = vm->GetJSThread();
-    JsonParser parser(thread);
-    JSHandle<JSTaggedValue> result =
-        parser.Parse(EcmaString::Cast(JSNApiHelper::ToJSTaggedValue(*string).GetTaggedObject()));
+    auto ecmaStr = EcmaString::Cast(JSNApiHelper::ToJSTaggedValue(*string).GetTaggedObject());
+    JSHandle<JSTaggedValue> result;
+    if (ecmaStr->IsUtf8()) {
+        JsonParser<uint8_t> parser(thread);
+        result = parser.ParseUtf8(EcmaString::Cast(JSNApiHelper::ToJSTaggedValue(*string).GetTaggedObject()));
+    } else {
+        JsonParser<uint16_t> parser(thread);
+        result = parser.ParseUtf16(EcmaString::Cast(JSNApiHelper::ToJSTaggedValue(*string).GetTaggedObject()));
+    }
     RETURN_VALUE_IF_ABRUPT(thread, JSValueRef::Exception(vm));
     return JSNApiHelper::ToLocal<JSValueRef>(result);
 }
