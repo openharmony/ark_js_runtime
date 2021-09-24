@@ -89,7 +89,7 @@ public:
 private:
     const uint8_t *bytecodeArray_ {nullptr};
     uint32_t bytecodeArraySize_ {0};
-    uint8_t slotSize_{0};
+    uint8_t slotSize_ {0};
 };
 }  // namespace panda::ecmascript
 

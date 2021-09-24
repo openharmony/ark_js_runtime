@@ -49,9 +49,9 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    PandaVM *instance{nullptr};
-    EcmaHandleScope *scope{nullptr};
-    JSThread *thread{nullptr};
+    PandaVM *instance {nullptr};
+    EcmaHandleScope *scope {nullptr};
+    JSThread *thread {nullptr};
 };
 
 HWTEST_F_L0(StubOptimizerTest, FastLoadElement)
@@ -1176,8 +1176,9 @@ public:
             AddrShift elements = GetElements(*holder);
             AddrShift isDictionary = IsDictionaryMode(elements);
             StubInterfaceDescriptor *findOwnElemnt2 = GET_STUBDESCRIPTOR(FindOwnElement2);
-            AddrShift val = CallStub(findOwnElemnt2, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)),
-                                     {thread, elements, index, isDictionary, pattr, pindexOrEntry});
+            AddrShift val = CallStub(findOwnElemnt2, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)), {
+                thread, elements, index, isDictionary, pattr, pindexOrEntry
+            });
             Label notHole(env);
             Label isHole(env);
             Branch(TaggedIsNotHole(val), &notHole, &isHole);
@@ -1211,8 +1212,10 @@ public:
                     Bind(&nextExtensible);
                     StubInterfaceDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
                     Return(CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
-                                       {thread, receiver, index, value,
-                                        GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
+                        {
+                        thread, receiver, index, value,
+                        GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())
+                    }));
                 }
                 Bind(&afterOnProtoType);
                 {
@@ -1260,8 +1263,9 @@ public:
                     {
                         StubInterfaceDescriptor *callsetter = GET_STUBDESCRIPTOR(CallSetter);
                         AddrShift setter = GetSetterFromAccessor(val);
-                        Return(CallRuntime(callsetter, thread, GetWord64Constant(FAST_STUB_ID(CallSetter)),
-                                           {thread, setter, receiver, value, TruncInt32ToInt1(mayThrow)}));
+                        Return(CallRuntime(callsetter, thread, GetWord64Constant(FAST_STUB_ID(CallSetter)), {
+                            thread, setter, receiver, value, TruncInt32ToInt1(mayThrow)
+                        }));
                     }
                 }
             }
@@ -1295,9 +1299,10 @@ public:
                     {
                         StubInterfaceDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
                         Return(CallRuntime(addElementInternal, thread,
-                                           GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
-                                           {thread, receiver, index, value,
-                                            GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
+                                           GetWord64Constant(FAST_STUB_ID(AddElementInternal)), {
+                            thread, receiver, index, value,
+                            GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())
+                        }));
                     }
                 }
                 Bind(&isHeapObj);
@@ -1309,8 +1314,9 @@ public:
                     {
                         StubInterfaceDescriptor *setProperty = GET_STUBDESCRIPTOR(JSProxySetProperty);
                         Return(CallRuntime(
-                            setProperty, thread, GetWord64Constant(FAST_STUB_ID(JSProxySetProperty)),
-                            {thread, *holder, IntBuildTagged(index), value, receiver, TruncInt32ToInt1(mayThrow)}));
+                            setProperty, thread, GetWord64Constant(FAST_STUB_ID(JSProxySetProperty)), {
+                                thread, *holder, IntBuildTagged(index), value, receiver, TruncInt32ToInt1(mayThrow)
+                            }));
                     }
                     Bind(&notJsProxy);
                     onPrototype = TrueConstant();

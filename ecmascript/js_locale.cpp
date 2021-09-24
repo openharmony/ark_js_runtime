@@ -543,9 +543,11 @@ JSHandle<JSArray> JSLocale::SupportedLocales(JSThread *thread, const JSHandle<Ta
         JSHandle<JSObject> obj = JSTaggedValue::ToObject(thread, options);
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSArray, thread);
 
-        matcher = GetOptionOfString<LocaleMatcherOption>(thread, obj, globalConst->GetHandledLocaleMatcherString(),
-                                                         {LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT},
-                                                         {"lookup", "best fit"}, LocaleMatcherOption::BEST_FIT);
+        matcher = GetOptionOfString<LocaleMatcherOption>(thread, obj, globalConst->GetHandledLocaleMatcherString(), {
+            LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT
+        }, {
+            "lookup", "best fit"
+        }, LocaleMatcherOption::BEST_FIT);
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSArray, thread);
     }
 
@@ -1115,7 +1117,7 @@ bool BuildOptionsTags(const JSHandle<EcmaString> &tag, icu::LocaleBuilder *build
                       JSHandle<JSTaggedValue> script, JSHandle<JSTaggedValue> region)
 {
     std::string tagStr = JSLocale::ConvertToStdString(tag);
-    int32_t len = static_cast<int32_t>(tagStr.length());
+    auto len = static_cast<int32_t>(tagStr.length());
     ASSERT(len > 0);
     builder->setLanguageTag({ tagStr.c_str(), len });
     UErrorCode status = U_ZERO_ERROR;
@@ -1231,7 +1233,7 @@ JSHandle<JSLocale> JSLocale::InitializeLocale(JSThread *thread, const JSHandle<J
                                               const JSHandle<JSObject> &options)
 {
     icu::LocaleBuilder builder;
-    TagElements tagElements;
+    TagElements tagElements {};
     if (!ApplyOptionsToTag(thread, localeString, options, tagElements)) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "apply option to tag failed", locale);
     }

@@ -300,7 +300,7 @@ private:
     JSHandle<JSTaggedValue> key_{};
     uint32_t elementIndex_{NOT_FOUND_INDEX};
     uint32_t index_{NOT_FOUND_INDEX};
-    PropertyAttributes attributes_;
+    PropertyAttributes attributes_{};
     uint32_t metaData_{0};
 };
 }  // namespace panda::ecmascript

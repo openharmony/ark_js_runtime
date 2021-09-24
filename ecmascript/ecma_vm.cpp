@@ -388,7 +388,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEntrypointImpl(Method *entrypoint, c
 }
 
 Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::File &pf, const CString &methodName,
-                                                           const std::vector<std::string> &args)
+    const std::vector<std::string> &args)
 {
     thread_->SetIsEcmaInterpreter(true);
     thread_->SetIsSnapshotMode(true);

@@ -167,16 +167,21 @@ JSHandle<JSPluralRules> JSPluralRules::InitializePluralRules(JSThread *thread,
 
     // 5. Let matcher be ? GetOption(options, "localeMatcher", "string", « "lookup", "best fit" », "best fit").
     LocaleMatcherOption matcher =
-        JSLocale::GetOptionOfString(thread, prOptions, globalConst->GetHandledLocaleMatcherString(),
-                                    {LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT},
-                                    {"lookup", "best fit"}, LocaleMatcherOption::BEST_FIT);
+        JSLocale::GetOptionOfString(thread, prOptions, globalConst->GetHandledLocaleMatcherString(), {
+            LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT
+        }, {
+            "lookup", "best fit"
+        }, LocaleMatcherOption::BEST_FIT);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSPluralRules, thread);
 
     // 7. Let t be ? GetOption(options, "type", "string", « "cardinal", "ordinal" », "cardinal").
     JSHandle<JSTaggedValue> property = JSHandle<JSTaggedValue>::Cast(globalConst->GetHandledTypeString());
     TypeOption type =
-        JSLocale::GetOptionOfString(thread, prOptions, property, { TypeOption::CARDINAL, TypeOption::ORDINAL },
-                                    { "cardinal", "ordinal" }, TypeOption::CARDINAL);
+        JSLocale::GetOptionOfString(thread, prOptions, property, {
+            TypeOption::CARDINAL, TypeOption::ORDINAL
+        }, {
+            "cardinal", "ordinal"
+        }, TypeOption::CARDINAL);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSPluralRules, thread);
 
     // set pluralRules.[[type]] to type
