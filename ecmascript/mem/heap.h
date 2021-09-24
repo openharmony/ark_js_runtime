@@ -31,6 +31,7 @@ class FreeListAllocator;
 class RegionFactory;
 class HeapTracker;
 class MemController;
+class ConcurrentSweeper;
 
 class Heap {
 public:
@@ -93,16 +94,6 @@ public:
         return machineCodeSpace_;
     }
 
-    MarkStack *GetMarkStack() const
-    {
-        return markStack_;
-    }
-
-    ProcessQueue *GetProcessQueue() const
-    {
-        return weakProcessQueue_;
-    }
-
     SemiSpaceCollector *GetSemiSpaceCollector() const
     {
         return semiSpaceCollector_;
@@ -116,6 +107,11 @@ public:
     CompressCollector *GetCompressCollector() const
     {
         return compressCollector_;
+    }
+
+    ConcurrentSweeper *GetSweeper() const
+    {
+        return sweeper_;
     }
 
     EcmaVM *GetEcmaVM() const
@@ -271,11 +267,10 @@ private:
     SnapShotSpace *snapshotSpace_ {nullptr};
     NonMovableSpace *nonMovableSpace_ {nullptr};
     MachineCodeSpace *machineCodeSpace_ {nullptr};
-    MarkStack *markStack_ {nullptr};
-    ProcessQueue *weakProcessQueue_ {nullptr};
     SemiSpaceCollector *semiSpaceCollector_ {nullptr};
     OldSpaceCollector *oldSpaceCollector_ {nullptr};
     CompressCollector *compressCollector_ {nullptr};
+    ConcurrentSweeper *sweeper_ {nullptr};
     EcmaHeapManager *heapManager_ {nullptr};
     RegionFactory *regionFactory_ {nullptr};
     HeapTracker *tracker_ {nullptr};

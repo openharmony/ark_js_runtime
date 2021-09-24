@@ -13,17 +13,20 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/ecma_heap_manager-inl.h"
-#include "ecmascript/mem/heap.h"
+#ifndef ECMASCRIPT_PLATFORM_TASK_H
+#define ECMASCRIPT_PLATFORM_TASK_H
+
+#include "macros.h"
 
 namespace panda::ecmascript {
-EcmaHeapManager::EcmaHeapManager(Heap *heap)
-    : heap_(heap),
-      newSpaceAllocator_(heap->GetNewSpace()),
-      freeListAllocator_ { FreeListAllocator(heap->GetOldSpace()), FreeListAllocator(heap_->GetNonMovableSpace()),
-      FreeListAllocator(heap->GetMachineCodeSpace()) }
-{
-    ASSERT(heap != nullptr);
-    heap->SetHeapManager(this);
-}
+class Task {
+public:
+    Task() = default;
+    virtual ~Task() = default;
+    virtual bool Run() = 0;
+
+    NO_COPY_SEMANTIC(Task);
+    NO_MOVE_SEMANTIC(Task);
+};
 }  // namespace panda::ecmascript
+#endif  // ECMASCRIPT_PLATFORM_TASK_H

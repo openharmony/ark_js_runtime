@@ -27,7 +27,11 @@
 #include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
-OldSpaceCollector::OldSpaceCollector(Heap *heap) : heap_(heap), rootManager_(heap->GetEcmaVM()) {}
+OldSpaceCollector::OldSpaceCollector(Heap *heap, bool parallelGc)
+    : heap_(heap), rootManager_(heap->GetEcmaVM()), paralledGC_(parallelGc)
+{
+    workList_ = new OldGCWorker(heap_, heap_->GetThreadPool()->GetThreadNum());
+}
 
 void OldSpaceCollector::RunPhases()
 {
@@ -45,12 +49,8 @@ void OldSpaceCollector::RunPhases()
 
 void OldSpaceCollector::InitializePhase()
 {
-    markStack_.BeginMarking(heap_, heap_->GetMarkStack());
-    weakProcessQueue_.BeginMarking(heap_, heap_->GetProcessQueue());
-    auto heapManager = heap_->GetHeapManager();
-    oldSpaceAllocator_.Swap(heapManager->GetOldSpaceAllocator());
-    nonMovableAllocator_.Swap(heapManager->GetNonMovableSpaceAllocator());
-    machineCodeSpaceAllocator_.Swap(heapManager->GetMachineCodeSpaceAllocator());
+    heap_->GetThreadPool()->WaitTaskFinish();
+    heap_->GetSweeper()->EnsureAllTaskFinish();
     heap_->EnumerateRegions([](Region *current) {
         // ensure mark bitmap
         auto bitmap = current->GetMarkBitmap();
@@ -60,6 +60,7 @@ void OldSpaceCollector::InitializePhase()
             bitmap->ClearAllBits();
         }
     });
+    workList_->Initialize();
     freeSize_ = 0;
     hugeSpaceFreeSize_ = 0;
     oldSpaceCommitSize_ = heap_->GetOldSpace()->GetCommittedSize();
@@ -68,13 +69,8 @@ void OldSpaceCollector::InitializePhase()
 
 void OldSpaceCollector::FinishPhase()
 {
-    // swap
-    markStack_.FinishMarking(heap_->GetMarkStack());
-    weakProcessQueue_.FinishMarking(heap_->GetProcessQueue());
-    auto heapManager = heap_->GetHeapManager();
-    heapManager->GetOldSpaceAllocator().Swap(oldSpaceAllocator_);
-    heapManager->GetNonMovableSpaceAllocator().Swap(nonMovableAllocator_);
-    heapManager->GetMachineCodeSpaceAllocator().Swap(machineCodeSpaceAllocator_);
+    size_t aliveSize = 0;
+    workList_->Finish(aliveSize);
 }
 
 void OldSpaceCollector::MarkingPhase()
@@ -83,92 +79,49 @@ void OldSpaceCollector::MarkingPhase()
     RootVisitor gcMarkYoung = [this]([[maybe_unused]] Root type, ObjectSlot slot) {
         JSTaggedValue value(slot.GetTaggedType());
         if (value.IsHeapObject()) {
-            MarkObject(value.GetTaggedObject());
+            MarkObject(0, value.GetTaggedObject());
         }
     };
     RootRangeVisitor gcMarkRangeYoung = [this]([[maybe_unused]] Root type, ObjectSlot start, ObjectSlot end) {
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
-                MarkObject(value.GetTaggedObject());
+                MarkObject(0, value.GetTaggedObject());
             }
         }
     };
     rootManager_.VisitVMRoots(gcMarkYoung, gcMarkRangeYoung);
 
-    ProcessMarkStack();
+    ProcessMarkStack(0);
+    if (paralledGC_) {
+        heap_->GetThreadPool()->WaitTaskFinish();
+    }
 }
 
-void OldSpaceCollector::ProcessMarkStack()
+void OldSpaceCollector::ProcessMarkStack(uint64_t threadId)
 {
     while (true) {
-        auto obj = markStack_.PopBack();
-        if (UNLIKELY(obj == nullptr)) {
+        TaggedObject *obj = nullptr;
+        if (!workList_->Pop(threadId, &obj)) {
             break;
         }
         auto jsHclass = obj->GetClass();
         // mark dynClass
-        MarkObject(jsHclass);
+        MarkObject(threadId, jsHclass);
 
         rootManager_.MarkObjectBody<GCType::OLD_GC>(
-            obj, jsHclass, [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+            obj, jsHclass, [this, &threadId]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
                 for (ObjectSlot slot = start; slot < end; slot++) {
                     JSTaggedValue value(slot.GetTaggedType());
                     if (value.IsWeak()) {
-                        RecordWeakReference(reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
+                        RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
                         continue;
                     }
                     if (value.IsHeapObject()) {
-                        MarkObject(value.GetTaggedObject());
+                        MarkObject(threadId, value.GetTaggedObject());
                     }
                 }
             });
-    }
-}
-
-void OldSpaceCollector::SweepSpace(Space *space, FreeListAllocator &allocator)
-{
-    allocator.RebuildFreeList();
-    space->EnumerateRegions([this, &allocator](Region *current) {
-        auto markBitmap = current->GetMarkBitmap();
-        ASSERT(markBitmap != nullptr);
-        uintptr_t freeStart = current->GetBegin();
-        markBitmap->IterateOverMarkedChunks([this, &current, &freeStart, &allocator](void *mem) {
-            ASSERT(current->InRange(ToUintPtr(mem)));
-            auto header = reinterpret_cast<TaggedObject *>(mem);
-            auto klass = header->GetClass();
-            JSType jsType = klass->GetObjectType();
-            auto size = klass->SizeFromJSHClass(jsType, header);
-            size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
-
-            uintptr_t freeEnd = ToUintPtr(mem);
-            if (freeStart != freeEnd) {
-                FreeLiveRange(allocator, current, freeStart, freeEnd);
-            }
-            freeStart = freeEnd + size;
-        });
-        uintptr_t freeEnd = current->GetEnd();
-        if (freeStart != freeEnd) {
-            FreeLiveRange(allocator, current, freeStart, freeEnd);
-        }
-    });
-}
-
-void OldSpaceCollector::SweepSpace(HugeObjectSpace *space)
-{
-    Region *currentRegion = space->GetRegionList().GetFirst();
-
-    while (currentRegion != nullptr) {
-        Region *next = currentRegion->GetNext();
-        auto markBitmap = currentRegion->GetMarkBitmap();
-        bool isMarked = false;
-        markBitmap->IterateOverMarkedChunks([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
-        if (!isMarked) {
-            space->GetRegionList().RemoveNode(currentRegion);
-            hugeSpaceFreeSize_ += currentRegion->GetCapacity();
-            space->ClearAndFreeRegion(currentRegion);
-        }
-        currentRegion = next;
     }
 }
 
@@ -176,19 +129,22 @@ void OldSpaceCollector::SweepPhases()
 {
     trace::ScopedTrace scoped_trace("OldSpaceCollector::SweepPhases");
     // process weak reference
-    while (true) {
-        auto obj = weakProcessQueue_.PopBack();
-        if (UNLIKELY(obj == nullptr)) {
-            break;
-        }
-        ObjectSlot slot(ToUintPtr(obj));
-        JSTaggedValue value(slot.GetTaggedType());
-        auto header = value.GetTaggedWeakRef();
+    for (uint32_t i = 0; i < heap_->GetThreadPool()->GetThreadNum(); i++) {
+        ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
+        while (true) {
+            auto obj = queue->PopBack();
+            if (UNLIKELY(obj == nullptr)) {
+                break;
+            }
+            ObjectSlot slot(ToUintPtr(obj));
+            JSTaggedValue value(slot.GetTaggedType());
+            auto header = value.GetTaggedWeakRef();
 
-        Region *objectRegion = Region::ObjectAddressToRange(header);
-        auto markBitmap = objectRegion->GetMarkBitmap();
-        if (!markBitmap->Test(header)) {
-            slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
+            Region *objectRegion = Region::ObjectAddressToRange(header);
+            auto markBitmap = objectRegion->GetMarkBitmap();
+            if (!markBitmap->Test(header)) {
+                slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
+            }
         }
     }
 
@@ -209,9 +165,6 @@ void OldSpaceCollector::SweepPhases()
     heap_->GetEcmaVM()->GetJSThread()->IterateWeakEcmaGlobalStorage(gcUpdateWeak);
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
 
-    SweepSpace(const_cast<OldSpace *>(heap_->GetOldSpace()), oldSpaceAllocator_);
-    SweepSpace(const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace()), nonMovableAllocator_);
-    SweepSpace(const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace()));
-    SweepSpace(const_cast<MachineCodeSpace *>(heap_->GetMachineCodeSpace()), machineCodeSpaceAllocator_);
+    heap_->GetSweeper()->SweepPhases();
 }
 }  // namespace panda::ecmascript

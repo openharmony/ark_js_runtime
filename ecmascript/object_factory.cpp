@@ -793,10 +793,12 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
     if (size >= FreeObject::SIZE_OFFSET && size < FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
         object->SetClass(freeObjectWithOneFieldClass_);
+        object->SetNext(nullptr);
     } else if (size >= FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
         object->SetClass(freeObjectWithTwoFieldClass_);
         object->SetAvailable(size);
+        object->SetNext(nullptr);
     } else if (size == FreeObject::NEXT_OFFSET) {
         object = reinterpret_cast<FreeObject *>(address);
         object->SetClass(freeObjectWithNoneFieldClass_);

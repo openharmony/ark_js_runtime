@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_MEM_REGION_H
 #define ECMASCRIPT_MEM_REGION_H
 
+#include "ecmascript/mem/free_object_list.h"
 #include "ecmascript/mem/mem.h"
 #include "mem/gc/bitmap.h"
 
@@ -41,9 +42,11 @@ enum RegionFlags {
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_OLD_GENERATION = 1 << 6,
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
+    IS_IN_NON_MOVABLE_GENERATION = 1 << 7,
+    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_YOUNG_OR_OLD_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_OLD_GENERATION,
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
-    IS_INVALID = 1 << 7,
+    IS_INVALID = 1 << 8,
 };
 
 class Region {
@@ -206,6 +209,36 @@ public:
         return res;
     }
 
+    void InitializeKind()
+    {
+        kinds_ = Span<FreeObjectKind *>(new FreeObjectKind *[FreeObjectList::NumberOfKinds()](),
+                                        FreeObjectList::NumberOfKinds());
+        for (int i = 0; i < FreeObjectList::NumberOfKinds(); i++) {
+            kinds_[i] = new FreeObjectKind(i);
+        }
+    }
+
+    void DestoryKind()
+    {
+        for (auto kind : kinds_) {
+            delete kind;
+        }
+        delete[] kinds_.data();
+    }
+
+    FreeObjectKind *GetFreeObjectKind(KindType type)
+    {
+        return kinds_[type];
+    }
+
+    template<class Callback>
+    void EnumerateKinds(Callback cb)
+    {
+        for (auto kind : kinds_) {
+            cb(kind);
+        }
+    }
+
 private:
     Space *space_;
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now
@@ -218,6 +251,7 @@ private:
     RangeBitmap *markBitmap_{nullptr};
     RememberedSet *crossRegionSet_{nullptr};
     RememberedSet *oldToNewSet_{nullptr};
+    Span<FreeObjectKind *> kinds_;
     friend class SnapShot;
 };
 }  // namespace ecmascript

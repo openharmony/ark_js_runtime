@@ -83,18 +83,18 @@ TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, 
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return AllocateHugeObject(hclass, size);
     }
-    auto object = reinterpret_cast<TaggedObject *>(nonMovableAllocator_.Allocate(size));
+    auto object = reinterpret_cast<TaggedObject *>(GetNonMovableSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {
         if (heap_->CheckAndTriggerNonMovableGC()) {
-            object = reinterpret_cast<TaggedObject *>(nonMovableAllocator_.Allocate(size));
+            object = reinterpret_cast<TaggedObject *>(GetNonMovableSpaceAllocator().Allocate(size));
         }
         if (UNLIKELY(object == nullptr)) {
             // hclass must be nonmovable
-            if (!heap_->FillNonMovableSpaceAndTryGC(&nonMovableAllocator_)) {
+            if (!heap_->FillNonMovableSpaceAndTryGC(&GetNonMovableSpaceAllocator())) {
                 LOG_ECMA_MEM(FATAL) << "OOM : extend failed";
                 UNREACHABLE();
             }
-            object = reinterpret_cast<TaggedObject *>(nonMovableAllocator_.Allocate(size));
+            object = reinterpret_cast<TaggedObject *>(GetNonMovableSpaceAllocator().Allocate(size));
             if (UNLIKELY(object == nullptr)) {
                 heap_->ThrowOutOfMemoryError(size);
                 UNREACHABLE();
@@ -140,18 +140,18 @@ TaggedObject *EcmaHeapManager::AllocateOldGenerationOrHugeObject(JSHClass *hclas
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return AllocateHugeObject(hclass, size);
     }
-    auto object = reinterpret_cast<TaggedObject *>(oldSpaceAllocator_.Allocate(size));
+    auto object = reinterpret_cast<TaggedObject *>(GetOldSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {
         if (heap_->CheckAndTriggerOldGC()) {
-            object = reinterpret_cast<TaggedObject *>(oldSpaceAllocator_.Allocate(size));
+            object = reinterpret_cast<TaggedObject *>(GetOldSpaceAllocator().Allocate(size));
         }
         if (UNLIKELY(object == nullptr)) {
             // hclass must nonmovable
-            if (!heap_->FillOldSpaceAndTryGC(&oldSpaceAllocator_)) {
+            if (!heap_->FillOldSpaceAndTryGC(&GetOldSpaceAllocator())) {
                 LOG_ECMA_MEM(FATAL) << "OOM : extend failed";
                 UNREACHABLE();
             }
-            object = reinterpret_cast<TaggedObject *>(oldSpaceAllocator_.Allocate(size));
+            object = reinterpret_cast<TaggedObject *>(GetOldSpaceAllocator().Allocate(size));
             if (UNLIKELY(object == nullptr)) {
                 heap_->ThrowOutOfMemoryError(size);
                 UNREACHABLE();
@@ -186,12 +186,12 @@ TaggedObject *EcmaHeapManager::AllocateHugeObject(JSHClass *hclass, size_t size)
 
 TaggedObject *EcmaHeapManager::AllocateMachineCodeSpaceObject(JSHClass *hclass, size_t size)
 {
-    auto object = reinterpret_cast<TaggedObject *>(machineCodeSpaceAllocator_.Allocate(size));
+    auto object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {
-        if (!heap_->FillMachineCodeSpaceAndTryGC(&machineCodeSpaceAllocator_)) {
+        if (!heap_->FillMachineCodeSpaceAndTryGC(&GetMachineCodeSpaceAllocator())) {
             return nullptr;
         }
-        object = reinterpret_cast<TaggedObject *>(machineCodeSpaceAllocator_.Allocate(size));
+        object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
         if (UNLIKELY(object == nullptr)) {
             heap_->ThrowOutOfMemoryError(size);
             return nullptr;

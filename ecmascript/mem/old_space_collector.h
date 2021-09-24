@@ -21,6 +21,7 @@
 #include "ecmascript/mem/allocator.h"
 #include "ecmascript/mem/mark_stack-inl.h"
 #include "ecmascript/mem/mark_word.h"
+#include "ecmascript/mem/semi_space_worker.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "ecmascript/mem/remembered_set.h"
@@ -33,7 +34,7 @@ class JSHClass;
 
 class OldSpaceCollector : public GarbageCollector {
 public:
-    explicit OldSpaceCollector(Heap *heap);
+    explicit OldSpaceCollector(Heap *heap, bool parallelGc);
     ~OldSpaceCollector() override = default;
     NO_COPY_SEMANTIC(OldSpaceCollector);
     NO_MOVE_SEMANTIC(OldSpaceCollector);
@@ -50,26 +51,22 @@ private:
     void SweepPhases();
     void FinishPhase();
 
-    void ProcessMarkStack();
+    void ProcessMarkStack(uint64_t threadId);
     void MarkObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor);
 
-    inline void MarkObject(TaggedObject *object);
-    inline void FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart, uintptr_t freeEnd);
-    inline void RecordWeakReference(JSTaggedType *ref);
-    void SweepSpace(Space *space, FreeListAllocator &allocator);
-    void SweepSpace(HugeObjectSpace *space);  // Only sweep huge space.
+    inline void MarkObject(uint64_t threadId, TaggedObject *object);
+    inline void RecordWeakReference(uint64_t threadId, JSTaggedType *ref);
 
     Heap *heap_;
     HeapRootManager rootManager_;
-    MarkStack markStack_;
-    ProcessQueue weakProcessQueue_;
-    FreeListAllocator oldSpaceAllocator_ {};
-    FreeListAllocator nonMovableAllocator_ {};
-    FreeListAllocator machineCodeSpaceAllocator_ {};
+    bool paralledGC_{false};
+    OldGCWorker *workList_{nullptr};
     size_t freeSize_{0};
     size_t hugeSpaceFreeSize_ = 0;
     size_t oldSpaceCommitSize_ = 0;
     size_t nonMoveSpaceCommitSize_ = 0;
+
+    friend class OldGCWorker;
 };
 }  // namespace ecmascript
 }  // namespace panda

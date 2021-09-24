@@ -91,7 +91,6 @@ private:
     size_t semiCopiedSize_{0};
     size_t commitSize_ = 0;
     uintptr_t ageMark_{0};
-    size_t gcTime_{0};
     friend class TlabAllocator;
     friend class SemiSpaceWorker;
     friend class SemiSpaceMarker;

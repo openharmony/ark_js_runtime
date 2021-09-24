@@ -29,13 +29,16 @@ class Heap;
 class Program;
 
 enum MemSpaceType {
-    SEMI_SPACE,
-    OLD_SPACE,
+    OLD_SPACE = 0,
     NON_MOVABLE,
-    HUGE_OBJECT_SPACE,
-    SNAPSHOT_SPACE,
     MACHINE_CODE_SPACE,
-    SPACE_TYPE_LAST  // Count of different types
+    HUGE_OBJECT_SPACE,
+    SEMI_SPACE,
+    SNAPSHOT_SPACE,
+    COMPRESS_SPACE,
+    SPACE_TYPE_LAST,  // Count of different types
+
+    FREE_LIST_NUM = MACHINE_CODE_SPACE - OLD_SPACE + 1,
 };
 
 enum TriggerGCType {
@@ -238,6 +241,7 @@ public:
     NO_COPY_SEMANTIC(HugeObjectSpace);
     NO_MOVE_SEMANTIC(HugeObjectSpace);
     uintptr_t Allocate(size_t objectSize);
+    void Free(Region *region);
     size_t GetHeapObjectSize() const;
     bool ContainObject(TaggedObject *object) const;
     bool IsLive(TaggedObject *object) const;

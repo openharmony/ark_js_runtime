@@ -13,17 +13,36 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/ecma_heap_manager-inl.h"
-#include "ecmascript/mem/heap.h"
+#ifndef ECMASCRIPT_PLATFORM_RUNNER_H
+#define ECMASCRIPT_PLATFORM_RUNNER_H
+
+#include <memory>
+#include <thread>
+#include <vector>
+
+#include "ecmascript/platform/task_queue.h"
 
 namespace panda::ecmascript {
-EcmaHeapManager::EcmaHeapManager(Heap *heap)
-    : heap_(heap),
-      newSpaceAllocator_(heap->GetNewSpace()),
-      freeListAllocator_ { FreeListAllocator(heap->GetOldSpace()), FreeListAllocator(heap_->GetNonMovableSpace()),
-      FreeListAllocator(heap->GetMachineCodeSpace()) }
-{
-    ASSERT(heap != nullptr);
-    heap->SetHeapManager(this);
-}
+class Runner {
+public:
+    explicit Runner(int threadNum);
+    ~Runner() = default;
+
+    NO_COPY_SEMANTIC(Runner);
+    NO_MOVE_SEMANTIC(Runner);
+
+    void PostTask(std::unique_ptr<Task> task)
+    {
+        taskQueue_.PostTask(std::move(task));
+    }
+
+    void Terminate();
+
+private:
+    void Run();
+
+    std::vector<std::unique_ptr<std::thread>> threadPool_ {};
+    TaskQueue taskQueue_ {};
+};
 }  // namespace panda::ecmascript
+#endif  // ECMASCRIPT_PLATFORM_RUNNER_H

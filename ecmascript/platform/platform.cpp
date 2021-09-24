@@ -13,17 +13,33 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/ecma_heap_manager-inl.h"
-#include "ecmascript/mem/heap.h"
+#include "ecmascript/platform/platform.h"
+
+#include "sys/sysinfo.h"
 
 namespace panda::ecmascript {
-EcmaHeapManager::EcmaHeapManager(Heap *heap)
-    : heap_(heap),
-      newSpaceAllocator_(heap->GetNewSpace()),
-      freeListAllocator_ { FreeListAllocator(heap->GetOldSpace()), FreeListAllocator(heap_->GetNonMovableSpace()),
-      FreeListAllocator(heap->GetMachineCodeSpace()) }
+void Platform::Initialize(int threadNum)
 {
-    ASSERT(heap != nullptr);
-    heap->SetHeapManager(this);
+    os::memory::LockHolder lock(mutex_);
+    if (isInitialized_++ <= 0) {
+        runner_ = std::make_unique<Runner>(TheMostSuitableThreadNum(threadNum));
+    }
+}
+
+void Platform::Destory()
+{
+    os::memory::LockHolder lock(mutex_);
+    if (--isInitialized_ <= 0) {
+        runner_->Terminate();
+    }
+}
+
+int Platform::TheMostSuitableThreadNum(int threadNum) const
+{
+    if (threadNum > 0) {
+        return std::min<int>(threadNum, MAX_PLATFORM_THREAD_NUM);
+    }
+    int numOfCpuCore = get_nprocs() - 1;
+    return std::min<int>(numOfCpuCore, MAX_PLATFORM_THREAD_NUM);
 }
 }  // namespace panda::ecmascript

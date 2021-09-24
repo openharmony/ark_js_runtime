@@ -59,7 +59,7 @@ void SemiSpaceCollector::RunPhases()
 void SemiSpaceCollector::InitializePhase()
 {
     heap_->GetThreadPool()->WaitTaskFinish();
-    gcTime_++;
+    heap_->GetSweeper()->EnsureAllTaskFinish();
     auto fromSpace = heap_->GetFromSpace();
     if (fromSpace->GetCommittedSize() == 0) {
         heap_->InitializeFromSpace();

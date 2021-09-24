@@ -233,6 +233,19 @@ public:
     NO_COPY_SEMANTIC(CompressGCWorker);
     NO_MOVE_SEMANTIC(CompressGCWorker);
 };
-}  // namespace panda::ecmascript
 
+class OldGCWorker : public Worker {
+public:
+    OldGCWorker() = delete;
+    OldGCWorker(Heap *heap, uint32_t threadNum) : Worker(heap, threadNum) {}
+
+    ~OldGCWorker() override = default;
+
+    void PushWorkNodeToGlobal(uint32_t threadId) override;
+    void Initialize() override;
+
+    NO_COPY_SEMANTIC(OldGCWorker);
+    NO_MOVE_SEMANTIC(OldGCWorker);
+};
+}  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H

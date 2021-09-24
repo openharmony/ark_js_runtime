@@ -24,7 +24,7 @@
 #include "ecmascript/mem/tlab_allocator.h"
 
 namespace panda::ecmascript {
-static constexpr size_t YOUNG_BUFFER_SIZE = 32 * 1024;
+static constexpr size_t YOUNG_BUFFER_SIZE = 31 * 1024;
 static constexpr size_t OLD_BUFFER_SIZE = 255 * 1024;
 
 TlabAllocator::TlabAllocator(Heap *heap, TriggerGCType gcType)
