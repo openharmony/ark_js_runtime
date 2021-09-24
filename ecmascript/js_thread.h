@@ -178,6 +178,16 @@ public:
         return internalCallParams_;
     }
 
+    ThreadId GetThreadId() const
+    {
+        return GetId();
+    }
+
+    static ThreadId GetCurrentThreadId()
+    {
+        return os::thread::GetCurrentThreadId();
+    }
+
     void IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor);
 
 private:
