@@ -290,7 +290,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObject(const JSHandle<JSHClass> &jshclass
     NewObjectHook();
     JSHandle<JSObject> obj(thread_, JSObject::Cast(NewDynObject(jshclass, JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
     JSHandle<TaggedArray> emptyArray = EmptyArray();
-    Barriers::SetDynPrimitive<JSTaggedType>(*obj, ECMAObject::HASH_OFFSET, JSTaggedValue(0).GetRawData());
+    obj->InitializeHash();
     obj->SetElements(thread_, emptyArray, SKIP_BARRIER);
     obj->SetProperties(thread_, emptyArray, SKIP_BARRIER);
     return obj;

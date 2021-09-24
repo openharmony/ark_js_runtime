@@ -88,7 +88,7 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     }
 
     // visit global Constant
-    globalConst_.Visitor(v1);
+    globalConst_.VisitRangeSlot(v1);
     // visit stack roots
     EcmaFrameHandler(currentFrame_).Iterate(v0, v1);
     // visit internal call params

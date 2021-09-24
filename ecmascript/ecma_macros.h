@@ -371,14 +371,14 @@
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECL_VISIT_OBJECT(BEGIN_OFFSET, SIZE)                                                          \
-    void Visitor(const EcmaObjectRangeVisitor &visitor)                                                \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                                \
     {                                                                                                  \
         visitor(this, ObjectSlot(ToUintPtr(this) + BEGIN_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE)); \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECL_VISIT_OBJECT_FOR_JS_OBJECT(PARENTCLASS, BEGIN_OFFSET, SIZE)                               \
-    void Visitor(const EcmaObjectRangeVisitor &visitor)                                                \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                                \
     {                                                                                                  \
         VisitObjects(visitor);                                                                         \
         /* visit in object fields */                                                                   \
