@@ -33,7 +33,10 @@ group("ark_js_host_linux_tools_packages") {
       "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})",
     ]
     if (is_standard_system) {
-      deps += [ "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})" ]
+      deps += [
+        "//ark/js_runtime/ecmascript/compiler:ark_stub_opt(${host_toolchain})",
+        "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})",
+      ]
     }
   }
 }
@@ -352,6 +355,7 @@ ecma_source = [
   "ecmascript/snapshot/mem/slot_bit.cpp",
   "ecmascript/snapshot/mem/snapshot.cpp",
   "ecmascript/snapshot/mem/snapshot_serialize.cpp",
+  "ecmascript/stub_module.cpp",
   "ecmascript/tagged_dictionary.cpp",
   "ecmascript/template_string.cpp",
   "ecmascript/vmstat/caller_stat.cpp",

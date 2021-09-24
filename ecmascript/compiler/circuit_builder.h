@@ -19,7 +19,7 @@
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/machine_type.h"
-#include "ecmascript/compiler/stub_interface.h"
+#include "ecmascript/compiler/stub_descriptor.h"
 
 namespace kungfu {
 class CircuitBuilder {
@@ -55,12 +55,12 @@ public:
     AddrShift NewArithMeticGate(OpCode opcode, AddrShift value);
     AddrShift NewLogicGate(OpCode opcode, AddrShift left, AddrShift right);
     AddrShift NewLogicGate(OpCode opcode, AddrShift value);
-    AddrShift NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args);
-    AddrShift NewCallGate(StubInterfaceDescriptor *descriptor, AddrShift target, AddrShift depend,
+    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args);
+    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift target, AddrShift depend,
                           std::initializer_list<AddrShift> args);
-    AddrShift NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+    AddrShift NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                  std::initializer_list<AddrShift> args);
-    AddrShift NewCallRuntimeGate(StubInterfaceDescriptor *descriptor, AddrShift thread, AddrShift target,
+    AddrShift NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                  AddrShift depend, std::initializer_list<AddrShift> args);
     static OpCode GetLoadOpCodeFromMachineType(MachineType type);
     static OpCode GetStoreOpCodeFromMachineType(MachineType type);

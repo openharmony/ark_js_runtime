@@ -40,6 +40,8 @@ public:
                                    uint64_t argValue, uint32_t argAttr);
     static bool CallSetter(uint64_t argThread, uint64_t argSetter, uint64_t argReceiver, uint64_t argValue,
                            bool argMayThrow);
+    static uint64_t CallGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver);
+    static uint64_t AccessorGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver);
     static void ThrowTypeError(uint64_t argThread, int argMessageStringId);
     static bool JSProxySetProperty(uint64_t argThread, uint64_t argProxy, uint64_t argKey, uint64_t argValue,
                                    uint64_t argReceiver, bool argMayThrow);

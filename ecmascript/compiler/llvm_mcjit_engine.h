@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_COMPILER_LLVM_MCJINT_COMPILER_H
-#define ECMASCRIPT_COMPILER_LLVM_MCJINT_COMPILER_H
+#ifndef ECMASCRIPT_COMPILER_LLVM_MCJINT_ENGINE_H
+#define ECMASCRIPT_COMPILER_LLVM_MCJINT_ENGINE_H
 
 #include <iostream>
 #include <list>
@@ -34,42 +34,43 @@
 #include "llvm-c/Transforms/Scalar.h"
 
 namespace kungfu {
-using ByteBuffer = std::vector<uint8_t>;
-using BufferList = std::list<ByteBuffer>;
-using StringList = std::list<std::string>;
-struct CompilerState {
-    CompilerState(): machineCode(nullptr), codeBufferPos(0), stackMapsSection_(nullptr)
+struct CodeInfo {
+    using ByteBuffer = std::vector<uint8_t>;
+    using BufferList = std::list<ByteBuffer>;
+    using StringList = std::list<std::string>;
+    CodeInfo() : machineCode(nullptr), codeBufferPos(0), stackMapsSection_(nullptr)
     {
         Reset();
         static constexpr int prot = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
         static constexpr int flags = MAP_ANONYMOUS | MAP_SHARED;         // NOLINT(hicpp-signed-bitwise)
         machineCode = static_cast<uint8_t *>(mmap(nullptr, MAX_MACHINE_CODE_SIZE, prot, flags, -1, 0));
+        std::cerr << std::hex << "machineCode : " << reinterpret_cast<std::uintptr_t>(machineCode) << std::endl;
     }
-    ~CompilerState()
+    ~CodeInfo()
     {
         Reset();
         munmap(machineCode, MAX_MACHINE_CODE_SIZE);
     }
-    uint8_t* AllocaCodeSection(uintptr_t size, const char* sectionName)
+    uint8_t *AllocaCodeSection(uintptr_t size, const char *sectionName)
     {
         uint8_t *addr = nullptr;
         if (codeBufferPos + size > MAX_MACHINE_CODE_SIZE) {
-            std::cerr << std::hex << "AllocaCodeSection failed alloc codeBufferPos:" << codeBufferPos << " size:"
-                << size << "  larger MAX_MACHINE_CODE_SIZE:" << MAX_MACHINE_CODE_SIZE << std::endl;
+            std::cerr << std::hex << "AllocaCodeSection failed alloc codeBufferPos:" << codeBufferPos
+                      << " size:" << size << "  larger MAX_MACHINE_CODE_SIZE:" << MAX_MACHINE_CODE_SIZE << std::endl;
             return nullptr;
         }
         std::cout << "AllocaCodeSection size:" << size << std::endl;
         std::vector<uint8_t> codeBuffer(machineCode[codeBufferPos], size);
         std::cout << " codeBuffer size: " << codeBuffer.size() << std::endl;
-        codeBufferPos += size;
         codeSectionNames_.push_back(sectionName);
         addr = machineCode + codeBufferPos;
         std::cout << "AllocaCodeSection addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) << std::endl;
         codeInfo_.push_back({addr, size});
+        codeBufferPos += size;
         return addr;
     }
 
-    uint8_t* AllocaDataSection(uintptr_t size, const char* sectionName)
+    uint8_t *AllocaDataSection(uintptr_t size, const char *sectionName)
     {
         uint8_t *addr = nullptr;
         dataSectionList_.push_back(std::vector<uint8_t>());
@@ -92,30 +93,42 @@ struct CompilerState {
         codeSectionNames_.clear();
         codeBufferPos = 0;
     }
-    uint8_t* GetStackMapsSection() const
+
+    uint8_t *GetStackMapsSection() const
     {
         return stackMapsSection_;
     }
     std::vector<std::pair<uint8_t *, uintptr_t>> GetCodeInfo() const
     {
-        return  codeInfo_;
+        return codeInfo_;
     }
+
+    int GetCodeSize() const
+    {
+        return codeBufferPos;
+    }
+
+    uint8_t *GetCodeBuff() const
+    {
+        return machineCode;
+    }
+
 private:
     BufferList dataSectionList_ {};
     StringList dataSectionNames_ {};
     StringList codeSectionNames_ {};
     uint8_t *machineCode;
-    const size_t MAX_MACHINE_CODE_SIZE = (1 << 20); // 1M
+    const size_t MAX_MACHINE_CODE_SIZE = (1 << 20);  // 1M
     int codeBufferPos = 0;
     /* <addr, size > for asssembler */
     std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo_ {};
     /* stack map */
-    uint8_t*  stackMapsSection_ {nullptr};
+    uint8_t *stackMapsSection_ {nullptr};
 };
-class LLVMMCJITCompiler {
+class LLVMAssembler {
 public:
-    explicit LLVMMCJITCompiler(LLVMModuleRef module);
-    virtual ~LLVMMCJITCompiler();
+    explicit LLVMAssembler(LLVMModuleRef module);
+    virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
     {
@@ -124,7 +137,16 @@ public:
     void Disassemble(std::map<uint64_t, std::string> addr2name = std::map<uint64_t, std::string>()) const;
     uint8_t *GetStackMapsSection() const
     {
-        return compilerState_.GetStackMapsSection();
+        return codeInfo_.GetStackMapsSection();
+    }
+
+    int GetCodeSize() const
+    {
+        return codeInfo_.GetCodeSize();
+    }
+    uint8_t *GetCodeBuffer() const
+    {
+        return codeInfo_.GetCodeBuff();
     }
 
 private:
@@ -140,8 +162,7 @@ private:
     LLVMExecutionEngineRef engine_;
     std::string hostTriple_;
     char *error_;
-    struct CompilerState compilerState_;
+    struct CodeInfo codeInfo_;
 };
-
-#endif
 }  // namespace kungfu
+#endif  // ECMASCRIPT_COMPILER_LLVM_MCJINT_ENGINE_H

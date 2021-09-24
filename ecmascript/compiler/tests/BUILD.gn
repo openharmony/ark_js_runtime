@@ -31,12 +31,12 @@ config("include_llvm_config") {
 
 module_output_path = "ark/js_runtime"
 
-host_unittest_action("StubOptimizerTest") {
+host_unittest_action("StubTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
-    "stub_optimizer_tests.cpp",
+    "stub_tests.cpp",
   ]
   configs = [
     ":include_llvm_config",
@@ -108,7 +108,6 @@ host_unittest_action("StubOptimizerTest") {
     "LLVMTransformUtils",
     "LLVMAArch64Utils",
     "LLVMARMUtils",
-    "LLVMX86Utils",
     "LLVMIRReader",
   ]
 
@@ -125,5 +124,5 @@ group("host_unittest") {
   testonly = true
 
   # deps file
-  deps = [ ":StubOptimizerTestAction" ]
+  deps = [ ":StubTestAction(${host_toolchain})" ]
 }

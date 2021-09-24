@@ -33,8 +33,8 @@ bool RuntimeTrampolines::AddElementInternal(uint64_t argThread, uint64_t argRece
     return JSObject::AddElementInternal(thread, receiver, argIndex, value, attr);
 }
 
-bool RuntimeTrampolines::CallSetter(uint64_t argThread, uint64_t argSetter, uint64_t argReceiver,
-                                    uint64_t argValue, bool argMayThrow)
+bool RuntimeTrampolines::CallSetter(uint64_t argThread, uint64_t argSetter, uint64_t argReceiver, uint64_t argValue,
+                                    bool argMayThrow)
 {
     auto thread = reinterpret_cast<JSThread *>(argThread);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -54,8 +54,8 @@ void RuntimeTrampolines::ThrowTypeError(uint64_t argThread, int argMessageString
     THROW_NEW_ERROR_AND_RETURN(thread, error.GetTaggedValue());
 }
 
-bool RuntimeTrampolines::JSProxySetProperty(uint64_t argThread, uint64_t argProxy, uint64_t argKey,
-                                            uint64_t argValue, uint64_t argReceiver, bool argMayThrow)
+bool RuntimeTrampolines::JSProxySetProperty(uint64_t argThread, uint64_t argProxy, uint64_t argKey, uint64_t argValue,
+                                            uint64_t argReceiver, bool argMayThrow)
 {
     auto thread = reinterpret_cast<JSThread *>(argThread);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -71,5 +71,21 @@ uint32_t RuntimeTrampolines::GetHash32(uint64_t key, uint64_t len)
 {
     auto pkey = reinterpret_cast<uint8_t *>(key);
     return panda::GetHash32(pkey, static_cast<size_t>(len));
+}
+
+uint64_t RuntimeTrampolines::CallGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver)
+{
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
+    JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
+    return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
+}
+
+uint64_t RuntimeTrampolines::AccessorGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver)
+{
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
+    JSHandle<JSObject> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
+    return accessor->CallInternalGet(thread, objHandle).GetRawData();
 }
 }  // namespace panda::ecmascript

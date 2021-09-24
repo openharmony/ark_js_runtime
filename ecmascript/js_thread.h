@@ -157,15 +157,23 @@ public:
 
     JSTaggedValue GetCurrentLexenv() const;
 
-    void SetRuntimeFunction(uint32_t id, uintptr_t functionAddress)
+    void SetRuntimeFunction(uint32_t id, Address functionAddress)
     {
         ASSERT(id < MAX_RUNTIME_FUNCTIONS);
-        runtimeFunctions[id] = functionAddress;
+        runtimeFunctions_[id] = functionAddress;
     }
+
+    Address GetFastStubEntry(uint32_t id)
+    {
+        ASSERT(id < kungfu::FAST_STUB_MAXCOUNT);
+        return fastStubEntires_[id];
+    }
+
+    void LoadFastStubModule(const char *moduleFile);
 
     static uint32_t GetRuntimeFunctionsOffset()
     {
-        return MEMBER_OFFSET(JSThread, runtimeFunctions);
+        return MEMBER_OFFSET(JSThread, runtimeFunctions_);
     }
 
     static uint64_t GetCurrentFrameOffset()
@@ -193,6 +201,9 @@ private:
     static constexpr uint32_t MAX_RUNTIME_FUNCTIONS =
         kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT - kungfu::EXTERNAL_RUNTIME_STUB_BEGIN - 1;
 
+    Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
+    Address fastStubEntires_[kungfu::FAST_STUB_MAXCOUNT];
+    JSTaggedValue stubCode_ {JSTaggedValue::Hole()};
     EcmaGlobalStorage *globalStorage_ {nullptr};
 
     os::memory::ConditionVariable initializationVar_ GUARDED_BY(initializationLock_);
@@ -210,7 +221,6 @@ private:
     JSTaggedValue exception_ {JSTaggedValue::Hole()};
     bool stableArrayElementsGuardians_ {true};
     GlobalEnvConstants globalConst_;  // Place-Holder
-    Address runtimeFunctions[MAX_RUNTIME_FUNCTIONS];
     InternalCallParams *internalCallParams_ {nullptr};
 
     friend class EcmaHandleScope;

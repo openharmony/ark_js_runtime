@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include "ecmascript/compiler/llvm_mcjit_compiler.h"
+#include "llvm_mcjit_engine.h"
 
 #include <vector>
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/APInt.h"
-#include "llvm/IR/Verifier.h"
+#include "llvm/CodeGen/BuiltinGCs.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/IR/Argument.h"
@@ -31,44 +31,42 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
-#include "llvm/CodeGen/BuiltinGCs.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/Transforms/Scalar.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
+#include "llvm-c/Disassembler.h"
+#include "llvm-c/DisassemblerTypes.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/Transforms/PassManagerBuilder.h"
 #include "llvm-c/Transforms/Scalar.h"
-#include "llvm/CodeGen/BuiltinGCs.h"
-
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/Host.h"
-#include "llvm-c/Disassembler.h"
-#include "llvm-c/DisassemblerTypes.h"
-#include "llvm/IRReader/IRReader.h"
-
 
 namespace kungfu {
-static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, unsigned alignment, unsigned sectionID,
-                                             const char *sectionName)
+static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
+                                             [[maybe_unused]] unsigned sectionID, const char *sectionName)
 {
     std::cout << "RoundTripAllocateCodeSection object " << object << " - " << std::endl;
-    struct CompilerState& state = *static_cast<struct CompilerState*>(object);
+    struct CodeInfo& state = *static_cast<struct CodeInfo*>(object);
     uint8_t *addr = state.AllocaCodeSection(size, sectionName);
     std::cout << "RoundTripAllocateCodeSection  addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) << addr
               << " size:0x" << size << " +" << std::endl;
     return addr;
 }
 
-static uint8_t *RoundTripAllocateDataSection(void *object, uintptr_t size, unsigned alignment, unsigned sectionID,
-                                             const char *sectionName, LLVMBool isReadOnly)
+static uint8_t *RoundTripAllocateDataSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
+                                             [[maybe_unused]] unsigned sectionID, const char *sectionName,
+                                             [[maybe_unused]] LLVMBool isReadOnly)
 {
-    struct CompilerState& state = *static_cast<struct CompilerState*>(object);
+    struct CodeInfo& state = *static_cast<struct CodeInfo*>(object);
     return state.AllocaDataSection(size, sectionName);
 }
 
-static LLVMBool RoundTripFinalizeMemory(void *object, char **errMsg)
+static LLVMBool RoundTripFinalizeMemory(void *object, [[maybe_unused]] char **errMsg)
 {
     std::cout << "RoundTripFinalizeMemory object " << object << " - " << std::endl;
     return 0;
@@ -77,18 +75,18 @@ static LLVMBool RoundTripFinalizeMemory(void *object, char **errMsg)
 static void RoundTripDestroy(void *object)
 {
     std::cout << "RoundTripDestroy object " << object << " - " << std::endl;
-    delete static_cast<struct CompilerState *>(object);
+    delete static_cast<struct CodeInfo *>(object);
 }
 
-void LLVMMCJITCompiler::UseRoundTripSectionMemoryManager()
+void LLVMAssembler::UseRoundTripSectionMemoryManager()
 {
     auto sectionMemoryManager = std::make_unique<llvm::SectionMemoryManager>();
     options_.MCJMM =
-        LLVMCreateSimpleMCJITMemoryManager(&compilerState_, RoundTripAllocateCodeSection,
+        LLVMCreateSimpleMCJITMemoryManager(&codeInfo_, RoundTripAllocateCodeSection,
             RoundTripAllocateDataSection, RoundTripFinalizeMemory, RoundTripDestroy);
 }
 
-bool LLVMMCJITCompiler::BuildMCJITEngine()
+bool LLVMAssembler::BuildMCJITEngine()
 {
     std::cout << " BuildMCJITEngine  - " << std::endl;
     LLVMBool ret = LLVMCreateMCJITCompilerForModule(&engine_, module_, &options_, sizeof(options_), &error_);
@@ -101,7 +99,7 @@ bool LLVMMCJITCompiler::BuildMCJITEngine()
     return true;
 }
 
-void LLVMMCJITCompiler::BuildAndRunPasses() const
+void LLVMAssembler::BuildAndRunPasses() const
 {
     std::cout << "BuildAndRunPasses  - " << std::endl;
     LLVMPassManagerRef pass = LLVMCreatePassManager();
@@ -114,14 +112,14 @@ void LLVMMCJITCompiler::BuildAndRunPasses() const
     std::cout << "BuildAndRunPasses  + " << std::endl;
 }
 
-LLVMMCJITCompiler::LLVMMCJITCompiler(LLVMModuleRef module): module_(module), engine_(nullptr),
+LLVMAssembler::LLVMAssembler(LLVMModuleRef module): module_(module), engine_(nullptr),
     hostTriple_(""), error_(nullptr)
 {
     Initialize();
     InitMember();
 }
 
-LLVMMCJITCompiler::~LLVMMCJITCompiler()
+LLVMAssembler::~LLVMAssembler()
 {
     module_ = nullptr;
     engine_ = nullptr;
@@ -129,7 +127,7 @@ LLVMMCJITCompiler::~LLVMMCJITCompiler()
     error_ = nullptr;
 }
 
-void LLVMMCJITCompiler::Run()
+void LLVMAssembler::Run()
 {
     UseRoundTripSectionMemoryManager();
     if (!BuildMCJITEngine()) {
@@ -138,7 +136,7 @@ void LLVMMCJITCompiler::Run()
     BuildAndRunPasses();
 }
 
-void LLVMMCJITCompiler::Initialize()
+void LLVMAssembler::Initialize()
 {
 #if defined(PANDA_TARGET_AMD64)
     LLVMInitializeX86TargetInfo();
@@ -156,18 +154,19 @@ void LLVMMCJITCompiler::Initialize()
     options_.NoFramePointerElim = true;
 }
 
-static const char *SymbolLookupCallback(void *disInfo, uint64_t referenceValue, uint64_t *referenceType,
-                                        uint64_t referencePC, const char **referenceName)
+static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_unused]] uint64_t referenceValue,
+                                        uint64_t *referenceType, [[maybe_unused]]uint64_t referencePC,
+                                        [[maybe_unused]] const char **referenceName)
 {
     *referenceType = LLVMDisassembler_ReferenceType_InOut_None;
     return nullptr;
 }
 
-void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) const
+void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
 {
     LLVMDisasmContextRef dcr = LLVMCreateDisasm("x86_64-unknown-linux-gnu", nullptr, 0, nullptr, SymbolLookupCallback);
     std::cout << "========================================================================" << std::endl;
-    for (auto it : compilerState_.GetCodeInfo()) {
+    for (auto it : codeInfo_.GetCodeInfo()) {
         uint8_t *byteSp;
         uintptr_t numBytes;
         byteSp = it.first;
@@ -190,7 +189,7 @@ void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) c
             if (addr2name.find(addr) != addr2name.end()) {
                 std::cout << addr2name[addr].c_str() << ":" << std::endl;
             }
-            fprintf(stderr, "%08x: %08x %s\n", pc, *reinterpret_cast<uint32_t *>(byteSp), outString);
+            (void)fprintf(stderr, "%08x: %08x %s\n", pc, *reinterpret_cast<uint32_t *>(byteSp), outString);
             pc += InstSize;
             byteSp += InstSize;
             numBytes -= InstSize;
@@ -199,7 +198,7 @@ void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) c
     std::cout << "========================================================================" << std::endl;
 }
 
-void LLVMMCJITCompiler::InitMember()
+void LLVMAssembler::InitMember()
 {
     if (module_ == nullptr) {
         module_ = LLVMModuleCreateWithName("simple_module");
