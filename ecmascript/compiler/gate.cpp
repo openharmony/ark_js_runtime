@@ -26,13 +26,13 @@ Properties OpCode::GetProperties() const
 // GENERAL_STATE for any opcode match in
 // {IF_TRUE, IF_FALSE, SWITCH_CASE, DEFAULT_CASE, MERGE, LOOP_BEGIN, STATE_ENTRY}
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define STATE(...) (std::make_pair(std::vector<OpCode>{__VA_ARGS__}, false))
+#define STATE(...) (std::make_pair(std::vector<OpCode> {__VA_ARGS__}, false))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define VALUE(...) (std::make_pair(std::vector<ValueCode>{__VA_ARGS__}, false))
+#define VALUE(...) (std::make_pair(std::vector<ValueCode> {__VA_ARGS__}, false))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MANY_STATE(...) (std::make_pair(std::vector<OpCode>{__VA_ARGS__}, true))
+#define MANY_STATE(...) (std::make_pair(std::vector<OpCode> {__VA_ARGS__}, true))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MANY_VALUE(...) (std::make_pair(std::vector<ValueCode>{__VA_ARGS__}, true))
+#define MANY_VALUE(...) (std::make_pair(std::vector<ValueCode> {__VA_ARGS__}, true))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NO_STATE (std::nullopt)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

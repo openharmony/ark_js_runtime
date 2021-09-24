@@ -136,9 +136,9 @@ struct OptionData {
 };
 
 struct TagElements {
-    JSHandle<JSTaggedValue> language;
-    JSHandle<JSTaggedValue> script;
-    JSHandle<JSTaggedValue> region;
+    JSHandle<JSTaggedValue> language {};
+    JSHandle<JSTaggedValue> script {};
+    JSHandle<JSTaggedValue> region {};
 };
 
 class JSLocale : public JSObject {

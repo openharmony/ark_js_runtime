@@ -572,7 +572,7 @@ AddrShift StubOptimizer::UpdateRepresention(AddrShift oldRep, AddrShift value, L
                     Label isObjectNewRep(env);
                     Label notObjectNewRep(env);
                     Branch(Word64NotEqual(newRep, GetWord64Constant(
-                                                      static_cast<int32_t>(panda::ecmascript::Representation::OBJECT))),
+                        static_cast<int32_t>(panda::ecmascript::Representation::OBJECT))),
                            &notObjectNewRep, &isObjectNewRep);
                     Bind(&notObjectNewRep);
                     {

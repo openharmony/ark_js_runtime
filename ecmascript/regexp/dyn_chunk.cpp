@@ -76,7 +76,7 @@ int DynChunk::Emit(const uint8_t *data, size_t length)
     }
 
     if (memcpy_s(buf_ + size_,  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                 length, data, length) != EOK) {
+        length, data, length) != EOK) {
         return FAILURE;
     }
     size_ += length;
@@ -97,9 +97,9 @@ int DynChunk::EmitSelf(size_t offset, size_t length)
     }
 
     if (memcpy_s(buf_ + size_,  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                 length,
-                 buf_ + offset,  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-                 length) != EOK) {
+        length,
+        buf_ + offset,  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        length) != EOK) {
         return FAILURE;
     }
     size_ += length;

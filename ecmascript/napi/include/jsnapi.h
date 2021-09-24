@@ -528,7 +528,7 @@ using FunctionCallback = Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>,
                                                const Local<JSValueRef> [],  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
                                                int32_t, void *);
 using FunctionCallbackWithNewTarget =
-    Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>, Local<JSValueRef>, const Local<JSValueRef> [], int32_t, void *);
+    Local<JSValueRef>(*)(EcmaVM *, Local<JSValueRef>, Local<JSValueRef>, const Local<JSValueRef> [], int32_t, void *);
 class PUBLIC_API FunctionRef : public ObjectRef {
 public:
     static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, void *data);

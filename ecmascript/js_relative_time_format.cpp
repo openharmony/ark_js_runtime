@@ -47,9 +47,11 @@ JSHandle<JSRelativeTimeFormat> JSRelativeTimeFormat::InitializeRelativeTimeForma
     // 5. Let matcher be ? GetOption(options, "localeMatcher", "string", «"lookup", "best fit"», "best fit").
     auto globalConst = thread->GlobalConstants();
     LocaleMatcherOption matcher =
-        JSLocale::GetOptionOfString(thread, rtfOptions, globalConst->GetHandledLocaleMatcherString(),
-                                    {LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT},
-                                    {"lookup", "best fit"}, LocaleMatcherOption::BEST_FIT);
+        JSLocale::GetOptionOfString(thread, rtfOptions, globalConst->GetHandledLocaleMatcherString(), {
+            LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT
+        }, {
+            "lookup", "best fit"
+        }, LocaleMatcherOption::BEST_FIT);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSRelativeTimeFormat, thread);
 
     // 7. Let numberingSystem be ? GetOption(options, "numberingSystem", "string", undefined, undefined).

@@ -85,18 +85,22 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
         RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
     }
     // 4. Let usage be ? GetOption(options, "usage", "string", « "sort", "search" », "sort").
-    auto usage = JSLocale::GetOptionOfString<UsageOption>(thread, optionsObject, globalConst->GetHandledUsageString(),
-                                                          {UsageOption::SORT, UsageOption::SEARCH}, {"sort", "search"},
-                                                          UsageOption::SORT);
+    auto usage = JSLocale::GetOptionOfString<UsageOption>(thread, optionsObject, globalConst->GetHandledUsageString(), {
+            UsageOption::SORT, UsageOption::SEARCH
+        }, {
+            "sort", "search"
+        }, UsageOption::SORT);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
     JSHandle<JSTaggedValue> usageValue(thread, JSTaggedValue(static_cast<int>(usage)));
     collator->SetUsage(thread, usageValue);
 
     // 5. Let matcher be ? GetOption(options, "localeMatcher", "string", « "lookup", "best fit" », "best fit").
     auto matcher = JSLocale::GetOptionOfString<LocaleMatcherOption>(
-        thread, optionsObject, globalConst->GetHandledLocaleMatcherString(),
-        {LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT}, {"lookup", "best fit"},
-        LocaleMatcherOption::BEST_FIT);
+        thread, optionsObject, globalConst->GetHandledLocaleMatcherString(), {
+            LocaleMatcherOption::LOOKUP, LocaleMatcherOption::BEST_FIT
+        }, {
+            "lookup", "best fit"
+        }, LocaleMatcherOption::BEST_FIT);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
 
     // 6. Let collation be ? GetOption(options, "collation", "string", undefined, undefined).
@@ -126,9 +130,11 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
 
     // 14. Let caseFirst be ? GetOption(options, "caseFirst", "string", « "upper", "lower", "false" », undefined).
     auto caseFirst = JSLocale::GetOptionOfString<CaseFirstOption>(
-        thread, optionsObject, globalConst->GetHandledCaseFirstString(),
-        {CaseFirstOption::UPPER, CaseFirstOption::LOWER, CaseFirstOption::FALSE_OPTION}, {"upper", "lower", "false"},
-        CaseFirstOption::UNDEFINED);
+        thread, optionsObject, globalConst->GetHandledCaseFirstString(), {
+            CaseFirstOption::UPPER, CaseFirstOption::LOWER, CaseFirstOption::FALSE_OPTION
+        }, {
+            "upper", "lower", "false"
+        }, CaseFirstOption::UNDEFINED);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
     JSHandle<JSTaggedValue> caseFirstValue(thread, JSTaggedValue(static_cast<int>(caseFirst)));
     collator->SetCaseFirst(thread, caseFirstValue);
@@ -237,9 +243,11 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
     // 24. Let sensitivity be ? GetOption(options, "sensitivity", "string", « "base", "accent", "case", "variant" »,
     //     undefined).
     auto sensitivity = JSLocale::GetOptionOfString<SensitivityOption>(
-        thread, optionsObject, globalConst->GetHandledSensitivityString(),
-        {SensitivityOption::BASE, SensitivityOption::ACCENT, SensitivityOption::CASE, SensitivityOption::VARIANT},
-        {"base", "accent", "case", "variant"}, SensitivityOption::UNDEFINED);
+        thread, optionsObject, globalConst->GetHandledSensitivityString(), {
+            SensitivityOption::BASE, SensitivityOption::ACCENT, SensitivityOption::CASE, SensitivityOption::VARIANT
+        }, {
+            "base", "accent", "case", "variant"
+        }, SensitivityOption::UNDEFINED);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
     // 25. If sensitivity is undefined, then
     //     a. If usage is "sort", then

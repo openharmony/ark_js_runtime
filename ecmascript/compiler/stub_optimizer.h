@@ -993,7 +993,7 @@ public:
               Word64Or(Word64And(oldValue,
                                  GetWord64Constant(~panda::ecmascript::JSHClass::ElementRepresentationBits::Mask())),
                        Word64LSR(value, GetWord64Constant(
-                            panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
+                           panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT))));
     }
 
     void UpdateValueAndDetails(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)
