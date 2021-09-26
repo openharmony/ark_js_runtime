@@ -1141,7 +1141,6 @@ HWTEST_F_L0(StubTest, FastGetPropertyByIndexStub)
     int y = 10;
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
-    
     assembler.Disassemble();
     JSTaggedValue resVal = getpropertyByIndex(thread, obj.GetTaggedValue(), 1);
     EXPECT_EQ(resVal.GetNumber(), x);
@@ -1183,8 +1182,9 @@ HWTEST_F_L0(StubTest, FastSetPropertyByIndexStub)
         auto taggedArray = array.GetTaggedValue();
         setpropertyByIndex(thread, taggedArray, i, JSTaggedValue(i));
     }
-    for(int i = 0; i < 20; i++) {
-        EXPECT_EQ(JSTaggedValue(i), JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
+    for (int i = 0; i < 20; i++) {
+        EXPECT_EQ(JSTaggedValue(i),
+                  JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
 }
 }  // namespace panda::test

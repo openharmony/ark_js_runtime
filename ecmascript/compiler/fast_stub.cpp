@@ -732,14 +732,14 @@ void FastGetPropertyByIndexStub::GenerateCircuit()
                         {
                             StubDescriptor *callAccessorGetter = GET_STUBDESCRIPTOR(AccessorGetter);
                             Return(CallRuntime(callAccessorGetter, thread,
-                                                GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
-                                                {thread, *holder, value}));
+                                               GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
+                                               {thread, *holder, value}));
                         }
                         Bind(&notInternal);
                         {
                             StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
                             Return(CallRuntime(callGetter, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
-                                                {thread, receiver, value}));
+                                               {thread, receiver, value}));
                         }
                     }
                     Bind(&notAccessor);
@@ -839,8 +839,8 @@ void FastSetPropertyByIndexStub::GenerateCircuit()
         {
             StubDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
             AddrShift result = CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
-                                   {thread, receiver, index, value,
-                                    GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())});
+                                           {thread, receiver, index, value,
+                                           GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())});
             Label success(env);
             Label failed(env);
             Branch(result, &success, &failed);

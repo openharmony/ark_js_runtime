@@ -155,6 +155,7 @@ void LabelImpl::Bind()
 {
     ASSERT(!predecessors_.empty());
     if (IsLoopHead()) {
+        // 2 means input number of depend selector gate
         loopDepend_ = env_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, 2);
         env_->GetCircuit()->NewIn(loopDepend_, 1, predecessors_[0]->GetDepend());
         depend_ = loopDepend_;
@@ -213,6 +214,7 @@ void LabelImpl::MergeAllDepend()
         ASSERT(predecessors_.size() == 2);  // 2 : Loop Head only support two predecessors_
         // Add loop depend to in of depend_seclector
         ASSERT(loopDepend_ != -1);
+        // 2 mean 3rd input gate for loopDepend_(depend_selector)
         env_->GetCircuit()->NewIn(loopDepend_, 2, predecessors_[1]->GetDepend());
         return;
     }

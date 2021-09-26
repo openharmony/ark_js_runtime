@@ -97,7 +97,7 @@ AddrShift CircuitBuilder::ExceptionConstant()
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
     return circuit_->NewGate(OpCode(OpCode::JS_CONSTANT), panda::coretypes::TaggedValue::VALUE_EXCEPTION,
-                                    {constantList}, TypeCode::NOTYPE);
+                             {constantList}, TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::Branch(AddrShift state, AddrShift condition)

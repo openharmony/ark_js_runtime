@@ -708,9 +708,9 @@ void LLVMIRBuilder::VisitBlock(int gate, const OperandsVector &predecessors)  //
         LOG_ECMA(INFO) << "  " << predecessor;
         LLVMMoveBasicBlockBefore(llvmpre, llvmbb);
     }
-    // if (gate == 0) { // insert prologue
-    //     PrologueHandle(module_, builder_);
-    // }
+    if (gate == 0) { // insert prologue
+        PrologueHandle(module_, builder_);
+    }
 }
 
 void LLVMIRBuilder::VisitGoto(int block, int bbOut)

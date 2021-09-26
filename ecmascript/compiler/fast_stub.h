@@ -112,6 +112,7 @@ public:
 
 class FastGetPropertyByIndexStub : public Stub {
 public:
+    // 3 : 3 means argument counts
     explicit FastGetPropertyByIndexStub(Circuit *circuit) : Stub("FastGetPropertyByIndex", 3, circuit) {}
     ~FastGetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(FastGetPropertyByIndexStub);
@@ -121,6 +122,7 @@ public:
 
 class FastSetPropertyByIndexStub : public Stub {
 public:
+    // 4 : 4 means argument counts
     explicit FastSetPropertyByIndexStub(Circuit *circuit) : Stub("FastSetPropertyByIndex", 4, circuit) {}
     ~FastSetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(FastSetPropertyByIndexStub);
