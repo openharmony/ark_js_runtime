@@ -130,7 +130,6 @@ void ObjectFactory::ObtainRootClass([[maybe_unused]] const JSHandle<GlobalEnv> &
     jsProxyOrdinaryClass_ = JSHClass::Cast(globalConst->GetJSProxyOrdinaryClass().GetTaggedObject());
     jsProxyCallableClass_ = JSHClass::Cast(globalConst->GetJSProxyCallableClass().GetTaggedObject());
     jsProxyConstructClass_ = JSHClass::Cast(globalConst->GetJSProxyConstructClass().GetTaggedObject());
-    objectWrapperClass_ = JSHClass::Cast(globalConst->GetObjectWrapperClass().GetTaggedObject());
     PropertyBoxClass_ = JSHClass::Cast(globalConst->GetPropertyBoxClass().GetTaggedObject());
     protoChangeMarkerClass_ = JSHClass::Cast(globalConst->GetProtoChangeMarkerClass().GetTaggedObject());
     protoChangeDetailsClass_ = JSHClass::Cast(globalConst->GetProtoChangeDetailsClass().GetTaggedObject());
@@ -1686,15 +1685,6 @@ JSHandle<TaggedArray> ObjectFactory::EmptyArray() const
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     return JSHandle<TaggedArray>(env->GetEmptyArray());
-}
-
-JSHandle<ObjectWrapper> ObjectFactory::NewObjectWrapper(const JSHandle<JSTaggedValue> &value)
-{
-    NewObjectHook();
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(objectWrapperClass_);
-    ObjectWrapper *obj = ObjectWrapper::Cast(header);
-    obj->SetValue(thread_, value);
-    return JSHandle<ObjectWrapper>(thread_, obj);
 }
 
 JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len,

@@ -186,11 +186,6 @@ JSTaggedValue JSPromise::TriggerPromiseReactions(JSThread *thread, const JSHandl
 
 JSHandle<JSTaggedValue> JSPromise::IfThrowGetThrowValue(JSThread *thread)
 {
-    if (thread->GetException().IsObjectWrapper()) {
-        JSHandle<ObjectWrapper> wrapperValue(thread, thread->GetException());
-        JSHandle<JSTaggedValue> throwValue(thread, wrapperValue->GetValue());
-        return throwValue;
-    }
     return JSHandle<JSTaggedValue>(thread, thread->GetException());
 }
 }  // namespace panda::ecmascript

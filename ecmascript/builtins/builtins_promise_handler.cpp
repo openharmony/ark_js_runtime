@@ -74,10 +74,8 @@ JSTaggedValue BuiltinsPromiseHandler::Resolve(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> thenKey(thread->GlobalConstants()->GetHandledPromiseThenString());
     JSHandle<JSTaggedValue> thenValue = JSObject::GetProperty(thread, resolution, thenKey).GetValue();
     if (thread->HasPendingException()) {
-        if (thread->GetException().IsObjectWrapper()) {
-            JSHandle<ObjectWrapper> wrapperValue(thread, thread->GetException());
-            JSHandle<JSTaggedValue> throwValue(thread, wrapperValue->GetValue());
-            thenValue = throwValue;
+        if (!thenValue->IsJSError()) {
+            thenValue = JSHandle<JSTaggedValue>(thread, thread->GetException());
         }
         thread->ClearException();
         return JSPromise::RejectPromise(thread, resolvePromise, thenValue);

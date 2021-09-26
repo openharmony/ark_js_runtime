@@ -476,11 +476,6 @@ JSHandle<JSTaggedValue> EcmaVM::GetEcmaUncaughtException() const
     }
     JSHandle<JSTaggedValue> exceptionHandle(thread_, thread_->GetException());
     thread_->ClearException();  // clear for ohos app
-    if (exceptionHandle->IsObjectWrapper()) {
-        JSHandle<ObjectWrapper> wrapperValue = JSHandle<ObjectWrapper>::Cast(exceptionHandle);
-        JSHandle<JSTaggedValue> throwValue(thread_, wrapperValue->GetValue());
-        return throwValue;
-    }
 
     return exceptionHandle;
 }
@@ -503,17 +498,9 @@ void EcmaVM::HandleUncaughtException(ObjectHeader *exception)
         PrintJSErrorInfo(exceptionHandle);
         return;
     }
-    if (exceptionHandle->IsObjectWrapper()) {
-        JSHandle<ObjectWrapper> wrapperValue = JSHandle<ObjectWrapper>::Cast(exceptionHandle);
-        JSHandle<JSTaggedValue> throwValue(thread_, wrapperValue->GetValue());
-        if (throwValue->IsJSError()) {
-            PrintJSErrorInfo(throwValue);
-        } else {
-            JSHandle<EcmaString> result = JSTaggedValue::ToString(thread_, throwValue);
-            CString string = ConvertToString(*result);
-            LOG(ERROR, RUNTIME) << string;
-        }
-    }
+    JSHandle<EcmaString> result = JSTaggedValue::ToString(thread_, exceptionHandle);
+    CString string = ConvertToString(*result);
+    LOG(ERROR, RUNTIME) << string;
 }
 
 void EcmaVM::PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo)

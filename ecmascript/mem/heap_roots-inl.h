@@ -209,9 +209,6 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
         case JSType::SYMBOL:
             JSSymbol::Cast(object)->VisitRangeSlot(visitor);
             break;
-        case JSType::OBJECT_WRAPPER:
-            ObjectWrapper::Cast(object)->VisitRangeSlot(visitor);
-            break;
         case JSType::JS_GENERATOR_CONTEXT:
             GeneratorContext::Cast(object)->VisitRangeSlot(visitor);
             break;
