@@ -55,6 +55,7 @@ public:
     [[nodiscard]] static AddrShift NullGate();
     [[nodiscard]] bool IsLoopHead(AddrShift gate) const;
     [[nodiscard]] bool IsSelector(AddrShift gate) const;
+    [[nodiscard]] bool IsControlCase(AddrShift gate) const;
     [[nodiscard]] AddrShift GetIn(AddrShift gate, size_t idx) const;
     [[nodiscard]] bool IsInGateNull(AddrShift gate, size_t idx) const;
     [[nodiscard]] bool IsFirstOutNull(AddrShift gate) const;

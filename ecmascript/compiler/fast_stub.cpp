@@ -652,4 +652,207 @@ void FastSetElementStub::GenerateCircuit()
     }
     LoopEnd(&loopHead);
 }
+
+void FastGetPropertyByIndexStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift thread = PtrArgument(0);
+    AddrShift receiver = PtrArgument(1);
+    AddrShift index = Int32Argument(2); /* 2 : 3rd parameter is index */
+
+    DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, receiver);
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label loopExit(env);
+    Label afterLoop(env);
+    Jump(&loopHead);
+    LoopBegin(&loopHead);
+    {
+        AddrShift hclass = LoadHClass(*holder);
+        AddrShift jsType = GetObjectType(hclass);
+        Label isSpecialIndexed(env);
+        Label notSpecialIndexed(env);
+        Label loopEnd(env);
+        Branch(IsSpecialIndexedObj(jsType), &isSpecialIndexed, &notSpecialIndexed);
+        Bind(&isSpecialIndexed);
+        {
+            Return(GetHoleConstant());
+        }
+        Bind(&notSpecialIndexed);
+        {
+            AddrShift elements = GetElements(*holder);
+            Label isDictionaryElement(env);
+            Label notDictionaryElement(env);
+            Branch(IsDictionaryElement(hclass), &isDictionaryElement, &notDictionaryElement);
+            Bind(&notDictionaryElement);
+            {
+                Label lessThanLength(env);
+                Label notLessThanLength(env);
+                Branch(Word32LessThan(index, GetLengthofElements(elements)), &lessThanLength, &notLessThanLength);
+                Bind(&lessThanLength);
+                {
+                    Label notHole(env);
+                    Label isHole(env);
+                    AddrShift value = GetValueFromTaggedArray(elements, index);
+                    Branch(TaggedIsNotHole(value), &notHole, &isHole);
+                    Bind(&notHole);
+                    {
+                        Return(value);
+                    }
+                    Bind(&isHole);
+                    {
+                        Jump(&loopExit);
+                    }
+                }
+                Bind(&notLessThanLength);
+                {
+                    Return(GetHoleConstant());
+                }
+            }
+            Bind(&isDictionaryElement);
+            {
+                AddrShift entry =
+                    FindElementFromNumberDictionary(thread, elements, IntBuildTagged(index));
+                Label notNegtiveOne(env);
+                Label negtiveOne(env);
+                Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Bind(&notNegtiveOne);
+                {
+                    AddrShift attr = GetAttributesFromDictionary(elements, entry);
+                    AddrShift value = GetValueFromDictionary(elements, entry);
+                    Label isAccessor(env);
+                    Label notAccessor(env);
+                    Branch(IsAcesscor(attr), &isAccessor, &notAccessor);
+                    Bind(&isAccessor);
+                    {
+                        Label isInternal(env);
+                        Label notInternal(env);
+                        Branch(IsAccessorInternal(value), &isInternal, &notInternal);
+                        Bind(&isInternal);
+                        {
+                            StubDescriptor *callAccessorGetter = GET_STUBDESCRIPTOR(AccessorGetter);
+                            Return(CallRuntime(callAccessorGetter, thread,
+                                                GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
+                                                {thread, *holder, value}));
+                        }
+                        Bind(&notInternal);
+                        {
+                            StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
+                            Return(CallRuntime(callGetter, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
+                                                {thread, receiver, value}));
+                        }
+                    }
+                    Bind(&notAccessor);
+                    {
+                        Return(value);
+                    }
+                }
+                Bind(&negtiveOne);
+                Jump(&loopExit);
+            }
+            Bind(&loopExit);
+            {
+                holder = GetPrototypeFromHClass(LoadHClass(*holder));
+                Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
+            }
+        }
+        Bind(&loopEnd);
+        LoopEnd(&loopHead);
+        Bind(&afterLoop);
+        {
+            Return(GetUndefinedConstant());
+        }
+    }
+}
+
+void FastSetPropertyByIndexStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift thread = PtrArgument(0);
+    AddrShift receiver = PtrArgument(1);
+    AddrShift index = Int32Argument(2); /* 2 : 3rd parameter is index */
+    AddrShift value = Int64Argument(3); /* 3 : 4th parameter is value */
+
+    DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, receiver);
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label loopExit(env);
+    Label afterLoop(env);
+    Jump(&loopHead);
+    LoopBegin(&loopHead);
+    {
+        AddrShift hclass = LoadHClass(*holder);
+        AddrShift jsType = GetObjectType(hclass);
+        Label isSpecialIndex(env);
+        Label notSpecialIndex(env);
+        Branch(IsSpecialIndexedObj(jsType), &isSpecialIndex, &notSpecialIndex);
+        Bind(&isSpecialIndex);
+        Return(GetHoleConstant());
+        Bind(&notSpecialIndex);
+        {
+            AddrShift elements = GetElements(*holder);
+            Label isDictionaryElement(env);
+            Label notDictionaryElement(env);
+            Branch(IsDictionaryElement(hclass), &isDictionaryElement, &notDictionaryElement);
+            Bind(&notDictionaryElement);
+            {
+                Label isReceiver(env);
+                Label notReceiver(env);
+                Branch(Word64Equal(*holder, receiver), &isReceiver, &notReceiver);
+                Bind(&isReceiver);
+                {
+                    AddrShift length = GetLengthofElements(elements);
+                    Label inRange(env);
+                    Branch(Word64LessThan(index, length), &inRange, &loopExit);
+                    Bind(&inRange);
+                    {
+                        AddrShift value1 = GetValueFromTaggedArray(elements, index);
+                        Label notHole(env);
+                        Branch(Word64NotEqual(value1, GetHoleConstant()), &notHole, &loopExit);
+                        Bind(&notHole);
+                        {
+                            StoreElement(elements, index, value);
+                            Return(GetUndefinedConstant());
+                        }
+                    }
+                }
+                Bind(&notReceiver);
+                Jump(&afterLoop);
+            }
+            Bind(&isDictionaryElement);
+            Return(GetHoleConstant());
+        }
+        Bind(&loopExit);
+        {
+            holder = GetPrototypeFromHClass(LoadHClass(*holder));
+            Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
+        }
+    }
+    Bind(&loopEnd);
+    LoopEnd(&loopHead);
+    Bind(&afterLoop);
+    {
+        Label isExtensible(env);
+        Label notExtensible(env);
+        Branch(IsExtensible(receiver), &isExtensible, &notExtensible);
+        Bind(&isExtensible);
+        {
+            StubDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
+            AddrShift result = CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
+                                   {thread, receiver, index, value,
+                                    GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())});
+            Label success(env);
+            Label failed(env);
+            Branch(result, &success, &failed);
+            Bind(&success);
+            Return(GetUndefinedConstant());
+            Bind(&failed);
+            Return(GetExceptionConstant());
+        }
+        Bind(&notExtensible);
+        {
+            ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible), GetExceptionConstant());
+        }
+    }
+}
 }  // namespace kungfu

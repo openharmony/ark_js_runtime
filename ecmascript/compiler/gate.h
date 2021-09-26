@@ -250,6 +250,8 @@ public:
     [[nodiscard]] bool IsGeneralState() const;
     [[nodiscard]] bool IsTerminalState() const;
     [[nodiscard]] bool IsCFGMerge() const;
+    [[nodiscard]] bool IsControlCase() const;
+    [[nodiscard]] bool IsLoopHead() const;
     ~OpCode() = default;
 
 private:

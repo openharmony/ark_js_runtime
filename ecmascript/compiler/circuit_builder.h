@@ -31,6 +31,7 @@ public:
     AddrShift NewArguments(size_t index);
     AddrShift NewMerge(AddrShift *in, size_t controlCount);
     AddrShift NewSelectorGate(OpCode opcode, AddrShift control, int valueCounts);
+    AddrShift NewSelectorGate(OpCode opcode, AddrShift control, std::vector<AddrShift> &values, int valueCounts);
     AddrShift NewIntegerConstant(int32_t value);
     AddrShift NewInteger64Constant(int64_t value);
     AddrShift NewWord64Constant(uint64_t val);
@@ -38,10 +39,11 @@ public:
     AddrShift NewDoubleConstant(double value);
     AddrShift UndefineConstant();
     AddrShift HoleConstant();
+    AddrShift ExceptionConstant();
     AddrShift Alloca(int size);
     AddrShift Branch(AddrShift state, AddrShift condition);
     AddrShift SwitchBranch(AddrShift state, AddrShift index, int caseCounts);
-    AddrShift Return(AddrShift state, AddrShift value);
+    AddrShift Return(AddrShift state, AddrShift depend, AddrShift value);
     AddrShift Goto(AddrShift state);
     AddrShift LoopBegin(AddrShift state);
     AddrShift LoopEnd(AddrShift state);
@@ -51,6 +53,10 @@ public:
     AddrShift NewDefaultCase(AddrShift switchBranch);
     AddrShift NewLoadGate(MachineType type, AddrShift val);
     AddrShift NewStoreGate(MachineType type, AddrShift ptr, AddrShift val);
+    AddrShift NewLoadGate(MachineType type, AddrShift val, AddrShift depend);
+    AddrShift NewStoreGate(MachineType type, AddrShift ptr, AddrShift val, AddrShift depend);
+    AddrShift NewDependRelay(AddrShift state, AddrShift depend);
+    AddrShift NewDependAnd(std::initializer_list<AddrShift> args);
     AddrShift NewArithMeticGate(OpCode opcode, AddrShift left, AddrShift right);
     AddrShift NewArithMeticGate(OpCode opcode, AddrShift value);
     AddrShift NewLogicGate(OpCode opcode, AddrShift left, AddrShift right);

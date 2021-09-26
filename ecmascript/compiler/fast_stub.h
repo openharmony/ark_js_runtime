@@ -109,5 +109,23 @@ public:
     NO_COPY_SEMANTIC(FastSetElementStub);
     void GenerateCircuit() override;
 };
+
+class FastGetPropertyByIndexStub : public Stub {
+public:
+    explicit FastGetPropertyByIndexStub(Circuit *circuit) : Stub("FastGetPropertyByIndex", 3, circuit) {}
+    ~FastGetPropertyByIndexStub() = default;
+    NO_MOVE_SEMANTIC(FastGetPropertyByIndexStub);
+    NO_COPY_SEMANTIC(FastGetPropertyByIndexStub);
+    void GenerateCircuit() override;
+};
+
+class FastSetPropertyByIndexStub : public Stub {
+public:
+    explicit FastSetPropertyByIndexStub(Circuit *circuit) : Stub("FastSetPropertyByIndex", 4, circuit) {}
+    ~FastSetPropertyByIndexStub() = default;
+    NO_MOVE_SEMANTIC(FastSetPropertyByIndexStub);
+    NO_COPY_SEMANTIC(FastSetPropertyByIndexStub);
+    void GenerateCircuit() override;
+};
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H

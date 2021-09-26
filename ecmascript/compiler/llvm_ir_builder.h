@@ -114,13 +114,13 @@ public:
         return module_;
     }
 
-    LLVMTypeRef GetExternalFunctionType(int index) const
+    LLVMTypeRef GetExternalFunctionType(uint32_t index) const
     {
-        ASSERT(index < MAX_EXTERNAL_FUNCTION_COUNT);
+        ASSERT(index - EXTERNAL_FUNCTION_OFFSET < MAX_EXTERNAL_FUNCTION_COUNT);
         return externalFuctionType_[index - EXTERNAL_FUNCTION_OFFSET];
     }
 
-    LLVMValueRef GetStubFunction(int index)
+    LLVMValueRef GetStubFunction(uint32_t index)
     {
         ASSERT(index < FAST_STUB_MAXCOUNT);
         return stubFunctions_[index];

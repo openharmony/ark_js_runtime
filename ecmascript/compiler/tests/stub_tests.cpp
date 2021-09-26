@@ -23,6 +23,7 @@
 #include "ecmascript/compiler/llvm_stackmap_parse.h"
 #include "ecmascript/compiler/scheduler.h"
 #include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/compiler/verifier.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
@@ -82,6 +83,8 @@ HWTEST_F_L0(StubTest, FastLoadElement)
     FastArrayLoadElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
+    bool result = Verifier::Run(&netOfGates);
+    ASSERT_TRUE(result);
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
         std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
@@ -92,9 +95,9 @@ HWTEST_F_L0(StubTest, FastLoadElement)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     /* exec function */
     auto fn = reinterpret_cast<uint64_t (*)(JSArray *, int)>(LLVMGetPointerToGlobal(engine, function));
     // 5 : 5 means that there are 5 cases in total.
@@ -164,9 +167,9 @@ HWTEST_F_L0(StubTest, PhiGateTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     /* exec function */
     auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
     auto val = fn(3);  // 3 : size of array
@@ -260,9 +263,9 @@ HWTEST_F_L0(StubTest, LoopTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
 
     /* exec function */
     auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
@@ -330,9 +333,9 @@ HWTEST_F_L0(StubTest, LoopTest1)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     /* exec function */
     auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
     auto resValid = fn(1);
@@ -367,9 +370,9 @@ HWTEST_F_L0(StubTest, FastAddTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     /* exec function */
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
     auto resValid = fn(JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData());
@@ -409,9 +412,9 @@ HWTEST_F_L0(StubTest, FastSubTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     /* exec function */
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
     auto resA = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(1).GetRawData());    // 2 : test case
@@ -446,9 +449,9 @@ HWTEST_F_L0(StubTest, FastMulTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
 
     /* exec function */
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
@@ -503,9 +506,9 @@ HWTEST_F_L0(StubTest, FastDivTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
     uint64_t x1 = JSTaggedValue(50).GetRawData();
     uint64_t x2 = JSTaggedValue(25).GetRawData();
@@ -532,8 +535,8 @@ HWTEST_F_L0(StubTest, FastFindOwnElementStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
+    LLVMAssembler assembler(module);
+    assembler.Run();
 }
 
 HWTEST_F_L0(StubTest, FastGetElementStub)
@@ -566,8 +569,8 @@ HWTEST_F_L0(StubTest, FastGetElementStub)
         }
     }
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
+    LLVMAssembler assembler(module);
+    assembler.Run();
 }
 
 HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
@@ -589,9 +592,9 @@ HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(JSThread *, TaggedArray *, uint32_t, bool,
                                                                   PropertyAttributes *, uint32_t *)>(
         reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
@@ -605,7 +608,7 @@ HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
     PropertyAttributes attr;
     uint32_t indexOrEntry;
     bool isDict = elements->IsDictionaryMode();
-    compiler.Disassemble();
+    assembler.Disassemble();
     JSTaggedValue resVal = findOwnElement2Ptr(thread, elements, 1, isDict, &attr, &indexOrEntry);
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = findOwnElement2Ptr(thread, elements, 10250, isDict, &attr, &indexOrEntry);
@@ -631,8 +634,8 @@ HWTEST_F_L0(StubTest, SetElementStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler compiler(module);
-    compiler.Run();
+    LLVMAssembler assembler(module);
+    assembler.Run();
 }
 
 struct ThreadTy {
@@ -870,9 +873,9 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     uint64_t stub1Code = LLVMGetFunctionAddress(engine, "stub1");
     uint64_t stub2Code = LLVMGetFunctionAddress(engine, "stub2");
     uint64_t stub3Code = LLVMGetFunctionAddress(engine, "stub3");
@@ -880,7 +883,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     std::cout << std::endl << " stub1Code : " << stub1Code << std::endl;
     std::cout << std::endl << " stub2Code : " << stub2Code << std::endl;
     std::cout << std::endl << " stub3Code : " << stub3Code << std::endl;
-    compiler.Disassemble(addr2name);
+    assembler.Disassemble(addr2name);
     struct ThreadTy parameters = {0x0, 0x0};
     auto stub1Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub1Code);
     g_stub2Func = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(stub2Code);
@@ -944,11 +947,11 @@ HWTEST_F_L0(StubTest, Prologue)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     uint64_t mainCode = LLVMGetFunctionAddress(engine, "main");
-    compiler.Disassemble();
+    assembler.Disassemble();
     auto mainFunc = reinterpret_cast<int64_t (*)(int64_t, int64_t)>(mainCode);
     int64_t result = mainFunc(1, 2);
     EXPECT_EQ(result, 3);
@@ -1023,12 +1026,12 @@ HWTEST_F_L0(StubTest, CEntryFp)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
     std::cout << std::endl << " nativeCode : " << nativeCode << std::endl;
-    compiler.Disassemble();
+    assembler.Disassemble();
     struct ThreadTy parameters = {0x0, 0x0};
 
     auto mainFunc = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(nativeCode);
@@ -1060,18 +1063,18 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
         return;
     }
     LLVMModuleRef module = LLVMCloneModule(wrap(rawModule.get()));
-    LLVMAssembler compiler(module);
-    compiler.Run();
-    auto engine = compiler.GetEngine();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
     LLVMValueRef function = LLVMGetNamedFunction(module, "main");
     LLVMDumpValue(function);
 
     auto *mainPtr = reinterpret_cast<int (*)()>(LLVMGetPointerToGlobal(engine, function));
-    uint8_t *ptr = compiler.GetStackMapsSection();
+    uint8_t *ptr = assembler.GetStackMapsSection();
     LLVMStackMapParse::GetInstance().CalculateStackMap(ptr);
     LLVMStackMapParse::GetInstance().Print();
 
-    compiler.Disassemble();
+    assembler.Disassemble();
     LLVMDumpModule(module);
     int value = reinterpret_cast<int (*)()>(mainPtr)();
     std::cout << " value:" << value << std::endl;
@@ -1109,127 +1112,10 @@ void DoSafepoint()
 }
 }
 
-class FastGetPropertyByIndexStub : public Stub {
-public:
-    explicit FastGetPropertyByIndexStub(Circuit *circuit) : Stub("FastGetPropertyByIndex", 3, circuit) {}
-    ~FastGetPropertyByIndexStub() = default;
-    NO_MOVE_SEMANTIC(FastGetPropertyByIndexStub);
-    NO_COPY_SEMANTIC(FastGetPropertyByIndexStub);
-    void GenerateCircuit() override
-    {
-        auto env = GetEnvironment();
-        AddrShift thread = PtrArgument(0);
-        AddrShift receiver = PtrArgument(1);
-        AddrShift index = Int32Argument(2); /* 2 : 3rd paramter is index */
-
-        DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, receiver);
-        Label loopHead(env);
-        Label loopEnd(env);
-        Label loopExit(env);
-        Label afterLoop(env);
-        Jump(&loopHead);
-        LoopBegin(&loopHead);
-        {
-            AddrShift hclass = LoadHClass(*holder);
-            AddrShift jsType = GetObjectType(hclass);
-            Label isSpecialIndexed(env);
-            Label notSpecialIndexed(env);
-            Label loopEnd(env);
-            Branch(IsSpecialIndexedObj(jsType), &isSpecialIndexed, &notSpecialIndexed);
-            Bind(&isSpecialIndexed);
-            {
-                Return(GetHoleConstant());
-            }
-            Bind(&notSpecialIndexed);
-            {
-                AddrShift elements = GetElements(*holder);
-                Label isDictionaryElement(env);
-                Label notDictionaryElement(env);
-                Branch(IsDictionaryElement(hclass), &isDictionaryElement, &notDictionaryElement);
-                Bind(&notDictionaryElement);
-                {
-                    Label lessThanLength(env);
-                    Label notLessThanLength(env);
-                    Branch(Word32LessThan(index, GetLengthofElements(elements)), &lessThanLength, &notLessThanLength);
-                    Bind(&lessThanLength);
-                    {
-                        Label notHole(env);
-                        Label isHole(env);
-                        AddrShift value = GetValueFromTaggedArray(elements, index);
-                        Branch(TaggedIsNotHole(value), &notHole, &isHole);
-                        Bind(&notHole);
-                        {
-                            Return(value);
-                        }
-                        Bind(&isHole);
-                        {
-                            Jump(&loopExit);
-                        }
-                    }
-                    Bind(&notLessThanLength);
-                    {
-                        Return(GetHoleConstant());
-                    }
-                }
-                Bind(&isDictionaryElement);
-                {
-                    AddrShift entry =
-                        FindElementFromNumberDictionary(thread, elements, IntBuildTagged(index));
-                    Label notNegtiveOne(env);
-                    Label negtiveOne(env);
-                    Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
-                    Bind(&notNegtiveOne);
-                    {
-                        AddrShift attr = GetAttributesFromDictionary(elements, entry);
-                        AddrShift value = GetValueFromDictionary(elements, entry);
-                        Label isAccessor(env);
-                        Label notAccessor(env);
-                        Branch(IsAcesscor(attr), &isAccessor, &notAccessor);
-                        Bind(&isAccessor);
-                        {
-                            Label isInternal(env);
-                            Label notInternal(env);
-                            Branch(IsAccessorInternal(value), &isInternal, &notInternal);
-                            Bind(&isInternal);
-                            {
-                                StubDescriptor *callAccessorGetter = GET_STUBDESCRIPTOR(AccessorGetter);
-                                Return(CallRuntime(callAccessorGetter, thread,
-                                                   GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
-                                                   {thread, *holder, value}));
-                            }
-                            Bind(&notInternal);
-                            {
-                                StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
-                                Return(CallRuntime(callGetter, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
-                                                   {thread, receiver, value}));
-                            }
-                        }
-                        Bind(&notAccessor);
-                        {
-                            Return(value);
-                        }
-                    }
-                    Bind(&negtiveOne);
-                    Jump(&loopExit);
-                }
-                Bind(&loopExit);
-                {
-                    holder = GetPrototypeFromHClass(LoadHClass(*holder));
-                    Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
-                }
-            }
-            Bind(&loopEnd);
-            LoopEnd(&loopHead);
-            Bind(&afterLoop);
-            {
-                Return(GetUndefinedConstant());
-            }
-        }
-    }
-};
-
 HWTEST_F_L0(StubTest, FastGetPropertyByIndexStub)
 {
+    auto module = stubModule.GetModule();
+    LLVMValueRef function = LLVMGetNamedFunction(module, "GetPropertyByIndex");
     Circuit netOfGates;
     FastGetPropertyByIndexStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -1241,6 +1127,64 @@ HWTEST_F_L0(StubTest, FastGetPropertyByIndexStub)
         for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
             netOfGates.Print(cfg[bbIdx][instIdx - 1]);
         }
+    }
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
+    auto *getpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
+        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<JSObject> obj = factory->NewEmptyJSObject();
+    int x = 213;
+    int y = 10;
+    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
+    FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
+    
+    assembler.Disassemble();
+    JSTaggedValue resVal = getpropertyByIndex(thread, obj.GetTaggedValue(), 1);
+    EXPECT_EQ(resVal.GetNumber(), x);
+    resVal = getpropertyByIndex(thread, obj.GetTaggedValue(), 10250);
+    EXPECT_EQ(resVal.GetNumber(), y);
+}
+
+HWTEST_F_L0(StubTest, FastSetPropertyByIndexStub)
+{
+    auto module = stubModule.GetModule();
+    LLVMValueRef function = LLVMGetNamedFunction(module, "SetPropertyByIndex");
+    Circuit netOfGates;
+    FastSetPropertyByIndexStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    bool result = Verifier::Run(&netOfGates);
+    ASSERT_TRUE(result);
+    auto cfg = Scheduler::Run(&netOfGates);
+    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
+        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
+                  << std::endl;
+        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
+            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
+        }
+    }
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
+    auto *setpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)>(
+        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<JSArray> array = factory->NewJSArray();
+    assembler.Disassemble();
+    // set value to array
+    array->SetArrayLength(thread, 20);
+    for (int i = 0; i < 20; i++) {
+        auto taggedArray = array.GetTaggedValue();
+        setpropertyByIndex(thread, taggedArray, i, JSTaggedValue(i));
+    }
+    for(int i = 0; i < 20; i++) {
+        EXPECT_EQ(JSTaggedValue(i), JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
 }
 }  // namespace panda::test

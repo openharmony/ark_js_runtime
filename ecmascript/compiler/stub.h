@@ -53,10 +53,11 @@ public:
             AddrShift ReadVariable(Variable *var);
             void Bind();
             void MergeAllControl();
+            void MergeAllDepend();
             void AppendPredecessor(LabelImpl *predecessor);
             std::vector<LabelImpl *> GetPredecessors() const
             {
-                return predecessors;
+                return predecessors_;
             }
 
             void SetControl(AddrShift control)
@@ -84,6 +85,16 @@ public:
                 return control_;
             }
 
+            void SetDepend(AddrShift depend)
+            {
+                depend_ = depend;
+            }
+
+            AddrShift GetDepend() const
+            {
+                return depend_;
+            }
+
         private:
             bool IsNeedSeal() const;
             bool IsSealed() const
@@ -91,15 +102,19 @@ public:
                 return isSealed_;
             }
             bool IsLoopHead() const;
+            bool IsControlCase() const;
             AddrShift ReadVariableRecursive(Variable *var);
             Environment *env_;
             AddrShift control_;
-            AddrShift predeControl_;
+            AddrShift predeControl_ {-1};
+            AddrShift dependRelay_ {-1};
+            AddrShift depend_ {-1};
+            AddrShift loopDepend_{-1};
             std::vector<AddrShift> otherPredeControls_;
-            bool isSealed_;
+            bool isSealed_ {false};
             std::map<Variable *, AddrShift> valueMap_;
             std::vector<AddrShift> phi;
-            std::vector<LabelImpl *> predecessors;
+            std::vector<LabelImpl *> predecessors_;
             std::map<Variable *, AddrShift> incompletePhis_;
         };
         explicit Label() = default;
@@ -136,6 +151,11 @@ public:
             impl_->MergeAllControl();
         }
 
+        void MergeAllDepend()
+        {
+            impl_->MergeAllDepend();
+        }
+
         void AppendPredecessor(const Label *predecessor)
         {
             impl_->AppendPredecessor(predecessor->GetRawLabel());
@@ -170,6 +190,15 @@ public:
             return impl_->GetControl();
         }
 
+        AddrShift GetDepend() const
+        {
+            return impl_->GetDepend();
+        }
+
+        void SetDepend(AddrShift depend)
+        {
+            return impl_->SetDepend(depend);
+        }
     private:
         friend class Environment;
         LabelImpl *GetRawLabel() const
@@ -228,19 +257,23 @@ public:
         void PushCurrentLabel(Label *entry)
         {
             AddrShift control = currentLabel_->GetControl();
+            AddrShift depend = currentLabel_->GetDepend();
             if (currentLabel_ != nullptr) {
                 stack_.push(currentLabel_);
                 currentLabel_ = entry;
                 currentLabel_->SetControl(control);
+                currentLabel_->SetDepend(depend);
             }
         }
 
         void PopCurrentLabel()
         {
             AddrShift control = currentLabel_->GetControl();
+            AddrShift depend = currentLabel_->GetDepend();
             if (!stack_.empty()) {
                 currentLabel_ = stack_.top();
                 currentLabel_->SetControl(control);
+                currentLabel_->SetDepend(depend);
                 stack_.pop();
             }
         }
@@ -421,6 +454,12 @@ public:
     {
         return env_.GetCircuitBuilder().HoleConstant();
     }
+
+    AddrShift GetExceptionConstant()
+    {
+        return env_.GetCircuitBuilder().ExceptionConstant();
+    }
+
     // parameter
     AddrShift Argument(size_t index)
     {
@@ -484,7 +523,8 @@ public:
     AddrShift Return(AddrShift value)
     {
         auto control = env_.GetCurrentLabel()->GetControl();
-        return env_.GetCircuitBuilder().Return(control, value);
+        auto depend = env_.GetCurrentLabel()->GetDepend();
+        return env_.GetCircuitBuilder().Return(control, depend, value);
     }
 
     void Bind(Label *label)
@@ -506,56 +546,79 @@ public:
     // call operation
     AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args)
     {
-        return env_.GetCircuitBuilder().NewCallGate(descriptor, target, args);
+        auto depend = env_.GetCurrentLabel()->GetDepend();
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        env_.GetCurrentLabel()->SetDepend(result);
+        return result;
     }
     AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, AddrShift depend,
                        std::initializer_list<AddrShift> args)
     {
-        return env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        env_.GetCurrentLabel()->SetDepend(result);
+        return result;
     }
 
     AddrShift CallRuntime(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                           std::initializer_list<AddrShift> args)
     {
-        return env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, args);
+        auto depend = env_.GetCurrentLabel()->GetDepend();
+        AddrShift result = env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        env_.GetCurrentLabel()->SetDepend(result);
+        return result;
     }
 
     AddrShift CallRuntime(StubDescriptor *descriptor, AddrShift thread, AddrShift target, AddrShift depend,
                           std::initializer_list<AddrShift> args)
     {
-        return env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        env_.GetCurrentLabel()->SetDepend(result);
+        return result;
     }
 
     // memory
     AddrShift Load(MachineType type, AddrShift base, AddrShift offset)
     {
+        auto depend = env_.GetCurrentLabel()->GetDepend();
         if (PtrValueCode() == ValueCode::INT64) {
             AddrShift val = Int64Add(base, offset);
-            return env_.GetCircuitBuilder().NewLoadGate(type, val);
+            AddrShift result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend);
+            env_.GetCurrentLabel()->SetDepend(result);
+            return result;
         }
         if (PtrValueCode() == ValueCode::INT32) {
             AddrShift val = Int32Add(base, offset);
-            return env_.GetCircuitBuilder().NewLoadGate(type, val);
+            AddrShift result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend);
+            env_.GetCurrentLabel()->SetDepend(result);
+            return result;
         }
         UNREACHABLE();
     }
 
     AddrShift Load(MachineType type, AddrShift base)
     {
-        return env_.GetCircuitBuilder().NewLoadGate(type, base);
+        auto depend = env_.GetCurrentLabel()->GetDepend();
+        AddrShift result = env_.GetCircuitBuilder().NewLoadGate(type, base, depend);
+        env_.GetCurrentLabel()->SetDepend(result);
+        return result;
     }
 
     AddrShift LoadFromObject(MachineType type, AddrShift object, AddrShift offset);
 
     AddrShift Store(MachineType type, AddrShift base, AddrShift offset, AddrShift value)
     {
+        auto depend = env_.GetCurrentLabel()->GetDepend();
         if (PtrValueCode() == ValueCode::INT64) {
             AddrShift ptr = Int64Add(base, offset);
-            return env_.GetCircuitBuilder().NewStoreGate(type, ptr, value);
+            AddrShift result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
+            env_.GetCurrentLabel()->SetDepend(result);
+            return result;
         }
         if (PtrValueCode() == ValueCode::INT32) {
             AddrShift ptr = Int32Add(base, offset);
-            return env_.GetCircuitBuilder().NewStoreGate(type, ptr, value);
+            AddrShift result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
+            env_.GetCurrentLabel()->SetDepend(result);
+            return result;
         }
         UNREACHABLE();
     }

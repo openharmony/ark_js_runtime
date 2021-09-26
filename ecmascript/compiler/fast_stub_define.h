@@ -53,7 +53,9 @@ namespace kungfu {
     V(FindOwnElement, 2)            \
     V(NewLexicalEnvDyn, 4)          \
     V(FindOwnProperty2, 6)          \
-    V(FindOwnElement2, 6)
+    V(FindOwnElement2, 6)           \
+    V(GetPropertyByIndex, 3)        \
+    V(SetPropertyByIndex, 4)
 
 #define CALL_STUB_LIST(V)     \
     FAST_RUNTIME_STUB_LIST(V) \
