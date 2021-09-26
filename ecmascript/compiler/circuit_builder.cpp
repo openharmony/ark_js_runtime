@@ -267,20 +267,6 @@ AddrShift CircuitBuilder::NewDependAnd(std::initializer_list<AddrShift> args)
     return circuit_->NewGate(OpCode(OpCode::DEPEND_AND), args.size(), inputs, TypeCode::NOTYPE);
 }
 
-AddrShift CircuitBuilder::NewLoadGate(MachineType type, AddrShift val)
-{
-    auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
-    OpCode op = GetLoadOpCodeFromMachineType(type);
-    return circuit_->NewGate(op, type, {dependEntry, val}, TypeCode::NOTYPE);
-}
-
-AddrShift CircuitBuilder::NewStoreGate(MachineType type, AddrShift ptr, AddrShift val)
-{
-    auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
-    OpCode op = GetStoreOpCodeFromMachineType(type);
-    return circuit_->NewGate(op, type, {dependEntry, val, ptr}, TypeCode::NOTYPE);
-}
-
 AddrShift CircuitBuilder::NewLoadGate(MachineType type, AddrShift val, AddrShift depend)
 {
     OpCode op = GetLoadOpCodeFromMachineType(type);

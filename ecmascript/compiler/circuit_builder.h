@@ -51,8 +51,6 @@ public:
     AddrShift NewIfFalse(AddrShift ifBranch);
     AddrShift NewSwitchCase(AddrShift switchBranch, int32_t value);
     AddrShift NewDefaultCase(AddrShift switchBranch);
-    AddrShift NewLoadGate(MachineType type, AddrShift val);
-    AddrShift NewStoreGate(MachineType type, AddrShift ptr, AddrShift val);
     AddrShift NewLoadGate(MachineType type, AddrShift val, AddrShift depend);
     AddrShift NewStoreGate(MachineType type, AddrShift ptr, AddrShift val, AddrShift depend);
     AddrShift NewDependRelay(AddrShift state, AddrShift depend);
