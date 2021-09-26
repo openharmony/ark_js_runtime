@@ -1728,13 +1728,14 @@ JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(EcmaString *string)
 }
 
 // NB! don't do special case for C0 80, it means '\u0000', so don't convert to UTF-8
-EcmaString *ObjectFactory::GetRawStringFromStringTable(const uint8_t *mutf8Data, uint32_t utf16Len) const
+EcmaString *ObjectFactory::GetRawStringFromStringTable(const uint8_t *mutf8Data,
+                                                       uint32_t utf16Len, bool canBeCompressed) const
 {
     if (UNLIKELY(utf16Len == 0)) {
         return *GetEmptyString();
     }
 
-    if (utf::IsMUtf8OnlySingleBytes(mutf8Data)) {
+    if (canBeCompressed) {
         return EcmaString::Cast(vm_->GetEcmaStringTable()->GetOrInternString(mutf8Data, utf16Len, true));
     }
 
@@ -2102,7 +2103,7 @@ EcmaString *ObjectFactory::ResolveString(uint32_t stringId)
     auto id = panda_file::File::EntityId(stringId);
     auto foundStr = pf->GetStringData(id);
 
-    return GetRawStringFromStringTable(foundStr.data, foundStr.utf16_length);
+    return GetRawStringFromStringTable(foundStr.data, foundStr.utf16_length, foundStr.is_ascii);
 }
 
 uintptr_t ObjectFactory::NewSpaceBySnapShotAllocator(size_t size)
