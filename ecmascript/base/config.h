@@ -22,6 +22,7 @@ namespace panda::ecmascript {
 
 #define ECMASCRIPT_ENABLE_RUNTIME_STAT 0 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ECMASCRIPT_ENABLE_IC 1  // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define ECMASCRIPT_ENABLE_THREAD_CHECK 0
 }  // namespace panda::ecmascript
 
 #endif  // ECMASCRIPT_BASE_CONFIG_H

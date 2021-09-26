@@ -112,6 +112,16 @@ public:
         return threadNum_;
     }
 
+    bool IsInThreadPool(std::thread::id id) const
+    {
+        for (auto &worker : workers_) {
+            if (worker.get_id() == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 private:
     NO_COPY_SEMANTIC(ThreadPool);
     NO_MOVE_SEMANTIC(ThreadPool);

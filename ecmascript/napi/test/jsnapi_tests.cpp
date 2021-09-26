@@ -66,12 +66,24 @@ Local<JSValueRef> FunctionCallback(EcmaVM *vm, Local<JSValueRef>, const Local<JS
     return scope.Escape(ArrayRef::New(vm, length));
 }
 
+void ThreadCheck(const EcmaVM *vm)
+{
+    EXPECT_TRUE(vm->GetJSThread()->GetThreadId() != JSThread::GetCurrentThreadId());
+}
+
 HWTEST_F_L0(JSNApiTests, GetGlobalObject)
 {
     LocalScope scope(vm_);
     Local<ObjectRef> globalObject = JSNApi::GetGlobalObject(vm_);
     ASSERT_FALSE(globalObject.IsEmpty());
     ASSERT_TRUE(globalObject->IsObject());
+}
+
+HWTEST_F_L0(JSNApiTests, ThreadIdCheck)
+{
+    EXPECT_TRUE(vm_->GetJSThread()->GetThreadId() == JSThread::GetCurrentThreadId());
+    std::thread testThread(ThreadCheck, vm_);
+    testThread.join();
 }
 
 HWTEST_F_L0(JSNApiTests, RegisterFunction)

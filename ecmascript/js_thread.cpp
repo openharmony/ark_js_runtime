@@ -36,7 +36,7 @@ JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
 }
 
 JSThread::JSThread(Runtime *runtime, PandaVM *vm)
-    : ManagedThread(NON_INITIALIZED_THREAD_ID, runtime->GetInternalAllocator(), vm,
+    : ManagedThread(GetCurrentThreadId(), runtime->GetInternalAllocator(), vm,
                     Thread::ThreadType::THREAD_TYPE_MANAGED)
 {
     SetLanguageContext(runtime->GetLanguageContext(panda_file::SourceLang::ECMASCRIPT));

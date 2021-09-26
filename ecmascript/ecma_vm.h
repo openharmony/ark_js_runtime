@@ -18,6 +18,7 @@
 
 #include <tuple>
 
+#include "ecmascript/base/config.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/global_handle_collection.h"
 #include "ecmascript/js_handle.h"
@@ -27,6 +28,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/gc_stats.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
@@ -239,6 +241,14 @@ public:
 
     JSThread *GetJSThread() const
     {
+#if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && ECMASCRIPT_ENABLE_THREAD_CHECK
+        ThreadPool *pool = GetHeap()->GetThreadPool();
+        // Exclude GC thread
+        if (!pool->IsInThreadPool(std::this_thread::get_id()) &&
+            thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
+                LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!";
+        }
+#endif
         return thread_;
     }
 

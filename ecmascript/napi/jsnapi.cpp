@@ -901,7 +901,7 @@ int32_t ArrayRef::Length([[maybe_unused]] const EcmaVM *vm)
 
 Local<JSValueRef> ArrayRef::GetValueAt(const EcmaVM *vm, Local<JSValueRef> obj, uint32_t index)
 {
-    JSThread *thread = vm->GetAssociatedJSThread();
+    JSThread *thread = vm->GetJSThread();
     JSHandle<JSTaggedValue> object = JSNApiHelper::ToJSHandle(obj);
     JSHandle<JSTaggedValue> result = JSArray::FastGetPropertyByValue(thread, object, index);
     return JSNApiHelper::ToLocal<JSValueRef>(result);
@@ -909,7 +909,7 @@ Local<JSValueRef> ArrayRef::GetValueAt(const EcmaVM *vm, Local<JSValueRef> obj, 
 
 bool ArrayRef::SetValueAt(const EcmaVM *vm, Local<JSValueRef> obj, uint32_t index, Local<JSValueRef> value)
 {
-    JSThread *thread = vm->GetAssociatedJSThread();
+    JSThread *thread = vm->GetJSThread();
     JSHandle<JSTaggedValue> objectHandle = JSNApiHelper::ToJSHandle(obj);
     JSHandle<JSTaggedValue> valueHandle = JSNApiHelper::ToJSHandle(value);
     return JSArray::FastSetPropertyByValue(thread, objectHandle, index, valueHandle);
