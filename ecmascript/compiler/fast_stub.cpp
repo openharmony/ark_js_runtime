@@ -838,7 +838,8 @@ void FastSetPropertyByIndexStub::GenerateCircuit()
         Bind(&isExtensible);
         {
             StubDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
-            AddrShift result = CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
+            AddrShift result = CallRuntime(addElementInternal, thread,
+                                           GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
                                            {thread, receiver, index, value,
                                            GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())});
             Label success(env);
