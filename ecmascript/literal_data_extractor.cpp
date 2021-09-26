@@ -45,8 +45,8 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const panda_file
     uint32_t methodId;
     FunctionKind kind;
     lda.EnumerateLiteralVals(
-        index, [elements, properties, &epos, &ppos, factory, thread, pft, &methodId, &kind](const LiteralValue &value,
-                                                                                            const LiteralTag &tag) {
+        index, [elements, properties, &epos, &ppos, factory, thread, pft, pf, &methodId, &kind]
+        (const LiteralValue &value, const LiteralTag &tag) {
         JSTaggedValue jt = JSTaggedValue::Null();
         bool flag = false;
         switch (tag) {
@@ -63,8 +63,8 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const panda_file
                 break;
             }
             case LiteralTag::STRING: {
-                StringData sd = std::get<StringData>(value);
-                EcmaString *str = factory->GetRawStringFromStringTable(sd.data, sd.utf16_length);
+                StringData sd = pf->GetStringData(panda_file::File::EntityId(std::get<uint32_t>(value)));
+                EcmaString *str = factory->GetRawStringFromStringTable(sd.data, sd.utf16_length, sd.is_ascii);
                 jt = JSTaggedValue(str);
                 uint32_t index = 0;
                 if (JSTaggedValue::ToElementIndex(jt, &index) && ppos % pairSize == 0) {
@@ -129,9 +129,8 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
     uint32_t methodId;
     FunctionKind kind;
     lda.EnumerateLiteralVals(
-        index, [literals, &pos, factory, thread, pft,
-                &methodId, &kind](const panda_file::LiteralDataAccessor::LiteralValue &value,
-                                  const LiteralTag &tag) {
+        index, [literals, &pos, factory, thread, pft, pf, &methodId, &kind]
+        (const panda_file::LiteralDataAccessor::LiteralValue &value, const LiteralTag &tag) {
             JSTaggedValue jt = JSTaggedValue::Null();
             switch (tag) {
                 case LiteralTag::INTEGER: {
@@ -147,8 +146,8 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
                     break;
                 }
                 case LiteralTag::STRING: {
-                    StringData sd = std::get<StringData>(value);
-                    EcmaString *str = factory->GetRawStringFromStringTable(sd.data, sd.utf16_length);
+                    StringData sd = pf->GetStringData(panda_file::File::EntityId(std::get<uint32_t>(value)));
+                    EcmaString *str = factory->GetRawStringFromStringTable(sd.data, sd.utf16_length, sd.is_ascii);
                     jt = JSTaggedValue(str);
                     break;
                 }

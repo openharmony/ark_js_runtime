@@ -144,7 +144,8 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
         if (value.GetConstpoolType() == ConstPoolType::STRING) {
             panda_file::File::EntityId id(it.first);
             auto foundStr = pf.GetStringData(id);
-            auto string = factory_->GetRawStringFromStringTable(foundStr.data, foundStr.utf16_length);
+            auto string = factory_->GetRawStringFromStringTable(foundStr.data,
+                                                                foundStr.utf16_length, foundStr.is_ascii);
             constpool->Set(thread_, value.GetConstpoolIndex(), JSTaggedValue(string));
         } else if (value.GetConstpoolType() == ConstPoolType::BASE_FUNCTION) {
             ASSERT(mainMethodIndex_ != it.first);
