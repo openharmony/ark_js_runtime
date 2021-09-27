@@ -82,7 +82,9 @@ bool JSDebugger::HandleBreakpoint([[maybe_unused]] const JSThread *thread, const
 
     auto *pf = method->GetPandaFile();
     PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
-    hooks_.Breakpoint(PtThread(ManagedThread::NON_INITIALIZED_THREAD_ID), location);
+    if (hooks_ != nullptr) {
+        hooks_->Breakpoint(PtThread(ManagedThread::NON_INITIALIZED_THREAD_ID), location);
+    }
 
     return true;
 }
@@ -96,14 +98,18 @@ void JSDebugger::HandleExceptionThrowEvent(const JSThread *thread, const JSMetho
     auto *pf = method->GetPandaFile();
     PtLocation throwLocation {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    hooks_.Exception(PtThread(ManagedThread::NON_INITIALIZED_THREAD_ID), throwLocation, PtObject(), throwLocation);
+    if (hooks_ != nullptr) {
+        hooks_->Exception(PtThread(ManagedThread::NON_INITIALIZED_THREAD_ID), throwLocation, PtObject(), throwLocation);
+    }
 }
 
 bool JSDebugger::HandleStep(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
 {
     auto *pf = method->GetPandaFile();
     PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
-    hooks_.SingleStep(PtThread(thread->GetId()), location);
+    if (hooks_ != nullptr) {
+        hooks_->SingleStep(PtThread(thread->GetId()), location);
+    }
     return true;
 }
 

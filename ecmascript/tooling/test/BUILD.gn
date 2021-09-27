@@ -34,30 +34,6 @@ config("debug_api_test") {
   ]
 }
 
-action("copy_resource_xml") {
-  visibility = [ ":*" ]  # Only targets in this file can depend on this.
-
-  deps = []
-
-  script = "//ark/js_runtime/test/copy_resource.py"
-
-  src_path = "//ark/js_runtime/test/resource/js_runtime/"
-  src_xml = "ohos_test.xml"
-  dst_path = "//ark/test/resource/js_runtime/"
-
-  args = [
-    "--src-path",
-    rebase_path(src_path),
-    "--src-xml",
-    src_xml,
-    "--dst-path",
-    rebase_path(dst_path),
-  ]
-
-  inputs = [ src_path + src_xml ]
-  outputs = [ "$target_out_dir" ]
-}
-
 ts2abc_gen_abc("ark_debug_abc") {
   extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
   src_js = rebase_path(test_js_path)
@@ -79,7 +55,7 @@ ohos_shared_library("jsdebugtest") {
   configs = [
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     ":debug_api_test",
     "$ark_root/runtime:arkruntime_public_config",
   ]
@@ -87,12 +63,14 @@ ohos_shared_library("jsdebugtest") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime:libark_js_intl_static",
-    "//ark/js_runtime:libark_jsruntime_static",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
   ]
+
+  if (!is_standard_system) {
+    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+  }
+
   output_extension = "so"
-  relative_install_dir = "test"
   subsystem_name = "test"
 }
 
@@ -107,19 +85,22 @@ host_unittest_action("EcmaDebugApiTest") {
   configs = [
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     ":debug_api_test",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     ":ark_debug_abc",
-    ":copy_resource_xml",
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
   ]
+
+  if (!is_standard_system) {
+    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("DebuggerCommandsTest") {
@@ -134,15 +115,19 @@ host_unittest_action("DebuggerCommandsTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("DebuggerEventsTest") {
@@ -157,15 +142,19 @@ host_unittest_action("DebuggerEventsTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("DebuggerTypesTest") {
@@ -180,15 +169,19 @@ host_unittest_action("DebuggerTypesTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 group("unittest") {

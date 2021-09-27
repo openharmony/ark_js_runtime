@@ -48,12 +48,12 @@ public:
 
     std::optional<Error> RegisterHooks(PtHooks *hooks) override
     {
-        hooks_.SetHooks(hooks);
+        hooks_ = hooks;
         return {};
     }
     std::optional<Error> UnregisterHooks() override
     {
-        hooks_.SetHooks(nullptr);
+        hooks_ = nullptr;
         return {};
     }
 
@@ -62,19 +62,27 @@ public:
     void BytecodePcChanged(ManagedThread *thread, Method *method, uint32_t bcOffset) override;
     void LoadModule(std::string_view filename) override
     {
-        hooks_.LoadModule(filename);
+        if (hooks_ != nullptr) {
+            hooks_->LoadModule(filename);
+        }
     }
     void VmStart() override
     {
-        hooks_.VmStart();
+        if (hooks_ != nullptr) {
+            hooks_->VmStart();
+        }
     }
     void VmInitialization(ManagedThread::ThreadId threadId) override
     {
-        hooks_.VmInitialization(PtThread(threadId));
+        if (hooks_ != nullptr) {
+            hooks_->VmInitialization(PtThread(threadId));
+        }
     }
     void VmDeath() override
     {
-        hooks_.VmDeath();
+        if (hooks_ != nullptr) {
+            hooks_->VmDeath();
+        }
     }
 
     PtLangExt *GetLangExtension() const override
@@ -228,7 +236,7 @@ private:
 
     const Runtime *runtime_;
     const EcmaVM *ecmaVm_;
-    PtHooksWrapper hooks_;
+    PtHooks *hooks_ {nullptr};
 
     CUnorderedSet<tooling::Breakpoint, tooling::HashBreakpoint> breakpoints_ {};
 };
