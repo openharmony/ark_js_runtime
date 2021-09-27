@@ -324,6 +324,11 @@ void LLVMIRBuilder::Build()
                     VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLT);
                     break;
                 }
+                case OpCode::INT32_ULT:  // no break, fall through
+                case OpCode::INT64_ULT: {
+                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntULT);
+                    break;
+                }
                 case OpCode::INT32_SLE:  // no break, fall through
                 case OpCode::INT64_SLE: {
                     VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLE);
@@ -383,6 +388,8 @@ void LLVMIRBuilder::Build()
                     VisitCastDoubleToInt(gate, ins[0]);
                     break;
                 }
+                case OpCode::DEPEND_AND:
+                    break;
                 default: {
                     LOG_ECMA(ERROR) << "The gate below need to be translated ";
                     circuit_->Print(gate);
@@ -1120,7 +1127,6 @@ LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *st
         paramTys.push_back(ConvertLLVMTypeFromMachineType(paramsType[i]));
     }
     auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount, 0);
-    LLVMDumpType(functype);
     return functype;
 }
 

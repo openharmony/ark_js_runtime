@@ -201,7 +201,16 @@ bool Circuit::IsLoopHead(AddrShift gate) const
 {
     if (gate != NullGate()) {
         const Gate *curGate = this->LoadGatePtrConst(gate);
-        return curGate->GetOpCode() == OpCode::LOOP_BEGIN;
+        return curGate->GetOpCode().IsLoopHead();
+    }
+    return false;
+}
+
+bool Circuit::IsControlCase(AddrShift gate) const
+{
+    if (gate != NullGate()) {
+        const Gate *curGate = this->LoadGatePtrConst(gate);
+        return curGate->GetOpCode().IsControlCase();
     }
     return false;
 }

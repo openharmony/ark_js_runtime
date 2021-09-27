@@ -40,6 +40,18 @@ AddrShift CircuitBuilder::NewSelectorGate(OpCode opCode, AddrShift control, int 
     return circuit_->NewGate(opCode, valueCounts, inList, TypeCode::NOTYPE);
 }
 
+AddrShift CircuitBuilder::NewSelectorGate(OpCode opCode, AddrShift control, std::vector<AddrShift> &values,
+                                          int valueCounts)
+{
+    std::vector<AddrShift> inList;
+    inList.push_back(control);
+    for (int i = 0; i < valueCounts; i++) {
+        inList.push_back(values[i]);
+    }
+
+    return circuit_->NewGate(opCode, valueCounts, inList, TypeCode::NOTYPE);
+}
+
 AddrShift CircuitBuilder::NewIntegerConstant(int32_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
@@ -80,6 +92,14 @@ AddrShift CircuitBuilder::HoleConstant()
                              TypeCode::NOTYPE);
 }
 
+AddrShift CircuitBuilder::ExceptionConstant()
+{
+    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
+    // NOTE: add bitfield value here
+    return circuit_->NewGate(OpCode(OpCode::JS_CONSTANT), panda::coretypes::TaggedValue::VALUE_EXCEPTION,
+                             {constantList}, TypeCode::NOTYPE);
+}
+
 AddrShift CircuitBuilder::Branch(AddrShift state, AddrShift condition)
 {
     return circuit_->NewGate(OpCode(OpCode::IF_BRANCH), 0, {state, condition}, TypeCode::NOTYPE);
@@ -90,11 +110,10 @@ AddrShift CircuitBuilder::SwitchBranch(AddrShift state, AddrShift index, int cas
     return circuit_->NewGate(OpCode(OpCode::SWITCH_BRANCH), caseCounts, {state, index}, TypeCode::NOTYPE);
 }
 
-AddrShift CircuitBuilder::Return(AddrShift state, AddrShift value)
+AddrShift CircuitBuilder::Return(AddrShift state, AddrShift depend, AddrShift value)
 {
-    auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
     auto returnList = Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST));
-    return circuit_->NewGate(OpCode(OpCode::RETURN), 0, {state, dependEntry, value, returnList}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::RETURN), 0, {state, depend, value, returnList}, TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::Goto(AddrShift state)
@@ -202,6 +221,8 @@ OpCode CircuitBuilder::GetLoadOpCodeFromMachineType(MachineType type)
 OpCode CircuitBuilder::GetSelectOpCodeFromMachineType(MachineType type)
 {
     switch (type) {
+        case NONE_TYPE:
+            return OpCode(OpCode::DEPEND_SELECTOR);
         case INT8_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT8);
         case INT16_TYPE:
@@ -232,18 +253,30 @@ OpCode CircuitBuilder::GetSelectOpCodeFromMachineType(MachineType type)
     }
 }
 
-AddrShift CircuitBuilder::NewLoadGate(MachineType type, AddrShift val)
+AddrShift CircuitBuilder::NewDependRelay(AddrShift state, AddrShift depend)
 {
-    auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
-    OpCode op = GetLoadOpCodeFromMachineType(type);
-    return circuit_->NewGate(op, type, {dependEntry, val}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::DEPEND_RELAY), 0, {state, depend}, TypeCode::NOTYPE);
 }
 
-AddrShift CircuitBuilder::NewStoreGate(MachineType type, AddrShift ptr, AddrShift val)
+AddrShift CircuitBuilder::NewDependAnd(std::initializer_list<AddrShift> args)
 {
-    auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
+    std::vector<AddrShift> inputs;
+    for (auto arg : args) {
+        inputs.push_back(arg);
+    }
+    return circuit_->NewGate(OpCode(OpCode::DEPEND_AND), args.size(), inputs, TypeCode::NOTYPE);
+}
+
+AddrShift CircuitBuilder::NewLoadGate(MachineType type, AddrShift val, AddrShift depend)
+{
+    OpCode op = GetLoadOpCodeFromMachineType(type);
+    return circuit_->NewGate(op, type, {depend, val}, TypeCode::NOTYPE);
+}
+
+AddrShift CircuitBuilder::NewStoreGate(MachineType type, AddrShift ptr, AddrShift val, AddrShift depend)
+{
     OpCode op = GetStoreOpCodeFromMachineType(type);
-    return circuit_->NewGate(op, type, {dependEntry, val, ptr}, TypeCode::NOTYPE);
+    return circuit_->NewGate(op, type, {depend, val, ptr}, TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::NewArithMeticGate(OpCode opcode, AddrShift left, AddrShift right)

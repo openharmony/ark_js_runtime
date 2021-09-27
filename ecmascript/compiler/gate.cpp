@@ -56,9 +56,9 @@ Properties OpCode::GetProperties() const
         case ARG_LIST:
             return {NOVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CIRCUIT_ROOT)};
         case RETURN:
-            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(ANYVALUE), OpCode(THROW_LIST)};
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(ANYVALUE), OpCode(RETURN_LIST)};
         case THROW:
-            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSValueCode()), OpCode(RETURN_LIST)};
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSValueCode()), OpCode(THROW_LIST)};
         case ORDINARY_BLOCK:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
         case IF_BRANCH:
@@ -1292,5 +1292,16 @@ bool OpCode::IsTerminalState() const
 bool OpCode::IsCFGMerge() const
 {
     return (this->op == OpCode::MERGE) || (this->op == OpCode::LOOP_BEGIN);
+}
+
+bool OpCode::IsControlCase() const
+{
+    return (this->op == OpCode::IF_BRANCH) || (this->op == OpCode::SWITCH_BRANCH) || (this->op == OpCode::IF_TRUE) ||
+           (this->op == OpCode::IF_FALSE) || (this->op == OpCode::SWITCH_CASE) || (this->op == OpCode::DEFAULT_CASE);
+}
+
+bool OpCode::IsLoopHead() const
+{
+    return (this->op == OpCode::LOOP_BEGIN);
 }
 }  // namespace kungfu

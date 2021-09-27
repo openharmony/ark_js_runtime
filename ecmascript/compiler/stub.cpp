@@ -134,15 +134,15 @@ AddrShift LabelImpl::ReadVariableRecursive(Variable *var)
     OpCode opcode = CircuitBuilder::GetSelectOpCodeFromMachineType(var->Type());
     if (!IsSealed()) {
         // only loopheader gate will be not sealed
-        int valueCounts = static_cast<int>(this->predecessors.size()) + 1;
+        int valueCounts = static_cast<int>(this->predecessors_.size()) + 1;
 
         val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, valueCounts);
         env_->AddSelectorToLabel(val, Label(this));
         incompletePhis_[var] = val;
-    } else if (predecessors.size() == 1) {
-        val = predecessors[0]->ReadVariable(var);
+    } else if (predecessors_.size() == 1) {
+        val = predecessors_[0]->ReadVariable(var);
     } else {
-        val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, this->predecessors.size());
+        val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, this->predecessors_.size());
         env_->AddSelectorToLabel(val, Label(this));
         WriteVariable(var, val);
         val = var->AddPhiOperand(val);
@@ -153,31 +153,38 @@ AddrShift LabelImpl::ReadVariableRecursive(Variable *var)
 
 void LabelImpl::Bind()
 {
-    ASSERT(!predecessors.empty());
+    ASSERT(!predecessors_.empty());
+    if (IsLoopHead()) {
+        // 2 means input number of depend selector gate
+        loopDepend_ = env_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, 2);
+        env_->GetCircuit()->NewIn(loopDepend_, 1, predecessors_[0]->GetDepend());
+        depend_ = loopDepend_;
+    }
     if (IsNeedSeal()) {
         Seal();
         MergeAllControl();
+        MergeAllDepend();
     }
 }
 
 void LabelImpl::MergeAllControl()
 {
-    if (predecessors.size() < 2) {  // 2 : Loop Head only support two predecessors
+    if (predecessors_.size() < 2) {  // 2 : Loop Head only support two predecessors_
         return;
     }
 
     if (IsLoopHead()) {
-        ASSERT(predecessors.size() == 2);  // 2 : Loop Head only support two predecessors
+        ASSERT(predecessors_.size() == 2);  // 2 : Loop Head only support two predecessors_
         ASSERT(otherPredeControls_.size() == 1);
         env_->GetCircuit()->NewIn(predeControl_, 1, otherPredeControls_[0]);
         return;
     }
 
-    // merge all control of predecessors
-    std::vector<AddrShift> inGates(predecessors.size());
+    // merge all control of predecessors_
+    std::vector<AddrShift> inGates(predecessors_.size());
     size_t i = 0;
     ASSERT(predeControl_ != -1);
-    ASSERT((otherPredeControls_.size() + 1) == predecessors.size());
+    ASSERT((otherPredeControls_.size() + 1) == predecessors_.size());
     inGates[i++] = predeControl_;
     for (auto in : otherPredeControls_) {
         inGates[i++] = in;
@@ -188,10 +195,43 @@ void LabelImpl::MergeAllControl()
     control_ = merge;
 }
 
+void LabelImpl::MergeAllDepend()
+{
+    if (IsControlCase()) {
+        // Add depend_relay to current label
+        auto denpendEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
+        dependRelay_ = env_->GetCircuitBuilder().NewDependRelay(predeControl_, denpendEntry);
+    }
+
+    if (predecessors_.size() < 2) {  // 2 : Loop Head only support two predecessors_
+        depend_ = predecessors_[0]->GetDepend();
+        if (dependRelay_ != -1) {
+            depend_ = env_->GetCircuitBuilder().NewDependAnd({depend_, dependRelay_});
+        }
+        return;
+    }
+    if (IsLoopHead()) {
+        ASSERT(predecessors_.size() == 2);  // 2 : Loop Head only support two predecessors_
+        // Add loop depend to in of depend_seclector
+        ASSERT(loopDepend_ != -1);
+        // 2 mean 3rd input gate for loopDepend_(depend_selector)
+        env_->GetCircuit()->NewIn(loopDepend_, 2, predecessors_[1]->GetDepend());
+        return;
+    }
+
+    //  Merge all depends to depend_seclector
+    std::vector<AddrShift> dependsList;
+    for (auto prede : this->GetPredecessors()) {
+        dependsList.push_back(prede->GetDepend());
+    }
+    depend_ = env_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, dependsList,
+                                                        dependsList.size());
+}
+
 void LabelImpl::AppendPredecessor(LabelImpl *predecessor)
 {
     if (predecessor != nullptr) {
-        predecessors.push_back(predecessor);
+        predecessors_.push_back(predecessor);
     }
 }
 
@@ -199,12 +239,17 @@ bool LabelImpl::IsNeedSeal() const
 {
     auto control = env_->GetCircuit()->LoadGatePtr(predeControl_);
     auto numsInList = control->GetOpCode().GetOpCodeNumInsArray(control->GetBitField());
-    return predecessors.size() >= numsInList[0];
+    return predecessors_.size() >= numsInList[0];
 }
 
 bool LabelImpl::IsLoopHead() const
 {
     return env_->GetCircuit()->IsLoopHead(predeControl_);
+}
+
+bool LabelImpl::IsControlCase() const
+{
+    return env_->GetCircuit()->IsControlCase(predeControl_);
 }
 
 Stub::Environment::Environment(size_t arguments, Circuit *circuit)
@@ -216,6 +261,8 @@ Stub::Environment::Environment(size_t arguments, Circuit *circuit)
     entry_ = Label(NewLabel(this, Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY))));
     currentLabel_ = &entry_;
     currentLabel_->Seal();
+    auto depend_entry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
+    currentLabel_->SetDepend(depend_entry);
 }
 
 Stub::Environment::~Environment()
@@ -234,7 +281,6 @@ void Stub::Jump(Label *label)
     currentLabel->SetControl(jump);
     label->AppendPredecessor(currentLabel);
     label->MergeControl(currentLabel->GetControl());
-
     env_.SetCurrentLabel(nullptr);
 }
 
@@ -295,6 +341,7 @@ void Stub::LoopEnd(Label *loopHead)
     loopHead->MergeControl(loopend);
     loopHead->Seal();
     loopHead->MergeAllControl();
+    loopHead->MergeAllDepend();
     env_.SetCurrentLabel(nullptr);
 }
 

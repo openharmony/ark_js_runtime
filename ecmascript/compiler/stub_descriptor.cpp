@@ -167,6 +167,35 @@ CALL_STUB_INIT_DESCRIPTOR(FindOwnElement2)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(GetPropertyByIndex)
+{
+    // 3 : 3 input parameters
+    static StubDescriptor getPropertyByIndex("GetPropertyByIndex", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = getPropertyByIndex;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
+
+CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
+{
+    // 4 : 4 input parameters
+    static StubDescriptor setPropertyByIndex("SetPropertyByIndex", 0, 4, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = setPropertyByIndex;
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
+
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 {
     // 5 : 5 input parameters
