@@ -44,9 +44,14 @@ JSTaggedValue BuiltinsJson::Parse(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> msg = GetCallArg(argv, 0);
     JSHandle<EcmaString> parseString = JSTaggedValue::ToString(thread, msg);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-
-    panda::ecmascript::base::JsonParser parser(thread);
-    JSHandle<JSTaggedValue> result = parser.Parse(*parseString);
+    JSHandle<JSTaggedValue> result;
+    if (parseString->IsUtf8()) {
+        panda::ecmascript::base::JsonParser<uint8_t> parser(thread);
+        result = parser.ParseUtf8(*parseString);
+    } else {
+        panda::ecmascript::base::JsonParser<uint16_t> parser(thread);
+        result = parser.ParseUtf16(*parseString);
+    }
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     JSTaggedValue reviver = JSTaggedValue::Undefined();
@@ -63,7 +68,7 @@ JSTaggedValue BuiltinsJson::Parse(EcmaRuntimeCallInfo *argv)
             // Perform ! CreateDataPropertyOrThrow(root, rootName, unfiltered).
             bool success = JSObject::CreateDataProperty(thread, root, rootName, result);
             if (success) {
-                result = parser.InternalizeJsonProperty(root, rootName, callbackfnHandle);
+                result = base::Internalize::InternalizeJsonProperty(thread, root, rootName, callbackfnHandle);
             }
         }
     }
