@@ -676,7 +676,7 @@ JSTaggedValue BuiltinsString::Normalize(EcmaRuntimeCallInfo *argv)
     } else {
         UNREACHABLE();
     }
-    SetHwIcuDirectory();
+
     icu::Normalizer::normalize(src, uForm, option, res, errorCode);
     JSHandle<EcmaString> str = JSLocale::IcuToString(thread, res);
     return JSTaggedValue(*str);
