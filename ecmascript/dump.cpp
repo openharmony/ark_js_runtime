@@ -185,8 +185,6 @@ CString JSHClass::DumpJSType(JSType type)
             return "InternalAccessor";
         case JSType::SYMBOL:
             return "Symbol";
-        case JSType::OBJECT_WRAPPER:
-            return "ObjectWapper";
         case JSType::PROPERTY_BOX:
             return "PropertyBox";
         case JSType::JS_ASYNC_FUNCTION:
@@ -455,7 +453,6 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
         case JSType::JS_SET_ITERATOR:
         case JSType::JS_ARRAY_ITERATOR:
         case JSType::JS_STRING_ITERATOR:
-        case JSType::OBJECT_WRAPPER:
         case JSType::PROPERTY_BOX:
             break;
         default:
@@ -1506,7 +1503,6 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::vector<std::pai
         case JSType::JS_GENERATOR_FUNCTION:
             JSGeneratorFunction::Cast(obj)->DumpForSnapshot(thread, vec);
             break;
-        case JSType::OBJECT_WRAPPER:
         case JSType::TRANSITION_HANDLER:
         case JSType::PROTOTYPE_HANDLER:
         case JSType::PROPERTY_BOX:

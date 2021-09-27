@@ -277,7 +277,6 @@ public:
     bool IsDynClass() const;
     bool IsJSHClass() const;
     bool IsForinIterator() const;
-    bool IsObjectWrapper() const;
     bool IsStringIterator() const;
     bool IsArrayBuffer() const;
 

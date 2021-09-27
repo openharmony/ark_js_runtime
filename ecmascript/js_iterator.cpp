@@ -29,15 +29,9 @@ JSTaggedValue JSIterator::IteratorCloseAndReturn(JSThread *thread, const JSHandl
 {
     ASSERT(thread->HasPendingException());
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> record;
-    if (thread->GetException().IsObjectWrapper()) {
-        JSTaggedValue exception = ObjectWrapper::Cast(thread->GetException().GetTaggedObject())->GetValue();
-        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::THROW,
-            JSHandle<JSTaggedValue>(thread, exception)));
-    } else {
-        record =
-            JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::NORMAL, status));
-    }
+    JSTaggedValue exception = thread->GetException();
+    JSHandle<JSTaggedValue> record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::THROW,
+        JSHandle<JSTaggedValue>(thread, exception)));
     JSHandle<JSTaggedValue> result = JSIterator::IteratorClose(thread, iter, record);
     if (result->IsCompletionRecord()) {
         return CompletionRecord::Cast(result->GetTaggedObject())->GetValue();

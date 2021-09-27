@@ -161,12 +161,7 @@ JSTaggedValue SlowRuntimeStub::DecDyn(JSThread *thread, JSTaggedValue value)
 void SlowRuntimeStub::ThrowDyn(JSThread *thread, JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, ThrowDyn);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSTaggedValue> obj(thread, value);
-    JSHandle<ObjectWrapper> wrapperObject = factory->NewObjectWrapper(obj);
-    thread->SetException(wrapperObject.GetTaggedValue());
+    thread->SetException(value);
 }
 
 JSTaggedValue SlowRuntimeStub::GetPropIterator(JSThread *thread, JSTaggedValue value)
@@ -944,10 +939,9 @@ JSTaggedValue SlowRuntimeStub::CloseIterator(JSThread *thread, JSTaggedValue ite
 
     JSHandle<JSTaggedValue> iterHandle(thread, iter);
     JSHandle<JSTaggedValue> record;
-    if (thread->GetException().IsObjectWrapper()) {
-        JSTaggedValue exception = ObjectWrapper::Cast(thread->GetException().GetTaggedObject())->GetValue();
+    if (thread->HasPendingException()) {
         record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::THROW,
-            JSHandle<JSTaggedValue>(thread, exception)));
+            JSHandle<JSTaggedValue>(thread, thread->GetException())));
     } else {
         JSHandle<JSTaggedValue> undefinedVal = globalConst->GetHandledUndefined();
         record = JSHandle<JSTaggedValue>(

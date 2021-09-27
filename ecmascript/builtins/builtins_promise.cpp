@@ -491,13 +491,7 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         // f. If nextValue is an abrupt completion, set iteratorRecord.[[done]] to true.
         if (thread->HasPendingException()) {
             itRecord->SetDone(thread, JSTaggedValue::True());
-            if (thread->GetException().IsObjectWrapper()) {
-                JSHandle<ObjectWrapper> wrapperVal(thread, thread->GetException());
-                JSHandle<JSTaggedValue> throwVal(thread, wrapperVal->GetValue());
-                nextVal = throwVal;
-            } else {
-                nextVal = JSHandle<JSTaggedValue>(thread, thread->GetException());
-            }
+            nextVal = JSHandle<JSTaggedValue>(thread, thread->GetException());
         }
 
         // g. ReturnIfAbrupt(nextValue).

@@ -809,11 +809,6 @@ inline bool JSTaggedValue::IsJSHClass() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsHClass();
 }
 
-inline bool JSTaggedValue::IsObjectWrapper() const
-{
-    return IsHeapObject() && GetTaggedObject()->GetClass()->IsObjectWrapper();
-}
-
 inline bool JSTaggedValue::IsStringIterator() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsStringIterator();

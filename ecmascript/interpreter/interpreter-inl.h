@@ -3194,12 +3194,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             return;
         }
 
-        // set exception to acc
-        if (exception.IsObjectWrapper()) {
-            SET_ACC(ObjectWrapper::Cast(exception.GetTaggedObject())->GetValue());
-        } else {
-            SET_ACC(exception);
-        }
+        SET_ACC(exception);
         thread->ClearException();
         thread->SetCurrentSPFrame(sp);
         DISPATCH_OFFSET(0);

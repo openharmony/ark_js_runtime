@@ -27,7 +27,6 @@
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/ecma_heap_manager.h"
 #include "ecmascript/mem/region_factory.h"
-#include "ecmascript/object_wrapper.h"
 #include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript {
@@ -256,8 +255,6 @@ public:
 
     JSHandle<TaggedArray> EmptyArray() const;
 
-    JSHandle<ObjectWrapper> NewObjectWrapper(const JSHandle<JSTaggedValue> &value);
-
     // start gc test
     void SetTriggerGc(bool flag, bool triggerSemiGC = false);
 
@@ -398,7 +395,6 @@ private:
     JSHClass *jsProxyOrdinaryClass_ {nullptr};
     JSHClass *jsProxyCallableClass_ {nullptr};
     JSHClass *jsProxyConstructClass_ {nullptr};
-    JSHClass *objectWrapperClass_ {nullptr};
     JSHClass *PropertyBoxClass_ {nullptr};
     JSHClass *protoChangeDetailsClass_ {nullptr};
     JSHClass *protoChangeMarkerClass_ {nullptr};

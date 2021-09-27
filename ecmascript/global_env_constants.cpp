@@ -87,8 +87,6 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
         factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::INTERNAL_ACCESSOR).GetTaggedValue());
     SetConstant(ConstantIndex::JS_PROXY_ORDINARY_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSProxy::SIZE, JSType::JS_PROXY).GetTaggedValue());
-    SetConstant(ConstantIndex::OBJECT_WRAPPER_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, ObjectWrapper::SIZE, JSType::OBJECT_WRAPPER).GetTaggedValue());
     SetConstant(
         ConstantIndex::COMPLETION_RECORD_CLASS_INDEX,
         factory->NewEcmaDynClass(dynClassClass, CompletionRecord::SIZE, JSType::COMPLETION_RECORD).GetTaggedValue());

@@ -304,8 +304,6 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             name = GetString("JSGlobalObject");
         } else if (hCls->IsClassPrototype()) {
             name = GetString("ClassPrototype");
-        } else if (hCls->IsObjectWrapper()) {
-            name = GetString("ObjectWrapper");
         } else if (hCls->IsGeneratorFunction()) {
             name = GetString("GeneratorFunction");
         } else if (hCls->IsGeneratorObject()) {
