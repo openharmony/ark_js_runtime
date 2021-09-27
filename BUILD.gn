@@ -220,7 +220,7 @@ config("ark_jsruntime_config") {
 config("ecma_test_config") {
   visibility = [ ":*" ]
 
-  cflags_cc = [ "-Wno-sign-compare" ]
+  cflags_cc = []
 }
 
 ecma_source = [
