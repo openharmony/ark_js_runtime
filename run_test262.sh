@@ -15,7 +15,7 @@
 set -e
 
 pushd ark/ts2abc
-    time=`date +'%Y%m%d%H%M%S'`
+    time=$(date +'%Y%m%d%H%M%S')
     if [ ! -d report ];then
         mkdir report
     fi
@@ -35,7 +35,7 @@ pushd ark/ts2abc
     cp out/test262/result.txt report/result_es2015_${time}.txt
 
     pushd report
-        es2015_fail=`grep FAIL result_es2015_${time}.txt | wc -l`
+        es2015_fail=$(grep FAIL result_es2015_${time}.txt | wc -l)
         threshold=0
         if [ ${es2015_fail} -gt ${threshold} ];then
             echo 'test262 fail case over thresgold'
