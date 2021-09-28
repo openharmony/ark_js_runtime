@@ -67,7 +67,7 @@ ohos_shared_library("jsdebugtest") {
   ]
 
   if (!is_standard_system) {
-    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+    deps += [ "$ark_root/runtime:libarkruntime" ]
   }
 
   output_extension = "so"
@@ -99,7 +99,7 @@ host_unittest_action("EcmaDebugApiTest") {
   ]
 
   if (!is_standard_system) {
-    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+    deps += [ "$ark_root/runtime:libarkruntime" ]
   }
 }
 
@@ -126,7 +126,7 @@ host_unittest_action("DebuggerCommandsTest") {
   ]
 
   if (!is_standard_system) {
-    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+    deps += [ "$ark_root/runtime:libarkruntime" ]
   }
 }
 
@@ -153,7 +153,7 @@ host_unittest_action("DebuggerEventsTest") {
   ]
 
   if (!is_standard_system) {
-    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+    deps += [ "$ark_root/runtime:libarkruntime" ]
   }
 }
 
@@ -180,7 +180,7 @@ host_unittest_action("DebuggerTypesTest") {
   ]
 
   if (!is_standard_system) {
-    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
+    deps += [ "$ark_root/runtime:libarkruntime" ]
   }
 }
 
