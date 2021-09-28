@@ -24,7 +24,7 @@
 #include "ecmascript/mem/tlab_allocator.h"
 
 namespace panda::ecmascript {
-static constexpr size_t SEMIGC_YOUNG_BUFFER_SIZE = 32 * 1024;
+static constexpr size_t YOUNG_BUFFER_SIZE = 32 * 1024;
 static constexpr size_t OLD_BUFFER_SIZE = 255 * 1024;
 
 TlabAllocator::TlabAllocator(Heap *heap, TriggerGCType gcType)
@@ -35,11 +35,15 @@ TlabAllocator::TlabAllocator(Heap *heap, TriggerGCType gcType)
 
 TlabAllocator::~TlabAllocator()
 {
-    FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngTop_, youngEnd_ - youngTop_);
-    if (gcType_ == TriggerGCType::SEMI_GC) {
-        heap_->GetSemiSpaceCollector()->oldSpaceAllocator_.Free(oldTop_, oldEnd_);
-    } else if (gcType_ == TriggerGCType::COMPRESS_FULL_GC) {
-        heap_->GetCompressCollector()->oldSpaceAllocator_.Free(oldTop_, oldEnd_);
+    if (youngTop_ != 0 && youngTop_ != youngEnd_) {
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngTop_, youngEnd_ - youngTop_);
+    }
+    if (oldTop_ != 0 && oldTop_ != oldEnd_) {
+        if (gcType_ == TriggerGCType::SEMI_GC) {
+            heap_->GetSemiSpaceCollector()->oldSpaceAllocator_.Free(oldTop_, oldEnd_);
+        } else if (gcType_ == TriggerGCType::COMPRESS_FULL_GC) {
+            heap_->GetCompressCollector()->oldSpaceAllocator_.Free(oldTop_, oldEnd_);
+        }
     }
 }
 
@@ -114,7 +118,7 @@ bool TlabAllocator::ExpandYoung()
 {
     uintptr_t buffer = 0;
     if (gcType_ == TriggerGCType::SEMI_GC) {
-        buffer = heap_->GetSemiSpaceCollector()->AllocateYoung(SEMIGC_YOUNG_BUFFER_SIZE);
+        buffer = heap_->GetSemiSpaceCollector()->AllocateYoung(YOUNG_BUFFER_SIZE);
     } else {
         UNREACHABLE();
     }
@@ -124,7 +128,7 @@ bool TlabAllocator::ExpandYoung()
     }
     youngBegin_ = buffer;
     youngTop_ = youngBegin_;
-    youngEnd_ = youngBegin_ + SEMIGC_YOUNG_BUFFER_SIZE;
+    youngEnd_ = youngBegin_ + YOUNG_BUFFER_SIZE;
     return true;
 }
 
@@ -132,7 +136,7 @@ bool TlabAllocator::ExpandOld()
 {
     uintptr_t buffer = 0;
     if (gcType_ == TriggerGCType::SEMI_GC) {
-        buffer = heap_->GetSemiSpaceCollector()->AllocateOld(OLD_BUFFER_SIZE);
+        buffer = heap_->GetSemiSpaceCollector()->AllocateOld(YOUNG_BUFFER_SIZE);
     } else if (gcType_ == TriggerGCType::COMPRESS_FULL_GC) {
         buffer = heap_->GetCompressCollector()->AllocateOld(OLD_BUFFER_SIZE);
     } else {
@@ -144,7 +148,13 @@ bool TlabAllocator::ExpandOld()
     }
     oldBegin_ = buffer;
     oldTop_ = oldBegin_;
-    oldEnd_ = oldBegin_ + OLD_BUFFER_SIZE;
+    if (gcType_ == TriggerGCType::SEMI_GC) {
+        oldEnd_ = oldBegin_ + YOUNG_BUFFER_SIZE;
+    } else if (gcType_ == TriggerGCType::COMPRESS_FULL_GC) {
+        oldEnd_ = oldBegin_ + OLD_BUFFER_SIZE;
+    } else {
+        UNREACHABLE();
+    }
     return true;
 }
 }  // namespace panda::ecmascript
