@@ -10,7 +10,9 @@
       ],
       "inner_kits": [],
       "system_kits": [],
-      "test_list": []
+      "test_list": [
+        "//ark/js_runtime:ark_js_unittest"
+      ]
     }
   }
 }

@@ -24,26 +24,10 @@ if (is_standard_system) {
 
 template("host_unittest_action") {
   _target_name_ = "${target_name}"
-  _deps_ = invoker.deps
-
-  _deps_ += [
-    "//ark/js_runtime:libark_jsruntime_static",
-    "//ark/js_runtime:libark_js_intl_static",
-  ]
-
-  if (!is_standard_system) {
-    _deps_ += [ "$ark_root/runtime:libarkruntime" ]
-  }
 
   # unittest for phone running
   ohos_unittest(_target_name_) {
-    forward_variables_from(invoker,
-                           "*",
-                           [
-                             "target_name",
-                             "deps",
-                           ])
-    deps = _deps_
+    forward_variables_from(invoker, "*")
   }
 
   _module_out_path_ = invoker.module_out_path
@@ -66,8 +50,7 @@ template("host_unittest_action") {
       "0",
       "--env-path",
       rebase_path(_root_out_dir_) + "/ark/ark:" + rebase_path(_root_out_dir_) +
-          "/ark/ark_js_runtime:" + rebase_path(_root_out_dir_) +
-          "/global/${icu_path}:" +
+          "/test/test:" + rebase_path(_root_out_dir_) + "/global/${icu_path}:" +
           rebase_path("//prebuilts/clang/ohos/linux-x86_64/llvm/lib/"),
     ]
 

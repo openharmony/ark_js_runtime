@@ -29,14 +29,19 @@ host_unittest_action("AssertScopeTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("BuiltinsTest") {
@@ -51,14 +56,19 @@ host_unittest_action("BuiltinsTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("DumpTest") {
@@ -73,14 +83,19 @@ host_unittest_action("DumpTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("GlueRegsTest") {
@@ -95,14 +110,19 @@ host_unittest_action("GlueRegsTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsArrayTest") {
@@ -117,14 +137,19 @@ host_unittest_action("JsArrayTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsDateTest") {
@@ -139,14 +164,19 @@ host_unittest_action("JsDateTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsForinIteratorTest") {
@@ -161,14 +191,19 @@ host_unittest_action("JsForinIteratorTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsFunctionTest") {
@@ -183,14 +218,19 @@ host_unittest_action("JsFunctionTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsHandleTest") {
@@ -205,14 +245,19 @@ host_unittest_action("JsHandleTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsIteratorTest") {
@@ -227,13 +272,18 @@ host_unittest_action("JsIteratorTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsMapTest") {
@@ -248,14 +298,19 @@ host_unittest_action("JsMapTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsObjectTest") {
@@ -270,14 +325,19 @@ host_unittest_action("JsObjectTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsPrimitiveRefTest") {
@@ -292,14 +352,19 @@ host_unittest_action("JsPrimitiveRefTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsPromiseTest") {
@@ -314,14 +379,19 @@ host_unittest_action("JsPromiseTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsProxyTest") {
@@ -336,14 +406,19 @@ host_unittest_action("JsProxyTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsSetTest") {
@@ -358,14 +433,19 @@ host_unittest_action("JsSetTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsSymbolTest") {
@@ -380,14 +460,19 @@ host_unittest_action("JsSymbolTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsTaggedQueueTest") {
@@ -402,14 +487,19 @@ host_unittest_action("JsTaggedQueueTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsVerificationTest") {
@@ -424,14 +514,19 @@ host_unittest_action("JsVerificationTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("HugeObjectTest") {
@@ -446,14 +541,19 @@ host_unittest_action("HugeObjectTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("LexicalEnvTest") {
@@ -468,14 +568,19 @@ host_unittest_action("LexicalEnvTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("LinkedHashTableTest") {
@@ -490,14 +595,19 @@ host_unittest_action("LinkedHashTableTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("NameDictionaryTest") {
@@ -512,14 +622,19 @@ host_unittest_action("NameDictionaryTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("NativePointerTest") {
@@ -534,14 +649,19 @@ host_unittest_action("NativePointerTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("ObjectFactoryTest") {
@@ -556,14 +676,19 @@ host_unittest_action("ObjectFactoryTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("TaggedValueTest") {
@@ -578,14 +703,19 @@ host_unittest_action("TaggedValueTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("WeakRefGenGcTest") {
@@ -600,14 +730,19 @@ host_unittest_action("WeakRefGenGcTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("WeakRefStwGcTest") {
@@ -622,14 +757,19 @@ host_unittest_action("WeakRefStwGcTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("JsSerializerTest") {
@@ -644,14 +784,19 @@ host_unittest_action("JsSerializerTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 host_unittest_action("GcTest") {
@@ -666,14 +811,19 @@ host_unittest_action("GcTest") {
     "//ark/js_runtime:ecma_test_config",
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
                                                      # arkruntime_public_config
-    "//ark/js_runtime:ark_jsruntime_config",
+    "//ark/js_runtime:ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
     sdk_libc_secshared_dep,
   ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
 }
 
 group("unittest") {

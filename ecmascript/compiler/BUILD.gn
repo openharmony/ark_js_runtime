@@ -38,7 +38,7 @@ config("ark_jsruntime_compiler_config") {
   configs = [ "//ark/js_runtime:ark_jsruntime_common_config" ]
 }
 
-ohos_shared_library("libark_jsoptimizer") {
+source_set("libark_jsoptimizer_static") {
   sources = [
     "circuit.cpp",
     "circuit_builder.cpp",
@@ -55,7 +55,7 @@ ohos_shared_library("libark_jsoptimizer") {
     "verifier.cpp",
   ]
 
-  configs = [
+  public_configs = [
     ":include_llvm",
     ":ark_jsruntime_compiler_config",
     "//ark/js_runtime:ark_jsruntime_public_config",
@@ -130,6 +130,13 @@ ohos_shared_library("libark_jsoptimizer") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
+    "$ark_root/libpandafile:libarkfile",
+  ]
+}
+
+ohos_shared_library("libark_jsoptimizer") {
+  deps = [
+    ":libark_jsoptimizer_static",
     "//ark/js_runtime:libark_jsruntime",
   ]
 
@@ -137,9 +144,34 @@ ohos_shared_library("libark_jsoptimizer") {
     deps += [ ":build_llvm_libs" ]
   }
 
+  install_enable = true
+  part_name = "ark_js_runtime"
+
   output_extension = "so"
-  relative_install_dir = "ark"
+  if (!is_standard_system) {
+    relative_install_dir = "ark"
+  }
   subsystem_name = "ark"
+}
+
+ohos_shared_library("libark_jsoptimizer_test") {
+  deps = [
+    ":libark_jsoptimizer_static",
+    "//ark/js_runtime:libark_jsruntime_test_static",
+  ]
+
+  if (is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime_static" ]
+  } else {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+
+  if (compile_llvm_online) {
+    deps += [ ":build_llvm_libs" ]
+  }
+
+  output_extension = "so"
+  subsystem_name = "test"
 }
 
 ohos_executable("ark_stub_opt") {

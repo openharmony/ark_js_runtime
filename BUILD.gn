@@ -95,40 +95,38 @@ config("ark_jsruntime_public_config") {
   ]
 }
 
-ohos_static_library("libark_js_intl_static") {
-  sources = [
-    "ecmascript/builtins/builtins_collator.cpp",
-    "ecmascript/builtins/builtins_date_time_format.cpp",
-    "ecmascript/builtins/builtins_intl.cpp",
-    "ecmascript/builtins/builtins_locale.cpp",
-    "ecmascript/builtins/builtins_number_format.cpp",
-    "ecmascript/builtins/builtins_plural_rules.cpp",
-    "ecmascript/builtins/builtins_relative_time_format.cpp",
-    "ecmascript/js_collator.cpp",
-    "ecmascript/js_date_time_format.cpp",
-    "ecmascript/js_locale.cpp",
-    "ecmascript/js_number_format.cpp",
-    "ecmascript/js_plural_rules.cpp",
-    "ecmascript/js_relative_time_format.cpp",
-  ]
+intl_sources = [
+  "ecmascript/builtins/builtins_collator.cpp",
+  "ecmascript/builtins/builtins_date_time_format.cpp",
+  "ecmascript/builtins/builtins_intl.cpp",
+  "ecmascript/builtins/builtins_locale.cpp",
+  "ecmascript/builtins/builtins_number_format.cpp",
+  "ecmascript/builtins/builtins_plural_rules.cpp",
+  "ecmascript/builtins/builtins_relative_time_format.cpp",
+  "ecmascript/js_collator.cpp",
+  "ecmascript/js_date_time_format.cpp",
+  "ecmascript/js_locale.cpp",
+  "ecmascript/js_number_format.cpp",
+  "ecmascript/js_plural_rules.cpp",
+  "ecmascript/js_relative_time_format.cpp",
+]
 
-  configs = [
+source_set("libark_js_intl_static") {
+  sources = intl_sources
+
+  public_configs = [
     ":ark_jsruntime_public_config",
     ":ark_jsruntime_common_config",
     "$ark_root/runtime:arkruntime_public_config",
   ]
 
   deps = [
-    ":libark_jsruntime_static",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
     "//third_party/icu/icu4c:shared_icui18n",
     "//third_party/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
   ]
-
-  output_extension = "a"
-  subsystem_name = "ark"
 }
 
 config("ark_jsruntime_common_config") {
@@ -221,7 +219,9 @@ config("ark_jsruntime_config") {
 config("ecma_test_config") {
   visibility = [ ":*" ]
 
-  cflags_cc = []
+  cflags_cc = [ "-Wno-sign-compare" ]
+
+  ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
 }
 
 ecma_source = [
@@ -363,14 +363,15 @@ ecma_source = [
   "ecmascript/weak_vector.cpp",
 ]
 
-ohos_static_library("libark_jsruntime_static") {
-  sources = ecma_source
-  sources += [
-    "ecmascript/tooling/interface/debugger_api.cpp",
-    "ecmascript/tooling/interface/js_debugger.cpp",
-  ]
+ecma_source += [
+  "ecmascript/tooling/interface/debugger_api.cpp",
+  "ecmascript/tooling/interface/js_debugger.cpp",
+]
 
-  configs = [
+source_set("libark_jsruntime_static") {
+  sources = ecma_source
+
+  public_configs = [
     ":ark_jsruntime_public_config",  # should add before
                                      # arkruntime_public_config
     ":ark_jsruntime_config",
@@ -389,9 +390,6 @@ ohos_static_library("libark_jsruntime_static") {
   } else {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
-
-  output_extension = "a"
-  subsystem_name = "ark"
 }
 
 ohos_shared_library("libark_jsruntime") {
@@ -410,4 +408,67 @@ ohos_shared_library("libark_jsruntime") {
     relative_install_dir = "ark"
   }
   subsystem_name = "ark"
+}
+
+source_set("libark_jsruntime_test_static") {
+  sources = ecma_source
+  sources += intl_sources
+
+  deps = [
+    ":copy_resource_xml",
+    "$ark_root/libpandabase:libarkbase",
+    "$ark_root/libpandafile:libarkfile",
+    "//third_party/icu/icu4c:shared_icui18n",
+    "//third_party/icu/icu4c:shared_icuuc",
+    sdk_libc_secshared_dep,
+  ]
+
+  public_configs = [
+    ":ark_jsruntime_public_config",  # should add before
+                                     # arkruntime_public_config
+    ":ark_jsruntime_common_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+}
+
+ohos_shared_library("libark_jsruntime_test") {
+  configs = [
+    ":ark_jsruntime_public_config",  # should add before
+                                     # arkruntime_public_config
+    ":ark_jsruntime_common_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [ ":libark_jsruntime_test_static" ]
+
+  if (is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime_static" ]
+  } else {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+
+  output_extension = "so"
+  subsystem_name = "test"
+}
+
+action("copy_resource_xml") {
+  deps = []
+
+  script = "//ark/js_runtime/test/copy_resource.py"
+
+  src_path = "//ark/js_runtime/test/resource/js_runtime/"
+  src_xml = "ohos_test.xml"
+  dst_path = "//ark/test/resource/js_runtime/"
+
+  args = [
+    "--src-path",
+    rebase_path(src_path),
+    "--src-xml",
+    src_xml,
+    "--dst-path",
+    rebase_path(dst_path),
+  ]
+
+  inputs = [ src_path + src_xml ]
+  outputs = [ "$target_out_dir" ]
 }

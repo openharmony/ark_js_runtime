@@ -23,7 +23,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 
 #include "mem/rendezvous.h"
-#include "include/runtime_notification.h"
+#include "include/runtime.h"
 #include "include/tooling/debug_interface.h"
 
 namespace panda {
