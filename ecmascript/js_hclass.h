@@ -335,11 +335,6 @@ public:
         return GetObjectType() == JSType::JS_NATIVE_POINTER;
     }
 
-    inline bool IsJSNativeObject() const
-    {
-        return GetObjectType() == JSType::JS_NATIVE_OBJECT;
-    }
-
     inline bool IsJSSymbol() const
     {
         return GetObjectType() == JSType::SYMBOL;

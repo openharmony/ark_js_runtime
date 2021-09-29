@@ -21,7 +21,6 @@
 #include "ecmascript/js_function_kind.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_native_object.h"
 #include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/machine_code.h"
@@ -308,9 +307,10 @@ public:
 
     EcmaString *InternString(const JSHandle<JSTaggedValue> &key);
 
-    inline JSHandle<JSNativePointer> NewJSNativePointer(void *externalPointer, bool nonMovable = false);
-    inline JSHandle<JSNativePointer> NewJSNativePointer(void *externalPointer, const DeleteEntryPoint &callBack,
-                                                        void *data, bool nonMovable = false);
+    inline JSHandle<JSNativePointer> NewJSNativePointer(void *externalPointer,
+                                                        const DeleteEntryPoint &callBack = nullptr,
+                                                        void *data = nullptr,
+                                                        bool nonMovable = false);
 
     JSHandle<JSObject> NewJSObjectByClass(const JSHandle<TaggedArray> &keys, const JSHandle<TaggedArray> &values);
     JSHandle<JSObject> NewJSObjectByClass(const JSHandle<TaggedArray> &properties, size_t length);
@@ -333,8 +333,6 @@ public:
 
     uintptr_t NewSpaceBySnapShotAllocator(size_t size);
     JSHandle<MachineCode> NewMachineCodeObject(size_t length, const uint8_t *data);
-    JSHandle<JSNativeObject> NewJSNativeObject(void *externalPointer);
-    JSHandle<JSNativeObject> NewJSNativeObject(void *externalPointer, DeleteEntryPoint callback, void *data);
 
     ~ObjectFactory() = default;
 

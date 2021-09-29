@@ -41,7 +41,6 @@
 #include "ecmascript/js_locale.h"
 #include "ecmascript/js_map.h"
 #include "ecmascript/js_map_iterator.h"
-#include "ecmascript/js_native_object.h"
 #include "ecmascript/js_number_format.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_primitive_ref.h"
@@ -282,9 +281,6 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
             break;
         case JSType::JS_INTL_BOUND_FUNCTION:
             JSIntlBoundFunction::Cast(object)->VisitRangeSlot(visitor);
-            break;
-        case JSType::JS_NATIVE_OBJECT:
-            JSNativeObject::Cast(object)->VisitRangeSlot(visitor);
             break;
         default:
             UNREACHABLE();

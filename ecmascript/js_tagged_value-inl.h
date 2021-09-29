@@ -382,11 +382,6 @@ inline bool JSTaggedValue::IsNativePointer() const
     return IsJSNativePointer();
 }
 
-inline bool JSTaggedValue::IsJSNativeObject() const
-{
-    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSNativeObject();
-}
-
 inline bool JSTaggedValue::IsJSNativePointer() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSNativePointer();

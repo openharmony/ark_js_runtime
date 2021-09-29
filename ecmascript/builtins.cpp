@@ -250,7 +250,6 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeString(env, primRefObjDynclass);
     InitializeArrayBuffer(env, objFuncDynclass);
     InitializeDataView(env, objFuncDynclass);
-    InitializeJSNativeObject(env);
 
     JSHandle<JSHClass> argumentsDynclass = factory_->CreateJSArguments();
     env->SetArgumentsClass(thread_, argumentsDynclass);
@@ -2723,14 +2722,5 @@ void Builtins::InitializePluralRules(const JSHandle<GlobalEnv> &env)
 
     // 15.4.5 Intl.PluralRules.prototype.resolvedOptions ()
     SetFunction(env, prPrototype, "resolvedOptions", PluralRules::ResolvedOptions, FunctionLength::ZERO);
-}
-
-void Builtins::InitializeJSNativeObject(const JSHandle<GlobalEnv> &env) const
-{
-    [[maybe_unused]] EcmaHandleScope scope(thread_);
-    JSHandle<JSHClass> dynclass = factory_->NewEcmaDynClass(JSNativeObject::SIZE, JSType::JS_NATIVE_OBJECT,
-                                                            JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Null()));
-
-    env->SetJSNativeObjectClass(thread_, dynclass);
 }
 }  // namespace panda::ecmascript

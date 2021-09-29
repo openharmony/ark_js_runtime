@@ -233,7 +233,6 @@ public:
     bool IsTaggedArray() const;
     bool IsNativePointer() const;
     bool IsJSNativePointer() const;
-    bool IsJSNativeObject() const;
     bool IsBoolean() const;
     bool IsSymbol() const;
     bool IsJSObject() const;

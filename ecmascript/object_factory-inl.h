@@ -32,21 +32,6 @@ EcmaString *ObjectFactory::AllocStringObject(size_t size)
     return reinterpret_cast<EcmaString *>(heapHelper_.AllocateYoungGenerationOrHugeObject(stringClass_, size));
 }
 
-JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointer, bool nonMovable)
-{
-    TaggedObject *header;
-    if (nonMovable) {
-        header = heapHelper_.AllocateNonMovableOrHugeObject(jsNativePointerClass_);
-    } else {
-        header = heapHelper_.AllocateYoungGenerationOrHugeObject(jsNativePointerClass_);
-    }
-    JSHandle<JSNativePointer> obj(thread_, header);
-    obj->SetExternalPointer(externalPointer);
-    obj->SetDeleter(nullptr);
-    obj->SetData(nullptr);
-    return obj;
-}
-
 JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointer,
                                                             const DeleteEntryPoint &callBack,
                                                             void *data,

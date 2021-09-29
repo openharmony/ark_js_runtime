@@ -282,7 +282,6 @@ public:
     bool IsDataView();
     bool IsTypedArray();
     bool IsNativePointer();
-    bool IsNativeObject();
     bool IsDate();
     bool IsError();
     bool IsMap();
@@ -521,7 +520,10 @@ public:
     void SetNativePointerFieldCount(int32_t count);
     int32_t GetNativePointerFieldCount();
     void *GetNativePointerField(int32_t index);
-    void SetNativePointerField(int32_t index, void *data);
+    void SetNativePointerField(int32_t index,
+                               void *nativePointer = nullptr,
+                               NativePointerCallback callBack = nullptr,
+                               void *data = nullptr);
 };
 
 using FunctionCallback = Local<JSValueRef> (*)(EcmaVM *, Local<JSValueRef>,
