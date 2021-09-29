@@ -74,6 +74,7 @@ public:
 class Callback {
 public:
     static ecmascript::JSTaggedValue RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info);
+    static ecmascript::JSTaggedValue RegisterCallbackWithProperty(ecmascript::EcmaRuntimeCallInfo *info);
     static ecmascript::JSTaggedValue RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCallInfo *info);
 };
 }  // namespace panda

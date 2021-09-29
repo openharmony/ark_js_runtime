@@ -533,6 +533,7 @@ class PUBLIC_API FunctionRef : public ObjectRef {
 public:
     static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, void *data);
     static Local<FunctionRef> New(EcmaVM *vm, FunctionCallback nativeFunc, Deleter deleter, void *data);
+    static Local<FunctionRef> NewWithProperty(EcmaVM *vm, FunctionCallback nativeFunc, void *data);
     static Local<FunctionRef> NewClassFunction(EcmaVM *vm, FunctionCallbackWithNewTarget nativeFunc, Deleter deleter,
         void *data);
     Local<JSValueRef> Call(const EcmaVM *vm, Local<JSValueRef> thisObj, const Local<JSValueRef> argv[],
