@@ -56,6 +56,10 @@ void RuntimeImpl::DispatcherImpl::RunIfWaitingForDebugger(const DispatchRequest 
 void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 {
     std::unique_ptr<GetPropertiesParams> params = GetPropertiesParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
 
     CVector<std::unique_ptr<PropertyDescriptor>> outPropertyDesc;
     std::optional<CVector<std::unique_ptr<InternalPropertyDescriptor>>> outInternalDescs;

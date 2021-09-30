@@ -85,6 +85,8 @@ source_set("libark_ecma_debugger_test_static") {
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
     "$ark_root/runtime:arkruntime_gen_intrinsics_intrinsics_h",
+    "$ark_root/runtime:libarkruntime_options_gen_h",
+    "$ark_root/verification/gen:verification_verifier_messages_h",
   ]
 }
 
