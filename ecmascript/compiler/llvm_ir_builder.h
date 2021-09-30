@@ -173,6 +173,7 @@ private:
     void VisitIntAnd(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitIntXor(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitIntLsr(AddrShift gate, AddrShift e1, AddrShift e2) const;
+    void VisitIntLsl(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitInt32LessThanOrEqual(AddrShift gate, AddrShift e1, AddrShift e2) const;
     void VisitIntOrUintCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMIntPredicate opcode) const;
     void VisitFloatOrDoubleCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMRealPredicate opcode) const;

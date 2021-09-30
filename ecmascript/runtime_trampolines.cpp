@@ -18,6 +18,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
+#include "ecmascript/layout_info.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
 
@@ -87,5 +88,19 @@ uint64_t RuntimeTrampolines::AccessorGetter(uint64_t argThread, uint64_t argGett
     auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
     JSHandle<JSObject> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
     return accessor->CallInternalGet(thread, objHandle).GetRawData();
+}
+
+int32_t RuntimeTrampolines::FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num)
+{
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    auto cls  = reinterpret_cast<JSHClass *>(hClass);
+    auto layoutInfo = LayoutInfo::Cast(cls->GetAttributes().GetTaggedObject());
+    return layoutInfo->FindElementWithCache(thread, cls, JSTaggedValue(key), num);
+}
+
+uint32_t RuntimeTrampolines::StringGetHashCode(uint64_t ecmaString)
+{
+    auto string = reinterpret_cast<EcmaString *>(ecmaString);
+    return string->GetHashcode();
 }
 }  // namespace panda::ecmascript

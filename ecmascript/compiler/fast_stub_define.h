@@ -25,7 +25,9 @@ namespace kungfu {
     V(AccessorGetter, 4)             \
     V(ThrowTypeError, 2)             \
     V(JSProxySetProperty, 6)         \
-    V(GetHash32, 2)
+    V(GetHash32, 2)                  \
+    V(FindElementWithCache, 4)       \
+    V(StringGetHashCode, 1)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

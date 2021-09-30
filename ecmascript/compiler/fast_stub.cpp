@@ -555,7 +555,7 @@ void FastSetElementStub::GenerateCircuit()
                 AddrShift attr = Load(INT32_TYPE, pattr);
                 Label isAccessor(env);
                 Label notAccessor(env);
-                Branch(IsAcesscor(attr), &isAccessor, &notAccessor);
+                Branch(IsAccessor(attr), &isAccessor, &notAccessor);
                 Bind(&notAccessor);
                 {
                     Label isWritable(env);
@@ -722,7 +722,7 @@ void FastGetPropertyByIndexStub::GenerateCircuit()
                     AddrShift value = GetValueFromDictionary(elements, entry);
                     Label isAccessor(env);
                     Label notAccessor(env);
-                    Branch(IsAcesscor(attr), &isAccessor, &notAccessor);
+                    Branch(IsAccessor(attr), &isAccessor, &notAccessor);
                     Bind(&isAccessor);
                     {
                         Label isInternal(env);
@@ -853,6 +853,157 @@ void FastSetPropertyByIndexStub::GenerateCircuit()
         Bind(&notExtensible);
         {
             ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible), GetExceptionConstant());
+        }
+    }
+}
+
+void FastGetPropertyByNameStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift thread = PtrArgument(0);
+    AddrShift receiver = Int64Argument(1);
+    AddrShift key = Int64Argument(2); // 2 : 3rd para
+    DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, receiver);
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label loopExit(env);
+    Label afterLoop(env);
+    // a do-while loop
+    Jump(&loopHead);
+    LoopBegin(&loopHead);
+    {
+        // auto *hclass = holder.GetTaggedObject()->GetClass()
+        // JSType jsType = hclass->GetObjectType()
+        AddrShift hClass = LoadHClass(*holder);
+        AddrShift jsType = GetObjectType(hClass);
+        Label isSIndexObj(env);
+        Label notSIndexObj(env);
+        // if branch condition : IsSpecialIndexedObj(jsType)
+        Branch(IsSpecialIndexedObj(jsType), &isSIndexObj, &notSIndexObj);
+        Bind(&isSIndexObj);
+        {
+            Return(GetHoleConstant());
+        }
+        Bind(&notSIndexObj);
+        {
+            Label isDicMode(env);
+            Label notDicMode(env);
+            // if branch condition : LIKELY(!hclass->IsDictionaryMode())
+            Branch(IsDictionaryElement(hClass), &isDicMode, &notDicMode);
+            Bind(&notDicMode);
+            {
+                // LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetAttributes().GetTaggedObject())
+                AddrShift layOutInfo = GetAttributesFromHclass(hClass);
+                // int propsNumber = hclass->GetPropertiesNumber()
+                AddrShift propsNum = ChangeInt64ToInt32(GetPropertiesNumberFromHClass(hClass));
+                // int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber)
+                StubDescriptor *findElemWithCache = GET_STUBDESCRIPTOR(FindElementWithCache);
+                AddrShift entry = CallRuntime(findElemWithCache, thread,
+                    GetWord64Constant(FAST_STUB_ID(FindElementWithCache)),
+                    {thread, hClass, key, propsNum});
+                Label hasEntry(env);
+                Label noEntry(env);
+                // if branch condition : entry != -1
+                Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &hasEntry, &noEntry);
+                Bind(&hasEntry);
+                {
+                    // PropertyAttributes attr(layoutInfo->GetAttr(entry))
+                    AddrShift propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entry);
+                    AddrShift attr = TaggedCastToInt32(propAttr);
+                    // auto value = JSObject::Cast(holder)->GetProperty(hclass, attr)
+                    AddrShift value = JSObjectGetProperty(*holder, hClass, attr);
+                    Label isAccessor(env);
+                    Label notAccessor(env);
+                    Branch(IsAccessor(attr), &isAccessor, &notAccessor);
+                    Bind(&isAccessor);
+                    {
+                        Label isInternal(env);
+                        Label notInternal(env);
+                        Branch(IsAccessorInternal(value), &isInternal, &notInternal);
+                        Bind(&isInternal);
+                        {
+                            StubDescriptor *callAccessorGetter = GET_STUBDESCRIPTOR(AccessorGetter);
+                            Return(CallRuntime(callAccessorGetter, thread,
+                                GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
+                                {thread, *holder, value}));
+                        }
+                        Bind(&notInternal);
+                        {
+                            StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
+                            Return(CallRuntime(callGetter, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
+                                {thread, receiver, value}));
+                        }
+                    }
+                    Bind(&notAccessor);
+                    {
+                        Return(value);
+                    }
+                }
+                Bind(&noEntry);
+                {
+                    Jump(&loopExit);
+                }
+            }
+            Bind(&isDicMode);
+            {
+                // TaggedArray *array = TaggedArray::Cast(JSObject::Cast(holder)->GetProperties().GetTaggedObject())
+                AddrShift array = GetProperties(*holder);
+                // int entry = dict->FindEntry(key)
+                AddrShift entry = FindEntryFromNameDictionary(thread, array, key);
+                Label notNegtiveOne(env);
+                Label negtiveOne(env);
+                // if branch condition : entry != -1
+                Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Bind(&notNegtiveOne);
+                {
+                    // auto value = dict->GetValue(entry)
+                    AddrShift attr = GetAttributesFromDictionary(array, entry);
+                    // auto attr = dict->GetAttributes(entry)
+                    AddrShift value = GetValueFromDictionary(array, entry);
+                    Label isAccessor1(env);
+                    Label notAccessor1(env);
+                    // if branch condition : UNLIKELY(attr.IsAccessor())
+                    Branch(IsAccessor(attr), &isAccessor1, &notAccessor1);
+                    Bind(&isAccessor1);
+                    {
+                        Label isInternal1(env);
+                        Label notInternal1(env);
+                        Branch(IsAccessorInternal(value), &isInternal1, &notInternal1);
+                        Bind(&isInternal1);
+                        {
+                            StubDescriptor *callAccessorGetter1 = GET_STUBDESCRIPTOR(AccessorGetter);
+                            Return(CallRuntime(callAccessorGetter1, thread,
+                                GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
+                                {thread, *holder, value}));
+                        }
+                        Bind(&notInternal1);
+                        {
+                            StubDescriptor *callGetter1 = GET_STUBDESCRIPTOR(CallGetter);
+                            Return(CallRuntime(callGetter1, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
+                                {thread, receiver, value}));
+                        }
+                    }
+                    Bind(&notAccessor1);
+                    {
+                        Return(value);
+                    }
+                }
+                Bind(&negtiveOne);
+                Jump(&loopExit);
+            }
+            Bind(&loopExit);
+            {
+                // holder = hclass->GetPrototype()
+                holder = GetPrototypeFromHClass(LoadHClass(*holder));
+                // loop condition for a do-while loop
+                Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
+            }
+        }
+        Bind(&loopEnd);
+        LoopEnd(&loopHead);
+        Bind(&afterLoop);
+        {
+            Return(GetUndefinedConstant());
         }
     }
 }

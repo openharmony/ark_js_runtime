@@ -23,6 +23,7 @@
 #include "ecmascript/compiler/stub_descriptor.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/layout_info.h"
 #include "ecmascript/tagged_dictionary.h"
 
 namespace kungfu {
@@ -823,6 +824,11 @@ public:
         return Word64Or(val, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_INT));
     }
 
+    AddrShift Int64BuildTagged(AddrShift x)
+    {
+        return Word64Or(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_INT));
+    }
+
     AddrShift DoubleBuildTagged(AddrShift x)
     {
         AddrShift val = CastDoubleToInt64(x);
@@ -981,6 +987,16 @@ public:
         return Load(MachineType::UINT64_TYPE, object, elementsOffset);
     }
 
+    AddrShift GetProperties(AddrShift object)
+    {
+        AddrShift propertiesOffset = GetInteger32Constant(panda::ecmascript::JSObject::PROPERTIES_OFFSET);
+        if (PtrValueCode() == ValueCode::INT64) {
+            propertiesOffset = SExtInt32ToInt64(propertiesOffset);
+        }
+        // load properties in object
+        return Load(MachineType::UINT64_TYPE, object, propertiesOffset);
+    }
+
     AddrShift GetLengthofElements(AddrShift elements)
     {
         return Load(UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
@@ -1035,6 +1051,18 @@ public:
             GetWord64Constant(0));
     }
 
+    AddrShift IsSymbol(AddrShift obj)
+    {
+        AddrShift objectType = GetObjectType(LoadHClass(obj));
+        return Word32Equal(objectType, GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::SYMBOL)));
+    }
+
+    AddrShift IsString(AddrShift obj)
+    {
+        AddrShift objectType = GetObjectType(LoadHClass(obj));
+        return Word32Equal(objectType, GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
+    }
+
     AddrShift IsJsProxy(AddrShift obj)
     {
         AddrShift objectType = GetObjectType(LoadHClass(obj));
@@ -1050,20 +1078,61 @@ public:
             GetInteger32Constant(0));
     }
 
-    AddrShift IsAcesscor(AddrShift attr)
+    AddrShift IsAccessor(AddrShift attr)
     {
         return Word32NotEqual(
-            Word32And(
-                Word32LSR(attr,
-                          GetInteger32Constant(panda::ecmascript::PropertyAttributes::IsAccessorField::START_BIT)),
+            Word32And(Word32LSR(attr,
+                GetInteger32Constant(panda::ecmascript::PropertyAttributes::IsAccessorField::START_BIT)),
                 GetInteger32Constant((1LLU << panda::ecmascript::PropertyAttributes::IsAccessorField::SIZE) - 1)),
             GetInteger32Constant(0));
+    }
+
+    AddrShift IsInlinedProperty(AddrShift attr)
+    {
+        return Word32NotEqual(
+            Word32And(Word32LSR(attr,
+                GetInteger32Constant(panda::ecmascript::PropertyAttributes::IsInlinedPropsField::START_BIT)),
+                GetInteger32Constant((1LLU << panda::ecmascript::PropertyAttributes::IsInlinedPropsField::SIZE) - 1)),
+            GetInteger32Constant(0));
+    }
+
+    AddrShift PropAttrGetOffset(AddrShift attr)
+    {
+        return Word32And(
+            Word32LSR(attr, GetInteger32Constant(panda::ecmascript::PropertyAttributes::OffsetField::START_BIT)),
+            GetInteger32Constant((1LLU << panda::ecmascript::PropertyAttributes::OffsetField::SIZE) - 1));
     }
 
     AddrShift GetPrototypeFromHClass(AddrShift hclass)
     {
         AddrShift protoOffset = GetPtrConstant(panda::ecmascript::JSHClass::PROTOTYPE_OFFSET);
         return Load(TAGGED_TYPE, hclass, protoOffset);
+    }
+
+    AddrShift GetAttributesFromHclass(AddrShift hclass)
+    {
+        AddrShift attrOffset = GetPtrConstant(panda::ecmascript::JSHClass::ATTRIBUTES_OFFSET);
+        return Load(TAGGED_TYPE, hclass, attrOffset);
+    }
+
+    AddrShift GetPropertiesNumberFromHClass(AddrShift hclass)
+    {
+        AddrShift bitfield = Load(INT64_TYPE, hclass, GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET));
+        AddrShift unusedNonInlinedProps = Word64And(Word64LSR(bitfield,
+            GetWord64Constant(panda::ecmascript::JSHClass::NumberOfUnusedNonInlinedPropsBits::START_BIT)),
+            GetWord64Constant((1LLU << panda::ecmascript::JSHClass::NumberOfUnusedNonInlinedPropsBits::SIZE) - 1));
+        AddrShift unusedInlinedProps = Word64And(Word64LSR(bitfield,
+            GetWord64Constant(panda::ecmascript::JSHClass::NumberOfUnusedInlinedPropsBits::START_BIT)),
+            GetWord64Constant((1LLU << panda::ecmascript::JSHClass::NumberOfUnusedInlinedPropsBits::SIZE) - 1));
+        return Int64Sub(Int64Sub(GetWord64Constant(
+            panda::ecmascript::PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES),
+            unusedNonInlinedProps),
+            unusedInlinedProps);
+    }
+
+    AddrShift GetObjectSizeFromHClass(AddrShift hclass) // NOTE: need to add special case for string and TAGGED_ARRAY
+    {
+        return Load(UINT64_TYPE, hclass, GetPtrConstant(panda::ecmascript::JSHClass::OBJECT_SIZE_OFFSET));
     }
 
     void StoreElement(AddrShift elements, AddrShift index, AddrShift value)
@@ -1157,14 +1226,31 @@ public:
 
     AddrShift GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry);
 
+    AddrShift GetPropAttrFromLayoutInfo(AddrShift layout, AddrShift entry)
+    {
+        AddrShift index = Int32Add(
+            Int32Add(GetInteger32Constant(panda::ecmascript::LayoutInfo::ELEMENTS_START_INDEX),
+                Word32LSL(entry, GetInteger32Constant(1))),
+            GetInteger32Constant(1));
+        return GetValueFromTaggedArray(layout, index);
+    }
+
     AddrShift IsMatchInNumberDictionary(AddrShift key, AddrShift other);
 
     AddrShift FindElementFromNumberDictionary(AddrShift thread, AddrShift elements, AddrShift key);
 
+    AddrShift FindEntryFromNameDictionary(AddrShift thread, AddrShift elements, AddrShift key);
+
+    AddrShift JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift propAttr);
+
+    AddrShift TaggedCastToInt64(AddrShift x)
+    {
+        return Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_MASK));
+    }
+
     AddrShift TaggedCastToInt32(AddrShift x)
     {
-        AddrShift val = Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_MASK));
-        return ChangeInt64ToInt32(val);
+        return ChangeInt64ToInt32(TaggedCastToInt64(x));
     }
 
     AddrShift TaggedCastToDouble(AddrShift x)

@@ -319,6 +319,11 @@ void LLVMIRBuilder::Build()
                     VisitIntLsr(gate, ins[0], ins[1]);
                     break;
                 }
+                case OpCode::INT32_LSL:  // no break, fall through
+                case OpCode::INT64_LSL: {
+                    VisitIntLsl(gate, ins[0], ins[1]);
+                    break;
+                }
                 case OpCode::INT32_SLT:  // no break, fall through
                 case OpCode::INT64_SLT: {
                     VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLT);
@@ -581,7 +586,6 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
     // runtime case
     if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         LLVMTypeRef rtfuncType = stubModule_->GetExternalFunctionType(index);
-        LLVMDumpType(rtfuncType);
         LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
         LLVMValueRef thread = g_values[inList[2]];  // 2 : 2 means skip two input gates (target thread )
         LLVMValueRef rtoffset = LLVMConstInt(LLVMInt64Type(),
@@ -589,14 +593,9 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
                                                  (index - FAST_STUB_MAXCOUNT) * sizeof(uintptr_t),
                                              0);
         LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, thread, rtoffset, "");
-        LLVMDumpValue(thread);
-        LLVMDumpValue(rtoffset);
-        LLVMDumpValue(rtbaseoffset);
         LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(LLVMInt64Type(), 0), "");
         LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
         callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-        std::cout << std::endl;
-        LLVMDumpValue(callee);
         paraStartIndex += 1;
     } else {
         callee = stubModule_->GetStubFunction(index);
@@ -1022,6 +1021,18 @@ void LLVMIRBuilder::VisitIntLsr(AddrShift gate, AddrShift e1, AddrShift e2) cons
     LLVMValueRef e2Value = g_values[e2];
     LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
     LLVMValueRef result = LLVMBuildLShr(builder_, e1Value, e2Value, "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::VisitIntLsl(AddrShift gate, AddrShift e1, AddrShift e2) const
+{
+    LOG_ECMA(INFO) << "int lsl gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef e2Value = g_values[e2];
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildShl(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }

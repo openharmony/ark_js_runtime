@@ -16,7 +16,8 @@
 #include "llvm_mcjit_engine.h"
 
 #include <vector>
-#include "llvm/IR/LegacyPassManager.h"
+
+#include "ecmascript/ecma_macros.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/CodeGen/BuiltinGCs.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -28,6 +29,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
@@ -106,7 +108,7 @@ void LLVMAssembler::BuildAndRunPasses() const
     LLVMAddConstantPropagationPass(pass);
     LLVMAddInstructionCombiningPass(pass);
     llvm::unwrap(pass)->add(llvm::createRewriteStatepointsForGCLegacyPass());
-    LLVMDumpModule(module_);
+    LOG_ECMA(INFO) << "Current Module: " << LLVMPrintModuleToString(module_);
     LLVMRunPassManager(pass, module_);
     LLVMDisposePassManager(pass);
     std::cout << "BuildAndRunPasses  + " << std::endl;
