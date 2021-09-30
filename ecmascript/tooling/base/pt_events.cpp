@@ -27,7 +27,7 @@ std::unique_ptr<BreakpointResolved> BreakpointResolved::Create(const EcmaVM *ecm
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             breakpointResolved->breakpointId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -37,7 +37,7 @@ std::unique_ptr<BreakpointResolved> BreakpointResolved::Create(const EcmaVM *ecm
         error += "should contain 'breakpointId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<Location> location = Location::Create(ecmaVm, result);
             if (location == nullptr) {
@@ -90,7 +90,7 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrames")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
@@ -111,7 +111,7 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
         error += "should contain 'callFrames';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "reason")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paused->reason_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -121,7 +121,7 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
         error += "should contain 'reason';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "data")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             paused->data_ = Local<ObjectRef>(result);
         } else {
@@ -129,7 +129,7 @@ std::unique_ptr<Paused> Paused::Create(const EcmaVM *ecmaVm, const Local<JSValue
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hitBreakpoints")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             CVector<BreakpointId> breakPoints;
             auto array = Local<ArrayRef>(result);
@@ -221,7 +221,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     auto scriptEvent = std::make_unique<ScriptFailedToParse>();
 
     Local<JSValueRef> result = Local<ObjectRef>(params)->Get(ecmaVm, StringRef::NewFromUtf8(ecmaVm, "scriptId"));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -231,7 +231,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         error += "should contain 'scriptId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -241,7 +241,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         error += "should contain 'url';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->startLine_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -251,7 +251,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         error += "should contain 'startLine';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->startColumn_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -261,7 +261,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         error += "should contain 'startColumn';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->endLine_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -271,7 +271,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         error += "should contain 'endLine';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->endColumn_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -282,7 +282,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     }
     result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->executionContextId_ = static_cast<ExecutionContextId>(Local<NumberRef>(result)->Value());
         } else {
@@ -292,7 +292,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         error += "should contain 'executionContextId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hash")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->hash_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -303,7 +303,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             scriptEvent->execContextAuxData_ = Local<ObjectRef>(result);
         } else {
@@ -311,7 +311,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "sourceMapURL")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->sourceMapUrl_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -319,7 +319,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hasSourceURL")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             scriptEvent->hasSourceUrl_ = result->IsTrue();
         } else {
@@ -327,7 +327,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isModule")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             scriptEvent->isModule_ = result->IsTrue();
         } else {
@@ -335,7 +335,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "length")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->length_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -343,7 +343,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "codeOffset")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->codeOffset_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -351,7 +351,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptLanguage")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->scriptLanguage_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -359,7 +359,7 @@ std::unique_ptr<ScriptFailedToParse> ScriptFailedToParse::Create(const EcmaVM *e
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "embedderName")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->embedderName_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -460,7 +460,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -470,7 +470,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         error += "should contain 'scriptId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -480,7 +480,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         error += "should contain 'url';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLine")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->startLine_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -490,7 +490,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         error += "should contain 'startLine';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startColumn")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->startColumn_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -500,7 +500,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         error += "should contain 'startColumn';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLine")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->endLine_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -510,7 +510,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         error += "should contain 'endLine';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endColumn")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->endColumn_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -521,7 +521,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     }
     result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->executionContextId_ = static_cast<ExecutionContextId>(Local<NumberRef>(result)->Value());
         } else {
@@ -531,7 +531,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         error += "should contain 'executionContextId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hash")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->hash_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -542,7 +542,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextAuxData")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             scriptEvent->execContextAuxData_ = Local<ObjectRef>(result);
         } else {
@@ -550,7 +550,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isLiveEdit")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             scriptEvent->isLiveEdit_ = result->IsTrue();
         } else {
@@ -558,7 +558,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "sourceMapURL")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->sourceMapUrl_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -566,7 +566,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "hasSourceURL")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             scriptEvent->hasSourceUrl_ = result->IsTrue();
         } else {
@@ -574,7 +574,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isModule")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             scriptEvent->isModule_ = result->IsTrue();
         } else {
@@ -582,7 +582,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "length")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->length_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -590,7 +590,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "codeOffset")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptEvent->codeOffset_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -598,7 +598,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptLanguage")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->scriptLanguage_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -606,7 +606,7 @@ std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "embedderName")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scriptEvent->embedderName_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {

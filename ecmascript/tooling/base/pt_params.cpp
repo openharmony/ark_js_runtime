@@ -28,7 +28,7 @@ std::unique_ptr<EnableParams> EnableParams::Create(const EcmaVM *ecmaVm, const L
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "maxScriptsCacheSize")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             paramsObject->maxScriptsCacheSize_ = Local<NumberRef>(result)->Value();
         } else {
@@ -56,7 +56,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->callFrameId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -67,7 +67,7 @@ std::unique_ptr<EvaluateOnCallFrameParams> EvaluateOnCallFrameParams::Create(con
     }
 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "expression")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->expression_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -130,7 +130,7 @@ std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Crea
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "start")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -145,7 +145,7 @@ std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Crea
         error += "should contain 'start';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "end")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -159,7 +159,7 @@ std::unique_ptr<GetPossibleBreakpointsParams> GetPossibleBreakpointsParams::Crea
     }
     result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "restrictToFunction")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->restrictToFunction_ = result->IsTrue();
         } else {
@@ -187,7 +187,7 @@ std::unique_ptr<GetScriptSourceParams> GetScriptSourceParams::Create(const EcmaV
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -217,7 +217,7 @@ std::unique_ptr<RemoveBreakpointParams> RemoveBreakpointParams::Create(const Ecm
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakpointId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->breakpointId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -246,7 +246,7 @@ std::unique_ptr<ResumeParams> ResumeParams::Create(const EcmaVM *ecmaVm, const L
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "terminateOnResume")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->terminateOnResume_ = result->IsTrue();
         } else {
@@ -274,7 +274,7 @@ std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Crea
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "maxDepth")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             paramsObject->maxDepth_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -304,7 +304,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "patterns")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             Local<ArrayRef> array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
@@ -346,7 +346,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             paramsObject->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -356,7 +356,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         error += "should contain 'lineNumber';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -364,7 +364,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "urlRegex")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->urlRegex_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -372,7 +372,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptHash")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->scriptHash_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -380,7 +380,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             paramsObject->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -388,7 +388,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "condition")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->condition_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -416,7 +416,7 @@ std::unique_ptr<SetPauseOnExceptionsParams> SetPauseOnExceptionsParams::Create(c
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "state")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             if (!paramsObject->StoreState(DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString()))) {
                 error += "'state' is invalid;";
@@ -447,7 +447,7 @@ std::unique_ptr<StepIntoParams> StepIntoParams::Create(const EcmaVM *ecmaVm, con
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "breakOnAsyncCall")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->breakOnAsyncCall_ = result->IsTrue();
         } else {
@@ -455,7 +455,7 @@ std::unique_ptr<StepIntoParams> StepIntoParams::Create(const EcmaVM *ecmaVm, con
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "skipList")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             Local<ArrayRef> array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
@@ -498,7 +498,7 @@ std::unique_ptr<StepOverParams> StepOverParams::Create(const EcmaVM *ecmaVm, con
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "skipList")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             Local<ArrayRef> array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
@@ -541,7 +541,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             paramsObject->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -551,7 +551,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
         error += "should contain 'objectId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "ownProperties")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->ownProperties_ = result->IsTrue();
         } else {
@@ -560,7 +560,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm,
         Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "accessorPropertiesOnly")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->accessorPropertiesOnly_ = result->IsTrue();
         } else {
@@ -569,7 +569,7 @@ std::unique_ptr<GetPropertiesParams> GetPropertiesParams::Create(const EcmaVM *e
     }
     result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "generatePreview")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             paramsObject->generatePreview_ = result->IsTrue();
         } else {

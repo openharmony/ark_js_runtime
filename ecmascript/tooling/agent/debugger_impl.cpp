@@ -57,6 +57,10 @@ void DebuggerImpl::DispatcherImpl::Dispatch(const DispatchRequest &request)
 void DebuggerImpl::DispatcherImpl::Enable(const DispatchRequest &request)
 {
     std::unique_ptr<EnableParams> params = EnableParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
 
     UniqueDebuggerId id;
     DispatchResponse response = debugger_->Enable(std::move(params), &id);
@@ -69,6 +73,10 @@ void DebuggerImpl::DispatcherImpl::EvaluateOnCallFrame(const DispatchRequest &re
 {
     std::unique_ptr<EvaluateOnCallFrameParams> params =
         EvaluateOnCallFrameParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
     std::unique_ptr<RemoteObject> result1 = std::make_unique<RemoteObject>();
     DispatchResponse response = debugger_->EvaluateOnCallFrame(std::move(params), &result1);
 
@@ -81,6 +89,10 @@ void DebuggerImpl::DispatcherImpl::GetPossibleBreakpoints(const DispatchRequest 
 {
     std::unique_ptr<GetPossibleBreakpointsParams> params =
         GetPossibleBreakpointsParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
     CVector<std::unique_ptr<BreakLocation>> locations;
     DispatchResponse response = debugger_->GetPossibleBreakpoints(std::move(params), &locations);
     std::unique_ptr<GetPossibleBreakpointsReturns> points =
@@ -92,6 +104,10 @@ void DebuggerImpl::DispatcherImpl::GetScriptSource(const DispatchRequest &reques
 {
     std::unique_ptr<GetScriptSourceParams> params =
         GetScriptSourceParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
     CString source;
     DispatchResponse response = debugger_->GetScriptSource(std::move(params), &source);
     std::unique_ptr<GetScriptSourceReturns> result = std::make_unique<GetScriptSourceReturns>(std::move(source));
@@ -109,6 +125,10 @@ void DebuggerImpl::DispatcherImpl::RemoveBreakpoint(const DispatchRequest &reque
 {
     std::unique_ptr<RemoveBreakpointParams> params =
         RemoveBreakpointParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
     DispatchResponse response = debugger_->RemoveBreakpoint(std::move(params));
     std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
     SendResponse(request, response, std::move(result));
@@ -117,6 +137,10 @@ void DebuggerImpl::DispatcherImpl::RemoveBreakpoint(const DispatchRequest &reque
 void DebuggerImpl::DispatcherImpl::Resume(const DispatchRequest &request)
 {
     std::unique_ptr<ResumeParams> params = ResumeParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
     DispatchResponse response = debugger_->Resume(std::move(params));
     std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
     SendResponse(request, response, std::move(result));
@@ -133,6 +157,10 @@ void DebuggerImpl::DispatcherImpl::SetBreakpointByUrl(const DispatchRequest &req
 {
     std::unique_ptr<SetBreakpointByUrlParams> params =
         SetBreakpointByUrlParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
 
     CString out_id;
     CVector<std::unique_ptr<Location>> outLocations;
@@ -146,6 +174,10 @@ void DebuggerImpl::DispatcherImpl::SetPauseOnExceptions(const DispatchRequest &r
 {
     std::unique_ptr<SetPauseOnExceptionsParams> params =
         SetPauseOnExceptionsParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
 
     DispatchResponse response = debugger_->SetPauseOnExceptions(std::move(params));
     std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
@@ -155,6 +187,10 @@ void DebuggerImpl::DispatcherImpl::SetPauseOnExceptions(const DispatchRequest &r
 void DebuggerImpl::DispatcherImpl::StepInto(const DispatchRequest &request)
 {
     std::unique_ptr<StepIntoParams> params = StepIntoParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
     DispatchResponse response = debugger_->StepInto(std::move(params));
     std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
     SendResponse(request, response, std::move(result));
@@ -170,6 +206,10 @@ void DebuggerImpl::DispatcherImpl::StepOut(const DispatchRequest &request)
 void DebuggerImpl::DispatcherImpl::StepOver(const DispatchRequest &request)
 {
     std::unique_ptr<StepOverParams> params = StepOverParams::Create(request.GetEcmaVM(), request.GetParams());
+    if (params == nullptr) {
+        SendResponse(request, DispatchResponse::Fail("Debugger got wrong params"), nullptr);
+        return;
+    }
     DispatchResponse response = debugger_->StepOver(std::move(params));
     std::unique_ptr<PtBaseReturns> result = std::make_unique<PtBaseReturns>();
     SendResponse(request, response, std::move(result));

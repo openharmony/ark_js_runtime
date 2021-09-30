@@ -311,7 +311,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
             if (ObjectType::Valid(type)) {
@@ -326,7 +326,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         error += "should contain 'type';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "subtype")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
             if (ObjectSubType::Valid(type)) {
@@ -339,7 +339,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "className")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             remoteObject->className_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -347,12 +347,12 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         remoteObject->value_ = result;
     }
     result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "unserializableValue")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             remoteObject->unserializableValue_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -360,7 +360,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "description")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             remoteObject->description_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -368,7 +368,7 @@ std::unique_ptr<RemoteObject> RemoteObject::Create(const EcmaVM *ecmaVm, const L
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "objectId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             remoteObject->objectId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -433,7 +433,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exceptionId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             exceptionDetails->exceptionId_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -443,7 +443,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
         error += "should contain 'exceptionId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "text")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             exceptionDetails->text_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -453,7 +453,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
         error += "should contain 'text';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             exceptionDetails->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -463,7 +463,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
         error += "should contain 'lineNumber';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             exceptionDetails->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -473,7 +473,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
         error += "should contain 'columnNumber';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             exceptionDetails->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -481,7 +481,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             exceptionDetails->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -489,7 +489,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "exception")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -504,7 +504,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
 
     result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "executionContextId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             exceptionDetails->executionContextId_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -570,7 +570,7 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             internalPropertyDescriptor->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -580,7 +580,7 @@ std::unique_ptr<InternalPropertyDescriptor> InternalPropertyDescriptor::Create(c
         error += "should contain 'name';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -629,7 +629,7 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             propertyDescriptor->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -639,7 +639,7 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
         error += "should contain 'name';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -652,7 +652,7 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "get")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -665,7 +665,7 @@ std::unique_ptr<PrivatePropertyDescriptor> PrivatePropertyDescriptor::Create(con
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "set")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -760,7 +760,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             propertyDescriptor->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -770,7 +770,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         error += "should contain 'name';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "value")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -783,7 +783,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "writable")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             propertyDescriptor->writable_ = result->IsTrue();
         } else {
@@ -791,7 +791,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "get")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -804,7 +804,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "set")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -817,7 +817,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "configurable")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             propertyDescriptor->configurable_ = result->IsTrue();
         } else {
@@ -827,7 +827,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         error += "should contain 'configurable';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "enumerable")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             propertyDescriptor->enumerable_ = result->IsTrue();
         } else {
@@ -837,7 +837,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         error += "should contain 'enumerable';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "wasThrown")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             propertyDescriptor->wasThrown_ = result->IsTrue();
         } else {
@@ -845,7 +845,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "isOwn")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsBoolean()) {
             propertyDescriptor->isOwn_ = result->IsTrue();
         } else {
@@ -853,7 +853,7 @@ std::unique_ptr<PropertyDescriptor> PropertyDescriptor::Create(const EcmaVM *ecm
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "symbol")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -939,7 +939,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             location->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -949,7 +949,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
         error += "should contain 'scriptId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             location->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -959,7 +959,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
         error += "should contain 'lineNumber';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             location->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -1003,7 +1003,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptPosition->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -1013,7 +1013,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
         error += "should contain 'lineNumber';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             scriptPosition->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -1053,7 +1053,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             locationSearch->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -1064,7 +1064,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
     }
 
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineContent")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             locationSearch->lineContent_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -1105,7 +1105,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             locationRange->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -1115,7 +1115,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
         error += "should contain 'scriptId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "start")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<ScriptPosition> obj = ScriptPosition::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1130,7 +1130,7 @@ std::unique_ptr<LocationRange> LocationRange::Create(const EcmaVM *ecmaVm, const
         error += "should contain 'start';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "end")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<ScriptPosition> obj = ScriptPosition::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1181,7 +1181,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scriptId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             breakLocation->scriptId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -1191,7 +1191,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
         error += "should contain 'scriptId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             breakLocation->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -1201,7 +1201,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
         error += "should contain 'lineNumber';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
             breakLocation->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
         } else {
@@ -1209,7 +1209,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
             if (BreakType::Valid(type)) {
@@ -1263,7 +1263,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "type")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             auto type = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
             if (Scope::Type::Valid(type)) {
@@ -1278,7 +1278,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
         error += "should contain 'type';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "object")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1293,7 +1293,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
         error += "should contain 'object';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "name")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             scope->name_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -1301,7 +1301,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "startLocation")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1314,7 +1314,7 @@ std::unique_ptr<Scope> Scope::Create(const EcmaVM *ecmaVm, const Local<JSValueRe
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "endLocation")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1377,7 +1377,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
 
     Local<JSValueRef> result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "callFrameId")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             callFrame->callFrameId_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -1387,7 +1387,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         error += "should contain 'callFrameId';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionName")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             callFrame->functionName_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -1398,7 +1398,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
     }
     result =
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "functionLocation")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1411,7 +1411,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         }
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "location")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<Location> obj = Location::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1426,7 +1426,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         error += "should contain 'location';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "url")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsString()) {
             callFrame->url_ = DebuggerApi::ConvertToString(StringRef::Cast(*result)->ToString());
         } else {
@@ -1436,7 +1436,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         error += "should contain 'url';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "scopeChain")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsArray(ecmaVm)) {
             auto array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
@@ -1457,7 +1457,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         error += "should contain 'scopeChain';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "this")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
@@ -1472,7 +1472,7 @@ std::unique_ptr<CallFrame> CallFrame::Create(const EcmaVM *ecmaVm, const Local<J
         error += "should contain 'this';";
     }
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "returnValue")));
-    if (!result.IsEmpty()) {
+    if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsObject()) {
             std::unique_ptr<RemoteObject> obj = RemoteObject::Create(ecmaVm, result);
             if (obj == nullptr) {
