@@ -155,6 +155,11 @@ public:
         return Local<T>(vm, *this);
     }
 
+    void Empty()
+    {
+        address_ = 0;
+    }
+
     // This method must be called before Global is released.
     void FreeGlobalHandleAddr();
 
