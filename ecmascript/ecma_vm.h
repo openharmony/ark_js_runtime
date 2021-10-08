@@ -23,6 +23,7 @@
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_native_pointer.h"
+#include "ecmascript/js_runtime_options.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/chunk_containers.h"
@@ -72,11 +73,11 @@ public:
         return reinterpret_cast<EcmaVM *>(object);
     }
 
-    static EcmaVM *Create(const RuntimeOptions &options);
+    static EcmaVM *Create(const JSRuntimeOptions &options);
 
     static bool Destroy(PandaVM *vm);
 
-    explicit EcmaVM(RuntimeOptions options);
+    explicit EcmaVM(JSRuntimeOptions options);
 
     static Expected<EcmaVM *, CString> Create([[maybe_unused]] Runtime *runtime);
 
@@ -208,6 +209,11 @@ public:
     }
 
     const RuntimeOptions &GetOptions() const override
+    {
+        return Runtime::GetOptions();
+    }
+
+    static const JSRuntimeOptions &GetJSOptions()
     {
         return options_;
     }
@@ -379,7 +385,7 @@ private:
     NO_COPY_SEMANTIC(EcmaVM);
 
     // init EcmaVM construct
-    RuntimeOptions options_;
+    static JSRuntimeOptions options_;
     EcmaStringTable *stringTable_;
     std::unique_ptr<RegionFactory> regionFactory_;
     Chunk chunk_;
@@ -423,6 +429,7 @@ private:
 
     friend class SnapShotSerialize;
     friend class ObjectFactory;
+    friend class panda::JSNApi;
 };
 }  // namespace ecmascript
 }  // namespace panda

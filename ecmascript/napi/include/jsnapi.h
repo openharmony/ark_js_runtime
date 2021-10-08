@@ -44,6 +44,7 @@ class JSNApiTests;
 
 namespace ecmascript {
 class EcmaVM;
+class JSRuntimeOptions;
 }  // namespace ecmascript
 
 using Deleter = void (*)(void *buffer, void *data);
@@ -718,6 +719,10 @@ public:
         debuggerLibraryPath_ = path;
     }
 
+    void SetEnableArkTools(bool value) {
+        enableArkTools_ = value;
+    }
+
 private:
     std::string GetGcType() const
     {
@@ -776,11 +781,18 @@ private:
         return debuggerLibraryPath_;
     }
 
+    bool GetEnableArkTools() const
+    {
+        return enableArkTools_;
+    }
+
+
     GC_TYPE gcType_ = GC_TYPE::EPSILON;
     LOG_LEVEL logLevel_ = LOG_LEVEL::DEBUG;
     uint32_t gcPoolSize_ = DEFAULT_GC_POOL_SIZE;
     LOG_PRINT logBufPrint_{nullptr};
     std::string debuggerLibraryPath_{};
+    bool enableArkTools_{false};
     friend JSNApi;
 };
 
@@ -813,6 +825,7 @@ public:
     static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
     static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
     static void DeleteSerializationData(void *data);
+    static void SetOptions(const ecmascript::JSRuntimeOptions &options);
 
 private:
     static bool CreateRuntime(const RuntimeOption &option);

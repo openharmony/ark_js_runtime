@@ -39,6 +39,7 @@
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
+#include "ecmascript/js_runtime_options.h"
 #include "ecmascript/js_serializer.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_tagged_number.h"
@@ -94,6 +95,7 @@ using ecmascript::base::JsonParser;
 using ecmascript::base::JsonStringifier;
 using ecmascript::base::StringHelper;
 using ecmascript::base::TypedArrayHelper;
+using ecmascript::JSRuntimeOptions;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -108,7 +110,7 @@ constexpr std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 // ------------------------------------ Panda -----------------------------------------------
 bool JSNApi::CreateRuntime(const RuntimeOption &option)
 {
-    RuntimeOptions runtimeOptions;
+    JSRuntimeOptions runtimeOptions;
     runtimeOptions.SetRuntimeType("ecmascript");
 
     // GC
@@ -139,6 +141,8 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     // Debugger
     runtimeOptions.SetDebuggerLibraryPath(option.GetDebuggerLibraryPath());
 
+    runtimeOptions.SetEnableArkTools(option.GetEnableArkTools());
+    SetOptions(runtimeOptions);
     static EcmaLanguageContext lcEcma;
     if (!Runtime::Create(runtimeOptions, {&lcEcma})) {
         std::cerr << "Error: cannot create runtime" << std::endl;
@@ -163,7 +167,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
         runtime = Runtime::GetCurrent();
         return EcmaVM::Cast(runtime->GetPandaVM());
     }
-    RuntimeOptions runtimeOptions;
+    JSRuntimeOptions runtimeOptions;
 
     // GC
     runtimeOptions.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
@@ -369,6 +373,11 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
     JSHandle<JSTaggedValue> itemString(factory->NewFromStdString(itemName));
     JSHandle<JSTaggedValue> exportObj = moduleManager->GetModuleItem(vm->GetJSThread(), moduleObj, itemString);
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
+}
+
+void JSNApi::SetOptions(const ecmascript::JSRuntimeOptions &options)
+{
+    ecmascript::EcmaVM::options_ = options;
 }
 // ----------------------------------- HandleScope -------------------------------------
 LocalScope::LocalScope(const EcmaVM *vm) : thread_(vm->GetJSThread())
