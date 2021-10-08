@@ -1007,4 +1007,155 @@ void FastGetPropertyByNameStub::GenerateCircuit()
         }
     }
 }
+
+void FastModStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift x = Int64Argument(0);
+    AddrShift y = Int64Argument(1);
+    DEFVARIABLE(intX, MachineType::INT32_TYPE, 0);
+    DEFVARIABLE(intY, MachineType::INT32_TYPE, 0);
+    DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
+    DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
+    Label xIsInt(env);
+    Label xNotIntOryNotInt(env);
+    Branch(TaggedIsInt(x), &xIsInt, &xNotIntOryNotInt);
+    Bind(&xIsInt);
+    {
+        Label yIsInt(env);
+        Label xIsIntAndyIsInt(env);
+        // if right.IsInt()
+        Branch(TaggedIsInt(y), &yIsInt, &xNotIntOryNotInt);
+        Bind(&yIsInt);
+        {
+            intX = TaggedCastToInt32(x);
+            intY = TaggedCastToInt32(y);
+            Jump(&xIsIntAndyIsInt);
+        }
+        Bind(&xIsIntAndyIsInt);
+        {
+            Label xGtZero(env);
+            Label xGtZeroAndyGtZero(env);
+            Branch(Int32GreaterThan(*intX, GetInteger32Constant(0)), &xGtZero, &xNotIntOryNotInt);
+            Bind(&xGtZero);
+            {
+                Branch(Int32GreaterThan(*intY, GetInteger32Constant(0)), &xGtZeroAndyGtZero, &xNotIntOryNotInt);
+                Bind(&xGtZeroAndyGtZero);
+                {
+                    intX = Int32Mod(*intX, *intY);
+                    Return(IntBuildTagged(*intX));
+                }
+            }
+        }
+    }
+    Bind(&xNotIntOryNotInt);
+    {
+        Label xIsNumber(env);
+        Label xNotNumberOryNotNumber(env);
+        Label xIsNumberAndyIsNumber(env);
+        Label xIsDoubleAndyIsDouble(env);
+        Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
+        Bind(&xIsNumber);
+        {
+            Label yIsNumber(env);
+            // if right.IsNumber()
+            Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
+            Bind(&yIsNumber);
+            {
+                Label xIfInt(env);
+                Label xIfNotInt(env);
+                Branch(TaggedIsInt(x), &xIfInt, &xIfNotInt);
+                Bind(&xIfInt);
+                {
+                    intX = TaggedCastToInt32(x);
+                    doubleX = CastInt32ToFloat64(*intX);
+                    Jump(&xIsNumberAndyIsNumber);
+                }
+                Bind(&xIfNotInt);
+                {
+                    doubleX = TaggedCastToDouble(x);
+                    Jump(&xIsNumberAndyIsNumber);
+                }
+            }
+        }
+        Bind(&xNotNumberOryNotNumber);
+        Return(GetHoleConstant());
+        Label yIfInt(env);
+        Label yIfNotInt(env);
+        Bind(&xIsNumberAndyIsNumber);
+        Branch(TaggedIsInt(y), &yIfInt, &yIfNotInt);
+        Bind(&yIfInt);
+        {
+            intY = TaggedCastToInt32(y);
+            doubleY = CastInt32ToFloat64(*intY);
+            Jump(&xIsDoubleAndyIsDouble);
+        }
+        Bind(&yIfNotInt);
+        {
+            doubleY = TaggedCastToDouble(y);
+            Jump(&xIsDoubleAndyIsDouble);
+        }
+        Bind(&xIsDoubleAndyIsDouble);
+        {
+            Label yIsZero(env);
+            Label yNotZero(env);
+            Label yIsZeroOrNanOrxIsNanOrInf(env);
+            Label yNeiZeroOrNanAndxNeiNanOrInf(env);
+            // dRight == 0.0 or std::isnan(dRight) or std::isnan(dLeft) or std::isinf(dLeft)
+            Branch(DoubleEqual(*doubleY, GetDoubleConstant(0.0)), &yIsZero, &yNotZero);
+            Bind(&yIsZero);
+            Jump(&yIsZeroOrNanOrxIsNanOrInf);
+            Bind(&yNotZero);
+            {
+                Label yIsNan(env);
+                Label yNotNan(env);
+                Branch(DoubleIsNAN(*doubleY), &yIsNan, &yNotNan);
+                Bind(&yIsNan);
+                Jump(&yIsZeroOrNanOrxIsNanOrInf);
+                Bind(&yNotNan);
+                {
+                    Label xIsNan(env);
+                    Label xNotNan(env);
+                    Branch(DoubleIsNAN(*doubleX), &xIsNan, &xNotNan);
+                    Bind(&xIsNan);
+                    Jump(&yIsZeroOrNanOrxIsNanOrInf);
+                    Bind(&xNotNan);
+                    {
+                        Label xIsInf(env);
+                        Label xNotInf(env);
+                        Branch(DoubleIsINF(*doubleX), &xIsInf, &xNotInf);
+                        Bind(&xIsInf);
+                        Jump(&yIsZeroOrNanOrxIsNanOrInf);
+                        Bind(&xNotInf);
+                        Jump(&yNeiZeroOrNanAndxNeiNanOrInf);
+                    }
+                }
+            }
+            Bind(&yIsZeroOrNanOrxIsNanOrInf);
+            Return(DoubleBuildTagged(GetDoubleConstant(base::NAN_VALUE)));
+            Bind(&yNeiZeroOrNanAndxNeiNanOrInf);
+            {
+                Label xIsFloatZero(env);
+                Label xIsZeroOryIsInf(env);
+                Label xNotZeroAndyNotInf(env);
+                Branch(DoubleEqual(*doubleX, GetDoubleConstant(0.0)), &xIsFloatZero, &xNotZeroAndyNotInf);
+                Bind(&xIsFloatZero);
+                Jump(&xIsZeroOryIsInf);
+                Label yIsInf(env);
+                Label yNotInf(env);
+                Bind(&xNotZeroAndyNotInf);
+                Branch(DoubleIsINF(*doubleY), &yIsInf, &yNotInf);
+                Bind(&yIsInf);
+                Jump(&xIsZeroOryIsInf);
+                Bind(&yNotInf);
+                {
+                    doubleX = DoubleMod(*doubleX, *doubleY);
+                    Return(DoubleBuildTagged(*doubleX));
+                }
+                Bind(&xIsZeroOryIsInf);
+                Return(DoubleBuildTagged(*doubleX));
+            }
+        }
+    }
+}
 }  // namespace kungfu

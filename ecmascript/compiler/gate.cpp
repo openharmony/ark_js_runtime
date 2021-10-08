@@ -260,6 +260,7 @@ Properties OpCode::GetProperties() const
         case FLOAT64_MUL:
         case FLOAT64_DIV:
         case FLOAT64_EXP:
+        case FLOAT64_SMOD:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(FLOAT64, FLOAT64), NO_ROOT};
         case FLOAT64_EQ:
             return {INT1, NO_STATE, NO_DEPEND, VALUE(FLOAT64, FLOAT64), NO_ROOT};
