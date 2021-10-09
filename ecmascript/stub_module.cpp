@@ -14,6 +14,7 @@
  */
 
 #include "stub_module.h"
+#include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript {
 void StubModule::Save(const std::string &filename)

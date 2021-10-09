@@ -141,24 +141,8 @@ public:
         return crossRegionSet_;
     }
 
-    RememberedSet *GetOrCreateCrossRegionRememberedSet()
-    {
-        if (UNLIKELY(crossRegionSet_ == nullptr)) {
-            crossRegionSet_ = CreateRememberedSet();
-        }
-        return crossRegionSet_;
-    }
-
     RememberedSet *GetOldToNewRememberedSet()
     {
-        return oldToNewSet_;
-    }
-
-    RememberedSet *GetOrCreateOldToNewRememberedSet()
-    {
-        if (UNLIKELY(oldToNewSet_ == nullptr)) {
-            oldToNewSet_ = CreateRememberedSet();
-        }
         return oldToNewSet_;
     }
 
@@ -193,7 +177,9 @@ public:
     }
 
     RangeBitmap *CreateMarkBitmap();
-    RememberedSet *CreateRememberedSet();
+    inline RememberedSet *CreateRememberedSet();
+    inline RememberedSet *GetOrCreateCrossRegionRememberedSet();
+    inline RememberedSet *GetOrCreateOldToNewRememberedSet();
     inline void InsertCrossRegionRememberedSet(uintptr_t addr);
     inline void InsertOldToNewRememberedSet(uintptr_t addr);
 

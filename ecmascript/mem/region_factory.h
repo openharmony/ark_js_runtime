@@ -42,7 +42,6 @@ public:
     void FreeRegion(Region *region);
     Area *AllocateArea(size_t capacity);
     void FreeArea(Area *area);
-    void *Allocate(size_t size);
     void Free(void *mem, size_t size);
     void *AllocateBuffer(size_t size);
     void FreeBuffer(void *mem);
@@ -118,6 +117,22 @@ public:
     size_t GetMaxNativeMemoryUsage() const
     {
         return maxNativeMemoryUsage_.load(std::memory_order_relaxed);
+    }
+
+    void *Allocate(size_t size)
+    {
+        if (size == 0) {
+            LOG_ECMA_MEM(FATAL) << "size must have a size bigger than 0";
+            UNREACHABLE();
+        }
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
+        void *ptr = malloc(size);
+        if (ptr == nullptr) {
+            LOG_ECMA_MEM(FATAL) << "malloc failed";
+            UNREACHABLE();
+        }
+        IncreaseNativeMemoryUsage(size);
+        return ptr;
     }
 
 private:

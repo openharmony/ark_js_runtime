@@ -38,6 +38,32 @@ void Space::EnumerateRegions(const Callback &cb, Region *region) const
     }
 }
 
+RememberedSet *Region::CreateRememberedSet()
+{
+    auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
+    auto setAddr = const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Allocate(setSize);
+    uintptr_t setData = ToUintPtr(setAddr);
+    auto ret = new RememberedSet(ToUintPtr(this), GetCapacity(), setData);
+    ret->ClearAllBits();
+    return ret;
+}
+
+RememberedSet *Region::GetOrCreateCrossRegionRememberedSet()
+{
+    if (UNLIKELY(crossRegionSet_ == nullptr)) {
+        crossRegionSet_ = CreateRememberedSet();
+    }
+    return crossRegionSet_;
+}
+
+RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
+{
+    if (UNLIKELY(oldToNewSet_ == nullptr)) {
+        oldToNewSet_ = CreateRememberedSet();
+    }
+    return oldToNewSet_;
+}
+
 void Region::InsertCrossRegionRememberedSet(uintptr_t addr)
 {
     auto set = GetOrCreateCrossRegionRememberedSet();
