@@ -156,7 +156,7 @@ private:
     void VisitParameter(AddrShift gate) const;
     void VisitInt32Constant(AddrShift gate, int32_t value) const;
     void VisitInt64Constant(AddrShift gate, int64_t value) const;
-    void VisitFloat64Constant(AddrShift gate, int64_t value) const;
+    void VisitFloat64Constant(AddrShift gate, double value) const;
     void VisitZExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const;
     void VisitSExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const;
     void VisitLoad(AddrShift gate, MachineRep rep, AddrShift base) const;
@@ -187,6 +187,8 @@ private:
     void VisitCastInt64ToDouble(AddrShift gate, AddrShift e1) const;
     void VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const;
     void VisitCastInt64ToPointer(AddrShift gate, AddrShift e1) const;
+    void VisitIntMod(AddrShift gate, AddrShift e1, AddrShift e2) const;
+    void VisitFloatMod(AddrShift gate, AddrShift e1, AddrShift e2) const;
 
     BasicBlock *EnsurBasicBlock(int id);
     LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder);

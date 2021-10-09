@@ -506,11 +506,33 @@ HWTEST_F_L0(StubTest, FastDivTest)
     assembler.Run();
     auto engine = assembler.GetEngine();
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
+
+    // test normal Division operation
     uint64_t x1 = JSTaggedValue(50).GetRawData();
-    uint64_t x2 = JSTaggedValue(25).GetRawData();
-    std::cout << "x1 = " << x1 << "  x2 = " << x2 << std::endl;
-    auto res = fn(x1, x2);
-    std::cout << "res for FastDiv(50, 25) = " << res.GetRawData() << std::endl;
+    uint64_t y1 = JSTaggedValue(25).GetRawData();
+    std::cout << "x1 = " << x1 << "  y1 = " << y1 << std::endl;
+    auto res1 = fn(x1, y1);
+    std::cout << "res for FastDiv(50, 25) = " << res1.GetRawData() << std::endl;
+    auto expectedG1 = FastRuntimeStub::FastDiv(JSTaggedValue(x1), JSTaggedValue(y1));
+    EXPECT_EQ(res1, expectedG1);
+
+    // test x == 0.0 or std::isnan(x)
+    uint64_t x2 = JSTaggedValue(base::NAN_VALUE).GetRawData();
+    uint64_t y2 = JSTaggedValue(0).GetRawData();
+    std::cout << "x2 = " << x1 << "  y2 = " << y2 << std::endl;
+    auto res2 = fn(x2, y2);
+    std::cout << "res for FastDiv(base::NAN_VALUE, 0) = " << res2.GetRawData() << std::endl;
+    auto expectedG2 = FastRuntimeStub::FastDiv(JSTaggedValue(x2), JSTaggedValue(y2));
+    EXPECT_EQ(res2, expectedG2);
+
+    // test other
+    uint64_t x3 = JSTaggedValue(7).GetRawData();
+    uint64_t y3 = JSTaggedValue(0).GetRawData();
+    std::cout << "x2 = " << x3 << "  y2 = " << y3 << std::endl;
+    auto res3 = fn(x3, y3);
+    std::cout << "res for FastDiv(7, 0) = " << res3.GetRawData() << std::endl;
+    auto expectedG3 = FastRuntimeStub::FastDiv(JSTaggedValue(x3), JSTaggedValue(y3));
+    EXPECT_EQ(res3, expectedG3);
 }
 
 HWTEST_F_L0(StubTest, FastFindOwnElementStub)
@@ -1223,5 +1245,77 @@ HWTEST_F_L0(StubTest, FastGetPropertyByNameStub)
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(), strBig.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
+}
+
+HWTEST_F_L0(StubTest, FastModTest)
+{
+    LLVMModuleRef module = LLVMModuleCreateWithName("fast_mod_module");
+    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    LLVMTypeRef paramTys[] = {
+        LLVMInt64Type(),
+        LLVMInt64Type(),
+    };
+    LLVMValueRef function = LLVMAddFunction(module, "FastMod", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
+    Circuit netOfGates;
+    FastModStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
+        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
+                  << std::endl;
+        for (size_t instIdex = cfg[bbIdx].size(); instIdex < 0; instIdex--) {
+            netOfGates.Print(cfg[bbIdx][instIdex - 1]);
+        }
+    }
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module);
+    assembler.Run();
+    auto engine = assembler.GetEngine();
+    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
+
+    // test left, right are all integer
+    int x = 7;
+    int y = 3;
+    auto result = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    JSTaggedValue expectRes = FastRuntimeStub::FastMod(JSTaggedValue(x), JSTaggedValue(y));
+    EXPECT_EQ(result, expectRes);
+
+    // test y == 0.0 || std::isnan(y) || std::isnan(x) || std::isinf(x) return NAN_VALUE
+    double x2 = 7.3;
+    int y2 = base::NAN_VALUE;
+    auto result2 = fn(JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
+    auto expectRes2 = FastRuntimeStub::FastMod(JSTaggedValue(x2), JSTaggedValue(y2));
+    EXPECT_EQ(result2, expectRes2);
+    std::cout << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData() << std::endl;
+    std::cout << "expectRes2 for FastMod(7, 'helloworld') = " << expectRes2.GetRawData() << std::endl;
+
+    // // test modular operation under normal conditions
+    double x3 = 33.0;
+    double y3 = 44.0;
+    auto result3 = fn(JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
+    auto expectRes3 = FastRuntimeStub::FastMod(JSTaggedValue(x3), JSTaggedValue(y3));
+    EXPECT_EQ(result3, expectRes3);
+
+    // test x == 0.0 || std::isinf(y) return x
+    double x4 = base::NAN_VALUE;
+    int y4 = 7;
+    auto result4 = fn(JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
+    auto expectRes4 = FastRuntimeStub::FastMod(JSTaggedValue(x4), JSTaggedValue(y4));
+
+    std::cout << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData() << std::endl;
+    std::cout << "expectRes4 for FastMod(base::NAN_VALUE, 7) = " << expectRes4.GetRawData() << std::endl;
+    EXPECT_EQ(result4, expectRes4);
+
+    // test all non-conforming conditions
+    int x5 = 7;
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto y5 = factory->NewFromStdString("hello world");
+    auto result5 = fn(JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
+    EXPECT_EQ(result5, JSTaggedValue::Hole());
+    auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
+    std::cout << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData() << std::endl;
+    EXPECT_EQ(result5, expectRes5);
 }
 }  // namespace panda::test

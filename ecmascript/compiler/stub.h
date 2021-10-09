@@ -17,6 +17,7 @@
 #define ECMASCRIPT_COMPILER_Stub_H
 
 #include "ecmascript/accessor_data.h"
+#include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/gate.h"
@@ -27,6 +28,8 @@
 #include "ecmascript/tagged_dictionary.h"
 
 namespace kungfu {
+using namespace panda::ecmascript;
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEFVARIABLE(varname, type, val) Stub::Variable varname(GetEnvironment(), type, NextVariableId(), val)
 
@@ -693,8 +696,22 @@ public:
     AddrShift Int32Div(AddrShift x, AddrShift y);
     AddrShift Int64Div(AddrShift x, AddrShift y);
 
+    AddrShift Int32Mod(AddrShift x, AddrShift y)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_SMOD), x, y);
+    }
+
+    AddrShift DoubleMod(AddrShift x, AddrShift y)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_SMOD), x, y);
+    }
+
     // bit operation
-    AddrShift Word32Or(AddrShift x, AddrShift y);
+    AddrShift Word32Or(AddrShift x, AddrShift y)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_OR), x, y);
+    }
+
     AddrShift Word32And(AddrShift x, AddrShift y)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_AND), x, y);
@@ -815,7 +832,17 @@ public:
     AddrShift DoubleIsNAN(AddrShift x)
     {
         AddrShift diff = DoubleEqual(x, x);
-        return Word32NotEqual(SExtInt1ToInt32(diff), GetInteger32Constant(0));
+        return Word32Equal(SExtInt1ToInt32(diff), GetInteger32Constant(0));
+    }
+
+    AddrShift DoubleIsINF(AddrShift x)
+    {
+        AddrShift infinity = GetDoubleConstant(base::POSITIVE_INFINITY);
+        AddrShift negativeInfinity = GetDoubleConstant(-base::POSITIVE_INFINITY);
+        AddrShift diff1 = DoubleEqual(x, infinity);
+        AddrShift diff2 = DoubleEqual(x, negativeInfinity);
+        return Word32Or(Word32Equal(SExtInt1ToInt32(diff1), GetInteger32Constant(1)),
+            Word32Equal(SExtInt1ToInt32(diff2), GetInteger32Constant(1)));
     }
 
     AddrShift IntBuildTagged(AddrShift x)

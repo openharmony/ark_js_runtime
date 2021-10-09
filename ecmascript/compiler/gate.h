@@ -210,6 +210,7 @@ public:
         FLOAT64_DIV,
         FLOAT64_EXP,
         FLOAT64_EQ,
+        FLOAT64_SMOD,
         INT8_LOAD,
         INT16_LOAD,
         INT32_LOAD,

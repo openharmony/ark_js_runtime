@@ -231,7 +231,8 @@ void LLVMIRBuilder::Build()
                 }
                 case OpCode::FLOAT64_CONSTANT: {
                     int64_t value = circuit_->GetBitField(gate);
-                    VisitFloat64Constant(gate, value);
+                    double doubleValue = bit_cast<double>(value); // actual double value
+                    VisitFloat64Constant(gate, doubleValue);
                     break;
                 }
                 case OpCode::ZEXT_INT1_TO_INT32: {
@@ -395,6 +396,14 @@ void LLVMIRBuilder::Build()
                 }
                 case OpCode::DEPEND_AND:
                     break;
+                case OpCode::INT32_SMOD: {
+                    VisitIntMod(gate, ins[0], ins[1]);
+                    break;
+                }
+                case OpCode::FLOAT64_SMOD: {
+                    VisitFloatMod(gate, ins[0], ins[1]);
+                    break;
+                }
                 default: {
                     LOG_ECMA(ERROR) << "The gate below need to be translated ";
                     circuit_->Print(gate);
@@ -750,7 +759,7 @@ void LLVMIRBuilder::VisitInt64Constant(AddrShift gate, int64_t value) const
     LOG_ECMA(INFO) << "VisitInt64Constant " << str;
 }
 
-void LLVMIRBuilder::VisitFloat64Constant(AddrShift gate, int64_t value) const
+void LLVMIRBuilder::VisitFloat64Constant(AddrShift gate, double value) const
 {
     LLVMValueRef llvmValue = LLVMConstReal(LLVMDoubleType(), value);
     LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
@@ -973,6 +982,30 @@ void LLVMIRBuilder::VisitIntMul(AddrShift gate, AddrShift e1, AddrShift e2) cons
     LLVMValueRef e2Value = g_values[e2];
     LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
     LLVMValueRef result = LLVMBuildMul(builder_, e1Value, e2Value, "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::VisitIntMod(AddrShift gate, AddrShift e1, AddrShift e2) const
+{
+    LOG_ECMA(INFO) << "int mod gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef e2Value = g_values[e2];
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildSRem(builder_, e1Value, e2Value, "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::VisitFloatMod(AddrShift gate, AddrShift e1, AddrShift e2) const
+{
+    LOG_ECMA(INFO) << "float mod gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef e2Value = g_values[e2];
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildFRem(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
