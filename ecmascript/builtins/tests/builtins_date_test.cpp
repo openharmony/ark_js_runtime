@@ -100,21 +100,6 @@ HWTEST_F_L0(BuiltinsDateTest, SetGetUTCDate)
     ASSERT_EQ(result4.GetRawData(), JSTaggedValue(static_cast<double>(2)).GetRawData());
 }
 
-HWTEST_F_L0(BuiltinsDateTest, SetGetMinusDate)
-{
-    JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
-
-    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
-    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
-    ecmaRuntimeCallInfo->SetThis(jsDate.GetTaggedValue());
-    ecmaRuntimeCallInfo->SetCallArg(0, JSTaggedValue(static_cast<double>(-2)));
-
-    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
-    [[maybe_unused]] JSTaggedValue result3 = BuiltinsDate::SetDate(ecmaRuntimeCallInfo.get());
-    JSTaggedValue result4 = BuiltinsDate::GetDate(ecmaRuntimeCallInfo.get());
-    ASSERT_EQ(result4.GetRawData(), JSTaggedValue(static_cast<double>(29)).GetRawData());
-}
-
 HWTEST_F_L0(BuiltinsDateTest, SetGetMinusUTCDate)
 {
     JSHandle<JSDate> jsDate = JSDateCreateTest(thread);
