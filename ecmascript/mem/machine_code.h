@@ -16,8 +16,8 @@
 #ifndef PANDA_RUNTIME_ECMASCRIPT_MEM_MACHINE_CODE_H
 #define PANDA_RUNTIME_ECMASCRIPT_MEM_MACHINE_CODE_H
 
+#include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/object_factory.h"
 #include "ecmascript/mem/tagged_object.h"
 
 namespace panda {

@@ -102,22 +102,6 @@ void RegionFactory::FreeArea(Area *area)
     free(reinterpret_cast<std::byte *>(area));
 }
 
-void *RegionFactory::Allocate(size_t size)
-{
-    if (size == 0) {
-        LOG_ECMA_MEM(FATAL) << "size must have a size bigger than 0";
-        UNREACHABLE();
-    }
-    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
-    void *ptr = malloc(size);
-    if (ptr == nullptr) {
-        LOG_ECMA_MEM(FATAL) << "malloc failed";
-        UNREACHABLE();
-    }
-    IncreaseNativeMemoryUsage(size);
-    return ptr;
-}
-
 void RegionFactory::Free(void *mem, size_t size)
 {
     if (mem == nullptr) {

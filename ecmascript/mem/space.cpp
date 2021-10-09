@@ -297,16 +297,6 @@ RangeBitmap *Region::CreateMarkBitmap()
     return ret;
 }
 
-RememberedSet *Region::CreateRememberedSet()
-{
-    auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
-    auto setAddr = const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Allocate(setSize);
-    uintptr_t setData = ToUintPtr(setAddr);
-    auto ret = new RememberedSet(ToUintPtr(this), GetCapacity(), setData);
-    ret->ClearAllBits();
-    return ret;
-}
-
 void Space::Destroy()
 {
     ReclaimRegions();
