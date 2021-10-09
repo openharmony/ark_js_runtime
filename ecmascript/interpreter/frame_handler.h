@@ -68,6 +68,34 @@ public:
 private:
     JSTaggedType *sp_{nullptr};
 };
-}  // namespace ecmascript
+
+class OptimizedFrameHandler {
+public:
+    explicit OptimizedFrameHandler(JSTaggedType *fp) : fp_(fp) {}
+    explicit OptimizedFrameHandler(const JSThread *thread);
+    ~OptimizedFrameHandler() = default;
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+private:
+    JSTaggedType *fp_{nullptr};
+};
+
+class OptimizedEntryFrameHandler {
+public:
+    explicit OptimizedEntryFrameHandler(JSTaggedType *fp) : fp_(fp) {}
+    explicit OptimizedEntryFrameHandler(const JSThread *thread);
+    ~OptimizedEntryFrameHandler() = default;
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+private:
+    JSTaggedType *fp_{nullptr};
+};
+
+class FrameIterator {
+public:
+    explicit FrameIterator(JSTaggedType *fp) : fp_(fp) {}
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+private:
+    JSTaggedType *fp_{nullptr};
+};
+} // namespace ecmascript
 }  // namespace panda
 #endif  // ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H

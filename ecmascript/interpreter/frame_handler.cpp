@@ -15,9 +15,12 @@
 
 #include "ecmascript/interpreter/frame_handler.h"
 
+#include <cstdint>
+
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_thread.h"
 #include "libpandafile/bytecode_instruction-inl.h"
+#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 
 namespace panda::ecmascript {
 EcmaFrameHandler::EcmaFrameHandler(const JSThread *thread)
@@ -44,7 +47,7 @@ void EcmaFrameHandler::PrevFrame()
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
-    sp_ = state->prev;
+    sp_ = state->base.prev;
 }
 
 EcmaFrameHandler EcmaFrameHandler::GetPrevFrame() const
@@ -52,7 +55,7 @@ EcmaFrameHandler EcmaFrameHandler::GetPrevFrame() const
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
-    return EcmaFrameHandler(state->prev);
+    return EcmaFrameHandler(state->base.prev);
 }
 
 JSTaggedValue EcmaFrameHandler::GetVRegValue(size_t index) const
@@ -82,7 +85,7 @@ uint32_t EcmaFrameHandler::GetSize() const
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
-    JSTaggedType *prevSp = state->prev;
+    JSTaggedType *prevSp = state->base.prev;
     ASSERT(prevSp != nullptr);
     auto size = (prevSp - sp_) - FRAME_STATE_SIZE;
     return static_cast<uint32_t>(size);
@@ -152,14 +155,14 @@ JSTaggedValue EcmaFrameHandler::GetEnv() const
 void EcmaFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     JSTaggedType *current = sp_;
-    while (current != nullptr) {
+    if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         FrameState *state = reinterpret_cast<FrameState *>(current) - 1;
 
         if (state->sp != nullptr) {
             uintptr_t start = ToUintPtr(current);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            FrameState *prev_state = reinterpret_cast<FrameState *>(state->prev) - 1;
+            FrameState *prev_state = reinterpret_cast<FrameState *>(state->base.prev) - 1;
             uintptr_t end = ToUintPtr(prev_state);
             v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
             if (state->pc != nullptr) {
@@ -170,7 +173,6 @@ void EcmaFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1
                 v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&state->profileTypeInfo)));
             }
         }
-        current = state->prev;
     }
 }
 
@@ -193,5 +195,81 @@ void EcmaFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
     // NOLINTNEXTLINE(cppcoreguidelines-narrowing-conversions, bugprone-narrowing-conversions)
     int offset = pc - JSMethod::Cast(frameHandler.GetMethod())->GetBytecodeArray();
     os << "offset: " << offset << "\n";
+}
+
+void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
+#ifdef PANDA_TARGET_AMD64
+    JSTaggedType *current = fp_;
+    if (current != nullptr) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::vector<uintptr_t> slotAddrs;
+        auto returnAddr = reinterpret_cast<uintptr_t>(*(current + 1));
+        bool ret = kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
+            returnAddr,
+            reinterpret_cast<uintptr_t>(fp_),
+            slotAddrs);
+        if (ret == false) {
+            return;
+        }
+        for (auto &address: slotAddrs) {
+            v0(Root::ROOT_FRAME, ObjectSlot(address));
+        }
+    }
+#else
+    (void)v0;
+    (void)v1;
+#endif
+}
+
+void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
+#ifdef PANDA_TARGET_AMD64
+    JSTaggedType *current = fp_;
+    if (current != nullptr) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::vector<uintptr_t> slotAddrs;
+        auto returnAddr = *(current + 1);
+        bool ret = kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
+            reinterpret_cast<uintptr_t>(returnAddr),
+            reinterpret_cast<uintptr_t>(fp_),
+            slotAddrs);
+        if (ret == false) {
+            return;
+        }
+        for (auto &address: slotAddrs) {
+            v0(Root::ROOT_FRAME, ObjectSlot(address));
+        }
+    }
+#else
+    (void)v0;
+    (void)v1;
+#endif
+}
+
+void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
+{
+    JSTaggedType *current = fp_;
+    while (current) {
+        FrameType type = *(reinterpret_cast<FrameType*>(
+                        reinterpret_cast<long long>(current) + FrameConst::kFrameType));
+        if (type == FrameType::INTERPRETER_FRAME) {
+            FrameState *state = reinterpret_cast<FrameState *>(current) - 1;
+            EcmaFrameHandler(current).Iterate(v0, v1);
+            current = state->base.prev;
+        } else if (type == FrameType::OPTIMIZED_FRAME) {
+            OptFrameStateBase *state = reinterpret_cast<OptFrameStateBase *>(
+                reinterpret_cast<long long>(current) -
+                MEMBER_OFFSET(OptFrameStateBase, prev));
+            OptimizedFrameHandler(current).Iterate(v0, v1);
+            current = reinterpret_cast<JSTaggedType *>(state->prev);
+        } else {
+            LLVMOptimizedEntryFrameState *state = reinterpret_cast<LLVMOptimizedEntryFrameState *>(
+                reinterpret_cast<long long>(current) -
+                MEMBER_OFFSET(LLVMOptimizedEntryFrameState, base.prev));
+            OptimizedEntryFrameHandler(current).Iterate(v0, v1);
+            current = reinterpret_cast<JSTaggedType *>(state->threadFp);
+        }
+    }
 }
 }  // namespace panda::ecmascript

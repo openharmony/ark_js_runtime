@@ -365,7 +365,7 @@ AddrShift CircuitBuilder::NewCallGate(StubDescriptor *descriptor, AddrShift targ
 AddrShift CircuitBuilder::NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                              std::initializer_list<AddrShift> args)
 {
-    ASSERT(descriptor->GetStubKind() == StubDescriptor::RUNTIME_STUB);
+    ASSERT(descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB);
     std::vector<AddrShift> inputs;
     auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
     inputs.push_back(dependEntry);
@@ -382,7 +382,7 @@ AddrShift CircuitBuilder::NewCallRuntimeGate(StubDescriptor *descriptor, AddrShi
 AddrShift CircuitBuilder::NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                              AddrShift depend, std::initializer_list<AddrShift> args)
 {
-    ASSERT(descriptor->GetStubKind() == StubDescriptor::RUNTIME_STUB);
+    ASSERT(descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB);
     std::vector<AddrShift> inputs;
     inputs.push_back(depend);
     inputs.push_back(target);

@@ -31,6 +31,8 @@ namespace kungfu {
 using OperandsVector = std::set<int>;
 class BasicBlock;
 using BasicBlockMap = std::map<int, std::unique_ptr<BasicBlock>>;
+class LLVMIRBuilder;
+typedef void (LLVMIRBuilder::*HandleType)(AddrShift gate);
 
 enum class MachineRep {
     K_NONE,
@@ -138,6 +140,49 @@ private:
     LLVMModuleRef module_;
 };
 
+#define OPCODES(V) \
+    V(Call, (AddrShift gate, const std::vector<AddrShift> &inList)) \
+    V(Alloca, (AddrShift gate)) \
+    V(Block, (int id, const OperandsVector &predecessors)) \
+    V(Goto, (int block, int bbout)) \
+    V(Parameter, (AddrShift gate) const ) \
+    V(Int32Constant, (AddrShift gate, int32_t value) const ) \
+    V(Int64Constant, (AddrShift gate, int64_t value) const ) \
+    V(Float64Constant, (AddrShift gate, double value) const ) \
+    V(ZExtInt, (AddrShift gate, AddrShift e1, MachineRep rep) const ) \
+    V(SExtInt, (AddrShift gate, AddrShift e1, MachineRep rep) const ) \
+    V(Load, (AddrShift gate, MachineRep rep, AddrShift base) const ) \
+    V(Store, (AddrShift gate, MachineRep rep, AddrShift base, AddrShift value) const ) \
+    V(IntRev, (AddrShift gate, AddrShift e1) const ) \
+    V(IntAdd, (AddrShift gate, AddrShift e1, AddrShift e2, MachineRep rep) const ) \
+    V(FloatAdd, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(FloatSub, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(FloatMul, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(FloatDiv, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(IntSub, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(IntMul, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(IntOr, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(IntAnd, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(IntXor, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(IntLsr, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(Int32LessThanOrEqual, (AddrShift gate, AddrShift e1, AddrShift e2) const ) \
+    V(IntOrUintCmp, (AddrShift gate, AddrShift e1, AddrShift e2, LLVMIntPredicate opcode) const ) \
+    V(FloatOrDoubleCmp, (AddrShift gate, AddrShift e1, AddrShift e2, LLVMRealPredicate opcode) const ) \
+    V(Branch, (AddrShift gate, AddrShift cmp, AddrShift btrue, AddrShift bfalse)) \
+    V(Switch, (AddrShift gate, AddrShift input, const std::vector<AddrShift> &outList)) \
+    V(SwitchCase, (AddrShift gate, AddrShift switchBranch, AddrShift out)) \
+    V(Phi, (AddrShift gate, const std::vector<AddrShift> &srcGates, MachineRep rep)) \
+    V(Return, (AddrShift gate, AddrShift popCount, const std::vector<AddrShift> &operands) const ) \
+    V(CastIntXToIntY, (AddrShift gate, AddrShift e1, MachineRep rep) const ) \
+    V(CastInt32ToDouble, (AddrShift gate, AddrShift e1) const ) \
+    V(CastInt64ToDouble, (AddrShift gate, AddrShift e1) const ) \
+    V(CastDoubleToInt, (AddrShift gate, AddrShift e1) const ) \
+    V(CastInt64ToPointer, (AddrShift gate, AddrShift e1) const ) \
+    V(IntLsl, (AddrShift gate, AddrShift e1, AddrShift e2) const) \
+    V(IntMod, (AddrShift gate, AddrShift e1, AddrShift e2) const) \
+    V(FloatMod, (AddrShift gate, AddrShift e1, AddrShift e2) const) \
+
+
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit);
@@ -149,46 +194,12 @@ public:
     ~LLVMIRBuilder() = default;
 
 private:
-    void VisitCall(AddrShift gate, const std::vector<AddrShift> &inList);
-    void VisitAlloca(AddrShift gate);
-    void VisitBlock(int id, const OperandsVector &predecessors);
-    void VisitGoto(int block, int bbout);
-    void VisitParameter(AddrShift gate) const;
-    void VisitInt32Constant(AddrShift gate, int32_t value) const;
-    void VisitInt64Constant(AddrShift gate, int64_t value) const;
-    void VisitFloat64Constant(AddrShift gate, double value) const;
-    void VisitZExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const;
-    void VisitSExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const;
-    void VisitLoad(AddrShift gate, MachineRep rep, AddrShift base) const;
-    void VisitStore(AddrShift gate, MachineRep rep, AddrShift base, AddrShift value) const;
-    void VisitIntRev(AddrShift gate, AddrShift e1) const;
-    void VisitIntAdd(AddrShift gate, AddrShift e1, AddrShift e2, MachineRep rep) const;
-    void VisitFloatAdd(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitFloatSub(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitFloatMul(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitFloatDiv(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntSub(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntMul(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntOr(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntAnd(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntXor(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntLsr(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntLsl(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitInt32LessThanOrEqual(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitIntOrUintCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMIntPredicate opcode) const;
-    void VisitFloatOrDoubleCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMRealPredicate opcode) const;
-    void VisitBranch(AddrShift gate, AddrShift cmp, AddrShift btrue, AddrShift bfalse);
-    void VisitSwitch(AddrShift gate, AddrShift input, const std::vector<AddrShift> &outList);
-    void VisitSwitchCase(AddrShift gate, AddrShift switchBranch, AddrShift out);
-    void VisitPhi(AddrShift gate, const std::vector<AddrShift> &srcGates, MachineRep rep);
-    void VisitReturn(AddrShift gate, AddrShift popCount, const std::vector<AddrShift> &operands) const;
-    void VisitCastIntXToIntY(AddrShift gate, AddrShift e1, MachineRep rep) const;
-    void VisitCastInt32ToDouble(AddrShift gate, AddrShift e1) const;
-    void VisitCastInt64ToDouble(AddrShift gate, AddrShift e1) const;
-    void VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const;
-    void VisitCastInt64ToPointer(AddrShift gate, AddrShift e1) const;
-    void VisitIntMod(AddrShift gate, AddrShift e1, AddrShift e2) const;
-    void VisitFloatMod(AddrShift gate, AddrShift e1, AddrShift e2) const;
+    #define DECLAREVISITOPCODE(name, signature) void Visit##name signature;
+        OPCODES(DECLAREVISITOPCODE)
+    #undef DECLAREVISITOPCODE
+    #define DECLAREHANDLEOPCODE(name, ignore) void Handle##name(AddrShift gate);
+        OPCODES(DECLAREHANDLEOPCODE)
+    #undef DECLAREHANDLEOPCODE
 
     BasicBlock *EnsurBasicBlock(int id);
     LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder);
@@ -203,6 +214,7 @@ private:
     void End();
 
     void ProcessPhiWorkList();
+    void AssignHandleMap();
 
 private:
     const std::vector<std::vector<AddrShift>> *schedule_ {nullptr};
@@ -219,6 +231,8 @@ private:
 
     std::vector<BasicBlock *> phiRebuildWorklist_;
     LLVMStubModule *stubModule_ {nullptr};
+    std::unordered_map<OpCode::Op, HandleType> opCodeHandleMap_;
+    std::set<OpCode::Op> opCodeHandleIgnore;
 };
 }  // namespace kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

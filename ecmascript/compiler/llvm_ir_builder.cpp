@@ -15,6 +15,7 @@
 
 #include "ecmascript/compiler/llvm_ir_builder.h"
 
+#include <set>
 #include <string>
 
 #include "ecmascript/compiler/circuit.h"
@@ -80,6 +81,90 @@ int LLVMIRBuilder::FindBasicBlock(AddrShift gate) const
     return -1;
 }
 
+void LLVMIRBuilder::AssignHandleMap()
+{
+    opCodeHandleMap_ = {{OpCode::STATE_ENTRY, &LLVMIRBuilder::HandleGoto},
+        {OpCode::RETURN, &LLVMIRBuilder::HandleReturn},
+        {OpCode::IF_BRANCH, &LLVMIRBuilder::HandleBranch}, {OpCode::SWITCH_BRANCH, &LLVMIRBuilder::HandleSwitch},
+        {OpCode::ORDINARY_BLOCK, &LLVMIRBuilder::HandleGoto}, {OpCode::IF_TRUE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::IF_FALSE, &LLVMIRBuilder::HandleGoto}, {OpCode::SWITCH_CASE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::MERGE, &LLVMIRBuilder::HandleGoto}, {OpCode::DEFAULT_CASE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::LOOP_BEGIN, &LLVMIRBuilder::HandleGoto}, {OpCode::LOOP_BACK, &LLVMIRBuilder::HandleGoto},
+        {OpCode::VALUE_SELECTOR_INT1, &LLVMIRBuilder::HandlePhi},
+        {OpCode::VALUE_SELECTOR_INT32, &LLVMIRBuilder::HandlePhi},
+        {OpCode::VALUE_SELECTOR_INT64, &LLVMIRBuilder::HandlePhi},
+        {OpCode::VALUE_SELECTOR_FLOAT64, &LLVMIRBuilder::HandlePhi},
+        {OpCode::CALL, &LLVMIRBuilder::HandleCall}, {OpCode::INT1_CALL, &LLVMIRBuilder::HandleCall},
+        {OpCode::INT32_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::FLOAT64_CALL, &LLVMIRBuilder::HandleCall},
+        {OpCode::INT64_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
+        {OpCode::INT1_ARG, &LLVMIRBuilder::HandleParameter}, {OpCode::INT32_ARG, &LLVMIRBuilder::HandleParameter},
+        {OpCode::INT64_ARG, &LLVMIRBuilder::HandleParameter},
+        {OpCode::INT32_CONSTANT, &LLVMIRBuilder::HandleInt32Constant},
+        {OpCode::JS_CONSTANT, &LLVMIRBuilder::HandleInt64Constant},
+        {OpCode::INT64_CONSTANT, &LLVMIRBuilder::HandleInt64Constant},
+        {OpCode::FLOAT64_CONSTANT, &LLVMIRBuilder::HandleFloat64Constant},
+        {OpCode::ZEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_INT32_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_INT1_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::SEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
+        {OpCode::SEXT_INT1_TO_INT64, &LLVMIRBuilder::HandleSExtInt},
+        {OpCode::SEXT_INT32_TO_INT64, &LLVMIRBuilder::HandleSExtInt},
+        {OpCode::TRUNC_INT64_TO_INT1, &LLVMIRBuilder::HandleCastIntXToIntY},
+        {OpCode::TRUNC_INT32_TO_INT1, &LLVMIRBuilder::HandleCastIntXToIntY},
+        {OpCode::TRUNC_INT64_TO_INT32, &LLVMIRBuilder::HandleCastIntXToIntY},
+        {OpCode::INT32_REV, &LLVMIRBuilder::HandleIntRev},
+        {OpCode::INT64_REV, &LLVMIRBuilder::HandleIntRev},
+        {OpCode::INT32_ADD, &LLVMIRBuilder::HandleIntAdd},
+        {OpCode::INT64_ADD, &LLVMIRBuilder::HandleIntAdd},
+        {OpCode::FLOAT64_ADD, &LLVMIRBuilder::HandleFloatAdd},
+        {OpCode::FLOAT64_SUB, &LLVMIRBuilder::HandleFloatSub},
+        {OpCode::FLOAT64_MUL, &LLVMIRBuilder::HandleFloatMul},
+        {OpCode::FLOAT64_DIV, &LLVMIRBuilder::HandleFloatDiv},
+        {OpCode::INT32_SUB, &LLVMIRBuilder::HandleIntSub},
+        {OpCode::INT64_SUB, &LLVMIRBuilder::HandleIntSub},
+        {OpCode::INT32_MUL, &LLVMIRBuilder::HandleIntMul},
+        {OpCode::INT64_MUL, &LLVMIRBuilder::HandleIntMul},
+        {OpCode::INT32_AND, &LLVMIRBuilder::HandleIntAnd},
+        {OpCode::INT64_AND, &LLVMIRBuilder::HandleIntAnd},
+        {OpCode::INT32_OR, &LLVMIRBuilder::HandleIntOr},
+        {OpCode::INT64_OR, &LLVMIRBuilder::HandleIntOr},
+        {OpCode::INT64_XOR, &LLVMIRBuilder::HandleIntXor},
+        {OpCode::INT32_LSR, &LLVMIRBuilder::HandleIntLsr},
+        {OpCode::INT64_LSR, &LLVMIRBuilder::HandleIntLsr},
+        {OpCode::INT32_SLT, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT64_SLT, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT32_ULT, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT64_ULT, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT32_SLE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT64_SLE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT32_SGT, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT64_SGT, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT32_SGE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT64_SGE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT32_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT64_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::FLOAT64_EQ, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
+        {OpCode::INT32_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT64_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT32_LOAD, &LLVMIRBuilder::HandleLoad},
+        {OpCode::INT64_LOAD, &LLVMIRBuilder::HandleLoad},
+        {OpCode::INT32_STORE, &LLVMIRBuilder::HandleStore},
+        {OpCode::INT64_STORE, &LLVMIRBuilder::HandleStore},
+        {OpCode::INT32_TO_FLOAT64, &LLVMIRBuilder::HandleCastInt32ToDouble},
+        {OpCode::INT64_TO_FLOAT64, &LLVMIRBuilder::HandleCastInt64ToDouble},
+        {OpCode::FLOAT64_TO_INT64, &LLVMIRBuilder::HandleCastDoubleToInt},
+        {OpCode::INT32_LSL, &LLVMIRBuilder::HandleIntLsl},
+        {OpCode::INT64_LSL, &LLVMIRBuilder::HandleIntLsl},
+        {OpCode::FLOAT64_SMOD, &LLVMIRBuilder::HandleFloatMod},
+        {OpCode::INT32_SMOD, &LLVMIRBuilder::HandleIntMod},
+
+    };
+    opCodeHandleIgnore= {OpCode::NOP, OpCode::CIRCUIT_ROOT, OpCode::DEPEND_ENTRY,
+                        OpCode::FRAMESTATE_ENTRY, OpCode::RETURN_LIST, OpCode::THROW_LIST,
+                        OpCode::CONSTANT_LIST, OpCode::ARG_LIST, OpCode::THROW,
+                        OpCode::DEPEND_SELECTOR, OpCode::DEPEND_RELAY, OpCode::DEPEND_AND};
+}
+
 void LLVMIRBuilder::Build()
 {
     LOG_ECMA(INFO) << "LLVM IR Builder Create Id Map of Blocks...";
@@ -89,8 +174,8 @@ void LLVMIRBuilder::Build()
             instIdMapBbId_[gateId] = bbIdx;
         }
     }
-
     LOG_ECMA(INFO) << "LLVM IR Builder Visit Gate...";
+    AssignHandleMap();
     for (size_t bbIdx = 0; bbIdx < (*schedule_).size(); bbIdx++) {
         OperandsVector predecessors;
         for (auto in : circuit_->GetInVector((*schedule_)[bbIdx][0])) {
@@ -105,310 +190,17 @@ void LLVMIRBuilder::Build()
             AddrShift gate = (*schedule_)[bbIdx][instIdx - 1];
             std::vector<AddrShift> ins = circuit_->GetInVector(gate);
             std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
-            switch (circuit_->GetOpCode(gate)) {
-                case OpCode::NOP:
-                    break;
-                case OpCode::CIRCUIT_ROOT:
-                    break;
-                case OpCode::STATE_ENTRY: {
-                    int block = instIdMapBbId_[circuit_->GetId(gate)];
-                    int bbOut = instIdMapBbId_[circuit_->GetId(outs[0])];
-                    VisitGoto(block, bbOut);
-                    break;
-                }
-                case OpCode::DEPEND_ENTRY:
-                    break;
-                case OpCode::FRAMESTATE_ENTRY:
-                    break;
-                case OpCode::RETURN_LIST:
-                    break;
-                case OpCode::THROW_LIST:
-                    break;
-                case OpCode::CONSTANT_LIST:
-                    break;
-                case OpCode::ARG_LIST:
-                    break;
-                case OpCode::RETURN: {
-                    // [STATE] [DEPEND] [VALUE] [RETURN_LIST]
-                    VisitReturn(gate, 1, ins);
-                    break;
-                }
-                case OpCode::THROW:
-                    break;
-                case OpCode::IF_BRANCH: {
-                    AddrShift bTrue = (circuit_->GetOpCode(outs[0]) == OpCode::IF_TRUE) ? outs[0] : outs[1];
-                    AddrShift bFalse = (circuit_->GetOpCode(outs[0]) == OpCode::IF_FALSE) ? outs[0] : outs[1];
-                    int bbTrue = instIdMapBbId_[circuit_->GetId(bTrue)];
-                    int bbFalse = instIdMapBbId_[circuit_->GetId(bFalse)];
-                    VisitBranch(gate, ins[1], bbTrue, bbFalse);
-                    break;
-                }
-                case OpCode::SWITCH_BRANCH: {
-                    VisitSwitch(gate, ins[1], outs);
-                    break;
-                }
-                case OpCode::ORDINARY_BLOCK:
-                case OpCode::IF_TRUE:
-                case OpCode::IF_FALSE:
-                case OpCode::SWITCH_CASE:
-                case OpCode::DEFAULT_CASE: {
-                    int block = instIdMapBbId_[circuit_->GetId(gate)];
-                    int bbOut = instIdMapBbId_[circuit_->GetId(outs[0])];
-                    VisitGoto(block, bbOut);
-                    break;
-                }
-                case OpCode::MERGE: {
-                    int block = instIdMapBbId_[circuit_->GetId(gate)];
-                    int bbOut;
-                    for (int i = 0; i < static_cast<int>(outs.size()); i++) {
-                        bbOut = instIdMapBbId_[circuit_->GetId(outs[i])];
-                        VisitGoto(block, bbOut);
-                    }
-                    break;
-                }
-                case OpCode::LOOP_BEGIN: {
-                    int block = instIdMapBbId_[circuit_->GetId(gate)];
-                    int bbOut;
-                    for (int i = 0; i < static_cast<int>(outs.size()); i++) {
-                        bbOut = instIdMapBbId_[circuit_->GetId(outs[i])];
-                        VisitGoto(block, bbOut);
-                    }
-                    break;
-                }
-                case OpCode::LOOP_BACK: {
-                    int block = instIdMapBbId_[circuit_->GetId(gate)];
-                    int bbOut = instIdMapBbId_[circuit_->GetId(outs[0])];
-                    VisitGoto(block, bbOut);
-                    break;
-                }
-                case OpCode::VALUE_SELECTOR_INT1: {
-                    VisitPhi(gate, ins, MachineRep::K_BIT);
-                    break;
-                }
-                case OpCode::VALUE_SELECTOR_INT32: {
-                    VisitPhi(gate, ins, MachineRep::K_WORD32);
-                    break;
-                }
-                case OpCode::VALUE_SELECTOR_INT64: {
-                    VisitPhi(gate, ins, MachineRep::K_WORD64);
-                    break;
-                }
-                case OpCode::VALUE_SELECTOR_FLOAT64: {
-                    VisitPhi(gate, ins, MachineRep::K_FLOAT64);
-                    break;
-                }
-                case OpCode::DEPEND_SELECTOR:
-                    break;
-                case OpCode::DEPEND_RELAY:
-                    break;
-                case OpCode::CALL:
-                case OpCode::INT1_CALL:
-                case OpCode::INT32_CALL:
-                case OpCode::INT64_CALL: {
-                    VisitCall(gate, ins);
-                    break;
-                }
-                case OpCode::ALLOCA: {
-                    VisitAlloca(gate);
-                    break;
-                }
-                case OpCode::INT1_ARG:   // no break, fall through
-                case OpCode::INT32_ARG:  // no break, fall through
-                case OpCode::INT64_ARG: {
-                    VisitParameter(gate);
-                    break;
-                }
-                case OpCode::INT32_CONSTANT: {
-                    int32_t value = circuit_->GetBitField(gate);
-                    VisitInt32Constant(gate, value);
-                    break;
-                }
-                case OpCode::JS_CONSTANT:  // no break, fall through
-                case OpCode::INT64_CONSTANT: {
-                    int64_t value = circuit_->GetBitField(gate);
-                    VisitInt64Constant(gate, value);
-                    break;
-                }
-                case OpCode::FLOAT64_CONSTANT: {
-                    int64_t value = circuit_->GetBitField(gate);
-                    double doubleValue = bit_cast<double>(value); // actual double value
-                    VisitFloat64Constant(gate, doubleValue);
-                    break;
-                }
-                case OpCode::ZEXT_INT1_TO_INT32: {
-                    VisitZExtInt(gate, ins[0], MachineRep::K_WORD32);
-                    break;
-                }
-                case OpCode::ZEXT_INT32_TO_INT64:  // no break, fall through
-                case OpCode::ZEXT_INT1_TO_INT64: {
-                    VisitZExtInt(gate, ins[0], MachineRep::K_WORD64);
-                    break;
-                }
-                case OpCode::SEXT_INT1_TO_INT32: {
-                    VisitSExtInt(gate, ins[0], MachineRep::K_WORD32);
-                    break;
-                }
-                case OpCode::SEXT_INT1_TO_INT64:  // no break, fall through
-                case OpCode::SEXT_INT32_TO_INT64: {
-                    VisitSExtInt(gate, ins[0], MachineRep::K_WORD64);
-                    break;
-                }
-                case OpCode::TRUNC_INT64_TO_INT1:
-                case OpCode::TRUNC_INT32_TO_INT1: {
-                    VisitCastIntXToIntY(gate, ins[0], MachineRep::K_BIT);
-                    break;
-                }
-                case OpCode::TRUNC_INT64_TO_INT32: {
-                    VisitCastIntXToIntY(gate, ins[0], MachineRep::K_WORD32);
-                    break;
-                }
-                case OpCode::INT32_REV:  // no break, fall through
-                case OpCode::INT64_REV: {
-                    VisitIntRev(gate, ins[0]);
-                    break;
-                }
-                case OpCode::INT32_ADD: {
-                    VisitIntAdd(gate, ins[0], ins[1], MachineRep::K_WORD32);
-                    break;
-                }
-                case OpCode::INT64_ADD: {
-                    VisitIntAdd(gate, ins[0], ins[1], MachineRep::K_WORD64);
-                    break;
-                }
-                case OpCode::FLOAT64_ADD: {
-                    VisitFloatAdd(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::FLOAT64_SUB: {
-                    VisitFloatSub(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::FLOAT64_MUL: {
-                    VisitFloatMul(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::FLOAT64_DIV: {
-                    VisitFloatDiv(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT32_SUB:  // no break, fall through
-                case OpCode::INT64_SUB: {
-                    VisitIntSub(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT32_MUL:  // no break, fall through
-                case OpCode::INT64_MUL: {
-                    VisitIntMul(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT32_AND:  // no break, fall through
-                case OpCode::INT64_AND: {
-                    VisitIntAnd(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT32_OR:  // no break, fall through
-                case OpCode::INT64_OR: {
-                    VisitIntOr(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT64_XOR: {
-                    VisitIntXor(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT32_LSR:  // no break, fall through
-                case OpCode::INT64_LSR: {
-                    VisitIntLsr(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT32_LSL:  // no break, fall through
-                case OpCode::INT64_LSL: {
-                    VisitIntLsl(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::INT32_SLT:  // no break, fall through
-                case OpCode::INT64_SLT: {
-                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLT);
-                    break;
-                }
-                case OpCode::INT32_ULT:  // no break, fall through
-                case OpCode::INT64_ULT: {
-                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntULT);
-                    break;
-                }
-                case OpCode::INT32_SLE:  // no break, fall through
-                case OpCode::INT64_SLE: {
-                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLE);
-                    break;
-                }
-                case OpCode::INT32_SGT:  // no break, fall through
-                case OpCode::INT64_SGT: {
-                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSGT);
-                    break;
-                }
-                case OpCode::INT32_SGE:  // no break, fall through
-                case OpCode::INT64_SGE: {
-                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSGE);
-                    break;
-                }
-                case OpCode::INT32_EQ:  // no break, fall through
-                case OpCode::INT64_EQ: {
-                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntEQ);
-                    break;
-                }
-                case OpCode::FLOAT64_EQ: {
-                    VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOEQ);
-                    break;
-                }
-                case OpCode::INT32_NE:  // no break, fall through
-                case OpCode::INT64_NE: {
-                    VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntNE);
-                    break;
-                }
-                case OpCode::INT32_LOAD: {
-                    AddrShift base = ins[1];
-                    VisitLoad(gate, MachineRep::K_WORD32, base);
-                    break;
-                }
-                case OpCode::INT64_LOAD: {
-                    AddrShift base = ins[1];
-                    VisitLoad(gate, MachineRep::K_WORD64, base);
-                    break;
-                }
-                case OpCode::INT32_STORE: {
-                    VisitStore(gate, MachineRep::K_WORD32, ins[2], ins[1]);  // 2:baseAddr gate, 1:data gate
-                    break;
-                }
-                case OpCode::INT64_STORE: {
-                    VisitStore(gate, MachineRep::K_WORD64, ins[2], ins[1]);  // 2:baseAddr gate, 1:data gate
-                    break;
-                }
-                case OpCode::INT32_TO_FLOAT64: {
-                    VisitCastInt32ToDouble(gate, ins[0]);
-                    break;
-                }
-                case OpCode::INT64_TO_FLOAT64: {
-                    VisitCastInt64ToDouble(gate, ins[0]);
-                    break;
-                }
-                case OpCode::FLOAT64_TO_INT64: {
-                    VisitCastDoubleToInt(gate, ins[0]);
-                    break;
-                }
-                case OpCode::DEPEND_AND:
-                    break;
-                case OpCode::INT32_SMOD: {
-                    VisitIntMod(gate, ins[0], ins[1]);
-                    break;
-                }
-                case OpCode::FLOAT64_SMOD: {
-                    VisitFloatMod(gate, ins[0], ins[1]);
-                    break;
-                }
-                default: {
-                    LOG_ECMA(ERROR) << "The gate below need to be translated ";
-                    circuit_->Print(gate);
-                    UNREACHABLE();
-                }
+            std::cout << "instIdx :" << instIdx << std::endl;
+            circuit_->Print(gate);
+            auto found = opCodeHandleMap_.find(circuit_->GetOpCode(gate));
+            if (found != opCodeHandleMap_.end()) {
+                (this->*(found->second))(gate);
+                continue;
+            }
+            if (opCodeHandleIgnore.find(circuit_->GetOpCode(gate)) == opCodeHandleIgnore.end()) {
+                LOG_ECMA(ERROR) << "The gate below need to be translated ";
+                circuit_->Print(gate);
+                UNREACHABLE();
             }
         }
     }
@@ -507,7 +299,7 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
         return;
     }
 
-    LLVMValueRef baseAddr = LLVMCallingFp(module_, builder_);
+    LLVMValueRef llvmFpAddr = LLVMCallingFp(module_, builder_);
     /* current frame
         0     pre rbp  <-- rbp
         -8    type
@@ -521,7 +313,8 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
 
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(LLVMInt64Type(), 0), "");
     LLVMValueRef threadFpValue = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    LLVMValueRef value = LLVMBuildStore(builder_, threadFpValue, baseAddr);
+    LLVMValueRef value = LLVMBuildStore(builder_, threadFpValue,
+        LLVMBuildIntToPtr(builder_, llvmFpAddr, LLVMPointerType(LLVMInt64Type(), 0), "cast"));
     LOG_ECMA(INFO) << "store value:" << value << " "
                 << "value type" << LLVMTypeOf(value);
 }
@@ -585,6 +378,24 @@ LLVMTypeRef LLVMIRBuilder::GetMachineRepType(MachineRep rep) const
     return dstType;
 }
 
+void LLVMIRBuilder::HandleCall(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::CALL:
+        case OpCode::INT1_CALL:
+        case OpCode::INT32_CALL:
+        case OpCode::FLOAT64_CALL:
+        case OpCode::INT64_CALL: {
+            VisitCall(gate, ins);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
 void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inList)
 {
     int paraStartIndex = 2;
@@ -626,6 +437,11 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
     return;
 }
 
+void LLVMIRBuilder::HandleAlloca(AddrShift gate)
+{
+    return VisitAlloca(gate);
+}
+
 void LLVMIRBuilder::VisitAlloca(AddrShift gate)
 {
     uint64_t sizeEnum = circuit_->GetBitField(gate);
@@ -634,6 +450,32 @@ void LLVMIRBuilder::VisitAlloca(AddrShift gate)
     g_values[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, sizeType, ""), LLVMInt64Type(),
                                        "");  // NOTE: pointer val is currently viewed as 64bits
     return;
+}
+
+void LLVMIRBuilder::HandlePhi(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::VALUE_SELECTOR_INT1: {
+            VisitPhi(gate, ins, MachineRep::K_BIT);
+            break;
+        }
+        case OpCode::VALUE_SELECTOR_INT32: {
+            VisitPhi(gate, ins, MachineRep::K_WORD32);
+            break;
+        }
+        case OpCode::VALUE_SELECTOR_INT64: {
+            VisitPhi(gate, ins, MachineRep::K_WORD64);
+            break;
+        }
+        case OpCode::VALUE_SELECTOR_FLOAT64: {
+            VisitPhi(gate, ins, MachineRep::K_FLOAT64);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
 }
 
 void LLVMIRBuilder::VisitPhi(AddrShift gate, const std::vector<AddrShift> &srcGates, MachineRep rep)
@@ -694,6 +536,12 @@ void LLVMIRBuilder::VisitReturn(AddrShift gate, AddrShift popCount, const std::v
     LLVMBuildRet(builder_, returnValue);
 }
 
+void LLVMIRBuilder::HandleReturn(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitReturn(gate, 1, ins);
+}
+
 void LLVMIRBuilder::VisitBlock(int gate, const OperandsVector &predecessors)  // NOLINTNEXTLINE(misc-unused-parameters)
 {
     LOG_ECMA(INFO) << " BBIdx:" << gate;
@@ -721,6 +569,27 @@ void LLVMIRBuilder::VisitBlock(int gate, const OperandsVector &predecessors)  //
     }
 }
 
+void LLVMIRBuilder::HandleGoto(AddrShift gate)
+{
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    int block = instIdMapBbId_[circuit_->GetId(gate)];
+    int bbOut = instIdMapBbId_[circuit_->GetId(outs[0])];
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::MERGE:
+        case OpCode::LOOP_BEGIN: {
+            for (int i = 0; i < static_cast<int>(outs.size()); i++) {
+                bbOut = instIdMapBbId_[circuit_->GetId(outs[i])];
+                VisitGoto(block, bbOut);
+            }
+            break;
+        }
+        default: {
+            VisitGoto(block, bbOut);
+            break;
+        }
+    }
+}
+
 void LLVMIRBuilder::VisitGoto(int block, int bbOut)
 {
     if (block == bbOut) {
@@ -735,6 +604,63 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
     llvm::BasicBlock *out = llvm::unwrap(EnsureLLVMBB(bbIdMapBb_[bbOut].get()));
     llvm::BranchInst::Create(out, self);
     EndCurrentBlock();
+}
+
+void LLVMIRBuilder::HandleInt32Constant(AddrShift gate)
+{
+    int32_t value = circuit_->GetBitField(gate);
+    VisitInt32Constant(gate, value);
+}
+
+void LLVMIRBuilder::HandleInt64Constant(AddrShift gate)
+{
+    int64_t value = circuit_->GetBitField(gate);
+    VisitInt64Constant(gate, value);
+}
+
+void LLVMIRBuilder::HandleFloat64Constant(AddrShift gate)
+{
+    int64_t value = circuit_->GetBitField(gate);
+    double doubleValue = bit_cast<double>(value); // actual double value
+    VisitFloat64Constant(gate, doubleValue);
+}
+
+void LLVMIRBuilder::HandleZExtInt(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::ZEXT_INT1_TO_INT32: {
+            VisitZExtInt(gate, ins[0], MachineRep::K_WORD32);
+            break;
+        }
+        case OpCode::ZEXT_INT32_TO_INT64:  // no break, fall through
+        case OpCode::ZEXT_INT1_TO_INT64: {
+            VisitZExtInt(gate, ins[0], MachineRep::K_WORD64);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
+void LLVMIRBuilder::HandleSExtInt(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::SEXT_INT1_TO_INT32: {
+            VisitSExtInt(gate, ins[0], MachineRep::K_WORD32);
+            break;
+        }
+        case OpCode::SEXT_INT1_TO_INT64:  // no break, fall through
+        case OpCode::SEXT_INT32_TO_INT64: {
+            VisitSExtInt(gate, ins[0], MachineRep::K_WORD64);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
 }
 
 void LLVMIRBuilder::VisitInt32Constant(AddrShift gate, int32_t value) const
@@ -770,6 +696,11 @@ void LLVMIRBuilder::VisitFloat64Constant(AddrShift gate, double value) const
     LOG_ECMA(INFO) << "VisitFloat64Constant " << str;
 }
 
+void LLVMIRBuilder::HandleParameter(AddrShift gate)
+{
+    return VisitParameter(gate);
+}
+
 void LLVMIRBuilder::VisitParameter(AddrShift gate) const
 {
     int argth = circuit_->LoadGatePtrConst(gate)->GetBitField();
@@ -786,6 +717,55 @@ void LLVMIRBuilder::VisitParameter(AddrShift gate) const
     }
     char *str = LLVMPrintValueToString(value);
     LOG_ECMA(INFO) << "para arg:" << argth << "value IR:" << str;
+}
+
+
+
+void LLVMIRBuilder::HandleBranch(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    AddrShift bTrue = (circuit_->GetOpCode(outs[0]) == OpCode::IF_TRUE) ? outs[0] : outs[1];
+    AddrShift bFalse = (circuit_->GetOpCode(outs[0]) == OpCode::IF_FALSE) ? outs[0] : outs[1];
+    int bbTrue = instIdMapBbId_[circuit_->GetId(bTrue)];
+    int bbFalse = instIdMapBbId_[circuit_->GetId(bFalse)];
+    VisitBranch(gate, ins[1], bbTrue, bbFalse);
+}
+
+void LLVMIRBuilder::HandleIntMod(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitIntMod(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::VisitIntMod(AddrShift gate, AddrShift e1, AddrShift e2) const
+{
+    LOG_ECMA(INFO) << "int mod gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef e2Value = g_values[e2];
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildSRem(builder_, e1Value, e2Value, "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::HandleFloatMod(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitFloatMod(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::VisitFloatMod(AddrShift gate, AddrShift e1, AddrShift e2) const
+{
+    LOG_ECMA(INFO) << "float mod gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LLVMValueRef e2Value = g_values[e2];
+    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LLVMValueRef result = LLVMBuildFRem(builder_, e1Value, e2Value, "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
 void LLVMIRBuilder::VisitBranch(AddrShift gate, AddrShift cmp, int btrue, int bfalse)
@@ -808,6 +788,13 @@ void LLVMIRBuilder::VisitBranch(AddrShift gate, AddrShift cmp, int btrue, int bf
     LLVMValueRef result = LLVMBuildCondBr(builder_, cond, llvmTrueBB, llvmFalseBB);
     EndCurrentBlock();
     g_values[gate] = result;
+}
+
+void LLVMIRBuilder::HandleSwitch(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitSwitch(gate, ins[1], outs);
 }
 
 void LLVMIRBuilder::VisitSwitch(AddrShift gate, AddrShift input, const std::vector<AddrShift> &outList)
@@ -889,6 +876,12 @@ void LLVMIRBuilder::VisitFloatOrDoubleCmp(AddrShift gate, AddrShift e1, AddrShif
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
+void LLVMIRBuilder::HandleIntRev(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitIntRev(gate, ins[0]);
+}
+
 void LLVMIRBuilder::VisitIntRev(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "int sign invert gate:" << gate;
@@ -897,6 +890,25 @@ void LLVMIRBuilder::VisitIntRev(AddrShift gate, AddrShift e1) const
     LLVMValueRef result = LLVMBuildNeg(builder_, e1Value, "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::HandleIntAdd(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::INT32_ADD: {
+            VisitIntAdd(gate, ins[0], ins[1], MachineRep::K_WORD32);
+            break;
+        }
+        case OpCode::INT64_ADD: {
+            VisitIntAdd(gate, ins[0], ins[1], MachineRep::K_WORD64);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
 }
 
 void LLVMIRBuilder::VisitIntAdd(AddrShift gate, AddrShift e1, AddrShift e2, MachineRep rep) const
@@ -914,6 +926,13 @@ void LLVMIRBuilder::VisitIntAdd(AddrShift gate, AddrShift e1, AddrShift e2, Mach
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
+void LLVMIRBuilder::HandleFloatAdd(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitFloatAdd(gate, ins[0], ins[1]);
+}
+
 void LLVMIRBuilder::VisitFloatAdd(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "float add gate:" << gate;
@@ -924,6 +943,161 @@ void LLVMIRBuilder::VisitFloatAdd(AddrShift gate, AddrShift e1, AddrShift e2) co
     LLVMValueRef result = LLVMBuildFAdd(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::HandleFloatSub(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitFloatSub(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleFloatMul(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitFloatMul(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleFloatDiv(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitFloatDiv(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleIntSub(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitIntSub(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleIntMul(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitIntMul(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleIntOr(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitIntOr(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleIntXor(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitIntXor(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleIntLsr(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitIntLsr(gate, ins[0], ins[1]);
+}
+
+void LLVMIRBuilder::HandleIntOrUintCmp(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::INT32_SLT:  // no break, fall through
+        case OpCode::INT64_SLT: {
+            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLT);
+            break;
+        }
+        case OpCode::INT32_ULT:  // no break, fall through
+        case OpCode::INT64_ULT: {
+            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntULT);
+            break;
+        }
+        case OpCode::INT32_SLE:  // no break, fall through
+        case OpCode::INT64_SLE: {
+            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLE);
+            break;
+        }
+        case OpCode::INT32_SGT:  // no break, fall through
+        case OpCode::INT64_SGT: {
+            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSGT);
+            break;
+        }
+        case OpCode::INT32_SGE:  // no break, fall through
+        case OpCode::INT64_SGE: {
+            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSGE);
+            break;
+        }
+        case OpCode::INT32_EQ:  // no break, fall through
+        case OpCode::INT64_EQ: {
+            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntEQ);
+            break;
+        }
+        case OpCode::INT32_NE:  // no break, fall through
+        case OpCode::INT64_NE: {
+            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntNE);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
+void LLVMIRBuilder::HandleFloatOrDoubleCmp(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOEQ);
+}
+
+void LLVMIRBuilder::HandleLoad(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::INT32_LOAD: {
+            AddrShift base = ins[1];
+            VisitLoad(gate, MachineRep::K_WORD32, base);
+            break;
+        }
+        case OpCode::INT64_LOAD: {
+            AddrShift base = ins[1];
+            VisitLoad(gate, MachineRep::K_WORD64, base);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
+void LLVMIRBuilder::HandleStore(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::INT32_STORE: {
+            VisitStore(gate, MachineRep::K_WORD32, ins[2], ins[1]);  // 2:baseAddr gate, 1:data gate
+            break;
+        }
+        case OpCode::INT64_STORE: {
+            VisitStore(gate, MachineRep::K_WORD64, ins[2], ins[1]);  // 2:baseAddr gate, 1:data gate
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
+void LLVMIRBuilder::HandleCastInt32ToDouble(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitCastInt32ToDouble(gate, ins[0]);
 }
 
 void LLVMIRBuilder::VisitFloatSub(AddrShift gate, AddrShift e1, AddrShift e2) const
@@ -986,30 +1160,6 @@ void LLVMIRBuilder::VisitIntMul(AddrShift gate, AddrShift e1, AddrShift e2) cons
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
-void LLVMIRBuilder::VisitIntMod(AddrShift gate, AddrShift e1, AddrShift e2) const
-{
-    LOG_ECMA(INFO) << "int mod gate:" << gate;
-    LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
-    LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
-    LLVMValueRef result = LLVMBuildSRem(builder_, e1Value, e2Value, "");
-    g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
-}
-
-void LLVMIRBuilder::VisitFloatMod(AddrShift gate, AddrShift e1, AddrShift e2) const
-{
-    LOG_ECMA(INFO) << "float mod gate:" << gate;
-    LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
-    LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
-    LLVMValueRef result = LLVMBuildFRem(builder_, e1Value, e2Value, "");
-    g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
-}
-
 void LLVMIRBuilder::VisitIntOr(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "int or gate:" << gate;
@@ -1020,6 +1170,12 @@ void LLVMIRBuilder::VisitIntOr(AddrShift gate, AddrShift e1, AddrShift e2) const
     LLVMValueRef result = LLVMBuildOr(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::HandleIntAnd(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitIntAnd(gate, ins[0], ins[1]);
 }
 
 void LLVMIRBuilder::VisitIntAnd(AddrShift gate, AddrShift e1, AddrShift e2) const
@@ -1058,6 +1214,12 @@ void LLVMIRBuilder::VisitIntLsr(AddrShift gate, AddrShift e1, AddrShift e2) cons
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
+void LLVMIRBuilder::HandleIntLsl(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitIntLsl(gate, ins[0], ins[1]);
+}
+
 void LLVMIRBuilder::VisitIntLsl(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "int lsl gate:" << gate;
@@ -1090,6 +1252,25 @@ void LLVMIRBuilder::VisitSExtInt(AddrShift gate, AddrShift e1, MachineRep rep) c
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
+void LLVMIRBuilder::HandleCastIntXToIntY(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::TRUNC_INT64_TO_INT1:
+        case OpCode::TRUNC_INT32_TO_INT1: {
+            VisitCastIntXToIntY(gate, ins[0], MachineRep::K_BIT);
+            break;
+        }
+        case OpCode::TRUNC_INT64_TO_INT32: {
+            VisitCastIntXToIntY(gate, ins[0], MachineRep::K_WORD32);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
 void LLVMIRBuilder::VisitCastIntXToIntY(AddrShift gate, AddrShift e1, MachineRep rep) const
 {
     LOG_ECMA(INFO) << "int cast2 int gate:" << gate;
@@ -1110,6 +1291,12 @@ void LLVMIRBuilder::VisitCastInt32ToDouble(AddrShift gate, AddrShift e1) const
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
+void LLVMIRBuilder::HandleCastInt64ToDouble(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitCastInt64ToDouble(gate, ins[0]);
+}
+
 void LLVMIRBuilder::VisitCastInt64ToDouble(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "int cast2 double gate:" << gate;
@@ -1118,6 +1305,12 @@ void LLVMIRBuilder::VisitCastInt64ToDouble(AddrShift gate, AddrShift e1) const
     LLVMValueRef result = LLVMBuildBitCast(builder_, e1Value, LLVMDoubleType(), "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+}
+
+void LLVMIRBuilder::HandleCastDoubleToInt(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitCastDoubleToInt(gate, ins[0]);
 }
 
 void LLVMIRBuilder::VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const
