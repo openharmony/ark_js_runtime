@@ -81,6 +81,7 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
 #else
     (void)frameFp;
     (void)slotAddrs;
+    UNREACHABLE();
 #endif
     return true;
 }

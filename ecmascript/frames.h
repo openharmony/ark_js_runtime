@@ -13,122 +13,197 @@
  * limitations under the License.
  */
 
-// OptimizedEntry Frame are divided up into four regions.
-// The first region, Caller Frame: Interpreter Call Stub comply c calling convention, if parameter number
-// larger than caller register number, then spill to stack frame.
-// The second region, Fixed Header: return addr、saved c frame ptr(pointer to caller frame)、OPTIMIZED_ENTRY_FRAME
-// (codegen prologue insert frame type)、saved gc frame ptr(pointer to interpreter iframe)
-// The third region, which contains the callee-saved registers must be
-// reserved after register allocation, since its size can only be precisely
-// determined after register allocation once the number of used callee-saved
-// register is certain.
-// The fourth region is spill slot. Comply c calling convertion, local variable is larger callee save register,
-// spill local variable to stack; heap ptr also spill stack slot before call runtime function, after call we will
-// rewrite heap ptr
-//     slot  OptimizedEntry frame
-//        +-----------------+--------------------------------
-//        |  parameter n    |                            ^
-//        |- - - - - - - - -|                            |
-//        |  parameter n-1  |                          Caller
-//        |       ...       |                          frame
-//        |  parameter n-2  |                       comply c calling convention
-//        |- - - - - - - - -|                       i-n th prameter spill to slot
-//        |  parameter i    |                            v
-//   -----+-----------------+--------------------------------
-//    0   |   return addr       |   ^                        ^
-//        |- - - - - - - - -    |   |                        |
-//    1   | saved c frame ptr   | Fixed                      |
-//        |- - - - - - - - -    | Header <-- frame ptr       |
-//    2   |OPTIMIZED_ENTRY_FRAME|   |                        |
-//        |- - - - - - - - -    |   |                        |
-//    3   | saved gc frame ptr  |   v                        |
-//        +-----------------+----                            |
-//    4   |  callee-saved 1 |   ^                            |
-//        |- - - - - - - - -|   |                            |
-//        |      ...        | Callee-saved                   |
-//        |- - - - - - - - -|   |                            |
-//  r+3   |  callee-saved r |   v                            |
-//        +-----------------+----                            |
-//                              ^
-//  r+4   | local variables |   |                            |
-//        |- - - - - - - - -|   |                            |
-//        |      ...        | spill slot                     |
-//        |- - - - - - - - -|   |                            |
-//        |  heap ptr       |   v                            v
-//   -----+-----------------+----- <-- stack ptr -------------
+//    in aot project, three Frame: Interpreter Frame、Runtime Frame、Optimized Frame.  Optimized Frame split
+// Optimized Entry Frame(interpreter call stub) and Optimized Frame(stub call stub) by call scenario.
+//    ​we gc trigger, we skip Runtime Frame, thus define OPTIMIZED_FRAME、OPTIMIZED_ENTRY_FRAME、INTERPRETER_FRAME respectively
+// represent optimized frame、optimized entry frame、interpreter frame.
+
+// Frame Layout
+// Interpreter Frame(alias   **iframe** ) Layout as follow:
+// ```
+//   +---------------------------------+--------------------+
+//   |             argv[n-1]            |                   ^
+//   |----------------------------------|                   |
+//   |              ........            |                   |
+//   |             argv[0]              |                   |
+//   |----------------------------------|                   |
+//   |              thisArg             |                   |
+//   |----------------------------------|                   |
+//   |              newTarget           |                   |
+//   |----------------------------------|                   |
+//   |              callTarget          |                   |
+//   +----------------------------------+--------+          |
+//   |       FrameType                  |        ^      interpreter frame
+//   |----------------------------------|        |          |
+//   |      pre(pre stack pointer)      |        |          |
+//   |----------------------------------|        |          |
+//   |        numActualArgs             |        |          |
+//   |----------------------------------|        |          |
+//   |        env                       |        |          |
+//   |----------------------------------|        |          |
+//   |        acc                       |    FrameState     |
+//   |----------------------------------|        |          |
+//   |        constantpool              |        |          |
+//   |----------------------------------|        |          |
+//   |        method                    |        |          |
+//   |----------------------------------|        |          |
+//   |        sp(current stack point)   |        |          |
+//   |----------------------------------|        |          |
+//   |        pc(bytecode addr)         |        v          v
+//   +----------------------------------+--------+----------+
+// ```
+// address space grow from high address to low address.we add new field  **FrameType** ,
+// the field's value is INTERPRETER_FRAME(represent interpreter frame).
+// **currentsp**  is pointer to  callTarget field address, sp field 's value is  **currentsp** ,
+// pre field pointer pre stack frame point. fill JSthread's sp field with iframe sp field
+// by  calling JSThread->SetCurrentSPFrame and save pre Frame address to iframe pre field.
+
+// Runtime  Frame: comply with C-ABI without custom modify, function generat frame.
+// ​
+// Optimized Frame and Optimized Entry Frame, we also comply with C-ABI,
+//the difference from Runtime Frame is that prologue and epilogue is customed.
+
+// Optimized Entry Frame layout as follow, we reserve two stack slot for saving eparately new field  **FrameType**
+// which's value is OPTIMIZED_ENTRY_FRAME and  new field pre that's value is iframe.sp by calling JSThread->GetCurrentSPFrame.
+// fp field point to pre frame,  **currentfp**  is pointer to fp field address.
+// save JSthread's sp  to pre field and  fill JSthread's sp field with  **currentfp** .
 
 
-//  Optimized Frame is similar to OptimizedEntry Frame, only difference is Fixed Header.
-//   slot  OptimizedEntry frame
-//        +-----------------+--------------------------------
-//        |  parameter n    |                            ^
-//        |- - - - - - - - -|                            |
-//        |  parameter n-1  |                          Caller
-//        |       ...       |                          frame
-//        |  parameter n-2  |                       comply c calling convention
-//        |- - - - - - - - -|                       i-n th prameter spill to slot
-//        |  parameter i    |                            v
-//   -----+-----------------+--------------------------------
-//    0   |   return addr       |   ^                        ^
-//        |- - - - - - - - -    |   |                        |
-//    1   | saved c frame ptr   | Fixed                      |
-//        |- - - - - - - - -    | Header <-- frame ptr       |
-//    2   |  OPTIMIZED_FRAME    |   |                        |
-//    3   | - - - - - - - - -   |   v                        |
-//        +-----------------+----                            |
-//    4   |  callee-saved 1 |   ^                            |
-//        |- - - - - - - - -|   |                            |
-//        |      ...        | Callee-saved                   |
-//        |- - - - - - - - -|   |                            |
-//  r+3   |  callee-saved r |   v                            |
-//        +-----------------+----                            |
-//                              ^
-//  r+4   | local variables |   |                            |
-//        |- - - - - - - - -|   |                            |
-//        |      ...        | spill slot                     |
-//        |- - - - - - - - -|   |                            |
-//        |  heap ptr       |   v                            v
-//   -----+-----------------+----- <-- stack ptr -------------
+// ```
+//     +---------------------------------------------------+
+//     |  parameter i         |                            ^
+//     |- - - - - - - - - --  |                            |
+//     |  parameter n-2       |                          Caller frame
+//     |       ...            |                         comply c-abi
+//     |  parameter n-1       |                        paramters push to stack from left to right
+//     |- - - - - - - - -     |                       i-n th prameter spill to slot
+//     |  parameter n         |                            v
+//     +--------------------------+------------------------+
+//     |   return addr        |   ^                        ^
+//     |- - - - - - - - -     |   |                        |
+//     |         fp           | Fixed                      |
+//     |- - - - - - - - -     | Header <-- frame ptr       |
+//     |  FrameType           |   |                       callee frame Header
+//     |- - - - - - - - -     |   |                        |
+//     |   pre                |   v                        |
+//     +--------------------------+------------------------+
+// ```
 
-//  for exampe:
-//          calls        calls
-//     foo --------> bar ------> baz
-// (interpreted)  (compiled)  (runtime)
-//  baz trigger gc, baz get current frame pointer(bar gc frame pointer), then visit foo's
-//  interpreter frame by reading bar gc frame pointer value
-//   ----+----------------+ <--- ManagedThread::GetCurrentFrame()
-// /     |                |                     |
-//       |                |                     |
-//   baz |                |                     |
-//       | return address |                     |
-//  ---- +----------------+                     |
-//       |      data      |                     |
-//       +----------------+                     |
-//       +----------------+ <+------------------
-//  bar  | pointer to the | ----------------------+
-//       | interpreter    |                       |
-//       | frame(gc frame |                       |
-//       |  pointer)      |                       |
-//       +----------------+                       |
-//       +----------------+                       |
-//       | OPTIMIZED_ENTRY_                       |
-//       |   FRAME        |                       |
-//       +----------------+                       |
-//       | c frame pointer| <-----+
-//       | return address |       |               |
-//       |                |       |               |
-//  ---- +----------------+       |               |
-//  E    | native frame   |       |               |
-//  x u  | of             |       |               |
-//  e t  | interpreter    |       |               |
-//  c e  |c frame pointer | <---- |               |
-//  ---- +----------------+                       |
-//       |      ...       |                       |
-//       +----------------+ <+--------------------
-//       | foo's          |
-//       | interpreter    |
-//       | frame          |
-//       +----------------+
+// ​	Optimized Frame layout as follow, we reserve one stack slot for saving FrameType field,
+// which's value is OPTIMIZED_FRAME.
+
+// ```
+//     +---------------------------------------------------+
+//     |  parameter n         |                            ^
+//     |- - - - - - - - - --  |                            |
+//     |  parameter n-1       |                          Caller frame
+//     |       ...            |                          comply c-abi
+//     |  parameter n-2       |                       paramters push to stack from left to right
+//     |- - - - - - - - -     |                       i-n th prameter spill to slot
+//     |  parameter i         |                            v
+//     +--------------------------+------------------------+
+//     |   return addr        |   ^                        ^
+//     |- - - - - - - - -     |   |                        |
+//     |         fp           | Fixed                      |
+//     |- - - - - - - - -     | Header <-- frame ptr      callee frame Header
+//     |  FrameType           |   V                        |
+//     +--------------------------+------------------------+
+// ```
+
+// ​	JSthread's sp will be updated dynamic, the scenarios is as follows by different Frames:
+// **SAVE**  is to save JSthread's sp to current Frame pre field,
+// **UPDATE**  is to fill  JSthread's sp with currentsp or currentfp when current frame is iframe or Optimized EntryFrame/Optimized Frame.
+//  **nop**  represent don't call SAVE or UPDATE,  **illegal**  represent this secnarios don't existed.
+
+// ```
+//              	iframe	         OptimizedEntry	  Optimized	  RunTime
+// iframe	     	SAVE/UPATE	     SAVE	         illegal	SAVE/UPATE
+// OptimizedEntry	UPATE		     illegal	     nop	         UPATE
+// Optimized	    UPATE	         illegal	     nop	         UPATE
+// RunTime		    nop		          illegal	     illegal	      nop
+// ```
+
+// ​	Iterator Frame from Runtime Frame,  the process is as flollows:
+
+// 1 calling JSThread->GetCurrentSPFrame get Current Frame, then get FrameType field
+
+// 2  Iterator previous Frame:
+
+// ​    accessing fp field when the current frame is Optimized Frame;
+
+// ​    accessing pre field when the current frame is Optimized Entry Frame or Interpreter Frame
+
+// 3 repeat process 2 until Current Frame is nullptr
+
+// For Example:
+// ```
+//                     call                call                 call
+//     foo    -----------------> bar   --------------->baz---------------------> rtfunc
+// (interpret frame)         (Optimized Entry Frame)   (Optimized Frame)      (Runtime Frame)
+// ```
+
+// Frame Layout as follow:
+// ```
+// +---------------------------------+--------------------+
+//   |             argv[n-1]            |                   ^
+//   |----------------------------------|                   |
+//   |              ........            |                   |
+//   |             argv[0]              |                   |
+//   |----------------------------------|                   |
+//   |              thisArg             |                   |
+//   |----------------------------------|                   |
+//   |              newTarget           |                   |
+//   |----------------------------------|                   |
+//   |              callTarget          |                   |
+//   +----------------------------------+--------+          |
+//   |       FrameType                  |        ^      foo's frame
+//   |----------------------------------|        |          |
+//   |      pre(pre stack pointer)      |        |          |
+//   |----------------------------------|        |          |
+//   |        numActualArgs             |        |          |
+//   |----------------------------------|        |          |
+//   |        env                       |        |          |
+//   |----------------------------------|        |          |
+//   |        acc                       |    FrameState     |
+//   |----------------------------------|        |          |
+//   |        constantpool              |        |          |
+//   |----------------------------------|        |          |
+//   |        method                    |        |          |
+//   |----------------------------------|        |          |
+//   |        sp(current stack point)   |        |          |
+//   |----------------------------------|        |          |
+//   |        pc(bytecode addr)         |        v          v
+//   +----------------------------------+--------+----------+
+//   |                   .............                      |
+//   +--------------------------+---------------------------+
+//   |   return addr        |   ^                           ^
+//   |- - - - - - - - -     |   |                           |
+//   |         fp           | Fixed                         |
+//   |- - - - - - - - -     | Header <-- frame ptr          |
+//   |  FrameType           |   |                       bar's frame Header
+//   |- - - - - - - - -     |   |                           |
+//   |   pre                |   v                           |
+//   +--------------------------+---------------------------+
+//   |                   .............                      |
+//   +--------------------------+---------------------------+
+//   |   return addr        |   ^                           ^
+//   |- - - - - - - - -     |   |                           |
+//   |         fp           | Fixed                         |
+//   |- - - - - - - - -     | Header <-- frame ptr          |
+//   |  FrameType           |   v                       baz's frame Header
+//   |                   .............                      |
+//   +--------------------------+---------------------------+
+//   |                                                      |
+//   |                 rtfunc's Frame                       |
+//   |                                                      |
+//   +------------------------------------------------------+
+// ```
+// Iterator:
+// rtfunc get baz's Frame **currentfp** by calling GetCurrentSPFrame.
+// baz'Frame fp field point to bar's Frame **currentfp**, then get bar's Frame pre field.
+// bar's Frame pre field point to foo's Frame **currentsp**.
+// finally we can iterator foo's Frame.
+
 #ifndef ECMASCRIPT_FRAMES_H
 #define ECMASCRIPT_FRAMES_H
 
