@@ -15,7 +15,8 @@
 
 //    in aot project, three Frame: Interpreter Frame、Runtime Frame、Optimized Frame.  Optimized Frame split
 // Optimized Entry Frame(interpreter call stub) and Optimized Frame(stub call stub) by call scenario.
-//    ​we gc trigger, we skip Runtime Frame, thus define OPTIMIZED_FRAME、OPTIMIZED_ENTRY_FRAME、INTERPRETER_FRAME respectively
+//    ​we gc trigger, we skip Runtime Frame, thus define OPTIMIZED_FRAME、OPTIMIZED_ENTRY_FRAME、
+// INTERPRETER_FRAME respectively
 // represent optimized frame、optimized entry frame、interpreter frame.
 
 // Frame Layout
@@ -61,7 +62,7 @@
 // Runtime  Frame: comply with C-ABI without custom modify, function generat frame.
 // ​
 // Optimized Frame and Optimized Entry Frame, we also comply with C-ABI,
-//the difference from Runtime Frame is that prologue and epilogue is customed.
+// the difference from Runtime Frame is that prologue and epilogue is customed.
 
 // Optimized Entry Frame layout as follow, we reserve two stack slot for saving eparately new field  **FrameType**
 // which's value is OPTIMIZED_ENTRY_FRAME and
