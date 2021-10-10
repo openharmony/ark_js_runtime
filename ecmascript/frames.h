@@ -64,7 +64,8 @@
 //the difference from Runtime Frame is that prologue and epilogue is customed.
 
 // Optimized Entry Frame layout as follow, we reserve two stack slot for saving eparately new field  **FrameType**
-// which's value is OPTIMIZED_ENTRY_FRAME and  new field pre that's value is iframe.sp by calling JSThread->GetCurrentSPFrame.
+// which's value is OPTIMIZED_ENTRY_FRAME and
+// new field pre that's value is iframe.sp by calling JSThread->GetCurrentSPFrame.
 // fp field point to pre frame,  **currentfp**  is pointer to fp field address.
 // save JSthread's sp  to pre field and  fill JSthread's sp field with  **currentfp** .
 
@@ -112,8 +113,9 @@
 
 // ​	JSthread's sp will be updated dynamic, the scenarios is as follows by different Frames:
 // **SAVE**  is to save JSthread's sp to current Frame pre field,
-// **UPDATE**  is to fill  JSthread's sp with currentsp or currentfp when current frame is iframe or Optimized EntryFrame/Optimized Frame.
-//  **nop**  represent don't call SAVE or UPDATE,  **illegal**  represent this secnarios don't existed.
+// **UPDATE**  is to fill  JSthread's sp with currentsp or currentfp when current frame is iframe
+// or Optimized EntryFrame/Optimized Frame.
+// **nop**  represent don't call SAVE or UPDATE,  **illegal**  represent this secnarios don't existed.
 
 // ```
 //              	iframe	         OptimizedEntry	  Optimized	  RunTime

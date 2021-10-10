@@ -719,8 +719,6 @@ void LLVMIRBuilder::VisitParameter(AddrShift gate) const
     LOG_ECMA(INFO) << "para arg:" << argth << "value IR:" << str;
 }
 
-
-
 void LLVMIRBuilder::HandleBranch(AddrShift gate)
 {
     std::vector<AddrShift> ins = circuit_->GetInVector(gate);

@@ -76,7 +76,7 @@ public:
     ~OptimizedFrameHandler() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
-    JSTaggedType *fp_{nullptr};
+    JSTaggedType *fp_ {nullptr};
 };
 
 class OptimizedEntryFrameHandler {
@@ -86,7 +86,7 @@ public:
     ~OptimizedEntryFrameHandler() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
-    JSTaggedType *fp_{nullptr};
+    JSTaggedType *fp_ {nullptr};
 };
 
 class FrameIterator {
@@ -94,7 +94,7 @@ public:
     explicit FrameIterator(JSTaggedType *fp) : fp_(fp) {}
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
-    JSTaggedType *fp_{nullptr};
+    JSTaggedType *fp_ {nullptr};
 };
 } // namespace ecmascript
 }  // namespace panda

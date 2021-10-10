@@ -19,9 +19,9 @@
 #include <string>
 
 namespace kungfu {
-std::string LocationTy::TypeToString(Kind location) const
+std::string LocationTy::TypeToString(Kind loc) const
 {
-    switch (location) {
+    switch (loc) {
         case Kind::REGISTER:
             return "Register	Reg	Value in a register";
         case Kind::DIRECT:
@@ -81,7 +81,7 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
 #else
     (void)frameFp;
     (void)slotAddrs;
-    UNREACHABLE();
+    abort();
 #endif
     return true;
 }

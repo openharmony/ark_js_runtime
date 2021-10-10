@@ -89,7 +89,7 @@ struct LocationTy {
     uint16_t Reserved_1;
     OffsetType OffsetOrSmallConstant;
 
-    std::string TypeToString(Kind location) const;
+    std::string TypeToString(Kind loc) const;
 
     void Print() const
     {
