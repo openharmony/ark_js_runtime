@@ -1257,8 +1257,7 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_004)
     EXPECT_EQ(ecmaStrEmptyPtr->GetHashcode(), 0);
 
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EcmaString *ecmaStrNotCompEmptyPtr = EcmaString::CreateEmptyString(ecmaVMPtr);
-    EXPECT_EQ(ecmaStrNotCompEmptyPtr->GetHashcode(), 0);
+    EXPECT_EQ(ecmaStrEmptyPtr->GetHashcode(), 0);
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
