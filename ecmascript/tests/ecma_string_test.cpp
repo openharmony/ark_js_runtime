@@ -1255,10 +1255,6 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_004)
     // GetHashcode(). EcmaString made by CreateEmptyString().
     EcmaString *ecmaStrEmptyPtr = EcmaString::CreateEmptyString(ecmaVMPtr);
     EXPECT_EQ(ecmaStrEmptyPtr->GetHashcode(), 0);
-
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(ecmaStrEmptyPtr->GetHashcode(), 0);
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
@@ -1271,9 +1267,5 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
     EcmaString *ecmaStrAllocNotCompPtr = EcmaString::AllocStringObject(sizeAlloc, false, ecmaVMPtr);
     EXPECT_EQ(ecmaStrAllocCompPtr->GetHashcode(), 0);
     EXPECT_EQ(ecmaStrAllocNotCompPtr->GetHashcode(), 0);
-
-    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(ecmaStrAllocNotCompPtr->GetHashcode(), 0);
-    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 }  // namespace panda::ecmascript
