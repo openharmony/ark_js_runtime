@@ -116,13 +116,19 @@ public:
     LLVMTypeRef GetExternalFunctionType(uint32_t index) const
     {
         ASSERT(index - EXTERNAL_FUNCTION_OFFSET < MAX_EXTERNAL_FUNCTION_COUNT);
-        return externalFuctionType_[index - EXTERNAL_FUNCTION_OFFSET];
+        return externalFunctionType_[index - EXTERNAL_FUNCTION_OFFSET];
     }
 
     LLVMValueRef GetStubFunction(uint32_t index)
     {
         ASSERT(index < FAST_STUB_MAXCOUNT);
         return stubFunctions_[index];
+    }
+
+    LLVMValueRef GetTestFunction(uint32_t index)
+    {
+        ASSERT(index - TEST_FUNCTION_OFFSET < MAX_TEST_FUNCTION_COUNT);
+        return testFunctions_[index - TEST_FUNCTION_OFFSET];
     }
 
 private:
@@ -132,8 +138,11 @@ private:
     static constexpr uint32_t MAX_EXTERNAL_FUNCTION_COUNT =
         kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT - kungfu::EXTERNAL_RUNTIME_STUB_BEGIN - 1;
     static constexpr uint32_t EXTERNAL_FUNCTION_OFFSET = kungfu::EXTERNAL_RUNTIME_STUB_BEGIN + 1;
+    static constexpr uint32_t MAX_TEST_FUNCTION_COUNT = kungfu::TEST_FUNC_MAXCOUNT - kungfu::TEST_FUNC_BEGIN - 1;
+    static constexpr uint32_t TEST_FUNCTION_OFFSET = kungfu::TEST_FUNC_BEGIN + 1;
     std::array<LLVMValueRef, FAST_STUB_MAXCOUNT> stubFunctions_ {nullptr};
-    std::array<LLVMTypeRef, MAX_EXTERNAL_FUNCTION_COUNT> externalFuctionType_ {nullptr};
+    std::array<LLVMTypeRef, MAX_EXTERNAL_FUNCTION_COUNT> externalFunctionType_ {nullptr};
+    std::array<LLVMValueRef, MAX_TEST_FUNCTION_COUNT> testFunctions_ {nullptr};
     LLVMModuleRef module_;
 };
 

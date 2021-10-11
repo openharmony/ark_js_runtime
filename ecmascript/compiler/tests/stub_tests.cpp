@@ -55,9 +55,15 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    JSTaggedValue FastMul2(JSTaggedValue x, JSTaggedValue y)
+    void PrintCircuitByBasicBlock(const std::vector<std::vector<AddrShift>> &cfg, const Circuit &netOfGates)
     {
-        return FastRuntimeStub::FastMul(x, y);
+        for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
+            std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
+                    << std::endl;
+            for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
+                netOfGates.Print(cfg[bbIdx][instIdx - 1]);
+            }
+        }
     }
 
     PandaVM *instance {nullptr};
@@ -68,16 +74,8 @@ public:
 
 HWTEST_F_L0(StubTest, FastLoadElement)
 {
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
-    LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMPointerType(LLVMInt64Type(), 0),
-        LLVMInt32Type(),
-    };
-    LLVMValueRef function =
-        // 2 : parameter number
-        LLVMAddFunction(module, "FastLoadElement", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetTestFunction(FAST_STUB_ID(FastLoadElement));
     Circuit netOfGates;
     FastArrayLoadElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -85,35 +83,24 @@ HWTEST_F_L0(StubTest, FastLoadElement)
     bool result = Verifier::Run(&netOfGates);
     ASSERT_TRUE(result);
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
-    /* exec function */
-    auto fn = reinterpret_cast<uint64_t (*)(JSArray *, int)>(LLVMGetPointerToGlobal(engine, function));
-    // 5 : 5 means that there are 5 cases in total.
-    JSHandle<TaggedArray> values(factory->NewTaggedArray(5));
-    // 5 : 5 means that there are 5 cases in total.
-    for (int i = 0; i < 5; i++) {
+    // Testcase build and run
+    auto fn = reinterpret_cast<uint64_t (*)(JSArray *, int)>(assembler.GetFuncPtrFromCompiledModule(function));
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> values(factory->NewTaggedArray(5)); // 5 :  5 elements in array
+    for (int i = 0; i < 5; i++) { // 5 :  5 elements in array
         values->Set(thread, i, JSTaggedValue(i));
     }
     JSHandle<JSObject> array(JSArray::CreateArrayFromList(thread, values));
     JSArray *arr = array.GetObject<JSArray>();
     auto valValid = fn(arr, 1);
     EXPECT_EQ(valValid, 0xffff000000000001);
-    // 6 : size of array
-    auto valUndefine = fn(arr, 6);
+    auto valUndefine = fn(arr, 6); // 6 : size of array
     EXPECT_EQ(valUndefine, 0xa);
-    std::cerr << "valValid = " << std::hex << valValid << std::endl;
-    std::cerr << "valUndefine = " << std::hex << valUndefine << std::endl;
 }
 
 class PhiStub : public Stub {
@@ -130,14 +117,17 @@ public:
         Label ifTrue(env);
         Label ifFalse(env);
         Label next(env);
-
         Branch(Word32Equal(*x, GetInteger32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
         Bind(&ifTrue);
-        z = Int32Add(*x, GetInteger32Constant(10));  // 10 : size of entry
-        Jump(&next);
-        Bind(&ifFalse);                               // else
-        z = Int32Add(*x, GetInteger32Constant(100));  // 100 : size of entry
-        Jump(&next);
+        {
+            z = Int32Add(*x, GetInteger32Constant(10));  // 10 : size of entry
+            Jump(&next);
+        }
+        Bind(&ifFalse);
+        {
+            z = Int32Add(*x, GetInteger32Constant(100));  // 100 : size of entry
+            Jump(&next);
+        }
         Bind(&next);
         Return(*z);
     }
@@ -145,63 +135,25 @@ public:
 
 HWTEST_F_L0(StubTest, PhiGateTest)
 {
-    std::cout << "---------------------PhiGateTest-----------------------------------------------------" << std::endl;
-    LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMInt32Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "PhiGateTest", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetTestFunction(FAST_STUB_ID(PhiGateTest));
     Circuit netOfGates;
     PhiStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
-    /* exec function */
-    auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
-    auto val = fn(3);  // 3 : size of array
-    auto val2 = fn(0);
-    std::cout << "val = " << std::dec << val << std::endl;
-    std::cout << "val2 = " << std::dec << val2 << std::endl;
-    std::cout << "+++++++++++++++++++++PhiGateTest+++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    // Testcase build and run
+    auto fn = reinterpret_cast<int (*)(int)>(assembler.GetFuncPtrFromCompiledModule(function));
+    auto valA = fn(3);  // 3 : size of array
+    auto valB = fn(0);
+    EXPECT_EQ(valA, 103); // 103 : eXpert res for fn(3)
+    EXPECT_EQ(valB, 100); // 100 : eXpert res for fn(0)
 }
-
-class CallPhiStub : public Stub {
-public:
-    explicit CallPhiStub(Circuit *circuit)
-        : Stub("CallPhi", 1, circuit),
-          phi_descriptor_("phi", 0, 1, ArgumentsOrder::DEFAULT_ORDER, MachineType::INT32_TYPE)
-    {
-        std::array<MachineType, 1> *params = new std::array<MachineType, 1>();
-        (*params)[0] = MachineType::INT32_TYPE;
-        phi_descriptor_.SetParameters(params->data());
-    }
-    ~CallPhiStub() = default;
-    NO_MOVE_SEMANTIC(CallPhiStub);
-    NO_COPY_SEMANTIC(CallPhiStub);
-    void GenerateCircuit() override
-    {
-        DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
-        x = Int32Add(*x, GetInteger32Constant(1));
-        AddrShift callFoo = CallStub(&phi_descriptor_, GetWord64Constant(0), {*x});
-        Return(Int32Add(callFoo, GetInteger32Constant(1)));
-    }
-
-private:
-    StubDescriptor phi_descriptor_;
-};
 
 class LoopStub : public Stub {
 public:
@@ -242,38 +194,26 @@ public:
 
 HWTEST_F_L0(StubTest, LoopTest)
 {
-    LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMInt32Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "LoopTest", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetTestFunction(FAST_STUB_ID(LoopTest));
     Circuit netOfGates;
     LoopStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t inst_idx = cfg[bbIdx].size(); inst_idx > 0; inst_idx--) {
-            netOfGates.Print(cfg[bbIdx][inst_idx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
-
-    /* exec function */
-    auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
-    auto resValid = fn(1);
-    auto resValid2 = fn(9);    // 9 : size of array
-    auto resInvalid = fn(11);  // 11 : size of array
-    std::cout << "res for loop(1) = " << std::dec << resValid << std::endl;
-    std::cout << "res for loop(9) = " << std::dec << resValid2 << std::endl;
-    std::cout << "res for loop(11) = " << std::dec << resInvalid << std::endl;
+    // Testcase build and run
+    auto fn = reinterpret_cast<int (*)(int)>(assembler.GetFuncPtrFromCompiledModule(function));
+    auto valA = fn(1);
+    auto valB = fn(9);    // 9 : size of array
+    auto valC = fn(11);  // 11 : size of array
+    EXPECT_EQ(valA, 109); // 109 : eXpert res for fn(1)
+    EXPECT_EQ(valB, 19); // 10 : eXpert res for fn(9)
+    EXPECT_EQ(valC, 0);
 }
 
 class LoopStub1 : public Stub {
@@ -324,61 +264,47 @@ HWTEST_F_L0(StubTest, LoopTest1)
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--)
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
-    /* exec function */
+    // Testcase build and run
     auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
-    auto resValid = fn(1);
-    auto resValid2 = fn(9);    // 9 : size of array
-    auto resInvalid = fn(11);  // 11 : size of array
-    std::cout << "res for loop1(1) = " << std::dec << resValid << std::endl;
-    std::cout << "res for loop1(9) = " << std::dec << resValid2 << std::endl;
-    std::cout << "res for loop1(11) = " << std::dec << resInvalid << std::endl;
+    auto valA = fn(1);
+    auto valB = fn(9);    // 9 : size of array
+    auto valC = fn(11);  // 11 : size of array
+    EXPECT_EQ(valA, 10); // 10 : eXpert res for fn(1)
+    EXPECT_EQ(valB, 10); // 10 : eXpert res for fn(9)
+    EXPECT_EQ(valC, 11); // 10 : eXpert res for fn(11)
 }
 
 HWTEST_F_L0(StubTest, FastAddTest)
 {
-    LLVMModuleRef module = LLVMModuleCreateWithName("fast_add_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMInt64Type(),
-        LLVMInt64Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "FastAddTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastAdd));
     Circuit netOfGates;
     FastAddStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
-    /* exec function */
-    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
-    auto resValid = fn(JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData());
-    auto resValid2 = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(2).GetRawData());     // 2 : test case
-    auto resInvalid = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData());  // 11 : test case
-    std::cout << "res for FastAdd(1, 1) = " << std::dec << resValid.GetNumber() << std::endl;
-    std::cout << "res for FastAdd(2, 2) = " << std::dec << resValid2.GetNumber() << std::endl;
-    std::cout << "res for FastAdd(11, 11) = " << std::dec << resInvalid.GetNumber() << std::endl;
+    // Testcase build and run
+    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
+    auto resA = fn(JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData());
+    auto resB = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(2).GetRawData());     // 2 : test case
+    auto resC = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData());  // 11 : test case
+    LOG_ECMA(INFO) << "res for FastAdd(1, 1) = " << resA.GetNumber();
+    LOG_ECMA(INFO) << "res for FastAdd(2, 2) = " << resB.GetNumber();
+    LOG_ECMA(INFO) << "res for FastAdd(11, 11) = " << resC.GetNumber();
+    EXPECT_EQ(resA.GetNumber(), JSTaggedValue(2).GetNumber());
+    EXPECT_EQ(resB.GetNumber(), JSTaggedValue(4).GetNumber());
+    EXPECT_EQ(resC.GetNumber(), JSTaggedValue(22).GetNumber());
     int x1 = 2147483647;
     int y1 = 15;
     auto resG = fn(JSTaggedValue(x1).GetRawData(), JSTaggedValue(y1).GetRawData());
@@ -388,75 +314,53 @@ HWTEST_F_L0(StubTest, FastAddTest)
 
 HWTEST_F_L0(StubTest, FastSubTest)
 {
-    LLVMModuleRef module = LLVMModuleCreateWithName("fast_sub_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMInt64Type(),
-        LLVMInt64Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "FastSubTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastSub));
     Circuit netOfGates;
     FastSubStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
-    /* exec function */
-    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
+    // Testcase build and run
+    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
     auto resA = fn(JSTaggedValue(2).GetRawData(), JSTaggedValue(1).GetRawData());    // 2 : test case
     auto resB = fn(JSTaggedValue(7).GetRawData(), JSTaggedValue(2).GetRawData());    // 7, 2 : test cases
     auto resC = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData());  // 11 : test case
-    std::cout << "res for FastSub(2, 1) = " << std::dec << resA.GetNumber() << std::endl;
-    std::cout << "res for FastSub(7, 2) = " << std::dec << resB.GetNumber() << std::endl;
-    std::cout << "res for FastSub(11, 11) = " << std::dec << resC.GetNumber() << std::endl;
+    LOG_ECMA(INFO) << "res for FastSub(2, 1) = " << resA.GetNumber();
+    LOG_ECMA(INFO) << "res for FastSub(7, 2) = " << resB.GetNumber();
+    LOG_ECMA(INFO) << "res for FastSub(11, 11) = " << resC.GetNumber();
+    EXPECT_EQ(resA, JSTaggedValue(1));
+    EXPECT_EQ(resB, JSTaggedValue(5));
+    EXPECT_EQ(resC, JSTaggedValue(0));
 }
 
 HWTEST_F_L0(StubTest, FastMulTest)
 {
-    LLVMModuleRef module = LLVMModuleCreateWithName("fast_mul_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMInt64Type(),
-        LLVMInt64Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "FastMulTest", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMul));
     Circuit netOfGates;
     FastMulStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
-
-    /* exec function */
-    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
+    // Testcase build and run
+    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
     auto resA = fn(JSTaggedValue(-2).GetRawData(), JSTaggedValue(1).GetRawData());   // -2 : test case
     auto resB = fn(JSTaggedValue(-7).GetRawData(), JSTaggedValue(-2).GetRawData());  // -7, -2 : test case
     auto resC = fn(JSTaggedValue(11).GetRawData(), JSTaggedValue(11).GetRawData());  // 11 : test case
-    std::cout << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber() << std::endl;
-    std::cout << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber() << std::endl;
-    std::cout << "res for FastMul(11, 11) = " << std::dec << resC.GetNumber() << std::endl;
+    LOG_ECMA(INFO) << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber();
+    LOG_ECMA(INFO) << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber();
+    LOG_ECMA(INFO) << "res for FastMul(11, 11) = " << std::dec << resC.GetNumber();
     int x = 7;
     double y = 1125899906842624;
     auto resD = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
@@ -481,76 +385,117 @@ HWTEST_F_L0(StubTest, FastMulTest)
 
 HWTEST_F_L0(StubTest, FastDivTest)
 {
-    LLVMModuleRef module = LLVMModuleCreateWithName("fast_div_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMInt64Type(),
-        LLVMInt64Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "FastDiv", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastDiv));
     Circuit netOfGates;
     FastDivStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
-    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
-
+    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
     // test normal Division operation
     uint64_t x1 = JSTaggedValue(50).GetRawData();
     uint64_t y1 = JSTaggedValue(25).GetRawData();
-    std::cout << "x1 = " << x1 << "  y1 = " << y1 << std::endl;
+    LOG_ECMA(INFO) << "x1 = " << x1 << "  y1 = " << y1;
     auto res1 = fn(x1, y1);
-    std::cout << "res for FastDiv(50, 25) = " << res1.GetRawData() << std::endl;
+    LOG_ECMA(INFO) << "res for FastDiv(50, 25) = " << res1.GetRawData();
     auto expectedG1 = FastRuntimeStub::FastDiv(JSTaggedValue(x1), JSTaggedValue(y1));
     EXPECT_EQ(res1, expectedG1);
 
     // test x == 0.0 or std::isnan(x)
     uint64_t x2 = JSTaggedValue(base::NAN_VALUE).GetRawData();
     uint64_t y2 = JSTaggedValue(0).GetRawData();
-    std::cout << "x2 = " << x1 << "  y2 = " << y2 << std::endl;
+    LOG_ECMA(INFO) << "x2 = " << x1 << "  y2 = " << y2;
     auto res2 = fn(x2, y2);
-    std::cout << "res for FastDiv(base::NAN_VALUE, 0) = " << res2.GetRawData() << std::endl;
+    LOG_ECMA(INFO) << "res for FastDiv(base::NAN_VALUE, 0) = " << res2.GetRawData();
     auto expectedG2 = FastRuntimeStub::FastDiv(JSTaggedValue(x2), JSTaggedValue(y2));
     EXPECT_EQ(res2, expectedG2);
 
     // test other
     uint64_t x3 = JSTaggedValue(7).GetRawData();
     uint64_t y3 = JSTaggedValue(0).GetRawData();
-    std::cout << "x2 = " << x3 << "  y2 = " << y3 << std::endl;
+    LOG_ECMA(INFO) << "x2 = " << x3 << "  y2 = " << y3;
     auto res3 = fn(x3, y3);
-    std::cout << "res for FastDiv(7, 0) = " << res3.GetRawData() << std::endl;
+    LOG_ECMA(INFO) << "res for FastDiv(7, 0) = " << res3.GetRawData();
     auto expectedG3 = FastRuntimeStub::FastDiv(JSTaggedValue(x3), JSTaggedValue(y3));
     EXPECT_EQ(res3, expectedG3);
 }
 
-HWTEST_F_L0(StubTest, FindOwnElementStub)
+HWTEST_F_L0(StubTest, FastModTest)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef findFunction = LLVMGetNamedFunction(module, "FindOwnElement");
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMod));
+    Circuit netOfGates;
+    FastModStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    assembler.Run();
+    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
+
+    // test left, right are all integer
+    int x = 7;
+    int y = 3;
+    auto result = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    JSTaggedValue expectRes = FastRuntimeStub::FastMod(JSTaggedValue(x), JSTaggedValue(y));
+    EXPECT_EQ(result, expectRes);
+
+    // test y == 0.0 || std::isnan(y) || std::isnan(x) || std::isinf(x) return NAN_VALUE
+    double x2 = 7.3;
+    int y2 = base::NAN_VALUE;
+    auto result2 = fn(JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
+    auto expectRes2 = FastRuntimeStub::FastMod(JSTaggedValue(x2), JSTaggedValue(y2));
+    EXPECT_EQ(result2, expectRes2);
+    LOG_ECMA(INFO) << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData();
+    LOG_ECMA(INFO) << "expectRes2 for FastMod(7, 'helloworld') = " << expectRes2.GetRawData();
+
+    // // test modular operation under normal conditions
+    double x3 = 33.0;
+    double y3 = 44.0;
+    auto result3 = fn(JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
+    auto expectRes3 = FastRuntimeStub::FastMod(JSTaggedValue(x3), JSTaggedValue(y3));
+    EXPECT_EQ(result3, expectRes3);
+
+    // test x == 0.0 || std::isinf(y) return x
+    double x4 = base::NAN_VALUE;
+    int y4 = 7;
+    auto result4 = fn(JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
+    auto expectRes4 = FastRuntimeStub::FastMod(JSTaggedValue(x4), JSTaggedValue(y4));
+
+    LOG_ECMA(INFO) << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData();
+    LOG_ECMA(INFO) << "expectRes4 for FastMod(base::NAN_VALUE, 7) = " << expectRes4.GetRawData();
+    EXPECT_EQ(result4, expectRes4);
+
+    // test all non-conforming conditions
+    int x5 = 7;
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto y5 = factory->NewFromStdString("hello world");
+    auto result5 = fn(JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
+    EXPECT_EQ(result5, JSTaggedValue::Hole());
+    auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
+    LOG_ECMA(INFO) << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData();
+    EXPECT_EQ(result5, expectRes5);
+}
+
+HWTEST_F_L0(StubTest, FastFindOwnElementStub)
+{
+    auto module = stubModule.GetModule();
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(FindOwnElement));
     Circuit netOfGates;
     FindOwnElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
@@ -560,18 +505,11 @@ HWTEST_F_L0(StubTest, FindOwnElementStub)
 HWTEST_F_L0(StubTest, GetElementStub)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef findFunction = LLVMGetNamedFunction(module, "FindOwnElement");
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(FindOwnElement));
     Circuit netOfGates;
     FindOwnElementStub findOptimizer(&netOfGates);
     findOptimizer.GenerateCircuit();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
     Circuit getNetOfGates;
@@ -579,13 +517,7 @@ HWTEST_F_L0(StubTest, GetElementStub)
     getOptimizer.GenerateCircuit();
     getNetOfGates.PrintAllGates();
     auto getCfg = Scheduler::Run(&getNetOfGates);
-    for (size_t bbIdx = 0; bbIdx < getCfg.size(); bbIdx++) {
-        std::cout << (getNetOfGates.GetOpCode(getCfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = getCfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            getNetOfGates.Print(getCfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(getCfg, getNetOfGates);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
@@ -593,29 +525,21 @@ HWTEST_F_L0(StubTest, GetElementStub)
 
 HWTEST_F_L0(StubTest, FindOwnElement2Stub)
 {
-    std::cout << " ------------------------FindOwnElement2Stub ---------------------" << std::endl;
     auto module = stubModule.GetModule();
-    LLVMValueRef function = LLVMGetNamedFunction(module, "FindOwnElement2");
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FindOwnElement2));
     Circuit netOfGates;
     FindOwnElement2Stub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
     auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(JSThread *, TaggedArray *, uint32_t, bool,
                                                                   PropertyAttributes *, uint32_t *)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+        reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
@@ -631,25 +555,18 @@ HWTEST_F_L0(StubTest, FindOwnElement2Stub)
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = findOwnElement2Ptr(thread, elements, 10250, isDict, &attr, &indexOrEntry);
     EXPECT_EQ(resVal.GetNumber(), y);
-    std::cout << " ++++++++++++++++++++FindOwnElement2Stub ++++++++++++++++++" << std::endl;
 }
 
 HWTEST_F_L0(StubTest, SetElementStub)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef function = LLVMGetNamedFunction(module, "SetElement");
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(SetElement));
     Circuit netOfGates;
     SetElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
@@ -1133,26 +1050,19 @@ void DoSafepoint()
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef function = LLVMGetNamedFunction(module, "GetPropertyByIndex");
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByIndex));
     Circuit netOfGates;
     GetPropertyByIndexStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
     auto *getpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+        reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
@@ -1169,7 +1079,7 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef function = LLVMGetNamedFunction(module, "SetPropertyByIndex");
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(SetPropertyByIndex));
     Circuit netOfGates;
     SetPropertyByIndexStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -1177,20 +1087,13 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
     bool result = Verifier::Run(&netOfGates);
     ASSERT_TRUE(result);
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
     auto *setpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+        reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSArray> array = factory->NewJSArray();
     assembler.Disassemble();
@@ -1209,7 +1112,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
 HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef function = LLVMGetNamedFunction(module, "GetPropertyByName");
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByName));
     Circuit netOfGates;
     GetPropertyByNameStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -1217,20 +1120,13 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     bool result = Verifier::Run(&netOfGates);
     ASSERT_TRUE(result);
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
     auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+        reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
@@ -1245,77 +1141,5 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(), strBig.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
-}
-
-HWTEST_F_L0(StubTest, FastModTest)
-{
-    LLVMModuleRef module = LLVMModuleCreateWithName("fast_mod_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
-    LLVMTypeRef paramTys[] = {
-        LLVMInt64Type(),
-        LLVMInt64Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "FastMod", LLVMFunctionType(LLVMInt64Type(), paramTys, 2, 0));
-    Circuit netOfGates;
-    FastModStub optimizer(&netOfGates);
-    optimizer.GenerateCircuit();
-    netOfGates.PrintAllGates();
-    auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdex = cfg[bbIdx].size(); instIdex < 0; instIdex--) {
-            netOfGates.Print(cfg[bbIdx][instIdex - 1]);
-        }
-    }
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
-    llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
-    assembler.Run();
-    auto engine = assembler.GetEngine();
-    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
-
-    // test left, right are all integer
-    int x = 7;
-    int y = 3;
-    auto result = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
-    JSTaggedValue expectRes = FastRuntimeStub::FastMod(JSTaggedValue(x), JSTaggedValue(y));
-    EXPECT_EQ(result, expectRes);
-
-    // test y == 0.0 || std::isnan(y) || std::isnan(x) || std::isinf(x) return NAN_VALUE
-    double x2 = 7.3;
-    int y2 = base::NAN_VALUE;
-    auto result2 = fn(JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
-    auto expectRes2 = FastRuntimeStub::FastMod(JSTaggedValue(x2), JSTaggedValue(y2));
-    EXPECT_EQ(result2, expectRes2);
-    std::cout << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData() << std::endl;
-    std::cout << "expectRes2 for FastMod(7, 'helloworld') = " << expectRes2.GetRawData() << std::endl;
-
-    // // test modular operation under normal conditions
-    double x3 = 33.0;
-    double y3 = 44.0;
-    auto result3 = fn(JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
-    auto expectRes3 = FastRuntimeStub::FastMod(JSTaggedValue(x3), JSTaggedValue(y3));
-    EXPECT_EQ(result3, expectRes3);
-
-    // test x == 0.0 || std::isinf(y) return x
-    double x4 = base::NAN_VALUE;
-    int y4 = 7;
-    auto result4 = fn(JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
-    auto expectRes4 = FastRuntimeStub::FastMod(JSTaggedValue(x4), JSTaggedValue(y4));
-
-    std::cout << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData() << std::endl;
-    std::cout << "expectRes4 for FastMod(base::NAN_VALUE, 7) = " << expectRes4.GetRawData() << std::endl;
-    EXPECT_EQ(result4, expectRes4);
-
-    // test all non-conforming conditions
-    int x5 = 7;
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
-    auto y5 = factory->NewFromStdString("hello world");
-    auto result5 = fn(JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
-    EXPECT_EQ(result5, JSTaggedValue::Hole());
-    auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
-    std::cout << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData() << std::endl;
-    EXPECT_EQ(result5, expectRes5);
 }
 }  // namespace panda::test

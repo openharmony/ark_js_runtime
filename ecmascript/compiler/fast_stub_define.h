@@ -59,9 +59,17 @@ namespace kungfu {
     V(GetPropertyByIndex, 3)        \
     V(SetPropertyByIndex, 4)
 
-#define CALL_STUB_LIST(V)     \
-    FAST_RUNTIME_STUB_LIST(V) \
-    EXTERNAL_RUNTIMESTUB_LIST(V)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TEST_FUNC_LIST(V)           \
+    V(FastLoadElement, 2)           \
+    V(PhiGateTest, 1)               \
+    V(LoopTest, 1)                  \
+    V(LoopTest1, 1)
+
+#define CALL_STUB_LIST(V)        \
+    FAST_RUNTIME_STUB_LIST(V)    \
+    EXTERNAL_RUNTIMESTUB_LIST(V) \
+    TEST_FUNC_LIST(V)
 
 enum CallStubId {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -69,8 +77,10 @@ enum CallStubId {
     FAST_RUNTIME_STUB_LIST(DEF_FAST_STUB) FAST_STUB_MAXCOUNT,
     EXTERNAL_RUNTIME_STUB_BEGIN = FAST_STUB_MAXCOUNT - 1,
     EXTERNAL_RUNTIMESTUB_LIST(DEF_FAST_STUB) EXTERN_RUNTIME_STUB_MAXCOUNT,
+    TEST_FUNC_BEGIN = EXTERN_RUNTIME_STUB_MAXCOUNT - 1,
+    TEST_FUNC_LIST(DEF_FAST_STUB) TEST_FUNC_MAXCOUNT,
 #undef DEF_FAST_STUB
-    CALL_STUB_MAXCOUNT = EXTERN_RUNTIME_STUB_MAXCOUNT,
+    CALL_STUB_MAXCOUNT = TEST_FUNC_MAXCOUNT,
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

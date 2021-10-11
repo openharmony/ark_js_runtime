@@ -1120,7 +1120,13 @@ void LLVMStubModule::Initialize()
     for (i = 0; i < MAX_EXTERNAL_FUNCTION_COUNT; i++) {
         auto externalDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + EXTERNAL_FUNCTION_OFFSET);
         if (!externalDescriptor->GetName().empty()) {
-            externalFuctionType_[i] = GetLLVMFunctionTypeStubDescriptor(externalDescriptor);
+            externalFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(externalDescriptor);
+        }
+    }
+    for (i = 0; i < MAX_TEST_FUNCTION_COUNT; i++) {
+        auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNCTION_OFFSET);
+        if (!testFuncDescriptor->GetName().empty()) {
+            testFunctions_[i] = GetLLVMFunctionByStubDescriptor(testFuncDescriptor);
         }
     }
 }
@@ -1159,6 +1165,7 @@ LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
         {MachineType::UINT64_TYPE,      LLVMInt64Type()},
         {MachineType::FLOAT32_TYPE,     LLVMFloatType()},
         {MachineType::FLOAT64_TYPE,     LLVMDoubleType()},
+        {MachineType::TAGGED_TYPE,      LLVMInt64Type()},
     };
     return machineTypeMap[type];
 }

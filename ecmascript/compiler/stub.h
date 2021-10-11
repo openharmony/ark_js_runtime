@@ -841,8 +841,8 @@ public:
         AddrShift negativeInfinity = GetDoubleConstant(-base::POSITIVE_INFINITY);
         AddrShift diff1 = DoubleEqual(x, infinity);
         AddrShift diff2 = DoubleEqual(x, negativeInfinity);
-        return Word32Or(Word32Equal(SExtInt1ToInt32(diff1), GetInteger32Constant(1)),
-            Word32Equal(SExtInt1ToInt32(diff2), GetInteger32Constant(1)));
+        return TruncInt32ToInt1(Word32Or(Word32Equal(SExtInt1ToInt32(diff1), GetInteger32Constant(1)),
+            Word32Equal(SExtInt1ToInt32(diff2), GetInteger32Constant(1))));
     }
 
     AddrShift IntBuildTagged(AddrShift x)

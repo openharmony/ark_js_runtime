@@ -79,7 +79,18 @@ CALL_STUB_INIT_DESCRIPTOR(FastDiv)
     descriptor->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(FastMod) {}
+CALL_STUB_INIT_DESCRIPTOR(FastMod)
+{
+    // 2 : 2 input parameters
+    static StubDescriptor fastMod("FastMod", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = fastMod;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
 
 CALL_STUB_INIT_DESCRIPTOR(FastEqual) {}
 
@@ -325,13 +336,60 @@ CALL_STUB_INIT_DESCRIPTOR(FindElementWithCache)
 
 CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
 {
-    static StubDescriptor stringGetHashCode("StringGetHashCode", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
+    // 2 : 2 input parameters
+    static StubDescriptor stringGetHashCode("StringGetHashCode", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
     *descriptor = stringGetHashCode;
-    std::array<MachineType, 1> params = {
+    std::array<MachineType, 1> params = { // // 2 : 2 input parameters
         MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(FastLoadElement)
+{
+    // 2 : 2 input parameters
+    static StubDescriptor fastLoadElement("FastLoadElement", 0, 2, ArgumentsOrder::DEFAULT_ORDER, TAGGED_TYPE);
+    *descriptor = fastLoadElement;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(PhiGateTest)
+{
+    static StubDescriptor phiGateTest("PhiGateTest", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
+    *descriptor = phiGateTest;
+    std::array<MachineType, 1> params = {
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(LoopTest)
+{
+    static StubDescriptor loopTest("LoopTest", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
+    *descriptor = loopTest;
+    std::array<MachineType, 1> params = {
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(LoopTest1)
+{
+    static StubDescriptor loopTest1("LoopTest1", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
+    *descriptor = loopTest1;
+    std::array<MachineType, 1> params = {
+        MachineType::UINT32_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
 }
 
 void FastStubDescriptors::InitializeStubDescriptors()

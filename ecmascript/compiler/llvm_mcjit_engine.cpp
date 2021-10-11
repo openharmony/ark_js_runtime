@@ -52,11 +52,11 @@ namespace kungfu {
 static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
                                              [[maybe_unused]] unsigned sectionID, const char *sectionName)
 {
-    std::cout << "RoundTripAllocateCodeSection object " << object << " - " << std::endl;
+    LOG_ECMA(INFO) << "RoundTripAllocateCodeSection object " << object << " - ";
     struct CodeInfo& state = *static_cast<struct CodeInfo*>(object);
     uint8_t *addr = state.AllocaCodeSection(size, sectionName);
-    std::cout << "RoundTripAllocateCodeSection  addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) << addr
-              << " size:0x" << size << " +" << std::endl;
+    LOG_ECMA(INFO) << "RoundTripAllocateCodeSection  addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) <<
+        addr << " size:0x" << size << " + ";
     return addr;
 }
 
@@ -70,13 +70,13 @@ static uint8_t *RoundTripAllocateDataSection(void *object, uintptr_t size, [[may
 
 static LLVMBool RoundTripFinalizeMemory(void *object, [[maybe_unused]] char **errMsg)
 {
-    std::cout << "RoundTripFinalizeMemory object " << object << " - " << std::endl;
+    LOG_ECMA(INFO) << "RoundTripFinalizeMemory object " << object << " - ";
     return 0;
 }
 
 static void RoundTripDestroy(void *object)
 {
-    std::cout << "RoundTripDestroy object " << object << " - " << std::endl;
+    LOG_ECMA(INFO) << "RoundTripDestroy object " << object << " - ";
 }
 
 void LLVMAssembler::UseRoundTripSectionMemoryManager()
@@ -89,20 +89,19 @@ void LLVMAssembler::UseRoundTripSectionMemoryManager()
 
 bool LLVMAssembler::BuildMCJITEngine()
 {
-    std::cout << " BuildMCJITEngine  - " << std::endl;
+    LOG_ECMA(INFO) << " BuildMCJITEngine  - ";
     LLVMBool ret = LLVMCreateMCJITCompilerForModule(&engine_, module_, &options_, sizeof(options_), &error_);
-    std::cout << " engine_  " << engine_ << std::endl;
     if (ret) {
-        std::cout << "error_ : " << error_ << std::endl;
+        LOG_ECMA(ERROR) << "error_ : " << error_;
         return false;
     }
-    std::cout << " BuildMCJITEngine  ++++++++++++ " << std::endl;
+    LOG_ECMA(INFO) << " BuildMCJITEngine  + ";
     return true;
 }
 
 void LLVMAssembler::BuildAndRunPasses() const
 {
-    std::cout << "BuildAndRunPasses  - " << std::endl;
+    LOG_ECMA(INFO) << "BuildAndRunPasses  - ";
     LLVMPassManagerRef pass = LLVMCreatePassManager();
     LLVMAddConstantPropagationPass(pass);
     LLVMAddInstructionCombiningPass(pass);
@@ -110,7 +109,7 @@ void LLVMAssembler::BuildAndRunPasses() const
     LOG_ECMA(INFO) << "Current Module: " << LLVMPrintModuleToString(module_);
     LLVMRunPassManager(pass, module_);
     LLVMDisposePassManager(pass);
-    std::cout << "BuildAndRunPasses  + " << std::endl;
+    LOG_ECMA(INFO) << "BuildAndRunPasses  + ";
 }
 
 LLVMAssembler::LLVMAssembler(LLVMModuleRef module, const char* triple): module_(module), engine_(nullptr),

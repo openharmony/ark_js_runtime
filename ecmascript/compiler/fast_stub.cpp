@@ -36,7 +36,6 @@ void FastArrayLoadElementStub::GenerateCircuit()
         aVal = TruncInt64ToInt32(aVal);
     }
     AddrShift taggedLength = Load(MachineType::TAGGED_TYPE, aVal, lengthOffset);
-
     AddrShift intLength = TaggedCastToInt32(taggedLength);
     // if index < length
     Label ifTrue(env);
