@@ -242,19 +242,19 @@ public:
 
         Label GetLabelFromSelector(AddrShift sel)
         {
-            LabelImpl *rawlabel = phi_to_labels[sel];
+            LabelImpl *rawlabel = phi_to_labels_[sel];
             return Label(rawlabel);
         }
 
         void AddSelectorToLabel(AddrShift sel, Label label)
         {
-            phi_to_labels[sel] = label.GetRawLabel();
+            phi_to_labels_[sel] = label.GetRawLabel();
         }
 
         LabelImpl *NewLabel(Environment *env, AddrShift control = -1)
         {
             auto impl = new LabelImpl(env, control);
-            rawlabels_.push_back(impl);
+            rawlabels_.emplace_back(impl);
             return impl;
         }
 
@@ -286,7 +286,7 @@ public:
         Label *currentLabel_ {nullptr};
         Circuit *circuit_;
         CircuitBuilder builder_;
-        std::unordered_map<AddrShift, LabelImpl *> phi_to_labels;
+        std::unordered_map<AddrShift, LabelImpl *> phi_to_labels_;
         std::vector<AddrShift> arguments_;
         Label entry_;
         std::vector<LabelImpl *> rawlabels_;
@@ -1344,6 +1344,11 @@ public:
     int NextVariableId()
     {
         return nextVariableId_++;
+    }
+
+    std::string GetMethodName() const
+    {
+        return methodName_;
     }
 
 private:

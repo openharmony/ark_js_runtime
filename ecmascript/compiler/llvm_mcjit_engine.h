@@ -38,35 +38,35 @@ struct CodeInfo {
     using ByteBuffer = std::vector<uint8_t>;
     using BufferList = std::list<ByteBuffer>;
     using StringList = std::list<std::string>;
-    CodeInfo() : machineCode(nullptr), codeBufferPos(0), stackMapsSection_(nullptr)
+    CodeInfo() : machineCode_(nullptr), codeBufferPos_(0), stackMapsSection_(nullptr)
     {
         Reset();
         static constexpr int prot = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
         static constexpr int flags = MAP_ANONYMOUS | MAP_SHARED;         // NOLINT(hicpp-signed-bitwise)
-        machineCode = static_cast<uint8_t *>(mmap(nullptr, MAX_MACHINE_CODE_SIZE, prot, flags, -1, 0));
-        std::cerr << std::hex << "machineCode : " << reinterpret_cast<std::uintptr_t>(machineCode) << std::endl;
+        machineCode_ = static_cast<uint8_t *>(mmap(nullptr, MAX_MACHINE_CODE_SIZE, prot, flags, -1, 0));
     }
     ~CodeInfo()
     {
         Reset();
-        munmap(machineCode, MAX_MACHINE_CODE_SIZE);
+        munmap(machineCode_, MAX_MACHINE_CODE_SIZE);
+        machineCode_ = nullptr;
     }
     uint8_t *AllocaCodeSection(uintptr_t size, const char *sectionName)
     {
         uint8_t *addr = nullptr;
-        if (codeBufferPos + size > MAX_MACHINE_CODE_SIZE) {
-            std::cerr << std::hex << "AllocaCodeSection failed alloc codeBufferPos:" << codeBufferPos
+        if (codeBufferPos_ + size > MAX_MACHINE_CODE_SIZE) {
+            std::cerr << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
                       << " size:" << size << "  larger MAX_MACHINE_CODE_SIZE:" << MAX_MACHINE_CODE_SIZE << std::endl;
             return nullptr;
         }
         std::cout << "AllocaCodeSection size:" << size << std::endl;
-        std::vector<uint8_t> codeBuffer(machineCode[codeBufferPos], size);
+        std::vector<uint8_t> codeBuffer(machineCode_[codeBufferPos_], size);
         std::cout << " codeBuffer size: " << codeBuffer.size() << std::endl;
         codeSectionNames_.push_back(sectionName);
-        addr = machineCode + codeBufferPos;
+        addr = machineCode_ + codeBufferPos_;
         std::cout << "AllocaCodeSection addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) << std::endl;
         codeInfo_.push_back({addr, size});
-        codeBufferPos += size;
+        codeBufferPos_ += size;
         return addr;
     }
 
@@ -91,7 +91,7 @@ struct CodeInfo {
         dataSectionList_.clear();
         dataSectionNames_.clear();
         codeSectionNames_.clear();
-        codeBufferPos = 0;
+        codeBufferPos_ = 0;
     }
 
     uint8_t *GetStackMapsSection() const
@@ -105,21 +105,21 @@ struct CodeInfo {
 
     int GetCodeSize() const
     {
-        return codeBufferPos;
+        return codeBufferPos_;
     }
 
     uint8_t *GetCodeBuff() const
     {
-        return machineCode;
+        return machineCode_;
     }
 
 private:
     BufferList dataSectionList_ {};
     StringList dataSectionNames_ {};
     StringList codeSectionNames_ {};
-    uint8_t *machineCode;
+    uint8_t *machineCode_;
     const size_t MAX_MACHINE_CODE_SIZE = (1 << 20);  // 1M
-    int codeBufferPos = 0;
+    int codeBufferPos_ = 0;
     /* <addr, size > for asssembler */
     std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo_ {};
     /* stack map */
@@ -127,7 +127,7 @@ private:
 };
 class LLVMAssembler {
 public:
-    explicit LLVMAssembler(LLVMModuleRef module);
+    explicit LLVMAssembler(LLVMModuleRef module, const char* triple);
     virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
@@ -148,6 +148,10 @@ public:
     {
         return codeInfo_.GetCodeBuff();
     }
+
+    const char *AMD64_TRIPLE = "x86_64-unknown-linux-gnu";
+    const char *ARM64_TRIPLE = "aarch64-unknown-linux-gnu";
+    const char *ARM32_TRIPLE = "arm-unknown-linux-gnu";
 
 private:
     void UseRoundTripSectionMemoryManager();

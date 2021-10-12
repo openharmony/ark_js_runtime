@@ -182,6 +182,15 @@ config("ark_jsruntime_common_config") {
       "-O0",
       "-ggdb3",
     ]
+    if (is_linux && (current_cpu == "x86" || current_cpu == "x64") &&
+        run_with_asan) {
+      cflags_cc += [
+        "-fsanitize=address",
+        "-fno-omit-frame-pointer",
+      ]
+      ldflags += [ "-L" + rebase_path("${root_out_dir}/ark/ark_js_runtime") ]
+      libs = [ "clang_rt.asan-x86_64" ]
+    }
   } else {
     defines += [ "NDEBUG" ]
   }
@@ -390,6 +399,11 @@ source_set("libark_jsruntime_static") {
   } else {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
+
+  if (is_debug && is_linux && (current_cpu == "x86" || current_cpu == "x64") &&
+      run_with_asan) {
+    deps += [ ":copy_asan_runtime" ]
+  }
 }
 
 ohos_shared_library("libark_jsruntime") {
@@ -422,6 +436,11 @@ source_set("libark_jsruntime_test_static") {
     "//third_party/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
   ]
+
+  if (is_debug && is_linux && (current_cpu == "x86" || current_cpu == "x64") &&
+      run_with_asan) {
+    deps += [ ":copy_asan_runtime" ]
+  }
 
   public_configs = [
     ":ark_jsruntime_public_config",  # should add before
@@ -471,4 +490,9 @@ action("copy_resource_xml") {
 
   inputs = [ src_path + src_xml ]
   outputs = [ "$target_out_dir" ]
+}
+
+ohos_copy("copy_asan_runtime") {
+  sources = [ "${asan_lib_path}/libclang_rt.asan-x86_64.a" ]
+  outputs = [ "${root_out_dir}/ark/ark_js_runtime/{{source_file_part}}" ]
 }

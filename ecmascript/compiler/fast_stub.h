@@ -70,73 +70,73 @@ public:
     void GenerateCircuit() override;
 };
 
-class FastFindOwnElementStub : public Stub {
+class FindOwnElementStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastFindOwnElementStub(Circuit *circuit) : Stub("FastFindOwnElement", 3, circuit) {}
-    ~FastFindOwnElementStub() = default;
-    NO_MOVE_SEMANTIC(FastFindOwnElementStub);
-    NO_COPY_SEMANTIC(FastFindOwnElementStub);
+    explicit FindOwnElementStub(Circuit *circuit) : Stub("FindOwnElement", 3, circuit) {}
+    ~FindOwnElementStub() = default;
+    NO_MOVE_SEMANTIC(FindOwnElementStub);
+    NO_COPY_SEMANTIC(FindOwnElementStub);
     void GenerateCircuit() override;
 };
 
-class FastGetElementStub : public Stub {
+class GetElementStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastGetElementStub(Circuit *circuit) : Stub("FastGetElement", 3, circuit) {}
-    ~FastGetElementStub() = default;
-    NO_MOVE_SEMANTIC(FastGetElementStub);
-    NO_COPY_SEMANTIC(FastGetElementStub);
+    explicit GetElementStub(Circuit *circuit) : Stub("GetElement", 3, circuit) {}
+    ~GetElementStub() = default;
+    NO_MOVE_SEMANTIC(GetElementStub);
+    NO_COPY_SEMANTIC(GetElementStub);
     void GenerateCircuit() override;
 };
 
-class FastFindOwnElement2Stub : public Stub {
+class FindOwnElement2Stub : public Stub {
 public:
     // 6 : 6 means argument counts
-    explicit FastFindOwnElement2Stub(Circuit *circuit) : Stub("FastFindOwnElement2", 6, circuit) {}
-    ~FastFindOwnElement2Stub() = default;
-    NO_MOVE_SEMANTIC(FastFindOwnElement2Stub);
-    NO_COPY_SEMANTIC(FastFindOwnElement2Stub);
+    explicit FindOwnElement2Stub(Circuit *circuit) : Stub("FindOwnElement2", 6, circuit) {}
+    ~FindOwnElement2Stub() = default;
+    NO_MOVE_SEMANTIC(FindOwnElement2Stub);
+    NO_COPY_SEMANTIC(FindOwnElement2Stub);
     void GenerateCircuit() override;
 };
 
-class FastSetElementStub : public Stub {
+class SetElementStub : public Stub {
 public:
     // 5 : 5 means argument counts
-    explicit FastSetElementStub(Circuit *circuit) : Stub("FastSetElement", 5, circuit) {}
-    ~FastSetElementStub() = default;
-    NO_MOVE_SEMANTIC(FastSetElementStub);
-    NO_COPY_SEMANTIC(FastSetElementStub);
+    explicit SetElementStub(Circuit *circuit) : Stub("SetElement", 5, circuit) {}
+    ~SetElementStub() = default;
+    NO_MOVE_SEMANTIC(SetElementStub);
+    NO_COPY_SEMANTIC(SetElementStub);
     void GenerateCircuit() override;
 };
 
-class FastGetPropertyByIndexStub : public Stub {
+class GetPropertyByIndexStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastGetPropertyByIndexStub(Circuit *circuit) : Stub("FastGetPropertyByIndex", 3, circuit) {}
-    ~FastGetPropertyByIndexStub() = default;
-    NO_MOVE_SEMANTIC(FastGetPropertyByIndexStub);
-    NO_COPY_SEMANTIC(FastGetPropertyByIndexStub);
+    explicit GetPropertyByIndexStub(Circuit *circuit) : Stub("GetPropertyByIndex", 3, circuit) {}
+    ~GetPropertyByIndexStub() = default;
+    NO_MOVE_SEMANTIC(GetPropertyByIndexStub);
+    NO_COPY_SEMANTIC(GetPropertyByIndexStub);
     void GenerateCircuit() override;
 };
 
-class FastSetPropertyByIndexStub : public Stub {
+class SetPropertyByIndexStub : public Stub {
 public:
     // 4 : 4 means argument counts
-    explicit FastSetPropertyByIndexStub(Circuit *circuit) : Stub("FastSetPropertyByIndex", 4, circuit) {}
-    ~FastSetPropertyByIndexStub() = default;
-    NO_MOVE_SEMANTIC(FastSetPropertyByIndexStub);
-    NO_COPY_SEMANTIC(FastSetPropertyByIndexStub);
+    explicit SetPropertyByIndexStub(Circuit *circuit) : Stub("SetPropertyByIndex", 4, circuit) {}
+    ~SetPropertyByIndexStub() = default;
+    NO_MOVE_SEMANTIC(SetPropertyByIndexStub);
+    NO_COPY_SEMANTIC(SetPropertyByIndexStub);
     void GenerateCircuit() override;
 };
 
-class FastGetPropertyByNameStub : public Stub {
+class GetPropertyByNameStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastGetPropertyByNameStub(Circuit *circuit) : Stub("FastGetPropertyByName", 3, circuit) {}
-    ~FastGetPropertyByNameStub() = default;
-    NO_MOVE_SEMANTIC(FastGetPropertyByNameStub);
-    NO_COPY_SEMANTIC(FastGetPropertyByNameStub);
+    explicit GetPropertyByNameStub(Circuit *circuit) : Stub("GetPropertyByName", 3, circuit) {}
+    ~GetPropertyByNameStub() = default;
+    NO_MOVE_SEMANTIC(GetPropertyByNameStub);
+    NO_COPY_SEMANTIC(GetPropertyByNameStub);
     void GenerateCircuit() override;
 };
 

@@ -36,10 +36,11 @@ public:
 
     static constexpr size_t INS_SIZE_OFFSET = TaggedObjectSize();
     ACCESSORS(InstructionSizeInBytes, INS_SIZE_OFFSET, DATA_OFFSET);
+    static constexpr size_t SIZE = DATA_OFFSET;
 
     uintptr_t GetDataOffsetAddress(void)
     {
-        return reinterpret_cast<uintptr_t>(this + DATA_OFFSET);
+        return reinterpret_cast<uintptr_t>(this) + DATA_OFFSET;
     }
 
     void SetData(const uint8_t *codeData, size_t codeLength)

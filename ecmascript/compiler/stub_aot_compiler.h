@@ -30,9 +30,15 @@ public:
         for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
             stubs_[i] = nullptr;
         }
-    };
-    ~StubAotCompiler() = default;
-    void BuildStubModule(panda::ecmascript::StubModule *module);
+    }
+    ~StubAotCompiler()
+    {
+        for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+            stubs_[i] = nullptr;
+        }
+    }
+    void BuildStubModuleAndSave(const char *triple, panda::ecmascript::StubModule *module,
+                                const std::string &filename);
     void SetStub(int index, Stub *optimizer)
     {
         stubs_[index] = optimizer;

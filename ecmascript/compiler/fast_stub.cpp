@@ -344,7 +344,7 @@ void FastDivStub::GenerateCircuit()
     }
 }
 
-void FastFindOwnElementStub::GenerateCircuit()
+void FindOwnElementStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
@@ -401,7 +401,7 @@ void FastFindOwnElementStub::GenerateCircuit()
     Return(GetHoleConstant());
 }
 
-void FastGetElementStub::GenerateCircuit()
+void GetElementStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
@@ -432,7 +432,7 @@ void FastGetElementStub::GenerateCircuit()
     LoopEnd(&loopHead);
 }
 
-void FastFindOwnElement2Stub::GenerateCircuit()
+void FindOwnElement2Stub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
@@ -493,7 +493,7 @@ void FastFindOwnElement2Stub::GenerateCircuit()
     Return(GetHoleConstant());
 }
 
-void FastSetElementStub::GenerateCircuit()
+void SetElementStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
@@ -507,6 +507,7 @@ void FastSetElementStub::GenerateCircuit()
     AddrShift pattr = Alloca(static_cast<int>(MachineRep::K_WORD32));
     AddrShift pindexOrEntry = Alloca(static_cast<int>(MachineRep::K_WORD32));
     Label loopHead(env);
+    Label loopEnd(env);
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
@@ -647,13 +648,15 @@ void FastSetElementStub::GenerateCircuit()
                 }
                 Bind(&notJsProxy);
                 onPrototype = TrueConstant();
+                Jump(&loopEnd);
             }
         }
     }
+    Bind(&loopEnd);
     LoopEnd(&loopHead);
 }
 
-void FastGetPropertyByIndexStub::GenerateCircuit()
+void GetPropertyByIndexStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
@@ -765,7 +768,7 @@ void FastGetPropertyByIndexStub::GenerateCircuit()
     }
 }
 
-void FastSetPropertyByIndexStub::GenerateCircuit()
+void SetPropertyByIndexStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
@@ -857,7 +860,7 @@ void FastSetPropertyByIndexStub::GenerateCircuit()
     }
 }
 
-void FastGetPropertyByNameStub::GenerateCircuit()
+void GetPropertyByNameStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);

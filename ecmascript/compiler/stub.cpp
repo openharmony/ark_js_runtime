@@ -378,7 +378,7 @@ AddrShift Stub::FindElementFromNumberDictionary(AddrShift thread, AddrShift elem
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &subentry);
+    env->PushCurrentLabel(&subentry);
     DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
     Label exit(env);
     AddrShift capcityoffset =
@@ -427,14 +427,16 @@ AddrShift Stub::FindElementFromNumberDictionary(AddrShift thread, AddrShift elem
     count = Int32Add(*count, GetInteger32Constant(1));
     LoopEnd(&loopHead);
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 AddrShift Stub::IsMatchInNumberDictionary(AddrShift key, AddrShift other)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
     Label isHole(env);
@@ -464,14 +466,16 @@ AddrShift Stub::IsMatchInNumberDictionary(AddrShift key, AddrShift other)
     Bind(&keyNotInt);
     Jump(&exit);
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 AddrShift Stub::GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry)
 {
     auto env = GetEnvironment();
     Label subentry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &subentry);
+    env->PushCurrentLabel(&subentry);
     Label exit(env);
     DEFVARIABLE(result, TAGGED_TYPE, GetUndefinedConstant());
     Label ltZero(env);
@@ -493,7 +497,9 @@ AddrShift Stub::GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry)
     result = GetValueFromTaggedArray(elements, arrayIndex);
     Jump(&exit);
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 // int TaggedHashTable<Derived>::FindEntry(const JSTaggedValue &key) in tagged_hash_table-inl.h
@@ -501,7 +507,7 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
 {
     auto env = GetEnvironment();
     Label funcEntry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &funcEntry);
+    env->PushCurrentLabel(&funcEntry);
     Label exit(env);
     DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
     AddrShift capcityoffset =
@@ -594,14 +600,16 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
         }
     }
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift attr)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(result, TAGGED_TYPE, GetUndefinedConstant());
     Label inlinedProp(env);
@@ -631,7 +639,9 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
         }
     }
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 void Stub::ThrowTypeAndReturn(AddrShift thread, int messageId, AddrShift val)
@@ -646,7 +656,7 @@ AddrShift Stub::TaggedToRepresentation(AddrShift value)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(resultRep, INT64_TYPE,
                 GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::OBJECT)));
@@ -676,14 +686,16 @@ AddrShift Stub::TaggedToRepresentation(AddrShift value)
         }
     }
     Bind(&exit);
-    return *resultRep;
+    auto ret = *resultRep;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 AddrShift Stub::UpdateRepresention(AddrShift oldRep, AddrShift value)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(resultRep, INT64_TYPE, oldRep);
     Label isMixedRep(env);
@@ -770,7 +782,9 @@ AddrShift Stub::UpdateRepresention(AddrShift oldRep, AddrShift value)
         }
     }
     Bind(&exit);
-    return *resultRep;
+    auto ret = *resultRep;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 void Stub::UpdateAndStoreRepresention(AddrShift hclass, AddrShift value)

@@ -63,7 +63,7 @@ public:
     PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
-    LLVMStubModule stubModule{"fast_stub"};
+    LLVMStubModule stubModule {"fast_stub", "x86_64-unknown-linux-gnu"};
 };
 
 HWTEST_F_L0(StubTest, FastLoadElement)
@@ -94,7 +94,7 @@ HWTEST_F_L0(StubTest, FastLoadElement)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     /* exec function */
@@ -166,7 +166,7 @@ HWTEST_F_L0(StubTest, PhiGateTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     /* exec function */
@@ -262,7 +262,7 @@ HWTEST_F_L0(StubTest, LoopTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
 
@@ -332,7 +332,7 @@ HWTEST_F_L0(StubTest, LoopTest1)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     /* exec function */
@@ -368,7 +368,7 @@ HWTEST_F_L0(StubTest, FastAddTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     /* exec function */
@@ -409,7 +409,7 @@ HWTEST_F_L0(StubTest, FastSubTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     /* exec function */
@@ -445,7 +445,7 @@ HWTEST_F_L0(StubTest, FastMulTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
 
@@ -502,7 +502,7 @@ HWTEST_F_L0(StubTest, FastDivTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
@@ -535,12 +535,12 @@ HWTEST_F_L0(StubTest, FastDivTest)
     EXPECT_EQ(res3, expectedG3);
 }
 
-HWTEST_F_L0(StubTest, FastFindOwnElementStub)
+HWTEST_F_L0(StubTest, FindOwnElementStub)
 {
     auto module = stubModule.GetModule();
     LLVMValueRef findFunction = LLVMGetNamedFunction(module, "FindOwnElement");
     Circuit netOfGates;
-    FastFindOwnElementStub optimizer(&netOfGates);
+    FindOwnElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -553,16 +553,16 @@ HWTEST_F_L0(StubTest, FastFindOwnElementStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
 }
 
-HWTEST_F_L0(StubTest, FastGetElementStub)
+HWTEST_F_L0(StubTest, GetElementStub)
 {
     auto module = stubModule.GetModule();
     LLVMValueRef findFunction = LLVMGetNamedFunction(module, "FindOwnElement");
     Circuit netOfGates;
-    FastFindOwnElementStub findOptimizer(&netOfGates);
+    FindOwnElementStub findOptimizer(&netOfGates);
     findOptimizer.GenerateCircuit();
     auto cfg = Scheduler::Run(&netOfGates);
     for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
@@ -575,7 +575,7 @@ HWTEST_F_L0(StubTest, FastGetElementStub)
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
     Circuit getNetOfGates;
-    FastGetElementStub getOptimizer(&getNetOfGates);
+    GetElementStub getOptimizer(&getNetOfGates);
     getOptimizer.GenerateCircuit();
     getNetOfGates.PrintAllGates();
     auto getCfg = Scheduler::Run(&getNetOfGates);
@@ -587,17 +587,17 @@ HWTEST_F_L0(StubTest, FastGetElementStub)
         }
     }
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
 }
 
-HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
+HWTEST_F_L0(StubTest, FindOwnElement2Stub)
 {
-    std::cout << " ------------------------FastFindOwnElement2Stub ---------------------" << std::endl;
+    std::cout << " ------------------------FindOwnElement2Stub ---------------------" << std::endl;
     auto module = stubModule.GetModule();
     LLVMValueRef function = LLVMGetNamedFunction(module, "FindOwnElement2");
     Circuit netOfGates;
-    FastFindOwnElement2Stub optimizer(&netOfGates);
+    FindOwnElement2Stub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -610,7 +610,7 @@ HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(JSThread *, TaggedArray *, uint32_t, bool,
@@ -631,7 +631,7 @@ HWTEST_F_L0(StubTest, FastFindOwnElement2Stub)
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = findOwnElement2Ptr(thread, elements, 10250, isDict, &attr, &indexOrEntry);
     EXPECT_EQ(resVal.GetNumber(), y);
-    std::cout << " ++++++++++++++++++++FastFindOwnElement2Stub ++++++++++++++++++" << std::endl;
+    std::cout << " ++++++++++++++++++++FindOwnElement2Stub ++++++++++++++++++" << std::endl;
 }
 
 HWTEST_F_L0(StubTest, SetElementStub)
@@ -639,7 +639,7 @@ HWTEST_F_L0(StubTest, SetElementStub)
     auto module = stubModule.GetModule();
     LLVMValueRef function = LLVMGetNamedFunction(module, "SetElement");
     Circuit netOfGates;
-    FastSetElementStub optimizer(&netOfGates);
+    SetElementStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -652,7 +652,7 @@ HWTEST_F_L0(StubTest, SetElementStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
 }
 
@@ -891,7 +891,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t stub1Code = LLVMGetFunctionAddress(engine, "stub1");
@@ -965,7 +965,7 @@ HWTEST_F_L0(StubTest, Prologue)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t mainCode = LLVMGetFunctionAddress(engine, "main");
@@ -1044,7 +1044,7 @@ HWTEST_F_L0(StubTest, CEntryFp)
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
@@ -1081,7 +1081,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
         return;
     }
     LLVMModuleRef module = LLVMCloneModule(wrap(rawModule.get()));
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     LLVMValueRef function = LLVMGetNamedFunction(module, "main");
@@ -1130,12 +1130,12 @@ void DoSafepoint()
 }
 }
 
-HWTEST_F_L0(StubTest, FastGetPropertyByIndexStub)
+HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
     LLVMValueRef function = LLVMGetNamedFunction(module, "GetPropertyByIndex");
     Circuit netOfGates;
-    FastGetPropertyByIndexStub optimizer(&netOfGates);
+    GetPropertyByIndexStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -1148,7 +1148,7 @@ HWTEST_F_L0(StubTest, FastGetPropertyByIndexStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     auto *getpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
@@ -1166,12 +1166,12 @@ HWTEST_F_L0(StubTest, FastGetPropertyByIndexStub)
     EXPECT_EQ(resVal.GetNumber(), y);
 }
 
-HWTEST_F_L0(StubTest, FastSetPropertyByIndexStub)
+HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
     LLVMValueRef function = LLVMGetNamedFunction(module, "SetPropertyByIndex");
     Circuit netOfGates;
-    FastSetPropertyByIndexStub optimizer(&netOfGates);
+    SetPropertyByIndexStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     bool result = Verifier::Run(&netOfGates);
@@ -1186,7 +1186,7 @@ HWTEST_F_L0(StubTest, FastSetPropertyByIndexStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     auto *setpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)>(
@@ -1206,12 +1206,12 @@ HWTEST_F_L0(StubTest, FastSetPropertyByIndexStub)
     }
 }
 
-HWTEST_F_L0(StubTest, FastGetPropertyByNameStub)
+HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
     auto module = stubModule.GetModule();
     LLVMValueRef function = LLVMGetNamedFunction(module, "GetPropertyByName");
     Circuit netOfGates;
-    FastGetPropertyByNameStub optimizer(&netOfGates);
+    GetPropertyByNameStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     bool result = Verifier::Run(&netOfGates);
@@ -1226,7 +1226,7 @@ HWTEST_F_L0(StubTest, FastGetPropertyByNameStub)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
@@ -1270,7 +1270,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     }
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     auto engine = assembler.GetEngine();
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(LLVMGetPointerToGlobal(engine, function));
