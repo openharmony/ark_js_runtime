@@ -32,7 +32,7 @@ class JSDebugger;
 }  // tooling::ecmascript
 
 namespace ecmascript {
-class EcmaFrameHandler;
+class InterpretedFrameHandler;
 class EcmaVM;
 class JSMethod;
 class JSThread;
@@ -41,7 +41,7 @@ class JSThread;
 
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::CString;
-using panda::ecmascript::EcmaFrameHandler;
+using panda::ecmascript::InterpretedFrameHandler;
 using panda::ecmascript::EcmaVM;
 using panda::ecmascript::JSMethod;
 using panda::ecmascript::JSThread;
@@ -59,16 +59,17 @@ public:
     static CString ToCString(int32_t number);
     static CString ConvertToString(const std::string &str);
 
-    // EcmaFrameHandler
+    // InterpretedFrameHandler
     static uint32_t GetStackDepth(const EcmaVM *ecmaVm);
-    static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const EcmaFrameHandler *)> func);
+    static bool StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func);
     static uint32_t GetBytecodeOffset(const EcmaVM *ecmaVm);
     static JSMethod *GetMethod(const EcmaVM *ecmaVm);
     static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm, size_t index);
     static void SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value);
-    static uint32_t GetBytecodeOffset(const EcmaFrameHandler *frameHandler);
-    static JSMethod *GetMethod(const EcmaFrameHandler *frameHandler);
-    static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm, const EcmaFrameHandler *frameHandler, size_t index);
+    static uint32_t GetBytecodeOffset(const InterpretedFrameHandler *frameHandler);
+    static JSMethod *GetMethod(const InterpretedFrameHandler *frameHandler);
+    static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
+        const InterpretedFrameHandler *frameHandler, size_t index);
 
     // JSThread
     static Local<JSValueRef> GetException(const EcmaVM *ecmaVm);

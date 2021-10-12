@@ -20,7 +20,7 @@
 #include "ecmascript/compiler/fast_stub.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/llvm_mcjit_engine.h"
-#include "ecmascript/compiler/llvm_stackmap_parse.h"
+#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/compiler/scheduler.h"
 #include "ecmascript/compiler/stub_descriptor.h"
 #include "ecmascript/compiler/verifier.h"
@@ -720,6 +720,27 @@ int RuntimeFunc2(struct ThreadTy *fpInfo)
     for (int i = 0; i < 40; i++) { // print 40 ptr value for debug
         std::cout << std::hex << &(rbp[i]) << " :" << rbp[i] << std::endl;
     }
+    /* walk back
+      stack frame:           0     pre rbp  <-- rbp
+                            -8     type
+                            -16    pre frame thread fp
+    */
+    int64_t *frameType = nullptr;
+    int64_t *gcFp = nullptr;
+    std::cout << "-----------------walkback----------------" << std::endl;
+    do {
+        frameType = rbp - 1;
+        if (*frameType == 1) {
+            gcFp = rbp - 2; // 2: 2 stack slot
+        } else {
+            gcFp = rbp;
+        }
+        rbp = reinterpret_cast<intptr_t *>(*gcFp);
+        std::cout << std::hex << "frameType :" << *frameType << " gcFp:" << *gcFp << std::endl;
+    } while (*gcFp != 0);
+    std::cout << "+++++++++++++++++walkback++++++++++++++++" << std::endl;
+    std::cout << "call RuntimeFunc2 func ThreadTy fp: " << fpInfo->fp << " magic:" << fpInfo->magic << std::endl;
+    std::cout << "RuntimeFunc2  +" << std::endl;
     return 0;
 }
 }
@@ -770,7 +791,7 @@ LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder)
     return frameAddr;
 }
 
-#ifdef LLVM_SUPPORT_GC
+#ifdef ARK_GC_SUPPORT
 HWTEST_F_L0(StubTest, JSEntryTest)
 {
     std::cout << " ---------- JSEntryTest ------------- " << std::endl;
@@ -1062,7 +1083,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
 {
     std::cout << "--------------LoadGCIRTest--------------------" << std::endl;
     char *path = get_current_dir_name();
-    std::string filePath = std::string(path) + "/../../ark/js_runtime/ecmascript/compiler/tests/satepoint_GC_0.ll";
+    std::string filePath = std::string(path) + "/ark/js_runtime/ecmascript/compiler/tests/satepoint_GC_0.ll";
 
     char resolvedPath[PATH_MAX];
     char *res = realpath(filePath.c_str(), resolvedPath);
@@ -1089,8 +1110,8 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
 
     auto *mainPtr = reinterpret_cast<int (*)()>(LLVMGetPointerToGlobal(engine, function));
     uint8_t *ptr = assembler.GetStackMapsSection();
-    LLVMStackMapParse::GetInstance().CalculateStackMap(ptr);
-    LLVMStackMapParse::GetInstance().Print();
+    LLVMStackMapParser::GetInstance().CalculateStackMap(ptr);
+    LLVMStackMapParser::GetInstance().Print();
 
     assembler.Disassemble();
     LLVMDumpModule(module);
@@ -1108,19 +1129,21 @@ void DoSafepoint()
         uintptr_t returnAddr =  *(rbp + 1);
         uintptr_t *rsp = rbp + 2;  // move 2 steps from rbp to get rsp
         rbp = reinterpret_cast<uintptr_t *>(*rbp);
-        DwarfRegAndOffsetType info;
-        bool found = LLVMStackMapParse::GetInstance().StackMapByAddr(returnAddr, info);
+        DwarfRegAndOffsetTypeVector infos;
+        bool found = LLVMStackMapParser::GetInstance().StackMapByAddr(returnAddr, infos);
         if (found) {
-            uintptr_t **address = nullptr;
-            if (info.first == 7) { // 7: x86_64 dwarf register num, representing rsp
-                address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
-            // rbp
-            } else if (info.first == 6) { // 6: x86_64 dwarf register num, representing rbp
-                address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
+            for (auto &info : infos) {
+                uintptr_t **address = nullptr;
+                if (info.first == SP_DWARF_REG_NUM) {
+                    address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
+                } else if (info.first == FP_DWARF_REG_NUM) {
+                    address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
+                }
+                // print ref and vlue for debug
+                std::cout << std::hex << "ref addr:" << address;
+                std::cout << "  value:" << *address;
+                std::cout << " *value :" << **address << std::endl;
             }
-            std::cout << std::hex << "ref addr:" << address;
-            std::cout << "  value:" << *address;
-            std::cout << " *value :" << **address << std::endl;
         }
         std::cout << std::endl << std::endl;
         std::cout << std::hex << "+++++++++++++++++++ returnAddr : 0x" << returnAddr << " rbp:" << rbp

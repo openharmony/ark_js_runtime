@@ -22,6 +22,7 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "include/thread.h"
+#include "ecmascript/frames.h"
 
 namespace panda::ecmascript {
 class EcmaVM;

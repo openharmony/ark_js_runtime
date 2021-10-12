@@ -192,7 +192,7 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 {
     auto ecmaVm = thread->GetEcmaVM();
     CString data;
-    EcmaFrameHandler frameHandler(thread);
+    InterpretedFrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;

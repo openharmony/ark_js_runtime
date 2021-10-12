@@ -109,8 +109,8 @@ private:
     PtJSExtractor *GetExtractor(const panda_file::File *file);
     PtJSExtractor *GetExtractor(const CString &url);
     bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
-    bool GenerateCallFrame(CallFrame *callFrame, const EcmaFrameHandler *frameHandler, int32_t frameId);
-    std::unique_ptr<Scope> GetLocalScopeChain(const EcmaFrameHandler *frameHandler,
+    bool GenerateCallFrame(CallFrame *callFrame, const InterpretedFrameHandler *frameHandler, int32_t frameId);
+    std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
     std::unique_ptr<Scope> GetGlobalScopeChain();
     std::optional<Error> SetValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result, const CString &varValue);

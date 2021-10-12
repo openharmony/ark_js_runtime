@@ -20,6 +20,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/frames.h"
 
 namespace panda::ecmascript {
 class ConstantPool;
@@ -32,7 +33,6 @@ using TaggedType = coretypes::TaggedType;
 struct FrameState {
     const uint8_t *pc;
     JSTaggedType *sp;
-    uint64_t *prev;
     JSMethod *method;
     // aligned with 8 bits
     alignas(sizeof(uint64_t)) ConstantPool *constpool;
@@ -40,6 +40,7 @@ struct FrameState {
     JSTaggedValue acc;
     JSTaggedValue env;
     uint64_t numActualArgs;
+    InterpretedFrameStateBase base;
 };
 
 // NOLINTNEXTLINE(bugprone-sizeof-expression)

@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#include "ecmascript/compiler/llvm_stackmap_parse.h"
+#include "llvm_stackmap_parser.h"
 #include <iostream>
 #include <fstream>
 #include <string>
 
 namespace kungfu {
-std::string LocationTy::TypeToString(Kind location) const
+std::string LocationTy::TypeToString(Kind loc) const
 {
-    switch (location) {
+    switch (loc) {
         case Kind::REGISTER:
             return "Register	Reg	Value in a register";
         case Kind::DIRECT:
@@ -37,18 +37,48 @@ std::string LocationTy::TypeToString(Kind location) const
     }
 }
 
-bool LLVMStackMapParse::StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetType &info)
+bool LLVMStackMapParser::StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetTypeVector &infos)
 {
+    bool found = false;
     for (auto it: callSiteInfos_) {
         if (it.first == funcAddr) {
-            info = it.second;
-            return true;
+            DwarfRegAndOffsetType info = it.second;
+            infos.push_back(info);
+            found = true;
         }
     }
-    return false;
+    return found;
 }
 
-void LLVMStackMapParse::CalcCallSite()
+bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t frameFp,
+    std::vector<uintptr_t> &slotAddrs)
+{
+    DwarfRegAndOffsetTypeVector infos;
+    if (!StackMapByAddr(funcAddr, infos)) {
+        return false;
+    }
+    uintptr_t *fp = reinterpret_cast<uintptr_t *>(frameFp);
+    uintptr_t **address = nullptr;
+    for (auto &info: infos) {
+        if (info.first == SP_DWARF_REG_NUM) {
+            uintptr_t *rsp = fp + SP_OFFSET;
+            address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
+        } else if (info.first == FP_DWARF_REG_NUM) {
+            fp = reinterpret_cast<uintptr_t *>(*fp);
+            address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(fp) + info.second);
+        } else {
+            address = nullptr;
+            abort();
+        }
+        std::cout << std::hex << "ref addr:" << address;
+        std::cout << "  value:" << *address;
+        std::cout << " *value :" << **address << std::endl;
+        slotAddrs.push_back(reinterpret_cast<uintptr_t>(address));
+    }
+    return true;
+}
+
+void LLVMStackMapParser::CalcCallSite()
 {
     uint64_t recordNum = 0;
     for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
@@ -74,7 +104,7 @@ void LLVMStackMapParse::CalcCallSite()
     }
 }
 
-bool LLVMStackMapParse::CalculateStackMap(const uint8_t *stackMapAddr)
+bool LLVMStackMapParser::CalculateStackMap(const uint8_t *stackMapAddr)
 {
     stackMapAddr_ = stackMapAddr;
     if (!stackMapAddr_) {

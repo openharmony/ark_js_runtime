@@ -1,0 +1,121 @@
+diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+index 0e85afa82c7..f56219422d2 100644
+--- a/llvm/CMakeLists.txt
++++ b/llvm/CMakeLists.txt
+@@ -507,6 +507,12 @@ option(LLVM_BUILD_EXAMPLES
+   "Build the LLVM example programs. If OFF, just generate build targets." OFF)
+ option(LLVM_INCLUDE_EXAMPLES "Generate build targets for the LLVM examples" ON)
+ 
++option(BUILD_ARK_GC_SUPPORT
++       "ARK support GC. If ON, support GC." OFF)
++if(BUILD_ARK_GC_SUPPORT)
++   add_definitions(-DARK_GC_SUPPORT)
++endif(ARK_SUPPORT_GC)
++
+ if(LLVM_BUILD_EXAMPLES)
+   add_definitions(-DBUILD_EXAMPLES)
+ endif(LLVM_BUILD_EXAMPLES)
+diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
+index 1da20371caf..875184f32b2 100644
+--- a/llvm/lib/Target/X86/X86FrameLowering.cpp
++++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
+@@ -31,6 +31,7 @@
+ #include "llvm/Support/Debug.h"
+ #include "llvm/Target/TargetOptions.h"
+ #include <cstdlib>
++#include <iostream>
+ 
+ using namespace llvm;
+ 
+@@ -1169,6 +1170,29 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
+       MFI.setOffsetAdjustment(-StackSize);
+   }
+ 
++#ifdef ARK_GC_SUPPORT
++    // push marker
++    if (MF.getFunction().hasFnAttribute("js-stub-call"))
++    {
++      int64_t marker = 0x0;
++      MF.getFunction()
++        .getFnAttribute("js-stub-call")
++        .getValueAsString()
++        .getAsInteger(10, marker);//marker 1 break frame
++      std::cout << __LINE__ << " marker:" << std::dec << marker << std::endl;
++
++      BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH64i32))
++            .addImm(marker)
++            .setMIFlag(MachineInstr::FrameSetup);
++      /*reserve thread.fp */
++      if (marker == 1) {
++        BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH64i32))
++              .addImm(marker)
++              .setMIFlag(MachineInstr::FrameSetup);
++      }
++    }
++#endif
++
+   // For EH funclets, only allocate enough space for outgoing calls. Save the
+   // NumBytes value that we would've used for the parent frame.
+   unsigned ParentFrameNumBytes = NumBytes;
+@@ -1635,6 +1659,27 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
+   uint64_t SEHStackAllocAmt = NumBytes;
+ 
+   if (HasFP) {
++#ifdef ARK_GC_SUPPORT
++    if (MF.getFunction().hasFnAttribute("js-stub-call"))
++    {
++      int64_t marker = 0x0;
++      MF.getFunction()
++      .getFnAttribute("js-stub-call")
++      .getValueAsString()
++      .getAsInteger(10, marker);//marker 1 break frame
++
++      // pop marker
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
++              MachineFramePtr)
++          .setMIFlag(MachineInstr::FrameDestroy);
++      if (marker == 1) {
++        // pop thread.fp
++        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
++            MachineFramePtr)
++        .setMIFlag(MachineInstr::FrameDestroy);
++      }
++    }
++#endif
+     // Pop EBP.
+     BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
+             MachineFramePtr)
+@@ -1993,8 +2038,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+ 
+   if (hasFP(MF)) {
+     // emitPrologue always spills frame register the first thing.
++#ifdef ARK_GC_SUPPORT
++    if (MF.getFunction().hasFnAttribute("js-stub-call")) {
++        int64_t marker = 0x0;
++        MF.getFunction()
++        .getFnAttribute("js-stub-call")
++        .getValueAsString()
++        .getAsInteger(10, marker);//marker 1 break frame
++        if (marker == 1) {
++            SpillSlotOffset -=  3 * SlotSize; // add type and thread.fp
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            CalleeSavedFrameSize += 16;
++        } else {
++            SpillSlotOffset -=  2 * SlotSize; // add type
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            CalleeSavedFrameSize += 8;
++        }
++    } else {
++        SpillSlotOffset -= SlotSize; // add type and thread.fp
++        MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++    }
++#else
+     SpillSlotOffset -= SlotSize;
+     MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++#endif
+ 
+     // Since emitPrologue and emitEpilogue will handle spilling and restoring of
+     // the frame register, we can delete it from CSI list and not have to worry

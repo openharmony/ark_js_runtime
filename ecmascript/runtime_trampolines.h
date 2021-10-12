@@ -49,5 +49,34 @@ public:
     static int32_t FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num);
     static uint32_t StringGetHashCode(uint64_t ecmaString);
 };
+
+class CallRuntimeTrampolinesScope {
+public:
+    CallRuntimeTrampolinesScope(JSThread *thread, JSTaggedType *newFp)
+        :oldRbp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())),
+        thread_(thread)
+    {
+        thread_->SetCurrentSPFrame(newFp);
+        // print newfp and type for debug
+        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
+            << " thread_->fp:" << thread_->GetCurrentSPFrame() <<std::endl;
+        FrameType type = *(reinterpret_cast<FrameType*>(
+                    reinterpret_cast<long long>(newFp) + FrameConst::kFrameType));
+        std::cout << "type = " << as_integer(type) << std::endl;
+    }
+    ~CallRuntimeTrampolinesScope()
+    {
+        // print oldfp and type for debug
+        std::cout << "~CallRuntimeTrampolinesScope oldRbp_: " << oldRbp_ <<
+            " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
+        FrameType type = *(reinterpret_cast<FrameType*>(
+                    reinterpret_cast<long long>(oldRbp_) + FrameConst::kFrameType));
+        std::cout << "type = " << as_integer(type) << std::endl;
+        thread_->SetCurrentSPFrame(oldRbp_);
+    }
+private:
+    JSTaggedType *oldRbp_;
+    JSThread *thread_;
+};
 }  // namespace panda::ecmascript
 #endif

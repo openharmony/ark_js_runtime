@@ -17,7 +17,7 @@
 #include "ecmascript/tooling/pt_js_extractor.h"
 
 namespace panda::tooling::ecmascript {
-using panda::ecmascript::EcmaFrameHandler;
+using panda::ecmascript::InterpretedFrameHandler;
 using panda::ecmascript::JSTaggedType;
 uint32_t PtJSExtractor::SingleStepper::GetStackDepth() const
 {
