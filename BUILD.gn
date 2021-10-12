@@ -390,6 +390,7 @@ source_set("libark_jsruntime_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "//ark/js_runtime/ecmascript/compiler/llvm:libllvm_stackmap_parser",
     sdk_libc_secshared_dep,
   ]
 
@@ -465,6 +466,8 @@ ohos_shared_library("libark_jsruntime_test") {
   } else {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
+  deps +=
+      [ "//ark/js_runtime/ecmascript/compiler/llvm:libllvm_stackmap_parser" ]
 
   output_extension = "so"
   subsystem_name = "test"

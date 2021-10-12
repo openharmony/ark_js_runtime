@@ -458,7 +458,7 @@ PtJSExtractor *JSBackend::GetExtractor(const CString &url)
 bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames)
 {
     int32_t callFrameId = 0;
-    auto walkerFunc = [this, &callFrameId, &callFrames](const EcmaFrameHandler *frameHandler) -> StackState {
+    auto walkerFunc = [this, &callFrameId, &callFrames](const InterpretedFrameHandler *frameHandler) -> StackState {
         JSMethod *method = DebuggerApi::GetMethod(frameHandler);
         if (method->IsNative()) {
             LOG(INFO, DEBUGGER) << "GenerateCallFrames: Skip CFrame and Native method";
@@ -478,7 +478,8 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
     return DebuggerApi::StackWalker(ecmaVm_, walkerFunc);
 }
 
-bool JSBackend::GenerateCallFrame(CallFrame *callFrame, const EcmaFrameHandler *frameHandler, int32_t callFrameId)
+bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
+    const InterpretedFrameHandler *frameHandler, int32_t callFrameId)
 {
     JSMethod *method = DebuggerApi::GetMethod(frameHandler);
     auto *pf = method->GetPandaFile();
@@ -528,7 +529,7 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame, const EcmaFrameHandler *
     return true;
 }
 
-std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const EcmaFrameHandler *frameHandler,
+std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
     std::unique_ptr<RemoteObject> *thisObj)
 {
     auto localScope = std::make_unique<Scope>();

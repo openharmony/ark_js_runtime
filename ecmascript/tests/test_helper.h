@@ -64,7 +64,8 @@ public:
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
         FrameState *state = reinterpret_cast<FrameState *>(newSp) - 1;
-        state->prev = sp;
+        state->base.frameType = ecmascript::FrameType::INTERPRETER_FRAME;
+        state->base.prev = sp;
         state->pc = nullptr;
         state->sp = newSp;
         state->method = thread->GetEcmaVM()->GetMethodForNativeFunction(nullptr);

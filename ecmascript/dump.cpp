@@ -552,7 +552,7 @@ void JSTaggedValue::DumpVal(JSThread *thread, JSTaggedType val)
 
 void JSThread::DumpStack()
 {
-    EcmaFrameHandler handler(this);
+    InterpretedFrameHandler handler(this);
     handler.DumpStack(std::cout);
 }
 

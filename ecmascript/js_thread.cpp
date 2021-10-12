@@ -78,7 +78,7 @@ void JSThread::ClearException()
 
 JSTaggedValue JSThread::GetCurrentLexenv() const
 {
-    return EcmaFrameHandler(currentFrame_).GetEnv();
+    return InterpretedFrameHandler(currentFrame_).GetEnv();
 }
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
@@ -86,14 +86,13 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     if (!exception_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&exception_)));
     }
-
     // visit global Constant
     globalConst_.VisitRangeSlot(v1);
     // visit stack roots
-    EcmaFrameHandler(currentFrame_).Iterate(v0, v1);
+    FrameIterator iterator(currentFrame_);
+    iterator.Iterate(v0, v1);
     // visit internal call params
     internalCallParams_->Iterate(v1);
-
     // visit tagged handle storage roots
     if (currentHandleStorageIndex_ != -1) {
         int32_t nid = currentHandleStorageIndex_;

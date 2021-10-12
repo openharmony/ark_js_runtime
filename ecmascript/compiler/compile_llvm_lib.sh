@@ -25,20 +25,24 @@ echo ${BIN_PATH}
 echo ${BASE_HOME}
 
 if [ ! -d ${BASE_HOME}/third_party/llvm-project ]; then
+    cd ${BASE_HOME}/third_party
 	dd if=/dev/zero of=/tmp/mem.swap bs=1M count=4096
-    git clone https://gitee.com/github-repos/llvm-project.git
+    git clone  https://gitee.com/surpassgoodchao/llvm-project.git
 fi
 
 cd ${BASE_HOME}/third_party/llvm-project
 if [ ! -d "build" ];then
+    git checkout -b local llvmorg-10.0.1
+    cp ../../ark/js_runtime/ecmascript/compiler/llvm/llvm.patch .
+    git apply --reject llvm.patch
     mkdir build && cd build
-    cmake -GNinja -DCMAKE_BUILD_TYPE=Release ../llvm
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_ARK_GC_SUPPORT=ON -DLLVM_ENABLE_TERMINFO=OFF DLLVM_STATIC_LINK_CXX_STDLIB=OFF -DLLVM_ENABLE_ZLIB=OFF ../llvm
     ninja
 else
     cd build
     if [ ! -d "lib" ]; then
         rm -rf *
-        cmake -GNinja -DCMAKE_BUILD_TYPE=Release ../llvm
+        cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_ARK_GC_SUPPORT=ON -DLLVM_ENABLE_TERMINFO=OFF DLLVM_STATIC_LINK_CXX_STDLIB=OFF -DLLVM_ENABLE_ZLIB=OFF ../llvm
         ninja
     fi
 fi

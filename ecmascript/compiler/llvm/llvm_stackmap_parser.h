@@ -21,10 +21,21 @@
 #include <set>
 #include <vector>
 
+#ifdef PANDA_TARGET_AMD64
+#define SP_DWARF_REG_NUM  7
+#define FP_DWARF_REG_NUM  6
+#define SP_OFFSET      2
+#else
+#define SP_DWARF_REG_NUM  0
+#define FP_DWARF_REG_NUM  0
+#define SP_OFFSET      0
+#endif
+
 namespace kungfu {
 using OffsetType = int32_t;
 using DwarfRegType = uint16_t;
 using DwarfRegAndOffsetType = std::pair<DwarfRegType, OffsetType>;
+using DwarfRegAndOffsetTypeVector = std::vector<DwarfRegAndOffsetType>;
 using Fun2InfoType = std::pair<uintptr_t, DwarfRegAndOffsetType>;
 
 struct Header {
@@ -88,7 +99,7 @@ struct LocationTy {
     uint16_t Reserved_1;
     OffsetType OffsetOrSmallConstant;
 
-    std::string TypeToString(Kind location) const;
+    std::string TypeToString(Kind loc) const;
 
     void Print() const
     {
@@ -132,7 +143,7 @@ struct StkMapRecordTy {
 
 class DataInfo {
 public:
-    explicit DataInfo(const uint8_t* data): data_(data), offset(0) {}
+    explicit DataInfo(const uint8_t *data): data_(data), offset(0) {}
     ~DataInfo()
     {
         data_ = nullptr;
@@ -150,7 +161,7 @@ public:
         return offset;
     }
 private:
-    const uint8_t* data_;
+    const uint8_t *data_;
     unsigned int offset;
 };
 
@@ -177,11 +188,11 @@ struct LLVMStackMap {
     }
 };
 
-class LLVMStackMapParse {
+class LLVMStackMapParser {
 public:
-    static LLVMStackMapParse& GetInstance()
+    static LLVMStackMapParser& GetInstance()
     {
-        static LLVMStackMapParse instance;
+        static LLVMStackMapParser instance;
         return instance;
     }
     bool CalculateStackMap(const uint8_t *stackMapAddr);
@@ -189,15 +200,17 @@ public:
     {
         llvmStackMap_.Print();
     }
-    bool StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetType &info);
+    bool StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetTypeVector &infos);
+    bool StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t frameFp,
+                                                std::vector<uintptr_t> &slotAddrs);
 private:
-    LLVMStackMapParse()
+    LLVMStackMapParser()
     {
         stackMapAddr_ = nullptr;
         callSiteInfos_.clear();
         dataInfo_ = nullptr;
     }
-    ~LLVMStackMapParse()
+    ~LLVMStackMapParser()
     {
         stackMapAddr_ = nullptr;
         callSiteInfos_.clear();

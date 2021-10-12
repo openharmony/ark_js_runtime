@@ -26,18 +26,18 @@ class JSThread;
 class JSFunction;
 class ConstantPool;
 
-class EcmaFrameHandler {
+class InterpretedFrameHandler {
 public:
-    explicit EcmaFrameHandler(JSTaggedType *sp) : sp_(sp) {}
-    explicit EcmaFrameHandler(const JSThread *thread);
-    ~EcmaFrameHandler() = default;
-    DEFAULT_COPY_SEMANTIC(EcmaFrameHandler);
-    DEFAULT_MOVE_SEMANTIC(EcmaFrameHandler);
+    explicit InterpretedFrameHandler(JSTaggedType *sp) : sp_(sp) {}
+    explicit InterpretedFrameHandler(const JSThread *thread);
+    ~InterpretedFrameHandler() = default;
+    DEFAULT_COPY_SEMANTIC(InterpretedFrameHandler);
+    DEFAULT_MOVE_SEMANTIC(InterpretedFrameHandler);
 
     bool HasFrame() const;
     bool IsBreakFrame() const;
     void PrevFrame();
-    EcmaFrameHandler GetPrevFrame() const;
+    InterpretedFrameHandler GetPrevFrame() const;
 
     JSTaggedValue GetVRegValue(size_t index) const;
     void SetVRegValue(size_t index, JSTaggedValue value);
@@ -68,6 +68,34 @@ public:
 private:
     JSTaggedType *sp_{nullptr};
 };
-}  // namespace ecmascript
+
+class OptimizedFrameHandler {
+public:
+    explicit OptimizedFrameHandler(uintptr_t *fp) : fp_(fp) {}
+    explicit OptimizedFrameHandler(const JSThread *thread);
+    ~OptimizedFrameHandler() = default;
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+private:
+    uintptr_t *fp_ {nullptr};
+};
+
+class OptimizedEntryFrameHandler {
+public:
+    explicit OptimizedEntryFrameHandler(uintptr_t *fp) : fp_(fp) {}
+    explicit OptimizedEntryFrameHandler(const JSThread *thread);
+    ~OptimizedEntryFrameHandler() = default;
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+private:
+    uintptr_t *fp_ {nullptr};
+};
+
+class FrameIterator {
+public:
+    explicit FrameIterator(JSTaggedType *fp) : fp_(fp) {}
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+private:
+    JSTaggedType *fp_ {nullptr};
+};
+} // namespace ecmascript
 }  // namespace panda
 #endif  // ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H

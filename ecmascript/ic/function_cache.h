@@ -36,7 +36,7 @@ public:
 
     static inline FunctionCache *GetCurrent(JSThread *thread)
     {
-        JSTaggedValue funcValue = EcmaFrameHandler(thread).GetFunction();
+        JSTaggedValue funcValue = InterpretedFrameHandler(thread).GetFunction();
         JSFunction *func = JSFunction::Cast(funcValue.GetTaggedObject());
         return FunctionCache::Cast(func->GetFunctionCache().GetTaggedObject());
     }
