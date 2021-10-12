@@ -181,6 +181,12 @@ void ProfileTypeAccessor::AddGlobalHandlerKey(JSHandle<JSTaggedValue> key, JSHan
     profileTypeInfo_->Set(thread_, index, newArr.GetTaggedValue());
 }
 
+void ProfileTypeAccessor::AddGlobalRecordHandler(JSHandle<JSTaggedValue> handler) const
+{
+    uint32_t index = slotId_;
+    profileTypeInfo_->Set(thread_, index, handler.GetTaggedValue());
+}
+
 void ProfileTypeAccessor::SetAsMega() const
 {
     profileTypeInfo_->Set(thread_, slotId_, JSTaggedValue::Hole());

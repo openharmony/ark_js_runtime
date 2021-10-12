@@ -116,6 +116,7 @@ public:
     void AddHandlerWithKey(JSHandle<JSTaggedValue> key, JSHandle<JSTaggedValue> dynclass,
                            JSHandle<JSTaggedValue> handler) const;
     void AddGlobalHandlerKey(JSHandle<JSTaggedValue> key, JSHandle<JSTaggedValue> handler) const;
+    void AddGlobalRecordHandler(JSHandle<JSTaggedValue> handler) const;
 
     JSTaggedValue GetWeakRef(JSTaggedValue value) const
     {

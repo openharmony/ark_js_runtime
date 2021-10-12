@@ -1380,16 +1380,21 @@ JSTaggedValue SlowRuntimeStub::TryUpdateGlobalRecord(JSThread *thread, JSTaggedV
 
     EcmaVM *vm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
-    NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
+    GlobalDictionary *dict = GlobalDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
     int entry = dict->FindEntry(prop);
+    ASSERT(entry != -1);
+
     if (dict->GetAttributes(entry).IsConstProps()) {
-        return ThrowSyntaxError(thread, " const can not be modified");
+        return ThrowSyntaxError(thread, "const variable can not be modified");
     }
-    dict->UpdateValue(thread, entry, value);
+
+    PropertyBox *box = dict->GetBox(entry);
+    box->SetValue(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return JSTaggedValue::True();
 }
 
+// return box
 JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue key, bool *found)
 {
     INTERPRETER_TRACE(thread, LdGlobalRecord);
@@ -1397,11 +1402,11 @@ JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue ke
 
     EcmaVM *vm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
-    NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
+    GlobalDictionary *dict = GlobalDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
     int entry = dict->FindEntry(key);
     if (entry != -1) {
         *found = true;
-        return dict->GetValue(entry);
+        return JSTaggedValue(dict->GetBox(entry));
     }
     return JSTaggedValue::Undefined();
 }
@@ -1413,18 +1418,28 @@ JSTaggedValue SlowRuntimeStub::StGlobalRecord(JSThread *thread, JSTaggedValue pr
 
     EcmaVM *vm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
-    NameDictionary *dict = NameDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
+    GlobalDictionary *dict = GlobalDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
 
+    // cross files global record name binding judgment
     int entry = dict->FindEntry(prop);
     if (entry != -1) {
-        return ThrowReferenceError(thread, prop, " is not defined");
+        return ThrowSyntaxError(thread, "Duplicate identifier");
     }
+
     PropertyAttributes attributes;
-    attributes.SetIsConstProps(isConst);
+    if (isConst) {
+        attributes.SetIsConstProps(true);
+    }
     JSHandle<JSTaggedValue> propHandle(thread, prop);
     JSHandle<JSTaggedValue> valueHandle(thread, value);
-    JSHandle<NameDictionary> dictHandle(thread, dict);
-    dict->PutIfAbsent(thread, dictHandle, propHandle, valueHandle, attributes);
+    JSHandle<GlobalDictionary> dictHandle(thread, dict);
+
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<PropertyBox> box = factory->NewPropertyBox(valueHandle);
+    PropertyBoxType boxType = valueHandle->IsUndefined() ? PropertyBoxType::UNDEFINED : PropertyBoxType::CONSTANT;
+    attributes.SetBoxType(boxType);
+
+    dict->PutIfAbsent(thread, dictHandle, propHandle, JSHandle<JSTaggedValue>(box), attributes);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return JSTaggedValue::True();
 }

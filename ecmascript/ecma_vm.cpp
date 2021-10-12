@@ -22,6 +22,7 @@
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_string_table.h"
+#include "ecmascript/global_dictionary.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
@@ -153,7 +154,7 @@ bool EcmaVM::Initialize()
         globalEnv->SetEmptyArray(thread_, factory_->NewEmptyArray());
         globalEnv->SetEmptyLayoutInfo(thread_, factory_->CreateLayoutInfo(0));
         globalEnv->SetRegisterSymbols(thread_, JSTaggedValue(SymbolTable::Create(thread_)));
-        globalEnv->SetGlobalRecord(thread_, JSTaggedValue(NameDictionary::Create(thread_)));
+        globalEnv->SetGlobalRecord(thread_, JSTaggedValue(GlobalDictionary::Create(thread_)));
         JSTaggedValue emptyStr = thread_->GlobalConstants()->GetEmptyString();
         stringTable_->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
         globalEnv->SetEmptyTaggedQueue(thread_, factory_->NewTaggedQueue(0));
