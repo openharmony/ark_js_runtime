@@ -57,7 +57,7 @@ public:
         thread_(thread)
     {
         thread_->SetCurrentSPFrame(newFp);
-
+        // print newfp and type for debug
         std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
             << " thread_->fp:" << thread_->GetCurrentSPFrame() <<std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
@@ -66,6 +66,7 @@ public:
     }
     ~CallRuntimeTrampolinesScope()
     {
+        // print oldfp and type for debug
         std::cout << "~CallRuntimeTrampolinesScope oldRbp_: " << oldRbp_ <<
             " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(

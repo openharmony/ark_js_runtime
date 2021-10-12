@@ -1139,6 +1139,7 @@ void DoSafepoint()
                 } else if (info.first == FP_DWARF_REG_NUM) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
                 }
+                // print ref and vlue for debug
                 std::cout << std::hex << "ref addr:" << address;
                 std::cout << "  value:" << *address;
                 std::cout << " *value :" << **address << std::endl;
