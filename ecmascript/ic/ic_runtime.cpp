@@ -136,15 +136,18 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
     if (receiver->IsTypedArray() || !receiver->IsJSObject()) {
         return JSTaggedValue::GetProperty(thread_, receiver, key).GetValue().GetTaggedValue();
     }
-    // 1. find from global record
+
+    // global variable find from global record firstly
     if (GetICKind() == ICKind::NamedGlobalLoadIC) {
         bool found = false;
-        JSTaggedValue res = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
+        JSTaggedValue box = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
         if (found) {
-            return res;
+            ASSERT(box.IsPropertyBox());
+            icAccessor_.AddGlobalRecordHandler(JSHandle<JSTaggedValue>(thread_, box));
+            return PropertyBox::Cast(box.GetTaggedObject())->GetValue();
         }
     }
-    // 2. find from global object
+
     ObjectOperator op(GetThread(), receiver, key);
     auto result = JSHandle<JSTaggedValue>(thread_, JSObject::GetProperty(GetThread(), &op));
     if (!op.IsFound() && GetICKind() == ICKind::NamedGlobalLoadIC) {
@@ -176,18 +179,21 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
         bool success = JSTaggedValue::SetProperty(GetThread(), receiver, key, value, true);
         return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
     }
-    // 1. find from global record
+
+    // global variable find from global record firstly
     if (GetICKind() == ICKind::NamedGlobalStoreIC) {
         bool found = false;
-        SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
+        JSTaggedValue box = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
         if (found) {
+            ASSERT(box.IsPropertyBox());
             SlowRuntimeStub::TryUpdateGlobalRecord(thread_, key.GetTaggedValue(), value.GetTaggedValue());
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);
+            icAccessor_.AddGlobalRecordHandler(JSHandle<JSTaggedValue>(thread_, box));
             return JSTaggedValue::Undefined();
         }
     }
     UpdateReceiverHClass(JSHandle<JSTaggedValue>(GetThread(), JSHandle<JSObject>::Cast(receiver)->GetClass()));
-    // 2. find from global object
+
     ObjectOperator op(GetThread(), receiver, key);
     bool success = JSObject::SetProperty(&op, value, true);
     if (!success && GetICKind() == ICKind::NamedGlobalStoreIC) {

@@ -2649,7 +2649,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         // order: 1. global record 2. global object
         JSTaggedValue result = SlowRuntimeStub::LdGlobalRecord(thread, prop, &found);
         if (found) {
-            SET_ACC(result);
+            SET_ACC(PropertyBox::Cast(result.GetTaggedObject())->GetValue());
         } else {
             JSTaggedValue globalResult = FastRuntimeStub::GetGlobalOwnProperty(globalObj, prop, &found);
             if (found) {
