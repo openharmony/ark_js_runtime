@@ -1134,10 +1134,9 @@ void DoSafepoint()
         if (found) {
             for (auto &info : infos) {
                 uintptr_t **address = nullptr;
-                if (info.first == 7) { // 7: x86_64 dwarf register num, representing rsp
+                if (info.first == SP_DWARF_REG_NUM) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
-                // rbp
-                } else if (info.first == 6) { // 6: x86_64 dwarf register num, representing rbp
+                } else if (info.first == FP_DWARF_REG_NUM) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
                 }
                 std::cout << std::hex << "ref addr:" << address;

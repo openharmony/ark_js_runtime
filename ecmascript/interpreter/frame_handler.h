@@ -26,18 +26,18 @@ class JSThread;
 class JSFunction;
 class ConstantPool;
 
-class EcmaFrameHandler {
+class InterpretedFrameHandler {
 public:
-    explicit EcmaFrameHandler(JSTaggedType *sp) : sp_(sp) {}
-    explicit EcmaFrameHandler(const JSThread *thread);
-    ~EcmaFrameHandler() = default;
-    DEFAULT_COPY_SEMANTIC(EcmaFrameHandler);
-    DEFAULT_MOVE_SEMANTIC(EcmaFrameHandler);
+    explicit InterpretedFrameHandler(JSTaggedType *sp) : sp_(sp) {}
+    explicit InterpretedFrameHandler(const JSThread *thread);
+    ~InterpretedFrameHandler() = default;
+    DEFAULT_COPY_SEMANTIC(InterpretedFrameHandler);
+    DEFAULT_MOVE_SEMANTIC(InterpretedFrameHandler);
 
     bool HasFrame() const;
     bool IsBreakFrame() const;
     void PrevFrame();
-    EcmaFrameHandler GetPrevFrame() const;
+    InterpretedFrameHandler GetPrevFrame() const;
 
     JSTaggedValue GetVRegValue(size_t index) const;
     void SetVRegValue(size_t index, JSTaggedValue value);

@@ -50,23 +50,23 @@ public:
     static uint32_t StringGetHashCode(uint64_t ecmaString);
 };
 
-class StubCallRunTimeThreadFpScope {
+class CallRuntimeTrampolinesScope {
 public:
-    StubCallRunTimeThreadFpScope(JSThread *thread, JSTaggedType *newFp)
+    CallRuntimeTrampolinesScope(JSThread *thread, JSTaggedType *newFp)
         :oldRbp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())),
         thread_(thread)
     {
         thread_->SetCurrentSPFrame(newFp);
 
-        std::cout << "StubCallRunTimeThreadFpScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
+        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
             << " thread_->fp:" << thread_->GetCurrentSPFrame() <<std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(newFp) + FrameConst::kFrameType));
         std::cout << "type = " << as_integer(type) << std::endl;
     }
-    ~StubCallRunTimeThreadFpScope()
+    ~CallRuntimeTrampolinesScope()
     {
-        std::cout << "~StubCallRunTimeThreadFpScope oldRbp_: " << oldRbp_ <<
+        std::cout << "~CallRuntimeTrampolinesScope oldRbp_: " << oldRbp_ <<
             " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(oldRbp_) + FrameConst::kFrameType));

@@ -25,7 +25,7 @@
 #include "include/tooling/pt_lang_extension.h"
 
 namespace panda {
-using ecmascript::EcmaFrameHandler;
+using ecmascript::InterpretedFrameHandler;
 using ecmascript::EcmaVM;
 using ecmascript::JSThread;
 
@@ -34,7 +34,7 @@ std::pair<Method *, uint32_t> EcmaLanguageContext::GetCatchMethodAndOffset(Metho
     Method *catchMethod = method;
     uint32_t catchOffset = 0;
     auto jsThread = static_cast<JSThread *>(thread);
-    EcmaFrameHandler frameHandler(jsThread);
+    InterpretedFrameHandler frameHandler(jsThread);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;

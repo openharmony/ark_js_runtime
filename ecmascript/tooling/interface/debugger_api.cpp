@@ -49,11 +49,11 @@ CString DebuggerApi::ConvertToString(const std::string &str)
     return panda::ecmascript::ConvertToString(str);
 }
 
-// EcmaFrameHandler
+// InterpretedFrameHandler
 uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
 {
     uint32_t count = 0;
-    EcmaFrameHandler frameHandler(ecmaVm->GetJSThread());
+    InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
@@ -63,9 +63,9 @@ uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
     return count;
 }
 
-bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const EcmaFrameHandler *)> func)
+bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func)
 {
-    EcmaFrameHandler frameHandler(ecmaVm->GetJSThread());
+    InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
@@ -84,37 +84,37 @@ bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(con
 
 uint32_t DebuggerApi::GetBytecodeOffset(const EcmaVM *ecmaVm)
 {
-    return EcmaFrameHandler(ecmaVm->GetJSThread()).GetBytecodeOffset();
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).GetBytecodeOffset();
 }
 
 JSMethod *DebuggerApi::GetMethod(const EcmaVM *ecmaVm)
 {
-    return EcmaFrameHandler(ecmaVm->GetJSThread()).GetMethod();
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).GetMethod();
 }
 
 Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm, size_t index)
 {
-    auto value = EcmaFrameHandler(ecmaVm->GetJSThread()).GetVRegValue(index);
+    auto value = InterpretedFrameHandler(ecmaVm->GetJSThread()).GetVRegValue(index);
     JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 
 void DebuggerApi::SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value)
 {
-    return EcmaFrameHandler(ecmaVm->GetJSThread()).SetVRegValue(index, JSNApiHelper::ToJSTaggedValue(*value));
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).SetVRegValue(index, JSNApiHelper::ToJSTaggedValue(*value));
 }
 
-uint32_t DebuggerApi::GetBytecodeOffset(const EcmaFrameHandler *frameHandler)
+uint32_t DebuggerApi::GetBytecodeOffset(const InterpretedFrameHandler *frameHandler)
 {
     return frameHandler->GetBytecodeOffset();
 }
 
-JSMethod *DebuggerApi::GetMethod(const EcmaFrameHandler *frameHandler)
+JSMethod *DebuggerApi::GetMethod(const InterpretedFrameHandler *frameHandler)
 {
     return frameHandler->GetMethod();
 }
 
-Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm, const EcmaFrameHandler *frameHandler, size_t index)
+Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm, const InterpretedFrameHandler *frameHandler, size_t index)
 {
     auto value = frameHandler->GetVRegValue(index);
     JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);

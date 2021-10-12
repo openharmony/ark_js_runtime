@@ -40,7 +40,7 @@ struct FrameState {
     JSTaggedValue acc;
     JSTaggedValue env;
     uint64_t numActualArgs;
-    InterPretFrameStateBase base;
+    InterpretedFrameStateBase base;
 };
 
 // NOLINTNEXTLINE(bugprone-sizeof-expression)

@@ -229,7 +229,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
 
     FrameState *state = GET_FRAME(newSp);
     state->base.prev = sp;
-    state->base.frameType = ecmascript::FrameType::INTERPRETER_FRAME;
+    state->base.frameType = FrameType::INTERPRETER_FRAME;
     state->pc = nullptr;
     state->sp = newSp;
     state->method = methodToCall;
@@ -450,7 +450,7 @@ void EcmaInterpreter::ResumeContext(JSThread *thread)
 
 void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
 {
-    EcmaFrameHandler frameHandler(thread);
+    InterpretedFrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
@@ -3183,7 +3183,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     HANDLE_OPCODE(EXCEPTION_HANDLER) {
         auto exception = thread->GetException();
 
-        EcmaFrameHandler frameHandler(sp);
+        InterpretedFrameHandler frameHandler(sp);
         uint32_t pcOffset = panda_file::INVALID_OFFSET;
         for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
             if (frameHandler.IsBreakFrame()) {

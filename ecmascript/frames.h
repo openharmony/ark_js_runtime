@@ -118,12 +118,17 @@
 // or Optimized EntryFrame/Optimized Frame.
 // **nop**  represent don't call SAVE or UPDATE,  **illegal**  represent this secnarios don't existed.
 
-// ```
-//              	iframe	         OptimizedEntry	  Optimized	  RunTime
-// iframe	     	SAVE/UPATE	     SAVE	         illegal	SAVE/UPATE
-// OptimizedEntry	UPATE		     illegal	     nop	         UPATE
-// Optimized	    UPATE	         illegal	     nop	         UPATE
-// RunTime		    nop		          illegal	     illegal	      nop
+// +----------------------------------------------------------------------+
+// |               | iframe	    | OptimizedEntry | Optimized | RunTime    |
+// |-----------------------------------------------------------------------
+// |iframe	       | SAVE/UPATE	| SAVE	         | illegal	 | SAVE/UPATE |
+// |-----------------------------------------------------------------------
+// |OptimizedEntry | UPATE		| illegal	     | nop	     | UPATE      |
+// |-----------------------------------------------------------------------
+// |Optimized	   | UPATE	    | illegal	     | nop	     | UPATE      |
+// |-----------------------------------------------------------------------
+// |RunTime		   | nop		| illegal	     | illegal	 | nop        |
+// +----------------------------------------------------------------------+
 // ```
 
 // ​	Iterator Frame from Runtime Frame,  the process is as flollows:
@@ -231,22 +236,22 @@ auto as_integer(Enumeration const value)
     return static_cast<typename std::underlying_type<Enumeration>::type>(value);
 }
 
-class OptFrameStateBase {
+class OptimizedFrameStateBase {
 public:
     FrameType frameType;
     uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
 };
 
-class InterPretFrameStateBase {
+class InterpretedFrameStateBase {
 public:
     uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     FrameType frameType;
 };
 
-class LLVMOptimizedEntryFrameState {
+class OptimizedEntryFrameState {
 public:
     uint64_t *threadFp; // for gc
-    OptFrameStateBase base;
+    OptimizedFrameStateBase base;
 };
 
 constexpr int kSystemPointerSize = sizeof(void*);

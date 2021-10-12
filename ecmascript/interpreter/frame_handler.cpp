@@ -23,18 +23,18 @@
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 
 namespace panda::ecmascript {
-EcmaFrameHandler::EcmaFrameHandler(const JSThread *thread)
+InterpretedFrameHandler::InterpretedFrameHandler(const JSThread *thread)
 {
     sp_ = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
 }
 
-bool EcmaFrameHandler::HasFrame() const
+bool InterpretedFrameHandler::HasFrame() const
 {
     // Breakframe also is a frame
     return sp_ != nullptr;
 }
 
-bool EcmaFrameHandler::IsBreakFrame() const
+bool InterpretedFrameHandler::IsBreakFrame() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -42,7 +42,7 @@ bool EcmaFrameHandler::IsBreakFrame() const
     return state->sp == nullptr;
 }
 
-void EcmaFrameHandler::PrevFrame()
+void InterpretedFrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -50,29 +50,29 @@ void EcmaFrameHandler::PrevFrame()
     sp_ = state->base.prev;
 }
 
-EcmaFrameHandler EcmaFrameHandler::GetPrevFrame() const
+InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
-    return EcmaFrameHandler(state->base.prev);
+    return InterpretedFrameHandler(state->base.prev);
 }
 
-JSTaggedValue EcmaFrameHandler::GetVRegValue(size_t index) const
+JSTaggedValue InterpretedFrameHandler::GetVRegValue(size_t index) const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return JSTaggedValue(sp_[index]);
 }
 
-void EcmaFrameHandler::SetVRegValue(size_t index, JSTaggedValue value)
+void InterpretedFrameHandler::SetVRegValue(size_t index, JSTaggedValue value)
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     sp_[index] = value.GetRawData();
 }
 
-JSTaggedValue EcmaFrameHandler::GetAcc() const
+JSTaggedValue InterpretedFrameHandler::GetAcc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -80,7 +80,7 @@ JSTaggedValue EcmaFrameHandler::GetAcc() const
     return state->acc;
 }
 
-uint32_t EcmaFrameHandler::GetSize() const
+uint32_t InterpretedFrameHandler::GetSize() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -91,7 +91,7 @@ uint32_t EcmaFrameHandler::GetSize() const
     return static_cast<uint32_t>(size);
 }
 
-uint32_t EcmaFrameHandler::GetBytecodeOffset() const
+uint32_t InterpretedFrameHandler::GetBytecodeOffset() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -101,7 +101,7 @@ uint32_t EcmaFrameHandler::GetBytecodeOffset() const
     return static_cast<uint32_t>(offset);
 }
 
-JSMethod *EcmaFrameHandler::GetMethod() const
+JSMethod *InterpretedFrameHandler::GetMethod() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -109,7 +109,7 @@ JSMethod *EcmaFrameHandler::GetMethod() const
     return state->method;
 }
 
-JSTaggedValue EcmaFrameHandler::GetFunction() const
+JSTaggedValue InterpretedFrameHandler::GetFunction() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -120,7 +120,7 @@ JSTaggedValue EcmaFrameHandler::GetFunction() const
     return func;
 }
 
-const uint8_t *EcmaFrameHandler::GetPc() const
+const uint8_t *InterpretedFrameHandler::GetPc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -128,7 +128,7 @@ const uint8_t *EcmaFrameHandler::GetPc() const
     return state->pc;
 }
 
-JSTaggedType *EcmaFrameHandler::GetSp() const
+JSTaggedType *InterpretedFrameHandler::GetSp() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -136,7 +136,7 @@ JSTaggedType *EcmaFrameHandler::GetSp() const
     return state->sp;
 }
 
-ConstantPool *EcmaFrameHandler::GetConstpool() const
+ConstantPool *InterpretedFrameHandler::GetConstpool() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -144,7 +144,7 @@ ConstantPool *EcmaFrameHandler::GetConstpool() const
     return state->constpool;
 }
 
-JSTaggedValue EcmaFrameHandler::GetEnv() const
+JSTaggedValue InterpretedFrameHandler::GetEnv() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -152,7 +152,7 @@ JSTaggedValue EcmaFrameHandler::GetEnv() const
     return state->env;
 }
 
-void EcmaFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
+void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
     JSTaggedType *current = sp_;
     if (current != nullptr) {
@@ -176,10 +176,10 @@ void EcmaFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1
     }
 }
 
-void EcmaFrameHandler::DumpStack(std::ostream &os) const
+void InterpretedFrameHandler::DumpStack(std::ostream &os) const
 {
     size_t i = 0;
-    EcmaFrameHandler frameHandler(sp_);
+    InterpretedFrameHandler frameHandler(sp_);
     for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
         os << "[" << i++
            << "]:" << frameHandler.GetMethod()->ParseFunctionName()
@@ -187,9 +187,9 @@ void EcmaFrameHandler::DumpStack(std::ostream &os) const
     }
 }
 
-void EcmaFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
+void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 {
-    EcmaFrameHandler frameHandler(sp_);
+    InterpretedFrameHandler frameHandler(sp_);
     ASSERT(frameHandler.HasFrame());
 
     // NOLINTNEXTLINE(cppcoreguidelines-narrowing-conversions, bugprone-narrowing-conversions)
@@ -245,18 +245,19 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
                         reinterpret_cast<long long>(current) + FrameConst::kFrameType));
         if (type == FrameType::INTERPRETER_FRAME) {
             FrameState *state = reinterpret_cast<FrameState *>(current) - 1;
-            EcmaFrameHandler(current).Iterate(v0, v1);
+            InterpretedFrameHandler(current).Iterate(v0, v1);
             current = state->base.prev;
         } else if (type == FrameType::OPTIMIZED_FRAME) {
-            OptFrameStateBase *state = reinterpret_cast<OptFrameStateBase *>(
+            OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
                 reinterpret_cast<long long>(current) -
-                MEMBER_OFFSET(OptFrameStateBase, prev));
+                MEMBER_OFFSET(OptimizedFrameStateBase, prev));
             OptimizedFrameHandler(current).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->prev);
         } else {
-            LLVMOptimizedEntryFrameState *state = reinterpret_cast<LLVMOptimizedEntryFrameState *>(
+            ASSERT(type == FrameType::OPTIMIZED_ENTRY_FRAME);
+            OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
                 reinterpret_cast<long long>(current) -
-                MEMBER_OFFSET(LLVMOptimizedEntryFrameState, base.prev));
+                MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
             OptimizedEntryFrameHandler(current).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->threadFp);
         }

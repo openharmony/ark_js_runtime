@@ -78,7 +78,7 @@ void JSThread::ClearException()
 
 JSTaggedValue JSThread::GetCurrentLexenv() const
 {
-    return EcmaFrameHandler(currentFrame_).GetEnv();
+    return InterpretedFrameHandler(currentFrame_).GetEnv();
 }
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
