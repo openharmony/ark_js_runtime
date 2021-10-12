@@ -114,7 +114,8 @@ JSMethod *DebuggerApi::GetMethod(const InterpretedFrameHandler *frameHandler)
     return frameHandler->GetMethod();
 }
 
-Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm, const InterpretedFrameHandler *frameHandler, size_t index)
+Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm,
+    const InterpretedFrameHandler *frameHandler, size_t index)
 {
     auto value = frameHandler->GetVRegValue(index);
     JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);

@@ -68,7 +68,8 @@ public:
     static void SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value);
     static uint32_t GetBytecodeOffset(const InterpretedFrameHandler *frameHandler);
     static JSMethod *GetMethod(const InterpretedFrameHandler *frameHandler);
-    static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm, const InterpretedFrameHandler *frameHandler, size_t index);
+    static Local<JSValueRef> GetVRegValue(const EcmaVM *ecmaVm,
+        const InterpretedFrameHandler *frameHandler, size_t index);
 
     // JSThread
     static Local<JSValueRef> GetException(const EcmaVM *ecmaVm);

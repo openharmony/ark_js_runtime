@@ -14,9 +14,6 @@
  */
 
 #include "ecmascript/interpreter/frame_handler.h"
-
-#include <cstdint>
-
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_thread.h"
 #include "libpandafile/bytecode_instruction-inl.h"

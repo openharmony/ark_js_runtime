@@ -478,7 +478,8 @@ bool JSBackend::GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFram
     return DebuggerApi::StackWalker(ecmaVm_, walkerFunc);
 }
 
-bool JSBackend::GenerateCallFrame(CallFrame *callFrame, const InterpretedFrameHandler *frameHandler, int32_t callFrameId)
+bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
+    const InterpretedFrameHandler *frameHandler, int32_t callFrameId)
 {
     JSMethod *method = DebuggerApi::GetMethod(frameHandler);
     auto *pf = method->GetPandaFile();
