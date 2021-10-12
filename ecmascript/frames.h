@@ -210,6 +210,12 @@
 #ifndef ECMASCRIPT_FRAMES_H
 #define ECMASCRIPT_FRAMES_H
 
+#ifdef PANDA_TARGET_AMD64
+#define GET_CURRETN_FP(fp) asm("mov %%rbp, %0" : "=rm" (fp))
+#else
+#define GET_CURRETN_FP(fp)
+#endif
+
 namespace panda::ecmascript {
 class JSThread;
 enum class FrameType: uint64_t {

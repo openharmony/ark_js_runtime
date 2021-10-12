@@ -28,11 +28,9 @@ bool RuntimeTrampolines::AddElementInternal(uint64_t argThread, uint64_t argRece
                                             uint64_t argValue, uint32_t argAttr)
 {
     JSTaggedType *fp = nullptr;
-#ifdef PANDA_TARGET_AMD64
-    asm("mov %%rbp, %0" : "=rm" (fp));
-#endif
+    GET_CURRETN_FP(fp);
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    StubCallRunTimeThreadFpLock(thread, fp);
+    StubCallRunTimeThreadFpScope(thread, fp);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSObject> receiver(thread, reinterpret_cast<TaggedObject *>(argReceiver));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
@@ -44,11 +42,9 @@ bool RuntimeTrampolines::CallSetter(uint64_t argThread, uint64_t argSetter, uint
                                     bool argMayThrow)
 {
     JSTaggedType *fp = nullptr;
-#ifdef PANDA_TARGET_AMD64
-    asm("mov %%rbp, %0" : "=rm" (fp));
-#endif
+    GET_CURRETN_FP(fp);
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    StubCallRunTimeThreadFpLock(thread, fp);
+    StubCallRunTimeThreadFpScope(thread, fp);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> receiver(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
@@ -59,11 +55,9 @@ bool RuntimeTrampolines::CallSetter(uint64_t argThread, uint64_t argSetter, uint
 void RuntimeTrampolines::ThrowTypeError(uint64_t argThread, int argMessageStringId)
 {
     JSTaggedType *fp = nullptr;
-#ifdef PANDA_TARGET_AMD64
-    asm("mov %%rbp, %0" : "=rm" (fp));
-#endif
+    GET_CURRETN_FP(fp);
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    StubCallRunTimeThreadFpLock(thread, fp);
+    StubCallRunTimeThreadFpScope(thread, fp);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     std::string message = MessageString::GetMessageString(argMessageStringId);
     ObjectFactory *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
@@ -75,11 +69,9 @@ bool RuntimeTrampolines::JSProxySetProperty(uint64_t argThread, uint64_t argProx
                                             uint64_t argReceiver, bool argMayThrow)
 {
     JSTaggedType *fp = nullptr;
-#ifdef PANDA_TARGET_AMD64
-    asm("mov %%rbp, %0" : "=rm" (fp));
-#endif
+    GET_CURRETN_FP(fp);
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    StubCallRunTimeThreadFpLock(thread, fp);
+    StubCallRunTimeThreadFpScope(thread, fp);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSProxy> proxy(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argProxy)));
     JSHandle<JSTaggedValue> index(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argKey)));
@@ -98,11 +90,9 @@ uint32_t RuntimeTrampolines::GetHash32(uint64_t key, uint64_t len)
 uint64_t RuntimeTrampolines::CallGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver)
 {
     JSTaggedType *fp = nullptr;
-#ifdef PANDA_TARGET_AMD64
-    asm("mov %%rbp, %0" : "=rm" (fp));
-#endif
+    GET_CURRETN_FP(fp);
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    StubCallRunTimeThreadFpLock(thread, fp);
+    StubCallRunTimeThreadFpScope(thread, fp);
     auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
     JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
     return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
@@ -111,11 +101,9 @@ uint64_t RuntimeTrampolines::CallGetter(uint64_t argThread, uint64_t argGetter, 
 uint64_t RuntimeTrampolines::AccessorGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver)
 {
     JSTaggedType *fp = nullptr;
-#ifdef PANDA_TARGET_AMD64
-    asm("mov %%rbp, %0" : "=rm" (fp));
-#endif
+    GET_CURRETN_FP(fp);
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    StubCallRunTimeThreadFpLock(thread, fp);
+    StubCallRunTimeThreadFpScope(thread, fp);
     auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
     JSHandle<JSObject> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
     return accessor->CallInternalGet(thread, objHandle).GetRawData();

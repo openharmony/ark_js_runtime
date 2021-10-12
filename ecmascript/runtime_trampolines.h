@@ -50,23 +50,23 @@ public:
     static uint32_t StringGetHashCode(uint64_t ecmaString);
 };
 
-class StubCallRunTimeThreadFpLock {
+class StubCallRunTimeThreadFpScope {
 public:
-    StubCallRunTimeThreadFpLock(JSThread *thread, JSTaggedType *newFp)
+    StubCallRunTimeThreadFpScope(JSThread *thread, JSTaggedType *newFp)
         :oldRbp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())),
         thread_(thread)
     {
         thread_->SetCurrentSPFrame(newFp);
 
-        std::cout << "StubCallRunTimeThreadFpLock newFp: " << newFp << " oldRbp_ : " << oldRbp_
+        std::cout << "StubCallRunTimeThreadFpScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
             << " thread_->fp:" << thread_->GetCurrentSPFrame() <<std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(newFp) + FrameConst::kFrameType));
         std::cout << "type = " << as_integer(type) << std::endl;
     }
-    ~StubCallRunTimeThreadFpLock()
+    ~StubCallRunTimeThreadFpScope()
     {
-        std::cout << "~StubCallRunTimeThreadFpLock oldRbp_: " << oldRbp_ <<
+        std::cout << "~StubCallRunTimeThreadFpScope oldRbp_: " << oldRbp_ <<
             " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(oldRbp_) + FrameConst::kFrameType));

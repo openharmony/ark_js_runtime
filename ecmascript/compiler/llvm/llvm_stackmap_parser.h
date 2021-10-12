@@ -21,6 +21,16 @@
 #include <set>
 #include <vector>
 
+#ifdef PANDA_TARGET_AMD64
+#define SP_DWARF_REG_NUM  7
+#define FP_DWARF_REG_NUM  6
+#define SP_OFFSET      2
+#else
+#define SP_DWARF_REG_NUM  0
+#define FP_DWARF_REG_NUM  0
+#define SP_OFFSET      0
+#endif
+
 namespace kungfu {
 using OffsetType = int32_t;
 using DwarfRegType = uint16_t;

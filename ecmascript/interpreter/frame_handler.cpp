@@ -199,7 +199,6 @@ void EcmaFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-#ifdef PANDA_TARGET_AMD64
     JSTaggedType *current = fp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -216,15 +215,10 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
             v0(Root::ROOT_FRAME, ObjectSlot(address));
         }
     }
-#else
-    (void)v0;
-    (void)v1;
-#endif
 }
 
 void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-#ifdef PANDA_TARGET_AMD64
     JSTaggedType *current = fp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -241,10 +235,6 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
             v0(Root::ROOT_FRAME, ObjectSlot(address));
         }
     }
-#else
-    (void)v0;
-    (void)v1;
-#endif
 }
 
 void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const

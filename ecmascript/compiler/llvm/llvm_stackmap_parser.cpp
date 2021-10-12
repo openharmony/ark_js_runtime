@@ -57,18 +57,15 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
     if (!StackMapByAddr(funcAddr, infos)) {
         return false;
     }
-#ifdef PANDA_TARGET_AMD64
-    uintptr_t *rbp = reinterpret_cast<uintptr_t *>(frameFp);
-    uintptr_t returnAddr =  *(rbp + 1);
-    uintptr_t *rsp = rbp + 2; // 2: rsp offset
-    rbp = reinterpret_cast<uintptr_t *>(*rbp);
+    uintptr_t *fp = reinterpret_cast<uintptr_t *>(frameFp);
     uintptr_t **address = nullptr;
     for (auto &info: infos) {
-        if (info.first == 7) { // 7: rsp for x86_64
+        if (info.first == SP_DWARF_REG_NUM) {
+            uintptr_t *rsp = fp + SP_OFFSET;
             address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
-        // rbp
-        } else if (info.first == 6) { // 6: rbp for x86_64
-            address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
+        } else if (info.first == FP_DWARF_REG_NUM) {
+            fp = reinterpret_cast<uintptr_t *>(*fp);
+            address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(fp) + info.second);
         } else {
             address = nullptr;
             abort();
@@ -78,11 +75,6 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
         std::cout << " *value :" << **address << std::endl;
         slotAddrs.push_back(reinterpret_cast<uintptr_t>(address));
     }
-#else
-    (void)frameFp;
-    (void)slotAddrs;
-    abort();
-#endif
     return true;
 }
 
