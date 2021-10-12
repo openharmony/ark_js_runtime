@@ -134,6 +134,7 @@ source_set("libark_jsoptimizer_static") {
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
   ]
+  deps += arkruntime_header_gen_deps
 }
 
 ohos_shared_library("libark_jsoptimizer") {
