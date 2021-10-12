@@ -96,7 +96,6 @@ struct NotMergedPhiDesc {
 struct LLVMTFBuilderBasicBlockImpl {
     LLVMBasicBlockRef llvm_bb_ = nullptr;
     LLVMBasicBlockRef continuation = nullptr;
-    std::unordered_map<int, LLVMValueRef> values_ = {};
     bool started = false;
     bool ended = false;
     std::vector<NotMergedPhiDesc> not_merged_phis;
@@ -104,7 +103,7 @@ struct LLVMTFBuilderBasicBlockImpl {
 
 class LLVMStubModule {
 public:
-    explicit LLVMStubModule(const char *name);
+    explicit LLVMStubModule(const char *name, const char *triple);
     ~LLVMStubModule() = default;
 
     void Initialize();
@@ -140,7 +139,6 @@ private:
 
 class LLVMIRBuilder {
 public:
-    explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit);
     explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                            LLVMModuleRef module, LLVMValueRef function);
     explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,

@@ -38,7 +38,8 @@ private:
 
 class LLVMModuleAssembler {
 public:
-    explicit LLVMModuleAssembler(LLVMStubModule *module) : stubmodule_(module), assembler_(module->GetModule()) {}
+    explicit LLVMModuleAssembler(LLVMStubModule *module, const char* triple)
+        : stubmodule_(module), assembler_(module->GetModule(), triple) {}
     void AssembleModule();
     void CopyAssembleCodeToModule(panda::ecmascript::StubModule *module);
 

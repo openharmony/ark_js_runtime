@@ -14,10 +14,14 @@
  */
 
 #include "stub_aot_compiler.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
 #include "fast_stub.h"
+#include "generated/stub_aot_options_gen.h"
+#include "libpandabase/utils/pandargs.h"
+#include "libpandabase/utils/span.h"
 #include "llvm_codegen.h"
 #include "scheduler.h"
 #include "stub.h"
@@ -99,15 +103,17 @@ public:
     }
 };
 
-void StubAotCompiler::BuildStubModule(panda::ecmascript::StubModule *module)
+void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascript::StubModule *module,
+                                             const std::string &filename)
 {
-    LLVMStubModule stubModule("fast_stubs");
+    LLVMStubModule stubModule("fast_stubs", triple);
     stubModule.Initialize();
     for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
-        auto Stub = stubs_[i];
-        if (Stub != nullptr) {
-            Stub->GenerateCircuit();
-            auto circuit = Stub->GetEnvironment()->GetCircuit();
+        auto stub = stubs_[i];
+        if (stub != nullptr) {
+            std::cout << "Stub Name: " << stub->GetMethodName() << std::endl;
+            stub->GenerateCircuit();
+            auto circuit = stub->GetEnvironment()->GetCircuit();
             PassPayLoad data(circuit, &stubModule);
             PassRunner pipeline(&data);
             pipeline.RunPass<VerifierPass>();
@@ -116,68 +122,63 @@ void StubAotCompiler::BuildStubModule(panda::ecmascript::StubModule *module)
         }
     }
 
-    LLVMModuleAssembler assembler(&stubModule);
+    LLVMModuleAssembler assembler(&stubModule, triple);
     assembler.AssembleModule();
     assembler.CopyAssembleCodeToModule(module);
+
+    module->Save(filename);
 }
 }  // namespace kungfu
 
-int main(int argc, char *argv[])
+#define SET_STUB_TO_MODULE(module, name) \
+    kungfu::Circuit name##Circuit; \
+    kungfu::name##Stub name##Stub(& name##Circuit); \
+    module.SetStub(FAST_STUB_ID(name), & name##Stub);
+
+
+#define SET_ALL_STUB_TO_MODEULE(module) \
+    SET_STUB_TO_MODULE(module, FastAdd) \
+    SET_STUB_TO_MODULE(module, FastSub) \
+    SET_STUB_TO_MODULE(module, FastMul) \
+    SET_STUB_TO_MODULE(module, FastDiv) \
+    SET_STUB_TO_MODULE(module, FindOwnElement) \
+    SET_STUB_TO_MODULE(module, GetElement) \
+    SET_STUB_TO_MODULE(module, FindOwnElement2) \
+    SET_STUB_TO_MODULE(module, SetElement) \
+    SET_STUB_TO_MODULE(module, GetPropertyByIndex) \
+    SET_STUB_TO_MODULE(module, SetPropertyByIndex) \
+    SET_STUB_TO_MODULE(module, GetPropertyByName)
+
+int main(const int argc, const char **argv)
 {
-    int opt;
-    // 3 means ark_stub_opt -f stub.m
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " -f stub.m" << std::endl;
-        return -1;
+    panda::Span<const char *> sp(argv, argc);
+    panda::Stub_Aot_Options stubOptions(sp[0]);
+    panda::PandArg<bool> help("help", false, "Print this message and exit");
+    panda::PandArg<bool> options("options", false, "Print compiler options");
+    panda::PandArgParser paParser;
+
+    stubOptions.AddOptions(&paParser);
+    paParser.Add(&help);
+    paParser.Add(&options);
+
+    if (!paParser.Parse(argc, argv) || help.GetValue()) {
+        std::cerr << paParser.GetErrorString() << std::endl;
+        std::cerr << "Usage: " << "ark_stub_opt" << " [OPTIONS]" << std::endl;
+        std::cerr << std::endl;
+        std::cerr << "optional arguments:" << std::endl;
+        std::cerr << paParser.GetHelpString() << std::endl;
+        return 1;
     }
-    std::string moduleFilename;
-    while ((opt = getopt(argc, argv, "f:")) != -1) {
-        switch (opt) {
-            case 'f':
-                moduleFilename += optarg;
-                break;
-            default: /* '?' */
-                std::cerr << "Usage: " << argv[0] << " -f stub.m" << std::endl;
-                return -1;
-        }
-    }
+
+    std::string moduleFilename = stubOptions.GetStubOutputFile();
+    std::string tripes = stubOptions.GetTargetTriple();
 
     kungfu::StubAotCompiler mouldeBuilder;
+    SET_ALL_STUB_TO_MODEULE(mouldeBuilder);
+
     panda::ecmascript::StubModule stubModule;
-    /* Set Stub into module */
-    kungfu::Circuit fastaddCircuit;
-    kungfu::FastAddStub fastaddStub(&fastaddCircuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(FastAdd), &fastaddStub);
+    mouldeBuilder.BuildStubModuleAndSave(tripes.c_str(), &stubModule, moduleFilename);
 
-    kungfu::Circuit fastsubCircuit;
-    kungfu::FastSubStub fastsubStub(&fastsubCircuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(FastSub), &fastsubStub);
-
-    kungfu::Circuit fastmulCircuit;
-    kungfu::FastMulStub fastmulStub(&fastmulCircuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(FastMul), &fastmulStub);
-
-    kungfu::Circuit fastdivCircuit;
-    kungfu::FastDivStub fastdivStub(&fastdivCircuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(FastDiv), &fastdivStub);
-
-    kungfu::Circuit fastFindOwnElementCircuit;
-    kungfu::FastFindOwnElementStub fastFindOwnElementStub(&fastFindOwnElementCircuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(FindOwnElement), &fastFindOwnElementStub);
-
-    kungfu::Circuit fastGetElementCircuit;
-    kungfu::FastGetElementStub fastGetElementStub(&fastGetElementCircuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(GetElement), &fastGetElementStub);
-
-    kungfu::Circuit fastFindOwnElement2Circuit;
-    kungfu::FastFindOwnElement2Stub fastFindOwnElement2Stub(&fastFindOwnElement2Circuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(FindOwnElement2), &fastFindOwnElement2Stub);
-
-    kungfu::Circuit fastSetElementCircuit;
-    kungfu::FastSetElementStub fastSetElementStub(&fastSetElementCircuit);
-    mouldeBuilder.SetStub(FAST_STUB_ID(SetElement), &fastSetElementStub);
-
-    mouldeBuilder.BuildStubModule(&stubModule);
-    stubModule.Save(moduleFilename);
-    exit(0);
+    std::cout << "BuildStubModuleAndSave success" << std::endl;
+    return 0;
 }

@@ -77,7 +77,6 @@ static LLVMBool RoundTripFinalizeMemory(void *object, [[maybe_unused]] char **er
 static void RoundTripDestroy(void *object)
 {
     std::cout << "RoundTripDestroy object " << object << " - " << std::endl;
-    delete static_cast<struct CodeInfo *>(object);
 }
 
 void LLVMAssembler::UseRoundTripSectionMemoryManager()
@@ -114,8 +113,8 @@ void LLVMAssembler::BuildAndRunPasses() const
     std::cout << "BuildAndRunPasses  + " << std::endl;
 }
 
-LLVMAssembler::LLVMAssembler(LLVMModuleRef module): module_(module), engine_(nullptr),
-    hostTriple_(""), error_(nullptr)
+LLVMAssembler::LLVMAssembler(LLVMModuleRef module, const char* triple): module_(module), engine_(nullptr),
+    hostTriple_(triple), error_(nullptr)
 {
     Initialize();
     InitMember();
@@ -140,15 +139,31 @@ void LLVMAssembler::Run()
 
 void LLVMAssembler::Initialize()
 {
-#if defined(PANDA_TARGET_AMD64)
-    LLVMInitializeX86TargetInfo();
-    LLVMInitializeX86TargetMC();
-    LLVMInitializeX86Disassembler();
-    /* this method must be called, ohterwise "Target does not support MC emission" */
-    LLVMInitializeX86AsmPrinter();
-    LLVMInitializeX86AsmParser();
-    LLVMInitializeX86Target();
-#endif
+    if (hostTriple_.compare(AMD64_TRIPLE) == 0) {
+        LLVMInitializeX86TargetInfo();
+        LLVMInitializeX86TargetMC();
+        LLVMInitializeX86Disassembler();
+        /* this method must be called, ohterwise "Target does not support MC emission" */
+        LLVMInitializeX86AsmPrinter();
+        LLVMInitializeX86AsmParser();
+        LLVMInitializeX86Target();
+    } else if (hostTriple_.compare(ARM64_TRIPLE) == 0) {
+        LLVMInitializeAArch64TargetInfo();
+        LLVMInitializeAArch64TargetMC();
+        LLVMInitializeAArch64Disassembler();
+        LLVMInitializeAArch64AsmPrinter();
+        LLVMInitializeAArch64AsmParser();
+        LLVMInitializeAArch64Target();
+    } else if (hostTriple_.compare(ARM32_TRIPLE) == 0) {
+        LLVMInitializeARMTargetInfo();
+        LLVMInitializeARMTargetMC();
+        LLVMInitializeARMDisassembler();
+        LLVMInitializeARMAsmPrinter();
+        LLVMInitializeARMAsmParser();
+        LLVMInitializeARMTarget();
+    } else {
+        UNREACHABLE();
+    }
     llvm::linkAllBuiltinGCs();
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
     options_.OptLevel = 2; // opt level 2
@@ -166,7 +181,7 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
 
 void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
 {
-    LLVMDisasmContextRef dcr = LLVMCreateDisasm("x86_64-unknown-linux-gnu", nullptr, 0, nullptr, SymbolLookupCallback);
+    LLVMDisasmContextRef dcr = LLVMCreateDisasm(hostTriple_.c_str(), nullptr, 0, nullptr, SymbolLookupCallback);
     std::cout << "========================================================================" << std::endl;
     for (auto it : codeInfo_.GetCodeInfo()) {
         uint8_t *byteSp;

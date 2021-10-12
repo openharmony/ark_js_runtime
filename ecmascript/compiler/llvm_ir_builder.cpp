@@ -15,8 +15,6 @@
 
 #include "ecmascript/compiler/llvm_ir_builder.h"
 
-#include <string>
-
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/fast_stub.h"
 #include "ecmascript/compiler/gate.h"
@@ -25,32 +23,16 @@
 #include "ecmascript/js_thread.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/Host.h"
-#include "llvm_mcjit_engine.h"
 #include "securec.h"
 #include "utils/logger.h"
 
 namespace kungfu {
 std::unordered_map<int, LLVMValueRef> g_values = {};
 
-LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit)
-    : schedule_(schedule), circuit_(circuit)
-{
-    module_ = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
-    builder_ = LLVMCreateBuilder();
-    context_ = LLVMGetGlobalContext();
-    LLVMTypeRef paramTys[] = {
-        LLVMInt32Type(),
-    };
-    function_ = LLVMAddFunction(module_, "foo", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
-    bbIdMapBb_.clear();
-}
-
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                              LLVMModuleRef module, LLVMValueRef function)
     : schedule_(schedule), circuit_(circuit), module_(module), function_(function)
 {
-    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
     bbIdMapBb_.clear();
@@ -61,7 +43,6 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule
     : schedule_(schedule), circuit_(circuit), module_(module->GetModule()),
       function_(function), stubModule_(module)
 {
-    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
     bbIdMapBb_.clear();
@@ -740,8 +721,6 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
 void LLVMIRBuilder::VisitInt32Constant(AddrShift gate, int32_t value) const
 {
     LLVMValueRef llvmValue = LLVMConstInt(LLVMInt32Type(), value, 0);
-    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    impl->values_[gate] = llvmValue;
     g_values[gate] = llvmValue;
     char *str = LLVMPrintValueToString(llvmValue);
     LOG_ECMA(INFO) << "VisitInt32Constant set gate:" << gate << "  value:" << value;
@@ -751,8 +730,6 @@ void LLVMIRBuilder::VisitInt32Constant(AddrShift gate, int32_t value) const
 void LLVMIRBuilder::VisitInt64Constant(AddrShift gate, int64_t value) const
 {
     LLVMValueRef llvmValue = LLVMConstInt(LLVMInt64Type(), value, 0);
-    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    impl->values_[gate] = llvmValue;
     g_values[gate] = llvmValue;
     char *str = LLVMPrintValueToString(llvmValue);
     LOG_ECMA(INFO) << "VisitInt64Constant set gate:" << gate << "  value:" << value;
@@ -762,8 +739,6 @@ void LLVMIRBuilder::VisitInt64Constant(AddrShift gate, int64_t value) const
 void LLVMIRBuilder::VisitFloat64Constant(AddrShift gate, double value) const
 {
     LLVMValueRef llvmValue = LLVMConstReal(LLVMDoubleType(), value);
-    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    impl->values_[gate] = llvmValue;
     g_values[gate] = llvmValue;
     char *str = LLVMPrintValueToString(llvmValue);
     LOG_ECMA(INFO) << "VisitFloat64Constant set gate:" << gate << "  value:" << value;
@@ -775,8 +750,6 @@ void LLVMIRBuilder::VisitParameter(AddrShift gate) const
     int argth = circuit_->LoadGatePtrConst(gate)->GetBitField();
     LOG_ECMA(INFO) << " Parameter value" << argth;
     LLVMValueRef value = LLVMGetParam(function_, argth);
-    LLVMTFBuilderBasicBlockImpl *impl = currentBb_->GetImpl<LLVMTFBuilderBasicBlockImpl>();
-    impl->values_[gate] = value;
     g_values[gate] = value;
     LOG_ECMA(INFO) << "VisitParameter set gate:" << gate << "  value:" << value;
     // NOTE: caller put args, otherwise crash
@@ -791,8 +764,7 @@ void LLVMIRBuilder::VisitParameter(AddrShift gate) const
 void LLVMIRBuilder::VisitBranch(AddrShift gate, AddrShift cmp, int btrue, int bfalse)
 {
     LOG_ECMA(INFO) << "cmp gate:" << cmp;
-    LLVMTFBuilderBasicBlockImpl *impl = EnsureLLVMBBImpl(currentBb_);
-    if ((impl->values_.count(cmp) == 0) && (g_values.count(cmp) == 0)) {
+    if (g_values.count(cmp) == 0) {
         LOG_ECMA(ERROR) << "Branch condition gate is nullptr!";
         return;
     }
@@ -1130,12 +1102,10 @@ void LLVMIRBuilder::VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const
     LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
 }
 
-LLVMStubModule::LLVMStubModule(const char *name)
+LLVMStubModule::LLVMStubModule(const char *name, const char *triple)
 {
-    module_ = LLVMModuleCreateWithName("fast_stubs");
-#ifdef PANDA_TARGET_AMD64
-    LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
-#endif
+    module_ = LLVMModuleCreateWithName(name);
+    LLVMSetTarget(module_, triple);
 }
 
 void LLVMStubModule::Initialize()

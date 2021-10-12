@@ -14,7 +14,56 @@
 ark_root = "//ark/runtime_core"
 js_root = "//ark/js_runtime"
 compile_llvm_online = false
+run_with_asan = false
+asan_lib_path = "/usr/lib/llvm-10/lib/clang/10.0.0/lib/linux"
 
 # For OpenHarmony build, always link with the static lib:
 sdk_libc_secshared_dep = "//utils/native/base:utilsecurec"
 sdk_libc_secshared_config = "//utils/native/base:utils_config"
+
+# Generate file for a template and YAML data provided.
+#
+# Mandatory arguments:
+# data_file -- YAML data full name
+# template_file -- template full name
+# output_file -- output file full name
+# requires -- a list of scripts that provide data-querying API for templates
+# extra_dependencies -- a list of files that should be considered as dependencies, must be lable
+template("ark_gen_file") {
+  assert(defined(invoker.data_file), "data_file is required!")
+  assert(defined(invoker.template_file), "template_file is required!")
+  assert(defined(invoker.output_file), "output_file is required!")
+
+  requires = ""
+  if (defined(invoker.requires)) {
+    requires = string_join(",", rebase_path(invoker.requires, root_build_dir))
+  }
+
+  extra_dependencies = []
+  if (defined(invoker.extra_dependencies)) {
+    extra_dependencies += invoker.extra_dependencies
+  }
+
+  action("$target_name") {
+    script = "$ark_root/isa/gen.rb"
+
+    # rerun action when data file or template file update
+    inputs = [
+      invoker.template_file,
+      invoker.data_file,
+    ]
+    outputs = [ invoker.output_file ]
+    args = [
+      "--template",
+      rebase_path(invoker.template_file, root_build_dir),
+      "--data",
+      rebase_path(invoker.data_file, root_build_dir),
+      "--require",
+      requires,
+      "--output",
+      rebase_path(outputs[0]),
+    ]
+
+    deps = extra_dependencies
+  }
+}

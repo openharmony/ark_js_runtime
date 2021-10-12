@@ -107,25 +107,28 @@ source_set("libark_jsoptimizer_static") {
     "LLVMAsmParser",
     "LLVMMCParser",
     "LLVMMIRParser",
-    "LLVMX86Info",
-    "LLVMAArch64Info",
+    "LLVMMCDisassembler",
+    "LLVMCodeGen",
+    "LLVMTransformUtils",
+    "LLVMIRReader",
+    "LLVMARMUtils",
+    "LLVMARMCodeGen",
+    "LLVMARMDisassembler",
     "LLVMARMDesc",
+    "LLVMARMInfo",
+    "LLVMARMAsmParser",
+    "LLVMAArch64Utils",
+    "LLVMAArch64CodeGen",
+    "LLVMAArch64Info",
     "LLVMAArch64Desc",
+    "LLVMAArch64Disassembler",
+    "LLVMAArch64AsmParser",
+    "LLVMX86Utils",
+    "LLVMX86AsmParser",
+    "LLVMX86CodeGen",
     "LLVMX86Desc",
     "LLVMX86Disassembler",
-    "LLVMARMDisassembler",
-    "LLVMAArch64Disassembler",
-    "LLVMMCDisassembler",
-    "LLVMAArch64CodeGen",
-    "LLVMARMCodeGen",
-    "LLVMCodeGen",
-    "LLVMX86CodeGen",
-    "LLVMX86AsmParser",
-    "LLVMTransformUtils",
-    "LLVMAArch64Utils",
-    "LLVMARMUtils",
-    "LLVMX86Utils",
-    "LLVMIRReader",
+    "LLVMX86Info",
   ]
 
   deps = [
@@ -174,8 +177,16 @@ ohos_shared_library("libark_jsoptimizer_test") {
   subsystem_name = "test"
 }
 
+ark_gen_file("stub_aot_options_gen_h") {
+  template_file = "options.h.erb"
+  data_file = "stub_aot_options.yaml"
+  requires = [ "$ark_root/templates/common.rb" ]
+  output_file = "$target_gen_dir/generated/stub_aot_options_gen.h"
+}
+
 ohos_executable("ark_stub_opt") {
   sources = [ "stub_aot_compiler.cpp" ]
+  include_dirs = [ "$target_gen_dir" ]
 
   configs = [
     ":include_llvm",
@@ -185,6 +196,7 @@ ohos_executable("ark_stub_opt") {
   ]
 
   deps = [
+    ":stub_aot_options_gen_h",
     "$ark_root/libpandabase:libarkbase",
     "//ark/js_runtime:libark_jsruntime",
     "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer",
