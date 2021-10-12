@@ -71,22 +71,22 @@ private:
 
 class OptimizedFrameHandler {
 public:
-    explicit OptimizedFrameHandler(JSTaggedType *fp) : fp_(fp) {}
+    explicit OptimizedFrameHandler(uintptr_t *fp) : fp_(fp) {}
     explicit OptimizedFrameHandler(const JSThread *thread);
     ~OptimizedFrameHandler() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
-    JSTaggedType *fp_ {nullptr};
+    uintptr_t *fp_ {nullptr};
 };
 
 class OptimizedEntryFrameHandler {
 public:
-    explicit OptimizedEntryFrameHandler(JSTaggedType *fp) : fp_(fp) {}
+    explicit OptimizedEntryFrameHandler(uintptr_t *fp) : fp_(fp) {}
     explicit OptimizedEntryFrameHandler(const JSThread *thread);
     ~OptimizedEntryFrameHandler() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
-    JSTaggedType *fp_ {nullptr};
+    uintptr_t *fp_ {nullptr};
 };
 
 class FrameIterator {

@@ -196,7 +196,7 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    JSTaggedType *current = fp_;
+    uintptr_t *current = fp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::vector<uintptr_t> slotAddrs;
@@ -216,7 +216,7 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
 
 void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    JSTaggedType *current = fp_;
+    uintptr_t *current = fp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::vector<uintptr_t> slotAddrs;
@@ -248,14 +248,14 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
                 reinterpret_cast<long long>(current) -
                 MEMBER_OFFSET(OptimizedFrameStateBase, prev));
-            OptimizedFrameHandler(current).Iterate(v0, v1);
+            OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->prev);
         } else {
             ASSERT(type == FrameType::OPTIMIZED_ENTRY_FRAME);
             OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
                 reinterpret_cast<long long>(current) -
                 MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
-            OptimizedEntryFrameHandler(current).Iterate(v0, v1);
+            OptimizedEntryFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->threadFp);
         }
     }
