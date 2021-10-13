@@ -138,8 +138,14 @@ size_t Utf16ToUtf8Size(const uint16_t *utf16, uint32_t length, bool modify)
         } else if (utf16[i] < utf::HI_SURROGATE_MIN || utf16[i] > utf::HI_SURROGATE_MAX) {
             res += UtfLength::THREE;
         } else {
-            res += UtfLength::FOUR;
-            ++i;
+            if (i < length - 1 &&
+                utf16[i + 1] >= utf::LO_SURROGATE_MIN &&  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                utf16[i + 1] <= utf::LO_SURROGATE_MAX) {  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                res += UtfLength::FOUR;
+                ++i;
+            } else {
+                res += UtfLength::THREE;
+            }
         }
     }
     return res;
