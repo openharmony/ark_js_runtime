@@ -497,7 +497,10 @@ action("copy_resource_xml") {
   outputs = [ "$target_out_dir" ]
 }
 
-ohos_copy("copy_asan_runtime") {
-  sources = [ "${asan_lib_path}/libclang_rt.asan-x86_64.a" ]
-  outputs = [ "${root_out_dir}/ark/ark_js_runtime/{{source_file_part}}" ]
+if (is_debug && is_linux && (current_cpu == "x86" || current_cpu == "x64") &&
+    run_with_asan) {
+  ohos_copy("copy_asan_runtime") {
+    sources = [ "${asan_lib_path}/libclang_rt.asan-x86_64.a" ]
+    outputs = [ "${root_out_dir}/ark/ark_js_runtime/{{source_file_part}}" ]
+  }
 }
