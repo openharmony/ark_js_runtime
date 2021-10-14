@@ -32,7 +32,7 @@ void LLVMModuleAssembler::AssembleModule()
     assembler_.Run();
 }
 
-void LLVMModuleAssembler::CopyAssembleCodeToModule(StubModule *module)
+void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
 {
     auto codeBuff = reinterpret_cast<Address>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
@@ -44,12 +44,5 @@ void LLVMModuleAssembler::CopyAssembleCodeToModule(StubModule *module)
         }
     }
     assembler_.Disassemble();
-
-    auto codeSize = assembler_.GetCodeSize();
-    MachineCode *code =
-        reinterpret_cast<MachineCode *>(new uint64_t[(MachineCode::SIZE + codeSize) / sizeof(uint64_t) + 1]);
-    code->SetInstructionSizeInBytes(nullptr, JSTaggedValue(codeSize), SKIP_BARRIER);
-    code->SetData(reinterpret_cast<uint8_t *>(codeBuff), codeSize);
-    module->SetCode(code);
 }
 }  // namespace kungfu

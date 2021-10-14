@@ -41,8 +41,15 @@ public:
     explicit LLVMModuleAssembler(LLVMStubModule *module, const char* triple)
         : stubmodule_(module), assembler_(module->GetModule(), triple) {}
     void AssembleModule();
-    void CopyAssembleCodeToModule(panda::ecmascript::StubModule *module);
-
+    void AssembleStubModule(panda::ecmascript::StubModule *module);
+    int GetCodeSize() const
+    {
+        return assembler_.GetCodeSize();
+    }
+    void CopyAssemblerToCode(panda::ecmascript::MachineCode *code)
+    {
+        code->SetData(reinterpret_cast<uint8_t *>(assembler_.GetCodeBuffer()), assembler_.GetCodeSize());
+    }
 private:
     LLVMStubModule *stubmodule_;
     LLVMAssembler assembler_;

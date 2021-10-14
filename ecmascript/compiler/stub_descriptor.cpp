@@ -336,10 +336,9 @@ CALL_STUB_INIT_DESCRIPTOR(FindElementWithCache)
 
 CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
 {
-    // 2 : 2 input parameters
-    static StubDescriptor stringGetHashCode("StringGetHashCode", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
+    static StubDescriptor stringGetHashCode("StringGetHashCode", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
     *descriptor = stringGetHashCode;
-    std::array<MachineType, 1> params = { // // 2 : 2 input parameters
+    std::array<MachineType, 1> params = {
         MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());
