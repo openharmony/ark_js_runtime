@@ -91,28 +91,37 @@ public:
     inline void AddFree(Region *region);
 
     inline void RebuildFreeList();
+    inline void FillFreeList(FreeObjectKind *kind);
 
     void Swap(FreeListAllocator &other)
     {
         heap_ = other.heap_;
         bpAllocator_.Swap(other.bpAllocator_);
         freeList_.swap(other.freeList_);
+        type_ = other.type_;
+        sweeping_ = other.sweeping_;
     }
 
     inline void FreeBumpPoint();
 
-    inline void Free(uintptr_t begin, uintptr_t end);
+    inline void Free(uintptr_t begin, uintptr_t end, bool isAdd = true);
     inline void SplitFreeObject(FreeObject *current, size_t allocateSize);
 
-    size_t GetAvailableSize() const
+    inline size_t GetAvailableSize() const;
+
+    void SetSweeping(bool sweeping)
     {
-        return freeList_->GetFreeObjectSize();
+        sweeping_ = sweeping;
     }
 
 private:
+    inline uintptr_t Allocate(FreeObject *object, size_t size);
+
     BumpPointerAllocator bpAllocator_;
     std::unique_ptr<FreeObjectList> freeList_;
     Heap *heap_{nullptr};
+    MemSpaceType type_ = OLD_SPACE;
+    bool sweeping_ = false;
 };
 }  // namespace panda::ecmascript
 

@@ -20,6 +20,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/assert_scope-inl.h"
 #include "ecmascript/mem/compress_collector.h"
+#include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/ecma_heap_manager.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem_controller.h"
@@ -54,8 +55,6 @@ void Heap::Initialize()
     machineCodeSpace_ = new MachineCodeSpace(this);
     machineCodeSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(this);
-    markStack_ = new MarkStack(this);
-    weakProcessQueue_ = new ProcessQueue(this);
     bool paralledGc = ecmaVm_->GetOptions().IsEnableParalledYoungGc();
     if (paralledGc) {
         int numOfCpuCore = get_nprocs();
@@ -63,12 +62,15 @@ void Heap::Initialize()
         pool_ = new ThreadPool(numThread);
         semiSpaceCollector_ = new SemiSpaceCollector(this, true);
         compressCollector_ = new CompressCollector(this, true);
+        oldSpaceCollector_ = new OldSpaceCollector(this, true);
     } else {
         pool_ = new ThreadPool(1);
         semiSpaceCollector_ = new SemiSpaceCollector(this, false);
         compressCollector_ = new CompressCollector(this, false);
+        oldSpaceCollector_ = new OldSpaceCollector(this, false);
     }
-    oldSpaceCollector_ = new OldSpaceCollector(this);
+    // After EcmaOptions merged, it will modified to EcmaOptions configuration
+    sweeper_ = new ConcurrentSweeper(this, true);
 }
 
 void Heap::FlipNewSpace()
@@ -87,6 +89,7 @@ void Heap::FlipCompressSpace()
 void Heap::Destroy()
 {
     pool_->WaitTaskFinish();
+    sweeper_->EnsureAllTaskFinish();
     toSpace_->Destroy();
     delete toSpace_;
     toSpace_ = nullptr;
@@ -109,16 +112,10 @@ void Heap::Destroy()
     machineCodeSpace_->Destroy();
     delete machineCodeSpace_;
     machineCodeSpace_ = nullptr;
-    markStack_->Destroy();
-    delete markStack_;
-    markStack_ = nullptr;
     hugeObjectSpace_->Destroy();
     delete hugeObjectSpace_;
     hugeObjectSpace_ = nullptr;
 
-    weakProcessQueue_->Destroy();
-    delete weakProcessQueue_;
-    weakProcessQueue_ = nullptr;
     delete semiSpaceCollector_;
     semiSpaceCollector_ = nullptr;
     delete oldSpaceCollector_;
@@ -130,6 +127,8 @@ void Heap::Destroy()
     memController_ = nullptr;
     delete pool_;
     pool_ = nullptr;
+    delete sweeper_;
+    sweeper_ = nullptr;
 }
 
 void Heap::CollectGarbage(TriggerGCType gcType)
@@ -138,6 +137,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     // pre gc heap verify
     {
         if (ecmaVm_->GetOptions().IsPreGcHeapVerifyEnabled()) {
+            sweeper_->EnsureAllTaskFinish();
             auto failCount = Verification(this).VerifyAll();
             if (failCount > 0) {
                 LOG(FATAL, GC) << "Before gc heap corrupted and " << failCount << " corruptions";
@@ -158,18 +158,18 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             }
             break;
         case TriggerGCType::OLD_GC:
-            if (oldSpace_->GetHeapObjectSize() < OLD_SPACE_LIMIT_BEGIN) {
-                oldSpaceCollector_->RunPhases();
-            } else {
-                compressCollector_->RunPhases();
+            oldSpaceCollector_->RunPhases();
+            if (!sweeper_->IsConcurrentSweepEnabled()) {
+                RecomputeLimits();
             }
-            RecomputeLimits();
             break;
         case TriggerGCType::NON_MOVE_GC:
         case TriggerGCType::HUGE_GC:
         case TriggerGCType::MACHINE_CODE_GC:
             oldSpaceCollector_->RunPhases();
-            RecomputeLimits();
+            if (!sweeper_->IsConcurrentSweepEnabled()) {
+                RecomputeLimits();
+            }
             break;
         case TriggerGCType::COMPRESS_FULL_GC:
             compressCollector_->RunPhases();
@@ -183,6 +183,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     // post gc heap verify
     {
         if (ecmaVm_->GetOptions().IsPreGcHeapVerifyEnabled()) {
+            sweeper_->EnsureAllTaskFinish();
             auto failCount = Verification(this).VerifyAll();
             if (failCount > 0) {
                 LOG(FATAL, GC) << "After gc heap corrupted and " << failCount << " corruptions";

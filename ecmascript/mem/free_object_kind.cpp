@@ -31,6 +31,9 @@ void FreeObjectKind::Rebuild()
 {
     freeObject_ = nullptr;
     available_ = 0;
+    isAdded_ = false;
+    next_ = nullptr;
+    prev_ = nullptr;
 }
 
 FreeObject *FreeObjectKind::SearchSmallFreeObject(size_t size)

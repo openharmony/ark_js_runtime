@@ -48,9 +48,14 @@ public:
         return heap_;
     }
 
-    FreeListAllocator &GetOldSpaceAllocator()
+    FreeListAllocator &GetFreeListAllocator(MemSpaceType type)
     {
-        return oldSpaceAllocator_;
+        return freeListAllocator_[type];
+    }
+
+    inline FreeListAllocator &GetOldSpaceAllocator()
+    {
+        return freeListAllocator_[OLD_SPACE];
     }
 
     BumpPointerAllocator &GetNewSpaceAllocator()
@@ -58,9 +63,9 @@ public:
         return newSpaceAllocator_;
     }
 
-    FreeListAllocator &GetNonMovableSpaceAllocator()
+    inline FreeListAllocator &GetNonMovableSpaceAllocator()
     {
-        return nonMovableAllocator_;
+        return freeListAllocator_[NON_MOVABLE];
     }
 
     const BumpPointerAllocator &GetSnapShotSpaceAllocator() const
@@ -68,18 +73,16 @@ public:
         return snapshotSpaceAllocator_;
     }
 
-    FreeListAllocator &GetMachineCodeSpaceAllocator()
+    inline FreeListAllocator &GetMachineCodeSpaceAllocator()
     {
-        return machineCodeSpaceAllocator_;
+        return freeListAllocator_[MACHINE_CODE_SPACE];
     }
 
 private:
     Heap *heap_{nullptr};
     BumpPointerAllocator newSpaceAllocator_;
-    FreeListAllocator nonMovableAllocator_;
-    FreeListAllocator oldSpaceAllocator_;
+    std::array<FreeListAllocator, FREE_LIST_NUM> freeListAllocator_;
     BumpPointerAllocator snapshotSpaceAllocator_;
-    FreeListAllocator machineCodeSpaceAllocator_;
 };
 }  // namespace panda::ecmascript
 

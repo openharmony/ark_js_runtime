@@ -27,9 +27,9 @@ class FreeObject;
 
 class FreeObjectKind {
 public:
-    FreeObjectKind(KindType type, uintptr_t begin, size_t size) : kindType_(type)
+    FreeObjectKind(KindType type) : kindType_(type)
     {
-        Free(begin, size);
+        Rebuild();
     }
     ~FreeObjectKind() = default;
 
@@ -60,6 +60,7 @@ private:
     FreeObjectKind *prev_ = nullptr;
     KindType kindType_ = INVALID_KIND_TYPE;
     size_t available_ = 0;
+    bool isAdded_ = false;
     FreeObject *freeObject_ = nullptr;
 
     friend class FreeObjectList;

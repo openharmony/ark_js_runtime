@@ -19,6 +19,7 @@
 #include "ecmascript/mem/compress_collector.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
+#include "ecmascript/mem/old_space_collector.h"
 #include "ecmascript/mem/region_factory.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 
@@ -195,6 +196,34 @@ void CompressGCWorker::Initialize()
         holder.weakQueue_->BeginMarking(heap_, continuousQueue_[i]);
         holder.allocator_ = new TlabAllocator(heap_, TriggerGCType::COMPRESS_FULL_GC);
         holder.aliveSize_ = 0;
+    }
+}
+
+void OldGCWorker::Initialize()
+{
+    spaceTop_ = markSpace_;
+    markSpaceEnd_ = markSpace_ + SPACE_SIZE;
+    for (uint32_t i = 0; i < threadNum_; i++) {
+        WorkNodeHolder &holder = workList_[i];
+        holder.pushNode_ = AllocalWorkNode();
+        holder.popNode_ = AllocalWorkNode();
+        holder.weakQueue_ = new ProcessQueue();
+        holder.weakQueue_->BeginMarking(heap_, continuousQueue_[i]);
+    }
+}
+
+void OldGCWorker::PushWorkNodeToGlobal(uint32_t threadId)
+{
+    WorkNode *&pushNode = workList_[threadId].pushNode_;
+    if (!pushNode->IsEmpty()) {
+        globalWork_.Push(pushNode);
+        pushNode = AllocalWorkNode();
+
+        auto pool = heap_->GetThreadPool();
+        if (pool->GetTaskCount() < pool->GetThreadNum() - 1) {
+            pool->Submit(std::bind(&OldSpaceCollector::ProcessMarkStack, heap_->GetOldSpaceCollector(),
+                std::placeholders::_1));
+        }
     }
 }
 }  // namespace panda::ecmascript

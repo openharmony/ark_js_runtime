@@ -831,6 +831,7 @@ host_unittest_action("GcTest") {
 
   sources = [
     # test file
+    "concurrent_sweep_test.cpp",
     "gc_test.cpp",
   ]
 

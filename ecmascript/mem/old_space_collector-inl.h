@@ -24,31 +24,19 @@
 #include "ecmascript/js_hclass-inl.h"
 
 namespace panda::ecmascript {
-void OldSpaceCollector::MarkObject(TaggedObject *object)
+void OldSpaceCollector::MarkObject(uint64_t threadId, TaggedObject *object)
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
 
     auto markBitmap = objectRegion->GetMarkBitmap();
-    if (!markBitmap->Test(object)) {
-        markBitmap->Set(object);
-        markStack_.PushBack(object);
+    if (!markBitmap->AtomicTestAndSet(object)) {
+        workList_->Push(threadId, object);
     }
 }
 
-void OldSpaceCollector::RecordWeakReference(JSTaggedType *ref)
+void OldSpaceCollector::RecordWeakReference(uint64_t threadId, JSTaggedType *ref)
 {
-    Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ref));
-    if (!objectRegion->InYoungGeneration()) {
-        weakProcessQueue_.PushBack(ref);
-    }
-}
-
-void OldSpaceCollector::FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart,
-                                      uintptr_t freeEnd)
-{
-    allocator.Free(freeStart, freeEnd);
-    freeSize_ += freeEnd - freeStart;
-    heap_->ClearSlotsRange(current, freeStart, freeEnd);
+    workList_->PushWeakReference(threadId, ref);
 }
 }  // namespace panda::ecmascript
 

@@ -23,6 +23,7 @@
 #include "ecmascript/hprof/heap_snapshot.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/assert_scope-inl.h"
+#include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
@@ -161,6 +162,7 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
 {
     LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapShot";
     DISALLOW_GARBAGE_COLLECTION;
+    heap_->GetSweeper()->EnsureAllTaskFinish();
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
             auto *snapShot = const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_);

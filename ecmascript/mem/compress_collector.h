@@ -61,7 +61,6 @@ private:
     os::memory::Mutex mtx_;
     BumpPointerAllocator fromSpaceAllocator_{};
     FreeListAllocator oldSpaceAllocator_{};
-    FreeListAllocator nonMovableAllocator_{};
 
     size_t youngAndOldAliveSize_ = 0;
     size_t nonMoveSpaceFreeSize_ = 0;

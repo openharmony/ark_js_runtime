@@ -36,6 +36,7 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/platform/platform.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/runtime_trampolines.h"
@@ -117,6 +118,7 @@ EcmaVM::EcmaVM(RuntimeOptions options)
 bool EcmaVM::Initialize()
 {
     trace::ScopedTrace scoped_trace("EcmaVM::Initialize");
+    Platform::GetCurrentPlatform()->Initialize();
 
     RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
 
@@ -232,6 +234,7 @@ bool EcmaVM::InitializeFinish()
 }
 EcmaVM::~EcmaVM()
 {
+    Platform::GetCurrentPlatform()->Destory();
     vmInitialized_ = false;
     ClearNativeMethodsData();
 

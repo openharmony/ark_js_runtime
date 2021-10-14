@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
+#include "ecmascript/mem/compress_collector.h"
+
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
-#include "ecmascript/mem/compress_collector.h"
 #include "ecmascript/mem/compress_gc_marker-inl.h"
 #include "ecmascript/mem/ecma_heap_manager.h"
 #include "ecmascript/mem/heap-inl.h"
@@ -58,6 +59,7 @@ void CompressCollector::RunPhases()
 void CompressCollector::InitializePhase()
 {
     heap_->GetThreadPool()->WaitTaskFinish();
+    heap_->GetSweeper()->EnsureAllTaskFinish();
     auto compressSpace = const_cast<OldSpace *>(heap_->GetCompressSpace());
     if (compressSpace->GetCommittedSize() == 0) {
         compressSpace->Initialize();
@@ -70,8 +72,6 @@ void CompressCollector::InitializePhase()
     FreeListAllocator compressAllocator(compressSpace);
     oldSpaceAllocator_.Swap(compressAllocator);
     fromSpaceAllocator_.Reset(fromSpace);
-    auto heapManager = heap_->GetHeapManager();
-    nonMovableAllocator_.Swap(heapManager->GetNonMovableSpaceAllocator());
 
     auto callback = [](Region *current) {
         // ensure mark bitmap
@@ -87,6 +87,7 @@ void CompressCollector::InitializePhase()
         }
     };
     heap_->GetNonMovableSpace()->EnumerateRegions(callback);
+    heap_->GetMachineCodeSpace()->EnumerateRegions(callback);
     heap_->GetSnapShotSpace()->EnumerateRegions(callback);
     heap_->GetHugeObjectSpace()->EnumerateRegions(callback);
 
@@ -116,7 +117,6 @@ void CompressCollector::FinishPhase()
     workList_->Finish(youngAndOldAliveSize_);
     auto heapManager = heap_->GetHeapManager();
     heapManager->GetOldSpaceAllocator().Swap(oldSpaceAllocator_);
-    heapManager->GetNonMovableSpaceAllocator().Swap(nonMovableAllocator_);
     heapManager->GetNewSpaceAllocator().Swap(fromSpaceAllocator_);
 }
 
@@ -230,60 +230,7 @@ void CompressCollector::SweepPhases()
     heap_->GetEcmaVM()->GetJSThread()->IterateWeakEcmaGlobalStorage(gcUpdateWeak);
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
 
-    SweepSpace(const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace()), nonMovableAllocator_);
-    SweepSpace(const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace()));
-}
-
-void CompressCollector::SweepSpace(HugeObjectSpace *space)
-{
-    Region *currentRegion = space->GetRegionList().GetFirst();
-    while (currentRegion != nullptr) {
-        Region *next = currentRegion->GetNext();
-        auto markBitmap = currentRegion->GetMarkBitmap();
-        bool isMarked = false;
-        markBitmap->IterateOverMarkedChunks([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
-        if (!isMarked) {
-            space->GetRegionList().RemoveNode(currentRegion);
-            space->ClearAndFreeRegion(currentRegion);
-        }
-        currentRegion = next;
-    }
-}
-
-void CompressCollector::SweepSpace(Space *space, FreeListAllocator &allocator)
-{
-    allocator.RebuildFreeList();
-    space->EnumerateRegions([this, &allocator](Region *current) {
-        auto markBitmap = current->GetMarkBitmap();
-        ASSERT(markBitmap != nullptr);
-        uintptr_t freeStart = current->GetBegin();
-        markBitmap->IterateOverMarkedChunks([this, &current, &freeStart, &allocator](void *mem) {
-            ASSERT(current->InRange(ToUintPtr(mem)));
-            auto header = reinterpret_cast<TaggedObject *>(mem);
-            auto klass = header->GetClass();
-            JSType jsType = klass->GetObjectType();
-            auto size = klass->SizeFromJSHClass(jsType, header);
-            size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
-
-            uintptr_t freeEnd = ToUintPtr(mem);
-            if (freeStart != freeEnd) {
-                FreeLiveRange(allocator, current, freeStart, freeEnd);
-            }
-            freeStart = freeEnd + size;
-        });
-        uintptr_t freeEnd = current->GetEnd();
-        if (freeStart != freeEnd) {
-            FreeLiveRange(allocator, current, freeStart, freeEnd);
-        }
-    });
-}
-
-void CompressCollector::FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart,
-                                      uintptr_t freeEnd)
-{
-    allocator.Free(freeStart, freeEnd);
-    nonMoveSpaceFreeSize_ += freeEnd - freeStart;
-    heap_->ClearSlotsRange(current, freeStart, freeEnd);
+    heap_->GetSweeper()->SweepPhases(true);
 }
 
 uintptr_t CompressCollector::AllocateOld(size_t size)

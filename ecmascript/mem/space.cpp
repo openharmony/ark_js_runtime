@@ -37,11 +37,16 @@ void Space::Initialize()
     } else if (spaceType_ == MemSpaceType::SNAPSHOT_SPACE) {
         region->SetFlag(RegionFlags::IS_IN_SNAPSHOT_GENERATION);
     } else if (spaceType_ == MemSpaceType::OLD_SPACE) {
+        region->InitializeKind();
         region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
     } else if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
+        region->InitializeKind();
         region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
         int res = region->SetCodeExecutableAndReadable();
         LOG_ECMA_MEM(DEBUG) << "Initialize SetCodeExecutableAndReadable" << res;
+    } else if (spaceType_ == MemSpaceType::NON_MOVABLE) {
+        region->InitializeKind();
+        region->SetFlag(RegionFlags::IS_IN_NON_MOVABLE_GENERATION);
     }
 
     AddRegion(region);
@@ -75,6 +80,11 @@ void Space::ClearAndFreeRegion(Region *region)
         delete rememberedSet;
     }
     DecrementCommitted(region->GetCapacity());
+    if (spaceType_ == MemSpaceType::OLD_SPACE ||
+        spaceType_ == MemSpaceType::NON_MOVABLE ||
+        spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
+        region->DestoryKind();
+    }
     const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeRegion(region);
 }
 
@@ -177,6 +187,7 @@ bool OldSpace::Expand()
     Region *region =
         const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
+    region->InitializeKind();
     AddRegion(region);
     return true;
 }
@@ -231,8 +242,7 @@ size_t OldSpace::GetHeapObjectSize() const
 {
     size_t result;
     size_t availableSize = GetHeap()->GetHeapManager()->GetOldSpaceAllocator().GetAvailableSize();
-    size_t regionSize = GetRegionList().GetLength() * DEFAULT_REGION_SIZE;
-    result = regionSize - availableSize;
+    result = GetCommittedSize() - availableSize;
     result += GetHeap()->GetHugeObjectSpace()->GetHeapObjectSize();
     return result;
 }
@@ -250,6 +260,8 @@ bool NonMovableSpace::Expand()
     }
     Region *region =
         const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    region->SetFlag(IS_IN_NON_MOVABLE_GENERATION);
+    region->InitializeKind();
     AddRegion(region);
     return true;
 }
@@ -372,6 +384,12 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
     return region->GetBegin();
 }
 
+void HugeObjectSpace::Free(Region *region)
+{
+    GetRegionList().RemoveNode(region);
+    ClearAndFreeRegion(region);
+}
+
 bool HugeObjectSpace::ContainObject(TaggedObject *object) const
 {
     auto region = GetRegionList().GetFirst();
@@ -391,12 +409,7 @@ bool HugeObjectSpace::IsLive(TaggedObject *object) const
 
 size_t HugeObjectSpace::GetHeapObjectSize() const
 {
-    size_t result = 0;
-    EnumerateRegions([&result](Region *current) {
-        auto obj = reinterpret_cast<TaggedObject *>(current->GetBegin());
-        result += obj->GetObjectSize();
-    });
-    return result;
+    return GetCommittedSize();
 }
 
 void HugeObjectSpace::IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const
@@ -420,6 +433,7 @@ bool MachineCodeSpace::Expand()
     }
     Region *region =
         const_cast<RegionFactory *>(GetHeap()->GetRegionFactory())->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    region->InitializeKind();
     AddRegion(region);
     int res = region->SetCodeExecutableAndReadable();
     LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;

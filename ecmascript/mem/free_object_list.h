@@ -29,14 +29,29 @@ public:
 
     FreeObject *Allocator(size_t size);
 
-    void Free(uintptr_t start, size_t size);
+    void Free(uintptr_t start, size_t size, bool isAdd = true);
 
     void Rebuild();
+
+    bool AddKind(FreeObjectKind *kind);
+
+    void RemoveKind(FreeObjectKind *kind);
+
+    template<class Callback>
+    void EnumerateKinds(const Callback &cb) const;
+
+    template<class Callback>
+    void EnumerateKinds(KindType type, const Callback &cb) const;
 
     NO_COPY_SEMANTIC(FreeObjectList);
     NO_MOVE_SEMANTIC(FreeObjectList);
 
     size_t GetFreeObjectSize() const;
+
+    static int NumberOfKinds()
+    {
+        return NUMBER_OF_KINDS;
+    }
 
 private:
     static constexpr int NUMBER_OF_KINDS = 39;
@@ -57,9 +72,6 @@ private:
     inline void SetNoneEmptyBit(KindType type);
     inline void ClearNoneEmptyBit(KindType type);
     inline size_t CalcNextNoneEmptyIndex(KindType start);
-
-    bool AddKind(FreeObjectKind *kind);
-    void RemoveKind(FreeObjectKind *kind);
 
     size_t available_ = 0;
     uint64_t noneEmptyKindBitMap_;
