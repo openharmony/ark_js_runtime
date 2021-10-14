@@ -1304,7 +1304,7 @@ HWTEST_F_L0(JSObjectTest, NativePointerField)
 
     obj->SetNativePointerFieldCount(1);
     char array[] = "Hello World!";
-    obj->SetNativePointerField(0, array);
+    obj->SetNativePointerField(0, array, nullptr, nullptr);
     int32_t count = obj->GetNativePointerFieldCount();
     EXPECT_TRUE(count == 1);
     void *pointer = obj->GetNativePointerField(0);

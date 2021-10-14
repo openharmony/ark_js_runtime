@@ -69,7 +69,6 @@ using ecmascript::JSFunctionExtraInfo;
 using ecmascript::JSHClass;
 using ecmascript::JSMap;
 using ecmascript::JSMethod;
-using ecmascript::JSNativeObject;
 using ecmascript::JSNativePointer;
 using ecmascript::JSObject;
 using ecmascript::JSPrimitiveRef;
@@ -522,7 +521,7 @@ Local<StringRef> SymbolRef::GetDescription(const EcmaVM *vm)
 Local<NativePointerRef> NativePointerRef::New(const EcmaVM *vm, void *nativePointer)
 {
     ObjectFactory *factory = vm->GetFactory();
-    JSHandle<JSNativeObject> obj = factory->NewJSNativeObject(nativePointer);
+    JSHandle<JSNativePointer> obj = factory->NewJSNativePointer(nativePointer);
     return JSNApiHelper::ToLocal<NativePointerRef>(JSHandle<JSTaggedValue>(obj));
 }
 
@@ -530,14 +529,14 @@ Local<NativePointerRef> NativePointerRef::New(
     const EcmaVM *vm, void *nativePointer, NativePointerCallback callBack, void *data)
 {
     ObjectFactory *factory = vm->GetFactory();
-    JSHandle<JSNativeObject> obj = factory->NewJSNativeObject(nativePointer, callBack, data);
+    JSHandle<JSNativePointer> obj = factory->NewJSNativePointer(nativePointer, callBack, data);
     return JSNApiHelper::ToLocal<NativePointerRef>(JSHandle<JSTaggedValue>(obj));
 }
 
 void *NativePointerRef::Value()
 {
     JSHandle<JSTaggedValue> nativePointer = JSNApiHelper::ToJSHandle(this);
-    return JSHandle<JSNativeObject>(nativePointer)->GetExternalPointer();
+    return JSHandle<JSNativePointer>(nativePointer)->GetExternalPointer();
 }
 
 // ----------------------------------- ObjectRef ----------------------------------------
@@ -731,10 +730,11 @@ void *ObjectRef::GetNativePointerField(int32_t index)
     return object->GetNativePointerField(index);
 }
 
-void ObjectRef::SetNativePointerField(int32_t index, void *data)
+void ObjectRef::SetNativePointerField(int32_t index, void *nativePointer,
+    NativePointerCallback callBack, void *data)
 {
     JSHandle<JSObject> object(JSNApiHelper::ToJSHandle(this));
-    object->SetNativePointerField(index, data);
+    object->SetNativePointerField(index, nativePointer, callBack, data);
 }
 
 // ----------------------------------- FunctionRef --------------------------------------
@@ -1669,11 +1669,6 @@ bool JSValueRef::IsTypedArray()
 bool JSValueRef::IsNativePointer()
 {
     return JSNApiHelper::ToJSTaggedValue(this).IsJSNativePointer();
-}
-
-bool JSValueRef::IsNativeObject()
-{
-    return JSNApiHelper::ToJSTaggedValue(this).IsJSNativeObject();
 }
 
 bool JSValueRef::IsDate()

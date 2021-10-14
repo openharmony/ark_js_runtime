@@ -24,18 +24,14 @@ namespace panda::ecmascript {
 template<typename Derived, typename HashObject>
 JSTaggedValue LinkedHashTable<Derived, HashObject>::GetElement(int index) const
 {
-    if (UNLIKELY((index < 0 || index > static_cast<int>(GetLength())))) {
-        return JSTaggedValue::Undefined();
-    }
+    ASSERT(index >= 0 && index < static_cast<int>(GetLength()));
     return Get(index);
 }
 
 template<typename Derived, typename HashObject>
 void LinkedHashTable<Derived, HashObject>::SetElement(const JSThread *thread, int index, JSTaggedValue element)
 {
-    if (UNLIKELY((index < 0 || index > static_cast<int>(GetLength())))) {
-        return;
-    }
+    ASSERT(index >= 0 && index < static_cast<int>(GetLength()));
     Set(thread, index, element);
 }
 

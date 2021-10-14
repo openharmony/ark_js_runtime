@@ -345,7 +345,8 @@ public:
     }
 
     void* GetNativePointerField(int32_t index) const;
-    void SetNativePointerField(int32_t index, void *data);
+    void SetNativePointerField(int32_t index, void *nativePointer,
+        const DeleteEntryPoint &callBack, void *data);
     int32_t GetNativePointerFieldCount() const;
     void SetNativePointerFieldCount(int32_t count);
 

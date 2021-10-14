@@ -1320,14 +1320,14 @@ JSHandle<AccessorData> ObjectFactory::NewInternalAccessor(void *setter, void *ge
     TaggedObject *header = heapHelper_.AllocateNonMovableOrHugeObject(internalAccessorClass_);
     JSHandle<AccessorData> obj(thread_, AccessorData::Cast(header));
     if (setter != nullptr) {
-        JSHandle<JSNativePointer> setFunc = NewJSNativePointer(setter, true);
+        JSHandle<JSNativePointer> setFunc = NewJSNativePointer(setter, nullptr, nullptr, true);
         obj->SetSetter(thread_, setFunc.GetTaggedValue());
     } else {
         JSTaggedValue setFunc = JSTaggedValue::Undefined();
         obj->SetSetter(thread_, setFunc);
         ASSERT(!obj->HasSetter());
     }
-    JSHandle<JSNativePointer> getFunc = NewJSNativePointer(getter, true);
+    JSHandle<JSNativePointer> getFunc = NewJSNativePointer(getter, nullptr, nullptr, true);
     obj->SetGetter(thread_, getFunc);
     return obj;
 }
@@ -2101,22 +2101,6 @@ EcmaString *ObjectFactory::ResolveString(uint32_t stringId)
 uintptr_t ObjectFactory::NewSpaceBySnapShotAllocator(size_t size)
 {
     return heapHelper_.AllocateSnapShotSpace(size);
-}
-
-JSHandle<JSNativeObject> ObjectFactory::NewJSNativeObject(void *externalPointer)
-{
-    return NewJSNativeObject(externalPointer, nullptr, nullptr);
-}
-
-JSHandle<JSNativeObject> ObjectFactory::NewJSNativeObject(void *externalPointer, DeleteEntryPoint callback, void *data)
-{
-    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
-    JSHandle<JSHClass> dynclass(env->GetJSNativeObjectClass());
-    JSHandle<JSNativeObject> nativeObject = JSHandle<JSNativeObject>::Cast(NewJSObject(dynclass));
-    JSHandle<JSNativePointer> pointer = NewJSNativePointer(externalPointer, callback, data);
-    nativeObject->SetJSNativePointer(thread_, pointer.GetTaggedValue());
-    vm_->PushToArrayDataList(*pointer);
-    return nativeObject;
 }
 
 JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const uint8_t *data)
