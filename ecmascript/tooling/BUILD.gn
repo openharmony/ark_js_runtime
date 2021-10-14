@@ -92,7 +92,6 @@ ohos_shared_library("libark_ecma_debugger_test") {
   deps = [
     ":libark_ecma_debugger_test_static",
     "//ark/js_runtime:libark_jsruntime_test_static",
-    "//ark/js_runtime/ecmascript/compiler/llvm:libllvm_stackmap_parser",
   ]
 
   configs = [

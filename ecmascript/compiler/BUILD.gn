@@ -141,7 +141,6 @@ ohos_shared_library("libark_jsoptimizer") {
   deps = [
     ":libark_jsoptimizer_static",
     "//ark/js_runtime:libark_jsruntime",
-    "//ark/js_runtime/ecmascript/compiler/llvm:libllvm_stackmap_parser",
   ]
 
   if (compile_llvm_online) {
@@ -166,8 +165,6 @@ ohos_shared_library("libark_jsoptimizer_test") {
 
   if (is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime_static" ]
-    deps +=
-        [ "//ark/js_runtime/ecmascript/compiler/llvm:libllvm_stackmap_parser" ]
   } else {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
