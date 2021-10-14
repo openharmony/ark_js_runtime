@@ -22,6 +22,7 @@
 #include <sys/mman.h>
 #include <vector>
 
+#include "ecmascript/ecma_macros.h"
 #include "llvm/ExecutionEngine/Interpreter.h"
 #include "llvm/ExecutionEngine/MCJIT.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
@@ -55,16 +56,16 @@ struct CodeInfo {
     {
         uint8_t *addr = nullptr;
         if (codeBufferPos_ + size > MAX_MACHINE_CODE_SIZE) {
-            std::cerr << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
-                      << " size:" << size << "  larger MAX_MACHINE_CODE_SIZE:" << MAX_MACHINE_CODE_SIZE << std::endl;
+            LOG_ECMA(INFO) << std::hex << "AllocaCodeSection failed alloc codeBufferPos_:" << codeBufferPos_
+                      << " size:" << size << "  larger MAX_MACHINE_CODE_SIZE:" << MAX_MACHINE_CODE_SIZE;
             return nullptr;
         }
-        std::cout << "AllocaCodeSection size:" << size << std::endl;
+        LOG_ECMA(INFO) << "AllocaCodeSection size:" << size;
         std::vector<uint8_t> codeBuffer(machineCode_[codeBufferPos_], size);
-        std::cout << " codeBuffer size: " << codeBuffer.size() << std::endl;
+        LOG_ECMA(INFO) << " codeBuffer size: " << codeBuffer.size();
         codeSectionNames_.push_back(sectionName);
         addr = machineCode_ + codeBufferPos_;
-        std::cout << "AllocaCodeSection addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr) << std::endl;
+        LOG_ECMA(INFO) << "AllocaCodeSection addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr);
         codeInfo_.push_back({addr, size});
         codeBufferPos_ += size;
         return addr;
@@ -78,7 +79,7 @@ struct CodeInfo {
         dataSectionNames_.push_back(sectionName);
         addr = static_cast<uint8_t *>(dataSectionList_.back().data());
         if (!strcmp(sectionName, ".llvm_stackmaps")) {
-            std::cout << "llvm_stackmaps : " << addr << std::endl;
+            LOG_ECMA(INFO) << "llvm_stackmaps : " << addr;
             stackMapsSection_ = addr;
         }
         return addr;
@@ -149,10 +150,13 @@ public:
         return codeInfo_.GetCodeBuff();
     }
 
+    void *GetFuncPtrFromCompiledModule(LLVMValueRef function)
+    {
+        return LLVMGetPointerToGlobal(engine_, function);
+    }
     const char *AMD64_TRIPLE = "x86_64-unknown-linux-gnu";
     const char *ARM64_TRIPLE = "aarch64-unknown-linux-gnu";
     const char *ARM32_TRIPLE = "arm-unknown-linux-gnu";
-
 private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
