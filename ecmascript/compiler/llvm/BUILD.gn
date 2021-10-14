@@ -17,7 +17,12 @@ import("//build/ohos.gni")
 ohos_shared_library("libllvm_stackmap_parser") {
   sources = [ "llvm_stackmap_parser.cpp" ]
 
+  install_enable = true
+  part_name = "ark_js_runtime"
+
   output_extension = "so"
-  relative_install_dir = "ark"
+  if (!is_standard_system) {
+    relative_install_dir = "ark"
+  }
   subsystem_name = "ark"
 }

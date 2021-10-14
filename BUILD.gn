@@ -438,6 +438,7 @@ source_set("libark_jsruntime_test_static") {
     ":copy_resource_xml",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "//ark/js_runtime/ecmascript/compiler/llvm:libllvm_stackmap_parser",
     "//third_party/icu/icu4c:shared_icui18n",
     "//third_party/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
