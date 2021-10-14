@@ -106,7 +106,9 @@ void LLVMAssembler::BuildAndRunPasses() const
     LLVMAddConstantPropagationPass(pass);
     LLVMAddInstructionCombiningPass(pass);
     llvm::unwrap(pass)->add(llvm::createRewriteStatepointsForGCLegacyPass());
-    LOG_ECMA(INFO) << "Current Module: " << LLVMPrintModuleToString(module_);
+    char *info = LLVMPrintModuleToString(module_);
+    LOG_ECMA(INFO) << "Current Module: " << info;
+    LLVMDisposeMessage(info);
     LLVMRunPassManager(pass, module_);
     LLVMDisposePassManager(pass);
     LOG_ECMA(INFO) << "BuildAndRunPasses  + ";
@@ -116,13 +118,14 @@ LLVMAssembler::LLVMAssembler(LLVMModuleRef module, const char* triple): module_(
     hostTriple_(triple), error_(nullptr)
 {
     Initialize();
-    InitMember();
 }
 
 LLVMAssembler::~LLVMAssembler()
 {
     module_ = nullptr;
-    engine_ = nullptr;
+    if (engine_ != nullptr) {
+        LLVMDisposeExecutionEngine(engine_);
+    }
     hostTriple_ = "";
     error_ = nullptr;
 }
@@ -212,13 +215,6 @@ void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
         }
     }
     std::cout << "========================================================================" << std::endl;
-}
-
-void LLVMAssembler::InitMember()
-{
-    if (module_ == nullptr) {
-        module_ = LLVMModuleCreateWithName("simple_module");
-        LLVMSetTarget(module_, "x86_64-unknown-linux-gnu");
-    }
+    LLVMDisasmDispose(dcr);
 }
 }  // namespace kungfu

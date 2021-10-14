@@ -197,8 +197,8 @@ public:
                            LLVMModuleRef module, LLVMValueRef function);
     explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                            LLVMStubModule *module, LLVMValueRef function);
+    ~LLVMIRBuilder();
     void Build();
-    ~LLVMIRBuilder() = default;
 
 private:
     #define DECLAREVISITOPCODE(name, signature) void Visit##name signature;
@@ -222,6 +222,7 @@ private:
 
     void ProcessPhiWorkList();
     void AssignHandleMap();
+    std::string LLVMValueToString(LLVMValueRef val) const;
 
 private:
     const std::vector<std::vector<AddrShift>> *schedule_ {nullptr};

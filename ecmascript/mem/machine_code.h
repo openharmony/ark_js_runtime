@@ -24,8 +24,6 @@ namespace panda {
 namespace ecmascript {
 class MachineCode : public TaggedObject {
 public:
-    MachineCode();
-    ~MachineCode();
     NO_COPY_SEMANTIC(MachineCode);
     NO_MOVE_SEMANTIC(MachineCode);
     static MachineCode *Cast(ObjectHeader *object)

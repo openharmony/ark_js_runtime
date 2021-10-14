@@ -124,9 +124,20 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
 
     LLVMModuleAssembler assembler(&stubModule, triple);
     assembler.AssembleModule();
-    assembler.CopyAssembleCodeToModule(module);
+    assembler.AssembleStubModule(module);
 
+    auto codeSize = assembler.GetCodeSize();
+    panda::ecmascript::MachineCode *code = reinterpret_cast<panda::ecmascript::MachineCode *>(
+        new uint64_t[(panda::ecmascript::MachineCode::SIZE + codeSize) / sizeof(uint64_t) + 1]);
+    code->SetInstructionSizeInBytes(nullptr, panda::ecmascript::JSTaggedValue(codeSize),
+                                    panda::ecmascript::SKIP_BARRIER);
+
+    assembler.CopyAssemblerToCode(code);
+
+    module->SetCode(code);
     module->Save(filename);
+
+    delete code;
 }
 }  // namespace kungfu
 
@@ -141,6 +152,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
     SET_STUB_TO_MODULE(module, FastSub) \
     SET_STUB_TO_MODULE(module, FastMul) \
     SET_STUB_TO_MODULE(module, FastDiv) \
+    SET_STUB_TO_MODULE(module, FastMod) \
     SET_STUB_TO_MODULE(module, FindOwnElement) \
     SET_STUB_TO_MODULE(module, GetElement) \
     SET_STUB_TO_MODULE(module, FindOwnElement2) \

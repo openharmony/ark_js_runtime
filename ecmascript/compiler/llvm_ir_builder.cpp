@@ -49,6 +49,13 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule
     bbIdMapBb_.clear();
 }
 
+LLVMIRBuilder::~LLVMIRBuilder()
+{
+    if (builder_ != nullptr) {
+        LLVMDisposeBuilder(builder_);
+    }
+}
+
 int LLVMIRBuilder::FindBasicBlock(AddrShift gate) const
 {
     for (size_t bbIdx = 0; bbIdx < schedule_->size(); bbIdx++) {
@@ -144,6 +151,14 @@ void LLVMIRBuilder::AssignHandleMap()
                         OpCode::FRAMESTATE_ENTRY, OpCode::RETURN_LIST, OpCode::THROW_LIST,
                         OpCode::CONSTANT_LIST, OpCode::ARG_LIST, OpCode::THROW,
                         OpCode::DEPEND_SELECTOR, OpCode::DEPEND_RELAY, OpCode::DEPEND_AND};
+}
+
+std::string LLVMIRBuilder::LLVMValueToString(LLVMValueRef val) const
+{
+    char* msg = LLVMPrintValueToString(val);
+    std::string str(msg);
+    LLVMDisposeMessage(msg);
+    return str;
 }
 
 void LLVMIRBuilder::Build()
@@ -327,6 +342,7 @@ LLVMBasicBlockRef LLVMIRBuilder::EnsureLLVMBB(BasicBlock *bb) const
     if (impl->llvm_bb_) {
         return impl->llvm_bb_;
     }
+
     std::string buf = "B" + std::to_string(bb->GetId());
     LLVMBasicBlockRef llvmBB = LLVMAppendBasicBlock(function_, buf.c_str());
     impl->llvm_bb_ = llvmBB;
@@ -407,8 +423,8 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
         AddrShift gateTmp = inList[paraIdx];
         params[paraIdx - paraStartIndex] = g_values[gateTmp];
         circuit_->Print(gateTmp);
-        LOG_ECMA(INFO) << "arg" << paraIdx - paraStartIndex << ": "
-                       << LLVMPrintValueToString(params[paraIdx - paraStartIndex]);
+        LOG_ECMA(INFO) << "arg" << paraIdx - paraStartIndex << ": " <<
+            LLVMValueToString(params[paraIdx - paraStartIndex]);
     }
     if (callee == nullptr) {
         LOG_ECMA(ERROR) << "callee nullptr";
@@ -513,7 +529,7 @@ void LLVMIRBuilder::VisitReturn(AddrShift gate, AddrShift popCount, const std::v
     LOG_ECMA(INFO) << " gate: " << gate << " popCount: " << popCount;
     LOG_ECMA(INFO) << " return: " << operand << " gateId: " << circuit_->GetId(operand);
     LLVMValueRef returnValue = g_values[operand];
-    LOG_ECMA(INFO) << LLVMPrintValueToString(returnValue);
+    LOG_ECMA(INFO) << LLVMValueToString(returnValue);
     LLVMBuildRet(builder_, returnValue);
 }
 
@@ -648,27 +664,24 @@ void LLVMIRBuilder::VisitInt32Constant(AddrShift gate, int32_t value) const
 {
     LLVMValueRef llvmValue = LLVMConstInt(LLVMInt32Type(), value, 0);
     g_values[gate] = llvmValue;
-    char *str = LLVMPrintValueToString(llvmValue);
     LOG_ECMA(INFO) << "VisitInt32Constant set gate:" << gate << "  value:" << value;
-    LOG_ECMA(INFO) << "VisitInt32Constant " << str;
+    LOG_ECMA(INFO) << "VisitInt32Constant " << LLVMValueToString(llvmValue);
 }
 
 void LLVMIRBuilder::VisitInt64Constant(AddrShift gate, int64_t value) const
 {
     LLVMValueRef llvmValue = LLVMConstInt(LLVMInt64Type(), value, 0);
     g_values[gate] = llvmValue;
-    char *str = LLVMPrintValueToString(llvmValue);
     LOG_ECMA(INFO) << "VisitInt64Constant set gate:" << gate << "  value:" << value;
-    LOG_ECMA(INFO) << "VisitInt64Constant " << str;
+    LOG_ECMA(INFO) << "VisitInt64Constant " << LLVMValueToString(llvmValue);
 }
 
 void LLVMIRBuilder::VisitFloat64Constant(AddrShift gate, double value) const
 {
     LLVMValueRef llvmValue = LLVMConstReal(LLVMDoubleType(), value);
     g_values[gate] = llvmValue;
-    char *str = LLVMPrintValueToString(llvmValue);
     LOG_ECMA(INFO) << "VisitFloat64Constant set gate:" << gate << "  value:" << value;
-    LOG_ECMA(INFO) << "VisitFloat64Constant " << str;
+    LOG_ECMA(INFO) << "VisitFloat64Constant " << LLVMValueToString(llvmValue);
 }
 
 void LLVMIRBuilder::HandleParameter(AddrShift gate)
@@ -688,8 +701,7 @@ void LLVMIRBuilder::VisitParameter(AddrShift gate) const
         LOG_ECMA(ERROR) << "generate LLVM IR for para: " << argth << "fail";
         return;
     }
-    char *str = LLVMPrintValueToString(value);
-    LOG_ECMA(INFO) << "para arg:" << argth << "value IR:" << str;
+    LOG_ECMA(INFO) << "para arg:" << argth << "value IR:" << LLVMValueToString(value);
 }
 
 void LLVMIRBuilder::HandleBranch(AddrShift gate)
@@ -713,12 +725,12 @@ void LLVMIRBuilder::VisitIntMod(AddrShift gate, AddrShift e1, AddrShift e2) cons
 {
     LOG_ECMA(INFO) << "int mod gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildSRem(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleFloatMod(AddrShift gate)
@@ -731,12 +743,12 @@ void LLVMIRBuilder::VisitFloatMod(AddrShift gate, AddrShift e1, AddrShift e2) co
 {
     LOG_ECMA(INFO) << "float mod gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildFRem(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitBranch(AddrShift gate, AddrShift cmp, int btrue, int bfalse)
@@ -826,24 +838,24 @@ void LLVMIRBuilder::VisitIntOrUintCmp(AddrShift gate, AddrShift e1, AddrShift e2
 {
     LOG_ECMA(INFO) << "cmp gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildICmp(builder_, opcode, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatOrDoubleCmp(AddrShift gate, AddrShift e1, AddrShift e2, LLVMRealPredicate opcode) const
 {
     LOG_ECMA(INFO) << "cmp gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildFCmp(builder_, opcode, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleIntRev(AddrShift gate)
@@ -856,10 +868,10 @@ void LLVMIRBuilder::VisitIntRev(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "int sign invert gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildNeg(builder_, e1Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleIntAdd(AddrShift gate)
@@ -885,15 +897,15 @@ void LLVMIRBuilder::VisitIntAdd(AddrShift gate, AddrShift e1, AddrShift e2, Mach
 {
     LOG_ECMA(INFO) << "int add gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     if (LLVMGetTypeKind(LLVMTypeOf(e1Value)) == LLVMPointerTypeKind) {  // for scenario: pointer + offset
         e1Value = LLVMBuildPtrToInt(builder_, e1Value, GetMachineRepType(rep), "");
     }
     LLVMValueRef result = LLVMBuildAdd(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleFloatAdd(AddrShift gate)
@@ -907,12 +919,12 @@ void LLVMIRBuilder::VisitFloatAdd(AddrShift gate, AddrShift e1, AddrShift e2) co
 {
     LOG_ECMA(INFO) << "float add gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildFAdd(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleFloatSub(AddrShift gate)
@@ -1074,72 +1086,72 @@ void LLVMIRBuilder::VisitFloatSub(AddrShift gate, AddrShift e1, AddrShift e2) co
 {
     LOG_ECMA(INFO) << "float sub gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildFSub(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatMul(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "float mul gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildFMul(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitFloatDiv(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "float div gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildFDiv(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntSub(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "int sub gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildSub(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntMul(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "int mul gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildMul(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntOr(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "int or gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildOr(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleIntAnd(AddrShift gate)
@@ -1152,36 +1164,36 @@ void LLVMIRBuilder::VisitIntAnd(AddrShift gate, AddrShift e1, AddrShift e2) cons
 {
     LOG_ECMA(INFO) << "int and gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildAnd(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntXor(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "int xor gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildXor(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitIntLsr(AddrShift gate, AddrShift e1, AddrShift e2) const
 {
     LOG_ECMA(INFO) << "int lsr gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildLShr(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleIntLsl(AddrShift gate)
@@ -1194,32 +1206,32 @@ void LLVMIRBuilder::VisitIntLsl(AddrShift gate, AddrShift e1, AddrShift e2) cons
 {
     LOG_ECMA(INFO) << "int lsl gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = g_values[e2];
-    LOG_ECMA(INFO) << "operand 1: " << LLVMPrintValueToString(e2Value);
+    LOG_ECMA(INFO) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = LLVMBuildShl(builder_, e1Value, e2Value, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitZExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const
 {
     LOG_ECMA(INFO) << "int zero extension gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildZExt(builder_, e1Value, GetMachineRepType(rep), "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitSExtInt(AddrShift gate, AddrShift e1, MachineRep rep) const
 {
     LOG_ECMA(INFO) << "int sign extension gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildSExt(builder_, e1Value, GetMachineRepType(rep), "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleCastIntXToIntY(AddrShift gate)
@@ -1245,20 +1257,20 @@ void LLVMIRBuilder::VisitCastIntXToIntY(AddrShift gate, AddrShift e1, MachineRep
 {
     LOG_ECMA(INFO) << "int cast2 int gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildIntCast2(builder_, e1Value, GetMachineRepType(rep), 1, "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::VisitCastInt32ToDouble(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "int cast2 double gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildSIToFP(builder_, e1Value, LLVMDoubleType(), "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleCastInt64ToDouble(AddrShift gate)
@@ -1271,10 +1283,10 @@ void LLVMIRBuilder::VisitCastInt64ToDouble(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "int cast2 double gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildBitCast(builder_, e1Value, LLVMDoubleType(), "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 void LLVMIRBuilder::HandleCastDoubleToInt(AddrShift gate)
@@ -1287,10 +1299,10 @@ void LLVMIRBuilder::VisitCastDoubleToInt(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "double cast2 int gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
-    LOG_ECMA(INFO) << "operand 0: " << LLVMPrintValueToString(e1Value);
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildBitCast(builder_, e1Value, LLVMInt64Type(), "");
     g_values[gate] = result;
-    LOG_ECMA(INFO) << "result: " << LLVMPrintValueToString(result);
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
 LLVMStubModule::LLVMStubModule(const char *name, const char *triple)
