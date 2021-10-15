@@ -81,9 +81,9 @@ HWTEST_F_L0(EcmaStringTest, CreateEmptyString)
     EXPECT_FALSE(ecmaStrEmptyPtr->IsUtf16());
 
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EcmaString *ecmaStrEmptyNotCompPtr = EcmaString::CreateEmptyString(ecmaVMPtr);
-    EXPECT_EQ(ecmaStrEmptyNotCompPtr->GetLength(), 0);
-    EXPECT_TRUE(ecmaStrEmptyNotCompPtr->IsUtf16());
+    EcmaString *ecmaStrEmptyDisableCompPtr = EcmaString::CreateEmptyString(ecmaVMPtr);
+    EXPECT_EQ(ecmaStrEmptyDisableCompPtr->GetLength(), 0);
+    EXPECT_TRUE(ecmaStrEmptyDisableCompPtr->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
@@ -111,7 +111,8 @@ HWTEST_F_L0(EcmaStringTest, AllocStringObject)
     EXPECT_FALSE(ecmaStrAllocNotCompPtr->IsUtf8());
     EXPECT_TRUE(ecmaStrAllocNotCompPtr->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_TRUE(ecmaStrAllocNotCompPtr->IsUtf16());
+    EcmaString *ecmaStrAllocNotCompDisableCompPtr = EcmaString::AllocStringObject(sizeAllocNotComp, false, ecmaVMPtr);
+    EXPECT_TRUE(ecmaStrAllocNotCompDisableCompPtr->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
@@ -151,7 +152,9 @@ HWTEST_F_L0(EcmaStringTest, CreateFromUtf16)
     EXPECT_FALSE(ecmaStrU16NotCompPtr->IsUtf8());
     EXPECT_TRUE(ecmaStrU16NotCompPtr->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_TRUE(ecmaStrU16NotCompPtr->IsUtf16());
+    EcmaString *ecmaStrU16NotCompDisableCompPtr = EcmaString::CreateFromUtf16(&arrayU16NotComp[0],
+        lengthEcmaStrU16NotComp, ecmaVMPtr, false);
+    EXPECT_TRUE(ecmaStrU16NotCompDisableCompPtr->IsUtf16());
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
@@ -1244,7 +1247,9 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_003)
     EXPECT_EQ(ecmaStrU16NotCompPtr->GetHashcode(), static_cast<int32_t>(hashExpect));
 
     EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
-    EXPECT_EQ(ecmaStrU16NotCompPtr->GetHashcode(), static_cast<int32_t>(hashExpect));
+    EcmaString *ecmaStrU16NotCompDisableCompPtr = EcmaString::CreateFromUtf16(&arrayU16NotComp[0],
+        lengthEcmaStrU16NotComp, ecmaVMPtr, false);
+    EXPECT_EQ(ecmaStrU16NotCompDisableCompPtr->GetHashcode(), static_cast<int32_t>(hashExpect));
     EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
@@ -1255,6 +1260,11 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_004)
     // GetHashcode(). EcmaString made by CreateEmptyString().
     EcmaString *ecmaStrEmptyPtr = EcmaString::CreateEmptyString(ecmaVMPtr);
     EXPECT_EQ(ecmaStrEmptyPtr->GetHashcode(), 0);
+
+    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
+    EcmaString *ecmaStrEmptyDisableCompPtr = EcmaString::CreateEmptyString(ecmaVMPtr);
+    EXPECT_EQ(ecmaStrEmptyDisableCompPtr->GetHashcode(), 0);
+    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 
 HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
@@ -1267,5 +1277,10 @@ HWTEST_F_L0(EcmaStringTest, GetHashcode_005)
     EcmaString *ecmaStrAllocNotCompPtr = EcmaString::AllocStringObject(sizeAlloc, false, ecmaVMPtr);
     EXPECT_EQ(ecmaStrAllocCompPtr->GetHashcode(), 0);
     EXPECT_EQ(ecmaStrAllocNotCompPtr->GetHashcode(), 0);
+
+    EcmaString::SetCompressedStringsEnabled(false); // Set compressedStringsEnabled false.
+    EcmaString *ecmaStrAllocNotCompDisableCompPtr = EcmaString::AllocStringObject(sizeAlloc, false, ecmaVMPtr);
+    EXPECT_EQ(ecmaStrAllocNotCompDisableCompPtr->GetHashcode(), 0);
+    EcmaString::SetCompressedStringsEnabled(true); // Set compressedStringsEnabled true(default).
 }
 }  // namespace panda::ecmascript
