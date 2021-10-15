@@ -690,6 +690,21 @@ JSHandle<JSTaggedValue> EcmaVM::GetModuleByName(JSHandle<JSTaggedValue> moduleNa
     auto pos = scriptName.find_last_of('.');
     CString abcPath = dirPath.append(scriptName.substr(0, pos == std::string::npos ? 0 : pos)).append(".abc");
 
+    // handle relative path
+    if (abcPath.find("./") == 0) { // starts with "./"
+        std::string fullPath = std::get<1>(pandaFileWithProgram_.back())->GetFilename();
+        auto lastSlash = fullPath.find_last_of('/');
+        if (lastSlash != std::string::npos) {
+            abcPath = fullPath.substr(0, lastSlash).append(abcPath.substr(1)); // 1: ignore "."
+        }
+    } else if (abcPath.find("../") == 0) { // starts with "../"
+        std::string fullPath = std::get<1>(pandaFileWithProgram_.back())->GetFilename();
+        auto lastSlash = fullPath.find_last_of('/');
+        if (lastSlash != std::string::npos) {
+            abcPath = fullPath.substr(0, lastSlash + 1).append(abcPath); // 1: with "/"
+        }
+    }
+
     // Uniform module name
     JSHandle<EcmaString> abcModuleName = factory_->NewFromString(abcPath);
 
