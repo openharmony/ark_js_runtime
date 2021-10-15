@@ -138,7 +138,7 @@ public:
             }
             return length;
         }
-        return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, length, maxLength - 1, start) - 1;
+        return base::utf_helper::ConvertRegionUtf16ToUtf8(GetDataUtf16(), buf, length, maxLength - 1, start);
     }
 
     inline uint32_t CopyDataUtf16(uint16_t *buf, uint32_t maxLength) const
