@@ -1070,6 +1070,7 @@ void DoSafepoint()
 }
 }
 
+#ifdef NDEBUG
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
@@ -1131,6 +1132,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
                   JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
 }
+#endif
 
 HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
