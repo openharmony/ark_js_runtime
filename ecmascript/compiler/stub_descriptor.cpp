@@ -94,7 +94,18 @@ CALL_STUB_INIT_DESCRIPTOR(FastMod)
 
 CALL_STUB_INIT_DESCRIPTOR(FastEqual) {}
 
-CALL_STUB_INIT_DESCRIPTOR(FastTypeOf) {}
+CALL_STUB_INIT_DESCRIPTOR(FastTypeOf)
+{
+    // 4 : 4 input parameters
+    static StubDescriptor fastTypeOf("FastTypeOf", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = fastTypeOf;
+    // 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
 
 CALL_STUB_INIT_DESCRIPTOR(FastStrictEqual) {}
 

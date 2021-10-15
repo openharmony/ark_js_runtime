@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "gtest/gtest.h"
+#include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/compiler/fast_stub.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/llvm_mcjit_engine.h"
@@ -41,6 +42,7 @@ namespace panda::test {
 using namespace panda::coretypes;
 using namespace panda::ecmascript;
 using namespace kungfu;
+using BuiltinsPromiseHandler = builtins::BuiltinsPromiseHandler;
 
 class StubTest : public testing::Test {
 public:
@@ -1164,5 +1166,91 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(), strBig.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
+}
+
+HWTEST_F_L0(StubTest, FastTypeOfTest)
+{
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMod));
+    Circuit netOfGates;
+    FastTypeOfStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    bool verRes = Verifier::Run(&netOfGates);
+    ASSERT_TRUE(verRes);
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    char *error = nullptr;
+    LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    assembler.Run();
+    LLVMDumpModule(module);
+    auto *typeOfPtr = 
+        reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+
+    // obj is JSTaggedValue::VALUE_TRUE
+    JSTaggedValue resultVal = typeOfPtr(thread, JSTaggedValue::True().GetRawData());
+    JSTaggedValue expectResult = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::True());
+    EXPECT_EQ(resultVal, globalConst->GetBooleanString());
+    EXPECT_EQ(resultVal, expectResult);
+
+    // obj is JSTaggedValue::VALUE_FALSE
+    JSTaggedValue resultVal2 = typeOfPtr(thread, JSTaggedValue::False().GetRawData());
+    JSTaggedValue expectResult2 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::False());
+    EXPECT_EQ(resultVal2, globalConst->GetBooleanString());
+    EXPECT_EQ(resultVal2, expectResult2);
+
+    // obj is JSTaggedValue::VALUE_NULL
+    JSTaggedValue resultVal3 = typeOfPtr(thread, JSTaggedValue::Null().GetRawData());
+    JSTaggedValue expectResult3 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Null());
+    EXPECT_EQ(resultVal3, globalConst->GetObjectString());
+    EXPECT_EQ(resultVal3, expectResult3);
+
+    // obj is JSTaggedValue::VALUE_UNDEFINED
+    JSTaggedValue resultVal4 = typeOfPtr(thread, JSTaggedValue::Undefined().GetRawData());
+    JSTaggedValue expectResult4 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Undefined());
+    EXPECT_EQ(resultVal4, globalConst->GetUndefinedString());
+    EXPECT_EQ(resultVal4, expectResult4);
+
+    // obj is IsNumber
+    JSTaggedValue resultVal5 = typeOfPtr(thread, JSTaggedValue(5).GetRawData());
+    JSTaggedValue expectResult5 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue(5));
+    EXPECT_EQ(resultVal5, globalConst->GetNumberString());
+    EXPECT_EQ(resultVal5, expectResult5);
+
+    // obj is String
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<EcmaString> str1 = factory->NewFromStdString("a");
+    JSHandle<EcmaString> str2 = factory->NewFromStdString("a");
+    JSTaggedValue expectResult6 = FastRuntimeStub::FastTypeOf(thread, str1.GetTaggedValue());
+    JSTaggedValue resultVal6 = typeOfPtr(thread, str2.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resultVal6, globalConst->GetStringString());
+    EXPECT_EQ(resultVal6, expectResult6);
+
+    // obj is Symbol
+    JSHandle<GlobalEnv> globalEnv = JSThread::Cast(thread)->GetEcmaVM()->GetGlobalEnv();
+    JSTaggedValue symbol = globalEnv->GetIteratorSymbol().GetTaggedValue();
+    JSTaggedValue expectResult7= FastRuntimeStub::FastTypeOf(thread, symbol);
+    JSTaggedValue resultVal7 = typeOfPtr(thread, symbol.GetRawData());
+    EXPECT_EQ(resultVal7, globalConst->GetSymbolString());
+    EXPECT_EQ(resultVal7, expectResult7);
+
+    // obj is callable
+    JSHandle<JSPromiseReactionsFunction> resolveCallable =
+        factory->CreateJSPromiseReactionsFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Resolve));
+    JSTaggedValue expectResult8= FastRuntimeStub::FastTypeOf(thread, resolveCallable.GetTaggedValue());
+    JSTaggedValue resultVal8 = typeOfPtr(thread, resolveCallable.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resultVal8, globalConst->GetFunctionString());
+    EXPECT_EQ(resultVal8, expectResult8);
+
+    // obj is heapObject
+    JSHandle<JSObject> object = factory->NewEmptyJSObject();
+    JSTaggedValue expectResult9= FastRuntimeStub::FastTypeOf(thread, object.GetTaggedValue());
+    JSTaggedValue resultVal9 = typeOfPtr(thread, object.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resultVal9, globalConst->GetObjectString());
+    EXPECT_EQ(resultVal9, expectResult9);
 }
 }  // namespace panda::test

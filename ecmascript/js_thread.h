@@ -182,6 +182,11 @@ public:
         return MEMBER_OFFSET(JSThread, currentFrame_);
     }
 
+    static uint64_t GetGlobalConstantOffset()
+    {
+        return MEMBER_OFFSET(JSThread, globalConst_);
+    }
+
     InternalCallParams *GetInternalCallParams() const
     {
         return internalCallParams_;

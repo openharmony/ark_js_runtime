@@ -282,6 +282,11 @@ public:
             }
         }
 
+        void SetFrameType(panda::ecmascript::FrameType type)
+        {
+            circuit_->SetFrameType(type);
+        }
+
     private:
         Label *currentLabel_ {nullptr};
         Circuit *circuit_;
@@ -735,7 +740,11 @@ public:
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_XOR), x, y);
     }
 
-    AddrShift Word32Not(AddrShift x);
+    AddrShift Word32Not(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_REV), x);
+    }
+
     AddrShift Word64Not(AddrShift x)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_REV), x);
@@ -814,11 +823,11 @@ public:
 
     AddrShift TaggedIsSpecial(AddrShift x)
     {
-        return TruncInt32ToInt1(WordLogicAnd(
+        return TruncInt32ToInt1(Word32And(
             SExtInt1ToInt32(
                 Word64Equal(Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
                             GetWord64Constant(0))),
-            WordLogicOr(SExtInt1ToInt32(Word64NotEqual(
+            Word32Or(SExtInt1ToInt32(Word64NotEqual(
                 Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
                 GetWord64Constant(0))), SExtInt1ToInt32(TaggedIsHole(x)))));
     }
@@ -826,7 +835,7 @@ public:
     AddrShift TaggedIsHeapObject(AddrShift x)
     {
         return TruncInt32ToInt1(
-            WordLogicAnd(SExtInt1ToInt32(TaggedIsObject(x)), WordLogicNot(SExtInt1ToInt32(TaggedIsSpecial(x)))));
+            Word32And(SExtInt1ToInt32(TaggedIsObject(x)), Word32Not(SExtInt1ToInt32(TaggedIsSpecial(x)))));
     }
 
     AddrShift DoubleIsNAN(AddrShift x)
@@ -1349,6 +1358,29 @@ public:
     std::string GetMethodName() const
     {
         return methodName_;
+    }
+
+    AddrShift GetGlobalConstantAddr(AddrShift index)
+    {
+        return Int64Mul(GetWord64Constant(sizeof(JSTaggedValue)), index);
+    }
+
+    AddrShift GetGlobalConstantString(ConstantIndex index)
+    {
+        return GetGlobalConstantAddr(GetWord64Constant(static_cast<int>(index)));
+    }
+
+    AddrShift IsCallable(AddrShift obj)
+    {
+        AddrShift hclass = LoadHClass(obj);
+        AddrShift bitfieldOffset = GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET);
+
+        AddrShift bitfield = Load(INT64_TYPE, hclass, bitfieldOffset);
+        // decode
+        return Word64NotEqual(
+            Word64And(Word64LSR(bitfield, GetWord64Constant(panda::ecmascript::JSHClass::CallableBit::START_BIT)),
+                      GetWord64Constant((1LLU << panda::ecmascript::JSHClass::CallableBit::SIZE) - 1)),
+            GetWord64Constant(0));
     }
 
 private:

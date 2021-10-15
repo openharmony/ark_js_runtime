@@ -149,5 +149,15 @@ public:
     NO_COPY_SEMANTIC(FastModStub);
     void GenerateCircuit() override;
 };
+
+class FastTypeOfStub : public Stub {
+public:
+    // 2 means argument counts
+    explicit FastTypeOfStub(Circuit *circuit) : Stub("FastTypeOf", 2, circuit) {}
+    ~FastTypeOfStub() = default;
+    NO_MOVE_SEMANTIC(FastTypeOfStub);
+    NO_COPY_SEMANTIC(FastTypeOfStub);
+    void GenerateCircuit() override;
+};
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H
