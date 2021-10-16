@@ -185,12 +185,20 @@ Properties OpCode::GetProperties() const
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
         case ZEXT_INT1_TO_INT32:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
+        case ZEXT_INT8_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
+        case ZEXT_INT16_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT16), NO_ROOT};
         case ZEXT_INT1_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
         case SEXT_INT32_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
         case SEXT_INT1_TO_INT32:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
+        case SEXT_INT8_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
+        case SEXT_INT16_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
         case SEXT_INT1_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
         case TRUNC_INT64_TO_INT32:
@@ -400,9 +408,13 @@ std::string OpCode::Str() const
         {FLOAT64_CONSTANT, "FLOAT64_CONSTANT"},
         {ZEXT_INT32_TO_INT64, "ZEXT_INT32_TO_INT64"},
         {ZEXT_INT1_TO_INT32, "ZEXT_INT1_TO_INT32"},
+        {ZEXT_INT8_TO_INT32, "ZEXT_INT8_TO_INT32"},
+        {ZEXT_INT16_TO_INT32, "ZEXT_INT16_TO_INT32"},
         {ZEXT_INT1_TO_INT64, "ZEXT_INT1_TO_INT64"},
         {SEXT_INT32_TO_INT64, "SEXT_INT32_TO_INT64"},
         {SEXT_INT1_TO_INT32, "SEXT_INT1_TO_INT32"},
+        {SEXT_INT8_TO_INT32, "SEXT_INT8_TO_INT32"},
+        {SEXT_INT16_TO_INT32, "SEXT_INT16_TO_INT32"},
         {SEXT_INT1_TO_INT64, "SEXT_INT1_TO_INT64"},
         {TRUNC_INT64_TO_INT32, "TRUNC_INT64_TO_INT32"},
         {TRUNC_INT64_TO_INT1, "TRUNC_INT64_TO_INT1"},
@@ -1304,5 +1316,10 @@ bool OpCode::IsControlCase() const
 bool OpCode::IsLoopHead() const
 {
     return (this->op == OpCode::LOOP_BEGIN);
+}
+
+bool OpCode::IsNop() const
+{
+    return (this->op == OpCode::NOP);
 }
 }  // namespace kungfu

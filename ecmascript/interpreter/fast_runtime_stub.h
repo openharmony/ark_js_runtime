@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_H
 #define ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_H
 
+#include <memory>
 #include "ecmascript/js_tagged_value.h"
 
 namespace panda::ecmascript {
@@ -24,6 +25,7 @@ class PropertyAttributes;
 
 class FastRuntimeStub {
 public:
+    using Address = uintptr_t;
     /* -------------- Common API Begin, Don't change those interface!!! ----------------- */
     static inline JSTaggedValue FastAdd(JSTaggedValue left, JSTaggedValue right);
     static inline JSTaggedValue FastSub(JSTaggedValue left, JSTaggedValue right);

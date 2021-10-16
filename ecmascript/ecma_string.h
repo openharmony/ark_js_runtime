@@ -45,6 +45,13 @@ public:
     static EcmaString *FastSubString(const JSHandle<EcmaString> &src, uint32_t start, uint32_t utf16Len,
                                      const EcmaVM *vm);
 
+    static constexpr uint32_t STRING_COMPRESSED_BIT = 0x1;
+    static constexpr uint32_t STRING_INTERN_BIT = 0x2;
+    enum CompressedStatus {
+        STRING_COMPRESSED,
+        STRING_UNCOMPRESSED,
+    };
+
     template<bool verify = true>
     uint16_t At(int32_t index) const;
 
@@ -285,12 +292,6 @@ private:
     static void CopyUtf16AsUtf8(const uint16_t *utf16From, uint8_t *utf8To, uint32_t utf16Len);
 
     static bool compressedStringsEnabled;
-    static constexpr uint32_t STRING_COMPRESSED_BIT = 0x1;
-    static constexpr uint32_t STRING_INTERN_BIT = 0x2;
-    enum CompressedStatus {
-        STRING_COMPRESSED,
-        STRING_UNCOMPRESSED,
-    };
 
     static bool IsASCIICharacter(uint16_t data)
     {

@@ -699,7 +699,16 @@ public:
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_DIV), x, y);
     }
-    AddrShift Int32Div(AddrShift x, AddrShift y);
+    AddrShift Int32Div(AddrShift x, AddrShift y)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_SDIV), x, y);
+    }
+
+    AddrShift Word32Div(AddrShift x, AddrShift y)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_UDIV), x, y);
+    }
+
     AddrShift Int64Div(AddrShift x, AddrShift y);
 
     AddrShift Int32Mod(AddrShift x, AddrShift y)
@@ -759,11 +768,6 @@ public:
     AddrShift WordLogicAnd(AddrShift x, AddrShift y)
     {
         return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_AND), x, y);
-    }
-
-    AddrShift WordLogicNot(AddrShift x)
-    {
-        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_REV), x);
     }
 
     AddrShift Word32LSL(AddrShift x, AddrShift y)
@@ -828,15 +832,27 @@ public:
             SExtInt1ToInt32(
                 Word64Equal(Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
                             GetWord64Constant(0))),
-            Word32Or(SExtInt1ToInt32(Word64NotEqual(
-                Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
+            WordLogicOr(SExtInt1ToInt32(Word64NotEqual(
+                Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_VALUE)),
                 GetWord64Constant(0))), SExtInt1ToInt32(TaggedIsHole(x)))));
     }
 
     AddrShift TaggedIsHeapObject(AddrShift x)
     {
         return TruncInt32ToInt1(
-            Word32And(SExtInt1ToInt32(TaggedIsObject(x)), Word32Not(SExtInt1ToInt32(TaggedIsSpecial(x)))));
+            WordLogicAnd(SExtInt1ToInt32(TaggedIsObject(x)),
+                         SExtInt1ToInt32(Word32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), GetInteger32Constant(0)))));
+    }
+
+    AddrShift TaggedIsString(AddrShift obj);
+
+    AddrShift TaggedIsStringOrSymbol(AddrShift obj);
+
+    AddrShift GetNextPositionForHash(AddrShift last, AddrShift count, AddrShift size)
+    {
+        auto nextOffset = Word32LSR(Int32Mul(count, Int32Add(count, GetInteger32Constant(1))),
+                                    GetInteger32Constant(2));
+        return Word32And(Int32Add(last, nextOffset), Int32Sub(size, GetInteger32Constant(1)));
     }
 
     AddrShift DoubleIsNAN(AddrShift x)
@@ -1060,6 +1076,17 @@ public:
         return Word32NotEqual(Word32And(Load(UINT32_TYPE, LoadHClass(object), GetPtrConstant(0)),
                                         GetInteger32Constant(panda::HClass::IS_DICTIONARY_ARRAY)),
                               GetInteger32Constant(0));
+    }
+
+    AddrShift IsDictionaryModeByHClass(AddrShift hClass)
+    {
+        AddrShift bitfieldOffset = GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET);
+        AddrShift bitfield = Load(INT64_TYPE, hClass, bitfieldOffset);
+        return Word64NotEqual(
+            Word64And(
+                Word64LSR(bitfield, GetWord64Constant(panda::ecmascript::JSHClass::IsDictionaryBit::START_BIT)),
+                GetWord64Constant((1LLU << panda::ecmascript::JSHClass::IsDictionaryBit::SIZE) - 1)),
+            GetWord64Constant(0));
     }
 
     AddrShift IsDictionaryElement(AddrShift hclass)
@@ -1309,6 +1336,18 @@ public:
 
     AddrShift JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift propAttr);
 
+    AddrShift IsUtf16String(AddrShift string);
+
+    AddrShift IsUtf8String(AddrShift string);
+
+    AddrShift IsInternalString(AddrShift string);
+
+    AddrShift IsDigit(AddrShift ch);
+
+    AddrShift StringToElementIndex(AddrShift string);
+
+    AddrShift TryToElementsIndex(AddrShift key);
+
     AddrShift TaggedCastToInt64(AddrShift x)
     {
         return Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_MASK));
@@ -1363,6 +1402,16 @@ public:
     AddrShift ZExtInt1ToInt32(AddrShift x)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT1_TO_INT32), x);
+    }
+
+    AddrShift ZExtInt8ToInt32(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT32), x);
+    }
+
+    AddrShift ZExtInt16ToInt32(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT16_TO_INT32), x);
     }
 
     AddrShift TruncInt64ToInt32(AddrShift x)

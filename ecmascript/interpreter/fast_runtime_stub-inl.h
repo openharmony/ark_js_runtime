@@ -622,7 +622,10 @@ bool FastRuntimeStub::FastSetPropertyByIndex(JSThread *thread, JSTaggedValue rec
                                              JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, FastSetPropertyByIndex);
-    JSTaggedValue result = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
+    auto *setPropertyByIndex = \
+        reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)> \
+            (reinterpret_cast<uintptr_t>(thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex))));
+    JSTaggedValue result = setPropertyByIndex(thread, receiver, index, value);
     if (!result.IsHole()) {
         return result != JSTaggedValue::Exception();
     }
@@ -654,7 +657,9 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedV
         // Maybe moved by GC
         receiver = receiverHandler.GetTaggedValue();
     }
-    JSTaggedValue result = FastRuntimeStub::GetPropertyByName(thread, receiver, key);
+    auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, JSTaggedValue)>(
+        thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName)));
+    JSTaggedValue result = getPropertyByNamePtr(thread, receiver, key);
     if (result.IsHole()) {
         return JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(thread, receiver),
                                           JSHandle<JSTaggedValue>(thread, key))
@@ -681,7 +686,10 @@ template<bool UseHole>  // UseHole is only for Array::Sort() which requires Hole
 JSTaggedValue FastRuntimeStub::FastGetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index)
 {
     INTERPRETER_TRACE(thread, FastGetPropertyByIndex);
-    JSTaggedValue result = GetPropertyByIndex(thread, receiver, index);
+    auto getPropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
+        thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex)));
+
+    JSTaggedValue result = getPropertyByIndex(thread, receiver, index);
     if (result.IsHole() && !UseHole) {
         return JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(thread, receiver), index)
             .GetValue()

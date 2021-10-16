@@ -92,6 +92,8 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT64_CONSTANT, &LLVMIRBuilder::HandleInt64Constant},
         {OpCode::FLOAT64_CONSTANT, &LLVMIRBuilder::HandleFloat64Constant},
         {OpCode::ZEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_INT8_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_INT16_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT32_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT1_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::SEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
@@ -134,6 +136,8 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::FLOAT64_EQ, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
         {OpCode::INT32_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT8_LOAD, &LLVMIRBuilder::HandleLoad},
+        {OpCode::INT16_LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::INT32_LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::INT64_LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::INT32_STORE, &LLVMIRBuilder::HandleStore},
@@ -186,7 +190,6 @@ void LLVMIRBuilder::Build()
             AddrShift gate = (*schedule_)[bbIdx][instIdx - 1];
             std::vector<AddrShift> ins = circuit_->GetInVector(gate);
             std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
-            std::cout << "instIdx :" << instIdx << std::endl;
             circuit_->Print(gate);
             auto found = opCodeHandleMap_.find(circuit_->GetOpCode(gate));
             if (found != opCodeHandleMap_.end()) {
@@ -361,6 +364,9 @@ LLVMTypeRef LLVMIRBuilder::GetMachineRepType(MachineRep rep) const
             break;
         case MachineRep::K_WORD8:
             dstType = LLVMInt8TypeInContext(context_);
+            break;
+        case MachineRep::K_WORD16:
+            dstType = LLVMInt16TypeInContext(context_);
             break;
         case MachineRep::K_WORD32:
             dstType = LLVMInt32TypeInContext(context_);
@@ -626,6 +632,8 @@ void LLVMIRBuilder::HandleZExtInt(AddrShift gate)
 {
     std::vector<AddrShift> ins = circuit_->GetInVector(gate);
     switch (circuit_->GetOpCode(gate)) {
+        case OpCode::ZEXT_INT8_TO_INT32:  // no break, fall through
+        case OpCode::ZEXT_INT16_TO_INT32:
         case OpCode::ZEXT_INT1_TO_INT32: {
             VisitZExtInt(gate, ins[0], MachineRep::K_WORD32);
             break;
@@ -1041,6 +1049,16 @@ void LLVMIRBuilder::HandleLoad(AddrShift gate)
     std::vector<AddrShift> ins = circuit_->GetInVector(gate);
     std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
     switch (circuit_->GetOpCode(gate)) {
+        case OpCode::INT8_LOAD: {
+            AddrShift base = ins[1];
+            VisitLoad(gate, MachineRep::K_WORD8, base);
+            break;
+        }
+        case OpCode::INT16_LOAD: {
+            AddrShift base = ins[1];
+            VisitLoad(gate, MachineRep::K_WORD16, base);
+            break;
+        }
         case OpCode::INT32_LOAD: {
             AddrShift base = ins[1];
             VisitLoad(gate, MachineRep::K_WORD32, base);

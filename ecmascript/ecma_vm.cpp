@@ -168,6 +168,9 @@ bool EcmaVM::Initialize()
         globalEnv->SetTemplateMap(thread_, JSTaggedValue(TemplateMap::Create(thread_)));
         globalEnv->SetRegisterSymbols(GetJSThread(), JSTaggedValue(SymbolTable::Create(GetJSThread())));
 
+        std::string moduleFile = options_.GetStubModuleFile();
+        thread_->LoadFastStubModule(moduleFile.c_str());
+
         SetupRegExpResultCache();
         microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
 

@@ -50,6 +50,7 @@ public:
     static uint32_t StringGetHashCode(uint64_t ecmaString);
     static uint64_t Execute(uint64_t argThread, uint64_t argFunc, uint64_t thisArg, uint32_t argc, uint64_t argArgv);
     static double FloatMod(double left, double right);
+    static uint64_t NewInternalString(uint64_t argThread, uint64_t argKey);
 };
 
 class CallRuntimeTrampolinesScope {

@@ -170,6 +170,14 @@ public:
         return fastStubEntires_[id];
     }
 
+    void SetFastStubEntry(uint32_t id, Address entry)
+    {
+        ASSERT(id < kungfu::FAST_STUB_MAXCOUNT);
+        fastStubEntires_[id] = entry;
+    }
+
+    void InitializeFastRuntimeStubs();
+
     void LoadFastStubModule(const char *moduleFile);
 
     static uint32_t GetRuntimeFunctionsOffset()

@@ -245,6 +245,36 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(GetPropertyByValue)
+{
+    // 3 : 3 input parameters
+    static StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = getPropertyByValue;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
+
+CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
+{
+    // // 4 : 4 input parameters
+    // static StubDescriptor setPropertyByValue("SetPropertyByValue", 0, 4, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    // *descriptor = setPropertyByValue;
+    // // 4 : 4 input parameters
+    // std::array<MachineType, 4> params = {
+    //     MachineType::UINT64_TYPE,
+    //     MachineType::UINT64_TYPE,
+    //     MachineType::UINT64_TYPE,
+    //     MachineType::UINT64_TYPE,
+    // };
+    // descriptor->SetParameters(params.data());
+}
+
+
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 {
     // 5 : 5 input parameters
@@ -398,6 +428,20 @@ CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
     StubDescriptor stringGetHashCode("StringGetHashCode", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
     *descriptor = stringGetHashCode;
     std::array<MachineType, 1> params = {
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
+{
+    // 2 : 2 input parameters
+    static StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = stringGetHashCode;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::UINT64_TYPE,
         MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());

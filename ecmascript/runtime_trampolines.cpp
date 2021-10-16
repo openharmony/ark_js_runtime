@@ -149,4 +149,11 @@ double RuntimeTrampolines::FloatMod(double left, double right)
 {
     return std::fmod(left, right);
 }
+
+uint64_t RuntimeTrampolines::NewInternalString(uint64_t argThread, uint64_t argKey)
+{
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argKey)));
+    return JSTaggedValue(thread->GetEcmaVM()->GetFactory()->InternString(keyHandle)).GetRawData();
+}
 }  // namespace panda::ecmascript

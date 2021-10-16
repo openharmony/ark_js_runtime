@@ -147,9 +147,13 @@ public:
         FLOAT64_CONSTANT,
         ZEXT_INT32_TO_INT64,
         ZEXT_INT1_TO_INT32,
+        ZEXT_INT8_TO_INT32,
+        ZEXT_INT16_TO_INT32,
         ZEXT_INT1_TO_INT64,
         SEXT_INT32_TO_INT64,
         SEXT_INT1_TO_INT32,
+        SEXT_INT8_TO_INT32,
+        SEXT_INT16_TO_INT32,
         SEXT_INT1_TO_INT64,
         TRUNC_INT64_TO_INT32,
         TRUNC_INT64_TO_INT1,
@@ -253,6 +257,7 @@ public:
     [[nodiscard]] bool IsCFGMerge() const;
     [[nodiscard]] bool IsControlCase() const;
     [[nodiscard]] bool IsLoopHead() const;
+    [[nodiscard]] bool IsNop() const;
     ~OpCode() = default;
 
 private:

@@ -83,7 +83,10 @@ public:
 class GetElementStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit GetElementStub(Circuit *circuit) : Stub("GetElement", 3, circuit) {}
+    explicit GetElementStub(Circuit *circuit) : Stub("GetElement", 3, circuit)
+    {
+       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
     ~GetElementStub() = default;
     NO_MOVE_SEMANTIC(GetElementStub);
     NO_COPY_SEMANTIC(GetElementStub);
@@ -113,7 +116,10 @@ public:
 class GetPropertyByIndexStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit GetPropertyByIndexStub(Circuit *circuit) : Stub("GetPropertyByIndex", 3, circuit) {}
+    explicit GetPropertyByIndexStub(Circuit *circuit) : Stub("GetPropertyByIndex", 3, circuit)
+    {
+       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
     ~GetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByIndexStub);
     NO_COPY_SEMANTIC(GetPropertyByIndexStub);
@@ -123,7 +129,10 @@ public:
 class SetPropertyByIndexStub : public Stub {
 public:
     // 4 : 4 means argument counts
-    explicit SetPropertyByIndexStub(Circuit *circuit) : Stub("SetPropertyByIndex", 4, circuit) {}
+    explicit SetPropertyByIndexStub(Circuit *circuit) : Stub("SetPropertyByIndex", 4, circuit)
+    {
+       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
     ~SetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByIndexStub);
     NO_COPY_SEMANTIC(SetPropertyByIndexStub);
@@ -133,7 +142,10 @@ public:
 class GetPropertyByNameStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit GetPropertyByNameStub(Circuit *circuit) : Stub("GetPropertyByName", 3, circuit) {}
+    explicit GetPropertyByNameStub(Circuit *circuit) : Stub("GetPropertyByName", 3, circuit)
+    {
+       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
     ~GetPropertyByNameStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByNameStub);
     NO_COPY_SEMANTIC(GetPropertyByNameStub);
@@ -170,6 +182,32 @@ public:
     ~FunctionCallInternalStub() = default;
     NO_MOVE_SEMANTIC(FunctionCallInternalStub);
     NO_COPY_SEMANTIC(FunctionCallInternalStub);
+    void GenerateCircuit() override;
+};
+
+class GetPropertyByValueStub : public Stub {
+public:
+    // 3 : 3 means argument counts
+    explicit GetPropertyByValueStub(Circuit *circuit) : Stub("FastGetPropertyByValue", 3, circuit)
+    {
+       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~GetPropertyByValueStub() = default;
+    NO_MOVE_SEMANTIC(GetPropertyByValueStub);
+    NO_COPY_SEMANTIC(GetPropertyByValueStub);
+    void GenerateCircuit() override;
+};
+
+class SetPropertyByValueStub : public Stub {
+public:
+    // 4 : 4 means argument counts
+    explicit SetPropertyByValueStub(Circuit *circuit) : Stub("FastSetPropertyByValue", 4, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~SetPropertyByValueStub() = default;
+    NO_MOVE_SEMANTIC(SetPropertyByValueStub);
+    NO_COPY_SEMANTIC(SetPropertyByValueStub);
     void GenerateCircuit() override;
 };
 }  // namespace kungfu

@@ -2439,7 +2439,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue receiver = GET_VREG_VALUE(v0);
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
-            JSTaggedValue res = FastRuntimeStub::GetPropertyByIndex(thread, receiver, idx);
+            auto getPropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
+                thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex)));
+            JSTaggedValue res = getPropertyByIndex(thread, receiver, idx);
             if (!res.IsHole()) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 SET_ACC(res);
@@ -2464,7 +2466,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             SAVE_ACC();
             JSTaggedValue value = GET_ACC();
             // fast path
-            JSTaggedValue res = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
+            auto *setPropertyByIndex = \
+                reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)> \
+                    (reinterpret_cast<uintptr_t>(thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex))));
+            JSTaggedValue res = setPropertyByIndex(thread, receiver, index, value);
             if (!res.IsHole()) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 RESTORE_ACC();
@@ -2887,7 +2892,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         if (LIKELY(receiver.IsHeapObject())) {
             // fast path
-            JSTaggedValue res = FastRuntimeStub::GetPropertyByName(thread, receiver, propKey);
+            auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, JSTaggedValue)>(
+                thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName)));
+            JSTaggedValue res = getPropertyByNamePtr(thread, receiver, propKey);
             if (!res.IsHole()) {
                 ASSERT(!res.IsAccessor());
                 INTERPRETER_RETURN_IF_ABRUPT(res);
