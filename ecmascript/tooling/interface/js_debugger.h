@@ -27,23 +27,15 @@ using panda::ecmascript::CUnorderedSet;
 
 class JSDebugger : public DebugInterface, RuntimeListener {
 public:
-    JSDebugger(const Runtime *runtime, const EcmaVM *vm) : runtime_(runtime), ecmaVm_(vm)
+    JSDebugger(const EcmaVM *vm) : ecmaVm_(vm)
     {
-        auto notificationMgr = runtime_->GetNotificationManager();
-        // set EcmaVM rendezvous
-        notificationMgr->SetRendezvous(ecmaVm_->GetRendezvous());
+        auto notificationMgr = ecmaVm_->GetNotificationManager();
         notificationMgr->AddListener(this, JSDEBUG_EVENT_MASK);
-        // set PandaVM rendezvous
-        notificationMgr->SetRendezvous(runtime_->GetPandaVM()->GetRendezvous());
     }
     ~JSDebugger() override
     {
-        auto notificationMgr = runtime_->GetNotificationManager();
-        // set EcmaVM rendezvous
-        notificationMgr->SetRendezvous(ecmaVm_->GetRendezvous());
+        auto notificationMgr = ecmaVm_->GetNotificationManager();
         notificationMgr->RemoveListener(this, JSDEBUG_EVENT_MASK);
-        // set PandaVM rendezvous
-        notificationMgr->SetRendezvous(runtime_->GetPandaVM()->GetRendezvous());
     }
 
     std::optional<Error> RegisterHooks(PtHooks *hooks) override
@@ -234,7 +226,6 @@ private:
     void HandleExceptionThrowEvent(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
     bool HandleStep(const JSThread *thread, const JSMethod *method, uint32_t bcOffset);
 
-    const Runtime *runtime_;
     const EcmaVM *ecmaVm_;
     PtHooks *hooks_ {nullptr};
 

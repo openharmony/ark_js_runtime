@@ -32,14 +32,14 @@ JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
     ecmaVm_ = static_cast<ProtocolHandler *>(frontend)->GetEcmaVM();
     hooks_ = std::make_unique<JSPtHooks>(this);
 
-    debugger_ = DebuggerApi::CreateJSDebugger(Runtime::GetCurrent(), ecmaVm_);
+    debugger_ = DebuggerApi::CreateJSDebugger(ecmaVm_);
     DebuggerApi::RegisterHooks(debugger_, hooks_.get());
 }
 
 JSBackend::JSBackend(const EcmaVM *vm) : ecmaVm_(vm)
 {
     // For testcases
-    debugger_ = DebuggerApi::CreateJSDebugger(Runtime::GetCurrent(), ecmaVm_);
+    debugger_ = DebuggerApi::CreateJSDebugger(ecmaVm_);
 }
 
 JSBackend::~JSBackend()

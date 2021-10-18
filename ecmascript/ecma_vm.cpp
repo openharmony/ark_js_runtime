@@ -113,6 +113,10 @@ EcmaVM::EcmaVM(RuntimeOptions options)
     }
     fileName_ = options_.GetSnapshotFile();
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile();
+
+    auto runtime = Runtime::GetCurrent();
+    notificationManager_ = chunk_.New<RuntimeNotificationManager>(runtime->GetInternalAllocator());
+    notificationManager_->SetRendezvous(rendezvous_);
 }
 
 bool EcmaVM::Initialize()
@@ -184,8 +188,8 @@ bool EcmaVM::Initialize()
 
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
-    Runtime::GetCurrent()->GetNotificationManager()->VmStartEvent();
-    Runtime::GetCurrent()->GetNotificationManager()->VmInitializationEvent(0);
+    notificationManager_->VmStartEvent();
+    notificationManager_->VmInitializationEvent(0);
     return true;
 }
 
@@ -262,6 +266,11 @@ EcmaVM::~EcmaVM()
 
     delete regExpParserCache_;
     regExpParserCache_ = nullptr;
+
+    if (notificationManager_ != nullptr) {
+        chunk_.Delete(notificationManager_);
+        notificationManager_ = nullptr;
+    }
 
     if (factory_ != nullptr) {
         chunk_.Delete(factory_);
@@ -456,7 +465,7 @@ void EcmaVM::AddPandaFile(const panda_file::File *pf, bool isModule)
     pandaFileWithProgram_.push_back(std::make_tuple(nullptr, pf, isModule));
 
     // for debugger
-    Runtime::GetCurrent()->GetNotificationManager()->LoadModuleEvent(pf->GetFilename());
+    notificationManager_->LoadModuleEvent(pf->GetFilename());
 }
 
 void EcmaVM::SetProgram(Program *program, const panda_file::File *pf)

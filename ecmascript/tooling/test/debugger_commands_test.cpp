@@ -62,7 +62,7 @@ protected:
 
 HWTEST_F_L0(DebuggerCommandsTest, CreateDebuggerTest)
 {
-    std::unique_ptr<JSDebugger> debugger = std::make_unique<JSDebugger>(Runtime::GetCurrent(), ecmaVm);
+    std::unique_ptr<JSDebugger> debugger = std::make_unique<JSDebugger>(ecmaVm);
     ASSERT_NE(debugger, nullptr);
 }
 }  // namespace panda::test

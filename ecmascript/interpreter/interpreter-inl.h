@@ -461,7 +461,7 @@ void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
             continue;
         }
         auto bcOffset = frameHandler.GetBytecodeOffset();
-        Runtime::GetCurrent()->GetNotificationManager()->BytecodePcChangedEvent(thread, method, bcOffset);
+        thread->GetEcmaVM()->GetNotificationManager()->BytecodePcChangedEvent(thread, method, bcOffset);
         return;
     }
 }
