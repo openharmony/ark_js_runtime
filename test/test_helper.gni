@@ -66,6 +66,10 @@ template("host_unittest_action") {
 template("host_moduletest_action") {
   _target_name_ = "${target_name}"
   _deps_ = invoker.deps
+  _is_module_ = false
+  if (defined(invoker.is_module) && invoker.is_module) {
+    _is_module_ = true
+  }
 
   _test_js_path_ = "./${_target_name_}.js"
   _test_abc_path_ = "$target_out_dir/${_target_name_}.abc"
@@ -77,6 +81,9 @@ template("host_moduletest_action") {
     src_js = rebase_path(_test_js_path_)
     dst_file = rebase_path(_test_abc_path_)
     extra_args = [ "--debug" ]
+    if (_is_module_) {
+      extra_args += [ "--module" ]
+    }
 
     in_puts = [
       _test_js_path_,

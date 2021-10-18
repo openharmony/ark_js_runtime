@@ -24,8 +24,7 @@ group("ark_js_moduletest") {
     "globalrecord:globalrecordAction",
     "helloworld:helloworldAction",
     "lexicalenv:lexicalenvAction",
-
-    # "module:moduleAction",
+    "module:moduleAction",
     "multiargs:multiargsAction",
     "newobjdynrange:newobjdynrangeAction",
     "promise:promiseAction",
