@@ -334,6 +334,39 @@ CALL_STUB_INIT_DESCRIPTOR(FindElementWithCache)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(Execute)
+{
+    // 5 : 5 input parameters
+    static StubDescriptor execute("Execute", 0, 5, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = execute;
+    std::array<MachineType, 5> params = {  // 5 : 5 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(FunctionCallInternal)
+{
+    // 5 : 5 input parameters
+    static StubDescriptor functionCallInternal("FunctionCallInternal", 0, 5,
+                                               ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = functionCallInternal;
+    std::array<MachineType, 5> params = {  // 5 : 5 input parameters
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT32_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
 {
     static StubDescriptor stringGetHashCode("StringGetHashCode", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
