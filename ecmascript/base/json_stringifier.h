@@ -66,7 +66,16 @@ private:
     bool SerializeElements(const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &replacer, bool hasContent);
     bool SerializeKeys(const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &replacer, bool hasContent);
 
-    static void FastStorePropertyByIndex(JSThread *thread, JSTaggedValue obj, uint32_t idx, JSTaggedValue value);
+    static inline bool CompareKey(const std::pair<JSHandle<JSTaggedValue>, PropertyAttributes> &a,
+                                  const std::pair<JSHandle<JSTaggedValue>, PropertyAttributes> &b)
+    {
+        return a.second.GetDictionaryOrder() < b.second.GetDictionaryOrder();
+    }
+
+    static inline bool CompareNumber(const JSHandle<JSTaggedValue> &a, const JSHandle<JSTaggedValue> &b)
+    {
+        return a->GetNumber() < b->GetNumber();
+    }
 
     CString gap_;
     CString result_;

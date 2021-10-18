@@ -631,21 +631,23 @@ bool JsonStringifier::SerializeElements(const JSHandle<JSObject> &obj, const JSH
         }
     } else {
         JSHandle<NumberDictionary> numberDic(elementsArr);
-        CVector<JSTaggedValue> sortArr;
+        CVector<JSHandle<JSTaggedValue>> sortArr;
         int size = numberDic->Size();
         for (int hashIndex = 0; hashIndex < size; hashIndex++) {
             JSTaggedValue key = numberDic->GetKey(hashIndex);
             if (!key.IsUndefined() && !key.IsHole()) {
                 PropertyAttributes attr = numberDic->GetAttributes(hashIndex);
                 if (attr.IsEnumerable()) {
-                    sortArr.emplace_back(JSTaggedValue(static_cast<uint32_t>(key.GetInt())));
+                    JSTaggedValue numberKey = JSTaggedValue(static_cast<uint32_t>(key.GetInt()));
+                    sortArr.emplace_back(JSHandle<JSTaggedValue>(thread_, numberKey));
                 }
             }
         }
-        std::sort(sortArr.begin(), sortArr.end(), NumberDictionary::CompKey);
+        std::sort(sortArr.begin(), sortArr.end(), CompareNumber);
         for (const auto &entry : sortArr) {
-            handleKey_.Update(entry);
-            int index = numberDic->FindEntry(entry);
+            JSTaggedValue entryKey = entry.GetTaggedValue();
+            handleKey_.Update(entryKey);
+            int index = numberDic->FindEntry(entryKey);
             JSTaggedValue value = numberDic->GetValue(index);
             handleValue_.Update(value);
             hasContent = JsonStringifier::AppendJsonString(obj, replacer, hasContent);
@@ -720,7 +722,7 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
     }
     JSHandle<NameDictionary> nameDic(propertiesArr);
     int size = nameDic->Size();
-    CVector<std::pair<JSTaggedValue, PropertyAttributes>> sortArr;
+    CVector<std::pair<JSHandle<JSTaggedValue>, PropertyAttributes>> sortArr;
     for (int hashIndex = 0; hashIndex < size; hashIndex++) {
         JSTaggedValue key = nameDic->GetKey(hashIndex);
         if (!key.IsString()) {
@@ -730,13 +732,14 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
         if (!attr.IsEnumerable()) {
             continue;
         }
-        std::pair<JSTaggedValue, PropertyAttributes> pair(key, attr);
+        std::pair<JSHandle<JSTaggedValue>, PropertyAttributes> pair(JSHandle<JSTaggedValue>(thread_, key), attr);
         sortArr.emplace_back(pair);
     }
-    std::sort(sortArr.begin(), sortArr.end(), NameDictionary::CompKey);
+    std::sort(sortArr.begin(), sortArr.end(), CompareKey);
     for (const auto &entry : sortArr) {
-        handleKey_.Update(entry.first);
-        int index = nameDic->FindEntry(entry.first);
+        JSTaggedValue entryKey = entry.first.GetTaggedValue();
+        handleKey_.Update(entryKey);
+        int index = nameDic->FindEntry(entryKey);
         JSTaggedValue value = nameDic->GetValue(index);
         if (UNLIKELY(value.IsAccessor())) {
             value = JSObject::CallGetter(thread_, AccessorData::Cast(value.GetTaggedObject()),
