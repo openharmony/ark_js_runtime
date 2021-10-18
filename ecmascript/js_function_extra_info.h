@@ -36,6 +36,7 @@ public:
     ACCESSORS(Data, DATA_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT(CALL_BACK_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript
 #endif

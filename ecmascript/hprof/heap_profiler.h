@@ -44,10 +44,10 @@ public:
     /**
      * dump the specific snapshot in target format
      */
-    bool DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &path);
+    bool DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &path, bool isVmMode = true);
     void AddSnapShot(HeapSnapShot *snapshot);
 
-    bool StartHeapTracking(JSThread *thread, double timeInterval) override;
+    bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const CString &filePath) override;
 
 private:
@@ -59,7 +59,7 @@ private:
     /**
      * make a new heap snapshot and put it into a container eg, vector
      */
-    HeapSnapShot *MakeHeapSnapShot(JSThread *thread, SampleType sampleType);
+    HeapSnapShot *MakeHeapSnapShot(JSThread *thread, SampleType sampleType, bool isVmMode = true);
     std::pair<bool, CString> FilePathValid(const CString &filePath);
     CString GenDumpFileName(DumpFormat dumpFormat);
     CString GetTimeStamp();

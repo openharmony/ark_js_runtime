@@ -43,6 +43,7 @@ public:
     ACCESSORS(NameDictionary, NAME_DICTIONARY_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(ECMAObject, NAME_DICTIONARY_OFFSET, SIZE)
+    DECL_DUMP()
 
 protected:
     void CopyModuleInternal(const JSThread *thread, JSHandle<EcmaModule> srcModule);

@@ -104,7 +104,6 @@ using base::ErrorType;
 using DeleteEntryPoint = void (*)(void *, void *);
 
 enum class RemoveSlots { YES, NO };
-
 class ObjectFactory {
 public:
     explicit ObjectFactory(JSThread *thread, Heap *heap);
@@ -358,6 +357,11 @@ public:
     JSHandle<EcmaString> NewFromString(EcmaString *str);
     JSHandle<EcmaString> ConcatFromString(const JSHandle<EcmaString> &prefix, const JSHandle<EcmaString> &suffix);
 
+    // used for creating Function
+    JSHandle<JSObject> NewJSObject(const JSHandle<JSHClass> &jshclass);
+    // used for creating jshclass in Builtins, Function, Class_Linker
+    JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype);
+
 private:
     friend class GlobalEnv;
     friend class GlobalEnvConstants;
@@ -419,11 +423,6 @@ private:
     JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type);
     // used for creating jshclass in GlobalEnv, EcmaVM
     JSHandle<JSHClass> NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type);
-    // used for creating jshclass in Builtins, Function, Class_Linker
-    JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype);
-
-    // used for creating Function
-    JSHandle<JSObject> NewJSObject(const JSHandle<JSHClass> &jshclass);
 
     // used to create nonmovable js_object
     JSHandle<JSObject> NewNonMovableJSObject(const JSHandle<JSHClass> &jshclass);

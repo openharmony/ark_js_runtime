@@ -142,204 +142,36 @@ void HeapSnapShot::MoveNode(uintptr_t address, uintptr_t forward_address)
 // NOLINTNEXTLINE(readability-function-size)
 CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
 {
-    CString *name = GetString("UnKnownType");
     auto *hCls = entry->GetClass();
-    if (hCls->IsTaggedArray()) {
-        CString arrayName;
-        TaggedArray *array = TaggedArray::Cast(entry);
-        if (hCls->IsDictionary()) {
-            arrayName = "TaggedDict[";
-            arrayName.append(ToCString(array->GetLength()));
-            arrayName.append("]");
-        } else {
+    JSType type = hCls->GetObjectType();
+    switch (type) {
+        case JSType::TAGGED_ARRAY: {
+            CString arrayName;
+            TaggedArray *array = TaggedArray::Cast(entry);
             arrayName = "TaggedArray[";
             arrayName.append(ToCString(array->GetLength()));
             arrayName.append("]");
+            return GetString(arrayName);  // String type was handled singly, see#GenerateStringNode
         }
-        name = GetString(arrayName);  // String type was handled singly, see#GenerateStringNode
-    } else if (hCls->IsHClass()) {
-        name = GetString("HiddenClass");
-    } else if (hCls->IsJSNativePointer()) {
-        name = GetString("JSNativePointer");
-    } else {
-        if (hCls->IsRealm()) {
-            name = GetString("JSRealm");
-        } else if (hCls->IsString()) {
-            name = GetString("JsString");
-        } else if (hCls->IsJSSymbol()) {
-            name = GetString("JSSymbol");
-        } else if (hCls->IsJSArray()) {
-            JSArray *jsArray = JSArray::Cast(entry);
-            CString arrayName("JSArray[");
-            arrayName.append(ToCString(jsArray->GetLength().GetInt()));
-            arrayName.append("]");
-            name = GetString(arrayName);
-        } else if (hCls->IsTypedArray()) {
-            name = GetString("TypedArray");
-        } else if (hCls->IsJSTypedArray()) {
-            name = GetString("JSTypedArray");
-        } else if (hCls->IsJSInt8Array()) {
-            name = GetString("JSInt8Array");
-        } else if (hCls->IsJSUint8Array()) {
-            name = GetString("JSUint8Array");
-        } else if (hCls->IsJSUint8ClampedArray()) {
-            name = GetString("JSUint8ClampedArray");
-        } else if (hCls->IsJSInt16Array()) {
-            name = GetString("JSInt16Array");
-        } else if (hCls->IsJSUint16Array()) {
-            name = GetString("JSUint16Array");
-        } else if (hCls->IsJSInt32Array()) {
-            name = GetString("JSInt32Array");
-        } else if (hCls->IsJSUint32Array()) {
-            name = GetString("JSUint32Array");
-        } else if (hCls->IsJSFloat32Array()) {
-            name = GetString("JSFloat32Array");
-        } else if (hCls->IsJSFloat64Array()) {
-            name = GetString("JSFloat64Array");
-        } else if (hCls->IsJsGlobalEnv()) {
-            name = GetString("JSGlobalEnv");
-        } else if (hCls->IsJSFunctionBase()) {
-            name = GetString("JSFunctionBase");
-        } else if (hCls->IsJsBoundFunction()) {
-            name = GetString("JsBoundFunction");
-        } else if (hCls->IsJSIntlBoundFunction()) {
-            name = GetString("JSIntlBoundFunction");
-        } else if (hCls->IsJSProxyRevocFunction()) {
-            name = GetString("JSProxyRevocFunction");
-        } else if (hCls->IsJSAsyncFunction()) {
-            name = GetString("JSAsyncFunction");
-        } else if (hCls->IsJSAsyncAwaitStatusFunction()) {
-            name = GetString("JSAsyncAwaitStatusFunction");
-        } else if (hCls->IsJSPromiseReactionFunction()) {
-            name = GetString("JSPromiseReactionFunction");
-        } else if (hCls->IsJSPromiseExecutorFunction()) {
-            name = GetString("JSPromiseExecutorFuncton");
-        } else if (hCls->IsJSPromiseAllResolveElementFunction()) {
-            name = GetString("JSPromiseAllResolveElementFunction");
-        } else if (hCls->IsJSFunctionExtraInfo()) {
-            name = GetString("JSFunctionExtraInfo");
-        } else if (hCls->IsMicroJobQueue()) {
-            name = GetString("MicroJobQueue");
-        } else if (hCls->IsPendingJob()) {
-            name = GetString("PendingJob");
-        } else if (hCls->IsJsPrimitiveRef()) {
-            name = GetString("JsPrimitiveRef");
-        } else if (hCls->IsJSSet()) {
-            name = GetString("JSSet");
-        } else if (hCls->IsJSMap()) {
-            name = GetString("JSMap");
-        } else if (hCls->IsJSWeakMap()) {
-            name = GetString("JSWeakMap");
-        } else if (hCls->IsJSWeakSet()) {
-            name = GetString("JSWeakSet");
-        } else if (hCls->IsJSFunction()) {
-            name = GetString("JSFunction");
-        } else if (hCls->IsJSError()) {
-            name = GetString("JSError");
-        } else if (hCls->IsArguments()) {
-            name = GetString("Arguments");
-        } else if (hCls->IsDate()) {
-            name = GetString("Date");
-        } else if (hCls->IsJSRegExp()) {
-            name = GetString("JSRegExp");
-        } else if (hCls->IsJSProxy()) {
-            name = GetString("JSProxy");
-        } else if (hCls->IsJSLocale()) {
-            name = GetString("JSLocale");
-        } else if (hCls->IsJSIntl()) {
-            name = GetString("JSIntl");
-        } else if (hCls->IsJSDateTimeFormat()) {
-            name = GetString("JSDateTimeFormat");
-        } else if (hCls->IsJSRelativeTimeFormat()) {
-            name = GetString("JSRelativeTimeFormat");
-        } else if (hCls->IsJSNumberFormat()) {
-            name = GetString("JSNumberFormat");
-        } else if (hCls->IsAccessorData()) {
-            name = GetString("AccessorData");
-        } else if (hCls->IsInternalAccessor()) {
-            name = GetString("InternalAccessor");
-        } else if (hCls->IsIterator()) {
-            name = GetString("Iterator");
-        } else if (hCls->IsForinIterator()) {
-            name = GetString("ForinIterator");
-        } else if (hCls->IsStringIterator()) {
-            name = GetString("StringIterator");
-        } else if (hCls->IsArrayBuffer()) {
-            name = GetString("ArrayBuffer");
-        } else if (hCls->IsDataView()) {
-            name = GetString("DataView");
-        } else if (hCls->IsJSSetIterator()) {
-            name = GetString("JSSetIterator");
-        } else if (hCls->IsJSMapIterator()) {
-            name = GetString("JSMapIterator");
-        } else if (hCls->IsJSArrayIterator()) {
-            name = GetString("JSArrayIterator");
-        } else if (hCls->IsPrototypeHandler()) {
-            name = GetString("PrototypeHandler");
-        } else if (hCls->IsTransitionHandler()) {
-            name = GetString("TransitionHandler");
-        } else if (hCls->IsPropertyBox()) {
-            name = GetString("PropertyBox");
-        } else if (hCls->IsProtoChangeMarker()) {
-            name = GetString("ProtoChangeMarker");
-        } else if (hCls->IsProtoChangeDetails()) {
-            name = GetString("ProtoChangeDetails");
-        } else if (hCls->IsProgram()) {
-            name = GetString("Program");
-        } else if (hCls->IsEcmaModule()) {
-            name = GetString("EcmaModule");
-        } else if (hCls->IsLexicalFunction()) {
-            name = GetString("LexicalFunction");
-        } else if (hCls->IsConstructor()) {
-            name = GetString("Constructor");
-        } else if (hCls->IsExtensible()) {
-            name = GetString("Extensible");
-        } else if (hCls->IsPrototype()) {
-            name = GetString("Prototype");
-        } else if (hCls->IsLiteral()) {
-            name = GetString("Literal");
-        } else if (hCls->IsClassConstructor()) {
-            name = GetString("ClassConstructor");
-        } else if (hCls->IsJSGlobalObject()) {
-            name = GetString("JSGlobalObject");
-        } else if (hCls->IsClassPrototype()) {
-            name = GetString("ClassPrototype");
-        } else if (hCls->IsGeneratorFunction()) {
-            name = GetString("GeneratorFunction");
-        } else if (hCls->IsGeneratorObject()) {
-            name = GetString("GeneratorObject");
-        } else if (hCls->IsAsyncFuncObject()) {
-            name = GetString("AsyncFunction");
-        } else if (hCls->IsJSPromise()) {
-            name = GetString("JSPromise");
-        } else if (hCls->IsResolvingFunctionsRecord()) {
-            name = GetString("ResolvingFunctionsRecord");
-        } else if (hCls->IsPromiseRecord()) {
-            name = GetString("PromiseRecord");
-        } else if (hCls->IsPromiseIteratorRecord()) {
-            name = GetString("JSPromiseIteratorRecord");
-        } else if (hCls->IsPromiseCapability()) {
-            name = GetString("PromiseCapability");
-        } else if (hCls->IsPromiseReaction()) {
-            name = GetString("JSPromiseReaction");
-        } else if (hCls->IsCompletionRecord()) {
-            name = GetString("CompletionRecord");
-        } else if (hCls->IsRecord()) {
-            name = GetString("Record");
-        } else if (hCls->IsTemplateMap()) {
-            name = GetString("TemplateMap");
-        } else if (hCls->IsFreeObjectWithOneField()) {
-            name = GetString("FreeObjectWithOneField");
-        } else if (hCls->IsFreeObjectWithTwoField()) {
-            name = GetString("FreeObjectWithTwoField");
-        } else if (hCls->IsJSObject()) {
+        case JSType::HCLASS:
+            return GetString("HiddenClass");
+        case JSType::TAGGED_DICTIONARY: {
+            CString dictName;
+            TaggedArray *dict = TaggedArray::Cast(entry);
+            dictName = "TaggedDict[";
+            dictName.append(ToCString(dict->GetLength()));
+            dictName.append("]");
+            return GetString(dictName);
+        }
+        case JSType::STRING:
+            return GetString("BaseString");
+        case JSType::JS_OBJECT: {
             const GlobalEnvConstants *globalConst = thread->GlobalConstants();
             CString objName = CString("JSOBJECT(Ctor=");  // Ctor-name
             JSTaggedValue proto = JSObject::Cast(entry)->GetPrototype(thread);
             JSHandle<JSTaggedValue> protoHandle(thread, proto);
             if (protoHandle->IsNull() || protoHandle->IsUndefined()) {
-                name = GetString("JSObject(Ctor=UnKnown)");
-                return name;
+                return GetString("JSObject(Ctor=UnKnown)");
             }
             JSHandle<JSTaggedValue> ctor =
                 JSObject::GetProperty(thread, protoHandle, globalConst->GetHandledConstructorString()).GetValue();
@@ -348,16 +180,197 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
                 JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, ctor, nameKey).GetValue();
                 CString ctorName = EntryVisitor::ConvertKey(value.GetTaggedValue());
                 objName.append(ctorName).append(")");
-                name = GetString(objName);
             }
-        } else if (hCls->IsECMAObject()) {
-            name = GetString("ECMAObject");
-        } else {
-            name = GetString("UnEmuratedJSType");
+            return GetString(objName);
         }
-        return name;  // Cached in String-Table
+        case JSType::FREE_OBJECT_WITH_ONE_FIELD:
+        case JSType::FREE_OBJECT_WITH_NONE_FIELD:
+        case JSType::FREE_OBJECT_WITH_TWO_FIELD:
+        case JSType::JS_NATIVE_POINTER:
+        {
+            break;
+        }
+        case JSType::JS_FUNCTION_BASE:
+            return GetString("JSFunctionBase");
+        case JSType::JS_FUNCTION:
+            return GetString("JSFunction");
+        case JSType::JS_ERROR:
+            return GetString("Error");
+        case JSType::JS_EVAL_ERROR:
+            return GetString("Eval Error");
+        case JSType::JS_RANGE_ERROR:
+            return GetString("Range Error");
+        case JSType::JS_TYPE_ERROR:
+            return GetString("Type Error");
+        case JSType::JS_REFERENCE_ERROR:
+            return GetString("Reference Error");
+        case JSType::JS_URI_ERROR:
+            return GetString("Uri Error");
+        case JSType::JS_SYNTAX_ERROR:
+            return GetString("Syntax Error");
+        case JSType::JS_REG_EXP:
+            return GetString("Regexp");
+        case JSType::JS_SET:
+            return GetString("Set");
+        case JSType::JS_MAP:
+            return GetString("Map");
+        case JSType::JS_WEAK_SET:
+            return GetString("WeakSet");
+        case JSType::JS_WEAK_MAP:
+            return GetString("WeakMap");
+        case JSType::JS_DATE:
+            return GetString("Date");
+        case JSType::JS_BOUND_FUNCTION:
+            return GetString("Bound Function");
+        case JSType::JS_ARRAY: {
+            JSArray *jsArray = JSArray::Cast(entry);
+            CString jsArrayName("JSArray[");
+            jsArrayName.append(ToCString(jsArray->GetLength().GetInt()));
+            jsArrayName.append("]");
+            return GetString(jsArrayName);
+        }
+        case JSType::JS_TYPED_ARRAY:
+            return GetString("Typed Array");
+        case JSType::JS_INT8_ARRAY:
+            return GetString("Int8 Array");
+        case JSType::JS_UINT8_ARRAY:
+            return GetString("Uint8 Array");
+        case JSType::JS_UINT8_CLAMPED_ARRAY:
+            return GetString("Uint8 Clamped Array");
+        case JSType::JS_INT16_ARRAY:
+            return GetString("Int16 Array");
+        case JSType::JS_UINT16_ARRAY:
+            return GetString("Uint16 Array");
+        case JSType::JS_INT32_ARRAY:
+            return GetString("Int32 Array");
+        case JSType::JS_UINT32_ARRAY:
+            return GetString("Uint32 Array");
+        case JSType::JS_FLOAT32_ARRAY:
+            return GetString("Float32 Array");
+        case JSType::JS_FLOAT64_ARRAY:
+            return GetString("Float64 Array");
+        case JSType::JS_ARGUMENTS:
+            return GetString("Arguments");
+        case JSType::JS_PROXY:
+            return GetString("Proxy");
+        case JSType::JS_PRIMITIVE_REF:
+            return GetString("Primitive");
+        case JSType::JS_DATA_VIEW:
+            return GetString("DataView");
+        case JSType::JS_ITERATOR:
+            return GetString("Iterator");
+        case JSType::JS_FORIN_ITERATOR:
+            return GetString("ForinInterator");
+        case JSType::JS_MAP_ITERATOR:
+            return GetString("MapIterator");
+        case JSType::JS_SET_ITERATOR:
+            return GetString("SetIterator");
+        case JSType::JS_ARRAY_ITERATOR:
+            return GetString("ArrayIterator");
+        case JSType::JS_STRING_ITERATOR:
+            return GetString("StringIterator");
+        case JSType::JS_ARRAY_BUFFER:
+            return GetString("ArrayBuffer");
+        case JSType::JS_PROXY_REVOC_FUNCTION:
+            return GetString("ProxyRevocFunction");
+        case JSType::PROMISE_REACTIONS:
+            return GetString("PromiseReaction");
+        case JSType::PROMISE_CAPABILITY:
+            return GetString("PromiseCapability");
+        case JSType::PROMISE_ITERATOR_RECORD:
+            return GetString("PromiseIteratorRecord");
+        case JSType::PROMISE_RECORD:
+            return GetString("PromiseRecord");
+        case JSType::RESOLVING_FUNCTIONS_RECORD:
+            return GetString("ResolvingFunctionsRecord");
+        case JSType::JS_PROMISE:
+            return GetString("Promise");
+        case JSType::JS_PROMISE_REACTIONS_FUNCTION:
+            return GetString("PromiseReactionsFunction");
+        case JSType::JS_PROMISE_EXECUTOR_FUNCTION:
+            return GetString("PromiseExecutorFunction");
+        case JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION:
+            return GetString("PromiseAllResolveElementFunction");
+        case JSType::JS_GENERATOR_FUNCTION:
+            return GetString("JSGeneratorFunction");
+        case JSType::SYMBOL:
+            return GetString("Symbol");
+        case JSType::JS_ASYNC_FUNCTION:
+            return GetString("AsyncFunction");
+        case JSType::JS_INTL_BOUND_FUNCTION:
+            return GetString("JSIntlBoundFunction");
+        case JSType::JS_ASYNC_AWAIT_STATUS_FUNCTION:
+            return GetString("AsyncAwaitStatusFunction");
+        case JSType::JS_ASYNC_FUNC_OBJECT:
+            return GetString("AsyncFunctionObject");
+        case JSType::JS_REALM:
+            return GetString("Realm");
+        case JSType::JS_GLOBAL_OBJECT:
+            return GetString("GlobalObject");
+        case JSType::JS_INTL:
+            return GetString("JSIntl");
+        case JSType::JS_LOCALE:
+            return GetString("JSLocale");
+        case JSType::JS_DATE_TIME_FORMAT:
+            return GetString("JSDateTimeFormat");
+        case JSType::JS_RELATIVE_TIME_FORMAT:
+            return GetString("JSRelativeTimeFormat");
+        case JSType::JS_NUMBER_FORMAT:
+            return GetString("JSNumberFormat");
+        case JSType::JS_COLLATOR:
+            return GetString("JSCollator");
+        case JSType::JS_PLURAL_RULES:
+            return GetString("JSPluralRules");
+        case JSType::JS_GENERATOR_OBJECT:
+            return GetString("JSGeneratorObject");
+        case JSType::JS_GENERATOR_CONTEXT:
+            return GetString("JSGeneratorContext");
+        case JSType::ACCESSOR_DATA:
+            return GetString("AccessorData");
+        case JSType::INTERNAL_ACCESSOR:
+            return GetString("InternalAccessor");
+        case JSType::FUNCTION_EXTRA_INFO:
+            return GetString("FunctionExtraInfo");
+        case JSType::MICRO_JOB_QUEUE:
+            return GetString("MicroJobQueue");
+        case JSType::PENDING_JOB:
+            return GetString("PendingJob");
+        case JSType::COMPLETION_RECORD:
+            return GetString("CompletionRecord");
+        case JSType::ECMA_MODULE:
+            return GetString("EcmaModule");
+        default:
+            break;
     }
-    return name;
+    if (IsInVmMode()) {
+        switch (type) {
+            case JSType::PROPERTY_BOX:
+                return GetString("PropertyBox");
+            case JSType::GLOBAL_ENV:
+                return GetString("GlobalEnv");
+            case JSType::PROTOTYPE_HANDLER:
+                return GetString("ProtoTypeHandler");
+            case JSType::TRANSITION_HANDLER:
+                return GetString("TransitionHandler");
+            case JSType::PROTO_CHANGE_MARKER:
+                return GetString("ProtoChangeMarker");
+            case JSType::PROTOTYPE_INFO:
+                return GetString("ProtoChangeDetails");
+            case JSType::TEMPLATE_MAP:
+                return GetString("TemplateMap");
+            case JSType::PROGRAM:
+                return GetString("Program");
+            case JSType::LEXICAL_FUNCTION:
+                return GetString("LexicalFunction");
+            case JSType::MACHINE_CODE_OBJECT:
+                return GetString("MachineCode");
+            default:
+                break;
+        }
+    } else {
+        return GetString("Hidden Object");
+    }
+    return GetString("UnKnownType");
 }
 
 NodeType HeapSnapShot::GenerateNodeType(TaggedObject *entry)
@@ -367,7 +380,7 @@ NodeType HeapSnapShot::GenerateNodeType(TaggedObject *entry)
     if (hCls->IsTaggedArray()) {
         nodeType = NodeType::JS_ARRAY;
     } else if (hCls->IsHClass()) {
-        nodeType = NodeType::PROPERTY_BOX;
+        nodeType = NodeType::HCLASS;
     } else {
         nodeType = NodeType(hCls->GetObjectType());
     }
@@ -489,7 +502,7 @@ void HeapSnapShot::FillEdges(JSThread *thread)
         ASSERT(*iter != nullptr);
         auto *objFrom = reinterpret_cast<TaggedObject *>((*iter)->GetAddress());
         std::vector<std::pair<CString, JSTaggedValue>> nameResources;
-        JSTaggedValue(objFrom).DumpForSnapshot(thread, nameResources);
+        JSTaggedValue(objFrom).DumpForSnapshot(thread, nameResources, isVmMode_);
         JSTaggedValue objValue(objFrom);
         for (auto const &it : nameResources) {
             JSTaggedValue toValue = it.second;

@@ -52,6 +52,7 @@ public:
     ACCESSORS(RemainingKeys, REMAINING_KEYS_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, OBJECT_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript
 

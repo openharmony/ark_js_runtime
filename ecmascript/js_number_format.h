@@ -83,6 +83,7 @@ public:
     ACCESSORS(IcuField, BOUND_FORMAT_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, SIZE)
+    DECL_DUMP()
 
     icu::number::LocalizedNumberFormatter *GetIcuCallTarget() const
     {
