@@ -162,9 +162,9 @@ double DebuggerApi::StringToDouble(const uint8_t *start, const uint8_t *end, uin
 }
 
 // JSDebugger
-JSDebugger *DebuggerApi::CreateJSDebugger(Runtime *runtime, const EcmaVM *ecmaVm)
+JSDebugger *DebuggerApi::CreateJSDebugger(const EcmaVM *ecmaVm)
 {
-    return new JSDebugger(runtime, ecmaVm);
+    return new JSDebugger(ecmaVm);
 }
 
 void DebuggerApi::DestroyJSDebugger(JSDebugger *debugger)

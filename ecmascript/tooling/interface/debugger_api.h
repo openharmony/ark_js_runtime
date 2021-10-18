@@ -83,7 +83,7 @@ public:
     static double StringToDouble(const uint8_t *start, const uint8_t *end, uint8_t radix);
 
     // JSDebugger
-    static JSDebugger *CreateJSDebugger(Runtime *runtime, const EcmaVM *ecmaVm);
+    static JSDebugger *CreateJSDebugger(const EcmaVM *ecmaVm);
     static void DestroyJSDebugger(JSDebugger *debugger);
     static std::optional<Error> RegisterHooks(JSDebugger *debugger, PtHooks *hooks);
     static std::optional<Error> SetBreakpoint(JSDebugger *debugger, const PtLocation &location);
