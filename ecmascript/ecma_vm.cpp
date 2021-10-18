@@ -689,7 +689,6 @@ JSHandle<JSTaggedValue> EcmaVM::GetModuleByName(JSHandle<JSTaggedValue> moduleNa
     // need to check abc file
     auto pos = scriptName.find_last_of('.');
     CString abcPath = dirPath.append(scriptName.substr(0, pos == std::string::npos ? 0 : pos)).append(".abc");
-
     // handle relative path
     if (abcPath.find("./") == 0) { // starts with "./"
         std::string fullPath = std::get<1>(pandaFileWithProgram_.back())->GetFilename();
