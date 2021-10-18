@@ -2501,7 +2501,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             if (LIKELY(firstValue.IsHeapObject())) {
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryLoadICByValue(thread, receiver, propKey, firstValue, secondValue);
-            } else if (firstValue.IsUndefined()) {
+            }
+            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
                 res = ICRuntimeStub::LoadICByValue(thread,
                                                    profileTypeArray,
                                                    receiver, propKey, slotId);
@@ -2552,7 +2553,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             if (LIKELY(firstValue.IsHeapObject())) {
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryStoreICByValue(thread, receiver, propKey, firstValue, secondValue, value);
-            } else if (firstValue.IsUndefined()) {
+            }
+            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
                 res = ICRuntimeStub::StoreICByValue(thread,
                                                     profileTypeArray,
                                                     receiver, propKey, value, slotId);
@@ -2864,7 +2866,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             if (LIKELY(firstValue.IsHeapObject())) {
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryLoadICByName(thread, receiver, firstValue, secondValue);
-            } else if (firstValue.IsUndefined()) {
+            }
+            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::LoadICByName(thread,
@@ -2918,7 +2921,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             if (LIKELY(firstValue.IsHeapObject())) {
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
-            } else if (firstValue.IsUndefined()) {
+            }
+            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::StoreICByName(thread,
