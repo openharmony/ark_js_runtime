@@ -234,6 +234,7 @@ ecma_source = [
   "ecmascript/base/typed_array_helper.cpp",
   "ecmascript/base/utf_helper.cpp",
   "ecmascript/builtins.cpp",
+  "ecmascript/builtins/builtins_ark_tools.cpp",
   "ecmascript/builtins/builtins_array.cpp",
   "ecmascript/builtins/builtins_arraybuffer.cpp",
   "ecmascript/builtins/builtins_async_function.cpp",

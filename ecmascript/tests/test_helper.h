@@ -33,6 +33,7 @@ using panda::ecmascript::JSTaggedType;
 using panda::ecmascript::JSTaggedValue;
 using panda::ecmascript::JSThread;
 using panda::ecmascript::NUM_MANDATORY_JSFUNC_ARGS;
+using ecmascript::JSRuntimeOptions;
 
 // Add for hmf tests platform, define to TEST_F or TEST_P when running gtest in gitlab
 #define HWTEST_F_L0(testsuit, testcase) HWTEST_F(testsuit, testcase, testing::ext::TestSize.Level0)
@@ -80,7 +81,7 @@ public:
     // If you want to call once create, you can refer to BuiltinsMathTest for detail.
     static void CreateEcmaVMWithScope(PandaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope)
     {
-        RuntimeOptions options;
+        JSRuntimeOptions options;
         options.SetShouldLoadBootPandaFiles(false);
         options.SetShouldInitializeIntrinsics(false);
         options.SetBootClassSpaces({"ecmascript"});

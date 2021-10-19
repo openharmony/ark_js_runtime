@@ -17,6 +17,7 @@
 
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/base/number_helper.h"
+#include "ecmascript/builtins/builtins_ark_tools.h"
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
@@ -74,6 +75,7 @@
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_regexp.h"
 #include "ecmascript/js_relative_time_format.h"
+#include "ecmascript/js_runtime_options.h"
 #include "ecmascript/js_set.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_string_iterator.h"
@@ -268,7 +270,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializePromise(env, objFuncDynclass);
     InitializePromiseJob(env);
 
-    RuntimeOptions options = vm_->GetOptions();
+    JSRuntimeOptions options = vm_->GetJSOptions();
     std::string icuPath = options.GetIcuDataPath();
     if (icuPath == "default") {
         SetHwIcuDirectory();
@@ -301,6 +303,11 @@ void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHa
     SetFunction(env, globalObject, "startRuntimeStat", Global::StartRuntimeStat, 0);
     SetFunction(env, globalObject, "stopRuntimeStat", Global::StopRuntimeStat, 0);
 #endif
+
+    JSRuntimeOptions options = vm_->GetJSOptions();
+    if (options.IsEnableArkTools()) {
+        SetConstant(globalObject, "ArkTools", InitializeArkTools(env).GetTaggedValue());
+    }
 
     // Global object function
     SetFunction(env, globalObject, "eval", Global::NotSupportEval, FunctionLength::ONE);
@@ -2732,5 +2739,14 @@ void Builtins::InitializeJSNativeObject(const JSHandle<GlobalEnv> &env) const
                                                             JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Null()));
 
     env->SetJSNativeObjectClass(thread_, dynclass);
+}
+
+JSHandle<JSObject> Builtins::InitializeArkTools(const JSHandle<GlobalEnv> &env) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+
+    JSHandle<JSObject> tools = factory_->NewEmptyJSObject();
+    SetFunction(env, tools, "print", builtins::BuiltinsArkTools::ObjectDump, FunctionLength::ZERO);
+    return tools;
 }
 }  // namespace panda::ecmascript
