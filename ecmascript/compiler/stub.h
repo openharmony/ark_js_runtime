@@ -22,6 +22,7 @@
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/js_function.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/layout_info.h"
@@ -1062,6 +1063,35 @@ public:
             Word64And(
                 Word64LSR(bitfield, GetWord64Constant(panda::ecmascript::JSHClass::DictionaryElementBits::START_BIT)),
                 GetWord64Constant((1LLU << panda::ecmascript::JSHClass::DictionaryElementBits::SIZE) - 1)),
+            GetWord64Constant(0));
+    }
+
+    AddrShift NotBuiltinsConstructor(AddrShift object)
+    {
+        AddrShift hclass = LoadHClass(object);
+        AddrShift bitfieldOffset = GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET);
+
+        AddrShift bitfield = Load(INT64_TYPE, hclass, bitfieldOffset);
+        // decode
+        return Word64Equal(
+            Word64And(
+                Word64LSR(bitfield, GetWord64Constant(panda::ecmascript::JSHClass::BuiltinsCtorBit::START_BIT)),
+                GetWord64Constant((1LLU << panda::ecmascript::JSHClass::BuiltinsCtorBit::SIZE) - 1)),
+            GetWord64Constant(0));
+    }
+
+    AddrShift IsClassConstructor(AddrShift object)
+    {
+        AddrShift functionInfoFlagOffset = GetPtrConstant(panda::ecmascript::JSFunction::FUNCTION_INFO_FLAG_OFFSET);
+        AddrShift functionInfoTaggedValue = Load(MachineType::UINT64_TYPE, object, functionInfoFlagOffset);
+        AddrShift functionInfoInt32 = TaggedCastToInt32(functionInfoTaggedValue);
+        AddrShift functionInfoFlag = ZExtInt32ToInt64(functionInfoInt32);
+        // decode
+        return Word64NotEqual(
+            Word64And(
+                Word64LSR(functionInfoFlag,
+                          GetWord64Constant(panda::ecmascript::JSFunction::ClassConstructorBit::START_BIT)),
+                GetWord64Constant((1LLU << panda::ecmascript::JSFunction::ClassConstructorBit::SIZE) - 1)),
             GetWord64Constant(0));
     }
 

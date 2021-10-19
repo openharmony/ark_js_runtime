@@ -48,6 +48,7 @@ public:
     static uint32_t GetHash32(uint64_t key, uint64_t len);
     static int32_t FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num);
     static uint32_t StringGetHashCode(uint64_t ecmaString);
+    static uint64_t Execute(uint64_t argThread, uint64_t argFunc, uint64_t thisArg, uint32_t argc, uint64_t argArgv);
 };
 
 class CallRuntimeTrampolinesScope {

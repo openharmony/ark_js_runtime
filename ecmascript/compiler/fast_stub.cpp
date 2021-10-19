@@ -1160,4 +1160,29 @@ void FastModStub::GenerateCircuit()
         }
     }
 }
+
+void FunctionCallInternalStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift thread = PtrArgument(0);
+    AddrShift func = PtrArgument(1);
+    AddrShift thisArg = Int64Argument(2); /* 2 : 3rd parameter is value */
+    AddrShift argc = Int32Argument(3); /* 3 : 4th parameter is value */
+    AddrShift argv = PtrArgument(4); /* 4 : 5th parameter is ptr */
+    Label funcNotBuiltinsConstructor(env);
+    Label funcIsBuiltinsConstructorOrFuncNotClassConstructor(env);
+    Label funcIsClassConstructor(env);
+    Branch(NotBuiltinsConstructor(func), &funcNotBuiltinsConstructor,
+           &funcIsBuiltinsConstructorOrFuncNotClassConstructor);
+    Bind(&funcNotBuiltinsConstructor);
+    {
+        Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcIsBuiltinsConstructorOrFuncNotClassConstructor);
+        Bind(&funcIsClassConstructor);
+        ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(FunctionCallNotConstructor), FalseConstant());
+    }
+    Bind(&funcIsBuiltinsConstructorOrFuncNotClassConstructor);
+    StubDescriptor *execute = GET_STUBDESCRIPTOR(Execute);
+    Return(CallRuntime(execute, thread, GetWord64Constant(FAST_STUB_ID(Execute)),
+                       {thread, func, thisArg, argc, argv}));
+}
 }  // namespace kungfu

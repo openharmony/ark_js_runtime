@@ -502,6 +502,22 @@ HWTEST_F_L0(StubTest, FastFindOwnElementStub)
     assembler.Run();
 }
 
+HWTEST_F_L0(StubTest, FunctionCallInternal)
+{
+    auto module = stubModule.GetModule();
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(FunctionCallInternal));
+    Circuit netOfGates;
+    FunctionCallInternalStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    assembler.Run();
+}
+
 HWTEST_F_L0(StubTest, GetElementStub)
 {
     auto module = stubModule.GetModule();

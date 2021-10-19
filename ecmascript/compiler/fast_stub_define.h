@@ -27,6 +27,7 @@ namespace kungfu {
     V(JSProxySetProperty, 6)         \
     V(GetHash32, 2)                  \
     V(FindElementWithCache, 4)       \
+    V(Execute, 5)                    \
     V(StringGetHashCode, 1)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -57,6 +58,7 @@ namespace kungfu {
     V(FindOwnProperty2, 6)          \
     V(FindOwnElement2, 6)           \
     V(GetPropertyByIndex, 3)        \
+    V(FunctionCallInternal, 5)      \
     V(SetPropertyByIndex, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

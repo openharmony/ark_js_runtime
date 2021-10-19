@@ -22,6 +22,7 @@
 #include "ecmascript/layout_info.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/interpreter/interpreter-inl.h"
 
 namespace panda::ecmascript {
 bool RuntimeTrampolines::AddElementInternal(uint64_t argThread, uint64_t argReceiver, uint32_t argIndex,
@@ -121,5 +122,21 @@ uint32_t RuntimeTrampolines::StringGetHashCode(uint64_t ecmaString)
 {
     auto string = reinterpret_cast<EcmaString *>(ecmaString);
     return string->GetHashcode();
+}
+
+uint64_t RuntimeTrampolines::Execute(uint64_t argThread, uint64_t argFunc,
+                                     uint64_t thisArg, uint32_t argc, uint64_t argArgv)
+{
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    auto func = reinterpret_cast<ECMAObject *>(argFunc);
+    auto argv = reinterpret_cast<const TaggedType *>(argArgv);
+    CallParams params;
+    params.callTarget = func;
+    params.newTarget = JSTaggedValue::VALUE_UNDEFINED;
+    params.thisArg = thisArg;
+    params.argc = argc;
+    params.argv = argv;
+
+    return EcmaInterpreter::Execute(thread, params).GetRawData();
 }
 }  // namespace panda::ecmascript
