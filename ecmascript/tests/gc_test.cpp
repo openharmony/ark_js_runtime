@@ -38,7 +38,7 @@ public:
 
     void SetUp() override
     {
-        RuntimeOptions options;
+        JSRuntimeOptions options;
         options.SetShouldLoadBootPandaFiles(false);
         options.SetShouldInitializeIntrinsics(false);
         options.SetBootClassSpaces({"ecmascript"});

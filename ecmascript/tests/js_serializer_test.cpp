@@ -41,7 +41,7 @@ public:
     JSDeserializerTest() : ecmaVm(nullptr), scope(nullptr), thread(nullptr) {}
     void Init()
     {
-        RuntimeOptions options;
+        JSRuntimeOptions options;
         options.SetShouldLoadBootPandaFiles(false);
         options.SetShouldInitializeIntrinsics(false);
         options.SetBootIntrinsicSpaces({"ecmascript"});

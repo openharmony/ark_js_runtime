@@ -208,6 +208,7 @@ private:
                      const JSHandle<JSTaggedValue> &getter, const JSHandle<JSTaggedValue> &setter) const;
     void SetGetter(const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &key,
                    const JSHandle<JSTaggedValue> &getter) const;
+    JSHandle<JSObject> InitializeArkTools(const JSHandle<GlobalEnv> &env) const;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_BUILTINS_H
