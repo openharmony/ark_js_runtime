@@ -38,6 +38,7 @@
 #include "libpandabase/os/library_loader.h"
 
 namespace panda {
+class RuntimeNotificationManager;
 namespace panda_file {
 class File;
 }  // namespace panda_file
@@ -346,7 +347,10 @@ public:
         return JSHandle<JSTaggedValue>(reinterpret_cast<uintptr_t>(&regexpCache_));
     }
 
-    friend class ValueSerializer;
+    RuntimeNotificationManager *GetNotificationManager() const
+    {
+        return notificationManager_;
+    }
 
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
@@ -403,6 +407,7 @@ private:
     CString frameworkAbcFileName_;
 
     bool isTestMode_{false};
+    RuntimeNotificationManager *notificationManager_ {nullptr};
 
     // init EcmaVM Create
     JSThread *thread_{nullptr};
@@ -433,6 +438,7 @@ private:
 
     friend class SnapShotSerialize;
     friend class ObjectFactory;
+    friend class ValueSerializer;
 };
 }  // namespace ecmascript
 }  // namespace panda

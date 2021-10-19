@@ -504,6 +504,22 @@ HWTEST_F_L0(StubTest, FastFindOwnElementStub)
     assembler.Run();
 }
 
+HWTEST_F_L0(StubTest, FunctionCallInternal)
+{
+    auto module = stubModule.GetModule();
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(FunctionCallInternal));
+    Circuit netOfGates;
+    FunctionCallInternalStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    assembler.Run();
+}
+
 HWTEST_F_L0(StubTest, GetElementStub)
 {
     auto module = stubModule.GetModule();
@@ -741,10 +757,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
 
     LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(stub1, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
-    /* struct ThreadTy fpInfo;
-        fpInfo.magic = 0x11223344;
-        fpInfo.fp = calling frame address
-    */
+
     LLVMValueRef value = LLVMGetParam(stub1, 0);
     LLVMValueRef c0 = LLVMConstInt(LLVMInt32Type(), 0, false);
     LLVMValueRef c1 = LLVMConstInt(LLVMInt32Type(), 1, false);
@@ -942,10 +955,7 @@ HWTEST_F_L0(StubTest, CEntryFp)
     LLVMAddTargetDependentFunctionAttr(func, "js-stub-call", "1");
     LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
-    /* struct ThreadTy fpInfo;
-        fpInfo.magic = 0x11223344;
-        fpInfo.fp = calling frame address
-    */
+
     LLVMValueRef value = LLVMGetParam(func, 0);
 
     LLVMValueRef c0 = LLVMConstInt(LLVMInt32Type(), 0, false);
@@ -1072,6 +1082,7 @@ void DoSafepoint()
 }
 }
 
+#ifdef NDEBUG
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
@@ -1133,6 +1144,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
                   JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
 }
+#endif
 
 HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
@@ -1187,7 +1199,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
     LLVMDumpModule(module);
-    auto *typeOfPtr = 
+    auto *typeOfPtr =
         reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 

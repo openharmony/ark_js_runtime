@@ -159,5 +159,15 @@ public:
     NO_COPY_SEMANTIC(FastTypeOfStub);
     void GenerateCircuit() override;
 };
+
+class FunctionCallInternalStub : public Stub {
+public:
+    // 5 : 5 means argument counts
+    explicit FunctionCallInternalStub(Circuit *circuit) : Stub("FunctionCallInternal", 5, circuit) {}
+    ~FunctionCallInternalStub() = default;
+    NO_MOVE_SEMANTIC(FunctionCallInternalStub);
+    NO_COPY_SEMANTIC(FunctionCallInternalStub);
+    void GenerateCircuit() override;
+};
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H

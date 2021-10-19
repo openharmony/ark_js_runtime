@@ -646,9 +646,10 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
 
 void Stub::ThrowTypeAndReturn(AddrShift thread, int messageId, AddrShift val)
 {
+    AddrShift taggedId = GetInteger32Constant(messageId);
     StubDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
-    AddrShift taggedId = IntBuildTagged(GetInteger32Constant(messageId));
-    CallStub(throwTypeError, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), {thread, taggedId});
+    CallRuntime(throwTypeError, thread, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)),
+                {thread, taggedId});
     Return(val);
 }
 

@@ -159,6 +159,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
     SET_STUB_TO_MODULE(module, SetElement) \
     SET_STUB_TO_MODULE(module, GetPropertyByIndex) \
     SET_STUB_TO_MODULE(module, SetPropertyByIndex) \
+    SET_STUB_TO_MODULE(module, FunctionCallInternal) \
     SET_STUB_TO_MODULE(module, GetPropertyByName)
 
 int main(const int argc, const char **argv)

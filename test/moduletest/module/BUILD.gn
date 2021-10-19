@@ -15,10 +15,12 @@ import("//ark/js_runtime/test/test_helper.gni")
 
 host_moduletest_action("B") {
   deps = []
+  is_module = true
 }
 
 host_moduletest_action("C") {
   deps = []
+  is_module = true
 }
 
 host_moduletest_action("module") {
@@ -26,4 +28,5 @@ host_moduletest_action("module") {
     ":gen_B_abc",
     ":gen_C_abc",
   ]
+  is_module = true
 }
