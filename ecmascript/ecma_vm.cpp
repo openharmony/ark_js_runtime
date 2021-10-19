@@ -56,9 +56,10 @@
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 static const std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
+JSRuntimeOptions EcmaVM::options_;  // NOLINT(fuchsia-statically-constructed-objects)
 
 /* static */
-EcmaVM *EcmaVM::Create(const RuntimeOptions &options)
+EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options)
 {
     auto runtime = Runtime::GetCurrent();
     auto vm = runtime->GetInternalAllocator()->New<EcmaVM>(options);
@@ -93,18 +94,18 @@ Expected<EcmaVM *, CString> EcmaVM::Create(Runtime *runtime)
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-EcmaVM::EcmaVM() : EcmaVM(Runtime::GetOptions())
+EcmaVM::EcmaVM() : EcmaVM(EcmaVM::GetJSOptions())
 {
     isTestMode_ = true;
 }
 
-EcmaVM::EcmaVM(RuntimeOptions options)
-    : options_(std::move(options)),
-      stringTable_(new EcmaStringTable(this)),
+EcmaVM::EcmaVM(JSRuntimeOptions options)
+    : stringTable_(new EcmaStringTable(this)),
       regionFactory_(std::make_unique<RegionFactory>()),
       chunk_(regionFactory_.get()),
       nativeMethods_(&chunk_)
 {
+    options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
     rendezvous_ = chunk_.New<EmptyRendezvous>();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
