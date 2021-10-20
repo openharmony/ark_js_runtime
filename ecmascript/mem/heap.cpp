@@ -152,7 +152,9 @@ void Heap::CollectGarbage(TriggerGCType gcType)
                 SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
                 ResetAppStartup();
             } else {
-                semiSpaceCollector_->RunPhases();
+                if (!CheckAndTriggerCompressGC()) {
+                    semiSpaceCollector_->RunPhases();
+                }
             }
             break;
         case TriggerGCType::OLD_GC:
@@ -228,7 +230,7 @@ void Heap::RecomputeLimits()
 
 bool Heap::CheckAndTriggerOldGC()
 {
-    if (oldSpace_->GetHeapObjectSize() <= oldSpaceAllocLimit_) {
+    if (oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize() <= oldSpaceAllocLimit_) {
         return false;
     }
     CollectGarbage(TriggerGCType::OLD_GC);
@@ -237,7 +239,7 @@ bool Heap::CheckAndTriggerOldGC()
 
 bool Heap::CheckAndTriggerCompressGC()
 {
-    if (oldSpace_->GetHeapObjectSize() <= oldSpaceAllocLimit_) {
+    if (oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize() <= oldSpaceAllocLimit_) {
         return false;
     }
     CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
@@ -246,7 +248,7 @@ bool Heap::CheckAndTriggerCompressGC()
 
 bool Heap::CheckAndTriggerNonMovableGC()
 {
-    if (nonMovableSpace_->GetHeapObjectSize() <= DEFAULT_NON_MOVABLE_SPACE_LIMIT) {
+    if (nonMovableSpace_->GetCommittedSize() <= DEFAULT_NON_MOVABLE_SPACE_LIMIT) {
         return false;
     }
     CollectGarbage(TriggerGCType::NON_MOVE_GC);

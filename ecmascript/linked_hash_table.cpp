@@ -221,7 +221,7 @@ JSTaggedValue LinkedHashMap::Shrink(const JSThread *thread, const JSHandle<Linke
                                     int additionalCapacity)
 {
     return JSTaggedValue(
-        LinkedHashTable<LinkedHashMap, LinkedHashSetObject>::Shrink(thread, table, additionalCapacity));
+        LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Shrink(thread, table, additionalCapacity));
 }
 
 // LinkedHashSet
