@@ -36,7 +36,7 @@ public:
     static void AddItem(const JSThread *thread, JSHandle<EcmaModule> module, JSHandle<JSTaggedValue> itemName,
         JSHandle<JSTaggedValue> itemValue);
 
-    void RemoveItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName);
+    static void RemoveItem(const JSThread *thread, JSHandle<EcmaModule> module, JSHandle<JSTaggedValue> itemName);
 
     void DebugPrint(const JSThread *thread, const CString &caller);
 

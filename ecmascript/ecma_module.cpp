@@ -51,12 +51,17 @@ void EcmaModule::AddItem(const JSThread *thread, JSHandle<EcmaModule> module, JS
     }
 }
 
-void EcmaModule::RemoveItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName)
+void EcmaModule::RemoveItem(const JSThread *thread, JSHandle<EcmaModule> module, JSHandle<JSTaggedValue> itemName)
 {
-    JSHandle<NameDictionary> moduleItems(thread, NameDictionary::Cast(GetNameDictionary().GetTaggedObject()));
+    JSHandle<JSTaggedValue> data(thread, module->GetNameDictionary());
+    if (data->IsUndefined()) {
+        return;
+    }
+    JSHandle<NameDictionary> moduleItems(data);
     int entry = moduleItems->FindEntry(itemName.GetTaggedValue());
     if (entry != -1) {
-        NameDictionary::Remove(thread, moduleItems, entry);  // discard return
+        NameDictionary *newDict = NameDictionary::Remove(thread, moduleItems, entry);  // discard return
+        module->SetNameDictionary(thread, JSTaggedValue(newDict));
     }
 }
 
