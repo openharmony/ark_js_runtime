@@ -144,6 +144,29 @@ JSHandle<JSTaggedValue> ModuleManager::GetModule(const JSThread *thread,
     return thread->GlobalConstants()->GetHandledUndefined();
 }
 
+CString ModuleManager::GenerateModuleFullPath(const std::string &currentPathFile, const CString &relativeFile)
+{
+    if (relativeFile.find("./") != 0 && relativeFile.find("../") != 0) { // not start with "./" or "../"
+        return relativeFile; // not relative
+    }
+
+    auto slashPos = currentPathFile.find_last_of('/');
+    if (slashPos == std::string::npos) {
+        return relativeFile; // no need to process
+    }
+
+    auto dotPos = relativeFile.find_last_of(".");
+    if (dotPos == std::string::npos) {
+        dotPos = 0;
+    }
+
+    CString fullPath;
+    fullPath.append(currentPathFile.substr(0, slashPos + 1)); // 1: with "/"
+    fullPath.append(relativeFile.substr(0, dotPos));
+    fullPath.append(".abc"); // ".js" -> ".abc"
+    return fullPath;
+}
+
 const CString &ModuleManager::GetCurrentExportModuleName()
 {
     return moduleStack_.GetTop();

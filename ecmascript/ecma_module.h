@@ -81,6 +81,8 @@ public:
 
     JSHandle<JSTaggedValue> GetModule(const JSThread *thread, JSHandle<JSTaggedValue> moduleName);
 
+    CString GenerateModuleFullPath(const std::string &currentPathFile, const CString &relativeFile);
+
     const CString &GetCurrentExportModuleName();
 
     const CString &GetPrevExportModuleName();
