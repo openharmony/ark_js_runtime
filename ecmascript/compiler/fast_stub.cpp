@@ -918,7 +918,6 @@ void GetPropertyByNameStub::GenerateCircuit()
                     Label notAccessor(env);
                     Branch(IsAccessor(attr), &isAccessor, &notAccessor);
                     Bind(&isAccessor);
-
                     {
                         Label isInternal(env);
                         Label notInternal(env);
@@ -983,7 +982,7 @@ void GetPropertyByNameStub::GenerateCircuit()
                         {
                             StubDescriptor *callGetter1 = GET_STUBDESCRIPTOR(CallGetter);
                             Return(CallRuntime(callGetter1, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
-                                {thread, value, receiver,}));
+                                {thread, value, receiver}));
                         }
                     }
                     Bind(&notAccessor1);

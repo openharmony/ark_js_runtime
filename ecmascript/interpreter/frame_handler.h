@@ -19,6 +19,7 @@
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/frames.h"
 
 namespace panda {
 namespace ecmascript {
@@ -66,6 +67,7 @@ public:
     }
 
 private:
+    FrameType GetFrameType();
     JSTaggedType *sp_{nullptr};
 };
 

@@ -206,7 +206,16 @@ namespace panda::ecmascript {
 JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, ExecuteNative);
-    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    auto current = originalPrevSp;
+    FrameType type = *(reinterpret_cast<FrameType*>(
+                        reinterpret_cast<long long>(current) + FrameConst::kFrameType));
+    JSTaggedType *sp = originalPrevSp;
+    if (type != FrameType::INTERPRETER_FRAME) {
+        JSTaggedType *lastSp = const_cast<JSTaggedType *>(thread->GetLastIFrameSp());
+        sp = lastSp;
+    }
+    
     JSMethod *methodToCall = params.callTarget->GetCallTarget();
     ASSERT(methodToCall->GetNumVregs() == 0);
     uint32_t numActualArgs = params.argc + RESERVED_CALL_ARGCOUNT;
@@ -252,10 +261,18 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     }
 
     JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-
+    auto current = originalPrevSp;
+    FrameType type = *(reinterpret_cast<FrameType*>(
+                        reinterpret_cast<long long>(current) + FrameConst::kFrameType));
+    JSTaggedType *newSp = nullptr;                    
+    if (type != FrameType::INTERPRETER_FRAME) {
+        JSTaggedType *lastSp = const_cast<JSTaggedType *>(thread->GetLastIFrameSp());
+        newSp = lastSp - FRAME_STATE_SIZE;
+    } else {
+        newSp = originalPrevSp - FRAME_STATE_SIZE;
+    }
     // push break state
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *newSp = originalPrevSp - FRAME_STATE_SIZE;
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
@@ -883,7 +900,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
     }
     HANDLE_OPCODE(HANDLE_RETURN_DYN) {
-        LOG_INST() << "return.dyn";
+        LOG_INST() << "returnla ";
         FrameState *state = GET_FRAME(sp);
         LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(state->sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);

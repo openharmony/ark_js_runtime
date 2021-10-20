@@ -104,7 +104,7 @@ void LLVMAssembler::BuildAndRunPasses() const
     LOG_ECMA(INFO) << "BuildAndRunPasses  - ";
     LLVMPassManagerRef pass = LLVMCreatePassManager();
     LLVMAddConstantPropagationPass(pass);
-    //LLVMAddInstructionCombiningPass(pass);
+    LLVMAddInstructionCombiningPass(pass);
     llvm::unwrap(pass)->add(llvm::createRewriteStatepointsForGCLegacyPass());
     char *info = LLVMPrintModuleToString(module_);
     LOG_ECMA(INFO) << "Current Module: " << info;

@@ -76,6 +76,16 @@ public:
         currentFrame_ = sp;
     }
 
+    const JSTaggedType *GetLastIFrameSp() const
+    {
+        return lastIFrame_;
+    }
+
+    void SetLastIFrameSp(JSTaggedType *sp)
+    {
+        lastIFrame_ = sp;
+    }
+
     bool DoStackOverflowCheck(const JSTaggedType *sp);
 
     bool IsEcmaInterpreter() const
@@ -242,6 +252,7 @@ private:
     os::memory::Mutex initializationLock_;
     int nestedLevel_ = 0;
     JSTaggedType *currentFrame_ {nullptr};
+    JSTaggedType *lastIFrame_ {nullptr};
     JSTaggedType *frameBase_ {nullptr};
     bool isSnapshotMode_ {false};
     bool isEcmaInterpreter_ {false};

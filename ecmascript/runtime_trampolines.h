@@ -63,6 +63,7 @@ public:
         thread->SetLastOptCallRuntimePc(pc);
         JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         lastFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
+        thread->SetLastIFrameSp(cursp);
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
         // print newfp and type for debug

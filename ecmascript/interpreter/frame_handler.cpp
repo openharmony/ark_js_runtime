@@ -42,9 +42,44 @@ bool InterpretedFrameHandler::IsBreakFrame() const
 void InterpretedFrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
-    sp_ = state->base.prev;
+    auto type = GetFrameType();
+    if (type == FrameType::INTERPRETER_FRAME) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+        sp_ = state->base.prev;
+        if (sp_ == nullptr) {
+            return;
+        }
+        type = GetFrameType();
+    }
+
+    while (type != FrameType::INTERPRETER_FRAME) {
+        switch(type) {
+        case FrameType::OPTIMIZED_FRAME: {
+            OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
+                reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedFrameStateBase, prev));
+            sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+        } break;
+        case FrameType::OPTIMIZED_ENTRY_FRAME: {
+            OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
+                reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
+            sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
+        } break;
+        default:
+            UNREACHABLE();
+        }
+        if (sp_ == nullptr) {
+            return;
+        }
+        type = GetFrameType();
+    }
+}
+
+FrameType InterpretedFrameHandler::GetFrameType()
+{
+    FrameType type = *(reinterpret_cast<FrameType*>(
+                    reinterpret_cast<long long>(sp_) + FrameConst::kFrameType));
+    return type;
 }
 
 InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
