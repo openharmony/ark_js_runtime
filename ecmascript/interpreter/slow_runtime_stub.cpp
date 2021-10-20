@@ -1439,8 +1439,9 @@ JSTaggedValue SlowRuntimeStub::StGlobalRecord(JSThread *thread, JSTaggedValue pr
     PropertyBoxType boxType = valueHandle->IsUndefined() ? PropertyBoxType::UNDEFINED : PropertyBoxType::CONSTANT;
     attributes.SetBoxType(boxType);
 
-    dict->PutIfAbsent(thread, dictHandle, propHandle, JSHandle<JSTaggedValue>(box), attributes);
+    dict = GlobalDictionary::PutIfAbsent(thread, dictHandle, propHandle, JSHandle<JSTaggedValue>(box), attributes);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    env->SetGlobalRecord(thread, JSTaggedValue(dict));
     return JSTaggedValue::True();
 }
 

@@ -49,7 +49,7 @@ JSTaggedValue WeakVector::Get(array_size_t index) const
 void WeakVector::Set(const JSThread *thread, array_size_t index, JSTaggedValue value)
 {
     ASSERT(index < GetCapacity());
-    return TaggedArray::Set(thread, VectorToArrayIndex(index), value);
+    TaggedArray::Set(thread, VectorToArrayIndex(index), value);
 }
 
 void WeakVector::SetEnd(const JSThread *thread, array_size_t end)

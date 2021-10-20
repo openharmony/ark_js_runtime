@@ -449,7 +449,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     params->MakeArgList(*jsargs);
     panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
     if (!thread_->HasPendingException()) {
-        job::MicroJobQueue::Cast(microJobQueue_.GetTaggedObject())->ExecutePendingJob(thread_);
+        job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
     }
 
     // print exception information
@@ -650,7 +650,7 @@ void EcmaVM::ClearBufferData()
 bool EcmaVM::ExecutePromisePendingJob() const
 {
     if (!thread_->HasPendingException()) {
-        job::MicroJobQueue::Cast(microJobQueue_.GetTaggedObject())->ExecutePendingJob(thread_);
+        job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
         return true;
     }
     return false;

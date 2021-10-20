@@ -197,7 +197,8 @@ void JSForInIterator::SlowGetAllEnumKeys(JSThread *thread, const JSHandle<JSForI
     for (array_size_t i = 0; i < len; i++) {
         value.Update(arr->Get(i));
         if (value->IsString()) {
-            remaining.Update(JSTaggedValue(TaggedQueue::Push(thread, remaining, value)));
+            TaggedQueue *newQueue = TaggedQueue::Push(thread, remaining, value);
+            remaining.Update(JSTaggedValue(newQueue));
         }
     }
     it->SetRemainingKeys(thread, remaining);
@@ -244,9 +245,9 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
             PropertyDescriptor desc(thread);
             bool has = JSTaggedValue::GetOwnProperty(thread, object, key, desc);
             if (has) {
-                auto queue = JSTaggedValue(TaggedQueue::Push(thread, visited, key));
-                visited.Update(queue);
-                it->SetVisitedKeys(thread, queue);
+                auto newQueue = JSTaggedValue(TaggedQueue::Push(thread, visited, key));
+                visited.Update(newQueue);
+                it->SetVisitedKeys(thread, newQueue);
                 if (desc.IsEnumerable()) {
                     return std::make_pair(key.GetTaggedValue(), false);
                 }

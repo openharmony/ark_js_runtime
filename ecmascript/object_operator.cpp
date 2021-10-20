@@ -568,8 +568,8 @@ void ObjectOperator::DeleteElementInHolder() const
         JSObject::ElementsToDictionary(thread_, JSHandle<JSObject>(holder_));
     } else {
         JSHandle<NumberDictionary> dictHandle(thread_, elements);
-        NumberDictionary *dict = NumberDictionary::Remove(thread_, dictHandle, GetIndex());
-        obj->SetElements(thread_, JSTaggedValue(dict));
+        NumberDictionary *newDict = NumberDictionary::Remove(thread_, dictHandle, GetIndex());
+        obj->SetElements(thread_, JSTaggedValue(newDict));
     }
 }
 
@@ -661,9 +661,9 @@ void ObjectOperator::AddPropertyInternal(const JSHandle<JSTaggedValue> &value)
         PropertyBoxType cellType = value->IsUndefined() ? PropertyBoxType::UNDEFINED : PropertyBoxType::CONSTANT;
         attr.SetBoxType(cellType);
 
-        JSTaggedValue properties(
-            GlobalDictionary::PutIfAbsent(thread_, dict, key_, JSHandle<JSTaggedValue>(cellHandle), attr));
-        obj->SetProperties(thread_, properties);
+        GlobalDictionary *properties =
+            GlobalDictionary::PutIfAbsent(thread_, dict, key_, JSHandle<JSTaggedValue>(cellHandle), attr);
+        obj->SetProperties(thread_, JSTaggedValue(properties));
         // index and fastMode is not essential for global obj;
         SetFound(0, cellHandle.GetTaggedValue(), attr.GetValue(), true);
         return;
@@ -704,8 +704,8 @@ void ObjectOperator::AddPropertyInternal(const JSHandle<JSTaggedValue> &value)
                 // change to dictionary and add one.
                 JSHandle<NameDictionary> dict(JSObject::TransitionToDictionary(thread_, obj));
                 attr.SetDictionaryOrder(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES);
-                auto result = JSTaggedValue(NameDictionary::PutIfAbsent(thread_, dict, key_, value, attr));
-                obj->SetProperties(thread_, result);
+                NameDictionary *newDict = NameDictionary::PutIfAbsent(thread_, dict, key_, value, attr);
+                obj->SetProperties(thread_, JSTaggedValue(newDict));
                 // index is not essential when fastMode is false;
                 SetFound(0, value.GetTaggedValue(), attr.GetValue(), false);
                 return;
@@ -724,8 +724,8 @@ void ObjectOperator::AddPropertyInternal(const JSHandle<JSTaggedValue> &value)
     }
 
     JSHandle<NameDictionary> dictHandle(array);
-    auto result = JSTaggedValue(NameDictionary::PutIfAbsent(thread_, dictHandle, key_, value, attr));
-    obj->SetProperties(thread_, result);
+    NameDictionary *newDict = NameDictionary::PutIfAbsent(thread_, dictHandle, key_, value, attr);
+    obj->SetProperties(thread_, JSTaggedValue(newDict));
     SetFound(0, value.GetTaggedValue(), attr.GetValue(), false);
 }
 

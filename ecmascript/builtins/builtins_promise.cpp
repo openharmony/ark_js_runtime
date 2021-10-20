@@ -414,7 +414,7 @@ JSTaggedValue BuiltinsPromise::PerformPromiseThen(JSThread *thread, const JSHand
         argv->Set(thread, 1, promise->GetPromiseResult());
 
         JSHandle<JSFunction> promiseReactionsJob(env->GetPromiseReactionJob());
-        job->EnqueueJob(thread, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, argv);
+        job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, argv);
     } else if (JSTaggedValue::SameValue(promise->GetPromiseState(),
                                         JSTaggedValue(static_cast<int32_t>(PromiseStatus::REJECTED)))) {
         JSHandle<TaggedArray> argv = factory->NewTaggedArray(2);  // 2: 2 means two args stored in array
@@ -422,7 +422,7 @@ JSTaggedValue BuiltinsPromise::PerformPromiseThen(JSThread *thread, const JSHand
         argv->Set(thread, 1, promise->GetPromiseResult());
 
         JSHandle<JSFunction> promiseReactionsJob(env->GetPromiseReactionJob());
-        job->EnqueueJob(thread, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, argv);
+        job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, argv);
     }
     return capability->GetPromise();
 }

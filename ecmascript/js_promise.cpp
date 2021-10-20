@@ -178,7 +178,7 @@ JSTaggedValue JSPromise::TriggerPromiseReactions(JSThread *thread, const JSHandl
         JSHandle<TaggedArray> arguments = factory->NewTaggedArray(2);  // 2 means the length of new array
         arguments->Set(thread, 0, reaction);
         arguments->Set(thread, 1, argument);
-        job->EnqueueJob(thread, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, arguments);
+        job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, arguments);
     }
     // 2. Return undefined.
     return globalConst->GetUndefined();

@@ -40,9 +40,9 @@ public:
         return static_cast<MicroJobQueue *>(object);
     }
 
-    void EnqueueJob(JSThread *thread, QueueType queueType, const JSHandle<JSFunction> &job,
-                    const JSHandle<TaggedArray> &argv);
-    void ExecutePendingJob(JSThread *thread);
+    static void EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueue, QueueType queueType,
+        const JSHandle<JSFunction> &job, const JSHandle<TaggedArray> &argv);
+    static void ExecutePendingJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueue);
 
     static constexpr size_t PROMISE_JOB_QUEUE_OFFSET = Record::SIZE;
     ACCESSORS(PromiseJobQueue, PROMISE_JOB_QUEUE_OFFSET, SCRIPT_JOB_QUEUE_OFFSET);

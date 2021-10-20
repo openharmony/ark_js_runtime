@@ -190,8 +190,8 @@ void JSArray::SetCapacity(JSThread *thread, const JSHandle<JSObject> &array, uin
                 uint32_t attr = dictHandle->GetAttributes(entry).GetValue();
                 PropertyAttributes propAttr(attr);
                 if (propAttr.IsConfigurable()) {
-                    NumberDictionary *dictionary = NumberDictionary::Remove(thread, dictHandle, entry);
-                    array->SetElements(thread, JSTaggedValue(dictionary));
+                    NumberDictionary *newDict = NumberDictionary::Remove(thread, dictHandle, entry);
+                    array->SetElements(thread, JSTaggedValue(newDict));
                     if (i == 0) {
                         newNumOfElements = i;
                         break;
