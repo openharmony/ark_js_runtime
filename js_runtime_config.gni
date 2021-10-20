@@ -21,14 +21,6 @@ asan_lib_path = "/usr/lib/llvm-10/lib/clang/10.0.0/lib/linux"
 sdk_libc_secshared_dep = "//utils/native/base:utilsecurec"
 sdk_libc_secshared_config = "//utils/native/base:utils_config"
 
-# Add for header file dependence, should dependent this when include
-# header file of runtime, but not dependent libarkruntime
-arkruntime_header_gen_deps = [
-  "$ark_root/runtime:arkruntime_gen_intrinsics_intrinsics_h",
-  "$ark_root/runtime:libarkruntime_options_gen_h",
-  "$ark_root/verification/gen:verification_verifier_messages_h",
-]
-
 # Generate file for a template and YAML data provided.
 #
 # Mandatory arguments:
