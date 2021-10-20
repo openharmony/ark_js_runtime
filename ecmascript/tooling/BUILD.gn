@@ -47,8 +47,8 @@ source_set("libark_ecma_debugger_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "$ark_root/runtime:arkruntime_header_deps",
   ]
-  deps += arkruntime_header_gen_deps
 
   cflags_cc = [ "-fvisibility=hidden" ]
 }
@@ -84,8 +84,8 @@ source_set("libark_ecma_debugger_test_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "$ark_root/runtime:arkruntime_header_deps",
   ]
-  deps += arkruntime_header_gen_deps
 }
 
 ohos_shared_library("libark_ecma_debugger_test") {
