@@ -33,9 +33,10 @@ public:
 
     JSHandle<JSTaggedValue> GetItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName);
 
-    void AddItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName, JSHandle<JSTaggedValue> itemValue);
+    static void AddItem(const JSThread *thread, JSHandle<EcmaModule> module, JSHandle<JSTaggedValue> itemName,
+        JSHandle<JSTaggedValue> itemValue);
 
-    void RemoveItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName);
+    static void RemoveItem(const JSThread *thread, JSHandle<EcmaModule> module, JSHandle<JSTaggedValue> itemName);
 
     void DebugPrint(const JSThread *thread, const CString &caller);
 
@@ -45,7 +46,8 @@ public:
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(ECMAObject, NAME_DICTIONARY_OFFSET, SIZE)
 
 protected:
-    void CopyModuleInternal(const JSThread *thread, JSHandle<EcmaModule> srcModule);
+    static void CopyModuleInternal(const JSThread *thread, JSHandle<EcmaModule> dstModule,
+        JSHandle<EcmaModule> srcModule);
 
     friend class ModuleManager;
 };
@@ -78,6 +80,8 @@ public:
     void RemoveModule(JSHandle<JSTaggedValue> moduleName);
 
     JSHandle<JSTaggedValue> GetModule(const JSThread *thread, JSHandle<JSTaggedValue> moduleName);
+
+    CString GenerateModuleFullPath(const std::string &currentPathFile, const CString &relativeFile);
 
     const CString &GetCurrentExportModuleName();
 

@@ -23,6 +23,7 @@
 #include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/js_runtime_options.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "include/runtime.h"
 #include "libpandabase/os/native_stack.h"
@@ -59,7 +60,7 @@ int Main(const int argc, const char **argv)
 
     BlockSignals();
     Span<const char *> sp(argv, argc);
-    RuntimeOptions runtimeOptions(sp[0]);
+    JSRuntimeOptions runtimeOptions(sp[0]);
 
     panda::PandArg<bool> help("help", false, "Print this message and exit");
     panda::PandArg<bool> options("options", false, "Print compiler and runtime options");
@@ -106,6 +107,7 @@ int Main(const int argc, const char **argv)
     runtimeOptions.SetShouldInitializeIntrinsics(false);
     runtimeOptions.SetBootClassSpaces({"ecmascript"});
     runtimeOptions.SetRuntimeType("ecmascript");
+    JSNApi::SetOptions(runtimeOptions);
     static EcmaLanguageContext lcEcma;
     bool ret = Runtime::Create(runtimeOptions, {&lcEcma});
     if (!ret) {
