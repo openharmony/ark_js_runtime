@@ -86,6 +86,9 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     if (!exception_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&exception_)));
     }
+    if (!stubCode_.IsHole()) {
+        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&stubCode_)));
+    }
     // visit global Constant
     globalConst_.VisitRangeSlot(v1);
     // visit stack roots

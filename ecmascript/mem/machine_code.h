@@ -53,10 +53,19 @@ public:
             return;
         }
     }
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
+    {
+        // no need to visit
+    }
+
+    void VisitObjects([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
+    {
+        // no field in this object
+    }
 
     size_t GetMachineCodeObjectSize(void)
     {
-        return sizeof(MachineCode) + this->GetInstructionSizeInBytes().GetInt();
+        return SIZE + this->GetInstructionSizeInBytes().GetInt();
     }
 };
 }  // namespace ecmascript

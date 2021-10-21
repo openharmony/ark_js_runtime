@@ -53,17 +53,22 @@ public:
 
 class CallRuntimeTrampolinesScope {
 public:
-    CallRuntimeTrampolinesScope(JSThread *thread, JSTaggedType *newFp)
-        :oldRbp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())),
+    CallRuntimeTrampolinesScope(JSThread *thread, uintptr_t *newFp, uintptr_t *fp)
+        :oldRbp_(nullptr),
         thread_(thread)
     {
-        thread_->SetCurrentSPFrame(newFp);
+        oldRuntimeTrampolinesFP_ = thread->GetRuntimeTrampolinesFP();
+        thread->SetRuntimeTrampolinesFP(fp);
+        JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+        oldRbp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
+        JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
+        thread_->SetCurrentSPFrame(newSp);
         // print newfp and type for debug
         std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
-            << " thread_->fp:" << thread_->GetCurrentSPFrame() <<std::endl;
+            << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(newFp) + FrameConst::kFrameType));
-        std::cout << "type = " << as_integer(type) << std::endl;
+        std::cout << __FUNCTION__ << " type = " << as_integer(type) << std::endl;
     }
     ~CallRuntimeTrampolinesScope()
     {
@@ -72,12 +77,15 @@ public:
             " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(oldRbp_) + FrameConst::kFrameType));
-        std::cout << "type = " << as_integer(type) << std::endl;
-        thread_->SetCurrentSPFrame(oldRbp_);
+        std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
+        JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(oldRbp_));
+        thread_->SetCurrentSPFrame(oldSp);
+        thread_->SetRuntimeTrampolinesFP(oldRuntimeTrampolinesFP_);
     }
 private:
-    JSTaggedType *oldRbp_;
+    uintptr_t *oldRbp_;
     JSThread *thread_;
+    uintptr_t  *oldRuntimeTrampolinesFP_;
 };
 }  // namespace panda::ecmascript
 #endif
