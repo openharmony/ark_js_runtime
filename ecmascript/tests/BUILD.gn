@@ -233,7 +233,7 @@ host_unittest_action("JsArrayTest") {
   }
 }
 
-host_unittest_action("JsDataviewTest") {
+host_unittest_action("JsDataViewTest") {
   module_out_path = module_output_path
 
   sources = [
@@ -978,7 +978,7 @@ group("unittest") {
     ":JsArgumentsTest",
     ":JsArrayIteratorTest",
     ":JsArrayTest",
-    ":JsDataviewTest",
+    ":JsDataViewTest",
     ":JsDateTest",
     ":JsForinIteratorTest",
     ":JsFunctionTest",
@@ -1021,7 +1021,7 @@ group("host_unittest") {
     ":JsArgumentsTestAction",
     ":JsArrayIteratorTestAction",
     ":JsArrayTestAction",
-    ":JsDataviewTestAction",
+    ":JsDataViewTestAction",
     ":JsDateTestAction",
     ":JsForinIteratorTestAction",
     ":JsFunctionTestAction",
