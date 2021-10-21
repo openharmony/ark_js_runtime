@@ -19,7 +19,7 @@ index 0e85afa82c7..43756892e40 100644
    add_definitions(-DBUILD_EXAMPLES)
  endif(LLVM_BUILD_EXAMPLES)
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..a00a28fa5e9 100644
+index 1da20371caf..d6f82baa7d7 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
 @@ -1168,6 +1168,27 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
@@ -36,14 +36,14 @@ index 1da20371caf..a00a28fa5e9 100644
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
 +
-+      BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH64i32))
-+            .addImm(marker)
-+            .setMIFlag(MachineInstr::FrameSetup);
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64r : X86::PUSH32r))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup);
 +      /*reserve thread.fp */
-+      if (marker == 1) {
-+        BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH64i32))
-+              .addImm(marker)
-+              .setMIFlag(MachineInstr::FrameSetup);
++      if (marker == JS_ENTRY_FRAME_MARK) {
++        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64r : X86::PUSH32r))
++          .addImm(marker)
++          .setMIFlag(MachineInstr::FrameSetup);
 +      }
 +    }
 +#endif
@@ -67,7 +67,7 @@ index 1da20371caf..a00a28fa5e9 100644
 +      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
 +              MachineFramePtr)
 +          .setMIFlag(MachineInstr::FrameDestroy);
-+      if (marker == 1) {
++      if (marker == JS_ENTRY_FRAME_MARK) {
 +        // pop thread.fp
 +        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
 +            MachineFramePtr)
@@ -112,3 +112,16 @@ index 1da20371caf..a00a28fa5e9 100644
  
      // Since emitPrologue and emitEpilogue will handle spilling and restoring of
      // the frame register, we can delete it from CSI list and not have to worry
+diff --git a/llvm/lib/Target/X86/X86FrameLowering.h b/llvm/lib/Target/X86/X86FrameLowering.h
+index 2103d6471ea..3fd89b0d9ee 100644
+--- a/llvm/lib/Target/X86/X86FrameLowering.h
++++ b/llvm/lib/Target/X86/X86FrameLowering.h
+@@ -15,6 +15,8 @@
+ 
+ #include "llvm/CodeGen/TargetFrameLowering.h"
+ 
++#define JS_ENTRY_FRAME_MARK 1
++
+ namespace llvm {
+ 
+ class MachineInstrBuilder;

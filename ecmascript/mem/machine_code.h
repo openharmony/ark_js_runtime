@@ -55,12 +55,12 @@ public:
     }
     void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
     {
-        // no need to visit
+        // left blank deliberately,only need to visit TaggedObject type object.
     }
 
     void VisitObjects([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
     {
-        // no field in this object
+        // left blank deliberately,only need to visit TaggedObject type object.
     }
 
     size_t GetMachineCodeObjectSize(void)
