@@ -38,6 +38,7 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
         child->SetParent(thread, parent.GetTaggedValue());
         return;
     }
+    JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
     if (transitions.IsJSHClass()) {
         auto cachedHClass = JSHClass::Cast(transitions.GetTaggedObject());
         int last = cachedHClass->GetPropertiesNumber() - 1;
@@ -45,11 +46,11 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
         auto lastKey = JSHandle<JSTaggedValue>(thread, layoutInfo->GetKey(last));
         auto lastHClass = JSHandle<JSTaggedValue>(thread, cachedHClass);
-        auto dict = JSHandle<TransitionsDictionary>(thread, TransitionsDictionary::Create(thread));
+        dict.Update(JSTaggedValue(TransitionsDictionary::Create(thread)));
         transitions = JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, lastKey, lastHClass, attr));
     }
     auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(attributes.GetPropertyMetaData()));
-    JSHandle<TransitionsDictionary> dict(thread, transitions);
+    dict.Update(transitions);
     transitions =
         JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), attr));
     parent->SetTransitions(thread, transitions);
@@ -68,6 +69,7 @@ void JSHClass::AddProtoTransitions(const JSThread *thread, const JSHandle<JSHCla
                                    const JSHandle<JSTaggedValue> &proto)
 {
     JSTaggedValue transitions = parent->GetTransitions();
+    JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
     if (transitions.IsNull()) {
         transitions = JSTaggedValue(TransitionsDictionary::Create(thread));
     } else if (transitions.IsJSHClass()) {
@@ -77,11 +79,11 @@ void JSHClass::AddProtoTransitions(const JSThread *thread, const JSHandle<JSHCla
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
         auto lastKey = JSHandle<JSTaggedValue>(thread, layoutInfo->GetKey(last));
         auto lastHClass = JSHandle<JSTaggedValue>(thread, cachedHClass);
-        auto dict = JSHandle<TransitionsDictionary>(thread, TransitionsDictionary::Create(thread));
+        dict.Update(JSTaggedValue(TransitionsDictionary::Create(thread)));
         transitions = JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, lastKey, lastHClass, attr));
     }
 
-    JSHandle<TransitionsDictionary> dict(thread, transitions);
+    dict.Update(transitions);
     transitions =
         JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), proto));
     parent->SetTransitions(thread, transitions);

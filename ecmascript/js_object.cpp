@@ -127,7 +127,8 @@ JSHandle<NameDictionary> JSObject::TransitionToDictionary(const JSThread *thread
         attr.SetBoxType(PropertyBoxType::UNDEFINED);
         valueHandle.Update(value);
         keyHandle.Update(key);
-        dict.Update(JSTaggedValue(NameDictionary::PutIfAbsent(thread, dict, keyHandle, valueHandle, attr)));
+        NameDictionary *newDict = NameDictionary::PutIfAbsent(thread, dict, keyHandle, valueHandle, attr);
+        dict.Update(JSTaggedValue(newDict));
     }
 
     receiver->SetProperties(thread, dict);
@@ -152,7 +153,8 @@ void JSObject::ElementsToDictionary(const JSThread *thread, JSHandle<JSObject> o
         }
         key.Update(JSTaggedValue(i));
         valueHandle.Update(value);
-        dict.Update(JSTaggedValue(NumberDictionary::PutIfAbsent(thread, dict, key, valueHandle, attr)));
+        NumberDictionary *newDict = NumberDictionary::PutIfAbsent(thread, dict, key, valueHandle, attr);
+        dict.Update(JSTaggedValue(newDict));
     }
     obj->SetElements(thread, dict);
 
@@ -193,9 +195,9 @@ bool JSObject::AddElementInternal(JSThread *thread, const JSHandle<JSObject> &re
     if (isDictionary) {
         ASSERT(elements->IsDictionaryMode());
         JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(static_cast<int32_t>(index)));
-        NumberDictionary *dict =
+        NumberDictionary *newDict =
             NumberDictionary::Put(thread, JSHandle<NumberDictionary>(thread, elements), keyHandle, value, attr);
-        receiver->SetElements(thread, JSTaggedValue(dict));
+        receiver->SetElements(thread, JSTaggedValue(newDict));
         return true;
     }
 
@@ -205,8 +207,8 @@ bool JSObject::AddElementInternal(JSThread *thread, const JSHandle<JSObject> &re
             JSObject::ElementsToDictionary(thread, receiver);
             JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(static_cast<int32_t>(index)));
             JSHandle<NumberDictionary> dict(thread, receiver->GetElements());
-            auto key = JSTaggedValue(NumberDictionary::Put(thread, dict, keyHandle, value, attr));
-            receiver->SetElements(thread, key);
+            NumberDictionary *newKey = NumberDictionary::Put(thread, dict, keyHandle, value, attr);
+            receiver->SetElements(thread, JSTaggedValue(newKey));
             return true;
         }
         elements = *JSObject::GrowElementsCapacity(thread, receiver, index + 1);
@@ -223,8 +225,8 @@ void JSObject::DeletePropertyInternal(JSThread *thread, const JSHandle<JSObject>
 
     if (obj->IsJSGlobalObject()) {
         JSHandle<GlobalDictionary> dictHandle(thread, obj->GetProperties());
-        GlobalDictionary *dict = GlobalDictionary::Remove(thread, dictHandle, index);
-        obj->SetProperties(thread, JSTaggedValue(dict));
+        GlobalDictionary *newDict = GlobalDictionary::Remove(thread, dictHandle, index);
+        obj->SetProperties(thread, JSTaggedValue(newDict));
         return;
     }
 
@@ -232,14 +234,14 @@ void JSObject::DeletePropertyInternal(JSThread *thread, const JSHandle<JSObject>
         JSHandle<NameDictionary> dictHandle(TransitionToDictionary(thread, obj));
         int entry = dictHandle->FindEntry(key.GetTaggedValue());
         ASSERT(entry != -1);
-        NameDictionary *dict = NameDictionary::Remove(thread, dictHandle, entry);
-        obj->SetProperties(thread, JSTaggedValue(dict));
+        NameDictionary *newDict = NameDictionary::Remove(thread, dictHandle, entry);
+        obj->SetProperties(thread, JSTaggedValue(newDict));
         return;
     }
 
     JSHandle<NameDictionary> dictHandle(array);
-    NameDictionary *dict = NameDictionary::Remove(thread, dictHandle, index);
-    obj->SetProperties(thread, JSTaggedValue(dict));
+    NameDictionary *newDict = NameDictionary::Remove(thread, dictHandle, index);
+    obj->SetProperties(thread, JSTaggedValue(newDict));
 }
 
 void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj, int offset,

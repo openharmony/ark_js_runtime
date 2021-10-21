@@ -95,7 +95,7 @@ JSTaggedValue BuiltinsPromiseHandler::Resolve(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSFunction> promiseResolveThenableJob(env->GetPromiseResolveThenableJob());
     JSHandle<job::MicroJobQueue> job = thread->GetEcmaVM()->GetMicroJobQueue();
-    job->EnqueueJob(thread, job::QueueType::QUEUE_PROMISE, promiseResolveThenableJob, arguments);
+    job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, promiseResolveThenableJob, arguments);
 
     // 13. Return undefined.
     return JSTaggedValue::Undefined();

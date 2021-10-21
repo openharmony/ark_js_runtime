@@ -27,8 +27,8 @@
 #include "utils/expected.h"
 
 namespace panda::ecmascript::job {
-void MicroJobQueue::EnqueueJob(JSThread *thread, QueueType queueType, const JSHandle<JSFunction> &job,
-                               const JSHandle<TaggedArray> &argv)
+void MicroJobQueue::EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueue, QueueType queueType,
+    const JSHandle<JSFunction> &job, const JSHandle<TaggedArray> &argv)
 {
     // 1. Assert: Type(queueName) is String and its value is the name of a Job Queue recognized by this implementation.
     // 2. Assert: job is the name of a Job.
@@ -39,24 +39,22 @@ void MicroJobQueue::EnqueueJob(JSThread *thread, QueueType queueType, const JSHa
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<PendingJob> pendingJob(factory->NewPendingJob(job, argv));
     if (queueType == QueueType::QUEUE_PROMISE) {
-        JSHandle<TaggedQueue> promiseQueue(thread, GetPromiseJobQueue());
+        JSHandle<TaggedQueue> promiseQueue(thread, jobQueue->GetPromiseJobQueue());
         LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
-        JSHandle<TaggedQueue> newPromiseQueue(
-            thread, TaggedQueue::Push(thread, promiseQueue, JSHandle<JSTaggedValue>::Cast(pendingJob)));
-        SetPromiseJobQueue(thread, newPromiseQueue.GetTaggedValue());
+        TaggedQueue *newPromiseQueue = TaggedQueue::Push(thread, promiseQueue, JSHandle<JSTaggedValue>(pendingJob));
+        jobQueue->SetPromiseJobQueue(thread, JSTaggedValue(newPromiseQueue));
         LOG_ECMA(DEBUG) << "promiseQueue end length: " << newPromiseQueue->Size();
     } else if (queueType == QueueType::QUEUE_SCRIPT) {
-        JSHandle<TaggedQueue> scriptQueue(thread, GetScriptJobQueue());
-        JSHandle<TaggedQueue> newScriptQueue(
-            thread, TaggedQueue::Push(thread, scriptQueue, JSHandle<JSTaggedValue>::Cast(pendingJob)));
-        SetScriptJobQueue(thread, newScriptQueue.GetTaggedValue());
+        JSHandle<TaggedQueue> scriptQueue(thread, jobQueue->GetScriptJobQueue());
+        TaggedQueue *newScriptQueue = TaggedQueue::Push(thread, scriptQueue, JSHandle<JSTaggedValue>(pendingJob));
+        jobQueue->SetScriptJobQueue(thread, JSTaggedValue(newScriptQueue));
     }
 }
 
-void MicroJobQueue::ExecutePendingJob(JSThread *thread)
+void MicroJobQueue::ExecutePendingJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueue)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<TaggedQueue> promiseQueue(thread, GetPromiseJobQueue());
+    JSMutableHandle<TaggedQueue> promiseQueue(thread, jobQueue->GetPromiseJobQueue());
     JSMutableHandle<PendingJob> pendingJob(thread, JSTaggedValue::Undefined());
     while (!promiseQueue->Empty()) {
         LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
@@ -66,10 +64,10 @@ void MicroJobQueue::ExecutePendingJob(JSThread *thread)
         if (thread->HasPendingException()) {
             return;
         }
-        promiseQueue = JSHandle<TaggedQueue>(thread, GetPromiseJobQueue());
+        promiseQueue.Update(jobQueue->GetPromiseJobQueue());
     }
 
-    JSHandle<TaggedQueue> scriptQueue(thread, GetScriptJobQueue());
+    JSHandle<TaggedQueue> scriptQueue(thread, jobQueue->GetScriptJobQueue());
     while (!scriptQueue->Empty()) {
         pendingJob.Update(scriptQueue->Pop(thread));
         PendingJob::ExecutePendingJob(pendingJob, thread);

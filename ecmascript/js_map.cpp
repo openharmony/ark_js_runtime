@@ -28,8 +28,8 @@ void JSMap::Set(JSThread *thread, const JSHandle<JSMap> &map, const JSHandle<JST
     }
     JSHandle<LinkedHashMap> mapHandle(thread, LinkedHashMap::Cast(map->GetLinkedMap().GetTaggedObject()));
 
-    auto result = LinkedHashMap::Set(thread, mapHandle, key, value);
-    map->SetLinkedMap(thread, result);
+    JSTaggedValue newMap = LinkedHashMap::Set(thread, mapHandle, key, value);
+    map->SetLinkedMap(thread, newMap);
 }
 
 bool JSMap::Delete(const JSThread *thread, const JSHandle<JSMap> &map, const JSHandle<JSTaggedValue> &key)
@@ -41,8 +41,8 @@ bool JSMap::Delete(const JSThread *thread, const JSHandle<JSMap> &map, const JSH
     }
     mapHandle->RemoveEntry(thread, entry);
 
-    auto result = LinkedHashMap::Shrink(thread, mapHandle);
-    map->SetLinkedMap(thread, result);
+    JSTaggedValue newMap = LinkedHashMap::Shrink(thread, mapHandle);
+    map->SetLinkedMap(thread, newMap);
     return true;
 }
 
