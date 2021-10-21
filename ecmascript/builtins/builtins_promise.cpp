@@ -399,14 +399,13 @@ JSTaggedValue BuiltinsPromise::PerformPromiseThen(JSThread *thread, const JSHand
     if (JSTaggedValue::SameValue(promise->GetPromiseState(),
                                  JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING)))) {
         JSHandle<TaggedQueue> fulfillReactions(thread, promise->GetPromiseFulfillReactions());
-        auto result =
-            JSTaggedValue(TaggedQueue::Push(thread, fulfillReactions, JSHandle<JSTaggedValue>::Cast(fulfillReaction)));
-        promise->SetPromiseFulfillReactions(thread, result);
+        TaggedQueue *newQueue =
+            TaggedQueue::Push(thread, fulfillReactions, JSHandle<JSTaggedValue>::Cast(fulfillReaction));
+        promise->SetPromiseFulfillReactions(thread, JSTaggedValue(newQueue));
 
         JSHandle<TaggedQueue> rejectReactions(thread, promise->GetPromiseRejectReactions());
-        result =
-            JSTaggedValue(TaggedQueue::Push(thread, rejectReactions, JSHandle<JSTaggedValue>::Cast(rejectReaction)));
-        promise->SetPromiseRejectReactions(thread, result);
+        newQueue = TaggedQueue::Push(thread, rejectReactions, JSHandle<JSTaggedValue>::Cast(rejectReaction));
+        promise->SetPromiseRejectReactions(thread, JSTaggedValue(newQueue));
     } else if (JSTaggedValue::SameValue(promise->GetPromiseState(),
                                         JSTaggedValue(static_cast<int32_t>(PromiseStatus::FULFILLED)))) {
         JSHandle<TaggedArray> argv = factory->NewTaggedArray(2);  // 2: 2 means two args stored in array

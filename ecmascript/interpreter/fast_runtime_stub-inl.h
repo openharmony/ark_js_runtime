@@ -880,9 +880,9 @@ bool FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue receiver
 
                     if (receiver.IsJSGlobalObject()) {
                         [[maybe_unused]] EcmaHandleScope handleScope(thread);
-                        JSHandle<GlobalDictionary> dict_handle(thread, properties);
+                        JSHandle<GlobalDictionary> dictHandle(thread, properties);
                         // globalobj have no internal accessor
-                        GlobalDictionary::InvalidatePropertyBox(thread, dict_handle, indexOrEntry, attr);
+                        GlobalDictionary::InvalidatePropertyBox(thread, dictHandle, indexOrEntry, attr);
                         return true;
                     }
 
@@ -961,7 +961,7 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
         JSHandle<JSTaggedValue> keyHandle(thread, key);
         JSHandle<JSTaggedValue> valHandle(thread, value);
         JSHandle<JSObject> objHandle(thread, obj);
-        JSHandle<GlobalDictionary> dict_handle(thread, GlobalDictionary::Create(thread));
+        JSHandle<GlobalDictionary> dictHandle(thread, GlobalDictionary::Create(thread));
 
         // Add PropertyBox to global dictionary
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -971,7 +971,7 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
         attr.SetBoxType(boxType);
 
         GlobalDictionary *properties =
-            GlobalDictionary::PutIfAbsent(thread, dict_handle, keyHandle, JSHandle<JSTaggedValue>(boxHandle), attr);
+            GlobalDictionary::PutIfAbsent(thread, dictHandle, keyHandle, JSHandle<JSTaggedValue>(boxHandle), attr);
         objHandle->SetProperties(thread, JSTaggedValue(properties));
         return true;
     }
@@ -983,8 +983,8 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
         if (!attr.IsAccessor()) {
             if (attr.IsWritable()) {
                 // globalobj have no internal accessor
-                JSHandle<GlobalDictionary> dict_handle(thread, dict);
-                GlobalDictionary::InvalidatePropertyBox(thread, dict_handle, entry, attr);
+                JSHandle<GlobalDictionary> dictHandle(thread, dict);
+                GlobalDictionary::InvalidatePropertyBox(thread, dictHandle, entry, attr);
                 return true;
             }
         }
@@ -1011,7 +1011,7 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
     JSHandle<JSTaggedValue> keyHandle(thread, key);
     JSHandle<JSTaggedValue> valHandle(thread, value);
     JSHandle<JSObject> objHandle(thread, obj);
-    JSHandle<GlobalDictionary> dict_handle(thread, dict);
+    JSHandle<GlobalDictionary> dictHandle(thread, dict);
 
     // Add PropertyBox to global dictionary
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -1021,7 +1021,7 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
     attr.SetBoxType(boxType);
 
     GlobalDictionary *properties =
-        GlobalDictionary::PutIfAbsent(thread, dict_handle, keyHandle, JSHandle<JSTaggedValue>(boxHandle), attr);
+        GlobalDictionary::PutIfAbsent(thread, dictHandle, keyHandle, JSHandle<JSTaggedValue>(boxHandle), attr);
     objHandle->SetProperties(thread, JSTaggedValue(properties));
     return true;
 }
