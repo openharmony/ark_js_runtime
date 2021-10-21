@@ -69,6 +69,11 @@ public:
     {
         return SIZE + this->GetInstructionSizeInBytes().GetInt();
     }
+    
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
+    {
+        // no need to visit
+    }
 };
 }  // namespace ecmascript
 }  // namespace panda
