@@ -19,7 +19,7 @@ index 0e85afa82c7..43756892e40 100644
    add_definitions(-DBUILD_EXAMPLES)
  endif(LLVM_BUILD_EXAMPLES)
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..657d215e31e 100644
+index 1da20371caf..e0264827556 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
 @@ -1168,6 +1168,25 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
@@ -76,7 +76,7 @@ index 1da20371caf..657d215e31e 100644
      // Pop EBP.
      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
              MachineFramePtr)
-@@ -1993,8 +2033,41 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+@@ -1993,8 +2033,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
  
    if (hasFP(MF)) {
      // emitPrologue always spills frame register the first thing.
@@ -92,20 +92,12 @@ index 1da20371caf..657d215e31e 100644
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            if (Is64Bit) {
-+              CalleeSavedFrameSize += 16;
-+            } else {
-+              CalleeSavedFrameSize += 8;
-+            }
++            CalleeSavedFrameSize += (2 * SlotSize);
 +        } else {
 +            SpillSlotOffset -=  2 * SlotSize; // add type
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            if (Is64Bit) {
-+              CalleeSavedFrameSize += 8;
-+            } else {
-+              CalleeSavedFrameSize += 4;
-+            }
++            CalleeSavedFrameSize += SlotSize;
 +        }
 +    } else {
 +        SpillSlotOffset -= SlotSize; // add type and thread.fp
