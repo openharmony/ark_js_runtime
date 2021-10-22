@@ -1,0 +1,17 @@
+code review
+
+Signed-off-by: songzhengchao <songzhengchao@huawei.com>
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Fri Oct 22 17:20:06 2021 +0800
+#
+# On branch bug_fix_2
+# Your branch is ahead of 'origin/bug_fix_2' by 1 commit.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	modified:   ecmascript/js_thread.h
+#	modified:   ecmascript/runtime_trampolines.h
+#

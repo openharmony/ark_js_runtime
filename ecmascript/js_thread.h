@@ -241,7 +241,7 @@ private:
     bool stableArrayElementsGuardians_ {true};
     GlobalEnvConstants globalConst_;  // Place-Holder
     InternalCallParams *internalCallParams_ {nullptr};
-    uintptr_t *lastOptCallRuntimePc_ = {nullptr};
+    uintptr_t *lastOptCallRuntimePc_ {nullptr};
 
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
