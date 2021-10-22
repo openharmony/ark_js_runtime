@@ -57,7 +57,7 @@ public:
         :oldFramePointer_(nullptr),
         thread_(thread)
     {
-        oldRuntimeTrampolinesFP_ = thread->GetRuntimeTrampolinesFP();
+        lastOptCallRuntimePc_ = thread->GetRuntimeTrampolinesFP();
         thread->SetRuntimeTrampolinesFP(fp);
         JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         oldFramePointer_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
@@ -80,12 +80,12 @@ public:
         std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(oldFramePointer_));
         thread_->SetCurrentSPFrame(oldSp);
-        thread_->SetRuntimeTrampolinesFP(oldRuntimeTrampolinesFP_);
+        thread_->SetRuntimeTrampolinesFP(lastOptCallRuntimePc_);
     }
 private:
     uintptr_t *oldFramePointer_;
     JSThread *thread_;
-    uintptr_t  *oldRuntimeTrampolinesFP_;
+    uintptr_t  *lastOptCallRuntimePc_;
 };
 }  // namespace panda::ecmascript
 #endif
