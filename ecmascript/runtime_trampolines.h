@@ -54,17 +54,17 @@ public:
 class CallRuntimeTrampolinesScope {
 public:
     CallRuntimeTrampolinesScope(JSThread *thread, uintptr_t *newFp, uintptr_t *fp)
-        :oldRbp_(nullptr),
+        :oldFramePointer_(nullptr),
         thread_(thread)
     {
         oldRuntimeTrampolinesFP_ = thread->GetRuntimeTrampolinesFP();
         thread->SetRuntimeTrampolinesFP(fp);
         JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-        oldRbp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
+        oldFramePointer_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
         // print newfp and type for debug
-        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
+        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " oldFramePointer_ : " << oldFramePointer_
             << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(newFp) + FrameConst::kFrameType));
@@ -73,17 +73,17 @@ public:
     ~CallRuntimeTrampolinesScope()
     {
         // print oldfp and type for debug
-        std::cout << "~CallRuntimeTrampolinesScope oldRbp_: " << oldRbp_ <<
+        std::cout << "~CallRuntimeTrampolinesScope oldFramePointer_: " << oldFramePointer_ <<
             " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(oldRbp_) + FrameConst::kFrameType));
+                    reinterpret_cast<long long>(oldFramePointer_) + FrameConst::kFrameType));
         std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
-        JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(oldRbp_));
+        JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(oldFramePointer_));
         thread_->SetCurrentSPFrame(oldSp);
         thread_->SetRuntimeTrampolinesFP(oldRuntimeTrampolinesFP_);
     }
 private:
-    uintptr_t *oldRbp_;
+    uintptr_t *oldFramePointer_;
     JSThread *thread_;
     uintptr_t  *oldRuntimeTrampolinesFP_;
 };
