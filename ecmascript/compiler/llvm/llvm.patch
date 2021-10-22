@@ -19,10 +19,10 @@ index 0e85afa82c7..43756892e40 100644
    add_definitions(-DBUILD_EXAMPLES)
  endif(LLVM_BUILD_EXAMPLES)
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..d6f82baa7d7 100644
+index 1da20371caf..26a11139817 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
-@@ -1168,6 +1168,27 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
+@@ -1168,6 +1168,34 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
      else
        MFI.setOffsetAdjustment(-StackSize);
    }
@@ -35,7 +35,14 @@ index 1da20371caf..d6f82baa7d7 100644
 +        .getFnAttribute("js-stub-call")
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
-+
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup);
++      if (marker == JS_ENTRY_FRAME_MARK) {
++        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup);
++      }
 +      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64r : X86::PUSH32r))
 +        .addImm(marker)
 +        .setMIFlag(MachineInstr::FrameSetup);
@@ -50,7 +57,7 @@ index 1da20371caf..d6f82baa7d7 100644
  
    // For EH funclets, only allocate enough space for outgoing calls. Save the
    // NumBytes value that we would've used for the parent frame.
-@@ -1635,6 +1656,27 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1635,6 +1663,27 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
    uint64_t SEHStackAllocAmt = NumBytes;
  
    if (HasFP) {
@@ -78,7 +85,7 @@ index 1da20371caf..d6f82baa7d7 100644
      // Pop EBP.
      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
              MachineFramePtr)
-@@ -1993,8 +2035,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+@@ -1993,8 +2042,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
  
    if (hasFP(MF)) {
      // emitPrologue always spills frame register the first thing.
