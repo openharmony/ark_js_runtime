@@ -199,11 +199,11 @@ public:
 
     void IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor);
 
-    uintptr_t* GetLastOptCallRuntimePc_() const
+    uintptr_t* GetLastOptCallRuntimePc() const
     {
         return lastOptCallRuntimePc_;
     }
-    void SetLastOptCallRuntimePc_(uintptr_t* pc)
+    void SetLastOptCallRuntimePc(uintptr_t* pc)
     {
         lastOptCallRuntimePc_ = pc;
     }

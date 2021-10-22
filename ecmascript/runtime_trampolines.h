@@ -53,12 +53,12 @@ public:
 
 class CallRuntimeTrampolinesScope {
 public:
-    CallRuntimeTrampolinesScope(JSThread *thread, uintptr_t *newFp, uintptr_t *fp)
+    CallRuntimeTrampolinesScope(JSThread *thread, uintptr_t *newFp, uintptr_t *pc)
         :oldFramePointer_(nullptr),
         thread_(thread)
     {
-        lastOptCallRuntimePc_ = thread->GetRuntimeTrampolinesFP();
-        thread->SetRuntimeTrampolinesFP(fp);
+        lastOptCallRuntimePc_ = thread->GetLastOptCallRuntimePc();
+        thread->SetLastOptCallRuntimePc(pc);
         JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         oldFramePointer_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
@@ -80,7 +80,7 @@ public:
         std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(oldFramePointer_));
         thread_->SetCurrentSPFrame(oldSp);
-        thread_->SetRuntimeTrampolinesFP(lastOptCallRuntimePc_);
+        thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:
     uintptr_t *oldFramePointer_;
