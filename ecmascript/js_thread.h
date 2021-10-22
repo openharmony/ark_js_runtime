@@ -199,13 +199,13 @@ public:
 
     void IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor);
 
-    uintptr_t* GetRuntimeTrampolinesFP() const
+    uintptr_t* GetLastOptCallRuntimePc_() const
     {
-        return runtimeTrampolinesFP;
+        return lastOptCallRuntimePc_;
     }
-    void SetRuntimeTrampolinesFP(uintptr_t* pc)
+    void SetLastOptCallRuntimePc_(uintptr_t* pc)
     {
-        runtimeTrampolinesFP = pc;
+        lastOptCallRuntimePc_ = pc;
     }
 private:
     NO_COPY_SEMANTIC(JSThread);
@@ -241,7 +241,7 @@ private:
     bool stableArrayElementsGuardians_ {true};
     GlobalEnvConstants globalConst_;  // Place-Holder
     InternalCallParams *internalCallParams_ {nullptr};
-    uintptr_t *runtimeTrampolinesFP = 0;
+    uintptr_t *lastOptCallRuntimePc_ = {nullptr};
 
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
