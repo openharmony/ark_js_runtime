@@ -220,7 +220,7 @@
 #define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp)
 #define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(fp))
 #else
-#define GET_CURRETN_FP(fp) 
+#define GET_CURRETN_FP(fp)
 #define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp))
 #define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(POINTER_CAST(fp, uintptr_t *)))
 #endif
