@@ -61,7 +61,7 @@ void EcmaModule::RemoveItem(const JSThread *thread, JSHandle<EcmaModule> module,
     JSHandle<NameDictionary> moduleItems(data);
     int entry = moduleItems->FindEntry(itemName.GetTaggedValue());
     if (entry != -1) {
-        NameDictionary *newDict = NameDictionary::Remove(thread, moduleItems, entry);  // discard return
+        NameDictionary *newDict = NameDictionary::Remove(thread, moduleItems, entry);
         module->SetNameDictionary(thread, JSTaggedValue(newDict));
     }
 }
