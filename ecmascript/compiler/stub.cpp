@@ -807,7 +807,7 @@ AddrShift Stub::TaggedIsString(AddrShift obj)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
     Label isHeapObject(env);
@@ -819,14 +819,16 @@ AddrShift Stub::TaggedIsString(AddrShift obj)
         Jump(&exit);
     }
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 AddrShift Stub::TaggedIsStringOrSymbol(AddrShift obj)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
     Label isHeapObject(env);
@@ -847,7 +849,9 @@ AddrShift Stub::TaggedIsStringOrSymbol(AddrShift obj)
         }
     }
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 AddrShift Stub::IsUtf16String(AddrShift string)
@@ -891,7 +895,7 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
     Label greatThanZero(env);
@@ -996,14 +1000,16 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
         }
     }
     Bind(&exit);
-    return *result;
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
 }
 
 AddrShift Stub::TryToElementsIndex(AddrShift key)
 {
     auto env = GetEnvironment();
     Label entry(env);
-    [[maybe_unused]] SubCircuitScope subCircuit(env, &entry);
+    env->PushCurrentLabel(&entry);
     Label exit(env);
     Label isKeyInt(env);
     Label notKeyInt(env);
@@ -1044,6 +1050,8 @@ AddrShift Stub::TryToElementsIndex(AddrShift key)
         }
     }
     Bind(&exit);
-    return *resultKey;
+    auto ret = *resultKey;
+    env->PopCurrentLabel();
+    return ret;
 }
 }  // namespace kungfu
