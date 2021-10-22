@@ -19,7 +19,7 @@ index 0e85afa82c7..43756892e40 100644
    add_definitions(-DBUILD_EXAMPLES)
  endif(LLVM_BUILD_EXAMPLES)
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..26a11139817 100644
+index 1da20371caf..436819f0c44 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
 @@ -1168,6 +1168,34 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
@@ -96,7 +96,7 @@ index 1da20371caf..26a11139817 100644
 +        .getFnAttribute("js-stub-call")
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
-+        if (marker == 1) {
++        if (marker == JS_ENTRY_FRAME_MARK) {
 +            SpillSlotOffset -=  3 * SlotSize; // add type and thread.fp
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
