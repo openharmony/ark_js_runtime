@@ -54,17 +54,17 @@ public:
 class CallRuntimeTrampolinesScope {
 public:
     CallRuntimeTrampolinesScope(JSThread *thread, uintptr_t *newFp, uintptr_t *pc)
-        :lastOptCallRuntimeFp_(nullptr),
+        :lastFp_(nullptr),
         thread_(thread)
     {
         lastOptCallRuntimePc_ = thread->GetLastOptCallRuntimePc();
         thread->SetLastOptCallRuntimePc(pc);
         JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-        lastOptCallRuntimeFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
+        lastFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
         // print newfp and type for debug
-        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " lastOptCallRuntimeFp_ : " << lastOptCallRuntimeFp_
+        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " lastFp_ : " << lastFp_
             << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(newFp) + FrameConst::kFrameType));
@@ -73,17 +73,17 @@ public:
     ~CallRuntimeTrampolinesScope()
     {
         // print oldfp and type for debug
-        std::cout << "~CallRuntimeTrampolinesScope lastOptCallRuntimeFp_: " << lastOptCallRuntimeFp_ <<
+        std::cout << "~CallRuntimeTrampolinesScope lastFp_: " << lastFp_ <<
             " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(lastOptCallRuntimeFp_) + FrameConst::kFrameType));
+                    reinterpret_cast<long long>(lastFp_) + FrameConst::kFrameType));
         std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
-        JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastOptCallRuntimeFp_));
+        JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:
-    uintptr_t *lastOptCallRuntimeFp_;
+    uintptr_t *lastFp_;
     JSThread *thread_;
     uintptr_t  *lastOptCallRuntimePc_;
 };
