@@ -18,7 +18,7 @@
 #include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
-void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath)
+void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath, bool isVmMode)
 {
     LOG(ERROR, RUNTIME) << "HeapProfilerInterface::DumpHeapSnapshot";
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
@@ -27,7 +27,7 @@ void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFo
         LOG_ECMA(FATAL) << "alloc hprof failed";
         UNREACHABLE();
     }
-    hprof->DumpHeapSnapShot(thread, dumpFormat, filePath);
+    hprof->DumpHeapSnapShot(thread, dumpFormat, filePath, isVmMode);
     const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(hprof);
 }
 

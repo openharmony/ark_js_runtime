@@ -122,6 +122,7 @@ public:
     ACCESSORS(TransitionHClass, TRANSITION_HCLASS_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT(HANDLER_INFO_OFFSET, SIZE)
+    DECL_DUMP()
 };
 
 class PrototypeHandler : public TaggedObject {
@@ -146,6 +147,7 @@ public:
     ACCESSORS(Holder, HOLDER_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT(HANDLER_INFO_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_IC_IC_HANDLER_H

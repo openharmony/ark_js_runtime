@@ -42,6 +42,7 @@ public:
     ACCESSORS(Value, VALUE_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT(VALUE_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace ecmascript
 }  // namespace panda

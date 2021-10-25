@@ -54,6 +54,7 @@ public:
     ACCESSORS(BoundCompare, BOUND_COMPARE_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, ICU_FIELD_OFFSET, SIZE)
+    DECL_DUMP()
 
     icu::Collator *GetIcuCollator() const
     {

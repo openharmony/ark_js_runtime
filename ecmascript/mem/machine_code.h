@@ -36,6 +36,8 @@ public:
     ACCESSORS(InstructionSizeInBytes, INS_SIZE_OFFSET, DATA_OFFSET);
     static constexpr size_t SIZE = DATA_OFFSET;
 
+    DECL_DUMP()
+
     uintptr_t GetDataOffsetAddress(void)
     {
         return reinterpret_cast<uintptr_t>(this) + DATA_OFFSET;

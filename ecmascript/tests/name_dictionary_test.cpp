@@ -78,7 +78,7 @@ HWTEST_F_L0(NameDictionaryTest, addKeyAndValue)
     int numOfElement = 64;
     JSHandle<NameDictionary> dictJShandle(thread, NameDictionary::Create(thread, numOfElement));
     EXPECT_TRUE(*dictJShandle != nullptr);
-    JSHandle<NameDictionary> dictHandle(dictJShandle);
+    JSMutableHandle<NameDictionary> dictHandle(dictJShandle);
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv(thread)->GetObjectFunction();
 
     // create key and values
@@ -103,7 +103,8 @@ HWTEST_F_L0(NameDictionaryTest, addKeyAndValue)
     PropertyAttributes metaData2;
 
     // test insert()
-    JSHandle<NameDictionary> dict(thread, NameDictionary::PutIfAbsent(thread, dictHandle, key1, value1, metaData1));
+    NameDictionary *dict = NameDictionary::PutIfAbsent(thread, dictHandle, key1, value1, metaData1);
+    dictHandle.Update(JSTaggedValue(dict));
     EXPECT_EQ(dict->EntriesCount(), 1);
 
     // test find() and lookup()
@@ -111,10 +112,10 @@ HWTEST_F_L0(NameDictionaryTest, addKeyAndValue)
     EXPECT_EQ(key1.GetTaggedValue(), JSTaggedValue(dict->GetKey(entry1).GetRawData()));
     EXPECT_EQ(value1.GetTaggedValue(), JSTaggedValue(dict->GetValue(entry1).GetRawData()));
 
-    JSHandle<NameDictionary> dict2(thread, dict->PutIfAbsent(thread, dictHandle, key2, value2, metaData2));
+    JSHandle<NameDictionary> dict2(thread, NameDictionary::PutIfAbsent(thread, dictHandle, key2, value2, metaData2));
     EXPECT_EQ(dict2->EntriesCount(), 2);
     // test remove()
-    dict->Remove(thread, dictHandle, entry1);
+    dict = NameDictionary::Remove(thread, dictHandle, entry1);
     EXPECT_EQ(-1, dict->FindEntry(key1.GetTaggedValue()));
     EXPECT_EQ(dict->EntriesCount(), 1);
 }
@@ -172,7 +173,8 @@ HWTEST_F_L0(NameDictionaryTest, ShrinkCapacity)
         PropertyAttributes metaData;
 
         // test insert()
-        dictHandle.Update(JSTaggedValue(NameDictionary::PutIfAbsent(thread, dictHandle, key, value, metaData)));
+        NameDictionary *newDict = NameDictionary::PutIfAbsent(thread, dictHandle, key, value, metaData);
+        dictHandle.Update(JSTaggedValue(newDict));
     }
 
     keyArray[5] = '2';
@@ -183,7 +185,8 @@ HWTEST_F_L0(NameDictionaryTest, ShrinkCapacity)
     int entry = dictHandle->FindEntry(arrayHandle.GetTaggedValue());
     EXPECT_NE(entry, -1);
 
-    dictHandle.Update(JSTaggedValue(NameDictionary::Remove(thread, dictHandle, entry)));
+    NameDictionary *newDict1 = NameDictionary::Remove(thread, dictHandle, entry);
+    dictHandle.Update(JSTaggedValue(newDict1));
     EXPECT_EQ(dictHandle->EntriesCount(), 9);
     EXPECT_EQ(dictHandle->Size(), 16);
 }

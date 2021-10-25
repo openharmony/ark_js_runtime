@@ -30,6 +30,7 @@
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
+#include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
 #include "ecmascript/js_date_time_format.h"
@@ -43,8 +44,10 @@
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_number_format.h"
 #include "ecmascript/js_object-inl.h"
+#include "ecmascript/js_plural_rules.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_promise.h"
+#include "ecmascript/js_realm.h"
 #include "ecmascript/js_regexp.h"
 #include "ecmascript/js_relative_time_format.h"
 #include "ecmascript/js_set.h"
@@ -53,6 +56,7 @@
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
@@ -196,6 +200,7 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
             break;
         case JSType::TAGGED_ARRAY:
         case JSType::TAGGED_DICTIONARY:
+        case JSType::TEMPLATE_MAP:
             TaggedArray::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::GLOBAL_ENV:
@@ -224,9 +229,6 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
             break;
         case JSType::PROTOTYPE_INFO:
             ProtoChangeDetails::Cast(object)->VisitRangeSlot(visitor);
-            break;
-        case JSType::TEMPLATE_MAP:
-            UNREACHABLE();
             break;
         case JSType::PROMISE_CAPABILITY:
             PromiseCapability::Cast(object)->VisitRangeSlot(visitor);

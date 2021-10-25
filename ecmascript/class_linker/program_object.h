@@ -37,8 +37,8 @@ public:
 
     inline void FreeMethodData(RegionFactory *factory);
 
-    DECL_DUMP()
     DECL_VISIT_OBJECT(LOCATION_OFFSET, METHODS_DATA_OFFSET)
+    DECL_DUMP()
 };
 
 class LexicalFunction : public ECMAObject {
@@ -65,6 +65,7 @@ public:
     ACCESSORS(Program, PROGRAM_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT(NAME_OFFSET, SIZE)
+    DECL_DUMP()
 };
 
 class ConstantPool : public TaggedArray {

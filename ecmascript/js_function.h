@@ -431,6 +431,7 @@ public:
     ACCESSORS(Collator, COLLATOR_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunction, NUMBER_FORMAT_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript
 

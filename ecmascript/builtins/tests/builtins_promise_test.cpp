@@ -449,7 +449,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Race2)
      */
     auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
-        microJobQueue->ExecutePendingJob(thread);
+        job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
 }
 
@@ -550,7 +550,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, All)
      */
     auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
-        microJobQueue->ExecutePendingJob(thread);
+        job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
 }
 
@@ -606,7 +606,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, Catch)
      */
     auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
-        microJobQueue->ExecutePendingJob(thread);
+        job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
 }
 
@@ -664,7 +664,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenResolve)
      */
     auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
-        microJobQueue->ExecutePendingJob(thread);
+        job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
 }
 
@@ -721,7 +721,7 @@ HWTEST_F_L0(BuiltinsPromiseTest, ThenReject)
      */
     auto microJobQueue = EcmaVM::Cast(instance)->GetMicroJobQueue();
     if (!thread->HasPendingException()) {
-        microJobQueue->ExecutePendingJob(thread);
+        job::MicroJobQueue::ExecutePendingJob(thread, microJobQueue);
     }
 }
 }  // namespace panda::test

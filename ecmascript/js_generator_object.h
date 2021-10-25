@@ -46,6 +46,7 @@ public:
     ACCESSORS(LexicalEnv, GENERATOR_LEXICALENV_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT(GENERATOR_REGS_ARRAY_OFFSET, SIZE)
+    DECL_DUMP()
 };
 
 class JSGeneratorObject : public JSObject {
@@ -84,6 +85,7 @@ public:
     }
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, GENERATOR_STATE_OFFSET, SIZE)
+    DECL_DUMP()
 };
 
 class JSAsyncFuncObject : public JSGeneratorObject {
@@ -98,6 +100,7 @@ public:
     ACCESSORS(Promise, GENERATOR_PROMISE_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSGeneratorObject, GENERATOR_PROMISE_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace ecmascript
 }  // namespace panda

@@ -107,6 +107,7 @@ public:
     ACCESSORS(BoundFormat, BOUND_FORMAT_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, SIZE)
+    DECL_DUMP()
 
     icu::Locale *GetIcuLocale() const;
     void SetIcuLocale(JSThread *thread, const icu::Locale &icuLocale, const DeleteEntryPoint &callback);

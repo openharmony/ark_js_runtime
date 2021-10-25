@@ -30,8 +30,8 @@ void JSWeakMap::Set(JSThread *thread, const JSHandle<JSWeakMap> &map, const JSHa
     }
     JSHandle<LinkedHashMap> mapHandle(thread, LinkedHashMap::Cast(map->GetLinkedMap().GetTaggedObject()));
 
-    auto result = LinkedHashMap::SetWeakRef(thread, mapHandle, key, value);
-    map->SetLinkedMap(thread, result);
+    JSTaggedValue newMap = LinkedHashMap::SetWeakRef(thread, mapHandle, key, value);
+    map->SetLinkedMap(thread, newMap);
 }
 
 bool JSWeakMap::Delete(JSThread *thread, const JSHandle<JSWeakMap> &map, const JSHandle<JSTaggedValue> &key)
@@ -43,8 +43,8 @@ bool JSWeakMap::Delete(JSThread *thread, const JSHandle<JSWeakMap> &map, const J
     }
     mapHandle->RemoveEntry(thread, entry);
 
-    auto result = LinkedHashMap::Shrink(thread, mapHandle);
-    map->SetLinkedMap(thread, result);
+    JSTaggedValue newMap = LinkedHashMap::Shrink(thread, mapHandle);
+    map->SetLinkedMap(thread, newMap);
     return true;
 }
 
@@ -70,8 +70,8 @@ void JSWeakSet::Add(JSThread *thread, const JSHandle<JSWeakSet> &weakSet, const 
     }
     JSHandle<LinkedHashSet> weakSetHandle(thread, LinkedHashSet::Cast(weakSet->GetLinkedSet().GetTaggedObject()));
 
-    auto result = LinkedHashSet::AddWeakRef(thread, weakSetHandle, value);
-    weakSet->SetLinkedSet(thread, result);
+    JSTaggedValue newSet = LinkedHashSet::AddWeakRef(thread, weakSetHandle, value);
+    weakSet->SetLinkedSet(thread, newSet);
 }
 
 bool JSWeakSet::Delete(JSThread *thread, const JSHandle<JSWeakSet> &weakSet, const JSHandle<JSTaggedValue> &value)
@@ -82,8 +82,8 @@ bool JSWeakSet::Delete(JSThread *thread, const JSHandle<JSWeakSet> &weakSet, con
         return false;
     }
     weakSetHandle->RemoveEntry(thread, entry);
-    auto result = LinkedHashSet::Shrink(thread, weakSetHandle);
-    weakSet->SetLinkedSet(thread, result);
+    JSTaggedValue newSet = LinkedHashSet::Shrink(thread, weakSetHandle);
+    weakSet->SetLinkedSet(thread, newSet);
     return true;
 }
 

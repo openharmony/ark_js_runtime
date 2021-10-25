@@ -24,7 +24,8 @@ enum class DumpFormat { JSON, BINARY, OTHER };
 
 class HeapProfilerInterface {
 public:
-    static void DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath);
+    static void DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat,
+                                 const CString &filePath, bool isVmMode = true);
 
     static HeapProfilerInterface *CreateHeapProfiler(JSThread *thread);
     static void Destory(JSThread *thread, HeapProfilerInterface *heapProfiler);
@@ -32,7 +33,7 @@ public:
     HeapProfilerInterface() = default;
     virtual ~HeapProfilerInterface() = default;
 
-    virtual bool StartHeapTracking(JSThread *thread, double timeInterval) = 0;
+    virtual bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) = 0;
     virtual bool StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const CString &filePath) = 0;
 
     NO_MOVE_SEMANTIC(HeapProfilerInterface);

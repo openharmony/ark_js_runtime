@@ -55,6 +55,7 @@ public:
     ACCESSORS(IcuField, ICU_FIELD_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, SIZE)
+    DECL_DUMP()
 
     // 14.1.1 InitializeRelativeTimeFormat ( relativeTimeFormat, locales, options )
     static JSHandle<JSRelativeTimeFormat> InitializeRelativeTimeFormat(

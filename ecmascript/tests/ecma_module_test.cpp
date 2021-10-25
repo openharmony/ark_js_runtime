@@ -29,7 +29,7 @@ public:
         GTEST_LOG_(INFO) << "SetUpTestCase";
     }
 
-    static void TesrDownTestCase()
+    static void TearDownTestCase()
     {
         GTEST_LOG_(INFO) << "TearDownCase";
     }

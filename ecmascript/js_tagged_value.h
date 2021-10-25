@@ -332,7 +332,8 @@ public:
     void DumpTaggedValue(JSThread *thread, std::ostream &os) const DUMP_API_ATTR;
     void Dump(JSThread *thread, std::ostream &os) const DUMP_API_ATTR;
     void Dump(JSThread *thread) const DUMP_API_ATTR;
-    void DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const;
+    void DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec,
+                         bool isVmMode = true) const;
     static void DumpVal(JSThread *thread, JSTaggedType val) DUMP_API_ATTR;
 
 private:
