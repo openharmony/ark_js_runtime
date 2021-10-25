@@ -285,6 +285,17 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
         case JSType::MACHINE_CODE_OBJECT:
             MachineCode::Cast(object)->VisitRangeSlot(visitor);
             break;
+        case JSType::JS_REALM:
+            JSRealm::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_COLLATOR:
+            JSCollator::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_PLURAL_RULES:
+            JSPluralRules::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::MACHINE_CODE_OBJECT:
+            break;
         default:
             UNREACHABLE();
     }
