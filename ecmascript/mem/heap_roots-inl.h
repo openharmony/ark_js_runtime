@@ -294,6 +294,7 @@ void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, cons
             JSPluralRules::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::MACHINE_CODE_OBJECT:
+            MachineCode::Cast(object)->VisitRangeSlot(visitor);
             break;
         default:
             UNREACHABLE();

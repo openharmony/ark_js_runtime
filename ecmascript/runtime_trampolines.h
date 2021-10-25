@@ -53,31 +53,39 @@ public:
 
 class CallRuntimeTrampolinesScope {
 public:
-    CallRuntimeTrampolinesScope(JSThread *thread, JSTaggedType *newFp)
-        :oldRbp_(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame())),
+    CallRuntimeTrampolinesScope(JSThread *thread, uintptr_t *newFp, uintptr_t *pc)
+        :lastFp_(nullptr),
         thread_(thread)
     {
-        thread_->SetCurrentSPFrame(newFp);
+        lastOptCallRuntimePc_ = thread->GetLastOptCallRuntimePc();
+        thread->SetLastOptCallRuntimePc(pc);
+        JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+        lastFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
+        JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
+        thread_->SetCurrentSPFrame(newSp);
         // print newfp and type for debug
-        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " oldRbp_ : " << oldRbp_
-            << " thread_->fp:" << thread_->GetCurrentSPFrame() <<std::endl;
+        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " lastFp_ : " << lastFp_
+            << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
                     reinterpret_cast<long long>(newFp) + FrameConst::kFrameType));
-        std::cout << "type = " << as_integer(type) << std::endl;
+        std::cout << __FUNCTION__ << " type = " << as_integer(type) << std::endl;
     }
     ~CallRuntimeTrampolinesScope()
     {
         // print oldfp and type for debug
-        std::cout << "~CallRuntimeTrampolinesScope oldRbp_: " << oldRbp_ <<
+        std::cout << "~CallRuntimeTrampolinesScope lastFp_: " << lastFp_ <<
             " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
         FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(oldRbp_) + FrameConst::kFrameType));
-        std::cout << "type = " << as_integer(type) << std::endl;
-        thread_->SetCurrentSPFrame(oldRbp_);
+                    reinterpret_cast<long long>(lastFp_) + FrameConst::kFrameType));
+        std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
+        JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
+        thread_->SetCurrentSPFrame(oldSp);
+        thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:
-    JSTaggedType *oldRbp_;
+    uintptr_t *lastFp_;
     JSThread *thread_;
+    uintptr_t  *lastOptCallRuntimePc_;
 };
 }  // namespace panda::ecmascript
 #endif

@@ -2106,7 +2106,7 @@ uintptr_t ObjectFactory::NewSpaceBySnapShotAllocator(size_t size)
 JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const uint8_t *data)
 {
     NewObjectHook();
-    TaggedObject *obj = heapHelper_.AllocateMachineCodeSpaceObject(machineCodeClass_, length + sizeof(MachineCode));
+    TaggedObject *obj = heapHelper_.AllocateMachineCodeSpaceObject(machineCodeClass_, length + MachineCode::SIZE);
     MachineCode *code = MachineCode::Cast(obj);
     code->SetInstructionSizeInBytes(thread_, JSTaggedValue(static_cast<int>(length)));
     if (data != nullptr) {
