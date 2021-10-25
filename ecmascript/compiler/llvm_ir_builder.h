@@ -115,10 +115,10 @@ public:
         return module_;
     }
 
-    LLVMTypeRef GetExternalFunctionType(uint32_t index) const
+    LLVMTypeRef GetStubFunctionType(uint32_t index) const
     {
-        ASSERT(index - EXTERNAL_FUNCTION_OFFSET < MAX_EXTERNAL_FUNCTION_COUNT);
-        return externalFunctionType_[index - EXTERNAL_FUNCTION_OFFSET];
+        ASSERT(index < MAX_STUB_FUNCTION_COUNT);
+        return stubFunctionType_[index];
     }
 
     LLVMValueRef GetStubFunction(uint32_t index)
@@ -137,13 +137,11 @@ private:
     LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef ConvertLLVMTypeFromMachineType(MachineType type);
-    static constexpr uint32_t MAX_EXTERNAL_FUNCTION_COUNT =
-        kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT - kungfu::EXTERNAL_RUNTIME_STUB_BEGIN - 1;
-    static constexpr uint32_t EXTERNAL_FUNCTION_OFFSET = kungfu::EXTERNAL_RUNTIME_STUB_BEGIN + 1;
+    static constexpr uint32_t MAX_STUB_FUNCTION_COUNT = kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT;
     static constexpr uint32_t MAX_TEST_FUNCTION_COUNT = kungfu::TEST_FUNC_MAXCOUNT - kungfu::TEST_FUNC_BEGIN - 1;
     static constexpr uint32_t TEST_FUNCTION_OFFSET = kungfu::TEST_FUNC_BEGIN + 1;
     std::array<LLVMValueRef, FAST_STUB_MAXCOUNT> stubFunctions_ {nullptr};
-    std::array<LLVMTypeRef, MAX_EXTERNAL_FUNCTION_COUNT> externalFunctionType_ {nullptr};
+    std::array<LLVMTypeRef, MAX_STUB_FUNCTION_COUNT> stubFunctionType_ {nullptr};
     std::array<LLVMValueRef, MAX_TEST_FUNCTION_COUNT> testFunctions_ {nullptr};
     LLVMModuleRef module_;
 };
@@ -182,7 +180,8 @@ private:
     V(Phi, (AddrShift gate, const std::vector<AddrShift> &srcGates, MachineRep rep)) \
     V(Return, (AddrShift gate, AddrShift popCount, const std::vector<AddrShift> &operands) const ) \
     V(CastIntXToIntY, (AddrShift gate, AddrShift e1, MachineRep rep) const ) \
-    V(CastInt32ToDouble, (AddrShift gate, AddrShift e1) const ) \
+    V(ChangeInt32ToDouble, (AddrShift gate, AddrShift e1) const ) \
+    V(ChangeDoubleToInt32, (AddrShift gate, AddrShift e1) const ) \
     V(CastInt64ToDouble, (AddrShift gate, AddrShift e1) const ) \
     V(CastDoubleToInt, (AddrShift gate, AddrShift e1) const ) \
     V(CastInt64ToPointer, (AddrShift gate, AddrShift e1) const ) \

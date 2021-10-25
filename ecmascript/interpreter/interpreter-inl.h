@@ -2456,9 +2456,13 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue receiver = GET_VREG_VALUE(v0);
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
+#ifdef ECMASCRTPT_ENABLE_STUB_AOT
             auto getPropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
                 thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex)));
             JSTaggedValue res = getPropertyByIndex(thread, receiver, idx);
+#else
+            JSTaggedValue res = FastRuntimeStub::GetPropertyByIndex(thread, receiver, idx);
+#endif
             if (!res.IsHole()) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 SET_ACC(res);
@@ -2483,10 +2487,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             SAVE_ACC();
             JSTaggedValue value = GET_ACC();
             // fast path
+#ifdef ECMASCRTPT_ENABLE_STUB_AOT
             auto *setPropertyByIndex = \
                 reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)> \
                     (reinterpret_cast<uintptr_t>(thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex))));
             JSTaggedValue res = setPropertyByIndex(thread, receiver, index, value);
+#else
+            JSTaggedValue res = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
+#endif
             if (!res.IsHole()) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 RESTORE_ACC();
@@ -2514,7 +2522,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
 #if ECMASCRIPT_ENABLE_IC
         auto profileTypeInfo = GetRuntimeProfileTypeInfo(sp);
-        if (!profileTypeInfo.IsUndefined()) {
+        if (!profileTypeInfo.IsUndefined()) { 
             uint16_t slotId = READ_INST_8_0();
             auto profileTypeArray = ProfileTypeInfo::Cast(profileTypeInfo.GetTaggedObject());
             JSTaggedValue firstValue = profileTypeArray->Get(slotId);
@@ -2538,7 +2546,13 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 #endif
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
+#ifdef ECMASCRTPT_ENABLE_STUB_AOT
+            auto *getPropertyByValuePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, JSTaggedValue)>(
+                thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue)));
+            JSTaggedValue res = getPropertyByValuePtr(thread, receiver, propKey);
+#else
             JSTaggedValue res = FastRuntimeStub::GetPropertyByValue(thread, receiver, propKey);
+#endif
             if (!res.IsHole()) {
                 ASSERT(!res.IsAccessor());
                 INTERPRETER_RETURN_IF_ABRUPT(res);
@@ -2909,9 +2923,13 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         if (LIKELY(receiver.IsHeapObject())) {
             // fast path
+#ifdef ECMASCRTPT_ENABLE_STUB_AOT
             auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, JSTaggedValue)>(
                 thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName)));
             JSTaggedValue res = getPropertyByNamePtr(thread, receiver, propKey);
+#else
+            JSTaggedValue res = FastRuntimeStub::GetPropertyByName(thread, receiver, propKey);
+#endif
             if (!res.IsHole()) {
                 ASSERT(!res.IsAccessor());
                 INTERPRETER_RETURN_IF_ABRUPT(res);

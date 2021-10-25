@@ -298,9 +298,11 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT64, PtrValueCode()), NO_ROOT};
         case INT32_TO_FLOAT64:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
-        case INT64_TO_FLOAT64:
+        case FLOAT64_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
+        case BITCAST_INT64_TO_FLOAT64:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
-        case FLOAT64_TO_INT64:
+        case BITCAST_FLOAT64_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
         default:
             std::cerr << "Please complete OpCode properties (OpCode=" << this->op << ")" << std::endl;
@@ -488,8 +490,9 @@ std::string OpCode::Str() const
         {FLOAT32_STORE, "FLOAT32_STORE"},
         {FLOAT64_STORE, "FLOAT64_STORE"},
         {INT32_TO_FLOAT64, "INT32_TO_FLOAT64"},
-        {INT64_TO_FLOAT64, "INT64_TO_FLOAT64"},
-        {FLOAT64_TO_INT64, "FLOAT64_TO_INT64"},
+        {FLOAT64_TO_INT32, "FLOAT64_TO_INT32"},
+        {BITCAST_INT64_TO_FLOAT64, "BITCAST_INT64_TO_FLOAT64"},
+        {BITCAST_FLOAT64_TO_INT64, "BITCAST_FLOAT64_TO_INT64"},
     };
     if (strMap.count(this->op) > 0) {
         return strMap.at(this->op);

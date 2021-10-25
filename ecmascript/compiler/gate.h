@@ -228,8 +228,9 @@ public:
         FLOAT32_STORE,
         FLOAT64_STORE,
         INT32_TO_FLOAT64,
-        INT64_TO_FLOAT64,
-        FLOAT64_TO_INT64,
+        FLOAT64_TO_INT32,
+        BITCAST_INT64_TO_FLOAT64,
+        BITCAST_FLOAT64_TO_INT64,
         TAG64_TO_INT1,
     };
 

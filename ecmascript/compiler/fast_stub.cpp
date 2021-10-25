@@ -74,7 +74,7 @@ void FastAddStub::GenerateCircuit()
             Bind(&xIsInt);
             {
                 intX = TaggedCastToInt32(x);
-                doubleX = CastInt32ToFloat64(*intX);
+                doubleX = ChangeInt32ToFloat64(*intX);
                 Jump(&xIsNumberAndyIsNumber);
             }
             Bind(&xNotInt);
@@ -94,7 +94,7 @@ void FastAddStub::GenerateCircuit()
         Bind(&yIsInt);
         {
             intY = TaggedCastToInt32(y);
-            doubleY = CastInt32ToFloat64(*intY);
+            doubleY = ChangeInt32ToFloat64(*intY);
             Jump(&xIsDoubleAndyIsDouble);
         }
         Bind(&yNotInt);
@@ -149,7 +149,7 @@ void FastSubStub::GenerateCircuit()
                     Bind(&yNotInt);
                     {
                         doubleY = TaggedCastToDouble(y);
-                        doubleX = CastInt32ToFloat64(*intX);
+                        doubleX = ChangeInt32ToFloat64(*intX);
                         Jump(&xNotIntOryNotInt);
                     }
                 }
@@ -162,7 +162,7 @@ void FastSubStub::GenerateCircuit()
                     Bind(&yIsInt);
                     {
                         intY = TaggedCastToInt32(y);
-                        doubleY = CastInt32ToFloat64(*intY);
+                        doubleY = ChangeInt32ToFloat64(*intY);
                         Jump(&xNotIntOryNotInt);
                     }
                     Bind(&yNotInt);
@@ -210,7 +210,7 @@ void FastMulStub::GenerateCircuit()
             Bind(&xIsInt);
             {
                 intX = TaggedCastToInt32(x);
-                doubleX = CastInt32ToFloat64(*intX);
+                doubleX = ChangeInt32ToFloat64(*intX);
                 Jump(&xIsNumberAndyIsNumber);
             }
             Bind(&xNotInt);
@@ -230,7 +230,7 @@ void FastMulStub::GenerateCircuit()
         Bind(&yIsInt);
         {
             intY = TaggedCastToInt32(y);
-            doubleY = CastInt32ToFloat64(*intY);
+            doubleY = ChangeInt32ToFloat64(*intY);
             Jump(&xIsDoubleAndyIsDouble);
         }
         Bind(&yNotInt);
@@ -271,7 +271,7 @@ void FastDivStub::GenerateCircuit()
             Bind(&xIsInt);
             {
                 intX = TaggedCastToInt32(x);
-                doubleX = CastInt32ToFloat64(*intX);
+                doubleX = ChangeInt32ToFloat64(*intX);
                 Jump(&xIsNumberAndyIsNumber);
             }
             Bind(&xNotInt);
@@ -290,7 +290,7 @@ void FastDivStub::GenerateCircuit()
     Bind(&yIsInt);
     {
         intY = TaggedCastToInt32(y);
-        doubleY = CastInt32ToFloat64(*intY);
+        doubleY = ChangeInt32ToFloat64(*intY);
         Jump(&xIsDoubleAndyIsDouble);
     }
     Bind(&yNotInt);
@@ -418,7 +418,8 @@ void GetElementStub::GenerateCircuit()
     AddrShift objPtr = ChangeInt64ToPointer(receiver);
     auto findOwnElementDescriptor = GET_STUBDESCRIPTOR(FindOwnElement);
     AddrShift callFindOwnElementVal =
-        CallStub(findOwnElementDescriptor, GetWord64Constant(FAST_STUB_ID(FindOwnElement)), {thread, objPtr, index});
+        CallStub(findOwnElementDescriptor, thread, GetWord64Constant(FAST_STUB_ID(FindOwnElement)),
+                 {thread, objPtr, index});
     Branch(TaggedIsHole(callFindOwnElementVal), &isHole, &notHole);
     Bind(&notHole);
     Return(callFindOwnElementVal);
@@ -513,7 +514,7 @@ void SetElementStub::GenerateCircuit()
         AddrShift elements = GetElements(*holder);
         AddrShift isDictionary = IsDictionaryMode(elements);
         StubDescriptor *findOwnElemnt2 = GET_STUBDESCRIPTOR(FindOwnElement2);
-        AddrShift val = CallStub(findOwnElemnt2, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)),
+        AddrShift val = CallStub(findOwnElemnt2, thread, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)),
                                  {thread, elements, index, isDictionary, pattr, pindexOrEntry});
         Label notHole(env);
         Label isHole(env);
@@ -1071,7 +1072,7 @@ void FastModStub::GenerateCircuit()
                 Bind(&xIfInt);
                 {
                     intX = TaggedCastToInt32(x);
-                    doubleX = CastInt32ToFloat64(*intX);
+                    doubleX = ChangeInt32ToFloat64(*intX);
                     Jump(&xIsNumberAndyIsNumber);
                 }
                 Bind(&xIfNotInt);
@@ -1090,7 +1091,7 @@ void FastModStub::GenerateCircuit()
         Bind(&yIfInt);
         {
             intY = TaggedCastToInt32(y);
-            doubleY = CastInt32ToFloat64(*intY);
+            doubleY = ChangeInt32ToFloat64(*intY);
             Jump(&xIsDoubleAndyIsDouble);
         }
         Bind(&yIfNotInt);
@@ -1346,7 +1347,7 @@ void GetPropertyByValueStub::GenerateCircuit()
         Bind(&validIndex);
         {
             auto getPropertyByIndex = GET_STUBDESCRIPTOR(GetPropertyByIndex);
-            Return(CallStub(getPropertyByIndex, GetWord64Constant(FAST_STUB_ID(GetPropertyByIndex)),
+            Return(CallStub(getPropertyByIndex, thread, GetWord64Constant(FAST_STUB_ID(GetPropertyByIndex)),
                             {thread, receiver, index}));
         }
         Bind(&notValidIndex);
@@ -1383,7 +1384,7 @@ void GetPropertyByValueStub::GenerateCircuit()
             Bind(&getByName);
             {
                 auto getPropertyByName = GET_STUBDESCRIPTOR(GetPropertyByName);
-                Return(CallStub(getPropertyByName, GetWord64Constant(FAST_STUB_ID(GetPropertyByName)),
+                Return(CallStub(getPropertyByName, thread, GetWord64Constant(FAST_STUB_ID(GetPropertyByName)),
                                 {thread, receiver, *key}));
             }
         }
@@ -1424,7 +1425,7 @@ void SetPropertyByValueStub::GenerateCircuit()
         Bind(&validIndex);
         {
             auto setPropertyByIndex = GET_STUBDESCRIPTOR(SetPropertyByIndex);
-            Return(CallStub(setPropertyByIndex, GetWord64Constant(FAST_STUB_ID(SetPropertyByIndex)),
+            Return(CallStub(setPropertyByIndex, thread, GetWord64Constant(FAST_STUB_ID(SetPropertyByIndex)),
                             {thread, receiver, index, value}));
         }
         Bind(&notValidIndex);
@@ -1461,7 +1462,7 @@ void SetPropertyByValueStub::GenerateCircuit()
             Bind(&getByName);
             {
                 auto setPropertyByName = GET_STUBDESCRIPTOR(SetPropertyByName);
-                Return(CallStub(setPropertyByName, GetWord64Constant(FAST_STUB_ID(SetPropertyByName)),
+                Return(CallStub(setPropertyByName, thread, GetWord64Constant(FAST_STUB_ID(SetPropertyByName)),
                                 {thread, receiver, *key, value}));
             }
         }

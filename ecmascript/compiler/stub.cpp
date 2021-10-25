@@ -950,7 +950,7 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                 Label loopEnd(env);
                 Label afterLoop(env);
                 Bind(&isDigit);
-                Branch(Int32LessThan(*i, len), &loopHead, &exit);
+                Branch(Int32LessThan(*i, len), &loopHead, &afterLoop);
                 LoopBegin(&loopHead);
                 {
                     Label isUtf16(env);
@@ -1014,7 +1014,7 @@ AddrShift Stub::TryToElementsIndex(AddrShift key)
     Label isKeyInt(env);
     Label notKeyInt(env);
 
-    DEFVARIABLE(resultKey, INT32_TYPE, GetInteger32Constant(0));
+    DEFVARIABLE(resultKey, INT32_TYPE, GetInteger32Constant(-1));
     Branch(TaggedIsInt(key), &isKeyInt, &notKeyInt);
     Bind(&isKeyInt);
     {
@@ -1038,9 +1038,9 @@ AddrShift Stub::TryToElementsIndex(AddrShift key)
             Bind(&isDouble);
             {
                 AddrShift number = TaggedCastToDouble(key);
-                AddrShift integer = ChangeInt64ToInt32(CastDoubleToInt64(number));
+                AddrShift integer = ChangeFloat64ToInt32(number);
                 Label isEqual(env);
-                Branch(DoubleEqual(number, CastInt64ToFloat64(SExtInt32ToInt64(integer))), &isEqual, &exit);
+                Branch(DoubleEqual(number, ChangeInt32ToFloat64(integer)), &isEqual, &exit);
                 Bind(&isEqual);
                 {
                     resultKey = integer;

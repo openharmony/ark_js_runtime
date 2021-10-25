@@ -554,17 +554,17 @@ public:
     void LoopEnd(Label *loopHead);
 
     // call operation
-    AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args)
+    AddrShift CallStub(StubDescriptor *descriptor,  AddrShift thread, AddrShift target, std::initializer_list<AddrShift> args)
     {
         auto depend = env_.GetCurrentLabel()->GetDepend();
-        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
-    AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, AddrShift depend,
+    AddrShift CallStub(StubDescriptor *descriptor,  AddrShift thread, AddrShift target, AddrShift depend,
                        std::initializer_list<AddrShift> args)
     {
-        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -573,7 +573,7 @@ public:
                           std::initializer_list<AddrShift> args)
     {
         auto depend = env_.GetCurrentLabel()->GetDepend();
-        AddrShift result = env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -581,7 +581,7 @@ public:
     AddrShift CallRuntime(StubDescriptor *descriptor, AddrShift thread, AddrShift target, AddrShift depend,
                           std::initializer_list<AddrShift> args)
     {
-        AddrShift result = env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -851,7 +851,7 @@ public:
     AddrShift GetNextPositionForHash(AddrShift last, AddrShift count, AddrShift size)
     {
         auto nextOffset = Word32LSR(Int32Mul(count, Int32Add(count, GetInteger32Constant(1))),
-                                    GetInteger32Constant(2));
+                                    GetInteger32Constant(1));
         return Word32And(Int32Add(last, nextOffset), Int32Sub(size, GetInteger32Constant(1)));
     }
 
@@ -890,7 +890,7 @@ public:
 
     AddrShift CastDoubleToInt64(AddrShift x)
     {
-        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_TO_INT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_FLOAT64_TO_INT64), x);
     }
 
     // compare operation
@@ -1364,14 +1364,19 @@ public:
         return CastInt64ToFloat64(val);
     }
 
-    AddrShift CastInt32ToFloat64(AddrShift x)
+    AddrShift ChangeInt32ToFloat64(AddrShift x)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_TO_FLOAT64), x);
     }
 
+    AddrShift ChangeFloat64ToInt32(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_TO_INT32), x);
+    }
+
     AddrShift CastInt64ToFloat64(AddrShift x)
     {
-        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_TO_FLOAT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_INT64_TO_FLOAT64), x);
     }
 
     AddrShift SExtInt32ToInt64(AddrShift x)

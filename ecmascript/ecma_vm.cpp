@@ -125,8 +125,6 @@ bool EcmaVM::Initialize()
     trace::ScopedTrace scoped_trace("EcmaVM::Initialize");
     Platform::GetCurrentPlatform()->Initialize();
 
-    RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
-
     auto globalConst = const_cast<GlobalEnvConstants *>(thread_->GlobalConstants());
 
     propertiesCache_ = new PropertiesCache();
@@ -167,10 +165,11 @@ bool EcmaVM::Initialize()
         globalEnv->SetEmptyTaggedQueue(thread_, factory_->NewTaggedQueue(0));
         globalEnv->SetTemplateMap(thread_, JSTaggedValue(TemplateMap::Create(thread_)));
         globalEnv->SetRegisterSymbols(GetJSThread(), JSTaggedValue(SymbolTable::Create(GetJSThread())));
-
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+        RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
         std::string moduleFile = options_.GetStubModuleFile();
         thread_->LoadFastStubModule(moduleFile.c_str());
-
+#endif
         SetupRegExpResultCache();
         microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
 

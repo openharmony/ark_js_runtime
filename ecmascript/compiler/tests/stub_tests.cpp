@@ -1087,7 +1087,6 @@ void DoSafepoint()
 }
 }
 
-#ifdef NDEBUG
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
@@ -1149,7 +1148,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
                   JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
 }
-#endif
+
 
 HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
@@ -1185,10 +1184,10 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     EXPECT_EQ(resVal.GetNumber(), y);
 }
 
-HWTEST_F_L0(StubTest, FastGetPropertyByValueStub)
+HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef getPropertyByIndexfunction = LLVMGetNamedFunction(module, "GetPropertyByIndex");
+    LLVMValueRef getPropertyByIndexfunction = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByIndex));
     Circuit netOfGates2;
     GetPropertyByIndexStub getPropertyByIndexStub(&netOfGates2);
     getPropertyByIndexStub.GenerateCircuit();
@@ -1197,7 +1196,7 @@ HWTEST_F_L0(StubTest, FastGetPropertyByValueStub)
     LLVMIRBuilder llvmBuilder2(&cfg2, &netOfGates2, &stubModule, getPropertyByIndexfunction);
     llvmBuilder2.Build();
 
-    LLVMValueRef getPropertyByNamefunction = LLVMGetNamedFunction(module, "GetPropertyByName");
+    LLVMValueRef getPropertyByNamefunction = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByName));
     Circuit netOfGates1;
     GetPropertyByNameStub getPropertyByNameStub(&netOfGates1);
     getPropertyByNameStub.GenerateCircuit();
@@ -1207,7 +1206,7 @@ HWTEST_F_L0(StubTest, FastGetPropertyByValueStub)
     LLVMIRBuilder llvmBuilder1(&cfg1, &netOfGates1, &stubModule, getPropertyByNamefunction);
     llvmBuilder1.Build();
 
-    LLVMValueRef function = LLVMGetNamedFunction(module, "GetPropertyByValue");
+    LLVMValueRef function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByValue));
     Circuit netOfGates;
     GetPropertyByValueStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();
@@ -1226,13 +1225,16 @@ HWTEST_F_L0(StubTest, FastGetPropertyByValueStub)
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto engine = assembler.GetEngine();
     auto *getPropertyByValuePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, function)));
+        reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, getPropertyByNamefunction)));
+        reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(getPropertyByNamefunction)));
     auto *getpropertyByIndexPtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
-        reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, getPropertyByIndexfunction)));
+        reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(getPropertyByIndexfunction)));
+    
+    thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex), reinterpret_cast<uintptr_t>(getpropertyByIndexPtr));
+    thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByName), reinterpret_cast<uintptr_t>(getPropertyByNamePtr));
+
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;

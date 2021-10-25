@@ -205,6 +205,11 @@ public:
         return MEMBER_OFFSET(JSThread, globalConst_);
     }
 
+    static uint64_t GetFastStubEntryOffset()
+    {
+        return MEMBER_OFFSET(JSThread, fastStubEntires_);
+    }
+
     InternalCallParams *GetInternalCallParams() const
     {
         return internalCallParams_;
