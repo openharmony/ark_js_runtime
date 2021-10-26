@@ -85,7 +85,7 @@ public:
     // 3 : 3 means argument counts
     explicit GetElementStub(Circuit *circuit) : Stub("GetElement", 3, circuit)
     {
-       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
     ~GetElementStub() = default;
     NO_MOVE_SEMANTIC(GetElementStub);
@@ -118,7 +118,7 @@ public:
     // 3 : 3 means argument counts
     explicit GetPropertyByIndexStub(Circuit *circuit) : Stub("GetPropertyByIndex", 3, circuit)
     {
-       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
     ~GetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByIndexStub);
@@ -131,7 +131,7 @@ public:
     // 4 : 4 means argument counts
     explicit SetPropertyByIndexStub(Circuit *circuit) : Stub("SetPropertyByIndex", 4, circuit)
     {
-       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
     ~SetPropertyByIndexStub() = default;
     NO_MOVE_SEMANTIC(SetPropertyByIndexStub);
@@ -144,7 +144,7 @@ public:
     // 3 : 3 means argument counts
     explicit GetPropertyByNameStub(Circuit *circuit) : Stub("GetPropertyByName", 3, circuit)
     {
-       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
     ~GetPropertyByNameStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByNameStub);
@@ -190,7 +190,7 @@ public:
     // 3 : 3 means argument counts
     explicit GetPropertyByValueStub(Circuit *circuit) : Stub("FastGetPropertyByValue", 3, circuit)
     {
-       circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
     ~GetPropertyByValueStub() = default;
     NO_MOVE_SEMANTIC(GetPropertyByValueStub);

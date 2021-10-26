@@ -71,7 +71,7 @@ struct CodeInfo {
         codeSectionNames_.push_back(sectionName);
         addr = machineCode_ + codeBufferPos_;
         LOG_ECMA(INFO) << "AllocaCodeSection addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr);
-        codeInfo_.push_back({addr, size});
+        codeInfo_.push_back({ addr, size });
         codeBufferPos_ += size;
         return addr;
     }

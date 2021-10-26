@@ -413,17 +413,13 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
     LLVMValueRef thread = g_values[inList[2]];  // 2 : 2 means skip two input gates (target thread)
     // runtime case
     if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
-
         rtoffset = LLVMConstInt(LLVMInt64Type(),
-                                             panda::ecmascript::JSThread::GetRuntimeFunctionsOffset() +
-                                                 (index - FAST_STUB_MAXCOUNT) * sizeof(uintptr_t),
-                                             0);
-
+                                panda::ecmascript::JSThread::GetRuntimeFunctionsOffset() +
+                                (index - FAST_STUB_MAXCOUNT) * sizeof(uintptr_t), 0);
     } else {
         rtoffset = LLVMConstInt(LLVMInt64Type(),
-                                             panda::ecmascript::JSThread::GetFastStubEntryOffset() +
-                                                 (index) * sizeof(uintptr_t),
-                                             0);
+                                panda::ecmascript::JSThread::GetFastStubEntryOffset() +
+                                (index) * sizeof(uintptr_t), 0);
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, thread, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(LLVMInt64Type(), 0), "");

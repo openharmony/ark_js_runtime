@@ -54,21 +54,21 @@ void InterpretedFrameHandler::PrevFrame()
     }
 
     while (type != FrameType::INTERPRETER_FRAME) {
-        switch(type) {
-        case FrameType::OPTIMIZED_FRAME: {
-            OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
-                reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedFrameStateBase, prev));
-            sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
-            break;
-        }
-        case FrameType::OPTIMIZED_ENTRY_FRAME: {
-            OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
-                reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
-            sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
-            break;
-        }
-        default:
-            UNREACHABLE();
+        switch (type) {
+            case FrameType::OPTIMIZED_FRAME: {
+                OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
+                    reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedFrameStateBase, prev));
+                sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+                break;
+            }
+            case FrameType::OPTIMIZED_ENTRY_FRAME: {
+                OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
+                    reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
+                sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
+                break;
+            }
+            default:
+                UNREACHABLE();
         }
         if (sp_ == nullptr) {
             return;

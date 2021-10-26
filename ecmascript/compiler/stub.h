@@ -554,7 +554,8 @@ public:
     void LoopEnd(Label *loopHead);
 
     // call operation
-    AddrShift CallStub(StubDescriptor *descriptor,  AddrShift thread, AddrShift target, std::initializer_list<AddrShift> args)
+    AddrShift CallStub(StubDescriptor *descriptor,  AddrShift thread, AddrShift target,
+                       std::initializer_list<AddrShift> args)
     {
         auto depend = env_.GetCurrentLabel()->GetDepend();
         AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);

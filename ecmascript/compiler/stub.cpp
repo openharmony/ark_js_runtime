@@ -95,11 +95,9 @@ AddrShift Stub::Variable::TryRemoveTrivialPhi(AddrShift phiVal)
         if (IsSelector(out->GetGate())) {
             auto out_addr_shift = env_->GetCircuit()->SaveGatePtr(out->GetGate());
             auto result = TryRemoveTrivialPhi(out_addr_shift);
-            if (same_addr_shift == out_addr_shift)
-            {
+            if (same_addr_shift == out_addr_shift) {
                 same_addr_shift = result;
             }
-
         }
     }
     return same_addr_shift;
@@ -837,14 +835,14 @@ AddrShift Stub::TaggedIsStringOrSymbol(AddrShift obj)
     {
         AddrShift objType = GetObjectType(LoadHClass(obj));
         result = Word32Equal(objType,
-                            GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
+                             GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
         Label isString(env);
         Label notString(env);
         Branch(*result, &exit, &notString);
         Bind(&notString);
         {
             result = Word32Equal(objType,
-                                GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::SYMBOL)));
+                                 GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::SYMBOL)));
             Jump(&exit);
         }
     }
@@ -860,8 +858,8 @@ AddrShift Stub::IsUtf16String(AddrShift string)
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
     return Word32Equal(
-            Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
-            GetInteger32Constant(panda::ecmascript::EcmaString::STRING_UNCOMPRESSED));
+        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
+        GetInteger32Constant(panda::ecmascript::EcmaString::STRING_UNCOMPRESSED));
 }
 
 AddrShift Stub::IsUtf8String(AddrShift string)
@@ -870,8 +868,8 @@ AddrShift Stub::IsUtf8String(AddrShift string)
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
     return Word32Equal(
-            Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
-            GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED));
+        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
+        GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED));
 }
 
 AddrShift Stub::IsInternalString(AddrShift string)
@@ -880,8 +878,8 @@ AddrShift Stub::IsInternalString(AddrShift string)
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
     return Word32NotEqual(
-            Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_INTERN_BIT)),
-            GetInteger32Constant(0));
+        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_INTERN_BIT)),
+        GetInteger32Constant(0));
 }
 
 AddrShift Stub::IsDigit(AddrShift ch)
@@ -902,7 +900,7 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
     Label inRange(env);
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
-    len = Word32LSR(len, GetInteger32Constant(2));
+    len = Word32LSR(len, GetInteger32Constant(2));  // 2 : 2 means len must be right shift 2 bits
     Branch(Word32Equal(len, GetInteger32Constant(0)), &exit, &greatThanZero);
     Bind(&greatThanZero);
     Branch(Int32GreaterThan(len, GetInteger32Constant(panda::ecmascript::MAX_INDEX_LEN)), &exit, &inRange);
@@ -959,6 +957,7 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                     Branch(isUtf16String, &isUtf16, &notUtf16);
                     Bind(&isUtf16);
                     {
+                        // 2 : 2 means utf16 char width is two bytes
                         c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16,
                                                   PtrMul(ChangeInt32ToPointer(*i), GetPtrConstant(2))));
                         Jump(&getChar2);
@@ -975,8 +974,9 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                         Branch(IsDigit(*c), &isDigit2, &notDigit2);
                         Bind(&isDigit2);
                         {
+                            // 10 means the base of digit is 10.
                             n = Int32Add(Int32Mul(*n, GetInteger32Constant(10)),
-                                        Int32Sub(*c, GetInteger32Constant('0')));
+                                         Int32Sub(*c, GetInteger32Constant('0')));
                             i = Int32Add(*i, GetInteger32Constant(1));
                             Branch(Int32LessThan(*i, len), &loopEnd, &afterLoop);
                         }
