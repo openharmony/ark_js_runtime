@@ -832,7 +832,7 @@ public:
     {
         return TruncInt32ToInt1(
             Word32And(SExtInt1ToInt32(TaggedIsObject(x)),
-                         SExtInt1ToInt32(Word32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), GetInteger32Constant(0)))));
+                      SExtInt1ToInt32(Word32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), GetInteger32Constant(0)))));
     }
 
     AddrShift TaggedIsString(AddrShift obj);
