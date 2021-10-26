@@ -92,6 +92,7 @@ private:
 class FrameIterator {
 public:
     explicit FrameIterator(JSTaggedType *fp) : fp_(fp) {}
+    ~FrameIterator() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
     JSTaggedType *fp_ {nullptr};
