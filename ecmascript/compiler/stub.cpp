@@ -957,9 +957,9 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                     Branch(isUtf16String, &isUtf16, &notUtf16);
                     Bind(&isUtf16);
                     {
-                        // 2 : 2 means utf16 char width is two bytes
                         c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16,
-                                                  PtrMul(ChangeInt32ToPointer(*i), GetPtrConstant(2))));
+                                PtrMul(ChangeInt32ToPointer(*i),
+                                       GetPtrConstant(2))));  // 2 : 2 means utf16 char width is two bytes
                         Jump(&getChar2);
                     }
                     Bind(&notUtf16);
