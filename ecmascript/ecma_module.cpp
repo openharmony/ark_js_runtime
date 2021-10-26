@@ -42,12 +42,13 @@ void EcmaModule::AddItem(const JSThread *thread, JSHandle<EcmaModule> module, JS
     JSHandle<JSTaggedValue> data(thread, module->GetNameDictionary());
     if (data->IsUndefined()) {
         JSHandle<NameDictionary> dict(thread, NameDictionary::Create(thread, DICTIONART_CAP));
-        auto result = dict->Put(thread, dict, itemName, itemValue, PropertyAttributes::Default());
-        module->SetNameDictionary(thread, JSTaggedValue(result));
+        NameDictionary *newDict = NameDictionary::Put(thread, dict, itemName, itemValue, PropertyAttributes::Default());
+        module->SetNameDictionary(thread, JSTaggedValue(newDict));
     } else {
         JSHandle<NameDictionary> dataDict = JSHandle<NameDictionary>::Cast(data);
-        auto result = dataDict->Put(thread, dataDict, itemName, itemValue, PropertyAttributes::Default());
-        module->SetNameDictionary(thread, JSTaggedValue(result));
+        NameDictionary *newDict =
+            NameDictionary::Put(thread, dataDict, itemName, itemValue, PropertyAttributes::Default());
+        module->SetNameDictionary(thread, JSTaggedValue(newDict));
     }
 }
 
@@ -60,7 +61,7 @@ void EcmaModule::RemoveItem(const JSThread *thread, JSHandle<EcmaModule> module,
     JSHandle<NameDictionary> moduleItems(data);
     int entry = moduleItems->FindEntry(itemName.GetTaggedValue());
     if (entry != -1) {
-        NameDictionary *newDict = NameDictionary::Remove(thread, moduleItems, entry);  // discard return
+        NameDictionary *newDict = NameDictionary::Remove(thread, moduleItems, entry);
         module->SetNameDictionary(thread, JSTaggedValue(newDict));
     }
 }
@@ -117,20 +118,21 @@ ModuleManager::ModuleManager(EcmaVM *vm) : vm_(vm)
 // class ModuleManager
 void ModuleManager::AddModule(JSHandle<JSTaggedValue> moduleName, JSHandle<JSTaggedValue> module)
 {
-    [[maybe_unused]] EcmaHandleScope scope(vm_->GetJSThread());
-    JSHandle<NameDictionary> dict(vm_->GetJSThread(), ecmaModules_);
+    JSThread *thread = vm_->GetJSThread();
+    [[maybe_unused]] EcmaHandleScope scope(thread);
+    JSHandle<NameDictionary> dict(thread, ecmaModules_);
     ecmaModules_ =
-        JSTaggedValue(dict->Put(vm_->GetJSThread(), dict, moduleName, module, PropertyAttributes::Default()));
+        JSTaggedValue(NameDictionary::Put(thread, dict, moduleName, module, PropertyAttributes::Default()));
 }
 
 void ModuleManager::RemoveModule(JSHandle<JSTaggedValue> moduleName)
 {
-    [[maybe_unused]] EcmaHandleScope scope(vm_->GetJSThread());
     JSThread *thread = vm_->GetJSThread();
+    [[maybe_unused]] EcmaHandleScope scope(thread);
     JSHandle<NameDictionary> moduleItems(thread, ecmaModules_);
     int entry = moduleItems->FindEntry(moduleName.GetTaggedValue());
     if (entry != -1) {
-        NameDictionary::Remove(vm_->GetJSThread(), moduleItems, entry);  // discard return
+        ecmaModules_ = JSTaggedValue(NameDictionary::Remove(thread, moduleItems, entry));
     }
 }
 

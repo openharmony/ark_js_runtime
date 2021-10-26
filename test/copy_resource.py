@@ -35,21 +35,20 @@ def parse_args():
     return args
 
 
-def copy_xml(args):
-    """copy resource xml to test direction."""
+def copy_res(args):
+    """copy resources to test direction."""
     src_xml_file = os.path.join(args.src_path, args.src_xml)
-    dst_xml_file = os.path.join(args.dst_path, args.src_xml)
 
     if not os.path.isfile(src_xml_file):
         print(args.src_xml + " not exist.")
         return
 
-    if not os.path.exists(args.dst_path):
-        os.makedirs(args.dst_path)
+    if os.path.exists(args.dst_path):
+        shutil.rmtree(args.dst_path)
 
-    shutil.copyfile(src_xml_file, dst_xml_file)
+    shutil.copytree(args.src_path, args.dst_path)
 
 
 if __name__ == '__main__':
     input_args = parse_args()
-    copy_xml(input_args)
+    copy_res(input_args)

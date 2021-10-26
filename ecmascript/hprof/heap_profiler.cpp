@@ -34,7 +34,7 @@ HeapProfiler::~HeapProfiler()
     jsonSerializer_ = nullptr;
 }
 
-bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath)
+bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath, bool isVmMode)
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(thread);
     ASSERT(heapClean);
@@ -42,7 +42,7 @@ bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, con
     size_t heapSize = heap->GetNewSpace()->GetHeapObjectSize() + heap->GetOldSpace()->GetHeapObjectSize()
                          + heap->GetNonMovableSpace()->GetHeapObjectSize();
     LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
-    HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::ONE_SHOT);
+    HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::ONE_SHOT, isVmMode);
     ASSERT(snapShot != nullptr);
     std::pair<bool, CString> realPath = FilePathValid(filePath);
     if (realPath.first) {
@@ -56,9 +56,9 @@ bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, con
     UNREACHABLE();
 }
 
-bool HeapProfiler::StartHeapTracking(JSThread *thread, double timeInterval)
+bool HeapProfiler::StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode)
 {
-    HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::REAL_TIME);
+    HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::REAL_TIME, isVmMode);
     if (snapShot == nullptr) {
         return false;
     }
@@ -158,14 +158,15 @@ bool HeapProfiler::ForceFullGC(JSThread *thread)
     return false;
 }
 
-HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sampleType)
+HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sampleType, bool isVmMode)
 {
     LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapShot";
     DISALLOW_GARBAGE_COLLECTION;
     heap_->GetSweeper()->EnsureAllTaskFinish();
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
-            auto *snapShot = const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_);
+            auto *snapShot =
+                const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_, isVmMode);
             if (snapShot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
@@ -175,7 +176,8 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
             return snapShot;
         }
         case SampleType::REAL_TIME: {
-            auto *snapShot = const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_);
+            auto *snapShot =
+                const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_, isVmMode);
             if (snapShot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();

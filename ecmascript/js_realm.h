@@ -29,6 +29,9 @@ public:
     static constexpr size_t VALUE_OFFSET = JSObject::SIZE;
     ACCESSORS(Value, VALUE_OFFSET, GLOBAL_ENV_OFFSET)
     ACCESSORS(GlobalEnv, GLOBAL_ENV_OFFSET, SIZE)
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, VALUE_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript
 

@@ -337,16 +337,6 @@ public:
         return moduleManager_;
     }
 
-    static constexpr uint32_t GetGlobalEnvOffset()
-    {
-        return MEMBER_OFFSET(EcmaVM, globalEnv_);
-    }
-
-    static constexpr uint32_t GetMicroJobQueueOffset()
-    {
-        return MEMBER_OFFSET(EcmaVM, microJobQueue_);
-    }
-
     void SetupRegExpResultCache();
     JSHandle<JSTaggedValue> GetRegExpCache()
     {

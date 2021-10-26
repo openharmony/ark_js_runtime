@@ -658,7 +658,6 @@ void SetElementStub::GenerateCircuit()
 void GetPropertyByIndexStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
-    env->SetFrameType(FrameType::OPTIMIZED_ENTRY_FRAME);
     AddrShift thread = PtrArgument(0);
     AddrShift receiver = PtrArgument(1);
     AddrShift index = Int32Argument(2); /* 2 : 3rd parameter is index */
@@ -771,7 +770,6 @@ void GetPropertyByIndexStub::GenerateCircuit()
 void SetPropertyByIndexStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
-    env->SetFrameType(FrameType::OPTIMIZED_ENTRY_FRAME);
     AddrShift thread = PtrArgument(0);
     AddrShift receiver = PtrArgument(1);
     AddrShift index = Int32Argument(2); /* 2 : 3rd parameter is index */
@@ -1015,8 +1013,9 @@ void GetPropertyByNameStub::GenerateCircuit()
 void FastModStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
-    AddrShift x = Int64Argument(0);
-    AddrShift y = Int64Argument(1);
+    AddrShift thread = PtrArgument(0);
+    AddrShift x = Int64Argument(1);
+    AddrShift y = Int64Argument(2);
     DEFVARIABLE(intX, MachineType::INT32_TYPE, 0);
     DEFVARIABLE(intY, MachineType::INT32_TYPE, 0);
     DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
@@ -1153,7 +1152,9 @@ void FastModStub::GenerateCircuit()
                 Jump(&xIsZeroOryIsInf);
                 Bind(&yNotInf);
                 {
-                    doubleX = DoubleMod(*doubleX, *doubleY);
+                    StubDescriptor *floatMod = GET_STUBDESCRIPTOR(FloatMod);
+                    doubleX =CallRuntime(floatMod, thread, GetWord64Constant(FAST_STUB_ID(FloatMod)),
+                        {*doubleX, *doubleY});
                     Return(DoubleBuildTagged(*doubleX));
                 }
                 Bind(&xIsZeroOryIsInf);
@@ -1226,8 +1227,8 @@ void FastTypeOfStub::GenerateCircuit()
     Bind(&defaultLabel);
     {
         Label objIsHeapObject(env);
-        Label ObjNotHeapObject(env);
-        Branch(TaggedIsHeapObject(obj), &objIsHeapObject, &ObjNotHeapObject);
+        Label objNotHeapObject(env);
+        Branch(TaggedIsHeapObject(obj), &objIsHeapObject, &objNotHeapObject);
         Bind(&objIsHeapObject);
         {
             Label objIsString(env);
@@ -1242,15 +1243,15 @@ void FastTypeOfStub::GenerateCircuit()
             Bind(&objNotString);
             {
                 Label objIsSymbol(env);
-                Label ObjNotSymbol(env);
-                Branch(IsSymbol(obj), &objIsSymbol, &ObjNotSymbol);
+                Label objNotSymbol(env);
+                Branch(IsSymbol(obj), &objIsSymbol, &objNotSymbol);
                 Bind(&objIsSymbol);
                 {
                     resultRep = Load(TAGGED_TYPE, gConstOffset,
                         GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
                     Jump(&exit);
                 }
-                Bind(&ObjNotSymbol);
+                Bind(&objNotSymbol);
                 {
                     Label objIsCallable(env);
                     Label objNotCallable(env);
@@ -1270,7 +1271,7 @@ void FastTypeOfStub::GenerateCircuit()
                 }
             }
         }
-        Bind(&ObjNotHeapObject);
+        Bind(&objNotHeapObject);
         {
             Label objIsNum(env);
             Label objNotNum(env);

@@ -36,6 +36,8 @@ public:
     ACCESSORS(InstructionSizeInBytes, INS_SIZE_OFFSET, DATA_OFFSET);
     static constexpr size_t SIZE = DATA_OFFSET;
 
+    DECL_DUMP()
+
     uintptr_t GetDataOffsetAddress(void)
     {
         return reinterpret_cast<uintptr_t>(this) + DATA_OFFSET;
@@ -53,10 +55,19 @@ public:
             return;
         }
     }
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
+    {
+        // left blank deliberately,only need to visit TaggedObject type object.
+    }
+
+    void VisitObjects([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
+    {
+        // left blank deliberately,only need to visit TaggedObject type object.
+    }
 
     size_t GetMachineCodeObjectSize(void)
     {
-        return sizeof(MachineCode) + this->GetInstructionSizeInBytes().GetInt();
+        return SIZE + this->GetInstructionSizeInBytes().GetInt();
     }
 };
 }  // namespace ecmascript

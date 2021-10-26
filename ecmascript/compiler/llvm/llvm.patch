@@ -1,5 +1,5 @@
 diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
-index 0e85afa82c7..54a9152e44f 100644
+index 0e85afa82c7..43756892e40 100644
 --- a/llvm/CMakeLists.txt
 +++ b/llvm/CMakeLists.txt
 @@ -505,8 +505,15 @@ option(LLVM_BUILD_RUNTIME
@@ -10,27 +10,19 @@ index 0e85afa82c7..54a9152e44f 100644
 +	"ARK support GC. If ON, support GC." OFF)
 +if(BUILD_ARK_GC_SUPPORT)
 +   add_definitions(-DARK_GC_SUPPORT)
-+endif(ARK_SUPPORT_GC)
++endif(BUILD_ARK_GC_SUPPORT)
 +
  option(LLVM_INCLUDE_EXAMPLES "Generate build targets for the LLVM examples" ON)
-
+ 
 +
  if(LLVM_BUILD_EXAMPLES)
    add_definitions(-DBUILD_EXAMPLES)
  endif(LLVM_BUILD_EXAMPLES)
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..60d9af0d833 100644
+index 1da20371caf..e0264827556 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
-@@ -31,6 +31,7 @@
- #include "llvm/Support/Debug.h"
- #include "llvm/Target/TargetOptions.h"
- #include <cstdlib>
-+#include <iostream>
-
- using namespace llvm;
-
-@@ -1168,6 +1169,28 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
+@@ -1168,6 +1168,25 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
      else
        MFI.setOffsetAdjustment(-StackSize);
    }
@@ -43,25 +35,22 @@ index 1da20371caf..60d9af0d833 100644
 +        .getFnAttribute("js-stub-call")
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
-+      std::cout << __LINE__ << " marker:" << std::dec << marker << std::endl;
-+
-+      BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH64i32))
-+            .addImm(marker)
-+            .setMIFlag(MachineInstr::FrameSetup);
-+      /*reserve thread.fp */
-+      if (marker == 1) {
-+        BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH64i32))
-+              .addImm(marker)
-+              .setMIFlag(MachineInstr::FrameSetup);
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup);
++      if (marker == JS_ENTRY_FRAME_MARK) {
++        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup);
 +      }
 +    }
 +#endif
-
+ 
    // For EH funclets, only allocate enough space for outgoing calls. Save the
    // NumBytes value that we would've used for the parent frame.
-@@ -1635,6 +1658,27 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1635,6 +1654,27 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
    uint64_t SEHStackAllocAmt = NumBytes;
-
+ 
    if (HasFP) {
 +#ifdef ARK_GC_SUPPORT
 +    if (MF.getFunction().hasFnAttribute("js-stub-call"))
@@ -76,7 +65,7 @@ index 1da20371caf..60d9af0d833 100644
 +      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
 +              MachineFramePtr)
 +          .setMIFlag(MachineInstr::FrameDestroy);
-+      if (marker == 1) {
++      if (marker == JS_ENTRY_FRAME_MARK) {
 +        // pop thread.fp
 +        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
 +            MachineFramePtr)
@@ -87,8 +76,8 @@ index 1da20371caf..60d9af0d833 100644
      // Pop EBP.
      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
              MachineFramePtr)
-@@ -1993,8 +2037,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
-
+@@ -1993,8 +2033,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+ 
    if (hasFP(MF)) {
      // emitPrologue always spills frame register the first thing.
 +#ifdef ARK_GC_SUPPORT
@@ -98,17 +87,17 @@ index 1da20371caf..60d9af0d833 100644
 +        .getFnAttribute("js-stub-call")
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
-+        if (marker == 1) {
++        if (marker == JS_ENTRY_FRAME_MARK) {
 +            SpillSlotOffset -=  3 * SlotSize; // add type and thread.fp
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            CalleeSavedFrameSize += 16;
++            CalleeSavedFrameSize += (2 * SlotSize);
 +        } else {
 +            SpillSlotOffset -=  2 * SlotSize; // add type
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            CalleeSavedFrameSize += 8;
++            CalleeSavedFrameSize += SlotSize;
 +        }
 +    } else {
 +        SpillSlotOffset -= SlotSize; // add type and thread.fp
@@ -118,6 +107,19 @@ index 1da20371caf..60d9af0d833 100644
      SpillSlotOffset -= SlotSize;
      MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +#endif
-
+ 
      // Since emitPrologue and emitEpilogue will handle spilling and restoring of
      // the frame register, we can delete it from CSI list and not have to worry
+diff --git a/llvm/lib/Target/X86/X86FrameLowering.h b/llvm/lib/Target/X86/X86FrameLowering.h
+index 2103d6471ea..3fd89b0d9ee 100644
+--- a/llvm/lib/Target/X86/X86FrameLowering.h
++++ b/llvm/lib/Target/X86/X86FrameLowering.h
+@@ -15,6 +15,8 @@
+ 
+ #include "llvm/CodeGen/TargetFrameLowering.h"
+ 
++#define JS_ENTRY_FRAME_MARK 1
++
+ namespace llvm {
+ 
+ class MachineInstrBuilder;

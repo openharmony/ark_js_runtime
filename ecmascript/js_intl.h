@@ -32,6 +32,7 @@ public:
     ACCESSORS(FallbackSymbol, FALLBACK_SYMBOL, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, FALLBACK_SYMBOL, SIZE)
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript
 

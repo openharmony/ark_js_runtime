@@ -38,6 +38,7 @@ public:
     ACCESSORS(StringIteratorNextIndex, STRING_ITERATOR_NEXT_INDEX_OFFSET, SIZE)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, ITERATED_STRING_OFFSET, SIZE)
+    DECL_DUMP()
 };
 }  // namespace ecmascript
 }  // namespace panda

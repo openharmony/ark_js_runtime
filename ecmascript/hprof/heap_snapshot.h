@@ -236,8 +236,8 @@ public:
     static constexpr int SEQ_STEP = 2;
     NO_MOVE_SEMANTIC(HeapSnapShot);
     NO_COPY_SEMANTIC(HeapSnapShot);
-    explicit HeapSnapShot(JSThread *thread, const Heap *heap)
-        : stringTable_(heap), thread_(thread), heap_(heap)
+    explicit HeapSnapShot(JSThread *thread, const Heap *heap, const bool isVmMode)
+        : stringTable_(heap), thread_(thread), heap_(heap), isVmMode_(isVmMode)
     {
     }
     ~HeapSnapShot();
@@ -293,6 +293,11 @@ public:
 
     CString *GetString(const CString &as);
 
+    bool IsInVmMode() const
+    {
+        return isVmMode_;
+    }
+
 private:
     void FillNodes(JSThread *thread);
     Node *GenerateNode(JSThread *thread, JSTaggedValue entry, int sequenceId = -1);
@@ -320,6 +325,7 @@ private:
     panda::ecmascript::HeapRootVisitor rootVisitor_;
     JSThread *thread_;
     const Heap *heap_;
+    bool isVmMode_{true};
 };
 
 class EntryVisitor {

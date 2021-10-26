@@ -28,7 +28,8 @@ namespace kungfu {
     V(GetHash32, 2)                  \
     V(FindElementWithCache, 4)       \
     V(Execute, 5)                    \
-    V(StringGetHashCode, 1)
+    V(StringGetHashCode, 1)          \
+    V(FloatMod, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
@@ -36,7 +37,7 @@ namespace kungfu {
     V(FastSub, 2)                   \
     V(FastMul, 2)                   \
     V(FastDiv, 2)                   \
-    V(FastMod, 2)                   \
+    V(FastMod, 3)                   \
     V(FastEqual, 2)                 \
     V(FastTypeOf, 2)                \
     V(FastStrictEqual, 2)           \

@@ -442,19 +442,24 @@ HWTEST_F_L0(StubTest, FastModTest)
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
-
+    LLVMDumpModule(module);
+    auto engine = assembler.GetEngine();
+    uint64_t stub1Code = LLVMGetFunctionAddress(engine, "FastModStub");
+    std::map<uint64_t, std::string> addr2name = {{stub1Code, "stub1"}};
+    assembler.Disassemble(addr2name);
+    auto fn = reinterpret_cast<JSTaggedValue (*)(JSThread *, int64_t, int64_t)>(
+        assembler.GetFuncPtrFromCompiledModule(function));
     // test left, right are all integer
     int x = 7;
     int y = 3;
-    auto result = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    auto result = fn(thread, JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
     JSTaggedValue expectRes = FastRuntimeStub::FastMod(JSTaggedValue(x), JSTaggedValue(y));
     EXPECT_EQ(result, expectRes);
 
     // test y == 0.0 || std::isnan(y) || std::isnan(x) || std::isinf(x) return NAN_VALUE
     double x2 = 7.3;
     int y2 = base::NAN_VALUE;
-    auto result2 = fn(JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
+    auto result2 = fn(thread, JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
     auto expectRes2 = FastRuntimeStub::FastMod(JSTaggedValue(x2), JSTaggedValue(y2));
     EXPECT_EQ(result2, expectRes2);
     LOG_ECMA(INFO) << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData();
@@ -463,14 +468,14 @@ HWTEST_F_L0(StubTest, FastModTest)
     // // test modular operation under normal conditions
     double x3 = 33.0;
     double y3 = 44.0;
-    auto result3 = fn(JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
+    auto result3 = fn(thread, JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
     auto expectRes3 = FastRuntimeStub::FastMod(JSTaggedValue(x3), JSTaggedValue(y3));
     EXPECT_EQ(result3, expectRes3);
 
     // test x == 0.0 || std::isinf(y) return x
     double x4 = base::NAN_VALUE;
     int y4 = 7;
-    auto result4 = fn(JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
+    auto result4 = fn(thread, JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
     auto expectRes4 = FastRuntimeStub::FastMod(JSTaggedValue(x4), JSTaggedValue(y4));
 
     LOG_ECMA(INFO) << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData();
@@ -481,7 +486,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     int x5 = 7;
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     auto y5 = factory->NewFromStdString("hello world");
-    auto result5 = fn(JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
+    auto result5 = fn(thread, JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
     EXPECT_EQ(result5, JSTaggedValue::Hole());
     auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
     LOG_ECMA(INFO) << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData();
@@ -1183,7 +1188,7 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 HWTEST_F_L0(StubTest, FastTypeOfTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMod));
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastTypeOf));
     Circuit netOfGates;
     FastTypeOfStub optimizer(&netOfGates);
     optimizer.GenerateCircuit();

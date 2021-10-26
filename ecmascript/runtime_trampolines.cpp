@@ -28,10 +28,11 @@ namespace panda::ecmascript {
 bool RuntimeTrampolines::AddElementInternal(uint64_t argThread, uint64_t argReceiver, uint32_t argIndex,
                                             uint64_t argValue, uint32_t argAttr)
 {
-    JSTaggedType *fp = nullptr;
-    GET_CURRETN_FP(fp);
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    CallRuntimeTrampolinesScope scope(thread, fp);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSObject> receiver(thread, reinterpret_cast<TaggedObject *>(argReceiver));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
@@ -42,11 +43,11 @@ bool RuntimeTrampolines::AddElementInternal(uint64_t argThread, uint64_t argRece
 bool RuntimeTrampolines::CallSetter(uint64_t argThread, uint64_t argSetter, uint64_t argReceiver, uint64_t argValue,
                                     bool argMayThrow)
 {
-    JSTaggedType *fp = nullptr;
-    GET_CURRETN_FP(fp);
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    CallRuntimeTrampolinesScope scope(thread, fp);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    GET_CURRETN_FP(curFp);
+    uintptr_t * prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     JSHandle<JSTaggedValue> receiver(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
     auto setter = AccessorData::Cast((reinterpret_cast<panda::ObjectHeader *>(argSetter)));
@@ -55,10 +56,11 @@ bool RuntimeTrampolines::CallSetter(uint64_t argThread, uint64_t argSetter, uint
 
 void RuntimeTrampolines::ThrowTypeError(uint64_t argThread, int argMessageStringId)
 {
-    JSTaggedType *fp = nullptr;
-    GET_CURRETN_FP(fp);
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    CallRuntimeTrampolinesScope scope(thread, fp);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     std::string message = MessageString::GetMessageString(argMessageStringId);
     ObjectFactory *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
@@ -69,10 +71,11 @@ void RuntimeTrampolines::ThrowTypeError(uint64_t argThread, int argMessageString
 bool RuntimeTrampolines::JSProxySetProperty(uint64_t argThread, uint64_t argProxy, uint64_t argKey, uint64_t argValue,
                                             uint64_t argReceiver, bool argMayThrow)
 {
-    JSTaggedType *fp = nullptr;
-    GET_CURRETN_FP(fp);
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    CallRuntimeTrampolinesScope scope(thread, fp);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSProxy> proxy(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argProxy)));
     JSHandle<JSTaggedValue> index(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argKey)));
@@ -90,10 +93,11 @@ uint32_t RuntimeTrampolines::GetHash32(uint64_t key, uint64_t len)
 
 uint64_t RuntimeTrampolines::CallGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver)
 {
-    JSTaggedType *fp = nullptr;
-    GET_CURRETN_FP(fp);
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    CallRuntimeTrampolinesScope scope(thread, fp);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
     JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
     return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
@@ -101,10 +105,11 @@ uint64_t RuntimeTrampolines::CallGetter(uint64_t argThread, uint64_t argGetter, 
 
 uint64_t RuntimeTrampolines::AccessorGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver)
 {
-    JSTaggedType *fp = nullptr;
-    GET_CURRETN_FP(fp);
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
-    CallRuntimeTrampolinesScope scope(thread, fp);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
     JSHandle<JSObject> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
     return accessor->CallInternalGet(thread, objHandle).GetRawData();
@@ -138,5 +143,10 @@ uint64_t RuntimeTrampolines::Execute(uint64_t argThread, uint64_t argFunc,
     params.argv = argv;
 
     return EcmaInterpreter::Execute(thread, params).GetRawData();
+}
+
+double RuntimeTrampolines::FloatMod(double left, double right)
+{
+    return std::fmod(left, right);
 }
 }  // namespace panda::ecmascript

@@ -35,6 +35,7 @@ public:
 
     static constexpr size_t HAS_CHANGED_OFFSET = TaggedObjectSize();
     SET_GET_PRIMITIVE_FIELD(HasChanged, bool, HAS_CHANGED_OFFSET, SIZE);
+    DECL_DUMP()
 };
 
 class ProtoChangeDetails : public TaggedObject {
@@ -51,6 +52,7 @@ public:
     ACCESSORS(RegisterIndex, REGISTER_INDEX_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT(CHANGE_LISTENER_OFFSET, SIZE)
+    DECL_DUMP()
 };
 
 class ChangeListener : public WeakVector {

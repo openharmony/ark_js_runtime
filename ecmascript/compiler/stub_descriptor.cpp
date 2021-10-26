@@ -81,15 +81,30 @@ CALL_STUB_INIT_DESCRIPTOR(FastDiv)
 
 CALL_STUB_INIT_DESCRIPTOR(FastMod)
 {
-    // 2 : 2 input parameters
-    StubDescriptor fastMod("FastMod", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    // 3 : 3 input parameters
+    StubDescriptor fastMod("FastMod", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = fastMod;
-    // 2 : 2 input parameters
-    std::array<MachineType, 2> params = {
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::UINT64_TYPE,
         MachineType::UINT64_TYPE,
         MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());
+}
+
+CALL_STUB_INIT_DESCRIPTOR(FloatMod)
+{
+    // 2 : 2 input parameters
+    StubDescriptor floatMod("FloatMod", 0, 2, ArgumentsOrder::DEFAULT_ORDER, FLOAT64_TYPE);
+    *descriptor = floatMod;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::FLOAT64_TYPE,
+        MachineType::FLOAT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(FastEqual) {}

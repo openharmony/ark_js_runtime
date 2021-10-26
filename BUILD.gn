@@ -123,11 +123,11 @@ source_set("libark_js_intl_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "$ark_root/runtime:arkruntime_header_deps",
     "//third_party/icu/icu4c:shared_icui18n",
     "//third_party/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
   ]
-  deps += arkruntime_header_gen_deps
 }
 
 config("ark_jsruntime_common_config") {
@@ -436,14 +436,14 @@ source_set("libark_jsruntime_test_static") {
   sources += intl_sources
 
   deps = [
-    ":copy_resource_xml",
+    ":copy_ark_resource",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "$ark_root/runtime:arkruntime_header_deps",
     "//third_party/icu/icu4c:shared_icui18n",
     "//third_party/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,
   ]
-  deps += arkruntime_header_gen_deps
 
   if (is_debug && is_linux && (current_cpu == "x86" || current_cpu == "x64") &&
       run_with_asan) {
@@ -478,25 +478,28 @@ ohos_shared_library("libark_jsruntime_test") {
   subsystem_name = "test"
 }
 
-action("copy_resource_xml") {
+action("copy_ark_resource") {
   deps = []
 
   script = "//ark/js_runtime/test/copy_resource.py"
 
-  src_path = "//ark/js_runtime/test/resource/js_runtime/"
+  src_path = "//ark/js_runtime/test/resource/js_runtime"
   src_xml = "ohos_test.xml"
   dst_path = "//ark/test/resource/js_runtime/"
 
   args = [
     "--src-path",
-    rebase_path(src_path),
+    rebase_path("${src_path}/"),
     "--src-xml",
     src_xml,
     "--dst-path",
     rebase_path(dst_path),
   ]
 
-  inputs = [ src_path + src_xml ]
+  inputs = [
+    src_path,
+    "${src_path}/${src_xml}",
+  ]
   outputs = [ "$target_out_dir" ]
 }
 

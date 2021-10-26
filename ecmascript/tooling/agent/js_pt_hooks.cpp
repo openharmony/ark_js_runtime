@@ -19,10 +19,6 @@
 namespace panda::tooling::ecmascript {
 void JSPtHooks::Breakpoint([[maybe_unused]] PtThread thread, const PtLocation &location)
 {
-    if (thread.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
-        // Skip none-js thread
-        return;
-    }
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Breakpoint => " << location.GetMethodId() << ": "
                          << location.GetBytecodeOffset();
 
@@ -38,13 +34,9 @@ void JSPtHooks::Paused(PauseReason reason)
     backend_->NotifyPaused({}, reason);
 }
 
-void JSPtHooks::Exception(PtThread thread, [[maybe_unused]] const PtLocation &location,
+void JSPtHooks::Exception([[maybe_unused]] PtThread thread, [[maybe_unused]] const PtLocation &location,
                           [[maybe_unused]] PtObject exceptionObject, [[maybe_unused]] const PtLocation &catchLocation)
 {
-    if (thread.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
-        // Skip none-js thread
-        return;
-    }
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: Exception";
 
     [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
@@ -58,12 +50,8 @@ void JSPtHooks::Exception(PtThread thread, [[maybe_unused]] const PtLocation &lo
     }
 }
 
-void JSPtHooks::SingleStep(PtThread thread, const PtLocation &location)
+void JSPtHooks::SingleStep([[maybe_unused]] PtThread thread, const PtLocation &location)
 {
-    if (thread.GetId() != ManagedThread::NON_INITIALIZED_THREAD_ID) {
-        // Skip none-js thread
-        return;
-    }
     LOG(DEBUG, DEBUGGER) << "JSPtHooks: SingleStep => " << location.GetBytecodeOffset();
 
     [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);

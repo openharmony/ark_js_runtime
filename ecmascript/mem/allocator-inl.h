@@ -142,10 +142,10 @@ void FreeListAllocator::Free(uintptr_t begin, uintptr_t end, bool isAdd)
 {
     ASSERT(heap_ != nullptr);
     size_t size = end - begin;
+    FreeObject::FillFreeObject(heap_->GetEcmaVM(), begin, size);
     if (UNLIKELY(size < FreeObject::SIZE_OFFSET)) {
         return;
     }
-    FreeObject::FillFreeObject(heap_->GetEcmaVM(), begin, size);
 
     freeList_->Free(begin, size, isAdd);
 }
