@@ -2454,8 +2454,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue receiver = GET_VREG_VALUE(v0);
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex));
             typedef JSTaggedValue (*PFGetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t);
             auto getPropertyByIndex = reinterpret_cast<PFGetPropertyByIndex>(stubAddr);
             JSTaggedValue res = getPropertyByIndex(thread, receiver, idx);
@@ -2486,8 +2486,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             SAVE_ACC();
             JSTaggedValue value = GET_ACC();
             // fast path
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex));
             typedef JSTaggedValue (*PFSetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue);
             auto setPropertyByIndex = reinterpret_cast<PFSetPropertyByIndex>(stubAddr);
             JSTaggedValue res = setPropertyByIndex(thread, receiver, index, value);
@@ -2545,8 +2545,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 #endif
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue));
             typedef JSTaggedValue (*PFGetPropertyByValue)(JSThread *, JSTaggedValue, JSTaggedValue);
             auto getPropertyByValuePtr = reinterpret_cast<PFGetPropertyByValue>(stubAddr);
             JSTaggedValue res = getPropertyByValuePtr(thread, receiver, propKey);
@@ -2923,8 +2923,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         if (LIKELY(receiver.IsHeapObject())) {
             // fast path
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName));
             typedef JSTaggedValue (*PFGetPropertyByName)(JSThread *, JSTaggedValue, JSTaggedValue);
             auto getPropertyByNamePtr = reinterpret_cast<PFGetPropertyByName>(stubAddr);
             JSTaggedValue res = getPropertyByNamePtr(thread, receiver, propKey);

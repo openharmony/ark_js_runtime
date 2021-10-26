@@ -66,21 +66,9 @@ public:
         thread->SetLastIFrameSp(cursp);
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
-        // print newfp and type for debug
-        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " lastFp_ : " << lastFp_
-            << std::endl;
-        FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(newFp) + FrameConst::FRAME_TYPE_OFFSET));
-        std::cout << __FUNCTION__ << " type = " << as_integer(type) << std::endl;
     }
     ~CallRuntimeTrampolinesScope()
     {
-        // print oldfp and type for debug
-        std::cout << "~CallRuntimeTrampolinesScope lastFp_: " << lastFp_ <<
-            " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
-        FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(lastFp_) + FrameConst::FRAME_TYPE_OFFSET));
-        std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);

@@ -761,16 +761,6 @@ public:
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_REV), x);
     }
 
-    AddrShift WordLogicOr(AddrShift x, AddrShift y)
-    {
-        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_OR), x, y);
-    }
-
-    AddrShift WordLogicAnd(AddrShift x, AddrShift y)
-    {
-        return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_AND), x, y);
-    }
-
     AddrShift Word32LSL(AddrShift x, AddrShift y)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_LSL), x, y);
@@ -797,7 +787,7 @@ public:
 
     AddrShift TaggedIsDouble(AddrShift x)
     {
-        return Word32Equal(WordLogicOr(SExtInt1ToInt32(TaggedIsInt(x)), SExtInt1ToInt32(TaggedIsObject(x))),
+        return Word32Equal(Word32Or(SExtInt1ToInt32(TaggedIsInt(x)), SExtInt1ToInt32(TaggedIsObject(x))),
                            GetInteger32Constant(0));
     }
 
@@ -809,7 +799,7 @@ public:
 
     AddrShift TaggedIsNumber(AddrShift x)
     {
-        return TruncInt32ToInt1(WordLogicOr(SExtInt1ToInt32(TaggedIsInt(x)), SExtInt1ToInt32(TaggedIsDouble(x))));
+        return TruncInt32ToInt1(Word32Or(SExtInt1ToInt32(TaggedIsInt(x)), SExtInt1ToInt32(TaggedIsDouble(x))));
     }
 
     AddrShift TaggedIsHole(AddrShift x)
@@ -833,7 +823,7 @@ public:
             SExtInt1ToInt32(
                 Word64Equal(Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
                             GetWord64Constant(0))),
-            WordLogicOr(SExtInt1ToInt32(Word64NotEqual(
+            Word32Or(SExtInt1ToInt32(Word64NotEqual(
                 Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_VALUE)),
                 GetWord64Constant(0))), SExtInt1ToInt32(TaggedIsHole(x)))));
     }
@@ -841,7 +831,7 @@ public:
     AddrShift TaggedIsHeapObject(AddrShift x)
     {
         return TruncInt32ToInt1(
-            WordLogicAnd(SExtInt1ToInt32(TaggedIsObject(x)),
+            Word32And(SExtInt1ToInt32(TaggedIsObject(x)),
                          SExtInt1ToInt32(Word32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), GetInteger32Constant(0)))));
     }
 

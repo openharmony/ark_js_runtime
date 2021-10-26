@@ -622,8 +622,8 @@ bool FastRuntimeStub::FastSetPropertyByIndex(JSThread *thread, JSTaggedValue rec
                                              JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, FastSetPropertyByIndex);
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex));
     typedef JSTaggedValue (*PFSetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue);
     auto setPropertyByIndex = reinterpret_cast<PFSetPropertyByIndex>(stubAddr);
     JSTaggedValue result = setPropertyByIndex(thread, receiver, index, value);
@@ -661,8 +661,8 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedV
         // Maybe moved by GC
         receiver = receiverHandler.GetTaggedValue();
     }
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName));
     typedef JSTaggedValue (*PFGetPropertyByName)(JSThread *, JSTaggedValue, JSTaggedValue);
     auto getPropertyByNamePtr = reinterpret_cast<PFGetPropertyByName>(stubAddr);
     JSTaggedValue result = getPropertyByNamePtr(thread, receiver, key);
@@ -681,8 +681,8 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedV
 JSTaggedValue FastRuntimeStub::FastGetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
     INTERPRETER_TRACE(thread, FastGetPropertyByValue);
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue));
     typedef JSTaggedValue (*PFGetPropertyByValue)(JSThread *, JSTaggedValue, JSTaggedValue);
     auto getPropertyByValuePtr = reinterpret_cast<PFGetPropertyByValue>(stubAddr);
     JSTaggedValue result = getPropertyByValuePtr(thread, receiver, key);
@@ -702,8 +702,8 @@ template<bool UseHole>  // UseHole is only for Array::Sort() which requires Hole
 JSTaggedValue FastRuntimeStub::FastGetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index)
 {
     INTERPRETER_TRACE(thread, FastGetPropertyByIndex);
-#ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex);
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex));
     typedef JSTaggedValue (*PFGetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t);
     auto getPropertyByIndex = reinterpret_cast<PFGetPropertyByIndex>(stubAddr);
     JSTaggedValue result = getPropertyByIndex(thread, receiver, index);
