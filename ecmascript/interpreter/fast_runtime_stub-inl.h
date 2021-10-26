@@ -623,9 +623,9 @@ bool FastRuntimeStub::FastSetPropertyByIndex(JSThread *thread, JSTaggedValue rec
 {
     INTERPRETER_TRACE(thread, FastSetPropertyByIndex);
 #ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto *setPropertyByIndex = \
-        reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)> \
-            (reinterpret_cast<uintptr_t>(thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex))));
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex);
+    typedef JSTaggedValue (*PFSetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue);
+    auto setPropertyByIndex = reinterpret_cast<PFSetPropertyByIndex>(stubAddr);
     JSTaggedValue result = setPropertyByIndex(thread, receiver, index, value);
 #else
     JSTaggedValue result = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
@@ -662,8 +662,9 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedV
         receiver = receiverHandler.GetTaggedValue();
     }
 #ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, JSTaggedValue)>(
-        thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName)));
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName);
+    typedef JSTaggedValue (*PFGetPropertyByName)(JSThread *, JSTaggedValue, JSTaggedValue);
+    auto getPropertyByNamePtr = reinterpret_cast<PFGetPropertyByName>(stubAddr);
     JSTaggedValue result = getPropertyByNamePtr(thread, receiver, key);
 #else
     JSTaggedValue result = FastRuntimeStub::GetPropertyByName(thread, receiver, key);
@@ -681,9 +682,10 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByValue(JSThread *thread, JSTagged
 {
     INTERPRETER_TRACE(thread, FastGetPropertyByValue);
 #ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto *getPropertyByValuePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
-        thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue)));
-    JSTaggedValue result = getPropertyByValuePtr(thread, receiver.GetRawData(), key.GetRawData());
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue);
+    typedef JSTaggedValue (*PFGetPropertyByValue)(JSThread *, JSTaggedValue, JSTaggedValue);
+    auto getPropertyByValuePtr = reinterpret_cast<PFGetPropertyByValue>(stubAddr);
+    JSTaggedValue result = getPropertyByValuePtr(thread, receiver, key);
 #else
     JSTaggedValue result = FastRuntimeStub::GetPropertyByValue(thread, receiver, key);
 #endif
@@ -701,8 +703,9 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByIndex(JSThread *thread, JSTagged
 {
     INTERPRETER_TRACE(thread, FastGetPropertyByIndex);
 #ifdef ECMASCRTPT_ENABLE_STUB_AOT
-    auto getPropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
-        thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex)));
+    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex);
+    typedef JSTaggedValue (*PFGetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t);
+    auto getPropertyByIndex = reinterpret_cast<PFGetPropertyByIndex>(stubAddr);
     JSTaggedValue result = getPropertyByIndex(thread, receiver, index);
 #else
     JSTaggedValue result = FastRuntimeStub::GetPropertyByIndex(thread, receiver, index);

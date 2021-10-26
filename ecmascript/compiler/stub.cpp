@@ -959,12 +959,13 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                     Branch(isUtf16String, &isUtf16, &notUtf16);
                     Bind(&isUtf16);
                     {
-                        c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16, PtrMul(*i, GetPtrConstant(2))));
+                        c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16,
+                                                  PtrMul(ChangeInt32ToPointer(*i), GetPtrConstant(2))));
                         Jump(&getChar2);
                     }
                     Bind(&notUtf16);
                     {
-                        c = ZExtInt8ToInt32(Load(INT8_TYPE, dataUtf16, *i));
+                        c = ZExtInt8ToInt32(Load(INT8_TYPE, dataUtf16, ChangeInt32ToPointer(*i)));
                         Jump(&getChar2);
                     }
                     Bind(&getChar2);

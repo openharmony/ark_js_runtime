@@ -19,8 +19,8 @@
 #include "gtest/gtest.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/llvm_codegen.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
-#include "ecmascript/compiler/llvm_mcjit_engine.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/compiler/scheduler.h"
 #include "ecmascript/compiler/stub_descriptor.h"
@@ -1087,6 +1087,7 @@ void DoSafepoint()
 }
 }
 
+#ifdef NDEBUG
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
@@ -1148,7 +1149,6 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
                   JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
 }
-
 
 HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
@@ -1231,7 +1231,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(getPropertyByNamefunction)));
     auto *getpropertyByIndexPtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(getPropertyByIndexfunction)));
-    
+
     thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex), reinterpret_cast<uintptr_t>(getpropertyByIndexPtr));
     thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByName), reinterpret_cast<uintptr_t>(getPropertyByNamePtr));
 
@@ -1271,6 +1271,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     resVal = getPropertyByValuePtr(thread, strHello.GetTaggedValue().GetRawData(), JSTaggedValue(key).GetRawData());
     EXPECT_EQ(resVal.GetRawData(), 0);
 }
+#endif
 
 HWTEST_F_L0(StubTest, FastTypeOfTest)
 {
@@ -1357,4 +1358,5 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     EXPECT_EQ(resultVal9, globalConst->GetObjectString());
     EXPECT_EQ(resultVal9, expectResult9);
 }
+
 }  // namespace panda::test

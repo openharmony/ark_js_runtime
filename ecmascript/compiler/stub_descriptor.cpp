@@ -248,7 +248,7 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
 CALL_STUB_INIT_DESCRIPTOR(GetPropertyByValue)
 {
     // 3 : 3 input parameters
-    static StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = getPropertyByValue;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -261,17 +261,6 @@ CALL_STUB_INIT_DESCRIPTOR(GetPropertyByValue)
 
 CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
 {
-    // // 4 : 4 input parameters
-    // static StubDescriptor setPropertyByValue("SetPropertyByValue", 0, 4, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
-    // *descriptor = setPropertyByValue;
-    // // 4 : 4 input parameters
-    // std::array<MachineType, 4> params = {
-    //     MachineType::UINT64_TYPE,
-    //     MachineType::UINT64_TYPE,
-    //     MachineType::UINT64_TYPE,
-    //     MachineType::UINT64_TYPE,
-    // };
-    // descriptor->SetParameters(params.data());
 }
 
 
@@ -292,7 +281,7 @@ CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 CALL_STUB_INIT_DESCRIPTOR(CallSetter)
 {
     // 5 : 5 input parameters
-    StubDescriptor callSetter("CallSetter", 0, 5, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
+    StubDescriptor callSetter("CallSetter", 0, 5, ArgumentsOrder::DEFAULT_ORDER, BOOL_TYPE);
     *descriptor = callSetter;
     // 5 : 5 input parameters
     std::array<MachineType, 5> params = {
@@ -306,7 +295,7 @@ CALL_STUB_INIT_DESCRIPTOR(CallSetter)
 CALL_STUB_INIT_DESCRIPTOR(CallGetter)
 {
     // 3 : 3 input parameters
-    StubDescriptor callGetter("CallGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
+    StubDescriptor callGetter("CallGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = callGetter;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -321,7 +310,7 @@ CALL_STUB_INIT_DESCRIPTOR(CallGetter)
 CALL_STUB_INIT_DESCRIPTOR(AccessorGetter)
 {
     // 3 : 3 input parameters
-    StubDescriptor accessorGetter("AccessorGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
+    StubDescriptor accessorGetter("AccessorGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = accessorGetter;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -437,7 +426,7 @@ CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
 CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
 {
     // 2 : 2 input parameters
-    static StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = stringGetHashCode;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {

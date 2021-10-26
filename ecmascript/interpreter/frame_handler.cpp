@@ -59,12 +59,14 @@ void InterpretedFrameHandler::PrevFrame()
             OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
                 reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedFrameStateBase, prev));
             sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
-        } break;
+            break;
+        }
         case FrameType::OPTIMIZED_ENTRY_FRAME: {
             OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
                 reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
             sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
-        } break;
+            break;
+        }
         default:
             UNREACHABLE();
         }
@@ -78,7 +80,7 @@ void InterpretedFrameHandler::PrevFrame()
 FrameType InterpretedFrameHandler::GetFrameType()
 {
     FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(sp_) + FrameConst::kFrameType));
+                    reinterpret_cast<long long>(sp_) + FrameConst::FRAME_TYPE_OFFSET));
     return type;
 }
 

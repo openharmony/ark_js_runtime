@@ -1304,7 +1304,7 @@ public:
                      Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
         AddrShift attributesIndex =
             Int32Add(arrayIndex, GetInteger32Constant(panda::ecmascript::NameDictionary::ENTRY_DETAILS_INDEX));
-        return GetValueFromTaggedArray(elements, attributesIndex);
+        return TaggedCastToInt32(GetValueFromTaggedArray(elements, attributesIndex));
     }
 
     AddrShift GetValueFromDictionary(AddrShift elements, AddrShift entry)

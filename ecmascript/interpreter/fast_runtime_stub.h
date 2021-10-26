@@ -25,7 +25,6 @@ class PropertyAttributes;
 
 class FastRuntimeStub {
 public:
-    using Address = uintptr_t;
     /* -------------- Common API Begin, Don't change those interface!!! ----------------- */
     static inline JSTaggedValue FastAdd(JSTaggedValue left, JSTaggedValue right);
     static inline JSTaggedValue FastSub(JSTaggedValue left, JSTaggedValue right);

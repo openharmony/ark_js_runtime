@@ -1308,7 +1308,7 @@ void FunctionCallInternalStub::GenerateCircuit()
     {
         Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcIsBuiltinsConstructorOrFuncNotClassConstructor);
         Bind(&funcIsClassConstructor);
-        ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(FunctionCallNotConstructor), FalseConstant());
+        ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(FunctionCallNotConstructor), GetExceptionConstant());
     }
     Bind(&funcIsBuiltinsConstructorOrFuncNotClassConstructor);
     StubDescriptor *execute = GET_STUBDESCRIPTOR(Execute);

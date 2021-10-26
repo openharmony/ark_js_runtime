@@ -1366,7 +1366,7 @@ void LLVMStubModule::Initialize()
         if (!stubDescriptor->GetName().empty()) {
             stubFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
         }
-    } 
+    }
     for (i = 0; i < MAX_TEST_FUNCTION_COUNT; i++) {
         auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNCTION_OFFSET);
         if (!testFuncDescriptor->GetName().empty()) {
