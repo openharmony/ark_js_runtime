@@ -239,21 +239,21 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     JSTaggedType *current = fp_;
     while (current) {
         FrameType type = *(reinterpret_cast<FrameType*>(
-                        reinterpret_cast<long long>(current) + FrameConst::kFrameType));
+                        reinterpret_cast<intptr_t>(current) + FrameConst::kFrameType));
         if (type == FrameType::INTERPRETER_FRAME) {
             FrameState *state = reinterpret_cast<FrameState *>(current) - 1;
             InterpretedFrameHandler(current).Iterate(v0, v1);
             current = state->base.prev;
         } else if (type == FrameType::OPTIMIZED_FRAME) {
             OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
-                reinterpret_cast<long long>(current) -
+                reinterpret_cast<intptr_t>(current) -
                 MEMBER_OFFSET(OptimizedFrameStateBase, prev));
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->prev);
         } else {
             ASSERT(type == FrameType::OPTIMIZED_ENTRY_FRAME);
             OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
-                reinterpret_cast<long long>(current) -
+                reinterpret_cast<intptr_t>(current) -
                 MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
             OptimizedEntryFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->threadFp);
