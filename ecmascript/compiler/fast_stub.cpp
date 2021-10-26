@@ -1013,8 +1013,9 @@ void GetPropertyByNameStub::GenerateCircuit()
 void FastModStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
-    AddrShift x = Int64Argument(0);
-    AddrShift y = Int64Argument(1);
+    AddrShift thread = PtrArgument(0);
+    AddrShift x = Int64Argument(1);
+    AddrShift y = Int64Argument(2);
     DEFVARIABLE(intX, MachineType::INT32_TYPE, 0);
     DEFVARIABLE(intY, MachineType::INT32_TYPE, 0);
     DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
@@ -1151,7 +1152,9 @@ void FastModStub::GenerateCircuit()
                 Jump(&xIsZeroOryIsInf);
                 Bind(&yNotInf);
                 {
-                    doubleX = DoubleMod(*doubleX, *doubleY);
+                    StubDescriptor *floatMod = GET_STUBDESCRIPTOR(FloatMod);
+                    doubleX =CallRuntime(floatMod, thread, GetWord64Constant(FAST_STUB_ID(FloatMod)),
+                        {*doubleX, *doubleY});
                     Return(DoubleBuildTagged(*doubleX));
                 }
                 Bind(&xIsZeroOryIsInf);
@@ -1159,6 +1162,132 @@ void FastModStub::GenerateCircuit()
             }
         }
     }
+}
+
+void FastTypeOfStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift thread = PtrArgument(0);
+    AddrShift obj = PtrArgument(1);
+    DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, obj);
+    AddrShift gConstOffset = PtrAdd(thread, GetPtrConstant(panda::ecmascript::JSThread::GetGlobalConstantOffset()));
+    AddrShift booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
+    AddrShift gConstUndefindStr = Load(TAGGED_TYPE, gConstOffset, booleanIndex);
+    DEFVARIABLE(resultRep, MachineType::TAGGED_TYPE, gConstUndefindStr);
+    Label objIsTrue(env);
+    Label objNotTrue(env);
+    Label exit(env);
+    Label defaultLabel(env);
+    AddrShift gConstBooleanStr = Load(
+        TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+    Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
+    Bind(&objIsTrue);
+    {
+        resultRep = gConstBooleanStr;
+        Jump(&exit);
+    }
+    Bind(&objNotTrue);
+    {
+        Label objIsFalse(env);
+        Label objNotFalse(env);
+        Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
+        Bind(&objIsFalse);
+        {
+            resultRep = gConstBooleanStr;
+            Jump(&exit);
+        }
+        Bind(&objNotFalse);
+        {
+            Label objIsNull(env);
+            Label objNotNull(env);
+            Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
+            Bind(&objIsNull);
+            {
+                resultRep = Load(
+                    TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                Jump(&exit);
+            }
+            Bind(&objNotNull);
+            {
+                Label objIsUndefined(env);
+                Label objNotUndefined(env);
+                Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
+                    &objNotUndefined);
+                Bind(&objIsUndefined);
+                {
+                    resultRep = Load(TAGGED_TYPE, gConstOffset,
+                        GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
+                    Jump(&exit);
+                }
+                Bind(&objNotUndefined);
+                Jump(&defaultLabel);
+            }
+        }
+    }
+    Bind(&defaultLabel);
+    {
+        Label objIsHeapObject(env);
+        Label objNotHeapObject(env);
+        Branch(TaggedIsHeapObject(obj), &objIsHeapObject, &objNotHeapObject);
+        Bind(&objIsHeapObject);
+        {
+            Label objIsString(env);
+            Label objNotString(env);
+            Branch(IsString(obj), &objIsString, &objNotString);
+            Bind(&objIsString);
+            {
+                resultRep = Load(
+                    TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
+                Jump(&exit);
+            }
+            Bind(&objNotString);
+            {
+                Label objIsSymbol(env);
+                Label objNotSymbol(env);
+                Branch(IsSymbol(obj), &objIsSymbol, &objNotSymbol);
+                Bind(&objIsSymbol);
+                {
+                    resultRep = Load(TAGGED_TYPE, gConstOffset,
+                        GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
+                    Jump(&exit);
+                }
+                Bind(&objNotSymbol);
+                {
+                    Label objIsCallable(env);
+                    Label objNotCallable(env);
+                    Branch(IsCallable(obj), &objIsCallable, &objNotCallable);
+                    Bind(&objIsCallable);
+                    {
+                        resultRep = Load(
+                            TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
+                        Jump(&exit);
+                    }
+                    Bind(&objNotCallable);
+                    {
+                        resultRep = Load(
+                            TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                        Jump(&exit);
+                    }
+                }
+            }
+        }
+        Bind(&objNotHeapObject);
+        {
+            Label objIsNum(env);
+            Label objNotNum(env);
+            Branch(TaggedIsNumber(obj), &objIsNum, &objNotNum);
+            Bind(&objIsNum);
+            {
+                resultRep = Load(
+                    TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
+                Jump(&exit);
+            }
+            Bind(&objNotNum);
+            Jump(&exit);
+        }
+    }
+    Bind(&exit);
+    Return(*resultRep);
 }
 
 void FunctionCallInternalStub::GenerateCircuit()

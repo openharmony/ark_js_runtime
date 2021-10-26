@@ -144,4 +144,9 @@ uint64_t RuntimeTrampolines::Execute(uint64_t argThread, uint64_t argFunc,
 
     return EcmaInterpreter::Execute(thread, params).GetRawData();
 }
+
+double RuntimeTrampolines::FloatMod(double left, double right)
+{
+    return std::fmod(left, right);
+}
 }  // namespace panda::ecmascript

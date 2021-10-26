@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "gtest/gtest.h"
+#include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/compiler/fast_stub.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/llvm_mcjit_engine.h"
@@ -41,6 +42,7 @@ namespace panda::test {
 using namespace panda::coretypes;
 using namespace panda::ecmascript;
 using namespace kungfu;
+using BuiltinsPromiseHandler = builtins::BuiltinsPromiseHandler;
 
 class StubTest : public testing::Test {
 public:
@@ -440,19 +442,24 @@ HWTEST_F_L0(StubTest, FastModTest)
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
-    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
-
+    LLVMDumpModule(module);
+    auto engine = assembler.GetEngine();
+    uint64_t stub1Code = LLVMGetFunctionAddress(engine, "FastModStub");
+    std::map<uint64_t, std::string> addr2name = {{stub1Code, "stub1"}};
+    assembler.Disassemble(addr2name);
+    auto fn = reinterpret_cast<JSTaggedValue (*)(JSThread *, int64_t, int64_t)>(
+        assembler.GetFuncPtrFromCompiledModule(function));
     // test left, right are all integer
     int x = 7;
     int y = 3;
-    auto result = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    auto result = fn(thread, JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
     JSTaggedValue expectRes = FastRuntimeStub::FastMod(JSTaggedValue(x), JSTaggedValue(y));
     EXPECT_EQ(result, expectRes);
 
     // test y == 0.0 || std::isnan(y) || std::isnan(x) || std::isinf(x) return NAN_VALUE
     double x2 = 7.3;
     int y2 = base::NAN_VALUE;
-    auto result2 = fn(JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
+    auto result2 = fn(thread, JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
     auto expectRes2 = FastRuntimeStub::FastMod(JSTaggedValue(x2), JSTaggedValue(y2));
     EXPECT_EQ(result2, expectRes2);
     LOG_ECMA(INFO) << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData();
@@ -461,14 +468,14 @@ HWTEST_F_L0(StubTest, FastModTest)
     // // test modular operation under normal conditions
     double x3 = 33.0;
     double y3 = 44.0;
-    auto result3 = fn(JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
+    auto result3 = fn(thread, JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
     auto expectRes3 = FastRuntimeStub::FastMod(JSTaggedValue(x3), JSTaggedValue(y3));
     EXPECT_EQ(result3, expectRes3);
 
     // test x == 0.0 || std::isinf(y) return x
     double x4 = base::NAN_VALUE;
     int y4 = 7;
-    auto result4 = fn(JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
+    auto result4 = fn(thread, JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
     auto expectRes4 = FastRuntimeStub::FastMod(JSTaggedValue(x4), JSTaggedValue(y4));
 
     LOG_ECMA(INFO) << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData();
@@ -479,7 +486,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     int x5 = 7;
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     auto y5 = factory->NewFromStdString("hello world");
-    auto result5 = fn(JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
+    auto result5 = fn(thread, JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
     EXPECT_EQ(result5, JSTaggedValue::Hole());
     auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
     LOG_ECMA(INFO) << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData();
@@ -755,10 +762,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
 
     LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(stub1, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
-    /* struct ThreadTy fpInfo;
-        fpInfo.magic = 0x11223344;
-        fpInfo.fp = calling frame address
-    */
+
     LLVMValueRef value = LLVMGetParam(stub1, 0);
     LLVMValueRef c0 = LLVMConstInt(LLVMInt32Type(), 0, false);
     LLVMValueRef c1 = LLVMConstInt(LLVMInt32Type(), 1, false);
@@ -956,10 +960,7 @@ HWTEST_F_L0(StubTest, CEntryFp)
     LLVMAddTargetDependentFunctionAttr(func, "js-stub-call", "1");
     LLVMBasicBlockRef entryBb = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
-    /* struct ThreadTy fpInfo;
-        fpInfo.magic = 0x11223344;
-        fpInfo.fp = calling frame address
-    */
+
     LLVMValueRef value = LLVMGetParam(func, 0);
 
     LLVMValueRef c0 = LLVMConstInt(LLVMInt32Type(), 0, false);
@@ -1182,5 +1183,91 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(), strBig.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
+}
+
+HWTEST_F_L0(StubTest, FastTypeOfTest)
+{
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastTypeOf));
+    Circuit netOfGates;
+    FastTypeOfStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    bool verRes = Verifier::Run(&netOfGates);
+    ASSERT_TRUE(verRes);
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    char *error = nullptr;
+    LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    assembler.Run();
+    LLVMDumpModule(module);
+    auto *typeOfPtr =
+        reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+
+    // obj is JSTaggedValue::VALUE_TRUE
+    JSTaggedValue resultVal = typeOfPtr(thread, JSTaggedValue::True().GetRawData());
+    JSTaggedValue expectResult = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::True());
+    EXPECT_EQ(resultVal, globalConst->GetBooleanString());
+    EXPECT_EQ(resultVal, expectResult);
+
+    // obj is JSTaggedValue::VALUE_FALSE
+    JSTaggedValue resultVal2 = typeOfPtr(thread, JSTaggedValue::False().GetRawData());
+    JSTaggedValue expectResult2 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::False());
+    EXPECT_EQ(resultVal2, globalConst->GetBooleanString());
+    EXPECT_EQ(resultVal2, expectResult2);
+
+    // obj is JSTaggedValue::VALUE_NULL
+    JSTaggedValue resultVal3 = typeOfPtr(thread, JSTaggedValue::Null().GetRawData());
+    JSTaggedValue expectResult3 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Null());
+    EXPECT_EQ(resultVal3, globalConst->GetObjectString());
+    EXPECT_EQ(resultVal3, expectResult3);
+
+    // obj is JSTaggedValue::VALUE_UNDEFINED
+    JSTaggedValue resultVal4 = typeOfPtr(thread, JSTaggedValue::Undefined().GetRawData());
+    JSTaggedValue expectResult4 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Undefined());
+    EXPECT_EQ(resultVal4, globalConst->GetUndefinedString());
+    EXPECT_EQ(resultVal4, expectResult4);
+
+    // obj is IsNumber
+    JSTaggedValue resultVal5 = typeOfPtr(thread, JSTaggedValue(5).GetRawData());
+    JSTaggedValue expectResult5 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue(5));
+    EXPECT_EQ(resultVal5, globalConst->GetNumberString());
+    EXPECT_EQ(resultVal5, expectResult5);
+
+    // obj is String
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<EcmaString> str1 = factory->NewFromStdString("a");
+    JSHandle<EcmaString> str2 = factory->NewFromStdString("a");
+    JSTaggedValue expectResult6 = FastRuntimeStub::FastTypeOf(thread, str1.GetTaggedValue());
+    JSTaggedValue resultVal6 = typeOfPtr(thread, str2.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resultVal6, globalConst->GetStringString());
+    EXPECT_EQ(resultVal6, expectResult6);
+
+    // obj is Symbol
+    JSHandle<GlobalEnv> globalEnv = JSThread::Cast(thread)->GetEcmaVM()->GetGlobalEnv();
+    JSTaggedValue symbol = globalEnv->GetIteratorSymbol().GetTaggedValue();
+    JSTaggedValue expectResult7= FastRuntimeStub::FastTypeOf(thread, symbol);
+    JSTaggedValue resultVal7 = typeOfPtr(thread, symbol.GetRawData());
+    EXPECT_EQ(resultVal7, globalConst->GetSymbolString());
+    EXPECT_EQ(resultVal7, expectResult7);
+
+    // obj is callable
+    JSHandle<JSPromiseReactionsFunction> resolveCallable =
+        factory->CreateJSPromiseReactionsFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Resolve));
+    JSTaggedValue expectResult8= FastRuntimeStub::FastTypeOf(thread, resolveCallable.GetTaggedValue());
+    JSTaggedValue resultVal8 = typeOfPtr(thread, resolveCallable.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resultVal8, globalConst->GetFunctionString());
+    EXPECT_EQ(resultVal8, expectResult8);
+
+    // obj is heapObject
+    JSHandle<JSObject> object = factory->NewEmptyJSObject();
+    JSTaggedValue expectResult9= FastRuntimeStub::FastTypeOf(thread, object.GetTaggedValue());
+    JSTaggedValue resultVal9 = typeOfPtr(thread, object.GetTaggedValue().GetRawData());
+    EXPECT_EQ(resultVal9, globalConst->GetObjectString());
+    EXPECT_EQ(resultVal9, expectResult9);
 }
 }  // namespace panda::test

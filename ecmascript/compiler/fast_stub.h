@@ -142,11 +142,24 @@ public:
 
 class FastModStub : public Stub {
 public:
-    // 2 means argument counts
-    explicit FastModStub(Circuit *circuit) : Stub("FastMod", 2, circuit) {}
+    // 3 means argument counts
+    explicit FastModStub(Circuit *circuit) : Stub("FastMod", 3, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
     ~FastModStub() = default;
     NO_MOVE_SEMANTIC(FastModStub);
     NO_COPY_SEMANTIC(FastModStub);
+    void GenerateCircuit() override;
+};
+
+class FastTypeOfStub : public Stub {
+public:
+    // 2 means argument counts
+    explicit FastTypeOfStub(Circuit *circuit) : Stub("FastTypeOf", 2, circuit) {}
+    ~FastTypeOfStub() = default;
+    NO_MOVE_SEMANTIC(FastTypeOfStub);
+    NO_COPY_SEMANTIC(FastTypeOfStub);
     void GenerateCircuit() override;
 };
 

@@ -869,7 +869,7 @@ void LLVMIRBuilder::VisitIntRev(AddrShift gate, AddrShift e1) const
     LOG_ECMA(INFO) << "int sign invert gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
     LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
-    LLVMValueRef result = LLVMBuildNeg(builder_, e1Value, "");
+    LLVMValueRef result = LLVMBuildNot(builder_, e1Value, "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
