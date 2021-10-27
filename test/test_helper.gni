@@ -92,6 +92,17 @@ template("host_moduletest_action") {
     out_puts = [ _test_abc_path_ ]
   }
 
+  _extra_modules_ = []
+  if (defined(invoker.extra_modules)) {
+    foreach(module, invoker.extra_modules) {
+      _extra_modules_ += [ "$target_out_dir/${module}.abc" ]
+    }
+  }
+  _test_abc_paths_ = rebase_path(_test_abc_path_)
+  foreach(extra_module, _extra_modules_) {
+    _test_abc_paths_ += ":" + rebase_path(extra_module)
+  }
+
   action("${_target_name_}Action") {
     testonly = true
 
@@ -102,6 +113,7 @@ template("host_moduletest_action") {
       ":gen_${_target_name_}_abc",
       _host_jsvm_target_,
     ]
+    deps += _deps_
 
     script = "//ark/js_runtime/test/run_ark_executable.py"
 
@@ -109,7 +121,7 @@ template("host_moduletest_action") {
       "--script-file",
       rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_js_vm",
       "--script-args",
-      rebase_path(_test_abc_path_),
+      _test_abc_paths_,
       "--expect-file",
       rebase_path(_test_expect_path_),
       "--env-path",
@@ -120,6 +132,7 @@ template("host_moduletest_action") {
     ]
 
     inputs = [ _test_abc_path_ ]
+    inputs += _extra_modules_
 
     outputs = [ "$target_out_dir/${_target_name_}/" ]
   }
