@@ -1358,5 +1358,4 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     EXPECT_EQ(resultVal9, globalConst->GetObjectString());
     EXPECT_EQ(resultVal9, expectResult9);
 }
-
 }  // namespace panda::test

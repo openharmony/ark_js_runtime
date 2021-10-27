@@ -34,7 +34,6 @@ public:
         parser->Add(&enable_ark_tools_);
         parser->Add(&enable_stub_aot_);
         parser->Add(&stub_module_file_);
-
     }
 
     bool IsEnableArkTools() const
@@ -52,34 +51,41 @@ public:
         return enable_ark_tools_.WasSet();
     }
 
-    bool IsEnableStubAot() const {
+    bool IsEnableStubAot() const
+    {
         return enable_stub_aot_.GetValue();
     }
 
-    void SetEnableStubAot(bool value) {
+    void SetEnableStubAot(bool value)
+    {
         enable_stub_aot_.SetValue(value);
     }
 
-    bool WasSetEnableStubAot() const {
+    bool WasSetEnableStubAot() const
+    {
         return enable_stub_aot_.WasSet();
     }
 
-    std::string GetStubModuleFile() const {
+    std::string GetStubModuleFile() const
+    {
         return stub_module_file_.GetValue();
     }
 
-    void SetStubModuleFile(std::string value) {
+    void SetStubModuleFile(std::string value)
+    {
         stub_module_file_.SetValue(std::move(value));
     }
 
-    bool WasSetStubModuleFile() const {
+    bool WasSetStubModuleFile() const
+    {
         return stub_module_file_.WasSet();
     }
 
 private:
     PandArg<bool> enable_ark_tools_{"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
     PandArg<bool> enable_stub_aot_{"enable-stub-aot", false, R"(enable aot of fast stub. Default: false)"};
-    PandArg<std::string> stub_module_file_{"stub-module-file", R"(stub.m)", R"(Path to stub module file. Default: "stub.m")"};
+    PandArg<std::string> stub_module_file_{"stub-module-file", R"(stub.m)",
+                                           R"(Path to stub module file. Default: "stub.m")"};
 };
 }  // namespace panda::ecmascript
 
