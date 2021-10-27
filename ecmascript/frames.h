@@ -227,7 +227,7 @@
 
 namespace panda::ecmascript {
 class JSThread;
-enum class FrameType: uint64_t {
+enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
     INTERPRETER_FRAME = 2,
@@ -258,12 +258,9 @@ public:
     OptimizedFrameStateBase base;
 };
 
-constexpr int kSystemPointerSize = sizeof(void*);
 class FrameConst {
 public:
-    uint64_t *prev;
-    FrameType frameType;
-    static constexpr int kFrameType = -kSystemPointerSize;
+    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(FrameType);
 };
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H
