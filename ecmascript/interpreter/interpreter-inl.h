@@ -2502,7 +2502,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryLoadICByValue(thread, receiver, propKey, firstValue, secondValue);
             }
-            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
+            if (res.IsHole() && !firstValue.IsHole()) {
                 res = ICRuntimeStub::LoadICByValue(thread,
                                                    profileTypeArray,
                                                    receiver, propKey, slotId);
@@ -2554,7 +2554,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryStoreICByValue(thread, receiver, propKey, firstValue, secondValue, value);
             }
-            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
+            if (res.IsHole() && !firstValue.IsHole()) {
                 res = ICRuntimeStub::StoreICByValue(thread,
                                                     profileTypeArray,
                                                     receiver, propKey, value, slotId);
@@ -2867,7 +2867,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryLoadICByName(thread, receiver, firstValue, secondValue);
             }
-            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
+            if (res.IsHole() && !firstValue.IsHole()) {
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::LoadICByName(thread,
@@ -2922,7 +2922,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
             }
-            if (res.IsHole() && !firstValue.IsHole()) { //ic miss not mega
+            if (res.IsHole() && !firstValue.IsHole()) {
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::StoreICByName(thread,
