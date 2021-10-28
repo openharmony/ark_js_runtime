@@ -47,6 +47,11 @@ void FrameHandler::PrevFrame()
     }
 }
 
+InterpretedFrameHandler::InterpretedFrameHandler(JSThread *thread)
+    : FrameHandler(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()))
+{
+}
+
 void InterpretedFrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
@@ -211,7 +216,7 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 void OptimizedFrameHandler::PrevFrame()
 {
     OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
-        reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedFrameStateBase, prev));
+        reinterpret_cast<uintptr_t>(sp_) - OptimizedFrameStateBase::GetFrameStateOffsetFromSp());
     sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
 }
 
@@ -238,7 +243,7 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
 void OptimizedEntryFrameHandler::PrevFrame()
 {
     OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
-        reinterpret_cast<long long>(sp_) - MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
+        reinterpret_cast<uintptr_t>(sp_) - OptimizedEntryFrameState::GetFrameStateOffsetFromSp());
     sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
 }
 

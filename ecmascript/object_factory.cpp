@@ -2091,8 +2091,7 @@ JSHandle<JSObject> ObjectFactory::NewEmptyJSObject()
 
 EcmaString *ObjectFactory::ResolveString(uint32_t stringId)
 {
-    auto sp = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
-    JSMethod *caller = InterpretedFrameHandler(sp).GetMethod();
+    JSMethod *caller = InterpretedFrameHandler(thread_).GetMethod();
     auto *pf = caller->GetPandaFile();
     auto id = panda_file::File::EntityId(stringId);
     auto foundStr = pf->GetStringData(id);

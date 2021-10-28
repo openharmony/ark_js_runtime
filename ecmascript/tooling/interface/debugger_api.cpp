@@ -53,8 +53,7 @@ CString DebuggerApi::ConvertToString(const std::string &str)
 uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
 {
     uint32_t count = 0;
-    JSTaggedType *sp = const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
@@ -66,8 +65,7 @@ uint32_t DebuggerApi::GetStackDepth(const EcmaVM *ecmaVm)
 
 bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(const InterpretedFrameHandler *)> func)
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    InterpretedFrameHandler frameHandler(ecmaVm->GetJSThread());
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
@@ -86,28 +84,24 @@ bool DebuggerApi::StackWalker(const EcmaVM *ecmaVm, std::function<StackState(con
 
 uint32_t DebuggerApi::GetBytecodeOffset(const EcmaVM *ecmaVm)
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame());
-    return InterpretedFrameHandler(sp).GetBytecodeOffset();
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).GetBytecodeOffset();
 }
 
 JSMethod *DebuggerApi::GetMethod(const EcmaVM *ecmaVm)
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame());
-    return InterpretedFrameHandler(sp).GetMethod();
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).GetMethod();
 }
 
 Local<JSValueRef> DebuggerApi::GetVRegValue(const EcmaVM *ecmaVm, size_t index)
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame());
-    auto value = InterpretedFrameHandler(sp).GetVRegValue(index);
+    auto value = InterpretedFrameHandler(ecmaVm->GetJSThread()).GetVRegValue(index);
     JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
     return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 
 void DebuggerApi::SetVRegValue(const EcmaVM *ecmaVm, size_t index, Local<JSValueRef> value)
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(ecmaVm->GetJSThread()->GetCurrentSPFrame());
-    return InterpretedFrameHandler(sp).SetVRegValue(index, JSNApiHelper::ToJSTaggedValue(*value));
+    return InterpretedFrameHandler(ecmaVm->GetJSThread()).SetVRegValue(index, JSNApiHelper::ToJSTaggedValue(*value));
 }
 
 uint32_t DebuggerApi::GetBytecodeOffset(const InterpretedFrameHandler *frameHandler)

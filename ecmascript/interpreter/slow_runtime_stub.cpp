@@ -440,8 +440,7 @@ JSTaggedValue SlowRuntimeStub::CreateObjectWithExcludedKeys(JSThread *thread, ui
     JSHandle<JSObject> obj(thread, objVal);
     array_size_t numExcludedKeys = 0;
     JSHandle<TaggedArray> excludedKeys = factory->NewTaggedArray(numKeys + 1);
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    InterpretedFrameHandler frameHandler(thread);
     JSTaggedValue excludedKey = frameHandler.GetVRegValue(firstArgRegIdx);
     if (!excludedKey.IsUndefined()) {
         numExcludedKeys = numKeys + 1;
@@ -1734,8 +1733,7 @@ JSTaggedValue SlowRuntimeStub::SuperCall(JSThread *thread, JSTaggedValue func, J
     INTERPRETER_TRACE(thread, SuperCall);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    InterpretedFrameHandler frameHandler(thread);
 
     JSHandle<JSTaggedValue> funcHandle(thread, func);
     JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);
@@ -1760,8 +1758,7 @@ JSTaggedValue SlowRuntimeStub::SuperCallSpread(JSThread *thread, JSTaggedValue f
 {
     INTERPRETER_TRACE(thread, SuperCallSpread);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    InterpretedFrameHandler frameHandler(thread);
 
     JSHandle<JSTaggedValue> funcHandle(thread, func);
     JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);

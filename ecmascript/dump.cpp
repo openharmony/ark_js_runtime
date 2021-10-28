@@ -688,8 +688,7 @@ void JSTaggedValue::DumpVal(JSThread *thread, JSTaggedType val)
 
 void JSThread::DumpStack()
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(this->GetCurrentSPFrame());
-    InterpretedFrameHandler handler(sp);
+    InterpretedFrameHandler handler(this);
     handler.DumpStack(std::cout);
 }
 

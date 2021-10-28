@@ -52,7 +52,7 @@ public:
     {
         ASSERT(HasFrame());
         FrameType type = *(reinterpret_cast<FrameType*>(
-                        reinterpret_cast<long long>(sp_) + FrameConst::FRAME_TYPE_OFFSET));
+                        reinterpret_cast<uintptr_t>(sp_) + FrameConst::FRAME_TYPE_OFFSET));
         return type;
     }
 private:
@@ -64,6 +64,7 @@ private:
 
 class InterpretedFrameHandler : public FrameHandler {
 public:
+    explicit InterpretedFrameHandler(JSThread *thread);
     explicit InterpretedFrameHandler(JSTaggedType *sp) : FrameHandler(sp) {}
     DEFAULT_COPY_SEMANTIC(InterpretedFrameHandler);
     DEFAULT_MOVE_SEMANTIC(InterpretedFrameHandler);

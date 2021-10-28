@@ -75,7 +75,7 @@ public:
         currentFrame_ = sp;
     }
 
-    const JSTaggedType *GetLastIFrameSp() const
+    const JSTaggedType *GetLastInterpretedFrameSp() const
     {
         return lastIFrame_;
     }

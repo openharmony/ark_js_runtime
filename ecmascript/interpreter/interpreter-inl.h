@@ -212,7 +212,7 @@ JSTaggedType *EcmaInterpreter::GetCurrentInterpretedFrameSp(JSThread *thread)
                         reinterpret_cast<long long>(current) + FrameConst::FRAME_TYPE_OFFSET));
     JSTaggedType *sp = originalPrevSp;
     if (type != FrameType::INTERPRETER_FRAME) {
-        JSTaggedType *lastSp = const_cast<JSTaggedType *>(thread->GetLastIFrameSp());
+        JSTaggedType *lastSp = const_cast<JSTaggedType *>(thread->GetLastInterpretedFrameSp());
         sp = lastSp;
     }
     return sp;
@@ -466,8 +466,7 @@ void EcmaInterpreter::ResumeContext(JSThread *thread)
 
 void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
 {
-    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    InterpretedFrameHandler frameHandler(sp);
+    InterpretedFrameHandler frameHandler(thread);
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;

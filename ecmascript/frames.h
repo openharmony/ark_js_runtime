@@ -243,19 +243,27 @@ auto as_integer(Enumeration const value)
 class OptimizedFrameStateBase {
 public:
     FrameType frameType;
-    uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    uintptr_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    static size_t GetFrameStateOffsetFromSp()
+    {
+        return MEMBER_OFFSET(OptimizedFrameStateBase, prev);
+    }
 };
 
 class InterpretedFrameStateBase {
 public:
-    uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    uintptr_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     FrameType frameType;
 };
 
 class OptimizedEntryFrameState {
 public:
-    uint64_t *threadFp; // for gc
+    uintptr_t *threadFp; // for gc
     OptimizedFrameStateBase base;
+    static size_t GetFrameStateOffsetFromSp()
+    {
+        return MEMBER_OFFSET(OptimizedEntryFrameState, base.prev);
+    }
 };
 
 class FrameConst {
