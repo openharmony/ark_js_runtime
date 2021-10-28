@@ -23,7 +23,7 @@ void FrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
     auto type = GetFrameType();
-    switch(type) {
+    switch (type) {
         case FrameType::OPTIMIZED_FRAME: {
             auto framehandle =
                 reinterpret_cast<OptimizedFrameHandler *>(this);
@@ -58,7 +58,7 @@ void InterpretedFrameHandler::PrevFrame()
 void InterpretedFrameHandler::PrevInterpretedFrame()
 {
     FrameHandler::PrevFrame();
-    for(;HasFrame() && GetFrameType() != FrameType::INTERPRETER_FRAME; FrameHandler::PrevFrame());
+    for (;HasFrame() && GetFrameType() != FrameType::INTERPRETER_FRAME; FrameHandler::PrevFrame());
 }
 
 InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const

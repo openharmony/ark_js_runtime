@@ -55,7 +55,6 @@ public:
                         reinterpret_cast<long long>(sp_) + FrameConst::FRAME_TYPE_OFFSET));
         return type;
     }
-    JSTaggedType *GetCurrentSp() { return sp_; }
 private:
     friend class InterpretedFrameHandler;
     friend class OptimizedFrameHandler;
