@@ -26,7 +26,6 @@ namespace panda::ecmascript {
 class ConstantPool;
 class ECMAObject;
 class GeneratorContext;
-using TaggedType = coretypes::TaggedType;
 
 // align with 8
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)

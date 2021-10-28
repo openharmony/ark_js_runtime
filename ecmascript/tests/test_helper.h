@@ -65,7 +65,7 @@ public:
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
         FrameState *state = reinterpret_cast<FrameState *>(newSp) - 1;
-        state->base.frameType = ecmascript::FrameType::INTERPRETER_FRAME;
+        state->base.frameType = static_cast<uintptr_t>(ecmascript::FrameType::INTERPRETER_FRAME);
         state->base.prev = sp;
         state->pc = nullptr;
         state->sp = newSp;

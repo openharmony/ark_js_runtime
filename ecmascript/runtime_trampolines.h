@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_H
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_H
 #include "ecmascript/compiler/fast_stub_define.h"
+#include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
@@ -64,23 +65,15 @@ public:
         lastFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
-        // print newfp and type for debug
-        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " lastFp_ : " << lastFp_
-            << std::endl;
-        FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(newFp) + FrameConst::FRAME_TYPE_OFFSET));
-        std::cout << __FUNCTION__ << " type = " << as_integer(type) << std::endl;
+        LOG_ECMA(INFO) << "Sp: " << newSp << " type:" <<
+            static_cast<uintptr_t>(Frame::GetFrameType(newSp));
     }
     ~CallRuntimeTrampolinesScope()
     {
-        // print oldfp and type for debug
-        std::cout << "~CallRuntimeTrampolinesScope lastFp_: " << lastFp_ <<
-            " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
-        FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(lastFp_) + FrameConst::FRAME_TYPE_OFFSET));
-        std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
+        LOG_ECMA(INFO) << "Sp: " << oldSp << " type:" <<
+            static_cast<uintptr_t>(Frame::GetFrameType(oldSp));
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:

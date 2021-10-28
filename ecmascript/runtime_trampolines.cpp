@@ -16,13 +16,13 @@
 #include "runtime_trampolines.h"
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/ecma_macros.h"
+#include "ecmascript/frames.h"
+#include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
-#include "ecmascript/frames.h"
 #include "ecmascript/layout_info.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
-#include "ecmascript/interpreter/interpreter-inl.h"
 
 namespace panda::ecmascript {
 bool RuntimeTrampolines::AddElementInternal(uint64_t argThread, uint64_t argReceiver, uint32_t argIndex,
@@ -117,7 +117,11 @@ uint64_t RuntimeTrampolines::AccessorGetter(uint64_t argThread, uint64_t argGett
 
 int32_t RuntimeTrampolines::FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num)
 {
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     auto cls  = reinterpret_cast<JSHClass *>(hClass);
     auto layoutInfo = LayoutInfo::Cast(cls->GetAttributes().GetTaggedObject());
     return layoutInfo->FindElementWithCache(thread, cls, JSTaggedValue(key), num);
