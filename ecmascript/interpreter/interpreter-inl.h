@@ -1717,10 +1717,13 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
         if (result->IsResolved()) {
+            SAVE_ACC();
             auto res = SlowRuntimeStub::DefineNCFuncDyn(thread, result);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             result = JSFunction::Cast(res.GetTaggedObject());
             result->SetConstantPool(thread, JSTaggedValue(constpool));
+            RESTORE_ACC();
+            homeObject = GET_ACC();
         } else {
             result->SetResolved(thread);
         }
