@@ -15,6 +15,7 @@
 
 #ifndef ECMASCRIPT_COMPILER_LLVM_CODEGEN_H
 #define ECMASCRIPT_COMPILER_LLVM_CODEGEN_H
+
 #include <iostream>
 #include <list>
 #include <map>
@@ -131,6 +132,7 @@ private:
     /* stack map */
     uint8_t *stackMapsSection_ {nullptr};
 };
+
 class LLVMAssembler {
 public:
     explicit LLVMAssembler(LLVMModuleRef module, const char* triple);

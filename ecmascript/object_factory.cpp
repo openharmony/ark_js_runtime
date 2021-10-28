@@ -31,6 +31,7 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/ic/proto_change_details.h"
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
@@ -2090,7 +2091,8 @@ JSHandle<JSObject> ObjectFactory::NewEmptyJSObject()
 
 EcmaString *ObjectFactory::ResolveString(uint32_t stringId)
 {
-    JSMethod *caller = InterpretedFrameHandler(thread_).GetMethod();
+    auto sp = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
+    JSMethod *caller = InterpretedFrameHandler(sp).GetMethod();
     auto *pf = caller->GetPandaFile();
     auto id = panda_file::File::EntityId(stringId);
     auto foundStr = pf->GetStringData(id);

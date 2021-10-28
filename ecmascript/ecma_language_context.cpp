@@ -17,6 +17,7 @@
 
 #include "ecmascript/ecma_class_linker_extension.h"
 #include "ecmascript/ecma_exceptions.h"
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
@@ -25,6 +26,7 @@
 #include "include/tooling/pt_lang_extension.h"
 
 namespace panda {
+using ecmascript::JSTaggedType;
 using ecmascript::InterpretedFrameHandler;
 using ecmascript::EcmaVM;
 using ecmascript::JSThread;
@@ -34,8 +36,9 @@ std::pair<Method *, uint32_t> EcmaLanguageContext::GetCatchMethodAndOffset(Metho
     Method *catchMethod = method;
     uint32_t catchOffset = 0;
     auto jsThread = static_cast<JSThread *>(thread);
-    InterpretedFrameHandler frameHandler(jsThread);
-    for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+    auto sp = const_cast<JSTaggedType *>(jsThread->GetCurrentSPFrame());
+    InterpretedFrameHandler frameHandler(sp);
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
         }

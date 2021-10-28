@@ -27,6 +27,7 @@
 #include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/ic/property_box.h"
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_array.h"
@@ -687,7 +688,8 @@ void JSTaggedValue::DumpVal(JSThread *thread, JSTaggedType val)
 
 void JSThread::DumpStack()
 {
-    InterpretedFrameHandler handler(this);
+    JSTaggedType *sp = const_cast<JSTaggedType *>(this->GetCurrentSPFrame());
+    InterpretedFrameHandler handler(sp);
     handler.DumpStack(std::cout);
 }
 

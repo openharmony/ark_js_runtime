@@ -19,6 +19,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -192,8 +193,9 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 {
     auto ecmaVm = thread->GetEcmaVM();
     CString data;
-    InterpretedFrameHandler frameHandler(thread);
-    for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    InterpretedFrameHandler frameHandler(sp);
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
         }

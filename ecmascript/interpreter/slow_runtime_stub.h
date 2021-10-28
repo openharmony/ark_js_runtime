@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H
 #define ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H
 
+#include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 

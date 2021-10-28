@@ -82,7 +82,8 @@ JSTaggedValue SlowRuntimeHelper::NewObject(JSThread *thread, JSHandle<JSTaggedVa
 
 void SlowRuntimeHelper::SaveFrameToContext(JSThread *thread, JSHandle<GeneratorContext> context)
 {
-    InterpretedFrameHandler frameHandler(thread);
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    InterpretedFrameHandler frameHandler(sp);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     uint32_t nregs = frameHandler.GetSize();
     JSHandle<TaggedArray> regsArray = factory->NewTaggedArray(nregs);
@@ -122,7 +123,8 @@ JSTaggedValue ConstructGeneric(JSThread *thread, JSHandle<JSFunction> ctor, JSHa
     }
 
     // Add the input parameter
-    InterpretedFrameHandler frameHandler(thread);
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    InterpretedFrameHandler frameHandler(sp);
     CallParams params;
     params.callTarget = ECMAObject::Cast(*ctor);
     params.newTarget = newTgt.GetTaggedType();
@@ -221,7 +223,8 @@ JSTaggedValue ConstructProxy(JSThread *thread, JSHandle<JSProxy> ctor, JSHandle<
             args->Set(thread, i, value);
         }
     }
-    InterpretedFrameHandler frameHandler(thread);
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    InterpretedFrameHandler frameHandler(sp);
     for (array_size_t i = 0; i < argsCount; ++i) {
         JSTaggedValue value = frameHandler.GetVRegValue(baseArgLocation + i);
         args->Set(thread, i + preArgsSize, value);

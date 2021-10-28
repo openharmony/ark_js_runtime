@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H
 #define ECMASCRIPT_INTERPRETER_FRAME_HANDLER_H
 
+#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/heap_roots.h"
@@ -27,17 +28,49 @@ class JSThread;
 class JSFunction;
 class ConstantPool;
 
-class InterpretedFrameHandler {
+class FrameHandler {
 public:
-    explicit InterpretedFrameHandler(JSTaggedType *sp) : sp_(sp) {}
-    explicit InterpretedFrameHandler(const JSThread *thread);
-    ~InterpretedFrameHandler() = default;
+    explicit FrameHandler(JSTaggedType *sp) : sp_(sp) {}
+    ~FrameHandler() = default;
+    DEFAULT_COPY_SEMANTIC(FrameHandler);
+    DEFAULT_MOVE_SEMANTIC(FrameHandler);
+    bool HasFrame() const
+    {
+        // Breakframe also is a frame
+        return sp_ != nullptr;
+    }
+    bool IsBreakFrame() const
+    {
+        ASSERT(HasFrame());
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+        return state->sp == nullptr;
+    }
+    void PrevFrame();
+
+    FrameType GetFrameType() const
+    {
+        ASSERT(HasFrame());
+        FrameType type = *(reinterpret_cast<FrameType*>(
+                        reinterpret_cast<long long>(sp_) + FrameConst::FRAME_TYPE_OFFSET));
+        return type;
+    }
+    JSTaggedType *GetCurrentSp() { return sp_; }
+private:
+    friend class InterpretedFrameHandler;
+    friend class OptimizedFrameHandler;
+    friend class OptimizedEntryFrameHandler;
+    JSTaggedType *sp_{nullptr};
+};
+
+class InterpretedFrameHandler : public FrameHandler {
+public:
+    explicit InterpretedFrameHandler(JSTaggedType *sp) : FrameHandler(sp) {}
     DEFAULT_COPY_SEMANTIC(InterpretedFrameHandler);
     DEFAULT_MOVE_SEMANTIC(InterpretedFrameHandler);
 
-    bool HasFrame() const;
-    bool IsBreakFrame() const;
     void PrevFrame();
+    void PrevInterpretedFrame();
     InterpretedFrameHandler GetPrevFrame() const;
 
     JSTaggedValue GetVRegValue(size_t index) const;
@@ -65,27 +98,25 @@ public:
     {
         DumpPC(std::cout, pc);
     }
-
-private:
-    FrameType GetFrameType();
-    JSTaggedType *sp_{nullptr};
 };
 
-class OptimizedFrameHandler {
+class OptimizedFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedFrameHandler(uintptr_t *fp) : fp_(fp) {}
+    explicit OptimizedFrameHandler(uintptr_t *fp) : FrameHandler(fp), fp_(fp) {}
     explicit OptimizedFrameHandler(const JSThread *thread);
     ~OptimizedFrameHandler() = default;
+    void PrevFrame();
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
     uintptr_t *fp_ {nullptr};
 };
 
-class OptimizedEntryFrameHandler {
+class OptimizedEntryFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedEntryFrameHandler(uintptr_t *fp) : fp_(fp) {}
+    explicit OptimizedEntryFrameHandler(uintptr_t *fp) : FrameHandler(fp), fp_(fp) {}
     explicit OptimizedEntryFrameHandler(const JSThread *thread);
     ~OptimizedEntryFrameHandler() = default;
+    void PrevFrame();
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
     uintptr_t *fp_ {nullptr};

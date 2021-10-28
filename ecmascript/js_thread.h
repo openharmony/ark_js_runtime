@@ -19,7 +19,6 @@
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/ecma_global_storage.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "include/thread.h"
 #include "ecmascript/frames.h"

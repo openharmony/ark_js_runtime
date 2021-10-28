@@ -23,6 +23,7 @@
 #include "ecmascript/ic/ic_runtime_stub-inl.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_tagged_value.h"
@@ -203,7 +204,7 @@ namespace panda::ecmascript {
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
-JSTaggedType *EcmaInterpreter::GetCurrentInterPreterFrameSp(JSThread *thread)
+JSTaggedType *EcmaInterpreter::GetCurrentInterpretedFrameSp(JSThread *thread)
 {
     JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     auto current = originalPrevSp;
@@ -220,7 +221,7 @@ JSTaggedType *EcmaInterpreter::GetCurrentInterPreterFrameSp(JSThread *thread)
 JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, ExecuteNative);
-    JSTaggedType *sp = GetCurrentInterPreterFrameSp(thread);
+    JSTaggedType *sp = GetCurrentInterpretedFrameSp(thread);
     
     JSMethod *methodToCall = params.callTarget->GetCallTarget();
     ASSERT(methodToCall->GetNumVregs() == 0);
@@ -267,7 +268,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     }
     JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
 
-    JSTaggedType *sp = GetCurrentInterPreterFrameSp(thread);
+    JSTaggedType *sp = GetCurrentInterpretedFrameSp(thread);
     JSTaggedType *newSp = sp - FRAME_STATE_SIZE;
     // push break state
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -465,8 +466,9 @@ void EcmaInterpreter::ResumeContext(JSThread *thread)
 
 void EcmaInterpreter::NotifyBytecodePcChanged(JSThread *thread)
 {
-    InterpretedFrameHandler frameHandler(thread);
-    for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    InterpretedFrameHandler frameHandler(sp);
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsBreakFrame()) {
             continue;
         }
@@ -3228,7 +3230,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         InterpretedFrameHandler frameHandler(sp);
         uint32_t pcOffset = panda_file::INVALID_OFFSET;
-        for (; frameHandler.HasFrame(); frameHandler.PrevFrame()) {
+        for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
             if (frameHandler.IsBreakFrame()) {
                 return;
             }
