@@ -13,5 +13,5 @@
  * limitations under the License.
  */
 
-var helloworld = "I'm helloworld!"
-print("hello world !")
+var second_module = "I'm second_module!"
+print("second_module got: " + helloworld)
