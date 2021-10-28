@@ -49,6 +49,7 @@ enum ValueCode {
     INT64,
     FLOAT32,
     FLOAT64,
+    TAGGED_POINTER,
 };
 
 std::string ValueCodeToStr(ValueCode valueCode);
@@ -128,6 +129,7 @@ public:
         INT64_CALL,
         FLOAT32_CALL,
         FLOAT64_CALL,
+        TAGGED_POINTER_CALL,
         ALLOCA,
         INT1_ARG,
         INT8_ARG,
@@ -253,6 +255,7 @@ public:
     [[nodiscard]] bool IsCFGMerge() const;
     [[nodiscard]] bool IsControlCase() const;
     [[nodiscard]] bool IsLoopHead() const;
+    [[nodiscard]] bool IsNop() const;
     ~OpCode() = default;
 
 private:
@@ -368,6 +371,7 @@ public:
     [[nodiscard]] bool Verify() const;
     [[nodiscard]] MarkCode GetMark(TimeStamp stamp) const;
     void SetMark(MarkCode mark, TimeStamp stamp);
+    TypeCode GetTypeCode() const;
     ~Gate() = default;
 
 private:

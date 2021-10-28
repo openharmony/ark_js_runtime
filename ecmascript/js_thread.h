@@ -170,6 +170,14 @@ public:
         return fastStubEntires_[id];
     }
 
+    void SetFastStubEntry(uint32_t id, Address entry)
+    {
+        ASSERT(id < kungfu::FAST_STUB_MAXCOUNT);
+        fastStubEntires_[id] = entry;
+    }
+
+    void InitializeFastRuntimeStubs();
+
     void LoadFastStubModule(const char *moduleFile);
 
     static uint32_t GetRuntimeFunctionsOffset()
@@ -228,6 +236,7 @@ private:
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
     Address fastStubEntires_[kungfu::FAST_STUB_MAXCOUNT];
     JSTaggedValue stubCode_ {JSTaggedValue::Hole()};
+    JSTaggedValue stubStackMap_ {JSTaggedValue::Hole()};
     EcmaGlobalStorage *globalStorage_ {nullptr};
 
     os::memory::ConditionVariable initializationVar_ GUARDED_BY(initializationLock_);

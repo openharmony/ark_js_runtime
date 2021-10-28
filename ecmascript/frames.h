@@ -228,6 +228,7 @@
 #endif
 
 namespace panda::ecmascript {
+using TaggedType = coretypes::TaggedType;
 class JSThread;
 enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
@@ -238,29 +239,29 @@ enum class FrameType: uintptr_t {
 class OptimizedFrameStateBase {
 public:
     uintptr_t frameType;
-    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    TaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
 };
 
 class InterpretedFrameStateBase {
 public:
-    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    TaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     uintptr_t frameType;
 };
 
 class OptimizedEntryFrameState {
 public:
-    JSTaggedType *threadFp; // for gc
+    TaggedType *threadFp; // for gc
     OptimizedFrameStateBase base;
 };
 
 class Frame {
+private:
+    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uintptr_t);
 public:
     static FrameType GetFrameType(const TaggedType *current)
     {
         return *(reinterpret_cast<FrameType*>(reinterpret_cast<uintptr_t>(current) + FRAME_TYPE_OFFSET));
     }
-private:
-    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uintptr_t);
 };
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H

@@ -18,8 +18,10 @@
 
 #include <iostream>
 #include <memory>
-#include <set>
 #include <vector>
+#include <set>
+#include "ecmascript/common.h"
+#include "ecmascript/ecma_macros.h"
 
 #ifdef PANDA_TARGET_AMD64
 #define SP_DWARF_REG_NUM  7
@@ -44,9 +46,9 @@ struct Header {
     uint16_t Reserved1; // Reserved (expected to be 0)
     void Print() const
     {
-        std::cout << "----- head ----" << std::endl;
-        std::cout << "   version:" << stackmapversion << std::endl;
-        std::cout << "+++++ head ++++" << std::endl;
+        LOG_ECMA(INFO) << "----- head ----" << std::endl;
+        LOG_ECMA(INFO) << "   version:" << static_cast<int>(stackmapversion) << std::endl;
+        LOG_ECMA(INFO) << "+++++ head ++++" << std::endl;
     }
 };
 
@@ -56,9 +58,9 @@ struct StkSizeRecordTy {
     uint64_t recordCount;
     void Print() const
     {
-            std::cout << "               functionAddress:0x" << std::hex << functionAddress << std::endl;
-            std::cout << "               stackSize:" << std::dec << stackSize << std::endl;
-            std::cout << "               recordCount:" << std::dec << recordCount << std::endl;
+            LOG_ECMA(INFO) << "               functionAddress:0x" << std::hex << functionAddress << std::endl;
+            LOG_ECMA(INFO) << "               stackSize:" << std::dec << stackSize << std::endl;
+            LOG_ECMA(INFO) << "               recordCount:" << std::dec << recordCount << std::endl;
     }
 };
 
@@ -66,7 +68,7 @@ struct ConstantsTy {
     uint64_t LargeConstant;
     void Print() const
     {
-        std::cout << "               LargeConstant:" << LargeConstant << std::endl;
+        LOG_ECMA(INFO) << "               LargeConstant:" << LargeConstant << std::endl;
     }
 };
 
@@ -77,14 +79,14 @@ struct StkMapRecordHeadTy {
     uint16_t NumLocations;
     void Print() const
     {
-        std::cout << "               PatchPointID:" << std::hex << PatchPointID << std::endl;
-        std::cout << "               instructionOffset:" << std::hex << InstructionOffset << std::endl;
-        std::cout << "               Reserved:" << Reserved << std::endl;
-        std::cout << "               NumLocations:" << NumLocations << std::endl;
+        LOG_ECMA(INFO) << "               PatchPointID:" << std::hex << PatchPointID << std::endl;
+        LOG_ECMA(INFO) << "               instructionOffset:" << std::hex << InstructionOffset << std::endl;
+        LOG_ECMA(INFO) << "               Reserved:" << Reserved << std::endl;
+        LOG_ECMA(INFO) << "               NumLocations:" << NumLocations << std::endl;
     }
 };
 
-struct LocationTy {
+struct  LocationTy {
     enum class Kind: uint8_t {
         REGISTER = 1,
         DIRECT = 2,
@@ -99,14 +101,14 @@ struct LocationTy {
     uint16_t Reserved_1;
     OffsetType OffsetOrSmallConstant;
 
-    std::string TypeToString(Kind loc) const;
+    std::string PUBLIC_API TypeToString(Kind loc) const;
 
     void Print() const
     {
-        std::cout  << TypeToString(location);
-        std::cout << ", size:" << std::dec << LocationSize;
-        std::cout << "\tDwarfRegNum:" << DwarfRegNum;
-        std::cout << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant << std::endl;
+        LOG_ECMA(INFO)  << TypeToString(location);
+        LOG_ECMA(INFO) << ", size:" << std::dec << LocationSize;
+        LOG_ECMA(INFO) << "\tDwarfRegNum:" << DwarfRegNum;
+        LOG_ECMA(INFO) << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant << std::endl;
     }
 };
 
@@ -116,9 +118,9 @@ struct LiveOutsTy {
     uint8_t SizeinBytes;
     void Print() const
     {
-        std::cout << "                  Dwarf RegNum:" << DwarfRegNum << std::endl;
-        std::cout << "                  Reserved:" << Reserved << std::endl;
-        std::cout << "                  SizeinBytes:" << SizeinBytes << std::endl;
+        LOG_ECMA(INFO) << "                  Dwarf RegNum:" << DwarfRegNum << std::endl;
+        LOG_ECMA(INFO) << "                  Reserved:" << Reserved << std::endl;
+        LOG_ECMA(INFO) << "                  SizeinBytes:" << SizeinBytes << std::endl;
     }
 };
 
@@ -131,38 +133,38 @@ struct StkMapRecordTy {
         head.Print();
         auto size = Locations.size();
         for (size_t i = 0; i < size; i++) {
-            std::cout << "                   #" << std::dec << i << ":";
+            LOG_ECMA(INFO) << "                   #" << std::dec << i << ":";
             Locations[i].Print();
         }
         size = LiveOuts.size();
         for (size_t i = 0; i < size; i++) {
-            std::cout << "               liveOuts[" << i << "] info:" << std::endl;
+            LOG_ECMA(INFO) << "               liveOuts[" << i << "] info:" << std::endl;
         }
     }
 };
 
 class DataInfo {
 public:
-    explicit DataInfo(const uint8_t *data): data_(data), offset(0) {}
+    explicit DataInfo(const uint8_t *data): data_(data), offset_(0) {}
     ~DataInfo()
     {
         data_ = nullptr;
-        offset = 0;
+        offset_ = 0;
     }
     template<class T>
     T Read()
     {
-        T t = *reinterpret_cast<const T*>(data_ + offset);
-        offset += sizeof(T);
+        T t = *reinterpret_cast<const T*>(data_ + offset_);
+        offset_ += sizeof(T);
         return t;
     }
     unsigned int GetOffset() const
     {
-        return offset;
+        return offset_;
     }
 private:
     const uint8_t *data_;
-    unsigned int offset;
+    unsigned int offset_;
 };
 
 struct LLVMStackMap {
@@ -174,15 +176,15 @@ struct LLVMStackMap {
     {
         head.Print();
         for (size_t i = 0; i < StkSizeRecords.size(); i++) {
-            std::cout << "stkSizeRecord[" << i << "] info:" << std::endl;
+            LOG_ECMA(INFO) << "stkSizeRecord[" << i << "] info:" << std::endl;
             StkSizeRecords[i].Print();
         }
         for (size_t i = 0; i < Constants.size(); i++) {
-            std::cout << "constants[" << i << "] info:" << std::endl;
+            LOG_ECMA(INFO) << "constants[" << i << "] info:" << std::endl;
             Constants[i].Print();
         }
         for (size_t i = 0; i < StkMapRecord.size(); i++) {
-            std::cout << "StkMapRecord[" << i << "] info:" << std::endl;
+            LOG_ECMA(INFO) << "StkMapRecord[" << i << "] info:" << std::endl;
             StkMapRecord[i].Print();
         }
     }
@@ -195,14 +197,16 @@ public:
         static LLVMStackMapParser instance;
         return instance;
     }
-    bool CalculateStackMap(const uint8_t *stackMapAddr);
-    void Print() const
+    bool PUBLIC_API CalculateStackMap(const uint8_t *stackMapAddr);
+    bool PUBLIC_API CalculateStackMap(const uint8_t *stackMapAddr,
+        uintptr_t hostCodeSectionAddr, uintptr_t deviceCodeSectionAddr);
+    void PUBLIC_API Print() const
     {
         llvmStackMap_.Print();
     }
     bool StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetTypeVector &infos);
     bool StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t frameFp,
-                                                std::vector<uintptr_t> &slotAddrs);
+                                                std::set<uintptr_t> &slotAddrs);
 private:
     LLVMStackMapParser()
     {

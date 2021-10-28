@@ -194,8 +194,6 @@ private:
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
-                           LLVMModuleRef module, LLVMValueRef function);
-    explicit LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                            LLVMStubModule *module, LLVMValueRef function);
     ~LLVMIRBuilder();
     void Build();

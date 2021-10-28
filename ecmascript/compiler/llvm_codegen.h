@@ -46,6 +46,10 @@ public:
     {
         return assembler_.GetCodeSize();
     }
+    int GetStackMapsSize() const
+    {
+        return assembler_.GetStackMapsSize();
+    }
     void CopyAssemblerToCode(panda::ecmascript::MachineCode *code)
     {
         code->SetData(reinterpret_cast<uint8_t *>(assembler_.GetCodeBuffer()), assembler_.GetCodeSize());

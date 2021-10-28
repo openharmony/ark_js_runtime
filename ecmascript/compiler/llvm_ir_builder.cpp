@@ -31,21 +31,13 @@ namespace kungfu {
 std::unordered_map<int, LLVMValueRef> g_values = {};
 
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
-                             LLVMModuleRef module, LLVMValueRef function)
-    : schedule_(schedule), circuit_(circuit), module_(module), function_(function)
-{
-    builder_ = LLVMCreateBuilder();
-    context_ = LLVMGetGlobalContext();
-    bbIdMapBb_.clear();
-}
-
-LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                              LLVMStubModule *module, LLVMValueRef function)
     : schedule_(schedule), circuit_(circuit), module_(module->GetModule()),
       function_(function), stubModule_(module)
 {
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
+    LLVMSetGC(function_, "statepoint-example");
     bbIdMapBb_.clear();
 }
 
@@ -145,6 +137,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT64_LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::FLOAT64_SMOD, &LLVMIRBuilder::HandleFloatMod},
         {OpCode::INT32_SMOD, &LLVMIRBuilder::HandleIntMod},
+        {OpCode::TAGGED_POINTER_CALL, &LLVMIRBuilder::HandleCall},
 
     };
     opCodeHandleIgnore= {OpCode::NOP, OpCode::CIRCUIT_ROOT, OpCode::DEPEND_ENTRY,
@@ -186,8 +179,6 @@ void LLVMIRBuilder::Build()
             AddrShift gate = (*schedule_)[bbIdx][instIdx - 1];
             std::vector<AddrShift> ins = circuit_->GetInVector(gate);
             std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
-            std::cout << "instIdx :" << instIdx << std::endl;
-            circuit_->Print(gate);
             auto found = opCodeHandleMap_.find(circuit_->GetOpCode(gate));
             if (found != opCodeHandleMap_.end()) {
                 (this->*(found->second))(gate);
@@ -1356,19 +1347,20 @@ LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *st
 LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
 {
     static std::map<MachineType, LLVMTypeRef> machineTypeMap = {
-        {MachineType::NONE_TYPE,        LLVMVoidType()},
-        {MachineType::BOOL_TYPE,        LLVMInt1Type()},
-        {MachineType::INT8_TYPE,        LLVMInt8Type()},
-        {MachineType::INT16_TYPE,       LLVMInt16Type()},
-        {MachineType::INT32_TYPE,       LLVMInt32Type()},
-        {MachineType::INT64_TYPE,       LLVMInt64Type()},
-        {MachineType::UINT8_TYPE,       LLVMInt8Type()},
-        {MachineType::UINT16_TYPE,      LLVMInt16Type()},
-        {MachineType::UINT32_TYPE,      LLVMInt32Type()},
-        {MachineType::UINT64_TYPE,      LLVMInt64Type()},
-        {MachineType::FLOAT32_TYPE,     LLVMFloatType()},
-        {MachineType::FLOAT64_TYPE,     LLVMDoubleType()},
-        {MachineType::TAGGED_TYPE,      LLVMInt64Type()},
+        {MachineType::NONE_TYPE,           LLVMVoidType()},
+        {MachineType::BOOL_TYPE,           LLVMInt1Type()},
+        {MachineType::INT8_TYPE,           LLVMInt8Type()},
+        {MachineType::INT16_TYPE,          LLVMInt16Type()},
+        {MachineType::INT32_TYPE,          LLVMInt32Type()},
+        {MachineType::INT64_TYPE,          LLVMInt64Type()},
+        {MachineType::UINT8_TYPE,          LLVMInt8Type()},
+        {MachineType::UINT16_TYPE,         LLVMInt16Type()},
+        {MachineType::UINT32_TYPE,         LLVMInt32Type()},
+        {MachineType::UINT64_TYPE,         LLVMInt64Type()},
+        {MachineType::FLOAT32_TYPE,        LLVMFloatType()},
+        {MachineType::FLOAT64_TYPE,        LLVMDoubleType()},
+        {MachineType::TAGGED_POINTER_TYPE, LLVMPointerType(LLVMInt64Type(), 1)},
+        {MachineType::TAGGED_TYPE,         LLVMInt64Type()},
     };
     return machineTypeMap[type];
 }

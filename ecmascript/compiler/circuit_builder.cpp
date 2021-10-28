@@ -155,30 +155,30 @@ AddrShift CircuitBuilder::NewDefaultCase(AddrShift switchBranch)
 OpCode CircuitBuilder::GetStoreOpCodeFromMachineType(MachineType type)
 {
     switch (type) {
-        case INT8_TYPE:
+        case MachineType::INT8_TYPE:
             return OpCode(OpCode::INT8_STORE);
-        case INT16_TYPE:
+        case MachineType::INT16_TYPE:
             return OpCode(OpCode::INT16_STORE);
-        case INT32_TYPE:
+        case MachineType::INT32_TYPE:
             return OpCode(OpCode::INT32_STORE);
-        case INT64_TYPE:
+        case MachineType::INT64_TYPE:
             return OpCode(OpCode::INT64_STORE);
-        case BOOL_TYPE:
+        case MachineType::BOOL_TYPE:
             return OpCode(OpCode::INT32_STORE);
-        case UINT8_TYPE:
+        case MachineType::UINT8_TYPE:
             return OpCode(OpCode::INT8_STORE);
-        case UINT16_TYPE:
+        case MachineType::UINT16_TYPE:
             return OpCode(OpCode::INT16_STORE);
-        case UINT32_TYPE:
+        case MachineType::UINT32_TYPE:
             return OpCode(OpCode::INT32_STORE);
-        case UINT64_TYPE:
-        case POINTER_TYPE:
-        case TAGGED_TYPE:
-        case TAGGED_POINTER_TYPE:
+        case MachineType::UINT64_TYPE:
+        case MachineType::POINTER_TYPE:
+        case MachineType::TAGGED_TYPE:
+        case MachineType::TAGGED_POINTER_TYPE:
             return OpCode(OpCode::INT64_STORE);
-        case FLOAT32_TYPE:
+        case MachineType::FLOAT32_TYPE:
             return OpCode(OpCode::FLOAT32_STORE);
-        case FLOAT64_TYPE:
+        case MachineType::FLOAT64_TYPE:
             return OpCode(OpCode::FLOAT64_STORE);
         default:
             UNREACHABLE();
@@ -188,30 +188,30 @@ OpCode CircuitBuilder::GetStoreOpCodeFromMachineType(MachineType type)
 OpCode CircuitBuilder::GetLoadOpCodeFromMachineType(MachineType type)
 {
     switch (type) {
-        case INT8_TYPE:
+        case MachineType::INT8_TYPE:
             return OpCode(OpCode::INT8_LOAD);
-        case INT16_TYPE:
+        case MachineType::INT16_TYPE:
             return OpCode(OpCode::INT16_LOAD);
-        case INT32_TYPE:
+        case MachineType::INT32_TYPE:
             return OpCode(OpCode::INT32_LOAD);
-        case INT64_TYPE:
+        case MachineType::INT64_TYPE:
             return OpCode(OpCode::INT64_LOAD);
-        case BOOL_TYPE:
+        case MachineType::BOOL_TYPE:
             return OpCode(OpCode::INT32_LOAD);
-        case UINT8_TYPE:
+        case MachineType::UINT8_TYPE:
             return OpCode(OpCode::INT8_LOAD);
-        case UINT16_TYPE:
+        case MachineType::UINT16_TYPE:
             return OpCode(OpCode::INT16_LOAD);
-        case UINT32_TYPE:
+        case MachineType::UINT32_TYPE:
             return OpCode(OpCode::INT32_LOAD);
-        case UINT64_TYPE:
-        case POINTER_TYPE:
-        case TAGGED_TYPE:
-        case TAGGED_POINTER_TYPE:
+        case MachineType::UINT64_TYPE:
+        case MachineType::POINTER_TYPE:
+        case MachineType::TAGGED_TYPE:
+        case MachineType::TAGGED_POINTER_TYPE:
             return OpCode(OpCode::INT64_LOAD);
-        case FLOAT32_TYPE:
+        case MachineType::FLOAT32_TYPE:
             return OpCode(OpCode::FLOAT32_LOAD);
-        case FLOAT64_TYPE:
+        case MachineType::FLOAT64_TYPE:
             return OpCode(OpCode::FLOAT64_LOAD);
         default:
             UNREACHABLE();
@@ -221,32 +221,32 @@ OpCode CircuitBuilder::GetLoadOpCodeFromMachineType(MachineType type)
 OpCode CircuitBuilder::GetSelectOpCodeFromMachineType(MachineType type)
 {
     switch (type) {
-        case NONE_TYPE:
+        case MachineType::NONE_TYPE:
             return OpCode(OpCode::DEPEND_SELECTOR);
-        case INT8_TYPE:
+        case MachineType::INT8_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT8);
-        case INT16_TYPE:
+        case MachineType::INT16_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT16);
-        case INT32_TYPE:
+        case MachineType::INT32_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT32);
-        case INT64_TYPE:
+        case MachineType::INT64_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT64);
-        case BOOL_TYPE:
+        case MachineType::BOOL_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT1);
-        case UINT8_TYPE:
+        case MachineType::UINT8_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT8);
-        case UINT16_TYPE:
+        case MachineType::UINT16_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT16);
-        case UINT32_TYPE:
+        case MachineType::UINT32_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT32);
-        case UINT64_TYPE:
-        case POINTER_TYPE:
-        case TAGGED_TYPE:
-        case TAGGED_POINTER_TYPE:
+        case MachineType::UINT64_TYPE:
+        case MachineType::POINTER_TYPE:
+        case MachineType::TAGGED_TYPE:
+        case MachineType::TAGGED_POINTER_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_INT64);
-        case FLOAT32_TYPE:
+        case MachineType::FLOAT32_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_FLOAT32);
-        case FLOAT64_TYPE:
+        case MachineType::FLOAT64_TYPE:
             return OpCode(OpCode::VALUE_SELECTOR_FLOAT64);
         default:
             UNREACHABLE();
@@ -270,13 +270,13 @@ AddrShift CircuitBuilder::NewDependAnd(std::initializer_list<AddrShift> args)
 AddrShift CircuitBuilder::NewLoadGate(MachineType type, AddrShift val, AddrShift depend)
 {
     OpCode op = GetLoadOpCodeFromMachineType(type);
-    return circuit_->NewGate(op, type, {depend, val}, TypeCode::NOTYPE);
+    return circuit_->NewGate(op, static_cast<BitField>(type), {depend, val}, TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::NewStoreGate(MachineType type, AddrShift ptr, AddrShift val, AddrShift depend)
 {
     OpCode op = GetStoreOpCodeFromMachineType(type);
-    return circuit_->NewGate(op, type, {depend, val, ptr}, TypeCode::NOTYPE);
+    return circuit_->NewGate(op, static_cast<BitField>(type), {depend, val, ptr}, TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::NewArithMeticGate(OpCode opcode, AddrShift left, AddrShift right)
@@ -291,43 +291,43 @@ AddrShift CircuitBuilder::NewArithMeticGate(OpCode opcode, AddrShift value)
 
 AddrShift CircuitBuilder::NewLogicGate(OpCode opcode, AddrShift left, AddrShift right)
 {
-    return circuit_->NewGate(opcode, MachineType::BOOL_TYPE, {left, right}, TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, static_cast<BitField>(MachineType::BOOL_TYPE), {left, right}, TypeCode::NOTYPE);
 }
 
 AddrShift CircuitBuilder::NewLogicGate(OpCode opcode, AddrShift value)
 {
-    return circuit_->NewGate(opcode, MachineType::BOOL_TYPE, {value}, TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, static_cast<BitField>(MachineType::BOOL_TYPE), {value}, TypeCode::NOTYPE);
 }
 
 OpCode CircuitBuilder::GetCallOpCodeFromMachineType(MachineType type)
 {
     switch (type) {
-        case NONE_TYPE:
+        case MachineType::NONE_TYPE:
             return OpCode(OpCode::CALL);
-        case INT8_TYPE:
+        case MachineType::INT8_TYPE:
             return OpCode(OpCode::INT8_CALL);
-        case INT16_TYPE:
+        case MachineType::INT16_TYPE:
             return OpCode(OpCode::INT16_CALL);
-        case INT32_TYPE:
+        case MachineType::INT32_TYPE:
             return OpCode(OpCode::INT32_CALL);
-        case INT64_TYPE:
+        case MachineType::INT64_TYPE:
             return OpCode(OpCode::INT64_CALL);
-        case BOOL_TYPE:
+        case MachineType::BOOL_TYPE:
             return OpCode(OpCode::INT1_CALL);
-        case UINT8_TYPE:
+        case MachineType::UINT8_TYPE:
             return OpCode(OpCode::INT8_CALL);
-        case UINT16_TYPE:
+        case MachineType::UINT16_TYPE:
             return OpCode(OpCode::INT16_CALL);
-        case UINT32_TYPE:
+        case MachineType::UINT32_TYPE:
             return OpCode(OpCode::INT32_CALL);
-        case UINT64_TYPE:
-        case POINTER_TYPE:
-        case TAGGED_TYPE:
-        case TAGGED_POINTER_TYPE:
+        case MachineType::UINT64_TYPE:
+        case MachineType::POINTER_TYPE:
+        case MachineType::TAGGED_TYPE:
+        case MachineType::TAGGED_POINTER_TYPE:
             return OpCode(OpCode::INT64_CALL);
-        case FLOAT32_TYPE:
+        case MachineType::FLOAT32_TYPE:
             return OpCode(OpCode::FLOAT32_CALL);
-        case FLOAT64_TYPE:
+        case MachineType::FLOAT64_TYPE:
             return OpCode(OpCode::FLOAT64_CALL);
         default:
             UNREACHABLE();
@@ -375,6 +375,10 @@ AddrShift CircuitBuilder::NewCallRuntimeGate(StubDescriptor *descriptor, AddrShi
         inputs.push_back(arg);
     }
     OpCode opcode = GetCallOpCodeFromMachineType(descriptor->GetReturnType());
+    if (descriptor->GetReturnType() == MachineType::TAGGED_POINTER_TYPE) {
+        // 2 : 2 means extra two input gates (target thread )
+        return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::TAGGED_POINTER_TYPE);
+    }
     // 2 : 2 means extra two input gates (target thread )
     return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::JS_ANY);
 }

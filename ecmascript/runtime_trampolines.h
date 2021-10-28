@@ -49,7 +49,9 @@ public:
     static uint32_t GetHash32(uint64_t key, uint64_t len);
     static int32_t FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num);
     static uint32_t StringGetHashCode(uint64_t ecmaString);
+    static TaggedArray* GetTaggedArrayPtr(uint64_t argThread);
     static uint64_t Execute(uint64_t argThread, uint64_t argFunc, uint64_t thisArg, uint32_t argc, uint64_t argArgv);
+    static void SetValueWithBarrier(uint64_t argThread, uint64_t argAddr, uint64_t argOffset, uint64_t argValue);
     static double FloatMod(double left, double right);
 };
 
@@ -66,14 +68,15 @@ public:
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
         LOG_ECMA(INFO) << "Sp: " << newSp << " type:" <<
-            static_cast<uintptr_t>(Frame::GetFrameType(newSp));
+            static_cast<uintptr_t>(Frame::GetFrameType(newSp)) << std::endl;
+
     }
     ~CallRuntimeTrampolinesScope()
     {
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
         LOG_ECMA(INFO) << "Sp: " << oldSp << " type:" <<
-            static_cast<uintptr_t>(Frame::GetFrameType(oldSp));
+            static_cast<uintptr_t>(Frame::GetFrameType(oldSp)) << std::endl;
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:

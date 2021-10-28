@@ -101,17 +101,18 @@ bool LLVMAssembler::BuildMCJITEngine()
 
 void LLVMAssembler::BuildAndRunPasses() const
 {
-    LOG_ECMA(INFO) << "BuildAndRunPasses  - ";
-    LLVMPassManagerRef pass = LLVMCreatePassManager();
-    LLVMAddConstantPropagationPass(pass);
-    LLVMAddInstructionCombiningPass(pass);
-    llvm::unwrap(pass)->add(llvm::createRewriteStatepointsForGCLegacyPass());
+    std::cout << "BuildAndRunPasses  - ";
+    LLVMPassManagerRef pm = LLVMCreatePassManager();
+    LLVMAddConstantPropagationPass(pm);
+    LLVMAddInstructionCombiningPass(pm);
+    llvm::unwrap(pm)->add(llvm::createRewriteStatepointsForGCLegacyPass());
     char *info = LLVMPrintModuleToString(module_);
-    LOG_ECMA(INFO) << "Current Module: " << info;
+    std::cout << "Current Module: " << info;
+    LLVMDumpModule(module_);
     LLVMDisposeMessage(info);
-    LLVMRunPassManager(pass, module_);
-    LLVMDisposePassManager(pass);
-    LOG_ECMA(INFO) << "BuildAndRunPasses  + ";
+    LLVMRunPassManager(pm, module_);
+    LLVMDisposePassManager(pm);
+    std::cout << "BuildAndRunPasses  + ";
 }
 
 LLVMAssembler::LLVMAssembler(LLVMModuleRef module, const char* triple): module_(module), engine_(nullptr),
@@ -132,6 +133,9 @@ LLVMAssembler::~LLVMAssembler()
 
 void LLVMAssembler::Run()
 {
+    char *error = nullptr;
+    LLVMVerifyModule(module_, LLVMAbortProcessAction, &error);
+    LLVMDisposeMessage(error);
     UseRoundTripSectionMemoryManager();
     if (!BuildMCJITEngine()) {
         return;

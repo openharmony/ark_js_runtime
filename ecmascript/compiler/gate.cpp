@@ -381,6 +381,7 @@ std::string OpCode::Str() const
         {INT64_CALL, "INT64_CALL"},
         {FLOAT32_CALL, "FLOAT32_CALL"},
         {FLOAT64_CALL, "FLOAT64_CALL"},
+        {TAGGED_POINTER_CALL, "TAGGED_POINTER_CALL"},
         {ALLOCA, "ALLOCA"},
         {INT1_ARG, "INT1_ARG"},
         {INT8_ARG, "INT8_ARG"},
@@ -1249,6 +1250,11 @@ void Gate::SetMark(MarkCode mark, TimeStamp stamp)
     this->mark = mark;
 }
 
+TypeCode Gate::GetTypeCode() const
+{
+    return type;
+}
+
 bool OpCode::IsRoot() const
 {
     return (this->GetProperties().states == OpCode::CIRCUIT_ROOT) || (this->op == OpCode::CIRCUIT_ROOT);
@@ -1304,5 +1310,10 @@ bool OpCode::IsControlCase() const
 bool OpCode::IsLoopHead() const
 {
     return (this->op == OpCode::LOOP_BEGIN);
+}
+
+bool OpCode::IsNop() const
+{
+    return (this->op == OpCode::NOP);
 }
 }  // namespace kungfu
