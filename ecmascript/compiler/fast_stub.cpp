@@ -1174,9 +1174,8 @@ void FastMulGCStub::GenerateCircuit()
     AddrShift x = Int64Argument(1);
     AddrShift y = Int64Argument(2);
 
-    DEFVARIABLE(intX, MachineType::INT32_TYPE, 0);
-    DEFVARIABLE(intY, MachineType::INT32_TYPE, 0);
-    DEFVARIABLE(intZ, MachineType::INT32_TYPE, 0);
+    DEFVARIABLE(intX, MachineType::INT64_TYPE, 0);
+    DEFVARIABLE(intY, MachineType::INT64_TYPE, 0);
     DEFVARIABLE(valuePtr, MachineType::INT64_TYPE, 0);
     DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
     DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
@@ -1197,7 +1196,7 @@ void FastMulGCStub::GenerateCircuit()
             Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
             Bind(&xIsInt);
             {
-                intX = TaggedCastToInt32(x);
+                intX = TaggedCastToInt64(x);
                 doubleX = CastInt64ToFloat64(*intX);
                 Jump(&xIsNumberAndyIsNumber);
             }
@@ -1217,7 +1216,7 @@ void FastMulGCStub::GenerateCircuit()
         Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
         Bind(&yIsInt);
         {
-            intY = TaggedCastToInt32(y);
+            intY = TaggedCastToInt64(y);
             doubleY = CastInt64ToFloat64(*intY);
             Jump(&xIsDoubleAndyIsDouble);
         }

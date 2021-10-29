@@ -168,6 +168,8 @@ CALL_STUB_INIT_DESCRIPTOR(SetElement)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(SetPropertyByName) {}
+
 CALL_STUB_INIT_DESCRIPTOR(GetPropertyByName)
 {
         // 3 : 3 input parameters
