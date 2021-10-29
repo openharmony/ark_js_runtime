@@ -39,6 +39,7 @@ public:
     }
     void BuildStubModuleAndSave(const char *triple, panda::ecmascript::StubModule *module,
                                 const std::string &filename);
+    void SetAllStubToModule();
     void SetStub(int index, Stub *optimizer)
     {
         stubs_[index] = optimizer;

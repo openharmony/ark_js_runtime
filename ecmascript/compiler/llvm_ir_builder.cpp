@@ -92,6 +92,8 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT64_CONSTANT, &LLVMIRBuilder::HandleInt64Constant},
         {OpCode::FLOAT64_CONSTANT, &LLVMIRBuilder::HandleFloat64Constant},
         {OpCode::ZEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_INT8_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_INT16_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT32_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT1_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::SEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
@@ -134,13 +136,16 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::FLOAT64_EQ, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
         {OpCode::INT32_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT8_LOAD, &LLVMIRBuilder::HandleLoad},
+        {OpCode::INT16_LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::INT32_LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::INT64_LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::INT32_STORE, &LLVMIRBuilder::HandleStore},
         {OpCode::INT64_STORE, &LLVMIRBuilder::HandleStore},
-        {OpCode::INT32_TO_FLOAT64, &LLVMIRBuilder::HandleCastInt32ToDouble},
-        {OpCode::INT64_TO_FLOAT64, &LLVMIRBuilder::HandleCastInt64ToDouble},
-        {OpCode::FLOAT64_TO_INT64, &LLVMIRBuilder::HandleCastDoubleToInt},
+        {OpCode::INT32_TO_FLOAT64, &LLVMIRBuilder::HandleChangeInt32ToDouble},
+        {OpCode::FLOAT64_TO_INT32, &LLVMIRBuilder::HandleChangeDoubleToInt32},
+        {OpCode::BITCAST_INT64_TO_FLOAT64, &LLVMIRBuilder::HandleCastInt64ToDouble},
+        {OpCode::BITCAST_FLOAT64_TO_INT64, &LLVMIRBuilder::HandleCastDoubleToInt},
         {OpCode::INT32_LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::INT64_LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::FLOAT64_SMOD, &LLVMIRBuilder::HandleFloatMod},
@@ -186,7 +191,6 @@ void LLVMIRBuilder::Build()
             AddrShift gate = (*schedule_)[bbIdx][instIdx - 1];
             std::vector<AddrShift> ins = circuit_->GetInVector(gate);
             std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
-            std::cout << "instIdx :" << instIdx << std::endl;
             circuit_->Print(gate);
             auto found = opCodeHandleMap_.find(circuit_->GetOpCode(gate));
             if (found != opCodeHandleMap_.end()) {
@@ -362,6 +366,9 @@ LLVMTypeRef LLVMIRBuilder::GetMachineRepType(MachineRep rep) const
         case MachineRep::K_WORD8:
             dstType = LLVMInt8TypeInContext(context_);
             break;
+        case MachineRep::K_WORD16:
+            dstType = LLVMInt16TypeInContext(context_);
+            break;
         case MachineRep::K_WORD32:
             dstType = LLVMInt32TypeInContext(context_);
             break;
@@ -399,24 +406,26 @@ void LLVMIRBuilder::VisitCall(AddrShift gate, const std::vector<AddrShift> &inLi
     int index = circuit_->GetBitField(inList[1]);
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
+    LLVMValueRef rtoffset;
     StubDescriptor *callee_descriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
+    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(index);
+    LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
+    LLVMValueRef thread = g_values[inList[2]];  // 2 : 2 means skip two input gates (target thread)
     // runtime case
     if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
-        LLVMTypeRef rtfuncType = stubModule_->GetExternalFunctionType(index);
-        LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
-        LLVMValueRef thread = g_values[inList[2]];  // 2 : 2 means skip two input gates (target thread )
-        LLVMValueRef rtoffset = LLVMConstInt(LLVMInt64Type(),
-                                             panda::ecmascript::JSThread::GetRuntimeFunctionsOffset() +
-                                                 (index - FAST_STUB_MAXCOUNT) * sizeof(uintptr_t),
-                                             0);
-        LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, thread, rtoffset, "");
-        LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(LLVMInt64Type(), 0), "");
-        LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
-        callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-        paraStartIndex += 1;
+        rtoffset = LLVMConstInt(LLVMInt64Type(),
+                                panda::ecmascript::JSThread::GetRuntimeFunctionsOffset() +
+                                (index - FAST_STUB_MAXCOUNT) * sizeof(uintptr_t), 0);
     } else {
-        callee = stubModule_->GetStubFunction(index);
+        rtoffset = LLVMConstInt(LLVMInt64Type(),
+                                panda::ecmascript::JSThread::GetFastStubEntryOffset() +
+                                (index) * sizeof(uintptr_t), 0);
     }
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, thread, rtoffset, "");
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(LLVMInt64Type(), 0), "");
+    LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
+    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
+    paraStartIndex += 1;
     // 16 : params limit
     LLVMValueRef params[16];
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
@@ -626,6 +635,8 @@ void LLVMIRBuilder::HandleZExtInt(AddrShift gate)
 {
     std::vector<AddrShift> ins = circuit_->GetInVector(gate);
     switch (circuit_->GetOpCode(gate)) {
+        case OpCode::ZEXT_INT8_TO_INT32:  // no break, fall through
+        case OpCode::ZEXT_INT16_TO_INT32:
         case OpCode::ZEXT_INT1_TO_INT32: {
             VisitZExtInt(gate, ins[0], MachineRep::K_WORD32);
             break;
@@ -1041,6 +1052,16 @@ void LLVMIRBuilder::HandleLoad(AddrShift gate)
     std::vector<AddrShift> ins = circuit_->GetInVector(gate);
     std::vector<AddrShift> outs = circuit_->GetOutVector(gate);
     switch (circuit_->GetOpCode(gate)) {
+        case OpCode::INT8_LOAD: {
+            AddrShift base = ins[1];
+            VisitLoad(gate, MachineRep::K_WORD8, base);
+            break;
+        }
+        case OpCode::INT16_LOAD: {
+            AddrShift base = ins[1];
+            VisitLoad(gate, MachineRep::K_WORD16, base);
+            break;
+        }
         case OpCode::INT32_LOAD: {
             AddrShift base = ins[1];
             VisitLoad(gate, MachineRep::K_WORD32, base);
@@ -1076,10 +1097,16 @@ void LLVMIRBuilder::HandleStore(AddrShift gate)
     }
 }
 
-void LLVMIRBuilder::HandleCastInt32ToDouble(AddrShift gate)
+void LLVMIRBuilder::HandleChangeInt32ToDouble(AddrShift gate)
 {
     std::vector<AddrShift> ins = circuit_->GetInVector(gate);
-    VisitCastInt32ToDouble(gate, ins[0]);
+    VisitChangeInt32ToDouble(gate, ins[0]);
+}
+
+void LLVMIRBuilder::HandleChangeDoubleToInt32(AddrShift gate)
+{
+    std::vector<AddrShift> ins = circuit_->GetInVector(gate);
+    VisitChangeDoubleToInt32(gate, ins[0]);
 }
 
 void LLVMIRBuilder::VisitFloatSub(AddrShift gate, AddrShift e1, AddrShift e2) const
@@ -1263,12 +1290,22 @@ void LLVMIRBuilder::VisitCastIntXToIntY(AddrShift gate, AddrShift e1, MachineRep
     LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
 
-void LLVMIRBuilder::VisitCastInt32ToDouble(AddrShift gate, AddrShift e1) const
+void LLVMIRBuilder::VisitChangeInt32ToDouble(AddrShift gate, AddrShift e1) const
 {
     LOG_ECMA(INFO) << "int cast2 double gate:" << gate;
     LLVMValueRef e1Value = g_values[e1];
     LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildSIToFP(builder_, e1Value, LLVMDoubleType(), "");
+    g_values[gate] = result;
+    LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
+}
+
+void LLVMIRBuilder::VisitChangeDoubleToInt32(AddrShift gate, AddrShift e1) const
+{
+    LOG_ECMA(INFO) << "double cast2 int32 gate:" << gate;
+    LLVMValueRef e1Value = g_values[e1];
+    LOG_ECMA(INFO) << "operand 0: " << LLVMValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildFPToSI(builder_, e1Value, LLVMInt32Type(), "");
     g_values[gate] = result;
     LOG_ECMA(INFO) << "result: " << LLVMValueToString(result);
 }
@@ -1320,10 +1357,10 @@ void LLVMStubModule::Initialize()
             stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
         }
     }
-    for (i = 0; i < MAX_EXTERNAL_FUNCTION_COUNT; i++) {
-        auto externalDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + EXTERNAL_FUNCTION_OFFSET);
-        if (!externalDescriptor->GetName().empty()) {
-            externalFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(externalDescriptor);
+    for (i = 0; i < MAX_STUB_FUNCTION_COUNT; i++) {
+        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i);
+        if (!stubDescriptor->GetName().empty()) {
+            stubFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
         }
     }
     for (i = 0; i < MAX_TEST_FUNCTION_COUNT; i++) {

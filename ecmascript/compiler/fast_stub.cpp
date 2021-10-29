@@ -74,7 +74,7 @@ void FastAddStub::GenerateCircuit()
             Bind(&xIsInt);
             {
                 intX = TaggedCastToInt32(x);
-                doubleX = CastInt32ToFloat64(*intX);
+                doubleX = ChangeInt32ToFloat64(*intX);
                 Jump(&xIsNumberAndyIsNumber);
             }
             Bind(&xNotInt);
@@ -94,7 +94,7 @@ void FastAddStub::GenerateCircuit()
         Bind(&yIsInt);
         {
             intY = TaggedCastToInt32(y);
-            doubleY = CastInt32ToFloat64(*intY);
+            doubleY = ChangeInt32ToFloat64(*intY);
             Jump(&xIsDoubleAndyIsDouble);
         }
         Bind(&yNotInt);
@@ -149,7 +149,7 @@ void FastSubStub::GenerateCircuit()
                     Bind(&yNotInt);
                     {
                         doubleY = TaggedCastToDouble(y);
-                        doubleX = CastInt32ToFloat64(*intX);
+                        doubleX = ChangeInt32ToFloat64(*intX);
                         Jump(&xNotIntOryNotInt);
                     }
                 }
@@ -162,7 +162,7 @@ void FastSubStub::GenerateCircuit()
                     Bind(&yIsInt);
                     {
                         intY = TaggedCastToInt32(y);
-                        doubleY = CastInt32ToFloat64(*intY);
+                        doubleY = ChangeInt32ToFloat64(*intY);
                         Jump(&xNotIntOryNotInt);
                     }
                     Bind(&yNotInt);
@@ -210,7 +210,7 @@ void FastMulStub::GenerateCircuit()
             Bind(&xIsInt);
             {
                 intX = TaggedCastToInt32(x);
-                doubleX = CastInt32ToFloat64(*intX);
+                doubleX = ChangeInt32ToFloat64(*intX);
                 Jump(&xIsNumberAndyIsNumber);
             }
             Bind(&xNotInt);
@@ -230,7 +230,7 @@ void FastMulStub::GenerateCircuit()
         Bind(&yIsInt);
         {
             intY = TaggedCastToInt32(y);
-            doubleY = CastInt32ToFloat64(*intY);
+            doubleY = ChangeInt32ToFloat64(*intY);
             Jump(&xIsDoubleAndyIsDouble);
         }
         Bind(&yNotInt);
@@ -271,7 +271,7 @@ void FastDivStub::GenerateCircuit()
             Bind(&xIsInt);
             {
                 intX = TaggedCastToInt32(x);
-                doubleX = CastInt32ToFloat64(*intX);
+                doubleX = ChangeInt32ToFloat64(*intX);
                 Jump(&xIsNumberAndyIsNumber);
             }
             Bind(&xNotInt);
@@ -290,7 +290,7 @@ void FastDivStub::GenerateCircuit()
     Bind(&yIsInt);
     {
         intY = TaggedCastToInt32(y);
-        doubleY = CastInt32ToFloat64(*intY);
+        doubleY = ChangeInt32ToFloat64(*intY);
         Jump(&xIsDoubleAndyIsDouble);
     }
     Bind(&yNotInt);
@@ -418,7 +418,8 @@ void GetElementStub::GenerateCircuit()
     AddrShift objPtr = ChangeInt64ToPointer(receiver);
     auto findOwnElementDescriptor = GET_STUBDESCRIPTOR(FindOwnElement);
     AddrShift callFindOwnElementVal =
-        CallStub(findOwnElementDescriptor, GetWord64Constant(FAST_STUB_ID(FindOwnElement)), {thread, objPtr, index});
+        CallStub(findOwnElementDescriptor, thread, GetWord64Constant(FAST_STUB_ID(FindOwnElement)),
+                 {thread, objPtr, index});
     Branch(TaggedIsHole(callFindOwnElementVal), &isHole, &notHole);
     Bind(&notHole);
     Return(callFindOwnElementVal);
@@ -513,7 +514,7 @@ void SetElementStub::GenerateCircuit()
         AddrShift elements = GetElements(*holder);
         AddrShift isDictionary = IsDictionaryMode(elements);
         StubDescriptor *findOwnElemnt2 = GET_STUBDESCRIPTOR(FindOwnElement2);
-        AddrShift val = CallStub(findOwnElemnt2, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)),
+        AddrShift val = CallStub(findOwnElemnt2, thread, GetWord64Constant(FAST_STUB_ID(FindOwnElement2)),
                                  {thread, elements, index, isDictionary, pattr, pindexOrEntry});
         Label notHole(env);
         Label isHole(env);
@@ -735,13 +736,13 @@ void GetPropertyByIndexStub::GenerateCircuit()
                             StubDescriptor *callAccessorGetter = GET_STUBDESCRIPTOR(AccessorGetter);
                             Return(CallRuntime(callAccessorGetter, thread,
                                                GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
-                                               {thread, *holder, value}));
+                                               {thread, value, *holder}));
                         }
                         Bind(&notInternal);
                         {
                             StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
                             Return(CallRuntime(callGetter, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
-                                               {thread, receiver, value}));
+                                               {thread, value, receiver}));
                         }
                     }
                     Bind(&notAccessor);
@@ -891,7 +892,7 @@ void GetPropertyByNameStub::GenerateCircuit()
             Label isDicMode(env);
             Label notDicMode(env);
             // if branch condition : LIKELY(!hclass->IsDictionaryMode())
-            Branch(IsDictionaryElement(hClass), &isDicMode, &notDicMode);
+            Branch(IsDictionaryModeByHClass(hClass), &isDicMode, &notDicMode);
             Bind(&notDicMode);
             {
                 // LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetAttributes().GetTaggedObject())
@@ -927,13 +928,13 @@ void GetPropertyByNameStub::GenerateCircuit()
                             StubDescriptor *callAccessorGetter = GET_STUBDESCRIPTOR(AccessorGetter);
                             Return(CallRuntime(callAccessorGetter, thread,
                                 GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
-                                {thread, *holder, value}));
+                                {thread, value, *holder}));
                         }
                         Bind(&notInternal);
                         {
                             StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
                             Return(CallRuntime(callGetter, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
-                                {thread, receiver, value}));
+                                {thread, value, receiver}));
                         }
                     }
                     Bind(&notAccessor);
@@ -976,13 +977,13 @@ void GetPropertyByNameStub::GenerateCircuit()
                             StubDescriptor *callAccessorGetter1 = GET_STUBDESCRIPTOR(AccessorGetter);
                             Return(CallRuntime(callAccessorGetter1, thread,
                                 GetWord64Constant(FAST_STUB_ID(AccessorGetter)),
-                                {thread, *holder, value}));
+                                {thread, value, *holder}));
                         }
                         Bind(&notInternal1);
                         {
                             StubDescriptor *callGetter1 = GET_STUBDESCRIPTOR(CallGetter);
                             Return(CallRuntime(callGetter1, thread, GetWord64Constant(FAST_STUB_ID(CallGetter)),
-                                {thread, receiver, value}));
+                                {thread, value, receiver}));
                         }
                     }
                     Bind(&notAccessor1);
@@ -1071,7 +1072,7 @@ void FastModStub::GenerateCircuit()
                 Bind(&xIfInt);
                 {
                     intX = TaggedCastToInt32(x);
-                    doubleX = CastInt32ToFloat64(*intX);
+                    doubleX = ChangeInt32ToFloat64(*intX);
                     Jump(&xIsNumberAndyIsNumber);
                 }
                 Bind(&xIfNotInt);
@@ -1090,7 +1091,7 @@ void FastModStub::GenerateCircuit()
         Bind(&yIfInt);
         {
             intY = TaggedCastToInt32(y);
-            doubleY = CastInt32ToFloat64(*intY);
+            doubleY = ChangeInt32ToFloat64(*intY);
             Jump(&xIsDoubleAndyIsDouble);
         }
         Bind(&yIfNotInt);
@@ -1307,11 +1308,166 @@ void FunctionCallInternalStub::GenerateCircuit()
     {
         Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcIsBuiltinsConstructorOrFuncNotClassConstructor);
         Bind(&funcIsClassConstructor);
-        ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(FunctionCallNotConstructor), FalseConstant());
+        ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(FunctionCallNotConstructor), GetExceptionConstant());
     }
     Bind(&funcIsBuiltinsConstructorOrFuncNotClassConstructor);
     StubDescriptor *execute = GET_STUBDESCRIPTOR(Execute);
     Return(CallRuntime(execute, thread, GetWord64Constant(FAST_STUB_ID(Execute)),
                        {thread, func, thisArg, argc, argv}));
+}
+
+void GetPropertyByValueStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift thread = PtrArgument(0);
+    AddrShift receiver = PtrArgument(1);
+    DEFVARIABLE(key, TAGGED_TYPE, PtrArgument(2)); /* 2 : 3rd parameter is key */
+
+    Label isNumberOrStringSymbol(env);
+    Label notNumber(env);
+    Label isStringOrSymbol(env);
+    Label notStringOrSymbol(env);
+    Label exit(env);
+
+    Branch(TaggedIsNumber(*key), &isNumberOrStringSymbol, &notNumber);
+    Bind(&notNumber);
+    {
+        Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
+        Bind(&notStringOrSymbol);
+        {
+            Return(GetHoleConstant());
+        }
+    }
+    Bind(&isNumberOrStringSymbol);
+    {
+        AddrShift index = TryToElementsIndex(*key);
+        Label validIndex(env);
+        Label notValidIndex(env);
+        Branch(Int32GreaterThanOrEqual(index, GetInteger32Constant(0)), &validIndex, &notValidIndex);
+        Bind(&validIndex);
+        {
+            auto getPropertyByIndex = GET_STUBDESCRIPTOR(GetPropertyByIndex);
+            Return(CallStub(getPropertyByIndex, thread, GetWord64Constant(FAST_STUB_ID(GetPropertyByIndex)),
+                            {thread, receiver, index}));
+        }
+        Bind(&notValidIndex);
+        {
+            Label notNumber(env);
+            Label getByName(env);
+            Branch(TaggedIsNumber(*key), &exit, &notNumber);
+            Bind(&notNumber);
+            {
+                Label isString(env);
+                Label notString(env);
+                Label isInternalString(env);
+                Label notIntenalString(env);
+                Branch(TaggedIsString(*key), &isString, &notString);
+                Bind(&isString);
+                {
+                    Branch(IsInternalString(*key), &isInternalString, &notIntenalString);
+                    Bind(&isInternalString);
+                    Jump(&getByName);
+                    Bind(&notIntenalString);
+                    {
+                        StubDescriptor *newInternalString = GET_STUBDESCRIPTOR(NewInternalString);
+                        key = CallRuntime(newInternalString, thread,
+                                          GetWord64Constant(FAST_STUB_ID(NewInternalString)),
+                                          {thread, *key});
+                        Jump(&getByName);
+                    }
+                }
+                Bind(&notString);
+                {
+                    Jump(&getByName);
+                }
+            }
+            Bind(&getByName);
+            {
+                auto getPropertyByName = GET_STUBDESCRIPTOR(GetPropertyByName);
+                Return(CallStub(getPropertyByName, thread, GetWord64Constant(FAST_STUB_ID(GetPropertyByName)),
+                                {thread, receiver, *key}));
+            }
+        }
+    }
+    Bind(&exit);
+    Return(GetHoleConstant());
+}
+
+void SetPropertyByValueStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift thread = PtrArgument(0);
+    AddrShift receiver = PtrArgument(1);
+    DEFVARIABLE(key, TAGGED_TYPE, PtrArgument(2)); /* 2 : 3rd parameter is key */
+    AddrShift value = Int64Argument(3);            /* 3 : 4th parameter is value */
+
+    Label isNumberOrStringSymbol(env);
+    Label notNumber(env);
+    Label isStringOrSymbol(env);
+    Label notStringOrSymbol(env);
+    Label exit(env);
+
+    Branch(TaggedIsNumber(*key), &isNumberOrStringSymbol, &notNumber);
+    Bind(&notNumber);
+    {
+        Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
+        Bind(&notStringOrSymbol);
+        {
+            Return(GetHoleConstant());
+        }
+    }
+    Bind(&isNumberOrStringSymbol);
+    {
+        AddrShift index = TryToElementsIndex(*key);
+        Label validIndex(env);
+        Label notValidIndex(env);
+        Branch(Int32GreaterThanOrEqual(index, GetInteger32Constant(0)), &validIndex, &notValidIndex);
+        Bind(&validIndex);
+        {
+            auto setPropertyByIndex = GET_STUBDESCRIPTOR(SetPropertyByIndex);
+            Return(CallStub(setPropertyByIndex, thread, GetWord64Constant(FAST_STUB_ID(SetPropertyByIndex)),
+                            {thread, receiver, index, value}));
+        }
+        Bind(&notValidIndex);
+        {
+            Label notNumber(env);
+            Label getByName(env);
+            Branch(TaggedIsNumber(*key), &exit, &notNumber);
+            Bind(&notNumber);
+            {
+                Label isString(env);
+                Label notString(env);
+                Label isInternalString(env);
+                Label notIntenalString(env);
+                Branch(TaggedIsString(*key), &isString, &notString);
+                Bind(&isString);
+                {
+                    Branch(IsInternalString(*key), &isInternalString, &notIntenalString);
+                    Bind(&isInternalString);
+                    Jump(&getByName);
+                    Bind(&notIntenalString);
+                    {
+                        StubDescriptor *newInternalString = GET_STUBDESCRIPTOR(NewInternalString);
+                        key = CallRuntime(newInternalString, thread,
+                                          GetWord64Constant(FAST_STUB_ID(NewInternalString)),
+                                          {thread, *key});
+                        Jump(&getByName);
+                    }
+                }
+                Bind(&notString);
+                {
+                    Jump(&getByName);
+                }
+            }
+            Bind(&getByName);
+            {
+                auto setPropertyByName = GET_STUBDESCRIPTOR(SetPropertyByName);
+                Return(CallStub(setPropertyByName, thread, GetWord64Constant(FAST_STUB_ID(SetPropertyByName)),
+                                {thread, receiver, *key, value}));
+            }
+        }
+    }
+    Bind(&exit);
+    Return(GetHoleConstant());
 }
 }  // namespace kungfu

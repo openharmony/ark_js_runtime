@@ -50,6 +50,7 @@ public:
     static uint32_t StringGetHashCode(uint64_t ecmaString);
     static uint64_t Execute(uint64_t argThread, uint64_t argFunc, uint64_t thisArg, uint32_t argc, uint64_t argArgv);
     static double FloatMod(double left, double right);
+    static uint64_t NewInternalString(uint64_t argThread, uint64_t argKey);
 };
 
 class CallRuntimeTrampolinesScope {
@@ -62,23 +63,12 @@ public:
         thread->SetLastOptCallRuntimePc(pc);
         JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         lastFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
+        thread->SetLastIFrameSp(cursp);
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
-        // print newfp and type for debug
-        std::cout << "CallRuntimeTrampolinesScope newFp: " << newFp << " lastFp_ : " << lastFp_
-            << std::endl;
-        FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(newFp) + FrameConst::FRAME_TYPE_OFFSET));
-        std::cout << __FUNCTION__ << " type = " << as_integer(type) << std::endl;
     }
     ~CallRuntimeTrampolinesScope()
     {
-        // print oldfp and type for debug
-        std::cout << "~CallRuntimeTrampolinesScope lastFp_: " << lastFp_ <<
-            " thread_->fp:" << thread_->GetCurrentSPFrame() << std::endl;
-        FrameType type = *(reinterpret_cast<FrameType*>(
-                    reinterpret_cast<long long>(lastFp_) + FrameConst::FRAME_TYPE_OFFSET));
-        std::cout << __FUNCTION__ << "type = " << as_integer(type) << std::endl;
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);

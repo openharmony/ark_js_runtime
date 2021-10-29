@@ -244,6 +244,10 @@ class OptimizedFrameStateBase {
 public:
     FrameType frameType;
     uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    static size_t GetFrameStateOffsetFromSp()
+    {
+        return MEMBER_OFFSET(OptimizedFrameStateBase, prev);
+    }
 };
 
 class InterpretedFrameStateBase {
@@ -256,6 +260,10 @@ class OptimizedEntryFrameState {
 public:
     uint64_t *threadFp; // for gc
     OptimizedFrameStateBase base;
+    static size_t GetFrameStateOffsetFromSp()
+    {
+        return MEMBER_OFFSET(OptimizedEntryFrameState, base.prev);
+    }
 };
 
 class FrameConst {

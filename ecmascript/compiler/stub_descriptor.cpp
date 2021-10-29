@@ -245,6 +245,25 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(GetPropertyByValue)
+{
+    // 3 : 3 input parameters
+    StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = getPropertyByValue;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
+
+CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
+{
+}
+
+
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 {
     // 5 : 5 input parameters
@@ -262,7 +281,7 @@ CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 CALL_STUB_INIT_DESCRIPTOR(CallSetter)
 {
     // 5 : 5 input parameters
-    StubDescriptor callSetter("CallSetter", 0, 5, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
+    StubDescriptor callSetter("CallSetter", 0, 5, ArgumentsOrder::DEFAULT_ORDER, BOOL_TYPE);
     *descriptor = callSetter;
     // 5 : 5 input parameters
     std::array<MachineType, 5> params = {
@@ -276,7 +295,7 @@ CALL_STUB_INIT_DESCRIPTOR(CallSetter)
 CALL_STUB_INIT_DESCRIPTOR(CallGetter)
 {
     // 3 : 3 input parameters
-    StubDescriptor callGetter("CallGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
+    StubDescriptor callGetter("CallGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = callGetter;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -291,7 +310,7 @@ CALL_STUB_INIT_DESCRIPTOR(CallGetter)
 CALL_STUB_INIT_DESCRIPTOR(AccessorGetter)
 {
     // 3 : 3 input parameters
-    StubDescriptor accessorGetter("AccessorGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, NONE_TYPE);
+    StubDescriptor accessorGetter("AccessorGetter", 0, 3, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
     *descriptor = accessorGetter;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -398,6 +417,20 @@ CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
     StubDescriptor stringGetHashCode("StringGetHashCode", 0, 1, ArgumentsOrder::DEFAULT_ORDER, UINT32_TYPE);
     *descriptor = stringGetHashCode;
     std::array<MachineType, 1> params = {
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
+{
+    // 2 : 2 input parameters
+    StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = stringGetHashCode;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::UINT64_TYPE,
         MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());

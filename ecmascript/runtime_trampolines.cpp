@@ -117,7 +117,11 @@ uint64_t RuntimeTrampolines::AccessorGetter(uint64_t argThread, uint64_t argGett
 
 int32_t RuntimeTrampolines::FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num)
 {
+    uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
     auto cls  = reinterpret_cast<JSHClass *>(hClass);
     auto layoutInfo = LayoutInfo::Cast(cls->GetAttributes().GetTaggedObject());
     return layoutInfo->FindElementWithCache(thread, cls, JSTaggedValue(key), num);
@@ -148,5 +152,16 @@ uint64_t RuntimeTrampolines::Execute(uint64_t argThread, uint64_t argFunc,
 double RuntimeTrampolines::FloatMod(double left, double right)
 {
     return std::fmod(left, right);
+}
+
+uint64_t RuntimeTrampolines::NewInternalString(uint64_t argThread, uint64_t argKey)
+{
+    uintptr_t *curFp = nullptr;
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
+    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argKey)));
+    return JSTaggedValue(thread->GetEcmaVM()->GetFactory()->InternString(keyHandle)).GetRawData();
 }
 }  // namespace panda::ecmascript

@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_H
 #define ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_H
 
+#include <memory>
 #include "ecmascript/js_tagged_value.h"
 
 namespace panda::ecmascript {

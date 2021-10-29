@@ -66,6 +66,7 @@ public:
 
     static inline JSTaggedValue Execute(JSThread *thread, const CallParams& params);
     static inline JSTaggedValue ExecuteNative(JSThread *thread, const CallParams& params);
+    static inline JSTaggedType *GetCurrentInterpretedFrameSp(JSThread *thread);
     static inline JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void ResumeContext(JSThread *thread);

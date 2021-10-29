@@ -185,12 +185,20 @@ Properties OpCode::GetProperties() const
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
         case ZEXT_INT1_TO_INT32:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
+        case ZEXT_INT8_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
+        case ZEXT_INT16_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT16), NO_ROOT};
         case ZEXT_INT1_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
         case SEXT_INT32_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
         case SEXT_INT1_TO_INT32:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
+        case SEXT_INT8_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
+        case SEXT_INT16_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
         case SEXT_INT1_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
         case TRUNC_INT64_TO_INT32:
@@ -290,9 +298,11 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT64, PtrValueCode()), NO_ROOT};
         case INT32_TO_FLOAT64:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
-        case INT64_TO_FLOAT64:
+        case FLOAT64_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
+        case BITCAST_INT64_TO_FLOAT64:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
-        case FLOAT64_TO_INT64:
+        case BITCAST_FLOAT64_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
         default:
             std::cerr << "Please complete OpCode properties (OpCode=" << this->op << ")" << std::endl;
@@ -400,9 +410,13 @@ std::string OpCode::Str() const
         {FLOAT64_CONSTANT, "FLOAT64_CONSTANT"},
         {ZEXT_INT32_TO_INT64, "ZEXT_INT32_TO_INT64"},
         {ZEXT_INT1_TO_INT32, "ZEXT_INT1_TO_INT32"},
+        {ZEXT_INT8_TO_INT32, "ZEXT_INT8_TO_INT32"},
+        {ZEXT_INT16_TO_INT32, "ZEXT_INT16_TO_INT32"},
         {ZEXT_INT1_TO_INT64, "ZEXT_INT1_TO_INT64"},
         {SEXT_INT32_TO_INT64, "SEXT_INT32_TO_INT64"},
         {SEXT_INT1_TO_INT32, "SEXT_INT1_TO_INT32"},
+        {SEXT_INT8_TO_INT32, "SEXT_INT8_TO_INT32"},
+        {SEXT_INT16_TO_INT32, "SEXT_INT16_TO_INT32"},
         {SEXT_INT1_TO_INT64, "SEXT_INT1_TO_INT64"},
         {TRUNC_INT64_TO_INT32, "TRUNC_INT64_TO_INT32"},
         {TRUNC_INT64_TO_INT1, "TRUNC_INT64_TO_INT1"},
@@ -476,8 +490,9 @@ std::string OpCode::Str() const
         {FLOAT32_STORE, "FLOAT32_STORE"},
         {FLOAT64_STORE, "FLOAT64_STORE"},
         {INT32_TO_FLOAT64, "INT32_TO_FLOAT64"},
-        {INT64_TO_FLOAT64, "INT64_TO_FLOAT64"},
-        {FLOAT64_TO_INT64, "FLOAT64_TO_INT64"},
+        {FLOAT64_TO_INT32, "FLOAT64_TO_INT32"},
+        {BITCAST_INT64_TO_FLOAT64, "BITCAST_INT64_TO_FLOAT64"},
+        {BITCAST_FLOAT64_TO_INT64, "BITCAST_FLOAT64_TO_INT64"},
     };
     if (strMap.count(this->op) > 0) {
         return strMap.at(this->op);
@@ -1304,5 +1319,10 @@ bool OpCode::IsControlCase() const
 bool OpCode::IsLoopHead() const
 {
     return (this->op == OpCode::LOOP_BEGIN);
+}
+
+bool OpCode::IsNop() const
+{
+    return (this->op == OpCode::NOP);
 }
 }  // namespace kungfu

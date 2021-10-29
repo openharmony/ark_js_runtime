@@ -14,29 +14,42 @@
  */
 
 #include "ecmascript/interpreter/frame_handler.h"
-#include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_thread.h"
 #include "libpandafile/bytecode_instruction-inl.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 
 namespace panda::ecmascript {
-InterpretedFrameHandler::InterpretedFrameHandler(const JSThread *thread)
-{
-    sp_ = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-}
-
-bool InterpretedFrameHandler::HasFrame() const
-{
-    // Breakframe also is a frame
-    return sp_ != nullptr;
-}
-
-bool InterpretedFrameHandler::IsBreakFrame() const
+void FrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
-    return state->sp == nullptr;
+    auto type = GetFrameType();
+    switch (type) {
+        case FrameType::OPTIMIZED_FRAME: {
+            auto framehandle =
+                reinterpret_cast<OptimizedFrameHandler *>(this);
+            framehandle->PrevFrame();
+            break;
+        }
+        case FrameType::OPTIMIZED_ENTRY_FRAME: {
+            auto framehandle =
+                reinterpret_cast<OptimizedEntryFrameHandler *>(this);
+            framehandle->PrevFrame();
+            break;
+        }
+        case FrameType::INTERPRETER_FRAME: {
+            auto framehandle =
+                reinterpret_cast<InterpretedFrameHandler *>(this);
+            framehandle->PrevFrame();
+            break;
+        }
+        default:
+            UNREACHABLE();
+    }
+}
+
+InterpretedFrameHandler::InterpretedFrameHandler(JSThread *thread)
+    : FrameHandler(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()))
+{
 }
 
 void InterpretedFrameHandler::PrevFrame()
@@ -45,6 +58,12 @@ void InterpretedFrameHandler::PrevFrame()
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
     sp_ = state->base.prev;
+}
+
+void InterpretedFrameHandler::PrevInterpretedFrame()
+{
+    FrameHandler::PrevFrame();
+    for (;HasFrame() && GetFrameType() != FrameType::INTERPRETER_FRAME; FrameHandler::PrevFrame());
 }
 
 InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
@@ -194,6 +213,13 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
     os << "offset: " << offset << "\n";
 }
 
+void OptimizedFrameHandler::PrevFrame()
+{
+    OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
+        reinterpret_cast<uintptr_t>(sp_) - OptimizedFrameStateBase::GetFrameStateOffsetFromSp());
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+}
+
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
     uintptr_t *current = fp_;
@@ -212,6 +238,13 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
             v0(Root::ROOT_FRAME, ObjectSlot(address));
         }
     }
+}
+
+void OptimizedEntryFrameHandler::PrevFrame()
+{
+    OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
+        reinterpret_cast<uintptr_t>(sp_) - OptimizedEntryFrameState::GetFrameStateOffsetFromSp());
+    sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
 }
 
 void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const

@@ -34,10 +34,11 @@ AddrShift Stub::Variable::AddPhiOperand(AddrShift val)
     Label label = env_->GetLabelFromSelector(val);
     size_t idx = 0;
     for (auto pred : label.GetPredecessors()) {
+        auto preVal = pred.ReadVariable(this);
+        ASSERT(!env_->GetCircuit()->GetOpCode(preVal).IsNop());
         idx++;
-        val = AddOperandToSelector(val, idx, pred.ReadVariable(this));
+        val = AddOperandToSelector(val, idx, preVal);
     }
-
     return TryRemoveTrivialPhi(val);
 }
 
@@ -66,6 +67,7 @@ AddrShift Stub::Variable::TryRemoveTrivialPhi(AddrShift phiVal)
         // the phi is unreachable or in the start block
         same = env_->GetCircuit()->LoadGatePtr(env_->GetCircuitBuilder().UndefineConstant());
     }
+    auto same_addr_shift = env_->GetCircuit()->SaveGatePtr(same);
 
     // remove the trivial phi
     // get all users of phi except self
@@ -92,10 +94,13 @@ AddrShift Stub::Variable::TryRemoveTrivialPhi(AddrShift phiVal)
     for (auto out : outs) {
         if (IsSelector(out->GetGate())) {
             auto out_addr_shift = env_->GetCircuit()->SaveGatePtr(out->GetGate());
-            TryRemoveTrivialPhi(out_addr_shift);
+            auto result = TryRemoveTrivialPhi(out_addr_shift);
+            if (same_addr_shift == out_addr_shift) {
+                same_addr_shift = result;
+            }
         }
     }
-    return env_->GetCircuit()->SaveGatePtr(same);
+    return same_addr_shift;
 }
 
 void Stub::Variable::RerouteOuts(const std::vector<Out *> &outs, Gate *newGate)
@@ -123,7 +128,10 @@ void LabelImpl::WriteVariable(Variable *var, AddrShift value)
 AddrShift LabelImpl::ReadVariable(Variable *var)
 {
     if (valueMap_.find(var) != valueMap_.end()) {
-        return valueMap_.at(var);
+        auto result = valueMap_.at(var);
+        if (!env_->GetCircuit()->GetOpCode(result).IsNop()) {
+            return result;
+        }
     }
     return ReadVariableRecursive(var);
 }
@@ -423,7 +431,7 @@ AddrShift Stub::FindElementFromNumberDictionary(AddrShift thread, AddrShift elem
     Bind(&notMatch);
     Jump(&loopEnd);
     Bind(&loopEnd);
-    entry = Word32And(Int32Add(*entry, *count), Int32Sub(capacity, GetInteger32Constant(1)));
+    entry = GetNextPositionForHash(*entry, *count, capacity);
     count = Int32Add(*count, GetInteger32Constant(1));
     LoopEnd(&loopHead);
     Bind(&exit);
@@ -594,7 +602,7 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
         }
         Bind(&loopEnd);
         {
-            entry = Word32And(Int32Add(*entry, *count), Int32Sub(capacity, GetInteger32Constant(1)));
+            entry = GetNextPositionForHash(*entry, *count, capacity);
             count = Int32Add(*count, GetInteger32Constant(1));
             LoopEnd(&loopHead);
         }
@@ -626,7 +634,7 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
                 Int32Mul(Int32Sub(
                     GetInteger32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS), attrOffset),
                     GetInteger32Constant(panda::ecmascript::JSTaggedValue::TaggedTypeSize())));
-            result = Int64BuildTagged(Load(UINT64_TYPE, obj, ZExtInt32ToInt64(propOffset)));
+            result = Load(UINT64_TYPE, obj, ZExtInt32ToInt64(propOffset));
             Jump(&exit);
         }
         Bind(&notInlinedProp);
@@ -646,10 +654,9 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
 
 void Stub::ThrowTypeAndReturn(AddrShift thread, int messageId, AddrShift val)
 {
-    AddrShift taggedId = GetInteger32Constant(messageId);
     StubDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
-    CallRuntime(throwTypeError, thread, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)),
-                {thread, taggedId});
+    AddrShift msgIntId = GetInteger32Constant(messageId);
+    CallRuntime(throwTypeError, thread, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), {thread, msgIntId});
     Return(val);
 }
 
@@ -792,5 +799,260 @@ void Stub::UpdateAndStoreRepresention(AddrShift hclass, AddrShift value)
 {
     AddrShift newRep = UpdateRepresention(GetElementRepresentation(hclass), value);
     SetElementRepresentation(hclass, newRep);
+}
+
+AddrShift Stub::TaggedIsString(AddrShift obj)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    Label exit(env);
+    DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
+    Label isHeapObject(env);
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        result = Word32Equal(GetObjectType(LoadHClass(obj)),
+                             GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+AddrShift Stub::TaggedIsStringOrSymbol(AddrShift obj)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    Label exit(env);
+    DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
+    Label isHeapObject(env);
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        AddrShift objType = GetObjectType(LoadHClass(obj));
+        result = Word32Equal(objType,
+                             GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
+        Label isString(env);
+        Label notString(env);
+        Branch(*result, &exit, &notString);
+        Bind(&notString);
+        {
+            result = Word32Equal(objType,
+                                 GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::SYMBOL)));
+            Jump(&exit);
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+AddrShift Stub::IsUtf16String(AddrShift string)
+{
+    // compressedStringsEnabled fixed to true constant
+    AddrShift len = Load(MachineType::UINT32_TYPE, string,
+                         GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
+    return Word32Equal(
+        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
+        GetInteger32Constant(panda::ecmascript::EcmaString::STRING_UNCOMPRESSED));
+}
+
+AddrShift Stub::IsUtf8String(AddrShift string)
+{
+    // compressedStringsEnabled fixed to true constant
+    AddrShift len = Load(MachineType::UINT32_TYPE, string,
+                         GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
+    return Word32Equal(
+        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
+        GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED));
+}
+
+AddrShift Stub::IsInternalString(AddrShift string)
+{
+    // compressedStringsEnabled fixed to true constant
+    AddrShift len = Load(MachineType::UINT32_TYPE, string,
+                         GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
+    return Word32NotEqual(
+        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_INTERN_BIT)),
+        GetInteger32Constant(0));
+}
+
+AddrShift Stub::IsDigit(AddrShift ch)
+{
+    return TruncInt32ToInt1(
+        Word32And(SExtInt1ToInt32(Int32LessThanOrEqual(ch, GetInteger32Constant('9'))),
+                  SExtInt1ToInt32(Int32GreaterThanOrEqual(ch, GetInteger32Constant('0')))));
+}
+
+AddrShift Stub::StringToElementIndex(AddrShift string)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    Label exit(env);
+    DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
+    Label greatThanZero(env);
+    Label inRange(env);
+    AddrShift len = Load(MachineType::UINT32_TYPE, string,
+                         GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
+    len = Word32LSR(len, GetInteger32Constant(2));  // 2 : 2 means len must be right shift 2 bits
+    Branch(Word32Equal(len, GetInteger32Constant(0)), &exit, &greatThanZero);
+    Bind(&greatThanZero);
+    Branch(Int32GreaterThan(len, GetInteger32Constant(panda::ecmascript::MAX_INDEX_LEN)), &exit, &inRange);
+    Bind(&inRange);
+    {
+        AddrShift dataUtf16 = PtrAdd(string, GetPtrConstant(panda::ecmascript::EcmaString::GetDataOffset()));
+        DEFVARIABLE(c, UINT32_TYPE, GetInteger32Constant(0));
+        Label isUtf16(env);
+        Label isUtf8(env);
+        Label getChar1(env);
+        AddrShift isUtf16String = IsUtf16String(string);
+        Branch(isUtf16String, &isUtf16, &isUtf8);
+        Bind(&isUtf16);
+        {
+            c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16));
+            Jump(&getChar1);
+        }
+        Bind(&isUtf8);
+        {
+            c = ZExtInt8ToInt32(Load(INT8_TYPE, dataUtf16));
+            Jump(&getChar1);
+        }
+        Bind(&getChar1);
+        {
+            Label isDigitZero(env);
+            Label notDigitZero(env);
+            Branch(Word32Equal(*c, GetInteger32Constant('0')), &isDigitZero, &notDigitZero);
+            Bind(&isDigitZero);
+            {
+                Label lengthIsOne(env);
+                Branch(Word32Equal(len, GetInteger32Constant(1)), &lengthIsOne, &exit);
+                Bind(&lengthIsOne);
+                {
+                    result = GetInteger32Constant(0);
+                    Jump(&exit);
+                }
+            }
+            Bind(&notDigitZero);
+            {
+                Label isDigit(env);
+                DEFVARIABLE(i, UINT32_TYPE, GetInteger32Constant(1));
+                DEFVARIABLE(n, UINT32_TYPE, Int32Sub(*c, GetInteger32Constant('0')));
+                Branch(IsDigit(*c), &isDigit, &exit);
+                Label loopHead(env);
+                Label loopEnd(env);
+                Label afterLoop(env);
+                Bind(&isDigit);
+                Branch(Int32LessThan(*i, len), &loopHead, &afterLoop);
+                LoopBegin(&loopHead);
+                {
+                    Label isUtf16(env);
+                    Label notUtf16(env);
+                    Label getChar2(env);
+                    Branch(isUtf16String, &isUtf16, &notUtf16);
+                    Bind(&isUtf16);
+                    {
+                        // 2 : 2 means utf16 char width is two bytes
+                        auto charOffset = PtrMul(ChangeInt32ToPointer(*i),  GetPtrConstant(2));
+                        c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16, charOffset));
+                        Jump(&getChar2);
+                    }
+                    Bind(&notUtf16);
+                    {
+                        c = ZExtInt8ToInt32(Load(INT8_TYPE, dataUtf16, ChangeInt32ToPointer(*i)));
+                        Jump(&getChar2);
+                    }
+                    Bind(&getChar2);
+                    {
+                        Label isDigit2(env);
+                        Label notDigit2(env);
+                        Branch(IsDigit(*c), &isDigit2, &notDigit2);
+                        Bind(&isDigit2);
+                        {
+                            // 10 means the base of digit is 10.
+                            n = Int32Add(Int32Mul(*n, GetInteger32Constant(10)),
+                                         Int32Sub(*c, GetInteger32Constant('0')));
+                            i = Int32Add(*i, GetInteger32Constant(1));
+                            Branch(Int32LessThan(*i, len), &loopEnd, &afterLoop);
+                        }
+                        Bind(&notDigit2);
+                        Jump(&exit);
+                    }
+                }
+                Bind(&loopEnd);
+                LoopEnd(&loopHead);
+                Bind(&afterLoop);
+                {
+                    Label lessThanMaxIndex(env);
+                    Branch(Word32LessThan(*n, GetInteger32Constant(panda::ecmascript::JSObject::MAX_ELEMENT_INDEX)),
+                           &lessThanMaxIndex, &exit);
+                    Bind(&lessThanMaxIndex);
+                    {
+                        result = *n;
+                        Jump(&exit);
+                    }
+                }
+            }
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+AddrShift Stub::TryToElementsIndex(AddrShift key)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    Label exit(env);
+    Label isKeyInt(env);
+    Label notKeyInt(env);
+
+    DEFVARIABLE(resultKey, INT32_TYPE, GetInteger32Constant(-1));
+    Branch(TaggedIsInt(key), &isKeyInt, &notKeyInt);
+    Bind(&isKeyInt);
+    {
+        resultKey = TaggedCastToInt32(key);
+        Jump(&exit);
+    }
+    Bind(&notKeyInt);
+    {
+        Label isString(env);
+        Label notString(env);
+        Branch(TaggedIsString(key), &isString, &notString);
+        Bind(&isString);
+        {
+            resultKey = StringToElementIndex(key);
+            Jump(&exit);
+        }
+        Bind(&notString);
+        {
+            Label isDouble(env);
+            Branch(TaggedIsDouble(key), &isDouble, &exit);
+            Bind(&isDouble);
+            {
+                AddrShift number = TaggedCastToDouble(key);
+                AddrShift integer = ChangeFloat64ToInt32(number);
+                Label isEqual(env);
+                Branch(DoubleEqual(number, ChangeInt32ToFloat64(integer)), &isEqual, &exit);
+                Bind(&isEqual);
+                {
+                    resultKey = integer;
+                    Jump(&exit);
+                }
+            }
+        }
+    }
+    Bind(&exit);
+    auto ret = *resultKey;
+    env->PopCurrentLabel();
+    return ret;
 }
 }  // namespace kungfu

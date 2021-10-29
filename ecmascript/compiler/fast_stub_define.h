@@ -29,7 +29,8 @@ namespace kungfu {
     V(FindElementWithCache, 4)       \
     V(Execute, 5)                    \
     V(StringGetHashCode, 1)          \
-    V(FloatMod, 2)
+    V(FloatMod, 2)                   \
+    V(NewInternalString, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
@@ -60,7 +61,9 @@ namespace kungfu {
     V(FindOwnElement2, 6)           \
     V(GetPropertyByIndex, 3)        \
     V(FunctionCallInternal, 5)      \
-    V(SetPropertyByIndex, 4)
+    V(SetPropertyByIndex, 4)        \
+    V(GetPropertyByValue, 3)        \
+    V(SetPropertyByValue, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
