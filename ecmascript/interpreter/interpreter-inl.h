@@ -245,7 +245,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
 
     FrameState *state = GET_FRAME(newSp);
     state->base.prev = sp;
-    state->base.frameType = FrameType::INTERPRETER_FRAME;
+    state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     state->pc = nullptr;
     state->sp = newSp;
     state->method = methodToCall;
@@ -279,7 +279,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->base.prev = originalPrevSp;
-    breakState->base.frameType = FrameType::INTERPRETER_FRAME;
+    breakState->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     breakState->numActualArgs = 0;
     JSTaggedType *prevSp = newSp;
 
@@ -319,7 +319,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     state->constpool = constpool;
     state->profileTypeInfo = thisFunc->GetProfileTypeInfo();
     state->base.prev = prevSp;
-    state->base.frameType = FrameType::INTERPRETER_FRAME;
+    state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     state->numActualArgs = numActualArgs;
 
     JSTaggedValue env = thisFunc->GetLexicalEnv();
@@ -358,7 +358,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->base.prev = currentSp;
-    breakState->base.frameType = FrameType::INTERPRETER_FRAME;
+    breakState->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     breakState->numActualArgs = 0;
 
     // create new frame and resume sp and pc
@@ -389,7 +389,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     state->acc = context->GetAcc();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     state->base.prev = breakSp;
-    state->base.frameType = FrameType::INTERPRETER_FRAME;
+    state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     JSTaggedValue env = context->GetLexicalEnv();
     state->env = env;
     // execute interpreter
@@ -421,7 +421,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->base.prev = currentSp;
-    breakState->base.frameType = FrameType::INTERPRETER_FRAME;
+    breakState->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
 
     // create new frame and resume sp and pc
     uint32_t nregs = context->GetNRegs().GetInt();
@@ -451,7 +451,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
     state->acc = context->GetAcc();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     state->base.prev = breakSp;
-    state->base.frameType = FrameType::INTERPRETER_FRAME;
+    state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     state->env = context->GetLexicalEnv();
 
     thread->SetCurrentSPFrame(newSp);
@@ -795,7 +795,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
                 FrameState *state = GET_FRAME(newSp);
                 state->base.prev = sp;
-                state->base.frameType = FrameType::INTERPRETER_FRAME;
+                state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
                 state->pc = nullptr;
                 state->sp = newSp;
                 state->method = methodToCall;
@@ -879,7 +879,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
                 FrameState *state = GET_FRAME(newSp);
                 state->base.prev = sp;
-                state->base.frameType = FrameType::INTERPRETER_FRAME;
+                state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
                 state->pc = pc = JSMethod::Cast(methodToCall)->GetBytecodeArray();
                 state->sp = sp = newSp;
                 state->method = methodToCall;
@@ -3271,7 +3271,7 @@ void EcmaInterpreter::InitStackFrame(JSThread *thread)
     state->acc = JSTaggedValue::Hole();
     state->constpool = nullptr;
     state->profileTypeInfo = JSTaggedValue::Undefined();
-    state->base.frameType = FrameType::INTERPRETER_FRAME;
+    state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     state->base.prev = nullptr;
     state->numActualArgs = 0;
 }

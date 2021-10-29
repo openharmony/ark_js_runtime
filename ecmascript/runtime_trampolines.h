@@ -16,7 +16,9 @@
 #ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_H
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_H
 #include "ecmascript/compiler/fast_stub_define.h"
+#include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/interpreter/frame_handler.h"
 
 namespace panda::ecmascript {
 class RuntimeTrampolines {
@@ -66,11 +68,15 @@ public:
         thread->SetLastIFrameSp(cursp);
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
+        LOG_ECMA(INFO) << "Sp: " << newSp << " type:" <<
+            static_cast<uintptr_t>(FrameHandler(newSp).GetFrameType());
     }
     ~CallRuntimeTrampolinesScope()
     {
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
+        LOG_ECMA(INFO) << "Sp: " << oldSp << " type:" <<
+            static_cast<uintptr_t>(FrameHandler(oldSp).GetFrameType());
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:

@@ -215,6 +215,8 @@
 #ifndef ECMASCRIPT_FRAMES_H
 #define ECMASCRIPT_FRAMES_H
 
+#include "ecmascript/js_tagged_value.h"
+
 #ifdef PANDA_TARGET_AMD64
 #define GET_CURRETN_FP(fp) asm("mov %%rbp, %0" : "=rm" (fp))
 #define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp)
@@ -233,17 +235,10 @@ enum class FrameType: uintptr_t {
     INTERPRETER_FRAME = 2,
 };
 
-template<typename Enumeration>
-auto as_integer(Enumeration const value)
--> typename std::underlying_type<Enumeration>::type
-{
-    return static_cast<typename std::underlying_type<Enumeration>::type>(value);
-}
-
 class OptimizedFrameStateBase {
 public:
-    FrameType frameType;
-    uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    uintptr_t frameType;
+    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     static size_t GetFrameStateOffsetFromSp()
     {
         return MEMBER_OFFSET(OptimizedFrameStateBase, prev);
@@ -252,13 +247,13 @@ public:
 
 class InterpretedFrameStateBase {
 public:
-    uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    FrameType frameType;
+    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    uintptr_t frameType;
 };
 
 class OptimizedEntryFrameState {
 public:
-    uint64_t *threadFp; // for gc
+    JSTaggedType *threadFp; // for gc
     OptimizedFrameStateBase base;
     static size_t GetFrameStateOffsetFromSp()
     {
@@ -268,7 +263,7 @@ public:
 
 class FrameConst {
 public:
-    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(FrameType);
+    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uintptr_t);
 };
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H
