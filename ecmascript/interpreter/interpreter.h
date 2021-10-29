@@ -23,10 +23,10 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript {
+using TaggedType = coretypes::TaggedType;
 class ConstantPool;
 class ECMAObject;
 class GeneratorContext;
-using TaggedType = coretypes::TaggedType;
 
 // align with 8
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
