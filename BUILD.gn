@@ -132,6 +132,9 @@ source_set("libark_js_intl_static") {
 
 config("ark_jsruntime_common_config") {
   defines = [ "PANDA_ENABLE_LTO" ]
+  if (enable_stub_aot) {
+    defines += [ "ECMASCRIPT_ENABLE_STUB_AOT" ]
+  }
 
   if (is_standard_system) {
     defines += [ "IS_STANDARD_SYSTEM" ]

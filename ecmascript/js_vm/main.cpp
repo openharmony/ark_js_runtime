@@ -65,7 +65,7 @@ int Main(const int argc, const char **argv)
     panda::PandArg<bool> help("help", false, "Print this message and exit");
     panda::PandArg<bool> options("options", false, "Print compiler and runtime options");
     // tail arguments
-    panda::PandArg<std::string> file("file", "", "path to pandafile");
+    panda::PandArg<arg_list_t> files("files", {""}, "path to pandafiles", ":");
     panda::PandArg<std::string> entrypoint("entrypoint", "_GLOBAL::func_main_0",
                                            "full name of entrypoint function or method");
     panda::PandArgParser paParser;
@@ -74,16 +74,16 @@ int Main(const int argc, const char **argv)
 
     paParser.Add(&help);
     paParser.Add(&options);
-    paParser.PushBackTail(&file);
+    paParser.PushBackTail(&files);
     paParser.PushBackTail(&entrypoint);
     paParser.EnableTail();
     paParser.EnableRemainder();
 
-    if (!paParser.Parse(argc, argv) || file.GetValue().empty() || entrypoint.GetValue().empty() || help.GetValue()) {
+    if (!paParser.Parse(argc, argv) || files.GetValue().empty() || entrypoint.GetValue().empty() || help.GetValue()) {
         std::cerr << paParser.GetErrorString() << std::endl;
         std::cerr << "Usage: "
                   << "panda"
-                  << " [OPTIONS] [file] [entrypoint] -- [arguments]" << std::endl;
+                  << " [OPTIONS] [file1:file2:file3] [entrypoint] -- [arguments]" << std::endl;
         std::cerr << std::endl;
         std::cerr << "optional arguments:" << std::endl;
         std::cerr << paParser.GetHelpString() << std::endl;
@@ -120,16 +120,20 @@ int Main(const int argc, const char **argv)
         std::cout << paParser.GetRegularArgs() << std::endl;
     }
 
-    std::string fileName = file.GetValue();
-    std::string entry = entrypoint.GetValue();
-
     EcmaVM *vm = EcmaVM::Cast(runtime->GetPandaVM());
-    auto fileNameRef = StringRef::NewFromUtf8(vm, fileName.c_str(), fileName.size());
+
+    std::string entry = entrypoint.GetValue();
     auto entryRef = StringRef::NewFromUtf8(vm, entry.c_str(), entry.size());
-    auto res = JSNApi::Execute(vm, fileNameRef, entryRef);
-    if (!res) {
-        std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry << "'" << std::endl;
-        ret = false;
+
+    arg_list_t fileNames = files.GetValue();
+    for (const auto &fileName : fileNames) {
+        auto fileNameRef = StringRef::NewFromUtf8(vm, fileName.c_str(), fileName.size());
+        auto res = JSNApi::Execute(vm, fileNameRef, entryRef);
+        if (!res) {
+            std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry << "'" << std::endl;
+            ret = false;
+            break;
+        }
     }
 
     if (!Runtime::Destroy()) {

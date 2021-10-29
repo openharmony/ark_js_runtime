@@ -144,9 +144,7 @@ TaggedArray* RuntimeTrampolines::GetTaggedArrayPtr(uint64_t argThread)
     // this case static static JSHandle<TaggedArray> arr don't free in first call
     // second call trigger gc.
     // don't call EcmaHandleScope handleScope(thread);
-    auto current = thread->GetCurrentSPFrame();
-    FrameType type = Frame::GetFrameType(current);
-    LOG_ECMA(INFO) << __FUNCTION__ << "type = " << static_cast<uint64_t>(type) << std::endl;
+    // auto current = thread->GetCurrentSPFrame();
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     static int i = 0;
@@ -214,5 +212,16 @@ void RuntimeTrampolines::SetValueWithBarrier(uint64_t argThread, uint64_t argAdd
 double RuntimeTrampolines::FloatMod(double left, double right)
 {
     return std::fmod(left, right);
+}
+
+uint64_t RuntimeTrampolines::NewInternalString(uint64_t argThread, uint64_t argKey)
+{
+    uintptr_t *curFp = nullptr;
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    GET_CURRETN_FP(curFp);
+    uintptr_t *prevFp = GET_PREV_FP(curFp);
+    CallRuntimeTrampolinesScope scope(thread, prevFp, curFp);
+    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argKey)));
+    return JSTaggedValue(thread->GetEcmaVM()->GetFactory()->InternString(keyHandle)).GetRawData();
 }
 }  // namespace panda::ecmascript

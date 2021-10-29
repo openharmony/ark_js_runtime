@@ -194,6 +194,32 @@ public:
     NO_COPY_SEMANTIC(FunctionCallInternalStub);
     void GenerateCircuit() override;
 };
+
+class GetPropertyByValueStub : public Stub {
+public:
+    // 3 : 3 means argument counts
+    explicit GetPropertyByValueStub(Circuit *circuit) : Stub("FastGetPropertyByValue", 3, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~GetPropertyByValueStub() = default;
+    NO_MOVE_SEMANTIC(GetPropertyByValueStub);
+    NO_COPY_SEMANTIC(GetPropertyByValueStub);
+    void GenerateCircuit() override;
+};
+
+class SetPropertyByValueStub : public Stub {
+public:
+    // 4 : 4 means argument counts
+    explicit SetPropertyByValueStub(Circuit *circuit) : Stub("FastSetPropertyByValue", 4, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~SetPropertyByValueStub() = default;
+    NO_MOVE_SEMANTIC(SetPropertyByValueStub);
+    NO_COPY_SEMANTIC(SetPropertyByValueStub);
+    void GenerateCircuit() override;
+};
 }  // namespace kungfu
 
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H

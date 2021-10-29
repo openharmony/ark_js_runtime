@@ -23,6 +23,7 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"

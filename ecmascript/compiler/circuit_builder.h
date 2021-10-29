@@ -59,12 +59,9 @@ public:
     AddrShift NewArithMeticGate(OpCode opcode, AddrShift value);
     AddrShift NewLogicGate(OpCode opcode, AddrShift left, AddrShift right);
     AddrShift NewLogicGate(OpCode opcode, AddrShift value);
-    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args);
-    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift target, AddrShift depend,
-                          std::initializer_list<AddrShift> args);
-    AddrShift NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
+    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                  std::initializer_list<AddrShift> args);
-    AddrShift NewCallRuntimeGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
+    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
                                  AddrShift depend, std::initializer_list<AddrShift> args);
     static OpCode GetLoadOpCodeFromMachineType(MachineType type);
     static OpCode GetStoreOpCodeFromMachineType(MachineType type);

@@ -13,6 +13,21 @@
 
 import("//ark/js_runtime/test/test_helper.gni")
 
-host_moduletest_action("helloworld") {
+host_moduletest_action("second_module") {
   deps = []
+}
+
+host_moduletest_action("third_module") {
+  deps = []
+}
+
+host_moduletest_action("helloworld") {
+  extra_modules = [
+    "second_module",
+    "third_module",
+  ]
+  deps = [
+    ":gen_second_module_abc",
+    ":gen_third_module_abc",
+  ]
 }

@@ -12,3 +12,5 @@
 # limitations under the License.
 
 hello world !
+second_module got: I'm helloworld!
+third_module got: I'm second_module!

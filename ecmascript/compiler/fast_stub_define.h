@@ -31,7 +31,8 @@ namespace kungfu {
     V(StringGetHashCode, 1)          \
     V(FloatMod, 2)                   \
     V(SetValueWithBarrier, 4)        \
-    V(GetTaggedArrayPtr, 1)
+    V(GetTaggedArrayPtr, 1)          \
+    V(NewInternalString, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
@@ -62,6 +63,9 @@ namespace kungfu {
     V(GetPropertyByIndex, 3)        \
     V(FunctionCallInternal, 5)      \
     V(SetPropertyByIndex, 4)        \
+    V(GetPropertyByValue, 3)        \
+    V(SetPropertyByValue, 4)        \
+    V(SetPropertyByName, 4)         \
     V(FastMulGC, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

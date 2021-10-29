@@ -53,6 +53,7 @@ public:
     static uint64_t Execute(uint64_t argThread, uint64_t argFunc, uint64_t thisArg, uint32_t argc, uint64_t argArgv);
     static void SetValueWithBarrier(uint64_t argThread, uint64_t argAddr, uint64_t argOffset, uint64_t argValue);
     static double FloatMod(double left, double right);
+    static uint64_t NewInternalString(uint64_t argThread, uint64_t argKey);
 };
 
 class CallRuntimeTrampolinesScope {
@@ -65,18 +66,14 @@ public:
         thread->SetLastOptCallRuntimePc(pc);
         JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
         lastFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
+        thread->SetLastIFrameSp(cursp);
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
-        LOG_ECMA(INFO) << "Sp: " << newSp << " type:" <<
-            static_cast<uintptr_t>(Frame::GetFrameType(newSp)) << std::endl;
-
     }
     ~CallRuntimeTrampolinesScope()
     {
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
-        LOG_ECMA(INFO) << "Sp: " << oldSp << " type:" <<
-            static_cast<uintptr_t>(Frame::GetFrameType(oldSp)) << std::endl;
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:

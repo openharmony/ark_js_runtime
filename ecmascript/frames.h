@@ -238,8 +238,12 @@ enum class FrameType: uintptr_t {
 
 class OptimizedFrameStateBase {
 public:
-    uintptr_t frameType;
-    TaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    FrameType frameType;
+    uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    static size_t GetFrameStateOffsetFromSp()
+    {
+        return MEMBER_OFFSET(OptimizedFrameStateBase, prev);
+    }
 };
 
 class InterpretedFrameStateBase {
@@ -252,16 +256,15 @@ class OptimizedEntryFrameState {
 public:
     TaggedType *threadFp; // for gc
     OptimizedFrameStateBase base;
+    static size_t GetFrameStateOffsetFromSp()
+    {
+        return MEMBER_OFFSET(OptimizedEntryFrameState, base.prev);
+    }
 };
 
-class Frame {
-private:
-    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uintptr_t);
+class FrameConst {
 public:
-    static FrameType GetFrameType(const TaggedType *current)
-    {
-        return *(reinterpret_cast<FrameType*>(reinterpret_cast<uintptr_t>(current) + FRAME_TYPE_OFFSET));
-    }
+    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uintptr_t);
 };
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H

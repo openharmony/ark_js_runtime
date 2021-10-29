@@ -19,7 +19,6 @@
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/ecma_global_storage.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "include/thread.h"
 #include "ecmascript/frames.h"
@@ -74,6 +73,16 @@ public:
     void SetCurrentSPFrame(JSTaggedType *sp)
     {
         currentFrame_ = sp;
+    }
+
+    const JSTaggedType *GetLastInterpretedFrameSp() const
+    {
+        return lastIFrame_;
+    }
+
+    void SetLastIFrameSp(JSTaggedType *sp)
+    {
+        lastIFrame_ = sp;
     }
 
     bool DoStackOverflowCheck(const JSTaggedType *sp);
@@ -195,6 +204,11 @@ public:
         return MEMBER_OFFSET(JSThread, globalConst_);
     }
 
+    static uint64_t GetFastStubEntryOffset()
+    {
+        return MEMBER_OFFSET(JSThread, fastStubEntires_);
+    }
+
     InternalCallParams *GetInternalCallParams() const
     {
         return internalCallParams_;
@@ -243,6 +257,7 @@ private:
     os::memory::Mutex initializationLock_;
     int nestedLevel_ = 0;
     JSTaggedType *currentFrame_ {nullptr};
+    JSTaggedType *lastIFrame_ {nullptr};
     JSTaggedType *frameBase_ {nullptr};
     bool isSnapshotMode_ {false};
     bool isEcmaInterpreter_ {false};

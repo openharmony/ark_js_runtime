@@ -556,17 +556,18 @@ public:
     void LoopEnd(Label *loopHead);
 
     // call operation
-    AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, std::initializer_list<AddrShift> args)
+    AddrShift CallStub(StubDescriptor *descriptor,  AddrShift thread, AddrShift target,
+                       std::initializer_list<AddrShift> args)
     {
         auto depend = env_.GetCurrentLabel()->GetDepend();
-        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
-    AddrShift CallStub(StubDescriptor *descriptor, AddrShift target, AddrShift depend,
+    AddrShift CallStub(StubDescriptor *descriptor,  AddrShift thread, AddrShift target, AddrShift depend,
                        std::initializer_list<AddrShift> args)
     {
-        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -575,7 +576,7 @@ public:
                           std::initializer_list<AddrShift> args)
     {
         auto depend = env_.GetCurrentLabel()->GetDepend();
-        AddrShift result = env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -583,7 +584,7 @@ public:
     AddrShift CallRuntime(StubDescriptor *descriptor, AddrShift thread, AddrShift target, AddrShift depend,
                           std::initializer_list<AddrShift> args)
     {
-        AddrShift result = env_.GetCircuitBuilder().NewCallRuntimeGate(descriptor, thread, target, depend, args);
+        AddrShift result = env_.GetCircuitBuilder().NewCallGate(descriptor, thread, target, depend, args);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -687,7 +688,16 @@ public:
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_DIV), x, y);
     }
-    AddrShift Int32Div(AddrShift x, AddrShift y);
+    AddrShift Int32Div(AddrShift x, AddrShift y)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_SDIV), x, y);
+    }
+
+    AddrShift Word32Div(AddrShift x, AddrShift y)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_UDIV), x, y);
+    }
+
     AddrShift Int64Div(AddrShift x, AddrShift y);
 
     AddrShift Int32Mod(AddrShift x, AddrShift y)
@@ -803,20 +813,25 @@ public:
                 Word64Equal(Word64And(x, GetWord64Constant(~panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
                             GetWord64Constant(0))),
             Word32Or(SExtInt1ToInt32(Word64NotEqual(
-                Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_MASK)),
+                Word64And(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::TAG_SPECIAL_VALUE)),
                 GetWord64Constant(0))), SExtInt1ToInt32(TaggedIsHole(x)))));
     }
 
     AddrShift TaggedIsHeapObject(AddrShift x)
     {
         return TruncInt32ToInt1(
-            Word32And(SExtInt1ToInt32(TaggedIsObject(x)), Word32Not(SExtInt1ToInt32(TaggedIsSpecial(x)))));
+            Word32And(SExtInt1ToInt32(TaggedIsObject(x)),
+                      SExtInt1ToInt32(Word32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), GetInt32Constant(0)))));
     }
+
+    AddrShift TaggedIsString(AddrShift obj);
+
+    AddrShift TaggedIsStringOrSymbol(AddrShift obj);
 
     AddrShift GetNextPositionForHash(AddrShift last, AddrShift count, AddrShift size)
     {
         auto nextOffset = Word32LSR(Int32Mul(count, Int32Add(count, GetInt32Constant(1))),
-            GetInt32Constant(1));
+                                    GetInt32Constant(1));
         return Word32And(Int32Add(last, nextOffset), Int32Sub(size, GetInt32Constant(1)));
     }
 
@@ -855,7 +870,7 @@ public:
 
     AddrShift CastDoubleToInt64(AddrShift x)
     {
-        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_TO_INT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_FLOAT64_TO_INT64), x);
     }
 
     // compare operation
@@ -1390,13 +1405,20 @@ public:
 
     AddrShift JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift propAttr);
 
-    AddrShift ShouldCallSetter(AddrShift receiver, AddrShift holder, AddrShift accessor, AddrShift attr);
+    AddrShift ShouldCallSetter(AddrShift receiver, AddrShift holder,
+        AddrShift accessor, AddrShift attr);
 
-    AddrShift CallSetterUtil(AddrShift thread, AddrShift holder, AddrShift accessor,  AddrShift value);
+    AddrShift IsUtf16String(AddrShift string);
 
-    AddrShift SetHasConstructorCondition(AddrShift thread, AddrShift receiver, AddrShift key);
+    AddrShift IsUtf8String(AddrShift string);
 
-    AddrShift AddPropertyByName(AddrShift thread, AddrShift receiver, AddrShift key, AddrShift value);
+    AddrShift IsInternalString(AddrShift string);
+
+    AddrShift IsDigit(AddrShift ch);
+
+    AddrShift StringToElementIndex(AddrShift string);
+
+    AddrShift TryToElementsIndex(AddrShift key);
 
     AddrShift TaggedCastToInt64(AddrShift x)
     {
@@ -1414,14 +1436,19 @@ public:
         return CastInt64ToFloat64(val);
     }
 
-    AddrShift CastInt32ToFloat64(AddrShift x)
+    AddrShift ChangeInt32ToFloat64(AddrShift x)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_TO_FLOAT64), x);
     }
 
+    AddrShift ChangeFloat64ToInt32(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::FLOAT64_TO_INT32), x);
+    }
+
     AddrShift CastInt64ToFloat64(AddrShift x)
     {
-        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_TO_FLOAT64), x);
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_INT64_TO_FLOAT64), x);
     }
 
     AddrShift SExtInt32ToInt64(AddrShift x)
@@ -1452,6 +1479,16 @@ public:
     AddrShift ZExtInt1ToInt32(AddrShift x)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT1_TO_INT32), x);
+    }
+
+    AddrShift ZExtInt8ToInt32(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT32), x);
+    }
+
+    AddrShift ZExtInt16ToInt32(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT16_TO_INT32), x);
     }
 
     AddrShift TruncInt64ToInt32(AddrShift x)

@@ -257,6 +257,25 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(GetPropertyByValue)
+{
+    // 3 : 3 input parameters
+    StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
+    *descriptor = getPropertyByValue;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+}
+
+CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
+{
+}
+
+
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 {
     // 5 : 5 input parameters
@@ -442,6 +461,13 @@ CALL_STUB_INIT_DESCRIPTOR(SetValueWithBarrier)
     std::array<MachineType, 4> params = {
         MachineType::UINT64_TYPE,
         MachineType::UINT64_TYPE,
+CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
+{
+    // 2 : 2 input parameters
+    StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    *descriptor = stringGetHashCode;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
         MachineType::UINT64_TYPE,
         MachineType::UINT64_TYPE,
     };
@@ -505,5 +531,6 @@ void FastStubDescriptors::InitializeStubDescriptors()
     CALL_STUB_LIST(INITIALIZE_CALL_STUB_DESCRIPTOR)
 #undef INITIALIZE_CALL_STUB_DESCRIPTOR
 #undef DEF_CALL_STUB
+}
 }
 }  // namespace kungfu
