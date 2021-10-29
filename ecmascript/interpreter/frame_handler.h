@@ -102,7 +102,8 @@ public:
 
 class OptimizedFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedFrameHandler(uintptr_t *fp) : FrameHandler(fp), fp_(fp) {}
+    explicit OptimizedFrameHandler(uintptr_t *fp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(fp)), fp_(fp) {}
     explicit OptimizedFrameHandler(const JSThread *thread);
     ~OptimizedFrameHandler() = default;
     void PrevFrame();
@@ -113,7 +114,8 @@ private:
 
 class OptimizedEntryFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedEntryFrameHandler(uintptr_t *fp) : FrameHandler(fp), fp_(fp) {}
+    explicit OptimizedEntryFrameHandler(uintptr_t *fp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(fp)), fp_(fp) {}
     explicit OptimizedEntryFrameHandler(const JSThread *thread);
     ~OptimizedEntryFrameHandler() = default;
     void PrevFrame();
