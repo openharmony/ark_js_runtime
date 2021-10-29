@@ -461,10 +461,17 @@ CALL_STUB_INIT_DESCRIPTOR(SetValueWithBarrier)
     std::array<MachineType, 4> params = {
         MachineType::UINT64_TYPE,
         MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+        MachineType::UINT64_TYPE,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
 {
     // 2 : 2 input parameters
-    StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, UINT64_TYPE);
+    StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
     *descriptor = stringGetHashCode;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {
@@ -531,6 +538,5 @@ void FastStubDescriptors::InitializeStubDescriptors()
     CALL_STUB_LIST(INITIALIZE_CALL_STUB_DESCRIPTOR)
 #undef INITIALIZE_CALL_STUB_DESCRIPTOR
 #undef DEF_CALL_STUB
-}
 }
 }  // namespace kungfu

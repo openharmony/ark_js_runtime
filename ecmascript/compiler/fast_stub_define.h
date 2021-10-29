@@ -48,6 +48,7 @@ namespace kungfu {
     V(IsSpecialIndexedObjForGet, 1) \
     V(GetPropertyByName, 3)         \
     V(GetElement, 2)                \
+    V(SetPropertyByName, 5)         \
     V(SetElement, 5)                \
     V(SetGlobalOwnProperty, 5)      \
     V(GetGlobalOwnProperty, 3)      \
@@ -65,7 +66,6 @@ namespace kungfu {
     V(SetPropertyByIndex, 4)        \
     V(GetPropertyByValue, 3)        \
     V(SetPropertyByValue, 4)        \
-    V(SetPropertyByName, 4)         \
     V(FastMulGC, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
