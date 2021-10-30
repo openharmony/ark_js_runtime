@@ -23,6 +23,7 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript {
+using TaggedType = coretypes::TaggedType;
 class ConstantPool;
 class ECMAObject;
 class GeneratorContext;

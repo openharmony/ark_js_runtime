@@ -238,8 +238,8 @@ enum class FrameType: uintptr_t {
 
 class OptimizedFrameStateBase {
 public:
-    FrameType frameType;
-    uint64_t *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    uintptr_t frameType;
+    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     static size_t GetFrameStateOffsetFromSp()
     {
         return MEMBER_OFFSET(OptimizedFrameStateBase, prev);

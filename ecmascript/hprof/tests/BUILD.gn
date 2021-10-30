@@ -73,16 +73,10 @@ host_unittest_action("HprofTest") {
 
 group("unittest") {
   testonly = true
-  deps = [
-    ":HeapTrackerTest",
-    ":HprofTest",
-  ]
+  deps = [ ":HeapTrackerTest" ]
 }
 
 group("host_unittest") {
   testonly = true
-  deps = [
-    ":HeapTrackerTestAction",
-    ":HprofTestAction",
-  ]
+  deps = [ ":HeapTrackerTestAction" ]
 }

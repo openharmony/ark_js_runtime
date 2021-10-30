@@ -59,7 +59,7 @@ private:
     friend class InterpretedFrameHandler;
     friend class OptimizedFrameHandler;
     friend class OptimizedEntryFrameHandler;
-    JSTaggedType *sp_{nullptr};
+    JSTaggedType *sp_ {nullptr};
 };
 
 class InterpretedFrameHandler : public FrameHandler {
