@@ -250,6 +250,7 @@ private:
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
     Address fastStubEntires_[kungfu::FAST_STUB_MAXCOUNT];
     JSTaggedValue stubCode_ {JSTaggedValue::Hole()};
+    JSTaggedValue stubStackMap_ {JSTaggedValue::Hole()};
     EcmaGlobalStorage *globalStorage_ {nullptr};
 
     os::memory::ConditionVariable initializationVar_ GUARDED_BY(initializationLock_);

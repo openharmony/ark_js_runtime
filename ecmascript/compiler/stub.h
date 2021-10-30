@@ -618,23 +618,9 @@ public:
 
     AddrShift LoadFromObject(MachineType type, AddrShift object, AddrShift offset);
 
-    AddrShift Store(MachineType type, AddrShift base, AddrShift offset, AddrShift value)
-    {
-        auto depend = env_.GetCurrentLabel()->GetDepend();
-        if (PtrValueCode() == ValueCode::INT64) {
-            AddrShift ptr = Int64Add(base, offset);
-            AddrShift result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
-            env_.GetCurrentLabel()->SetDepend(result);
-            return result;
-        }
-        if (PtrValueCode() == ValueCode::INT32) {
-            AddrShift ptr = Int32Add(base, offset);
-            AddrShift result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
-            env_.GetCurrentLabel()->SetDepend(result);
-            return result;
-        }
-        UNREACHABLE();
-    }
+    AddrShift Store(MachineType type, AddrShift thread, AddrShift base, AddrShift offset, AddrShift value);
+
+    AddrShift Store(MachineType type, AddrShift base, AddrShift offset, AddrShift value);
 
     // arithmetic
     AddrShift Int32Add(AddrShift x, AddrShift y)
@@ -734,6 +720,12 @@ public:
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_AND), x, y);
     }
+
+    AddrShift Word32Not(AddrShift x)
+    {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_REV), x);
+    }
+
     AddrShift Word32Xor(AddrShift x, AddrShift y);
 
     AddrShift FixLoadType(AddrShift x);
@@ -751,11 +743,6 @@ public:
     AddrShift Word64Xor(AddrShift x, AddrShift y)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_XOR), x, y);
-    }
-
-    AddrShift Word32Not(AddrShift x)
-    {
-        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_REV), x);
     }
 
     AddrShift Word64Not(AddrShift x)
@@ -1043,6 +1030,16 @@ public:
         return Load(MachineType::UINT64_TYPE, object, propertiesOffset);
     }
 
+    // setProperties in js_object.h
+    void setProperties(AddrShift thread, AddrShift object, AddrShift value)
+    {
+        AddrShift propertiesOffset = GetInt32Constant(panda::ecmascript::JSObject::PROPERTIES_OFFSET);
+        if (PtrValueCode() == ValueCode::INT64) {
+            propertiesOffset = SExtInt32ToInt64(propertiesOffset);
+        }
+        Store(MachineType::UINT64_TYPE, thread, object, propertiesOffset, value);
+    }
+
     AddrShift GetLengthofElements(AddrShift elements)
     {
         return Load(MachineType::UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
@@ -1064,9 +1061,9 @@ public:
 
     AddrShift IsDictionaryMode(AddrShift object)
     {
-        return Word32NotEqual(Word32And(Load(MachineType::UINT32_TYPE, LoadHClass(object), GetPtrConstant(0)),
-                                        GetInt32Constant(panda::HClass::IS_DICTIONARY_ARRAY)),
-                              GetInt32Constant(0));
+        AddrShift objectType = GetObjectType(LoadHClass(object));
+        return Word32Equal(objectType,
+            GetInt32Constant(static_cast<int32_t>(panda::ecmascript::JSType::TAGGED_DICTIONARY)));
     }
 
     AddrShift IsDictionaryModeByHClass(AddrShift hClass)
@@ -1185,11 +1182,45 @@ public:
             GetInt32Constant(0));
     }
 
-    AddrShift PropAttrGetOffset(AddrShift attr)
+    // GetOffset func in property_attribute.h
+    AddrShift GetOffsetFieldInPropAttr(AddrShift attr)
     {
         return Word32And(
             Word32LSR(attr, GetInt32Constant(panda::ecmascript::PropertyAttributes::OffsetField::START_BIT)),
             GetInt32Constant((1LLU << panda::ecmascript::PropertyAttributes::OffsetField::SIZE) - 1));
+    }
+
+    // SetOffset func in property_attribute.h
+    AddrShift SetOffsetFieldInPropAttr(AddrShift attr, AddrShift value)
+    {
+        AddrShift mask = Word32LSL(
+            GetInt32Constant((1LLU << panda::ecmascript::PropertyAttributes::OffsetField::SIZE) - 1),
+            GetInt32Constant(panda::ecmascript::PropertyAttributes::OffsetField::START_BIT));
+        AddrShift newVal = Word32Or(Word32And(attr, Word32Not(mask)),
+            Word32LSL(value, GetInt32Constant(panda::ecmascript::PropertyAttributes::OffsetField::START_BIT)));
+        return newVal;
+    }
+
+    // SetIsInlinedProps func in property_attribute.h
+    AddrShift SetIsInlinePropsFieldInPropAttr(AddrShift attr, AddrShift value)
+    {
+        AddrShift mask = Word32LSL(
+            GetInt32Constant((1LLU << panda::ecmascript::PropertyAttributes::IsInlinedPropsField::SIZE) - 1),
+            GetInt32Constant(panda::ecmascript::PropertyAttributes::IsInlinedPropsField::START_BIT));
+        AddrShift newVal = Word32Or(Word32And(attr, Word32Not(mask)),
+            Word32LSL(value, GetInt32Constant(panda::ecmascript::PropertyAttributes::IsInlinedPropsField::START_BIT)));
+        return newVal;
+    }
+
+    // SetDictionaryOrder func in property_attribute.h
+    AddrShift SetDictionaryOrderFieldInPropAttr(AddrShift attr, AddrShift value)
+    {
+        AddrShift mask = Word32LSL(
+            GetInt32Constant((1LLU << panda::ecmascript::PropertyAttributes::DictionaryOrderField::SIZE) - 1),
+            GetInt32Constant(panda::ecmascript::PropertyAttributes::DictionaryOrderField::START_BIT));
+        AddrShift newVal = Word32Or(Word32And(attr, Word32Not(mask)),
+            Word32LSL(value, GetInt32Constant(panda::ecmascript::PropertyAttributes::DictionaryOrderField::START_BIT)));
+        return newVal;
     }
 
     AddrShift GetPrototypeFromHClass(AddrShift hClass)
@@ -1225,6 +1256,26 @@ public:
         return Load(MachineType::UINT64_TYPE, hClass, GetPtrConstant(panda::ecmascript::JSHClass::OBJECT_SIZE_OFFSET));
     }
 
+    void SetHasConstructorToHClass(AddrShift hClass, AddrShift value)
+    {
+        AddrShift bitfield = Load(MachineType::INT64_TYPE, hClass,
+            GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET));
+        AddrShift mask = Word64LSL(
+            GetWord64Constant((1LLU << panda::ecmascript::JSHClass::HasConstructorBits::SIZE) - 1),
+            GetWord64Constant(panda::ecmascript::JSHClass::HasConstructorBits::START_BIT));
+        AddrShift newVal = Word64Or(Word64And(bitfield, Word64Not(mask)),
+            Word64LSL(value, GetWord64Constant(panda::ecmascript::JSHClass::HasConstructorBits::START_BIT)));
+        Store(MachineType::UINT64_TYPE, hClass, GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET), newVal);
+    }
+
+    void StoreElement(AddrShift thread, AddrShift elements, AddrShift index, AddrShift value)
+    {
+        AddrShift offset =
+            PtrMul(ChangeInt32ToPointer(index), GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()));
+        AddrShift dataOffset = PtrAdd(offset, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
+        Store(MachineType::TAGGED_TYPE, thread, elements, dataOffset, value);
+    }
+
     void StoreElement(AddrShift elements, AddrShift index, AddrShift value)
     {
         AddrShift offset =
@@ -1241,6 +1292,15 @@ public:
             PtrMul(ChangeInt32ToPointer(index), GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()));
         AddrShift dataOffset = PtrAdd(offset, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
         return Load(MachineType::TAGGED_TYPE, elements, dataOffset);
+    }
+
+    AddrShift SetValueToTaggedArray(AddrShift elements, AddrShift index, AddrShift val)
+    {
+        // NOTE: need to translate MarkingBarrier
+        AddrShift offset =
+            PtrMul(ChangeInt32ToPointer(index), GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()));
+        AddrShift dataOffset = PtrAdd(offset, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
+        return Store(MachineType::TAGGED_TYPE, elements, dataOffset, val);
     }
 
     AddrShift TaggedToRepresentation(AddrShift value);
@@ -1265,7 +1325,18 @@ public:
         Store(MachineType::INT64_TYPE, hClass, bitfieldOffset, Word64Or(oldWithMask, newValue));
     }
 
-    void UpdateValueAndAttributes(AddrShift elements, AddrShift index, AddrShift value, AddrShift attr)
+    void UpdateValueInDict(AddrShift elements, AddrShift index, AddrShift value)
+    {
+        AddrShift arrayIndex =
+            Int32Add(GetInt32Constant(panda::ecmascript::NameDictionary::TABLE_HEADER_SIZE),
+                     Int32Mul(index, GetInt32Constant(panda::ecmascript::NameDictionary::ENTRY_SIZE)));
+        AddrShift valueIndex =
+            Int32Add(arrayIndex, GetInt32Constant(panda::ecmascript::NameDictionary::ENTRY_VALUE_INDEX));
+        StoreElement(elements, valueIndex, value);
+    }
+
+    void UpdateValueAndAttributes(AddrShift thread, AddrShift elements, AddrShift index,
+        AddrShift value, AddrShift attr)
     {
         AddrShift arrayIndex =
             Int32Add(GetInt32Constant(panda::ecmascript::NameDictionary::TABLE_HEADER_SIZE),
@@ -1332,6 +1403,9 @@ public:
     AddrShift FindEntryFromNameDictionary(AddrShift thread, AddrShift elements, AddrShift key);
 
     AddrShift JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift propAttr);
+
+    AddrShift ShouldCallSetter(AddrShift receiver, AddrShift holder,
+        AddrShift accessor, AddrShift attr);
 
     AddrShift IsUtf16String(AddrShift string);
 

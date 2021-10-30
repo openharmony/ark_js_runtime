@@ -41,8 +41,10 @@ bool LLVMStackMapParser::StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetTyp
 {
     bool found = false;
     for (auto it: callSiteInfos_) {
+        LOG_ECMA(INFO) << __FUNCTION__ << std::hex <<  " addr:" << it.first << std::endl;
         if (it.first == funcAddr) {
             DwarfRegAndOffsetType info = it.second;
+            LOG_ECMA(INFO) << __FUNCTION__ << " info <" << info.first << " ," << info.second << " >" << std::endl;
             infos.push_back(info);
             found = true;
         }
@@ -51,7 +53,7 @@ bool LLVMStackMapParser::StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetTyp
 }
 
 bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t frameFp,
-    std::vector<uintptr_t> &slotAddrs)
+    std::set<uintptr_t> &slotAddrs)
 {
     DwarfRegAndOffsetTypeVector infos;
     if (!StackMapByAddr(funcAddr, infos)) {
@@ -62,7 +64,7 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
     for (auto &info: infos) {
         if (info.first == SP_DWARF_REG_NUM) {
             uintptr_t *rsp = fp + SP_OFFSET;
-            address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
+            address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uintptr_t>(rsp) + info.second);
         } else if (info.first == FP_DWARF_REG_NUM) {
             fp = reinterpret_cast<uintptr_t *>(*fp);
             address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(fp) + info.second);
@@ -70,10 +72,10 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
             address = nullptr;
             abort();
         }
-        std::cout << std::hex << "ref addr:" << address;
-        std::cout << "  value:" << *address;
-        std::cout << " *value :" << **address << std::endl;
-        slotAddrs.push_back(reinterpret_cast<uintptr_t>(address));
+        LOG_ECMA(INFO) << std::hex << "stackMap ref addr:" << address;
+        LOG_ECMA(INFO) << "  value:" << *address;
+        LOG_ECMA(INFO) << " *value :" << **address << std::endl;
+        slotAddrs.insert(reinterpret_cast<uintptr_t>(address));
     }
     return true;
 }
@@ -83,24 +85,21 @@ void LLVMStackMapParser::CalcCallSite()
     uint64_t recordNum = 0;
     for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
         uintptr_t address =  llvmStackMap_.StkSizeRecords[i].functionAddress;
-        std::cout << std::hex << "address " << address << std::endl;
         uint64_t recordCount = llvmStackMap_.StkSizeRecords[i].recordCount;
-        std::cout << std::hex << "recordCount " << recordCount << std::endl;
-        recordNum += recordCount;
-        std::cout << std::hex << "recordNum " << recordNum << std::endl;
-        struct StkMapRecordHeadTy recordHead = llvmStackMap_.StkMapRecord[recordNum - 1].head;
-        uint32_t instructionOffset = recordHead.InstructionOffset;
-        std::cout << std::hex << "instructionOffset " << instructionOffset << std::endl;
-        uintptr_t callsite = address + instructionOffset;
-
-        for (int j = 0; j < recordHead.NumLocations; j++) {
-            struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum - 1].Locations[j];
-            if (loc.location == LocationTy::Kind::INDIRECT) {
-                DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
-                Fun2InfoType callSiteInfo {callsite, info};
-                callSiteInfos_.push_back(callSiteInfo);
+        for (uint64_t k = 0; k < recordCount; k++) {
+            struct StkMapRecordHeadTy recordHead = llvmStackMap_.StkMapRecord[recordNum + k].head;
+            for (int j = 0; j < recordHead.NumLocations; j++) {
+                struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum + k].Locations[j];
+                uint32_t instructionOffset = recordHead.InstructionOffset;
+                uintptr_t callsite = address + instructionOffset;
+                if (loc.location == LocationTy::Kind::INDIRECT) {
+                    DwarfRegAndOffsetType info(loc.DwarfRegNum, loc.OffsetOrSmallConstant);
+                    Fun2InfoType callSiteInfo {callsite, info};
+                    callSiteInfos_.push_back(callSiteInfo);
+                }
             }
         }
+        recordNum += recordCount;
     }
 }
 
@@ -108,7 +107,7 @@ bool LLVMStackMapParser::CalculateStackMap(const uint8_t *stackMapAddr)
 {
     stackMapAddr_ = stackMapAddr;
     if (!stackMapAddr_) {
-        std::cerr << "stackMapAddr_ nullptr error ! " << std::endl;
+        LOG_ECMA(ERROR) << "stackMapAddr_ nullptr error ! " << std::endl;
         return false;
     }
     dataInfo_ = std::make_unique<DataInfo>(stackMapAddr_);
@@ -149,6 +148,27 @@ bool LLVMStackMapParser::CalculateStackMap(const uint8_t *stackMapAddr)
         }
         llvmStackMap_.StkMapRecord.push_back(stkSizeRecord);
     }
+    CalcCallSite();
+    return true;
+}
+
+bool LLVMStackMapParser::CalculateStackMap(const uint8_t *stackMapAddr,
+    uintptr_t hostCodeSectionAddr, uintptr_t deviceCodeSectionAddr)
+{
+    bool ret = CalculateStackMap(stackMapAddr);
+    if (!ret) {
+        return ret;
+    }
+    // update functionAddress from host side to device side
+    LOG_ECMA(INFO) << "stackmap calculate update funcitonaddress " << std::endl;
+    for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
+        uintptr_t hostAddr = llvmStackMap_.StkSizeRecords[i].functionAddress;
+        uintptr_t deviceAddr = hostAddr - hostCodeSectionAddr + deviceCodeSectionAddr;
+        llvmStackMap_.StkSizeRecords[i].functionAddress = deviceAddr;
+        LOG_ECMA(INFO) << std::dec << i << "th function " << std::hex << hostAddr << " ---> " << deviceAddr
+            << std::endl;
+    }
+    callSiteInfos_.clear();
     CalcCallSite();
     return true;
 }

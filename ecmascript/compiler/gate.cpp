@@ -391,6 +391,7 @@ std::string OpCode::Str() const
         {INT64_CALL, "INT64_CALL"},
         {FLOAT32_CALL, "FLOAT32_CALL"},
         {FLOAT64_CALL, "FLOAT64_CALL"},
+        {TAGGED_POINTER_CALL, "TAGGED_POINTER_CALL"},
         {ALLOCA, "ALLOCA"},
         {INT1_ARG, "INT1_ARG"},
         {INT8_ARG, "INT8_ARG"},
@@ -1262,6 +1263,11 @@ void Gate::SetMark(MarkCode mark, TimeStamp stamp)
 {
     this->stamp = stamp;
     this->mark = mark;
+}
+
+TypeCode Gate::GetTypeCode() const
+{
+    return type;
 }
 
 bool OpCode::IsRoot() const

@@ -31,21 +31,13 @@ namespace kungfu {
 std::unordered_map<int, LLVMValueRef> g_values = {};
 
 LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
-                             LLVMModuleRef module, LLVMValueRef function)
-    : schedule_(schedule), circuit_(circuit), module_(module), function_(function)
-{
-    builder_ = LLVMCreateBuilder();
-    context_ = LLVMGetGlobalContext();
-    bbIdMapBb_.clear();
-}
-
-LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<AddrShift>> *schedule, const Circuit *circuit,
                              LLVMStubModule *module, LLVMValueRef function)
     : schedule_(schedule), circuit_(circuit), module_(module->GetModule()),
       function_(function), stubModule_(module)
 {
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
+    LLVMSetGC(function_, "statepoint-example");
     bbIdMapBb_.clear();
 }
 
@@ -150,6 +142,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT64_LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::FLOAT64_SMOD, &LLVMIRBuilder::HandleFloatMod},
         {OpCode::INT32_SMOD, &LLVMIRBuilder::HandleIntMod},
+        {OpCode::TAGGED_POINTER_CALL, &LLVMIRBuilder::HandleCall},
 
     };
     opCodeHandleIgnore= {OpCode::NOP, OpCode::CIRCUIT_ROOT, OpCode::DEPEND_ENTRY,
@@ -1405,6 +1398,7 @@ LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
         {MachineType::UINT64_TYPE,         LLVMInt64Type()},
         {MachineType::FLOAT32_TYPE,        LLVMFloatType()},
         {MachineType::FLOAT64_TYPE,        LLVMDoubleType()},
+        {MachineType::TAGGED_POINTER_TYPE, LLVMPointerType(LLVMInt64Type(), 1)},
         {MachineType::TAGGED_TYPE,         LLVMInt64Type()},
     };
     return machineTypeMap[type];

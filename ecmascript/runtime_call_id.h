@@ -153,7 +153,6 @@ namespace panda::ecmascript {
     V(AddPropertyByIndex)           \
     V(GetPropertyByIndex)           \
     V(GetPropertyByValue)           \
-    V(SetPropertyByName)            \
     V(SetPropertyByIndex)           \
     V(SetPropertyByValue)           \
     V(FastTypeOf)                   \

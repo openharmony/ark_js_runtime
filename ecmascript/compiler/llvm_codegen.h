@@ -85,8 +85,9 @@ struct CodeInfo {
         dataSectionNames_.push_back(sectionName);
         addr = static_cast<uint8_t *>(dataSectionList_.back().data());
         if (!strcmp(sectionName, ".llvm_stackmaps")) {
-            LOG_ECMA(INFO) << "llvm_stackmaps : " << addr;
+            LOG_ECMA(INFO) << "llvm_stackmaps : " << addr << " size:" << size << std::endl;
             stackMapsSection_ = addr;
+            stackMapsSize_ = size;
         }
         return addr;
     }
@@ -104,6 +105,10 @@ struct CodeInfo {
     uint8_t *GetStackMapsSection() const
     {
         return stackMapsSection_;
+    }
+    int GetStackMapsSize() const
+    {
+        return stackMapsSize_;
     }
     std::vector<std::pair<uint8_t *, uintptr_t>> GetCodeInfo() const
     {
@@ -131,6 +136,7 @@ private:
     std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo_ {};
     /* stack map */
     uint8_t *stackMapsSection_ {nullptr};
+    int stackMapsSize_ = 0;
 };
 
 class LLVMAssembler {
@@ -146,6 +152,10 @@ public:
     uint8_t *GetStackMapsSection() const
     {
         return codeInfo_.GetStackMapsSection();
+    }
+    int GetStackMapsSize() const
+    {
+        return codeInfo_.GetStackMapsSize();
     }
 
     int GetCodeSize() const
@@ -199,6 +209,10 @@ public:
     int GetCodeSize() const
     {
         return assembler_.GetCodeSize();
+    }
+    int GetStackMapsSize() const
+    {
+        return assembler_.GetStackMapsSize();
     }
     void CopyAssemblerToCode(panda::ecmascript::MachineCode *code)
     {

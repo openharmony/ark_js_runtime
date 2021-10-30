@@ -182,6 +182,11 @@ MarkCode Circuit::GetMark(AddrShift gate) const
     return this->LoadGatePtrConst(gate)->GetMark(this->GetTime());
 }
 
+TypeCode Circuit::GetTypeCode(AddrShift gate) const
+{
+    return this->LoadGatePtrConst(gate)->GetTypeCode();
+}
+
 void Circuit::SetMark(AddrShift gate, MarkCode mark) const
 {
     const_cast<Gate *>(this->LoadGatePtrConst(gate))->SetMark(mark, this->GetTime());

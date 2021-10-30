@@ -35,18 +35,63 @@ public:
     {
         code_ = code;
     }
+    void SetData(MachineCode *data)
+    {
+        data_ = data;
+    }
     void SetStubEntry(int index, Address offset)
     {
         fastStubEntries_[index] = offset;
+    }
+    void SetHostCodeSectionAddr(Address addr)
+    {
+        hostCodeSectionAddr_ = addr;
+    }
+    Address GetHostCodeSectionAddr()
+    {
+        return hostCodeSectionAddr_;
+    }
+    void SetDeviceCodeSectionAddr(uintptr_t addr)
+    {
+        DevicesCodeSectionAddr_ = addr;
+    }
+    uintptr_t GetDeviceCodeSectionAddr()
+    {
+        return DevicesCodeSectionAddr_;
     }
     JSTaggedValue GetCode()
     {
         return JSTaggedValue(code_);
     }
+    JSTaggedValue GetData()
+    {
+        return JSTaggedValue(data_);
+    }
+    void SetStackMapAddr(Address addr)
+    {
+        stackMapAddr_ = addr;
+    }
+    Address GetStackMapAddr()
+    {
+        return stackMapAddr_;
+    }
+    void SetStackMapSize(int len)
+    {
+        stackMapSize_ = len;
+    }
+    int GetStackMapSize()
+    {
+        return stackMapSize_;
+    }
 
 private:
     std::array<Address, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
+    Address hostCodeSectionAddr_ = 0;
+    uintptr_t DevicesCodeSectionAddr_ = 0;
     MachineCode *code_ {nullptr};
+    MachineCode *data_ {nullptr};
+    Address stackMapAddr_  = 0;
+    int stackMapSize_ = 0;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_STUB_MODULE_H

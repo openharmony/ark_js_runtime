@@ -72,6 +72,7 @@ public:
     [[nodiscard]] OpCode GetOpCode(AddrShift gate) const;
     [[nodiscard]] TimeStamp GetTime() const;
     [[nodiscard]] MarkCode GetMark(AddrShift gate) const;
+    [[nodiscard]] TypeCode GetTypeCode(AddrShift gate) const;
     void SetMark(AddrShift gate, MarkCode mark) const;
     [[nodiscard]] bool Verify(AddrShift gate) const;
     [[nodiscard]] Gate *LoadGatePtr(AddrShift shift);

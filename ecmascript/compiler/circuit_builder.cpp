@@ -346,6 +346,10 @@ AddrShift CircuitBuilder::NewCallGate(StubDescriptor *descriptor, AddrShift thre
         inputs.push_back(arg);
     }
     OpCode opcode = GetCallOpCodeFromMachineType(descriptor->GetReturnType());
+    if (descriptor->GetReturnType() == MachineType::TAGGED_POINTER_TYPE) {
+        // 2 : 2 means extra two input gates (target thread )
+        return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::TAGGED_POINTER_TYPE);
+    }
     // 2 : 2 means extra two input gates (target thread )
     return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::JS_ANY);
 }

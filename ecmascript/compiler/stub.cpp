@@ -624,7 +624,7 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
     DEFVARIABLE(result, MachineType::TAGGED_TYPE, GetUndefinedConstant());
     Label inlinedProp(env);
     Label notInlinedProp(env);
-    AddrShift attrOffset = PropAttrGetOffset(attr);
+    AddrShift attrOffset = GetOffsetFieldInPropAttr(attr);
     Branch(IsInlinedProperty(attr), &inlinedProp, &notInlinedProp);
     {
         Bind(&inlinedProp);
@@ -648,6 +648,43 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
                 GetInt32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
             Jump(&exit);
         }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+AddrShift Stub::ShouldCallSetter(AddrShift receiver, AddrShift holder, AddrShift accessor, AddrShift attr)
+{
+    auto env = GetEnvironment();
+    Label subEntry(env);
+    env->PushCurrentLabel(&subEntry);
+    Label exit(env);
+    DEFVARIABLE(result, MachineType::BOOL_TYPE, TrueConstant());
+    Label isInternal(env);
+    Label notInternal(env);
+    Branch(IsAccessorInternal(accessor), &isInternal, &notInternal);
+    Bind(&isInternal);
+    {
+        Label receiverEqualsHolder(env);
+        Label receiverNotEqualsHolder(env);
+        Branch(Word64Equal(receiver, holder), &receiverEqualsHolder, &receiverNotEqualsHolder);
+        Bind(&receiverEqualsHolder);
+        {
+            result = IsWritable(attr);
+            Jump(&exit);
+        }
+        Bind(&receiverNotEqualsHolder);
+        {
+            result = FalseConstant();
+            Jump(&exit);
+        }
+    }
+    Bind(&notInternal);
+    {
+        result = TrueConstant();
+        Jump(&exit);
     }
     Bind(&exit);
     auto ret = *result;
@@ -798,10 +835,46 @@ AddrShift Stub::UpdateRepresention(AddrShift oldRep, AddrShift value)
     return ret;
 }
 
-void Stub::UpdateAndStoreRepresention(AddrShift hclass, AddrShift value)
+AddrShift Stub::Store(MachineType type, AddrShift thread, AddrShift base, AddrShift offset, AddrShift value)
 {
-    AddrShift newRep = UpdateRepresention(GetElementRepresentation(hclass), value);
-    SetElementRepresentation(hclass, newRep);
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    AddrShift result;
+    if (PtrValueCode() == ValueCode::INT64) {
+        AddrShift ptr = Int64Add(base, offset);
+        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
+        env_.GetCurrentLabel()->SetDepend(result);
+    } else if (PtrValueCode() == ValueCode::INT32) {
+        AddrShift ptr = Int32Add(base, offset);
+        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
+        env_.GetCurrentLabel()->SetDepend(result);
+    } else {
+        UNREACHABLE();
+    }
+    // write barrier
+    if (type == MachineType::TAGGED_POINTER_TYPE || type == MachineType::TAGGED_TYPE) {
+        StubDescriptor *setValueWithBarrier = GET_STUBDESCRIPTOR(SetValueWithBarrier);
+        CallRuntime(setValueWithBarrier, thread, GetWord64Constant(FAST_STUB_ID(SetValueWithBarrier)),
+                    {thread, base, offset, value});
+    }
+
+    return result;
+}
+AddrShift Stub::Store(MachineType type, AddrShift base, AddrShift offset, AddrShift value)
+{
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    AddrShift result;
+    if (PtrValueCode() == ValueCode::INT64) {
+        AddrShift ptr = Int64Add(base, offset);
+        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
+        env_.GetCurrentLabel()->SetDepend(result);
+    } else if (PtrValueCode() == ValueCode::INT32) {
+        AddrShift ptr = Int32Add(base, offset);
+        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
+        env_.GetCurrentLabel()->SetDepend(result);
+    } else {
+        UNREACHABLE();
+    }
+    return result;
 }
 
 AddrShift Stub::TaggedIsString(AddrShift obj)
