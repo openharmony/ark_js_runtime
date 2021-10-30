@@ -66,22 +66,26 @@ void LLVMModuleAssembler::AssembleModule()
 
 void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
 {
-    auto codeBuff = reinterpret_cast<Address>(assembler_.GetCodeBuffer());
+    auto codeBuff = reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
     std::map<uint64_t, std::string> addr2name;
     for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
         auto stubfunction = stubmodule_->GetStubFunction(i);
+#ifndef NDEBUG
         LOG_ECMA(INFO) << "  AssembleStubModule :" << i << " th " << std::endl;
+#endif
         if (stubfunction != nullptr) {
-            Address stubEntry = reinterpret_cast<Address>(LLVMGetPointerToGlobal(engine, stubfunction));
+            uintptr_t stubEntry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, stubfunction));
             module->SetStubEntry(i, stubEntry - codeBuff);
-            addr2name[stubEntry] = GET_STUBDESCRIPTOR_BY_ID(i)->GetName();
+            addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(i)->GetName();
+#ifndef NDEBUG
             LOG_ECMA(INFO) << "name : " << addr2name[codeBuff] << std::endl;
+#endif
         }
     }
     module->SetHostCodeSectionAddr(codeBuff);
     // stackmaps ptr and size
-    module->SetStackMapAddr(reinterpret_cast<Address>(assembler_.GetStackMapsSection()));
+    module->SetStackMapAddr(reinterpret_cast<uintptr_t>(assembler_.GetStackMapsSection()));
     module->SetStackMapSize(assembler_.GetStackMapsSize());
 #ifndef NDEBUG
     assembler_.Disassemble(addr2name);

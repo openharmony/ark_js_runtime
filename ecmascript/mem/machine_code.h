@@ -43,18 +43,19 @@ public:
         return reinterpret_cast<uintptr_t>(this) + DATA_OFFSET;
     }
 
-    void SetData(const uint8_t *codeData, size_t codeLength)
+    void SetData(const uint8_t *stackMapData, size_t codeLength)
     {
-        if (codeData == nullptr) {
+        if (stackMapData == nullptr) {
             LOG_ECMA_MEM(ERROR) << "data is null in creating new code object";
             return;
         }
         if (memcpy_s(reinterpret_cast<void *>(this->GetDataOffsetAddress()),
-            this->GetInstructionSizeInBytes().GetInt(), codeData, codeLength) != EOK) {
+            this->GetInstructionSizeInBytes().GetInt(), stackMapData, codeLength) != EOK) {
             LOG_ECMA_MEM(ERROR) << "memcpy fail in creating new code object ";
             return;
         }
     }
+
     void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
     {
         // left blank deliberately,only need to visit TaggedObject type object.

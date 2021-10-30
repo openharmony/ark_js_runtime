@@ -813,7 +813,7 @@ AddrShift Stub::Store(MachineType type, AddrShift thread, AddrShift base, AddrSh
     } else {
         UNREACHABLE();
     }
-    // write barrier
+    // write barrier will implemented in IR later
     if (type == MachineType::TAGGED_POINTER_TYPE || type == MachineType::TAGGED_TYPE) {
         StubDescriptor *setValueWithBarrier = GET_STUBDESCRIPTOR(SetValueWithBarrier);
         CallRuntime(setValueWithBarrier, thread, GetWord64Constant(FAST_STUB_ID(SetValueWithBarrier)),

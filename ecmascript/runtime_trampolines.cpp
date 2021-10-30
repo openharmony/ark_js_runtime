@@ -151,7 +151,7 @@ void RuntimeTrampolines::PrintHeapReginInfo(uint64_t argThread)
     });
 }
 
-TaggedArray* RuntimeTrampolines::GetTaggedArrayPtr(uint64_t argThread)
+TaggedArray* RuntimeTrampolines::GetTaggedArrayPtrTest(uint64_t argThread)
 {
     uintptr_t *curFp = nullptr;
     auto thread = reinterpret_cast<JSThread *>(argThread);

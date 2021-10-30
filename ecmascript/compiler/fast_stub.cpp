@@ -1163,7 +1163,7 @@ void FastModStub::GenerateCircuit()
     }
 }
 
-void FastMulGCStub::GenerateCircuit()
+void FastMulGCTestStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
     env->GetCircuit()->SetFrameType(FrameType::OPTIMIZED_ENTRY_FRAME);
@@ -1226,10 +1226,10 @@ void FastMulGCStub::GenerateCircuit()
     }
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
-    StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtr);
-    AddrShift ptr1 = CallRuntime(getTaggedArrayPtr, thread, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtr)),
+    StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtrTest);
+    AddrShift ptr1 = CallRuntime(getTaggedArrayPtr, thread, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)),
         {thread});
-    AddrShift ptr2 = CallRuntime(getTaggedArrayPtr, thread, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtr)),
+    AddrShift ptr2 = CallRuntime(getTaggedArrayPtr, thread, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)),
         {thread});
     (void)ptr2;
     auto value = Load(MachineType::INT64_TYPE, ptr1);

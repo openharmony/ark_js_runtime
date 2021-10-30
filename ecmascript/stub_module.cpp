@@ -79,12 +79,12 @@ void StubModule::Load(JSThread *thread, const std::string &filename)
 
     auto dataHandle = factory->NewMachineCodeObject(stackmapSize, nullptr);
     modulefile.read(reinterpret_cast<char *>(dataHandle->GetDataOffsetAddress()), stackmapSize);
-    SetData(*dataHandle);
+    SetStackMapData(*dataHandle);
 #ifndef NDEBUG
     LOG_ECMA(INFO) << "stackmapSize adress for device:" << std::hex << dataHandle->GetDataOffsetAddress()
         << " stackmapSize:"<< stackmapSize << std::endl;
 #endif
-    SetStackMapAddr(reinterpret_cast<Address>(dataHandle->GetDataOffsetAddress()));
+    SetStackMapAddr(reinterpret_cast<uintptr_t>(dataHandle->GetDataOffsetAddress()));
     modulefile.close();
 }
 }  // namespace panda::ecmascript

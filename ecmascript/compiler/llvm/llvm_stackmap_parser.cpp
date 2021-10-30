@@ -41,10 +41,14 @@ bool LLVMStackMapParser::StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetTyp
 {
     bool found = false;
     for (auto it: callSiteInfos_) {
+#ifndef NDEBUG
         LOG_ECMA(INFO) << __FUNCTION__ << std::hex <<  " addr:" << it.first << std::endl;
+#endif
         if (it.first == funcAddr) {
             DwarfRegAndOffsetType info = it.second;
+#ifndef NDEBUG
             LOG_ECMA(INFO) << __FUNCTION__ << " info <" << info.first << " ," << info.second << " >" << std::endl;
+#endif
             infos.push_back(info);
             found = true;
         }
@@ -72,9 +76,11 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
             address = nullptr;
             abort();
         }
+#ifndef NDEBUG
         LOG_ECMA(INFO) << std::hex << "stackMap ref addr:" << address;
         LOG_ECMA(INFO) << "  value:" << *address;
         LOG_ECMA(INFO) << " *value :" << **address << std::endl;
+#endif
         slotAddrs.insert(reinterpret_cast<uintptr_t>(address));
     }
     return true;
@@ -163,13 +169,17 @@ bool LLVMStackMapParser::CalculateStackMap(const uint8_t *stackMapAddr,
         return ret;
     }
     // update functionAddress from host side to device side
+#ifndef NDEBUG
     LOG_ECMA(INFO) << "stackmap calculate update funcitonaddress " << std::endl;
+#endif
     for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
         uintptr_t hostAddr = llvmStackMap_.StkSizeRecords[i].functionAddress;
         uintptr_t deviceAddr = hostAddr - hostCodeSectionAddr + deviceCodeSectionAddr;
         llvmStackMap_.StkSizeRecords[i].functionAddress = deviceAddr;
+#ifndef NDEBUG
         LOG_ECMA(INFO) << std::dec << i << "th function " << std::hex << hostAddr << " ---> " << deviceAddr
             << std::endl;
+#endif
     }
     callSiteInfos_.clear();
     CalcCallSite();

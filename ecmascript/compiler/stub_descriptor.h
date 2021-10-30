@@ -142,7 +142,6 @@ private:
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GET_STUBDESCRIPTOR(name) FastStubDescriptors::GetInstance().GetStubDescriptor(FAST_STUB_ID(name))
-#define GET_STUBDESCRIPTOR_BY_ID(id) FastStubDescriptors::GetInstance().GetStubDescriptor(id)
 
 class FastStubDescriptors {
 public:

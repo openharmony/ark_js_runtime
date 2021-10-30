@@ -149,7 +149,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
     SET_STUB_TO_MODULE(module, FastAdd) \
     SET_STUB_TO_MODULE(module, FastSub) \
     SET_STUB_TO_MODULE(module, FastMul) \
-    SET_STUB_TO_MODULE(module, FastMulGC) \
+    SET_STUB_TO_MODULE(module, FastMulGCTest) \
     SET_STUB_TO_MODULE(module, FastDiv) \
     SET_STUB_TO_MODULE(module, FastMod) \
     SET_STUB_TO_MODULE(module, FastTypeOf) \

@@ -233,6 +233,6 @@ void JSThread::LoadFastStubModule(const char *moduleFile)
     kungfu::LLVMStackMapParser::GetInstance().Print();
 
     stubCode_ = stubModule.GetCode();
-    stubStackMap_ = stubModule.GetData();
+    stubStackMap_ = stubModule.GetStackMapData();
 }
 }  // namespace panda::ecmascript

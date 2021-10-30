@@ -60,13 +60,13 @@ public:
     void GenerateCircuit() override;
 };
 
-class FastMulGCStub : public Stub {
+class FastMulGCTestStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastMulGCStub(Circuit *circuit) : Stub("FastMulGC", 3, circuit) {}
-    ~FastMulGCStub() = default;
-    NO_MOVE_SEMANTIC(FastMulGCStub);
-    NO_COPY_SEMANTIC(FastMulGCStub);
+    explicit FastMulGCTestStub(Circuit *circuit) : Stub("FastMulGCTest", 3, circuit) {}
+    ~FastMulGCTestStub() = default;
+    NO_MOVE_SEMANTIC(FastMulGCTestStub);
+    NO_COPY_SEMANTIC(FastMulGCTestStub);
     void GenerateCircuit() override;
 };
 

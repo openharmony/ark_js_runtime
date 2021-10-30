@@ -22,7 +22,6 @@
 namespace kungfu {
 class Stub;
 class circuit;
-using Address = uintptr_t;
 class StubAotCompiler {
 public:
     StubAotCompiler()
