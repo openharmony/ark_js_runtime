@@ -624,7 +624,7 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
     DEFVARIABLE(result, MachineType::TAGGED_TYPE, GetUndefinedConstant());
     Label inlinedProp(env);
     Label notInlinedProp(env);
-    AddrShift attrOffset = GetOffsetFieldInPropAttr(attr);
+    AddrShift attrOffset = PropAttrGetOffset(attr);
     Branch(IsInlinedProperty(attr), &inlinedProp, &notInlinedProp);
     {
         Bind(&inlinedProp);
@@ -648,43 +648,6 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
                 GetInt32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
             Jump(&exit);
         }
-    }
-    Bind(&exit);
-    auto ret = *result;
-    env->PopCurrentLabel();
-    return ret;
-}
-
-AddrShift Stub::ShouldCallSetter(AddrShift receiver, AddrShift holder, AddrShift accessor, AddrShift attr)
-{
-    auto env = GetEnvironment();
-    Label subEntry(env);
-    env->PushCurrentLabel(&subEntry);
-    Label exit(env);
-    DEFVARIABLE(result, MachineType::BOOL_TYPE, TrueConstant());
-    Label isInternal(env);
-    Label notInternal(env);
-    Branch(IsAccessorInternal(accessor), &isInternal, &notInternal);
-    Bind(&isInternal);
-    {
-        Label receiverEqualsHolder(env);
-        Label receiverNotEqualsHolder(env);
-        Branch(Word64Equal(receiver, holder), &receiverEqualsHolder, &receiverNotEqualsHolder);
-        Bind(&receiverEqualsHolder);
-        {
-            result = IsWritable(attr);
-            Jump(&exit);
-        }
-        Bind(&receiverNotEqualsHolder);
-        {
-            result = FalseConstant();
-            Jump(&exit);
-        }
-    }
-    Bind(&notInternal);
-    {
-        result = TrueConstant();
-        Jump(&exit);
     }
     Bind(&exit);
     auto ret = *result;

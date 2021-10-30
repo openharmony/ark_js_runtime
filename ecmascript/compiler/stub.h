@@ -1182,34 +1182,11 @@ public:
             GetInt32Constant(0));
     }
 
-    // GetOffset func in property_attribute.h
-    AddrShift GetOffsetFieldInPropAttr(AddrShift attr)
+    AddrShift PropAttrGetOffset(AddrShift attr)
     {
         return Word32And(
             Word32LSR(attr, GetInt32Constant(panda::ecmascript::PropertyAttributes::OffsetField::START_BIT)),
             GetInt32Constant((1LLU << panda::ecmascript::PropertyAttributes::OffsetField::SIZE) - 1));
-    }
-
-    // SetOffset func in property_attribute.h
-    AddrShift SetOffsetFieldInPropAttr(AddrShift attr, AddrShift value)
-    {
-        AddrShift mask = Word32LSL(
-            GetInt32Constant((1LLU << panda::ecmascript::PropertyAttributes::OffsetField::SIZE) - 1),
-            GetInt32Constant(panda::ecmascript::PropertyAttributes::OffsetField::START_BIT));
-        AddrShift newVal = Word32Or(Word32And(attr, Word32Not(mask)),
-            Word32LSL(value, GetInt32Constant(panda::ecmascript::PropertyAttributes::OffsetField::START_BIT)));
-        return newVal;
-    }
-
-    // SetIsInlinedProps func in property_attribute.h
-    AddrShift SetIsInlinePropsFieldInPropAttr(AddrShift attr, AddrShift value)
-    {
-        AddrShift mask = Word32LSL(
-            GetInt32Constant((1LLU << panda::ecmascript::PropertyAttributes::IsInlinedPropsField::SIZE) - 1),
-            GetInt32Constant(panda::ecmascript::PropertyAttributes::IsInlinedPropsField::START_BIT));
-        AddrShift newVal = Word32Or(Word32And(attr, Word32Not(mask)),
-            Word32LSL(value, GetInt32Constant(panda::ecmascript::PropertyAttributes::IsInlinedPropsField::START_BIT)));
-        return newVal;
     }
 
     // SetDictionaryOrder func in property_attribute.h
@@ -1256,18 +1233,6 @@ public:
         return Load(MachineType::UINT64_TYPE, hClass, GetPtrConstant(panda::ecmascript::JSHClass::OBJECT_SIZE_OFFSET));
     }
 
-    void SetHasConstructorToHClass(AddrShift hClass, AddrShift value)
-    {
-        AddrShift bitfield = Load(MachineType::INT64_TYPE, hClass,
-            GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET));
-        AddrShift mask = Word64LSL(
-            GetWord64Constant((1LLU << panda::ecmascript::JSHClass::HasConstructorBits::SIZE) - 1),
-            GetWord64Constant(panda::ecmascript::JSHClass::HasConstructorBits::START_BIT));
-        AddrShift newVal = Word64Or(Word64And(bitfield, Word64Not(mask)),
-            Word64LSL(value, GetWord64Constant(panda::ecmascript::JSHClass::HasConstructorBits::START_BIT)));
-        Store(MachineType::UINT64_TYPE, hClass, GetPtrConstant(panda::ecmascript::JSHClass::BIT_FIELD_OFFSET), newVal);
-    }
-
     void StoreElement(AddrShift thread, AddrShift elements, AddrShift index, AddrShift value)
     {
         AddrShift offset =
@@ -1294,15 +1259,6 @@ public:
         return Load(MachineType::TAGGED_TYPE, elements, dataOffset);
     }
 
-    AddrShift SetValueToTaggedArray(AddrShift elements, AddrShift index, AddrShift val)
-    {
-        // NOTE: need to translate MarkingBarrier
-        AddrShift offset =
-            PtrMul(ChangeInt32ToPointer(index), GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()));
-        AddrShift dataOffset = PtrAdd(offset, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
-        return Store(MachineType::TAGGED_TYPE, elements, dataOffset, val);
-    }
-
     AddrShift TaggedToRepresentation(AddrShift value);
 
     AddrShift GetElementRepresentation(AddrShift hClass)
@@ -1323,16 +1279,6 @@ public:
         AddrShift newValue = Word64LSR(value, GetWord64Constant(
             panda::ecmascript::JSHClass::ElementRepresentationBits::START_BIT));
         Store(MachineType::INT64_TYPE, hClass, bitfieldOffset, Word64Or(oldWithMask, newValue));
-    }
-
-    void UpdateValueInDict(AddrShift elements, AddrShift index, AddrShift value)
-    {
-        AddrShift arrayIndex =
-            Int32Add(GetInt32Constant(panda::ecmascript::NameDictionary::TABLE_HEADER_SIZE),
-                     Int32Mul(index, GetInt32Constant(panda::ecmascript::NameDictionary::ENTRY_SIZE)));
-        AddrShift valueIndex =
-            Int32Add(arrayIndex, GetInt32Constant(panda::ecmascript::NameDictionary::ENTRY_VALUE_INDEX));
-        StoreElement(elements, valueIndex, value);
     }
 
     void UpdateValueAndAttributes(AddrShift thread, AddrShift elements, AddrShift index,
@@ -1403,9 +1349,6 @@ public:
     AddrShift FindEntryFromNameDictionary(AddrShift thread, AddrShift elements, AddrShift key);
 
     AddrShift JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift propAttr);
-
-    AddrShift ShouldCallSetter(AddrShift receiver, AddrShift holder,
-        AddrShift accessor, AddrShift attr);
 
     AddrShift IsUtf16String(AddrShift string);
 
