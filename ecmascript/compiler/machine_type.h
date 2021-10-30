@@ -17,7 +17,7 @@
 #define ECMASCRIPT_COMPILER_MACHINE_TYPE_H
 
 namespace kungfu {
-enum MachineType {
+enum class MachineType {
     NONE_TYPE,
     BOOL_TYPE,
     INT8_TYPE,

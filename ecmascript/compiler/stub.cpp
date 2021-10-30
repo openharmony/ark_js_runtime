@@ -366,7 +366,7 @@ AddrShift Stub::FixLoadType(AddrShift x)
 
 AddrShift Stub::LoadFromObject(MachineType type, AddrShift object, AddrShift offset)
 {
-    AddrShift elementsOffset = GetInteger32Constant(panda::ecmascript::JSObject::ELEMENTS_OFFSET);
+    AddrShift elementsOffset = GetInt32Constant(panda::ecmascript::JSObject::ELEMENTS_OFFSET);
     if (PtrValueCode() == ValueCode::INT64) {
         elementsOffset = SExtInt32ToInt64(elementsOffset);
     }
@@ -374,8 +374,8 @@ AddrShift Stub::LoadFromObject(MachineType type, AddrShift object, AddrShift off
     AddrShift elements = Load(MachineType::UINT64_TYPE, object, elementsOffset);
     // load index in tagged array
     AddrShift dataOffset =
-        Int32Add(GetInteger32Constant(panda::coretypes::Array::GetDataOffset()),
-                 Int32Mul(offset, GetInteger32Constant(panda::ecmascript::JSTaggedValue::TaggedTypeSize())));
+        Int32Add(GetInt32Constant(panda::coretypes::Array::GetDataOffset()),
+                 Int32Mul(offset, GetInt32Constant(panda::ecmascript::JSTaggedValue::TaggedTypeSize())));
     if (PtrValueCode() == ValueCode::INT64) {
         dataOffset = SExtInt32ToInt64(dataOffset);
     }
@@ -387,22 +387,22 @@ AddrShift Stub::FindElementFromNumberDictionary(AddrShift thread, AddrShift elem
     auto env = GetEnvironment();
     Label subentry(env);
     env->PushCurrentLabel(&subentry);
-    DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
+    DEFVARIABLE(result, MachineType::INT32_TYPE, GetInt32Constant(-1));
     Label exit(env);
     AddrShift capcityoffset =
         PtrMul(GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()),
                GetPtrConstant(panda::ecmascript::TaggedHashTable<panda::ecmascript::NumberDictionary>::SIZE_INDEX));
     AddrShift dataoffset = GetPtrConstant(panda::coretypes::Array::GetDataOffset());
-    AddrShift capacity = TaggedCastToInt32(Load(TAGGED_TYPE, elements, PtrAdd(dataoffset, capcityoffset)));
-    DEFVARIABLE(count, INT32_TYPE, GetInteger32Constant(1));
+    AddrShift capacity = TaggedCastToInt32(Load(MachineType::TAGGED_TYPE, elements, PtrAdd(dataoffset, capcityoffset)));
+    DEFVARIABLE(count, MachineType::INT32_TYPE, GetInt32Constant(1));
 
     AddrShift pKey = Alloca(static_cast<int>(MachineRep::K_WORD32));
-    AddrShift keyStore = Store(INT32_TYPE, pKey, GetPtrConstant(0), TaggedCastToInt32(key));
+    AddrShift keyStore = Store(MachineType::INT32_TYPE, pKey, GetPtrConstant(0), TaggedCastToInt32(key));
     StubDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
-    AddrShift len = GetInteger32Constant(sizeof(int) / sizeof(uint8_t));
+    AddrShift len = GetInt32Constant(sizeof(int) / sizeof(uint8_t));
     AddrShift hash =
         CallRuntime(getHash32Descriptor, thread, GetWord64Constant(FAST_STUB_ID(GetHash32)), keyStore, {pKey, len});
-    DEFVARIABLE(entry, INT32_TYPE, Word32And(hash, Int32Sub(capacity, GetInteger32Constant(1))));
+    DEFVARIABLE(entry, MachineType::INT32_TYPE, Word32And(hash, Int32Sub(capacity, GetInt32Constant(1))));
     Label loopHead(env);
     Label loopEnd(env);
     Label afterLoop(env);
@@ -419,7 +419,7 @@ AddrShift Stub::FindElementFromNumberDictionary(AddrShift thread, AddrShift elem
     Label notUndefined(env);
     Branch(TaggedIsUndefined(element), &isUndefined, &notUndefined);
     Bind(&isUndefined);
-    result = GetInteger32Constant(-1);
+    result = GetInt32Constant(-1);
     Jump(&exit);
     Bind(&notUndefined);
     Label isMatch(env);
@@ -432,7 +432,7 @@ AddrShift Stub::FindElementFromNumberDictionary(AddrShift thread, AddrShift elem
     Jump(&loopEnd);
     Bind(&loopEnd);
     entry = GetNextPositionForHash(*entry, *count, capacity);
-    count = Int32Add(*count, GetInteger32Constant(1));
+    count = Int32Add(*count, GetInt32Constant(1));
     LoopEnd(&loopHead);
     Bind(&exit);
     auto ret = *result;
@@ -446,7 +446,7 @@ AddrShift Stub::IsMatchInNumberDictionary(AddrShift key, AddrShift other)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
+    DEFVARIABLE(result, MachineType::BOOL_TYPE, FalseConstant());
     Label isHole(env);
     Label notHole(env);
     Label isUndefined(env);
@@ -485,16 +485,17 @@ AddrShift Stub::GetKeyFromNumberDictionary(AddrShift elements, AddrShift entry)
     Label subentry(env);
     env->PushCurrentLabel(&subentry);
     Label exit(env);
-    DEFVARIABLE(result, TAGGED_TYPE, GetUndefinedConstant());
+    DEFVARIABLE(result, MachineType::TAGGED_TYPE, GetUndefinedConstant());
     Label ltZero(env);
     Label notLtZero(env);
     Label gtLength(env);
     Label notGtLength(env);
-    AddrShift dictionaryLength = Load(INT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
+    AddrShift dictionaryLength =
+        Load(MachineType::INT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
     AddrShift arrayIndex =
-        Int32Add(GetInteger32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
-                 Int32Mul(entry, GetInteger32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
-    Branch(Int32LessThan(arrayIndex, GetInteger32Constant(0)), &ltZero, &notLtZero);
+        Int32Add(GetInt32Constant(panda::ecmascript::NumberDictionary::TABLE_HEADER_SIZE),
+                 Int32Mul(entry, GetInt32Constant(panda::ecmascript::NumberDictionary::ENTRY_SIZE)));
+    Branch(Int32LessThan(arrayIndex, GetInt32Constant(0)), &ltZero, &notLtZero);
     Bind(&ltZero);
     Jump(&exit);
     Bind(&notLtZero);
@@ -517,14 +518,14 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
     Label funcEntry(env);
     env->PushCurrentLabel(&funcEntry);
     Label exit(env);
-    DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
+    DEFVARIABLE(result, MachineType::INT32_TYPE, GetInt32Constant(-1));
     AddrShift capcityoffset =
         PtrMul(GetPtrConstant(panda::ecmascript::JSTaggedValue::TaggedTypeSize()),
                GetPtrConstant(panda::ecmascript::TaggedHashTable<panda::ecmascript::NumberDictionary>::SIZE_INDEX));
     AddrShift dataoffset = GetPtrConstant(panda::coretypes::Array::GetDataOffset());
-    AddrShift capacity = TaggedCastToInt32(Load(TAGGED_TYPE, elements, PtrAdd(dataoffset, capcityoffset)));
-    DEFVARIABLE(count, INT32_TYPE, GetInteger32Constant(1));
-    DEFVARIABLE(hash, INT32_TYPE, GetInteger32Constant(0));
+    AddrShift capacity = TaggedCastToInt32(Load(MachineType::TAGGED_TYPE, elements, PtrAdd(dataoffset, capcityoffset)));
+    DEFVARIABLE(count, MachineType::INT32_TYPE, GetInt32Constant(1));
+    DEFVARIABLE(hash, MachineType::INT32_TYPE, GetInt32Constant(0));
     // NameDictionary::hash
     Label isSymbol(env);
     Label notSymbol(env);
@@ -535,7 +536,8 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
     Branch(IsSymbol(key), &isSymbol, &notSymbol);
     Bind(&isSymbol);
     {
-        hash = TaggedCastToInt32(Load(TAGGED_TYPE, key, GetPtrConstant(panda::ecmascript::JSSymbol::HASHFIELD_OFFSET)));
+        hash = TaggedCastToInt32(Load(MachineType::TAGGED_TYPE, key,
+            GetPtrConstant(panda::ecmascript::JSSymbol::HASHFIELD_OFFSET)));
         Jump(&beforeDefineHash);
     }
     Bind(&notSymbol);
@@ -556,7 +558,7 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
     }
     Bind(&beforeDefineHash);
     // GetFirstPosition(hash, size)
-    DEFVARIABLE(entry, INT32_TYPE, Word32And(*hash, Int32Sub(capacity, GetInteger32Constant(1))));
+    DEFVARIABLE(entry, MachineType::INT32_TYPE, Word32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
@@ -577,7 +579,7 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
                 {
                     Bind(&isUndefined);
                     {
-                        result = GetInteger32Constant(-1);
+                        result = GetInt32Constant(-1);
                         Jump(&exit);
                     }
                     Bind(&notUndefined);
@@ -603,7 +605,7 @@ AddrShift Stub::FindEntryFromNameDictionary(AddrShift thread, AddrShift elements
         Bind(&loopEnd);
         {
             entry = GetNextPositionForHash(*entry, *count, capacity);
-            count = Int32Add(*count, GetInteger32Constant(1));
+            count = Int32Add(*count, GetInt32Constant(1));
             LoopEnd(&loopHead);
         }
     }
@@ -619,7 +621,7 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, TAGGED_TYPE, GetUndefinedConstant());
+    DEFVARIABLE(result, MachineType::TAGGED_TYPE, GetUndefinedConstant());
     Label inlinedProp(env);
     Label notInlinedProp(env);
     AddrShift attrOffset = PropAttrGetOffset(attr);
@@ -632,17 +634,18 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
             AddrShift propOffset = Int32Sub(
                 ChangeInt64ToInt32(hClassObjectSize),
                 Int32Mul(Int32Sub(
-                    GetInteger32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS), attrOffset),
-                    GetInteger32Constant(panda::ecmascript::JSTaggedValue::TaggedTypeSize())));
-            result = Load(UINT64_TYPE, obj, ZExtInt32ToInt64(propOffset));
+                    GetInt32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS), attrOffset),
+                    GetInt32Constant(panda::ecmascript::JSTaggedValue::TaggedTypeSize())));
+            result = Load(MachineType::UINT64_TYPE, obj, ZExtInt32ToInt64(propOffset));
             Jump(&exit);
         }
         Bind(&notInlinedProp);
         {
             // compute outOfLineProp offset, get it and return
-            AddrShift array = Load(UINT64_TYPE, obj, GetPtrConstant(panda::ecmascript::JSObject::PROPERTIES_OFFSET));
+            AddrShift array =
+                Load(MachineType::UINT64_TYPE, obj, GetPtrConstant(panda::ecmascript::JSObject::PROPERTIES_OFFSET));
             result = GetValueFromTaggedArray(array, Int32Sub(attrOffset,
-                GetInteger32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
+                GetInt32Constant(panda::ecmascript::JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
             Jump(&exit);
         }
     }
@@ -655,7 +658,7 @@ AddrShift Stub::JSObjectGetProperty(AddrShift obj, AddrShift hClass, AddrShift a
 void Stub::ThrowTypeAndReturn(AddrShift thread, int messageId, AddrShift val)
 {
     StubDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
-    AddrShift msgIntId = GetInteger32Constant(messageId);
+    AddrShift msgIntId = GetInt32Constant(messageId);
     CallRuntime(throwTypeError, thread, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), {thread, msgIntId});
     Return(val);
 }
@@ -666,7 +669,7 @@ AddrShift Stub::TaggedToRepresentation(AddrShift value)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(resultRep, INT64_TYPE,
+    DEFVARIABLE(resultRep, MachineType::INT64_TYPE,
                 GetWord64Constant(static_cast<int32_t>(panda::ecmascript::Representation::OBJECT)));
     Label isInt(env);
     Label notInt(env);
@@ -705,7 +708,7 @@ AddrShift Stub::UpdateRepresention(AddrShift oldRep, AddrShift value)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(resultRep, INT64_TYPE, oldRep);
+    DEFVARIABLE(resultRep, MachineType::INT64_TYPE, oldRep);
     Label isMixedRep(env);
     Label notMiexedRep(env);
     Branch(Word64Equal(oldRep, GetWord64Constant(static_cast<int64_t>(panda::ecmascript::Representation::MIXED))),
@@ -807,13 +810,13 @@ AddrShift Stub::TaggedIsString(AddrShift obj)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
+    DEFVARIABLE(result, MachineType::BOOL_TYPE, FalseConstant());
     Label isHeapObject(env);
     Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     Bind(&isHeapObject);
     {
         result = Word32Equal(GetObjectType(LoadHClass(obj)),
-                             GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
+                             GetInt32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
         Jump(&exit);
     }
     Bind(&exit);
@@ -828,21 +831,21 @@ AddrShift Stub::TaggedIsStringOrSymbol(AddrShift obj)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, BOOL_TYPE, FalseConstant());
+    DEFVARIABLE(result, MachineType::BOOL_TYPE, FalseConstant());
     Label isHeapObject(env);
     Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     Bind(&isHeapObject);
     {
         AddrShift objType = GetObjectType(LoadHClass(obj));
         result = Word32Equal(objType,
-                             GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
+                             GetInt32Constant(static_cast<int32_t>(panda::ecmascript::JSType::STRING)));
         Label isString(env);
         Label notString(env);
         Branch(*result, &exit, &notString);
         Bind(&notString);
         {
             result = Word32Equal(objType,
-                                 GetInteger32Constant(static_cast<int32_t>(panda::ecmascript::JSType::SYMBOL)));
+                                 GetInt32Constant(static_cast<int32_t>(panda::ecmascript::JSType::SYMBOL)));
             Jump(&exit);
         }
     }
@@ -858,8 +861,8 @@ AddrShift Stub::IsUtf16String(AddrShift string)
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
     return Word32Equal(
-        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
-        GetInteger32Constant(panda::ecmascript::EcmaString::STRING_UNCOMPRESSED));
+        Word32And(len, GetInt32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
+        GetInt32Constant(panda::ecmascript::EcmaString::STRING_UNCOMPRESSED));
 }
 
 AddrShift Stub::IsUtf8String(AddrShift string)
@@ -868,8 +871,8 @@ AddrShift Stub::IsUtf8String(AddrShift string)
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
     return Word32Equal(
-        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
-        GetInteger32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED));
+        Word32And(len, GetInt32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED_BIT)),
+        GetInt32Constant(panda::ecmascript::EcmaString::STRING_COMPRESSED));
 }
 
 AddrShift Stub::IsInternalString(AddrShift string)
@@ -878,15 +881,15 @@ AddrShift Stub::IsInternalString(AddrShift string)
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
     return Word32NotEqual(
-        Word32And(len, GetInteger32Constant(panda::ecmascript::EcmaString::STRING_INTERN_BIT)),
-        GetInteger32Constant(0));
+        Word32And(len, GetInt32Constant(panda::ecmascript::EcmaString::STRING_INTERN_BIT)),
+        GetInt32Constant(0));
 }
 
 AddrShift Stub::IsDigit(AddrShift ch)
 {
     return TruncInt32ToInt1(
-        Word32And(SExtInt1ToInt32(Int32LessThanOrEqual(ch, GetInteger32Constant('9'))),
-                  SExtInt1ToInt32(Int32GreaterThanOrEqual(ch, GetInteger32Constant('0')))));
+        Word32And(SExtInt1ToInt32(Int32LessThanOrEqual(ch, GetInt32Constant('9'))),
+                  SExtInt1ToInt32(Int32GreaterThanOrEqual(ch, GetInt32Constant('0')))));
 }
 
 AddrShift Stub::StringToElementIndex(AddrShift string)
@@ -895,19 +898,19 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, INT32_TYPE, GetInteger32Constant(-1));
+    DEFVARIABLE(result, MachineType::INT32_TYPE, GetInt32Constant(-1));
     Label greatThanZero(env);
     Label inRange(env);
     AddrShift len = Load(MachineType::UINT32_TYPE, string,
                          GetPtrConstant(panda::ecmascript::EcmaString::GetLengthOffset()));
-    len = Word32LSR(len, GetInteger32Constant(2));  // 2 : 2 means len must be right shift 2 bits
-    Branch(Word32Equal(len, GetInteger32Constant(0)), &exit, &greatThanZero);
+    len = Word32LSR(len, GetInt32Constant(2));  // 2 : 2 means len must be right shift 2 bits
+    Branch(Word32Equal(len, GetInt32Constant(0)), &exit, &greatThanZero);
     Bind(&greatThanZero);
-    Branch(Int32GreaterThan(len, GetInteger32Constant(panda::ecmascript::MAX_INDEX_LEN)), &exit, &inRange);
+    Branch(Int32GreaterThan(len, GetInt32Constant(panda::ecmascript::MAX_INDEX_LEN)), &exit, &inRange);
     Bind(&inRange);
     {
         AddrShift dataUtf16 = PtrAdd(string, GetPtrConstant(panda::ecmascript::EcmaString::GetDataOffset()));
-        DEFVARIABLE(c, UINT32_TYPE, GetInteger32Constant(0));
+        DEFVARIABLE(c, MachineType::UINT32_TYPE, GetInt32Constant(0));
         Label isUtf16(env);
         Label isUtf8(env);
         Label getChar1(env);
@@ -915,34 +918,34 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
         Branch(isUtf16String, &isUtf16, &isUtf8);
         Bind(&isUtf16);
         {
-            c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16));
+            c = ZExtInt16ToInt32(Load(MachineType::INT16_TYPE, dataUtf16));
             Jump(&getChar1);
         }
         Bind(&isUtf8);
         {
-            c = ZExtInt8ToInt32(Load(INT8_TYPE, dataUtf16));
+            c = ZExtInt8ToInt32(Load(MachineType::INT8_TYPE, dataUtf16));
             Jump(&getChar1);
         }
         Bind(&getChar1);
         {
             Label isDigitZero(env);
             Label notDigitZero(env);
-            Branch(Word32Equal(*c, GetInteger32Constant('0')), &isDigitZero, &notDigitZero);
+            Branch(Word32Equal(*c, GetInt32Constant('0')), &isDigitZero, &notDigitZero);
             Bind(&isDigitZero);
             {
                 Label lengthIsOne(env);
-                Branch(Word32Equal(len, GetInteger32Constant(1)), &lengthIsOne, &exit);
+                Branch(Word32Equal(len, GetInt32Constant(1)), &lengthIsOne, &exit);
                 Bind(&lengthIsOne);
                 {
-                    result = GetInteger32Constant(0);
+                    result = GetInt32Constant(0);
                     Jump(&exit);
                 }
             }
             Bind(&notDigitZero);
             {
                 Label isDigit(env);
-                DEFVARIABLE(i, UINT32_TYPE, GetInteger32Constant(1));
-                DEFVARIABLE(n, UINT32_TYPE, Int32Sub(*c, GetInteger32Constant('0')));
+                DEFVARIABLE(i, MachineType::UINT32_TYPE, GetInt32Constant(1));
+                DEFVARIABLE(n, MachineType::UINT32_TYPE, Int32Sub(*c, GetInt32Constant('0')));
                 Branch(IsDigit(*c), &isDigit, &exit);
                 Label loopHead(env);
                 Label loopEnd(env);
@@ -959,12 +962,12 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                     {
                         // 2 : 2 means utf16 char width is two bytes
                         auto charOffset = PtrMul(ChangeInt32ToPointer(*i),  GetPtrConstant(2));
-                        c = ZExtInt16ToInt32(Load(INT16_TYPE, dataUtf16, charOffset));
+                        c = ZExtInt16ToInt32(Load(MachineType::INT16_TYPE, dataUtf16, charOffset));
                         Jump(&getChar2);
                     }
                     Bind(&notUtf16);
                     {
-                        c = ZExtInt8ToInt32(Load(INT8_TYPE, dataUtf16, ChangeInt32ToPointer(*i)));
+                        c = ZExtInt8ToInt32(Load(MachineType::INT8_TYPE, dataUtf16, ChangeInt32ToPointer(*i)));
                         Jump(&getChar2);
                     }
                     Bind(&getChar2);
@@ -975,9 +978,9 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                         Bind(&isDigit2);
                         {
                             // 10 means the base of digit is 10.
-                            n = Int32Add(Int32Mul(*n, GetInteger32Constant(10)),
-                                         Int32Sub(*c, GetInteger32Constant('0')));
-                            i = Int32Add(*i, GetInteger32Constant(1));
+                            n = Int32Add(Int32Mul(*n, GetInt32Constant(10)),
+                                         Int32Sub(*c, GetInt32Constant('0')));
+                            i = Int32Add(*i, GetInt32Constant(1));
                             Branch(Int32LessThan(*i, len), &loopEnd, &afterLoop);
                         }
                         Bind(&notDigit2);
@@ -989,7 +992,7 @@ AddrShift Stub::StringToElementIndex(AddrShift string)
                 Bind(&afterLoop);
                 {
                     Label lessThanMaxIndex(env);
-                    Branch(Word32LessThan(*n, GetInteger32Constant(panda::ecmascript::JSObject::MAX_ELEMENT_INDEX)),
+                    Branch(Word32LessThan(*n, GetInt32Constant(panda::ecmascript::JSObject::MAX_ELEMENT_INDEX)),
                            &lessThanMaxIndex, &exit);
                     Bind(&lessThanMaxIndex);
                     {
@@ -1015,7 +1018,7 @@ AddrShift Stub::TryToElementsIndex(AddrShift key)
     Label isKeyInt(env);
     Label notKeyInt(env);
 
-    DEFVARIABLE(resultKey, INT32_TYPE, GetInteger32Constant(-1));
+    DEFVARIABLE(resultKey, MachineType::INT32_TYPE, GetInt32Constant(-1));
     Branch(TaggedIsInt(key), &isKeyInt, &notKeyInt);
     Bind(&isKeyInt);
     {

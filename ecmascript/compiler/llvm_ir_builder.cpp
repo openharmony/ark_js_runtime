@@ -1393,19 +1393,19 @@ LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *st
 LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
 {
     static std::map<MachineType, LLVMTypeRef> machineTypeMap = {
-        {MachineType::NONE_TYPE,        LLVMVoidType()},
-        {MachineType::BOOL_TYPE,        LLVMInt1Type()},
-        {MachineType::INT8_TYPE,        LLVMInt8Type()},
-        {MachineType::INT16_TYPE,       LLVMInt16Type()},
-        {MachineType::INT32_TYPE,       LLVMInt32Type()},
-        {MachineType::INT64_TYPE,       LLVMInt64Type()},
-        {MachineType::UINT8_TYPE,       LLVMInt8Type()},
-        {MachineType::UINT16_TYPE,      LLVMInt16Type()},
-        {MachineType::UINT32_TYPE,      LLVMInt32Type()},
-        {MachineType::UINT64_TYPE,      LLVMInt64Type()},
-        {MachineType::FLOAT32_TYPE,     LLVMFloatType()},
-        {MachineType::FLOAT64_TYPE,     LLVMDoubleType()},
-        {MachineType::TAGGED_TYPE,      LLVMInt64Type()},
+        {MachineType::NONE_TYPE,           LLVMVoidType()},
+        {MachineType::BOOL_TYPE,           LLVMInt1Type()},
+        {MachineType::INT8_TYPE,           LLVMInt8Type()},
+        {MachineType::INT16_TYPE,          LLVMInt16Type()},
+        {MachineType::INT32_TYPE,          LLVMInt32Type()},
+        {MachineType::INT64_TYPE,          LLVMInt64Type()},
+        {MachineType::UINT8_TYPE,          LLVMInt8Type()},
+        {MachineType::UINT16_TYPE,         LLVMInt16Type()},
+        {MachineType::UINT32_TYPE,         LLVMInt32Type()},
+        {MachineType::UINT64_TYPE,         LLVMInt64Type()},
+        {MachineType::FLOAT32_TYPE,        LLVMFloatType()},
+        {MachineType::FLOAT64_TYPE,        LLVMDoubleType()},
+        {MachineType::TAGGED_TYPE,         LLVMInt64Type()},
     };
     return machineTypeMap[type];
 }
