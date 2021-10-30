@@ -14,7 +14,6 @@
  */
 
 #include "llvm_codegen.h"
-#include "llvm/llvm_stackmap_parser.h"
 #include <vector>
 #include "ecmascript/object_factory.h"
 #include "stub_descriptor.h"
@@ -41,6 +40,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/llvm_stackmap_parser.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Disassembler.h"

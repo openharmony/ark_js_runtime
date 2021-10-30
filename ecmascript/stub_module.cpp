@@ -38,7 +38,9 @@ void StubModule::Save(const std::string &filename)
         modulefile.write(reinterpret_cast<char *>(code_->GetDataOffsetAddress()), codeSize);
         /* write stackmap buff */
         int stackmapSize = GetStackMapSize();
+#ifndef NDEBUG
         LOG_ECMA(INFO) << "stackmap host addr:" << GetStackMapAddr() << " stackmapSize:" << stackmapSize << std::endl;
+#endif
         modulefile.write(reinterpret_cast<char *>(&stackmapSize), sizeof(stackmapSize));
         modulefile.write(reinterpret_cast<char *>(GetStackMapAddr()), stackmapSize);
 
@@ -64,8 +66,10 @@ void StubModule::Load(JSThread *thread, const std::string &filename)
     auto codeHandle = factory->NewMachineCodeObject(codeSize, nullptr);
     modulefile.read(reinterpret_cast<char *>(codeHandle->GetDataOffsetAddress()), codeSize);
     SetCode(*codeHandle);
+#ifndef NDEBUG
     LOG_ECMA(INFO) << "codeSection adress for device:" << std::hex << codeHandle->GetDataOffsetAddress() <<
         " codeSize:" << codeSize << std::endl;
+#endif
     SetDeviceCodeSectionAddr(codeHandle->GetDataOffsetAddress());
     /* read stackmap */
 
@@ -76,8 +80,10 @@ void StubModule::Load(JSThread *thread, const std::string &filename)
     auto dataHandle = factory->NewMachineCodeObject(stackmapSize, nullptr);
     modulefile.read(reinterpret_cast<char *>(dataHandle->GetDataOffsetAddress()), stackmapSize);
     SetData(*dataHandle);
+#ifndef NDEBUG
     LOG_ECMA(INFO) << "stackmapSize adress for device:" << std::hex << dataHandle->GetDataOffsetAddress()
         << " stackmapSize:"<< stackmapSize << std::endl;
+#endif
     SetStackMapAddr(reinterpret_cast<Address>(dataHandle->GetDataOffsetAddress()));
     modulefile.close();
 }

@@ -822,6 +822,7 @@ AddrShift Stub::Store(MachineType type, AddrShift thread, AddrShift base, AddrSh
 
     return result;
 }
+
 AddrShift Stub::Store(MachineType type, AddrShift base, AddrShift offset, AddrShift value)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();

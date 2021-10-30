@@ -134,6 +134,23 @@ uint32_t RuntimeTrampolines::StringGetHashCode(uint64_t ecmaString)
     return string->GetHashcode();
 }
 
+void RuntimeTrampolines::PrintHeapReginInfo(uint64_t argThread)
+{
+    auto thread = reinterpret_cast<JSThread *>(argThread);
+    thread->GetEcmaVM()->GetHeap()->GetNewSpace()->EnumerateRegions([](Region *current) {
+        LOG_ECMA(INFO) << "semispace region: " << current << std::endl;
+    });
+    thread->GetEcmaVM()->GetHeap()->GetOldSpace()->EnumerateRegions([](Region *current) {
+        LOG_ECMA(INFO) << "GetOldSpace region: " << current << std::endl;
+    });
+    thread->GetEcmaVM()->GetHeap()->GetNonMovableSpace()->EnumerateRegions([](Region *current) {
+        LOG_ECMA(INFO) << "GetNonMovableSpace region: " << current << std::endl;
+    });
+    thread->GetEcmaVM()->GetHeap()->GetMachineCodeSpace()->EnumerateRegions([](Region *current) {
+        LOG_ECMA(INFO) << "GetMachineCodeSpace region: " << current << std::endl;
+    });
+}
+
 TaggedArray* RuntimeTrampolines::GetTaggedArrayPtr(uint64_t argThread)
 {
     uintptr_t *curFp = nullptr;
@@ -144,8 +161,6 @@ TaggedArray* RuntimeTrampolines::GetTaggedArrayPtr(uint64_t argThread)
     // this case static static JSHandle<TaggedArray> arr don't free in first call
     // second call trigger gc.
     // don't call EcmaHandleScope handleScope(thread);
-    // auto current = thread->GetCurrentSPFrame();
-
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     static int i = 0;
     static JSHandle<TaggedArray> arr = factory->NewTaggedArray(2);
@@ -153,33 +168,14 @@ TaggedArray* RuntimeTrampolines::GetTaggedArrayPtr(uint64_t argThread)
         arr->Set(thread, 0, JSTaggedValue(3)); // 3: first element
         arr->Set(thread, 1, JSTaggedValue(4)); // 4: second element
     }
-
-    thread->GetEcmaVM()->GetHeap()->GetNewSpace()->EnumerateRegions([](Region *current) {
-        LOG_ECMA(INFO) << "semispace region: " << current << std::endl;
-    });
-
-    thread->GetEcmaVM()->GetHeap()->GetOldSpace()->EnumerateRegions([](Region *current) {
-        LOG_ECMA(INFO) << "GetOldSpace region: " << current << std::endl;
-    });
-
-    thread->GetEcmaVM()->GetHeap()->GetNonMovableSpace()->EnumerateRegions([](Region *current) {
-        LOG_ECMA(INFO) << "GetNonMovableSpace region: " << current << std::endl;
-    });
-
-    thread->GetEcmaVM()->GetHeap()->GetMachineCodeSpace()->EnumerateRegions([](Region *current) {
-        LOG_ECMA(INFO) << "GetMachineCodeSpace region: " << current << std::endl;
-    });
-
-    LOG_ECMA(INFO) << "  arr->GetData() " << std::dec << __LINE__ <<
-        std::hex << "  " << arr->GetData() << std::endl;
+#ifndef NDEBUG
+    PrintHeapReginInfo(argThread);
+#endif
     if (i != 0) {
-        LOG_ECMA(INFO) << " trigger GC : " << std::endl;
         thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
-        LOG_ECMA(INFO) << "  arr->GetData() " << std::dec << __LINE__ <<
-            std::hex << "  " << arr->GetData() << std::endl;
     }
+    LOG_ECMA(INFO) << " arr->GetData() " << std::hex << "  " << arr->GetData();
     i++;
-    LOG_ECMA(INFO) << " **arr " << *(reinterpret_cast<uint64_t *>(*arr)) << std::endl;
     return *arr;
 }
 uint64_t RuntimeTrampolines::Execute(uint64_t argThread, uint64_t argFunc,

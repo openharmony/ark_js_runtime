@@ -119,7 +119,6 @@ public:
     explicit OptimizedEntryFrameHandler(const JSThread *thread);
     ~OptimizedEntryFrameHandler() = default;
     void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
     uintptr_t *fp_ {nullptr};
 };

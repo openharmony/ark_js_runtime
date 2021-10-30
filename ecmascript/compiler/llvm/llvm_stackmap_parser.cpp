@@ -83,13 +83,10 @@ bool LLVMStackMapParser::StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t fram
 void LLVMStackMapParser::CalcCallSite()
 {
     uint64_t recordNum = 0;
-    for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
-        uintptr_t address =  llvmStackMap_.StkSizeRecords[i].functionAddress;
-        uint64_t recordCount = llvmStackMap_.StkSizeRecords[i].recordCount;
-        for (uint64_t k = 0; k < recordCount; k++) {
-            struct StkMapRecordHeadTy recordHead = llvmStackMap_.StkMapRecord[recordNum + k].head;
-            for (int j = 0; j < recordHead.NumLocations; j++) {
-                struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum + k].Locations[j];
+    auto calStkMapRecordFunc = [this, &recordNum](uintptr_t address, int recordId) {
+        struct StkMapRecordHeadTy recordHead = llvmStackMap_.StkMapRecord[recordNum + recordId].head;
+        for (int j = 0; j < recordHead.NumLocations; j++) {
+                struct LocationTy loc = llvmStackMap_.StkMapRecord[recordNum + recordId].Locations[j];
                 uint32_t instructionOffset = recordHead.InstructionOffset;
                 uintptr_t callsite = address + instructionOffset;
                 if (loc.location == LocationTy::Kind::INDIRECT) {
@@ -97,7 +94,13 @@ void LLVMStackMapParser::CalcCallSite()
                     Fun2InfoType callSiteInfo {callsite, info};
                     callSiteInfos_.push_back(callSiteInfo);
                 }
-            }
+        }
+    };
+    for (size_t i = 0; i < llvmStackMap_.StkSizeRecords.size(); i++) {
+        uintptr_t address =  llvmStackMap_.StkSizeRecords[i].functionAddress;
+        uint64_t recordCount = llvmStackMap_.StkSizeRecords[i].recordCount;
+        for (uint64_t k = 0; k < recordCount; k++) {
+            calStkMapRecordFunc(address, k);
         }
         recordNum += recordCount;
     }

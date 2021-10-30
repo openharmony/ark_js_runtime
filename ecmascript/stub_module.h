@@ -53,11 +53,11 @@ public:
     }
     void SetDeviceCodeSectionAddr(uintptr_t addr)
     {
-        DevicesCodeSectionAddr_ = addr;
+        devicesCodeSectionAddr_ = addr;
     }
-    uintptr_t GetDeviceCodeSectionAddr()
+    uintptr_t GetDeviceCodeSectionAddr() const
     {
-        return DevicesCodeSectionAddr_;
+        return devicesCodeSectionAddr_;
     }
     JSTaggedValue GetCode()
     {
@@ -87,7 +87,7 @@ public:
 private:
     std::array<Address, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
     Address hostCodeSectionAddr_ = 0;
-    uintptr_t DevicesCodeSectionAddr_ = 0;
+    uintptr_t devicesCodeSectionAddr_ = 0;
     MachineCode *code_ {nullptr};
     MachineCode *data_ {nullptr};
     Address stackMapAddr_  = 0;

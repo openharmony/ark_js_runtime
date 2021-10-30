@@ -248,12 +248,6 @@ void OptimizedEntryFrameHandler::PrevFrame()
     sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
 }
 
-void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
-{
-    // Entry Frame return address's callsite already visited by OptimizedFrameHandler
-    // or HandleRuntimeTrampolines
-}
-
 void FrameIterator::HandleRuntimeTrampolines(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
     if (thread_) {
@@ -263,17 +257,23 @@ void FrameIterator::HandleRuntimeTrampolines(const RootVisitor &v0, const RootRa
         }
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = *(fp + 1);
+#ifndef NDEBUG
         LOG_ECMA(INFO) << __FUNCTION__ << " returnAddr :" << returnAddr << " fp: " << fp << std::endl;
+#endif
         bool ret = kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
             reinterpret_cast<uintptr_t>(returnAddr),
             reinterpret_cast<uintptr_t>(fp),
             slotAddrs);
         if (ret == false) {
+#ifndef NDEBUG
             LOG_ECMA(INFO) << " stackmap don't found returnAddr " << std::endl;
+#endif
             return;
         }
         for (auto &address: slotAddrs) {
+#ifndef NDEBUG
             LOG_ECMA(INFO) << "stackmap address : " << std::hex << address << std::endl;
+#endif
             v0(Root::ROOT_FRAME, ObjectSlot(address));
         }
     }
@@ -304,7 +304,6 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
                 reinterpret_cast<intptr_t>(current) -
                 MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
-            OptimizedEntryFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->threadFp);
         }
     }

@@ -55,6 +55,7 @@ public:
     static void SetValueWithBarrier(uint64_t argThread, uint64_t argAddr, uint64_t argOffset, uint64_t argValue);
     static double FloatMod(double left, double right);
     static uint64_t NewInternalString(uint64_t argThread, uint64_t argKey);
+    static void PrintHeapReginInfo(uint64_t argThread);
 };
 
 class CallRuntimeTrampolinesScope {
