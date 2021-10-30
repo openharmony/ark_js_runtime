@@ -83,7 +83,9 @@ void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
     // stackmaps ptr and size
     module->SetStackMapAddr(reinterpret_cast<Address>(assembler_.GetStackMapsSection()));
     module->SetStackMapSize(assembler_.GetStackMapsSize());
+#ifndef NDEBUG
     assembler_.Disassemble(addr2name);
+#endif
 }
 
 static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
@@ -138,18 +140,20 @@ bool LLVMAssembler::BuildMCJITEngine()
 
 void LLVMAssembler::BuildAndRunPasses() const
 {
-    std::cout << "BuildAndRunPasses  - ";
+    LOG_ECMA(INFO) << "BuildAndRunPasses  - ";
     LLVMPassManagerRef pm = LLVMCreatePassManager();
     LLVMAddConstantPropagationPass(pm);
     LLVMAddInstructionCombiningPass(pm);
     llvm::unwrap(pm)->add(llvm::createRewriteStatepointsForGCLegacyPass());
+#ifndef NDEBUG
     char *info = LLVMPrintModuleToString(module_);
-    std::cout << "Current Module: " << info;
+    LOG_ECMA(INFO) << "Current Module: " << info;
     LLVMDumpModule(module_);
     LLVMDisposeMessage(info);
+#endif
     LLVMRunPassManager(pm, module_);
     LLVMDisposePassManager(pm);
-    std::cout << "BuildAndRunPasses  + ";
+    LOG_ECMA(INFO) << "BuildAndRunPasses  + ";
 }
 
 LLVMAssembler::LLVMAssembler(LLVMModuleRef module, const char* triple): module_(module), engine_(nullptr),

@@ -68,7 +68,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastMul)
 CALL_STUB_INIT_DESCRIPTOR(FastMulGC)
 {
     // 3 : 3 input parameters
-    static StubDescriptor fastMulGC("FastMulGC", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
+    StubDescriptor fastMulGC("FastMulGC", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
     *descriptor = fastMulGC;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -296,7 +296,7 @@ CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 
 CALL_STUB_INIT_DESCRIPTOR(GetTaggedArrayPtr)
 {
-    static StubDescriptor getTaggedArrayPtr("GetTaggedArrayPtr", 0, 1, ArgumentsOrder::DEFAULT_ORDER,
+    StubDescriptor getTaggedArrayPtr("GetTaggedArrayPtr", 0, 1, ArgumentsOrder::DEFAULT_ORDER,
                                              MachineType::TAGGED_POINTER_TYPE);
     *descriptor = getTaggedArrayPtr;
     std::array<MachineType, 1> params = {

@@ -1167,7 +1167,7 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
-    int x = 256;
+    int x = 213;
     int y = 10;
     JSHandle<JSTaggedValue> strA(factory->NewFromCanBeCompressString("a"));
     JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
@@ -1268,7 +1268,6 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     resVal = getPropertyByValuePtr(thread, strHello.GetTaggedValue().GetRawData(), JSTaggedValue(key).GetRawData());
     EXPECT_EQ(resVal.GetRawData(), 0);
 }
-#endif
 
 HWTEST_F_L0(StubTest, FastTypeOfTest)
 {
