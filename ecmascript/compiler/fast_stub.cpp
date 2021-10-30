@@ -29,7 +29,7 @@ void FastArrayLoadElementStub::GenerateCircuit()
     AddrShift indexVal = Int32Argument(1);
 
     // load a.length
-    AddrShift lengthOffset = GetInteger32Constant(JSArray::GetArrayLengthOffset());
+    AddrShift lengthOffset = GetInt32Constant(JSArray::GetArrayLengthOffset());
     if (PtrValueCode() == ValueCode::INT64) {
         lengthOffset = SExtInt32ToInt64(lengthOffset);
     } else if (PtrValueCode() == ValueCode::INT32) {
@@ -349,19 +349,18 @@ void FindOwnElementStub::GenerateCircuit()
     AddrShift thread = PtrArgument(0);
     AddrShift obj = PtrArgument(1);
     AddrShift index = Int32Argument(2);  // 2: 3rd parameter - index
-
     Label notDict(env);
     Label isDict(env);
     Label invalidValue(env);
     Label end(env);
-    AddrShift elements = Load(POINTER_TYPE, obj, GetPtrConstant(JSObject::ELEMENTS_OFFSET));
-
+    AddrShift elements = Load(MachineType::POINTER_TYPE, obj, GetPtrConstant(JSObject::ELEMENTS_OFFSET));
     Branch(IsDictionaryMode(elements), &isDict, &notDict);
     Bind(&notDict);
     {
         Label outOfArray(env);
         Label notOutOfArray(env);
-        AddrShift arrayLength = Load(UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
+        AddrShift arrayLength = Load(MachineType::UINT32_TYPE, elements,
+                                     GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
         Branch(Int32LessThanOrEqual(arrayLength, index), &outOfArray, &notOutOfArray);
         Bind(&outOfArray);
         Jump(&invalidValue);
@@ -369,7 +368,7 @@ void FindOwnElementStub::GenerateCircuit()
         {
             AddrShift offset = PtrMul(ChangeInt32ToPointer(index), GetPtrConstant(JSTaggedValue::TaggedTypeSize()));
             AddrShift dataIndex = PtrAdd(offset, GetPtrConstant(panda::coretypes::Array::GetDataOffset()));
-            AddrShift value = Load(TAGGED_TYPE, elements, dataIndex);
+            AddrShift value = Load(MachineType::TAGGED_TYPE, elements, dataIndex);
             Label isHole1(env);
             Label notHole1(env);
             Branch(TaggedIsHole(value), &isHole1, &notHole1);
@@ -381,14 +380,13 @@ void FindOwnElementStub::GenerateCircuit()
         Bind(&invalidValue);
         Return(GetHoleConstant());
     }
-    // IsDictionary
     Bind(&isDict);
     {
         AddrShift taggedIndex = IntBuildTagged(index);
         AddrShift entry = FindElementFromNumberDictionary(thread, elements, taggedIndex);
         Label notNegtiveOne(env);
         Label negtiveOne(env);
-        Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
+        Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
         Bind(&notNegtiveOne);
         {
             Return(GetValueFromDictionary(elements, entry));
@@ -424,7 +422,7 @@ void GetElementStub::GenerateCircuit()
     Bind(&notHole);
     Return(callFindOwnElementVal);
     Bind(&isHole);
-    receiver = Load(TAGGED_TYPE, LoadHClass(objPtr), GetPtrConstant(JSHClass::PROTOTYPE_OFFSET));
+    receiver = Load(MachineType::TAGGED_TYPE, LoadHClass(objPtr), GetPtrConstant(JSHClass::PROTOTYPE_OFFSET));
     Branch(TaggedIsHeapObject(receiver), &loopEnd, &notHeapObj);
     Bind(&notHeapObj);
     Return(GetUndefinedConstant());
@@ -445,11 +443,11 @@ void FindOwnElement2Stub::GenerateCircuit()
     Label notDictionary(env);
     Label isDictionary(env);
     Label end(env);
-    Branch(Word32Equal(isDict, GetInteger32Constant(0)), &notDictionary, &isDictionary);
+    Branch(Word32Equal(isDict, GetInt32Constant(0)), &notDictionary, &isDictionary);
     Bind(&notDictionary);
     {
         AddrShift elementsLength =
-            Load(UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
+            Load(MachineType::UINT32_TYPE, elements, GetPtrConstant(panda::coretypes::Array::GetLengthOffset()));
         Label outOfElements(env);
         Label notOutOfElements(env);
         Branch(Int32LessThanOrEqual(elementsLength, index), &outOfElements, &notOutOfElements);
@@ -467,9 +465,9 @@ void FindOwnElement2Stub::GenerateCircuit()
             Jump(&end);
             Bind(&notHole);
             {
-                Store(UINT32_TYPE, attr, GetPtrConstant(0),
-                      GetInteger32Constant(PropertyAttributes::GetDefaultAttributes()));
-                Store(UINT32_TYPE, indexOrEntry, GetPtrConstant(0), index);
+                Store(MachineType::UINT32_TYPE, attr, GetPtrConstant(0),
+                      GetInt32Constant(PropertyAttributes::GetDefaultAttributes()));
+                Store(MachineType::UINT32_TYPE, indexOrEntry, GetPtrConstant(0), index);
                 Return(value);
             }
         }
@@ -479,11 +477,11 @@ void FindOwnElement2Stub::GenerateCircuit()
         AddrShift entry = FindElementFromNumberDictionary(thread, elements, IntBuildTagged(index));
         Label notNegtiveOne(env);
         Label negtiveOne(env);
-        Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
+        Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
         Bind(&notNegtiveOne);
         {
-            Store(UINT32_TYPE, attr, GetPtrConstant(0), GetAttributesFromDictionary(elements, entry));
-            Store(UINT32_TYPE, indexOrEntry, GetPtrConstant(0), entry);
+            Store(MachineType::UINT32_TYPE, attr, GetPtrConstant(0), GetAttributesFromDictionary(elements, entry));
+            Store(MachineType::UINT32_TYPE, indexOrEntry, GetPtrConstant(0), entry);
             Return(GetValueFromDictionary(elements, entry));
         }
         Bind(&negtiveOne);
@@ -539,7 +537,7 @@ void SetElementStub::GenerateCircuit()
                 {
                     Label isThrow(env);
                     Label notThrow(env);
-                    Branch(Word32NotEqual(mayThrow, GetInteger32Constant(0)), &isThrow, &notThrow);
+                    Branch(Word32NotEqual(mayThrow, GetInt32Constant(0)), &isThrow, &notThrow);
                     Bind(&isThrow);
                     ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible), FalseConstant());
                     Bind(&notThrow);
@@ -549,11 +547,11 @@ void SetElementStub::GenerateCircuit()
                 StubDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
                 Return(CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
                                    {thread, receiver, index, value,
-                                    GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
+                                    GetInt32Constant(PropertyAttributes::GetDefaultAttributes())}));
             }
             Bind(&afterOnProtoType);
             {
-                AddrShift attr = Load(INT32_TYPE, pattr);
+                AddrShift attr = Load(MachineType::INT32_TYPE, pattr);
                 Label isAccessor(env);
                 Label notAccessor(env);
                 Branch(IsAccessor(attr), &isAccessor, &notAccessor);
@@ -567,7 +565,7 @@ void SetElementStub::GenerateCircuit()
                         AddrShift elements = GetElements(receiver);
                         Label isDict(env);
                         Label notDict(env);
-                        AddrShift indexOrEntry = Load(INT32_TYPE, pindexOrEntry);
+                        AddrShift indexOrEntry = Load(MachineType::INT32_TYPE, pindexOrEntry);
                         Branch(isDictionary, &isDict, &notDict);
                         Bind(&notDict);
                         {
@@ -585,7 +583,7 @@ void SetElementStub::GenerateCircuit()
                     {
                         Label isThrow(env);
                         Label notThrow(env);
-                        Branch(Word32NotEqual(mayThrow, GetInteger32Constant(0)), &isThrow, &notThrow);
+                        Branch(Word32NotEqual(mayThrow, GetInt32Constant(0)), &isThrow, &notThrow);
                         Bind(&isThrow);
                         ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetReadOnlyProperty), FalseConstant());
                         Bind(&notThrow);
@@ -620,7 +618,7 @@ void SetElementStub::GenerateCircuit()
                 {
                     Label isThrow(env);
                     Label notThrow(env);
-                    Branch(Word32NotEqual(mayThrow, GetInteger32Constant(0)), &isThrow, &notThrow);
+                    Branch(Word32NotEqual(mayThrow, GetInt32Constant(0)), &isThrow, &notThrow);
                     Bind(&isThrow);
                     ThrowTypeAndReturn(thread, GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible), FalseConstant());
                     Bind(&notThrow);
@@ -631,7 +629,7 @@ void SetElementStub::GenerateCircuit()
                     StubDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
                     Return(CallRuntime(addElementInternal, thread, GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
                                        {thread, receiver, index, value,
-                                        GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())}));
+                                        GetInt32Constant(PropertyAttributes::GetDefaultAttributes())}));
                 }
             }
             Bind(&isHeapObj);
@@ -718,7 +716,7 @@ void GetPropertyByIndexStub::GenerateCircuit()
                     FindElementFromNumberDictionary(thread, elements, IntBuildTagged(index));
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
-                Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
                     AddrShift attr = GetAttributesFromDictionary(elements, entry);
@@ -844,7 +842,7 @@ void SetPropertyByIndexStub::GenerateCircuit()
             AddrShift result = CallRuntime(addElementInternal, thread,
                                            GetWord64Constant(FAST_STUB_ID(AddElementInternal)),
                                            {thread, receiver, index, value,
-                                           GetInteger32Constant(PropertyAttributes::GetDefaultAttributes())});
+                                           GetInt32Constant(PropertyAttributes::GetDefaultAttributes())});
             Label success(env);
             Label failed(env);
             Branch(result, &success, &failed);
@@ -907,7 +905,7 @@ void GetPropertyByNameStub::GenerateCircuit()
                 Label hasEntry(env);
                 Label noEntry(env);
                 // if branch condition : entry != -1
-                Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &hasEntry, &noEntry);
+                Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
                 Bind(&hasEntry);
                 {
                     // PropertyAttributes attr(layoutInfo->GetAttr(entry))
@@ -956,7 +954,7 @@ void GetPropertyByNameStub::GenerateCircuit()
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
                 // if branch condition : entry != -1
-                Branch(Word32NotEqual(entry, GetInteger32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
                     // auto value = dict->GetValue(entry)
@@ -1040,10 +1038,10 @@ void FastModStub::GenerateCircuit()
         {
             Label xGtZero(env);
             Label xGtZeroAndyGtZero(env);
-            Branch(Int32GreaterThan(*intX, GetInteger32Constant(0)), &xGtZero, &xNotIntOryNotInt);
+            Branch(Int32GreaterThan(*intX, GetInt32Constant(0)), &xGtZero, &xNotIntOryNotInt);
             Bind(&xGtZero);
             {
-                Branch(Int32GreaterThan(*intY, GetInteger32Constant(0)), &xGtZeroAndyGtZero, &xNotIntOryNotInt);
+                Branch(Int32GreaterThan(*intY, GetInt32Constant(0)), &xGtZeroAndyGtZero, &xNotIntOryNotInt);
                 Bind(&xGtZeroAndyGtZero);
                 {
                     intX = Int32Mod(*intX, *intY);
@@ -1173,14 +1171,14 @@ void FastTypeOfStub::GenerateCircuit()
     DEFVARIABLE(holder, MachineType::TAGGED_POINTER_TYPE, obj);
     AddrShift gConstOffset = PtrAdd(thread, GetPtrConstant(panda::ecmascript::JSThread::GetGlobalConstantOffset()));
     AddrShift booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
-    AddrShift gConstUndefindStr = Load(TAGGED_TYPE, gConstOffset, booleanIndex);
+    AddrShift gConstUndefindStr = Load(MachineType::TAGGED_TYPE, gConstOffset, booleanIndex);
     DEFVARIABLE(resultRep, MachineType::TAGGED_TYPE, gConstUndefindStr);
     Label objIsTrue(env);
     Label objNotTrue(env);
     Label exit(env);
     Label defaultLabel(env);
     AddrShift gConstBooleanStr = Load(
-        TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+        MachineType::TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
     Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
     Bind(&objIsTrue);
     {
@@ -1205,7 +1203,8 @@ void FastTypeOfStub::GenerateCircuit()
             Bind(&objIsNull);
             {
                 resultRep = Load(
-                    TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                    MachineType::TAGGED_TYPE, gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                 Jump(&exit);
             }
             Bind(&objNotNull);
@@ -1216,7 +1215,7 @@ void FastTypeOfStub::GenerateCircuit()
                     &objNotUndefined);
                 Bind(&objIsUndefined);
                 {
-                    resultRep = Load(TAGGED_TYPE, gConstOffset,
+                    resultRep = Load(MachineType::TAGGED_TYPE, gConstOffset,
                         GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
                     Jump(&exit);
                 }
@@ -1238,7 +1237,8 @@ void FastTypeOfStub::GenerateCircuit()
             Bind(&objIsString);
             {
                 resultRep = Load(
-                    TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
+                    MachineType::TAGGED_TYPE, gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
                 Jump(&exit);
             }
             Bind(&objNotString);
@@ -1248,7 +1248,7 @@ void FastTypeOfStub::GenerateCircuit()
                 Branch(IsSymbol(obj), &objIsSymbol, &objNotSymbol);
                 Bind(&objIsSymbol);
                 {
-                    resultRep = Load(TAGGED_TYPE, gConstOffset,
+                    resultRep = Load(MachineType::TAGGED_TYPE, gConstOffset,
                         GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
                     Jump(&exit);
                 }
@@ -1260,13 +1260,15 @@ void FastTypeOfStub::GenerateCircuit()
                     Bind(&objIsCallable);
                     {
                         resultRep = Load(
-                            TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
+                            MachineType::TAGGED_TYPE, gConstOffset,
+                            GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
                         Jump(&exit);
                     }
                     Bind(&objNotCallable);
                     {
                         resultRep = Load(
-                            TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                            MachineType::TAGGED_TYPE, gConstOffset,
+                            GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                         Jump(&exit);
                     }
                 }
@@ -1280,7 +1282,8 @@ void FastTypeOfStub::GenerateCircuit()
             Bind(&objIsNum);
             {
                 resultRep = Load(
-                    TAGGED_TYPE, gConstOffset, GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
+                    MachineType::TAGGED_TYPE, gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
                 Jump(&exit);
             }
             Bind(&objNotNum);
@@ -1321,7 +1324,7 @@ void GetPropertyByValueStub::GenerateCircuit()
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
     AddrShift receiver = PtrArgument(1);
-    DEFVARIABLE(key, TAGGED_TYPE, PtrArgument(2)); /* 2 : 3rd parameter is key */
+    DEFVARIABLE(key, MachineType::TAGGED_TYPE, PtrArgument(2)); /* 2 : 3rd parameter is key */
 
     Label isNumberOrStringSymbol(env);
     Label notNumber(env);
@@ -1343,7 +1346,7 @@ void GetPropertyByValueStub::GenerateCircuit()
         AddrShift index = TryToElementsIndex(*key);
         Label validIndex(env);
         Label notValidIndex(env);
-        Branch(Int32GreaterThanOrEqual(index, GetInteger32Constant(0)), &validIndex, &notValidIndex);
+        Branch(Int32GreaterThanOrEqual(index, GetInt32Constant(0)), &validIndex, &notValidIndex);
         Bind(&validIndex);
         {
             auto getPropertyByIndex = GET_STUBDESCRIPTOR(GetPropertyByIndex);
@@ -1398,7 +1401,7 @@ void SetPropertyByValueStub::GenerateCircuit()
     auto env = GetEnvironment();
     AddrShift thread = PtrArgument(0);
     AddrShift receiver = PtrArgument(1);
-    DEFVARIABLE(key, TAGGED_TYPE, PtrArgument(2)); /* 2 : 3rd parameter is key */
+    DEFVARIABLE(key, MachineType::TAGGED_TYPE, PtrArgument(2)); /* 2 : 3rd parameter is key */
     AddrShift value = Int64Argument(3);            /* 3 : 4th parameter is value */
 
     Label isNumberOrStringSymbol(env);
@@ -1421,7 +1424,7 @@ void SetPropertyByValueStub::GenerateCircuit()
         AddrShift index = TryToElementsIndex(*key);
         Label validIndex(env);
         Label notValidIndex(env);
-        Branch(Int32GreaterThanOrEqual(index, GetInteger32Constant(0)), &validIndex, &notValidIndex);
+        Branch(Int32GreaterThanOrEqual(index, GetInt32Constant(0)), &validIndex, &notValidIndex);
         Bind(&validIndex);
         {
             auto setPropertyByIndex = GET_STUBDESCRIPTOR(SetPropertyByIndex);

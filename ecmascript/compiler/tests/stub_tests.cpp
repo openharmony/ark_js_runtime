@@ -114,22 +114,19 @@ public:
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
-        DEFVARIABLE(z, MachineType::INT32_TYPE, GetInteger32Constant(0));
+        DEFVARIABLE(z, MachineType::INT32_TYPE, GetInt32Constant(0));
         DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
         Label ifTrue(env);
         Label ifFalse(env);
         Label next(env);
-        Branch(Word32Equal(*x, GetInteger32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
+
+        Branch(Word32Equal(*x, GetInt32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
         Bind(&ifTrue);
-        {
-            z = Int32Add(*x, GetInteger32Constant(10));  // 10 : size of entry
-            Jump(&next);
-        }
+        z = Int32Add(*x, GetInt32Constant(10));  // 10 : size of entry
+        Jump(&next);
         Bind(&ifFalse);
-        {
-            z = Int32Add(*x, GetInteger32Constant(100));  // 100 : size of entry
-            Jump(&next);
-        }
+        z = Int32Add(*x, GetInt32Constant(100));  // 100 : size of entry
+        Jump(&next);
         Bind(&next);
         Return(*z);
     }
@@ -166,27 +163,27 @@ public:
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
-        DEFVARIABLE(z, MachineType::INT32_TYPE, GetInteger32Constant(0));
+        DEFVARIABLE(z, MachineType::INT32_TYPE, GetInt32Constant(0));
         DEFVARIABLE(y, MachineType::INT32_TYPE, Int32Argument(0));
         Label loopHead(env);
         Label loopEnd(env);
         Label afterLoop(env);
-        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
+        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
         LoopBegin(&loopHead);
         Label ifTrue(env);
         Label ifFalse(env);
         Label next(env);
-        Branch(Word32Equal(Int32Argument(0), GetInteger32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
+        Branch(Word32Equal(Int32Argument(0), GetInt32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
         Bind(&ifTrue);
-        z = Int32Add(*y, GetInteger32Constant(10));  // 10 : size of entry
-        y = Int32Add(*z, GetInteger32Constant(1));
+        z = Int32Add(*y, GetInt32Constant(10));  // 10 : size of entry
+        y = Int32Add(*z, GetInt32Constant(1));
         Jump(&next);
         Bind(&ifFalse);
-        z = Int32Add(*y, GetInteger32Constant(100));  // 100 : size of entry
+        z = Int32Add(*y, GetInt32Constant(100));  // 100 : size of entry
         Jump(&next);
         Bind(&next);
-        y = Int32Add(*y, GetInteger32Constant(1));
-        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
+        y = Int32Add(*y, GetInt32Constant(1));
+        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
         Bind(&loopEnd);
         LoopEnd(&loopHead);
         Bind(&afterLoop);
@@ -204,7 +201,7 @@ HWTEST_F_L0(StubTest, LoopTest)
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
@@ -233,18 +230,18 @@ public:
         Label loopHead(env);
         Label loopEnd(env);
         Label afterLoop(env);
-        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
+        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
         LoopBegin(&loopHead);
-        x = Int32Add(*z, GetInteger32Constant(3));  // 3 : size of entry
+        x = Int32Add(*z, GetInt32Constant(3));  // 3 : size of entry
         Label ifTrue(env);
         Label next(env);
-        Branch(Word32Equal(*x, GetInteger32Constant(9)), &ifTrue, &next);  // 9 : size of entry
+        Branch(Word32Equal(*x, GetInt32Constant(9)), &ifTrue, &next);  // 9 : size of entry
         Bind(&ifTrue);
         y = Int32Add(*z, *x);
         Jump(&next);
         Bind(&next);
-        y = Int32Add(*y, GetInteger32Constant(1));
-        Branch(Int32LessThan(*y, GetInteger32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
+        y = Int32Add(*y, GetInt32Constant(1));
+        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
         Bind(&loopEnd);
         LoopEnd(&loopHead);
         Bind(&afterLoop);
@@ -255,8 +252,7 @@ public:
 
 HWTEST_F_L0(StubTest, LoopTest1)
 {
-    LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    auto module = stubModule.GetModule();
     LLVMTypeRef paramTys[] = {
         LLVMInt32Type(),
     };
@@ -267,7 +263,7 @@ HWTEST_F_L0(StubTest, LoopTest1)
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, module, function);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
     LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
     assembler.Run();
@@ -1033,6 +1029,7 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
     std::unique_ptr<llvm::Module> rawModule = parseIRFile(inputFilename, err, context);
     if (!rawModule) {
         std::cout << "parseIRFile :" << inputFilename.data() << " failed !" << std::endl;
+        err.print("parseIRFile ", llvm::errs());
         return;
     }
     LLVMModuleRef module = LLVMCloneModule(wrap(rawModule.get()));
