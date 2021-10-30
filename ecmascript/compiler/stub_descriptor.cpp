@@ -248,7 +248,8 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
 CALL_STUB_INIT_DESCRIPTOR(GetPropertyByValue)
 {
     // 3 : 3 input parameters
-    StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
+    StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
     *descriptor = getPropertyByValue;
     // 3 : 3 input parameters
     std::array<MachineType, 3> params = {
@@ -274,18 +275,6 @@ CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
     std::array<MachineType, 5> params = {
         MachineType::UINT64_TYPE, MachineType::UINT64_TYPE, MachineType::UINT32_TYPE,
         MachineType::UINT64_TYPE, MachineType::UINT32_TYPE,
-    };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
-}
-
-CALL_STUB_INIT_DESCRIPTOR(GetTaggedArrayPtr)
-{
-    static StubDescriptor getTaggedArrayPtr("GetTaggedArrayPtr", 0, 1, ArgumentsOrder::DEFAULT_ORDER,
-                                             MachineType::TAGGED_POINTER_TYPE);
-    *descriptor = getTaggedArrayPtr;
-    std::array<MachineType, 1> params = {
-        MachineType::UINT64_TYPE,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
@@ -459,7 +448,8 @@ CALL_STUB_INIT_DESCRIPTOR(SetValueWithBarrier)
 CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
 {
     // 2 : 2 input parameters
-    StubDescriptor stringGetHashCode("NewInternalString", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
+    StubDescriptor stringGetHashCode("NewInternalString", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64_TYPE);
     *descriptor = stringGetHashCode;
     // 2 : 2 input parameters
     std::array<MachineType, 2> params = {

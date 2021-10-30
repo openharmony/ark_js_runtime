@@ -380,7 +380,6 @@ void FindOwnElementStub::GenerateCircuit()
         Bind(&invalidValue);
         Return(GetHoleConstant());
     }
-    // IsDictionary
     Bind(&isDict);
     {
         AddrShift taggedIndex = IntBuildTagged(index);
@@ -1205,7 +1204,7 @@ void FastTypeOfStub::GenerateCircuit()
             {
                 resultRep = Load(
                     MachineType::TAGGED_TYPE, gConstOffset,
-                        GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                    GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                 Jump(&exit);
             }
             Bind(&objNotNull);
@@ -1239,7 +1238,7 @@ void FastTypeOfStub::GenerateCircuit()
             {
                 resultRep = Load(
                     MachineType::TAGGED_TYPE, gConstOffset,
-                        GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
+                    GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
                 Jump(&exit);
             }
             Bind(&objNotString);
@@ -1262,14 +1261,14 @@ void FastTypeOfStub::GenerateCircuit()
                     {
                         resultRep = Load(
                             MachineType::TAGGED_TYPE, gConstOffset,
-                                GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
+                            GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
                         Jump(&exit);
                     }
                     Bind(&objNotCallable);
                     {
                         resultRep = Load(
                             MachineType::TAGGED_TYPE, gConstOffset,
-                                GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                            GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                         Jump(&exit);
                     }
                 }
@@ -1284,7 +1283,7 @@ void FastTypeOfStub::GenerateCircuit()
             {
                 resultRep = Load(
                     MachineType::TAGGED_TYPE, gConstOffset,
-                        GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
+                    GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
                 Jump(&exit);
             }
             Bind(&objNotNum);
