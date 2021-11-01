@@ -31,7 +31,7 @@ namespace kungfu {
     V(StringGetHashCode, 1)          \
     V(FloatMod, 2)                   \
     V(SetValueWithBarrier, 4)        \
-    V(GetTaggedArrayPtrTest, 1)          \
+    V(GetTaggedArrayPtrTest, 1)      \
     V(NewInternalString, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

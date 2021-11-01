@@ -145,22 +145,22 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
     kungfu::Circuit name##Circuit; \
     kungfu::name##Stub name##Stub(& name##Circuit); \
     module.SetStub(FAST_STUB_ID(name), & name##Stub);
-#define SET_ALL_STUB_TO_MODEULE(module) \
-    SET_STUB_TO_MODULE(module, FastAdd) \
-    SET_STUB_TO_MODULE(module, FastSub) \
-    SET_STUB_TO_MODULE(module, FastMul) \
-    SET_STUB_TO_MODULE(module, FastMulGCTest) \
-    SET_STUB_TO_MODULE(module, FastDiv) \
-    SET_STUB_TO_MODULE(module, FastMod) \
-    SET_STUB_TO_MODULE(module, FastTypeOf) \
-    SET_STUB_TO_MODULE(module, FindOwnElement) \
-    SET_STUB_TO_MODULE(module, GetElement) \
-    SET_STUB_TO_MODULE(module, FindOwnElement2) \
-    SET_STUB_TO_MODULE(module, SetElement) \
-    SET_STUB_TO_MODULE(module, GetPropertyByIndex) \
-    SET_STUB_TO_MODULE(module, SetPropertyByIndex) \
-    SET_STUB_TO_MODULE(module, FunctionCallInternal) \
-    SET_STUB_TO_MODULE(module, GetPropertyByName) \
+#define SET_ALL_STUB_TO_MODEULE(module)                 \
+    SET_STUB_TO_MODULE(module, FastAdd)                 \
+    SET_STUB_TO_MODULE(module, FastSub)                 \
+    SET_STUB_TO_MODULE(module, FastMul)                 \
+    SET_STUB_TO_MODULE(module, FastMulGCTest)           \
+    SET_STUB_TO_MODULE(module, FastDiv)                 \
+    SET_STUB_TO_MODULE(module, FastMod)                 \
+    SET_STUB_TO_MODULE(module, FastTypeOf)              \
+    SET_STUB_TO_MODULE(module, FindOwnElement)          \
+    SET_STUB_TO_MODULE(module, GetElement)              \
+    SET_STUB_TO_MODULE(module, FindOwnElement2)         \
+    SET_STUB_TO_MODULE(module, SetElement)              \
+    SET_STUB_TO_MODULE(module, GetPropertyByIndex)      \
+    SET_STUB_TO_MODULE(module, SetPropertyByIndex)      \
+    SET_STUB_TO_MODULE(module, FunctionCallInternal)    \
+    SET_STUB_TO_MODULE(module, GetPropertyByName)       \
     SET_STUB_TO_MODULE(module, GetPropertyByValue)
 
 int main(const int argc, const char **argv)
