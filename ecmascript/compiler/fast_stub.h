@@ -60,6 +60,16 @@ public:
     void GenerateCircuit() override;
 };
 
+class FastMulGCTestStub : public Stub {
+public:
+    // 3 : 3 means argument counts
+    explicit FastMulGCTestStub(Circuit *circuit) : Stub("FastMulGCTest", 3, circuit) {}
+    ~FastMulGCTestStub() = default;
+    NO_MOVE_SEMANTIC(FastMulGCTestStub);
+    NO_COPY_SEMANTIC(FastMulGCTestStub);
+    void GenerateCircuit() override;
+};
+
 class FastDivStub : public Stub {
 public:
     // 2 : 2 means argument counts
@@ -211,4 +221,5 @@ public:
     void GenerateCircuit() override;
 };
 }  // namespace kungfu
+
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H

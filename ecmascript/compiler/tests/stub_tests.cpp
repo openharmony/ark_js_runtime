@@ -74,6 +74,7 @@ public:
     LLVMStubModule stubModule {"fast_stub", "x86_64-unknown-linux-gnu"};
 };
 
+
 HWTEST_F_L0(StubTest, FastLoadElement)
 {
     auto module = stubModule.GetModule();
@@ -797,8 +798,8 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     entryBb = LLVMAppendBasicBlock(stub2, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
     LLVMValueRef value2 = LLVMGetParam(stub2, 0);
-    /* struct ThreadTy fpInfo;
-        fpInfo.fp = calling frame address
+    /* ThreadTy fpInfo struct;
+        fpInfo.fp assign calling frame address
     */
     gep2 = LLVMBuildGEP2(builder, threadTy, value2, indexes2.data(), indexes2.size(), "fpAddr");
     frameAddr = LLVMCallingFp(module, builder);
@@ -827,8 +828,8 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     entryBb = LLVMAppendBasicBlock(stub3, "entry");
     LLVMPositionBuilderAtEnd(builder, entryBb);
     LLVMValueRef value3 = LLVMGetParam(stub3, 0);
-    /* struct ThreadTy fpInfo;
-        fpInfo.fp = calling frame address
+    /* ThreadTy fpInfo
+        fpInfo.fp set calling frame address
     */
     gep2 = LLVMBuildGEP2(builder, threadTy, value3, indexes2.data(), indexes2.size(), "fpAddr");
     /* current frame
@@ -1084,7 +1085,6 @@ void DoSafepoint()
 }
 }
 
-#ifdef NDEBUG
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
@@ -1268,7 +1268,6 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     resVal = getPropertyByValuePtr(thread, strHello.GetTaggedValue().GetRawData(), JSTaggedValue(key).GetRawData());
     EXPECT_EQ(resVal.GetRawData(), 0);
 }
-#endif
 
 HWTEST_F_L0(StubTest, FastTypeOfTest)
 {

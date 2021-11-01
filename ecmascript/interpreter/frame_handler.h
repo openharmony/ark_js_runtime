@@ -119,18 +119,19 @@ public:
     explicit OptimizedEntryFrameHandler(const JSThread *thread);
     ~OptimizedEntryFrameHandler() = default;
     void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
     uintptr_t *fp_ {nullptr};
 };
 
 class FrameIterator {
 public:
-    explicit FrameIterator(JSTaggedType *fp) : fp_(fp) {}
+    explicit FrameIterator(JSTaggedType *fp, const JSThread *thread) : fp_(fp), thread_(thread) {}
     ~FrameIterator() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void HandleRuntimeTrampolines(const RootVisitor &v0, const RootRangeVisitor &v1) const;
 private:
     JSTaggedType *fp_ {nullptr};
+    const JSThread *thread_ {nullptr};
 };
 } // namespace ecmascript
 }  // namespace panda

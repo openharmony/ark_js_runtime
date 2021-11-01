@@ -17,6 +17,7 @@
 #include <vector>
 #include "ecmascript/object_factory.h"
 #include "stub_descriptor.h"
+#include "ecmascript/ecma_macros.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/CodeGen/BuiltinGCs.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -39,6 +40,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/llvm_stackmap_parser.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Disassembler.h"
@@ -64,16 +66,30 @@ void LLVMModuleAssembler::AssembleModule()
 
 void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
 {
-    auto codeBuff = reinterpret_cast<Address>(assembler_.GetCodeBuffer());
+    auto codeBuff = reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
+    std::map<uint64_t, std::string> addr2name;
     for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
         auto stubfunction = stubmodule_->GetStubFunction(i);
+#ifndef NDEBUG
+        LOG_ECMA(INFO) << "  AssembleStubModule :" << i << " th " << std::endl;
+#endif
         if (stubfunction != nullptr) {
-            Address stubEntry = reinterpret_cast<Address>(LLVMGetPointerToGlobal(engine, stubfunction));
+            uintptr_t stubEntry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, stubfunction));
             module->SetStubEntry(i, stubEntry - codeBuff);
+            addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(i)->GetName();
+#ifndef NDEBUG
+            LOG_ECMA(INFO) << "name : " << addr2name[codeBuff] << std::endl;
+#endif
         }
     }
-    assembler_.Disassemble();
+    module->SetHostCodeSectionAddr(codeBuff);
+    // stackmaps ptr and size
+    module->SetStackMapAddr(reinterpret_cast<uintptr_t>(assembler_.GetStackMapsSection()));
+    module->SetStackMapSize(assembler_.GetStackMapsSize());
+#ifndef NDEBUG
+    assembler_.Disassemble(addr2name);
+#endif
 }
 
 static uint8_t *RoundTripAllocateCodeSection(void *object, uintptr_t size, [[maybe_unused]] unsigned alignment,
@@ -129,15 +145,18 @@ bool LLVMAssembler::BuildMCJITEngine()
 void LLVMAssembler::BuildAndRunPasses() const
 {
     LOG_ECMA(INFO) << "BuildAndRunPasses  - ";
-    LLVMPassManagerRef pass = LLVMCreatePassManager();
-    LLVMAddConstantPropagationPass(pass);
-    LLVMAddInstructionCombiningPass(pass);
-    llvm::unwrap(pass)->add(llvm::createRewriteStatepointsForGCLegacyPass());
+    LLVMPassManagerRef pm = LLVMCreatePassManager();
+    LLVMAddConstantPropagationPass(pm);
+    LLVMAddInstructionCombiningPass(pm);
+    llvm::unwrap(pm)->add(llvm::createRewriteStatepointsForGCLegacyPass());
+#ifndef NDEBUG
     char *info = LLVMPrintModuleToString(module_);
     LOG_ECMA(INFO) << "Current Module: " << info;
+    LLVMDumpModule(module_);
     LLVMDisposeMessage(info);
-    LLVMRunPassManager(pass, module_);
-    LLVMDisposePassManager(pass);
+#endif
+    LLVMRunPassManager(pm, module_);
+    LLVMDisposePassManager(pm);
     LOG_ECMA(INFO) << "BuildAndRunPasses  + ";
 }
 

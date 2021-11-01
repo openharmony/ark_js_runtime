@@ -30,6 +30,8 @@ namespace kungfu {
     V(Execute, 5)                    \
     V(StringGetHashCode, 1)          \
     V(FloatMod, 2)                   \
+    V(SetValueWithBarrier, 4)        \
+    V(GetTaggedArrayPtrTest, 1)      \
     V(NewInternalString, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -46,8 +48,8 @@ namespace kungfu {
     V(IsSpecialIndexedObjForGet, 1) \
     V(GetPropertyByName, 3)         \
     V(GetElement, 2)                \
-    V(SetElement, 5)                \
     V(SetPropertyByName, 5)         \
+    V(SetElement, 5)                \
     V(SetGlobalOwnProperty, 5)      \
     V(GetGlobalOwnProperty, 3)      \
     V(SetOwnPropertyByName, 4)      \
@@ -63,7 +65,8 @@ namespace kungfu {
     V(FunctionCallInternal, 5)      \
     V(SetPropertyByIndex, 4)        \
     V(GetPropertyByValue, 3)        \
-    V(SetPropertyByValue, 4)
+    V(SetPropertyByValue, 4)        \
+    V(FastMulGCTest, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \

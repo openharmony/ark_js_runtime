@@ -22,10 +22,9 @@
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
-using Address = uintptr_t;
 class PUBLIC_API StubModule {
 public:
-    Address GetStubEntry(int index)
+    uintptr_t GetStubEntry(int index)
     {
         return code_->GetDataOffsetAddress() + fastStubEntries_[index];
     }
@@ -35,18 +34,63 @@ public:
     {
         code_ = code;
     }
-    void SetStubEntry(int index, Address offset)
+    void SetStackMapData(MachineCode *stackMapData)
+    {
+        stackMapData_ = stackMapData;
+    }
+    void SetStubEntry(int index, uintptr_t offset)
     {
         fastStubEntries_[index] = offset;
+    }
+    void SetHostCodeSectionAddr(uintptr_t addr)
+    {
+        hostCodeSectionAddr_ = addr;
+    }
+    uintptr_t GetHostCodeSectionAddr() const
+    {
+        return hostCodeSectionAddr_;
+    }
+    void SetDeviceCodeSectionAddr(uintptr_t addr)
+    {
+        devicesCodeSectionAddr_ = addr;
+    }
+    uintptr_t GetDeviceCodeSectionAddr() const
+    {
+        return devicesCodeSectionAddr_;
     }
     JSTaggedValue GetCode()
     {
         return JSTaggedValue(code_);
     }
+    JSTaggedValue GetStackMapData() const
+    {
+        return JSTaggedValue(stackMapData_);
+    }
+    void SetStackMapAddr(uintptr_t addr)
+    {
+        stackMapAddr_ = addr;
+    }
+    uintptr_t GetStackMapAddr() const
+    {
+        return stackMapAddr_;
+    }
+    void SetStackMapSize(int len)
+    {
+        stackMapSize_ = len;
+    }
+    int GetStackMapSize() const
+    {
+        return stackMapSize_;
+    }
 
 private:
-    std::array<Address, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
+    std::array<uintptr_t, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
+    uintptr_t hostCodeSectionAddr_  {0};
+    uintptr_t devicesCodeSectionAddr_ {0};
     MachineCode *code_ {nullptr};
+    MachineCode *stackMapData_ {nullptr};
+    uintptr_t stackMapAddr_ {0};
+    int stackMapSize_ {0};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_STUB_MODULE_H

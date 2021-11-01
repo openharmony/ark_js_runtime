@@ -15,6 +15,7 @@
 
 #include "stub_module.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 
 namespace panda::ecmascript {
 void StubModule::Save(const std::string &filename)
@@ -23,25 +24,73 @@ void StubModule::Save(const std::string &filename)
         std::ofstream modulefile(filename.c_str(), std::ofstream::binary);
         /* write stub entries offset  */
         modulefile.write(reinterpret_cast<char *>(fastStubEntries_.data()),
-                         sizeof(uintptr_t) * kungfu::FAST_STUB_MAXCOUNT);
-        /* write code length & code buff */
+                         sizeof(uintptr_t) * (kungfu::FAST_STUB_MAXCOUNT));
         int codeSize = code_->GetInstructionSizeInBytes().GetInt();
+        /* write host code section start addr */
+        modulefile.write(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
+        /* write stackmap offset */
+        int stackmapOffset = sizeof(uintptr_t) * (kungfu::FAST_STUB_MAXCOUNT) + 2*sizeof(int)
+            + codeSize;
+        modulefile.write(reinterpret_cast<char *>(&stackmapOffset),
+                         sizeof(int));
+        /* write code length & code buff */
         modulefile.write(reinterpret_cast<char *>(&codeSize), sizeof(codeSize));
         modulefile.write(reinterpret_cast<char *>(code_->GetDataOffsetAddress()), codeSize);
+        /* write stackmap buff */
+        int stackmapSize = GetStackMapSize();
+#ifndef NDEBUG
+        LOG_ECMA(INFO) << "stackmap host addr:" << GetStackMapAddr() << " stackmapSize:" << stackmapSize << std::endl;
+#endif
+        modulefile.write(reinterpret_cast<char *>(&stackmapSize), sizeof(stackmapSize));
+        modulefile.write(reinterpret_cast<char *>(GetStackMapAddr()), stackmapSize);
+
+        uint8_t *ptr = reinterpret_cast<uint8_t *>(GetStackMapAddr());
+        kungfu::LLVMStackMapParser::GetInstance().CalculateStackMap(ptr);
+
         modulefile.close();
     }
 }
 
 void StubModule::Load(JSThread *thread, const std::string &filename)
 {
+#ifndef NDEBUG
+    Logger::SetLevel(Logger::Level::INFO);
+#endif
+    //  now MachineCode is non movable, code and stackmap sperately is saved to MachineCode
+    // by calling NewMachineCodeObject.
+    //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
+    // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     std::ifstream modulefile(filename.c_str(), std::ofstream::binary);
-    modulefile.read(reinterpret_cast<char *>(fastStubEntries_.data()), sizeof(uintptr_t) * kungfu::FAST_STUB_MAXCOUNT);
+    modulefile.read(reinterpret_cast<char *>(fastStubEntries_.data()),
+        sizeof(uintptr_t) * (kungfu::FAST_STUB_MAXCOUNT));
+    /* read  host code section start addr  */
+    modulefile.read(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
+    int stackmapOffset;
+    modulefile.read(reinterpret_cast<char *>(&stackmapOffset), sizeof(stackmapOffset));
     int codeSize = 0;
     modulefile.read(reinterpret_cast<char *>(&codeSize), sizeof(codeSize));
     auto factory = thread->GetEcmaVM()->GetFactory();
     auto codeHandle = factory->NewMachineCodeObject(codeSize, nullptr);
     modulefile.read(reinterpret_cast<char *>(codeHandle->GetDataOffsetAddress()), codeSize);
     SetCode(*codeHandle);
+#ifndef NDEBUG
+    LOG_ECMA(INFO) << "codeSection adress for device:" << std::hex << codeHandle->GetDataOffsetAddress() <<
+        " codeSize:" << codeSize << std::endl;
+#endif
+    SetDeviceCodeSectionAddr(codeHandle->GetDataOffsetAddress());
+    /* read stackmap */
+
+    int stackmapSize;
+    modulefile.read(reinterpret_cast<char *>(&stackmapSize), sizeof(stackmapSize));
+    SetStackMapSize(stackmapSize);
+    auto dataHandle = factory->NewMachineCodeObject(stackmapSize, nullptr);
+    modulefile.read(reinterpret_cast<char *>(dataHandle->GetDataOffsetAddress()), stackmapSize);
+    SetStackMapData(*dataHandle);
+#ifndef NDEBUG
+    LOG_ECMA(INFO) << "stackmapSize adress for device:" << std::hex << dataHandle->GetDataOffsetAddress()
+        << " stackmapSize:"<< stackmapSize << std::endl;
+#endif
+    SetStackMapAddr(reinterpret_cast<uintptr_t>(dataHandle->GetDataOffsetAddress()));
     modulefile.close();
 }
 }  // namespace panda::ecmascript

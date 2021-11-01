@@ -225,8 +225,9 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
     uintptr_t *current = fp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        std::vector<uintptr_t> slotAddrs;
+        std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(current + 1));
+        LOG_ECMA(INFO) << __FUNCTION__ << " returnAddr :" << returnAddr << std::endl;
         bool ret = kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
             returnAddr,
             reinterpret_cast<uintptr_t>(fp_),
@@ -247,31 +248,47 @@ void OptimizedEntryFrameHandler::PrevFrame()
     sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
 }
 
-void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
+void FrameIterator::HandleRuntimeTrampolines(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    uintptr_t *current = fp_;
-    if (current != nullptr) {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        std::vector<uintptr_t> slotAddrs;
-        auto returnAddr = *(current + 1);
+    if (thread_) {
+        uintptr_t *fp = thread_->GetLastOptCallRuntimePc();
+        if (fp == nullptr) {
+            return;
+        }
+        std::set<uintptr_t> slotAddrs;
+        auto returnAddr = *(fp + 1);
+#ifndef NDEBUG
+        LOG_ECMA(INFO) << __FUNCTION__ << " returnAddr :" << returnAddr << " fp: " << fp << std::endl;
+#endif
         bool ret = kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
             reinterpret_cast<uintptr_t>(returnAddr),
-            reinterpret_cast<uintptr_t>(fp_),
+            reinterpret_cast<uintptr_t>(fp),
             slotAddrs);
         if (ret == false) {
+#ifndef NDEBUG
+            LOG_ECMA(INFO) << " stackmap don't found returnAddr " << std::endl;
+#endif
             return;
         }
         for (auto &address: slotAddrs) {
+#ifndef NDEBUG
+            LOG_ECMA(INFO) << "stackmap address : " << std::hex << address << std::endl;
+#endif
             v0(Root::ROOT_FRAME, ObjectSlot(address));
         }
     }
 }
 
+
 void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
     JSTaggedType *current = fp_;
+    // handle runtimeTrampolines Frame in order get stub returnAddress which used by
+    // stackMap
+    HandleRuntimeTrampolines(v0, v1);
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
+        LOG_ECMA(INFO) << __FUNCTION__ << "type = " << static_cast<uint64_t>(type) << std::endl;
         if (type == FrameType::INTERPRETER_FRAME) {
             FrameState *state = reinterpret_cast<FrameState *>(current) - 1;
             InterpretedFrameHandler(current).Iterate(v0, v1);
@@ -287,7 +304,6 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
                 reinterpret_cast<intptr_t>(current) -
                 MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
-            OptimizedEntryFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1);
             current = reinterpret_cast<JSTaggedType *>(state->threadFp);
         }
     }

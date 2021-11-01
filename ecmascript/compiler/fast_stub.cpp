@@ -569,13 +569,13 @@ void SetElementStub::GenerateCircuit()
                         Branch(isDictionary, &isDict, &notDict);
                         Bind(&notDict);
                         {
-                            StoreElement(elements, indexOrEntry, value);
+                            StoreElement(thread, elements, indexOrEntry, value);
                             UpdateRepresention(LoadHClass(receiver), value);
                             Return(TrueConstant());
                         }
                         Bind(&isDict);
                         {
-                            UpdateValueAndAttributes(elements, indexOrEntry, value, attr);
+                            UpdateValueAndAttributes(thread, elements, indexOrEntry, value, attr);
                             Return(TrueConstant());
                         }
                     }
@@ -812,7 +812,7 @@ void SetPropertyByIndexStub::GenerateCircuit()
                         Branch(Word64NotEqual(value1, GetHoleConstant()), &notHole, &loopExit);
                         Bind(&notHole);
                         {
-                            StoreElement(elements, index, value);
+                            StoreElement(thread, elements, index, value);
                             Return(GetUndefinedConstant());
                         }
                     }
@@ -1162,6 +1162,83 @@ void FastModStub::GenerateCircuit()
         }
     }
 }
+
+#ifndef NDEBUG
+void FastMulGCTestStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    env->GetCircuit()->SetFrameType(FrameType::OPTIMIZED_ENTRY_FRAME);
+    AddrShift thread = PtrArgument(0);
+    (void)thread;
+    AddrShift x = Int64Argument(1);
+    AddrShift y = Int64Argument(2);
+
+    DEFVARIABLE(intX, MachineType::INT64_TYPE, 0);
+    DEFVARIABLE(intY, MachineType::INT64_TYPE, 0);
+    DEFVARIABLE(valuePtr, MachineType::INT64_TYPE, 0);
+    DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
+    DEFVARIABLE(doubleY, MachineType::FLOAT64_TYPE, 0);
+    Label xIsNumber(env);
+    Label xNotNumberOryNotNumber(env);
+    Label xIsNumberAndyIsNumber(env);
+    Label xIsDoubleAndyIsDouble(env);
+    Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
+    Bind(&xIsNumber);
+    {
+        Label yIsNumber(env);
+        // if right.IsNumber()
+        Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
+        Bind(&yIsNumber);
+        {
+            Label xIsInt(env);
+            Label xNotInt(env);
+            Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
+            Bind(&xIsInt);
+            {
+                intX = TaggedCastToInt64(x);
+                doubleX = CastInt64ToFloat64(*intX);
+                Jump(&xIsNumberAndyIsNumber);
+            }
+            Bind(&xNotInt);
+            {
+                doubleX = TaggedCastToDouble(x);
+                Jump(&xIsNumberAndyIsNumber);
+            }
+        }
+    }
+    Bind(&xNotNumberOryNotNumber);
+    Return(GetHoleConstant());
+    Label yIsInt(env);
+    Label yNotInt(env);
+    Bind(&xIsNumberAndyIsNumber);
+    {
+        Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
+        Bind(&yIsInt);
+        {
+            intY = TaggedCastToInt64(y);
+            doubleY = CastInt64ToFloat64(*intY);
+            Jump(&xIsDoubleAndyIsDouble);
+        }
+        Bind(&yNotInt);
+        {
+            doubleY = TaggedCastToDouble(y);
+            Jump(&xIsDoubleAndyIsDouble);
+        }
+    }
+    Bind(&xIsDoubleAndyIsDouble);
+    doubleX = DoubleMul(*doubleX, *doubleY);
+    StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtrTest);
+    AddrShift ptr1 = CallRuntime(getTaggedArrayPtr, thread, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)),
+        {thread});
+    AddrShift ptr2 = CallRuntime(getTaggedArrayPtr, thread, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)),
+        {thread});
+    (void)ptr2;
+    auto value = Load(MachineType::INT64_TYPE, ptr1);
+    AddrShift value2 = CastInt64ToFloat64(value);
+    doubleX = DoubleMul(*doubleX, value2);
+    Return(DoubleBuildTagged(*doubleX));
+}
+#endif
 
 void FastTypeOfStub::GenerateCircuit()
 {

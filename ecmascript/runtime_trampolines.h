@@ -50,9 +50,12 @@ public:
     static uint32_t GetHash32(uint64_t key, uint64_t len);
     static int32_t FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num);
     static uint32_t StringGetHashCode(uint64_t ecmaString);
+    static TaggedArray* GetTaggedArrayPtrTest(uint64_t argThread);
     static uint64_t Execute(uint64_t argThread, uint64_t argFunc, uint64_t thisArg, uint32_t argc, uint64_t argArgv);
+    static void SetValueWithBarrier(uint64_t argThread, uint64_t argAddr, uint64_t argOffset, uint64_t argValue);
     static double FloatMod(double left, double right);
     static uint64_t NewInternalString(uint64_t argThread, uint64_t argKey);
+    static void PrintHeapReginInfo(uint64_t argThread);
 };
 
 class CallRuntimeTrampolinesScope {

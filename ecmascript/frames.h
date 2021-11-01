@@ -247,13 +247,13 @@ public:
 
 class InterpretedFrameStateBase {
 public:
-    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     uintptr_t frameType;
 };
 
 class OptimizedEntryFrameState {
 public:
-    JSTaggedType *threadFp; // for gc
+    JSTaggedType  *threadFp; // for gc
     OptimizedFrameStateBase base;
     static size_t GetFrameStateOffsetFromSp()
     {

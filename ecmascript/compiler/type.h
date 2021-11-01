@@ -20,8 +20,8 @@
 
 namespace kungfu {
 using GateType = uint8_t;
-enum TypeCode : GateType {
-    // for HIR
+enum class TypeCode : GateType {
+    // for AOT
     NOTYPE,
     JS_ANY,
     JS_NULL,
@@ -42,9 +42,9 @@ enum TypeCode : GateType {
     JS_UINT32ARRAY,
     JS_FLOAT32ARRAY,
     JS_FLOAT64ARRAY,
-    // for MIR
-    IS_REFERENCE,
-    NOT_REFERENCE,
+    // for Stub
+    POINTER_TYPE,
+    TAGGED_POINTER_TYPE,
 };
 
 class Type {

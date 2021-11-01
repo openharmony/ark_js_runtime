@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
@@ -89,12 +90,15 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
     if (!stubCode_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&stubCode_)));
     }
+    if (!stubStackMap_.IsHole()) {
+        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&stubStackMap_)));
+    }
     // visit global Constant
     globalConst_.VisitRangeSlot(v1);
     // visit stack roots
-    FrameIterator iterator(currentFrame_);
+    FrameIterator iterator(currentFrame_, this);
     iterator.Iterate(v0, v1);
-    // visit internal call params
+    // visit internal call params；
     internalCallParams_->Iterate(v1);
     // visit tagged handle storage roots
     if (currentHandleStorageIndex_ != -1) {
@@ -222,6 +226,14 @@ void JSThread::LoadFastStubModule(const char *moduleFile)
     for (int i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
         fastStubEntires_[i] = stubModule.GetStubEntry(i);
     }
+    uint8_t *ptr = reinterpret_cast<uint8_t *>(stubModule.GetStackMapAddr());
+    Address hostCodeSectionAddr = stubModule.GetHostCodeSectionAddr();
+    uintptr_t deviceCodeSectionAddr = stubModule.GetDeviceCodeSectionAddr();
+    kungfu::LLVMStackMapParser::GetInstance().CalculateStackMap(ptr, hostCodeSectionAddr, deviceCodeSectionAddr);
+#ifdef NDEBUG
+    kungfu::LLVMStackMapParser::GetInstance().Print();
+#endif
     stubCode_ = stubModule.GetCode();
+    stubStackMap_ = stubModule.GetStackMapData();
 }
 }  // namespace panda::ecmascript
