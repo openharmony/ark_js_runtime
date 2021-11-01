@@ -1163,6 +1163,7 @@ void FastModStub::GenerateCircuit()
     }
 }
 
+#ifndef NDEBUG
 void FastMulGCTestStub::GenerateCircuit()
 {
     auto env = GetEnvironment();
@@ -1237,6 +1238,7 @@ void FastMulGCTestStub::GenerateCircuit()
     doubleX = DoubleMul(*doubleX, value2);
     Return(DoubleBuildTagged(*doubleX));
 }
+#endif
 
 void FastTypeOfStub::GenerateCircuit()
 {

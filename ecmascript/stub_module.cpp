@@ -53,6 +53,13 @@ void StubModule::Save(const std::string &filename)
 
 void StubModule::Load(JSThread *thread, const std::string &filename)
 {
+#ifndef NDEBUG
+    Logger::SetLevel(Logger::Level::INFO);
+#endif
+    //  now MachineCode is non movable, code and stackmap sperately is saved to MachineCode
+    // by calling NewMachineCodeObject.
+    //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
+    // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     std::ifstream modulefile(filename.c_str(), std::ofstream::binary);
     modulefile.read(reinterpret_cast<char *>(fastStubEntries_.data()),
         sizeof(uintptr_t) * (kungfu::FAST_STUB_MAXCOUNT));
@@ -76,7 +83,6 @@ void StubModule::Load(JSThread *thread, const std::string &filename)
     int stackmapSize;
     modulefile.read(reinterpret_cast<char *>(&stackmapSize), sizeof(stackmapSize));
     SetStackMapSize(stackmapSize);
-
     auto dataHandle = factory->NewMachineCodeObject(stackmapSize, nullptr);
     modulefile.read(reinterpret_cast<char *>(dataHandle->GetDataOffsetAddress()), stackmapSize);
     SetStackMapData(*dataHandle);

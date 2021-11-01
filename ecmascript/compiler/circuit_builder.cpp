@@ -338,6 +338,8 @@ AddrShift CircuitBuilder::NewCallGate(StubDescriptor *descriptor, AddrShift thre
                                       std::initializer_list<AddrShift> args)
 {
     std::vector<AddrShift> inputs;
+    // 2 means extra two input gates (target thread)
+    const size_t extraparamCnt = 2;
     auto dependEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
     inputs.push_back(dependEntry);
     inputs.push_back(target);
@@ -347,11 +349,9 @@ AddrShift CircuitBuilder::NewCallGate(StubDescriptor *descriptor, AddrShift thre
     }
     OpCode opcode = GetCallOpCodeFromMachineType(descriptor->GetReturnType());
     if (descriptor->GetReturnType() == MachineType::TAGGED_POINTER_TYPE) {
-        // 2 : 2 means extra two input gates (target thread )
-        return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::TAGGED_POINTER_TYPE);
+        return circuit_->NewGate(opcode, args.size() + extraparamCnt, inputs, TypeCode::TAGGED_POINTER_TYPE);
     }
-    // 2 : 2 means extra two input gates (target thread )
-    return circuit_->NewGate(opcode, args.size() + 2, inputs, TypeCode::JS_ANY);
+    return circuit_->NewGate(opcode, args.size() + extraparamCnt, inputs, TypeCode::JS_ANY);
 }
 
 AddrShift CircuitBuilder::NewCallGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,

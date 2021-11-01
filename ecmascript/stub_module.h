@@ -85,12 +85,12 @@ public:
 
 private:
     std::array<uintptr_t, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
-    uintptr_t hostCodeSectionAddr_ = 0;
-    uintptr_t devicesCodeSectionAddr_ = 0;
+    uintptr_t hostCodeSectionAddr_  {0};
+    uintptr_t devicesCodeSectionAddr_ {0};
     MachineCode *code_ {nullptr};
     MachineCode *stackMapData_ {nullptr};
-    uintptr_t stackMapAddr_  = 0;
-    int stackMapSize_ = 0;
+    uintptr_t stackMapAddr_ {0};
+    int stackMapSize_ {0};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_STUB_MODULE_H

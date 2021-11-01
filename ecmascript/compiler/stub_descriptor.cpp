@@ -65,6 +65,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastMul)
     descriptor->SetParameters(params.data());
 }
 
+#ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {
     // 3 : 3 input parameters
@@ -78,6 +79,9 @@ CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
     };
     descriptor->SetParameters(params.data());
 }
+#else
+CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest) {}
+#endif
 
 CALL_STUB_INIT_DESCRIPTOR(FastDiv)
 {

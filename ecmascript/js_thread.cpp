@@ -230,8 +230,9 @@ void JSThread::LoadFastStubModule(const char *moduleFile)
     Address hostCodeSectionAddr = stubModule.GetHostCodeSectionAddr();
     uintptr_t deviceCodeSectionAddr = stubModule.GetDeviceCodeSectionAddr();
     kungfu::LLVMStackMapParser::GetInstance().CalculateStackMap(ptr, hostCodeSectionAddr, deviceCodeSectionAddr);
+#ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
-
+#endif
     stubCode_ = stubModule.GetCode();
     stubStackMap_ = stubModule.GetStackMapData();
 }

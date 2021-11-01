@@ -149,7 +149,6 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
     SET_STUB_TO_MODULE(module, FastAdd)                 \
     SET_STUB_TO_MODULE(module, FastSub)                 \
     SET_STUB_TO_MODULE(module, FastMul)                 \
-    SET_STUB_TO_MODULE(module, FastMulGCTest)           \
     SET_STUB_TO_MODULE(module, FastDiv)                 \
     SET_STUB_TO_MODULE(module, FastMod)                 \
     SET_STUB_TO_MODULE(module, FastTypeOf)              \
@@ -162,6 +161,11 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
     SET_STUB_TO_MODULE(module, FunctionCallInternal)    \
     SET_STUB_TO_MODULE(module, GetPropertyByName)       \
     SET_STUB_TO_MODULE(module, GetPropertyByValue)
+
+#ifndef NDEBUG
+#define SET_TEST_STUB_TO_MODEULE(module)                \
+    SET_STUB_TO_MODULE(module, FastMulGCTest)
+#endif
 
 int main(const int argc, const char **argv)
 {
@@ -189,7 +193,9 @@ int main(const int argc, const char **argv)
 
     kungfu::StubAotCompiler mouldeBuilder;
     SET_ALL_STUB_TO_MODEULE(mouldeBuilder);
-
+#ifndef NDEBUG
+    SET_TEST_STUB_TO_MODEULE(mouldeBuilder);
+#endif
     panda::ecmascript::StubModule stubModule;
     mouldeBuilder.BuildStubModuleAndSave(tripes.c_str(), &stubModule, moduleFilename);
 
