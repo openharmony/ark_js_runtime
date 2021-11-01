@@ -1138,7 +1138,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_TYPEOFDYN_PREF) {
         LOG_INST() << "intrinsics::typeofdyn";
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastTypeOf));
+        typedef JSTaggedValue (*PFFastTypeOf)(JSThread *, JSTaggedValue);
+        auto fastTypeOfPtr = reinterpret_cast<PFFastTypeOf>(stubAddr);
+        JSTaggedValue res = fastTypeOfPtr(thread, GET_ACC());
+#else
         JSTaggedValue res = FastRuntimeStub::FastTypeOf(thread, GET_ACC());
+#endif
         SET_ACC(res);
         DISPATCH(BytecodeInstruction::Format::PREF_NONE);
     }
@@ -1331,8 +1338,15 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << vs;
         JSTaggedValue left = GET_VREG_VALUE(vs);
         JSTaggedValue right = GET_ACC();
-        // fast path
+
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMod));
+        typedef JSTaggedValue (*PFFastMod)(JSTaggedValue, JSTaggedValue);
+        auto fastModPtr = reinterpret_cast<PFFastMod>(stubAddr);
+        JSTaggedValue res = fastModPtr(left, right);
+#else
         JSTaggedValue res = FastRuntimeStub::FastMod(left, right);
+#endif
         if (!res.IsHole()) {
             SET_ACC(res);
         } else {
@@ -1350,7 +1364,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastEqual));
+        typedef JSTaggedValue (*PFFastEqual)(JSTaggedValue, JSTaggedValue);
+        auto fastEqualPtr = reinterpret_cast<PFFastEqual>(stubAddr);
+        JSTaggedValue res = fastEqualPtr(left, right);
+#else
         JSTaggedValue res = FastRuntimeStub::FastEqual(left, right);
+#endif
         if (!res.IsHole()) {
             SET_ACC(res);
         } else {

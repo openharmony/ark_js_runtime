@@ -1550,4 +1550,87 @@ void SetPropertyByValueStub::GenerateCircuit()
     Bind(&exit);
     Return(GetHoleConstant());
 }
+
+void FastEqualStub::GenerateCircuit()
+{
+    auto env = GetEnvironment();
+    AddrShift x = Int64Argument(0);
+    AddrShift y = Int64Argument(1);
+    DEFVARIABLE(doubleX, MachineType::FLOAT64_TYPE, 0);
+    Label xIsEqualy(env);
+    Label xIsNotEqualy(env);
+    Branch(Word64Equal(x, y), &xIsEqualy, &xIsNotEqualy);
+    Bind(&xIsEqualy);
+    {
+        Label xIsDouble(env);
+        Label xNotDoubleOrxNotNan(env);
+        Branch(TaggedIsDouble(x), &xIsDouble, &xNotDoubleOrxNotNan);
+        Bind(&xIsDouble);
+        {
+            AddrShift doubleX = TaggedCastToDouble(x);
+            Label xIsNan(env);
+            Branch(DoubleIsNAN(doubleX), &xIsNan, &xNotDoubleOrxNotNan);
+            Bind(&xIsNan);
+            Return(TaggedFalse());
+        }
+        Bind(&xNotDoubleOrxNotNan);
+        Return(TaggedTrue());
+    }
+    Bind(&xIsNotEqualy);
+    {
+        Label xIsNumber(env);
+        Label xNotNumberAndxNotIntAndyNotInt(env);
+        Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberAndxNotIntAndyNotInt);
+        Bind(&xIsNumber);
+        {
+            Label xIsInt(env);
+            Branch(TaggedIsInt(x), &xIsInt, &xNotNumberAndxNotIntAndyNotInt);
+            Bind(&xIsInt);
+            {
+                Label yIsInt(env);
+                Branch(TaggedIsInt(y), &yIsInt, &xNotNumberAndxNotIntAndyNotInt);
+                Bind(&yIsInt);
+                Return(TaggedFalse());
+            }
+        }
+        Bind(&xNotNumberAndxNotIntAndyNotInt);
+        {
+            Label yIsUndefinedOrNull(env);
+            Label xyNotUndefinedAndNull(env);
+            Branch(TaggedIsUndefinedOrNull(y), &yIsUndefinedOrNull, &xyNotUndefinedAndNull);
+            Bind(&yIsUndefinedOrNull);
+            {
+                Label xIsHeapObject(env);
+                Label xNotHeapObject(env);
+                Branch(TaggedIsHeapObject(x), &xIsHeapObject, &xNotHeapObject);
+                Bind(&xIsHeapObject);
+                Return(TaggedFalse());
+                Bind(&xNotHeapObject);
+                {
+                    Label xIsUndefinedOrNull(env);
+                    Branch(TaggedIsUndefinedOrNull(x), &xIsUndefinedOrNull, &xyNotUndefinedAndNull);
+                    Bind(&xIsUndefinedOrNull);
+                    Return(TaggedTrue());
+                }
+            }
+            Bind(&xyNotUndefinedAndNull);
+            {
+                Label xIsBoolean(env);
+                Label xNotBooleanAndyNotSpecial(env);
+                Branch(TaggedIsBoolean(x), &xIsBoolean, &xNotBooleanAndyNotSpecial);
+                Bind(&xIsBoolean);
+                {
+                    Label yIsSpecial(env);
+                    Branch(TaggedIsSpecial(y), &yIsSpecial, &xNotBooleanAndyNotSpecial);
+                    Bind(&yIsSpecial);
+                    Return(TaggedFalse());
+                }
+                Bind(&xNotBooleanAndyNotSpecial);
+                {
+                    Return(GetHoleConstant());
+                }
+            }
+        }
+    }
+}
 }  // namespace kungfu

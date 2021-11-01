@@ -1354,4 +1354,73 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     EXPECT_EQ(resultVal9, globalConst->GetObjectString());
     EXPECT_EQ(resultVal9, expectResult9);
 }
+
+HWTEST_F_L0(StubTest, FastEqualTest)
+{
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastEqual));
+    Circuit netOfGates;
+    FastEqualStub optimizer(&netOfGates);
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    assembler.Run();
+    LLVMDumpModule(module);
+    auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
+    // test for 1 == 1
+    auto resA = fn(JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData());
+    auto expectA = FastRuntimeStub::FastEqual(JSTaggedValue(1), JSTaggedValue(1));
+    EXPECT_EQ(resA, expectA);
+
+    // test for nan == nan
+    double nan = std::numeric_limits<double>::quiet_NaN();
+    auto resB = fn(JSTaggedValue(nan).GetRawData(), JSTaggedValue(nan).GetRawData());
+    auto expectB = FastRuntimeStub::FastEqual(JSTaggedValue(nan), JSTaggedValue(nan));
+    EXPECT_EQ(resB, expectB);
+
+    // test for undefined == null
+    auto resC = fn(JSTaggedValue::Undefined().GetRawData(), JSTaggedValue::Null().GetRawData());
+    auto expectC = FastRuntimeStub::FastEqual(JSTaggedValue::Undefined(), JSTaggedValue::Null());
+    EXPECT_EQ(resC, expectC);
+
+    // test for "hello world" == undefined
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    auto str = factory->NewFromStdString("hello world");
+    auto resD = fn(str.GetTaggedValue().GetRawData(), JSTaggedValue::Undefined().GetRawData());
+    auto expectD = FastRuntimeStub::FastEqual(str.GetTaggedValue(), JSTaggedValue::Undefined());
+    EXPECT_EQ(resD, expectD);
+
+    // test for true == hole
+    auto resE = fn(JSTaggedValue::True().GetRawData(), JSTaggedValue::Hole().GetRawData());
+    auto expectE = FastRuntimeStub::FastEqual(JSTaggedValue::True(), JSTaggedValue::Hole());
+    EXPECT_EQ(resE, expectE);
+
+    // test for "hello world" == "hello world"
+    auto resF = fn(str.GetTaggedValue().GetRawData(), str.GetTaggedValue().GetRawData());
+    auto expectF = FastRuntimeStub::FastEqual(str.GetTaggedValue(), str.GetTaggedValue());
+    EXPECT_EQ(resF, expectF);
+
+    // test for 5.2 == 5.2
+    auto resG = fn(JSTaggedValue(5.2).GetRawData(), JSTaggedValue(5.2).GetRawData());
+    auto expectG = FastRuntimeStub::FastEqual(JSTaggedValue(5.2), JSTaggedValue(5.2));
+    EXPECT_EQ(resG, expectG);
+
+    // test for false == false
+    auto resH = fn(JSTaggedValue::False().GetRawData(), JSTaggedValue::False().GetRawData());
+    auto expectH = FastRuntimeStub::FastEqual(JSTaggedValue::False(), JSTaggedValue::False());
+    EXPECT_EQ(resH, expectH);
+
+    // test for obj == obj
+    JSHandle<JSObject> obj1 = factory->NewEmptyJSObject();
+    JSHandle<JSObject> obj2 = factory->NewEmptyJSObject();
+    FastRuntimeStub::SetOwnElement(thread, obj1.GetTaggedValue(), 1, JSTaggedValue(1));
+    FastRuntimeStub::SetOwnElement(thread, obj2.GetTaggedValue(), 1, JSTaggedValue(1));
+    auto resI = fn(obj1.GetTaggedValue().GetRawData(), obj2.GetTaggedValue().GetRawData());
+    auto expectI = FastRuntimeStub::FastEqual(obj1.GetTaggedValue(), obj2.GetTaggedValue());
+    EXPECT_EQ(resI, expectI);
+}
 }  // namespace panda::test

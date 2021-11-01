@@ -851,6 +851,31 @@ public:
             Word32Equal(SExtInt1ToInt32(diff2), GetInt32Constant(1))));
     }
 
+        AddrShift TaggedIsNull(AddrShift x)
+    {
+        return Word64Equal(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::VALUE_NULL));
+    }
+
+    AddrShift TaggedIsUndefinedOrNull(AddrShift x)
+    {
+        return TruncInt32ToInt1(Word32Or(SExtInt1ToInt32(TaggedIsUndefined(x)), SExtInt1ToInt32(TaggedIsNull(x))));
+    }
+
+    AddrShift TaggedIsTrue(AddrShift x)
+    {
+        return Word64Equal(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::VALUE_TRUE));
+    }
+
+    AddrShift TaggedIsFalse(AddrShift x)
+    {
+        return Word64Equal(x, GetWord64Constant(panda::ecmascript::JSTaggedValue::VALUE_FALSE));
+    }
+
+    AddrShift TaggedIsBoolean(AddrShift x)
+    {
+        return TruncInt32ToInt1(Word32Or(SExtInt1ToInt32(TaggedIsTrue(x)), SExtInt1ToInt32(TaggedIsFalse(x))));
+    }
+
     AddrShift IntBuildTagged(AddrShift x)
     {
         AddrShift val = ZExtInt32ToInt64(x);
@@ -871,6 +896,16 @@ public:
     AddrShift CastDoubleToInt64(AddrShift x)
     {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_FLOAT64_TO_INT64), x);
+    }
+
+    AddrShift TaggedTrue()
+    {
+        return GetWord64Constant(panda::ecmascript::JSTaggedValue::VALUE_TRUE);
+    }
+
+    AddrShift TaggedFalse()
+    {
+        return GetWord64Constant(panda::ecmascript::JSTaggedValue::VALUE_FALSE);
     }
 
     // compare operation
