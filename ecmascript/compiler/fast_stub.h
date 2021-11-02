@@ -220,6 +220,16 @@ public:
     NO_COPY_SEMANTIC(SetPropertyByValueStub);
     void GenerateCircuit() override;
 };
+
+class FastEqualStub : public Stub {
+public:
+    // 2 means argument counts
+    explicit FastEqualStub(Circuit *circuit) : Stub("FastEqual", 2, circuit) {}
+    ~FastEqualStub() = default;
+    NO_MOVE_SEMANTIC(FastEqualStub);
+    NO_COPY_SEMANTIC(FastEqualStub);
+    void GenerateCircuit() override;
+};
 }  // namespace kungfu
 
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H
