@@ -1813,4 +1813,38 @@ bool JSValueRef::IsJSPrimitiveString()
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
     return JSPrimitiveRef::Cast(obj->GetHeapObject())->IsString();
 }
+
+bool JSValueRef::IsJSPrimitiveSymbol()
+{
+    JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
+    return JSPrimitiveRef::Cast(obj->GetHeapObject())->IsSymbol();
+}
+
+bool JSValueRef::IsGeneratorObject()
+{
+    JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
+    bool rst = obj->IsGeneratorObject();
+    return rst;
+}
+
+bool JSValueRef::IsAsyncFunction()
+{
+    JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
+    bool rst  = obj->IsJSAsyncFunction();
+    return rst;
+}
+
+bool JSValueRef::IsArgumentsObject()
+{
+    JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
+    bool rst  = obj->IsArguments();
+    return rst;
+}
+
+bool JSValueRef::IsGeneratorFunction()
+{
+    JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
+    bool rst  = obj->IsGeneratorFunction();
+    return rst;
+}
 }  // namespace panda

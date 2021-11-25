@@ -315,6 +315,13 @@ public:
     bool IsJSPrimitiveBoolean();
     bool IsJSPrimitiveString();
 
+    bool IsGeneratorObject();
+    bool IsJSPrimitiveSymbol();
+
+    bool IsArgumentsObject();
+    bool IsGeneratorFunction();
+    bool IsAsyncFunction();
+
     bool IsStrictEquals(const EcmaVM *vm, Local<JSValueRef> value);
     Local<StringRef> Typeof(const EcmaVM *vm);
     bool InstanceOf(const EcmaVM *vm, Local<JSValueRef> value);

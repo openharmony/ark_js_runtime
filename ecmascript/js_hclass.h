@@ -312,6 +312,11 @@ public:
         return GetObjectType() == JSType::STRING;
     }
 
+    inline bool IsSymbol() const
+    {
+        return GetObjectType() == JSType::SYMBOL;
+    }
+    
     inline bool IsStringOrSymbol() const
     {
         JSType jsType = GetObjectType();
