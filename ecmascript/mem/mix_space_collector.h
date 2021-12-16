@@ -23,7 +23,7 @@
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/slots.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/semi_space_collector.h"
 

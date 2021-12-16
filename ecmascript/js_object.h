@@ -24,8 +24,9 @@
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
+#include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/object_operator.h"
 #include "ecmascript/property_attributes.h"
@@ -211,16 +212,16 @@ public:
 private:
     const JSThread *thread_{nullptr};
 
-    bool writable_{false};
-    bool enumerable_{false};
-    bool configurable_{false};
-    bool hasWritable_{false};
-    bool hasEnumerable_{false};
-    bool hasConfigurable_{false};
+    bool writable_ {false};
+    bool enumerable_ {false};
+    bool configurable_ {false};
+    bool hasWritable_ {false};
+    bool hasEnumerable_ {false};
+    bool hasConfigurable_ {false};
 
-    JSHandle<JSTaggedValue> value_{};
-    JSHandle<JSTaggedValue> getter_{};
-    JSHandle<JSTaggedValue> setter_{};
+    JSHandle<JSTaggedValue> value_ {};
+    JSHandle<JSTaggedValue> getter_ {};
+    JSHandle<JSTaggedValue> setter_ {};
 };
 
 enum class ElementTypes { ALLTYPES, STRING_AND_SYMBOL };
@@ -320,8 +321,8 @@ public:
     }
 
 private:
-    const JSThread *thread_{nullptr};
-    JSHandle<JSTaggedValue> value_{};
+    const JSThread *thread_ {nullptr};
+    JSHandle<JSTaggedValue> value_ {};
     PropertyMetaData metaData_{0U};
 };
 

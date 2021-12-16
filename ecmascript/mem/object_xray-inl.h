@@ -55,12 +55,12 @@
 #include "ecmascript/js_string_iterator.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
-void HeapRootManager::VisitVMRoots(const RootVisitor &visitor, const RootRangeVisitor &rangeVisitor) const
+void ObjectXRay::VisitVMRoots(const RootVisitor &visitor, const RootRangeVisitor &rangeVisitor) const
 {
     ecmaVm_->Iterate(visitor);
     ecmaVm_->GetJSThread()->Iterate(visitor, rangeVisitor);
@@ -68,7 +68,7 @@ void HeapRootManager::VisitVMRoots(const RootVisitor &visitor, const RootRangeVi
 
 template<GCType gc_type>
 // NOLINTNEXTLINE(readability-function-size)
-void HeapRootManager::MarkObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor)
+void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor)
 {
     // handle body
     JSType type = klass->GetObjectType();

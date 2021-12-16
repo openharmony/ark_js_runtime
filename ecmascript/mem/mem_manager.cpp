@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/ecma_heap_manager-inl.h"
+#include "ecmascript/mem/mem_manager-inl.h"
 #include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
-EcmaHeapManager::EcmaHeapManager(Heap *heap)
+MemManager::MemManager(Heap *heap)
     : heap_(heap),
       newSpaceAllocator_(heap->GetNewSpace()),
       freeListAllocator_ { FreeListAllocator(heap->GetOldSpace()), FreeListAllocator(heap_->GetNonMovableSpace()),

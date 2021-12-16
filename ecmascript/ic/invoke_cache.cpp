@@ -36,7 +36,7 @@ bool InvokeCache::SetPolyConstuctCacheSlot(JSThread *thread, ProfileTypeInfo *pr
                                            uint8_t length, JSTaggedValue newTargetArray,
                                            JSTaggedValue initialHClassArray)
 {
-    ASSERT(length <= 4 && newTargetArray.IsTaggedArray() && initialHClassArray.IsTaggedArray());
+    ASSERT(length <= POLY_CASE_NUM && newTargetArray.IsTaggedArray() && initialHClassArray.IsTaggedArray());
 
     JSHandle<TaggedArray> profileTypeInfoArr(thread, profileTypeInfo);
     JSHandle<TaggedArray> newTargetArr(thread, newTargetArray);
@@ -143,7 +143,7 @@ bool InvokeCache::SetMonoInlineCallCacheSlot(JSThread *thread, ProfileTypeInfo *
 bool InvokeCache::SetPolyInlineCallCacheSlot(JSThread *thread, ProfileTypeInfo *profileTypeInfo, uint32_t slotId,
                                              uint8_t length, JSTaggedValue calleeArray)
 {
-    ASSERT(calleeArray.IsTaggedArray() && length >= 2 && length <= 4);
+    ASSERT(calleeArray.IsTaggedArray() && length >= MONO_CASE_NUM && length <= POLY_CASE_NUM);
     JSHandle<TaggedArray> calleeArr(thread, calleeArray);
     ASSERT(calleeArr->GetLength() == length);
     JSHandle<TaggedArray> profileTypeInfoArr(thread, profileTypeInfo);

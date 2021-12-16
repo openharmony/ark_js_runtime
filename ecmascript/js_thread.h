@@ -22,7 +22,7 @@
 #include "ecmascript/ecma_global_storage.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 
 namespace panda::ecmascript {
 class EcmaVM;

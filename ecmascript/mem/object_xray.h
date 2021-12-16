@@ -17,7 +17,9 @@
 #define ECMASCRIPT_MEM_HEAP_ROOTS_H
 
 #include <cstdint>
+
 #include "ecmascript/mem/slots.h"
+#include "mem/mem.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
@@ -40,17 +42,17 @@ using EcmaObjectRangeVisitor = std::function<void(TaggedObject *root, ObjectSlot
 
 using WeakRootVisitor = std::function<TaggedObject *(TaggedObject *p)>;
 
-class HeapRootManager {
+class ObjectXRay {
 public:
-    explicit HeapRootManager(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm) {}
-    ~HeapRootManager() = default;
+    explicit ObjectXRay(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm) {}
+    ~ObjectXRay() = default;
 
     inline void VisitVMRoots(const RootVisitor &visitor, const RootRangeVisitor &range_visitor) const;
     template<GCType gc_type>
-    inline void MarkObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor);
+    inline void VisitObjectBody(TaggedObject *object, JSHClass *klass, const EcmaObjectRangeVisitor &visitor);
 
 private:
-    EcmaVM *ecmaVm_{nullptr};
+    EcmaVM *ecmaVm_ {nullptr};
 };
 }  // namespace panda::ecmascript
 

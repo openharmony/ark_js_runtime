@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {

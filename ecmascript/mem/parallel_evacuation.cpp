@@ -18,7 +18,8 @@
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/barriers-inl.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/heap_roots-inl.h"
+#include "ecmascript/mem/object_xray-inl.h"
+#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 
@@ -135,22 +136,23 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
 void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
 {
     auto klass = object->GetClass();
-    rootManager_.MarkObjectBody<GCType::OLD_GC>(object, klass,
+    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, klass,
         [&](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 JSTaggedValue value(slot.GetTaggedType());
                 if (value.IsHeapObject()) {
-                    if (!value.IsWeak()) {
-                        Region *object_region = Region::ObjectAddressToRange(value.GetTaggedObject());
-                        if (heap_->IsOnlyMarkSemi() && !object_region->InYoungGeneration()) {
-                            continue;
-                        }
-                        auto reset = object_region->GetMarkBitmap();
-                        if (!reset->Test(value.GetTaggedObject())) {
-                            LOG(FATAL, RUNTIME) << "Miss mark value: " << value.GetTaggedObject()
-                                                << ", body address:" << slot.SlotAddress()
-                                                << ", header address:" << object;
-                        }
+                    if (value.IsWeak()) {
+                        continue;
+                    }
+                    Region *object_region = Region::ObjectAddressToRange(value.GetTaggedObject());
+                    if (heap_->IsOnlyMarkSemi() && !object_region->InYoungGeneration()) {
+                        continue;
+                    }
+                    auto reset = object_region->GetMarkBitmap();
+                    if (!reset->Test(value.GetTaggedObject())) {
+                        LOG(FATAL, RUNTIME) << "Miss mark value: " << value.GetTaggedObject()
+                                            << ", body address:" << slot.SlotAddress()
+                                            << ", header address:" << object;
                     }
                 }
             }
@@ -220,7 +222,7 @@ void ParallelEvacuation::UpdateRoot()
         }
     };
 
-    rootManager_.VisitVMRoots(gcUpdateYoung, gcUpdateRangeYoung);
+    objXRay_.VisitVMRoots(gcUpdateYoung, gcUpdateRangeYoung);
 }
 
 void ParallelEvacuation::UpdateWeakReference()
@@ -404,7 +406,7 @@ void ParallelEvacuation::UpdateAndSweepCompressRegionReference(Region *region, b
 
 void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cls)
 {
-    rootManager_.MarkObjectBody<GCType::OLD_GC>(object, cls,
+    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls,
         [this](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 UpdateObjectSlot(slot);
@@ -414,7 +416,7 @@ void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cl
 
 void ParallelEvacuation::UpdateCompressObjectField(Region *region, TaggedObject *object, JSHClass *cls)
 {
-    rootManager_.MarkObjectBody<GCType::OLD_GC>(object, cls,
+    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls,
         [this, region](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 if (UpdateObjectSlot(slot)) {

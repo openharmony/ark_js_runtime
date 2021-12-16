@@ -24,6 +24,7 @@
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/layout_info.h"
+#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_dictionary.h"
@@ -249,7 +250,7 @@ void RuntimeTrampolines::SetValueWithBarrier([[maybe_unused]] uintptr_t argGlue,
     auto offset = static_cast<size_t>(argOffset);
     auto value = static_cast<JSTaggedValue>(argValue);
     if (value.IsHeapObject()) {
-        MarkingBarrier(addr, offset, value.GetRawData());
+        WriteBarrier(addr, offset, value.GetRawData());
     }
 }
 

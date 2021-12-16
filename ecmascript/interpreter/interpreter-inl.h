@@ -991,7 +991,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                     InterpreterFrameCopyArgs(newSp, numVregs, copyArgs, numDeclaredArgs, haveExtra);
                 }
 
-
                 FrameState *state = GET_FRAME(newSp);
                 state->base.prev = sp;
                 state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);

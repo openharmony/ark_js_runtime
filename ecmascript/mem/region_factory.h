@@ -167,11 +167,14 @@ private:
     NO_COPY_SEMANTIC(RegionFactory);
     NO_MOVE_SEMANTIC(RegionFactory);
 
-    Area *cachedArea_{nullptr};
-    std::atomic<size_t> annoMemoryUsage_{0};
-    std::atomic<size_t> maxAnnoMemoryUsage_{0};
-    std::atomic<size_t> nativeMemoryUsage_{0};
-    std::atomic<size_t> maxNativeMemoryUsage_{0};
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    static constexpr int INVALID_VALUE = 0x7;
+#endif
+    Area *cachedArea_ {nullptr};
+    std::atomic<size_t> annoMemoryUsage_ {0};
+    std::atomic<size_t> maxAnnoMemoryUsage_ {0};
+    std::atomic<size_t> nativeMemoryUsage_ {0};
+    std::atomic<size_t> maxNativeMemoryUsage_ {0};
 };
 }  // namespace panda::ecmascript
 

@@ -20,7 +20,7 @@
 #include <string>
 #include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/frames.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/slots.h"
 
 namespace kungfu {

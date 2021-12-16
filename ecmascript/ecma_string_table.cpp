@@ -19,7 +19,6 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_string.h"
-#include "ecmascript/mem/heap_roots.h"
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript {

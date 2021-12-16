@@ -19,7 +19,7 @@
 #include <array>
 #include <atomic>
 
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/platform/task.h"

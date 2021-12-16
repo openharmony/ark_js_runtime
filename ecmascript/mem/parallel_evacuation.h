@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/space.h"
@@ -34,7 +34,7 @@ class TlabAllocator;
 class ParallelEvacuation {
 public:
     ParallelEvacuation(Heap *heap)
-        : heap_(heap), rootManager_(heap->GetEcmaVM()), evacuationAllocator_(heap_->GetEvacuationAllocator()) {}
+        : heap_(heap), objXRay_(heap->GetEcmaVM()), evacuationAllocator_(heap_->GetEvacuationAllocator()) {}
     ~ParallelEvacuation() = default;
     void Initialize();
     void Finalize();
@@ -162,7 +162,7 @@ private:
 
     Heap *heap_;
     TlabAllocator *allocator_;
-    HeapRootManager rootManager_;
+    ObjectXRay objXRay_;
     EvacuationAllocator *evacuationAllocator_;
 
     uintptr_t ageMark_;

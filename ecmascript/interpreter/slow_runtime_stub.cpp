@@ -1670,8 +1670,8 @@ JSTaggedValue SlowRuntimeStub::DefineClass(JSThread *thread, JSFunction *func, T
     } else {
         JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
         parentPrototype.Update(JSTaggedValue::GetProperty(thread, parent, globalConst->GetHandledPrototypeString())
-                                   .GetValue()
-                                   .GetTaggedValue());
+                               .GetValue()
+                               .GetTaggedValue());
         if (!parentPrototype->IsECMAObject() && !parentPrototype->IsNull()) {
             return ThrowTypeError(thread, "parent class have no valid prototype");
         }

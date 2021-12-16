@@ -16,7 +16,7 @@
 #include "ecmascript/mem/evacuation_allocator-inl.h"
 
 #include "ecmascript/js_hclass-inl.h"
-#include "ecmascript/mem/ecma_heap_manager.h"
+#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/free_object_kind.h"
 #include "ecmascript/mem/mark_word.h"
 #include "ecmascript/mem/space.h"

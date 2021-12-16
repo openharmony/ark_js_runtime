@@ -16,24 +16,24 @@
 #ifndef ECMASCRIPT_MEM_HEAP_MANAGER_INL_H
 #define ECMASCRIPT_MEM_HEAP_MANAGER_INL_H
 
-#include "ecmascript/mem/ecma_heap_manager.h"
+#include "ecmascript/mem/mem_manager.h"
 
 #include <ctime>
 
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/mem/heap-inl.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_hclass.h"
 
 namespace panda::ecmascript {
-TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass)
+TaggedObject *MemManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass)
 {
     size_t size = hclass->GetObjectSize();
     return AllocateYoungGenerationOrHugeObject(hclass, size);
 }
 
-TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass, size_t size)
+TaggedObject *MemManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass, size_t size)
 {
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return AllocateHugeObject(hclass, size);
@@ -70,7 +70,7 @@ TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrHugeObject(JSHClass *hcl
     return object;
 }
 
-TaggedObject *EcmaHeapManager::TryAllocateYoungGeneration(size_t size)
+TaggedObject *MemManager::TryAllocateYoungGeneration(size_t size)
 {
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return nullptr;
@@ -78,18 +78,18 @@ TaggedObject *EcmaHeapManager::TryAllocateYoungGeneration(size_t size)
     return reinterpret_cast<TaggedObject *>(newSpaceAllocator_.Allocate(size));
 }
 
-TaggedObject *EcmaHeapManager::AllocateDynClassClass(JSHClass *hclass, size_t size)
+TaggedObject *MemManager::AllocateDynClassClass(JSHClass *hclass, size_t size)
 {
     auto object = reinterpret_cast<TaggedObject *>(GetNonMovableSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {
-        LOG_ECMA_MEM(FATAL) << "EcmaHeapManager::AllocateDynClassClass can not allocate any space";
+        LOG_ECMA_MEM(FATAL) << "MemManager::AllocateDynClassClass can not allocate any space";
     }
     *reinterpret_cast<MarkWordType *>(ToUintPtr(object)) = reinterpret_cast<MarkWordType>(hclass);
     heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
     return object;
 }
 
-TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size)
+TaggedObject *MemManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size)
 {
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return AllocateHugeObject(hclass, size);
@@ -117,7 +117,7 @@ TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, 
     return object;
 }
 
-uintptr_t EcmaHeapManager::AllocateSnapShotSpace(size_t size)
+uintptr_t MemManager::AllocateSnapShotSpace(size_t size)
 {
     uintptr_t object = snapshotSpaceAllocator_.Allocate(size);
     if (UNLIKELY(object == 0)) {
@@ -134,18 +134,18 @@ uintptr_t EcmaHeapManager::AllocateSnapShotSpace(size_t size)
     return object;
 }
 
-void EcmaHeapManager::SetClass(TaggedObject *header, JSHClass *hclass)
+void MemManager::SetClass(TaggedObject *header, JSHClass *hclass)
 {
     header->SetClass(hclass);
 }
 
-TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass)
+TaggedObject *MemManager::AllocateNonMovableOrHugeObject(JSHClass *hclass)
 {
     size_t size = hclass->GetObjectSize();
     return AllocateNonMovableOrHugeObject(hclass, size);
 }
 
-TaggedObject *EcmaHeapManager::AllocateOldGenerationOrHugeObject(JSHClass *hclass, size_t size)
+TaggedObject *MemManager::AllocateOldGenerationOrHugeObject(JSHClass *hclass, size_t size)
 {
     ASSERT(size > 0);
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
@@ -174,7 +174,7 @@ TaggedObject *EcmaHeapManager::AllocateOldGenerationOrHugeObject(JSHClass *hclas
     return object;
 }
 
-TaggedObject *EcmaHeapManager::AllocateHugeObject(JSHClass *hclass, size_t size)
+TaggedObject *MemManager::AllocateHugeObject(JSHClass *hclass, size_t size)
 {
     ASSERT(size > MAX_REGULAR_HEAP_OBJECT_SIZE);
     // large objects
@@ -195,7 +195,7 @@ TaggedObject *EcmaHeapManager::AllocateHugeObject(JSHClass *hclass, size_t size)
     return object;
 }
 
-TaggedObject *EcmaHeapManager::AllocateMachineCodeSpaceObject(JSHClass *hclass, size_t size)
+TaggedObject *MemManager::AllocateMachineCodeSpaceObject(JSHClass *hclass, size_t size)
 {
     auto object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {

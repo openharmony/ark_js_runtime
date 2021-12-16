@@ -21,7 +21,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/space.h"
+#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/hprof/heap_tracker.h"
 #include "ecmascript/mem/remembered_set.h"
 

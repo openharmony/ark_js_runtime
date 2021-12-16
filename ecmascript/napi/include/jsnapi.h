@@ -198,7 +198,7 @@ private:
     };
     inline void Update(const Global &that);
     uintptr_t address_ = 0U;
-    const EcmaVM *vm_{nullptr};
+    const EcmaVM *vm_ {nullptr};
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions, hicpp-special-member-functions)
@@ -213,7 +213,7 @@ protected:
 private:
     void *prevNext_ = nullptr;
     void *prevEnd_ = nullptr;
-    int prevHandleStorageIndex_{-1};
+    int prevHandleStorageIndex_ {-1};
     void *thread_ = nullptr;
 };
 
@@ -816,10 +816,10 @@ private:
     GC_TYPE gcType_ = GC_TYPE::EPSILON;
     LOG_LEVEL logLevel_ = LOG_LEVEL::DEBUG;
     uint32_t gcPoolSize_ = DEFAULT_GC_POOL_SIZE;
-    LOG_PRINT logBufPrint_{nullptr};
-    std::string debuggerLibraryPath_{};
-    bool enableArkTools_{false};
-    bool enableCpuprofiler_{false};
+    LOG_PRINT logBufPrint_ {nullptr};
+    std::string debuggerLibraryPath_ {};
+    bool enableArkTools_ {false};
+    bool enableCpuprofiler_ {false};
     friend JSNApi;
 };
 

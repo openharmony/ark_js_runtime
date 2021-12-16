@@ -17,42 +17,45 @@
 #define ECMASCRIPT_MEM_BARRIERS_INL_H
 
 #include "ecmascript/mem/barriers.h"
-#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/runtime_api.h"
 
 namespace panda::ecmascript {
-static inline void MarkingBarrier(void *obj, size_t offset, JSTaggedType value)
+static inline void MarkingBarrier(uintptr_t slotAddr, Region *objectRegion, TaggedObject *value,
+    Region *valueRegion)
+{
+    auto heap = valueRegion->GetSpace()->GetHeap();
+    bool isOnlySemi = heap->IsOnlyMarkSemi();
+    if (!JSTaggedValue(value).IsWeak()) {
+        if (isOnlySemi && !valueRegion->InYoungGeneration()) {
+            return;
+        }
+        auto valueBitmap = valueRegion->GetOrCreateMarkBitmap();
+        if (!RuntimeApi::AtomicTestAndSet(valueBitmap, value)) {
+            RuntimeApi::PushWorkList(heap->GetWorkList(), 0, value, valueRegion);
+        }
+    }
+    if (!isOnlySemi && !objectRegion->InYoungAndCSetGeneration() && valueRegion->InCollectSet()) {
+        auto set = objectRegion->GetOrCreateCrossRegionRememberedSet();
+        RuntimeApi::AtomicInsertCrossRegionRememberedSet(set, slotAddr);
+    }
+}
+
+static inline void WriteBarrier(void *obj, size_t offset, JSTaggedType value)
 {
     ASSERT(value != JSTaggedValue::VALUE_UNDEFINED);
     Region *objectRegion = Region::ObjectAddressToRange(static_cast<TaggedObject *>(obj));
     Region *valueRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(value));
+    uintptr_t slotAddr = ToUintPtr(obj) + offset;
     if (!objectRegion->InYoungGeneration() && valueRegion->InYoungGeneration()) {
-        uintptr_t slotAddr = ToUintPtr(obj) + offset;
         // Should align with '8' in 64 and 32 bit platform
         ASSERT((slotAddr % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
         objectRegion->InsertOldToNewRememberedSet(slotAddr);
     }
 
     if (valueRegion->IsMarking()) {
-        auto heap = valueRegion->GetSpace()->GetHeap();
-        bool isOnlySemi = heap->IsOnlyMarkSemi();
-        if (!JSTaggedValue(value).IsWeak()) {
-            if (isOnlySemi && !valueRegion->InYoungGeneration()) {
-                return;
-            }
-            TaggedObject *valueObject = reinterpret_cast<TaggedObject *>(value);
-            auto valueBitmap = valueRegion->GetOrCreateMarkBitmap();
-            if (!RuntimeApi::AtomicTestAndSet(valueBitmap, valueObject)) {
-                RuntimeApi::PushWorkList(heap->GetWorkList(), 0, valueObject, valueRegion);
-            }
-        }
-        if (!isOnlySemi && !objectRegion->InYoungAndCSetGeneration() && valueRegion->InCollectSet()) {
-            uintptr_t slotAddr = ToUintPtr(obj) + offset;
-            auto set = objectRegion->GetOrCreateCrossRegionRememberedSet();
-            RuntimeApi::AtomicInsertCrossRegionRememberedSet(set, slotAddr);
-        }
+        MarkingBarrier(slotAddr, objectRegion, reinterpret_cast<TaggedObject *>(value), valueRegion);
     }
 }
 
@@ -65,7 +68,7 @@ inline void Barriers::SetDynObject([[maybe_unused]] const JSThread *thread, void
 {
     // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     *reinterpret_cast<JSTaggedType *>(reinterpret_cast<uintptr_t>(obj) + offset) = value;
-    MarkingBarrier(obj, offset, value);
+    WriteBarrier(obj, offset, value);
 }
 }  // namespace panda::ecmascript
 

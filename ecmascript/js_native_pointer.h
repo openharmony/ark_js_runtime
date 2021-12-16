@@ -16,12 +16,14 @@
 #ifndef ECMASCRIPT_JSNATIVEPOINTER_H
 #define ECMASCRIPT_JSNATIVEPOINTER_H
 
-#include "include/coretypes/native_pointer.h"
+#include "ecmascript/ecma_macros.h"
+#include "ecmascript/mem/tagged_object.h"
 
 namespace panda::ecmascript {
 using DeleteEntryPoint = void (*)(void *, void *);
 
-class JSNativePointer : public coretypes::NativePointer {
+// Used for the requirement of ACE that wants to associated a registered C++ resource with a JSObject.
+class JSNativePointer : public TaggedObject {
 public:
     static JSNativePointer *Cast(ObjectHeader *object)
     {
@@ -31,47 +33,34 @@ public:
 
     inline void ResetExternalPointer(void *externalPointer)
     {
-        ClearExternalPointer();
+        DeleteExternalPointer();
         SetExternalPointer(externalPointer);
-    }
-
-    inline void ClearExternalPointer()
-    {
-        if (GetExternalPointer() == nullptr) {
-            return;
-        }
-        if (deleter_ != nullptr) {
-            deleter_(GetExternalPointer(), data_);
-        }
-        SetExternalPointer(nullptr);
-    }
-
-    inline void SetDeleter(DeleteEntryPoint deleter)
-    {
-        deleter_ = deleter;
-    }
-
-    inline void SetData(void *data)
-    {
-        data_ = data;
-    }
-
-    inline const void *GetData() const
-    {
-        return data_;
     }
 
     inline void Destroy()
     {
-        ClearExternalPointer();
+        DeleteExternalPointer();
+        SetExternalPointer(nullptr);
         SetDeleter(nullptr);
         SetData(nullptr);
     }
 
+    static constexpr size_t POINTER_OFFSET = TaggedObjectSize();
+    SET_GET_VOID_FIELD(ExternalPointer, POINTER_OFFSET, DELETER_OFFSET);
+    SET_GET_PRIMITIVE_FIELD(Deleter, DeleteEntryPoint, DELETER_OFFSET, DATA_OFFSET);
+    SET_GET_VOID_FIELD(Data, DATA_OFFSET, SIZE);
+
 private:
-    DeleteEntryPoint deleter_{nullptr};
-    alignas(sizeof(uint64_t)) void *data_ {nullptr};
+    inline void DeleteExternalPointer()
+    {
+        void *externalPointer = GetExternalPointer();
+        if (externalPointer != nullptr) {
+            DeleteEntryPoint deleter = GetDeleter();
+            if (deleter != nullptr) {
+                deleter(externalPointer, GetData());
+            }
+        }
+    }
 };
 }  // namespace panda::ecmascript
-
 #endif  // ECMASCRIPT_JSNATIVEPOINTER_H

@@ -27,7 +27,7 @@
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/mem/ecma_heap_manager.h"
+#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"

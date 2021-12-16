@@ -16,15 +16,15 @@
 #include "verification.h"
 
 #include "ecmascript/js_tagged_value-inl.h"
-#include "heap_roots-inl.h"
-#include "slots.h"
+#include "ecmascript/mem/object_xray-inl.h"
+#include "ecmascript/mem/slots.h"
 
 namespace panda::ecmascript {
 // Verify the object body
 void VerifyObjectVisitor::VisitAllObjects(TaggedObject *obj)
 {
     auto jsHclass = obj->GetClass();
-    rootManager_.MarkObjectBody<GCType::OLD_GC>(
+    objXRay_.VisitObjectBody<GCType::OLD_GC>(
         obj, jsHclass, [this]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
             for (ObjectSlot slot = start; slot < end; slot++) {
                 JSTaggedValue value(slot.GetTaggedType());
@@ -66,7 +66,7 @@ size_t Verification::VerifyRoot() const
             }
         }
     };
-    rootManager_.VisitVMRoots(visit1, visit2);
+    objXRay_.VisitVMRoots(visit1, visit2);
     if (failCount > 0) {
         LOG(ERROR, RUNTIME) << "VerifyRoot detects deadObject count is " << failCount;
     }

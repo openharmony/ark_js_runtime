@@ -94,7 +94,8 @@ public:
 class ProfileTypeAccessor {
 public:
     static constexpr size_t CACHE_MAX_LEN = 8;
-    static constexpr size_t POLY_DEFAULT_LEN = 4;
+    static constexpr size_t MONO_CASE_NUM = 2;
+    static constexpr size_t POLY_CASE_NUM = 4;
 
     enum ICState {
         UNINIT,

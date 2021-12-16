@@ -24,7 +24,7 @@
 #include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/machine_code.h"
-#include "ecmascript/mem/ecma_heap_manager.h"
+#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/region_factory.h"
 #include "ecmascript/tagged_array.h"
 
@@ -317,7 +317,7 @@ public:
 
     void ObtainRootClass(const JSHandle<GlobalEnv> &globalEnv);
 
-    const EcmaHeapManager &GetHeapManager() const
+    const MemManager &GetHeapManager() const
     {
         return heapHelper_;
     }
@@ -370,7 +370,7 @@ private:
     JSThread *thread_ {nullptr};
     bool isTriggerGc_ {false};
     bool triggerSemiGC_ {false};
-    EcmaHeapManager heapHelper_;
+    MemManager heapHelper_;
 
     JSHClass *hclassClass_ {nullptr};
     JSHClass *stringClass_ {nullptr};

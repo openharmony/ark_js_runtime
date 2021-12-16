@@ -23,14 +23,13 @@
 #include "ecmascript/global_handle_collection.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
-#include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_runtime_options.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/gc_stats.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/platform/task.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
@@ -50,9 +49,10 @@ class GlobalEnv;
 class ObjectFactory;
 class RegExpParserCache;
 class EcmaRuntimeStat;
-class EcmaHeapManager;
+class MemManager;
 class Heap;
 class HeapTracker;
+class JSNativePointer;
 class Program;
 class RegExpExecResultCache;
 class JSPromise;
