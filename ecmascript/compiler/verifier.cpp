@@ -23,16 +23,16 @@
 namespace kungfu {
 bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
 {
-    std::unordered_set<AddrShift> gatesSet;
-    std::vector<AddrShift> gatesList;
+    std::unordered_set<GateRef> gatesSet;
+    std::vector<GateRef> gatesList;
     gatesList.push_back(0);
     gatesSet.insert(0);
     size_t out = sizeof(Gate);
-    AddrShift prevGate = 0;
+    GateRef prevGate = 0;
     while (true) {
-        AddrShift gate = circuit->SaveGatePtr(
+        GateRef gate = circuit->SaveGatePtr(
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            reinterpret_cast<const Out *>(circuit->LoadGatePtrConst(AddrShift(out)))->GetGateConst());
+            reinterpret_cast<const Out *>(circuit->LoadGatePtrConst(GateRef(out)))->GetGateConst());
         if (gate < prevGate + static_cast<int64_t>(sizeof(Gate)) ||
             gate >= static_cast<int64_t>(circuit->GetCircuitDataSize())) {
             std::cerr << "[Verifier][Error] Circuit data is corrupted (bad next gate)" << std::endl;
@@ -44,7 +44,7 @@ bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
         prevGate = gate;
         out += Gate::GetGateSize(
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            reinterpret_cast<const Out *>(circuit->LoadGatePtrConst(AddrShift(out)))->GetIndex() + 1);
+            reinterpret_cast<const Out *>(circuit->LoadGatePtrConst(GateRef(out)))->GetIndex() + 1);
         if (out == circuit->GetCircuitDataSize()) {
             break;
         }
@@ -99,23 +99,27 @@ bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
             }
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] Circuit data integrity is verified" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunStateGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList)
+bool Verifier::RunStateGatesCheck(const Circuit *circuit, const std::vector<GateRef> &bbGatesList)
 {
     for (const auto &bbGate : bbGatesList) {
         if (!circuit->Verify(bbGate)) {
             return false;
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] State gates input list schema is verified" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunCFGSoundnessCheck(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList,
-    const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx)
+bool Verifier::RunCFGSoundnessCheck(const Circuit *circuit, const std::vector<GateRef> &bbGatesList,
+    const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx)
 {
     for (const auto &bbGate : bbGatesList) {
         for (const auto &predGate : circuit->GetInVector(bbGate)) {
@@ -132,14 +136,16 @@ bool Verifier::RunCFGSoundnessCheck(const Circuit *circuit, const std::vector<Ad
             }
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] CFG is sound" << std::endl;
+#endif
     return true;
 }
 
 bool Verifier::RunCFGIsDAGCheck(const Circuit *circuit)
 {
     circuit->AdvanceTime();
-    std::function<bool(AddrShift)> dfs = [&](AddrShift cur) -> bool {
+    std::function<bool(GateRef)> dfs = [&](GateRef cur) -> bool {
         if (circuit->GetOpCode(cur) == OpCode::LOOP_BACK) {
             return true;
         }
@@ -171,12 +177,14 @@ bool Verifier::RunCFGIsDAGCheck(const Circuit *circuit)
     if (!dfs(root)) {
         return false;
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] CFG without loop back edges is directed acyclic graph" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunCFGReducibilityCheck(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList,
-    const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
+bool Verifier::RunCFGReducibilityCheck(const Circuit *circuit, const std::vector<GateRef> &bbGatesList,
+    const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
     const std::function<bool(size_t, size_t)> &isAncestor)
 {
     for (const auto &curGate : bbGatesList) {
@@ -197,23 +205,27 @@ bool Verifier::RunCFGReducibilityCheck(const Circuit *circuit, const std::vector
             }
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] CFG is reducible" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunFixedGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &fixedGatesList)
+bool Verifier::RunFixedGatesCheck(const Circuit *circuit, const std::vector<GateRef> &fixedGatesList)
 {
     for (const auto &fixedGate : fixedGatesList) {
         if (!circuit->Verify(fixedGate)) {
             return false;
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] Fixed gates input list schema is verified" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::vector<AddrShift> &fixedGatesList,
-    const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
+bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::vector<GateRef> &fixedGatesList,
+    const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
     const std::function<bool(size_t, size_t)> &isAncestor)
 {
     for (const auto &fixedGate : fixedGatesList) {
@@ -238,15 +250,17 @@ bool Verifier::RunFixedGatesRelationsCheck(const Circuit *circuit, const std::ve
             cnt++;
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] Fixed gates relationship is consistent" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<AddrShift> *schedulableGatesListPtr,
-    const std::vector<AddrShift> &bbGatesList, const std::vector<AddrShift> &fixedGatesList)
+bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<GateRef> *schedulableGatesListPtr,
+    const std::vector<GateRef> &bbGatesList, const std::vector<GateRef> &fixedGatesList)
 {
     circuit->AdvanceTime();
-    std::vector<AddrShift> startGateList;
+    std::vector<GateRef> startGateList;
     for (const auto &gate : bbGatesList) {
         for (const auto &predGate : circuit->GetInVector(gate)) {
             if (circuit->GetOpCode(predGate).IsSchedulable()) {
@@ -268,9 +282,9 @@ bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<AddrShift> 
         }
     }
     circuit->AdvanceTime();
-    std::vector<AddrShift> cycleGatesList;
-    AddrShift meet = -1;
-    std::function<bool(AddrShift)> dfs = [&](AddrShift cur) -> bool {
+    std::vector<GateRef> cycleGatesList;
+    GateRef meet = -1;
+    std::function<bool(GateRef)> dfs = [&](GateRef cur) -> bool {
         circuit->SetMark(cur, MarkCode::VISITED);
         schedulableGatesListPtr->push_back(cur);
         size_t numIns = circuit->LoadGatePtrConst(cur)->GetNumIns();
@@ -316,22 +330,26 @@ bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<AddrShift> 
             }
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] Every directed data or depend flow cycles in circuit contain selectors" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunSchedulableGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &schedulableGatesList)
+bool Verifier::RunSchedulableGatesCheck(const Circuit *circuit, const std::vector<GateRef> &schedulableGatesList)
 {
     for (const auto &schedulableGate : schedulableGatesList) {
         if (!circuit->Verify(schedulableGate)) {
             return false;
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] Schedulable gates input list schema is verified" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunPrologGatesCheck(const Circuit *circuit, const std::vector<AddrShift> &schedulableGatesList)
+bool Verifier::RunPrologGatesCheck(const Circuit *circuit, const std::vector<GateRef> &schedulableGatesList)
 {
     for (const auto &schedulableGate : schedulableGatesList) {
         for (const auto &predGate : circuit->GetInVector(schedulableGate)) {
@@ -342,17 +360,19 @@ bool Verifier::RunPrologGatesCheck(const Circuit *circuit, const std::vector<Add
             }
         }
     }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     std::cerr << "[Verifier][Pass] Prolog gates input list schema is verified" << std::endl;
+#endif
     return true;
 }
 
-bool Verifier::RunSchedulingBoundsCheck(const Circuit *circuit, const std::vector<AddrShift> &schedulableGatesList,
-    const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
+bool Verifier::RunSchedulingBoundsCheck(const Circuit *circuit, const std::vector<GateRef> &schedulableGatesList,
+    const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
     const std::function<bool(size_t, size_t)> &isAncestor,
     const std::function<size_t(size_t, size_t)> &lowestCommonAncestor)
 {
     // check existence of scheduling upper bound
-    std::unordered_map<AddrShift, size_t> upperBound;
+    std::unordered_map<GateRef, size_t> upperBound;
     {
         auto result =
             Scheduler::CalculateSchedulingUpperBound(circuit, bbGatesAddrToIdx, isAncestor, schedulableGatesList);
@@ -360,14 +380,18 @@ bool Verifier::RunSchedulingBoundsCheck(const Circuit *circuit, const std::vecto
             return false;
         }
         upperBound = result.value();
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
         std::cerr << "[Verifier][Pass] Scheduling upper bounds of all schedulable gates exist" << std::endl;
+#endif
     }
     // check existence of scheduling lower bound
-    std::unordered_map<AddrShift, size_t> lowerBound;
+    std::unordered_map<GateRef, size_t> lowerBound;
     {
         auto result = Scheduler::CalculateSchedulingLowerBound(circuit, bbGatesAddrToIdx, lowestCommonAncestor);
         lowerBound = result.value();
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
         std::cerr << "[Verifier][Pass] Scheduling lower bounds of all schedulable gates exist" << std::endl;
+#endif
     }
     // check consistency of lower bound and upper bound
     {
@@ -381,14 +405,16 @@ bool Verifier::RunSchedulingBoundsCheck(const Circuit *circuit, const std::vecto
                 std::cerr << "Lower bound is BB_" << lowerBound.at(item.first) << std::endl;
             }
         }
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
         std::cerr << "[Verifier][Pass] Bounds of all schedulable gates are consistent" << std::endl;
+#endif
     }
     return true;
 }
 
-std::vector<AddrShift> Verifier::FindFixedGates(const Circuit *circuit, const std::vector<AddrShift> &bbGatesList)
+std::vector<GateRef> Verifier::FindFixedGates(const Circuit *circuit, const std::vector<GateRef> &bbGatesList)
 {
-    std::vector<AddrShift> fixedGatesList;
+    std::vector<GateRef> fixedGatesList;
     for (const auto &bbGate : bbGatesList) {
         for (const auto &succGate : circuit->GetOutVector(bbGate)) {
             if (circuit->GetOpCode(succGate).IsFixed()) {
@@ -404,8 +430,8 @@ bool Verifier::Run(const Circuit *circuit)
     if (!RunDataIntegrityCheck(circuit)) {
         return false;
     }
-    std::vector<AddrShift> bbGatesList;
-    std::unordered_map<AddrShift, size_t> bbGatesAddrToIdx;
+    std::vector<GateRef> bbGatesList;
+    std::unordered_map<GateRef, size_t> bbGatesAddrToIdx;
     std::vector<size_t> immDom;
     std::tie(bbGatesList, bbGatesAddrToIdx, immDom) = Scheduler::CalculateDominatorTree(circuit);
     std::cerr << std::dec;
@@ -463,14 +489,14 @@ bool Verifier::Run(const Circuit *circuit)
     if (!RunCFGReducibilityCheck(circuit, bbGatesList, bbGatesAddrToIdx, isAncestor)) {
         return false;
     }
-    std::vector<AddrShift> fixedGatesList = FindFixedGates(circuit, bbGatesList);
+    std::vector<GateRef> fixedGatesList = FindFixedGates(circuit, bbGatesList);
     if (!RunFixedGatesCheck(circuit, fixedGatesList)) {
         return false;
     }
     if (!RunFixedGatesRelationsCheck(circuit, fixedGatesList, bbGatesAddrToIdx, isAncestor)) {
         return false;
     }
-    std::vector<AddrShift> schedulableGatesList;
+    std::vector<GateRef> schedulableGatesList;
     if (!RunFlowCyclesFind(circuit, &schedulableGatesList, bbGatesList, fixedGatesList)) {
         return false;
     }

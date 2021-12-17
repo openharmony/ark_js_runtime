@@ -37,18 +37,20 @@ public:
 
     inline static int ComputeHashTableSize(uint32_t atLeastSize);
 
-    static Derived *GrowHashTable(const JSThread *thread, const JSHandle<Derived> &table, int numOfAddedElements = 1);
+    static JSHandle<Derived> GrowHashTable(const JSThread *thread, const JSHandle<Derived> &table,
+                                           int numOfAddedElements = 1);
 
-    static Derived *Create(const JSThread *thread, int numberOfElements);
+    static JSHandle<Derived> Create(const JSThread *thread, int numberOfElements);
 
-    static Derived *Insert(const JSThread *thread, JSHandle<Derived> &table, const JSHandle<JSTaggedValue> &key,
-                           const JSHandle<JSTaggedValue> &value);
+    static JSHandle<Derived> Insert(const JSThread *thread, JSHandle<Derived> &table,
+                                    const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
 
-    static Derived *Remove(const JSThread *thread, JSHandle<Derived> &table, const JSHandle<JSTaggedValue> &key);
+    static JSHandle<Derived> Remove(const JSThread *thread, JSHandle<Derived> &table,
+                                    const JSHandle<JSTaggedValue> &key);
 
     inline static int RecalculateTableSize(int currentSize, int atLeastSize);
 
-    inline static Derived *Shrink(const JSThread *thread, const JSHandle<Derived> &table, int additionalSize);
+    inline static JSHandle<Derived> Shrink(const JSThread *thread, const JSHandle<Derived> &table, int additionalSize);
 
     bool IsNeedGrowHashTable(int numOfAddEntries);
 
@@ -91,7 +93,7 @@ protected:
 
     inline static uint32_t GetNextPosition(uint32_t last, uint32_t number, uint32_t size)
     {
-        return (last + (number * (number + 1)) / 2) & (size - 1); // 2 : half
+        return (last + (number * (number + 1)) / 2) & (size - 1);  // 2 : half
     }
 
     inline void SetEntriesCount(const JSThread *thread, int noe);
@@ -124,21 +126,22 @@ public:
         return reinterpret_cast<Derived *>(object);
     }
     // Attempt to shrink the table after deletion of key.
-    static Derived *Shrink(const JSThread *thread, const JSHandle<Derived> &table)
+    static JSHandle<Derived> Shrink(const JSThread *thread, const JSHandle<Derived> &table)
     {
         int index = table->GetNextEnumerationIndex();
-        Derived *newTable = HashTableT::Shrink(thread, table, 0);
+        JSHandle<Derived> newTable = HashTableT::Shrink(thread, table, 0);
         newTable->SetNextEnumerationIndex(thread, index);
         return newTable;
     }
 
-    static Derived *Create(const JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER);
-    static Derived *PutIfAbsent(const JSThread *thread, const JSHandle<Derived> &table,
-                                const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
-                                const PropertyAttributes &metaData);
-    static Derived *Put(const JSThread *thread, const JSHandle<Derived> &table, const JSHandle<JSTaggedValue> &key,
-                        const JSHandle<JSTaggedValue> &value, const PropertyAttributes &metaData);
-    static Derived *Remove(const JSThread *thread, const JSHandle<Derived> &table, int entry);
+    static JSHandle<Derived> Create(const JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER);
+    static JSHandle<Derived> PutIfAbsent(const JSThread *thread, const JSHandle<Derived> &table,
+                                         const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
+                                         const PropertyAttributes &metaData);
+    static JSHandle<Derived> Put(const JSThread *thread, const JSHandle<Derived> &table,
+                                 const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
+                                 const PropertyAttributes &metaData);
+    static JSHandle<Derived> Remove(const JSThread *thread, const JSHandle<Derived> &table, int entry);
 
     inline void SetNextEnumerationIndex(const JSThread *thread, int index)
     {

@@ -44,7 +44,7 @@ JSTaggedValue BuiltinsMap::MapConstructor(EcmaRuntimeCallInfo *argv)
     JSHandle<JSMap> map = JSHandle<JSMap>::Cast(obj);
 
     // 4.Set map’s [[MapData]] internal slot to a new empty List.
-    JSTaggedValue linkedMap = LinkedHashMap::Create(thread);
+    JSHandle<LinkedHashMap> linkedMap = LinkedHashMap::Create(thread);
     map->SetLinkedMap(thread, linkedMap);
     // add data into set from iterable
     // 5.If iterable is not present, let iterable be undefined.

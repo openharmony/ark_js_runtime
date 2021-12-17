@@ -55,7 +55,7 @@ public:
         return reinterpret_cast<TemplateMap *>(object);
     }
     static const int DEFAULT_ELEMENTS_NUMBER = 16;
-    static TemplateMap *Create(JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
+    static JSHandle<TemplateMap> Create(JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
     {
         return HashTable::Create(thread, numberOfElements);
     }

@@ -25,11 +25,7 @@ namespace panda {
 namespace ecmascript {
 class JSStringIterator : public JSObject {
 public:
-    static JSStringIterator *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsStringIterator());
-        return static_cast<JSStringIterator *>(object);
-    }
+    CAST_CHECK(JSStringIterator, IsStringIterator);
 
     static JSHandle<JSStringIterator> CreateStringIterator(const JSThread *thread, const JSHandle<EcmaString> &string);
 

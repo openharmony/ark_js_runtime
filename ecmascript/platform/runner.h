@@ -23,9 +23,12 @@
 #include "ecmascript/platform/task_queue.h"
 
 namespace panda::ecmascript {
+static constexpr uint32_t MAX_PLATFORM_THREAD_NUM = 7;
+static constexpr uint32_t DEFAULT_PLATFORM_THREAD_NUM = 0;
+
 class Runner {
 public:
-    explicit Runner(int threadNum);
+    explicit Runner(uint32_t threadNum);
     ~Runner() = default;
 
     NO_COPY_SEMANTIC(Runner);
@@ -36,13 +39,32 @@ public:
         taskQueue_.PostTask(std::move(task));
     }
 
-    void Terminate();
+    void TerminateThread();
+    void TerminateTask();
+
+    uint32_t GetTotalThreadNum() const
+    {
+        return totalThreadNum_;
+    }
+
+    bool IsInThreadPool(std::thread::id id) const
+    {
+        for (auto &thread : threadPool_) {
+            if (thread->get_id() == id) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 private:
-    void Run();
+    void Run(uint32_t threadId);
 
     std::vector<std::unique_ptr<std::thread>> threadPool_ {};
     TaskQueue taskQueue_ {};
+    std::array<Task*, MAX_PLATFORM_THREAD_NUM + 1> runningTask_;
+    uint32_t totalThreadNum_ {0};
+    std::vector<os::thread::ThreadId> threadIdToIndexList_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_PLATFORM_RUNNER_H

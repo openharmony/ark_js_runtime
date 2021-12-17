@@ -68,8 +68,8 @@ protected:
         JSHandle<JSTaggedValue> constructor = env->GetBuiltinsSetFunction();
         JSHandle<JSSet> set =
             JSHandle<JSSet>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
-        LinkedHashSet *hashSet = LinkedHashSet::Cast(LinkedHashSet::Create(thread).GetTaggedObject());
-        set->SetLinkedSet(thread, JSTaggedValue(hashSet));
+        JSHandle<LinkedHashSet> hashSet = LinkedHashSet::Create(thread);
+        set->SetLinkedSet(thread, hashSet);
         return JSSet::Cast(set.GetTaggedValue().GetTaggedObject());
     }
 };

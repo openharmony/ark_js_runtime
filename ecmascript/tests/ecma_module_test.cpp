@@ -69,7 +69,7 @@ HWTEST_F_L0(EcmaModuleTest, AddItem_001)
     CString cStrItemName = "key1";
     int intItemValue = 1;
     JSHandle<EcmaModule> handleEcmaModule(thread, EcmaModuleCreate(thread));
-    JSHandle<NameDictionary> handleNameDict(thread, NameDictionary::Create(thread, numOfElementsDict));
+    JSHandle<NameDictionary> handleNameDict(NameDictionary::Create(thread, numOfElementsDict));
     JSHandle<JSTaggedValue> handleTagValItemName(
         thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(cStrItemName));
     JSHandle<JSTaggedValue> handleTagValItemValue(thread, JSTaggedValue(intItemValue));
@@ -141,14 +141,14 @@ HWTEST_F_L0(EcmaModuleTest, SetNameDictionary)
     ObjectFactory* objFactory = thread->GetEcmaVM()->GetFactory();
 
     int numOfElementsDict = 4;
-    JSHandle<NameDictionary> handleNameDict(thread, NameDictionary::Create(thread, numOfElementsDict));
+    JSHandle<NameDictionary> handleNameDict(NameDictionary::Create(thread, numOfElementsDict));
     JSHandle<JSTaggedValue> handleObjFunc = thread->GetEcmaVM()->GetGlobalEnv()->GetObjectFunction();
     CString keyArray1 = "hello1";
     JSHandle<EcmaString> stringKey1 = objFactory->NewFromCanBeCompressString(keyArray1);
     JSHandle<JSTaggedValue> key1(stringKey1);
     JSHandle<JSTaggedValue> value1(objFactory
         ->NewJSObjectByConstructor(JSHandle<JSFunction>(handleObjFunc), handleObjFunc));
-    JSHandle<NameDictionary> handleNameDictionaryFrom(thread,
+    JSHandle<NameDictionary> handleNameDictionaryFrom(
         NameDictionary::Put(thread, handleNameDict, key1, value1, PropertyAttributes::Default()));
     JSHandle<EcmaModule> handleEcmaModule(thread, EcmaModuleCreate(thread));
 
@@ -181,8 +181,8 @@ HWTEST_F_L0(EcmaModuleTest, ModuleManager_AddModule)
     CString cStrItemName2 = "cStrItemName2";
     int intItemValue1 = 1;
     int intItemValue2 = 2;
-    JSHandle<NameDictionary> handleNameDict1(thread, NameDictionary::Create(thread, numOfElementsDict1));
-    JSHandle<NameDictionary> handleNameDict2(thread, NameDictionary::Create(thread, numOfElementsDict2));
+    JSHandle<NameDictionary> handleNameDict1(NameDictionary::Create(thread, numOfElementsDict1));
+    JSHandle<NameDictionary> handleNameDict2(NameDictionary::Create(thread, numOfElementsDict2));
     JSHandle<JSTaggedValue> handleItemName1(
         thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString(cStrItemName1));
     JSHandle<JSTaggedValue> handleItemName2(
@@ -244,8 +244,8 @@ HWTEST_F_L0(EcmaModuleTest, ModuleManager_RemoveModule)
     JSHandle<JSTaggedValue> handleTagValItemValue2(thread, JSTaggedValue(intItemValue2));
     JSHandle<EcmaModule> handleEcmaModuleAddFrom1(thread, EcmaModuleCreate(thread));
     JSHandle<EcmaModule> handleEcmaModuleAddFrom2(thread, EcmaModuleCreate(thread));
-    JSHandle<NameDictionary> handleNameDict1(thread, NameDictionary::Create(thread, numOfElementsDict1));
-    JSHandle<NameDictionary> handleNameDict2(thread, NameDictionary::Create(thread, numOfElementsDict2));
+    JSHandle<NameDictionary> handleNameDict1(NameDictionary::Create(thread, numOfElementsDict1));
+    JSHandle<NameDictionary> handleNameDict2(NameDictionary::Create(thread, numOfElementsDict2));
     handleEcmaModuleAddFrom1->SetNameDictionary(thread, handleNameDict1);
     handleEcmaModuleAddFrom2->SetNameDictionary(thread, handleNameDict2);
     EcmaModule::AddItem(thread, handleEcmaModuleAddFrom1, handleTagValItemName1, handleTagValItemValue1);
@@ -463,86 +463,5 @@ HWTEST_F_L0(EcmaModuleTest, ModuleManager_CopyModule)
         moduleManager->GetModuleItem(thread, handleTagValEcmaModuleCopyTo2, handleTagValItemName21)->GetNumber());
     EXPECT_EQ(intItemValue22,
         moduleManager->GetModuleItem(thread, handleTagValEcmaModuleCopyTo2, handleTagValItemName22)->GetNumber());
-}
-
-// ModuleStack
-/*
- * Feature: ModuleStack
- * Function: PushModule
- * SubFunction: GetTop
- * FunctionPoints: Push EcmaModule By Name
- * CaseDescription: Create a target ModuleStack, push a source EcmaModule name at the back of the name vector of the
- *                  target ModuleStack, check whether the returned EcmaModule name obtained through 'GetTop' function
- *                  from the target ModuleStack is the same with the source EcmaModule name.
- */
-HWTEST_F_L0(EcmaModuleTest, ModuleStack_PushModule)
-{
-    ModuleStack moduleStack;
-
-    CString cStrPushNo1 = "cStrPushNo1";
-    CString cStrPushNo2 = "cStrPushNo2";
-    CString cStrPushNo3 = "cStrPushNo3";
-    moduleStack.PushModule(cStrPushNo1);
-    EXPECT_STREQ(moduleStack.GetTop().c_str(), cStrPushNo1.c_str());
-    moduleStack.PushModule(cStrPushNo2);
-    EXPECT_STREQ(moduleStack.GetTop().c_str(), cStrPushNo2.c_str());
-    moduleStack.PushModule(cStrPushNo3);
-    EXPECT_STREQ(moduleStack.GetTop().c_str(), cStrPushNo3.c_str());
-}
-
-/*
- * Feature: ModuleStack
- * Function: PopModule
- * SubFunction: PushModule/GetTop
- * FunctionPoints: Pop EcmaModule At The Back
- * CaseDescription: Create a target ModuleStack, push some source EcmaModule names at the back of the name vector of
- *                  the target ModuleStack, check whether the returned EcmaModule name obtained through 'GetTop'
- *                  function from the target ModuleStack now and the returned EcmaModule name obtained through 'GetTop'
- *                  function from the target ModuleStack after the target ModuleStack calls 'PopModule' function are
- *                  within expectations.
- */
-HWTEST_F_L0(EcmaModuleTest, ModuleStack_PopModule)
-{
-    ModuleStack moduleStack;
-
-    CString cStrPushNo1 = "cStrPushNo1";
-    CString cStrPushNo2 = "cStrPushNo2";
-    CString cStrPushNo3 = "cStrPushNo3";
-    moduleStack.PushModule(cStrPushNo1);
-    moduleStack.PushModule(cStrPushNo2);
-    moduleStack.PushModule(cStrPushNo3);
-    EXPECT_STREQ(moduleStack.GetTop().c_str(), cStrPushNo3.c_str());
-    moduleStack.PopModule();
-    EXPECT_STREQ(moduleStack.GetTop().c_str(), cStrPushNo2.c_str());
-    moduleStack.PopModule();
-    EXPECT_STREQ(moduleStack.GetTop().c_str(), cStrPushNo1.c_str());
-    moduleStack.PopModule();
-}
-
-/*
- * Feature: ModuleStack
- * Function: GetPrevModule
- * SubFunction: PushModule/GetTop/PopModule
- * FunctionPoints: Get Previous Module
- * CaseDescription: Create a target ModuleStack, push some source EcmaModule names at the back of the name vector of
- *                  the target ModuleStack, check whether the returned EcmaModule name obtained through 'GetPrevModule'
- *                  function from the target ModuleStack now and the returned EcmaModule name obtained through
- *                 'GetPrevModule' function from the target ModuleStack after the target ModuleStack calls 'PushModule'
- *                  function or 'PopModule' function are within expectations.
- */
-HWTEST_F_L0(EcmaModuleTest, ModuleStack_GetPrevModule)
-{
-    ModuleStack moduleStack;
-
-    CString cStrPushNo1 = "cStrPushNo1";
-    CString cStrPushNo2 = "cStrPushNo2";
-    CString cStrPushNo3 = "cStrPushNo3";
-    moduleStack.PushModule(cStrPushNo1);
-    moduleStack.PushModule(cStrPushNo2);
-    EXPECT_STREQ(moduleStack.GetPrevModule().c_str(), cStrPushNo1.c_str());
-    moduleStack.PushModule(cStrPushNo3);
-    EXPECT_STREQ(moduleStack.GetPrevModule().c_str(), cStrPushNo2.c_str());
-    moduleStack.PopModule();
-    EXPECT_STREQ(moduleStack.GetPrevModule().c_str(), cStrPushNo1.c_str());
 }
 }  // namespace panda::ecmascript

@@ -25,8 +25,8 @@
 #include "ecmascript/hprof/heap_snapshot_json_serializer.h"
 #include "ecmascript/hprof/string_hashmap.h"
 #include "ecmascript/ic/ic_handler.h"
-#include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/ic/property_box.h"
+#include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_arguments.h"
@@ -111,19 +111,18 @@ public:
 #ifndef NDEBUG
 HWTEST_F_L0(EcmaDumpTest, Dump)
 {
-    auto jsThread = thread;
     JSTaggedValue value1(100);
-    value1.Dump(jsThread);
+    value1.D();
 
     JSTaggedValue value2(100.0);
-    JSTaggedValue::DumpVal(jsThread, value2.GetRawData());
+    JSTaggedValue::DV(value2.GetRawData());
 
-    JSTaggedValue::Undefined().Dump(jsThread);
+    JSTaggedValue::Undefined().D();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    env.Dump(jsThread);
+    env.Dump();
 
     JSHandle<JSFunction> objFunc(env->GetObjectFunction());
-    objFunc.Dump(jsThread);
+    objFunc.Dump();
 }
 #endif  // #ifndef NDEBUG
 
@@ -131,7 +130,7 @@ static JSHandle<JSMap> NewJSMap(JSThread *thread, ObjectFactory *factory, JSHand
 {
     JSHandle<JSHClass> mapClass = factory->NewEcmaDynClass(JSMap::SIZE, JSType::JS_MAP, proto);
     JSHandle<JSMap> jsMap = JSHandle<JSMap>::Cast(factory->NewJSObject(mapClass));
-    JSHandle<JSTaggedValue> linkedMap(thread, LinkedHashMap::Create(thread));
+    JSHandle<LinkedHashMap> linkedMap(LinkedHashMap::Create(thread));
     jsMap->SetLinkedMap(thread, linkedMap);
     return jsMap;
 }
@@ -140,7 +139,7 @@ static JSHandle<JSSet> NewJSSet(JSThread *thread, ObjectFactory *factory, JSHand
 {
     JSHandle<JSHClass> setClass = factory->NewEcmaDynClass(JSSet::SIZE, JSType::JS_SET, proto);
     JSHandle<JSSet> jsSet = JSHandle<JSSet>::Cast(factory->NewJSObject(setClass));
-    JSHandle<JSTaggedValue> linkedSet(thread, LinkedHashSet::Create(thread));
+    JSHandle<LinkedHashSet> linkedSet(LinkedHashSet::Create(thread));
     jsSet->SetLinkedSet(thread, linkedSet);
     return jsSet;
 }
@@ -162,15 +161,15 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
     JSHandle<JSTaggedValue> proto = globalEnv->GetFunctionPrototype();
     std::vector<std::pair<CString, JSTaggedValue>> snapshotVector;
 
-#define DUMP_FOR_HANDLE(dumpHandle)                                             \
-    dumpHandle.GetTaggedValue().Dump(thread);                                   \
+#define DUMP_FOR_HANDLE(dumpHandle)                                        \
+    dumpHandle.GetTaggedValue().D();                                       \
     dumpHandle.GetTaggedValue().DumpForSnapshot(thread, snapshotVector);
 
 #define NEW_OBJECT_AND_DUMP(ClassName, TypeName)                                       \
     JSHandle<JSHClass> class##ClassName =                                              \
         factory->NewEcmaDynClass(ClassName::SIZE, JSType::TypeName, proto);            \
         JSHandle<JSObject> object##ClassName = factory->NewJSObject(class##ClassName); \
-        object##ClassName.GetTaggedValue().Dump(thread);                               \
+        object##ClassName.GetTaggedValue().D();                                        \
         object##ClassName.GetTaggedValue().DumpForSnapshot(thread, snapshotVector);
 
     for (JSType type = JSType::JS_OBJECT; type <= JSType::JS_TYPE_LAST; type = JSType(static_cast<int>(type) + 1)) {
@@ -282,7 +281,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FILEDS(JSObject::SIZE, JSWeakMap::SIZE, 1)
                 JSHandle<JSHClass> weakMapClass = factory->NewEcmaDynClass(JSWeakMap::SIZE, JSType::JS_WEAK_MAP, proto);
                 JSHandle<JSWeakMap> jsWeakMap = JSHandle<JSWeakMap>::Cast(factory->NewJSObject(weakMapClass));
-                JSHandle<JSTaggedValue> weakLinkedMap(thread, LinkedHashMap::Create(thread));
+                JSHandle<LinkedHashMap> weakLinkedMap(LinkedHashMap::Create(thread));
                 jsWeakMap->SetLinkedMap(thread, weakLinkedMap);
                 DUMP_FOR_HANDLE(jsWeakMap)
                 break;
@@ -291,7 +290,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FILEDS(JSObject::SIZE, JSWeakSet::SIZE, 1)
                 JSHandle<JSHClass> weakSetClass = factory->NewEcmaDynClass(JSWeakSet::SIZE, JSType::JS_WEAK_SET, proto);
                 JSHandle<JSWeakSet> jsWeakSet = JSHandle<JSWeakSet>::Cast(factory->NewJSObject(weakSetClass));
-                JSHandle<JSTaggedValue> weakLinkedSet(thread, LinkedHashSet::Create(thread));
+                JSHandle<LinkedHashSet> weakLinkedSet(LinkedHashSet::Create(thread));
                 jsWeakSet->SetLinkedSet(thread, weakLinkedSet);
                 DUMP_FOR_HANDLE(jsWeakSet)
                 break;
@@ -620,7 +619,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 UNREACHABLE();
                 break;
         }
-    } 
+    }
 #undef NEW_OBJECT_AND_DUMP
 #undef DUMP_FOR_HANDLE
 }

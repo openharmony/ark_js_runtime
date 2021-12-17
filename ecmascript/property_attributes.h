@@ -58,7 +58,7 @@ public:
 
     static constexpr uint32_t DICTIONARY_ORDER_NUM = 20;
     static constexpr uint32_t OFFSET_BITFIELD_NUM = 10;
-    static constexpr uint32_t MAX_CAPACITY_OF_PROPERTIES = (1U << OFFSET_BITFIELD_NUM);
+    static constexpr uint32_t MAX_CAPACITY_OF_PROPERTIES = (1U << OFFSET_BITFIELD_NUM) - 1;
 
     using PropertyMetaDataField = BitField<int, 0, 4>;    // 4: property metaData field occupies 4 bits
     using AttributesField = BitField<int, 0, 4>;         // 4: attributes field occupies 4 bits

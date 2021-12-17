@@ -18,21 +18,21 @@
 
 namespace kungfu {
 enum class MachineType {
-    NONE_TYPE,
-    BOOL_TYPE,
-    INT8_TYPE,
-    INT16_TYPE,
-    INT32_TYPE,
-    INT64_TYPE,
-    UINT8_TYPE,
-    UINT16_TYPE,
-    UINT32_TYPE,
-    UINT64_TYPE,
-    POINTER_TYPE,
-    TAGGED_TYPE,
-    TAGGED_POINTER_TYPE,
-    FLOAT32_TYPE,
-    FLOAT64_TYPE,
+    NONE,
+    BOOL,
+    INT8,
+    INT16,
+    INT32,
+    INT64,
+    UINT8,
+    UINT16,
+    UINT32,
+    UINT64,
+    FLOAT32,
+    FLOAT64,
+    NATIVE_POINTER, // GC will not visit NATIVE_POINTER.
+    TAGGED,         // GC cares
+    TAGGED_POINTER,
 };
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_MACHINE_TYPE_H

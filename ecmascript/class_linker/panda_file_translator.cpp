@@ -109,6 +109,7 @@ void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CSt
             InitializeMemory(method, nullptr, &pf, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
                              mda.GetAccessFlags(), codeDataAccessor.GetNumArgs(), nullptr);
             method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
+            method->SetCallTypeFromAnnotation();
             const uint8_t *insns = codeDataAccessor.GetInstructions();
             if (this->translated_code_.find(insns) == this->translated_code_.end()) {
                 this->translated_code_.insert(insns);
@@ -241,13 +242,7 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             array_size_t length = literal->GetLength();
 
             JSHandle<JSArray> arr(JSArray::ArrayCreate(thread_, JSTaggedNumber(length)));
-            JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
-            JSMutableHandle<JSTaggedValue> arrValue(thread_, JSTaggedValue::Undefined());
-            for (array_size_t i = 0; i < length; i++) {
-                key.Update(JSTaggedValue(static_cast<int32_t>(i)));
-                arrValue.Update(literal->Get(i));
-                JSObject::DefinePropertyByLiteral(thread_, JSHandle<JSObject>::Cast(arr), key, arrValue);
-            }
+            arr->SetElements(thread_, literal);
             constpool->Set(thread_, value.GetConstpoolIndex(), arr.GetTaggedValue());
         } else if (value.GetConstpoolType() == ConstPoolType::CLASS_LITERAL) {
             size_t index = it.first;
@@ -350,6 +345,23 @@ void PandaFileTranslator::UpdateICOffset(JSMethod *method, uint8_t *pc) const
         case EcmaOpcode::TRYSTGLOBALBYNAME_PREF_ID32:
         case EcmaOpcode::LDGLOBALVAR_PREF_ID32:
         case EcmaOpcode::STGLOBALVAR_PREF_ID32:
+        case EcmaOpcode::ADD2DYN_PREF_V8:
+        case EcmaOpcode::SUB2DYN_PREF_V8:
+        case EcmaOpcode::MUL2DYN_PREF_V8:
+        case EcmaOpcode::DIV2DYN_PREF_V8:
+        case EcmaOpcode::MOD2DYN_PREF_V8:
+        case EcmaOpcode::SHL2DYN_PREF_V8:
+        case EcmaOpcode::SHR2DYN_PREF_V8:
+        case EcmaOpcode::ASHR2DYN_PREF_V8:
+        case EcmaOpcode::AND2DYN_PREF_V8:
+        case EcmaOpcode::OR2DYN_PREF_V8:
+        case EcmaOpcode::XOR2DYN_PREF_V8:
+        case EcmaOpcode::EQDYN_PREF_V8:
+        case EcmaOpcode::NOTEQDYN_PREF_V8:
+        case EcmaOpcode::LESSDYN_PREF_V8:
+        case EcmaOpcode::LESSEQDYN_PREF_V8:
+        case EcmaOpcode::GREATERDYN_PREF_V8:
+        case EcmaOpcode::GREATEREQDYN_PREF_V8:
             method->UpdateSlotSize(1);
             break;
         case EcmaOpcode::LDOBJBYVALUE_PREF_V8_V8:

@@ -135,6 +135,34 @@ public:
         return ptr;
     }
 
+    static inline Area *AllocateSpace(size_t capacity)
+    {
+        size_t headerSize = sizeof(Area);
+        if (capacity < headerSize) {
+            LOG_ECMA_MEM(FATAL) << "capacity must have a size not less than sizeof Area.";
+            UNREACHABLE();
+        }
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
+        void *mem = malloc(capacity);
+        if (mem == nullptr) {
+            LOG_ECMA_MEM(FATAL) << "malloc failed";
+            UNREACHABLE();
+        }
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        uintptr_t begin = reinterpret_cast<uintptr_t>(mem) + headerSize;
+        capacity -= headerSize;
+        return new (mem) Area(begin, capacity);
+    }
+
+    static inline void FreeSpace(Area *area)
+    {
+        if (area == nullptr) {
+            return;
+        }
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
+        free(reinterpret_cast<std::byte *>(area));
+    }
+
 private:
     NO_COPY_SEMANTIC(RegionFactory);
     NO_MOVE_SEMANTIC(RegionFactory);

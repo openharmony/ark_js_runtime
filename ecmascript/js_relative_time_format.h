@@ -36,11 +36,7 @@
 namespace panda::ecmascript {
 class JSRelativeTimeFormat : public JSObject {
 public:
-    static JSRelativeTimeFormat *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSRelativeTimeFormat());
-        return reinterpret_cast<JSRelativeTimeFormat *>(object);
-    }
+    CAST_CHECK(JSRelativeTimeFormat, IsJSRelativeTimeFormat);
 
     static constexpr size_t LOCALE_OFFSET = JSObject::SIZE;
 

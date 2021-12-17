@@ -59,7 +59,7 @@ TaggedObject *EcmaHeapManager::AllocateYoungGenerationOrHugeObject(JSHClass *hcl
             heap_->CollectGarbage(TriggerGCType::OLD_GC);
             object = reinterpret_cast<TaggedObject *>(newSpaceAllocator_.Allocate(size));
             if (UNLIKELY(object == nullptr)) {
-                heap_->ThrowOutOfMemoryError(size);
+                heap_->ThrowOutOfMemoryError(size, "AllocateYoungGenerationOrHugeObject");
                 UNREACHABLE();
             }
         }
@@ -76,6 +76,17 @@ TaggedObject *EcmaHeapManager::TryAllocateYoungGeneration(size_t size)
         return nullptr;
     }
     return reinterpret_cast<TaggedObject *>(newSpaceAllocator_.Allocate(size));
+}
+
+TaggedObject *EcmaHeapManager::AllocateDynClassClass(JSHClass *hclass, size_t size)
+{
+    auto object = reinterpret_cast<TaggedObject *>(GetNonMovableSpaceAllocator().Allocate(size));
+    if (UNLIKELY(object == nullptr)) {
+        LOG_ECMA_MEM(FATAL) << "EcmaHeapManager::AllocateDynClassClass can not allocate any space";
+    }
+    *reinterpret_cast<MarkWordType *>(ToUintPtr(object)) = reinterpret_cast<MarkWordType>(hclass);
+    heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
 }
 
 TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size)
@@ -96,7 +107,7 @@ TaggedObject *EcmaHeapManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, 
             }
             object = reinterpret_cast<TaggedObject *>(GetNonMovableSpaceAllocator().Allocate(size));
             if (UNLIKELY(object == nullptr)) {
-                heap_->ThrowOutOfMemoryError(size);
+                heap_->ThrowOutOfMemoryError(size, "AllocateNonMovableOrHugeObject");
                 UNREACHABLE();
             }
         }
@@ -153,7 +164,7 @@ TaggedObject *EcmaHeapManager::AllocateOldGenerationOrHugeObject(JSHClass *hclas
             }
             object = reinterpret_cast<TaggedObject *>(GetOldSpaceAllocator().Allocate(size));
             if (UNLIKELY(object == nullptr)) {
-                heap_->ThrowOutOfMemoryError(size);
+                heap_->ThrowOutOfMemoryError(size, "AllocateOldGenerationOrHugeObject");
                 UNREACHABLE();
             }
         }
@@ -167,7 +178,7 @@ TaggedObject *EcmaHeapManager::AllocateHugeObject(JSHClass *hclass, size_t size)
 {
     ASSERT(size > MAX_REGULAR_HEAP_OBJECT_SIZE);
     // large objects
-    heap_->CheckAndTriggerOldGC();
+    heap_->CheckAndTriggerCompressGC();
     auto *object =
         reinterpret_cast<TaggedObject *>(const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace())->Allocate(size));
     if (UNLIKELY(object == nullptr)) {
@@ -175,7 +186,7 @@ TaggedObject *EcmaHeapManager::AllocateHugeObject(JSHClass *hclass, size_t size)
         object = reinterpret_cast<TaggedObject *>(
                     const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace())->Allocate(size));
         if (UNLIKELY(object == nullptr)) {
-            heap_->ThrowOutOfMemoryError(size);
+            heap_->ThrowOutOfMemoryError(size, "AllocateHugeObject");
             UNREACHABLE();
         }
     }
@@ -188,13 +199,18 @@ TaggedObject *EcmaHeapManager::AllocateMachineCodeSpaceObject(JSHClass *hclass, 
 {
     auto object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {
-        if (!heap_->FillMachineCodeSpaceAndTryGC(&GetMachineCodeSpaceAllocator())) {
-            return nullptr;
+        if (heap_->CheckAndTriggerMachineCodeGC()) {
+            object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
         }
-        object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
         if (UNLIKELY(object == nullptr)) {
-            heap_->ThrowOutOfMemoryError(size);
-            return nullptr;
+            if (!heap_->FillMachineCodeSpaceAndTryGC(&GetMachineCodeSpaceAllocator())) {
+                return nullptr;
+            }
+            object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
+            if (UNLIKELY(object == nullptr)) {
+                heap_->ThrowOutOfMemoryError(size, "AllocateMachineCodeSpaceObject");
+                return nullptr;
+            }
         }
     }
     SetClass(object, hclass);

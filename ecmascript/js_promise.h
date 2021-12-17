@@ -27,14 +27,11 @@
 namespace panda::ecmascript {
 enum class PromiseStatus : uint32_t { PENDING = 0, FULFILLED, REJECTED };
 enum class PromiseType : uint32_t { RESOLVE = 0, REJECT };
+enum class PromiseRejectionEvent : uint32_t { REJECT = 0, HANDLE };
 
 class PromiseReaction final : public Record {
 public:
-    static PromiseReaction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsPromiseReaction());
-        return static_cast<PromiseReaction *>(object);
-    }
+    CAST_CHECK(PromiseReaction, IsPromiseReaction);
 
     static constexpr size_t PROMISE_CAPABILITY_OFFSET = Record::SIZE;
     ACCESSORS(PromiseCapability, PROMISE_CAPABILITY_OFFSET, TYPE_OFFSET);
@@ -48,11 +45,7 @@ public:
 
 class PromiseCapability final : public Record {
 public:
-    static PromiseCapability *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsPromiseCapability());
-        return static_cast<PromiseCapability *>(object);
-    }
+    CAST_CHECK(PromiseCapability, IsPromiseCapability);
 
     static constexpr size_t PROMISE_OFFSET = Record::SIZE;
     ACCESSORS(Promise, PROMISE_OFFSET, RESOLVE_OFFSET);
@@ -66,11 +59,7 @@ public:
 
 class PromiseIteratorRecord final : public Record {
 public:
-    static PromiseIteratorRecord *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsPromiseIteratorRecord());
-        return static_cast<PromiseIteratorRecord *>(object);
-    }
+    CAST_CHECK(PromiseIteratorRecord, IsPromiseIteratorRecord);
 
     static constexpr size_t ITERATOR_OFFSET = Record::SIZE;
     ACCESSORS(Iterator, ITERATOR_OFFSET, DONE_OFFSET);
@@ -83,11 +72,8 @@ public:
 
 class PromiseRecord final : public Record {
 public:
-    static PromiseRecord *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsPromiseRecord());
-        return static_cast<PromiseRecord *>(object);
-    }
+    CAST_CHECK(PromiseRecord, IsPromiseRecord);
+
     static constexpr size_t VALUE_OFFSET = Record::SIZE;
     ACCESSORS(Value, VALUE_OFFSET, SIZE);
     DECL_DUMP()
@@ -97,11 +83,8 @@ public:
 
 class ResolvingFunctionsRecord final : public Record {
 public:
-    static ResolvingFunctionsRecord *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsResolvingFunctionsRecord());
-        return static_cast<ResolvingFunctionsRecord *>(object);
-    }
+    CAST_CHECK(ResolvingFunctionsRecord, IsResolvingFunctionsRecord);
+
     static constexpr size_t RESOLVE_FUNCTION_OFFSET = Record::SIZE;
     ACCESSORS(ResolveFunction, RESOLVE_FUNCTION_OFFSET, REJECT_FUNCTION_OFFSET);
     ACCESSORS(RejectFunction, REJECT_FUNCTION_OFFSET, SIZE);
@@ -113,11 +96,7 @@ public:
 
 class JSPromise final : public JSObject {
 public:
-    static JSPromise *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSPromise());
-        return static_cast<JSPromise *>(object);
-    }
+    CAST_CHECK(JSPromise, IsJSPromise);
 
     // ES6 25.4.1.3 CreateResolvingFunctions ( promise )
     static JSHandle<ResolvingFunctionsRecord> CreateResolvingFunctions(JSThread *thread,

@@ -113,7 +113,7 @@ host_unittest_action("StubTest") {
 
   deps = [
     "$ark_root/libpandabase:libarkbase",
-    "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer_test(${host_toolchain})",
+    "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer_test",
     sdk_libc_secshared_dep,
   ]
 }

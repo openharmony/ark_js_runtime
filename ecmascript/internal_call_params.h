@@ -155,6 +155,11 @@ private:
         return fixed_length_;
     }
 
+    inline uintptr_t GetFixedDataAddress() const
+    {
+        return ToUintPtr(&fixed_data_);
+    }
+
     inline JSTaggedType GetFixedBuffer(uint32_t idx) const
     {
         return fixed_data_[idx];
@@ -186,6 +191,11 @@ private:
     inline uint32_t GetVariableLength() const
     {
         return variable_length_;
+    }
+
+    inline uintptr_t GetVariableDataAddress() const
+    {
+        return ToUintPtr(&variable_data_);
     }
 
     inline JSTaggedType GetVariableBuffer(uint32_t idx) const

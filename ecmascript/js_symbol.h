@@ -39,11 +39,7 @@ public:
     static constexpr const uint32_t LINEAR_SEED = 987654321U;
 
 public:
-    static JSSymbol *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsSymbol());
-        return static_cast<JSSymbol *>(object);
-    }
+    CAST_CHECK(JSSymbol, IsSymbol);
 
     static inline uint32_t ComputeHash()
     {

@@ -222,30 +222,23 @@ bool FastRuntimeStub::ShouldCallSetter(JSTaggedValue receiver, JSTaggedValue hol
     return attr.IsWritable();
 }
 
-JSTaggedValue FastRuntimeStub::AddPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
-                                                 JSTaggedValue value)
+PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle<JSObject> objHandle,
+                                                      JSHandle<JSTaggedValue> keyHandle,
+                                                      JSHandle<JSTaggedValue> valueHandle,
+                                                      PropertyAttributes attr)
 {
     INTERPRETER_TRACE(thread, AddPropertyByName);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    if (UNLIKELY(!JSObject::Cast(receiver)->IsExtensible())) {
-        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot add property in prevent extensions ", JSTaggedValue::Exception());
-    }
 
-    JSHandle<JSObject> objHandle(thread, receiver);
-    JSHandle<JSTaggedValue> keyHandle(thread, key);
-    JSHandle<JSTaggedValue> valueHandle(thread, value);
     if (objHandle->IsJSArray() && keyHandle.GetTaggedValue() == thread->GlobalConstants()->GetConstructorString()) {
         objHandle->GetJSHClass()->SetHasConstructor(true);
     }
-    PropertyAttributes attr = PropertyAttributes::Default();
-    uint32_t unusedInlinedProps = objHandle->GetJSHClass()->GetUnusedInlinedProps();
-    if (unusedInlinedProps != 0) {
-        uint32_t order = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS - unusedInlinedProps;
-        objHandle->SetPropertyInlinedProps(thread, order, value);
-        attr.SetOffset(order);
+    int32_t nextInlinedPropsIndex = objHandle->GetJSHClass()->GetNextInlinedPropsIndex();
+    if (nextInlinedPropsIndex >= 0) {
+        objHandle->SetPropertyInlinedProps(thread, nextInlinedPropsIndex, valueHandle.GetTaggedValue());
+        attr.SetOffset(nextInlinedPropsIndex);
         attr.SetIsInlinedProps(true);
         JSHClass::AddProperty(thread, objHandle, keyHandle, attr);
-        return JSTaggedValue::Undefined();
+        return attr;
     }
 
     JSMutableHandle<TaggedArray> array(thread, objHandle->GetProperties());
@@ -260,19 +253,18 @@ JSTaggedValue FastRuntimeStub::AddPropertyByName(JSThread *thread, JSTaggedValue
     if (!array->IsDictionaryMode()) {
         attr.SetIsInlinedProps(false);
 
-        array_size_t outProps =
-            JSHClass::DEFAULT_CAPACITY_OF_OUT_OBJECTS - objHandle->GetJSHClass()->GetUnusedNonInlinedProps();
-        ASSERT(length >= outProps);
+        array_size_t nonInlinedProps = objHandle->GetJSHClass()->GetNextNonInlinedPropsIndex();
+        ASSERT(length >= nonInlinedProps);
         // if array is full, grow array or change to dictionary mode
-        if (length == outProps) {
-            if (UNLIKELY(length >= JSHClass::DEFAULT_CAPACITY_OF_OUT_OBJECTS)) {
+        if (length == nonInlinedProps) {
+            if (UNLIKELY(length == JSHClass::MAX_CAPACITY_OF_OUT_OBJECTS)) {
                 // change to dictionary and add one.
                 JSHandle<NameDictionary> dict(JSObject::TransitionToDictionary(thread, objHandle));
-                attr.SetDictionaryOrder(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES);
-                NameDictionary *newDict = NameDictionary::PutIfAbsent(thread, dict, keyHandle, valueHandle, attr);
-                objHandle->SetProperties(thread, JSTaggedValue(newDict));
+                JSHandle<NameDictionary> newDict =
+                    NameDictionary::PutIfAbsent(thread, dict, keyHandle, valueHandle, attr);
+                objHandle->SetProperties(thread, newDict);
                 // index is not essential when fastMode is false;
-                return JSTaggedValue::Undefined();
+                return attr;
             }
             // Grow properties array size
             array_size_t capacity = JSObject::ComputePropertyCapacity(length);
@@ -281,15 +273,16 @@ JSTaggedValue FastRuntimeStub::AddPropertyByName(JSThread *thread, JSTaggedValue
             objHandle->SetProperties(thread, array.GetTaggedValue());
         }
 
-        attr.SetOffset(outProps + JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+        attr.SetOffset(nonInlinedProps + objHandle->GetJSHClass()->GetInlinedProperties());
         JSHClass::AddProperty(thread, objHandle, keyHandle, attr);
-        array->Set(thread, outProps, valueHandle.GetTaggedValue());
+        array->Set(thread, nonInlinedProps, valueHandle.GetTaggedValue());
     } else {
         JSHandle<NameDictionary> dictHandle(array);
-        NameDictionary *newDict = NameDictionary::PutIfAbsent(thread, dictHandle, keyHandle, valueHandle, attr);
-        objHandle->SetProperties(thread, JSTaggedValue(newDict));
+        JSHandle<NameDictionary> newDict =
+            NameDictionary::PutIfAbsent(thread, dictHandle, keyHandle, valueHandle, attr);
+        objHandle->SetProperties(thread, newDict);
     }
-    return JSTaggedValue::Undefined();
+    return attr;
 }
 
 JSTaggedValue FastRuntimeStub::AddPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
@@ -396,9 +389,8 @@ JSTaggedValue FastRuntimeStub::GetPropertyByName(JSThread *thread, JSTaggedValue
         if (LIKELY(!hclass->IsDictionaryMode())) {
             ASSERT(!TaggedArray::Cast(JSObject::Cast(holder)->GetProperties().GetTaggedObject())->IsDictionaryMode());
 
-            LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetAttributes().GetTaggedObject());
-
-            int propsNumber = hclass->GetPropertiesNumber();
+            LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetLayout().GetTaggedObject());
+            int propsNumber = hclass->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber);
             if (entry != -1) {
                 PropertyAttributes attr(layoutInfo->GetAttr(entry));
@@ -451,9 +443,9 @@ JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue
         if (LIKELY(!hclass->IsDictionaryMode())) {
             ASSERT(!TaggedArray::Cast(JSObject::Cast(holder)->GetProperties().GetTaggedObject())->IsDictionaryMode());
 
-            LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetAttributes().GetTaggedObject());
+            LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetLayout().GetTaggedObject());
 
-            int propsNumber = hclass->GetPropertiesNumber();
+            int propsNumber = hclass->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber);
             if (entry != -1) {
                 PropertyAttributes attr(layoutInfo->GetAttr(entry));
@@ -504,7 +496,16 @@ JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue
         holder = hclass->GetPrototype();
     } while (holder.IsHeapObject());
 
-    return AddPropertyByName(thread, receiver, key, value);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSObject> objHandle(thread, receiver);
+    JSHandle<JSTaggedValue> keyHandle(thread, key);
+    JSHandle<JSTaggedValue> valueHandle(thread, value);
+
+    if (UNLIKELY(!JSObject::Cast(receiver)->IsExtensible())) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot add property in prevent extensions ", JSTaggedValue::Exception());
+    }
+    AddPropertyByName(thread, objHandle, keyHandle, valueHandle, PropertyAttributes::Default());
+    return JSTaggedValue::Undefined();
 }
 
 template<bool UseOwn>
@@ -622,11 +623,11 @@ bool FastRuntimeStub::FastSetPropertyByIndex(JSThread *thread, JSTaggedValue rec
                                              JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, FastSetPropertyByIndex);
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
     auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex));
-    typedef JSTaggedValue (*PFSetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue);
+    typedef JSTaggedValue (*PFSetPropertyByIndex)(uintptr_t, JSTaggedValue, uint32_t, JSTaggedValue);
     auto setPropertyByIndex = reinterpret_cast<PFSetPropertyByIndex>(stubAddr);
-    JSTaggedValue result = setPropertyByIndex(thread, receiver, index, value);
+    JSTaggedValue result = setPropertyByIndex(thread->GetGlueAddr(), receiver, index, value);
 #else
     JSTaggedValue result = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
 #endif
@@ -661,11 +662,11 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedV
         // Maybe moved by GC
         receiver = receiverHandler.GetTaggedValue();
     }
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
     auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName));
-    typedef JSTaggedValue (*PFGetPropertyByName)(JSThread *, JSTaggedValue, JSTaggedValue);
+    typedef JSTaggedValue (*PFGetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue);
     auto getPropertyByNamePtr = reinterpret_cast<PFGetPropertyByName>(stubAddr);
-    JSTaggedValue result = getPropertyByNamePtr(thread, receiver, key);
+    JSTaggedValue result = getPropertyByNamePtr(thread->GetGlueAddr(), receiver, key);
 #else
     JSTaggedValue result = FastRuntimeStub::GetPropertyByName(thread, receiver, key);
 #endif
@@ -681,11 +682,11 @@ JSTaggedValue FastRuntimeStub::FastGetPropertyByName(JSThread *thread, JSTaggedV
 JSTaggedValue FastRuntimeStub::FastGetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
     INTERPRETER_TRACE(thread, FastGetPropertyByValue);
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
     auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue));
-    typedef JSTaggedValue (*PFGetPropertyByValue)(JSThread *, JSTaggedValue, JSTaggedValue);
+    typedef JSTaggedValue (*PFGetPropertyByValue)(uintptr_t, JSTaggedValue, JSTaggedValue);
     auto getPropertyByValuePtr = reinterpret_cast<PFGetPropertyByValue>(stubAddr);
-    JSTaggedValue result = getPropertyByValuePtr(thread, receiver, key);
+    JSTaggedValue result = getPropertyByValuePtr(thread->GetGlueAddr(), receiver, key);
 #else
     JSTaggedValue result = FastRuntimeStub::GetPropertyByValue(thread, receiver, key);
 #endif
@@ -702,11 +703,11 @@ template<bool UseHole>  // UseHole is only for Array::Sort() which requires Hole
 JSTaggedValue FastRuntimeStub::FastGetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index)
 {
     INTERPRETER_TRACE(thread, FastGetPropertyByIndex);
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
     auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex));
-    typedef JSTaggedValue (*PFGetPropertyByIndex)(JSThread *, JSTaggedValue, uint32_t);
+    typedef JSTaggedValue (*PFGetPropertyByIndex)(uintptr_t, JSTaggedValue, uint32_t);
     auto getPropertyByIndex = reinterpret_cast<PFGetPropertyByIndex>(stubAddr);
-    JSTaggedValue result = getPropertyByIndex(thread, receiver, index);
+    JSTaggedValue result = getPropertyByIndex(thread->GetGlueAddr(), receiver, index);
 #else
     JSTaggedValue result = FastRuntimeStub::GetPropertyByIndex(thread, receiver, index);
 #endif
@@ -989,7 +990,7 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
         JSHandle<JSTaggedValue> keyHandle(thread, key);
         JSHandle<JSTaggedValue> valHandle(thread, value);
         JSHandle<JSObject> objHandle(thread, obj);
-        JSHandle<GlobalDictionary> dictHandle(thread, GlobalDictionary::Create(thread));
+        JSHandle<GlobalDictionary> dictHandle(GlobalDictionary::Create(thread));
 
         // Add PropertyBox to global dictionary
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -998,9 +999,9 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
         PropertyBoxType boxType = valHandle->IsUndefined() ? PropertyBoxType::UNDEFINED : PropertyBoxType::CONSTANT;
         attr.SetBoxType(boxType);
 
-        GlobalDictionary *properties =
+        JSHandle<GlobalDictionary> properties =
             GlobalDictionary::PutIfAbsent(thread, dictHandle, keyHandle, JSHandle<JSTaggedValue>(boxHandle), attr);
-        objHandle->SetProperties(thread, JSTaggedValue(properties));
+        objHandle->SetProperties(thread, properties);
         return true;
     }
 
@@ -1048,9 +1049,9 @@ bool FastRuntimeStub::SetGlobalOwnProperty(JSThread *thread, JSTaggedValue recei
     PropertyBoxType boxType = valHandle->IsUndefined() ? PropertyBoxType::UNDEFINED : PropertyBoxType::CONSTANT;
     attr.SetBoxType(boxType);
 
-    GlobalDictionary *properties =
+    JSHandle<GlobalDictionary> properties =
         GlobalDictionary::PutIfAbsent(thread, dictHandle, keyHandle, JSHandle<JSTaggedValue>(boxHandle), attr);
-    objHandle->SetProperties(thread, JSTaggedValue(properties));
+    objHandle->SetProperties(thread, properties);
     return true;
 }
 
@@ -1177,10 +1178,10 @@ JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, 
     INTERPRETER_TRACE(thread, FindOwnProperty);
     if (!properties->IsDictionaryMode()) {
         JSHClass *cls = obj->GetJSHClass();
-        JSTaggedValue attrs = cls->GetAttributes();
+        JSTaggedValue attrs = cls->GetLayout();
         if (!attrs.IsNull()) {
             LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetHeapObject());
-            int propNumber = cls->GetPropertiesNumber();
+            int propNumber = cls->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, cls, key, propNumber);
             if (entry != -1) {
                 *attr = layoutInfo->GetAttr(entry);
@@ -1189,7 +1190,7 @@ JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, 
                 if (attr->IsInlinedProps()) {
                     return obj->GetPropertyInlinedProps(entry);
                 }
-                *indexOrEntry -= JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS;
+                *indexOrEntry -= cls->GetInlinedProperties();
                 return properties->Get(*indexOrEntry);
             }
         }
@@ -1250,16 +1251,16 @@ JSTaggedValue FastRuntimeStub::FindOwnProperty(JSThread *thread, JSObject *obj, 
     TaggedArray *array = TaggedArray::Cast(obj->GetProperties().GetHeapObject());
     if (!array->IsDictionaryMode()) {
         JSHClass *cls = obj->GetJSHClass();
-        JSTaggedValue attrs = cls->GetAttributes();
+        JSTaggedValue attrs = cls->GetLayout();
         if (!attrs.IsNull()) {
             LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetHeapObject());
-            int propsNumber = cls->GetPropertiesNumber();
+            int propsNumber = cls->NumberOfProps();
             int entry = layoutInfo->FindElementWithCache(thread, cls, key, propsNumber);
             if (entry != -1) {
                 PropertyAttributes attr(layoutInfo->GetAttr(entry));
                 ASSERT(static_cast<int>(attr.GetOffset()) == entry);
                 return attr.IsInlinedProps() ? obj->GetPropertyInlinedProps(entry)
-                                             : array->Get(entry - JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+                                             : array->Get(entry - cls->GetInlinedProperties());
             }
         }
         return JSTaggedValue::Hole();  // array == empty array will return here.

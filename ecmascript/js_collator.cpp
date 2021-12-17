@@ -43,13 +43,15 @@ JSHandle<TaggedArray> JSCollator::GetAvailableLocales(JSThread *thread)
     return availableLocales;
 }
 
-void JSCollator::SetIcuCollator(JSThread *thread, icu::Collator *icuCollator, const DeleteEntryPoint &callback)
+/* static */
+void JSCollator::SetIcuCollator(JSThread *thread, const JSHandle<JSCollator> &collator,
+    icu::Collator *icuCollator, const DeleteEntryPoint &callback)
 {
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
 
     ASSERT(icuCollator != nullptr);
-    JSTaggedValue data = GetIcuField();
+    JSTaggedValue data = collator->GetIcuField();
     if (data.IsJSNativePointer()) {
         JSNativePointer *native = JSNativePointer::Cast(data.GetTaggedObject());
         native->ResetExternalPointer(icuCollator);
@@ -57,7 +59,7 @@ void JSCollator::SetIcuCollator(JSThread *thread, icu::Collator *icuCollator, co
     }
     JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuCollator);
     pointer->SetDeleter(callback);
-    SetIcuField(thread, pointer.GetTaggedValue());
+    collator->SetIcuField(thread, pointer.GetTaggedValue());
     ecmaVm->PushToArrayDataList(*pointer);
 }
 
@@ -286,7 +288,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
         ASSERT(U_SUCCESS(status));
     }
 
-    collator->SetIcuCollator(thread, icuCollator.release(), JSCollator::FreeIcuCollator);
+    SetIcuCollator(thread, collator, icuCollator.release(), JSCollator::FreeIcuCollator);
     collator->SetBoundCompare(thread, JSTaggedValue::Undefined());
     // 29. Return collator.
     return collator;

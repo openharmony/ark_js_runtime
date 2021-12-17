@@ -36,10 +36,9 @@ public:
 
     void SynchronizedSetClass(JSHClass *hclass);
     JSHClass *SynchronizedGetClass() const;
+    void SetClassWithoutBarrier(JSHClass *hclass);
     void SetClass(JSHClass *hclass);
     JSHClass *GetClass() const;
-
-    size_t GetObjectSize();
 
     // Size of object header
     static constexpr int TaggedObjectSize()

@@ -37,7 +37,7 @@ public:
     NO_MOVE_SEMANTIC(Platform);
 
     void Initialize(int threadNum = DEFAULT_PLATFORM_THREAD_NUM);
-    void Destory();
+    void Destroy();
 
     void PostTask(std::unique_ptr<Task> task) const
     {
@@ -45,11 +45,18 @@ public:
         runner_->PostTask(std::move(task));
     }
 
-private:
-    static constexpr uint32_t MAX_PLATFORM_THREAD_NUM = 7;
-    static constexpr uint32_t DEFAULT_PLATFORM_THREAD_NUM = 0;
+    uint32_t GetTotalThreadNum() const
+    {
+        return runner_->GetTotalThreadNum();
+    }
 
-    int TheMostSuitableThreadNum(int threadNum) const;
+    bool IsInThreadPool(std::thread::id id) const
+    {
+        return runner_->IsInThreadPool(id);
+    }
+
+private:
+    uint32_t TheMostSuitableThreadNum(uint32_t threadNum) const;
 
     std::unique_ptr<Runner> runner_;
     int isInitialized_ = 0;

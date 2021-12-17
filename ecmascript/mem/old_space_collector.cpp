@@ -13,44 +13,52 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/old_space_collector-inl.h"
+#include "ecmascript/mem/old_space_collector.h"
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
+#include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/ecma_heap_manager.h"
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/heap_roots-inl.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem.h"
+#include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
-OldSpaceCollector::OldSpaceCollector(Heap *heap, bool parallelGc)
-    : heap_(heap), rootManager_(heap->GetEcmaVM()), paralledGC_(parallelGc)
-{
-    workList_ = new OldGCWorker(heap_, heap_->GetThreadPool()->GetThreadNum());
-}
+OldSpaceCollector::OldSpaceCollector(Heap *heap)
+    : heap_(heap), workList_(heap->GetWorkList()) {}
 
 void OldSpaceCollector::RunPhases()
 {
-    [[maybe_unused]] ecmascript::JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
+    JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
     INTERPRETER_TRACE(thread, OldSpaceCollector_RunPhases);
-    trace::ScopedTrace scoped_trace("OldSpaceCollector::RunPhases");
-    [[maybe_unused]] ClockScope clock("OldSpaceCollector::RunPhases");
-    InitializePhase();
-    MarkingPhase();
-    SweepPhases();
-    FinishPhase();
-    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticOldCollector(clock.GetPauseTime(), freeSize_, oldSpaceCommitSize_,
-                                                                nonMoveSpaceCommitSize_);
+    ClockScope clockScope;
+
+    concurrentMark_ = heap_->CheckConcurrentMark(thread);
+    if (concurrentMark_) {
+        heap_->GetConcurrentMarker()->ReMarking();
+        SweepPhases();
+        auto marker = heap_->GetConcurrentMarker();
+        marker->Reset();
+    } else {
+        InitializePhase();
+        MarkingPhase();
+        SweepPhases();
+        FinishPhase();
+    }
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticOldCollector(
+        clockScope.GetPauseTime(), freeSize_, oldSpaceCommitSize_, nonMoveSpaceCommitSize_);
+    ECMA_GC_LOG() << "OldSpaceCollector::RunPhases " << clockScope.TotalSpentTime();
 }
 
 void OldSpaceCollector::InitializePhase()
 {
-    heap_->GetThreadPool()->WaitTaskFinish();
-    heap_->GetSweeper()->EnsureAllTaskFinish();
+    heap_->WaitRunningTaskFinished();
+    heap_->GetSweeper()->EnsureAllTaskFinished();
     heap_->EnumerateRegions([](Region *current) {
         // ensure mark bitmap
         auto bitmap = current->GetMarkBitmap();
@@ -60,7 +68,8 @@ void OldSpaceCollector::InitializePhase()
             bitmap->ClearAllBits();
         }
     });
-    workList_->Initialize();
+    workList_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK);
+
     freeSize_ = 0;
     hugeSpaceFreeSize_ = 0;
     oldSpaceCommitSize_ = heap_->GetOldSpace()->GetCommittedSize();
@@ -76,60 +85,21 @@ void OldSpaceCollector::FinishPhase()
 void OldSpaceCollector::MarkingPhase()
 {
     trace::ScopedTrace scoped_trace("OldSpaceCollector::MarkingPhase");
-    RootVisitor gcMarkYoung = [this]([[maybe_unused]] Root type, ObjectSlot slot) {
-        JSTaggedValue value(slot.GetTaggedType());
-        if (value.IsHeapObject()) {
-            MarkObject(0, value.GetTaggedObject());
-        }
-    };
-    RootRangeVisitor gcMarkRangeYoung = [this]([[maybe_unused]] Root type, ObjectSlot start, ObjectSlot end) {
-        for (ObjectSlot slot = start; slot < end; slot++) {
-            JSTaggedValue value(slot.GetTaggedType());
-            if (value.IsHeapObject()) {
-                MarkObject(0, value.GetTaggedObject());
-            }
-        }
-    };
-    rootManager_.VisitVMRoots(gcMarkYoung, gcMarkRangeYoung);
-
-    ProcessMarkStack(0);
-    if (paralledGC_) {
-        heap_->GetThreadPool()->WaitTaskFinish();
+    heap_->GetNonMovableMarker()->MarkRoots(0);
+    if (heap_->IsOnlyMarkSemi()) {
+        heap_->GetNonMovableMarker()->ProcessOldToNew(0);
+    } else {
+        heap_->GetNonMovableMarker()->ProcessMarkStack(0);
     }
-}
-
-void OldSpaceCollector::ProcessMarkStack(uint64_t threadId)
-{
-    while (true) {
-        TaggedObject *obj = nullptr;
-        if (!workList_->Pop(threadId, &obj)) {
-            break;
-        }
-        auto jsHclass = obj->GetClass();
-        // mark dynClass
-        MarkObject(threadId, jsHclass);
-
-        rootManager_.MarkObjectBody<GCType::OLD_GC>(
-            obj, jsHclass, [this, &threadId]([[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end) {
-                for (ObjectSlot slot = start; slot < end; slot++) {
-                    JSTaggedValue value(slot.GetTaggedType());
-                    if (value.IsWeak()) {
-                        RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
-                        continue;
-                    }
-                    if (value.IsHeapObject()) {
-                        MarkObject(threadId, value.GetTaggedObject());
-                    }
-                }
-            });
-    }
+    heap_->WaitRunningTaskFinished();
 }
 
 void OldSpaceCollector::SweepPhases()
 {
     trace::ScopedTrace scoped_trace("OldSpaceCollector::SweepPhases");
     // process weak reference
-    for (uint32_t i = 0; i < heap_->GetThreadPool()->GetThreadNum(); i++) {
+    auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1;
+    for (uint32_t i = 0; i < totalThreadCount; i++) {
         ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
         while (true) {
             auto obj = queue->PopBack();
@@ -164,6 +134,7 @@ void OldSpaceCollector::SweepPhases()
     stringTable->SweepWeakReference(gcUpdateWeak);
     heap_->GetEcmaVM()->GetJSThread()->IterateWeakEcmaGlobalStorage(gcUpdateWeak);
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
+    heap_->UpdateDerivedObjectInStack();
 
     heap_->GetSweeper()->SweepPhases();
 }

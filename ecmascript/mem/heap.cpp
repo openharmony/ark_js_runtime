@@ -13,20 +13,25 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/heap-inl.h"
 
 #include <sys/sysinfo.h>
 
+#include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/assert_scope-inl.h"
 #include "ecmascript/mem/compress_collector.h"
+#include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/ecma_heap_manager.h"
+#include "ecmascript/mem/evacuation_allocator.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/old_space_collector.h"
+#include "ecmascript/mem/mix_space_collector.h"
+#include "ecmascript/mem/parallel_evacuation.h"
+#include "ecmascript/mem/parallel_marker-inl.h"
+#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/semi_space_collector.h"
-#include "ecmascript/mem/semi_space_worker.h"
 #include "ecmascript/mem/verification.h"
 
 namespace panda::ecmascript {
@@ -55,22 +60,28 @@ void Heap::Initialize()
     machineCodeSpace_ = new MachineCodeSpace(this);
     machineCodeSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(this);
-    bool paralledGc = ecmaVm_->GetOptions().IsEnableParalledYoungGc();
-    if (paralledGc) {
-        int numOfCpuCore = get_nprocs();
-        int numThread = std::min<int>(numOfCpuCore, THREAD_NUM_FOR_YOUNG_GC);
-        pool_ = new ThreadPool(numThread);
-        semiSpaceCollector_ = new SemiSpaceCollector(this, true);
-        compressCollector_ = new CompressCollector(this, true);
-        oldSpaceCollector_ = new OldSpaceCollector(this, true);
-    } else {
-        pool_ = new ThreadPool(1);
-        semiSpaceCollector_ = new SemiSpaceCollector(this, false);
-        compressCollector_ = new CompressCollector(this, false);
-        oldSpaceCollector_ = new OldSpaceCollector(this, false);
-    }
-    // After EcmaOptions merged, it will modified to EcmaOptions configuration
-    sweeper_ = new ConcurrentSweeper(this, true);
+    paralledGc_ = ecmaVm_->GetJSOptions().IsEnableParalledYoungGc();
+#if ECMASCRIPT_DISABLE_PARALLEL_GC
+    paralledGc_ = false;
+#endif
+#if defined(IS_STANDARD_SYSTEM)
+    concurrentMarkingEnable_ = false;
+#endif
+    workList_ = new WorkerHelper(this, Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1);
+    semiSpaceCollector_ = new SemiSpaceCollector(this, paralledGc_);
+    compressCollector_ = new CompressCollector(this);
+
+    derivedPointers_ = new ChunkVector<DerivedData>(ecmaVm_->GetChunk());
+    derivedPointers_->resize(STACK_MAP_DEFALUT_DERIVED_SIZE);
+    derivedPointers_->clear();
+    mixSpaceCollector_ = new MixSpaceCollector(this);
+    sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().IsEnableConcurrentSweep());
+    concurrentMarker_ = new ConcurrentMarker(this);
+    nonMovableMarker_ = new NonMovableMarker(this);
+    semiGcMarker_ = new SemiGcMarker(this);
+    compressGcMarker_ = new CompressGcMarker(this);
+    evacuationAllocator_ = new EvacuationAllocator(this);
+    evacuation_ = new ParallelEvacuation(this);
 }
 
 void Heap::FlipNewSpace()
@@ -86,10 +97,10 @@ void Heap::FlipCompressSpace()
     compressSpace_ = oldSpace_;
     oldSpace_ = oldSpace;
 }
+
 void Heap::Destroy()
 {
-    pool_->WaitTaskFinish();
-    sweeper_->EnsureAllTaskFinish();
+    Prepare();
     toSpace_->Destroy();
     delete toSpace_;
     toSpace_ = nullptr;
@@ -116,49 +127,79 @@ void Heap::Destroy()
     delete hugeObjectSpace_;
     hugeObjectSpace_ = nullptr;
 
+    delete workList_;
+    workList_ = nullptr;
     delete semiSpaceCollector_;
     semiSpaceCollector_ = nullptr;
-    delete oldSpaceCollector_;
-    oldSpaceCollector_ = nullptr;
+    delete mixSpaceCollector_;
+    mixSpaceCollector_ = nullptr;
     delete compressCollector_;
     compressCollector_ = nullptr;
     regionFactory_ = nullptr;
     delete memController_;
     memController_ = nullptr;
-    delete pool_;
-    pool_ = nullptr;
     delete sweeper_;
     sweeper_ = nullptr;
+    delete derivedPointers_;
+    derivedPointers_ = nullptr;
+    delete concurrentMarker_;
+    concurrentMarker_ = nullptr;
+    delete nonMovableMarker_;
+    nonMovableMarker_ = nullptr;
+    delete semiGcMarker_;
+    semiGcMarker_ = nullptr;
+    delete compressGcMarker_;
+    compressGcMarker_ = nullptr;
+}
+
+void Heap::Prepare()
+{
+    WaitRunningTaskFinished();
+    sweeper_->EnsureAllTaskFinished();
+    evacuationAllocator_->WaitFreeTaskFinish();
 }
 
 void Heap::CollectGarbage(TriggerGCType gcType)
 {
+    JSThread *thread = GetEcmaVM()->GetAssociatedJSThread();
+    [[maybe_unused]] GcStateScope scope(thread);
     CHECK_NO_GC
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
+    isVerifying_ = true;
     // pre gc heap verify
-    {
-        if (ecmaVm_->GetOptions().IsPreGcHeapVerifyEnabled()) {
-            sweeper_->EnsureAllTaskFinish();
-            auto failCount = Verification(this).VerifyAll();
-            if (failCount > 0) {
-                LOG(FATAL, GC) << "Before gc heap corrupted and " << failCount << " corruptions";
-            }
-        }
+    sweeper_->EnsureAllTaskFinished();
+    auto failCount = Verification(this).VerifyAll();
+    if (failCount > 0) {
+        LOG(FATAL, GC) << "Before gc heap corrupted and " << failCount << " corruptions";
     }
+    isVerifying_ = false;
+    // verify need semiGC or fullGC.
+    if (gcType != TriggerGCType::SEMI_GC) {
+        gcType = TriggerGCType::COMPRESS_FULL_GC;
+    }
+#endif
+
+# if ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC
+    gcType = TriggerGCType::COMPRESS_FULL_GC;
+#endif
     switch (gcType) {
         case TriggerGCType::SEMI_GC:
             if (GetMemController()->IsInAppStartup()) {
-                semiSpaceCollector_->RunPhases();
                 SetFromSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
                 SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
+                compressCollector_->RunPhases();
                 ResetAppStartup();
             } else {
                 if (!CheckAndTriggerCompressGC()) {
-                    semiSpaceCollector_->RunPhases();
+                    mixSpaceCollector_->RunPhases();
+                    if (!sweeper_->IsConcurrentSweepEnabled()) {
+                        RecomputeLimits();
+                    }
                 }
             }
             break;
         case TriggerGCType::OLD_GC:
-            oldSpaceCollector_->RunPhases();
+            mixSpaceCollector_->RunPhases();
             if (!sweeper_->IsConcurrentSweepEnabled()) {
                 RecomputeLimits();
             }
@@ -166,7 +207,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
         case TriggerGCType::NON_MOVE_GC:
         case TriggerGCType::HUGE_GC:
         case TriggerGCType::MACHINE_CODE_GC:
-            oldSpaceCollector_->RunPhases();
+            mixSpaceCollector_->RunPhases();
             if (!sweeper_->IsConcurrentSweepEnabled()) {
                 RecomputeLimits();
             }
@@ -180,26 +221,36 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             break;
     }
 
+# if ECMASCRIPT_ENABLE_GC_LOG
+    ecmaVm_->GetEcmaGCStats()->PrintStatisticResult();
+#endif
+
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
     // post gc heap verify
-    {
-        if (ecmaVm_->GetOptions().IsPreGcHeapVerifyEnabled()) {
-            sweeper_->EnsureAllTaskFinish();
-            auto failCount = Verification(this).VerifyAll();
-            if (failCount > 0) {
-                LOG(FATAL, GC) << "After gc heap corrupted and " << failCount << " corruptions";
-            }
-        }
+    isVerifying_ = true;
+    sweeper_->EnsureAllTaskFinished();
+    failCount = Verification(this).VerifyAll();
+    if (failCount > 0) {
+        LOG(FATAL, GC) << "After gc heap corrupted and " << failCount << " corruptions";
     }
+    isVerifying_ = false;
+#endif
 }
 
-void Heap::ThrowOutOfMemoryError(size_t size)
+void Heap::ThrowOutOfMemoryError(size_t size, std::string functionName)
 {
-    LOG_ECMA_MEM(FATAL) << "OOM when trying to allocate " << size << " bytes";
+    LOG_ECMA_MEM(FATAL) << "OOM when trying to allocate " << size << " bytes"
+        << " function name: " << functionName.c_str();
 }
 
 size_t Heap::VerifyHeapObjects() const
 {
     size_t failCount = 0;
+    {
+        VerifyObjectVisitor verifier(this, &failCount);
+        toSpace_->IterateOverObjects(verifier);
+    }
+
     {
         VerifyObjectVisitor verifier(this, &failCount);
         oldSpace_->IterateOverObjects(verifier);
@@ -214,19 +265,55 @@ size_t Heap::VerifyHeapObjects() const
         VerifyObjectVisitor verifier(this, &failCount);
         hugeObjectSpace_->IterateOverObjects(verifier);
     }
-
     return failCount;
 }
 
 void Heap::RecomputeLimits()
 {
-    size_t oldSpaceSize = oldSpace_->GetHeapObjectSize();
+    size_t oldSpaceSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetCommittedSize();
     size_t newSpaceCapacity = toSpace_->GetMaximumCapacity();
 
     constexpr double GrowingFactor = 1.1;
     auto newOldSpaceLimit = memController_->CalculateAllocLimit(oldSpaceSize, DEFAULT_OLD_SPACE_SIZE,
                                                                 MAX_OLD_SPACE_SIZE, newSpaceCapacity, GrowingFactor);
     oldSpaceAllocLimit_ = newOldSpaceLimit;
+}
+
+bool Heap::CheckConcurrentMark(JSThread *thread)
+{
+    if (ConcurrentMarkingEnable() && !thread->IsNotBeginMark()) {
+        if (thread->IsMarking()) {
+            [[maybe_unused]] ClockScope clockScope;
+            WaitConcurrentMarkingFinished();
+            ECMA_GC_LOG() << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();
+        }
+        return true;
+    }
+    return false;
+}
+
+void Heap::TryTriggerConcurrentMarking(bool allowGc)
+{
+    if (allowGc &&
+        toSpace_->GetCommittedSize() > SEMI_SPACE_TRIGGER_CONCURRENT_MARK &&
+        GetEcmaVM()->GetJSThread()->IsNotBeginMark() &&
+        !GetMemController()->IsInAppStartup()) {
+        TriggerConcurrentMarking();
+    }
+}
+
+void Heap::TriggerConcurrentMarking()
+{
+    if (concurrentMarkingEnable_) {
+        concurrentMarker_->ConcurrentMarking();
+    }
+}
+
+void Heap::CheckNeedFullMark()
+{
+    if ((oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize()) > oldSpaceAllocLimit_) {
+        SetOnlyMarkSemi(false);
+    }
 }
 
 bool Heap::CheckAndTriggerOldGC()
@@ -253,6 +340,120 @@ bool Heap::CheckAndTriggerNonMovableGC()
         return false;
     }
     CollectGarbage(TriggerGCType::NON_MOVE_GC);
+    return true;
+}
+
+bool Heap::CheckAndTriggerMachineCodeGC()
+{
+    if (machineCodeSpace_->GetCommittedSize() <= DEFAULT_MACHINE_CODE_SPACE_LIMIT) {
+        return false;
+    }
+    CollectGarbage(TriggerGCType::MACHINE_CODE_GC);
+    return true;
+}
+
+void Heap::UpdateDerivedObjectInStack()
+{
+    if (derivedPointers_->empty()) {
+        return;
+    }
+    for (auto derived : *derivedPointers_) {
+        auto baseAddr = reinterpret_cast<JSTaggedValue *>(std::get<0>(derived));
+        JSTaggedValue base = *baseAddr;
+        if (base.IsHeapObject()) {
+            uintptr_t baseOldObject = std::get<1>(derived);
+            uintptr_t *derivedAddr = reinterpret_cast<uintptr_t *>(std::get<2>(derived));
+            // derived is always bigger than base
+            *derivedAddr = reinterpret_cast<uintptr_t>(base.GetHeapObject()) + (*derivedAddr - baseOldObject);
+#ifndef NDEBUG
+            LOG_ECMA(DEBUG) << std::hex << "fix base:" << baseAddr << " base Value: " << base.GetHeapObject() <<
+                " derived:" << derivedAddr << " New Value: " << *derivedAddr;
+#endif
+        }
+    }
+    derivedPointers_->resize(STACK_MAP_DEFALUT_DERIVED_SIZE);
+    derivedPointers_->clear();
+}
+
+void Heap::WaitRunningTaskFinished()
+{
+    os::memory::LockHolder holder(waitTaskFinishedMutex_);
+    while (runningTastCount_ > 0) {
+        waitTaskFinishedCV_.Wait(&waitTaskFinishedMutex_);
+    }
+}
+
+void Heap::WaitConcurrentMarkingFinished()
+{
+    concurrentMarker_->WaitConcurrentMarkingFinished();
+}
+
+void Heap::SetConcurrentMarkingEnable(bool flag)
+{
+    concurrentMarkingEnable_ = flag;
+}
+
+bool Heap::ConcurrentMarkingEnable() const
+{
+    return concurrentMarkingEnable_;
+}
+
+void Heap::PostParallelGCTask(ParallelGCTaskPhase gcTask)
+{
+    IncreaseTaskCount();
+    Platform::GetCurrentPlatform()->PostTask(std::make_unique<ParallelGCTask>(this, gcTask));
+}
+
+void Heap::IncreaseTaskCount()
+{
+    os::memory::LockHolder holder(waitTaskFinishedMutex_);
+    runningTastCount_++;
+}
+
+bool Heap::CheckCanDistributeTask()
+{
+    os::memory::LockHolder holder(waitTaskFinishedMutex_);
+    return (runningTastCount_ < Platform::GetCurrentPlatform()->GetTotalThreadNum() - 1) && (runningTastCount_ <= 3);
+}
+
+void Heap::ReduceTaskCount()
+{
+    os::memory::LockHolder holder(waitTaskFinishedMutex_);
+    runningTastCount_--;
+    if (runningTastCount_ == 0) {
+        waitTaskFinishedCV_.SignalAll();
+    }
+}
+
+bool Heap::ParallelGCTask::Run(uint32_t threadIndex)
+{
+    switch (taskPhase_) {
+        case ParallelGCTaskPhase::SEMI_HANDLE_THREAD_ROOTS_TASK:
+            heap_->GetSemiGcMarker()->MarkRoots(threadIndex);
+            heap_->GetSemiGcMarker()->ProcessMarkStack(threadIndex);
+            break;
+        case ParallelGCTaskPhase::SEMI_HANDLE_SNAPSHOT_TASK:
+            heap_->GetSemiGcMarker()->ProcessSnapshotRSet(threadIndex);
+            break;
+        case ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK:
+            heap_->GetSemiGcMarker()->ProcessMarkStack(threadIndex);
+            break;
+        case ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK:
+            heap_->GetNonMovableMarker()->ProcessMarkStack(threadIndex);
+            break;
+        case ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK:
+            heap_->GetCompressGcMarker()->ProcessMarkStack(threadIndex);
+            break;
+        case ParallelGCTaskPhase::CONCURRENT_HANDLE_GLOBAL_POOL_TASK:
+            heap_->GetNonMovableMarker()->ProcessMarkStack(threadIndex);
+            break;
+        case ParallelGCTaskPhase::CONCURRENT_HANDLE_OLD_TO_NEW_TASK:
+            heap_->GetNonMovableMarker()->ProcessOldToNew(threadIndex);
+            break;
+        default:
+            break;
+    }
+    heap_->ReduceTaskCount();
     return true;
 }
 }  // namespace panda::ecmascript

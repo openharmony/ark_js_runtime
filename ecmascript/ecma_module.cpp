@@ -22,8 +22,6 @@
 #include "ecmascript/tagged_dictionary.h"
 
 namespace panda::ecmascript {
-static constexpr uint32_t DICTIONART_CAP = 4;
-constexpr uint32_t PREVMODULE_CAP = 2;
 
 JSHandle<JSTaggedValue> EcmaModule::GetItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName)
 {
@@ -37,19 +35,16 @@ JSHandle<JSTaggedValue> EcmaModule::GetItem(const JSThread *thread, JSHandle<JST
 }
 
 void EcmaModule::AddItem(const JSThread *thread, JSHandle<EcmaModule> module, JSHandle<JSTaggedValue> itemName,
-    JSHandle<JSTaggedValue> itemValue)
+                         JSHandle<JSTaggedValue> itemValue)
 {
-    JSHandle<JSTaggedValue> data(thread, module->GetNameDictionary());
+    JSMutableHandle<JSTaggedValue> data(thread, module->GetNameDictionary());
     if (data->IsUndefined()) {
-        JSHandle<NameDictionary> dict(thread, NameDictionary::Create(thread, DICTIONART_CAP));
-        NameDictionary *newDict = NameDictionary::Put(thread, dict, itemName, itemValue, PropertyAttributes::Default());
-        module->SetNameDictionary(thread, JSTaggedValue(newDict));
-    } else {
-        JSHandle<NameDictionary> dataDict = JSHandle<NameDictionary>::Cast(data);
-        NameDictionary *newDict =
-            NameDictionary::Put(thread, dataDict, itemName, itemValue, PropertyAttributes::Default());
-        module->SetNameDictionary(thread, JSTaggedValue(newDict));
+        data.Update(NameDictionary::Create(thread, DEAULT_DICTIONART_CAPACITY));
     }
+    JSHandle<NameDictionary> dataDict = JSHandle<NameDictionary>::Cast(data);
+    JSHandle<NameDictionary> newDict =
+        NameDictionary::Put(thread, dataDict, itemName, itemValue, PropertyAttributes::Default());
+    module->SetNameDictionary(thread, newDict);
 }
 
 void EcmaModule::RemoveItem(const JSThread *thread, JSHandle<EcmaModule> module, JSHandle<JSTaggedValue> itemName)
@@ -61,13 +56,13 @@ void EcmaModule::RemoveItem(const JSThread *thread, JSHandle<EcmaModule> module,
     JSHandle<NameDictionary> moduleItems(data);
     int entry = moduleItems->FindEntry(itemName.GetTaggedValue());
     if (entry != -1) {
-        NameDictionary *newDict = NameDictionary::Remove(thread, moduleItems, entry);
-        module->SetNameDictionary(thread, JSTaggedValue(newDict));
+        JSHandle<NameDictionary> newDict = NameDictionary::Remove(thread, moduleItems, entry);
+        module->SetNameDictionary(thread, newDict);
     }
 }
 
 void EcmaModule::CopyModuleInternal(const JSThread *thread, JSHandle<EcmaModule> dstModule,
-    JSHandle<EcmaModule> srcModule)
+                                    JSHandle<EcmaModule> srcModule)
 {
     JSHandle<NameDictionary> moduleItems(thread,
                                          NameDictionary::Cast(srcModule->GetNameDictionary().GetTaggedObject()));
@@ -112,7 +107,7 @@ void EcmaModule::DebugPrint(const JSThread *thread, const CString &caller)
 
 ModuleManager::ModuleManager(EcmaVM *vm) : vm_(vm)
 {
-    ecmaModules_ = JSTaggedValue(NameDictionary::Create(vm_->GetJSThread(), DICTIONART_CAP));
+    ecmaModules_ = NameDictionary::Create(vm_->GetJSThread(), DEAULT_DICTIONART_CAPACITY).GetTaggedValue();
 }
 
 // class ModuleManager
@@ -122,7 +117,7 @@ void ModuleManager::AddModule(JSHandle<JSTaggedValue> moduleName, JSHandle<JSTag
     [[maybe_unused]] EcmaHandleScope scope(thread);
     JSHandle<NameDictionary> dict(thread, ecmaModules_);
     ecmaModules_ =
-        JSTaggedValue(NameDictionary::Put(thread, dict, moduleName, module, PropertyAttributes::Default()));
+        NameDictionary::Put(thread, dict, moduleName, module, PropertyAttributes::Default()).GetTaggedValue();
 }
 
 void ModuleManager::RemoveModule(JSHandle<JSTaggedValue> moduleName)
@@ -132,7 +127,7 @@ void ModuleManager::RemoveModule(JSHandle<JSTaggedValue> moduleName)
     JSHandle<NameDictionary> moduleItems(thread, ecmaModules_);
     int entry = moduleItems->FindEntry(moduleName.GetTaggedValue());
     if (entry != -1) {
-        ecmaModules_ = JSTaggedValue(NameDictionary::Remove(thread, moduleItems, entry));
+        ecmaModules_ = NameDictionary::Remove(thread, moduleItems, entry).GetTaggedValue();
     }
 }
 
@@ -148,13 +143,13 @@ JSHandle<JSTaggedValue> ModuleManager::GetModule(const JSThread *thread,
 
 CString ModuleManager::GenerateModuleFullPath(const std::string &currentPathFile, const CString &relativeFile)
 {
-    if (relativeFile.find("./") != 0 && relativeFile.find("../") != 0) { // not start with "./" or "../"
-        return relativeFile; // not relative
+    if (relativeFile.find("./") != 0 && relativeFile.find("../") != 0) {  // not start with "./" or "../"
+        return relativeFile;                                              // not relative
     }
 
     auto slashPos = currentPathFile.find_last_of('/');
     if (slashPos == std::string::npos) {
-        return relativeFile; // no need to process
+        return relativeFile;  // no need to process
     }
 
     auto dotPos = relativeFile.find_last_of(".");
@@ -163,30 +158,38 @@ CString ModuleManager::GenerateModuleFullPath(const std::string &currentPathFile
     }
 
     CString fullPath;
-    fullPath.append(currentPathFile.substr(0, slashPos + 1)); // 1: with "/"
+    fullPath.append(currentPathFile.substr(0, slashPos + 1));  // 1: with "/"
     fullPath.append(relativeFile.substr(0, dotPos));
-    fullPath.append(".abc"); // ".js" -> ".abc"
+    fullPath.append(".abc");  // ".js" -> ".abc"
     return fullPath;
 }
 
 const CString &ModuleManager::GetCurrentExportModuleName()
 {
-    return moduleStack_.GetTop();
+    return moduleNames_.back();
 }
 
 void ModuleManager::SetCurrentExportModuleName(const std::string_view &moduleFile)
 {
-    moduleStack_.PushModule(CString(moduleFile));  // xx/xx/x.abc
+    moduleNames_.emplace_back(CString(moduleFile));  // xx/xx/x.abc
 }
 
 void ModuleManager::RestoreCurrentExportModuleName()
 {
-    moduleStack_.PopModule();
+    auto s = moduleNames_.size();
+    if (s > 0) {
+        moduleNames_.resize(s - 1);
+        return;
+    }
+    UNREACHABLE();
 }
 
 const CString &ModuleManager::GetPrevExportModuleName()
 {
-    return moduleStack_.GetPrevModule();
+    static const int MINIMUM_COUNT = 2;
+    auto count = moduleNames_.size();
+    ASSERT(count >= MINIMUM_COUNT);
+    return moduleNames_[count - MINIMUM_COUNT];
 }
 
 void ModuleManager::AddModuleItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName,
@@ -237,44 +240,13 @@ void ModuleManager::CopyModule(const JSThread *thread, JSHandle<JSTaggedValue> s
 
 void ModuleManager::DebugPrint([[maybe_unused]] const JSThread *thread, [[maybe_unused]] const CString &caller)
 {
-    moduleStack_.DebugPrint(std::cout);
+    std::cout << "ModuleStack:";
+    for_each(moduleNames_.cbegin(),
+             moduleNames_.cend(),
+             [](const CString& s)->void {
+                 std::cout << s << " ";
+             });
+    std::cout << "\n";
 }
 
-// class ModuleStack
-void ModuleStack::PushModule(const CString &moduleName)
-{
-    data_.push_back(moduleName);
-}
-
-void ModuleStack::PopModule()
-{
-    data_.pop_back();
-}
-
-const CString &ModuleStack::GetTop()
-{
-    return data_.back();
-}
-
-const CString &ModuleStack::GetPrevModule()
-{
-    if (data_.size() >= PREVMODULE_CAP) {
-        return data_[data_.size() - PREVMODULE_CAP];
-    }
-
-    UNREACHABLE();
-}
-
-void ModuleStack::DebugPrint(std::ostream &dump) const
-{
-    dump << "ModuleStack:\n";
-    if (data_.empty()) {
-        dump << "empty \n";
-        return;
-    }
-    // NOLINTNEXTLINE(hicpp-use-auto, modernize-use-auto)
-    for (std::vector<CString>::const_reverse_iterator it = data_.rbegin(); it != data_.rend(); it++) {
-        dump << *it << "\n";
-    }
-}
 }  // namespace panda::ecmascript

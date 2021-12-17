@@ -327,7 +327,8 @@ private:
 
 class ECMAObject : public TaggedObject {
 public:
-    static ECMAObject *Cast(ObjectHeader *object);
+    CAST_CHECK(ECMAObject, IsECMAObject);
+
     void SetBuiltinsCtorMode();
     bool IsBuiltinsConstructor() const;
     void SetCallable(bool flag);
@@ -373,17 +374,8 @@ public:
     static constexpr int MAX_GAP = 1024;
     static constexpr uint32_t MAX_ELEMENT_INDEX = std::numeric_limits<uint32_t>::max();
 
-    static inline JSObject *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsECMAObject());
-        return static_cast<JSObject *>(object);
-    }
-
-    static inline JSObject *Cast(JSTaggedValue value)
-    {
-        ASSERT(value.IsHeapObject() && value.GetTaggedObject()->GetClass()->IsECMAObject());
-        return static_cast<JSObject *>(value.GetTaggedObject());
-    }
+    CAST_CHECK(JSObject, IsECMAObject);
+    CAST_CHECK_TAGGEDVALUE(JSObject, IsECMAObject);
 
     // ecma6.0 6.2.4.4
     static JSHandle<JSTaggedValue> FromPropertyDescriptor(JSThread *thread, const PropertyDescriptor &desc);
@@ -564,8 +556,6 @@ public:
                              const JSHandle<JSTaggedValue> &value);
     static void DefineGetter(JSThread *thread, const JSHandle<JSTaggedValue> &obj, const JSHandle<JSTaggedValue> &key,
                              const JSHandle<JSTaggedValue> &value);
-    static JSHandle<JSObject> CreateObjectFromLiteral(const JSThread *thread, const JSHandle<TaggedArray> &literal,
-                                                      size_t length, bool useDict);
     static JSHandle<JSObject> CreateObjectFromProperties(const JSThread *thread,
                                                          const JSHandle<TaggedArray> &properties);
     static void GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj, int offset,
@@ -591,7 +581,7 @@ public:
 
     ACCESSORS(Properties, PROPERTIES_OFFSET, ELEMENTS_OFFSET);
     ACCESSORS(Elements, ELEMENTS_OFFSET, SIZE);
- 
+
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(ECMAObject, PROPERTIES_OFFSET, SIZE)
 
     DECL_DUMP()
@@ -612,14 +602,6 @@ public:
     static bool ShouldTransToDict(uint32_t capacity, uint32_t index);
     static JSHandle<TaggedArray> GrowElementsCapacity(const JSThread *thread, const JSHandle<JSObject> &obj,
                                                       uint32_t capacity);
-
-    inline uint32_t GetPropertyInObjectIndex(uint32_t index) const
-    {
-        ASSERT(index < JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
-        size_t offset = GetJSHClass()->GetObjectSize() -
-                        (JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS - index) * JSTaggedValue::TaggedTypeSize();
-        return offset / JSTaggedValue::TaggedTypeSize();
-    }
 
 protected:
     static void ElementsToDictionary(const JSThread *thread, JSHandle<JSObject> obj);

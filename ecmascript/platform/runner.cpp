@@ -18,18 +18,34 @@
 #include "os/thread.h"
 
 namespace panda::ecmascript {
-Runner::Runner(int threadNum)
+Runner::Runner(uint32_t threadNum) : totalThreadNum_(threadNum)
 {
-    for (int i = 0; i < threadNum; i++) {
-        std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&Runner::Run, this);
+    for (uint32_t i = 0; i < threadNum; i++) {
+        // main thread is 0;
+        std::unique_ptr<std::thread> thread = std::make_unique<std::thread>(&Runner::Run, this, i + 1);
         os::thread::SetThreadName(thread->native_handle(), "GC_WorkerThread");
         threadPool_.emplace_back(std::move(thread));
     }
+
+    for (uint32_t i = 0; i < runningTask_.size(); i++) {
+        runningTask_[i] = nullptr;
+    }
 }
 
-void Runner::Terminate()
+void Runner::TerminateTask()
+{
+    for (uint32_t i = 0; i < runningTask_.size(); i++) {
+        if (runningTask_[i] != nullptr) {
+            runningTask_[i]->Terminated();
+        }
+    }
+}
+
+void Runner::TerminateThread()
 {
     taskQueue_.Terminate();
+    TerminateTask();
+
     int threadNum = threadPool_.size();
     for (int i = 0; i < threadNum; i++) {
         threadPool_.at(i)->join();
@@ -37,10 +53,12 @@ void Runner::Terminate()
     threadPool_.clear();
 }
 
-void Runner::Run()
+void Runner::Run(uint32_t threadId)
 {
     while (std::unique_ptr<Task> task = taskQueue_.PopTask()) {
-        task->Run();
+        runningTask_[threadId] = task.get();
+        task->Run(threadId);
+        runningTask_[threadId] = nullptr;
     }
 }
 }  // namespace panda::ecmascript

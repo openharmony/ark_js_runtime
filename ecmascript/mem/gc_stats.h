@@ -29,7 +29,7 @@ public:
     GCStats(const Heap *heap) : heap_(heap) {};
     ~GCStats() = default;
 
-    void PrintStatisticResult();
+    void PrintStatisticResult(bool isForce = false);
 
     void StatisticSemiCollector(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize);
     void StatisticOldCollector(Duration time, size_t freeSize, size_t oldSpaceCommitSize,
@@ -53,6 +53,7 @@ private:
         return (float)size / MB;
     }
 
+    size_t lastSemiGCCount_ = 0;
     size_t semiGCCount_ = 0;
     size_t semiGCMinPause_ = 0;
     size_t semiGCMAXPause_ = 0;
@@ -61,6 +62,7 @@ private:
     size_t semiTotalCommitSize_ = 0;
     size_t semiTotalPromoteSize_ = 0;
 
+    size_t lastOldGCCount_ = 0;
     size_t oldGCCount_ = 0;
     size_t oldGCMinPause_ = 0;
     size_t oldGCMAXPause_ = 0;
@@ -69,6 +71,7 @@ private:
     size_t oldSpaceTotalCommitSize_ = 0;
     size_t oldNonMoveTotalCommitSize_ = 0;
 
+    size_t lastCompressGCCount_ = 0;
     size_t compressGCCount_ = 0;
     size_t compressGCMinPause_ = 0;
     size_t compressGCMaxPause_ = 0;

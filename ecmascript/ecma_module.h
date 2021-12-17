@@ -40,6 +40,8 @@ public:
 
     void DebugPrint(const JSThread *thread, const CString &caller);
 
+    static constexpr uint32_t DEAULT_DICTIONART_CAPACITY = 4;
+
     static constexpr size_t NAME_DICTIONARY_OFFSET = ECMAObject::SIZE;
     ACCESSORS(NameDictionary, NAME_DICTIONARY_OFFSET, SIZE)
 
@@ -51,24 +53,6 @@ protected:
         JSHandle<EcmaModule> srcModule);
 
     friend class ModuleManager;
-};
-
-class ModuleStack {
-public:
-    ModuleStack() = default;
-    ~ModuleStack() = default;
-
-    NO_COPY_SEMANTIC(ModuleStack);
-    NO_MOVE_SEMANTIC(ModuleStack);
-
-    void PushModule(const CString &moduleName);
-    void PopModule();
-    const CString &GetTop();
-    const CString &GetPrevModule();
-    void DebugPrint(std::ostream &dump) const;
-
-private:
-    std::vector<CString> data_;
 };
 
 class ModuleManager {
@@ -102,15 +86,16 @@ public:
     void DebugPrint(const JSThread *thread, const CString &caller);
 
 private:
+    static constexpr uint32_t DEAULT_DICTIONART_CAPACITY = 4;
+
     NO_COPY_SEMANTIC(ModuleManager);
     NO_MOVE_SEMANTIC(ModuleManager);
 
     EcmaVM *vm_{nullptr};
     JSTaggedValue ecmaModules_{JSTaggedValue::Hole()};
-    ModuleStack moduleStack_;
+    std::vector<CString> moduleNames_{DEAULT_DICTIONART_CAPACITY};
 
     friend class EcmaVM;
-    friend class ModuleStack;
 };
 }  // namespace panda::ecmascript
 

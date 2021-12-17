@@ -46,7 +46,7 @@ JSTaggedValue BuiltinsSet::SetConstructor(EcmaRuntimeCallInfo *argv)
     JSHandle<JSSet> set = JSHandle<JSSet>::Cast(obj);
     // 3.ReturnIfAbrupt(set).
     // 4.Set set’s [[SetData]] internal slot to a new empty List.
-    JSTaggedValue linkedSet = LinkedHashSet::Create(thread);
+    JSHandle<LinkedHashSet> linkedSet = LinkedHashSet::Create(thread);
     set->SetLinkedSet(thread, linkedSet);
 
     // add data into set from iterable
@@ -116,7 +116,7 @@ JSTaggedValue BuiltinsSet::Add(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> value(GetCallArg(argv, 0));
-    JSHandle<JSSet> set(thread, JSSet::Cast(*JSTaggedValue::ToObject(thread, self)));
+    JSHandle<JSSet> set(JSTaggedValue::ToObject(thread, self));
 
     JSSet::Add(thread, set, value);
     return set.GetTaggedValue();

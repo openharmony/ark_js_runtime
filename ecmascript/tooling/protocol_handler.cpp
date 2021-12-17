@@ -39,40 +39,28 @@ void ProtocolHandler::RunIfWaitingForDebugger()
 
 void ProtocolHandler::ProcessCommand(const EcmaVM *ecmaVm)
 {
-    CVector<CString> msgs;
-    do {
-        queueLock_.Lock();
-        if (waitingForDebugger_ && msgQueue_.empty()) {
-            queueCond_.Wait(&queueLock_);
-        }
-        while (!msgQueue_.empty()) {
-            msgs.emplace_back(std::move(msgQueue_.front()));
-            msgQueue_.pop();
-        }
-        queueLock_.Unlock();
-
-        for (const auto &msg : msgs) {
-            LOG(DEBUG, DEBUGGER) << "ProtocolHandler::ProcessCommand: " << msg;
-            Local<JSValueRef> exception = DebuggerApi::GetException(ecmaVm);
-            if (!exception->IsHole()) {
-                DebuggerApi::ClearException(ecmaVm);
-            }
-            dispatcher_->Dispatch(DispatchRequest(ecmaVm, msg));
-            DebuggerApi::ClearException(ecmaVm);
-            if (!exception->IsHole()) {
-                DebuggerApi::SetException(ecmaVm, exception);
-            }
-        }
-        msgs.clear();
-    } while (waitingForDebugger_);
+    static constexpr int DEBUGGER_WAIT_SLEEP_TIME = 100;
+    while (waitingForDebugger_) {
+        usleep(DEBUGGER_WAIT_SLEEP_TIME);
+    }
 }
 
 void ProtocolHandler::SendCommand(const CString &msg)
 {
-    queueLock_.Lock();
-    msgQueue_.push(msg);
-    queueCond_.Signal();
-    queueLock_.Unlock();
+    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendCommand: " << msg;
+    Local<JSValueRef> exception = DebuggerApi::GetException(vm_);
+    if (!exception->IsHole()) {
+        DebuggerApi::ClearException(vm_);
+    }
+    dispatcher_->Dispatch(DispatchRequest(vm_, msg));
+    DebuggerApi::ClearException(vm_);
+    if (!exception->IsHole()) {
+        DebuggerApi::SetException(vm_, exception);
+    }
+    std::string startDebugging("Runtime.runIfWaitingForDebugger");
+    if (msg.find(startDebugging, 0) != std::string::npos) {
+        waitingForDebugger_ = false;
+    }
 }
 
 void ProtocolHandler::SendResponse(const DispatchRequest &request, const DispatchResponse &response,
@@ -96,11 +84,11 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
 
 void ProtocolHandler::SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
 {
-    if (events == nullptr) {
-        return;
-    }
-    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
-    SendReply(ecmaVm, events->ToObject(ecmaVm));
+        if (!Runtime::GetCurrent()->IsDebugMode() || events == nullptr) {
+            return;
+        }
+        LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
+        SendReply(ecmaVm, events->ToObject(ecmaVm));
 }
 
 void ProtocolHandler::SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply)

@@ -26,7 +26,7 @@ using Clock = std::chrono::high_resolution_clock;
 using Duration = std::chrono::duration<uint64_t, std::nano>;
 
 public:
-    explicit ClockScope(std::string str) : str_(str)
+    explicit ClockScope()
     {
         start_ = Clock::now();
     }
@@ -36,21 +36,17 @@ public:
         return Clock::now() - start_;
     }
 
-    ~ClockScope()
+    float TotalSpentTime() const
     {
-        end_ = Clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_ - start_);
-        LOG(DEBUG, RUNTIME) << str_ << " spent time: " << (float) duration.count() / MILLION_TIME << "ms";
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - start_);
+        return (float) duration.count() / MILLION_TIME;
     }
 
+private:
     NO_COPY_SEMANTIC(ClockScope);
     NO_MOVE_SEMANTIC(ClockScope);
 
-private:
-    std::string str_;
     Clock::time_point start_;
-    Clock::time_point end_;
-
     static constexpr uint32_t MILLION_TIME = 1000;
 };
 }  // namespace panda::ecmascript

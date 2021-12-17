@@ -24,9 +24,14 @@
 #include "heap.h"
 
 namespace panda::ecmascript {
-inline void TaggedObject::SetClass(JSHClass *hclass)
+inline void TaggedObject::SetClassWithoutBarrier(JSHClass *hclass)
 {
     *reinterpret_cast<MarkWordType *>(ToUintPtr(this)) = reinterpret_cast<MarkWordType>(hclass);
+}
+
+inline void TaggedObject::SetClass(JSHClass *hclass)
+{
+    Barriers::SetDynObject<true>(GetJSThread(), this, 0, JSTaggedValue(hclass).GetRawData());
 }
 
 inline void TaggedObject::SetClass(JSHandle<JSHClass> hclass)

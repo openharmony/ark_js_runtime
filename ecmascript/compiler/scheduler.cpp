@@ -20,17 +20,17 @@
 #include "ecmascript/compiler/verifier.h"
 
 namespace kungfu {
-using DominatorTreeInfo = std::tuple<std::vector<AddrShift>, std::unordered_map<AddrShift, size_t>,
+using DominatorTreeInfo = std::tuple<std::vector<GateRef>, std::unordered_map<GateRef, size_t>,
     std::vector<size_t>>;
 DominatorTreeInfo Scheduler::CalculateDominatorTree(const Circuit *circuit)
 {
-    std::vector<AddrShift> bbGatesList;
-    std::unordered_map<AddrShift, size_t> bbGatesAddrToIdx;
-    std::unordered_map<AddrShift, size_t> dfsTimestamp;
+    std::vector<GateRef> bbGatesList;
+    std::unordered_map<GateRef, size_t> bbGatesAddrToIdx;
+    std::unordered_map<GateRef, size_t> dfsTimestamp;
     circuit->AdvanceTime();
     {
         size_t timestamp = 0;
-        std::deque<AddrShift> pendingList;
+        std::deque<GateRef> pendingList;
         auto startGate = Circuit::GetCircuitRoot(OpCode(OpCode::STATE_ENTRY));
         circuit->SetMark(startGate, MarkCode::VISITED);
         pendingList.push_back(startGate);
@@ -101,18 +101,18 @@ DominatorTreeInfo Scheduler::CalculateDominatorTree(const Circuit *circuit)
     return {bbGatesList, bbGatesAddrToIdx, immDom};
 }
 
-std::vector<std::vector<AddrShift>> Scheduler::Run(const Circuit *circuit)
+std::vector<std::vector<GateRef>> Scheduler::Run(const Circuit *circuit)
 {
 #ifndef NDEBUG
     if (!Verifier::Run(circuit)) {
         UNREACHABLE();
     }
 #endif
-    std::vector<AddrShift> bbGatesList;
-    std::unordered_map<AddrShift, size_t> bbGatesAddrToIdx;
+    std::vector<GateRef> bbGatesList;
+    std::unordered_map<GateRef, size_t> bbGatesAddrToIdx;
     std::vector<size_t> immDom;
     std::tie(bbGatesList, bbGatesAddrToIdx, immDom) = Scheduler::CalculateDominatorTree(circuit);
-    std::vector<std::vector<AddrShift>> result(bbGatesList.size());
+    std::vector<std::vector<GateRef>> result(bbGatesList.size());
     for (size_t idx = 0; idx < bbGatesList.size(); idx++) {
         result[idx].push_back(bbGatesList[idx]);
     }
@@ -162,14 +162,14 @@ std::vector<std::vector<AddrShift>> Scheduler::Run(const Circuit *circuit)
         return jumpUp[nodeA][0];
     };
     {
-        std::vector<AddrShift> order;
+        std::vector<GateRef> order;
         auto lowerBound =
             Scheduler::CalculateSchedulingLowerBound(circuit, bbGatesAddrToIdx, lowestCommonAncestor, &order).value();
         for (const auto &schedulableGate : order) {
             result[lowerBound.at(schedulableGate)].push_back(schedulableGate);
         }
         auto argList = circuit->GetOutVector(Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST)));
-        std::sort(argList.begin(), argList.end(), [&](const AddrShift &lhs, const AddrShift &rhs) -> bool {
+        std::sort(argList.begin(), argList.end(), [&](const GateRef &lhs, const GateRef &rhs) -> bool {
             return circuit->GetBitField(lhs) > circuit->GetBitField(rhs);
         });
         for (const auto &arg : argList) {
@@ -186,12 +186,12 @@ std::vector<std::vector<AddrShift>> Scheduler::Run(const Circuit *circuit)
     return result;
 }
 
-std::optional<std::unordered_map<AddrShift, size_t>> Scheduler::CalculateSchedulingUpperBound(const Circuit *circuit,
-    const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
-    const std::function<bool(size_t, size_t)> &isAncestor, const std::vector<AddrShift> &schedulableGatesList)
+std::optional<std::unordered_map<GateRef, size_t>> Scheduler::CalculateSchedulingUpperBound(const Circuit *circuit,
+    const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
+    const std::function<bool(size_t, size_t)> &isAncestor, const std::vector<GateRef> &schedulableGatesList)
 {
-    std::unordered_map<AddrShift, size_t> upperBound;
-    std::function<std::optional<size_t>(AddrShift)> dfs = [&](AddrShift curGate) -> std::optional<size_t> {
+    std::unordered_map<GateRef, size_t> upperBound;
+    std::function<std::optional<size_t>(GateRef)> dfs = [&](GateRef curGate) -> std::optional<size_t> {
         if (upperBound.count(curGate) > 0) {
             return upperBound[curGate];
         }
@@ -230,14 +230,14 @@ std::optional<std::unordered_map<AddrShift, size_t>> Scheduler::CalculateSchedul
     return upperBound;
 }
 
-std::optional<std::unordered_map<AddrShift, size_t>> Scheduler::CalculateSchedulingLowerBound(const Circuit *circuit,
-    const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
-    const std::function<size_t(size_t, size_t)> &lowestCommonAncestor, std::vector<AddrShift> *order)
+std::optional<std::unordered_map<GateRef, size_t>> Scheduler::CalculateSchedulingLowerBound(const Circuit *circuit,
+    const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
+    const std::function<size_t(size_t, size_t)> &lowestCommonAncestor, std::vector<GateRef> *order)
 {
-    std::unordered_map<AddrShift, size_t> lowerBound;
-    std::unordered_map<AddrShift, size_t> useCount;
-    std::deque<AddrShift> pendingList;
-    std::vector<AddrShift> bbAndFixedGatesList;
+    std::unordered_map<GateRef, size_t> lowerBound;
+    std::unordered_map<GateRef, size_t> useCount;
+    std::deque<GateRef> pendingList;
+    std::vector<GateRef> bbAndFixedGatesList;
     for (const auto &item : bbGatesAddrToIdx) {
         bbAndFixedGatesList.push_back(item.first);
         for (const auto &succGate : circuit->GetOutVector(item.first)) {
@@ -246,7 +246,7 @@ std::optional<std::unordered_map<AddrShift, size_t>> Scheduler::CalculateSchedul
             }
         }
     }
-    std::function<void(AddrShift)> dfsVisit = [&](AddrShift curGate) {
+    std::function<void(GateRef)> dfsVisit = [&](GateRef curGate) {
         for (const auto &prevGate : circuit->GetInVector(curGate)) {
             if (circuit->GetOpCode(prevGate).IsSchedulable()) {
                 useCount[prevGate]++;
@@ -259,7 +259,7 @@ std::optional<std::unordered_map<AddrShift, size_t>> Scheduler::CalculateSchedul
     for (const auto &gate : bbAndFixedGatesList) {
         dfsVisit(gate);
     }
-    std::function<void(AddrShift)> dfsFinish = [&](AddrShift curGate) {
+    std::function<void(GateRef)> dfsFinish = [&](GateRef curGate) {
         size_t cnt = 0;
         for (const auto &prevGate : circuit->GetInVector(curGate)) {
             if (circuit->GetOpCode(prevGate).IsSchedulable()) {
@@ -294,10 +294,10 @@ std::optional<std::unordered_map<AddrShift, size_t>> Scheduler::CalculateSchedul
     return lowerBound;
 }
 
-void Scheduler::Print(const std::vector<std::vector<AddrShift>> *cfg, const Circuit *circuit)
+void Scheduler::Print(const std::vector<std::vector<GateRef>> *cfg, const Circuit *circuit)
 {
-    std::vector<AddrShift> bbGatesList;
-    std::unordered_map<AddrShift, size_t> bbGatesAddrToIdx;
+    std::vector<GateRef> bbGatesList;
+    std::unordered_map<GateRef, size_t> bbGatesAddrToIdx;
     std::vector<size_t> immDom;
     std::tie(bbGatesList, bbGatesAddrToIdx, immDom) = Scheduler::CalculateDominatorTree(circuit);
     std::cout << "==========================================================================" << std::endl;

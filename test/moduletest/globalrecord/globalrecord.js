@@ -31,7 +31,7 @@ print(a);
 
 print(b);
 try {
-    b = "bb";   
+    b = "bb";
 } catch (error) {
     print("const can not be modified");
 }

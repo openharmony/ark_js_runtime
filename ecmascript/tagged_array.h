@@ -94,9 +94,9 @@ public:
 
     inline void InitializeWithSpecialValue(JSTaggedValue initValue, array_size_t length);
 
-    static inline bool ShouldTrim(array_size_t oldLength, array_size_t newLength)
+    static inline bool ShouldTrim(JSThread *thread, array_size_t oldLength, array_size_t newLength)
     {
-        return oldLength - newLength > MAX_END_UNUSED;
+        return (oldLength - newLength > MAX_END_UNUSED) && thread->IsNotBeginMark();
     }
     inline void Trim(JSThread *thread, array_size_t newLength);
     void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
@@ -118,5 +118,7 @@ private:
     // should align by 8, 32bit using TaggedType also
     __extension__ alignas(sizeof(JSTaggedType)) JSTaggedType data_[0];  // NOLINT(modernize-avoid-c-arrays)
 };
+
+static_assert(TaggedArray::GetLengthOffset() == sizeof(TaggedObject));
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_ARRAY_H

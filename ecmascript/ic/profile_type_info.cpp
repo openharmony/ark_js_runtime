@@ -48,7 +48,6 @@ void ProfileTypeAccessor::AddHandlerWithoutKey(JSHandle<JSTaggedValue> dynclass,
     auto profileData = profileTypeInfo_->Get(slotId_);
     ASSERT(!profileData.IsHole());
     if (profileData.IsUndefined()) {
-        ASSERT(profileTypeInfo_->Get(index + 1) == JSTaggedValue::Undefined());
         profileTypeInfo_->Set(thread_, index, GetWeakRef(dynclass.GetTaggedValue()));
         profileTypeInfo_->Set(thread_, index + 1, handler.GetTaggedValue());
         return;

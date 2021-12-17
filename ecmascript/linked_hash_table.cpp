@@ -21,7 +21,7 @@
 
 namespace panda::ecmascript {
 template<typename Derived, typename HashObject>
-Derived *LinkedHashTable<Derived, HashObject>::Create(const JSThread *thread, int numberOfElements)
+JSHandle<Derived> LinkedHashTable<Derived, HashObject>::Create(const JSThread *thread, int numberOfElements)
 {
     ASSERT_PRINT(numberOfElements > 0, "size must be a non-negative integer");
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -29,7 +29,7 @@ Derived *LinkedHashTable<Derived, HashObject>::Create(const JSThread *thread, in
     ASSERT_PRINT(helpers::math::IsPowerOfTwo(capacity), "capacity must be pow of '2'");
     int length = ELEMENTS_START_INDEX + numberOfElements + numberOfElements * (HashObject::ENTRY_SIZE + 1);
 
-    auto table = static_cast<Derived *>(*factory->NewTaggedArray(length));
+    auto table = JSHandle<Derived>(factory->NewTaggedArray(length));
     table->SetNumberOfElements(thread, 0);
     table->SetNumberOfDeletedElements(thread, 0);
     table->SetCapacity(thread, capacity);
@@ -37,19 +37,19 @@ Derived *LinkedHashTable<Derived, HashObject>::Create(const JSThread *thread, in
 }
 
 template<typename Derived, typename HashObject>
-Derived *LinkedHashTable<Derived, HashObject>::Insert(const JSThread *thread, const JSHandle<Derived> &table,
-                                                      const JSHandle<JSTaggedValue> &key,
-                                                      const JSHandle<JSTaggedValue> &value)
+JSHandle<Derived> LinkedHashTable<Derived, HashObject>::Insert(const JSThread *thread, const JSHandle<Derived> &table,
+                                                               const JSHandle<JSTaggedValue> &key,
+                                                               const JSHandle<JSTaggedValue> &value)
 {
     ASSERT(IsKey(key.GetTaggedValue()));
-    int hash = HashObject::Hash(key.GetTaggedValue());
+    int hash = LinkedHash::Hash(key.GetTaggedValue());
     int entry = table->FindElement(key.GetTaggedValue());
     if (entry != -1) {
         table->SetValue(thread, entry, value.GetTaggedValue());
-        return Derived::Cast(*table);
+        return table;
     }
 
-    Derived *newTable = GrowCapacity(thread, table);
+    JSHandle<Derived> newTable = GrowCapacity(thread, table);
 
     int bucket = newTable->HashToBucket(hash);
     entry = newTable->NumberOfElements() + newTable->NumberOfDeletedElements();
@@ -62,19 +62,18 @@ Derived *LinkedHashTable<Derived, HashObject>::Insert(const JSThread *thread, co
 }
 
 template<typename Derived, typename HashObject>
-Derived *LinkedHashTable<Derived, HashObject>::InsertWeakRef(const JSThread *thread, const JSHandle<Derived> &table,
-                                                             const JSHandle<JSTaggedValue> &key,
-                                                             const JSHandle<JSTaggedValue> &value)
+JSHandle<Derived> LinkedHashTable<Derived, HashObject>::InsertWeakRef(const JSThread *thread,
+    const JSHandle<Derived> &table, const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
 {
     ASSERT(IsKey(key.GetTaggedValue()));
-    int hash = HashObject::Hash(key.GetTaggedValue());
+    int hash = LinkedHash::Hash(key.GetTaggedValue());
     int entry = table->FindElement(key.GetTaggedValue());
     if (entry != -1) {
         table->SetValue(thread, entry, value.GetTaggedValue());
-        return Derived::Cast(*table);
+        return table;
     }
 
-    Derived *newTable = GrowCapacity(thread, table);
+    JSHandle<Derived> newTable = GrowCapacity(thread, table);
 
     int bucket = newTable->HashToBucket(hash);
     entry = newTable->NumberOfElements() + newTable->NumberOfDeletedElements();
@@ -114,7 +113,7 @@ void LinkedHashTable<Derived, HashObject>::Rehash(const JSThread *thread, Derive
             key.RemoveWeakTag();
         }
 
-        int bucket = newTable->HashToBucket(HashObject::Hash(key));
+        int bucket = newTable->HashToBucket(LinkedHash::Hash(key));
         newTable->InsertNewEntry(thread, bucket, desEntry);
         int desIndex = newTable->EntryToIndex(desEntry);
         for (int j = 0; j < HashObject::ENTRY_SIZE; j++) {
@@ -127,25 +126,25 @@ void LinkedHashTable<Derived, HashObject>::Rehash(const JSThread *thread, Derive
 }
 
 template<typename Derived, typename HashObject>
-Derived *LinkedHashTable<Derived, HashObject>::GrowCapacity(const JSThread *thread, const JSHandle<Derived> &table,
-                                                            int numberOfAddedElements)
+JSHandle<Derived> LinkedHashTable<Derived, HashObject>::GrowCapacity(const JSThread *thread,
+    const JSHandle<Derived> &table, int numberOfAddedElements)
 {
     if (table->HasSufficientCapacity(numberOfAddedElements)) {
-        return Derived::Cast(*table);
+        return table;
     }
     int newCapacity = ComputeCapacity(table->NumberOfElements() + numberOfAddedElements);
-    Derived *newTable = Create(thread, newCapacity);
-    table->Rehash(thread, newTable);
+    JSHandle<Derived> newTable = Create(thread, newCapacity);
+    table->Rehash(thread, *newTable);
     return newTable;
 }
 
 template<typename Derived, typename HashObject>
-Derived *LinkedHashTable<Derived, HashObject>::Remove(const JSThread *thread, const JSHandle<Derived> &table,
-                                                      const JSHandle<JSTaggedValue> &key)
+JSHandle<Derived> LinkedHashTable<Derived, HashObject>::Remove(const JSThread *thread, const JSHandle<Derived> &table,
+                                                               const JSHandle<JSTaggedValue> &key)
 {
     int entry = table->FindElement(key.GetTaggedValue());
     if (entry == -1) {
-        return Derived::Cast(*table);
+        return table;
     }
 
     table->RemoveEntry(thread, entry);
@@ -153,42 +152,42 @@ Derived *LinkedHashTable<Derived, HashObject>::Remove(const JSThread *thread, co
 }
 
 template<typename Derived, typename HashObject>
-Derived *LinkedHashTable<Derived, HashObject>::Shrink(const JSThread *thread, const JSHandle<Derived> &table,
-                                                      int additionalCapacity)
+JSHandle<Derived> LinkedHashTable<Derived, HashObject>::Shrink(const JSThread *thread, const JSHandle<Derived> &table,
+    int additionalCapacity)
 {
     int newCapacity = ComputeCapacityWithShrink(table->Capacity(), table->NumberOfElements() + additionalCapacity);
     if (newCapacity == table->Capacity()) {
-        return Derived::Cast(*table);
+        return table;
     }
 
-    Derived *newTable = Create(thread, newCapacity);
+    JSHandle<Derived> newTable = Create(thread, newCapacity);
 
-    table->Rehash(thread, newTable);
+    table->Rehash(thread, *newTable);
     return newTable;
 }
 
 // LinkedHashMap
-JSTaggedValue LinkedHashMap::Create(const JSThread *thread, int numberOfElements)
+JSHandle<LinkedHashMap> LinkedHashMap::Create(const JSThread *thread, int numberOfElements)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Create(thread, numberOfElements));
+    return LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Create(thread, numberOfElements);
 }
 
-JSTaggedValue LinkedHashMap::Delete(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
+JSHandle<LinkedHashMap> LinkedHashMap::Delete(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
                                     const JSHandle<JSTaggedValue> &key)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Remove(thread, obj, key));
+    return LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Remove(thread, obj, key);
 }
 
-JSTaggedValue LinkedHashMap::Set(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
-                                 const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
+JSHandle<LinkedHashMap> LinkedHashMap::Set(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
+    const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Insert(thread, obj, key, value));
+    return LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Insert(thread, obj, key, value);
 }
 
-JSTaggedValue LinkedHashMap::SetWeakRef(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
-                                        const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
+JSHandle<LinkedHashMap> LinkedHashMap::SetWeakRef(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
+    const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::InsertWeakRef(thread, obj, key, value));
+    return LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::InsertWeakRef(thread, obj, key, value);
 }
 
 JSTaggedValue LinkedHashMap::Get(JSTaggedValue key) const
@@ -217,35 +216,34 @@ void LinkedHashMap::Clear(const JSThread *thread)
     SetNumberOfDeletedElements(thread, numberOfElements);
 }
 
-JSTaggedValue LinkedHashMap::Shrink(const JSThread *thread, const JSHandle<LinkedHashMap> &table,
+JSHandle<LinkedHashMap> LinkedHashMap::Shrink(const JSThread *thread, const JSHandle<LinkedHashMap> &table,
                                     int additionalCapacity)
 {
-    return JSTaggedValue(
-        LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Shrink(thread, table, additionalCapacity));
+    return LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Shrink(thread, table, additionalCapacity);
 }
 
 // LinkedHashSet
-JSTaggedValue LinkedHashSet::Create(const JSThread *thread, int numberOfElements)
+JSHandle<LinkedHashSet> LinkedHashSet::Create(const JSThread *thread, int numberOfElements)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Create(thread, numberOfElements));
+    return LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Create(thread, numberOfElements);
 }
 
-JSTaggedValue LinkedHashSet::Delete(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
+JSHandle<LinkedHashSet> LinkedHashSet::Delete(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
                                     const JSHandle<JSTaggedValue> &key)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Remove(thread, obj, key));
+    return LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Remove(thread, obj, key);
 }
 
-JSTaggedValue LinkedHashSet::Add(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
+JSHandle<LinkedHashSet> LinkedHashSet::Add(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
                                  const JSHandle<JSTaggedValue> &key)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Insert(thread, obj, key, key));
+    return LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Insert(thread, obj, key, key);
 }
 
-JSTaggedValue LinkedHashSet::AddWeakRef(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
-                                        const JSHandle<JSTaggedValue> &key)
+JSHandle<LinkedHashSet> LinkedHashSet::AddWeakRef(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
+    const JSHandle<JSTaggedValue> &key)
 {
-    return JSTaggedValue(LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::InsertWeakRef(thread, obj, key, key));
+    return LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::InsertWeakRef(thread, obj, key, key);
 }
 
 bool LinkedHashSet::Has(JSTaggedValue key) const
@@ -264,14 +262,13 @@ void LinkedHashSet::Clear(const JSThread *thread)
     SetNumberOfDeletedElements(thread, numberOfElements);
 }
 
-JSTaggedValue LinkedHashSet::Shrink(const JSThread *thread, const JSHandle<LinkedHashSet> &table,
-                                    int additionalCapacity)
+JSHandle<LinkedHashSet> LinkedHashSet::Shrink(const JSThread *thread, const JSHandle<LinkedHashSet> &table,
+    int additionalCapacity)
 {
-    return JSTaggedValue(
-        LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Shrink(thread, table, additionalCapacity));
+    return LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Shrink(thread, table, additionalCapacity);
 }
 
-int LinkedHashMapObject::Hash(JSTaggedValue key)
+int LinkedHash::Hash(JSTaggedValue key)
 {
     if (key.IsDouble() && key.GetDouble() == 0.0) {
         key = JSTaggedValue(0);

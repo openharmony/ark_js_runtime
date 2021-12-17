@@ -586,7 +586,7 @@ void SnapShotSerialize::Serialize(TaggedObject *objectHeader, CQueue<TaggedObjec
                                   std::unordered_map<uint64_t, SlotBit> *data)
 {
     uint8_t objectType = SerializeHelper::GetObjectType(objectHeader);
-    size_t objectSize = objectHeader->GetObjectSize();
+    size_t objectSize = objectHeader->GetClass()->SizeFromJSHClass(objectHeader);
     if (objectSize > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         LOG_ECMA_MEM(FATAL) << "It is a huge object. Not Support.";
     }

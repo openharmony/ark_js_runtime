@@ -38,9 +38,11 @@ static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 2 * 1024 * 1024;
 #if defined(IS_STANDARD_SYSTEM)
 static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 3 * 1024 * 1024;
 static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 3 * 1024 * 1024;
+static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 2.5 * 1024 * 1024;
 #else
 static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 4 * 1024 * 1024;
 static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 16 * 1024 * 1024;
+static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 3.5 * 1024 * 1024;
 #endif
 
 static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 10 * 1024 * 1024;
@@ -56,7 +58,8 @@ static constexpr size_t REGION_SIZE_LOG2 = 18U;
 static constexpr size_t DEFAULT_SNAPSHOT_SPACE_SIZE = 1U << REGION_SIZE_LOG2;
 static constexpr size_t MAX_SNAPSHOT_SPACE_SIZE = 8 * 1024 * 1024;
 
-static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_SIZE = 1024 * 1024;
+static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_SIZE = 256 * 1024;
+static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_LIMIT = 1024 * 1024;
 static constexpr size_t MAX_MACHINE_CODE_SPACE_SIZE = 8 * 1024 * 1024;
 
 static constexpr size_t MAX_HEAP_SIZE = 256 * 1024 * 1024;
@@ -86,8 +89,6 @@ static constexpr size_t MAX_CACHED_CHUNK_AREA_SIZE = 16 * 1024;
 static constexpr size_t MAX_CHUNK_AREA_SIZE = 1 * 1024 * 1024;
 
 static constexpr uintptr_t PANDA_32BITS_HEAP_START_ADDRESS_256 = 256_KB;
-
-static os::memory::Mutex staticResourceLock_;
 
 template<typename T>
 constexpr inline bool IsAligned(T value, size_t alignment)

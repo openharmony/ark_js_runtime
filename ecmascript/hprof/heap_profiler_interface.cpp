@@ -18,7 +18,8 @@
 #include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
-void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath, bool isVmMode)
+void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat,
+                                             const CString &filePath, bool isVmMode)
 {
     LOG(ERROR, RUNTIME) << "HeapProfilerInterface::DumpHeapSnapshot";
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
@@ -39,7 +40,7 @@ HeapProfilerInterface *HeapProfilerInterface::CreateHeapProfiler(JSThread *threa
     return hprof;
 }
 
-void HeapProfilerInterface::Destory(JSThread *thread, HeapProfilerInterface *heapProfiler)
+void HeapProfilerInterface::Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler)
 {
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
     const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(heapProfiler);

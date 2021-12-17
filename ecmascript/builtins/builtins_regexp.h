@@ -115,9 +115,12 @@ public:
     JSTaggedValue FindCachedResult(JSThread *thread, const JSHandle<JSTaggedValue> &patten,
                                    const JSHandle<JSTaggedValue> &flags, const JSHandle<JSTaggedValue> &input,
                                    CacheType type, const JSHandle<JSTaggedValue> &regexp);
-    void AddResultInCache(JSThread *thread, const JSHandle<JSTaggedValue> &patten, const JSHandle<JSTaggedValue> &flags,
-                          const JSHandle<JSTaggedValue> &input, JSTaggedValue resultArray, CacheType type,
-                          uint32_t lastIndex);
+    static void AddResultInCache(JSThread *thread, JSHandle<RegExpExecResultCache> cache,
+                                 const JSHandle<JSTaggedValue> &patten, const JSHandle<JSTaggedValue> &flags,
+                                 const JSHandle<JSTaggedValue> &input, const JSHandle<JSTaggedValue> &resultArray,
+                                 CacheType type, uint32_t lastIndex);
+
+    static void GrowRegexpCache(JSThread *thread, JSHandle<RegExpExecResultCache> cache);
 
     void ClearEntry(JSThread *thread, int entry);
     void SetEntry(JSThread *thread, int entry, JSTaggedValue &patten, JSTaggedValue &flags, JSTaggedValue &input,
@@ -180,16 +183,28 @@ public:
         return Get(STRING_LENGTH_THRESHOLD_INDEX).GetInt();
     }
 
+    inline void SetCacheLength(JSThread *thread, int length)
+    {
+        Set(thread, CACHE_LENGTH_INDEX, JSTaggedValue(length));
+    }
+
+    inline int GetCacheLength()
+    {
+        return Get(CACHE_LENGTH_INDEX).GetInt();
+    }
+
 private:
     static constexpr int DEFAULT_LARGE_STRING_COUNT = 10;
     static constexpr int DEFAULT_CONFLICT_COUNT = 100;
+    static constexpr int INITIAL_CACHE_NUMBER = 0x10;
     static constexpr int DEFAULT_CACHE_NUMBER = 0x1000;
     static constexpr int CACHE_COUNT_INDEX = 0;
     static constexpr int CACHE_HIT_COUNT_INDEX = 1;
     static constexpr int LARGE_STRING_COUNT_INDEX = 2;
     static constexpr int CONFLICT_COUNT_INDEX = 3;
     static constexpr int STRING_LENGTH_THRESHOLD_INDEX = 4;
-    static constexpr int CACHE_TABLE_HEADER_SIZE = 5;
+    static constexpr int CACHE_LENGTH_INDEX = 5;
+    static constexpr int CACHE_TABLE_HEADER_SIZE = 6;
     static constexpr int PATTERN_INDEX = 0;
     static constexpr int FLAG_INDEX = 1;
     static constexpr int INPUT_STRING_INDEX = 2;

@@ -32,7 +32,7 @@ class LinkedHashMap;
 class LinkedHashSet;
 class NameDictionary;
 
-template<typename T>
+template <typename T>
 class JSHandle : public HandleBase {
 public:
     inline explicit JSHandle() : HandleBase(reinterpret_cast<uintptr_t>(nullptr)) {}
@@ -55,12 +55,12 @@ public:
         address_ = EcmaHandleScope::NewHandle(const_cast<JSThread *>(thread), JSTaggedValue(value).GetRawData());
     }
 
-    template<typename S>
+    template <typename S>
     explicit JSHandle(const JSHandle<S> &handle) : HandleBase(handle.GetAddress())
     {
     }
 
-    template<typename S>
+    template <typename S>
     inline static JSHandle<T> Cast(const JSHandle<S> &handle)
     {
         T::Cast(handle.GetTaggedValue().GetTaggedObject());
@@ -108,7 +108,7 @@ public:
         return GetAddress() == 0U;
     }
 
-    template<typename R>
+    template <typename R>
     R *GetObject() const
     {
         return reinterpret_cast<R *>(GetTaggedValue().GetTaggedObject());
@@ -121,14 +121,14 @@ public:
         }
     }
 
-    void Dump(JSThread *thread) const DUMP_API_ATTR
+    void Dump() const DUMP_API_ATTR
     {
-        GetTaggedValue().Dump(thread);
+        GetTaggedValue().D();
     }
 
 private:
     inline explicit JSHandle(const JSTaggedType *slot) : HandleBase(reinterpret_cast<uintptr_t>(slot)) {}
-    inline explicit JSHandle(const T * const *slot) : HandleBase(reinterpret_cast<uintptr_t>(slot)) {}
+    inline explicit JSHandle(const T *const *slot) : HandleBase(reinterpret_cast<uintptr_t>(slot)) {}
 
     friend class EcmaVM;
     friend class GlobalEnv;
@@ -136,31 +136,31 @@ private:
     friend class GlobalHandleCollection;
 };
 
-template<>
+template <>
 inline JSTaggedValue *JSHandle<JSTaggedValue>::operator->() const
 {
     return reinterpret_cast<JSTaggedValue *>(GetAddress());
 }
 
-template<>
+template <>
 inline JSTaggedValue *JSHandle<JSTaggedValue>::operator*() const
 {
     return reinterpret_cast<JSTaggedValue *>(GetAddress());
 }
 
-template<>
+template <>
 inline JSTaggedNumber *JSHandle<JSTaggedNumber>::operator->() const
 {
     return reinterpret_cast<JSTaggedNumber *>(GetAddress());
 }
 
-template<>
+template <>
 inline JSTaggedNumber *JSHandle<JSTaggedNumber>::operator*() const
 {
     return reinterpret_cast<JSTaggedNumber *>(GetAddress());
 }
 
-template<typename T>
+template <typename T>
 class JSMutableHandle : public JSHandle<T> {
 public:
     JSMutableHandle() = default;
@@ -170,8 +170,13 @@ public:
 
     explicit JSMutableHandle(const JSThread *thread, JSTaggedValue value) : JSHandle<T>(thread, value) {}
     explicit JSMutableHandle(const JSThread *thread, const TaggedArray *value) : JSHandle<T>(thread, value) {}
+    template <typename S>
+    explicit JSMutableHandle(const JSThread *thread, const JSHandle<S> &handle)
+        : JSHandle<T>(thread, handle.GetTaggedValue())
+    {
+    }
 
-    template<typename S>
+    template <typename S>
     explicit JSMutableHandle(const JSHandle<S> &handle) : JSHandle<T>(handle)
     {
     }
@@ -180,6 +185,13 @@ public:
     {
         auto addr = reinterpret_cast<JSTaggedValue *>(this->GetAddress());
         *addr = value;
+    }
+
+    template <typename S>
+    void Update(const JSHandle<S> &handle)
+    {
+        auto addr = reinterpret_cast<JSTaggedValue *>(this->GetAddress());
+        *addr = handle.GetTaggedValue();
     }
 };
 }  // namespace panda::ecmascript

@@ -158,7 +158,11 @@ JSTaggedValue JSPromise::RejectPromise(JSThread *thread, const JSHandle<JSPromis
     promise->SetPromiseRejectReactions(thread, globalConst->GetHandledUndefined());
     // 6. Set the value of promise's [[PromiseState]] internal slot to "rejected".
     promise->SetPromiseState(thread, JSTaggedValue(static_cast<int32_t>(PromiseStatus::REJECTED)));
-    // 7. Return TriggerPromiseReactions(reactions, reason).
+    // 7. When a promise is rejected without any handlers, it is called with its operation argument set to "reject".
+    if (!promise->GetPromiseIsHandled().ToBoolean()) {
+        thread->GetEcmaVM()->PromiseRejectionTracker(promise, reason, PromiseRejectionEvent::REJECT);
+    }
+    // 8. Return TriggerPromiseReactions(reactions, reason).
     return TriggerPromiseReactions(thread, reactions, reason);
 }
 

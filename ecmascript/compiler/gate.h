@@ -30,11 +30,12 @@
 #include "ecmascript/compiler/type.h"
 
 namespace kungfu {
+using GateRef = int32_t; // for external users
 using GateId = uint32_t;
 using GateOp = uint8_t;
 using GateMark = uint8_t;
 using TimeStamp = uint8_t;
-using AddrShift = int32_t;
+using GateRef = int32_t;
 using BitField = uint64_t;
 using OutIdx = uint32_t;
 class Gate;
@@ -49,7 +50,6 @@ enum ValueCode {
     INT64,
     FLOAT32,
     FLOAT64,
-    TAGGED_POINTER,
 };
 
 std::string ValueCodeToStr(ValueCode valueCode);
@@ -71,6 +71,7 @@ public:
         ALLOCA_LIST,
         ARG_LIST,
         RETURN,
+        RETURN_VOID,
         THROW,
         ORDINARY_BLOCK,
         IF_BRANCH,
@@ -90,6 +91,7 @@ public:
         VALUE_SELECTOR_INT64,
         VALUE_SELECTOR_FLOAT32,
         VALUE_SELECTOR_FLOAT64,
+        VALUE_SELECTOR_ANYVALUE,
         DEPEND_SELECTOR,
         DEPEND_RELAY,
         DEPEND_AND,
@@ -130,6 +132,7 @@ public:
         FLOAT32_CALL,
         FLOAT64_CALL,
         TAGGED_POINTER_CALL,
+        ANYVALUE_CALL,
         ALLOCA,
         INT1_ARG,
         INT8_ARG,
@@ -231,16 +234,17 @@ public:
         FLOAT64_STORE,
         INT32_TO_FLOAT64,
         FLOAT64_TO_INT32,
+        TAGGED_POINTER_TO_INT64,
         BITCAST_INT64_TO_FLOAT64,
         BITCAST_FLOAT64_TO_INT64,
         TAG64_TO_INT1,
     };
 
     OpCode() = default;
-    explicit constexpr OpCode(Op op) : op(op) {}
+    explicit constexpr OpCode(Op op) : op_(op) {}
     operator Op() const
     {
-        return this->op;
+        return op_;
     }
     explicit operator bool() const = delete;
     [[nodiscard]] Properties GetProperties() const;
@@ -264,7 +268,7 @@ public:
     ~OpCode() = default;
 
 private:
-    Op op;
+    Op op_;
 };
 
 struct Properties {
@@ -283,6 +287,7 @@ enum MarkCode : GateMark {
 
 ValueCode JSValueCode();
 ValueCode PtrValueCode();
+ValueCode ArchRelatePtrValueCode(const char *triple);
 size_t GetValueBits(ValueCode valueCode);
 
 class Out {
@@ -305,9 +310,9 @@ public:
     ~Out() = default;
 
 private:
-    OutIdx idx;
-    AddrShift nextOut;
-    AddrShift prevOut;
+    OutIdx idx_;
+    GateRef nextOut_;
+    GateRef prevOut_;
 };
 
 class In {
@@ -321,7 +326,7 @@ public:
     ~In() = default;
 
 private:
-    AddrShift gatePtr;
+    GateRef gatePtr_;
 };
 
 class Gate {
@@ -356,6 +361,8 @@ public:
     [[nodiscard]] bool IsInGateNull(size_t idx) const;
     [[nodiscard]] OpCode GetOpCode() const;
     void SetOpCode(OpCode opcode);
+    [[nodiscard]] TypeCode GetTypeCode() const;
+    void SetTypeCode(TypeCode type);
     [[nodiscard]] GateId GetId() const;
     [[nodiscard]] size_t GetNumIns() const;
     [[nodiscard]] std::array<size_t, 4> GetNumInsArray() const;
@@ -376,7 +383,6 @@ public:
     [[nodiscard]] bool Verify() const;
     [[nodiscard]] MarkCode GetMark(TimeStamp stamp) const;
     void SetMark(MarkCode mark, TimeStamp stamp);
-    TypeCode GetTypeCode() const;
     ~Gate() = default;
 
 private:
@@ -384,13 +390,13 @@ private:
     // out(2)
     // out(1)
     // out(0)
-    GateId id;
-    OpCode opcode;
-    TypeCode type;
-    TimeStamp stamp;
-    MarkCode mark;
-    BitField bitfield;
-    AddrShift firstOut;
+    GateId id_;
+    OpCode opcode_;
+    TypeCode type_;
+    TimeStamp stamp_;
+    MarkCode mark_;
+    BitField bitfield_;
+    GateRef firstOut_;
     // in(0)
     // in(1)
     // in(2)

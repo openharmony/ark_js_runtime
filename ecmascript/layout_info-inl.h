@@ -108,7 +108,7 @@ inline int LayoutInfo::FindElementWithCache(JSThread *thread, JSHClass *cls, JST
         return -1;
     }
 
-    PropertiesCache *cache = thread->GetEcmaVM()->GetPropertiesCache();
+    PropertiesCache *cache = thread->GetPropertiesCache();
     int index = cache->Get(cls, key);
     if (index == PropertiesCache::NOT_FOUND) {
         index = BinarySearch(key, propertiesNumber);

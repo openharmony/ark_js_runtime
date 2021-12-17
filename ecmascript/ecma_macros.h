@@ -29,6 +29,8 @@
 #define LOG_ECMA(type) \
     LOG(type, ECMASCRIPT) << __func__ << " Line:" << __LINE__ << " "  // NOLINT(bugprone-lambda-function-name)
 
+#define ECMA_GC_LOG() LOG(DEBUG, ECMASCRIPT) << " ecmascript gc log: "
+
 /* Note: We can't statically decide the element type is a primitive or heap object, especially for */
 /*       dynamically-typed languages like JavaScript. So we simply skip the read-barrier.          */
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -396,9 +398,77 @@
         visitor(this, ObjectSlot(ToUintPtr(this) + BEGIN_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE)); \
     }
 
+#if ECMASCRIPT_ENABLE_CAST_CHECK
+    #define CAST_CHECK(CAST_TYPE, CHECK_METHOD)                                                 \
+        static inline CAST_TYPE *Cast(ObjectHeader *object)                                     \
+        {                                                                                       \
+            if (!JSTaggedValue(object).CHECK_METHOD()) {                                        \
+                std::abort();                                                                   \
+            }                                                                                   \
+            return static_cast<CAST_TYPE *>(object);                                            \
+        }                                                                                       \
+        static inline const CAST_TYPE *ConstCast(const ObjectHeader *object)                    \
+        {                                                                                       \
+            if (!JSTaggedValue(object).CHECK_METHOD()) {                                        \
+                std::abort();                                                                   \
+            }                                                                                   \
+            return static_cast<const CAST_TYPE *>(object);                                      \
+        }
+# else
+    #define CAST_CHECK(CAST_TYPE, CHECK_METHOD)                                                   \
+        static inline CAST_TYPE *Cast(ObjectHeader *object)                                       \
+        {                                                                                         \
+            ASSERT(JSTaggedValue(object).CHECK_METHOD());                                         \
+            return static_cast<CAST_TYPE *>(object);                                              \
+        }                                                                                         \
+        static const inline CAST_TYPE *ConstCast(const ObjectHeader *object)                      \
+        {                                                                                         \
+            ASSERT(JSTaggedValue(object).CHECK_METHOD());                                         \
+            return static_cast<const CAST_TYPE *>(object);                                        \
+        }
+
+    #define CAST_NO_CHECK(CAST_TYPE)                                                              \
+        static inline CAST_TYPE *Cast(ObjectHeader *object)                                       \
+        {                                                                                         \
+            return static_cast<CAST_TYPE *>(object);                                              \
+        }                                                                                         \
+        static const inline CAST_TYPE *ConstCast(const ObjectHeader *object)                      \
+        {                                                                                         \
+            return static_cast<const CAST_TYPE *>(object);                                        \
+        }
+#endif
+
+#if ECMASCRIPT_ENABLE_CAST_CHECK
+    #define CAST_CHECK_TAGGEDVALUE(CAST_TYPE, CHECK_METHOD)                                     \
+        static inline CAST_TYPE *Cast(JSTaggedValue value)                                      \
+        {                                                                                       \
+            if (value.IsHeapObject() && value.GetTaggedObject()->GetClass()->CHECK_METHOD()) {  \
+                return static_cast<CAST_TYPE *>(value.GetTaggedObject());                       \
+            }                                                                                   \
+            std::abort();                                                                       \
+        }
+# else
+    #define CAST_CHECK_TAGGEDVALUE(CAST_TYPE, CHECK_METHOD)                                       \
+        static inline CAST_TYPE *Cast(JSTaggedValue value)                                        \
+        {                                                                                         \
+            ASSERT(value.IsHeapObject() && value.GetTaggedObject()->GetClass()->CHECK_METHOD());  \
+            return static_cast<CAST_TYPE *>(value.GetTaggedObject());                             \
+        }
+#endif
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHECK_DUMP_FILEDS(begin, end, num)                                             \
-        LOG_IF(num != (end - begin) / JSTaggedValue::TaggedTypeSize(), FATAL, RUNTIME) \
-         << "Fileds in obj are not in dump list. ";
+#define CHECK_DUMP_FILEDS(begin, end, num)                                         \
+    LOG_IF(num != (end - begin) / JSTaggedValue::TaggedTypeSize(), FATAL, RUNTIME) \
+        << "Fileds in obj are not in dump list. ";
+
+#define CHECK_OBJECT_SIZE(size)                                                                   \
+    if (size == 0) {                                                                              \
+        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " objectSize is " << size; \
+    }
+
+#define CHECK_REGION_END(begin, end)                                                                           \
+    if (begin > end) {                                                                                         \
+        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " begin: " << begin << " end: " << end; \
+    }
 
 #endif  // ECMASCRIPT_ECMA_MACROS_H

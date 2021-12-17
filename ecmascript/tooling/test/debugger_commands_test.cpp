@@ -33,10 +33,12 @@ public:
     static void SetUpTestCase()
     {
         GTEST_LOG_(INFO) << "SetUpTestCase";
+        Logger::InitializeStdLogging(Logger::Level::FATAL, LoggerComponentMaskAll);
     }
 
     static void TearDownTestCase()
     {
+        Logger::InitializeStdLogging(Logger::Level::ERROR, LoggerComponentMaskAll);
         GTEST_LOG_(INFO) << "TearDownCase";
     }
 
@@ -45,7 +47,7 @@ public:
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
         ecmaVm = EcmaVM::Cast(instance);
         // Main logic is JSON parser, so not need trigger GC to decrease execute time
-        ecmaVm->GetFactory()->SetTriggerGc(false);
+        ecmaVm->SetEnableForceGC(false);
     }
 
     void TearDown() override

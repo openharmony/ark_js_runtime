@@ -47,18 +47,19 @@ public:
         options.SetBootIntrinsicSpaces({"ecmascript"});
         options.SetBootClassSpaces({"ecmascript"});
         options.SetRuntimeType("ecmascript");
+        options.SetEnableForceGC(true);
         ecmaVm = EcmaVM::Create(options);
+        ecmaVm->SetEnableForceGC(true);
         EXPECT_TRUE(ecmaVm != nullptr) << "Cannot create Runtime";
         thread = ecmaVm->GetJSThread();
         scope = new EcmaHandleScope(thread);
         thread->SetIsEcmaInterpreter(true);
-        ecmaVm->GetFactory()->SetTriggerGc(true);
     }
     void Destroy()
     {
         delete scope;
         scope = nullptr;
-        ecmaVm->GetFactory()->SetTriggerGc(false);
+        ecmaVm->SetEnableForceGC(false);
         thread->ClearException();
         [[maybe_unused]] bool success = EcmaVM::Destroy(ecmaVm);
         EXPECT_TRUE(success) << "Cannot destroy Runtime";
@@ -477,6 +478,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSSpecialValue)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSSpecialValueTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, SerializeJSPlainObject)
@@ -521,6 +523,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSPlainObject)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSPlainObjectTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, TestSerializeDescription)
@@ -554,6 +557,7 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeDescription)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::DescriptionTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, TestSerializeJSSet)
@@ -564,7 +568,7 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeJSSet)
     JSHandle<JSTaggedValue> constructor = env->GetBuiltinsSetFunction();
     JSHandle<JSSet> set =
         JSHandle<JSSet>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
-    JSTaggedValue linkedSet = LinkedHashSet::Create(thread);
+    JSHandle<LinkedHashSet> linkedSet = LinkedHashSet::Create(thread);
     set->SetLinkedSet(thread, linkedSet);
     // set property to set
     JSHandle<JSTaggedValue> value1(thread, JSTaggedValue(7));
@@ -591,6 +595,7 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeJSSet)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSSetTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, TestSerializeJSArray)
@@ -622,6 +627,7 @@ HWTEST_F_L0(JSSerializerTest, TestSerializeJSArray)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSArrayTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 // Test the situation that Objects' properties stores values that reference with each other
@@ -650,13 +656,14 @@ HWTEST_F_L0(JSSerializerTest, TestObjectsPropertyReference)
 
     JSSerializer *serializer = new JSSerializer(thread);
     bool success1 = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(obj1));
-    bool success2 = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(obj1));
+    bool success2 = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(obj2));
     EXPECT_TRUE(success1) << "Serialize obj1 fail";
     EXPECT_TRUE(success2) << "Serialize obj2 fail";
     std::pair<uint8_t *, size_t> data = serializer->ReleaseBuffer();
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::ObjectsPropertyReferenceTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, SerializeEcmaString)
@@ -670,6 +677,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeEcmaString)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::EcmaStringTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, SerializeInt32_t)
@@ -685,6 +693,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeInt32_t)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::Int32Test, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, SerializeDouble)
@@ -699,6 +708,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeDouble)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::DoubleTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 JSDate *JSDateCreate(EcmaVM *ecmaVM)
@@ -723,6 +733,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeDate)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSDateTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 JSMap *CreateMap(JSThread *thread)
@@ -732,7 +743,7 @@ JSMap *CreateMap(JSThread *thread)
     JSHandle<JSTaggedValue> constructor = env->GetBuiltinsMapFunction();
     JSHandle<JSMap> map =
         JSHandle<JSMap>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
-    JSTaggedValue linkedMap = LinkedHashMap::Create(thread);
+    JSHandle<LinkedHashMap> linkedMap = LinkedHashMap::Create(thread);
     map->SetLinkedMap(thread, linkedMap);
     return *map;
 }
@@ -755,6 +766,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSMap)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSMapTest, jsDeserializerTest, data, map);
     t1.join();
+    delete serializer;
 };
 
 JSArrayBuffer *CreateJSArrayBuffer(JSThread *thread)
@@ -784,6 +796,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBuffer)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSArrayBufferTest, jsDeserializerTest, data, jsArrayBuffer, 10, nullptr);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared)
@@ -806,6 +819,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSArrayBufferTest, jsDeserializerTest, data, jsArrayBuffer, 12, nullptr);
     t1.join();
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared2)
@@ -831,6 +845,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBufferShared2)
                    jsDeserializerTest, data, jsArrayBuffer, 12, changeStr.c_str());
     t1.join();
     EXPECT_TRUE(strcmp(msgBuffer, "world hello") == 0) << "Serialize JSArrayBuffer fail";
+    delete serializer;
 };
 
 HWTEST_F_L0(JSSerializerTest, SerializeJSRegExp)
@@ -855,6 +870,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSRegExp)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSRegexpTest, jsDeserializerTest, data);
     t1.join();
+    delete serializer;
 };
 
 JSArrayBuffer *CreateTestJSArrayBuffer(JSThread *thread)
@@ -894,6 +910,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSTypedArray)
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::TypedArrayTest, jsDeserializerTest, data, int8Array);
     t1.join();
+    delete serializer;
 };
 
 // not support function
@@ -914,6 +931,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeObjectWithFunction)
     JSDeserializer deserializer(thread, data.first, data.second);
     JSHandle<JSTaggedValue> ret = deserializer.DeserializeJSTaggedValue();
     EXPECT_TRUE(ret.IsEmpty());
+    delete serializer;
 };
 
 // not support symbol
@@ -935,5 +953,6 @@ HWTEST_F_L0(JSSerializerTest, SerializeSymbolWithProperty)
     JSDeserializer deserializer(thread, data.first, data.second);
     JSHandle<JSTaggedValue> ret = deserializer.DeserializeJSTaggedValue();
     EXPECT_TRUE(ret.IsEmpty());
+    delete serializer;
 };
 }  // namespace panda::test

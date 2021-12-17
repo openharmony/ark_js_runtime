@@ -20,21 +20,21 @@
 #include "ecmascript/builtins/builtins_regexp.h"
 #include "ecmascript/class_linker/panda_file_translator.h"
 #include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/global_dictionary.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
 #include "ecmascript/global_env_constants.h"
-#include "ecmascript/ic/properties_cache-inl.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_invoker.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/platform/platform.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
@@ -45,6 +45,7 @@
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "ecmascript/symbol_table.h"
 #include "ecmascript/tagged_array-inl.h"
+#include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_queue-inl.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/template_map.h"
@@ -127,8 +128,6 @@ bool EcmaVM::Initialize()
     RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
 
     auto globalConst = const_cast<GlobalEnvConstants *>(thread_->GlobalConstants());
-
-    propertiesCache_ = new PropertiesCache();
     regExpParserCache_ = new RegExpParserCache();
     heap_ = new Heap(this);
     heap_->Initialize();
@@ -139,11 +138,12 @@ bool EcmaVM::Initialize()
         UNREACHABLE();
     }
 
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
     if (!snapshotDeserializeEnable_ || !VerifyFilePath(fileName_)) {
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
-        [[maybe_unused]] EcmaHandleScope scope(thread_);
 
-        JSHandle<JSHClass> dynClassClassHandle = factory_->NewEcmaDynClass(nullptr, JSHClass::SIZE, JSType::HCLASS);
+        JSHandle<JSHClass> dynClassClassHandle =
+            factory_->NewEcmaDynClassClass(nullptr, JSHClass::SIZE, JSType::HCLASS);
         JSHClass *dynclass = reinterpret_cast<JSHClass *>(dynClassClassHandle.GetTaggedValue().GetTaggedObject());
         dynclass->SetClass(dynclass);
         JSHandle<JSHClass> globalEnvClass =
@@ -159,13 +159,13 @@ bool EcmaVM::Initialize()
         globalConst->InitGlobalConstant(thread_);
         globalEnv->SetEmptyArray(thread_, factory_->NewEmptyArray());
         globalEnv->SetEmptyLayoutInfo(thread_, factory_->CreateLayoutInfo(0));
-        globalEnv->SetRegisterSymbols(thread_, JSTaggedValue(SymbolTable::Create(thread_)));
-        globalEnv->SetGlobalRecord(thread_, JSTaggedValue(GlobalDictionary::Create(thread_)));
+        globalEnv->SetRegisterSymbols(thread_, SymbolTable::Create(thread_));
+        globalEnv->SetGlobalRecord(thread_, GlobalDictionary::Create(thread_));
         JSTaggedValue emptyStr = thread_->GlobalConstants()->GetEmptyString();
         stringTable_->InternEmptyString(EcmaString::Cast(emptyStr.GetTaggedObject()));
         globalEnv->SetEmptyTaggedQueue(thread_, factory_->NewTaggedQueue(0));
-        globalEnv->SetTemplateMap(thread_, JSTaggedValue(TemplateMap::Create(thread_)));
-        globalEnv->SetRegisterSymbols(GetJSThread(), JSTaggedValue(SymbolTable::Create(GetJSThread())));
+        globalEnv->SetTemplateMap(thread_, TemplateMap::Create(thread_));
+        globalEnv->SetRegisterSymbols(GetJSThread(), SymbolTable::Create(GetJSThread()));
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
         std::string moduleFile = options_.GetStubModuleFile();
         thread_->LoadFastStubModule(moduleFile.c_str());
@@ -193,6 +193,24 @@ bool EcmaVM::Initialize()
     InitializeFinish();
     notificationManager_->VmStartEvent();
     notificationManager_->VmInitializationEvent(0);
+    Platform::GetCurrentPlatform()->PostTask(std::make_unique<TrimNewSpaceLimitTask>(heap_));
+    return true;
+}
+
+bool EcmaVM::TrimNewSpaceLimitTask::Run(uint32_t threadIndex)
+{
+    for (uint32_t i = 0; i < THREAD_SLEEP_COUNT; i++) {
+        if (IsTerminate()) {
+            return false;
+        }
+        usleep(THREAD_SLEEP_TIME);
+    }
+
+    if (!IsTerminate() && heap_->GetMemController()->IsInAppStartup()) {
+        heap_->SetFromSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
+        heap_->SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
+        heap_->ResetAppStartup();
+    }
     return true;
 }
 
@@ -241,8 +259,8 @@ bool EcmaVM::InitializeFinish()
 }
 EcmaVM::~EcmaVM()
 {
-    Platform::GetCurrentPlatform()->Destory();
     vmInitialized_ = false;
+    Platform::GetCurrentPlatform()->Destroy();
     ClearNativeMethodsData();
 
     if (runtimeStat_ != nullptr && runtimeStatEnabled_) {
@@ -253,7 +271,9 @@ EcmaVM::~EcmaVM()
     ClearBufferData();
 
     if (gcStats_ != nullptr) {
-        gcStats_->PrintStatisticResult();
+#if ECMASCRIPT_ENABLE_GC_LOG
+        gcStats_->PrintStatisticResult(true);
+#endif
         chunk_.Delete(gcStats_);
         gcStats_ = nullptr;
     }
@@ -263,9 +283,6 @@ EcmaVM::~EcmaVM()
         delete heap_;
         heap_ = nullptr;
     }
-
-    delete propertiesCache_;
-    propertiesCache_ = nullptr;
 
     delete regExpParserCache_;
     regExpParserCache_ = nullptr;
@@ -449,7 +466,15 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
 
     InternalCallParams *params = thread_->GetInternalCallParams();
     params->MakeArgList(*jsargs);
-    panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
+    JSRuntimeOptions options = this->GetJSOptions();
+    if (options.IsEnableCpuProfiler()) {
+        CpuProfiler *profiler = CpuProfiler::GetInstance();
+        profiler->CpuProfiler::StartCpuProfiler(this);
+        panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
+        profiler->CpuProfiler::StopCpuProfiler();
+    } else {
+        panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
+    }
     if (!thread_->HasPendingException()) {
         job::MicroJobQueue::ExecutePendingJob(thread_, GetMicroJobQueue());
     }
@@ -536,10 +561,6 @@ void EcmaVM::PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo)
 
 void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
 {
-    if (propertiesCache_ != nullptr) {
-        propertiesCache_->Clear();
-    }
-
     if (regExpParserCache_ != nullptr) {
         regExpParserCache_->Clear();
     }

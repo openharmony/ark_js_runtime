@@ -65,15 +65,15 @@ public:
 HWTEST_F_L0(LinkedHashTableTest, MapCreate)
 {
     int numOfElement = 64;
-    LinkedHashMap *dict = LinkedHashMap::Cast(LinkedHashMap::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(dict != nullptr);
+    JSHandle<LinkedHashMap> dict = LinkedHashMap::Create(thread, numOfElement);
+    EXPECT_TRUE(*dict != nullptr);
 }
 
 HWTEST_F_L0(LinkedHashTableTest, SetCreate)
 {
     int numOfElement = 64;
-    LinkedHashSet *set = LinkedHashSet::Cast(LinkedHashSet::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(set != nullptr);
+    JSHandle<LinkedHashSet> set = LinkedHashSet::Create(thread, numOfElement);
+    EXPECT_TRUE(*set != nullptr);
 }
 
 HWTEST_F_L0(LinkedHashTableTest, addKeyAndValue)
@@ -81,9 +81,8 @@ HWTEST_F_L0(LinkedHashTableTest, addKeyAndValue)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // mock object needed in test
     int numOfElement = 64;
-    LinkedHashMap *dict = LinkedHashMap::Cast(LinkedHashMap::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(dict != nullptr);
-    JSHandle<LinkedHashMap> dictHandle(thread, dict);
+    JSHandle<LinkedHashMap> dictHandle = LinkedHashMap::Create(thread, numOfElement);
+    EXPECT_TRUE(*dictHandle != nullptr);
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
     char keyArray[] = "hello";
@@ -97,25 +96,25 @@ HWTEST_F_L0(LinkedHashTableTest, addKeyAndValue)
     JSHandle<JSTaggedValue> value2(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
     // test set()
-    dict = LinkedHashMap::Cast(LinkedHashMap::Set(thread, dictHandle, key1, value1).GetTaggedObject());
-    EXPECT_EQ(dict->NumberOfElements(), 1);
+    dictHandle = LinkedHashMap::Set(thread, dictHandle, key1, value1);
+    EXPECT_EQ(dictHandle->NumberOfElements(), 1);
 
     // test find()
-    int entry1 = dict->FindElement(key1.GetTaggedValue());
-    EXPECT_EQ(key1.GetTaggedValue(), dict->GetKey(entry1));
-    EXPECT_EQ(value1.GetTaggedValue(), dict->GetValue(entry1));
+    int entry1 = dictHandle->FindElement(key1.GetTaggedValue());
+    EXPECT_EQ(key1.GetTaggedValue(), dictHandle->GetKey(entry1));
+    EXPECT_EQ(value1.GetTaggedValue(), dictHandle->GetValue(entry1));
 
-    dict = LinkedHashMap::Cast(LinkedHashMap::Set(thread, dictHandle, key2, value2).GetTaggedObject());
-    EXPECT_EQ(dict->NumberOfElements(), 2);
+    dictHandle = LinkedHashMap::Set(thread, dictHandle, key2, value2);
+    EXPECT_EQ(dictHandle->NumberOfElements(), 2);
     // test remove()
-    dict = LinkedHashMap::Cast(LinkedHashMap::Delete(thread, dictHandle, key1).GetTaggedObject());
-    EXPECT_EQ(-1, dict->FindElement(key1.GetTaggedValue()));
-    EXPECT_EQ(dict->NumberOfElements(), 1);
+    dictHandle = LinkedHashMap::Delete(thread, dictHandle, key1);
+    EXPECT_EQ(-1, dictHandle->FindElement(key1.GetTaggedValue()));
+    EXPECT_EQ(dictHandle->NumberOfElements(), 1);
 
     JSHandle<JSTaggedValue> undefinedKey(thread, JSTaggedValue::Undefined());
-    dict = LinkedHashMap::Cast(LinkedHashMap::Set(thread, dictHandle, undefinedKey, value1).GetTaggedObject());
-    int entry2 = dict->FindElement(undefinedKey.GetTaggedValue());
-    EXPECT_EQ(value1.GetTaggedValue(), dict->GetValue(entry2));
+    dictHandle = LinkedHashMap::Set(thread, dictHandle, undefinedKey, value1);
+    int entry2 = dictHandle->FindElement(undefinedKey.GetTaggedValue());
+    EXPECT_EQ(value1.GetTaggedValue(), dictHandle->GetValue(entry2));
 }
 
 HWTEST_F_L0(LinkedHashTableTest, SetaddKeyAndValue)
@@ -123,9 +122,8 @@ HWTEST_F_L0(LinkedHashTableTest, SetaddKeyAndValue)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // mock object needed in test
     int numOfElement = 64;
-    LinkedHashSet *set = LinkedHashSet::Cast(LinkedHashSet::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(set != nullptr);
-    JSHandle<LinkedHashSet> setHandle(thread, set);
+    JSHandle<LinkedHashSet> setHandle = LinkedHashSet::Create(thread, numOfElement);
+    EXPECT_TRUE(*setHandle != nullptr);
     JSHandle<JSTaggedValue> objFun = GetGlobalEnv()->GetObjectFunction();
 
     char keyArray[] = "hello";
@@ -139,45 +137,43 @@ HWTEST_F_L0(LinkedHashTableTest, SetaddKeyAndValue)
     JSHandle<JSTaggedValue> value2(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun));
 
     // test set()
-    set = LinkedHashSet::Cast(LinkedHashSet::Add(thread, setHandle, key1).GetTaggedObject());
-    EXPECT_EQ(set->NumberOfElements(), 1);
+    setHandle = LinkedHashSet::Add(thread, setHandle, key1);
+    EXPECT_EQ(setHandle->NumberOfElements(), 1);
 
     // test has()
-    EXPECT_TRUE(set->Has(key1.GetTaggedValue()));
+    EXPECT_TRUE(setHandle->Has(key1.GetTaggedValue()));
 
-    set = LinkedHashSet::Cast(LinkedHashSet::Add(thread, setHandle, key2).GetTaggedObject());
-    EXPECT_EQ(set->NumberOfElements(), 2);
+    setHandle = LinkedHashSet::Add(thread, setHandle, key2);
+    EXPECT_EQ(setHandle->NumberOfElements(), 2);
     // test remove()
-    set = LinkedHashSet::Cast(LinkedHashSet::Delete(thread, setHandle, key1).GetTaggedObject());
-    EXPECT_EQ(-1, set->FindElement(key1.GetTaggedValue()));
-    EXPECT_EQ(set->NumberOfElements(), 1);
+    setHandle = LinkedHashSet::Delete(thread, setHandle, key1);
+    EXPECT_EQ(-1, setHandle->FindElement(key1.GetTaggedValue()));
+    EXPECT_EQ(setHandle->NumberOfElements(), 1);
 
     JSHandle<JSTaggedValue> undefinedKey(thread, JSTaggedValue::Undefined());
-    set = LinkedHashSet::Cast(LinkedHashSet::Add(thread, setHandle, undefinedKey).GetTaggedObject());
-    EXPECT_TRUE(set->Has(undefinedKey.GetTaggedValue()));
+    setHandle = LinkedHashSet::Add(thread, setHandle, undefinedKey);
+    EXPECT_TRUE(setHandle->Has(undefinedKey.GetTaggedValue()));
 }
 
 HWTEST_F_L0(LinkedHashTableTest, GrowCapacity)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     int numOfElement = 8;
-    LinkedHashMap *dict = LinkedHashMap::Cast(LinkedHashMap::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(dict != nullptr);
+    JSHandle<LinkedHashMap> dictHandle = LinkedHashMap::Create(thread, numOfElement);
+    EXPECT_TRUE(*dictHandle != nullptr);
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
     char keyArray[7] = "hello";
     for (int i = 0; i < 33; i++) {
-        JSHandle<LinkedHashMap> dictHandle(thread, dict);
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
         JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
 
         // test insert()
-        dict = LinkedHashMap::Cast(LinkedHashMap::Set(thread, dictHandle, key, value).GetTaggedObject());
-        EXPECT_EQ(i, dict->FindElement(key.GetTaggedValue()));
+        dictHandle = LinkedHashMap::Set(thread, dictHandle, key, value);
+        EXPECT_EQ(i, dictHandle->FindElement(key.GetTaggedValue()));
     }
 
-    JSHandle<LinkedHashMap> dictHandle(thread, dict);
     // test order
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
@@ -194,25 +190,22 @@ HWTEST_F_L0(LinkedHashTableTest, SetGrowCapacity)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     int numOfElement = 8;
-    LinkedHashSet *set = LinkedHashSet::Cast(LinkedHashSet::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(set != nullptr);
+    JSHandle<LinkedHashSet> setHandle = LinkedHashSet::Create(thread, numOfElement);
+    EXPECT_TRUE(*setHandle != nullptr);
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
     // create key and values
     char keyArray[7] = "hello";
     for (int i = 0; i < 33; i++) {
-        JSHandle<LinkedHashSet> setHandle(thread, set);
-
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         JSHandle<JSTaggedValue> key(stringKey);
 
         // test insert()
-        set = LinkedHashSet::Cast(LinkedHashSet::Add(thread, setHandle, key).GetTaggedObject());
-        EXPECT_EQ(i, set->FindElement(key.GetTaggedValue()));
+        setHandle = LinkedHashSet::Add(thread, setHandle, key);
+        EXPECT_EQ(i, setHandle->FindElement(key.GetTaggedValue()));
     }
 
-    JSHandle<LinkedHashSet> setHandle(thread, set);
     // test order
     for (int i = 0; i < 33; i++) {
         keyArray[5] = '1' + i;
@@ -229,69 +222,63 @@ HWTEST_F_L0(LinkedHashTableTest, ShrinkCapacity)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     int numOfElement = 64;
-    LinkedHashMap *dict = LinkedHashMap::Cast(LinkedHashMap::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(dict != nullptr);
+    JSHandle<LinkedHashMap> dictHandle = LinkedHashMap::Create(thread, numOfElement);
+    EXPECT_TRUE(*dictHandle != nullptr);
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
     char keyArray[7] = "hello";
     for (int i = 0; i < 10; i++) {
-        JSHandle<LinkedHashMap> dictHandle(thread, dict);
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
         JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
         JSHandle<JSTaggedValue> value(thread, JSTaggedValue(i));
 
         // test insert()
-        dict = LinkedHashMap::Cast(LinkedHashMap::Set(thread, dictHandle, key, value).GetTaggedObject());
+        dictHandle = LinkedHashMap::Set(thread, dictHandle, key, value);
     }
-    JSHandle<LinkedHashMap> dictHandle(thread, dict);
     keyArray[5] = '1' + 9;
     JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
-    dict = LinkedHashMap::Cast(LinkedHashMap::Delete(thread, dictHandle, key).GetTaggedObject());
-    JSHandle<LinkedHashMap> handle(thread, dict);
+    dictHandle = LinkedHashMap::Delete(thread, dictHandle, key);
     // test order
     for (int i = 0; i < 9; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         // test insert()
-        EXPECT_EQ(i, handle->FindElement(stringKey.GetTaggedValue()));
+        EXPECT_EQ(i, dictHandle->FindElement(stringKey.GetTaggedValue()));
     }
-    EXPECT_EQ(handle->NumberOfElements(), 9);
-    EXPECT_EQ(handle->Capacity(), 16);
+    EXPECT_EQ(dictHandle->NumberOfElements(), 9);
+    EXPECT_EQ(dictHandle->Capacity(), 16);
 }
 
 HWTEST_F_L0(LinkedHashTableTest, SetShrinkCapacity)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     int numOfElement = 64;
-    LinkedHashSet *set = LinkedHashSet::Cast(LinkedHashSet::Create(thread, numOfElement).GetTaggedObject());
-    EXPECT_TRUE(set != nullptr);
+    JSHandle<LinkedHashSet> setHandle = LinkedHashSet::Create(thread, numOfElement);
+    EXPECT_TRUE(*setHandle != nullptr);
     JSHandle<JSFunction> objFun(GetGlobalEnv()->GetObjectFunction());
     // create key and values
     char keyArray[7] = "hello";
     for (int i = 0; i < 10; i++) {
-        JSHandle<LinkedHashSet> setHandle(thread, set);
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
         JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyArray));
 
         // test insert()
-        set = LinkedHashSet::Cast(LinkedHashSet::Add(thread, setHandle, key).GetTaggedObject());
+        setHandle = LinkedHashSet::Add(thread, setHandle, key);
     }
-    JSHandle<LinkedHashSet> setHandle(thread, set);
     keyArray[5] = '1' + 9;
     JSHandle<JSTaggedValue> keyHandle(factory->NewFromCanBeCompressString(keyArray));
-    set = LinkedHashSet::Cast(LinkedHashSet::Delete(thread, setHandle, keyHandle).GetTaggedObject());
-    JSHandle<LinkedHashSet> handle(thread, set);
+    setHandle = LinkedHashSet::Delete(thread, setHandle, keyHandle);
     // test order
     for (int i = 0; i < 9; i++) {
         keyArray[5] = '1' + i;
         keyArray[6] = 0;
         JSHandle<EcmaString> stringKey = factory->NewFromCanBeCompressString(keyArray);
         // test insert()
-        EXPECT_EQ(i, handle->FindElement(stringKey.GetTaggedValue()));
+        EXPECT_EQ(i, setHandle->FindElement(stringKey.GetTaggedValue()));
     }
-    EXPECT_EQ(handle->NumberOfElements(), 9);
-    EXPECT_EQ(handle->Capacity(), 16);
+    EXPECT_EQ(setHandle->NumberOfElements(), 9);
+    EXPECT_EQ(setHandle->Capacity(), 16);
 }
 }  // namespace panda::test

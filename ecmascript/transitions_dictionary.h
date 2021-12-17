@@ -78,14 +78,15 @@ public:
     }
 
     static constexpr int DEFAULT_ELEMENTS_NUMBER = 16;
-    static TransitionsDictionary *Create(const JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
+    static JSHandle<TransitionsDictionary> Create(const JSThread *thread,
+                                                  int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
     {
         return HashTableT::Create(thread, numberOfElements);
     }
 
     // Attempt to shrink the dictionary after deletion of key.
-    inline static TransitionsDictionary *Shrink(const JSThread *thread,
-                                                const JSHandle<TransitionsDictionary> &dictionary)
+    inline static JSHandle<TransitionsDictionary> Shrink(const JSThread *thread,
+                                                         const JSHandle<TransitionsDictionary> &dictionary)
     {
         return HashTableT::Shrink(thread, dictionary, 0);
     }
@@ -118,11 +119,13 @@ public:
     }
 
     int FindEntry(const JSTaggedValue &key, const JSTaggedValue &metaData);
-    static TransitionsDictionary *PutIfAbsent(const JSThread *thread, const JSHandle<TransitionsDictionary> &dictionary,
-                                              const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
-                                              const JSHandle<JSTaggedValue> &metaData);
-    static TransitionsDictionary *Remove(const JSThread *thread, const JSHandle<TransitionsDictionary> &table,
-                                         const JSHandle<JSTaggedValue> &key, const JSTaggedValue &metaData);
+    static JSHandle<TransitionsDictionary> PutIfAbsent(const JSThread *thread,
+                                                       const JSHandle<TransitionsDictionary> &dictionary,
+                                                       const JSHandle<JSTaggedValue> &key,
+                                                       const JSHandle<JSTaggedValue> &value,
+                                                       const JSHandle<JSTaggedValue> &metaData);
+    static JSHandle<TransitionsDictionary> Remove(const JSThread *thread, const JSHandle<TransitionsDictionary> &table,
+                                                  const JSHandle<JSTaggedValue> &key, const JSTaggedValue &metaData);
     void Rehash(const JSThread *thread, TransitionsDictionary *newTable);
 
     static constexpr int ENTRY_SIZE = 3;

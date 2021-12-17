@@ -18,21 +18,21 @@
 
 #include "gtest/gtest.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
+#include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/js_thread_offset_table.h"
 #include "ecmascript/compiler/llvm_codegen.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/compiler/scheduler.h"
 #include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/compiler/triple.h"
 #include "ecmascript/compiler/verifier.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/tests/test_helper.h"
-
-#include "llvm/Support/SourceMgr.h"
-#include "llvm/IRReader/IRReader.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/Host.h"
@@ -50,15 +50,18 @@ public:
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
         stubModule.Initialize();
+        OffsetTable::CreateInstance(TripleConst::GetLLVMAmd64Triple());
     }
 
     void TearDown() override
     {
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
+        OffsetTable::Destroy();
     }
 
-    void PrintCircuitByBasicBlock(const std::vector<std::vector<AddrShift>> &cfg, const Circuit &netOfGates)
+    void PrintCircuitByBasicBlock(const std::vector<std::vector<GateRef>> &cfg, const Circuit &netOfGates) const
     {
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
         for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
             std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
                     << std::endl;
@@ -66,57 +69,26 @@ public:
                 netOfGates.Print(cfg[bbIdx][instIdx - 1]);
             }
         }
+#endif
     }
 
     PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
-    LLVMStubModule stubModule {"fast_stub", "x86_64-unknown-linux-gnu"};
+    LLVMStubModule stubModule {"fast_stub", TripleConst::GetLLVMAmd64Triple()};
 };
-
-
-HWTEST_F_L0(StubTest, FastLoadElement)
-{
-    auto module = stubModule.GetModule();
-    auto function = stubModule.GetTestFunction(FAST_STUB_ID(FastLoadElement));
-    Circuit netOfGates;
-    FastArrayLoadElementStub optimizer(&netOfGates);
-    optimizer.GenerateCircuit();
-    netOfGates.PrintAllGates();
-    bool result = Verifier::Run(&netOfGates);
-    ASSERT_TRUE(result);
-    auto cfg = Scheduler::Run(&netOfGates);
-    PrintCircuitByBasicBlock(cfg, netOfGates);
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
-    llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
-    assembler.Run();
-    // Testcase build and run
-    auto fn = reinterpret_cast<uint64_t (*)(JSArray *, int)>(assembler.GetFuncPtrFromCompiledModule(function));
-    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> values(factory->NewTaggedArray(5)); // 5 :  5 elements in array
-    for (int i = 0; i < 5; i++) { // 5 :  5 elements in array
-        values->Set(thread, i, JSTaggedValue(i));
-    }
-    JSHandle<JSObject> array(JSArray::CreateArrayFromList(thread, values));
-    JSArray *arr = array.GetObject<JSArray>();
-    auto valValid = fn(arr, 1);
-    EXPECT_EQ(valValid, 0xffff000000000001);
-    auto valUndefine = fn(arr, 6); // 6 : size of array
-    EXPECT_EQ(valUndefine, 0xa);
-}
-
+#ifdef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
 class PhiStub : public Stub {
 public:
-    explicit PhiStub(Circuit *circuit) : Stub("Phi", 1, circuit) {}
+    explicit PhiStub(Circuit *circuit, const char* triple) : Stub("Phi", 1, circuit, triple) {}
     ~PhiStub() = default;
     NO_MOVE_SEMANTIC(PhiStub);
     NO_COPY_SEMANTIC(PhiStub);
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
-        DEFVARIABLE(z, MachineType::INT32_TYPE, GetInt32Constant(0));
-        DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
+        DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
+        DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
         Label ifTrue(env);
         Label ifFalse(env);
         Label next(env);
@@ -138,34 +110,34 @@ HWTEST_F_L0(StubTest, PhiGateTest)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetTestFunction(FAST_STUB_ID(PhiGateTest));
     Circuit netOfGates;
-    PhiStub optimizer(&netOfGates);
+    PhiStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     // Testcase build and run
     auto fn = reinterpret_cast<int (*)(int)>(assembler.GetFuncPtrFromCompiledModule(function));
     auto valA = fn(3);  // 3 : size of array
     auto valB = fn(0);
-    EXPECT_EQ(valA, 103); // 103 : eXpert res for fn(3)
-    EXPECT_EQ(valB, 100); // 100 : eXpert res for fn(0)
+    EXPECT_EQ(valA, 103); // 103 : expected res for fn(3)
+    EXPECT_EQ(valB, 100); // 100 : expected res for fn(0)
 }
 
 class LoopStub : public Stub {
 public:
-    explicit LoopStub(Circuit *circuit) : Stub("loop", 1, circuit) {}
+    explicit LoopStub(Circuit *circuit, const char* triple) : Stub("loop", 1, circuit, triple) {}
     ~LoopStub() = default;
     NO_MOVE_SEMANTIC(LoopStub);
     NO_COPY_SEMANTIC(LoopStub);
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
-        DEFVARIABLE(z, MachineType::INT32_TYPE, GetInt32Constant(0));
-        DEFVARIABLE(y, MachineType::INT32_TYPE, Int32Argument(0));
+        DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
+        DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
         Label loopHead(env);
         Label loopEnd(env);
         Label afterLoop(env);
@@ -197,37 +169,37 @@ HWTEST_F_L0(StubTest, LoopTest)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetTestFunction(FAST_STUB_ID(LoopTest));
     Circuit netOfGates;
-    LoopStub optimizer(&netOfGates);
+    LoopStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     // Testcase build and run
     auto fn = reinterpret_cast<int (*)(int)>(assembler.GetFuncPtrFromCompiledModule(function));
     auto valA = fn(1);
     auto valB = fn(9);    // 9 : size of array
     auto valC = fn(11);  // 11 : size of array
-    EXPECT_EQ(valA, 109); // 109 : eXpert res for fn(1)
-    EXPECT_EQ(valB, 19); // 10 : eXpert res for fn(9)
+    EXPECT_EQ(valA, 109); // 109 : expected res for fn(1)
+    EXPECT_EQ(valB, 19); // 10 : expected res for fn(9)
     EXPECT_EQ(valC, 0);
 }
 
 class LoopStub1 : public Stub {
 public:
-    explicit LoopStub1(Circuit *circuit) : Stub("loop1", 1, circuit) {}
+    explicit LoopStub1(Circuit *circuit, const char* triple) : Stub("loop1", 1, circuit, triple) {}
     ~LoopStub1() = default;
     NO_MOVE_SEMANTIC(LoopStub1);
     NO_COPY_SEMANTIC(LoopStub1);
     void GenerateCircuit() override
     {
         auto env = GetEnvironment();
-        DEFVARIABLE(y, MachineType::INT32_TYPE, Int32Argument(0));
-        DEFVARIABLE(x, MachineType::INT32_TYPE, Int32Argument(0));
-        DEFVARIABLE(z, MachineType::INT32_TYPE, Int32Argument(0));
+        DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
+        DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
+        DEFVARIABLE(z, MachineType::INT32, Int32Argument(0));
         Label loopHead(env);
         Label loopEnd(env);
         Label afterLoop(env);
@@ -254,29 +226,25 @@ public:
 HWTEST_F_L0(StubTest, LoopTest1)
 {
     auto module = stubModule.GetModule();
-    LLVMTypeRef paramTys[] = {
-        LLVMInt32Type(),
-    };
-    LLVMValueRef function = LLVMAddFunction(module, "LoopTest1", LLVMFunctionType(LLVMInt32Type(), paramTys, 1, 0));
+    auto function = stubModule.GetTestFunction(FAST_STUB_ID(LoopTest1));
     Circuit netOfGates;
-    LoopStub1 optimizer(&netOfGates);
+    LoopStub1 optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    auto engine = assembler.GetEngine();
     // Testcase build and run
-    auto fn = reinterpret_cast<int (*)(int)>(LLVMGetPointerToGlobal(engine, function));
+    auto fn = reinterpret_cast<int (*)(int)>(assembler.GetFuncPtrFromCompiledModule(function));
     auto valA = fn(1);
     auto valB = fn(9);    // 9 : size of array
     auto valC = fn(11);  // 11 : size of array
-    EXPECT_EQ(valA, 10); // 10 : eXpert res for fn(1)
-    EXPECT_EQ(valB, 10); // 10 : eXpert res for fn(9)
-    EXPECT_EQ(valC, 11); // 10 : eXpert res for fn(11)
+    EXPECT_EQ(valA, 10); // 10 : expected res for fn(1)
+    EXPECT_EQ(valB, 10); // 10 : expected res for fn(9)
+    EXPECT_EQ(valC, 11); // 10 : expected res for fn(11)
 }
 
 HWTEST_F_L0(StubTest, FastAddTest)
@@ -284,14 +252,14 @@ HWTEST_F_L0(StubTest, FastAddTest)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastAdd));
     Circuit netOfGates;
-    FastAddStub optimizer(&netOfGates);
+    FastAddStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     // Testcase build and run
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
@@ -316,14 +284,14 @@ HWTEST_F_L0(StubTest, FastSubTest)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastSub));
     Circuit netOfGates;
-    FastSubStub optimizer(&netOfGates);
+    FastSubStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     // Testcase build and run
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
@@ -337,20 +305,21 @@ HWTEST_F_L0(StubTest, FastSubTest)
     EXPECT_EQ(resB, JSTaggedValue(5));
     EXPECT_EQ(resC, JSTaggedValue(0));
 }
+#endif
 
 HWTEST_F_L0(StubTest, FastMulTest)
 {
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMul));
     Circuit netOfGates;
-    FastMulStub optimizer(&netOfGates);
+    FastMulStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     // Testcase build and run
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
@@ -360,6 +329,10 @@ HWTEST_F_L0(StubTest, FastMulTest)
     LOG_ECMA(INFO) << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber();
     LOG_ECMA(INFO) << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber();
     LOG_ECMA(INFO) << "res for FastMul(11, 11) = " << std::dec << resC.GetNumber();
+    EXPECT_EQ(resA.GetInt(), -2); // -2: test case
+    EXPECT_EQ(resB.GetInt(), 14); // 14: test case
+    EXPECT_EQ(resC.GetInt(), 121); // 121: test case
+#ifdef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
     int x = 7;
     double y = 1125899906842624;
     auto resD = fn(JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
@@ -380,21 +353,23 @@ HWTEST_F_L0(StubTest, FastMulTest)
     auto resG = fn(JSTaggedValue(x1).GetRawData(), JSTaggedValue(y1).GetRawData());
     auto expectedG = FastRuntimeStub::FastMul(JSTaggedValue(x1), JSTaggedValue(y1));
     EXPECT_EQ(resG, expectedG);
+#endif
 }
 
+#ifdef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
 HWTEST_F_L0(StubTest, FastDivTest)
 {
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastDiv));
     Circuit netOfGates;
-    FastDivStub optimizer(&netOfGates);
+    FastDivStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
     // test normal Division operation
@@ -430,33 +405,32 @@ HWTEST_F_L0(StubTest, FastModTest)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMod));
     Circuit netOfGates;
-    FastModStub optimizer(&netOfGates);
+    FastModStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    LLVMDumpModule(module);
     auto engine = assembler.GetEngine();
     uint64_t stub1Code = LLVMGetFunctionAddress(engine, "FastModStub");
     std::map<uint64_t, std::string> addr2name = {{stub1Code, "stub1"}};
     assembler.Disassemble(addr2name);
-    auto fn = reinterpret_cast<JSTaggedValue (*)(JSThread *, int64_t, int64_t)>(
+    auto fn = reinterpret_cast<JSTaggedValue (*)(uintptr_t, int64_t, int64_t)>(
         assembler.GetFuncPtrFromCompiledModule(function));
     // test left, right are all integer
     int x = 7;
     int y = 3;
-    auto result = fn(thread, JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
+    auto result = fn(thread->GetGlueAddr(), JSTaggedValue(x).GetRawData(), JSTaggedValue(y).GetRawData());
     JSTaggedValue expectRes = FastRuntimeStub::FastMod(JSTaggedValue(x), JSTaggedValue(y));
     EXPECT_EQ(result, expectRes);
 
     // test y == 0.0 || std::isnan(y) || std::isnan(x) || std::isinf(x) return NAN_VALUE
     double x2 = 7.3;
     int y2 = base::NAN_VALUE;
-    auto result2 = fn(thread, JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
+    auto result2 = fn(thread->GetGlueAddr(), JSTaggedValue(x2).GetRawData(), JSTaggedValue(y2).GetRawData());
     auto expectRes2 = FastRuntimeStub::FastMod(JSTaggedValue(x2), JSTaggedValue(y2));
     EXPECT_EQ(result2, expectRes2);
     LOG_ECMA(INFO) << "result2 for FastMod(7, 'helloworld') = " << result2.GetRawData();
@@ -465,14 +439,14 @@ HWTEST_F_L0(StubTest, FastModTest)
     // // test modular operation under normal conditions
     double x3 = 33.0;
     double y3 = 44.0;
-    auto result3 = fn(thread, JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
+    auto result3 = fn(thread->GetGlueAddr(), JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
     auto expectRes3 = FastRuntimeStub::FastMod(JSTaggedValue(x3), JSTaggedValue(y3));
     EXPECT_EQ(result3, expectRes3);
 
     // test x == 0.0 || std::isinf(y) return x
     double x4 = base::NAN_VALUE;
     int y4 = 7;
-    auto result4 = fn(thread, JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
+    auto result4 = fn(thread->GetGlueAddr(), JSTaggedValue(x4).GetRawData(), JSTaggedValue(y4).GetRawData());
     auto expectRes4 = FastRuntimeStub::FastMod(JSTaggedValue(x4), JSTaggedValue(y4));
 
     LOG_ECMA(INFO) << "result4 for FastMod(base::NAN_VALUE, 7) = " << result4.GetRawData();
@@ -483,7 +457,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     int x5 = 7;
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     auto y5 = factory->NewFromStdString("hello world");
-    auto result5 = fn(thread, JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
+    auto result5 = fn(thread->GetGlueAddr(), JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
     EXPECT_EQ(result5, JSTaggedValue::Hole());
     auto expectRes5 = FastRuntimeStub::FastMod(JSTaggedValue(x5), y5.GetTaggedValue());
     LOG_ECMA(INFO) << "result1 for FastMod(7, 'helloworld') = " << result5.GetRawData();
@@ -495,51 +469,78 @@ HWTEST_F_L0(StubTest, FastFindOwnElementStub)
     auto module = stubModule.GetModule();
     auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(FindOwnElement));
     Circuit netOfGates;
-    FindOwnElementStub optimizer(&netOfGates);
+    FindOwnElementStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
 }
 
-HWTEST_F_L0(StubTest, FunctionCallInternal)
+HWTEST_F_L0(StubTest, TryLoadICByName)
 {
     auto module = stubModule.GetModule();
-    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(FunctionCallInternal));
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryLoadICByName));
     Circuit netOfGates;
-    FunctionCallInternalStub optimizer(&netOfGates);
+    TryLoadICByNameStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
 }
 
-HWTEST_F_L0(StubTest, GetElementStub)
+HWTEST_F_L0(StubTest, TryLoadICByValue)
 {
     auto module = stubModule.GetModule();
-    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(FindOwnElement));
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryLoadICByValue));
     Circuit netOfGates;
-    FindOwnElementStub findOptimizer(&netOfGates);
-    findOptimizer.GenerateCircuit();
+    TryLoadICByValueStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    Circuit getNetOfGates;
-    GetElementStub getOptimizer(&getNetOfGates);
-    getOptimizer.GenerateCircuit();
-    getNetOfGates.PrintAllGates();
-    auto getCfg = Scheduler::Run(&getNetOfGates);
-    PrintCircuitByBasicBlock(getCfg, getNetOfGates);
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
+    assembler.Run();
+}
+
+HWTEST_F_L0(StubTest, TryStoreICByName)
+{
+    auto module = stubModule.GetModule();
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryStoreICByName));
+    Circuit netOfGates;
+    TryStoreICByNameStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
+    assembler.Run();
+}
+
+HWTEST_F_L0(StubTest, TryStoreICByValue)
+{
+    auto module = stubModule.GetModule();
+    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryStoreICByValue));
+    Circuit netOfGates;
+    TryStoreICByValueStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, findFunction);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
 }
 
@@ -548,16 +549,16 @@ HWTEST_F_L0(StubTest, FindOwnElement2Stub)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FindOwnElement2));
     Circuit netOfGates;
-    FindOwnElement2Stub optimizer(&netOfGates);
+    FindOwnElement2Stub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(JSThread *, TaggedArray *, uint32_t, bool,
+    auto *findOwnElement2Ptr = reinterpret_cast<JSTaggedValue (*)(uintptr_t, TaggedArray *, uint32_t, bool,
                                                                   PropertyAttributes *, uint32_t *)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
@@ -571,26 +572,10 @@ HWTEST_F_L0(StubTest, FindOwnElement2Stub)
     uint32_t indexOrEntry;
     bool isDict = elements->IsDictionaryMode();
     assembler.Disassemble();
-    JSTaggedValue resVal = findOwnElement2Ptr(thread, elements, 1, isDict, &attr, &indexOrEntry);
+    JSTaggedValue resVal = findOwnElement2Ptr(thread->GetGlueAddr(), elements, 1, isDict, &attr, &indexOrEntry);
     EXPECT_EQ(resVal.GetNumber(), x);
-    resVal = findOwnElement2Ptr(thread, elements, 10250, isDict, &attr, &indexOrEntry);
+    resVal = findOwnElement2Ptr(thread->GetGlueAddr(), elements, 10250, isDict, &attr, &indexOrEntry);
     EXPECT_EQ(resVal.GetNumber(), y);
-}
-
-HWTEST_F_L0(StubTest, SetElementStub)
-{
-    auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(SetElement));
-    Circuit netOfGates;
-    SetElementStub optimizer(&netOfGates);
-    optimizer.GenerateCircuit();
-    netOfGates.PrintAllGates();
-    auto cfg = Scheduler::Run(&netOfGates);
-    PrintCircuitByBasicBlock(cfg, netOfGates);
-    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
-    llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
-    assembler.Run();
 }
 
 struct ThreadTy {
@@ -733,7 +718,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
 {
     std::cout << " ---------- JSEntryTest ------------- " << std::endl;
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    LLVMSetTarget(module, TripleConst::GetLLVMAmd64Triple());
     LLVMBuilderRef builder = LLVMCreateBuilder();
     LLVMContextRef context = LLVMGetGlobalContext();
 
@@ -842,11 +827,10 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     LLVMBuildCall(builder, runtimeFunc2, argValue.data(), 1, "");
     retVal = LLVMConstInt(LLVMInt64Type(), 3, false);
     LLVMBuildRet(builder, retVal);
-    LLVMDumpModule(module);
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t stub1Code = LLVMGetFunctionAddress(engine, "stub1");
@@ -882,7 +866,7 @@ HWTEST_F_L0(StubTest, Prologue)
 {
     std::cout << " ---------- Prologue ------------- " << std::endl;
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    LLVMSetTarget(module, TripleConst::GetLLVMAmd64Triple());
     LLVMBuilderRef builder = LLVMCreateBuilder();
     // struct ThreadTy
     LLVMTypeRef paramTys0[] = {
@@ -915,12 +899,10 @@ HWTEST_F_L0(StubTest, Prologue)
     std::vector<LLVMValueRef> args = {value0, value1};
     auto retVal = LLVMBuildCall(builder, bar, args.data(), 2, "");
     LLVMBuildRet(builder, retVal);
-
-    LLVMDumpModule(module);
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t mainCode = LLVMGetFunctionAddress(engine, "main");
@@ -941,7 +923,7 @@ HWTEST_F_L0(StubTest, CEntryFp)
 {
     std::cout << " ---------- CEntryFp ------------- " << std::endl;
     LLVMModuleRef module = LLVMModuleCreateWithName("simple_module");
-    LLVMSetTarget(module, "x86_64-unknown-linux-gnu");
+    LLVMSetTarget(module, TripleConst::GetLLVMAmd64Triple());
     LLVMBuilderRef builder = LLVMCreateBuilder();
     LLVMContextRef context = LLVMGetGlobalContext();
 
@@ -965,7 +947,6 @@ HWTEST_F_L0(StubTest, CEntryFp)
     std::vector<LLVMValueRef> indexes1 = {c0, c0};
     std::vector<LLVMValueRef> indexes2 = {c0, c1};
     LLVMValueRef gep1 = LLVMBuildGEP2(builder, threadTy, value, indexes1.data(), indexes1.size(), "");
-    LLVMDumpValue(gep1);
     std::cout << std::endl;
     LLVMValueRef gep2 = LLVMBuildGEP2(builder, threadTy, value, indexes2.data(), indexes2.size(), "fpAddr");
     LLVMBuildStore(builder, LLVMConstInt(LLVMInt64Type(), 0x11223344, false), gep1);
@@ -991,12 +972,10 @@ HWTEST_F_L0(StubTest, CEntryFp)
     std::cout << std::endl;
     LLVMValueRef retVal = LLVMBuildCall(builder, runTimeFunc, argValue.data(), 1, "");
     LLVMBuildRet(builder, retVal);
-
-    LLVMDumpModule(module);
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
 
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
@@ -1034,19 +1013,16 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
         return;
     }
     LLVMModuleRef module = LLVMCloneModule(wrap(rawModule.get()));
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
     auto engine = assembler.GetEngine();
     LLVMValueRef function = LLVMGetNamedFunction(module, "main");
-    LLVMDumpValue(function);
 
     auto *mainPtr = reinterpret_cast<int (*)()>(LLVMGetPointerToGlobal(engine, function));
     uint8_t *ptr = assembler.GetStackMapsSection();
     LLVMStackMapParser::GetInstance().CalculateStackMap(ptr);
-    LLVMStackMapParser::GetInstance().Print();
 
     assembler.Disassemble();
-    LLVMDumpModule(module);
     int value = reinterpret_cast<int (*)()>(mainPtr)();
     std::cout << " value:" << value << std::endl;
 }
@@ -1061,14 +1037,13 @@ void DoSafepoint()
         uintptr_t returnAddr =  *(rbp + 1);
         uintptr_t *rsp = rbp + 2;  // move 2 steps from rbp to get rsp
         rbp = reinterpret_cast<uintptr_t *>(*rbp);
-        DwarfRegAndOffsetTypeVector infos;
-        bool found = LLVMStackMapParser::GetInstance().StackMapByAddr(returnAddr, infos);
-        if (found) {
-            for (auto &info : infos) {
+        const DwarfRegAndOffsetTypeVector *infos = LLVMStackMapParser::GetInstance().StackMapByAddr(returnAddr);
+        if (infos != nullptr) {
+            for (auto &info : *infos) {
                 uintptr_t **address = nullptr;
-                if (info.first == SP_DWARF_REG_NUM) {
+                if (info.first == FrameConst::SP_DWARF_REG_NUM) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
-                } else if (info.first == FP_DWARF_REG_NUM) {
+                } else if (info.first == FrameConst::FP_DWARF_REG_NUM) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
                 }
                 // print ref and vlue for debug
@@ -1090,16 +1065,16 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByIndex));
     Circuit netOfGates;
-    GetPropertyByIndexStub optimizer(&netOfGates);
+    GetPropertyByIndexStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    auto *getpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
+    auto *getpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue, uint32_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
@@ -1108,9 +1083,9 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
     assembler.Disassemble();
-    JSTaggedValue resVal = getpropertyByIndex(thread, obj.GetTaggedValue(), 1);
+    JSTaggedValue resVal = getpropertyByIndex(thread->GetGlueAddr(), obj.GetTaggedValue(), 1);
     EXPECT_EQ(resVal.GetNumber(), x);
-    resVal = getpropertyByIndex(thread, obj.GetTaggedValue(), 10250);
+    resVal = getpropertyByIndex(thread->GetGlueAddr(), obj.GetTaggedValue(), 10250);
     EXPECT_EQ(resVal.GetNumber(), y);
 }
 
@@ -1119,7 +1094,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(SetPropertyByIndex));
     Circuit netOfGates;
-    SetPropertyByIndexStub optimizer(&netOfGates);
+    SetPropertyByIndexStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     bool result = Verifier::Run(&netOfGates);
@@ -1128,9 +1103,9 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    auto *setpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t, JSTaggedValue)>(
+    auto *setpropertyByIndex = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue, uint32_t, JSTaggedValue)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSArray> array = factory->NewJSArray();
@@ -1139,7 +1114,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
     array->SetArrayLength(thread, 20);
     for (int i = 0; i < 20; i++) {
         auto taggedArray = array.GetTaggedValue();
-        setpropertyByIndex(thread, taggedArray, i, JSTaggedValue(i));
+        setpropertyByIndex(thread->GetGlueAddr(), taggedArray, i, JSTaggedValue(i));
     }
     for (int i = 0; i < 20; i++) {
         EXPECT_EQ(JSTaggedValue(i),
@@ -1152,7 +1127,7 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByName));
     Circuit netOfGates;
-    GetPropertyByNameStub optimizer(&netOfGates);
+    GetPropertyByNameStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     bool result = Verifier::Run(&netOfGates);
@@ -1161,32 +1136,67 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
+    auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(uintptr_t, uint64_t, uint64_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
-    int x = 213;
+    int x = 256;
     int y = 10;
     JSHandle<JSTaggedValue> strA(factory->NewFromCanBeCompressString("a"));
     JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y));
     assembler.Disassemble();
-    JSTaggedValue resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(),
+    JSTaggedValue resVal = getPropertyByNamePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
         strA.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), x);
-    resVal = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(), strBig.GetTaggedValue().GetRawData());
+    resVal = getPropertyByNamePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
+                                  strBig.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
 }
+
+#ifdef ARK_GC_SUPPORT
+HWTEST_F_L0(StubTest, SetPropertyByNameStub)
+{
+    auto module = stubModule.GetModule();
+    auto function = stubModule.GetStubFunction(FAST_STUB_ID(SetPropertyByName));
+    Circuit netOfGates;
+    SetPropertyByNameStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
+    optimizer.GenerateCircuit();
+    netOfGates.PrintAllGates();
+    auto cfg = Scheduler::Run(&netOfGates);
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+    LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
+    llvmBuilder.Build();
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
+    assembler.Run();
+    assembler.Disassemble();
+    auto *setPropertyByName = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue,
+        JSTaggedValue, JSTaggedValue, bool)>
+        (reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
+    auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    JSHandle<JSObject> obj = factory->NewEmptyJSObject();
+    int x = 256;
+    int y = 10;
+    JSHandle<JSTaggedValue> strA(factory->NewFromCanBeCompressString("hello"));
+    JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
+    setPropertyByName(thread->GetGlueAddr(), obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x), false);
+    setPropertyByName(thread->GetGlueAddr(), obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y), false);
+    auto resA = FastRuntimeStub::GetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue());
+    EXPECT_EQ(resA.GetNumber(), x);
+    auto resB = FastRuntimeStub::GetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue());
+    EXPECT_EQ(resB.GetNumber(), y);
+}
+#endif
 
 HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 {
     auto module = stubModule.GetModule();
     LLVMValueRef getPropertyByIndexfunction = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByIndex));
     Circuit netOfGates2;
-    GetPropertyByIndexStub getPropertyByIndexStub(&netOfGates2);
+    GetPropertyByIndexStub getPropertyByIndexStub(&netOfGates2, TripleConst::GetLLVMAmd64Triple());
     getPropertyByIndexStub.GenerateCircuit();
     netOfGates2.PrintAllGates();
     auto cfg2 = Scheduler::Run(&netOfGates2);
@@ -1195,7 +1205,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 
     LLVMValueRef getPropertyByNamefunction = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByName));
     Circuit netOfGates1;
-    GetPropertyByNameStub getPropertyByNameStub(&netOfGates1);
+    GetPropertyByNameStub getPropertyByNameStub(&netOfGates1, TripleConst::GetLLVMAmd64Triple());
     getPropertyByNameStub.GenerateCircuit();
     bool result = Verifier::Run(&netOfGates1);
     ASSERT_TRUE(result);
@@ -1205,28 +1215,23 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 
     LLVMValueRef function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByValue));
     Circuit netOfGates;
-    GetPropertyByValueStub optimizer(&netOfGates);
+    GetPropertyByValueStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     result = Verifier::Run(&netOfGates);
     ASSERT_TRUE(result);
     auto cfg = Scheduler::Run(&netOfGates);
-    for (size_t bbIdx = 0; bbIdx < cfg.size(); bbIdx++) {
-        std::cout << (netOfGates.GetOpCode(cfg[bbIdx].front()).IsCFGMerge() ? "MERGE_" : "BB_") << bbIdx << ":"
-                  << std::endl;
-        for (size_t instIdx = cfg[bbIdx].size(); instIdx > 0; instIdx--) {
-            netOfGates.Print(cfg[bbIdx][instIdx - 1]);
-        }
-    }
+    PrintCircuitByBasicBlock(cfg, netOfGates);
+
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    auto *getPropertyByValuePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
+    auto *getPropertyByValuePtr = reinterpret_cast<JSTaggedValue (*)(uintptr_t, uint64_t, uint64_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
-    auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t, uint64_t)>(
+    auto *getPropertyByNamePtr = reinterpret_cast<JSTaggedValue (*)(uintptr_t, uint64_t, uint64_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(getPropertyByNamefunction)));
-    auto *getpropertyByIndexPtr = reinterpret_cast<JSTaggedValue (*)(JSThread *, JSTaggedValue, uint32_t)>(
+    auto *getpropertyByIndexPtr = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue, uint32_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(getPropertyByIndexfunction)));
 
     thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex), reinterpret_cast<uintptr_t>(getpropertyByIndexPtr));
@@ -1248,24 +1253,28 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y));
     assembler.Disassemble();
 
-    JSTaggedValue resVal1 = getPropertyByNamePtr(thread, obj.GetTaggedValue().GetRawData(),
+    JSTaggedValue resVal1 = getPropertyByNamePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
         strA.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal1.GetNumber(), x);
-    JSTaggedValue resVal = getPropertyByValuePtr(thread, obj.GetTaggedValue().GetRawData(),
+    JSTaggedValue resVal = getPropertyByValuePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
         strA.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), x);
-    resVal = getPropertyByValuePtr(thread, obj.GetTaggedValue().GetRawData(), strBig.GetTaggedValue().GetRawData());
+    resVal = getPropertyByValuePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
+                                   strBig.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
-    resVal = getpropertyByIndexPtr(thread, obj.GetTaggedValue(), 1);
+    resVal = getpropertyByIndexPtr(thread->GetGlueAddr(), obj.GetTaggedValue(), 1);
     EXPECT_EQ(resVal.GetNumber(), x);
-    resVal = getPropertyByValuePtr(thread, obj.GetTaggedValue().GetRawData(), JSTaggedValue(10250).GetRawData());
+    resVal = getPropertyByValuePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
+                                   JSTaggedValue(10250).GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
-    resVal = getPropertyByValuePtr(thread, obj.GetTaggedValue().GetRawData(), strDigit.GetTaggedValue().GetRawData());
+    resVal = getPropertyByValuePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
+                                   strDigit.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
 
     JSHandle<JSTaggedValue> strHello(factory->NewFromCanBeCompressString("hello world"));
     double key = 4.29497e+09;
-    resVal = getPropertyByValuePtr(thread, strHello.GetTaggedValue().GetRawData(), JSTaggedValue(key).GetRawData());
+    resVal = getPropertyByValuePtr(thread->GetGlueAddr(), strHello.GetTaggedValue().GetRawData(),
+                                   JSTaggedValue(key).GetRawData());
     EXPECT_EQ(resVal.GetRawData(), 0);
 }
 
@@ -1274,7 +1283,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastTypeOf));
     Circuit netOfGates;
-    FastTypeOfStub optimizer(&netOfGates);
+    FastTypeOfStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     bool verRes = Verifier::Run(&netOfGates);
@@ -1285,39 +1294,38 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     llvmBuilder.Build();
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    LLVMDumpModule(module);
     auto *typeOfPtr =
-        reinterpret_cast<JSTaggedValue (*)(JSThread *, uint64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
+        reinterpret_cast<JSTaggedValue (*)(uintptr_t, uint64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
     // obj is JSTaggedValue::VALUE_TRUE
-    JSTaggedValue resultVal = typeOfPtr(thread, JSTaggedValue::True().GetRawData());
+    JSTaggedValue resultVal = typeOfPtr(thread->GetGlueAddr(), JSTaggedValue::True().GetRawData());
     JSTaggedValue expectResult = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::True());
     EXPECT_EQ(resultVal, globalConst->GetBooleanString());
     EXPECT_EQ(resultVal, expectResult);
 
     // obj is JSTaggedValue::VALUE_FALSE
-    JSTaggedValue resultVal2 = typeOfPtr(thread, JSTaggedValue::False().GetRawData());
+    JSTaggedValue resultVal2 = typeOfPtr(thread->GetGlueAddr(), JSTaggedValue::False().GetRawData());
     JSTaggedValue expectResult2 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::False());
     EXPECT_EQ(resultVal2, globalConst->GetBooleanString());
     EXPECT_EQ(resultVal2, expectResult2);
 
     // obj is JSTaggedValue::VALUE_NULL
-    JSTaggedValue resultVal3 = typeOfPtr(thread, JSTaggedValue::Null().GetRawData());
+    JSTaggedValue resultVal3 = typeOfPtr(thread->GetGlueAddr(), JSTaggedValue::Null().GetRawData());
     JSTaggedValue expectResult3 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Null());
     EXPECT_EQ(resultVal3, globalConst->GetObjectString());
     EXPECT_EQ(resultVal3, expectResult3);
 
     // obj is JSTaggedValue::VALUE_UNDEFINED
-    JSTaggedValue resultVal4 = typeOfPtr(thread, JSTaggedValue::Undefined().GetRawData());
+    JSTaggedValue resultVal4 = typeOfPtr(thread->GetGlueAddr(), JSTaggedValue::Undefined().GetRawData());
     JSTaggedValue expectResult4 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Undefined());
     EXPECT_EQ(resultVal4, globalConst->GetUndefinedString());
     EXPECT_EQ(resultVal4, expectResult4);
 
     // obj is IsNumber
-    JSTaggedValue resultVal5 = typeOfPtr(thread, JSTaggedValue(5).GetRawData());
+    JSTaggedValue resultVal5 = typeOfPtr(thread->GetGlueAddr(), JSTaggedValue(5).GetRawData());
     JSTaggedValue expectResult5 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue(5));
     EXPECT_EQ(resultVal5, globalConst->GetNumberString());
     EXPECT_EQ(resultVal5, expectResult5);
@@ -1327,7 +1335,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     JSHandle<EcmaString> str1 = factory->NewFromStdString("a");
     JSHandle<EcmaString> str2 = factory->NewFromStdString("a");
     JSTaggedValue expectResult6 = FastRuntimeStub::FastTypeOf(thread, str1.GetTaggedValue());
-    JSTaggedValue resultVal6 = typeOfPtr(thread, str2.GetTaggedValue().GetRawData());
+    JSTaggedValue resultVal6 = typeOfPtr(thread->GetGlueAddr(), str2.GetTaggedValue().GetRawData());
     EXPECT_EQ(resultVal6, globalConst->GetStringString());
     EXPECT_EQ(resultVal6, expectResult6);
 
@@ -1335,7 +1343,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     JSHandle<GlobalEnv> globalEnv = JSThread::Cast(thread)->GetEcmaVM()->GetGlobalEnv();
     JSTaggedValue symbol = globalEnv->GetIteratorSymbol().GetTaggedValue();
     JSTaggedValue expectResult7= FastRuntimeStub::FastTypeOf(thread, symbol);
-    JSTaggedValue resultVal7 = typeOfPtr(thread, symbol.GetRawData());
+    JSTaggedValue resultVal7 = typeOfPtr(thread->GetGlueAddr(), symbol.GetRawData());
     EXPECT_EQ(resultVal7, globalConst->GetSymbolString());
     EXPECT_EQ(resultVal7, expectResult7);
 
@@ -1343,14 +1351,14 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     JSHandle<JSPromiseReactionsFunction> resolveCallable =
         factory->CreateJSPromiseReactionsFunction(reinterpret_cast<void *>(BuiltinsPromiseHandler::Resolve));
     JSTaggedValue expectResult8= FastRuntimeStub::FastTypeOf(thread, resolveCallable.GetTaggedValue());
-    JSTaggedValue resultVal8 = typeOfPtr(thread, resolveCallable.GetTaggedValue().GetRawData());
+    JSTaggedValue resultVal8 = typeOfPtr(thread->GetGlueAddr(), resolveCallable.GetTaggedValue().GetRawData());
     EXPECT_EQ(resultVal8, globalConst->GetFunctionString());
     EXPECT_EQ(resultVal8, expectResult8);
 
     // obj is heapObject
     JSHandle<JSObject> object = factory->NewEmptyJSObject();
     JSTaggedValue expectResult9= FastRuntimeStub::FastTypeOf(thread, object.GetTaggedValue());
-    JSTaggedValue resultVal9 = typeOfPtr(thread, object.GetTaggedValue().GetRawData());
+    JSTaggedValue resultVal9 = typeOfPtr(thread->GetGlueAddr(), object.GetTaggedValue().GetRawData());
     EXPECT_EQ(resultVal9, globalConst->GetObjectString());
     EXPECT_EQ(resultVal9, expectResult9);
 }
@@ -1360,16 +1368,15 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     auto module = stubModule.GetModule();
     auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastEqual));
     Circuit netOfGates;
-    FastEqualStub optimizer(&netOfGates);
+    FastEqualStub optimizer(&netOfGates, TripleConst::GetLLVMAmd64Triple());
     optimizer.GenerateCircuit();
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
     PrintCircuitByBasicBlock(cfg, netOfGates);
     LLVMIRBuilder llvmBuilder(&cfg, &netOfGates, &stubModule, function);
     llvmBuilder.Build();
-    LLVMAssembler assembler(module, "x86_64-unknown-linux-gnu");
+    LLVMAssembler assembler(module, TripleConst::GetLLVMAmd64Triple());
     assembler.Run();
-    LLVMDumpModule(module);
     auto fn = reinterpret_cast<JSTaggedValue (*)(int64_t, int64_t)>(assembler.GetFuncPtrFromCompiledModule(function));
     // test for 1 == 1
     auto resA = fn(JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData());
@@ -1423,4 +1430,5 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     auto expectI = FastRuntimeStub::FastEqual(obj1.GetTaggedValue(), obj2.GetTaggedValue());
     EXPECT_EQ(resI, expectI);
 }
+#endif
 }  // namespace panda::test

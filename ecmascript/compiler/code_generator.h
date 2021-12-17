@@ -19,7 +19,7 @@
 #include "circuit.h"
 
 namespace kungfu {
-using ControlFlowGraph = std::vector<std::vector<AddrShift>>;
+using ControlFlowGraph = std::vector<std::vector<GateRef>>;
 class CodeGeneratorImpl {
 public:
     CodeGeneratorImpl() = default;
@@ -29,7 +29,7 @@ public:
 
 class CodeGenerator {
 public:
-    explicit CodeGenerator(CodeGeneratorImpl *impl) : impl_(impl) {}
+    explicit CodeGenerator(std::unique_ptr<CodeGeneratorImpl> &impl, const char* triple) : impl_(std::move(impl)) {}
     ~CodeGenerator() = default;
     void Run(Circuit *circuit, const ControlFlowGraph &graph, int index)
     {
@@ -37,7 +37,7 @@ public:
     }
 
 private:
-    CodeGeneratorImpl *impl_;
+    std::unique_ptr<CodeGeneratorImpl> impl_{nullptr};
 };
 }  // namespace kungfu
 #endif  // ECMASCRIPT_COMPILER_CODE_GENERATOR_H

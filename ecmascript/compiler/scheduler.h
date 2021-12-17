@@ -25,18 +25,18 @@
 #include "ecmascript/compiler/circuit.h"
 
 namespace kungfu {
-using ControlFlowGraph = std::vector<std::vector<AddrShift>>;
+using ControlFlowGraph = std::vector<std::vector<GateRef>>;
 class Scheduler {
 public:
-    static std::tuple<std::vector<AddrShift>, std::unordered_map<AddrShift, size_t>, std::vector<size_t>>
+    static std::tuple<std::vector<GateRef>, std::unordered_map<GateRef, size_t>, std::vector<size_t>>
     CalculateDominatorTree(const Circuit *circuit);
     static ControlFlowGraph Run(const Circuit *circuit);
-    static std::optional<std::unordered_map<AddrShift, size_t>> CalculateSchedulingUpperBound(const Circuit *circuit,
-        const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
-        const std::function<bool(size_t, size_t)> &isAncestor, const std::vector<AddrShift> &schedulableGatesList);
-    static std::optional<std::unordered_map<AddrShift, size_t>> CalculateSchedulingLowerBound(const Circuit *circuit,
-        const std::unordered_map<AddrShift, size_t> &bbGatesAddrToIdx,
-        const std::function<size_t(size_t, size_t)> &lowestCommonAncestor, std::vector<AddrShift> *order = nullptr);
+    static std::optional<std::unordered_map<GateRef, size_t>> CalculateSchedulingUpperBound(const Circuit *circuit,
+        const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
+        const std::function<bool(size_t, size_t)> &isAncestor, const std::vector<GateRef> &schedulableGatesList);
+    static std::optional<std::unordered_map<GateRef, size_t>> CalculateSchedulingLowerBound(const Circuit *circuit,
+        const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx,
+        const std::function<size_t(size_t, size_t)> &lowestCommonAncestor, std::vector<GateRef> *order = nullptr);
     static void Print(const ControlFlowGraph *cfg, const Circuit *circuit);
 };
 };  // namespace kungfu

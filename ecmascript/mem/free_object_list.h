@@ -37,11 +37,16 @@ public:
 
     void RemoveKind(FreeObjectKind *kind);
 
+    void Merge(FreeObjectList *list);
+
     template<class Callback>
     void EnumerateKinds(const Callback &cb) const;
 
     template<class Callback>
     void EnumerateKinds(KindType type, const Callback &cb) const;
+
+    template<class Callback>
+    void EnumerateTopAndLastKinds(const Callback &cb) const;
 
     NO_COPY_SEMANTIC(FreeObjectList);
     NO_MOVE_SEMANTIC(FreeObjectList);
@@ -76,6 +81,7 @@ private:
     size_t available_ = 0;
     uint64_t noneEmptyKindBitMap_;
     Span<FreeObjectKind *> kinds_ {};
+    Span<FreeObjectKind *> lastKinds_ {};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_FREE_OBJECT_LIST_H

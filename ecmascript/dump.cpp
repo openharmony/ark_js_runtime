@@ -25,8 +25,8 @@
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/ic/ic_handler.h"
-#include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/ic/property_box.h"
+#include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
@@ -302,7 +302,7 @@ static void DumpHClass(JSThread *thread, const JSHClass *jshclass, std::ostream 
     jshclass->GetPrototype().DumpTaggedValue(thread, os);
     os << "\n";
     os << " - PropertyDescriptors :" << std::setw(DUMP_TYPE_OFFSET);
-    JSTaggedValue attrs = jshclass->GetAttributes();
+    JSTaggedValue attrs = jshclass->GetLayout();
     attrs.DumpTaggedValue(thread, os);
     os << "\n";
     if (withDetail && !attrs.IsNull()) {
@@ -325,8 +325,8 @@ static void DumpHClass(JSThread *thread, const JSHClass *jshclass, std::ostream 
     os << "| Callable :" << jshclass->IsCallable();
     os << "| Extensible :" << jshclass->IsExtensible();
     os << "| ElementRepresentation :" << static_cast<int>(jshclass->GetElementRepresentation());
-    os << "| UnusedInlineProperties :" << std::dec << jshclass->GetUnusedInlinedProps();
-    os << "| UnusedOutProperties :" << std::dec << jshclass->GetUnusedNonInlinedProps();
+    os << "| NumberOfProps :" << std::dec << jshclass->NumberOfProps();
+    os << "| InlinedProperties :" << std::dec << jshclass->GetInlinedProperties();
     os << "\n";
 }
 
@@ -485,7 +485,7 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             JSPromiseExecutorFunction::Cast(obj)->Dump(thread, os);
             break;
         case JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION:
-            JSPromiseAllResolveElementFunction::Cast(obj)->Dump(thread);
+            JSPromiseAllResolveElementFunction::Cast(obj)->Dump(thread, os);
             break;
         case JSType::MICRO_JOB_QUEUE:
             MicroJobQueue::Cast(obj)->Dump(thread, os);
@@ -672,18 +672,21 @@ void JSTaggedValue::Dump(JSThread *thread, std::ostream &os) const
 
     if (IsHeapObject()) {
         TaggedObject *obj = GetTaggedObject();
+        if (thread == nullptr) {
+            thread = obj->GetJSThread();
+        }
         DumpObject(thread, obj, os);
     }
 }
 
-void JSTaggedValue::Dump(JSThread *thread) const
+void JSTaggedValue::D() const
 {
-    Dump(thread, std::cout);
+    Dump(nullptr, std::cout);
 }
 
-void JSTaggedValue::DumpVal(JSThread *thread, JSTaggedType val)
+void JSTaggedValue::DV(JSTaggedType val)
 {
-    JSTaggedValue(val).Dump(thread);
+    JSTaggedValue(val).D();
 }
 
 void JSThread::DumpStack()
@@ -844,13 +847,13 @@ void JSObject::Dump(JSThread *thread, std::ostream &os) const
     }
 
     if (!properties->IsDictionaryMode()) {
-        JSTaggedValue attrs = jshclass->GetAttributes();
+        JSTaggedValue attrs = jshclass->GetLayout();
         if (attrs.IsNull()) {
             return;
         }
 
         LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetTaggedObject());
-        int propNumber = jshclass->GetPropertiesNumber();
+        int propNumber = jshclass->NumberOfProps();
         os << " <LayoutInfo[" << std::dec << propNumber << "]>\n";
         for (int i = 0; i < propNumber; i++) {
             JSTaggedValue key = layoutInfo->GetKey(i);
@@ -863,7 +866,7 @@ void JSObject::Dump(JSThread *thread, std::ostream &os) const
             if (attr.IsInlinedProps()) {
                 val = GetPropertyInlinedProps(i);
             } else {
-                val = properties->Get(i - JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+                val = properties->Get(i - jshclass->GetInlinedProperties());
             }
             val.DumpTaggedValue(thread, os);
             os << ") ";
@@ -898,13 +901,13 @@ void AccessorData::Dump(JSThread *thread, std::ostream &os) const
 void Program::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Location: ";
-    GetLocation().Dump(thread);
+    GetLocation().D();
     os << "\n";
     os << " - ConstantPool: ";
-    GetConstantPool().Dump(thread);
+    GetConstantPool().D();
     os << "\n";
     os << " - MainFunction: ";
-    GetMainFunction().Dump(thread);
+    GetMainFunction().D();
     os << "\n";
     os << " - MethodsData: " << GetMethodsData() << "\n";
     os << " - NumberMethods: " << GetNumberMethods() << "\n";
@@ -918,25 +921,25 @@ void ConstantPool::Dump(JSThread *thread, std::ostream &os) const
 void JSFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - ProtoOrDynClass: ";
-    GetProtoOrDynClass().Dump(thread);
+    GetProtoOrDynClass().D();
     os << "\n";
     os << " - LexicalEnv: ";
-    GetLexicalEnv().Dump(thread);
+    GetLexicalEnv().D();
     os << "\n";
     os << " - HomeObject: ";
-    GetHomeObject().Dump(thread);
+    GetHomeObject().D();
     os << "\n";
     os << " - FunctionInfoFlag: ";
-    GetFunctionInfoFlag().Dump(thread);
+    GetFunctionInfoFlag().D();
     os << "\n";
     os << " - FunctionExtraInfo: ";
-    GetFunctionExtraInfo().Dump(thread);
+    GetFunctionExtraInfo().D();
     os << "\n";
     os << " - ConstantPool: ";
-    GetConstantPool().Dump(thread);
+    GetConstantPool().D();
     os << "\n";
     os << " - ProfileTypeInfo: ";
-    GetProfileTypeInfo().Dump(thread);
+    GetProfileTypeInfo().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1098,34 +1101,34 @@ void JSStringIterator::Dump(JSThread *thread, std::ostream &os) const
 void JSTypedArray::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - viewed-array-buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
+    GetViewedArrayBuffer().D();
     os << " - typed-array-name: ";
-    GetTypedArrayName().Dump(thread);
+    GetTypedArrayName().D();
     os << " - byte-length: ";
-    GetByteLength().Dump(thread);
+    GetByteLength().D();
     os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
+    GetByteOffset().D();
     os << " - array-length: ";
-    GetArrayLength().Dump(thread);
+    GetArrayLength().D();
     JSObject::Dump(thread, os);
 }
 
 void JSRegExp::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - LastIndex: ";
-    GetLastIndex().Dump(thread);
+    GetLastIndex().D();
     os << "\n";
     os << " - ByteCodeBuffer: ";
-    GetByteCodeBuffer().Dump(thread);
+    GetByteCodeBuffer().D();
     os << "\n";
     os << " - OriginalSource: ";
-    GetOriginalSource().Dump(thread);
+    GetOriginalSource().D();
     os << "\n";
     os << " - OriginalFlags: ";
-    GetOriginalFlags().Dump(thread);
+    GetOriginalFlags().D();
     os << "\n";
     os << " - Length: ";
-    GetLength().Dump(thread);
+    GetLength().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1145,13 +1148,13 @@ void JSSymbol::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - hash-field: ";
     JSTaggedValue hashField = GetHashField();
-    hashField.Dump(thread);
+    hashField.D();
     os << " - flags: ";
     JSTaggedValue flags = GetFlags();
-    flags.Dump(thread);
+    flags.D();
     os << " - description: ";
     JSTaggedValue description = GetDescription();
-    description.Dump(thread);
+    description.D();
 }
 
 void LexicalEnv::Dump(JSThread *thread, std::ostream &os) const
@@ -1372,142 +1375,142 @@ void GlobalEnv::Dump(JSThread *thread, std::ostream &os) const
 void JSDataView::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - data-view: ";
-    GetDataView().Dump(thread);
+    GetDataView().D();
     os << " - buffer: ";
-    GetViewedArrayBuffer().Dump(thread);
+    GetViewedArrayBuffer().D();
     os << " - byte-length: ";
-    GetByteLength().Dump(thread);
+    GetByteLength().D();
     os << " - byte-offset: ";
-    GetByteOffset().Dump(thread);
+    GetByteOffset().D();
 }
 
 void JSArrayBuffer::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - byte-length: ";
-    GetArrayBufferByteLength().Dump(thread);
+    GetArrayBufferByteLength().D();
     os << " - buffer-data: ";
-    GetArrayBufferData().Dump(thread);
+    GetArrayBufferData().D();
     os << " - Shared: ";
-    GetShared().Dump(thread);
+    GetShared().D();
 }
 
 void PromiseReaction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - promise-capability: ";
-    GetPromiseCapability().Dump(thread);
+    GetPromiseCapability().D();
     os << " - type: ";
-    GetType().Dump(thread);
+    GetType().D();
     os << " - handler: ";
-    GetHandler().Dump(thread);
+    GetHandler().D();
 }
 
 void PromiseCapability::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - promise: ";
-    GetPromise().Dump(thread);
+    GetPromise().D();
     os << " - resolve: ";
-    GetResolve().Dump(thread);
+    GetResolve().D();
     os << " - reject: ";
-    GetReject().Dump(thread);
+    GetReject().D();
 }
 
 void PromiseIteratorRecord::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - iterator: ";
-    GetIterator().Dump(thread);
+    GetIterator().D();
     os << " - done: ";
-    GetDone().Dump(thread);
+    GetDone().D();
 }
 
 void PromiseRecord::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - value: ";
-    GetValue().Dump(thread);
+    GetValue().D();
 }
 
 void ResolvingFunctionsRecord::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - resolve-function: ";
-    GetResolveFunction().Dump(thread);
+    GetResolveFunction().D();
     os << " - reject-function: ";
-    GetRejectFunction().Dump(thread);
+    GetRejectFunction().D();
 }
 
 void JSPromise::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - promise-state: ";
-    GetPromiseState().Dump(thread);
+    GetPromiseState().D();
     os << " - promise-result: ";
-    GetPromiseResult().Dump(thread);
+    GetPromiseResult().D();
     os << " - promise-fulfill-reactions: ";
-    GetPromiseFulfillReactions().Dump(thread);
+    GetPromiseFulfillReactions().D();
     os << " - promise-reject-reactions: ";
-    GetPromiseRejectReactions().Dump(thread);
+    GetPromiseRejectReactions().D();
     os << " - promise-is-handled: ";
-    GetPromiseIsHandled().Dump(thread);
+    GetPromiseIsHandled().D();
     JSObject::Dump(thread, os);
 }
 
 void JSPromiseReactionsFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - promise: ";
-    GetPromise().Dump(thread);
+    GetPromise().D();
     os << " - already-resolved: ";
-    GetAlreadyResolved().Dump(thread);
+    GetAlreadyResolved().D();
     JSObject::Dump(thread, os);
 }
 
 void JSPromiseExecutorFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - capability: ";
-    GetCapability().Dump(thread);
+    GetCapability().D();
     JSObject::Dump(thread, os);
 }
 
 void JSPromiseAllResolveElementFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - index: ";
-    GetIndex().Dump(thread);
+    GetIndex().D();
     os << " - values: ";
-    GetValues().Dump(thread);
+    GetValues().D();
     os << " - capability: ";
-    GetCapabilities().Dump(thread);
+    GetCapabilities().D();
     os << " - remaining-elements: ";
-    GetRemainingElements().Dump(thread);
+    GetRemainingElements().D();
     os << " - already-called: ";
-    GetAlreadyCalled().Dump(thread);
+    GetAlreadyCalled().D();
     JSObject::Dump(thread, os);
 }
 
 void MicroJobQueue::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - promise-job-queue: ";
-    GetPromiseJobQueue().Dump(thread);
+    GetPromiseJobQueue().D();
     os << " - script-job-queue: ";
-    GetScriptJobQueue().Dump(thread);
+    GetScriptJobQueue().D();
 }
 
 void PendingJob::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - job: ";
-    GetJob().Dump(thread);
+    GetJob().D();
     os << " - arguments: ";
-    GetArguments().Dump(thread);
+    GetArguments().D();
 }
 
 void CompletionRecord::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - type: ";
-    GetType().Dump(thread);
+    GetType().D();
     os << " - value: ";
-    GetValue().Dump(thread);
+    GetValue().D();
 }
 
 void JSProxyRevocFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - RevocableProxy: ";
     os << "\n";
-    GetRevocableProxy().Dump(thread);
+    GetRevocableProxy().D();
     os << "\n";
 }
 
@@ -1520,7 +1523,7 @@ void JSAsyncAwaitStatusFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - AsyncContext: ";
     os << "\n";
-    GetAsyncContext().Dump(thread);
+    GetAsyncContext().D();
     os << "\n";
 }
 
@@ -1532,13 +1535,13 @@ void JSGeneratorFunction::Dump(JSThread *thread, std::ostream &os) const
 void JSIntlBoundFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - NumberFormat: ";
-    GetNumberFormat().Dump(thread);
+    GetNumberFormat().D();
     os << "\n";
     os << " - DateTimeFormat: ";
-    GetDateTimeFormat().Dump(thread);
+    GetDateTimeFormat().D();
     os << "\n";
     os << " - Collator: ";
-    GetCollator().Dump(thread);
+    GetCollator().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1546,40 +1549,40 @@ void JSIntlBoundFunction::Dump(JSThread *thread, std::ostream &os) const
 void PropertyBox::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Value: ";
-    GetValue().Dump(thread);
+    GetValue().D();
     os << "\n";
 }
 
 void PrototypeHandler::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - HandlerInfo: ";
-    GetHandlerInfo().Dump(thread);
+    GetHandlerInfo().D();
     os << "\n";
     os << " - ProtoCell: ";
-    GetHandlerInfo().Dump(thread);
+    GetHandlerInfo().D();
     os << "\n";
     os << " - Holder: ";
-    GetHandlerInfo().Dump(thread);
+    GetHandlerInfo().D();
     os << "\n";
 }
 
 void TransitionHandler::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - HandlerInfo: ";
-    GetHandlerInfo().Dump(thread);
+    GetHandlerInfo().D();
     os << "\n";
     os << " - TransitionHClass: ";
-    GetTransitionHClass().Dump(thread);
+    GetTransitionHClass().D();
     os << "\n";
 }
 
 void JSRealm::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Value: ";
-    GetValue().Dump(thread);
+    GetValue().D();
     os << "\n";
     os << " - GlobalEnv: ";
-    GetGlobalEnv().Dump(thread);
+    GetGlobalEnv().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1587,7 +1590,7 @@ void JSRealm::Dump(JSThread *thread, std::ostream &os) const
 void JSIntl::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - FallbackSymbol: ";
-    GetFallbackSymbol().Dump(thread);
+    GetFallbackSymbol().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1595,7 +1598,7 @@ void JSIntl::Dump(JSThread *thread, std::ostream &os) const
 void JSLocale::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - IcuField: ";
-    GetIcuField().Dump(thread);
+    GetIcuField().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1603,37 +1606,37 @@ void JSLocale::Dump(JSThread *thread, std::ostream &os) const
 void JSDateTimeFormat::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().Dump(thread);
+    GetLocale().D();
     os << "\n";
     os << " - Calendar: ";
-    GetCalendar().Dump(thread);
+    GetCalendar().D();
     os << "\n";
     os << " - NumberingSystem: ";
-    GetNumberingSystem().Dump(thread);
+    GetNumberingSystem().D();
     os << "\n";
     os << " - TimeZone: ";
-    GetTimeZone().Dump(thread);
+    GetTimeZone().D();
     os << "\n";
     os << " - HourCycle: ";
-    GetHourCycle().Dump(thread);
+    GetHourCycle().D();
     os << "\n";
     os << " - LocaleIcu: ";
-    GetLocaleIcu().Dump(thread);
+    GetLocaleIcu().D();
     os << "\n";
     os << " - SimpleDateTimeFormatIcu: ";
-    GetSimpleDateTimeFormatIcu().Dump(thread);
+    GetSimpleDateTimeFormatIcu().D();
     os << "\n";
     os << " - Iso8601: ";
-    GetIso8601().Dump(thread);
+    GetIso8601().D();
     os << "\n";
     os << " - DateStyle: ";
-    GetDateStyle().Dump(thread);
+    GetDateStyle().D();
     os << "\n";
     os << " - TimeStyle: ";
-    GetTimeStyle().Dump(thread);
+    GetTimeStyle().D();
     os << "\n";
     os << " - BoundFormat: ";
-    GetBoundFormat().Dump(thread);
+    GetBoundFormat().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1641,25 +1644,25 @@ void JSDateTimeFormat::Dump(JSThread *thread, std::ostream &os) const
 void JSRelativeTimeFormat::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().Dump(thread);
+    GetLocale().D();
     os << "\n";
     os << " - InitializedRelativeTimeFormat: ";
-    GetInitializedRelativeTimeFormat().Dump(thread);
+    GetInitializedRelativeTimeFormat().D();
     os << "\n";
     os << " - NumberingSystem: ";
-    GetNumberingSystem().Dump(thread);
+    GetNumberingSystem().D();
     os << "\n";
     os << " - Style: ";
-    GetStyle().Dump(thread);
+    GetStyle().D();
     os << "\n";
     os << " - Numeric: ";
-    GetNumeric().Dump(thread);
+    GetNumeric().D();
     os << "\n";
     os << " - AvailableLocales: ";
-    GetAvailableLocales().Dump(thread);
+    GetAvailableLocales().D();
     os << "\n";
     os << " - IcuField: ";
-    GetIcuField().Dump(thread);
+    GetIcuField().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1667,45 +1670,45 @@ void JSRelativeTimeFormat::Dump(JSThread *thread, std::ostream &os) const
 void JSNumberFormat::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().Dump(thread);
+    GetLocale().D();
     os << "\n" << " - NumberingSystem: ";
-    GetNumberingSystem().Dump(thread);
+    GetNumberingSystem().D();
     os << "\n" << " - Style: ";
-    GetStyle().Dump(thread);
+    GetStyle().D();
     os << "\n" << " - Currency: ";
-    GetCurrency().Dump(thread);
+    GetCurrency().D();
     os << "\n" << " - CurrencyDisplay: ";
-    GetCurrencyDisplay().Dump(thread);
+    GetCurrencyDisplay().D();
     os << "\n" << " - CurrencySign: ";
-    GetCurrencySign().Dump(thread);
+    GetCurrencySign().D();
     os << "\n" << " - Unit: ";
-    GetUnit().Dump(thread);
+    GetUnit().D();
     os << "\n" << " - UnitDisplay: ";
-    GetUnitDisplay().Dump(thread);
+    GetUnitDisplay().D();
     os << "\n" << " - MinimumIntegerDigits: ";
-    GetMinimumIntegerDigits().Dump(thread);
+    GetMinimumIntegerDigits().D();
     os << "\n" << " - MinimumFractionDigits: ";
-    GetMinimumFractionDigits().Dump(thread);
+    GetMinimumFractionDigits().D();
     os << "\n" << " - MaximumFractionDigits: ";
-    GetMaximumFractionDigits().Dump(thread);
+    GetMaximumFractionDigits().D();
     os << "\n" << " - MinimumSignificantDigits: ";
-    GetMinimumSignificantDigits().Dump(thread);
+    GetMinimumSignificantDigits().D();
     os << "\n" << " - MaximumSignificantDigits: ";
-    GetMaximumSignificantDigits().Dump(thread);
+    GetMaximumSignificantDigits().D();
     os << "\n" << " - UseGrouping: ";
-    GetUseGrouping().Dump(thread);
+    GetUseGrouping().D();
     os << "\n" << " - RoundingType: ";
-    GetUseGrouping().Dump(thread);
+    GetUseGrouping().D();
     os << "\n" << " - Notation: ";
-    GetMinimumIntegerDigits().Dump(thread);
+    GetMinimumIntegerDigits().D();
     os << "\n" << " - CompactDisplay: ";
-    GetMaximumSignificantDigits().Dump(thread);
+    GetMaximumSignificantDigits().D();
     os << "\n" << " - SignDisplay: ";
-    GetMinimumFractionDigits().Dump(thread);
+    GetMinimumFractionDigits().D();
     os << "\n" << " - BoundFormat: ";
-    GetMaximumFractionDigits().Dump(thread);
+    GetMaximumFractionDigits().D();
     os << "\n" << " - IcuField: ";
-    GetMinimumSignificantDigits().Dump(thread);
+    GetMinimumSignificantDigits().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1713,31 +1716,31 @@ void JSNumberFormat::Dump(JSThread *thread, std::ostream &os) const
 void JSCollator::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - IcuField: ";
-    GetIcuField().Dump(thread);
+    GetIcuField().D();
     os << "\n";
     os << " - Locale: ";
-    GetLocale().Dump(thread);
+    GetLocale().D();
     os << "\n";
     os << " - Usage: ";
-    GetUsage().Dump(thread);
+    GetUsage().D();
     os << "\n";
     os << " - Sensitivity: ";
-    GetSensitivity().Dump(thread);
+    GetSensitivity().D();
     os << "\n";
     os << " - IgnorePunctuation: ";
-    GetIgnorePunctuation().Dump(thread);
+    GetIgnorePunctuation().D();
     os << "\n";
     os << " - Collation: ";
-    GetCollation().Dump(thread);
+    GetCollation().D();
     os << "\n";
     os << " - Numeric: ";
-    GetNumeric().Dump(thread);
+    GetNumeric().D();
     os << "\n";
     os << " - CaseFirst: ";
-    GetCaseFirst().Dump(thread);
+    GetCaseFirst().D();
     os << "\n";
     os << " - BoundCompare: ";
-    GetBoundCompare().Dump(thread);
+    GetBoundCompare().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1745,37 +1748,37 @@ void JSCollator::Dump(JSThread *thread, std::ostream &os) const
 void JSPluralRules::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Locale: ";
-    GetLocale().Dump(thread);
+    GetLocale().D();
     os << "\n";
     os << " - InitializedPluralRules: ";
-    GetInitializedPluralRules().Dump(thread);
+    GetInitializedPluralRules().D();
     os << "\n";
     os << " - Type: ";
-    GetType().Dump(thread);
+    GetType().D();
     os << "\n";
     os << " - MinimumIntegerDigits: ";
-    GetMinimumIntegerDigits().Dump(thread);
+    GetMinimumIntegerDigits().D();
     os << "\n";
     os << " - MinimumFractionDigits: ";
-    GetMinimumFractionDigits().Dump(thread);
+    GetMinimumFractionDigits().D();
     os << "\n";
     os << " - MaximumFractionDigits: ";
-    GetMaximumFractionDigits().Dump(thread);
+    GetMaximumFractionDigits().D();
     os << "\n";
     os << " - MinimumSignificantDigits: ";
-    GetMinimumSignificantDigits().Dump(thread);
+    GetMinimumSignificantDigits().D();
     os << "\n";
     os << " - MaximumSignificantDigits: ";
-    GetMaximumSignificantDigits().Dump(thread);
+    GetMaximumSignificantDigits().D();
     os << "\n";
     os << " - RoundingType: ";
-    GetRoundingType().Dump(thread);
+    GetRoundingType().D();
     os << "\n";
     os << " - IcuPR: ";
-    GetIcuPR().Dump(thread);
+    GetIcuPR().D();
     os << "\n";
     os << " - IcuNF: ";
-    GetIcuNF().Dump(thread);
+    GetIcuNF().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1783,16 +1786,16 @@ void JSPluralRules::Dump(JSThread *thread, std::ostream &os) const
 void JSGeneratorObject::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - GeneratorState: ";
-    GetGeneratorState().Dump(thread);
+    GetGeneratorState().D();
     os << "\n";
     os << " - GeneratorContext: ";
-    GetGeneratorContext().Dump(thread);
+    GetGeneratorContext().D();
     os << "\n";
     os << " - ResumeResult: ";
-    GetResumeResult().Dump(thread);
+    GetResumeResult().D();
     os << "\n";
     os << " - ResumeMode: ";
-    GetResumeMode().Dump(thread);
+    GetResumeMode().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1800,32 +1803,32 @@ void JSGeneratorObject::Dump(JSThread *thread, std::ostream &os) const
 void JSAsyncFuncObject::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Promise: ";
-    GetPromise().Dump(thread);
+    GetPromise().D();
     os << "\n";
 }
 
 void GeneratorContext::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - RegsArray: ";
-    GetRegsArray().Dump(thread);
+    GetRegsArray().D();
     os << "\n";
     os << " - Method: ";
-    GetMethod().Dump(thread);
+    GetMethod().D();
     os << "\n";
     os << " - Acc: ";
-    GetAcc().Dump(thread);
+    GetAcc().D();
     os << "\n";
     os << " - NRegs: ";
-    GetNRegs().Dump(thread);
+    GetNRegs().D();
     os << "\n";
     os << " - BCOffset: ";
-    GetBCOffset().Dump(thread);
+    GetBCOffset().D();
     os << "\n";
     os << " - GeneratorObject: ";
-    GetGeneratorObject().Dump(thread);
+    GetGeneratorObject().D();
     os << "\n";
     os << " - LexicalEnv: ";
-    GetLexicalEnv().Dump(thread);
+    GetLexicalEnv().D();
     os << "\n";
 }
 
@@ -1837,53 +1840,53 @@ void ProtoChangeMarker::Dump(JSThread *thread, std::ostream &os) const
 void ProtoChangeDetails::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - ChangeListener: ";
-    GetChangeListener().Dump(thread);
+    GetChangeListener().D();
     os << "\n";
     os << " - RegisterIndex: ";
-    GetRegisterIndex().Dump(thread);
+    GetRegisterIndex().D();
     os << "\n";
 }
 
 void LexicalFunction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Name: ";
-    GetName().Dump(thread);
+    GetName().D();
     os << "\n";
     os << " - NumberVRegs: ";
-    GetNumberVRegs().Dump(thread);
+    GetNumberVRegs().D();
     os << "\n";
     os << " - NumberICSlots: ";
-    GetNumberICSlots().Dump(thread);
+    GetNumberICSlots().D();
     os << "\n";
     os << " - Bytecode: ";
-    GetBytecode().Dump(thread);
+    GetBytecode().D();
     os << "\n";
     os << " - Program: ";
-    GetProgram().Dump(thread);
+    GetProgram().D();
     os << "\n";
 }
 
 void JSFunctionExtraInfo::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - Callback: ";
-    GetCallback().Dump(thread);
+    GetCallback().D();
     os << "\n";
     os << " - Data: ";
-    GetData().Dump(thread);
+    GetData().D();
     os << "\n";
 }
 
 void MachineCode::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - InstructionSizeInBytes: ";
-    GetInstructionSizeInBytes().Dump(thread);
+    GetInstructionSizeInBytes().D();
     os << "\n";
 }
 
 void EcmaModule::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - NameDictionary: ";
-    GetNameDictionary().Dump(thread);
+    GetNameDictionary().D();
     os << "\n";
 }
 
@@ -2287,13 +2290,13 @@ void JSObject::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, 
     }
 
     if (!properties->IsDictionaryMode()) {
-        JSTaggedValue attrs = jshclass->GetAttributes();
+        JSTaggedValue attrs = jshclass->GetLayout();
         if (attrs.IsNull()) {
             return;
         }
 
         LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetTaggedObject());
-        int propNumber = jshclass->GetPropertiesNumber();
+        int propNumber = jshclass->NumberOfProps();
         for (int i = 0; i < propNumber; i++) {
             JSTaggedValue key = layoutInfo->GetKey(i);
             PropertyAttributes attr = layoutInfo->GetAttr(i);
@@ -2302,7 +2305,7 @@ void JSObject::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, 
             if (attr.IsInlinedProps()) {
                 val = GetPropertyInlinedProps(i);
             } else {
-                val = properties->Get(i - JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+                val = properties->Get(i - jshclass->GetInlinedProperties());
             }
 
             CString str;

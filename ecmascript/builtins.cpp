@@ -154,7 +154,8 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 
     // GLobalObject.prototype_or_dynclass
     JSHandle<JSHClass> globalObjFuncDynclass =
-        factory_->NewEcmaDynClass(JSObject::SIZE, JSType::JS_GLOBAL_OBJECT, objFuncPrototypeVal);
+        factory_->NewEcmaDynClass(JSObject::SIZE, JSType::JS_GLOBAL_OBJECT, 0);
+    globalObjFuncDynclass->SetPrototype(thread_, objFuncPrototypeVal.GetTaggedValue());
     globalObjFuncDynclass->SetIsDictionaryMode(true);
     // Function.prototype_or_dynclass
     JSHandle<JSHClass> emptyFuncDynclass(
@@ -1586,7 +1587,7 @@ void Builtins::InitializeArray(const JSHandle<GlobalEnv> &env, const JSHandle<JS
     // Set the [[Realm]] internal slot of F to the running execution context's Realm
     JSHandle<LexicalEnv> lexicalEnv = factory_->NewLexicalEnv(0);
     lexicalEnv->SetParentEnv(thread_, env.GetTaggedValue());
-    arrayFuncFunction->SetLexicalEnv(thread_, lexicalEnv.GetTaggedValue(), SKIP_BARRIER);
+    arrayFuncFunction->SetLexicalEnv(thread_, lexicalEnv.GetTaggedValue());
 
     arrayFuncFunction->SetFunctionPrototype(thread_, arrFuncInstanceDynclass.GetTaggedValue());
 

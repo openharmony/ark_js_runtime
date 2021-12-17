@@ -16,15 +16,18 @@
 #ifndef ECMASCRIPT_MEM_HEAP_H
 #define ECMASCRIPT_MEM_HEAP_H
 
-#include "ecmascript/thread/thread_pool.h"
+#include "ecmascript/base/config.h"
+#include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/space.h"
+#include "ecmascript/platform/platform.h"
+#include "ecmascript/mem/parallel_work_helper.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
 class EcmaHeapManager;
 class SemiSpaceCollector;
-class OldSpaceCollector;
+class MixSpaceCollector;
 class CompressCollector;
 class BumpPointerAllocator;
 class FreeListAllocator;
@@ -32,6 +35,13 @@ class RegionFactory;
 class HeapTracker;
 class MemController;
 class ConcurrentSweeper;
+class ConcurrentMarker;
+class Marker;
+class ParallelEvacuation;
+class EvacuationAllocator;
+class WorkerHelper;
+
+using DerivedData = std::tuple<uintptr_t, uintptr_t, uintptr_t>;
 
 class Heap {
 public:
@@ -41,6 +51,7 @@ public:
     NO_MOVE_SEMANTIC(Heap);
     void Initialize();
     void Destroy();
+    void Prepare();
 
     const SemiSpace *GetNewSpace() const
     {
@@ -62,17 +73,13 @@ public:
     }
 
     inline void InitializeFromSpace();
+    inline void InitializeCompressSpace();
 
     inline void SwapSpace();
 
     inline void ReclaimFromSpaceRegions();
 
     inline void SetFromSpaceMaximumCapacity(size_t maximumCapacity);
-
-    void SetFromSpace(SemiSpace *space)
-    {
-        fromSpace_ = space;
-    }
 
     const OldSpace *GetOldSpace() const
     {
@@ -99,9 +106,9 @@ public:
         return semiSpaceCollector_;
     }
 
-    OldSpaceCollector *GetOldSpaceCollector() const
+    MixSpaceCollector *GetMixSpaceCollector() const
     {
-        return oldSpaceCollector_;
+        return mixSpaceCollector_;
     }
 
     CompressCollector *GetCompressCollector() const
@@ -114,14 +121,29 @@ public:
         return sweeper_;
     }
 
+    ParallelEvacuation *GetEvacuation() const
+    {
+        return evacuation_;
+    }
+
+    EvacuationAllocator *GetEvacuationAllocator() const
+    {
+        return evacuationAllocator_;
+    }
+
+    ConcurrentMarker *GetConcurrentMarker() const
+    {
+        return concurrentMarker_;
+    }
+
     EcmaVM *GetEcmaVM() const
     {
         return ecmaVm_;
     }
 
-    ThreadPool *GetThreadPool() const
+    WorkerHelper *GetWorkList() const
     {
-        return pool_;
+        return workList_;
     }
 
     void FlipNewSpace();
@@ -138,6 +160,9 @@ public:
     void EnumerateSnapShotSpaceRegions(const Callback &cb) const;
 
     template<class Callback>
+    void EnumerateNonMovableRegions(const Callback &cb) const;
+
+    template<class Callback>
     void EnumerateRegions(const Callback &cb) const;
 
     template<class Callback>
@@ -150,8 +175,11 @@ public:
     inline bool FillNonMovableSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc = true);
     inline bool FillSnapShotSpace(BumpPointerAllocator *spaceAllocator);
     inline bool FillMachineCodeSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc = true);
+    inline Region *ExpandCompressSpace();
+    inline bool AddRegionToCompressSpace(Region *region);
+    inline bool AddRegionToToSpace(Region *region);
 
-    void ThrowOutOfMemoryError(size_t size);
+    void ThrowOutOfMemoryError(size_t size, std::string functionName);
 
     void SetHeapManager(EcmaHeapManager *heapManager)
     {
@@ -176,11 +204,21 @@ public:
     inline void OnAllocateEvent(uintptr_t address);
     inline void OnMoveEvent(uintptr_t address, uintptr_t forwardAddress);
 
+    void TryTriggerConcurrentMarking(bool allowGc);
+
+    void TriggerConcurrentMarking();
+
+    void CheckNeedFullMark();
+
+    bool CheckConcurrentMark(JSThread *thread);
+
     bool CheckAndTriggerOldGC();
 
     bool CheckAndTriggerCompressGC();
 
     bool CheckAndTriggerNonMovableGC();
+
+    bool CheckAndTriggerMachineCodeGC();
 
     const RegionFactory *GetRegionFactory() const
     {
@@ -235,7 +273,6 @@ public:
         if (hugeObjectSpace_->ContainObject(object)) {
             return true;
         }
-
         return false;
     }
 
@@ -257,7 +294,81 @@ public:
 
     inline void ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd);
 
+    ChunkVector<DerivedData> *GetDerivedPointers() const
+    {
+        return derivedPointers_;
+    }
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
+    bool GetIsVerifying() const
+    {
+        return isVerifying_;
+    }
+#endif
+
+    void UpdateDerivedObjectInStack();
+    static constexpr uint32_t STACK_MAP_DEFALUT_DERIVED_SIZE = 8U;
+
+    void WaitRunningTaskFinished();
+
+    bool CheckCanDistributeTask();
+
+    void PostParallelGCTask(ParallelGCTaskPhase gcTask);
+
+    bool IsEnableParallelGC() const
+    {
+        return paralledGc_;
+    }
+
+    void WaitConcurrentMarkingFinished();
+
+    void SetConcurrentMarkingEnable(bool flag);
+
+    bool ConcurrentMarkingEnable() const;
+
+    inline bool IsOnlyMarkSemi() const
+    {
+        return isOnlySemi_;
+    }
+
+    void SetOnlyMarkSemi(bool onlySemi)
+    {
+        isOnlySemi_ = onlySemi;
+    }
+
+    Marker *GetNonMovableMarker() const
+    {
+        return nonMovableMarker_;
+    }
+
+    Marker *GetSemiGcMarker() const
+    {
+        return semiGcMarker_;
+    }
+
+    Marker *GetCompressGcMarker() const
+    {
+        return compressGcMarker_;
+    }
+
 private:
+    void IncreaseTaskCount();
+
+    void ReduceTaskCount();
+
+    class ParallelGCTask : public Task {
+    public:
+        ParallelGCTask(Heap *heap, ParallelGCTaskPhase taskPhase) : heap_(heap), taskPhase_(taskPhase) {};
+        ~ParallelGCTask() override = default;
+        bool Run(uint32_t threadIndex) override;
+
+        NO_COPY_SEMANTIC(ParallelGCTask);
+        NO_MOVE_SEMANTIC(ParallelGCTask);
+
+    private:
+        Heap *heap_ {nullptr};
+        ParallelGCTaskPhase taskPhase_;
+    };
+
     EcmaVM *ecmaVm_ {nullptr};
     SemiSpace *fromSpace_ {nullptr};
     SemiSpace *toSpace_ {nullptr};
@@ -268,16 +379,33 @@ private:
     NonMovableSpace *nonMovableSpace_ {nullptr};
     MachineCodeSpace *machineCodeSpace_ {nullptr};
     SemiSpaceCollector *semiSpaceCollector_ {nullptr};
-    OldSpaceCollector *oldSpaceCollector_ {nullptr};
+    MixSpaceCollector *mixSpaceCollector_ {nullptr};
     CompressCollector *compressCollector_ {nullptr};
     ConcurrentSweeper *sweeper_ {nullptr};
+    Marker *nonMovableMarker_ {nullptr};
+    Marker *semiGcMarker_ {nullptr};
+    Marker *compressGcMarker_ {nullptr};
+    ParallelEvacuation *evacuation_ {nullptr};
+    EvacuationAllocator *evacuationAllocator_ {nullptr};
     EcmaHeapManager *heapManager_ {nullptr};
     RegionFactory *regionFactory_ {nullptr};
     HeapTracker *tracker_ {nullptr};
     MemController *memController_ {nullptr};
-    ThreadPool *pool_ {nullptr};
     size_t oldSpaceAllocLimit_ {OLD_SPACE_LIMIT_BEGIN};
+    ChunkVector<DerivedData> *derivedPointers_ {nullptr};
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
+    bool isVerifying_ {false};
+#endif
 
+    ConcurrentMarker *concurrentMarker_;
+    uint32_t runningTastCount_ {0};
+    os::memory::Mutex waitTaskFinishedMutex_;
+    os::memory::ConditionVariable waitTaskFinishedCV_;
+    bool paralledGc_ {true};
+    WorkerHelper *workList_ {nullptr};
+
+    bool concurrentMarkingEnable_ {true};
+    bool isOnlySemi_ {true};
     inline void SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity);
 };
 }  // namespace panda::ecmascript

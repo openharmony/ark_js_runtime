@@ -665,7 +665,7 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
         JSHandle<JSHClass> jsHclass(thread_, obj->GetJSHClass());
         JSTaggedValue enumCache = jsHclass->GetEnumCache();
         if (!enumCache.IsNull()) {
-            int propsNumber = jsHclass->GetPropertiesNumber();
+            int propsNumber = jsHclass->NumberOfProps();
             JSHandle<TaggedArray> cache(thread_, enumCache);
             uint32_t length = cache->GetLength();
             for (uint32_t i = 0; i < length; i++) {
@@ -675,13 +675,13 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
                 }
                 handleKey_.Update(key);
                 JSTaggedValue value;
-                LayoutInfo *layoutInfo = LayoutInfo::Cast(jsHclass->GetAttributes().GetTaggedObject());
+                LayoutInfo *layoutInfo = LayoutInfo::Cast(jsHclass->GetLayout().GetTaggedObject());
                 int index = layoutInfo->FindElementWithCache(thread_, *jsHclass, key, propsNumber);
                 PropertyAttributes attr(layoutInfo->GetAttr(index));
                 ASSERT(static_cast<int>(attr.GetOffset()) == index);
                 value = attr.IsInlinedProps()
                         ? obj->GetPropertyInlinedProps(index)
-                        : propertiesArr->Get(index - JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+                        : propertiesArr->Get(index - jsHclass->GetInlinedProperties());
                 if (UNLIKELY(value.IsAccessor())) {
                     value = JSObject::CallGetter(thread_, AccessorData::Cast(value.GetTaggedObject()),
                                                  JSHandle<JSTaggedValue>(obj));
@@ -692,13 +692,13 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
             }
             return hasContent;
         }
-        int end = jsHclass->GetPropertiesNumber();
+        int end = jsHclass->NumberOfProps();
         if (end <= 0) {
             return hasContent;
         }
-        int propsNumber = jsHclass->GetPropertiesNumber();
+        int propsNumber = jsHclass->NumberOfProps();
         for (int i = 0; i < end; i++) {
-            LayoutInfo *layoutInfo = LayoutInfo::Cast(jsHclass->GetAttributes().GetTaggedObject());
+            LayoutInfo *layoutInfo = LayoutInfo::Cast(jsHclass->GetLayout().GetTaggedObject());
             JSTaggedValue key = layoutInfo->GetKey(i);
             if (key.IsString() && layoutInfo->GetAttr(i).IsEnumerable()) {
                 handleKey_.Update(key);
@@ -708,7 +708,7 @@ bool JsonStringifier::SerializeKeys(const JSHandle<JSObject> &obj, const JSHandl
                 ASSERT(static_cast<int>(attr.GetOffset()) == index);
                 value = attr.IsInlinedProps()
                         ? obj->GetPropertyInlinedProps(index)
-                        : propertiesArr->Get(index - JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+                        : propertiesArr->Get(index - jsHclass->GetInlinedProperties());
                 if (UNLIKELY(value.IsAccessor())) {
                     value = JSObject::CallGetter(thread_, AccessorData::Cast(value.GetTaggedObject()),
                                                  JSHandle<JSTaggedValue>(obj));

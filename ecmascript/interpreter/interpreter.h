@@ -23,7 +23,6 @@
 #include "ecmascript/frames.h"
 
 namespace panda::ecmascript {
-using TaggedType = coretypes::TaggedType;
 class ConstantPool;
 class ECMAObject;
 class GeneratorContext;
@@ -33,13 +32,12 @@ class GeneratorContext;
 struct FrameState {
     const uint8_t *pc;
     JSTaggedType *sp;
-    JSMethod *method;
     // aligned with 8 bits
-    alignas(sizeof(uint64_t)) ConstantPool *constpool;
+    alignas(sizeof(uint64_t)) JSTaggedValue constpool;
+    JSTaggedValue function;
     JSTaggedValue profileTypeInfo;
     JSTaggedValue acc;
     JSTaggedValue env;
-    uint64_t numActualArgs;
     InterpretedFrameStateBase base;
 };
 
@@ -53,16 +51,16 @@ static constexpr uint32_t RESERVED_INDEX_THIS = 2;
 
 struct CallParams {
     ECMAObject *callTarget;
-    TaggedType newTarget;
-    TaggedType thisArg;
-    const TaggedType *argv;
+    JSTaggedType newTarget;
+    JSTaggedType thisArg;
+    const JSTaggedType *argv;
     uint32_t argc;
 };
 
 class EcmaInterpreter {
 public:
     static const uint32_t METHOD_HOTNESS_THRESHOLD = 512;
-    enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 3, CALLARG1, CALLARGS2, CALLARGS3 };
+    enum ActualNumArgsOfCall : uint8_t { CALLARG0 = 0, CALLARG1, CALLARGS2, CALLARGS3 };
 
     static inline JSTaggedValue Execute(JSThread *thread, const CallParams& params);
     static inline JSTaggedValue ExecuteNative(JSThread *thread, const CallParams& params);
@@ -76,12 +74,14 @@ public:
     static inline uint32_t FindCatchBlock(JSMethod *caller, uint32_t pc);
     static inline size_t GetJumpSizeAfterCall(const uint8_t *prevPc);
 
-    static inline JSTaggedValue GetRuntimeProfileTypeInfo(TaggedType *sp);
-    static inline bool UpdateHotnessCounter(JSThread* thread, TaggedType *sp, JSTaggedValue acc, int32_t offset);
+    static inline JSTaggedValue GetRuntimeProfileTypeInfo(JSTaggedType *sp);
+    static inline bool UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, JSTaggedValue acc, int32_t offset);
     static inline void InterpreterFrameCopyArgs(JSTaggedType *newSp, uint32_t numVregs, uint32_t numActualArgs,
-                                                uint32_t numDeclaredArgs);
+                                                uint32_t numDeclaredArgs, bool haveExtraArgs = true);
     static inline void NotifyBytecodePcChanged(JSThread *thread);
     static inline JSTaggedValue GetThisFunction(JSTaggedType *sp);
+    static inline JSTaggedValue GetNewTarget(JSTaggedType *sp);
+    static inline uint32_t GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx);
 };
 
 enum EcmaOpcode {
@@ -218,6 +218,7 @@ enum EcmaOpcode {
     STCLASSTOGLOBALRECORD_PREF_ID32,
     STOWNBYVALUEWITHNAMESET_PREF_V8_V8,
     STOWNBYNAMEWITHNAMESET_PREF_ID32_V8,
+    LDFUNCTION_PREF,
     MOV_DYN_V8_V8,
     MOV_DYN_V16_V16,
     LDA_STR_ID32,

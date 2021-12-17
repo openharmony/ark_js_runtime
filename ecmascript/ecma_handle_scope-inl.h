@@ -24,10 +24,12 @@ inline EcmaHandleScope::EcmaHandleScope(JSThread *thread)
     : thread_(thread), prevNext_(thread->handleScopeStorageNext_), prevEnd_(thread->handleScopeStorageEnd_),
       prevHandleStorageIndex_(thread->currentHandleStorageIndex_)
 {
+    thread->HandleScopeCountAdd();
 }
 
 inline EcmaHandleScope::~EcmaHandleScope()
 {
+    thread_->HandleScopeCountDec();
     thread_->handleScopeStorageNext_ = prevNext_;
     if (thread_->handleScopeStorageEnd_ != prevEnd_) {
         thread_->handleScopeStorageEnd_ = prevEnd_;
@@ -37,6 +39,8 @@ inline EcmaHandleScope::~EcmaHandleScope()
 
 uintptr_t EcmaHandleScope::NewHandle(JSThread *thread, JSTaggedType value)
 {
+    // Each Handle must be managed by HandleScope, otherwise it may cause Handle leakage.
+    ASSERT(thread->handleScopeCount_ > 0);
     auto result = thread->handleScopeStorageNext_;
     if (result == thread->handleScopeStorageEnd_) {
         result = reinterpret_cast<JSTaggedType *>(thread->ExpandHandleStorage());

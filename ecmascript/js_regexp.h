@@ -24,11 +24,7 @@
 namespace panda::ecmascript {
 class JSRegExp : public JSObject {
 public:
-    static JSRegExp *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSRegExp());
-        return static_cast<JSRegExp *>(object);
-    }
+    CAST_CHECK(JSRegExp, IsJSRegExp);
 
     static constexpr size_t LAST_INDEX_OFFSET = JSObject::SIZE;
     ACCESSORS(LastIndex, LAST_INDEX_OFFSET, REGEXP_BYTE_CODE_OFFSET);

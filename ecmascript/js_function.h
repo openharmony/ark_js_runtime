@@ -29,17 +29,7 @@ class JSThread;
 
 class JSFunctionBase : public JSObject {
 public:
-    static JSFunctionBase *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSFunctionBase());
-        return static_cast<JSFunctionBase *>(object);
-    }
-
-    static const JSFunctionBase *ConstCast(const ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSFunctionBase());
-        return static_cast<const JSFunctionBase *>(object);
-    }
+    CAST_CHECK(JSFunctionBase, IsJSFunctionBase);
 
     inline void SetConstructor(bool flag)
     {
@@ -71,11 +61,7 @@ public:
     static constexpr int CLASS_PROTOTYPE_INLINE_PROPERTY_INDEX = 1;
 
     /* -------------- Common API Begin, Don't change those interface!!! ----------------- */
-    static JSFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSFunction());
-        return static_cast<JSFunction *>(object);
-    }
+    CAST_CHECK(JSFunction, IsJSFunction);
 
     static void InitializeJSFunction(JSThread *thread, const JSHandle<GlobalEnv> &env, const JSHandle<JSFunction> &func,
                                      FunctionKind kind = FunctionKind::NORMAL_FUNCTION, bool strict = true);
@@ -303,11 +289,7 @@ private:
 
 class JSGeneratorFunction : public JSFunction {
 public:
-    static JSGeneratorFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsGeneratorFunction());
-        return static_cast<JSGeneratorFunction *>(object);
-    }
+    CAST_CHECK(JSGeneratorFunction, IsGeneratorFunction);
 
     static constexpr size_t SIZE = JSFunction::SIZE;
 
@@ -318,11 +300,7 @@ public:
 
 class JSBoundFunction : public JSFunctionBase {
 public:
-    static JSBoundFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsBoundFunction());
-        return static_cast<JSBoundFunction *>(object);
-    }
+    CAST_CHECK(JSBoundFunction, IsBoundFunction);
 
     // 9.4.1.1[[Call]](thisArgument, argumentsList)
     static JSTaggedValue CallInternal(JSThread *thread, const JSHandle<JSBoundFunction> &func);
@@ -343,11 +321,7 @@ public:
 
 class JSProxyRevocFunction : public JSFunction {
 public:
-    static JSProxyRevocFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsProxyRevocFunction());
-        return static_cast<JSProxyRevocFunction *>(object);
-    }
+    CAST_CHECK(JSProxyRevocFunction, IsProxyRevocFunction);
 
     static void ProxyRevocFunctions(const JSThread *thread, const JSHandle<JSProxyRevocFunction> &revoker);
 
@@ -362,11 +336,7 @@ public:
 // ResolveFunction/RejectFunction
 class JSPromiseReactionsFunction : public JSFunction {
 public:
-    static JSPromiseReactionsFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSPromiseReactionFunction());
-        return static_cast<JSPromiseReactionsFunction *>(object);
-    }
+    CAST_CHECK(JSPromiseReactionsFunction, IsJSPromiseReactionFunction);
 
     static constexpr size_t PROMISE_OFFSET = JSFunction::SIZE;
     ACCESSORS(Promise, PROMISE_OFFSET, ALREADY_RESOLVED_OFFSET);
@@ -380,11 +350,7 @@ public:
 // ExecutorFunction
 class JSPromiseExecutorFunction : public JSFunction {
 public:
-    static JSPromiseExecutorFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSPromiseExecutorFunction());
-        return static_cast<JSPromiseExecutorFunction *>(object);
-    }
+    CAST_CHECK(JSPromiseExecutorFunction, IsJSPromiseExecutorFunction);
 
     static constexpr size_t CAPABILITY_OFFSET = JSFunction::SIZE;
     ACCESSORS(Capability, CAPABILITY_OFFSET, SIZE);
@@ -396,11 +362,7 @@ public:
 
 class JSPromiseAllResolveElementFunction : public JSFunction {
 public:
-    static JSPromiseAllResolveElementFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSPromiseAllResolveElementFunction());
-        return static_cast<JSPromiseAllResolveElementFunction *>(object);
-    }
+    CAST_CHECK(JSPromiseAllResolveElementFunction, IsJSPromiseAllResolveElementFunction);
 
     static constexpr size_t INDEX_OFFSET = JSFunction::SIZE;
     ACCESSORS(Index, INDEX_OFFSET, VALUES_OFFSET);
@@ -416,11 +378,7 @@ public:
 
 class JSIntlBoundFunction : public JSFunction {
 public:
-    static JSIntlBoundFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSIntlBoundFunction());
-        return static_cast<JSIntlBoundFunction *>(object);
-    }
+    CAST_CHECK(JSIntlBoundFunction, IsJSIntlBoundFunction);
 
     static JSTaggedValue IntlNameGetter(JSThread *thread, const JSHandle<JSObject> &self);
 

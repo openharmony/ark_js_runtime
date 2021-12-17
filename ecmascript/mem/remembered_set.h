@@ -44,6 +44,11 @@ public:
         SetBit(AddrToBitOffset(address));
     }
 
+    void AtomicInsert(uintptr_t address)
+    {
+        AtomicTestAndSetBit(AddrToBitOffset(address));
+    }
+
     template<typename VisitorType>
     void IterateOverSetBits(VisitorType visitor)
     {

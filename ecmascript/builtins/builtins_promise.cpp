@@ -419,10 +419,16 @@ JSTaggedValue BuiltinsPromise::PerformPromiseThen(JSThread *thread, const JSHand
         JSHandle<TaggedArray> argv = factory->NewTaggedArray(2);  // 2: 2 means two args stored in array
         argv->Set(thread, 0, rejectReaction.GetTaggedValue());
         argv->Set(thread, 1, promise->GetPromiseResult());
-
+        // When a handler is added to a rejected promise for the first time, it is called with its operation
+        // argument set to "handle".
+        if (!promise->GetPromiseIsHandled().ToBoolean()) {
+            JSHandle<JSTaggedValue> reason(thread, JSTaggedValue::Null());
+            thread->GetEcmaVM()->PromiseRejectionTracker(promise, reason, ecmascript::PromiseRejectionEvent::HANDLE);
+        }
         JSHandle<JSFunction> promiseReactionsJob(env->GetPromiseReactionJob());
         job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, argv);
     }
+    promise->SetPromiseIsHandled(thread, JSTaggedValue::True());
     return capability->GetPromise();
 }
 

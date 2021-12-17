@@ -27,18 +27,18 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/stub_module.h"
-#include "llvm-c/Types.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/Transforms/PassManagerBuilder.h"
 #include "llvm-c/Transforms/Scalar.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/Host.h"
+#include "llvm-c/Types.h"
 #include "llvm/ExecutionEngine/Interpreter.h"
 #include "llvm/ExecutionEngine/MCJIT.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/Support/Host.h"
 
 namespace kungfu {
 struct CodeInfo {
@@ -51,11 +51,20 @@ struct CodeInfo {
         static constexpr int prot = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
         static constexpr int flags = MAP_ANONYMOUS | MAP_SHARED;         // NOLINT(hicpp-signed-bitwise)
         machineCode_ = static_cast<uint8_t *>(mmap(nullptr, MAX_MACHINE_CODE_SIZE, prot, flags, -1, 0));
+        if (machineCode_ == reinterpret_cast<uint8_t *>(-1)) {
+            machineCode_ = nullptr;
+        }
+        if (machineCode_ != nullptr) {
+            ASAN_UNPOISON_MEMORY_REGION(machineCode_, MAX_MACHINE_CODE_SIZE);
+        }
     }
     ~CodeInfo()
     {
         Reset();
-        munmap(machineCode_, MAX_MACHINE_CODE_SIZE);
+        if (machineCode_ != nullptr) {
+            ASAN_POISON_MEMORY_REGION(machineCode_, MAX_MACHINE_CODE_SIZE);
+            munmap(machineCode_, MAX_MACHINE_CODE_SIZE);
+        }
         machineCode_ = nullptr;
     }
     uint8_t *AllocaCodeSection(uintptr_t size, const char *sectionName)
@@ -67,11 +76,8 @@ struct CodeInfo {
             return nullptr;
         }
         LOG_ECMA(INFO) << "AllocaCodeSection size:" << size;
-        std::vector<uint8_t> codeBuffer(machineCode_[codeBufferPos_], size);
-        LOG_ECMA(INFO) << " codeBuffer size: " << codeBuffer.size();
         codeSectionNames_.push_back(sectionName);
         addr = machineCode_ + codeBufferPos_;
-        LOG_ECMA(INFO) << "AllocaCodeSection addr:" << std::hex << reinterpret_cast<std::uintptr_t>(addr);
         codeInfo_.push_back({addr, size});
         codeBufferPos_ += size;
         return addr;
@@ -85,7 +91,7 @@ struct CodeInfo {
         dataSectionNames_.push_back(sectionName);
         addr = static_cast<uint8_t *>(dataSectionList_.back().data());
         if (!strcmp(sectionName, ".llvm_stackmaps")) {
-            LOG_ECMA(INFO) << "llvm_stackmaps : " << addr << " size:" << size << std::endl;
+            LOG_ECMA(INFO) << "llvm_stackmaps : " << addr << " size:" << size;
             stackMapsSection_ = addr;
             stackMapsSize_ = size;
         }
@@ -171,9 +177,6 @@ public:
     {
         return LLVMGetPointerToGlobal(engine_, function);
     }
-    const char *AMD64_TRIPLE = "x86_64-unknown-linux-gnu";
-    const char *ARM64_TRIPLE = "aarch64-unknown-linux-gnu";
-    const char *ARM32_TRIPLE = "arm-unknown-linux-gnu";
 private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
@@ -182,18 +185,38 @@ private:
     void Initialize();
     void InitMember();
 
-    LLVMMCJITCompilerOptions options_;
+    LLVMMCJITCompilerOptions options_ {};
     LLVMModuleRef module_;
-    LLVMExecutionEngineRef engine_;
-    std::string hostTriple_;
-    char *error_;
-    struct CodeInfo codeInfo_;
+    LLVMExecutionEngineRef engine_ {nullptr};
+    const char *triple_;
+    char *error_ {nullptr};
+    struct CodeInfo codeInfo_ {};
 };
 
 class LLVMCodeGeneratorImpl : public CodeGeneratorImpl {
 public:
     explicit LLVMCodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
     ~LLVMCodeGeneratorImpl() = default;
+    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index) override;
+
+private:
+    LLVMStubModule *module_;
+};
+
+class LLVMAarch64CodeGeneratorImpl : public CodeGeneratorImpl {
+public:
+    explicit LLVMAarch64CodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
+    ~LLVMAarch64CodeGeneratorImpl() = default;
+    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index) override;
+
+private:
+    LLVMStubModule *module_;
+};
+
+class LLVMArm32CodeGeneratorImpl : public CodeGeneratorImpl {
+public:
+    explicit LLVMArm32CodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
+    ~LLVMArm32CodeGeneratorImpl() = default;
     void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index) override;
 
 private:

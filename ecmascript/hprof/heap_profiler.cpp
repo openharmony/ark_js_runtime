@@ -162,7 +162,7 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
 {
     LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapShot";
     DISALLOW_GARBAGE_COLLECTION;
-    heap_->GetSweeper()->EnsureAllTaskFinish();
+    heap_->GetSweeper()->EnsureAllTaskFinished();
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
             auto *snapShot =

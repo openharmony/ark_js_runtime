@@ -40,7 +40,8 @@ public:
     void SetUp() override
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        thread->GetEcmaVM()->GetFactory()->SetTriggerGc(false);
+        thread->GetEcmaVM()->SetEnableForceGC(false);
+        const_cast<Heap *>(thread->GetEcmaVM()->GetHeap())->SetOnlyMarkSemi(false);
     }
 
     void TearDown() override

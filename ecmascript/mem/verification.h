@@ -29,7 +29,7 @@ namespace panda::ecmascript {
 class VerifyObjectVisitor {
 public:
     VerifyObjectVisitor(const Heap *heap, size_t *failCount)
-        : HEAP(heap), FAIL_COUNT(failCount), rootManager_(heap->GetEcmaVM())
+        : heap_(heap), failCount_(failCount), rootManager_(heap->GetEcmaVM())
     {
     }
     ~VerifyObjectVisitor() = default;
@@ -41,14 +41,14 @@ public:
 
     size_t GetFailedCount() const
     {
-        return *FAIL_COUNT;
+        return *failCount_;
     }
 
+private:
     void VisitAllObjects(TaggedObject *obj);
 
-private:
-    const Heap * const HEAP{nullptr};
-    size_t * const FAIL_COUNT{nullptr};
+    const Heap* const heap_ {nullptr};
+    size_t* const failCount_ {nullptr};
     HeapRootManager rootManager_;
 };
 
@@ -57,20 +57,20 @@ public:
     explicit Verification(const Heap *heap) : heap_(heap), rootManager_(heap->GetEcmaVM()) {}
     ~Verification() = default;
 
-    bool IsHeapAddress(void *addr) const;
-    size_t VerifyRoot() const;
-
-    size_t VerifyHeap() const;
-
     size_t VerifyAll() const
     {
-        return VerifyRoot() + VerifyHeap();
+        size_t result = VerifyRoot();
+        result += VerifyHeap();
+        return result;
     }
 
+    bool IsHeapAddress(void *addr) const;
+    size_t VerifyRoot() const;
+    size_t VerifyHeap() const;
+private:
     NO_COPY_SEMANTIC(Verification);
     NO_MOVE_SEMANTIC(Verification);
 
-private:
     const Heap *heap_{nullptr};
     HeapRootManager rootManager_;
 };

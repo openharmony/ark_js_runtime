@@ -33,8 +33,8 @@ public:
     inline TaggedObject *AllocateYoungGenerationOrHugeObject(JSHClass *hclass);
     inline TaggedObject *TryAllocateYoungGeneration(size_t size);
     inline TaggedObject *AllocateYoungGenerationOrHugeObject(JSHClass *hclass, size_t size);
-
     inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size);
+    inline TaggedObject *AllocateDynClassClass(JSHClass *hclass, size_t size);
     inline TaggedObject *AllocateNonMovableOrHugeObject(JSHClass *hclass);
     inline TaggedObject *AllocateHugeObject(JSHClass *hclass, size_t size);
     inline TaggedObject *AllocateOldGenerationOrHugeObject(JSHClass *hclass, size_t size);

@@ -28,45 +28,61 @@ public:
     ~CircuitBuilder() = default;
     NO_MOVE_SEMANTIC(CircuitBuilder);
     NO_COPY_SEMANTIC(CircuitBuilder);
-    AddrShift NewArguments(size_t index);
-    AddrShift NewMerge(AddrShift *in, size_t controlCount);
-    AddrShift NewSelectorGate(OpCode opcode, AddrShift control, int valueCounts);
-    AddrShift NewSelectorGate(OpCode opcode, AddrShift control, std::vector<AddrShift> &values, int valueCounts);
-    AddrShift NewIntegerConstant(int32_t value);
-    AddrShift NewInteger64Constant(int64_t value);
-    AddrShift NewWord64Constant(uint64_t val);
-    AddrShift NewBooleanConstant(bool value);
-    AddrShift NewDoubleConstant(double value);
-    AddrShift UndefineConstant();
-    AddrShift HoleConstant();
-    AddrShift ExceptionConstant();
-    AddrShift Alloca(int size);
-    AddrShift Branch(AddrShift state, AddrShift condition);
-    AddrShift SwitchBranch(AddrShift state, AddrShift index, int caseCounts);
-    AddrShift Return(AddrShift state, AddrShift depend, AddrShift value);
-    AddrShift Goto(AddrShift state);
-    AddrShift LoopBegin(AddrShift state);
-    AddrShift LoopEnd(AddrShift state);
-    AddrShift NewIfTrue(AddrShift ifBranch);
-    AddrShift NewIfFalse(AddrShift ifBranch);
-    AddrShift NewSwitchCase(AddrShift switchBranch, int32_t value);
-    AddrShift NewDefaultCase(AddrShift switchBranch);
-    AddrShift NewLoadGate(MachineType type, AddrShift val, AddrShift depend);
-    AddrShift NewStoreGate(MachineType type, AddrShift ptr, AddrShift val, AddrShift depend);
-    AddrShift NewDependRelay(AddrShift state, AddrShift depend);
-    AddrShift NewDependAnd(std::initializer_list<AddrShift> args);
-    AddrShift NewArithMeticGate(OpCode opcode, AddrShift left, AddrShift right);
-    AddrShift NewArithMeticGate(OpCode opcode, AddrShift value);
-    AddrShift NewLogicGate(OpCode opcode, AddrShift left, AddrShift right);
-    AddrShift NewLogicGate(OpCode opcode, AddrShift value);
-    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
-                                 std::initializer_list<AddrShift> args);
-    AddrShift NewCallGate(StubDescriptor *descriptor, AddrShift thread, AddrShift target,
-                                 AddrShift depend, std::initializer_list<AddrShift> args);
-    static OpCode GetLoadOpCodeFromMachineType(MachineType type);
-    static OpCode GetStoreOpCodeFromMachineType(MachineType type);
+    GateRef NewArguments(size_t index);
+    GateRef NewMerge(GateRef *in, size_t controlCount);
+    GateRef NewSelectorGate(OpCode opcode, GateRef control, int valueCounts,
+                              MachineType type = MachineType::NONE);
+    GateRef NewSelectorGate(OpCode opcode, GateRef control, std::vector<GateRef> &values, int valueCounts,
+                              MachineType type = MachineType::NONE);
+    GateRef NewIntegerConstant(int32_t value);
+    GateRef NewInteger64Constant(int64_t value);
+    GateRef NewWord64Constant(uint64_t val);
+    GateRef NewBooleanConstant(bool value);
+    GateRef NewDoubleConstant(double value);
+    GateRef UndefineConstant(TypeCode type);
+    GateRef HoleConstant(TypeCode type);
+    GateRef NullConstant(TypeCode type);
+    GateRef ExceptionConstant(TypeCode type);
+    GateRef Alloca(int size, TypeCode type);
+    GateRef Branch(GateRef state, GateRef condition);
+    GateRef SwitchBranch(GateRef state, GateRef index, int caseCounts);
+    GateRef Return(GateRef state, GateRef depend, GateRef value);
+    GateRef ReturnVoid(GateRef state, GateRef depend);
+    GateRef Goto(GateRef state);
+    GateRef LoopBegin(GateRef state);
+    GateRef LoopEnd(GateRef state);
+    GateRef NewIfTrue(GateRef ifBranch);
+    GateRef NewIfFalse(GateRef ifBranch);
+    GateRef NewSwitchCase(GateRef switchBranch, int32_t value);
+    GateRef NewDefaultCase(GateRef switchBranch);
+    GateRef NewLoadGate(MachineType type, GateRef val, GateRef depend, const char *triple);
+    GateRef NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend, const char *triple);
+    GateRef NewDependRelay(GateRef state, GateRef depend);
+    GateRef NewDependAnd(std::initializer_list<GateRef> args);
+    GateRef NewArithMeticGate(OpCode opcode, GateRef left, GateRef right);
+    GateRef NewArithMeticGate(OpCode opcode, GateRef value);
+    GateRef NewLogicGate(OpCode opcode, GateRef left, GateRef right);
+    GateRef NewLogicGate(OpCode opcode, GateRef value);
+    GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+                                 std::initializer_list<GateRef> args);
+    GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+                                 GateRef depend, std::initializer_list<GateRef> args);
+    static OpCode GetLoadOpCodeFromMachineType(MachineType type, const char *triple);
+    static OpCode GetStoreOpCodeFromMachineType(MachineType type, const char *triple);
     static OpCode GetSelectOpCodeFromMachineType(MachineType type);
     static OpCode GetCallOpCodeFromMachineType(MachineType type);
+
+    static TypeCode MachineType2TypeCode(MachineType type)
+    {
+        switch (type) {
+            case MachineType::TAGGED_POINTER:
+                return TypeCode::TAGGED_POINTER;
+            case MachineType::TAGGED:
+                return TypeCode::JS_ANY;
+            default:
+                return TypeCode::NOTYPE;
+        }
+    }
 
 private:
     Circuit *circuit_;

@@ -27,6 +27,7 @@
 #include "ecmascript/interpreter/slow_runtime_helper.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
+#include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_function.h"
@@ -198,8 +199,8 @@ JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, EcmaVM *ecma_vm, JSTagg
     JSHandle<JSTaggedValue> leftValue(thread, left);
     JSHandle<JSTaggedValue> rightValue(thread, right);
     if (leftValue->IsString() && rightValue->IsString()) {
-        EcmaString *newString = EcmaString::Concat(JSHandle<EcmaString>(leftValue),
-                                                   JSHandle<EcmaString>(rightValue), ecma_vm);
+        EcmaString *newString =
+            EcmaString::Concat(JSHandle<EcmaString>(leftValue), JSHandle<EcmaString>(rightValue), ecma_vm);
         return JSTaggedValue(newString);
     }
     JSHandle<JSTaggedValue> primitiveA0(thread, JSTaggedValue::ToPrimitive(thread, leftValue));
@@ -265,10 +266,13 @@ JSTaggedValue SlowRuntimeStub::Div2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Div2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSTaggedNumber leftNumber = JSTaggedValue::ToNumber(thread, JSHandle<JSTaggedValue>(thread, left));
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+
+    JSTaggedNumber leftNumber = JSTaggedValue::ToNumber(thread, leftHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     double dLeft = leftNumber.GetNumber();
-    JSTaggedNumber rightNumber = JSTaggedValue::ToNumber(thread, JSHandle<JSTaggedValue>(thread, right));
+    JSTaggedNumber rightNumber = JSTaggedValue::ToNumber(thread, rightHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     double dRight = rightNumber.GetNumber();
     if (dRight == 0) {
@@ -287,10 +291,13 @@ JSTaggedValue SlowRuntimeStub::Mod2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Mod2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSTaggedNumber leftNumber = JSTaggedValue::ToNumber(thread, JSHandle<JSTaggedValue>(thread, left));
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+
+    JSTaggedNumber leftNumber = JSTaggedValue::ToNumber(thread, leftHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     double dLeft = leftNumber.GetNumber();
-    JSTaggedNumber rightNumber = JSTaggedValue::ToNumber(thread, JSHandle<JSTaggedValue>(thread, right));
+    JSTaggedNumber rightNumber = JSTaggedValue::ToNumber(thread, rightHandle);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     double dRight = rightNumber.GetNumber();
     // 12.6.3.3 Applying the % Operator
@@ -941,12 +948,11 @@ JSTaggedValue SlowRuntimeStub::CloseIterator(JSThread *thread, JSTaggedValue ite
     JSHandle<JSTaggedValue> iterHandle(thread, iter);
     JSHandle<JSTaggedValue> record;
     if (thread->HasPendingException()) {
-        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::THROW,
-            JSHandle<JSTaggedValue>(thread, thread->GetException())));
+        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(
+            CompletionRecord::THROW, JSHandle<JSTaggedValue>(thread, thread->GetException())));
     } else {
         JSHandle<JSTaggedValue> undefinedVal = globalConst->GetHandledUndefined();
-        record = JSHandle<JSTaggedValue>(
-            factory->NewCompletionRecord(CompletionRecord::NORMAL, undefinedVal));
+        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::NORMAL, undefinedVal));
     }
     JSHandle<JSTaggedValue> result = JSIterator::IteratorClose(thread, iterHandle, record);
     if (result->IsCompletionRecord()) {
@@ -1440,7 +1446,7 @@ JSTaggedValue SlowRuntimeStub::StGlobalRecord(JSThread *thread, JSTaggedValue pr
     PropertyBoxType boxType = valueHandle->IsUndefined() ? PropertyBoxType::UNDEFINED : PropertyBoxType::CONSTANT;
     attributes.SetBoxType(boxType);
 
-    dict = GlobalDictionary::PutIfAbsent(thread, dictHandle, propHandle, JSHandle<JSTaggedValue>(box), attributes);
+    dict = *GlobalDictionary::PutIfAbsent(thread, dictHandle, propHandle, JSHandle<JSTaggedValue>(box), attributes);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     env->SetGlobalRecord(thread, JSTaggedValue(dict));
     return JSTaggedValue::True();
@@ -1484,13 +1490,13 @@ JSTaggedValue SlowRuntimeStub::StArraySpread(JSThread *thread, JSTaggedValue dst
 
     JSHandle<JSTaggedValue> dstHandle(thread, dst);
     JSHandle<JSTaggedValue> srcHandle(thread, src);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     ASSERT(dstHandle->IsJSArray() && !srcHandle->IsNull() && !srcHandle->IsUndefined());
     if (srcHandle->IsString()) {
         JSHandle<EcmaString> srcString = JSTaggedValue::ToString(thread, srcHandle);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         array_size_t dstLen = index.GetInt();
         array_size_t strLen = srcString->GetLength();
-        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         for (array_size_t i = 0; i < strLen; i++) {
             uint16_t res = srcString->At<false>(i);
             JSHandle<JSTaggedValue> strValue(factory->NewFromUtf16Literal(&res, 1));
@@ -1499,25 +1505,39 @@ JSTaggedValue SlowRuntimeStub::StArraySpread(JSThread *thread, JSTaggedValue dst
         }
         return JSTaggedValue(dstLen + strLen);
     }
-    JSHandle<TaggedArray> keys = JSTaggedValue::GetOwnPropertyKeys(thread, srcHandle);
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    JSHandle<JSTaggedValue> iter;
+    auto globalConst = thread->GlobalConstants();
+    if (srcHandle->IsJSArrayIterator() || srcHandle->IsJSMapIterator() || srcHandle->IsJSSetIterator() ||
+        srcHandle->IsIterator()) {
+        iter = srcHandle;
+    } else if (srcHandle->IsJSArray() || srcHandle->IsJSMap() || srcHandle->IsTypedArray() || srcHandle->IsJSSet()) {
+        JSHandle<JSTaggedValue> valuesStr = globalConst->GetHandledValuesString();
+        JSHandle<JSTaggedValue> valuesMethod = JSObject::GetMethod(thread, srcHandle, valuesStr);
+        iter = JSIterator::GetIterator(thread, srcHandle, valuesMethod);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    } else {
+        iter = JSIterator::GetIterator(thread, srcHandle);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    }
 
     JSMutableHandle<JSTaggedValue> indexHandle(thread, index);
-    JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    array_size_t length = keys->GetLength();
-    for (array_size_t i = 0; i < length; i++) {
-        PropertyDescriptor desc(thread);
-        key.Update(keys->Get(i));
-        bool success = JSTaggedValue::GetOwnProperty(thread, srcHandle, key, desc);
+    JSHandle<JSTaggedValue> valueStr = globalConst->GetHandledValueString();
+    PropertyDescriptor desc(thread);
+    JSHandle<JSTaggedValue> iterResult;
+    do {
+        iterResult = JSIterator::IteratorStep(thread, iter);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-
+        if (iterResult->IsFalse()) {
+            break;
+        }
+        bool success = JSTaggedValue::GetOwnProperty(thread, iterResult, valueStr, desc);
         if (success && desc.IsEnumerable()) {
             JSTaggedValue::DefineOwnProperty(thread, dstHandle, indexHandle, desc);
-            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             int tmp = indexHandle->GetInt();
             indexHandle.Update(JSTaggedValue(tmp + 1));
         }
-    }
+    } while (true);
 
     return indexHandle.GetTaggedValue();
 }
@@ -1649,8 +1669,9 @@ JSTaggedValue SlowRuntimeStub::DefineClass(JSThread *thread, JSFunction *func, T
         return ThrowTypeError(thread, "parent class is not constructor");
     } else {
         JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
-        parentPrototype.Update(JSTaggedValue::GetProperty(thread, parent,
-            globalConst->GetHandledPrototypeString()).GetValue().GetTaggedValue());
+        parentPrototype.Update(JSTaggedValue::GetProperty(thread, parent, globalConst->GetHandledPrototypeString())
+                                   .GetValue()
+                                   .GetTaggedValue());
         if (!parentPrototype->IsECMAObject() && !parentPrototype->IsNull()) {
             return ThrowTypeError(thread, "parent class have no valid prototype");
         }

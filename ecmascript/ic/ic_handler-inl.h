@@ -52,7 +52,7 @@ JSHandle<JSTaggedValue> LoadHandler::LoadProperty(const JSThread *thread, const 
     if (op.IsInlinedProps()) {
         InlinedPropsBit::Set<uint32_t>(true, &handler);
         JSHandle<JSObject> holder = JSHandle<JSObject>::Cast(op.GetHolder());
-        auto index = holder->GetPropertyInObjectIndex(op.GetIndex());
+        auto index = holder->GetJSHClass()->GetInlinedPropertiesIndex(op.GetIndex());
         OffsetBit::Set<uint32_t>(index, &handler);
         return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
     }
@@ -120,7 +120,7 @@ JSHandle<JSTaggedValue> StoreHandler::StoreProperty(const JSThread *thread, cons
     if (op.IsInlinedProps()) {
         InlinedPropsBit::Set<uint32_t>(true, &handler);
         JSHandle<JSObject> receiver = JSHandle<JSObject>::Cast(op.GetReceiver());
-        auto index = receiver->GetPropertyInObjectIndex(op.GetIndex());
+        auto index = receiver->GetJSHClass()->GetInlinedPropertiesIndex(op.GetIndex());
         OffsetBit::Set<uint32_t>(index, &handler);
         return JSHandle<JSTaggedValue>(thread, JSTaggedValue(handler));
     }

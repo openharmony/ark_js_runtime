@@ -46,13 +46,13 @@ public:
         ASSERT_TRUE(vm_ != nullptr) << "Cannot create Runtime";
         thread_ = vm_->GetJSThread();
         thread_->SetIsEcmaInterpreter(true);
-        vm_->GetFactory()->SetTriggerGc(true);
+        vm_->SetEnableForceGC(true);
     }
 
     void TearDown() override
     {
-        vm_->GetFactory()->SetTriggerGc(false);
-        JSNApi::DestoryJSVM(vm_);
+        vm_->SetEnableForceGC(false);
+        JSNApi::DestroyJSVM(vm_);
     }
 
 protected:
@@ -406,7 +406,7 @@ HWTEST_F_L0(JSNApiTests, ArrayBufferWithBuffer)
         ASSERT_EQ(arrayBuffer->ByteLength(vm_), length);
         ASSERT_EQ(arrayBuffer->GetBuffer(), buffer);
     }
-    JSNApi::TriggerGC(vm_);
+    JSNApi::TriggerGC(vm_, JSNApi::TRIGGER_GC_TYPE::COMPRESS_FULL_GC);
     ASSERT_TRUE(isFree);
 }
 

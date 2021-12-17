@@ -28,6 +28,7 @@
 │   ├─ builtins           # ECMAScript标准库
 │   ├─ class_linker       # 字节码预处理模块
 │   ├─ compiler           # JS编译器
+│   ├─ cpu_profiler       # CPU性能分析器
 │   ├─ hprof              # 内存分析工具
 │   ├─ ic                 # 内联缓存模块
 │   ├─ interpreter        # JS解释器

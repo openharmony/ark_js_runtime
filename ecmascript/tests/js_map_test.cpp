@@ -67,8 +67,8 @@ protected:
         JSHandle<JSTaggedValue> constructor = env->GetBuiltinsMapFunction();
         JSHandle<JSMap> map =
             JSHandle<JSMap>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), constructor));
-        LinkedHashMap *hashMap = LinkedHashMap::Cast(LinkedHashMap::Create(thread).GetTaggedObject());
-        map->SetLinkedMap(thread, JSTaggedValue(hashMap));
+        JSHandle<LinkedHashMap> hashMap = LinkedHashMap::Create(thread);
+        map->SetLinkedMap(thread, hashMap);
         return *map;
     }
 };

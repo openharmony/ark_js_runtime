@@ -19,6 +19,7 @@
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/ic/property_box.h"
+#include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass-inl.h"
@@ -314,9 +315,9 @@ void ObjectOperator::LookupPropertyInlinedProps(const JSHandle<JSObject> &obj)
     TaggedArray *array = TaggedArray::Cast(obj->GetProperties().GetTaggedObject());
     if (!array->IsDictionaryMode()) {
         JSHClass *jshclass = obj->GetJSHClass();
-        JSTaggedValue attrs = jshclass->GetAttributes();
+        JSTaggedValue attrs = jshclass->GetLayout();
         LayoutInfo *layoutInfo = LayoutInfo::Cast(attrs.GetTaggedObject());
-        int propsNumber = jshclass->GetPropertiesNumber();
+        int propsNumber = jshclass->NumberOfProps();
         int entry = layoutInfo->FindElementWithCache(thread_, jshclass, key_.GetTaggedValue(), propsNumber);
         if (entry == -1) {
             return;
@@ -327,7 +328,7 @@ void ObjectOperator::LookupPropertyInlinedProps(const JSHandle<JSObject> &obj)
         if (attr.IsInlinedProps()) {
             value = obj->GetPropertyInlinedProps(entry);
         } else {
-            entry -= JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS;
+            entry -= jshclass->GetInlinedProperties();
             value = array->Get(entry);
         }
 
@@ -568,8 +569,8 @@ void ObjectOperator::DeleteElementInHolder() const
         JSObject::ElementsToDictionary(thread_, JSHandle<JSObject>(holder_));
     } else {
         JSHandle<NumberDictionary> dictHandle(thread_, elements);
-        NumberDictionary *newDict = NumberDictionary::Remove(thread_, dictHandle, GetIndex());
-        obj->SetElements(thread_, JSTaggedValue(newDict));
+        JSHandle<NumberDictionary> newDict = NumberDictionary::Remove(thread_, dictHandle, GetIndex());
+        obj->SetElements(thread_, newDict);
     }
 }
 
@@ -652,7 +653,7 @@ void ObjectOperator::AddPropertyInternal(const JSHandle<JSTaggedValue> &value)
     if (obj->IsJSGlobalObject()) {
         JSMutableHandle<GlobalDictionary> dict(thread_, obj->GetProperties());
         if (dict->GetLength() == 0) {
-            dict.Update(JSTaggedValue(GlobalDictionary::Create(thread_)));
+            dict.Update(GlobalDictionary::Create(thread_));
         }
 
         // Add PropertyBox to global dictionary
@@ -661,72 +662,22 @@ void ObjectOperator::AddPropertyInternal(const JSHandle<JSTaggedValue> &value)
         PropertyBoxType cellType = value->IsUndefined() ? PropertyBoxType::UNDEFINED : PropertyBoxType::CONSTANT;
         attr.SetBoxType(cellType);
 
-        GlobalDictionary *properties =
+        JSHandle<GlobalDictionary> properties =
             GlobalDictionary::PutIfAbsent(thread_, dict, key_, JSHandle<JSTaggedValue>(cellHandle), attr);
-        obj->SetProperties(thread_, JSTaggedValue(properties));
+        obj->SetProperties(thread_, properties);
         // index and fastMode is not essential for global obj;
         SetFound(0, cellHandle.GetTaggedValue(), attr.GetValue(), true);
         return;
     }
 
-    if (obj->IsJSArray() && key_.GetTaggedValue() == thread_->GlobalConstants()->GetConstructorString()) {
-        obj->GetJSHClass()->SetHasConstructor(true);
+    attr = FastRuntimeStub::AddPropertyByName(thread_, obj, key_, value, attr);
+    if (obj->GetJSHClass()->IsDictionaryMode()) {
+        SetFound(0, value.GetTaggedValue(), attr.GetValue(), false);
+    } else {
+        uint32_t index = attr.IsInlinedProps() ? attr.GetOffset() :
+                attr.GetOffset() - obj->GetJSHClass()->GetInlinedProperties();
+        SetFound(index, value.GetTaggedValue(), attr.GetValue(), true, true);
     }
-
-    uint32_t unusedInlinedProps = obj->GetJSHClass()->GetUnusedInlinedProps();
-    if (unusedInlinedProps != 0) {
-        uint32_t order = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS - unusedInlinedProps;
-        obj->SetPropertyInlinedProps(thread_, order, value.GetTaggedValue());
-        attr.SetOffset(order);
-        attr.SetIsInlinedProps(true);
-        JSHClass::AddProperty(thread_, obj, key_, attr);
-        SetFound(order, value.GetTaggedValue(), attr.GetValue(), true, true);
-        return;
-    }
-
-    JSMutableHandle<TaggedArray> array(thread_, obj->GetProperties());
-    array_size_t length = array->GetLength();
-    if (length == 0) {
-        length = JSObject::MIN_PROPERTIES_LENGTH;
-        array.Update(factory->NewTaggedArray(length).GetTaggedValue());
-        obj->SetProperties(thread_, array.GetTaggedValue());
-    }
-
-    if (!array->IsDictionaryMode()) {
-        attr.SetIsInlinedProps(false);
-
-        array_size_t nonInlinedProps =
-            JSHClass::DEFAULT_CAPACITY_OF_OUT_OBJECTS - obj->GetJSHClass()->GetUnusedNonInlinedProps();
-        ASSERT(length >= nonInlinedProps);
-        // if array is full, grow array or change to dictionary mode
-        if (length == nonInlinedProps) {
-            if (length >= JSHClass::DEFAULT_CAPACITY_OF_OUT_OBJECTS) {
-                // change to dictionary and add one.
-                JSHandle<NameDictionary> dict(JSObject::TransitionToDictionary(thread_, obj));
-                attr.SetDictionaryOrder(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES);
-                NameDictionary *newDict = NameDictionary::PutIfAbsent(thread_, dict, key_, value, attr);
-                obj->SetProperties(thread_, JSTaggedValue(newDict));
-                // index is not essential when fastMode is false;
-                SetFound(0, value.GetTaggedValue(), attr.GetValue(), false);
-                return;
-            }
-            // Grow properties array size
-            array_size_t capacity = JSObject::ComputePropertyCapacity(length);
-            array.Update(factory->CopyArray(array, length, capacity).GetTaggedValue());
-            obj->SetProperties(thread_, array.GetTaggedValue());
-        }
-
-        attr.SetOffset(nonInlinedProps + JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
-        JSHClass::AddProperty(thread_, obj, key_, attr);
-        array->Set(thread_, nonInlinedProps, value.GetTaggedValue());
-        SetFound(nonInlinedProps, value.GetTaggedValue(), attr.GetValue(), true, true);
-        return;
-    }
-
-    JSHandle<NameDictionary> dictHandle(array);
-    NameDictionary *newDict = NameDictionary::PutIfAbsent(thread_, dictHandle, key_, value, attr);
-    obj->SetProperties(thread_, JSTaggedValue(newDict));
-    SetFound(0, value.GetTaggedValue(), attr.GetValue(), false);
 }
 
 void ObjectOperator::DefineSetter(const JSHandle<JSTaggedValue> &value)

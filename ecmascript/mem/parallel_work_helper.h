@@ -13,25 +13,36 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
-#define ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
+#ifndef ECMASCRIPT_MEM_PARALLEL_WORK_HELPER_H
+#define ECMASCRIPT_MEM_PARALLEL_WORK_HELPER_H
 
-#include "ecmascript/mem/mark_stack.h"
+#include "ecmascript/mem/mark_stack-inl.h"
 #include "ecmascript/mem/slots.h"
+#include "ecmascript/platform/platform.h"
 
 namespace panda::ecmascript {
 using SlotNeedUpdate = std::pair<TaggedObject *, ObjectSlot>;
 
 static constexpr uint32_t MARKSTACK_MAX_SIZE = 100;
-static constexpr uint32_t THREAD_NUM_FOR_YOUNG_GC = 6;
-static constexpr uint32_t STACK_AREA_SIZE = sizeof(uintptr_t *) * MARKSTACK_MAX_SIZE;
-
+static constexpr uint32_t STACK_AREA_SIZE = sizeof(uintptr_t) * MARKSTACK_MAX_SIZE;
 static constexpr uint32_t SPACE_SIZE = 8 * 1024;
 
 class Heap;
 class Stack;
 class SemiSpaceCollector;
 class TlabAllocator;
+class Region;
+
+enum ParallelGCTaskPhase {
+    SEMI_HANDLE_THREAD_ROOTS_TASK,
+    SEMI_HANDLE_SNAPSHOT_TASK,
+    SEMI_HANDLE_GLOBAL_POOL_TASK,
+    OLD_HANDLE_GLOBAL_POOL_TASK,
+    COMPRESS_HANDLE_GLOBAL_POOL_TASK,
+    CONCURRENT_HANDLE_GLOBAL_POOL_TASK,
+    CONCURRENT_HANDLE_OLD_TO_NEW_TASK,
+    TASK_LAST  // Count of different Task phase
+};
 
 class WorkNode {
 public:
@@ -113,93 +124,61 @@ public:
     }
 
 private:
-    WorkNode *top_;
+    WorkNode *top_ {nullptr};
     os::memory::Mutex mtx_;
 };
 
 struct WorkNodeHolder {
-    WorkNode *pushNode_{nullptr};
-    WorkNode *popNode_{nullptr};
-    ProcessQueue *weakQueue_{nullptr};
+    WorkNode *pushNode_ {nullptr};
+    WorkNode *popNode_ {nullptr};
+    ProcessQueue *weakQueue_ {nullptr};
     std::vector<SlotNeedUpdate> waitUpdate_;
-    TlabAllocator *allocator_{nullptr};
+    TlabAllocator *allocator_ {nullptr};
     size_t aliveSize_ = 0;
     size_t promoteSize_ = 0;
 };
 
-class Worker {
+class WorkerHelper final {
 public:
-    Worker() = delete;
-    explicit Worker(Heap *heap, uint32_t threadNum);
+    WorkerHelper() = delete;
+    explicit WorkerHelper(Heap *heap, uint32_t threadNum);
+    ~WorkerHelper();
 
-    virtual ~Worker() = 0;
-    virtual void PushWorkNodeToGlobal(uint32_t threadId) = 0;
-    virtual void Initialize() = 0;
-
+    void Initialize(TriggerGCType gcType, ParallelGCTaskPhase parallelTask);
     void Finish(size_t &aliveSize);
     void Finish(size_t &aliveSize, size_t &promoteSize);
 
     bool Push(uint32_t threadId, TaggedObject *object);
+    bool Push(uint32_t threadId, TaggedObject *object, Region *region);
     bool Pop(uint32_t threadId, TaggedObject **object);
 
     bool PopWorkNodeFromGlobal(uint32_t threadId);
+    void PushWorkNodeToGlobal(uint32_t threadId, bool postTask = true);
 
-    void PushWeakReference(uint32_t threadId, JSTaggedType *weak)
+    inline void PushWeakReference(uint32_t threadId, JSTaggedType *weak)
     {
         workList_[threadId].weakQueue_->PushBack(weak);
     }
 
-    void AddAliveSize(uint32_t threadId, size_t size)
+    inline void AddAliveSize(uint32_t threadId, size_t size)
     {
         workList_[threadId].aliveSize_ += size;
     }
 
-    void AddPromoteSize(uint32_t threadId, size_t size)
+    inline void AddPromoteSize(uint32_t threadId, size_t size)
     {
         workList_[threadId].promoteSize_ += size;
     }
 
-    ProcessQueue *GetWeakReferenceQueue(uint32_t threadId) const
+    inline ProcessQueue *GetWeakReferenceQueue(uint32_t threadId) const
     {
         return workList_[threadId].weakQueue_;
     }
 
-    TlabAllocator *GetTlabAllocator(uint32_t threadId) const
+    inline TlabAllocator *GetTlabAllocator(uint32_t threadId) const
     {
         return workList_[threadId].allocator_;
     }
-
-    NO_COPY_SEMANTIC(Worker);
-    NO_MOVE_SEMANTIC(Worker);
-
-protected:
-    WorkNode *AllocalWorkNode();
-
-    Heap *heap_;          // NOLINT(misc-non-private-member-variables-in-classes)
-    uint32_t threadNum_;  // NOLINT(misc-non-private-member-variables-in-classes)
-    // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes, modernize-avoid-c-arrays)
-    WorkNodeHolder workList_[THREAD_NUM_FOR_YOUNG_GC];
-    // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes, modernize-avoid-c-arrays)
-    ContinuousStack<JSTaggedType> *continuousQueue_[THREAD_NUM_FOR_YOUNG_GC];
-    GlobalWorkList globalWork_;  // NOLINT(misc-non-private-member-variables-in-classes)
-
-    uintptr_t markSpace_;     // NOLINT(misc-non-private-member-variables-in-classes)
-    uintptr_t spaceTop_;      // NOLINT(misc-non-private-member-variables-in-classes)
-    uintptr_t markSpaceEnd_;  // NOLINT(misc-non-private-member-variables-in-classes)
-
-private:
-    std::vector<uintptr_t> unuseSpace_;
-    os::memory::Mutex mtx_;
-};
-
-class SemiSpaceWorker : public Worker {
-public:
-    SemiSpaceWorker() = delete;
-    explicit SemiSpaceWorker(Heap *heap, uint32_t threadNum) : Worker(heap, threadNum) {}
-
-    ~SemiSpaceWorker() override;
-    void PushWorkNodeToGlobal(uint32_t threadId) override;
-    void Initialize() override;
 
     inline void PushWaitUpdateSlot(uint32_t threadId, SlotNeedUpdate slot)
     {
@@ -217,35 +196,23 @@ public:
         return true;
     }
 
-    NO_COPY_SEMANTIC(SemiSpaceWorker);
-    NO_MOVE_SEMANTIC(SemiSpaceWorker);
-};
+private:
+    NO_COPY_SEMANTIC(WorkerHelper);
+    NO_MOVE_SEMANTIC(WorkerHelper);
 
-class CompressGCWorker : public Worker {
-public:
-    CompressGCWorker() = delete;
-    explicit CompressGCWorker(Heap *heap, uint32_t threadNum) : Worker(heap, threadNum) {}
+    WorkNode *AllocalWorkNode();
 
-    ~CompressGCWorker() override;
-    void PushWorkNodeToGlobal(uint32_t threadId) override;
-    void Initialize() override;
-
-    NO_COPY_SEMANTIC(CompressGCWorker);
-    NO_MOVE_SEMANTIC(CompressGCWorker);
-};
-
-class OldGCWorker : public Worker {
-public:
-    OldGCWorker() = delete;
-    OldGCWorker(Heap *heap, uint32_t threadNum) : Worker(heap, threadNum) {}
-
-    ~OldGCWorker() override = default;
-
-    void PushWorkNodeToGlobal(uint32_t threadId) override;
-    void Initialize() override;
-
-    NO_COPY_SEMANTIC(OldGCWorker);
-    NO_MOVE_SEMANTIC(OldGCWorker);
+    Heap *heap_;
+    uint32_t threadNum_;
+    WorkNodeHolder workList_[MAX_PLATFORM_THREAD_NUM + 1];
+    ContinuousStack<JSTaggedType> *continuousQueue_[MAX_PLATFORM_THREAD_NUM + 1];
+    GlobalWorkList globalWork_;
+    uintptr_t markSpace_;
+    uintptr_t spaceTop_;
+    uintptr_t markSpaceEnd_;
+    std::vector<uintptr_t> unuseSpace_;
+    os::memory::Mutex mtx_;
+    ParallelGCTaskPhase parallelTask_;
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_MEM_SEMI_SPACE_WORKER_H
+#endif  // ECMASCRIPT_MEM_PARALLEL_WORK_HELPER_H

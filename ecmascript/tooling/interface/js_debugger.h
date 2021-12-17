@@ -105,6 +105,10 @@ public:
     {
         return {};
     }
+    std::optional<Error> GetThisVariableByFrame(PtThread thread, uint32_t frameDepth, PtValue *value) override
+    {
+        return {};
+    }
     void ThreadStart(ManagedThread::ThreadId threadId) override {}
     void ThreadEnd(ManagedThread::ThreadId threadId) override {}
     void GarbageCollectorStart() override {}

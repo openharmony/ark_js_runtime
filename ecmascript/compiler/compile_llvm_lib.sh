@@ -33,8 +33,8 @@ fi
 cd ${BASE_HOME}/third_party/llvm-project
 if [ ! -d "build" ];then
     git checkout -b local llvmorg-10.0.1
-    cp ../../ark/js_runtime/ecmascript/compiler/llvm/llvm.patch .
-    git apply --reject llvm.patch
+    cp ../../ark/js_runtime/ecmascript/compiler/llvm/llvm_new.patch .
+    git apply --reject llvm_new.patch
     mkdir build && cd build
     cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_ARK_GC_SUPPORT=ON -DLLVM_ENABLE_TERMINFO=OFF DLLVM_STATIC_LINK_CXX_STDLIB=OFF -DLLVM_ENABLE_ZLIB=OFF ../llvm
     ninja

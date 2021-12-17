@@ -44,11 +44,13 @@ source_set("libark_jsoptimizer_static") {
     "circuit_builder.cpp",
     "fast_stub.cpp",
     "gate.cpp",
+    "js_thread_offset_table.cpp",
     "llvm_codegen.cpp",
     "llvm_ir_builder.cpp",
     "scheduler.cpp",
     "stub.cpp",
     "stub_descriptor.cpp",
+    "triple.cpp",
     "type.cpp",
     "verifier.cpp",
   ]
@@ -67,8 +69,6 @@ source_set("libark_jsoptimizer_static") {
   }
 
   libs = [
-    "stdc++",
-    "z",
     "LLVMTarget",
     "LLVMObject",
     "LLVMMC",

@@ -17,6 +17,9 @@
 #define ECMASCRIPT_MEM_HEAP_INL_H
 
 #include "ecmascript/mem/heap.h"
+
+#include "ecmascript/ecma_vm.h"
+#include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/hprof/heap_tracker.h"
@@ -45,6 +48,15 @@ void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
 }
 
 template<class Callback>
+void Heap::EnumerateNonMovableRegions(const Callback &cb) const
+{
+    snapshotSpace_->EnumerateRegions(cb);
+    nonMovableSpace_->EnumerateRegions(cb);
+    hugeObjectSpace_->EnumerateRegions(cb);
+    machineCodeSpace_->EnumerateRegions(cb);
+}
+
+template<class Callback>
 void Heap::EnumerateRegions(const Callback &cb) const
 {
     toSpace_->EnumerateRegions(cb);
@@ -68,15 +80,14 @@ bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allow
 {
     if (toSpace_->Expand(spaceAllocator->GetTop())) {
         spaceAllocator->Reset(toSpace_);
+        TryTriggerConcurrentMarking(allowGc);
         return true;
     }
-    if (!allowGc) {
-        return false;
-    }
-    if (!CheckAndTriggerCompressGC()) {
+    if (allowGc) {
         CollectGarbage(TriggerGCType::SEMI_GC);
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool Heap::FillOldSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
@@ -127,6 +138,23 @@ bool Heap::FillMachineCodeSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool 
     return false;
 }
 
+Region *Heap::ExpandCompressSpace()
+{
+    if (compressSpace_->Expand()) {
+        return compressSpace_->GetCurrentRegion();
+    }
+    return nullptr;
+}
+
+bool Heap::AddRegionToCompressSpace(Region *region)
+{
+    return compressSpace_->AddRegionToList(region);
+}
+
+bool Heap::AddRegionToToSpace(Region *region)
+{
+    return toSpace_->AddRegionToList(region);
+}
 
 void Heap::OnAllocateEvent(uintptr_t address)
 {
@@ -156,8 +184,16 @@ void Heap::SetNewSpaceMaximumCapacity(size_t maximumCapacity)
 
 void Heap::InitializeFromSpace()
 {
-    ASSERT(fromSpace_ != nullptr);
-    fromSpace_->Initialize();
+    if (fromSpace_->GetCommittedSize() == 0) {
+        fromSpace_->Initialize();
+    }
+}
+
+void Heap::InitializeCompressSpace()
+{
+    if (compressSpace_->GetCommittedSize() == 0) {
+        compressSpace_->Initialize();
+    }
 }
 
 void Heap::SwapSpace()

@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
+#include "ecmascript/js_thread.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/global_env_constants-inl.h"
+#include "ecmascript/ic/properties_cache-inl.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
-#include "ecmascript/js_thread.h"
+#include "ecmascript/mem/machine_code.h"
 #include "ecmascript/stub_module.h"
 #include "include/panda_vm.h"
 
@@ -44,6 +46,7 @@ JSThread::JSThread(Runtime *runtime, PandaVM *vm)
     auto chunk = EcmaVM::Cast(vm)->GetChunk();
     globalStorage_ = chunk->New<EcmaGlobalStorage>(chunk);
     internalCallParams_ = new InternalCallParams();
+    propertiesCache_ = new PropertiesCache();
 }
 
 JSThread::~JSThread()
@@ -53,6 +56,7 @@ JSThread::~JSThread()
     }
     handleStorageNodes_.clear();
     currentHandleStorageIndex_ = -1;
+    handleScopeCount_ = 0;
     handleScopeStorageNext_ = handleScopeStorageEnd_ = nullptr;
     EcmaVM::Cast(GetVM())->GetChunk()->Delete(globalStorage_);
 
@@ -60,6 +64,9 @@ JSThread::~JSThread()
     frameBase_ = nullptr;
     regionFactory_ = nullptr;
     delete internalCallParams_;
+    internalCallParams_ = nullptr;
+    delete propertiesCache_;
+    propertiesCache_ = nullptr;
 }
 
 EcmaVM *JSThread::GetEcmaVM() const
@@ -84,14 +91,15 @@ JSTaggedValue JSThread::GetCurrentLexenv() const
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
 {
+    if (propertiesCache_ != nullptr) {
+        propertiesCache_->Clear();
+    }
+
     if (!exception_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&exception_)));
     }
     if (!stubCode_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&stubCode_)));
-    }
-    if (!stubStackMap_.IsHole()) {
-        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&stubStackMap_)));
     }
     // visit global Constant
     globalConst_.VisitRangeSlot(v1);
@@ -110,53 +118,30 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
             v1(ecmascript::Root::ROOT_HANDLE, ObjectSlot(ToUintPtr(start)), ObjectSlot(ToUintPtr(end)));
         }
     }
-    // visit global handle storage roots
-    if (globalStorage_->GetNodes()->empty()) {
-        return;
-    }
-    for (size_t i = 0; i < globalStorage_->GetNodes()->size(); i++) {
-        auto block = globalStorage_->GetNodes()->at(i);
-        auto size = EcmaGlobalStorage::GLOBAL_BLOCK_SIZE;
-        if (i == globalStorage_->GetNodes()->size() - 1) {
-            size = globalStorage_->GetCount();
+    globalStorage_->IterateUsageGlobal([v0](EcmaGlobalStorage::Node *node) {
+        JSTaggedValue value(node->GetObject());
+        if (value.IsHeapObject()) {
+            v0(ecmascript::Root::ROOT_HANDLE, ecmascript::ObjectSlot(node->GetObjectAddress()));
         }
-
-        for (auto j = 0; j < size; j++) {
-            JSTaggedValue value(block->at(j).GetObject());
-            if (value.IsHeapObject()) {
-                v0(ecmascript::Root::ROOT_HANDLE, ecmascript::ObjectSlot(block->at(j).GetObjectAddress()));
-            }
-        }
-    }
+    });
 }
 
 void JSThread::IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor)
 {
-    if (globalStorage_->GetWeakNodes()->empty()) {
-        return;
-    }
-    for (size_t i = 0; i < globalStorage_->GetWeakNodes()->size(); i++) {
-        auto block = globalStorage_->GetWeakNodes()->at(i);
-        auto size = EcmaGlobalStorage::GLOBAL_BLOCK_SIZE;
-        if (i == globalStorage_->GetWeakNodes()->size() - 1) {
-            size = globalStorage_->GetWeakCount();
-        }
-
-        for (auto j = 0; j < size; j++) {
-            JSTaggedValue value(block->at(j).GetObject());
-            if (value.IsHeapObject()) {
-                auto object = value.GetTaggedObject();
-                auto fwd = visitor(object);
-                if (fwd == nullptr) {
-                    // undefind
-                    block->at(j).SetObject(JSTaggedValue::Undefined().GetRawData());
-                } else if (fwd != object) {
-                    // update
-                    block->at(j).SetObject(JSTaggedValue(fwd).GetRawData());
-                }
+    globalStorage_->IterateWeakUsageGlobal([visitor](EcmaGlobalStorage::Node *node) {
+        JSTaggedValue value(node->GetObject());
+        if (value.IsHeapObject()) {
+            auto object = value.GetTaggedObject();
+            auto fwd = visitor(object);
+            if (fwd == nullptr) {
+                // undefind
+                node->SetObject(JSTaggedValue::Undefined().GetRawData());
+            } else if (fwd != object) {
+                // update
+                node->SetObject(JSTaggedValue(fwd).GetRawData());
             }
         }
-    }
+    });
 }
 
 bool JSThread::DoStackOverflowCheck(const JSTaggedType *sp)
@@ -196,6 +181,23 @@ uintptr_t *JSThread::ExpandHandleStorage()
 void JSThread::ShrinkHandleStorage(int prevIndex)
 {
     currentHandleStorageIndex_ = prevIndex;
+    int32_t lastIndex = handleStorageNodes_.size() - 1;
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    uintptr_t size = ToUintPtr(handleScopeStorageEnd_) - ToUintPtr(handleScopeStorageNext_);
+    memset_s(handleScopeStorageNext_, size, 0, size);
+    for (int32_t i = currentHandleStorageIndex_ + 1; i < lastIndex; i++) {
+        memset_s(handleStorageNodes_[i], NODE_BLOCK_SIZE * sizeof(JSTaggedType), 0,
+                 NODE_BLOCK_SIZE * sizeof(JSTaggedType));
+    }
+#endif
+
+    if (lastIndex > MIN_HANDLE_STORAGE_SIZE && currentHandleStorageIndex_ < MIN_HANDLE_STORAGE_SIZE) {
+        for (int i = MIN_HANDLE_STORAGE_SIZE; i < lastIndex; i++) {
+            auto node = handleStorageNodes_.back();
+            delete node;
+            handleStorageNodes_.pop_back();
+        }
+    }
 }
 
 void JSThread::NotifyStableArrayElementsGuardians(JSHandle<JSObject> receiver)
@@ -226,14 +228,23 @@ void JSThread::LoadFastStubModule(const char *moduleFile)
     for (int i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
         fastStubEntires_[i] = stubModule.GetStubEntry(i);
     }
-    uint8_t *ptr = reinterpret_cast<uint8_t *>(stubModule.GetStackMapAddr());
-    Address hostCodeSectionAddr = stubModule.GetHostCodeSectionAddr();
-    uintptr_t deviceCodeSectionAddr = stubModule.GetDeviceCodeSectionAddr();
-    kungfu::LLVMStackMapParser::GetInstance().CalculateStackMap(ptr, hostCodeSectionAddr, deviceCodeSectionAddr);
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif
     stubCode_ = stubModule.GetCode();
-    stubStackMap_ = stubModule.GetStackMapData();
+}
+
+bool JSThread::CheckSafepoint() const
+{
+#ifndef NDEBUG
+    EcmaVM::Cast(GetVM())->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    return true;
+#endif
+    if (IsMarkFinished()) {
+        auto heap = EcmaVM::Cast(GetVM())->GetHeap();
+        heap->GetConcurrentMarker()->HandleMarkFinished();
+        return true;
+    }
+    return false;
 }
 }  // namespace panda::ecmascript

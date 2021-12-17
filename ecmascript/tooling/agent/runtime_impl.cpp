@@ -79,6 +79,7 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 
 DispatchResponse RuntimeImpl::Enable()
 {
+    Runtime::GetCurrent()->SetDebugMode(true);
     return DispatchResponse::Ok();
 }
 

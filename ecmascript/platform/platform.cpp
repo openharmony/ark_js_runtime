@@ -26,20 +26,22 @@ void Platform::Initialize(int threadNum)
     }
 }
 
-void Platform::Destory()
+void Platform::Destroy()
 {
     os::memory::LockHolder lock(mutex_);
     if (--isInitialized_ <= 0) {
-        runner_->Terminate();
+        runner_->TerminateThread();
+    } else {
+        runner_->TerminateTask();
     }
 }
 
-int Platform::TheMostSuitableThreadNum(int threadNum) const
+uint32_t Platform::TheMostSuitableThreadNum(uint32_t threadNum) const
 {
     if (threadNum > 0) {
-        return std::min<int>(threadNum, MAX_PLATFORM_THREAD_NUM);
+        return std::min<uint32_t>(threadNum, MAX_PLATFORM_THREAD_NUM);
     }
-    int numOfCpuCore = get_nprocs() - 1;
-    return std::min<int>(numOfCpuCore, MAX_PLATFORM_THREAD_NUM);
+    uint32_t numOfCpuCore = get_nprocs() - 1;
+    return std::min<uint32_t>(numOfCpuCore, MAX_PLATFORM_THREAD_NUM);
 }
 }  // namespace panda::ecmascript

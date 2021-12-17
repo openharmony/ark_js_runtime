@@ -16,6 +16,8 @@
 #ifndef ECMASCRIPT_MEM_TLAB_ALLOCATOR_H
 #define ECMASCRIPT_MEM_TLAB_ALLOCATOR_H
 
+#include "ecmascript/mem/allocator-inl.h"
+
 namespace panda::ecmascript {
 enum class SpaceAlloc : bool {
     YOUNG_SPACE,
@@ -23,6 +25,7 @@ enum class SpaceAlloc : bool {
 };
 
 class Heap;
+class EvacuationAllocator;
 
 class TlabAllocator {
 public:
@@ -30,6 +33,8 @@ public:
     inline ~TlabAllocator();
     NO_COPY_SEMANTIC(TlabAllocator);
     NO_MOVE_SEMANTIC(TlabAllocator);
+
+    inline void Finalize();
 
     inline explicit TlabAllocator(Heap *heap, TriggerGCType gcType);
 
@@ -44,14 +49,11 @@ private:
 
     Heap *heap_;
     TriggerGCType gcType_;
-    uintptr_t youngBegin_;
-    uintptr_t youngTop_;
-    uintptr_t youngEnd_;
     bool youngEnable_;
 
-    uintptr_t oldBegin_;
-    uintptr_t oldTop_;
-    uintptr_t oldEnd_;
+    BumpPointerAllocator youngerAllocator_;
+    BumpPointerAllocator oldBumpPointerAllocator_;
+    EvacuationAllocator *allocator_;
 };
 }  // namespace panda::ecmascript
 

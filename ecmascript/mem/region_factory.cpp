@@ -37,8 +37,11 @@ Region *RegionFactory::AllocateAlignedRegion(Space *space, size_t capacity)
     auto pool = PoolManager::GetMmapMemPool()->AllocPool(commitSize, panda::SpaceType::SPACE_TYPE_OBJECT,
                                                          AllocatorType::RUNSLOTS_ALLOCATOR, nullptr);
     void *mapMem = pool.GetMem();
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    memset_s(mapMem, commitSize, 0, commitSize);
+#endif
     if (mapMem == nullptr) {
-        LOG_ECMA_MEM(FATAL) << "pool is empty";
+        LOG_ECMA_MEM(FATAL) << "pool is empty " << annoMemoryUsage_.load(std::memory_order_relaxed);
         UNREACHABLE();
     }
     IncreaseAnnoMemoryUsage(capacity);
@@ -58,6 +61,9 @@ void RegionFactory::FreeRegion(Region *region)
 {
     auto size = region->GetCapacity();
     DecreaseAnnoMemoryUsage(size);
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    memset_s(ToVoidPtr(region->GetAllocateBase()), size, 7, size);
+#endif
     PoolManager::GetMmapMemPool()->FreePool(ToVoidPtr(region->GetAllocateBase()), size);
 }
 
@@ -75,6 +81,9 @@ Area *RegionFactory::AllocateArea(size_t capacity)
     }
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     void *mem = malloc(capacity);
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    memset_s(mem, capacity, 0, capacity);
+#endif
     if (mem == nullptr) {
         LOG_ECMA_MEM(FATAL) << "malloc failed";
         UNREACHABLE();
@@ -97,7 +106,9 @@ void RegionFactory::FreeArea(Area *area)
     }
     auto size = area->GetSize() + sizeof(Area);
     DecreaseNativeMemoryUsage(size);
-    os::memory::LockHolder lock(staticResourceLock_);
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    memset_s(area, size, 7, size);
+#endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(reinterpret_cast<std::byte *>(area));
 }
@@ -108,7 +119,9 @@ void RegionFactory::Free(void *mem, size_t size)
         return;
     }
     DecreaseNativeMemoryUsage(size);
-    os::memory::LockHolder lock(staticResourceLock_);
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    memset_s(mem, size, 7, size);
+#endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);
 }
@@ -125,6 +138,9 @@ void *RegionFactory::AllocateBuffer(size_t size)
         LOG_ECMA_MEM(FATAL) << "malloc failed";
         UNREACHABLE();
     }
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    memset_s(ptr, size, 0, size);
+#endif
     IncreaseNativeMemoryUsage(size);
     return ptr;
 }
@@ -135,7 +151,9 @@ void RegionFactory::FreeBuffer(void *mem)
         return;
     }
     DecreaseNativeMemoryUsage(malloc_usable_size(mem));
-    os::memory::LockHolder lock(staticResourceLock_);
+#if ECMASCRIPT_ENABLE_ZAP_MEM
+    memset_s(mem, size, 7, size);
+#endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);
 }

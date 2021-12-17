@@ -36,6 +36,9 @@ void InternalCallParams::MakeArgv(const EcmaRuntimeCallInfo *info, uint32_t posi
 
 void InternalCallParams::MakeArgListWithHole(const TaggedArray *argv, uint32_t length)
 {
+    if (length > argv->GetLength()) {
+        length = argv->GetLength();
+    }
     ASSERT(length <= argv->GetLength());
     if (LIKELY(length <= InternalCallParams::RESERVE_INTERNAL_CALL_PARAMS_FIXED_LENGTH)) {
         EnableFixedModeAndSetLength(length);
@@ -118,15 +121,11 @@ void InternalCallParams::Iterate(const RootRangeVisitor &v) const
     uintptr_t start = 0U;
     uintptr_t end = 0U;
     if (LIKELY(IsFixedMode())) {
-        JSTaggedType first = GetFixedBuffer(0);
-        start = ToUintPtr(&first);
-        JSTaggedType last = GetFixedBuffer(fixed_length_ - 1);
-        end = ToUintPtr(&last);
+        start = GetFixedDataAddress();
+        end = start + sizeof(TaggedType) * fixed_length_;
     } else {
-        JSTaggedType first = GetVariableBuffer(0);
-        start = ToUintPtr(&first);
-        JSTaggedType last = GetVariableBuffer(variable_length_ - 1);
-        end = ToUintPtr(&last);
+        start = GetVariableDataAddress();
+        end = start + sizeof(TaggedType) * variable_length_;
     }
     v(Root::ROOT_INTERNAL_CALL_PARAMS, ObjectSlot(start), ObjectSlot(end));
 }

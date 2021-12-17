@@ -13,14 +13,23 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/tagged_object.h"
+#include "ecmascript/runtime_api.h"
 
-#include "ecmascript/js_hclass-inl.h"
+#include "ecmascript/mem/parallel_work_helper.h"
 
 namespace panda::ecmascript {
-size_t TaggedObject::GetObjectSize()
+bool RuntimeApi::AtomicTestAndSet(RangeBitmap *bitmap, TaggedObject *object)
 {
-    JSHClass *cls = GetClass();
-    return cls->SizeFromJSHClass(cls->GetObjectType(), this);
+    return bitmap->AtomicTestAndSet(object);
 }
-}  //  namespace panda::ecmascript
+
+void RuntimeApi::PushWorkList(WorkerHelper *worklist, uint32_t threadId, TaggedObject *object, Region *region)
+{
+    worklist->Push(threadId, object, region);
+}
+
+void RuntimeApi::AtomicInsertCrossRegionRememberedSet(RememberedSet *rset, uintptr_t addr)
+{
+    rset->AtomicInsert(addr);
+}
+}  // namespace panda::tooling::ecmascript

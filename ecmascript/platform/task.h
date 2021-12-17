@@ -23,10 +23,23 @@ class Task {
 public:
     Task() = default;
     virtual ~Task() = default;
-    virtual bool Run() = 0;
+    virtual bool Run(uint32_t threadIndex) = 0;
 
     NO_COPY_SEMANTIC(Task);
     NO_MOVE_SEMANTIC(Task);
+
+    void Terminated()
+    {
+        terminate_ = true;
+    }
+
+    bool IsTerminate()
+    {
+        return terminate_;
+    }
+
+private:
+    volatile bool terminate_ {false};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_PLATFORM_TASK_H

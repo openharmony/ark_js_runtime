@@ -28,7 +28,7 @@ public:
                                  const CString &filePath, bool isVmMode = true);
 
     static HeapProfilerInterface *CreateHeapProfiler(JSThread *thread);
-    static void Destory(JSThread *thread, HeapProfilerInterface *heapProfiler);
+    static void Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler);
 
     HeapProfilerInterface() = default;
     virtual ~HeapProfilerInterface() = default;

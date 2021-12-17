@@ -29,21 +29,26 @@ public:
     explicit EcmaGlobalStorage(Chunk *chunk) : chunk_(chunk)
     {
         ASSERT(chunk != nullptr);
-        globalNodes_ = chunk->New<CVector<std::array<Node, GLOBAL_BLOCK_SIZE> *>>();
-        weakGlobalNodes_ = chunk->New<CVector<std::array<Node, GLOBAL_BLOCK_SIZE> *>>();
-    };
+        topGlobalNodes_ = lastGlobalNodes_ = chunk_->New<NodeList>(false);
+        topWeakGlobalNodes_ = lastWeakGlobalNodes_ = chunk_->New<NodeList>(true);
+    }
 
     ~EcmaGlobalStorage()
     {
-        for (auto block : *globalNodes_) {
-            chunk_->Delete(block);
+        NodeList *next = topGlobalNodes_;
+        NodeList *current = nullptr;
+        while (next != nullptr) {
+            current = next;
+            next = current->GetNext();
+            chunk_->Delete(current);
         }
-        chunk_->Delete(globalNodes_);
 
-        for (auto block : *weakGlobalNodes_) {
-            chunk_->Delete(block);
+        next = topWeakGlobalNodes_;
+        while (next != nullptr) {
+            current = next;
+            next = current->GetNext();
+            chunk_->Delete(current);
         }
-        chunk_->Delete(weakGlobalNodes_);
     }
 
     class Node {
@@ -68,6 +73,36 @@ public:
             next_ = node;
         }
 
+        Node *GetPrev() const
+        {
+            return prev_;
+        }
+
+        void SetPrev(Node *node)
+        {
+            prev_ = node;
+        }
+
+        int32_t GetIndex()
+        {
+            return index_;
+        }
+
+        void SetIndex(int32_t index)
+        {
+            index_ = index;
+        }
+
+        void SetFree(bool free)
+        {
+            isFree_ = free;
+        }
+
+        bool IsFree() const
+        {
+            return isFree_;
+        }
+
         uintptr_t GetObjectAddress() const
         {
             return reinterpret_cast<uintptr_t>(&obj_);
@@ -75,7 +110,110 @@ public:
 
     private:
         JSTaggedType obj_;
-        Node *next_;
+        Node *next_ {nullptr};
+        Node *prev_ {nullptr};
+        int32_t index_ {-1};
+        bool isFree_ {false};
+    };
+
+    class NodeList {
+    public:
+        NodeList(bool isWeak) : isWeak_(isWeak)
+        {
+            for (int i = 0; i < GLOBAL_BLOCK_SIZE; i++) {
+                nodeList_[i].SetIndex(i);
+            }
+        }
+        ~NodeList() = default;
+
+        inline static NodeList *NodeToNodeList(Node *node);
+
+        inline Node *NewNode(JSTaggedType value);
+        inline Node *GetFreeNode(JSTaggedType value);
+        inline void FreeNode(Node *node);
+
+        inline void LinkTo(NodeList *prev);
+        inline void RemoveList();
+
+        inline bool IsFull()
+        {
+            return index_ >= GLOBAL_BLOCK_SIZE;
+        }
+
+        inline bool IsWeak()
+        {
+            return isWeak_;
+        }
+
+        inline bool HasFreeNode()
+        {
+            return freeList_ != nullptr;
+        }
+
+        inline bool HasUsagedNode()
+        {
+            return !IsFull() || usedList_ != nullptr;
+        }
+
+        inline void SetNext(NodeList *next)
+        {
+            next_ = next;
+        }
+        inline NodeList *GetNext() const
+        {
+            return next_;
+        }
+
+        inline void SetPrev(NodeList *prev)
+        {
+            prev_ = prev;
+        }
+        inline NodeList *GetPrev() const
+        {
+            return prev_;
+        }
+
+        inline void SetFreeNext(NodeList *next)
+        {
+            freeNext_ = next;
+        }
+        inline NodeList *GetFreeNext() const
+        {
+            return freeNext_;
+        }
+
+        inline void SetFreePrev(NodeList *prev)
+        {
+            freePrev_ = prev;
+        }
+        inline NodeList *GetFreePrev() const
+        {
+            return freePrev_;
+        }
+
+        template<class Callback>
+        inline void IterateUsageGlobal(Callback callback)
+        {
+            Node *next = usedList_;
+            Node *current = nullptr;
+            while (next != nullptr) {
+                current = next;
+                next = current->GetNext();
+                ASSERT(current != next);
+                callback(current);
+            }
+        }
+
+    private:
+        Node nodeList_[GLOBAL_BLOCK_SIZE];  // all
+        Node *freeList_ {nullptr};  // dispose node
+        Node *usedList_ {nullptr};  // usage node
+        int32_t index_ {0};
+        bool isWeak_ {false};
+        NodeList *next_ {nullptr};
+        NodeList *prev_ {nullptr};
+        NodeList *freeNext_ {nullptr};
+        NodeList *freePrev_ {nullptr};
     };
 
     inline uintptr_t NewGlobalHandle(JSTaggedType value);
@@ -83,40 +221,46 @@ public:
     inline uintptr_t SetWeak(uintptr_t addr);
     inline bool IsWeak(uintptr_t addr) const;
 
-    inline CVector<std::array<Node, GLOBAL_BLOCK_SIZE> *> *GetNodes() const
+    template<class Callback>
+    void IterateUsageGlobal(Callback callback)
     {
-        return globalNodes_;
+        NodeList *next = topGlobalNodes_;
+        NodeList *current = nullptr;
+        while (next != nullptr) {
+            current = next;
+            next = current->GetNext();
+            ASSERT(current != next);
+            current->IterateUsageGlobal(callback);
+        }
     }
 
-    inline CVector<std::array<Node, GLOBAL_BLOCK_SIZE> *> *GetWeakNodes() const
+    template<class Callback>
+    void IterateWeakUsageGlobal(Callback callback)
     {
-        return weakGlobalNodes_;
-    }
-
-    inline int32_t GetCount() const
-    {
-        return count_;
-    }
-
-    inline int32_t GetWeakCount() const
-    {
-        return weakCount_;
+        NodeList *next = topWeakGlobalNodes_;
+        NodeList *current = nullptr;
+        while (next != nullptr) {
+            current = next;
+            next = current->GetNext();
+            ASSERT(current != next);
+            current->IterateUsageGlobal(callback);
+        }
     }
 
 private:
     NO_COPY_SEMANTIC(EcmaGlobalStorage);
     NO_MOVE_SEMANTIC(EcmaGlobalStorage);
 
-    inline uintptr_t NewGlobalHandleImplement(CVector<std::array<Node, GLOBAL_BLOCK_SIZE> *> *storage, Node *freeList,
-                                              int32_t &count, JSTaggedType value);
+    inline uintptr_t NewGlobalHandleImplement(NodeList **storage, NodeList **freeList, bool isWeak, JSTaggedType value);
 
     Chunk *chunk_ {nullptr};
-    CVector<std::array<Node, GLOBAL_BLOCK_SIZE> *> *globalNodes_ {nullptr};
-    int32_t count_ {GLOBAL_BLOCK_SIZE};
-    Node *freeList_ {nullptr};
-    CVector<std::array<Node, GLOBAL_BLOCK_SIZE> *> *weakGlobalNodes_ {nullptr};
-    int32_t weakCount_ {GLOBAL_BLOCK_SIZE};
-    Node *weakFreeList_ {nullptr};
+    NodeList *topGlobalNodes_ {nullptr};
+    NodeList *lastGlobalNodes_ {nullptr};
+    NodeList *freeListNodes_ {nullptr};
+
+    NodeList *topWeakGlobalNodes_ {nullptr};
+    NodeList *lastWeakGlobalNodes_ {nullptr};
+    NodeList *weakFreeListNodes_ {nullptr};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_ECMA_GLOABL_STORAGE_H

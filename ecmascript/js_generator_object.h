@@ -30,11 +30,7 @@ enum class JSGeneratorState {
 
 class GeneratorContext : TaggedObject {
 public:
-    static GeneratorContext *Cast(ObjectHeader *object)
-    {
-        ASSERT(!JSTaggedValue(object).IsJSHClass());
-        return static_cast<GeneratorContext *>(object);
-    }
+    CAST_CHECK(GeneratorContext, IsGeneratorContext);
 
     static constexpr size_t GENERATOR_REGS_ARRAY_OFFSET = TaggedObjectSize();
     ACCESSORS(RegsArray, GENERATOR_REGS_ARRAY_OFFSET, GENERATOR_METHOD_OFFSET)
@@ -51,11 +47,7 @@ public:
 
 class JSGeneratorObject : public JSObject {
 public:
-    static JSGeneratorObject *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsGeneratorObject());
-        return static_cast<JSGeneratorObject *>(object);
-    }
+    CAST_CHECK(JSGeneratorObject, IsGeneratorObject);
 
     static constexpr size_t GENERATOR_STATE_OFFSET = JSObject::SIZE;
     ACCESSORS(GeneratorState, GENERATOR_STATE_OFFSET, GENERATOR_CONTEXT_OFFSET)
@@ -90,11 +82,7 @@ public:
 
 class JSAsyncFuncObject : public JSGeneratorObject {
 public:
-    static JSAsyncFuncObject *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsAsyncFuncObject());
-        return static_cast<JSAsyncFuncObject *>(object);
-    }
+    CAST_CHECK(JSAsyncFuncObject, IsAsyncFuncObject);
 
     static constexpr size_t GENERATOR_PROMISE_OFFSET = JSGeneratorObject::SIZE;
     ACCESSORS(Promise, GENERATOR_PROMISE_OFFSET, SIZE);

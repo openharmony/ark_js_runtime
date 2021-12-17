@@ -253,12 +253,9 @@ public:
 
     JSHandle<TaggedArray> EmptyArray() const;
 
-    // start gc test
-    void SetTriggerGc(bool flag, bool triggerSemiGC = false);
-
     FreeObject *FillFreeObject(uintptr_t address, size_t size, RemoveSlots removeSlots = RemoveSlots::NO);
 
-    TaggedObject *NewDynObject(const JSHandle<JSHClass> &dynclass, int inobjPropCount = 0);
+    TaggedObject *NewDynObject(const JSHandle<JSHClass> &dynclass);
 
     TaggedObject *NewNonMovableDynObject(const JSHandle<JSHClass> &dynclass, int inobjPropCount = 0);
 
@@ -311,7 +308,6 @@ public:
                                                         void *data = nullptr,
                                                         bool nonMovable = false);
 
-    JSHandle<JSObject> NewJSObjectByClass(const JSHandle<TaggedArray> &keys, const JSHandle<TaggedArray> &values);
     JSHandle<JSObject> NewJSObjectByClass(const JSHandle<TaggedArray> &properties, size_t length);
 
     // only use for creating Function.prototype and Function
@@ -359,6 +355,7 @@ public:
 
     // used for creating Function
     JSHandle<JSObject> NewJSObject(const JSHandle<JSHClass> &jshclass);
+
     // used for creating jshclass in Builtins, Function, Class_Linker
     JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype);
 
@@ -417,19 +414,21 @@ private:
     NO_COPY_SEMANTIC(ObjectFactory);
     NO_MOVE_SEMANTIC(ObjectFactory);
 
-    void NewObjectHook();
+    void NewObjectHook() const;
 
     // used for creating jshclass in Builtins, Function, Class_Linker
-    JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type);
+    JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type,
+                                       uint32_t inlinedProps = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
     // used for creating jshclass in GlobalEnv, EcmaVM
-    JSHandle<JSHClass> NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type);
+    JSHandle<JSHClass> NewEcmaDynClassClass(JSHClass *hclass, uint32_t size, JSType type);
+    JSHandle<JSHClass> NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type,
+                                       uint32_t inlinedProps = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
 
     // used to create nonmovable js_object
     JSHandle<JSObject> NewNonMovableJSObject(const JSHandle<JSHClass> &jshclass);
 
     // used for creating Function
     JSHandle<JSFunction> NewJSFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &dynKlass);
-    JSHandle<JSHClass> CreateObjectClass(const JSHandle<TaggedArray> &keys, const JSHandle<TaggedArray> &values);
     JSHandle<JSHClass> CreateObjectClass(const JSHandle<TaggedArray> &properties, size_t length);
     JSHandle<JSHClass> CreateFunctionClass(FunctionKind kind, uint32_t size, JSType type,
                                            const JSHandle<JSTaggedValue> &prototype);
@@ -462,6 +461,7 @@ private:
     friend class JsVerificationTest;
     friend class PandaFileTranslator;
     friend class LiteralDataExtractor;
+    friend class RuntimeTrampolines;
 };
 
 class ClassLinkerFactory {

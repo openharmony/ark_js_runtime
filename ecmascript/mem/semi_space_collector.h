@@ -25,12 +25,8 @@
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "ecmascript/mem/remembered_set.h"
-
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/tlab_allocator.h"
-
-#include "ecmascript/thread/thread_pool.h"
-#include "ecmascript/mem/semi_space_marker.h"
 
 #include "os/mutex.h"
 
@@ -38,7 +34,7 @@ namespace panda {
 namespace ecmascript {
 class Heap;
 class JSHClass;
-class SemiSpaceWorker;
+class WorkerHelper;
 
 class GarbageCollector {
 public:
@@ -50,50 +46,32 @@ public:
 
 class SemiSpaceCollector : public GarbageCollector {
 public:
-    explicit SemiSpaceCollector(Heap *heap, bool parallelGc);
-    ~SemiSpaceCollector() override;
+    explicit SemiSpaceCollector(Heap *heap, bool paralledGc);
+    ~SemiSpaceCollector() override = default;
     NO_COPY_SEMANTIC(SemiSpaceCollector);
     NO_MOVE_SEMANTIC(SemiSpaceCollector);
 
     void RunPhases();
 
-    Heap *GetHeap() const
-    {
-        return heap_;
-    }
-
 private:
-    bool ParallelHandleOldToNew(uint32_t threadId, Region *region);
-    bool ParallelHandleThreadRoots(uint32_t threadId);
-    bool ParallelHandleSnapShot(uint32_t threadId);
-    bool ParallelHandleGlobalPool(uint32_t threadId);
     void InitializePhase();
     void ParallelMarkingPhase();
     void SweepPhases();
     void FinishPhase();
-    void ProcessMarkStack(uint64_t threadId);
 
-    inline uintptr_t AllocateYoung(size_t size);
-    inline uintptr_t AllocateOld(size_t size);
     inline void UpdatePromotedSlot(TaggedObject *object, ObjectSlot slot);
-    inline void RecordWeakReference(uint32_t threadId, JSTaggedType *ref);
-    inline bool BlowAgeMark(uintptr_t address);
 
     Heap *heap_;
-    HeapRootManager rootManager_;
-    os::memory::Mutex allocatorLock_;
-    BumpPointerAllocator fromSpaceAllocator_{};
-    FreeListAllocator oldSpaceAllocator_{};
-    bool paralledGC_{false};
-    SemiSpaceWorker *workList_{nullptr};
-    SemiSpaceMarker markObject_;
     size_t promotedSize_{0};
     size_t semiCopiedSize_{0};
     size_t commitSize_ = 0;
-    uintptr_t ageMark_{0};
+
+    // obtain from heap
+    bool paralledGc_ {false};
+    WorkerHelper *workList_ {nullptr};
+
     friend class TlabAllocator;
-    friend class SemiSpaceWorker;
-    friend class SemiSpaceMarker;
+    friend class WorkerHelper;
     friend class Heap;
 };
 }  // namespace ecmascript

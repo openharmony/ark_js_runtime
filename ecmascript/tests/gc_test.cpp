@@ -70,17 +70,18 @@ HWTEST_F_L0(GCTest, CompressGCOne)
     auto heap = thread->GetEcmaVM()->GetHeap();
     auto compressGc = heap->GetCompressCollector();
     compressGc->RunPhases();
-    auto oldSizebase = heap->GetOldSpace()->GetCommittedSize();
+    auto oldSizebase = heap->GetOldSpace()->GetHeapObjectSize();
+    size_t oldSizeBefore = 0;
     {
         [[maybe_unused]] ecmascript::EcmaHandleScope baseScope(thread);
         for (int i = 0; i < 1024; i++) {
             factory->NewTaggedArray(512, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
         }
-        auto oldSizeBefore = heap->GetOldSpace()->GetCommittedSize();
+        oldSizeBefore = heap->GetOldSpace()->GetHeapObjectSize();
         EXPECT_TRUE(oldSizeBefore > oldSizebase);
     }
     compressGc->RunPhases();
-    auto oldSizeAfter = heap->GetOldSpace()->GetCommittedSize();
-    EXPECT_EQ(oldSizebase, oldSizeAfter);
+    auto oldSizeAfter = heap->GetOldSpace()->GetHeapObjectSize();
+    EXPECT_TRUE(oldSizeBefore > oldSizeAfter);
 }
 }  // namespace panda::test
