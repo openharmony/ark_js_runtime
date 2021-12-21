@@ -134,6 +134,9 @@ config("ark_jsruntime_common_config") {
   if (enable_specific_stubs) {
     defines += [ "ECMASCRIPT_ENABLE_SPECIFIC_STUBS" ]
   }
+  if (enable_ts_aot) {
+    defines += ["ECMASCRIPT_ENABLE_TS_AOT"]
+  }
 
   if (is_standard_system) {
     defines += [ "IS_STANDARD_SYSTEM" ]

@@ -17,6 +17,7 @@ compile_llvm_online = false
 run_with_asan = false
 enable_stub_aot = false
 enable_specific_stubs = false
+enable_ts_aot = true
 asan_lib_path = "/usr/lib/llvm-10/lib/clang/10.0.0/lib/linux"
 
 # For OpenHarmony build, always link with the static lib:

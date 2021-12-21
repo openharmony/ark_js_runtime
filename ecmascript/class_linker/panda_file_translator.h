@@ -27,6 +27,35 @@ namespace panda::ecmascript {
 class JSThread;
 class Program;
 
+struct ByteCodeBasicBlock{
+    size_t id;
+    uint8_t *start;
+    uint8_t *end;
+    std::vector<ByteCodeBasicBlock *> preds{}; // List of predessesor blocks
+    std::vector<ByteCodeBasicBlock *> succs{}; // List of successors blocks
+    std::vector<ByteCodeBasicBlock *> trys{};
+    std::vector<ByteCodeBasicBlock *> catchs{}; // List of catches blocks
+    std::vector<ByteCodeBasicBlock *> immDomBlocks{}; // List of dominated blocks
+    ByteCodeBasicBlock *iDominator{nullptr}; // Block that dominates the current block
+    std::vector<ByteCodeBasicBlock *> domFrontiers{}; // List of dominace frontiers
+    bool isDead{false};
+    std::set<uint16_t> phi{}; // phi node
+
+    bool operator <(const ByteCodeBasicBlock &target) const
+    {
+        return id < target.id;
+    }
+};
+
+struct ByteCodeInfo {
+    std::vector<uint16_t> vregIn{}; // read register
+    std::vector<uint16_t> vregOut{}; // write register
+    bool accIn{false}; // read acc
+    bool accOut{false}; // write acc
+    uint8_t opcode{-1};
+    uint16_t offset{-1};
+};
+
 class PandaFileTranslator {
 public:
     enum FixInstructionIndex : uint8_t { FIX_ONE = 1, FIX_TWO = 2, FIX_FOUR = 4 };
@@ -110,6 +139,135 @@ private:
         return {methods_, numMethods_};
     }
 
+    void CollectBytecodeBlockInfo(uint8_t* pc,
+        std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo);
+
+    std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> CollectTryCatchBlockInfo(
+        const panda_file::File &file, const JSMethod *method, std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc,
+        std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo);
+
+    void CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc,
+        std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo);
+
+    void BuildBasicBlocks(const JSMethod *method,
+                          std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> &exception,
+                          std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo,
+                          std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc);
+
+    void Sort(std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &markOffset)
+    {
+        std::sort(markOffset.begin(), markOffset.end(),
+                  [](std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>> left,
+                     std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>> right) {
+                      if (std::get<0>(left) != std::get<0>(right)) {
+                          return std::get<0>(left) < std::get<0>(right);
+                      } else {
+                          return std::get<1>(left) < std::get<1>(right);
+                      }
+                  });
+    }
+
+    void PrintCollectBlockInfo(std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo)
+    {
+        for(auto iter = bytecodeBlockInfo.begin(); iter != bytecodeBlockInfo.end(); iter++) {
+            std::cout << "offset: " << static_cast<const void *>(std::get<0>(*iter)) << " position: " <<
+                      std::get<1>(*iter) << " successor are: ";
+            auto vec = std::get<2>(*iter);
+            for(size_t i = 0; i < vec.size(); i++) {
+                std::cout<< static_cast<const void *>(vec[i]) << " , ";
+            }
+            std::cout<<""<<std::endl;
+        }
+        std::cout << "=============================================================================" << std::endl;
+    }
+
+    void PrintGraph(std::vector<ByteCodeBasicBlock> &blocks)
+    {
+        for (size_t i = 0; i < blocks.size(); i++) {
+            if (blocks[i].isDead) {
+                std::cout<< "BB_" << blocks[i].id << ":                               ;predsId= ";
+                for (size_t k = 0; k < blocks[i].preds.size(); ++k) {
+                    std::cout << blocks[i].preds[k]->id << ", ";
+                }
+                std::cout << "" << std::endl;
+                std::cout<< "curStartPc: " << static_cast<const void *>(blocks[i].start) <<
+                        " curEndPc: " << static_cast<const void *>(blocks[i].end) << std::endl;
+
+                for (size_t j = 0; j < blocks[i].preds.size(); j++) {
+                    std::cout << "predsStartPc: " << static_cast<const void *>(blocks[i].preds[j]->start) <<
+                            " predsEndPc: " << static_cast<const void *>(blocks[i].preds[j]->end) << std::endl;
+                }
+
+                for (size_t j = 0; j < blocks[i].succs.size(); j++) {
+                    std::cout << "succesStartPc: " << static_cast<const void *>(blocks[i].succs[j]->start) <<
+                            " succesEndPc: " << static_cast<const void *>(blocks[i].succs[j]->end) << std::endl;
+                }
+                continue;
+            }
+            std::cout<< "BB_" << blocks[i].id << ":                               ;predsId= ";
+            for (size_t k = 0; k < blocks[i].preds.size(); ++k) {
+                std::cout << blocks[i].preds[k]->id << ", ";
+            }
+            std::cout << "" << std::endl;
+            std::cout<< "curStartPc: " << static_cast<const void *>(blocks[i].start) <<
+                     " curEndPc: " << static_cast<const void *>(blocks[i].end) << std::endl;
+
+            for (size_t j = 0; j < blocks[i].preds.size(); j++) {
+                std::cout << "predsStartPc: " << static_cast<const void *>(blocks[i].preds[j]->start) <<
+                          " predsEndPc: " << static_cast<const void *>(blocks[i].preds[j]->end) << std::endl;
+            }
+
+            for (size_t j = 0; j < blocks[i].succs.size(); j++) {
+                std::cout << "succesStartPc: " << static_cast<const void *>(blocks[i].succs[j]->start) <<
+                          " succesEndPc: " << static_cast<const void *>(blocks[i].succs[j]->end) << std::endl;
+            }
+
+            std::cout<< "succesId: ";
+            for (size_t j = 0; j < blocks[i].succs.size(); j++) {
+                std::cout << blocks[i].succs[j]->id << ", ";
+            }
+            std::cout << "" << std::endl;
+
+
+            for (size_t j = 0; j < blocks[i].catchs.size(); j++) {
+                std::cout << "catchStartPc: " << static_cast<const void *>(blocks[i].catchs[j]->start) <<
+                          " catchEndPc: " << static_cast<const void *>(blocks[i].catchs[j]->end) << std::endl;
+            }
+
+            for (size_t j = 0; j < blocks[i].immDomBlocks.size(); j++) {
+                std::cout << "dominate block id: " << blocks[i].immDomBlocks[j]->id << " startPc: " <<
+                          static_cast<const void *>(blocks[i].immDomBlocks[j]->start) << " endPc: " <<
+                          static_cast<const void *>(blocks[i].immDomBlocks[j]->end) << std::endl;
+            }
+
+            if (blocks[i].iDominator) {
+                std::cout << "current block " << blocks[i].id << 
+                          " immediate dominator is " << blocks[i].iDominator->id << std::endl;
+            }
+            std::cout << std::endl;
+
+            std::cout << "current block " << blocks[i].id << " dominace Frontiers: ";
+            for (const auto &frontier : blocks[i].domFrontiers) {
+                std::cout << frontier->id << " , ";
+            }
+            std::cout << std::endl;
+            
+            std::cout << "current block " << blocks[i].id << " phi variable: ";
+            for (auto variable : blocks[i].phi) {
+                std::cout << variable << " , " ;
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    void ComputeDominatorTree(std::vector<ByteCodeBasicBlock> &graph);
+    void BuildImmediateDominator(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
+    void ComputeDomFrontiers(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
+    void GetByteCodeInfo(std::vector<ByteCodeBasicBlock> &graph);
+    ByteCodeInfo GetByteCodeInfo(uint8_t *pc);
+    void DeadCodeRemove(const std::map<size_t, size_t> &dfsTimestamp, std::vector<ByteCodeBasicBlock> &graph);
+    void InsertPhi(std::vector<ByteCodeBasicBlock> &graph);
+
     EcmaVM *ecmaVm_;
     ObjectFactory *factory_;
     JSThread *thread_;
@@ -120,6 +278,7 @@ private:
 
     std::unordered_map<uint32_t, uint64_t> constpoolMap_;
     std::set<const uint8_t *> translated_code_;
+    std::map<const JSMethod *, std::vector<ByteCodeBasicBlock>> methodsGraphs_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
