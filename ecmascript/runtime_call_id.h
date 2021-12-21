@@ -135,7 +135,7 @@ namespace panda::ecmascript {
     V(StoreICByValue)               \
     V(NotifyInlineCache)            \
     V(CompressCollector_RunPhases)  \
-    V(OldSpaceCollector_RunPhases)  \
+    V(MixSpaceCollector_RunPhases)  \
     V(SemiSpaceCollector_RunPhases) \
     V(LoadGlobalICByName)           \
     V(StoreGlobalICByName)          \

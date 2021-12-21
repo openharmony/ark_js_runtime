@@ -873,7 +873,7 @@ HWTEST_F_L0(JSObjectTest, FastToSlow)
     JSMutableHandle<JSTaggedValue> newkey(thread, JSTaggedValue(0));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
-    factory->SetTriggerGc(false);
+    ecmaVM->SetEnableForceGC(false);
     for (uint32_t i = 0; i < PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES; i++) {
         number.Update(JSTaggedValue(i));
         number.Update(JSTaggedValue::ToString(thread, number).GetTaggedValue());
@@ -881,7 +881,7 @@ HWTEST_F_L0(JSObjectTest, FastToSlow)
         newkey.Update(JSTaggedValue(newString));
         JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), newkey, value);
     }
-    factory->SetTriggerGc(true);
+    ecmaVM->SetEnableForceGC(true);
 
     EXPECT_FALSE(TaggedArray::Cast(obj1->GetProperties().GetTaggedObject())->IsDictionaryMode());
 

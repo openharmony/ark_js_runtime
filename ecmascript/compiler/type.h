@@ -22,11 +22,11 @@ namespace kungfu {
 using GateType = uint8_t;
 enum class TypeCode : GateType {
     // for AOT
-    NOTYPE,
-    JS_ANY,
+    NOTYPE = 0,
     JS_NULL,
     JS_UNDEFINED,
     JS_BOOLEAN,
+    JS_ANY,
     JS_NUMBER,
     JS_STRING,
     JS_BIGINT,
@@ -43,8 +43,13 @@ enum class TypeCode : GateType {
     JS_FLOAT32ARRAY,
     JS_FLOAT64ARRAY,
     // for Stub
-    POINTER_TYPE,
-    TAGGED_POINTER_TYPE,
+    TAGGED_POINTER,
+
+    JS_TYPE_START = JS_NULL,
+    JS_TYPE_SPECIAL_START = JS_NULL,
+    JS_TYPE_SPECIAL_STOP = JS_BOOLEAN,
+    JS_TYPE_OBJECT_START = JS_ANY,
+    JS_TYPE_OBJECT_STOP = JS_FLOAT64ARRAY,
 };
 
 class Type {

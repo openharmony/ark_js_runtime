@@ -22,11 +22,7 @@
 namespace panda::ecmascript {
 class JSSetIterator : public JSObject {
 public:
-    static JSSetIterator *Cast(ObjectHeader *obj)
-    {
-        ASSERT(JSTaggedValue(obj).IsJSSetIterator());
-        return static_cast<JSSetIterator *>(obj);
-    }
+    CAST_CHECK(JSSetIterator, IsJSSetIterator);
 
     static JSHandle<JSTaggedValue> CreateSetIterator(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                                      IterationKind kind);

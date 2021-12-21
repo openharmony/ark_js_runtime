@@ -16,14 +16,17 @@
 #include "ecmascript/mem/free_object_list.h"
 
 #include "ecmascript/free_object.h"
+#include "ecmascript/mem/free_object_kind.h"
 #include "ecmascript/mem/free_object_list-inl.h"
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
-FreeObjectList::FreeObjectList() : kinds_(new FreeObjectKind *[NUMBER_OF_KINDS](), NUMBER_OF_KINDS)
+FreeObjectList::FreeObjectList() : kinds_(new FreeObjectKind *[NUMBER_OF_KINDS](), NUMBER_OF_KINDS),
+    lastKinds_(new FreeObjectKind *[NUMBER_OF_KINDS](), NUMBER_OF_KINDS)
 {
     for (int i = 0; i < NUMBER_OF_KINDS; i++) {
         kinds_[i] = nullptr;
+        lastKinds_[i] = nullptr;
     }
     noneEmptyKindBitMap_ = 0;
 }
@@ -31,6 +34,7 @@ FreeObjectList::FreeObjectList() : kinds_(new FreeObjectKind *[NUMBER_OF_KINDS](
 FreeObjectList::~FreeObjectList()
 {
     delete[] kinds_.data();
+    delete[] lastKinds_.data();
     noneEmptyKindBitMap_ = 0;
 }
 
@@ -113,6 +117,7 @@ void FreeObjectList::Rebuild()
     EnumerateKinds([](FreeObjectKind *kind) { kind->Rebuild(); });
     for (int i = 0; i < NUMBER_OF_KINDS; i++) {
         kinds_[i] = nullptr;
+        lastKinds_[i] = nullptr;
     }
     available_ = 0;
     noneEmptyKindBitMap_ = 0;
@@ -138,6 +143,9 @@ bool FreeObjectList::AddKind(FreeObjectKind *kind)
     }
     kind->isAdded_ = true;
     kind->next_ = top;
+    if (lastKinds_[type] == nullptr) {
+        lastKinds_[type] = kind;
+    }
     kinds_[type] = kind;
     SetNoneEmptyBit(type);
     available_ += kind->Available();
@@ -151,8 +159,12 @@ void FreeObjectList::RemoveKind(FreeObjectKind *kind)
     }
     KindType type = kind->kindType_;
     FreeObjectKind *top = kinds_[type];
+    FreeObjectKind *end = lastKinds_[type];
     if (top == kind) {
         kinds_[type] = top->next_;
+    }
+    if (end == kind) {
+        lastKinds_[type] = end->prev_;
     }
     if (kind->prev_ != nullptr) {
         kind->prev_->next_ = kind->next_;
@@ -165,6 +177,27 @@ void FreeObjectList::RemoveKind(FreeObjectKind *kind)
     }
     available_ -= kind->Available();
     kind->Rebuild();
+}
+
+void FreeObjectList::Merge(FreeObjectList *list)
+{
+    list->EnumerateTopAndLastKinds([this](FreeObjectKind *kind, FreeObjectKind *end) {
+        if (kind == nullptr || kind->Empty()) {
+            return;
+        }
+        KindType type = kind->kindType_;
+        FreeObjectKind *top = kinds_[type];
+        if (top == nullptr) {
+            top = kind;
+        } else {
+            lastKinds_[type]->next_ = kind;
+            kind->prev_ = lastKinds_[type];
+        }
+        lastKinds_[type] = end;
+        SetNoneEmptyBit(type);
+    });
+    available_ += list->available_;
+    list->Rebuild();
 }
 
 template<class Callback>
@@ -184,6 +217,14 @@ void FreeObjectList::EnumerateKinds(KindType type, const Callback &cb) const
         FreeObjectKind *next = current->next_;
         cb(current);
         current = next;
+    }
+}
+
+template<class Callback>
+void FreeObjectList::EnumerateTopAndLastKinds(const Callback &cb) const
+{
+    for (KindType i = 0; i < NUMBER_OF_KINDS; i++) {
+        cb(kinds_[i], lastKinds_[i]);
     }
 }
 }  // namespace panda::ecmascript

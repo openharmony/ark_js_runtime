@@ -19,6 +19,7 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "ecmascript/frames.h"
 
@@ -107,7 +108,8 @@ public:
     explicit OptimizedFrameHandler(const JSThread *thread);
     ~OptimizedFrameHandler() = default;
     void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1, ChunkVector<DerivedData> *derivedPointers,
+                 bool isVerifying) const;
 private:
     uintptr_t *fp_ {nullptr};
 };
@@ -128,7 +130,9 @@ public:
     explicit FrameIterator(JSTaggedType *fp, const JSThread *thread) : fp_(fp), thread_(thread) {}
     ~FrameIterator() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
-    void HandleRuntimeTrampolines(const RootVisitor &v0, const RootRangeVisitor &v1) const;
+    void HandleRuntimeTrampolines(const RootVisitor &v0, const RootRangeVisitor &v1,
+                                  ChunkVector<DerivedData> *derivedPointers, bool isVerifying) const;
+    void IterateStackMapAfterGC() const;
 private:
     JSTaggedType *fp_ {nullptr};
     const JSThread *thread_ {nullptr};

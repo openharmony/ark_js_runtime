@@ -25,6 +25,7 @@
 namespace panda::ecmascript {
 class Space;
 class Region;
+class Heap;
 
 class Allocator {
 public:
@@ -87,13 +88,16 @@ public:
 
     inline explicit FreeListAllocator(const Space *space);
 
+    inline void Reset(const Space *space);
+    inline void Reset(Heap *heap);
+
     inline uintptr_t Allocate(size_t size);
     inline void AddFree(Region *region);
 
     inline void RebuildFreeList();
     inline void FillFreeList(FreeObjectKind *kind);
 
-    void Swap(FreeListAllocator &other)
+    inline void Swap(FreeListAllocator &other)
     {
         heap_ = other.heap_;
         bpAllocator_.Swap(other.bpAllocator_);
@@ -101,6 +105,8 @@ public:
         type_ = other.type_;
         sweeping_ = other.sweeping_;
     }
+
+    inline void Merge(FreeListAllocator *other);
 
     inline void FreeBumpPoint();
 

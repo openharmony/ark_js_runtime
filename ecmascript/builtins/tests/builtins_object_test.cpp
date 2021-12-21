@@ -84,7 +84,7 @@ JSFunction *BuiltinsObjectTestCreate(JSThread *thread)
 JSObject *TestNewJSObject(JSThread *thread, const JSHandle<JSHClass> &dynClass)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSObject *obj = JSObject::Cast(factory->NewDynObject(dynClass, JSObject::MIN_PROPERTIES_LENGTH));
+    JSObject *obj = JSObject::Cast(factory->NewDynObject(dynClass));
 
     obj->SetElements(thread, factory->EmptyArray().GetTaggedValue(), SKIP_BARRIER);
     return obj;

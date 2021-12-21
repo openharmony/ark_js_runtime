@@ -17,63 +17,45 @@
 #define ECMASCRIPT_MEM_SPACE_INL_H
 
 #include "ecmascript/mem/space.h"
-#include "ecmascript/mem/remembered_set.h"
 
 namespace panda::ecmascript {
 template<class Callback>
-void Space::EnumerateRegions(const Callback &cb, Region *region) const
+void Space::EnumerateRegions(const Callback &cb, Region *end) const
 {
     Region *current = regionList_.GetFirst();
-    if (region == nullptr) {
-        region = regionList_.GetLast();
+    if (end == nullptr) {
+        end = regionList_.GetLast();
     }
-    while (current != region) {
+    while (current != end) {
         auto next = current->GetNext();
         cb(current);
         current = next;
     }
 
-    if (region != nullptr) {
+    if (current != nullptr) {
         cb(current);
     }
 }
 
-RememberedSet *Region::CreateRememberedSet()
+template<class Callback>
+void OldSpace::EnumerateCollectRegionSet(const Callback &cb) const
 {
-    auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
-    auto setAddr = const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Allocate(setSize);
-    uintptr_t setData = ToUintPtr(setAddr);
-    auto ret = new RememberedSet(ToUintPtr(this), GetCapacity(), setData);
-    ret->ClearAllBits();
-    return ret;
-}
-
-RememberedSet *Region::GetOrCreateCrossRegionRememberedSet()
-{
-    if (UNLIKELY(crossRegionSet_ == nullptr)) {
-        crossRegionSet_ = CreateRememberedSet();
+    for (Region *current : collectRegionSet_) {
+        if (current != nullptr) {
+            ASSERT(current->InCollectSet());
+            cb(current);
+        }
     }
-    return crossRegionSet_;
 }
 
-RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
+template<class Callback>
+void OldSpace::EnumerateNonCollectRegionSet(const Callback &cb) const
 {
-    if (UNLIKELY(oldToNewSet_ == nullptr)) {
-        oldToNewSet_ = CreateRememberedSet();
-    }
-    return oldToNewSet_;
-}
-
-void Region::InsertCrossRegionRememberedSet(uintptr_t addr)
-{
-    auto set = GetOrCreateCrossRegionRememberedSet();
-    set->Insert(addr);
-}
-
-void Region::InsertOldToNewRememberedSet(uintptr_t addr)
-{
-    auto set = GetOrCreateOldToNewRememberedSet();
-    set->Insert(addr);
+    EnumerateRegions([this, &cb](Region *region) {
+        if (!region->InCollectSet()) {
+            cb(region);
+        }
+    });
 }
 }  // namespace panda::ecmascript
 

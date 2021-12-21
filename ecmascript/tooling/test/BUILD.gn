@@ -29,7 +29,6 @@ config("debug_api_test") {
   ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
   include_dirs = [
     "//ark/js_runtime",
-    "$ark_root/third_party/libc_sec/include",
     "//ark/js_runtime/ecmascript/tooling/test",
   ]
 }
@@ -63,10 +62,13 @@ ohos_shared_library("jsdebugtest") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
+    "//ark/js_runtime:libark_jsruntime_test_static",
+    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test_static",
   ]
 
-  if (!is_standard_system) {
+  if (is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime_static" ]
+  } else {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
 
@@ -74,7 +76,7 @@ ohos_shared_library("jsdebugtest") {
   subsystem_name = "test"
 }
 
-host_unittest_action("EcmaDebugApiTest") {
+ohos_unittest("EcmaDebugApiTest") {
   module_out_path = module_output_path
 
   sources = [
@@ -95,7 +97,6 @@ host_unittest_action("EcmaDebugApiTest") {
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
-    "//ark/js_runtime/ecmascript/tooling:libark_ecma_debugger_test",
   ]
 
   if (!is_standard_system) {
@@ -192,8 +193,7 @@ group("unittest") {
     ":DebuggerCommandsTest",
     ":DebuggerEventsTest",
     ":DebuggerTypesTest",
-
-    #":EcmaDebugApiTest",
+    ":EcmaDebugApiTest",
   ]
 }
 

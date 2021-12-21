@@ -63,10 +63,8 @@ public:
 };
 class JSDate : public JSObject {
 public:
-    static JSDate *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSDate *>(object);
-    }
+    CAST_CHECK(JSDate, IsDate);
+
     static constexpr size_t TIME_VALUE_OFFSET = JSObject::SIZE;
     ACCESSORS(TimeValue, TIME_VALUE_OFFSET, LOCAL_TIME_OFFSET)
     ACCESSORS(LocalOffset, LOCAL_TIME_OFFSET, SIZE)  // localoffset in min

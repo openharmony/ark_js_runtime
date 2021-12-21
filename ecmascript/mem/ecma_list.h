@@ -56,6 +56,22 @@ public:
         length_++;
     }
 
+    void AddNodeToFirst(T *node)
+    {
+        ASSERT(node != nullptr);
+        if (LIKELY(last_ != nullptr)) {
+            node->LinkNext(first_);
+            node->LinkPrev(first_->GetPrev());
+            first_->LinkPrev(node);
+            first_ = node;
+        } else {
+            node->LinkPrev(nullptr);
+            node->LinkNext(nullptr);
+            first_ = last_ = node;
+        }
+        length_++;
+    }
+
     T *PopBack()
     {
         T *node = last_;

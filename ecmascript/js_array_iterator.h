@@ -22,11 +22,8 @@
 namespace panda::ecmascript {
 class JSArrayIterator : public JSObject {
 public:
-    static JSArrayIterator *Cast(ObjectHeader *obj)
-    {
-        ASSERT(JSTaggedValue(obj).IsJSArrayIterator());
-        return static_cast<JSArrayIterator *>(obj);
-    }
+    CAST_CHECK(JSArrayIterator, IsJSArrayIterator);
+
     static JSTaggedValue Next(EcmaRuntimeCallInfo *argv);
 
     static constexpr size_t ITERATED_ARRAY_OFFSET = JSObject::SIZE;

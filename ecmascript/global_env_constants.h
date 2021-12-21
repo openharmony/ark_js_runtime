@@ -280,6 +280,7 @@ class JSThread;
     V(JSTaggedValue, Iso8601String, ISO8601_INDEX, iso8601)                                                           \
     V(JSTaggedValue, GregoryString, GREGORY_INDEX, gregory)                                                           \
     V(JSTaggedValue, EthioaaString, ETHIOAA_INDEX, ethioaa)                                                           \
+    V(JSTaggedValue, ValuesString, VALUES_INDEX, values)                                                              \
     /* for regexp. */                                                                                                 \
     V(JSTaggedValue, ExecString, EXEC_INDEX, exec)                                                                    \
     V(JSTaggedValue, LastIndexString, LAST_INDEX_INDEX, lastIndex)                                                    \

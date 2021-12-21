@@ -22,10 +22,8 @@ namespace panda::ecmascript {
 enum class DataViewType : uint8_t { FLOAT32 = 0, FLOAT64, INT8, INT16, INT32, UINT8, UINT16, UINT32, UINT8_CLAMPED };
 class JSDataView : public JSObject {
 public:
-    static JSDataView *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSDataView *>(object);
-    }
+    CAST_CHECK(JSDataView, IsDataView);
+
     static int32_t GetElementSize(DataViewType type);
 
     static constexpr size_t DATA_VIEW_OFFSET = JSObject::SIZE;

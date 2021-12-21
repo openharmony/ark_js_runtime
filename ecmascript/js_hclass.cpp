@@ -28,22 +28,22 @@
 
 namespace panda::ecmascript {
 // class TransitionsDictionary
-TransitionsDictionary *TransitionsDictionary::PutIfAbsent(const JSThread *thread,
-                                                          const JSHandle<TransitionsDictionary> &dictionary,
-                                                          const JSHandle<JSTaggedValue> &key,
-                                                          const JSHandle<JSTaggedValue> &value,
-                                                          const JSHandle<JSTaggedValue> &metaData)
+JSHandle<TransitionsDictionary> TransitionsDictionary::PutIfAbsent(const JSThread *thread,
+                                                                   const JSHandle<TransitionsDictionary> &dictionary,
+                                                                   const JSHandle<JSTaggedValue> &key,
+                                                                   const JSHandle<JSTaggedValue> &value,
+                                                                   const JSHandle<JSTaggedValue> &metaData)
 {
     int hash = TransitionsDictionary::Hash(key.GetTaggedValue(), metaData.GetTaggedValue());
 
     /* no need to add key if exist */
     int entry = dictionary->FindEntry(key.GetTaggedValue(), metaData.GetTaggedValue());
     if (entry != -1) {
-        return *dictionary;
+        return dictionary;
     }
 
     // Check whether the dictionary should be extended.
-    TransitionsDictionary *newDictionary = HashTableT::GrowHashTable(thread, dictionary);
+    JSHandle<TransitionsDictionary> newDictionary(HashTableT::GrowHashTable(thread, dictionary));
     // Compute the key object.
     entry = newDictionary->FindInsertIndex(hash);
     newDictionary->SetEntry(thread, entry, key.GetTaggedValue(), value.GetTaggedValue(), metaData.GetTaggedValue());
@@ -74,13 +74,14 @@ int TransitionsDictionary::FindEntry(const JSTaggedValue &key, const JSTaggedVal
     return -1;
 }
 
-TransitionsDictionary *TransitionsDictionary::Remove(const JSThread *thread,
-                                                     const JSHandle<TransitionsDictionary> &table,
-                                                     const JSHandle<JSTaggedValue> &key, const JSTaggedValue &metaData)
+JSHandle<TransitionsDictionary> TransitionsDictionary::Remove(const JSThread *thread,
+                                                              const JSHandle<TransitionsDictionary> &table,
+                                                              const JSHandle<JSTaggedValue> &key,
+                                                              const JSTaggedValue &metaData)
 {
     int entry = table->FindEntry(key.GetTaggedValue(), metaData);
     if (entry == -1) {
-        return *table;
+        return table;
     }
 
     table->RemoveElement(thread, entry);
@@ -115,26 +116,25 @@ void TransitionsDictionary::Rehash(const JSThread *thread, TransitionsDictionary
 }
 
 // class JSHClass
-void JSHClass::Initialize(const JSThread *thread, uint32_t size, JSType type, JSTaggedValue proto)
+void JSHClass::Initialize(const JSThread *thread, uint32_t size, JSType type, uint32_t inlinedProps)
 {
     DISALLOW_GARBAGE_COLLECTION;
+    ClearBitField();
     if (JSType::JS_OBJECT_BEGIN <= type && type <= JSType::JS_OBJECT_END) {
-        SetObjectSize(size + DEFAULT_CAPACITY_OF_IN_OBJECTS * JSTaggedValue::TaggedTypeSize());
+        SetObjectSize(size + inlinedProps * JSTaggedValue::TaggedTypeSize());
+        SetInlinedPropsStart(size);
         auto env = thread->GetEcmaVM()->GetGlobalEnv();
-        SetAttributes(thread, env->GetEmptyLayoutInfo());
+        SetLayout(thread, env->GetEmptyLayoutInfo());
     } else {
         SetObjectSize(size);
-        SetAttributes(thread, JSTaggedValue::Null());
+        SetLayout(thread, JSTaggedValue::Null());
     }
-    SetPrototype(thread, proto);
+    SetPrototype(thread, JSTaggedValue::Null());
 
-    ClearBitField();
     SetObjectType(type);
     SetExtensible(true);
     SetIsPrototype(false);
     SetElementRepresentation(Representation::NONE);
-    SetUnusedInlinedProps(DEFAULT_CAPACITY_OF_IN_OBJECTS);
-    SetUnusedNonInlinedProps(DEFAULT_CAPACITY_OF_OUT_OBJECTS);
     SetTransitions(thread, JSTaggedValue::Null());
     SetParent(thread, JSTaggedValue::Null());
     SetProtoChangeMarker(thread, JSTaggedValue::Null());
@@ -142,28 +142,29 @@ void JSHClass::Initialize(const JSThread *thread, uint32_t size, JSType type, JS
     SetEnumCache(thread, JSTaggedValue::Null());
 }
 
-JSHandle<JSHClass> JSHClass::Clone(const JSThread *thread, const JSHandle<JSHClass> &jshclass)
+JSHandle<JSHClass> JSHClass::Clone(const JSThread *thread, const JSHandle<JSHClass> &jshclass,
+                                   bool withoutInlinedProperties)
 {
     JSType type = jshclass->GetObjectType();
-    uint32_t size = jshclass->GetObjectSize() - DEFAULT_CAPACITY_OF_IN_OBJECTS * JSTaggedValue::TaggedTypeSize();
-
-    JSHandle<JSHClass> newJshclass = thread->GetEcmaVM()->GetFactory()->NewEcmaDynClass(size, type);
-    // 3. Copy
-    JSHClass::CopyAll(thread, newJshclass, jshclass);
-    return newJshclass;
-}
-
-void JSHClass::CopyAll(const JSThread *thread, const JSHandle<JSHClass> &newJshclass,
-                       const JSHandle<JSHClass> &jshclass)
-{
+    uint32_t size = jshclass->GetInlinedPropsStartSize();
+    uint32_t numInlinedProps = withoutInlinedProperties ? 0 : jshclass->GetInlinedProperties();
+    JSHandle<JSHClass> newJshclass = thread->GetEcmaVM()->GetFactory()->NewEcmaDynClass(size, type, numInlinedProps);
+    // Copy all
     newJshclass->Copy(thread, *jshclass);
-
     newJshclass->SetParent(thread, JSTaggedValue::Null());
     newJshclass->SetTransitions(thread, JSTaggedValue::Null());
     newJshclass->SetProtoChangeDetails(thread, JSTaggedValue::Null());
     newJshclass->SetEnumCache(thread, JSTaggedValue::Null());
     // reuse Attributes first.
-    newJshclass->SetAttributes(thread, jshclass->GetAttributes());
+    newJshclass->SetLayout(thread, jshclass->GetLayout());
+
+    return newJshclass;
+}
+
+// use for transition to dictionary
+JSHandle<JSHClass> JSHClass::CloneWithoutInlinedProperties(const JSThread *thread, const JSHandle<JSHClass> &jshclass)
+{
+    return Clone(thread, jshclass, true);
 }
 
 void JSHClass::TransitionElementsToDictionary(const JSThread *thread, const JSHandle<JSObject> &obj)
@@ -191,40 +192,30 @@ void JSHClass::AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj
     }
 
     // 2. Create hclass
-    JSType type = jshclass->GetObjectType();
-    uint32_t size = jshclass->GetObjectSize() - DEFAULT_CAPACITY_OF_IN_OBJECTS * JSTaggedValue::TaggedTypeSize();
-    JSHandle<JSHClass> newJshclass = factory->NewEcmaDynClass(size, type);
+    JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
 
-    // 3. Copy field and properties
-    JSHClass::CopyAll(thread, newJshclass, jshclass);
-
-    // 4. Add Property and metaData
-    bool inObj = attr.IsInlinedProps();
+    // 3. Add Property and metaData
     int offset = attr.GetOffset();
-    if (inObj) {
-        newJshclass->DecUnusedInlinedProps();
-    } else {
-        newJshclass->DecUnusedNonInlinedProps();
-    }
+    newJshclass->IncNumberOfProps();
 
     {
-        JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newJshclass->GetAttributes());
+        JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, newJshclass->GetLayout());
 
         if (layoutInfoHandle->NumberOfElements() != offset) {
-            layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1).GetTaggedValue());
-            newJshclass->SetAttributes(thread, layoutInfoHandle);
+            layoutInfoHandle.Update(factory->CopyAndReSort(layoutInfoHandle, offset, offset + 1));
+            newJshclass->SetLayout(thread, layoutInfoHandle);
         } else if (layoutInfoHandle->GetPropertiesCapacity() <= offset) {  // need to Grow
-            layoutInfoHandle.Update(factory->ExtendLayoutInfo(layoutInfoHandle,
-                LayoutInfo::ComputeGrowCapacity(offset)).GetTaggedValue());
-            newJshclass->SetAttributes(thread, layoutInfoHandle);
+            layoutInfoHandle.Update(
+                factory->ExtendLayoutInfo(layoutInfoHandle, LayoutInfo::ComputeGrowCapacity(offset)));
+            newJshclass->SetLayout(thread, layoutInfoHandle);
         }
         layoutInfoHandle->AddKey(thread, offset, key.GetTaggedValue(), attr);
     }
 
-    // 5. Add newDynclass to old dynclass's transitions.
+    // 4. Add newDynclass to old dynclass's transitions.
     AddTransitions(thread, jshclass, newJshclass, key, attr);
 
-    // 6. update hclass in object.
+    // 5. update hclass in object.
 #if ECMASCRIPT_ENABLE_IC
     JSHClass::NotifyHclassChanged(thread, jshclass, newJshclass);
 #endif
@@ -242,22 +233,17 @@ JSHandle<JSHClass> JSHClass::TransitionExtension(const JSThread *thread, const J
     }
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // 2. new a hclass
-    JSType type = jshclass->GetObjectType();
-    uint32_t size = jshclass->GetObjectSize() - DEFAULT_CAPACITY_OF_IN_OBJECTS * JSTaggedValue::TaggedTypeSize();
-    JSHandle<JSHClass> newJshclass = factory->NewEcmaDynClass(size, type);
-
-    // 3. Copy and change
-    JSHClass::CopyAll(thread, newJshclass, jshclass);
+    JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
     newJshclass->SetExtensible(false);
 
-    JSTaggedValue attrs = newJshclass->GetAttributes();
+    JSTaggedValue attrs = newJshclass->GetLayout();
     {
         JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, attrs);
         layoutInfoHandle.Update(factory->CopyLayoutInfo(layoutInfoHandle).GetTaggedValue());
-        newJshclass->SetAttributes(thread, layoutInfoHandle);
+        newJshclass->SetLayout(thread, layoutInfoHandle);
     }
 
-    // 4. Add newDynclass to old dynclass's parent's transitions.
+    // 3. Add newDynclass to old dynclass's parent's transitions.
     AddExtensionTransitions(thread, jshclass, newJshclass, key);
     // parent is the same as jshclass, already copy
     return newJshclass;
@@ -277,22 +263,17 @@ JSHandle<JSHClass> JSHClass::TransitionProto(const JSThread *thread, const JSHan
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // 2. new a hclass
-    JSType type = jshclass->GetObjectType();
-    uint32_t size = jshclass->GetObjectSize() - DEFAULT_CAPACITY_OF_IN_OBJECTS * JSTaggedValue::TaggedTypeSize();
-    JSHandle<JSHClass> newJshclass = factory->NewEcmaDynClass(size, type);
-
-    // 3. Copy
-    JSHClass::CopyAll(thread, newJshclass, jshclass);
+    JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
     newJshclass->SetPrototype(thread, proto.GetTaggedValue());
 
-    JSTaggedValue attrs = newJshclass->GetAttributes();
+    JSTaggedValue attrs = newJshclass->GetLayout();
     {
         JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, attrs);
         layoutInfoHandle.Update(factory->CopyLayoutInfo(layoutInfoHandle).GetTaggedValue());
-        newJshclass->SetAttributes(thread, layoutInfoHandle);
+        newJshclass->SetLayout(thread, layoutInfoHandle);
     }
 
-    // 4. Add newJshclass to old jshclass's parent's transitions.
+    // 3. Add newJshclass to old jshclass's parent's transitions.
     AddProtoTransitions(thread, jshclass, newJshclass, key, proto);
 
     // parent is the same as jshclass, already copy
@@ -308,28 +289,21 @@ void JSHClass::SetPrototype(const JSThread *thread, JSTaggedValue proto)
 }
 void JSHClass::SetPrototype(const JSThread *thread, const JSHandle<JSTaggedValue> &proto)
 {
-    if (proto->IsECMAObject()) {
-        JSObject::Cast(proto->GetTaggedObject())->GetJSHClass()->SetIsPrototype(true);
-    }
-    SetProto(thread, proto);
+    SetPrototype(thread, proto.GetTaggedValue());
 }
 
 void JSHClass::TransitionToDictionary(const JSThread *thread, const JSHandle<JSObject> &obj)
 {
     // 1. new a hclass
-    JSType type = obj->GetJSHClass()->GetObjectType();
-    uint32_t size =
-        obj->GetJSHClass()->GetObjectSize() - DEFAULT_CAPACITY_OF_IN_OBJECTS * JSTaggedValue::TaggedTypeSize();
-    JSHandle<JSHClass> newJshclass = thread->GetEcmaVM()->GetFactory()->NewEcmaDynClass(size, type);
+    JSHandle<JSHClass> jshclass(thread, obj->GetJSHClass());
+    JSHandle<JSHClass> newJshclass = CloneWithoutInlinedProperties(thread, jshclass);
+
     {
         DISALLOW_GARBAGE_COLLECTION;
         // 2. Copy
-        newJshclass->Copy(thread, obj->GetJSHClass());
-
-        // reset Unused
-        newJshclass->SetUnusedInlinedProps(0);
-        newJshclass->SetUnusedNonInlinedProps(0);
+        newJshclass->SetNumberOfProps(0);
         newJshclass->SetIsDictionaryMode(true);
+        ASSERT(newJshclass->GetInlinedProperties() == 0);
 
         // 3. Add newJshclass to ?
 #if ECMASCRIPT_ENABLE_IC

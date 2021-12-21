@@ -26,27 +26,22 @@ using RangeBitmap = mem::MemBitmap<static_cast<size_t>(ecmascript::MemAlignment:
 namespace ecmascript {
 class Space;
 class RememberedSet;
+class WorkerHelper;
 
 enum RegionFlags {
     NEVER_EVACUATE = 1,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     HAS_AGE_MARK = 1 << 1,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     BELOW_AGE_MARK = 1 << 2,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_YOUNG_GENERATION = 1 << 3,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_SNAPSHOT_GENERATION = 1 << 4,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_HUGE_OBJECT = 1 << 5,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_OLD_GENERATION = 1 << 6,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_NON_MOVABLE_GENERATION = 1 << 7,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
     IS_IN_YOUNG_OR_OLD_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_OLD_GENERATION,
-    // NOLINTNEXTLINE(hicpp-signed-bitwise)
-    IS_INVALID = 1 << 8,
+    IS_IN_COLLECT_SET = 1 << 8,
+    IS_IN_PROMOTE_SET = 1 << 9,
+    IS_IN_YOUNG_OR_CSET_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_COLLECT_SET,
+    IS_INVALID = 1 << 10,
 };
 
 class Region {
@@ -58,12 +53,20 @@ public:
           // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
           begin_(begin),
           end_(end),
-          highWaterMark_(end)
+          highWaterMark_(end),
+          available_(0)
     {
     }
     ~Region() = default;
     NO_COPY_SEMANTIC(Region);
     NO_MOVE_SEMANTIC(Region);
+
+    void Reset()
+    {
+        flags_ = 0;
+        highWaterMark_ = end_;
+        memset_s(reinterpret_cast<void *>(begin_), GetSize(), 0, GetSize());
+    }
 
     void LinkNext(Region *next)
     {
@@ -110,6 +113,16 @@ public:
         return space_;
     }
 
+    void SetSpace(Space *space)
+    {
+        space_ = space;
+    }
+
+    void ResetFlag()
+    {
+        flags_ = 0;
+    }
+
     void SetFlag(RegionFlags flag)
     {
         flags_ |= flag;
@@ -128,14 +141,6 @@ public:
 
     RangeBitmap *GetMarkBitmap()
     {
-        return markBitmap_;
-    }
-
-    RangeBitmap *GetOrCreateMarkBitmap()
-    {
-        if (UNLIKELY(markBitmap_ == nullptr)) {
-            markBitmap_ = CreateMarkBitmap();
-        }
         return markBitmap_;
     }
 
@@ -159,9 +164,29 @@ public:
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_GENERATION);
     }
 
+    bool InOldGeneration() const
+    {
+        return IsFlagSet(RegionFlags::IS_IN_OLD_GENERATION);
+    }
+
     bool InYoungAndOldGeneration() const
     {
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_OLD_GENERATION);
+    }
+
+    bool InYoungAndCSetGeneration() const
+    {
+        return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_CSET_GENERATION);
+    }
+
+    bool InPromoteSet() const
+    {
+        return IsFlagSet(RegionFlags::IS_IN_PROMOTE_SET);
+    }
+
+    bool InCollectSet() const
+    {
+        return IsFlagSet(RegionFlags::IS_IN_COLLECT_SET);
     }
 
     bool HasAgeMark() const
@@ -179,12 +204,18 @@ public:
         return address >= begin_ && address <= end_;
     }
 
-    RangeBitmap *CreateMarkBitmap();
+    inline RangeBitmap *GetOrCreateMarkBitmap();
+    inline RangeBitmap *CreateMarkBitmap();
+    inline void ClearMarkBitmap();
     inline RememberedSet *CreateRememberedSet();
     inline RememberedSet *GetOrCreateCrossRegionRememberedSet();
     inline RememberedSet *GetOrCreateOldToNewRememberedSet();
     inline void InsertCrossRegionRememberedSet(uintptr_t addr);
+    inline void AtomicInsertCrossRegionRememberedSet(uintptr_t addr);
     inline void InsertOldToNewRememberedSet(uintptr_t addr);
+    inline void AtomicInsertOldToNewRememberedSet(uintptr_t addr);
+    inline void ClearCrossRegionRememberedSet();
+    inline void ClearOldToNewRememberedSet();
 
     uintptr_t GetAllocateBase() const
     {
@@ -199,6 +230,7 @@ public:
 
     void SetHighWaterMark(uintptr_t mark)
     {
+        ASSERT(InRange(mark));
         highWaterMark_ = mark;
     }
 
@@ -213,12 +245,18 @@ public:
     {
         kinds_ = Span<FreeObjectKind *>(new FreeObjectKind *[FreeObjectList::NumberOfKinds()](),
                                         FreeObjectList::NumberOfKinds());
-        for (int i = 0; i < FreeObjectList::NumberOfKinds(); i++) {
-            kinds_[i] = new FreeObjectKind(i);
-        }
     }
 
-    void DestoryKind()
+    void RebuildKind()
+    {
+        EnumerateKinds([](FreeObjectKind *kind) {
+            if (kind != nullptr) {
+                kind->Rebuild();
+            }
+        });
+    }
+
+    void DestroyKind()
     {
         for (auto kind : kinds_) {
             delete kind;
@@ -228,6 +266,10 @@ public:
 
     FreeObjectKind *GetFreeObjectKind(KindType type)
     {
+        // Thread safe
+        if (kinds_[type] == nullptr) {
+            kinds_[type] = new FreeObjectKind(type);
+        }
         return kinds_[type];
     }
 
@@ -239,6 +281,33 @@ public:
         }
     }
 
+    bool IsMarking() const
+    {
+        return marking_;
+    }
+
+    void SetMarking(bool isMarking)
+    {
+        marking_ = isMarking;
+    }
+
+    inline WorkerHelper *GetWorkList() const;
+
+    void IncrementAvailable(size_t size)
+    {
+        available_ += size;
+    }
+
+    void ResetAvailable()
+    {
+        available_ = 0;
+    }
+
+    size_t Available()
+    {
+        return available_;
+    }
+
 private:
     Space *space_;
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now
@@ -246,12 +315,15 @@ private:
     uintptr_t begin_;
     uintptr_t end_;
     uintptr_t highWaterMark_;
-    Region *next_{nullptr};
-    Region *prev_{nullptr};
-    RangeBitmap *markBitmap_{nullptr};
-    RememberedSet *crossRegionSet_{nullptr};
-    RememberedSet *oldToNewSet_{nullptr};
+    bool marking_ {false};
+    std::atomic_size_t available_ = 0;
+    Region *next_ {nullptr};
+    Region *prev_ {nullptr};
+    RangeBitmap *markBitmap_ {nullptr};
+    RememberedSet *crossRegionSet_ {nullptr};
+    RememberedSet *oldToNewSet_ {nullptr};
     Span<FreeObjectKind *> kinds_;
+    os::memory::Mutex lock_;
     friend class SnapShot;
 };
 }  // namespace ecmascript

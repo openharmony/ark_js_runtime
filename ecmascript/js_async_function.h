@@ -23,11 +23,7 @@
 namespace panda::ecmascript {
 class JSAsyncAwaitStatusFunction : public JSFunction {
 public:
-    static JSAsyncAwaitStatusFunction *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSAsyncAwaitStatusFunction());
-        return static_cast<JSAsyncAwaitStatusFunction *>(object);
-    }
+    CAST_CHECK(JSAsyncAwaitStatusFunction, IsJSAsyncAwaitStatusFunction);
 
     static JSHandle<JSTaggedValue> AsyncFunctionAwaitFulfilled(JSThread *thread,
                                                                const JSHandle<JSAsyncAwaitStatusFunction> &func,

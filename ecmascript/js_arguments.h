@@ -30,10 +30,7 @@ public:
     static constexpr int CALLER_INLINE_PROPERTY_INDEX = 2;
     static constexpr int CALLEE_INLINE_PROPERTY_INDEX = 3;
 
-    static JSArguments *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSArguments *>(object);
-    }
+    CAST_NO_CHECK(JSArguments);
 
     // 9.4.4.1 [[GetOwnProperty]] (P)
     static bool GetOwnProperty(JSThread *thread, const JSHandle<JSArguments> &args, const JSHandle<JSTaggedValue> &key,

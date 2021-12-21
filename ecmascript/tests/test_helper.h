@@ -20,6 +20,8 @@
 #include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/js_function.h"
+#include "ecmascript/js_handle.h"
 #include "ecmascript/object_factory.h"
 #include "gtest/gtest.h"
 #include "include/runtime_options.h"
@@ -69,7 +71,7 @@ public:
         state->base.prev = sp;
         state->pc = nullptr;
         state->sp = newSp;
-        state->method = thread->GetEcmaVM()->GetMethodForNativeFunction(nullptr);
+        state->function = methodFunction_.GetTaggedValue();
         thread->SetCurrentSPFrame(newSp);
         return sp;
     }
@@ -88,26 +90,33 @@ public:
         options.SetBootClassSpaces({"ecmascript"});
         options.SetRuntimeType("ecmascript");
         options.SetPreGcHeapVerifyEnabled(true);
+        options.SetEnableForceGC(true);
         static EcmaLanguageContext lcEcma;
         [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
         ASSERT_TRUE(success) << "Cannot create Runtime";
         instance = Runtime::GetCurrent()->GetPandaVM();
+        EcmaVM::Cast(instance)->SetEnableForceGC(true);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
         thread = EcmaVM::Cast(instance)->GetJSThread();
         scope = new EcmaHandleScope(thread);
         thread->SetIsEcmaInterpreter(true);
-        EcmaVM::Cast(instance)->GetFactory()->SetTriggerGc(true);
+        EcmaVM *ecmaVm = thread->GetEcmaVM();
+        auto globalEnv = ecmaVm->GetGlobalEnv();
+        methodFunction_ = ecmaVm->GetFactory()->NewJSFunction(globalEnv);
     }
 
     static inline void DestroyEcmaVMWithScope(PandaVM *instance, EcmaHandleScope *scope)
     {
         delete scope;
-        EcmaVM::Cast(instance)->GetFactory()->SetTriggerGc(false);
+        EcmaVM::Cast(instance)->SetEnableForceGC(false);
         auto thread = EcmaVM::Cast(instance)->GetJSThread();
         thread->ClearException();
         [[maybe_unused]] bool success = Runtime::Destroy();
         ASSERT_TRUE(success) << "Cannot destroy Runtime";
     }
+
+private:
+    inline static ecmascript::JSHandle<ecmascript::JSFunction> methodFunction_;
 };
 }  // namespace panda::test
 #endif  // ECMASCRIPT_TESTS_TEST_HELPER_H

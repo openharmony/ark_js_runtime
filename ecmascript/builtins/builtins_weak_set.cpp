@@ -45,7 +45,7 @@ JSTaggedValue BuiltinsWeakSet::WeakSetConstructor(EcmaRuntimeCallInfo *argv)
     JSHandle<JSWeakSet> weakSet = JSHandle<JSWeakSet>::Cast(obj);
     // 3.ReturnIfAbrupt(weakSet).
     // 4.WeakSet set’s [[WeakSetData]] internal slot to a new empty List.
-    JSTaggedValue linkedSet = LinkedHashSet::Create(thread);
+    JSHandle<LinkedHashSet> linkedSet = LinkedHashSet::Create(thread);
     weakSet->SetLinkedSet(thread, linkedSet);
 
     // add data into weakset from iterable

@@ -129,7 +129,7 @@ void JSForInIterator::FastGetAllEnumKeys(const JSThread *thread, const JSHandle<
                     JSHandle<TaggedArray> cache(thread, enumCache);
                     uint32_t length = cache->GetLength();
                     if (length != numOfKeys) {
-                        JSHandle<LayoutInfo> layoutInfoHandle(thread, jsHclass->GetAttributes());
+                        JSHandle<LayoutInfo> layoutInfoHandle(thread, jsHclass->GetLayout());
                         for (uint32_t i = 0; i < numOfKeys; i++) {
                             JSTaggedValue key = layoutInfoHandle->GetKey(i);
                             if (key.IsString()) {
@@ -149,7 +149,7 @@ void JSForInIterator::FastGetAllEnumKeys(const JSThread *thread, const JSHandle<
                         }
                     }
                 } else {
-                    JSHandle<LayoutInfo> layoutInfoHandle(thread, jsHclass->GetAttributes());
+                    JSHandle<LayoutInfo> layoutInfoHandle(thread, jsHclass->GetLayout());
                     for (uint32_t i = 0; i < numOfKeys; i++) {
                         JSTaggedValue key = layoutInfoHandle->GetKey(i);
                         if (key.IsString()) {

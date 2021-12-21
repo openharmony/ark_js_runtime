@@ -17,10 +17,11 @@
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_H
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/js_thread.h"
 #include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
+using JSTaggedType = panda::ecmascript::JSTaggedType;
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {
@@ -38,24 +39,43 @@ public:
     #undef INITIAL_RUNTIME_FUNCTIONS
     #undef DEF_RUNTIME_STUB
     }
-    static bool AddElementInternal(uint64_t argThread, uint64_t argReceiver, uint32_t argIndex,
-                                   uint64_t argValue, uint32_t argAttr);
-    static bool CallSetter(uint64_t argThread, uint64_t argSetter, uint64_t argReceiver, uint64_t argValue,
-                           bool argMayThrow);
-    static uint64_t CallGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver);
-    static uint64_t AccessorGetter(uint64_t argThread, uint64_t argGetter, uint64_t argReceiver);
-    static void ThrowTypeError(uint64_t argThread, int argMessageStringId);
-    static bool JSProxySetProperty(uint64_t argThread, uint64_t argProxy, uint64_t argKey, uint64_t argValue,
-                                   uint64_t argReceiver, bool argMayThrow);
-    static uint32_t GetHash32(uint64_t key, uint64_t len);
-    static int32_t FindElementWithCache(uint64_t argThread, uint64_t hClass, uint64_t key, int32_t num);
-    static uint32_t StringGetHashCode(uint64_t ecmaString);
-    static TaggedArray* GetTaggedArrayPtrTest(uint64_t argThread);
-    static uint64_t Execute(uint64_t argThread, uint64_t argFunc, uint64_t thisArg, uint32_t argc, uint64_t argArgv);
-    static void SetValueWithBarrier(uint64_t argThread, uint64_t argAddr, uint64_t argOffset, uint64_t argValue);
+    static bool AddElementInternal(uintptr_t argGlue, JSTaggedType argReceiver, uint32_t argIndex,
+                                   JSTaggedType argValue, uint32_t argAttr);
+    static bool CallSetter(uintptr_t argGlue, JSTaggedType argSetter, JSTaggedType argReceiver,
+                           JSTaggedType argValue, bool argMayThrow);
+    static JSTaggedType CallSetter2(uintptr_t argGlue, JSTaggedType argReceiver, JSTaggedType argValue,
+                                JSTaggedType argAccessor);
+    static JSTaggedType CallGetter(uintptr_t argGlue, JSTaggedType argGetter, JSTaggedType argReceiver);
+    static JSTaggedType CallGetter2(uintptr_t argGlue, JSTaggedType argReceiver, JSTaggedType argHolder,
+                                JSTaggedType argAccessor);
+    static JSTaggedType CallInternalGetter(uintptr_t argGlue, JSTaggedType argGetter, JSTaggedType argReceiver);
+    static void ThrowTypeError(uintptr_t argGlue, int argMessageStringId);
+    static bool JSProxySetProperty(uintptr_t argGlue, JSTaggedType argProxy, JSTaggedType argKey,
+                                   JSTaggedType argValue, JSTaggedType argReceiver, bool argMayThrow);
+    static uint32_t GetHash32(uintptr_t key, uint32_t len);
+    static int32_t FindElementWithCache(uintptr_t argGlue, JSTaggedType hClass, JSTaggedType key, int32_t num);
+    static uint32_t StringGetHashCode(JSTaggedType ecmaString);
+    static JSTaggedType GetTaggedArrayPtrTest(uintptr_t argGlue);
+    static JSTaggedType Execute(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType thisArg, uint32_t argc,
+                                uintptr_t argArgv);
+    static void SetValueWithBarrier(uintptr_t argGlue, JSTaggedType argAddr, size_t argOffset,
+                                   JSTaggedType argValue);
     static double FloatMod(double left, double right);
-    static uint64_t NewInternalString(uint64_t argThread, uint64_t argKey);
-    static void PrintHeapReginInfo(uint64_t argThread);
+    static JSTaggedType NewInternalString(uintptr_t argGlue, JSTaggedType argKey);
+    static JSTaggedType NewEcmaDynClass(uintptr_t argGlue, uint32_t size, uint8_t type);
+    static void UpdateLayOutAndAddTransition(uintptr_t argGlue, JSTaggedType oldHClass, JSTaggedType newHClass,
+                                            JSTaggedType key, uint32_t attr);
+    static void PrintHeapReginInfo(uintptr_t argGlue);
+    static JSTaggedType NewTaggedArray(uintptr_t argGlue, uint32_t length);
+    static JSTaggedType CopyArray(uintptr_t argGlue, JSTaggedType array, uint32_t length, uint32_t capacity);
+    static JSTaggedType NameDictPutIfAbsent(uintptr_t argGlue, JSTaggedType receiver, JSTaggedType array,
+        JSTaggedType key, JSTaggedType value, uint32_t attr, bool needTransToDict);
+    static void PropertiesSetValue(uintptr_t argGlue, JSTaggedType argReceiver, JSTaggedType argValue,
+                                   JSTaggedType argArray, uint32_t capacity, uint32_t index);
+    static JSTaggedType TaggedArraySetValue(uintptr_t argGlue, JSTaggedType argReceiver, JSTaggedType argValue,
+                                        JSTaggedType argElement, uint32_t elementIndex, uint32_t capacity);
+    static void DebugPrint(int fmtMessageId, ...);
+    static void NoticeThroughChainAndRefreshUser(uintptr_t argGlue, uint64_t argoldHClass, uint64_t argnewHClass);
 };
 
 class CallRuntimeTrampolinesScope {
@@ -71,15 +91,11 @@ public:
         thread->SetLastIFrameSp(cursp);
         JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
         thread_->SetCurrentSPFrame(newSp);
-        LOG_ECMA(INFO) << "Sp: " << newSp << " type:" <<
-            static_cast<uintptr_t>(FrameHandler(newSp).GetFrameType());
     }
     ~CallRuntimeTrampolinesScope()
     {
         JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
         thread_->SetCurrentSPFrame(oldSp);
-        LOG_ECMA(INFO) << "Sp: " << oldSp << " type:" <<
-            static_cast<uintptr_t>(FrameHandler(oldSp).GetFrameType());
         thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
     }
 private:

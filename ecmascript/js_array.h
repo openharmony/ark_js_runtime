@@ -28,11 +28,7 @@ class JSArray : public JSObject {
 public:
     static constexpr int LENGTH_INLINE_PROPERTY_INDEX = 0;
 
-    static JSArray *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSArray());
-        return static_cast<JSArray *>(object);
-    }
+    CAST_CHECK(JSArray, IsJSArray);
 
     static JSHandle<JSTaggedValue> ArrayCreate(JSThread *thread, JSTaggedNumber length);
     static JSHandle<JSTaggedValue> ArrayCreate(JSThread *thread, JSTaggedNumber length,

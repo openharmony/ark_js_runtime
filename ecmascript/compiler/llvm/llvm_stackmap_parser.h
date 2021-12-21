@@ -18,20 +18,12 @@
 
 #include <iostream>
 #include <memory>
+#include <tuple>
+#include <unordered_map>
 #include <vector>
-#include <set>
 #include "ecmascript/common.h"
 #include "ecmascript/ecma_macros.h"
 
-#ifdef PANDA_TARGET_AMD64
-#define SP_DWARF_REG_NUM  7
-#define FP_DWARF_REG_NUM  6
-#define SP_OFFSET      2
-#else
-#define SP_DWARF_REG_NUM  0
-#define FP_DWARF_REG_NUM  0
-#define SP_OFFSET      0
-#endif
 
 namespace kungfu {
 using OffsetType = int32_t;
@@ -39,6 +31,9 @@ using DwarfRegType = uint16_t;
 using DwarfRegAndOffsetType = std::pair<DwarfRegType, OffsetType>;
 using DwarfRegAndOffsetTypeVector = std::vector<DwarfRegAndOffsetType>;
 using Fun2InfoType = std::pair<uintptr_t, DwarfRegAndOffsetType>;
+using DerivedData = panda::ecmascript::DerivedData;
+using RootVisitor = panda::ecmascript::RootVisitor;
+using RootRangeVisitor = panda::ecmascript::RootRangeVisitor;
 
 struct Header {
     uint8_t  stackmapversion; // Stack Map Version (current version is 3)
@@ -46,29 +41,31 @@ struct Header {
     uint16_t Reserved1; // Reserved (expected to be 0)
     void Print() const
     {
-        LOG_ECMA(INFO) << "----- head ----" << std::endl;
-        LOG_ECMA(INFO) << "   version:" << static_cast<int>(stackmapversion) << std::endl;
-        LOG_ECMA(INFO) << "+++++ head ++++" << std::endl;
+        LOG_ECMA(DEBUG) << "----- head ----";
+        LOG_ECMA(DEBUG) << "   version:" << static_cast<int>(stackmapversion);
+        LOG_ECMA(DEBUG) << "+++++ head ++++";
     }
 };
 
+#pragma pack(1)
 struct StkSizeRecordTy {
-    uint64_t functionAddress;
+    uintptr_t functionAddress;
     uint64_t stackSize;
     uint64_t recordCount;
     void Print() const
     {
-            LOG_ECMA(INFO) << "               functionAddress:0x" << std::hex << functionAddress << std::endl;
-            LOG_ECMA(INFO) << "               stackSize:" << std::dec << stackSize << std::endl;
-            LOG_ECMA(INFO) << "               recordCount:" << std::dec << recordCount << std::endl;
+        LOG_ECMA(DEBUG) << "               functionAddress:0x" << std::hex << functionAddress;
+        LOG_ECMA(DEBUG) << "               stackSize:0x" << std::hex << stackSize;
+        LOG_ECMA(DEBUG) << "               recordCount:" << std::hex << recordCount;
     }
 };
+#pragma pack()
 
 struct ConstantsTy {
-    uint64_t LargeConstant;
+    uintptr_t LargeConstant;
     void Print() const
     {
-        LOG_ECMA(INFO) << "               LargeConstant:" << LargeConstant << std::endl;
+        LOG_ECMA(DEBUG) << "               LargeConstant:0x" << std::hex << LargeConstant;
     }
 };
 
@@ -79,10 +76,10 @@ struct StkMapRecordHeadTy {
     uint16_t NumLocations;
     void Print() const
     {
-        LOG_ECMA(INFO) << "               PatchPointID:" << std::hex << PatchPointID << std::endl;
-        LOG_ECMA(INFO) << "               instructionOffset:" << std::hex << InstructionOffset << std::endl;
-        LOG_ECMA(INFO) << "               Reserved:" << Reserved << std::endl;
-        LOG_ECMA(INFO) << "               NumLocations:" << NumLocations << std::endl;
+        LOG_ECMA(DEBUG) << "               PatchPointID:0x" << std::hex << PatchPointID;
+        LOG_ECMA(DEBUG) << "               instructionOffset:0x" << std::hex << InstructionOffset;
+        LOG_ECMA(DEBUG) << "               Reserved:0x" << std::hex << Reserved;
+        LOG_ECMA(DEBUG) << "               NumLocations:0x" << std::hex << NumLocations;
     }
 };
 
@@ -105,10 +102,10 @@ struct  LocationTy {
 
     void Print() const
     {
-        LOG_ECMA(INFO)  << TypeToString(location);
-        LOG_ECMA(INFO) << ", size:" << std::dec << LocationSize;
-        LOG_ECMA(INFO) << "\tDwarfRegNum:" << DwarfRegNum;
-        LOG_ECMA(INFO) << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant << std::endl;
+        LOG_ECMA(DEBUG)  << TypeToString(location);
+        LOG_ECMA(DEBUG) << ", size:" << std::dec << LocationSize;
+        LOG_ECMA(DEBUG) << "\tDwarfRegNum:" << DwarfRegNum;
+        LOG_ECMA(DEBUG) << "\t OffsetOrSmallConstant:" << OffsetOrSmallConstant;
     }
 };
 
@@ -118,9 +115,9 @@ struct LiveOutsTy {
     uint8_t SizeinBytes;
     void Print() const
     {
-        LOG_ECMA(INFO) << "                  Dwarf RegNum:" << DwarfRegNum << std::endl;
-        LOG_ECMA(INFO) << "                  Reserved:" << Reserved << std::endl;
-        LOG_ECMA(INFO) << "                  SizeinBytes:" << SizeinBytes << std::endl;
+        LOG_ECMA(DEBUG) << "                  Dwarf RegNum:" << DwarfRegNum;
+        LOG_ECMA(DEBUG) << "                  Reserved:" << Reserved;
+        LOG_ECMA(DEBUG) << "                  SizeinBytes:" << SizeinBytes;
     }
 };
 
@@ -133,28 +130,28 @@ struct StkMapRecordTy {
         head.Print();
         auto size = Locations.size();
         for (size_t i = 0; i < size; i++) {
-            LOG_ECMA(INFO) << "                   #" << std::dec << i << ":";
+            LOG_ECMA(DEBUG) << "                   #" << std::dec << i << ":";
             Locations[i].Print();
         }
         size = LiveOuts.size();
         for (size_t i = 0; i < size; i++) {
-            LOG_ECMA(INFO) << "               liveOuts[" << i << "] info:" << std::endl;
+            LOG_ECMA(DEBUG) << "               liveOuts[" << i << "] info:";
         }
     }
 };
 
 class DataInfo {
 public:
-    explicit DataInfo(const uint8_t *data): data_(data), offset_(0) {}
+    explicit DataInfo(std::unique_ptr<uint8_t[]> data): data_(std::move(data)), offset_(0) {}
     ~DataInfo()
     {
-        data_ = nullptr;
+        data_.reset();
         offset_ = 0;
     }
     template<class T>
     T Read()
     {
-        T t = *reinterpret_cast<const T*>(data_ + offset_);
+        T t = *reinterpret_cast<const T*>(data_.get() + offset_);
         offset_ += sizeof(T);
         return t;
     }
@@ -163,8 +160,8 @@ public:
         return offset_;
     }
 private:
-    const uint8_t *data_;
-    unsigned int offset_;
+    std::unique_ptr<uint8_t[]> data_ {nullptr};
+    unsigned int offset_ {0};
 };
 
 struct LLVMStackMap {
@@ -176,15 +173,15 @@ struct LLVMStackMap {
     {
         head.Print();
         for (size_t i = 0; i < StkSizeRecords.size(); i++) {
-            LOG_ECMA(INFO) << "stkSizeRecord[" << i << "] info:" << std::endl;
+            LOG_ECMA(DEBUG) << "stkSizeRecord[" << i << "] info:";
             StkSizeRecords[i].Print();
         }
         for (size_t i = 0; i < Constants.size(); i++) {
-            LOG_ECMA(INFO) << "constants[" << i << "] info:" << std::endl;
+            LOG_ECMA(DEBUG) << "constants[" << i << "] info:";
             Constants[i].Print();
         }
         for (size_t i = 0; i < StkMapRecord.size(); i++) {
-            LOG_ECMA(INFO) << "StkMapRecord[" << i << "] info:" << std::endl;
+            LOG_ECMA(DEBUG) << "StkMapRecord[" << i << "] info:";
             StkMapRecord[i].Print();
         }
     }
@@ -197,16 +194,17 @@ public:
         static LLVMStackMapParser instance;
         return instance;
     }
-    bool PUBLIC_API CalculateStackMap(const uint8_t *stackMapAddr);
-    bool PUBLIC_API CalculateStackMap(const uint8_t *stackMapAddr,
-        uintptr_t hostCodeSectionAddr, uintptr_t deviceCodeSectionAddr);
+    bool PUBLIC_API CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr);
+    bool PUBLIC_API CalculateStackMap(std::unique_ptr<uint8_t []> stackMapAddr,
+    uintptr_t hostCodeSectionAddr, uintptr_t deviceCodeSectionAddr);
     void PUBLIC_API Print() const
     {
         llvmStackMap_.Print();
     }
-    bool StackMapByAddr(uintptr_t funcAddr, DwarfRegAndOffsetTypeVector &infos);
-    bool StackMapByFuncAddrFp(uintptr_t funcAddr, uintptr_t frameFp,
-                                                std::set<uintptr_t> &slotAddrs);
+    const DwarfRegAndOffsetTypeVector *StackMapByAddr(uintptr_t funcAddr) const;
+    bool StackMapByFuncAddrFp(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
+                              const RootRangeVisitor &v1, panda::ecmascript::ChunkVector<DerivedData> *data,
+                              [[maybe_unused]] bool isVerifying) const;
 private:
     LLVMStackMapParser()
     {
@@ -216,14 +214,16 @@ private:
     }
     ~LLVMStackMapParser()
     {
-        stackMapAddr_ = nullptr;
+        if (stackMapAddr_) {
+            stackMapAddr_.release();
+        }
         callSiteInfos_.clear();
         dataInfo_ = nullptr;
     }
     void CalcCallSite();
-    const uint8_t *stackMapAddr_;
+    std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
-    std::vector<Fun2InfoType> callSiteInfos_;
+    std::unordered_map<uintptr_t, DwarfRegAndOffsetTypeVector> callSiteInfos_;
     [[maybe_unused]] std::unique_ptr<DataInfo> dataInfo_;
 };
 } // namespace kungfu

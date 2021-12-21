@@ -48,7 +48,7 @@ public:
     static inline uint32_t Hash(const JSTaggedValue &obj);
 
     static const int DEFAULT_ELEMENTS_NUMBER = 64;
-    static SymbolTable *Create(JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
+    static JSHandle<SymbolTable> Create(JSThread *thread, int numberOfElements = DEFAULT_ELEMENTS_NUMBER)
     {
         return HashTable::Create(thread, numberOfElements);
     }

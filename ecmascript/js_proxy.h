@@ -22,15 +22,7 @@
 namespace panda::ecmascript {
 class JSProxy final : public ECMAObject {
 public:
-    static JSProxy *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSProxy *>(object);
-    }
-
-    static const JSProxy *ConstCast(const TaggedObject *object)
-    {
-        return static_cast<const JSProxy *>(object);
-    }
+    CAST_CHECK(JSProxy, IsJSProxy);
 
     // ES6 9.5.15 ProxyCreate(target, handler)
     static JSHandle<JSProxy> ProxyCreate(JSThread *thread, const JSHandle<JSTaggedValue> &target,

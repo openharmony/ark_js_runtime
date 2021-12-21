@@ -22,35 +22,40 @@
 // Frame Layout
 // Interpreter Frame(alias   **iframe** ) Layout as follow:
 // ```
-//   +---------------------------------+--------------------+
-//   |             argv[n-1]            |                   ^
+//   +----------------------------------+-------------------+
+//   |    argv[n-1]                     |                   ^
 //   |----------------------------------|                   |
-//   |              ........            |                   |
-//   |             argv[0]              |                   |
+//   |    ......                        |                   |
 //   |----------------------------------|                   |
-//   |              thisArg             |                   |
+//   |    thisArg [maybe not exist]     |                   |
 //   |----------------------------------|                   |
-//   |              newTarget           |                   |
+//   |    newTarget [maybe not exist]   |                   |
 //   |----------------------------------|                   |
-//   |              callTarget          |                   |
-//   +----------------------------------+--------+          |
-//   |       FrameType                  |        ^      interpreter frame
+//   |    callTarget [deleted]          |                   |
+//   |----------------------------------|                   |
+//   |    ......                        |                   |
+//   |----------------------------------|                   |
+//   |    Vregs [not exist in native]   |                   |
+//   +----------------------------------+--------+      interpreter frame
+//   |    base.frameType                |        ^          |
 //   |----------------------------------|        |          |
-//   |      pre(pre stack pointer)      |        |          |
+//   |    base.prev(pre stack pointer)  |        |          |
 //   |----------------------------------|        |          |
-//   |        numActualArgs             |        |          |
+//   |    numActualArgs [deleted]       |        |          |
 //   |----------------------------------|        |          |
-//   |        env                       |        |          |
+//   |    env                           |        |          |
 //   |----------------------------------|        |          |
-//   |        acc                       |    FrameState     |
+//   |    acc                           |        |          |
+//   |----------------------------------|    FrameState     |
+//   |    profileTypeInfo               |        |          |
 //   |----------------------------------|        |          |
-//   |        constantpool              |        |          |
+//   |    constantpool                  |        |          |
 //   |----------------------------------|        |          |
-//   |        method                    |        |          |
+//   |    method [changed to function]  |        |          |
 //   |----------------------------------|        |          |
-//   |        sp(current stack point)   |        |          |
+//   |    sp(current stack point)       |        |          |
 //   |----------------------------------|        |          |
-//   |        pc(bytecode addr)         |        v          v
+//   |    pc(bytecode addr)             |        v          v
 //   +----------------------------------+--------+----------+
 // ```
 // address space grow from high address to low address.we add new field  **FrameType** ,
@@ -73,13 +78,13 @@
 
 // ```
 //     +---------------------------------------------------+
-//     |  parameter i         |                            ^
+//     |  parameter n         |                            ^
 //     |- - - - - - - - - --  |                            |
-//     |  parameter n-2       |                          Caller frame
+//     |  parameter n-1       |                          Caller frame
 //     |       ...            |                         comply c-abi
-//     |  parameter n-1       |                        paramters push to stack from left to right
+//     |  parameter n-2       |                        paramters push to stack from left to right
 //     |- - - - - - - - -     |                       i-n th prameter spill to slot
-//     |  parameter n         |                            v
+//     |  parameter i         |                            v
 //     +--------------------------+------------------------+
 //     |   return addr        |   ^                        ^
 //     |- - - - - - - - -     |   |                        |
@@ -152,35 +157,36 @@
 
 // Frame Layout as follow:
 // ```
-// +---------------------------------+--------------------+
-//   |             argv[n-1]            |                   ^
+//   +----------------------------------+-------------------+
+//   |    argv[n-1]                     |                   ^
 //   |----------------------------------|                   |
-//   |              ........            |                   |
-//   |             argv[0]              |                   |
+//   |    ......                        |                   |
 //   |----------------------------------|                   |
-//   |              thisArg             |                   |
+//   |    thisArg [maybe not exist]     |                   |
 //   |----------------------------------|                   |
-//   |              newTarget           |                   |
+//   |    newTarget [maybe not exist]   |                   |
 //   |----------------------------------|                   |
-//   |              callTarget          |                   |
-//   +----------------------------------+--------+          |
-//   |       FrameType                  |        ^      foo's frame
+//   |    ......                        |                   |
+//   |----------------------------------|                   |
+//   |    Vregs                         |                   |
+//   +----------------------------------+--------+     foo's frame
+//   |    base.frameType                |        ^          |
 //   |----------------------------------|        |          |
-//   |      pre(pre stack pointer)      |        |          |
+//   |    base.prev(pre stack pointer)  |        |          |
 //   |----------------------------------|        |          |
-//   |        numActualArgs             |        |          |
+//   |    env                           |        |          |
 //   |----------------------------------|        |          |
-//   |        env                       |        |          |
+//   |    acc                           |        |          |
 //   |----------------------------------|        |          |
-//   |        acc                       |    FrameState     |
+//   |    profileTypeInfo               |    FrameState     |
 //   |----------------------------------|        |          |
-//   |        constantpool              |        |          |
+//   |    constantpool                  |        |          |
 //   |----------------------------------|        |          |
-//   |        method                    |        |          |
+//   |    function                      |        |          |
 //   |----------------------------------|        |          |
-//   |        sp(current stack point)   |        |          |
+//   |    sp(current stack point)       |        |          |
 //   |----------------------------------|        |          |
-//   |        pc(bytecode addr)         |        v          v
+//   |    pc(bytecode addr)             |        v          v
 //   +----------------------------------+--------+----------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
@@ -221,7 +227,21 @@
 #define GET_CURRETN_FP(fp) asm("mov %%rbp, %0" : "=rm" (fp))
 #define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp)
 #define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(fp))
-#else
+#endif
+
+#ifdef PANDA_TARGET_ARM64
+#define GET_CURRETN_FP(fp) asm("mov %0, x29" : "=r" (fp))
+#define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp))
+#define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(POINTER_CAST(fp, uintptr_t *)))
+#endif
+
+#ifdef  PANDA_TARGET_ARM32
+#define GET_CURRETN_FP(fp) asm("mov %0, r11" : "=r" (fp))
+#define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp))
+#define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(POINTER_CAST(fp, uintptr_t *)))
+#endif
+
+#if !defined(PANDA_TARGET_AMD64) && !defined(PANDA_TARGET_ARM64) && !defined(PANDA_TARGET_ARM32)
 #define GET_CURRETN_FP(fp)
 #define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp))
 #define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(POINTER_CAST(fp, uintptr_t *)))
@@ -264,6 +284,30 @@ public:
 class FrameConst {
 public:
     static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uintptr_t);
+#ifdef PANDA_TARGET_AMD64
+    static constexpr int SP_DWARF_REG_NUM = 7;
+    static constexpr int FP_DWARF_REG_NUM = 6;
+    static constexpr int SP_OFFSET = 2;
+#else
+#ifdef PANDA_TARGET_ARM64
+    static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
+    static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
+    static constexpr int SP_OFFSET = -3;
+#else
+#ifdef PANDA_TARGET_ARM32
+    static constexpr int SP_DWARF_REG_NUM = 13;
+    static constexpr int FP_DWARF_REG_NUM = 11;
+    static constexpr int SP_OFFSET = 0;
+#else
+    static constexpr int SP_DWARF_REG_NUM = 0;
+    static constexpr int FP_DWARF_REG_NUM = 0;
+    static constexpr int SP_OFFSET = 0;
+#endif
+#endif
+#endif
+    static constexpr int AARCH64_SLOT_SIZE = 8;
+    static constexpr int AMD64_SLOT_SIZE = 8;
+    static constexpr int ARM32_SLOT_SIZE = 4;
 };
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H

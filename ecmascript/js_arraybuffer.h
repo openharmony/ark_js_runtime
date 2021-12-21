@@ -21,10 +21,8 @@
 namespace panda::ecmascript {
 class JSArrayBuffer final : public JSObject {
 public:
-    static JSArrayBuffer *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSArrayBuffer *>(object);
-    }
+    CAST_NO_CHECK(JSArrayBuffer);
+
     // 6.2.6.2
     static void CopyDataBlockBytes(JSTaggedValue toBlock, JSTaggedValue fromBlock, int32_t fromIndex, int32_t count);
 

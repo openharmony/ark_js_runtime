@@ -34,6 +34,7 @@ public:
         parser->Add(&enable_ark_tools_);
         parser->Add(&enable_stub_aot_);
         parser->Add(&stub_module_file_);
+        parser->Add(&enable_cpuprofiler_);
     }
 
     bool IsEnableArkTools() const
@@ -81,11 +82,61 @@ public:
         return stub_module_file_.WasSet();
     }
 
+    bool IsEnableForceGC() const
+    {
+        return enable_force_gc_.GetValue();
+    }
+
+    void SetEnableForceGC(bool value)
+    {
+        enable_force_gc_.SetValue(value);
+    }
+
+    bool IsForceCompressGC() const
+    {
+        return force_compress_gc_.GetValue();
+    }
+
+    void SetForceCompressGC(bool value)
+    {
+        force_compress_gc_.SetValue(value);
+    }
+
+    bool IsEnableConcurrentSweep() const
+    {
+        return enable_concurrent_sweep_.GetValue();
+    }
+
+    void SetEnableConcurrentSweep(bool value)
+    {
+        enable_concurrent_sweep_.SetValue(value);
+    }
+
+    bool IsEnableCpuProfiler() const
+    {
+        return enable_cpuprofiler_.GetValue();
+    }
+
+    void SetEnableCpuprofiler(bool value)
+    {
+        enable_cpuprofiler_.SetValue(value);
+    }
+
 private:
     PandArg<bool> enable_ark_tools_{"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
+    PandArg<bool> enable_cpuprofiler_{"enable-cpuprofiler", false,
+        R"(Enable cpuprofiler to sample call stack and output to json file. Default: false)"};
     PandArg<bool> enable_stub_aot_{"enable-stub-aot", false, R"(enable aot of fast stub. Default: false)"};
-    PandArg<std::string> stub_module_file_{"stub-module-file", R"(stub.m)",
-                                           R"(Path to stub module file. Default: "stub.m")"};
+    PandArg<std::string> stub_module_file_{"stub-module-file",
+        R"(stub.m)",
+        R"(Path to stub module file. Default: "stub.m")"};
+    PandArg<bool> enable_force_gc_{"enable-force-gc", true, R"(enable force gc when allocating object)"};
+    PandArg<bool> force_compress_gc_{"force-compress-gc",
+        true,
+        R"(if true trigger compress gc, else trigger semi and old gc)"};
+    PandArg<bool> enable_concurrent_sweep_{"enable_concurrent_sweep",
+        true,
+        R"(If true enable concurrent sweep, else disable concurrent sweep. Default: true)"};
 };
 }  // namespace panda::ecmascript
 

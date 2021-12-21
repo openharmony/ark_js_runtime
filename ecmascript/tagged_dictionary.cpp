@@ -82,7 +82,7 @@ void NameDictionary::GetAllEnumKeys(const JSThread *thread, int offset, TaggedAr
     *keys += arrayIndex;
 }
 
-NameDictionary *NameDictionary::Create(const JSThread *thread, int numberOfElements)
+JSHandle<NameDictionary> NameDictionary::Create(const JSThread *thread, int numberOfElements)
 {
     return OrderHashTableT::Create(thread, numberOfElements);
 }
@@ -204,7 +204,7 @@ void NumberDictionary::GetAllEnumKeys(const JSThread *thread, const JSHandle<Num
     *keys += arrayIndex;
 }
 
-NumberDictionary *NumberDictionary::Create(const JSThread *thread, int numberOfElements)
+JSHandle<NumberDictionary> NumberDictionary::Create(const JSThread *thread, int numberOfElements)
 {
     return OrderHashTableT::Create(thread, numberOfElements);
 }

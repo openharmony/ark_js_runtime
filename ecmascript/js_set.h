@@ -23,10 +23,7 @@
 namespace panda::ecmascript {
 class JSSet : public JSObject {
 public:
-    static JSSet *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSSet *>(object);
-    }
+    CAST_CHECK(JSSet, IsJSSet);
 
     static bool Delete(const JSThread *thread, const JSHandle<JSSet> &set, const JSHandle<JSTaggedValue> &value);
 

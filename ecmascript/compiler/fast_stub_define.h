@@ -18,23 +18,35 @@
 
 namespace kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define EXTERNAL_RUNTIMESTUB_LIST(V) \
-    V(AddElementInternal, 5)         \
-    V(CallSetter, 4)                 \
-    V(CallGetter, 4)                 \
-    V(AccessorGetter, 4)             \
-    V(ThrowTypeError, 2)             \
-    V(JSProxySetProperty, 6)         \
-    V(GetHash32, 2)                  \
-    V(FindElementWithCache, 4)       \
-    V(Execute, 5)                    \
-    V(StringGetHashCode, 1)          \
-    V(FloatMod, 2)                   \
-    V(SetValueWithBarrier, 4)        \
-    V(GetTaggedArrayPtrTest, 1)      \
-    V(NewInternalString, 2)
+#define EXTERNAL_RUNTIMESTUB_LIST(V)        \
+    V(AddElementInternal, 5)                \
+    V(CallSetter, 5)                        \
+    V(CallSetter2, 4)                       \
+    V(CallGetter, 3)                        \
+    V(CallGetter2, 4)                       \
+    V(CallInternalGetter, 3)                \
+    V(ThrowTypeError, 2)                    \
+    V(JSProxySetProperty, 6)                \
+    V(GetHash32, 2)                         \
+    V(FindElementWithCache, 4)              \
+    V(Execute, 5)                           \
+    V(StringGetHashCode, 1)                 \
+    V(FloatMod, 2)                          \
+    V(GetTaggedArrayPtrTest, 1)             \
+    V(NewInternalString, 2)                 \
+    V(NewTaggedArray, 2)                    \
+    V(CopyArray, 3)                         \
+    V(NameDictPutIfAbsent, 7)               \
+    V(SetValueWithBarrier, 4)               \
+    V(PropertiesSetValue, 6)                \
+    V(TaggedArraySetValue, 6)               \
+    V(NewEcmaDynClass, 3)                   \
+    V(UpdateLayOutAndAddTransition, 5)      \
+    V(NoticeThroughChainAndRefreshUser, 3)  \
+    V(DebugPrint, 1)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#ifdef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
 #define FAST_RUNTIME_STUB_LIST(V)   \
     V(FastAdd, 2)                   \
     V(FastSub, 2)                   \
@@ -47,9 +59,8 @@ namespace kungfu {
     V(IsSpecialIndexedObjForSet, 1) \
     V(IsSpecialIndexedObjForGet, 1) \
     V(GetPropertyByName, 3)         \
-    V(GetElement, 2)                \
-    V(SetPropertyByName, 5)         \
-    V(SetElement, 5)                \
+    V(SetPropertyByName, 4)         \
+    V(SetPropertyByNameWithOwn, 4)  \
     V(SetGlobalOwnProperty, 5)      \
     V(GetGlobalOwnProperty, 3)      \
     V(SetOwnPropertyByName, 4)      \
@@ -57,23 +68,39 @@ namespace kungfu {
     V(FastSetProperty, 5)           \
     V(FastGetProperty, 3)           \
     V(FindOwnProperty, 6)           \
-    V(FindOwnElement, 2)            \
     V(NewLexicalEnvDyn, 4)          \
     V(FindOwnProperty2, 6)          \
     V(FindOwnElement2, 6)           \
     V(GetPropertyByIndex, 3)        \
-    V(FunctionCallInternal, 5)      \
     V(SetPropertyByIndex, 4)        \
     V(GetPropertyByValue, 3)        \
     V(SetPropertyByValue, 4)        \
+    V(FastMulGCTest, 3)             \
+    V(TryLoadICByName, 4)           \
+    V(TryLoadICByValue, 5)          \
+    V(TryStoreICByName, 5)          \
+    V(TryStoreICByValue, 6)
+#else
+#define FAST_RUNTIME_STUB_LIST(V)   \
+    V(FastAdd, 2)                   \
+    V(FastSub, 2)                   \
+    V(FastMul, 2)                   \
+    V(FastDiv, 2)                   \
+    V(FastMod, 3)                   \
+    V(FastEqual, 2)                 \
+    V(FastTypeOf, 2)                \
     V(FastMulGCTest, 3)
+#endif
 
+#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
-    V(FastLoadElement, 2)           \
     V(PhiGateTest, 1)               \
     V(LoopTest, 1)                  \
     V(LoopTest1, 1)
+#else
+#define TEST_FUNC_LIST(V)
+#endif
 
 #define CALL_STUB_LIST(V)        \
     FAST_RUNTIME_STUB_LIST(V)    \

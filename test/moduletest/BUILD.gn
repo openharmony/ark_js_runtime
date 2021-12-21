@@ -16,6 +16,7 @@ group("ark_js_moduletest") {
   deps = [
     "async:asyncAction",
     "bitwiseop:bitwiseopAction",
+    "callframe:callframeAction",
     "class:classAction",
     "dyninstruction:dyninstructionAction",
     "fortest:fortestAction",
@@ -28,6 +29,7 @@ group("ark_js_moduletest") {
     "multiargs:multiargsAction",
     "newobjdynrange:newobjdynrangeAction",
     "promise:promiseAction",
+    "spreadoperator:spreadoperatorAction",
     "throwdyn:throwdynAction",
     "yieldstar:yieldstarAction",
   ]

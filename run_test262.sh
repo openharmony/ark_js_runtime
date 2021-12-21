@@ -13,14 +13,17 @@
 # limitations under the License.
 
 set -e
-
+CODESPACE=$(pwd)
+export PATH=${CODESPACE}/prebuilts/build-tools/common/nodejs/node-v12.18.4-linux-x64/bin:$PATH
+node -v
+npm config set registry https://repo.huaweicloud.com/repository/npm/
 pushd ark/ts2abc
     time=$(date +'%Y%m%d%H%M%S')
     if [ ! -d report ];then
         mkdir report
     fi
 
-    python3 test262/run_test262.py --ci-build --threads=16 --libs-dir ../../out/hi3516dv300/clang_x64/ark/ark:../../out/hi3516dv300/clang_x64/ark/ark_js_runtime:../../out/hi3516dv300/clang_x64/global/i18n_standard:../../prebuilts/clang/ohos/linux-x86_64/llvm/lib --ark-tool=../../out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=../../out/hi3516dv300/clang_x64/ark/ark/build/src/index.js
+    python3 test262/run_test262.py --es2015 all --threads=16 --libs-dir ../../out/hi3516dv300/clang_x64/ark/ark:../../out/hi3516dv300/clang_x64/ark/ark_js_runtime:../../out/hi3516dv300/clang_x64/global/i18n_standard:../../prebuilts/clang/ohos/linux-x86_64/llvm/lib --ark-tool=../../out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=../../out/hi3516dv300/clang_x64/ark/ark/build/src/index.js
     
     if [ $? -ne 0 ];then
         echo 'execute run_test262.py failed!'

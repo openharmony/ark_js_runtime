@@ -24,10 +24,7 @@
 namespace panda::ecmascript {
 class JSForInIterator : public JSObject {
 public:
-    static JSForInIterator *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSForInIterator *>(object);
-    }
+    CAST_CHECK(JSForInIterator, IsForinIterator);
 
     static std::pair<JSTaggedValue, bool> NextInternal(JSThread *thread, const JSHandle<JSForInIterator> &it);
 

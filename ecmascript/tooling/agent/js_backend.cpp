@@ -25,7 +25,7 @@ using ObjectType = RemoteObject::TypeName;
 using ObjectSubType = RemoteObject::SubTypeName;
 using ObjectClassName = RemoteObject::ClassName;
 
-const std::string DATA_APP_PATH = "/data/app/";
+const std::string DATA_APP_PATH = "/data/";
 
 JSBackend::JSBackend(FrontEnd *frontend) : frontend_(frontend)
 {

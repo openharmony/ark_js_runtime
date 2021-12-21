@@ -72,16 +72,11 @@ void JSPtHooks::SingleStep([[maybe_unused]] PtThread thread, const PtLocation &l
 
 void JSPtHooks::LoadModule(std::string_view pandaFileName)
 {
-    LOG(DEBUG, DEBUGGER) << "JSPtHooks: LoadModule: " << pandaFileName;
+    LOG(INFO, DEBUGGER) << "JSPtHooks: LoadModule: " << pandaFileName;
 
     [[maybe_unused]] LocalScope scope(backend_->ecmaVm_);
-    static bool firstTime = true;
-    if (firstTime) {
-        firstTime = false;
-        backend_->WaitForDebugger();
-    }
-    static int32_t scriptId = 0;
 
+    static int32_t scriptId = 0;
     if (backend_->NotifyScriptParsed(scriptId++, DebuggerApi::ConvertToString(pandaFileName.data()))) {
         firstTime_ = true;
     }

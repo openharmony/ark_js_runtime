@@ -27,6 +27,7 @@
 namespace panda {
 class JSNApiHelper;
 class EscapeLocalScope;
+class PromiseRejectInfo;
 template<typename T>
 class Global;
 class JSNApi;
@@ -53,12 +54,12 @@ using JSTaggedType = uint64_t;
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DISALLOW_COPY(className)           \
+#define ECMA_DISALLOW_COPY(className)      \
     className(const className &) = delete; \
     className &operator=(const className &) = delete
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DISALLOW_MOVE(className)      \
+#define ECMA_DISALLOW_MOVE(className) \
     className(className &&) = delete; \
     className &operator=(className &&) = delete
 
@@ -123,9 +124,9 @@ class PUBLIC_API Global {  // NOLINTNEXTLINE(cppcoreguidelines-special-member-fu
 public:
     inline Global() = default;
 
-    inline Global(const Global &that) {
-        address_ = that.address_;
-        vm_ = that.vm_;
+    inline Global(const Global &that)
+    {
+        Update(that);
     }
 
     inline Global &operator=(const Global &that)
@@ -134,9 +135,9 @@ public:
         return *this;
     }
 
-    inline Global(Global &&that) {
-        address_ = that.address_;
-        vm_ = that.vm_;
+    inline Global(Global &&that)
+    {
+        Update(that);
     }
 
     inline Global &operator=(Global &&that)
@@ -149,6 +150,8 @@ public:
 
     template<typename S>
     Global(const EcmaVM *vm, const Local<S> &current);
+    template<typename S>
+    Global(const EcmaVM *vm, const Global<S> &current);
     ~Global() = default;
 
     Local<T> ToLocal(const EcmaVM *vm) const
@@ -219,8 +222,8 @@ public:
     explicit EscapeLocalScope(const EcmaVM *vm);
     ~EscapeLocalScope() override = default;
 
-    DISALLOW_COPY(EscapeLocalScope);
-    DISALLOW_MOVE(EscapeLocalScope);
+    ECMA_DISALLOW_COPY(EscapeLocalScope);
+    ECMA_DISALLOW_MOVE(EscapeLocalScope);
 
     template<typename T>
     inline Local<T> Escape(Local<T> current)
@@ -240,8 +243,8 @@ class PUBLIC_API JSExecutionScope {
 public:
     explicit JSExecutionScope(const EcmaVM *vm);
     ~JSExecutionScope();
-    DISALLOW_COPY(JSExecutionScope);
-    DISALLOW_MOVE(JSExecutionScope);
+    ECMA_DISALLOW_COPY(JSExecutionScope);
+    ECMA_DISALLOW_MOVE(JSExecutionScope);
 
 private:
     void *last_current_thread_ = nullptr;
@@ -738,6 +741,10 @@ public:
         enableArkTools_ = value;
     }
 
+    void SetEnableCpuprofiler(bool value) {
+        enableCpuprofiler_ = value;
+    }
+
 private:
     std::string GetGcType() const
     {
@@ -801,6 +808,10 @@ private:
         return enableArkTools_;
     }
 
+    bool GetEnableCpuprofiler() const
+    {
+        return enableCpuprofiler_;
+    }
 
     GC_TYPE gcType_ = GC_TYPE::EPSILON;
     LOG_LEVEL logLevel_ = LOG_LEVEL::DEBUG;
@@ -808,7 +819,26 @@ private:
     LOG_PRINT logBufPrint_{nullptr};
     std::string debuggerLibraryPath_{};
     bool enableArkTools_{false};
+    bool enableCpuprofiler_{false};
     friend JSNApi;
+};
+
+class PUBLIC_API PromiseRejectInfo {
+public:
+    enum class PUBLIC_API PROMISE_REJECTION_EVENT : uint32_t { REJECT = 0, HANDLE };
+    PromiseRejectInfo(Local<JSValueRef> promise, Local<JSValueRef> reason,
+                      PromiseRejectInfo::PROMISE_REJECTION_EVENT operation, void* data);
+    ~PromiseRejectInfo() {}
+    Local<JSValueRef> GetPromise() const;
+    Local<JSValueRef> GetReason() const;
+    PromiseRejectInfo::PROMISE_REJECTION_EVENT GetOperation() const;
+    void* GetData() const;
+
+private:
+    Local<JSValueRef> promise_ {};
+    Local<JSValueRef> reason_ {};
+    PROMISE_REJECTION_EVENT operation_ = PROMISE_REJECTION_EVENT::REJECT;
+    void* data_ {nullptr};
 };
 
 class PUBLIC_API JSNApi {
@@ -816,7 +846,7 @@ public:
     // JSVM
     enum class PUBLIC_API TRIGGER_GC_TYPE : uint8_t { SEMI_GC, OLD_GC, COMPRESS_FULL_GC };
     static EcmaVM *CreateJSVM(const RuntimeOption &option);
-    static void DestoryJSVM(EcmaVM *ecmaVm);
+    static void DestroyJSVM(EcmaVM *ecmaVm);
 
     // JS code
     static bool Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> entry);
@@ -835,16 +865,21 @@ public:
     static Local<ObjectRef> GetUncaughtException(const EcmaVM *vm);
     static void EnableUserUncaughtErrorHandler(EcmaVM *vm);
 
-    static bool StartDebugger(const char *library_path, EcmaVM *vm);
+    static bool StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMode);
     // Serialize & Deserialize.
     static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
     static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
     static void DeleteSerializationData(void *data);
     static void SetOptions(const ecmascript::JSRuntimeOptions &options);
+    static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
+    static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
+    // profile generator
+    static void StartCpuProfiler(const EcmaVM *vm);
+    static void StopCpuProfiler();
 
 private:
     static bool CreateRuntime(const RuntimeOption &option);
-    static bool DestoryRuntime();
+    static bool DestroyRuntime();
 
     static uintptr_t GetHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
     static uintptr_t GetGlobalHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
@@ -862,6 +897,15 @@ private:
 template<typename T>
 template<typename S>
 Global<T>::Global(const EcmaVM *vm, const Local<S> &current) : vm_(vm)
+{
+    if (!current.IsEmpty()) {
+        address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));
+    }
+}
+
+template<typename T>
+template<typename S>
+Global<T>::Global(const EcmaVM *vm, const Global<S> &current) : vm_(vm)
 {
     if (!current.IsEmpty()) {
         address_ = JSNApi::GetGlobalHandleAddr(vm_, reinterpret_cast<uintptr_t>(*current));

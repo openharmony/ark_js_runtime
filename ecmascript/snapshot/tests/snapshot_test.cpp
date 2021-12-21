@@ -46,19 +46,19 @@ public:
         options.SetBootIntrinsicSpaces({"ecmascript"});
         options.SetBootClassSpaces({"ecmascript"});
         options.SetRuntimeType("ecmascript");
-        options.SetRunGcInPlace(true);
+        options.SetEnableForceGC(true);
         ecmaVm = EcmaVM::Create(options);
+        ecmaVm->SetEnableForceGC(true);
         ASSERT_TRUE(ecmaVm != nullptr) << "Cannot create Runtime";
         thread = ecmaVm->GetJSThread();
         scope = new EcmaHandleScope(thread);
         thread->SetIsEcmaInterpreter(true);
-        ecmaVm->GetFactory()->SetTriggerGc(true);
     }
 
     void TearDown() override
     {
         thread->ClearException();
-        ecmaVm->GetFactory()->SetTriggerGc(false);
+        ecmaVm->SetEnableForceGC(false);
         delete scope;
         [[maybe_unused]] bool success = EcmaVM::Destroy(ecmaVm);
         ASSERT_TRUE(success) << "Cannot destroy Runtime";

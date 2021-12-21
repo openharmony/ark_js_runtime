@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/compiler/gate.h"
+#include "triple.h"
 
 namespace kungfu {
 constexpr size_t ONE_DEPEND = 1;
@@ -41,7 +42,7 @@ Properties OpCode::GetProperties() const
 #define NO_ROOT (std::nullopt)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GENERAL_STATE (NOP)
-    switch (this->op) {
+    switch (op_) {
         // SHARED
         case NOP:
         case CIRCUIT_ROOT:
@@ -57,6 +58,8 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CIRCUIT_ROOT)};
         case RETURN:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(ANYVALUE), OpCode(RETURN_LIST)};
+        case RETURN_VOID:
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, NO_VALUE, OpCode(RETURN_LIST)};
         case THROW:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSValueCode()), OpCode(THROW_LIST)};
         case ORDINARY_BLOCK:
@@ -93,6 +96,8 @@ Properties OpCode::GetProperties() const
             return {FLOAT32, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(FLOAT32), NO_ROOT};
         case VALUE_SELECTOR_FLOAT64:
             return {FLOAT64, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(FLOAT64), NO_ROOT};
+        case VALUE_SELECTOR_ANYVALUE:
+            return {ANYVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
         case DEPEND_SELECTOR:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), MANY_DEPEND, NO_VALUE, NO_ROOT};
         case DEPEND_RELAY:
@@ -133,23 +138,25 @@ Properties OpCode::GetProperties() const
             return {JSValueCode(), NO_STATE, NO_DEPEND, VALUE(JSValueCode()), NO_ROOT};
         // Middle Level IR
         case CALL:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {NOVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case INT1_CALL:
-            return {INT1, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {INT1, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case INT8_CALL:
-            return {INT8, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {INT8, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case INT16_CALL:
-            return {INT16, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {INT16, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case INT32_CALL:
-            return {INT32, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {INT32, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case INT64_CALL:
-            return {INT64, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {INT64, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case FLOAT32_CALL:
-            return {FLOAT32, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {FLOAT32, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case FLOAT64_CALL:
-            return {FLOAT64, NO_STATE, ONE_DEPEND, MANY_VALUE(PtrValueCode(), ANYVALUE), NO_ROOT};
+            return {FLOAT64, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
+        case ANYVALUE_CALL:
+            return {ANYVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case ALLOCA:
-            return {PtrValueCode(), NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ALLOCA_LIST)};
+            return {ANYVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ALLOCA_LIST)};
         case INT1_ARG:
             return {INT1, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
         case INT8_ARG:
@@ -166,7 +173,7 @@ Properties OpCode::GetProperties() const
             return {FLOAT64, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
         case MUTABLE_DATA:
         case CONST_DATA:
-            return {PtrValueCode(), NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
+            return {ANYVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
         case INT1_CONSTANT:
             return {INT1, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
         case INT8_CONSTANT:
@@ -273,39 +280,41 @@ Properties OpCode::GetProperties() const
         case FLOAT64_EQ:
             return {INT1, NO_STATE, NO_DEPEND, VALUE(FLOAT64, FLOAT64), NO_ROOT};
         case INT8_LOAD:
-            return {INT8, NO_STATE, ONE_DEPEND, VALUE(PtrValueCode()), NO_ROOT};
+            return {INT8, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case INT16_LOAD:
-            return {INT16, NO_STATE, ONE_DEPEND, VALUE(PtrValueCode()), NO_ROOT};
+            return {INT16, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case INT32_LOAD:
-            return {INT32, NO_STATE, ONE_DEPEND, VALUE(PtrValueCode()), NO_ROOT};
+            return {INT32, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case INT64_LOAD:
-            return {INT64, NO_STATE, ONE_DEPEND, VALUE(PtrValueCode()), NO_ROOT};
+            return {INT64, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case FLOAT32_LOAD:
-            return {FLOAT32, NO_STATE, ONE_DEPEND, VALUE(PtrValueCode()), NO_ROOT};
+            return {FLOAT32, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case FLOAT64_LOAD:
-            return {FLOAT64, NO_STATE, ONE_DEPEND, VALUE(PtrValueCode()), NO_ROOT};
+            return {FLOAT64, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case INT8_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT8, PtrValueCode()), NO_ROOT};
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT8, ANYVALUE), NO_ROOT};
         case INT16_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT16, PtrValueCode()), NO_ROOT};
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT16, ANYVALUE), NO_ROOT};
         case INT32_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT32, PtrValueCode()), NO_ROOT};
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT32, ANYVALUE), NO_ROOT};
         case INT64_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT64, PtrValueCode()), NO_ROOT};
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT64, ANYVALUE), NO_ROOT};
         case FLOAT32_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT32, PtrValueCode()), NO_ROOT};
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT32, ANYVALUE), NO_ROOT};
         case FLOAT64_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT64, PtrValueCode()), NO_ROOT};
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT64, ANYVALUE), NO_ROOT};
         case INT32_TO_FLOAT64:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
         case FLOAT64_TO_INT32:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
+        case TAGGED_POINTER_TO_INT64:
+            return {INT64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case BITCAST_INT64_TO_FLOAT64:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
         case BITCAST_FLOAT64_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
         default:
-            std::cerr << "Please complete OpCode properties (OpCode=" << this->op << ")" << std::endl;
+            std::cerr << "Please complete OpCode properties (OpCode=" << op_ << ")" << std::endl;
             UNREACHABLE();
     }
 #undef STATE
@@ -333,6 +342,7 @@ std::string OpCode::Str() const
         {ALLOCA_LIST, "ALLOCA_LIST"},
         {ARG_LIST, "ARG_LIST"},
         {RETURN, "RETURN"},
+        {RETURN_VOID, "RETURN_VOID"},
         {THROW, "THROW"},
         {ORDINARY_BLOCK, "ORDINARY_BLOCK"},
         {IF_BRANCH, "IF_BRANCH"},
@@ -391,6 +401,7 @@ std::string OpCode::Str() const
         {INT64_CALL, "INT64_CALL"},
         {FLOAT32_CALL, "FLOAT32_CALL"},
         {FLOAT64_CALL, "FLOAT64_CALL"},
+        {ANYVALUE_CALL, "ANYVALUE_CALL"},
         {TAGGED_POINTER_CALL, "TAGGED_POINTER_CALL"},
         {ALLOCA, "ALLOCA"},
         {INT1_ARG, "INT1_ARG"},
@@ -492,19 +503,21 @@ std::string OpCode::Str() const
         {FLOAT64_STORE, "FLOAT64_STORE"},
         {INT32_TO_FLOAT64, "INT32_TO_FLOAT64"},
         {FLOAT64_TO_INT32, "FLOAT64_TO_INT32"},
+        {TAGGED_POINTER_TO_INT64, "TAGGED_POINTER_TO_INT64"},
         {BITCAST_INT64_TO_FLOAT64, "BITCAST_INT64_TO_FLOAT64"},
         {BITCAST_FLOAT64_TO_INT64, "BITCAST_FLOAT64_TO_INT64"},
+        {VALUE_SELECTOR_ANYVALUE, "VALUE_SELECTOR_ANYVALUE"},
     };
-    if (strMap.count(this->op) > 0) {
-        return strMap.at(this->op);
+    if (strMap.count(op_) > 0) {
+        return strMap.at(op_);
     }
-    return "OP-" + std::to_string(this->op);
+    return "OP-" + std::to_string(op_);
 }
 // 4 : 4 means that there are 4 args in total
 std::array<size_t, 4> OpCode::GetOpCodeNumInsArray(BitField bitfield) const
 {
     const size_t manyDepend = 2;
-    auto properties = this->GetProperties();
+    auto properties = GetProperties();
     auto stateProp = properties.statesIn;
     auto dependProp = properties.dependsIn;
     auto valueProp = properties.valuesIn;
@@ -518,7 +531,7 @@ std::array<size_t, 4> OpCode::GetOpCodeNumInsArray(BitField bitfield) const
 
 size_t OpCode::GetOpCodeNumIns(BitField bitfield) const
 {
-    auto numInsArray = this->GetOpCodeNumInsArray(bitfield);
+    auto numInsArray = GetOpCodeNumInsArray(bitfield);
     // 2 : 2 means the third element.
     // 3 : 3 means the fourth element.
     return numInsArray[0] + numInsArray[1] + numInsArray[2] + numInsArray[3];
@@ -526,13 +539,13 @@ size_t OpCode::GetOpCodeNumIns(BitField bitfield) const
 
 ValueCode OpCode::GetValueCode() const
 {
-    return this->GetProperties().returnValue;
+    return GetProperties().returnValue;
 }
 
 ValueCode OpCode::GetInValueCode(BitField bitfield, size_t idx) const
 {
-    auto numInsArray = this->GetOpCodeNumInsArray(bitfield);
-    auto valueProp = this->GetProperties().valuesIn;
+    auto numInsArray = GetOpCodeNumInsArray(bitfield);
+    auto valueProp = GetProperties().valuesIn;
     idx -= numInsArray[0];
     idx -= numInsArray[1];
     ASSERT(valueProp.has_value());
@@ -544,7 +557,7 @@ ValueCode OpCode::GetInValueCode(BitField bitfield, size_t idx) const
 
 OpCode OpCode::GetInStateCode(size_t idx) const
 {
-    auto stateProp = this->GetProperties().statesIn;
+    auto stateProp = GetProperties().statesIn;
     ASSERT(stateProp.has_value());
     if (stateProp->second) {
         return stateProp->first.at(std::min(idx, stateProp->first.size() - 1));
@@ -580,9 +593,9 @@ std::string ValueCodeToStr(ValueCode valueCode)
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckNullInput() const
 {
-    const auto numIns = this->GetNumIns();
+    const auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {
-        if (this->IsInGateNull(idx)) {
+        if (IsInGateNull(idx)) {
             return std::make_pair("In list contains null", idx);
         }
     }
@@ -591,14 +604,14 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckNullInput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckStateInput() const
 {
-    const auto numInsArray = this->GetOpCode().GetOpCodeNumInsArray(this->GetBitField());
+    const auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
     size_t stateStart = 0;
     size_t stateEnd = numInsArray[0];
     for (size_t idx = stateStart; idx < stateEnd; idx++) {
-        auto stateProp = this->GetOpCode().GetProperties().statesIn;
+        auto stateProp = GetOpCode().GetProperties().statesIn;
         ASSERT(stateProp.has_value());
-        auto expectedIn = this->GetOpCode().GetInStateCode(idx);
-        auto actualIn = this->GetInGateConst(idx)->GetOpCode();
+        auto expectedIn = GetOpCode().GetInStateCode(idx);
+        auto actualIn = GetInGateConst(idx)->GetOpCode();
         if (expectedIn == OpCode::NOP) {  // general
             if (!actualIn.IsGeneralState()) {
                 return std::make_pair(
@@ -617,12 +630,12 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckStateInput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckValueInput() const
 {
-    const auto numInsArray = this->GetOpCode().GetOpCodeNumInsArray(this->GetBitField());
+    const auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
     size_t valueStart = numInsArray[0] + numInsArray[1];
     size_t valueEnd = numInsArray[0] + numInsArray[1] + numInsArray[2]; // 2 : 2 means the third element.
     for (size_t idx = valueStart; idx < valueEnd; idx++) {
-        auto expectedIn = this->GetOpCode().GetInValueCode(this->GetBitField(), idx);
-        auto actualIn = this->GetInGateConst(idx)->GetOpCode().GetValueCode();
+        auto expectedIn = GetOpCode().GetInValueCode(GetBitField(), idx);
+        auto actualIn = GetInGateConst(idx)->GetOpCode().GetValueCode();
         if ((expectedIn != actualIn) && (expectedIn != ANYVALUE)) {
             return std::make_pair("Value input does not match (expected: " + ValueCodeToStr(expectedIn) +
                     " actual: " + ValueCodeToStr(actualIn) + ")",
@@ -634,12 +647,12 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckValueInput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckDependInput() const
 {
-    const auto numInsArray = this->GetOpCode().GetOpCodeNumInsArray(this->GetBitField());
+    const auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
     size_t dependStart = numInsArray[0];
     size_t dependEnd = dependStart + numInsArray[1];
     for (size_t idx = dependStart; idx < dependEnd; idx++) {
-        if (this->GetInGateConst(idx)->GetNumInsArray()[1] == 0 &&
-            this->GetInGateConst(idx)->GetOpCode() != OpCode::DEPEND_ENTRY) {
+        if (GetInGateConst(idx)->GetNumInsArray()[1] == 0 &&
+            GetInGateConst(idx)->GetOpCode() != OpCode::DEPEND_ENTRY) {
             return std::make_pair("Depend input is side-effect free", idx);
         }
     }
@@ -648,7 +661,7 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckDependInput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckStateOutput() const
 {
-    if (this->GetOpCode().IsState()) {
+    if (GetOpCode().IsState()) {
         size_t cnt = 0;
         const Gate *curGate = this;
         if (!curGate->IsFirstOutNull()) {
@@ -665,11 +678,11 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckStateOutput() const
         }
         size_t expected = 0;
         bool needCheck = true;
-        if (this->GetOpCode().IsTerminalState()) {
+        if (GetOpCode().IsTerminalState()) {
             expected = 0;
-        } else if (this->GetOpCode() == OpCode::IF_BRANCH) {
+        } else if (GetOpCode() == OpCode::IF_BRANCH) {
             expected = 2; // 2: expected number of state out branches
-        } else if (this->GetOpCode() == OpCode::SWITCH_BRANCH) {
+        } else if (GetOpCode() == OpCode::SWITCH_BRANCH) {
             needCheck = false;
         } else {
             expected = 1;
@@ -686,7 +699,7 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckStateOutput() const
 std::optional<std::pair<std::string, size_t>> Gate::CheckBranchOutput() const
 {
     std::map<std::pair<OpCode, BitField>, size_t> setOfOps;
-    if (this->GetOpCode() == OpCode::IF_BRANCH || this->GetOpCode() == OpCode::SWITCH_BRANCH) {
+    if (GetOpCode() == OpCode::IF_BRANCH || GetOpCode() == OpCode::SWITCH_BRANCH) {
         size_t cnt = 0;
         const Gate *curGate = this;
         if (!curGate->IsFirstOutNull()) {
@@ -712,8 +725,8 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckBranchOutput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckNOP() const
 {
-    if (this->GetOpCode() == OpCode::NOP) {
-        if (!this->IsFirstOutNull()) {
+    if (GetOpCode() == OpCode::NOP) {
+        if (!IsFirstOutNull()) {
             return std::make_pair("NOP gate used by other gates", -1);
         }
     }
@@ -722,21 +735,21 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckNOP() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckSelector() const
 {
-    if (this->GetOpCode() == OpCode::VALUE_SELECTOR_JS ||
-        (OpCode::VALUE_SELECTOR_INT1 <= this->GetOpCode() && this->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64) ||
-        this->GetOpCode() == OpCode::DEPEND_SELECTOR) {
-        auto stateOp = this->GetInGateConst(0)->GetOpCode();
+    if (GetOpCode() == OpCode::VALUE_SELECTOR_JS ||
+        (OpCode::VALUE_SELECTOR_INT1 <= GetOpCode() && GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64) ||
+        GetOpCode() == OpCode::DEPEND_SELECTOR) {
+        auto stateOp = GetInGateConst(0)->GetOpCode();
         if (stateOp == OpCode::MERGE || stateOp == OpCode::LOOP_BEGIN) {
-            if (this->GetInGateConst(0)->GetNumIns() != this->GetNumIns() - 1) {
-                if (this->GetOpCode() == OpCode::DEPEND_SELECTOR) {
+            if (GetInGateConst(0)->GetNumIns() != GetNumIns() - 1) {
+                if (GetOpCode() == OpCode::DEPEND_SELECTOR) {
                     return std::make_pair("Number of depend flows does not match control flows (expected:" +
-                            std::to_string(this->GetInGateConst(0)->GetNumIns()) +
-                            " actual:" + std::to_string(this->GetNumIns() - 1) + ")",
+                            std::to_string(GetInGateConst(0)->GetNumIns()) +
+                            " actual:" + std::to_string(GetNumIns() - 1) + ")",
                         -1);
                 } else {
                     return std::make_pair("Number of data flows does not match control flows (expected:" +
-                            std::to_string(this->GetInGateConst(0)->GetNumIns()) +
-                            " actual:" + std::to_string(this->GetNumIns() - 1) + ")",
+                            std::to_string(GetInGateConst(0)->GetNumIns()) +
+                            " actual:" + std::to_string(GetNumIns() - 1) + ")",
                         -1);
                 }
             }
@@ -750,8 +763,8 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckSelector() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckRelay() const
 {
-    if (this->GetOpCode() == OpCode::DEPEND_RELAY) {
-        auto stateOp = this->GetInGateConst(0)->GetOpCode();
+    if (GetOpCode() == OpCode::DEPEND_RELAY) {
+        auto stateOp = GetInGateConst(0)->GetOpCode();
         if (!(stateOp == OpCode::IF_TRUE || stateOp == OpCode::IF_FALSE || stateOp == OpCode::SWITCH_CASE ||
             stateOp == OpCode::DEFAULT_CASE)) {
             return std::make_pair(
@@ -766,19 +779,19 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckRelay() const
 std::optional<std::pair<std::string, size_t>> Gate::SpecialCheck() const
 {
     {
-        auto ret = this->CheckNOP();
+        auto ret = CheckNOP();
         if (ret.has_value()) {
             return ret;
         }
     }
     {
-        auto ret = this->CheckSelector();
+        auto ret = CheckSelector();
         if (ret.has_value()) {
             return ret;
         }
     }
     {
-        auto ret = this->CheckRelay();
+        auto ret = CheckRelay();
         if (ret.has_value()) {
             return ret;
         }
@@ -792,49 +805,49 @@ bool Gate::Verify() const
     size_t highlightIdx = -1;
     bool failed = false;
     {
-        auto ret = this->CheckNullInput();
+        auto ret = CheckNullInput();
         if (ret.has_value()) {
             failed = true;
             std::tie(errorString, highlightIdx) = ret.value();
         }
     }
     if (!failed) {
-        auto ret = this->CheckStateInput();
+        auto ret = CheckStateInput();
         if (ret.has_value()) {
             failed = true;
             std::tie(errorString, highlightIdx) = ret.value();
         }
     }
     if (!failed) {
-        auto ret = this->CheckValueInput();
+        auto ret = CheckValueInput();
         if (ret.has_value()) {
             failed = true;
             std::tie(errorString, highlightIdx) = ret.value();
         }
     }
     if (!failed) {
-        auto ret = this->CheckDependInput();
+        auto ret = CheckDependInput();
         if (ret.has_value()) {
             failed = true;
             std::tie(errorString, highlightIdx) = ret.value();
         }
     }
     if (!failed) {
-        auto ret = this->CheckStateOutput();
+        auto ret = CheckStateOutput();
         if (ret.has_value()) {
             failed = true;
             std::tie(errorString, highlightIdx) = ret.value();
         }
     }
     if (!failed) {
-        auto ret = this->CheckBranchOutput();
+        auto ret = CheckBranchOutput();
         if (ret.has_value()) {
             failed = true;
             std::tie(errorString, highlightIdx) = ret.value();
         }
     }
     if (!failed) {
-        auto ret = this->SpecialCheck();
+        auto ret = SpecialCheck();
         if (ret.has_value()) {
             failed = true;
             std::tie(errorString, highlightIdx) = ret.value();
@@ -842,7 +855,7 @@ bool Gate::Verify() const
     }
     if (failed) {
         std::cerr << "[Verifier][Error] Gate level input list schema verify failed" << std::endl;
-        this->Print(true, highlightIdx);
+        Print(true, highlightIdx);
         std::cerr << "Note: " << errorString << std::endl;
     }
     return !failed;
@@ -867,6 +880,15 @@ ValueCode PtrValueCode()
 #ifdef PANDA_TARGET_ARM32
     return ValueCode::INT32;
 #endif
+}
+
+ValueCode ArchRelatePtrValueCode(const char *triple)
+{
+    if (triple == TripleConst::GetLLVMArm32Triple()) {
+        return ValueCode::INT32;
+    } else {
+        return ValueCode::INT64;
+    }
 }
 
 size_t GetValueBits(ValueCode valueCode)
@@ -900,127 +922,127 @@ size_t GetOpCodeNumIns(OpCode opcode, BitField bitfield)
 
 void Out::SetNextOut(const Out *ptr)
 {
-    this->nextOut =
+    nextOut_ =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        static_cast<AddrShift>((reinterpret_cast<const uint8_t *>(ptr)) - (reinterpret_cast<const uint8_t *>(this)));
+        static_cast<GateRef>((reinterpret_cast<const uint8_t *>(ptr)) - (reinterpret_cast<const uint8_t *>(this)));
 }
 
 Out *Out::GetNextOut()
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<Out *>((reinterpret_cast<uint8_t *>(this)) + this->nextOut);
+    return reinterpret_cast<Out *>((reinterpret_cast<uint8_t *>(this)) + nextOut_);
 }
 
 const Out *Out::GetNextOutConst() const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<const Out *>((reinterpret_cast<const uint8_t *>(this)) + this->nextOut);
+    return reinterpret_cast<const Out *>((reinterpret_cast<const uint8_t *>(this)) + nextOut_);
 }
 
 void Out::SetPrevOut(const Out *ptr)
 {
-    this->prevOut =
+    prevOut_ =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        static_cast<AddrShift>((reinterpret_cast<const uint8_t *>(ptr)) - (reinterpret_cast<const uint8_t *>(this)));
+        static_cast<GateRef>((reinterpret_cast<const uint8_t *>(ptr)) - (reinterpret_cast<const uint8_t *>(this)));
 }
 
 Out *Out::GetPrevOut()
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<Out *>((reinterpret_cast<uint8_t *>(this)) + this->prevOut);
+    return reinterpret_cast<Out *>((reinterpret_cast<uint8_t *>(this)) + prevOut_);
 }
 
 const Out *Out::GetPrevOutConst() const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<const Out *>((reinterpret_cast<const uint8_t *>(this)) + this->prevOut);
+    return reinterpret_cast<const Out *>((reinterpret_cast<const uint8_t *>(this)) + prevOut_);
 }
 
 void Out::SetIndex(OutIdx idx)
 {
-    this->idx = idx;
+    idx_ = idx;
 }
 
 OutIdx Out::GetIndex() const
 {
-    return this->idx;
+    return idx_;
 }
 
 Gate *Out::GetGate()
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<Gate *>(&this[this->idx + 1]);
+    return reinterpret_cast<Gate *>(&this[idx_ + 1]);
 }
 
 const Gate *Out::GetGateConst() const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<const Gate *>(&this[this->idx + 1]);
+    return reinterpret_cast<const Gate *>(&this[idx_ + 1]);
 }
 
 void Out::SetPrevOutNull()
 {
-    this->prevOut = 0;
+    prevOut_ = 0;
 }
 
 bool Out::IsPrevOutNull() const
 {
-    return this->prevOut == 0;
+    return prevOut_ == 0;
 }
 
 void Out::SetNextOutNull()
 {
-    this->nextOut = 0;
+    nextOut_ = 0;
 }
 
 bool Out::IsNextOutNull() const
 {
-    return this->nextOut == 0;
+    return nextOut_ == 0;
 }
 
 void In::SetGate(const Gate *ptr)
 {
-    this->gatePtr =
+    gatePtr_ =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        static_cast<AddrShift>((reinterpret_cast<const uint8_t *>(ptr)) - (reinterpret_cast<const uint8_t *>(this)));
+        static_cast<GateRef>((reinterpret_cast<const uint8_t *>(ptr)) - (reinterpret_cast<const uint8_t *>(this)));
 }
 
 Gate *In::GetGate()
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<Gate *>((reinterpret_cast<uint8_t *>(this)) + this->gatePtr);
+    return reinterpret_cast<Gate *>((reinterpret_cast<uint8_t *>(this)) + gatePtr_);
 }
 
 const Gate *In::GetGateConst() const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<const Gate *>((reinterpret_cast<const uint8_t *>(this)) + this->gatePtr);
+    return reinterpret_cast<const Gate *>((reinterpret_cast<const uint8_t *>(this)) + gatePtr_);
 }
 
 void In::SetGateNull()
 {
-    this->gatePtr = 0;
+    gatePtr_ = 0;
 }
 
 bool In::IsGateNull() const
 {
-    return this->gatePtr == 0;
+    return gatePtr_ == 0;
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
 Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark)
-    : id(id), opcode(opcode), type(type), stamp(1), mark(mark), bitfield(bitfield), firstOut(0)
+    : id_(id), opcode_(opcode), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
 {
-    auto numIns = this->GetNumIns();
+    auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         auto in = inList[idx];
         if (in == nullptr) {
-            this->GetIn(idx)->SetGateNull();
+            GetIn(idx)->SetGateNull();
         } else {
-            this->NewIn(idx, in);
+            NewIn(idx, in);
         }
-        auto curOut = this->GetOut(idx);
+        auto curOut = GetOut(idx);
         curOut->SetIndex(idx);
     }
 }
@@ -1032,7 +1054,7 @@ size_t Gate::GetOutListSize(size_t numIns)
 
 size_t Gate::GetOutListSize() const
 {
-    return Gate::GetOutListSize(this->GetNumIns());
+    return Gate::GetOutListSize(GetNumIns());
 }
 
 size_t Gate::GetInListSize(size_t numIns)
@@ -1042,7 +1064,7 @@ size_t Gate::GetInListSize(size_t numIns)
 
 size_t Gate::GetInListSize() const
 {
-    return Gate::GetInListSize(this->GetNumIns());
+    return Gate::GetInListSize(GetNumIns());
 }
 
 size_t Gate::GetGateSize(size_t numIns)
@@ -1052,13 +1074,13 @@ size_t Gate::GetGateSize(size_t numIns)
 
 size_t Gate::GetGateSize() const
 {
-    return Gate::GetGateSize(this->GetNumIns());
+    return Gate::GetGateSize(GetNumIns());
 }
 
 void Gate::NewIn(size_t idx, Gate *in)
 {
-    this->GetIn(idx)->SetGate(in);
-    auto curOut = this->GetOut(idx);
+    GetIn(idx)->SetGate(in);
+    auto curOut = GetOut(idx);
     if (in->IsFirstOutNull()) {
         curOut->SetNextOutNull();
     } else {
@@ -1071,33 +1093,33 @@ void Gate::NewIn(size_t idx, Gate *in)
 
 void Gate::ModifyIn(size_t idx, Gate *in)
 {
-    this->DeleteIn(idx);
-    this->NewIn(idx, in);
+    DeleteIn(idx);
+    NewIn(idx, in);
 }
 
 void Gate::DeleteIn(size_t idx)
 {
-    if (!this->GetOut(idx)->IsNextOutNull() && !this->GetOut(idx)->IsPrevOutNull()) {
-        this->GetOut(idx)->GetPrevOut()->SetNextOut(this->GetOut(idx)->GetNextOut());
-        this->GetOut(idx)->GetNextOut()->SetPrevOut(this->GetOut(idx)->GetPrevOut());
-    } else if (this->GetOut(idx)->IsNextOutNull() && !this->GetOut(idx)->IsPrevOutNull()) {
-        this->GetOut(idx)->GetPrevOut()->SetNextOutNull();
-    } else if (!this->GetOut(idx)->IsNextOutNull()) {  // then this->GetOut(idx)->IsPrevOutNull() is true
-        this->GetIn(idx)->GetGate()->SetFirstOut(this->GetOut(idx)->GetNextOut());
-        this->GetOut(idx)->GetNextOut()->SetPrevOutNull();
+    if (!GetOut(idx)->IsNextOutNull() && !GetOut(idx)->IsPrevOutNull()) {
+        GetOut(idx)->GetPrevOut()->SetNextOut(GetOut(idx)->GetNextOut());
+        GetOut(idx)->GetNextOut()->SetPrevOut(GetOut(idx)->GetPrevOut());
+    } else if (GetOut(idx)->IsNextOutNull() && !GetOut(idx)->IsPrevOutNull()) {
+        GetOut(idx)->GetPrevOut()->SetNextOutNull();
+    } else if (!GetOut(idx)->IsNextOutNull()) {  // then GetOut(idx)->IsPrevOutNull() is true
+        GetIn(idx)->GetGate()->SetFirstOut(GetOut(idx)->GetNextOut());
+        GetOut(idx)->GetNextOut()->SetPrevOutNull();
     } else {  // only this out now
-        this->GetIn(idx)->GetGate()->SetFirstOutNull();
+        GetIn(idx)->GetGate()->SetFirstOutNull();
     }
-    this->GetIn(idx)->SetGateNull();
+    GetIn(idx)->SetGateNull();
 }
 
 void Gate::DeleteGate()
 {
-    auto numIns = this->GetNumIns();
+    auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {
-        this->DeleteIn(idx);
+        DeleteIn(idx);
     }
-    this->SetOpCode(OpCode(OpCode::NOP));
+    SetOpCode(OpCode(OpCode::NOP));
 }
 
 Out *Gate::GetOut(size_t idx)
@@ -1109,38 +1131,38 @@ Out *Gate::GetOut(size_t idx)
 Out *Gate::GetFirstOut()
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<Out *>((reinterpret_cast<uint8_t *>(this)) + this->firstOut);
+    return reinterpret_cast<Out *>((reinterpret_cast<uint8_t *>(this)) + firstOut_);
 }
 
 const Out *Gate::GetFirstOutConst() const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<const Out *>((reinterpret_cast<const uint8_t *>(this)) + this->firstOut);
+    return reinterpret_cast<const Out *>((reinterpret_cast<const uint8_t *>(this)) + firstOut_);
 }
 
 void Gate::SetFirstOutNull()
 {
-    this->firstOut = 0;
+    firstOut_ = 0;
 }
 
 bool Gate::IsFirstOutNull() const
 {
-    return this->firstOut == 0;
+    return firstOut_ == 0;
 }
 
 void Gate::SetFirstOut(const Out *firstOut)
 {
-    this->firstOut =
+    firstOut_ =
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        static_cast<AddrShift>(reinterpret_cast<const uint8_t *>(firstOut) - reinterpret_cast<const uint8_t *>(this));
+        static_cast<GateRef>(reinterpret_cast<const uint8_t *>(firstOut) - reinterpret_cast<const uint8_t *>(this));
 }
 
 In *Gate::GetIn(size_t idx)
 {
 #ifndef NDEBUG
-    if (idx >= this->GetNumIns()) {
+    if (idx >= GetNumIns()) {
         std::cerr << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")" << std::endl;
-        this->Print();
+        Print();
         ASSERT(false);
     }
 #endif
@@ -1151,9 +1173,9 @@ In *Gate::GetIn(size_t idx)
 const In *Gate::GetInConst(size_t idx) const
 {
 #ifndef NDEBUG
-    if (idx >= this->GetNumIns()) {
+    if (idx >= GetNumIns()) {
         std::cerr << std::dec << "Gate In access out-of-bound! (idx=" << idx << ")" << std::endl;
-        this->Print();
+        Print();
         ASSERT(false);
     }
 #endif
@@ -1163,72 +1185,82 @@ const In *Gate::GetInConst(size_t idx) const
 
 Gate *Gate::GetInGate(size_t idx)
 {
-    return this->GetIn(idx)->GetGate();
+    return GetIn(idx)->GetGate();
 }
 
 const Gate *Gate::GetInGateConst(size_t idx) const
 {
-    return this->GetInConst(idx)->GetGateConst();
+    return GetInConst(idx)->GetGateConst();
 }
 
 bool Gate::IsInGateNull(size_t idx) const
 {
-    return this->GetInConst(idx)->IsGateNull();
+    return GetInConst(idx)->IsGateNull();
 }
 
 GateId Gate::GetId() const
 {
-    return id;
+    return id_;
 }
 
 OpCode Gate::GetOpCode() const
 {
-    return this->opcode;
+    return opcode_;
 }
 
 void Gate::SetOpCode(OpCode opcode)
 {
-    this->opcode = opcode;
+    opcode_ = opcode;
+}
+
+TypeCode Gate::GetTypeCode() const
+{
+    return type_;
+}
+
+void Gate::SetTypeCode(TypeCode type)
+{
+    type_ = type;
 }
 
 size_t Gate::GetNumIns() const
 {
-    return GetOpCodeNumIns(this->GetOpCode(), this->GetBitField());
+    return GetOpCodeNumIns(GetOpCode(), GetBitField());
 }
 
 std::array<size_t, 4> Gate::GetNumInsArray() const // 4 : 4 means that there are 4 args.
 {
-    return this->GetOpCode().GetOpCodeNumInsArray(this->GetBitField());
+    return GetOpCode().GetOpCodeNumInsArray(GetBitField());
 }
 
 BitField Gate::GetBitField() const
 {
-    return this->bitfield;
+    return bitfield_;
 }
 
 void Gate::SetBitField(BitField bitfield)
 {
-    this->bitfield = bitfield;
+    bitfield_ = bitfield;
 }
 
 void Gate::Print(bool inListPreview, size_t highlightIdx) const
 {
-    if (this->GetOpCode() != OpCode::NOP) {
+    if (GetOpCode() != OpCode::NOP) {
         std::cerr << std::dec << "("
-                  << "id=" << this->id << ", "
-                  << "op=" << this->GetOpCode().Str() << ", "
-                  << "bitfield=" << std::to_string(this->bitfield) << ", "
-                  << "type=" << static_cast<uint32_t>(this->type) << ", "
-                  << "stamp=" << static_cast<uint32_t>(this->stamp) << ", "
-                  << "mark=" << static_cast<uint32_t>(this->mark) << ", ";
+                  << "id=" << id_ << ", "
+                  << "op=" << GetOpCode().Str() << ", "
+                  << "bitfield=" << std::to_string(bitfield_) << ", "
+                  << "type=" << static_cast<uint32_t>(type_) << ", "
+                  << "stamp=" << static_cast<uint32_t>(stamp_) << ", "
+                  << "mark=" << static_cast<uint32_t>(mark_) << ", ";
         std::cerr << "in="
                   << "[";
-        for (size_t idx = 0; idx < this->GetNumIns(); idx++) {
+        for (size_t idx = 0; idx < GetNumIns(); idx++) {
             std::cerr << std::dec << ((idx == 0) ? "" : " ") << ((idx == highlightIdx) ? "\033[4;31m" : "")
-                      << ((this->IsInGateNull(idx)
+                      << ((IsInGateNull(idx)
                                  ? "N"
-                                 : (std::to_string(this->GetInGateConst(idx)->GetId()) +
-                                       (inListPreview ? std::string(":" + this->GetInGateConst(idx)->GetOpCode().Str())
+                                 : (std::to_string(GetInGateConst(idx)->GetId()) +
+                                       (inListPreview ? std::string(":" + GetInGateConst(idx)->GetOpCode().Str())
                                                       : std::string("")))))
                       << ((idx == highlightIdx) ? "\033[0m" : "");
         }
@@ -1236,8 +1268,8 @@ void Gate::Print(bool inListPreview, size_t highlightIdx) const
                   << ", ";
         std::cerr << "out="
                   << "[";
-        if (!this->IsFirstOutNull()) {
-            const Out *curOut = this->GetFirstOutConst();
+        if (!IsFirstOutNull()) {
+            const Out *curOut = GetFirstOutConst();
             std::cerr << std::dec << ""
                       << std::to_string(curOut->GetGateConst()->GetId()) +
                     (inListPreview ? std::string(":" + curOut->GetGateConst()->GetOpCode().Str()) : std::string(""));
@@ -1256,79 +1288,75 @@ void Gate::Print(bool inListPreview, size_t highlightIdx) const
 
 MarkCode Gate::GetMark(TimeStamp stamp) const
 {
-    return (this->stamp == stamp) ? this->mark : MarkCode::EMPTY;
+    return (stamp_ == stamp) ? mark_ : MarkCode::EMPTY;
 }
 
 void Gate::SetMark(MarkCode mark, TimeStamp stamp)
 {
-    this->stamp = stamp;
-    this->mark = mark;
-}
-
-TypeCode Gate::GetTypeCode() const
-{
-    return type;
+    stamp_ = stamp;
+    mark_ = mark;
 }
 
 bool OpCode::IsRoot() const
 {
-    return (this->GetProperties().states == OpCode::CIRCUIT_ROOT) || (this->op == OpCode::CIRCUIT_ROOT);
+    return (GetProperties().states == OpCode::CIRCUIT_ROOT) || (op_ == OpCode::CIRCUIT_ROOT);
 }
 
 bool OpCode::IsProlog() const
 {
-    return (this->GetProperties().states == OpCode::ARG_LIST);
+    return (GetProperties().states == OpCode::ARG_LIST);
 }
 
 bool OpCode::IsFixed() const
 {
-    return (this->GetOpCodeNumInsArray(1)[0] > 0) &&
-        ((this->GetValueCode() != NOVALUE) ||
-            ((this->GetOpCodeNumInsArray(1)[1] > 0) && (this->GetOpCodeNumInsArray(1)[2] == 0)));
+    return (GetOpCodeNumInsArray(1)[0] > 0) &&
+        ((GetValueCode() != NOVALUE) ||
+            ((GetOpCodeNumInsArray(1)[1] > 0) && (GetOpCodeNumInsArray(1)[2] == 0) &&
+             (GetOpCodeNumInsArray(1)[3] == 0)));
 }
 
 bool OpCode::IsSchedulable() const
 {
-    return (this->op != OpCode::NOP) && (!this->IsProlog()) && (!this->IsRoot()) && (!this->IsFixed()) &&
-        (this->GetOpCodeNumInsArray(1)[0] == 0);
+    return (op_ != OpCode::NOP) && (!IsProlog()) && (!IsRoot()) && (!IsFixed()) &&
+        (GetOpCodeNumInsArray(1)[0] == 0);
 }
 
 bool OpCode::IsState() const
 {
-    return (this->op != OpCode::NOP) && (!this->IsProlog()) && (!this->IsRoot()) && (!this->IsFixed()) &&
-        (this->GetOpCodeNumInsArray(1)[0] > 0);
+    return (op_ != OpCode::NOP) && (!IsProlog()) && (!IsRoot()) && (!IsFixed()) &&
+        (GetOpCodeNumInsArray(1)[0] > 0);
 }
 
 bool OpCode::IsGeneralState() const
 {
-    return ((this->op == OpCode::IF_TRUE) || (this->op == OpCode::IF_FALSE) || (this->op == OpCode::SWITCH_CASE) ||
-        (this->op == OpCode::DEFAULT_CASE) || (this->op == OpCode::MERGE) || (this->op == OpCode::LOOP_BEGIN) ||
-        (this->op == OpCode::ORDINARY_BLOCK) || (this->op == OpCode::STATE_ENTRY));
+    return ((op_ == OpCode::IF_TRUE) || (op_ == OpCode::IF_FALSE) || (op_ == OpCode::SWITCH_CASE) ||
+        (op_ == OpCode::DEFAULT_CASE) || (op_ == OpCode::MERGE) || (op_ == OpCode::LOOP_BEGIN) ||
+        (op_ == OpCode::ORDINARY_BLOCK) || (op_ == OpCode::STATE_ENTRY));
 }
 
 bool OpCode::IsTerminalState() const
 {
-    return ((this->op == OpCode::RETURN) || (this->op == OpCode::THROW));
+    return ((op_ == OpCode::RETURN) || (op_ == OpCode::THROW) || (op_ == OpCode::RETURN_VOID));
 }
 
 bool OpCode::IsCFGMerge() const
 {
-    return (this->op == OpCode::MERGE) || (this->op == OpCode::LOOP_BEGIN);
+    return (op_ == OpCode::MERGE) || (op_ == OpCode::LOOP_BEGIN);
 }
 
 bool OpCode::IsControlCase() const
 {
-    return (this->op == OpCode::IF_BRANCH) || (this->op == OpCode::SWITCH_BRANCH) || (this->op == OpCode::IF_TRUE) ||
-           (this->op == OpCode::IF_FALSE) || (this->op == OpCode::SWITCH_CASE) || (this->op == OpCode::DEFAULT_CASE);
+    return (op_ == OpCode::IF_BRANCH) || (op_ == OpCode::SWITCH_BRANCH) || (op_ == OpCode::IF_TRUE) ||
+           (op_ == OpCode::IF_FALSE) || (op_ == OpCode::SWITCH_CASE) || (op_ == OpCode::DEFAULT_CASE);
 }
 
 bool OpCode::IsLoopHead() const
 {
-    return (this->op == OpCode::LOOP_BEGIN);
+    return (op_ == OpCode::LOOP_BEGIN);
 }
 
 bool OpCode::IsNop() const
 {
-    return (this->op == OpCode::NOP);
+    return (op_ == OpCode::NOP);
 }
 }  // namespace kungfu

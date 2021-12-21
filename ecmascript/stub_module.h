@@ -24,7 +24,7 @@
 namespace panda::ecmascript {
 class PUBLIC_API StubModule {
 public:
-    uintptr_t GetStubEntry(int index)
+    uint64_t GetStubEntry(int index)
     {
         return code_->GetDataOffsetAddress() + fastStubEntries_[index];
     }
@@ -34,27 +34,34 @@ public:
     {
         code_ = code;
     }
-    void SetStackMapData(MachineCode *stackMapData)
+
+    void SetCodePtr(uint64_t codePtr)
     {
-        stackMapData_ = stackMapData;
+        codePtr_ = codePtr;
     }
-    void SetStubEntry(int index, uintptr_t offset)
+
+    uint64_t GetCodePtr()
+    {
+        return codePtr_;
+    }
+
+    void SetStubEntry(int index, uint64_t offset)
     {
         fastStubEntries_[index] = offset;
     }
-    void SetHostCodeSectionAddr(uintptr_t addr)
+    void SetHostCodeSectionAddr(uint64_t addr)
     {
         hostCodeSectionAddr_ = addr;
     }
-    uintptr_t GetHostCodeSectionAddr() const
+    uint64_t GetHostCodeSectionAddr() const
     {
         return hostCodeSectionAddr_;
     }
-    void SetDeviceCodeSectionAddr(uintptr_t addr)
+    void SetDeviceCodeSectionAddr(uint64_t addr)
     {
         devicesCodeSectionAddr_ = addr;
     }
-    uintptr_t GetDeviceCodeSectionAddr() const
+    uint64_t GetDeviceCodeSectionAddr() const
     {
         return devicesCodeSectionAddr_;
     }
@@ -62,15 +69,11 @@ public:
     {
         return JSTaggedValue(code_);
     }
-    JSTaggedValue GetStackMapData() const
-    {
-        return JSTaggedValue(stackMapData_);
-    }
-    void SetStackMapAddr(uintptr_t addr)
+    void SetStackMapAddr(uint64_t addr)
     {
         stackMapAddr_ = addr;
     }
-    uintptr_t GetStackMapAddr() const
+    uint64_t GetStackMapAddr() const
     {
         return stackMapAddr_;
     }
@@ -78,18 +81,19 @@ public:
     {
         stackMapSize_ = len;
     }
+
     int GetStackMapSize() const
     {
         return stackMapSize_;
     }
 
 private:
-    std::array<uintptr_t, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
-    uintptr_t hostCodeSectionAddr_  {0};
-    uintptr_t devicesCodeSectionAddr_ {0};
+    std::array<uint64_t, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
+    uint64_t hostCodeSectionAddr_  {0};
+    uint64_t devicesCodeSectionAddr_ {0};
     MachineCode *code_ {nullptr};
-    MachineCode *stackMapData_ {nullptr};
-    uintptr_t stackMapAddr_ {0};
+    uint64_t stackMapAddr_ {0};
+    uint64_t codePtr_{0};
     int stackMapSize_ {0};
 };
 }  // namespace panda::ecmascript

@@ -285,6 +285,7 @@ public:
     bool IsIterator() const;
     bool IsGeneratorFunction() const;
     bool IsGeneratorObject() const;
+    bool IsGeneratorContext() const;
     bool IsAsyncFuncObject() const;
     bool IsJSPromise() const;
     bool IsRecord() const;
@@ -331,10 +332,10 @@ public:
 
     void DumpTaggedValue(JSThread *thread, std::ostream &os) const DUMP_API_ATTR;
     void Dump(JSThread *thread, std::ostream &os) const DUMP_API_ATTR;
-    void Dump(JSThread *thread) const DUMP_API_ATTR;
+    void D() const DUMP_API_ATTR;
     void DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec,
                          bool isVmMode = true) const;
-    static void DumpVal(JSThread *thread, JSTaggedType val) DUMP_API_ATTR;
+    static void DV(JSTaggedType val) DUMP_API_ATTR;
 
 private:
     inline double ExtractNumber() const;

@@ -16,9 +16,8 @@
 #ifndef ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
 #define ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
 
-#include "ecmascript/mem/compress_gc_marker.h"
+#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/semi_space_collector.h"
-#include "ecmascript/mem/semi_space_worker.h"
 
 namespace panda {
 namespace ecmascript {
@@ -27,50 +26,32 @@ class JSHClass;
 
 class CompressCollector : public GarbageCollector {
 public:
-    explicit CompressCollector(Heap *heap, bool parallelGc);
-    ~CompressCollector() override;
+    explicit CompressCollector(Heap *heap);
+    ~CompressCollector() override = default;
 
     NO_COPY_SEMANTIC(CompressCollector);
     NO_MOVE_SEMANTIC(CompressCollector);
 
     void RunPhases();
 
-    Heap *GetHeap() const
-    {
-        return heap_;
-    }
-
 private:
     void InitializePhase();
     void MarkingPhase();
     void SweepPhases();
     void FinishPhase();
-    void ProcessMarkStack(uint32_t threadId);
-
-    uintptr_t AllocateOld(size_t size);
-    void RecordWeakReference(uint32_t threadId, JSTaggedType *ref);
-    void SweepSpace(Space *space, FreeListAllocator &allocator);
-    void SweepSpace(HugeObjectSpace *space);  // Only sweep huge space.
-    void FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart, uintptr_t freeEnd);
 
     Heap *heap_;
-    bool paralledGC_;
-    CompressGCMarker marker_;
-    HeapRootManager rootManager_;
-    CompressGCWorker *workList_;
-    os::memory::Mutex mtx_;
-    BumpPointerAllocator fromSpaceAllocator_{};
-    FreeListAllocator oldSpaceAllocator_{};
-
     size_t youngAndOldAliveSize_ = 0;
     size_t nonMoveSpaceFreeSize_ = 0;
     size_t youngSpaceCommitSize_ = 0;
     size_t oldSpaceCommitSize_ = 0;
     size_t nonMoveSpaceCommitSize_ = 0;
 
-    friend class TlabAllocator;
-    friend class CompressGCMarker;
-    friend class CompressGCWorker;
+    // obtain from heap
+    WorkerHelper *workList_ {nullptr};
+
+    friend class WorkerHelper;
+    friend class Heap;
 };
 }  // namespace ecmascript
 }  // namespace panda

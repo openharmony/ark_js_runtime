@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/compiler/circuit.h"
+#include "ecmascript/compiler/compiler_macros.h"
 
 namespace kungfu {
 Circuit::Circuit() : space({}), circuitSize(0), gateCounter(0), time(1), dataSection({})
@@ -56,8 +57,8 @@ Gate *Circuit::AllocateGateSpace(size_t numIns)
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-AddrShift Circuit::NewGate(
-    OpCode opcode, BitField bitfield, size_t numIns, const AddrShift inList[], TypeCode type, MarkCode mark)
+GateRef Circuit::NewGate(
+    OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type, MarkCode mark)
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
@@ -79,54 +80,56 @@ AddrShift Circuit::NewGate(
     return this->SaveGatePtr(newGate);
 }
 
-AddrShift Circuit::NewGate(
-    OpCode opcode, BitField bitfield, const std::vector<AddrShift> &inList, TypeCode type, MarkCode mark)
+GateRef Circuit::NewGate(
+    OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type, MarkCode mark)
 {
     return this->NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark);
 }
 
 void Circuit::PrintAllGates() const
 {
+#if ECMASCRIPT_ENABLE_COMPILER_LOG
     const auto &gateList = this->GetAllGates();
     for (auto &gate : gateList) {
         this->LoadGatePtrConst(gate)->Print();
     }
+#endif
 }
 
-std::vector<AddrShift> Circuit::GetAllGates() const
+std::vector<GateRef> Circuit::GetAllGates() const
 {
-    std::vector<AddrShift> gateList;
+    std::vector<GateRef> gateList;
     gateList.push_back(0);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     for (size_t out = sizeof(Gate); out < this->circuitSize;
          out += Gate::GetGateSize(
              // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-             reinterpret_cast<const Out *>(this->LoadGatePtrConst(AddrShift(out)))->GetIndex() + 1)) {
+             reinterpret_cast<const Out *>(this->LoadGatePtrConst(GateRef(out)))->GetIndex() + 1)) {
         gateList.push_back(
-            this->SaveGatePtr(reinterpret_cast<const Out *>(this->LoadGatePtrConst(AddrShift(out)))->GetGateConst()));
+            this->SaveGatePtr(reinterpret_cast<const Out *>(this->LoadGatePtrConst(GateRef(out)))->GetGateConst()));
     }
     return gateList;
 }
 
-AddrShift Circuit::SaveGatePtr(const Gate *gate) const
+GateRef Circuit::SaveGatePtr(const Gate *gate) const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return static_cast<AddrShift>(reinterpret_cast<const uint8_t *>(gate) - this->GetDataPtrConst(0));
+    return static_cast<GateRef>(reinterpret_cast<const uint8_t *>(gate) - this->GetDataPtrConst(0));
 }
 
-Gate *Circuit::LoadGatePtr(AddrShift shift)
+Gate *Circuit::LoadGatePtr(GateRef shift)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return reinterpret_cast<Gate *>(this->GetDataPtr(shift));
 }
 
-const Gate *Circuit::LoadGatePtrConst(AddrShift shift) const
+const Gate *Circuit::LoadGatePtrConst(GateRef shift) const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return reinterpret_cast<const Gate *>(this->GetDataPtrConst(shift));
 }
 
-AddrShift Circuit::GetCircuitRoot(OpCode opcode)
+GateRef Circuit::GetCircuitRoot(OpCode opcode)
 {
     switch (opcode) {
         case OpCode::CIRCUIT_ROOT:
@@ -177,32 +180,27 @@ TimeStamp Circuit::GetTime() const
     return this->time;
 }
 
-MarkCode Circuit::GetMark(AddrShift gate) const
+MarkCode Circuit::GetMark(GateRef gate) const
 {
     return this->LoadGatePtrConst(gate)->GetMark(this->GetTime());
 }
 
-TypeCode Circuit::GetTypeCode(AddrShift gate) const
-{
-    return this->LoadGatePtrConst(gate)->GetTypeCode();
-}
-
-void Circuit::SetMark(AddrShift gate, MarkCode mark) const
+void Circuit::SetMark(GateRef gate, MarkCode mark) const
 {
     const_cast<Gate *>(this->LoadGatePtrConst(gate))->SetMark(mark, this->GetTime());
 }
 
-bool Circuit::Verify(AddrShift gate) const
+bool Circuit::Verify(GateRef gate) const
 {
     return this->LoadGatePtrConst(gate)->Verify();
 }
 
-AddrShift Circuit::NullGate()
+GateRef Circuit::NullGate()
 {
     return -1;
 }
 
-bool Circuit::IsLoopHead(AddrShift gate) const
+bool Circuit::IsLoopHead(GateRef gate) const
 {
     if (gate != NullGate()) {
         const Gate *curGate = this->LoadGatePtrConst(gate);
@@ -211,7 +209,7 @@ bool Circuit::IsLoopHead(AddrShift gate) const
     return false;
 }
 
-bool Circuit::IsControlCase(AddrShift gate) const
+bool Circuit::IsControlCase(GateRef gate) const
 {
     if (gate != NullGate()) {
         const Gate *curGate = this->LoadGatePtrConst(gate);
@@ -220,7 +218,7 @@ bool Circuit::IsControlCase(AddrShift gate) const
     return false;
 }
 
-bool Circuit::IsSelector(AddrShift gate) const
+bool Circuit::IsSelector(GateRef gate) const
 {
     if (gate != NullGate()) {
         const Gate *curGate = this->LoadGatePtrConst(gate);
@@ -230,9 +228,9 @@ bool Circuit::IsSelector(AddrShift gate) const
     return false;
 }
 
-std::vector<AddrShift> Circuit::GetInVector(AddrShift gate) const
+std::vector<GateRef> Circuit::GetInVector(GateRef gate) const
 {
-    std::vector<AddrShift> result;
+    std::vector<GateRef> result;
     const Gate *curGate = this->LoadGatePtrConst(gate);
     for (size_t idx = 0; idx < curGate->GetNumIns(); idx++) {
         result.push_back(this->SaveGatePtr(curGate->GetInGateConst(idx)));
@@ -240,27 +238,27 @@ std::vector<AddrShift> Circuit::GetInVector(AddrShift gate) const
     return result;
 }
 
-AddrShift Circuit::GetIn(AddrShift gate, size_t idx) const
+GateRef Circuit::GetIn(GateRef gate, size_t idx) const
 {
     const Gate *curGate = this->LoadGatePtrConst(gate);
     return this->SaveGatePtr(curGate->GetInGateConst(idx));
 }
 
-bool Circuit::IsInGateNull(AddrShift gate, size_t idx) const
+bool Circuit::IsInGateNull(GateRef gate, size_t idx) const
 {
     const Gate *curGate = this->LoadGatePtrConst(gate);
     return curGate->GetInConst(idx)->IsGateNull();
 }
 
-bool Circuit::IsFirstOutNull(AddrShift gate) const
+bool Circuit::IsFirstOutNull(GateRef gate) const
 {
     const Gate *curGate = this->LoadGatePtrConst(gate);
     return curGate->IsFirstOutNull();
 }
 
-std::vector<AddrShift> Circuit::GetOutVector(AddrShift gate) const
+std::vector<GateRef> Circuit::GetOutVector(GateRef gate) const
 {
-    std::vector<AddrShift> result;
+    std::vector<GateRef> result;
     const Gate *curGate = this->LoadGatePtrConst(gate);
     if (!curGate->IsFirstOutNull()) {
         const Out *curOut = curGate->GetFirstOutConst();
@@ -273,47 +271,57 @@ std::vector<AddrShift> Circuit::GetOutVector(AddrShift gate) const
     return result;
 }
 
-void Circuit::NewIn(AddrShift gate, size_t idx, AddrShift in)
+void Circuit::NewIn(GateRef gate, size_t idx, GateRef in)
 {
     this->LoadGatePtr(gate)->NewIn(idx, this->LoadGatePtr(in));
 }
 
-void Circuit::ModifyIn(AddrShift gate, size_t idx, AddrShift in)
+void Circuit::ModifyIn(GateRef gate, size_t idx, GateRef in)
 {
     this->LoadGatePtr(gate)->ModifyIn(idx, this->LoadGatePtr(in));
 }
 
-void Circuit::DeleteIn(AddrShift gate, size_t idx)
+void Circuit::DeleteIn(GateRef gate, size_t idx)
 {
     this->LoadGatePtr(gate)->DeleteIn(idx);
 }
 
-void Circuit::DeleteGate(AddrShift gate)
+void Circuit::DeleteGate(GateRef gate)
 {
     this->LoadGatePtr(gate)->DeleteGate();
 }
 
-void Circuit::SetOpCode(AddrShift gate, OpCode opcode)
+void Circuit::SetOpCode(GateRef gate, OpCode opcode)
 {
     this->LoadGatePtr(gate)->SetOpCode(opcode);
 }
 
-OpCode Circuit::GetOpCode(AddrShift gate) const
+void Circuit::SetTypeCode(GateRef gate, TypeCode type)
+{
+    this->LoadGatePtr(gate)->SetTypeCode(type);
+}
+
+TypeCode Circuit::GetTypeCode(GateRef gate) const
+{
+    return this->LoadGatePtrConst(gate)->GetTypeCode();
+}
+
+OpCode Circuit::GetOpCode(GateRef gate) const
 {
     return this->LoadGatePtrConst(gate)->GetOpCode();
 }
 
-GateId Circuit::GetId(AddrShift gate) const
+GateId Circuit::GetId(GateRef gate) const
 {
     return this->LoadGatePtrConst(gate)->GetId();
 }
 
-BitField Circuit::GetBitField(AddrShift gate) const
+BitField Circuit::GetBitField(GateRef gate) const
 {
     return this->LoadGatePtrConst(gate)->GetBitField();
 }
 
-void Circuit::Print(AddrShift gate) const
+void Circuit::Print(GateRef gate) const
 {
     this->LoadGatePtrConst(gate)->Print();
 }

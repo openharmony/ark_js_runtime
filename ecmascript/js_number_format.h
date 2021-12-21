@@ -51,11 +51,7 @@ static const std::set<std::string> sanctionedUnit({ "acre", "bit", "byte", "cels
 
 class JSNumberFormat : public JSObject {
 public:
-    static JSNumberFormat *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSNumberFormat());
-        return reinterpret_cast<JSNumberFormat *>(object);
-    }
+    CAST_CHECK(JSNumberFormat, IsJSNumberFormat);
 
     static constexpr size_t LOCALE_OFFSET = JSObject::SIZE;
 

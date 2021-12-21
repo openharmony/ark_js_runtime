@@ -24,7 +24,13 @@ class JSTypedArray : public JSObject {
 public:
     static JSTypedArray *Cast(ObjectHeader *object)
     {
+    #if ECMASCRIPT_ENABLE_CAST_CHECK
+        if (!(JSTaggedValue(object).IsTypedArray() || JSTaggedValue(object).IsJSTypedArray())) {
+            std::abort();
+        }
+    #else
         ASSERT(JSTaggedValue(object).IsTypedArray() || JSTaggedValue(object).IsJSTypedArray());
+    #endif
         return static_cast<JSTypedArray *>(object);
     }
 

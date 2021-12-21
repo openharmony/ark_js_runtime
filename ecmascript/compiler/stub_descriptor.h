@@ -21,6 +21,7 @@
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/compiler/machine_type.h"
 #include "libpandabase/macros.h"
+#include "libpandabase/utils/bit_field.h"
 #include "llvm-c/Types.h"
 
 namespace kungfu {
@@ -30,6 +31,7 @@ enum class ArgumentsOrder {
 
 class StubDescriptor {
 public:
+    using VariableArgsBits = panda::BitField<bool, 0, 1>;  // 1 variable argument
     enum class CallStubKind {
         CODE_STUB,
         RUNTIME_STUB,
@@ -114,6 +116,22 @@ public:
         return flags_;
     }
 
+    void SetFlags(int flag)
+    {
+        flags_ = flag;
+    }
+
+    bool GetVariableArgs() const
+    {
+        return VariableArgsBits::Decode(flags_);
+    }
+
+    void SetVariableArgs(bool variable)
+    {
+        uint64_t newVal = VariableArgsBits::Update(flags_, variable);
+        SetFlags(newVal);
+    }
+
     CallStubKind GetStubKind() const
     {
         return kind_;
@@ -136,7 +154,7 @@ private:
     int paramCounter_ {0};
     ArgumentsOrder order_ {ArgumentsOrder::DEFAULT_ORDER};
 
-    MachineType returnType_ {MachineType::NONE_TYPE};
+    MachineType returnType_ {MachineType::NONE};
     std::unique_ptr<std::vector<MachineType>> paramsType_ {nullptr};
 };
 

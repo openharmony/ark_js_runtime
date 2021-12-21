@@ -24,11 +24,13 @@
 namespace panda::ecmascript {
 EcmaString *ObjectFactory::AllocNonMovableStringObject(size_t size)
 {
+    NewObjectHook();
     return reinterpret_cast<EcmaString *>(heapHelper_.AllocateNonMovableOrHugeObject(stringClass_, size));
 }
 
 EcmaString *ObjectFactory::AllocStringObject(size_t size)
 {
+    NewObjectHook();
     return reinterpret_cast<EcmaString *>(heapHelper_.AllocateYoungGenerationOrHugeObject(stringClass_, size));
 }
 
@@ -37,6 +39,7 @@ JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointe
                                                             void *data,
                                                             bool nonMovable)
 {
+    NewObjectHook();
     TaggedObject *header;
     if (nonMovable) {
         header = heapHelper_.AllocateNonMovableOrHugeObject(jsNativePointerClass_);
@@ -52,6 +55,7 @@ JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointe
 
 LexicalEnv *ObjectFactory::InlineNewLexicalEnv(int numSlots)
 {
+    NewObjectHook();
     size_t size = LexicalEnv::ComputeSize(numSlots);
     auto header = heapHelper_.TryAllocateYoungGeneration(size);
     if (UNLIKELY(header == nullptr)) {

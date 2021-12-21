@@ -28,14 +28,10 @@ group("ark_js_packages") {
 group("ark_js_host_linux_tools_packages") {
   deps = []
   if (host_os != "mac") {
-    deps += [
-      "//ark/js_runtime:libark_jsruntime(${host_toolchain})",
-      "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})",
-    ]
+    deps += [ "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})" ]
     if (is_standard_system) {
       deps += [
         "//ark/js_runtime/ecmascript/compiler:ark_stub_opt(${host_toolchain})",
-        "//ark/js_runtime/ecmascript/compiler:libark_jsoptimizer(${host_toolchain})",
       ]
     }
   }
@@ -48,6 +44,7 @@ group("ark_js_unittest") {
     deps += [
       "//ark/js_runtime/ecmascript/builtins/tests:unittest",
       "//ark/js_runtime/ecmascript/hprof/tests:unittest",
+      "//ark/js_runtime/ecmascript/ic/tests:unittest",
       "//ark/js_runtime/ecmascript/napi/test:unittest",
       "//ark/js_runtime/ecmascript/regexp/tests:unittest",
       "//ark/js_runtime/ecmascript/snapshot/tests:unittest",
@@ -63,10 +60,9 @@ group("ark_js_host_unittest") {
   if (host_os != "mac") {
     # js unittest
     deps += [
-      "//ark/js_runtime:libark_jsruntime(${host_toolchain})",
       "//ark/js_runtime/ecmascript/builtins/tests:host_unittest",
       "//ark/js_runtime/ecmascript/hprof/tests:host_unittest",
-      "//ark/js_runtime/ecmascript/js_vm:ark_js_vm(${host_toolchain})",
+      "//ark/js_runtime/ecmascript/ic/tests:host_unittest",
       "//ark/js_runtime/ecmascript/napi/test:host_unittest",
       "//ark/js_runtime/ecmascript/regexp/tests:host_unittest",
       "//ark/js_runtime/ecmascript/snapshot/tests:host_unittest",
@@ -135,6 +131,9 @@ config("ark_jsruntime_common_config") {
   if (enable_stub_aot) {
     defines += [ "ECMASCRIPT_ENABLE_STUB_AOT" ]
   }
+  if (enable_specific_stubs) {
+    defines += [ "ECMASCRIPT_ENABLE_SPECIFIC_STUBS" ]
+  }
 
   if (is_standard_system) {
     defines += [ "IS_STANDARD_SYSTEM" ]
@@ -175,10 +174,12 @@ config("ark_jsruntime_common_config") {
     "-pipe",
     "-Wdate-time",
     "-Wformat=2",
-    "-flto",
   ]
 
-  ldflags = [ "-flto" ]
+  if (!use_libfuzzer) {
+    cflags_cc += [ "-flto" ]
+    ldflags = [ "-flto" ]
+  }
 
   if (is_debug) {
     cflags_cc += [
@@ -203,6 +204,7 @@ config("ark_jsruntime_common_config") {
     defines += [
       "PANDA_TARGET_ARM32_ABI_SOFT=1",
       "PANDA_TARGET_ARM32",
+      "PANDA_TARGET_32",
     ]
   } else if (current_cpu == "arm64") {
     defines += [
@@ -279,6 +281,9 @@ ecma_source = [
   "ecmascript/builtins/builtins_weak_map.cpp",
   "ecmascript/builtins/builtins_weak_set.cpp",
   "ecmascript/class_linker/panda_file_translator.cpp",
+  "ecmascript/cpu_profiler/cpu_profiler.cpp",
+  "ecmascript/cpu_profiler/profile_processor.cpp",
+  "ecmascript/cpu_profiler/profile_generator.cpp",
   "ecmascript/dump.cpp",
   "ecmascript/ecma_class_linker_extension.cpp",
   "ecmascript/ecma_exceptions.cpp",
@@ -298,8 +303,10 @@ ecma_source = [
   "ecmascript/hprof/heap_snapshot_json_serializer.cpp",
   "ecmascript/hprof/heap_tracker.cpp",
   "ecmascript/hprof/string_hashmap.cpp",
-  "ecmascript/ic/profile_type_info.cpp",
   "ecmascript/ic/ic_runtime.cpp",
+  "ecmascript/ic/ic_compare_op.cpp",
+  "ecmascript/ic/invoke_cache.cpp",
+  "ecmascript/ic/profile_type_info.cpp",
   "ecmascript/ic/property_box.cpp",
   "ecmascript/ic/proto_change_details.cpp",
   "ecmascript/internal_call_params.cpp",
@@ -342,20 +349,22 @@ ecma_source = [
   "ecmascript/mem/c_string.cpp",
   "ecmascript/mem/chunk.cpp",
   "ecmascript/mem/compress_collector.cpp",
+  "ecmascript/mem/concurrent_marker.cpp",
   "ecmascript/mem/concurrent_sweeper.cpp",
   "ecmascript/mem/ecma_heap_manager.cpp",
+  "ecmascript/mem/evacuation_allocator.cpp",
   "ecmascript/mem/free_object_kind.cpp",
   "ecmascript/mem/free_object_list.cpp",
   "ecmascript/mem/gc_stats.cpp",
   "ecmascript/mem/heap.cpp",
   "ecmascript/mem/mem_controller.cpp",
-  "ecmascript/mem/old_space_collector.cpp",
+  "ecmascript/mem/mix_space_collector.cpp",
+  "ecmascript/mem/parallel_work_helper.cpp",
+  "ecmascript/mem/parallel_evacuation.cpp",
+  "ecmascript/mem/parallel_marker.cpp",
   "ecmascript/mem/region_factory.cpp",
   "ecmascript/mem/semi_space_collector.cpp",
-  "ecmascript/mem/semi_space_marker.cpp",
-  "ecmascript/mem/semi_space_worker.cpp",
   "ecmascript/mem/space.cpp",
-  "ecmascript/mem/tagged_object.cpp",
   "ecmascript/mem/verification.cpp",
   "ecmascript/napi/jsnapi.cpp",
   "ecmascript/object_factory.cpp",
@@ -369,6 +378,7 @@ ecma_source = [
   "ecmascript/regexp/regexp_opcode.cpp",
   "ecmascript/regexp/regexp_parser.cpp",
   "ecmascript/regexp/regexp_parser_cache.cpp",
+  "ecmascript/runtime_api.cpp",
   "ecmascript/runtime_trampolines.cpp",
   "ecmascript/snapshot/mem/slot_bit.cpp",
   "ecmascript/snapshot/mem/snapshot.cpp",
@@ -420,9 +430,9 @@ ohos_shared_library("libark_jsruntime") {
   deps = [
     ":libark_js_intl_static",
     ":libark_jsruntime_static",
-    "//third_party/icu/icu4c:shared_icui18n",
-    "//third_party/icu/icu4c:shared_icuuc",
   ]
+
+  configs = [ ":ark_jsruntime_config" ]
 
   install_enable = true
   part_name = "ark_js_runtime"

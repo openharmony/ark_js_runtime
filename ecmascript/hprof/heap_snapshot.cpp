@@ -410,14 +410,14 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
         if (entry.IsString()) {
             node = GenerateStringNode(entry, sequenceId);
             if (node == nullptr) {
-                LOG(ERROR, RUNTIME) << "string node nullptr";
+                LOG(DEBUG, RUNTIME) << "string node nullptr";
             }
         }
         TaggedObject *obj = entry.GetTaggedObject();
         auto *baseClass = obj->GetClass();
         if (baseClass != nullptr) {
             node = Node::NewNode(heap_, sequenceId, nodeCount_, GenerateNodeName(thread, obj), GenerateNodeType(obj),
-                                 obj->GetObjectSize(), obj);
+                                 obj->GetClass()->SizeFromJSHClass(obj), obj);
             Node *existNode = entryMap_.FindOrInsertNode(node);  // Fast Index
             if (existNode == node) {
                 if (sequenceId == sequenceId_ + SEQ_STEP) {

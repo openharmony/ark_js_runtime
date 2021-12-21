@@ -16,34 +16,37 @@
 #ifndef ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H
 #define ECMASCRIPT_MEM_TLAB_ALLOCATOR_INL_H
 
+#include "ecmascript/mem/tlab_allocator.h"
+
 #include <cstdlib>
 
 #include "ecmascript/free_object.h"
 #include "ecmascript/mem/compress_collector.h"
-#include "ecmascript/mem/semi_space_collector-inl.h"
-#include "ecmascript/mem/tlab_allocator.h"
+#include "ecmascript/mem/evacuation_allocator-inl.h"
 
 namespace panda::ecmascript {
 static constexpr size_t YOUNG_BUFFER_SIZE = 31 * 1024;
 static constexpr size_t OLD_BUFFER_SIZE = 255 * 1024;
 
 TlabAllocator::TlabAllocator(Heap *heap, TriggerGCType gcType)
-    : heap_(heap), gcType_(gcType), youngBegin_(0), youngTop_(0), youngEnd_(0), youngEnable_(true), oldBegin_(0),
-    oldTop_(0), oldEnd_(0)
+    : heap_(heap), gcType_(gcType), youngEnable_(true), allocator_(heap_->GetEvacuationAllocator())
 {
 }
 
 TlabAllocator::~TlabAllocator()
 {
-    if (youngTop_ != 0 && youngTop_ != youngEnd_) {
-        FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngTop_, youngEnd_ - youngTop_);
+    Finalize();
+}
+
+inline void TlabAllocator::Finalize()
+{
+    if (youngerAllocator_.Available() != 0) {
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngerAllocator_.GetTop(), youngerAllocator_.Available());
+        youngerAllocator_.Reset();
     }
-    if (oldTop_ != 0 && oldTop_ != oldEnd_) {
-        if (gcType_ == TriggerGCType::SEMI_GC) {
-            heap_->GetSemiSpaceCollector()->oldSpaceAllocator_.Free(oldTop_, oldEnd_);
-        } else if (gcType_ == TriggerGCType::COMPRESS_FULL_GC) {
-            heap_->GetCompressCollector()->oldSpaceAllocator_.Free(oldTop_, oldEnd_);
-        }
+    if (oldBumpPointerAllocator_.Available() != 0) {
+        allocator_->FreeSafe(oldBumpPointerAllocator_.GetTop(), oldBumpPointerAllocator_.GetEnd());
+        oldBumpPointerAllocator_.Reset();
     }
 }
 
@@ -67,68 +70,54 @@ uintptr_t TlabAllocator::TlabAllocatorYoungSpace(size_t size)
 {
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     if (UNLIKELY(size >= SMALL_OBJECT_SIZE)) {
-        uintptr_t largeObject = 0;
-        if (gcType_ == TriggerGCType::SEMI_GC) {
-            largeObject = heap_->GetSemiSpaceCollector()->AllocateOld(size);
-        } else {
-            UNREACHABLE();
-        }
-        return largeObject;
+        uintptr_t address =  allocator_->AllocateYoung(size);
+        LOG(DEBUG, RUNTIME) << "AllocatorYoungSpace:" << address;
+        return address;
     }
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (UNLIKELY(youngTop_ + size > youngEnd_)) {
-        // set FreeObject and extend
-        if (youngEnd_ - youngTop_ != 0) {
-            FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngTop_, youngEnd_ - youngTop_);
-        }
-        if (!youngEnable_ || !ExpandYoung()) {
-            youngEnable_ = false;
-            return 0;
-        }
+    uintptr_t result = youngerAllocator_.Allocate(size);
+    if (result != 0) {
+        return result;
     }
-
-    uintptr_t result = youngTop_;
-
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    youngTop_ += size;
-    return result;
+    if (youngerAllocator_.Available() != 0) {
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngerAllocator_.GetTop(), youngerAllocator_.Available());
+    }
+    if (!youngEnable_ || !ExpandYoung()) {
+        youngEnable_ = false;
+        return 0;
+    }
+    return youngerAllocator_.Allocate(size);
 }
 
 uintptr_t TlabAllocator::TlabAllocatorOldSpace(size_t size)
 {
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (UNLIKELY(oldTop_ + size > oldEnd_)) {
-        // set FreeObject and extend
-        if (oldEnd_ - oldTop_ != 0) {
-            FreeObject::FillFreeObject(heap_->GetEcmaVM(), oldTop_, oldEnd_ - oldTop_);
-        }
-        if (!ExpandOld()) {
-            return 0;
-        }
+    uintptr_t result = oldBumpPointerAllocator_.Allocate(size);
+    if (result != 0) {
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), oldBumpPointerAllocator_.GetTop(),
+            oldBumpPointerAllocator_.Available());
+        return result;
     }
-
-    uintptr_t result = oldTop_;
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    oldTop_ += size;
+    allocator_->FreeSafe(oldBumpPointerAllocator_.GetTop(), oldBumpPointerAllocator_.GetEnd());
+    if (!ExpandOld()) {
+        return 0;
+    }
+    result = oldBumpPointerAllocator_.Allocate(size);
+    if (result != 0) {
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), oldBumpPointerAllocator_.GetTop(),
+            oldBumpPointerAllocator_.Available());
+    }
     return result;
 }
 
 bool TlabAllocator::ExpandYoung()
 {
     uintptr_t buffer = 0;
-    if (gcType_ == TriggerGCType::SEMI_GC) {
-        buffer = heap_->GetSemiSpaceCollector()->AllocateYoung(YOUNG_BUFFER_SIZE);
-    } else {
-        UNREACHABLE();
-    }
+    buffer = allocator_->AllocateYoung(YOUNG_BUFFER_SIZE);
 
     if (buffer == 0) {
         return false;
     }
-    youngBegin_ = buffer;
-    youngTop_ = youngBegin_;
-    youngEnd_ = youngBegin_ + YOUNG_BUFFER_SIZE;
+    youngerAllocator_.Reset(buffer, buffer + YOUNG_BUFFER_SIZE);
     return true;
 }
 
@@ -136,25 +125,25 @@ bool TlabAllocator::ExpandOld()
 {
     uintptr_t buffer = 0;
     if (gcType_ == TriggerGCType::SEMI_GC) {
-        buffer = heap_->GetSemiSpaceCollector()->AllocateOld(YOUNG_BUFFER_SIZE);
+        buffer = allocator_->AllocateOld(YOUNG_BUFFER_SIZE);
+        if (buffer == 0) {
+            return false;
+        }
+        oldBumpPointerAllocator_.Reset(buffer, buffer + YOUNG_BUFFER_SIZE);
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), oldBumpPointerAllocator_.GetTop(),
+            oldBumpPointerAllocator_.Available());
     } else if (gcType_ == TriggerGCType::COMPRESS_FULL_GC) {
-        buffer = heap_->GetCompressCollector()->AllocateOld(OLD_BUFFER_SIZE);
+        Region *region = allocator_->ExpandOldSpace();
+        if (region == nullptr) {
+            return false;
+        }
+        oldBumpPointerAllocator_.Reset(region->GetBegin(), region->GetEnd());
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), oldBumpPointerAllocator_.GetTop(),
+            oldBumpPointerAllocator_.Available());
     } else {
         UNREACHABLE();
     }
 
-    if (buffer == 0) {
-        return false;
-    }
-    oldBegin_ = buffer;
-    oldTop_ = oldBegin_;
-    if (gcType_ == TriggerGCType::SEMI_GC) {
-        oldEnd_ = oldBegin_ + YOUNG_BUFFER_SIZE;
-    } else if (gcType_ == TriggerGCType::COMPRESS_FULL_GC) {
-        oldEnd_ = oldBegin_ + OLD_BUFFER_SIZE;
-    } else {
-        UNREACHABLE();
-    }
     return true;
 }
 }  // namespace panda::ecmascript

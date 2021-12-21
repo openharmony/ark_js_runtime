@@ -19,12 +19,13 @@
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
-void GCStats::PrintStatisticResult()
+void GCStats::PrintStatisticResult(bool isForce)
 {
-    LOG(DEBUG, RUNTIME) << "GCStats statistic: ";
-    if (semiGCCount_ != 0) {
-        LOG(DEBUG, RUNTIME) << " SemiCollector statistic: total semi gc count " << semiGCCount_;
-        LOG(DEBUG, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(semiGCMinPause_) << "ms"
+    LOG(ERROR, RUNTIME) << "GCStats statistic: ";
+    if ((isForce && semiGCCount_ != 0) || (!isForce && semiGCCount_ != lastSemiGCCount_)) {
+        lastSemiGCCount_ = semiGCCount_;
+        LOG(ERROR, RUNTIME) << " SemiCollector statistic: total semi gc count " << semiGCCount_;
+        LOG(ERROR, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(semiGCMinPause_) << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(semiGCMAXPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(semiGCTotalPause_) << "ms"
                             << " average pause time: " << PrintTimeMilliseconds(semiGCTotalPause_ / semiGCCount_)
@@ -38,9 +39,10 @@ void GCStats::PrintStatisticResult()
                             << " average promote size: " << sizeToMB(semiTotalPromoteSize_ / semiGCCount_) << "MB";
     }
 
-    if (oldGCCount_ != 0) {
-        LOG(DEBUG, RUNTIME) << " oldCollector statistic: total old gc count " << oldGCCount_;
-        LOG(DEBUG, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(oldGCMinPause_) << "ms"
+    if ((isForce && oldGCCount_ != 0) || (!isForce && lastOldGCCount_ != oldGCCount_)) {
+        lastOldGCCount_ = oldGCCount_;
+        LOG(ERROR, RUNTIME) << " MixCollector statistic: total old gc count " << oldGCCount_;
+        LOG(ERROR, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(oldGCMinPause_) << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(oldGCMAXPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(oldGCTotalPause_) << "ms"
                             << " average pause time: " << PrintTimeMilliseconds(oldGCTotalPause_ / oldGCCount_) << "ms"
@@ -56,9 +58,10 @@ void GCStats::PrintStatisticResult()
                             << float(oldTotalFreeSize_) / (oldSpaceTotalCommitSize_ + oldNonMoveTotalCommitSize_);
     }
 
-    if (compressGCCount_ != 0) {
-        LOG(DEBUG, RUNTIME) << " compressCollector statistic: total compress gc count " << compressGCCount_;
-        LOG(DEBUG, RUNTIME)
+    if ((isForce && compressGCCount_ != 0) || (!isForce && compressGCCount_ != lastCompressGCCount_)) {
+        lastCompressGCCount_ = compressGCCount_;
+        LOG(ERROR, RUNTIME) << " compressCollector statistic: total compress gc count " << compressGCCount_;
+        LOG(ERROR, RUNTIME)
             << " MIN pause time: " << PrintTimeMilliseconds(compressGCMinPause_) << "ms"
             << " MAX pause time: " << PrintTimeMilliseconds(compressGCMaxPause_) << "ms"
             << " total pause time: " << PrintTimeMilliseconds(compressGCTotalPause_) << "ms"
@@ -77,13 +80,13 @@ void GCStats::PrintStatisticResult()
             << " non move free rate: " << float(compressNonMoveTotalFreeSize_) / compressNonMoveTotalCommitSize_;
     }
 
-    if (heap_ != nullptr) {
+    if (isForce && heap_ != nullptr) {
         RegionFactory *regionFactory = const_cast<RegionFactory *>(heap_->GetRegionFactory());
-        LOG(DEBUG, RUNTIME) << "pool statistic:: "
-                            << "anno memory usage size:" << regionFactory->GetAnnoMemoryUsage()
-                            << "anno memory max usage size:" << regionFactory->GetMaxAnnoMemoryUsage()
-                            << "native memory usage size:" << regionFactory->GetNativeMemoryUsage()
-                            << "native memory max usage size:" << regionFactory->GetMaxNativeMemoryUsage();
+        LOG(ERROR, RUNTIME) << "Memory statistic:";
+        LOG(ERROR, RUNTIME) << "  anno memory usage size:" << regionFactory->GetAnnoMemoryUsage()
+                            << "  anno memory max usage size:" << regionFactory->GetMaxAnnoMemoryUsage()
+                            << "  native memory usage size:" << regionFactory->GetNativeMemoryUsage()
+                            << "  native memory max usage size:" << regionFactory->GetMaxNativeMemoryUsage();
     }
 }
 

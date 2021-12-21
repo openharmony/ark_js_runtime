@@ -57,7 +57,8 @@ public:
         JSTaggedValue((int16_t)(-31111)), JSTaggedValue((uint16_t)(61111)),
         // int32 : -2147483648->2147483647, uint32 : 0->4294967295
         JSTaggedValue((int32_t)(2111111111)), JSTaggedValue((uint32_t)(4111111111)),
-        JSTaggedValue((float)(4321.1234)), JSTaggedValue((double)(987654321.123456789))};
+        JSTaggedValue((float)(4321.1234)), JSTaggedValue((double)(987654321.123456789))
+    };
 };
 
 JSHandle<JSTypedArray> CreateNumberTypedArray(JSThread *thread, JSType jsType)

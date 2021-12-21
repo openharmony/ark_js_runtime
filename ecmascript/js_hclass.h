@@ -23,6 +23,38 @@
 #include "include/hclass.h"
 #include "utils/bit_field.h"
 
+/*
+ *                         JS Object and JS HClass Layout
+ *
+ *      Properties                         JS Object                    JS HClass
+ *      +------------+                     +------------+               +------------------+
+ *      |arrayClass  + <---------|         |JS HClass   +-------------->|HClass class      |
+ *      +------------+           |         +------------+               +------------------+
+ *      |property 0  |           |         |Hash        |               |BitField          |
+ *      +------------+           |         +------------+               +------------------+
+ *      |property 1  |           |-------  |Properties  |               |BitField1         |
+ *      +------------+                     +------------+               +------------------+
+ *      |...         |           |-------  |Elements    |               |Proto             |
+ *      +------------+           |         +------------+               +------------------+
+ *                               |         |in-obj 0    |               |Layout            |
+ *      Elements                 |         +------------+               +------------------+
+ *      +------------+           |         |in-obj 1    |               |Transitions       |
+ *      |arrayClass  + <---------|         +------------+               +------------------+
+ *      +------------+                     |...         |               |Parent            |
+ *      |value 0     |                     +------------+               +------------------+
+ *      +------------+                                                  |ProtoChangeMarker |
+ *      |value 1     |                                                  +------------------+
+ *      +------------+                                                  |ProtoChangeDetails|
+ *      |...         |                                                  +------------------+
+ *      +------------+                                                  |EnumCache         |
+ *                                                                      +------------------+
+ *
+ *                          Proto: [[Prototype]] in Ecma spec
+ *                          Layout: record key and attr
+ *                          ProtoChangeMarker, ProtoChangeDetails: monitor [[prototype]] chain
+ *                          EnumCache: use for for-in syntax
+ *
+ */
 namespace panda::ecmascript {
 class ProtoChangeDetails;
 
@@ -165,31 +197,38 @@ public:
     using IsPrototypeBit = ExtensibleBit::NextFlag;
     using ElementRepresentationBits = IsPrototypeBit::NextField<Representation, 3>;        // 3 means next 3 bit
     using DictionaryElementBits = ElementRepresentationBits::NextFlag;                     // 16
-    using IsDictionaryBit = DictionaryElementBits::NextFlag;
-    using IsStableElementsBit = IsDictionaryBit::NextFlag;
-    using NumberOfUnusedInlinedPropsBits = IsStableElementsBit::NextField<uint32_t, 3>;    // 3 means next 3 bit
-    // the max value is 1024, need 11 bits
-    using NumberOfUnusedNonInlinedPropsBits =
-        NumberOfUnusedInlinedPropsBits::NextField<uint32_t, PropertyAttributes::OFFSET_BITFIELD_NUM>;  // 31
-
-    using HasConstructorBits = NumberOfUnusedNonInlinedPropsBits::NextFlag;
-    using IsLiteralBit = HasConstructorBits::NextFlag;
-    using ClassConstructorBit = IsLiteralBit::NextFlag;
-    using ClassPrototypeBit = ClassConstructorBit::NextFlag;
+    using IsDictionaryBit = DictionaryElementBits::NextFlag;                               // 17
+    using IsStableElementsBit = IsDictionaryBit::NextFlag;                                 // 18
+    using HasConstructorBits = IsStableElementsBit::NextFlag;                              // 19
+    using IsLiteralBit = HasConstructorBits::NextFlag;                                     // 20
+    using ClassConstructorBit = IsLiteralBit::NextFlag;                                    // 21
+    using ClassPrototypeBit = ClassConstructorBit::NextFlag;                               // 22
 
     static constexpr int DEFAULT_CAPACITY_OF_IN_OBJECTS = 4;
-    static constexpr int DEFAULT_CAPACITY_OF_OUT_OBJECTS =
+    static constexpr int MAX_CAPACITY_OF_OUT_OBJECTS =
         PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES - DEFAULT_CAPACITY_OF_IN_OBJECTS;
+    static constexpr int OFFSET_MAX_OBJECT_SIZE_IN_WORDS_WITHOUT_INLINED = 5;
+    static constexpr int OFFSET_MAX_OBJECT_SIZE_IN_WORDS =
+        PropertyAttributes::OFFSET_BITFIELD_NUM + OFFSET_MAX_OBJECT_SIZE_IN_WORDS_WITHOUT_INLINED;
+    static constexpr int MAX_OBJECT_SIZE_IN_WORDS = (1U << OFFSET_MAX_OBJECT_SIZE_IN_WORDS) - 1;
+
+    using NumberOfPropsBits = BitField<uint32_t, 0, PropertyAttributes::OFFSET_BITFIELD_NUM>; // 10
+    using InlinedPropsStartBits = NumberOfPropsBits::NextField<uint32_t,
+            OFFSET_MAX_OBJECT_SIZE_IN_WORDS_WITHOUT_INLINED>; // 15
+    using ObjectSizeInWordsBits = InlinedPropsStartBits::NextField<uint32_t, OFFSET_MAX_OBJECT_SIZE_IN_WORDS>; // 30
 
     static JSHClass *Cast(const TaggedObject *object);
 
-    inline size_t SizeFromJSHClass(JSType type, TaggedObject *header);
-    inline bool HasReferenceField(JSType type);
+    inline size_t SizeFromJSHClass(TaggedObject *header);
+    inline bool HasReferenceField();
 
     // size need to add inlined property numbers
-    void Initialize(const JSThread *thread, uint32_t size, JSType type, JSTaggedValue proto);
+    void Initialize(const JSThread *thread, uint32_t size, JSType type, uint32_t inlinedProps);
 
-    static JSHandle<JSHClass> Clone(const JSThread *thread, const JSHandle<JSHClass> &jshclass);
+    static JSHandle<JSHClass> Clone(const JSThread *thread, const JSHandle<JSHClass> &jshclass,
+                                    bool withoutInlinedProperties = false);
+    static JSHandle<JSHClass> CloneWithoutInlinedProperties(const JSThread *thread, const JSHandle<JSHClass> &jshclass);
+
     static void TransitionElementsToDictionary(const JSThread *thread, const JSHandle<JSObject> &obj);
     static void AddProperty(const JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &key,
                             const PropertyAttributes &attr);
@@ -224,65 +263,66 @@ public:
 
     inline void ClearBitField()
     {
-        SetBitField(0ULL);
+        SetBitField(0UL);
+        SetBitField1(0UL);
     }
 
     inline JSType GetObjectType() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return ObjectTypeBits::Decode(bits);
     }
 
     inline void SetObjectType(JSType type)
     {
-        uint64_t bits = GetBitField();
-        uint64_t newVal = ObjectTypeBits::Update(bits, type);
+        uint32_t bits = GetBitField();
+        uint32_t newVal = ObjectTypeBits::Update(bits, type);
         SetBitField(newVal);
     }
 
     inline void SetCallable(bool flag)
     {
-        CallableBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        CallableBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetConstructor(bool flag) const
     {
-        ConstrutorBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        ConstrutorBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetBuiltinsCtor(bool flag) const
     {
-        BuiltinsCtorBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        BuiltinsCtorBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetExtensible(bool flag) const
     {
-        ExtensibleBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        ExtensibleBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetIsPrototype(bool flag) const
     {
-        IsPrototypeBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        IsPrototypeBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetIsLiteral(bool flag) const
     {
-        IsLiteralBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        IsLiteralBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetClassConstructor(bool flag) const
     {
-        ClassConstructorBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        ClassConstructorBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetClassPrototype(bool flag) const
     {
-        ClassPrototypeBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        ClassPrototypeBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline void SetIsDictionaryMode(bool flag) const
     {
-        IsDictionaryBit::Set<JSTaggedType>(flag, GetBitFieldAddr());
+        IsDictionaryBit::Set<uint32_t>(flag, GetBitFieldAddr());
     }
 
     inline bool IsJSObject() const
@@ -316,7 +356,7 @@ public:
     {
         return GetObjectType() == JSType::SYMBOL;
     }
-    
+
     inline bool IsStringOrSymbol() const
     {
         JSType jsType = GetObjectType();
@@ -653,43 +693,43 @@ public:
 
     inline bool IsCallable() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return CallableBit::Decode(bits);
     }
 
     inline bool IsConstructor() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return ConstrutorBit::Decode(bits);
     }
 
     inline bool IsBuiltinsCtor() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return BuiltinsCtorBit::Decode(bits);
     }
 
     inline bool IsExtensible() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return ExtensibleBit::Decode(bits);
     }
 
     inline bool IsPrototype() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return IsPrototypeBit::Decode(bits);
     }
 
     inline bool IsLiteral() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return IsLiteralBit::Decode(bits);
     }
 
     inline bool IsClassConstructor() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return ClassConstructorBit::Decode(bits);
     }
 
@@ -700,13 +740,13 @@ public:
 
     inline bool IsClassPrototype() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return ClassPrototypeBit::Decode(bits);
     }
 
     inline bool IsDictionaryMode() const
     {
-        JSTaggedType bits = GetBitField();
+        uint32_t bits = GetBitField();
         return IsDictionaryBit::Decode(bits);
     }
 
@@ -719,6 +759,11 @@ public:
     {
         JSType jsType = GetObjectType();
         return jsType == JSType::JS_GENERATOR_OBJECT || jsType == JSType::JS_ASYNC_FUNC_OBJECT;
+    }
+
+    inline bool IsGeneratorContext() const
+    {
+        return GetObjectType() == JSType::JS_GENERATOR_CONTEXT;
     }
 
     inline bool IsAsyncFuncObject() const
@@ -794,14 +839,14 @@ public:
 
     inline void SetElementRepresentation(Representation representation)
     {
-        uint64_t bits = GetBitField();
-        uint64_t newVal = ElementRepresentationBits::Update(bits, representation);
+        uint32_t bits = GetBitField();
+        uint32_t newVal = ElementRepresentationBits::Update(bits, representation);
         SetBitField(newVal);
     }
 
     inline Representation GetElementRepresentation() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         return ElementRepresentationBits::Decode(bits);
     }
 
@@ -831,13 +876,13 @@ public:
     }
     inline bool IsStableJSArguments() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         auto type = ObjectTypeBits::Decode(bits);
         return IsStableElementsBit::Decode(bits) && (type == JSType::JS_ARGUMENTS);
     }
     inline bool IsStableJSArray() const
     {
-        uint64_t bits = GetBitField();
+        uint32_t bits = GetBitField();
         auto type = ObjectTypeBits::Decode(bits);
         return IsStableElementsBit::Decode(bits) && (type == JSType::JS_ARRAY);
     }
@@ -850,61 +895,104 @@ public:
     {
         return HasConstructorBits::Decode(GetBitField());
     }
-    inline uint32_t DecUnusedInlinedProps()
+
+    inline void SetNumberOfProps(uint32_t num)
     {
-        ASSERT(GetUnusedInlinedProps() != 0);
-        uint32_t num = GetUnusedInlinedProps() - 1;
-        SetUnusedInlinedProps(num);
-        return num;
+        uint32_t bits = GetBitField1();
+        uint32_t newVal = NumberOfPropsBits::Update(bits, num);
+        SetBitField1(newVal);
     }
 
-    inline void SetUnusedInlinedProps(uint32_t num)
+    inline void IncNumberOfProps()
     {
-        uint64_t bits = GetBitField();
-        uint64_t newVal = NumberOfUnusedInlinedPropsBits::Update(bits, num);
-        SetBitField(newVal);
+        ASSERT(NumberOfProps() < PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES);
+        SetNumberOfProps(NumberOfProps() + 1);
     }
 
-    inline uint32_t GetUnusedInlinedProps() const
+    inline uint32_t NumberOfProps() const
     {
-        uint64_t bits = GetBitField();
-        return NumberOfUnusedInlinedPropsBits::Decode(bits);
+        uint32_t bits = GetBitField1();
+        return NumberOfPropsBits::Decode(bits);
     }
 
-    inline uint32_t DecUnusedNonInlinedProps()
+    inline int32_t GetNextInlinedPropsIndex() const
     {
-        ASSERT(GetUnusedNonInlinedProps() != 0);
-        uint32_t num = GetUnusedNonInlinedProps() - 1;
-        SetUnusedNonInlinedProps(num);
-        return num;
+        uint32_t inlinedProperties = GetInlinedProperties();
+        uint32_t numberOfProps = NumberOfProps();
+        if (numberOfProps < inlinedProperties) {
+            return numberOfProps;
+        }
+        return -1;
     }
 
-    inline void SetUnusedNonInlinedProps(uint32_t num)
+    inline int32_t GetNextNonInlinedPropsIndex() const
     {
-        uint64_t bits = GetBitField();
-        uint64_t newVal = NumberOfUnusedNonInlinedPropsBits::Update(bits, num);
-        SetBitField(newVal);
+        uint32_t inlinedProperties = GetInlinedProperties();
+        uint32_t numberOfProps = NumberOfProps();
+        if (numberOfProps >= inlinedProperties) {
+            return numberOfProps - inlinedProperties;
+        }
+        return -1;
     }
 
-    inline uint32_t GetUnusedNonInlinedProps() const
+    inline uint32_t GetObjectSize() const
     {
-        uint64_t bits = GetBitField();
-        return NumberOfUnusedNonInlinedPropsBits::Decode(bits);
+        uint32_t bits = GetBitField1();
+        return ObjectSizeInWordsBits::Decode(bits) * JSTaggedValue::TaggedTypeSize();
     }
 
-    inline int GetPropertiesNumber() const
+    inline void SetObjectSize(uint32_t num)
     {
-        return static_cast<int>(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES - GetUnusedNonInlinedProps() -
-                                GetUnusedInlinedProps());
+        ASSERT((num / JSTaggedValue::TaggedTypeSize()) <= MAX_OBJECT_SIZE_IN_WORDS);
+        uint32_t bits = GetBitField1();
+        uint32_t newVal = ObjectSizeInWordsBits::Update(bits, num / JSTaggedValue::TaggedTypeSize());
+        SetBitField1(newVal);
+    }
+
+    inline uint32_t GetInlinedPropertiesOffset(uint32_t index) const
+    {
+        ASSERT(index < GetInlinedProperties());
+        return GetInlinedPropertiesIndex(index) * JSTaggedValue::TaggedTypeSize();
+    }
+
+    inline uint32_t GetInlinedPropertiesIndex(uint32_t index) const
+    {
+        ASSERT(index < GetInlinedProperties());
+        uint32_t bits = GetBitField1();
+        return InlinedPropsStartBits::Decode(bits) + index;
+    }
+
+    inline void SetInlinedPropsStart(uint32_t num)
+    {
+        uint32_t bits = GetBitField1();
+        uint32_t newVal = InlinedPropsStartBits::Update(bits, num / JSTaggedValue::TaggedTypeSize());
+        SetBitField1(newVal);
+    }
+
+    inline uint32_t GetInlinedPropsStartSize() const
+    {
+        uint32_t bits = GetBitField1();
+        return InlinedPropsStartBits::Decode(bits) * JSTaggedValue::TaggedTypeSize();
+    }
+
+    inline uint32_t GetInlinedProperties() const
+    {
+        JSType type = GetObjectType();
+        if (JSType::JS_OBJECT_BEGIN <= type && type <= JSType::JS_OBJECT_END) {
+            uint32_t bits = GetBitField1();
+            return static_cast<uint32_t>(ObjectSizeInWordsBits::Decode(bits) - InlinedPropsStartBits::Decode(bits));
+        } else {
+            return 0;
+        }
     }
 
     JSTaggedValue GetAccessor(const JSTaggedValue &key);
 
     static constexpr size_t BIT_FIELD_OFFSET = TaggedObjectSize();
-    SET_GET_PRIMITIVE_FIELD(BitField, uint64_t, BIT_FIELD_OFFSET, OBJECT_SIZE_OFFSET);
-    SET_GET_PRIMITIVE_FIELD(ObjectSize, uint64_t, OBJECT_SIZE_OFFSET, PROTOTYPE_OFFSET);
-    ACCESSORS(Proto, PROTOTYPE_OFFSET, ATTRIBUTES_OFFSET);
-    ACCESSORS(Attributes, ATTRIBUTES_OFFSET, TRANSTIONS_OFFSET);
+    SET_GET_PRIMITIVE_FIELD(BitField, uint32_t, BIT_FIELD_OFFSET, BIT_FIELD1_OFFSET);
+    SET_GET_PRIMITIVE_FIELD(BitField1, uint32_t, BIT_FIELD1_OFFSET, PROTOTYPE_OFFSET);
+    ACCESSORS(Proto, PROTOTYPE_OFFSET, LAYOUT_OFFSET);
+    ACCESSORS(Layout, LAYOUT_OFFSET, TRANSTIONS_OFFSET);
     ACCESSORS(Transitions, TRANSTIONS_OFFSET, PARENT_OFFSET);
     ACCESSORS(Parent, PARENT_OFFSET, VALIDITY_CELL_OFFSET);
     ACCESSORS(ProtoChangeMarker, VALIDITY_CELL_OFFSET, PROTOTYPE_INFO_OFFSET);
@@ -935,14 +1023,13 @@ private:
     inline JSHClass *FindTransitions(const JSTaggedValue &key, const JSTaggedValue &attributes);
     inline JSHClass *FindProtoTransitions(const JSTaggedValue &key, const JSTaggedValue &proto);
 
-    static void CopyAll(const JSThread *thread, const JSHandle<JSHClass> &newjshclass,
-                        const JSHandle<JSHClass> &jshclass);
     inline void Copy(const JSThread *thread, const JSHClass *jshcalss);
 
-    JSTaggedType *GetBitFieldAddr() const
+    uint32_t *GetBitFieldAddr() const
     {
-        return reinterpret_cast<JSTaggedType *>(ToUintPtr(this) + BIT_FIELD_OFFSET);
+        return reinterpret_cast<uint32_t *>(ToUintPtr(this) + BIT_FIELD_OFFSET);
     }
+    friend class RuntimeTrampolines;
 };
 static_assert(JSHClass::BIT_FIELD_OFFSET % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT) == 0);
 }  // namespace panda::ecmascript

@@ -59,7 +59,7 @@ JSTaggedValue JSStableArray::Pop(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo
     array_size_t capacity = elements->GetLength();
     array_size_t index = length - 1;
     auto result = elements->Get(index);
-    if (TaggedArray::ShouldTrim(capacity, index)) {
+    if (TaggedArray::ShouldTrim(thread, capacity, index)) {
         elements->Trim(thread, index);
     } else {
         elements->Set(thread, index, JSTaggedValue::Hole());
@@ -131,7 +131,7 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
             srcElementsHandle->Set(thread, idx + insertCount, element);
         }
 
-        if (TaggedArray::ShouldTrim(oldCapacity, newCapacity)) {
+        if (TaggedArray::ShouldTrim(thread, oldCapacity, newCapacity)) {
             srcElementsHandle->Trim(thread, newCapacity);
         } else {
             for (array_size_t idx = newCapacity; idx < len; idx++) {
@@ -180,7 +180,7 @@ JSTaggedValue JSStableArray::Shift(JSHandle<JSArray> receiver, EcmaRuntimeCallIn
     }
     array_size_t capacity = elements->GetLength();
     array_size_t index = length - 1;
-    if (TaggedArray::ShouldTrim(capacity, index)) {
+    if (TaggedArray::ShouldTrim(thread, capacity, index)) {
         elements->Trim(thread, index);
     } else {
         elements->Set(thread, index, JSTaggedValue::Hole());

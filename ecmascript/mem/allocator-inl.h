@@ -20,7 +20,7 @@
 
 #include "ecmascript/mem/allocator.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
-#include "ecmascript/mem/heap-inl.h"
+#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/free_object.h"
 
@@ -53,7 +53,7 @@ void BumpPointerAllocator::Reset(const Space *space)
 
 uintptr_t BumpPointerAllocator::Allocate(size_t size)
 {
-    if (size == 0) {
+    if (UNLIKELY(size == 0)) {
         LOG_ECMA_MEM(FATAL) << "size must have a size bigger than 0";
         UNREACHABLE();
     }
@@ -68,14 +68,31 @@ uintptr_t BumpPointerAllocator::Allocate(size_t size)
     return result;
 }
 
-FreeListAllocator::FreeListAllocator(const Space *space) : heap_(space->GetHeap()), type_(space->GetSpaceType())
+FreeListAllocator::FreeListAllocator(const Space *space) : heap_(space->GetHeap()), type_(space->GetSpaceType()),
+    sweeping_(false)
 {
     freeList_ = std::make_unique<FreeObjectList>();
-    uintptr_t begin = space->GetCurrentRegion()->GetBegin();
-    size_t size = space->GetCurrentRegion()->GetSize();
-    FreeObject::Cast(begin)->SetAvailable(size);
-    FreeObject::Cast(begin)->SetNext(nullptr);
-    freeList_->Free(begin, size);
+    bpAllocator_.Reset(space);
+    FreeObject::Cast(bpAllocator_.GetTop())->SetAvailable(bpAllocator_.Available());
+    FreeObject::Cast(bpAllocator_.GetTop())->SetNext(nullptr);
+}
+
+void FreeListAllocator::Reset(const Space *space)
+{
+    heap_ = space->GetHeap();
+    type_ = space->GetSpaceType();
+    sweeping_ = false;
+    freeList_ = std::make_unique<FreeObjectList>();
+    bpAllocator_.Reset(space);
+    FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
+}
+
+void FreeListAllocator::Reset(Heap *heap)
+{
+    heap_ = heap;
+    freeList_ = std::make_unique<FreeObjectList>();
+    sweeping_ = false;
+    bpAllocator_.Reset();
 }
 
 void FreeListAllocator::AddFree(Region *region)
@@ -142,7 +159,9 @@ void FreeListAllocator::Free(uintptr_t begin, uintptr_t end, bool isAdd)
 {
     ASSERT(heap_ != nullptr);
     size_t size = end - begin;
-    FreeObject::FillFreeObject(heap_->GetEcmaVM(), begin, size);
+    if (size != 0) {
+        FreeObject::FillFreeObject(heap_->GetEcmaVM(), begin, size);
+    }
     if (UNLIKELY(size < FreeObject::SIZE_OFFSET)) {
         return;
     }
@@ -154,6 +173,13 @@ void FreeListAllocator::RebuildFreeList()
 {
     bpAllocator_.Reset();
     freeList_->Rebuild();
+}
+
+void FreeListAllocator::Merge(FreeListAllocator *other)
+{
+    ASSERT(type_ == other->type_);
+    other->FreeBumpPoint();
+    freeList_->Merge(other->freeList_.get());
 }
 
 void FreeListAllocator::FillFreeList(FreeObjectKind *kind)

@@ -14,8 +14,8 @@
  */
 
 #include "ecmascript/global_env.h"
-#include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_array.h"
+#include "ecmascript/js_array_iterator.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tests/test_helper.h"
 

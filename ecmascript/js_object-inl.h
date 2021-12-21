@@ -23,12 +23,6 @@
 #include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript {
-inline ECMAObject *ECMAObject::Cast(ObjectHeader *object)
-{
-    ASSERT(JSTaggedValue(object).IsECMAObject());
-    return static_cast<ECMAObject *>(object);
-}
-
 inline void ECMAObject::SetBuiltinsCtorMode()
 {
     GetClass()->SetBuiltinsCtor(true);
@@ -215,17 +209,13 @@ JSTaggedValue JSObject::GetPropertyInlinedProps(uint32_t index) const
 void JSObject::SetPropertyInlinedProps(const JSThread *thread, const JSHClass *hclass, uint32_t index,
                                        JSTaggedValue value)
 {
-    ASSERT(index < JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
-    size_t offset =
-        hclass->GetObjectSize() - (JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS - index) * JSTaggedValue::TaggedTypeSize();
+    uint32_t offset = hclass->GetInlinedPropertiesOffset(index);
     SET_VALUE_WITH_BARRIER(thread, this, offset, value);
 }
 
 JSTaggedValue JSObject::GetPropertyInlinedProps(const JSHClass *hclass, uint32_t index) const
 {
-    ASSERT(index < JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
-    size_t offset =
-        hclass->GetObjectSize() - (JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS - index) * JSTaggedValue::TaggedTypeSize();
+    uint32_t offset = hclass->GetInlinedPropertiesOffset(index);
     return JSTaggedValue(GET_VALUE(this, offset));
 }
 
@@ -235,7 +225,7 @@ JSTaggedValue JSObject::GetProperty(const JSHClass *hclass, PropertyAttributes a
         return GetPropertyInlinedProps(hclass, attr.GetOffset());
     }
     TaggedArray *array = TaggedArray::Cast(GetProperties().GetTaggedObject());
-    return array->Get(attr.GetOffset() - JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS);
+    return array->Get(attr.GetOffset() - hclass->GetInlinedProperties());
 }
 
 void JSObject::SetProperty(const JSThread *thread, const JSHClass *hclass, PropertyAttributes attr, JSTaggedValue value)
@@ -244,7 +234,7 @@ void JSObject::SetProperty(const JSThread *thread, const JSHClass *hclass, Prope
         SetPropertyInlinedProps(thread, hclass, attr.GetOffset(), value);
     } else {
         TaggedArray *array = TaggedArray::Cast(GetProperties().GetTaggedObject());
-        array->Set(thread, attr.GetOffset() - JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS, value);
+        array->Set(thread, attr.GetOffset() - hclass->GetInlinedProperties(), value);
     }
 }
 
@@ -273,8 +263,8 @@ inline uint32_t JSObject::ComputeElementCapacity(uint32_t oldCapacity)
 inline uint32_t JSObject::ComputePropertyCapacity(uint32_t oldCapacity)
 {
     uint32_t newCapacity = oldCapacity + PROPERTIES_GROW_SIZE;
-    return newCapacity > PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES ? PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES
-                                                                        : newCapacity;
+    return newCapacity > JSHClass::MAX_CAPACITY_OF_OUT_OBJECTS ? JSHClass::MAX_CAPACITY_OF_OUT_OBJECTS
+                                                               : newCapacity;
 }
 
 // static

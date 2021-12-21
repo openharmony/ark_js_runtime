@@ -29,11 +29,7 @@ constexpr int MXFD_DEFAULT = 3;
 
 class JSPluralRules : public JSObject {
 public:
-    static JSPluralRules *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSPluralRules());
-        return reinterpret_cast<JSPluralRules *>(object);
-    }
+    CAST_CHECK(JSPluralRules, IsJSPluralRules);
 
     static constexpr size_t LOCALE_OFFSET = JSObject::SIZE;
 
@@ -54,14 +50,15 @@ public:
 
     icu::number::LocalizedNumberFormatter *GetIcuNumberFormatter() const;
 
-    void SetIcuNumberFormatter(JSThread *thread, const icu::number::LocalizedNumberFormatter &icuNF,
-                               const DeleteEntryPoint &callback);
+    static void SetIcuNumberFormatter(JSThread *thread, const JSHandle<JSPluralRules> &pluralRules,
+        const icu::number::LocalizedNumberFormatter &icuNF, const DeleteEntryPoint &callback);
 
     static void FreeIcuNumberFormatter(void *pointer, [[maybe_unused]] void* hint = nullptr);
 
     icu::PluralRules *GetIcuPluralRules() const;
 
-    void SetIcuPluralRules(JSThread *thread, const icu::PluralRules &icuPR, const DeleteEntryPoint &callback);
+    static void SetIcuPluralRules(JSThread *thread, const JSHandle<JSPluralRules> &pluralRules,
+        const icu::PluralRules &icuPR, const DeleteEntryPoint &callback);
 
     static void FreeIcuPluralRules(void *pointer, [[maybe_unused]] void* hint = nullptr);
 

@@ -155,7 +155,6 @@ public:
             return;
         }
         // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
-        os::memory::LockHolder lock(staticResourceLock_);
         free(mem);
     }
 };

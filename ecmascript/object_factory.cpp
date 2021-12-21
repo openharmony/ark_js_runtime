@@ -31,8 +31,8 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/ic/proto_change_details.h"
-#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/internal_call_params.h"
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_arguments.h"
@@ -88,19 +88,29 @@ ObjectFactory::ObjectFactory(JSThread *thread, Heap *heap)
 {
 }
 
-JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type)
+JSHandle<JSHClass> ObjectFactory::NewEcmaDynClassClass(JSHClass *hclass, uint32_t size, JSType type)
 {
     NewObjectHook();
     uint32_t classSize = JSHClass::SIZE;
-    auto *newClass = static_cast<JSHClass *>(heapHelper_.AllocateNonMovableOrHugeObject(hclass, classSize));
-    newClass->Initialize(thread_, size, type, JSTaggedValue::Null());
+    auto *newClass = static_cast<JSHClass *>(heapHelper_.AllocateDynClassClass(hclass, classSize));
+    newClass->Initialize(thread_, size, type, 0);
 
     return JSHandle<JSHClass>(thread_, newClass);
 }
 
-JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(uint32_t size, JSType type)
+JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(JSHClass *hclass, uint32_t size, JSType type, uint32_t inlinedProps)
 {
-    return NewEcmaDynClass(hclassClass_, size, type);
+    NewObjectHook();
+    uint32_t classSize = JSHClass::SIZE;
+    auto *newClass = static_cast<JSHClass *>(heapHelper_.AllocateNonMovableOrHugeObject(hclass, classSize));
+    newClass->Initialize(thread_, size, type, inlinedProps);
+
+    return JSHandle<JSHClass>(thread_, newClass);
+}
+
+JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(uint32_t size, JSType type, uint32_t inlinedProps)
+{
+    return NewEcmaDynClass(hclassClass_, size, type, inlinedProps);
 }
 
 void ObjectFactory::ObtainRootClass([[maybe_unused]] const JSHandle<GlobalEnv> &globalEnv)
@@ -279,7 +289,6 @@ void ObjectFactory::NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, vo
 
 JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype)
 {
-    NewObjectHook();
     JSHandle<JSHClass> newClass = NewEcmaDynClass(size, type);
     newClass->SetPrototype(thread_, prototype.GetTaggedValue());
     return newClass;
@@ -287,8 +296,7 @@ JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(uint32_t size, JSType type, co
 
 JSHandle<JSObject> ObjectFactory::NewJSObject(const JSHandle<JSHClass> &jshclass)
 {
-    NewObjectHook();
-    JSHandle<JSObject> obj(thread_, JSObject::Cast(NewDynObject(jshclass, JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
+    JSHandle<JSObject> obj(thread_, JSObject::Cast(NewDynObject(jshclass)));
     JSHandle<TaggedArray> emptyArray = EmptyArray();
     obj->InitializeHash();
     obj->SetElements(thread_, emptyArray, SKIP_BARRIER);
@@ -319,10 +327,9 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
 JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object)
 {
     NewObjectHook();
-    auto klass = object->GetClass();
+    auto klass = JSHandle<JSHClass>(thread_, object->GetClass());
 
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass);
-    JSHandle<JSObject> cloneObject(thread_, JSObject::Cast(header));
+    JSHandle<JSObject> cloneObject = NewJSObject(klass);
 
     JSHandle<TaggedArray> elements(thread_, object->GetElements());
     auto newElements = CloneProperties(elements);
@@ -332,7 +339,7 @@ JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object)
     auto newProperties = CloneProperties(properties);
     cloneObject->SetProperties(thread_, newProperties.GetTaggedValue());
 
-    for (int i = 0; i < JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS; i++) {
+    for (uint32_t i = 0; i < klass->GetInlinedProperties(); i++) {
         cloneObject->SetPropertyInlinedProps(thread_, i, object->GetPropertyInlinedProps(i));
     }
     return cloneObject;
@@ -341,10 +348,10 @@ JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object)
 JSHandle<JSArray> ObjectFactory::CloneArrayLiteral(JSHandle<JSArray> object)
 {
     NewObjectHook();
-    auto klass = object->GetClass();
+    auto klass = JSHandle<JSHClass>(thread_, object->GetClass());
 
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass);
-    JSHandle<JSArray> cloneObject(thread_, JSObject::Cast(header));
+    JSHandle<JSArray> cloneObject(NewJSObject(klass));
+    cloneObject->SetArrayLength(thread_, object->GetArrayLength());
 
     JSHandle<TaggedArray> elements(thread_, object->GetElements());
     auto newElements = CopyArray(elements, elements->GetLength(), elements->GetLength());
@@ -354,8 +361,7 @@ JSHandle<JSArray> ObjectFactory::CloneArrayLiteral(JSHandle<JSArray> object)
     auto newProperties = CopyArray(properties, properties->GetLength(), properties->GetLength());
     cloneObject->SetProperties(thread_, newProperties.GetTaggedValue());
 
-    cloneObject->SetArrayLength(thread_, object->GetArrayLength());
-    for (int i = 0; i < JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS; i++) {
+    for (uint32_t i = 0; i < klass->GetInlinedProperties(); i++) {
         cloneObject->SetPropertyInlinedProps(thread_, i, object->GetPropertyInlinedProps(i));
     }
     return cloneObject;
@@ -370,11 +376,7 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
         return EmptyArray();
     }
     NewObjectHook();
-    auto klass = old->GetClass();
-    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
-    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass, size);
-    JSHandle<TaggedArray> newArray(thread_, header);
-    newArray->SetLength(newLength);
+    JSHandle<TaggedArray> newArray = NewTaggedArray(newLength);
 
     for (array_size_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i);
@@ -396,10 +398,9 @@ JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object, 
                                                      const JSHandle<JSTaggedValue> &constpool)
 {
     NewObjectHook();
-    auto klass = object->GetClass();
+    auto klass = JSHandle<JSHClass>(thread_, object->GetClass());
 
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(klass);
-    JSHandle<JSObject> cloneObject(thread_, JSObject::Cast(header));
+    JSHandle<JSObject> cloneObject = NewJSObject(klass);
 
     JSHandle<TaggedArray> elements(thread_, object->GetElements());
     auto newElements = CloneProperties(elements, env, cloneObject, constpool);
@@ -409,7 +410,7 @@ JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object, 
     auto newProperties = CloneProperties(properties, env, cloneObject, constpool);
     cloneObject->SetProperties(thread_, newProperties.GetTaggedValue());
 
-    for (int i = 0; i < JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS; i++) {
+    for (uint32_t i = 0; i < klass->GetInlinedProperties(); i++) {
         JSTaggedValue value = object->GetPropertyInlinedProps(i);
         if (!value.IsJSFunction()) {
             cloneObject->SetPropertyInlinedProps(thread_, i, value);
@@ -427,7 +428,6 @@ JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object, 
 
 JSHandle<JSFunction> ObjectFactory::CloneJSFuction(JSHandle<JSFunction> obj, FunctionKind kind)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> jshclass(thread_, obj->GetJSHClass());
     JSHandle<JSFunction> cloneFunc = NewJSFunctionByDynClass(obj->GetCallTarget(), jshclass, kind);
@@ -446,9 +446,8 @@ JSHandle<JSFunction> ObjectFactory::CloneJSFuction(JSHandle<JSFunction> obj, Fun
 
 JSHandle<JSObject> ObjectFactory::NewNonMovableJSObject(const JSHandle<JSHClass> &jshclass)
 {
-    NewObjectHook();
     JSHandle<JSObject> obj(thread_,
-                           JSObject::Cast(NewNonMovableDynObject(jshclass, JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS)));
+                           JSObject::Cast(NewNonMovableDynObject(jshclass, jshclass->GetInlinedProperties())));
     obj->SetElements(thread_, EmptyArray(), SKIP_BARRIER);
     obj->SetProperties(thread_, EmptyArray(), SKIP_BARRIER);
     return obj;
@@ -457,7 +456,6 @@ JSHandle<JSObject> ObjectFactory::NewNonMovableJSObject(const JSHandle<JSHClass>
 JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(const JSHandle<JSHClass> &dynKlass,
                                                           const JSHandle<JSTaggedValue> &object)
 {
-    NewObjectHook();
     JSHandle<JSPrimitiveRef> obj = JSHandle<JSPrimitiveRef>::Cast(NewJSObject(dynKlass));
     obj->SetValue(thread_, object);
     return obj;
@@ -465,7 +463,6 @@ JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(const JSHandle<JSHClas
 
 JSHandle<JSArray> ObjectFactory::NewJSArray()
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> function = env->GetArrayFunction();
 
@@ -501,10 +498,8 @@ JSHandle<JSHClass> ObjectFactory::CreateJSRegExpInstanceClass(JSHandle<JSTaggedV
     }
 
     {
-        regexpDynclass->SetAttributes(thread_, layoutInfoHandle);
-        uint32_t unusedInlinedProps = regexpDynclass->GetUnusedInlinedProps();
-        ASSERT(unusedInlinedProps >= fieldOrder);
-        regexpDynclass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
+        regexpDynclass->SetLayout(thread_, layoutInfoHandle);
+        regexpDynclass->SetNumberOfProps(fieldOrder);
     }
 
     return regexpDynclass;
@@ -527,10 +522,8 @@ JSHandle<JSHClass> ObjectFactory::CreateJSArrayInstanceClass(JSHandle<JSTaggedVa
     }
 
     {
-        arrayDynclass->SetAttributes(thread_, layoutInfoHandle);
-        uint32_t unusedInlinedProps = arrayDynclass->GetUnusedInlinedProps();
-        ASSERT(unusedInlinedProps >= fieldOrder);
-        arrayDynclass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
+        arrayDynclass->SetLayout(thread_, layoutInfoHandle);
+        arrayDynclass->SetNumberOfProps(fieldOrder);
     }
     arrayDynclass->SetIsStableElements(true);
     arrayDynclass->SetHasConstructor(false);
@@ -591,10 +584,8 @@ JSHandle<JSHClass> ObjectFactory::CreateJSArguments()
     }
 
     {
-        argumentsDynclass->SetAttributes(thread_, layoutInfoHandle);
-        uint32_t unusedInlinedProps = argumentsDynclass->GetUnusedInlinedProps();
-        ASSERT(unusedInlinedProps >= fieldOrder);
-        argumentsDynclass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
+        argumentsDynclass->SetLayout(thread_, layoutInfoHandle);
+        argumentsDynclass->SetNumberOfProps(fieldOrder);
     }
     argumentsDynclass->SetIsStableElements(true);
     return argumentsDynclass;
@@ -602,7 +593,6 @@ JSHandle<JSHClass> ObjectFactory::CreateJSArguments()
 
 JSHandle<JSArguments> ObjectFactory::NewJSArguments()
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetArgumentsClass());
     JSHandle<JSArguments> obj = JSHandle<JSArguments>::Cast(NewJSObject(dynclass));
@@ -616,7 +606,6 @@ JSHandle<JSObject> ObjectFactory::GetJSError(const ErrorType &errorType, const c
                      errorType == ErrorType::SYNTAX_ERROR || errorType == ErrorType::TYPE_ERROR ||
                      errorType == ErrorType::URI_ERROR,
                  "The error type is not in the valid range.");
-    NewObjectHook();
     if (data != nullptr) {
         JSHandle<EcmaString> handleMsg = NewFromString(data);
         return NewJSError(errorType, handleMsg);
@@ -627,7 +616,6 @@ JSHandle<JSObject> ObjectFactory::GetJSError(const ErrorType &errorType, const c
 
 JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const JSHandle<EcmaString> &message)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
     JSHandle<JSTaggedValue> nativeConstructor;
@@ -668,7 +656,6 @@ JSHandle<JSObject> ObjectFactory::NewJSError(const ErrorType &errorType, const J
 JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunction> &constructor,
                                                            const JSHandle<JSTaggedValue> &newTarget)
 {
-    NewObjectHook();
     JSHandle<JSHClass> jshclass;
     if (!constructor->HasFunctionPrototype() ||
         (constructor->GetProtoOrDynClass().IsHeapObject() && constructor->GetFunctionPrototype().IsECMAObject())) {
@@ -677,6 +664,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
         JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
         jshclass = JSFunction::GetInstanceJSHClass(thread_, JSHandle<JSFunction>(env->GetObjectFunction()), newTarget);
     }
+    // Check this exception elsewhere
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread_);
 
     JSHandle<JSObject> obj = NewJSObject(jshclass);
@@ -793,18 +781,18 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
     FreeObject *object = nullptr;
     if (size >= FreeObject::SIZE_OFFSET && size < FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
-        object->SetClass(freeObjectWithOneFieldClass_);
+        object->SetClassWithoutBarrier(freeObjectWithOneFieldClass_);
         object->SetNext(nullptr);
     } else if (size >= FreeObject::SIZE) {
         object = reinterpret_cast<FreeObject *>(address);
-        object->SetClass(freeObjectWithTwoFieldClass_);
+        object->SetClassWithoutBarrier(freeObjectWithTwoFieldClass_);
         object->SetAvailable(size);
         object->SetNext(nullptr);
     } else if (size == FreeObject::NEXT_OFFSET) {
         object = reinterpret_cast<FreeObject *>(address);
-        object->SetClass(freeObjectWithNoneFieldClass_);
+        object->SetClassWithoutBarrier(freeObjectWithNoneFieldClass_);
     } else {
-        LOG_ECMA(INFO) << "Fill free object size is smaller";
+        LOG_ECMA(DEBUG) << "Fill free object size is smaller";
     }
 
     if (removeSlots == RemoveSlots::YES) {
@@ -816,9 +804,11 @@ FreeObject *ObjectFactory::FillFreeObject(uintptr_t address, size_t size, Remove
     return object;
 }
 
-TaggedObject *ObjectFactory::NewDynObject(const JSHandle<JSHClass> &dynclass, int inobjPropCount)
+TaggedObject *ObjectFactory::NewDynObject(const JSHandle<JSHClass> &dynclass)
 {
+    NewObjectHook();
     TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(*dynclass);
+    uint32_t inobjPropCount = dynclass->GetInlinedProperties();
     if (inobjPropCount > 0) {
         InitializeExtraProperties(dynclass, header, inobjPropCount);
     }
@@ -827,6 +817,7 @@ TaggedObject *ObjectFactory::NewDynObject(const JSHandle<JSHClass> &dynclass, in
 
 TaggedObject *ObjectFactory::NewNonMovableDynObject(const JSHandle<JSHClass> &dynclass, int inobjPropCount)
 {
+    NewObjectHook();
     TaggedObject *header = heapHelper_.AllocateNonMovableOrHugeObject(*dynclass);
     if (inobjPropCount > 0) {
         InitializeExtraProperties(dynclass, header, inobjPropCount);
@@ -847,7 +838,6 @@ void ObjectFactory::InitializeExtraProperties(const JSHandle<JSHClass> &dynclass
 
 JSHandle<JSObject> ObjectFactory::OrdinaryNewJSObjectCreate(const JSHandle<JSTaggedValue> &proto)
 {
-    NewObjectHook();
     JSHandle<JSTaggedValue> protoValue(proto);
     JSHandle<JSHClass> protoDyn = NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, protoValue);
     JSHandle<JSObject> newObj = NewJSObject(protoDyn);
@@ -864,7 +854,6 @@ JSHandle<JSFunction> ObjectFactory::NewJSFunction(const JSHandle<GlobalEnv> &env
 
 JSHandle<JSFunction> ObjectFactory::NewJSFunction(const JSHandle<GlobalEnv> &env, JSMethod *method, FunctionKind kind)
 {
-    NewObjectHook();
     JSHandle<JSHClass> dynclass;
     if (kind == FunctionKind::BASE_CONSTRUCTOR) {
         dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
@@ -934,10 +923,8 @@ JSHandle<JSHClass> ObjectFactory::CreateFunctionClass(FunctionKind kind, uint32_
     }
 
     {
-        functionClass->SetAttributes(thread_, layoutInfoHandle);
-        uint32_t unusedInlinedProps = functionClass->GetUnusedInlinedProps();
-        ASSERT(unusedInlinedProps >= fieldOrder);
-        functionClass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
+        functionClass->SetLayout(thread_, layoutInfoHandle);
+        functionClass->SetNumberOfProps(fieldOrder);
     }
     return functionClass;
 }
@@ -945,7 +932,6 @@ JSHandle<JSHClass> ObjectFactory::CreateFunctionClass(FunctionKind kind, uint32_
 JSHandle<JSFunction> ObjectFactory::NewJSFunctionByDynClass(JSMethod *method, const JSHandle<JSHClass> &clazz,
                                                             FunctionKind kind)
 {
-    NewObjectHook();
     JSHandle<JSFunction> function = JSHandle<JSFunction>::Cast(NewJSObject(clazz));
     clazz->SetCallable(true);
     clazz->SetExtensible(true);
@@ -956,7 +942,6 @@ JSHandle<JSFunction> ObjectFactory::NewJSFunctionByDynClass(JSMethod *method, co
 
 JSHandle<JSFunction> ObjectFactory::NewJSNativeErrorFunction(const JSHandle<GlobalEnv> &env, const void *nativeFunc)
 {
-    NewObjectHook();
     JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetNativeErrorFunctionClass());
     return NewJSFunctionByDynClass(target, dynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
@@ -965,7 +950,6 @@ JSHandle<JSFunction> ObjectFactory::NewJSNativeErrorFunction(const JSHandle<Glob
 JSHandle<JSFunction> ObjectFactory::NewSpecificTypedArrayFunction(const JSHandle<GlobalEnv> &env,
                                                                   const void *nativeFunc)
 {
-    NewObjectHook();
     JSMethod *target = vm_->GetMethodForNativeFunction(nativeFunc);
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetSpecificTypedArrayFunctionClass());
     return NewJSFunctionByDynClass(target, dynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
@@ -975,7 +959,6 @@ JSHandle<JSBoundFunction> ObjectFactory::NewJSBoundFunction(const JSHandle<JSFun
                                                             const JSHandle<JSTaggedValue> &boundThis,
                                                             const JSHandle<TaggedArray> &args)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> proto = env->GetFunctionPrototype();
     JSHandle<JSHClass> dynclass = NewEcmaDynClass(JSBoundFunction::SIZE, JSType::JS_BOUND_FUNCTION, proto);
@@ -996,7 +979,6 @@ JSHandle<JSBoundFunction> ObjectFactory::NewJSBoundFunction(const JSHandle<JSFun
 
 JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(const void *nativeFunc, int functionLength)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetJSIntlBoundFunctionClass());
 
@@ -1017,7 +999,6 @@ JSHandle<JSIntlBoundFunction> ObjectFactory::NewJSIntlBoundFunction(const void *
 JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHandle<JSProxy> &proxy,
                                                                       const void *nativeFunc)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetProxyRevocFunctionClass());
@@ -1039,7 +1020,6 @@ JSHandle<JSProxyRevocFunction> ObjectFactory::NewJSProxyRevocFunction(const JSHa
 
 JSHandle<JSAsyncAwaitStatusFunction> ObjectFactory::NewJSAsyncAwaitStatusFunction(const void *nativeFunc)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetAsyncAwaitStatusFunctionClass());
 
@@ -1054,7 +1034,6 @@ JSHandle<JSAsyncAwaitStatusFunction> ObjectFactory::NewJSAsyncAwaitStatusFunctio
 
 JSHandle<JSFunction> ObjectFactory::NewJSGeneratorFunction(JSMethod *method)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
 
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetGeneratorFunctionClass());
@@ -1066,7 +1045,6 @@ JSHandle<JSFunction> ObjectFactory::NewJSGeneratorFunction(JSMethod *method)
 
 JSHandle<JSGeneratorObject> ObjectFactory::NewJSGeneratorObject(JSHandle<JSTaggedValue> generatorFunction)
 {
-    NewObjectHook();
     JSHandle<JSTaggedValue> proto(thread_, JSHandle<JSFunction>::Cast(generatorFunction)->GetProtoOrDynClass());
     if (!proto->IsECMAObject()) {
         JSHandle<GlobalEnv> realmHandle = JSObject::GetFunctionRealm(thread_, generatorFunction);
@@ -1079,7 +1057,6 @@ JSHandle<JSGeneratorObject> ObjectFactory::NewJSGeneratorObject(JSHandle<JSTagge
 
 JSHandle<JSAsyncFunction> ObjectFactory::NewAsyncFunction(JSMethod *method)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetAsyncFunctionClass());
     JSHandle<JSAsyncFunction> asyncFunction = JSHandle<JSAsyncFunction>::Cast(NewJSObject(dynclass));
@@ -1090,7 +1067,6 @@ JSHandle<JSAsyncFunction> ObjectFactory::NewAsyncFunction(JSMethod *method)
 
 JSHandle<JSAsyncFuncObject> ObjectFactory::NewJSAsyncFuncObject()
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> proto = env->GetInitialGenerator();
     JSHandle<JSHClass> dynclass = NewEcmaDynClass(JSAsyncFuncObject::SIZE, JSType::JS_ASYNC_FUNC_OBJECT, proto);
@@ -1126,8 +1102,6 @@ JSHandle<GeneratorContext> ObjectFactory::NewGeneratorContext()
 JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(const JSHandle<JSFunction> &function,
                                                           const JSHandle<JSTaggedValue> &object)
 {
-    NewObjectHook();
-
     JSHandle<JSPrimitiveRef> obj(NewJSObjectByConstructor(function, JSHandle<JSTaggedValue>(function)));
     obj->SetValue(thread_, object);
 
@@ -1146,7 +1120,6 @@ JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(const JSHandle<JSFunct
 
 JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(PrimitiveType type, const JSHandle<JSTaggedValue> &object)
 {
-    NewObjectHook();
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> function;
@@ -1172,13 +1145,12 @@ JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(PrimitiveType type, co
 
 JSHandle<JSPrimitiveRef> ObjectFactory::NewJSString(const JSHandle<JSTaggedValue> &str)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> stringFunc = env->GetStringFunction();
 
     JSHandle<JSPrimitiveRef> obj =
         JSHandle<JSPrimitiveRef>::Cast(NewJSObjectByConstructor(JSHandle<JSFunction>(stringFunc), stringFunc));
-    obj->SetValue(thread_, str, SKIP_BARRIER);
+    obj->SetValue(thread_, str);
     return obj;
 }
 
@@ -1261,7 +1233,6 @@ JSHandle<JSSymbol> ObjectFactory::NewPublicSymbol(const JSHandle<JSTaggedValue> 
 
 JSHandle<JSSymbol> ObjectFactory::NewSymbolWithTable(const JSHandle<JSTaggedValue> &name)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<SymbolTable> tableHandle(env->GetRegisterSymbols());
     if (tableHandle->ContainsKey(thread_, name.GetTaggedValue())) {
@@ -1272,35 +1243,31 @@ JSHandle<JSSymbol> ObjectFactory::NewSymbolWithTable(const JSHandle<JSTaggedValu
     JSHandle<JSSymbol> obj = NewPublicSymbol(name);
     JSHandle<JSTaggedValue> valueHandle(obj);
     JSHandle<JSTaggedValue> keyHandle(name);
-    SymbolTable *table = SymbolTable::Insert(thread_, tableHandle, keyHandle, valueHandle);
-    env->SetRegisterSymbols(thread_, JSTaggedValue(table));
+    JSHandle<SymbolTable> table = SymbolTable::Insert(thread_, tableHandle, keyHandle, valueHandle);
+    env->SetRegisterSymbols(thread_, table);
     return obj;
 }
 
 JSHandle<JSSymbol> ObjectFactory::NewPrivateNameSymbolWithChar(const char *description)
 {
-    NewObjectHook();
     JSHandle<EcmaString> string = NewFromString(description);
     return NewPrivateNameSymbol(JSHandle<JSTaggedValue>(string));
 }
 
 JSHandle<JSSymbol> ObjectFactory::NewWellKnownSymbolWithChar(const char *description)
 {
-    NewObjectHook();
     JSHandle<EcmaString> string = NewFromString(description);
     return NewWellKnownSymbol(JSHandle<JSTaggedValue>(string));
 }
 
 JSHandle<JSSymbol> ObjectFactory::NewPublicSymbolWithChar(const char *description)
 {
-    NewObjectHook();
     JSHandle<EcmaString> string = NewFromString(description);
     return NewPublicSymbol(JSHandle<JSTaggedValue>(string));
 }
 
 JSHandle<JSSymbol> ObjectFactory::NewSymbolWithTableWithChar(const char *description)
 {
-    NewObjectHook();
     JSHandle<EcmaString> string = NewFromString(description);
     return NewSymbolWithTable(JSHandle<JSTaggedValue>(string));
 }
@@ -1426,10 +1393,8 @@ JSHandle<JSProxy> ObjectFactory::NewJSProxy(const JSHandle<JSTaggedValue> &targe
 
 JSHandle<JSRealm> ObjectFactory::NewJSRealm()
 {
-    NewObjectHook();
-
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
-    JSHandle<JSHClass> dynClassClassHandle = NewEcmaDynClass(nullptr, JSHClass::SIZE, JSType::HCLASS);
+    JSHandle<JSHClass> dynClassClassHandle = NewEcmaDynClassClass(nullptr, JSHClass::SIZE, JSType::HCLASS);
     JSHClass *dynclass = reinterpret_cast<JSHClass *>(dynClassClassHandle.GetTaggedValue().GetTaggedObject());
     dynclass->SetClass(dynclass);
     JSHandle<JSHClass> realmEnvClass = NewEcmaDynClass(*dynClassClassHandle, GlobalEnv::SIZE, JSType::GLOBAL_ENV);
@@ -1438,7 +1403,8 @@ JSHandle<JSRealm> ObjectFactory::NewJSRealm()
     ObtainRootClass(env);
     realmEnvHandle->SetEmptyArray(thread_, NewEmptyArray());
     realmEnvHandle->SetEmptyTaggedQueue(thread_, NewTaggedQueue(0));
-    realmEnvHandle->SetTemplateMap(thread_, JSTaggedValue(TemplateMap::Create(thread_)));
+    auto result = TemplateMap::Create(thread_);
+    realmEnvHandle->SetTemplateMap(thread_, result);
 
     Builtins builtins;
     builtins.Initialize(realmEnvHandle, thread_);
@@ -1460,7 +1426,6 @@ JSHandle<JSRealm> ObjectFactory::NewJSRealm()
 JSHandle<TaggedArray> ObjectFactory::NewEmptyArray()
 {
     NewObjectHook();
-
     auto header = heapHelper_.AllocateNonMovableOrHugeObject(arrayClass_, sizeof(TaggedArray));
     JSHandle<TaggedArray> array(thread_, header);
     array->SetLength(0);
@@ -1520,7 +1485,6 @@ JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTagge
 JSHandle<TaggedArray> ObjectFactory::NewDictionaryArray(array_size_t length)
 {
     NewObjectHook();
-
     ASSERT(length > 0);
 
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
@@ -1535,7 +1499,6 @@ JSHandle<TaggedArray> ObjectFactory::ExtendArray(const JSHandle<TaggedArray> &ol
                                                  JSTaggedValue initVal)
 {
     ASSERT(length > old->GetLength());
-
     NewObjectHook();
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
     auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
@@ -1619,21 +1582,18 @@ JSHandle<LayoutInfo> ObjectFactory::ExtendLayoutInfo(const JSHandle<LayoutInfo> 
                                                      JSTaggedValue initVal)
 {
     ASSERT(properties > old->NumberOfElements());
-    NewObjectHook();
     int arrayLength = LayoutInfo::ComputeArrayLength(LayoutInfo::ComputeGrowCapacity(properties));
     return JSHandle<LayoutInfo>(ExtendArray(JSHandle<TaggedArray>(old), arrayLength, initVal));
 }
 
 JSHandle<LayoutInfo> ObjectFactory::CopyLayoutInfo(const JSHandle<LayoutInfo> &old)
 {
-    NewObjectHook();
     int newLength = old->GetLength();
     return JSHandle<LayoutInfo>(CopyArray(JSHandle<TaggedArray>::Cast(old), newLength, newLength));
 }
 
 JSHandle<LayoutInfo> ObjectFactory::CopyAndReSort(const JSHandle<LayoutInfo> &old, int end, int capacity)
 {
-    NewObjectHook();
     ASSERT(capacity >= end);
     JSHandle<LayoutInfo> newArr = CreateLayoutInfo(capacity);
     Span<struct Properties> sp(old->GetProperties(), end);
@@ -1693,6 +1653,7 @@ JSHandle<TaggedArray> ObjectFactory::EmptyArray() const
 JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8Data, uint32_t utf8Len,
                                                              bool canBeCompress) const
 {
+    NewObjectHook();
     if (utf8Len == 0) {
         return GetEmptyString();
     }
@@ -1703,6 +1664,7 @@ JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint8_t *utf8
 JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const uint16_t *utf16Data, uint32_t utf16Len,
                                                              bool canBeCompress) const
 {
+    NewObjectHook();
     if (utf16Len == 0) {
         return GetEmptyString();
     }
@@ -1724,6 +1686,7 @@ JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(EcmaString *string)
 EcmaString *ObjectFactory::GetRawStringFromStringTable(const uint8_t *mutf8Data,
                                                        uint32_t utf16Len, bool canBeCompressed) const
 {
+    NewObjectHook();
     if (UNLIKELY(utf16Len == 0)) {
         return *GetEmptyString();
     }
@@ -1779,32 +1742,24 @@ JSHandle<ProfileTypeInfo> ObjectFactory::NewProfileTypeInfo(uint32_t length)
 }
 
 // static
-void ObjectFactory::NewObjectHook()
+void ObjectFactory::NewObjectHook() const
 {
 #ifndef NDEBUG
-    if (!isTriggerGc_) {
-        return;
-    }
-    if (vm_->IsInitialized()) {
-        if (triggerSemiGC_) {
+    if (vm_->GetJSOptions().IsEnableForceGC() && vm_->IsInitialized()) {
+        if (vm_->GetJSOptions().IsForceCompressGC()) {
             vm_->CollectGarbage(TriggerGCType::SEMI_GC);
-        } else {
+            vm_->CollectGarbage(TriggerGCType::OLD_GC);
             vm_->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+        } else {
+            vm_->CollectGarbage(TriggerGCType::SEMI_GC);
+            vm_->CollectGarbage(TriggerGCType::OLD_GC);
         }
     }
 #endif
 }
 
-void ObjectFactory::SetTriggerGc(bool flag, bool triggerSemiGC)
-{
-    isTriggerGc_ = flag;
-    triggerSemiGC_ = triggerSemiGC;
-}
-
 JSHandle<TaggedQueue> ObjectFactory::NewTaggedQueue(array_size_t length)
 {
-    NewObjectHook();
-
     array_size_t queueLength = TaggedQueue::QueueToArrayIndex(length);
     auto queue = JSHandle<TaggedQueue>::Cast(NewTaggedArray(queueLength, JSTaggedValue::Hole()));
     queue->SetStart(thread_, JSTaggedValue(0));  // equal to 0 when add 1.
@@ -1822,7 +1777,6 @@ JSHandle<TaggedQueue> ObjectFactory::GetEmptyTaggedQueue() const
 
 JSHandle<JSSetIterator> ObjectFactory::NewJSSetIterator(const JSHandle<JSSet> &set, IterationKind kind)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> protoValue = env->GetSetIteratorPrototype();
     JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSSetIterator::SIZE, JSType::JS_SET_ITERATOR, protoValue);
@@ -1836,7 +1790,6 @@ JSHandle<JSSetIterator> ObjectFactory::NewJSSetIterator(const JSHandle<JSSet> &s
 
 JSHandle<JSMapIterator> ObjectFactory::NewJSMapIterator(const JSHandle<JSMap> &map, IterationKind kind)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> protoValue = env->GetMapIteratorPrototype();
     JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSMapIterator::SIZE, JSType::JS_MAP_ITERATOR, protoValue);
@@ -1850,7 +1803,6 @@ JSHandle<JSMapIterator> ObjectFactory::NewJSMapIterator(const JSHandle<JSMap> &m
 
 JSHandle<JSArrayIterator> ObjectFactory::NewJSArrayIterator(const JSHandle<JSObject> &array, IterationKind kind)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> protoValue = env->GetArrayIteratorPrototype();
     JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSArrayIterator::SIZE, JSType::JS_ARRAY_ITERATOR, protoValue);
@@ -1864,7 +1816,6 @@ JSHandle<JSArrayIterator> ObjectFactory::NewJSArrayIterator(const JSHandle<JSObj
 
 JSHandle<JSPromiseReactionsFunction> ObjectFactory::CreateJSPromiseReactionsFunction(const void *nativeFunc)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseReactionFunctionClass());
 
@@ -1882,7 +1833,6 @@ JSHandle<JSPromiseReactionsFunction> ObjectFactory::CreateJSPromiseReactionsFunc
 
 JSHandle<JSPromiseExecutorFunction> ObjectFactory::CreateJSPromiseExecutorFunction(const void *nativeFunc)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseExecutorFunctionClass());
     JSHandle<JSPromiseExecutorFunction> executorFunction =
@@ -1900,7 +1850,6 @@ JSHandle<JSPromiseExecutorFunction> ObjectFactory::CreateJSPromiseExecutorFuncti
 JSHandle<JSPromiseAllResolveElementFunction> ObjectFactory::NewJSPromiseAllResolveElementFunction(
     const void *nativeFunc)
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetPromiseAllResolveElementFunctionClass());
     JSHandle<JSPromiseAllResolveElementFunction> function =
@@ -1962,65 +1911,10 @@ JSHandle<ResolvingFunctionsRecord> ObjectFactory::NewResolvingFunctionsRecord()
     return obj;
 }
 
-JSHandle<JSHClass> ObjectFactory::CreateObjectClass(const JSHandle<TaggedArray> &keys,
-                                                    const JSHandle<TaggedArray> &values)
-{
-    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
-    JSHandle<JSTaggedValue> proto = env->GetObjectFunctionPrototype();
-
-    JSHandle<JSHClass> objClass = NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, proto);
-
-    uint32_t fieldOrder = 0;
-    JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
-    JSMutableHandle<JSTaggedValue> value(thread_, JSTaggedValue::Undefined());
-    uint32_t length = keys->GetLength();
-    JSHandle<LayoutInfo> layoutInfoHandle = CreateLayoutInfo(length);
-    while (fieldOrder < length) {
-        key.Update(keys->Get(fieldOrder));
-        value.Update(values->Get(fieldOrder));
-        ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
-        PropertyAttributes attributes = PropertyAttributes::Default(true, true, true);
-
-        if (values->Get(fieldOrder).IsAccessorData()) {
-            attributes.SetIsAccessor(true);
-        }
-
-        if (fieldOrder >= JSObject::MIN_PROPERTIES_LENGTH) {
-            attributes.SetIsInlinedProps(false);
-        } else {
-            attributes.SetIsInlinedProps(true);
-        }
-
-        attributes.SetRepresentation(Representation::MIXED);
-        attributes.SetOffset(fieldOrder);
-        layoutInfoHandle->AddKey(thread_, fieldOrder, key.GetTaggedValue(), attributes);
-        fieldOrder++;
-    }
-
-    {
-        objClass->SetExtensible(true);
-        objClass->SetIsLiteral(true);
-        objClass->SetAttributes(thread_, layoutInfoHandle);
-
-        if (fieldOrder > JSObject::MIN_PROPERTIES_LENGTH) {
-            uint32_t unusedNonInlinedProps = objClass->GetUnusedNonInlinedProps();
-            ASSERT(unusedNonInlinedProps >= (fieldOrder - JSObject::MIN_PROPERTIES_LENGTH));
-            objClass->SetUnusedNonInlinedProps(unusedNonInlinedProps - (fieldOrder - JSObject::MIN_PROPERTIES_LENGTH));
-            objClass->SetUnusedInlinedProps(0);
-        } else {
-            uint32_t unusedInlinedProps = objClass->GetUnusedInlinedProps();
-            ASSERT(unusedInlinedProps >= fieldOrder);
-            objClass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
-        }
-    }
-    return objClass;
-}
-
 JSHandle<JSHClass> ObjectFactory::CreateObjectClass(const JSHandle<TaggedArray> &properties, size_t length)
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> proto = env->GetObjectFunctionPrototype();
-    JSHandle<JSHClass> objClass = NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, proto);
 
     uint32_t fieldOrder = 0;
     JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
@@ -2028,54 +1922,32 @@ JSHandle<JSHClass> ObjectFactory::CreateObjectClass(const JSHandle<TaggedArray> 
     while (fieldOrder < length) {
         key.Update(properties->Get(fieldOrder * 2));  // 2: Meaning to double
         ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
-        PropertyAttributes attributes = PropertyAttributes::Default(true, true, true);
+        PropertyAttributes attributes = PropertyAttributes::Default();
 
         if (properties->Get(fieldOrder * 2 + 1).IsAccessor()) {  // 2: Meaning to double
             attributes.SetIsAccessor(true);
         }
 
-        if (fieldOrder >= JSObject::MIN_PROPERTIES_LENGTH) {
-            attributes.SetIsInlinedProps(false);
-        } else {
-            attributes.SetIsInlinedProps(true);
-        }
-
+        attributes.SetIsInlinedProps(true);
         attributes.SetRepresentation(Representation::MIXED);
         attributes.SetOffset(fieldOrder);
         layoutInfoHandle->AddKey(thread_, fieldOrder, key.GetTaggedValue(), attributes);
         fieldOrder++;
     }
-
+    ASSERT(fieldOrder <= PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES);
+    JSHandle<JSHClass> objClass = NewEcmaDynClass(JSObject::SIZE, JSType::JS_OBJECT, fieldOrder);
+    objClass->SetPrototype(thread_, proto.GetTaggedValue());
     {
         objClass->SetExtensible(true);
         objClass->SetIsLiteral(true);
-        objClass->SetAttributes(thread_, layoutInfoHandle);
-        if (fieldOrder > JSObject::MIN_PROPERTIES_LENGTH) {
-            uint32_t unusedNonInlinedProps = objClass->GetUnusedNonInlinedProps();
-            ASSERT(unusedNonInlinedProps >= (fieldOrder - JSObject::MIN_PROPERTIES_LENGTH));
-            objClass->SetUnusedNonInlinedProps(unusedNonInlinedProps - (fieldOrder - JSObject::MIN_PROPERTIES_LENGTH));
-            objClass->SetUnusedInlinedProps(0);
-        } else {
-            uint32_t unusedInlinedProps = objClass->GetUnusedInlinedProps();
-            ASSERT(unusedInlinedProps >= fieldOrder);
-            objClass->SetUnusedInlinedProps(unusedInlinedProps - fieldOrder);
-        }
+        objClass->SetLayout(thread_, layoutInfoHandle);
+        objClass->SetNumberOfProps(fieldOrder);
     }
     return objClass;
 }
 
-JSHandle<JSObject> ObjectFactory::NewJSObjectByClass(const JSHandle<TaggedArray> &keys,
-                                                     const JSHandle<TaggedArray> &values)
-{
-    NewObjectHook();
-    JSHandle<JSHClass> dynclass = CreateObjectClass(keys, values);
-    JSHandle<JSObject> obj = NewJSObject(dynclass);
-    return obj;
-}
-
 JSHandle<JSObject> ObjectFactory::NewJSObjectByClass(const JSHandle<TaggedArray> &properties, size_t length)
 {
-    NewObjectHook();
     JSHandle<JSHClass> dynclass = CreateObjectClass(properties, length);
     JSHandle<JSObject> obj = NewJSObject(dynclass);
     return obj;
@@ -2083,7 +1955,6 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByClass(const JSHandle<TaggedArray>
 
 JSHandle<JSObject> ObjectFactory::NewEmptyJSObject()
 {
-    NewObjectHook();
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> builtinObj = env->GetObjectFunction();
     return NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj);
@@ -2101,6 +1972,7 @@ EcmaString *ObjectFactory::ResolveString(uint32_t stringId)
 
 uintptr_t ObjectFactory::NewSpaceBySnapShotAllocator(size_t size)
 {
+    NewObjectHook();
     return heapHelper_.AllocateSnapShotSpace(size);
 }
 
@@ -2120,7 +1992,6 @@ JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const u
 // ----------------------------------- new string ----------------------------------------
 JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
 {
-    NewObjectHook();
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
     bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
     return GetStringFromStringTable(utf8Data, data.length(), canBeCompress);
@@ -2128,7 +1999,6 @@ JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
 
 JSHandle<EcmaString> ObjectFactory::NewFromCanBeCompressString(const CString &data)
 {
-    NewObjectHook();
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
     ASSERT(EcmaString::CanBeCompressed(utf8Data));
     return GetStringFromStringTable(utf8Data, data.length(), true);
@@ -2136,7 +2006,6 @@ JSHandle<EcmaString> ObjectFactory::NewFromCanBeCompressString(const CString &da
 
 JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
 {
-    NewObjectHook();
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
     bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
     return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
@@ -2144,27 +2013,23 @@ JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
 
 JSHandle<EcmaString> ObjectFactory::NewFromStdStringUnCheck(const std::string &data, bool canBeCompress)
 {
-    NewObjectHook();
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
     return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromUtf8(const uint8_t *utf8Data, uint32_t utf8Len)
 {
-    NewObjectHook();
     bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
     return GetStringFromStringTable(utf8Data, utf8Len, canBeCompress);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromUtf8UnCheck(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress)
 {
-    NewObjectHook();
     return GetStringFromStringTable(utf8Data, utf8Len, canBeCompress);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromUtf16(const uint16_t *utf16Data, uint32_t utf16Len)
 {
-    NewObjectHook();
     bool canBeCompress = EcmaString::CanBeCompressed(utf16Data, utf16Len);
     return GetStringFromStringTable(utf16Data, utf16Len, canBeCompress);
 }
@@ -2172,7 +2037,6 @@ JSHandle<EcmaString> ObjectFactory::NewFromUtf16(const uint16_t *utf16Data, uint
 JSHandle<EcmaString> ObjectFactory::NewFromUtf16UnCheck(const uint16_t *utf16Data, uint32_t utf16Len,
                                                         bool canBeCompress)
 {
-    NewObjectHook();
     return GetStringFromStringTable(utf16Data, utf16Len, canBeCompress);
 }
 
@@ -2206,14 +2070,12 @@ JSHandle<EcmaString> ObjectFactory::NewFromUtf16LiteralUnCheck(const uint16_t *u
 
 JSHandle<EcmaString> ObjectFactory::NewFromString(EcmaString *str)
 {
-    NewObjectHook();
     return GetStringFromStringTable(str);
 }
 
 JSHandle<EcmaString> ObjectFactory::ConcatFromString(const JSHandle<EcmaString> &prefix,
                                                      const JSHandle<EcmaString> &suffix)
 {
-    NewObjectHook();
     EcmaString *concatString = EcmaString::Concat(prefix, suffix, vm_);
     return GetStringFromStringTable(concatString);
 }

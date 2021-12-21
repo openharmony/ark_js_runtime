@@ -45,7 +45,7 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
     JSHandle<JSWeakMap> weakMap = JSHandle<JSWeakMap>::Cast(obj);
 
     // 4.Set weakmap’s [[WeakMapData]] internal slot to a new empty List.
-    JSTaggedValue linkedMap = LinkedHashMap::Create(thread);
+    JSHandle<LinkedHashMap> linkedMap = LinkedHashMap::Create(thread);
     weakMap->SetLinkedMap(thread, linkedMap);
     // add data into set from iterable
     // 5.If iterable is not present, let iterable be undefined.

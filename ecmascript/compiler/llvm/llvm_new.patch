@@ -1,0 +1,928 @@
+diff --git a/llvm/CMakeLists.txt b/llvm/CMakeLists.txt
+index 0e85afa82c7..43756892e40 100644
+--- a/llvm/CMakeLists.txt
++++ b/llvm/CMakeLists.txt
+@@ -505,8 +505,15 @@ option(LLVM_BUILD_RUNTIME
+   "Build the LLVM runtime libraries." ON)
+ option(LLVM_BUILD_EXAMPLES
+   "Build the LLVM example programs. If OFF, just generate build targets." OFF)
++option(BUILD_ARK_GC_SUPPORT
++	"ARK support GC. If ON, support GC." OFF)
++if(BUILD_ARK_GC_SUPPORT)
++   add_definitions(-DARK_GC_SUPPORT)
++endif(BUILD_ARK_GC_SUPPORT)
++
+ option(LLVM_INCLUDE_EXAMPLES "Generate build targets for the LLVM examples" ON)
+ 
++
+ if(LLVM_BUILD_EXAMPLES)
+   add_definitions(-DBUILD_EXAMPLES)
+ endif(LLVM_BUILD_EXAMPLES)
+diff --git a/llvm/include/llvm/CodeGen/TargetFrameLowering.h b/llvm/include/llvm/CodeGen/TargetFrameLowering.h
+index c7d4c4d7e5d..1df40696dd0 100644
+--- a/llvm/include/llvm/CodeGen/TargetFrameLowering.h
++++ b/llvm/include/llvm/CodeGen/TargetFrameLowering.h
+@@ -15,6 +15,9 @@
+ 
+ #include "llvm/CodeGen/MachineBasicBlock.h"
+ #include "llvm/ADT/StringSwitch.h"
++#ifdef ARK_GC_SUPPORT
++#include "llvm/ADT/Triple.h"
++#endif
+ #include <utility>
+ #include <vector>
+ 
+@@ -177,7 +180,12 @@ public:
+                             MachineBasicBlock &MBB) const = 0;
+   virtual void emitEpilogue(MachineFunction &MF,
+                             MachineBasicBlock &MBB) const = 0;
+-
++#ifdef ARK_GC_SUPPORT
++  virtual Triple::ArchType GetArkSupportTarget() const
++  {
++      return Triple::UnknownArch;
++  }
++#endif
+   /// Replace a StackProbe stub (if any) with the actual probe code inline
+   virtual void inlineStackProbe(MachineFunction &MF,
+                                 MachineBasicBlock &PrologueMBB) const {}
+diff --git a/llvm/lib/CodeGen/PrologEpilogInserter.cpp b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
+index 3909b571728..c8b3c1c2928 100644
+--- a/llvm/lib/CodeGen/PrologEpilogInserter.cpp
++++ b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
+@@ -79,6 +79,8 @@ using MBBVector = SmallVector<MachineBasicBlock *, 4>;
+ STATISTIC(NumLeafFuncWithSpills, "Number of leaf functions with CSRs");
+ STATISTIC(NumFuncSeen, "Number of functions seen in PEI");
+ 
++#define JS_ENTRY_FRAME_MARK 1
++#define JS_FRAME_MARK   0
+ 
+ namespace {
+ 
+@@ -878,6 +880,35 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
+   int64_t FixedCSEnd = Offset;
+   unsigned MaxAlign = MFI.getMaxAlignment();
+ 
++  #ifdef ARK_GC_SUPPORT
++  unsigned CalleeSavedFrameSize = 0;
++  Triple::ArchType archType = TFI.GetArkSupportTarget();
++  if (archType != Triple::UnknownArch) {
++    int slotSize = 4;
++    if (archType == Triple::aarch64) {
++      slotSize = 8;
++    }
++    if (MF.getFunction().hasFnAttribute("js-stub-call")) {
++      int64_t marker = 0x0;
++      MF.getFunction()
++      .getFnAttribute("js-stub-call")
++      .getValueAsString()
++      .getAsInteger(10, marker);//marker 1 break frame
++      if (marker == JS_ENTRY_FRAME_MARK) {
++        CalleeSavedFrameSize = 3 * slotSize;/* frameType + threadSP */
++      } else if (marker == JS_FRAME_MARK){
++        CalleeSavedFrameSize = 2 * slotSize; /* frameType */
++      } else {
++        assert("js-stub-call is illeagl ! ");
++      }
++      if (archType == Triple::aarch64) {
++        CalleeSavedFrameSize += slotSize; /* current SP */
++      }
++      Offset += CalleeSavedFrameSize;
++    }
++  }
++  #endif
++
+   // Make sure the special register scavenging spill slot is closest to the
+   // incoming stack pointer if a frame pointer is required and is closer
+   // to the incoming rather than the final stack pointer.
+diff --git a/llvm/lib/CodeGen/StackMaps.cpp b/llvm/lib/CodeGen/StackMaps.cpp
+index e16587c44a5..bd3e99c6600 100644
+--- a/llvm/lib/CodeGen/StackMaps.cpp
++++ b/llvm/lib/CodeGen/StackMaps.cpp
+@@ -29,6 +29,9 @@
+ #include "llvm/Support/ErrorHandling.h"
+ #include "llvm/Support/MathExtras.h"
+ #include "llvm/Support/raw_ostream.h"
++#ifdef ARK_GC_SUPPORT
++#include "llvm/Target/TargetMachine.h"
++#endif
+ #include <algorithm>
+ #include <cassert>
+ #include <cstdint>
+@@ -442,7 +445,11 @@ void StackMaps::emitFunctionFrameRecords(MCStreamer &OS) {
+     LLVM_DEBUG(dbgs() << WSMP << "function addr: " << FR.first
+                       << " frame size: " << FR.second.StackSize
+                       << " callsite count: " << FR.second.RecordCount << '\n');
++#ifdef ARK_GC_SUPPORT
++    OS.EmitSymbolValue(FR.first, AP.TM.getProgramPointerSize());
++#else
+     OS.EmitSymbolValue(FR.first, 8);
++#endif
+     OS.EmitIntValue(FR.second.StackSize, 8);
+     OS.EmitIntValue(FR.second.RecordCount, 8);
+   }
+diff --git a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
+index 6da089d1859..271b4e157d9 100644
+--- a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
++++ b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
+@@ -95,6 +95,10 @@ public:
+                      const MachineInstr &MI);
+   void LowerPATCHPOINT(MCStreamer &OutStreamer, StackMaps &SM,
+                        const MachineInstr &MI);
++#ifdef ARK_GC_SUPPORT
++  void LowerSTATEPOINT(MCStreamer &OutStreamer, StackMaps &SM,
++                       const MachineInstr &MI);
++#endif
+ 
+   void LowerPATCHABLE_FUNCTION_ENTER(const MachineInstr &MI);
+   void LowerPATCHABLE_FUNCTION_EXIT(const MachineInstr &MI);
+@@ -936,6 +940,49 @@ void AArch64AsmPrinter::LowerPATCHPOINT(MCStreamer &OutStreamer, StackMaps &SM,
+     EmitToStreamer(OutStreamer, MCInstBuilder(AArch64::HINT).addImm(0));
+ }
+ 
++#ifdef ARK_GC_SUPPORT
++void AArch64AsmPrinter::LowerSTATEPOINT(MCStreamer &OutStreamer, StackMaps &SM,
++                                        const MachineInstr &MI) {
++  StatepointOpers SOpers(&MI);
++  if (unsigned PatchBytes = SOpers.getNumPatchBytes()) {
++    assert(PatchBytes % 4 == 0 && "Invalid number of NOP bytes requested!");
++    for (unsigned i = 0; i < PatchBytes; i += 4)
++      EmitToStreamer(OutStreamer, MCInstBuilder(AArch64::HINT).addImm(0));
++  } else {
++    // Lower call target and choose correct opcode
++    const MachineOperand &CallTarget = SOpers.getCallTarget();
++    MCOperand CallTargetMCOp;
++    unsigned CallOpcode;
++    switch (CallTarget.getType()) {
++    case MachineOperand::MO_GlobalAddress:
++    case MachineOperand::MO_ExternalSymbol:
++      MCInstLowering.lowerOperand(CallTarget, CallTargetMCOp);
++      CallOpcode = AArch64::BL;
++      break;
++    case MachineOperand::MO_Immediate:
++      CallTargetMCOp = MCOperand::createImm(CallTarget.getImm());
++      CallOpcode = AArch64::BL;
++      break;
++    case MachineOperand::MO_Register:
++      CallTargetMCOp = MCOperand::createReg(CallTarget.getReg());
++      CallOpcode = AArch64::BLR;
++      break;
++    default:
++      llvm_unreachable("Unsupported operand type in statepoint call target");
++      break;
++    }
++
++    EmitToStreamer(OutStreamer,
++                   MCInstBuilder(CallOpcode).addOperand(CallTargetMCOp));
++  }
++
++  auto &Ctx = OutStreamer.getContext();
++  MCSymbol *MILabel = Ctx.createTempSymbol();
++  OutStreamer.EmitLabel(MILabel);
++  SM.recordStatepoint(*MILabel, MI);
++}
++#endif
++
+ void AArch64AsmPrinter::EmitFMov0(const MachineInstr &MI) {
+   Register DestReg = MI.getOperand(0).getReg();
+   if (STI->hasZeroCycleZeroingFP() && !STI->hasZeroCycleZeroingFPWorkaround()) {
+@@ -1198,6 +1245,11 @@ void AArch64AsmPrinter::EmitInstruction(const MachineInstr *MI) {
+   case TargetOpcode::PATCHPOINT:
+     return LowerPATCHPOINT(*OutStreamer, SM, *MI);
+ 
++#ifdef ARK_GC_SUPPORT
++  case TargetOpcode::STATEPOINT:
++    return LowerSTATEPOINT(*OutStreamer, SM, *MI);
++#endif
++
+   case TargetOpcode::PATCHABLE_FUNCTION_ENTER:
+     LowerPATCHABLE_FUNCTION_ENTER(*MI);
+     return;
+diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
+index 651ad9ad4c8..6e4a674be51 100644
+--- a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
++++ b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
+@@ -872,6 +872,13 @@ static bool IsSVECalleeSave(MachineBasicBlock::iterator I) {
+   }
+ }
+ 
++#ifdef ARK_GC_SUPPORT
++Triple::ArchType AArch64FrameLowering::GetArkSupportTarget() const
++{
++  return Triple::aarch64;
++}
++#endif
++
+ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
+                                         MachineBasicBlock &MBB) const {
+   MachineBasicBlock::iterator MBBI = MBB.begin();
+diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.h b/llvm/lib/Target/AArch64/AArch64FrameLowering.h
+index b5719feb6b1..b09aa05176d 100644
+--- a/llvm/lib/Target/AArch64/AArch64FrameLowering.h
++++ b/llvm/lib/Target/AArch64/AArch64FrameLowering.h
+@@ -15,6 +15,11 @@
+ 
+ #include "AArch64StackOffset.h"
+ #include "llvm/CodeGen/TargetFrameLowering.h"
++#ifdef ARK_GC_SUPPORT
++#include "llvm/ADT/Triple.h"
++#endif
++
++#define JS_ENTRY_FRAME_MARK 1
+ 
+ namespace llvm {
+ 
+@@ -35,6 +40,9 @@ public:
+   /// the function.
+   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
++#ifdef ARK_GC_SUPPORT
++  Triple::ArchType GetArkSupportTarget() const override;
++#endif
+ 
+   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
+ 
+diff --git a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
+index 23f05eaad94..9d42a9d9af9 100644
+--- a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
++++ b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
+@@ -1498,6 +1498,9 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
+ 
+   case TargetOpcode::STACKMAP:
+   case TargetOpcode::PATCHPOINT:
++#ifdef ARK_GC_SUPPORT
++  case TargetOpcode::STATEPOINT:
++#endif
+     return emitPatchPoint(MI, BB);
+ 
+   case AArch64::CATCHRET:
+diff --git a/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp b/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp
+index 54f3f7c1013..c57374c9c78 100644
+--- a/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp
++++ b/llvm/lib/Target/AArch64/AArch64InstrInfo.cpp
+@@ -107,6 +107,15 @@ unsigned AArch64InstrInfo::getInstSizeInBytes(const MachineInstr &MI) const {
+     NumBytes = PatchPointOpers(&MI).getNumPatchBytes();
+     assert(NumBytes % 4 == 0 && "Invalid number of NOP bytes requested!");
+     break;
++#ifdef ARK_GC_SUPPORT
++  case TargetOpcode::STATEPOINT:
++    NumBytes = StatepointOpers(&MI).getNumPatchBytes();
++    assert(NumBytes % 4 == 0 && "Invalid number of NOP bytes requested!");
++    // No patch bytes means a normal call inst is emitted
++    if (NumBytes == 0)
++      NumBytes = 4;
++    break;
++#endif
+   case AArch64::TLSDESC_CALLSEQ:
+     // This gets lowered to an instruction sequence which takes 16 bytes
+     NumBytes = 16;
+diff --git a/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp b/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp
+index 14f839cd4f8..f305d3abdbf 100644
+--- a/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp
++++ b/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp
+@@ -464,8 +464,14 @@ void AArch64RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+   unsigned FrameReg;
+ 
+   // Special handling of dbg_value, stackmap and patchpoint instructions.
++#ifdef ARK_GC_SUPPORT
++  if (MI.isDebugValue() || MI.getOpcode() == TargetOpcode::STACKMAP ||
++      MI.getOpcode() == TargetOpcode::PATCHPOINT ||
++      MI.getOpcode() == TargetOpcode::STATEPOINT) {
++#else
+   if (MI.isDebugValue() || MI.getOpcode() == TargetOpcode::STACKMAP ||
+       MI.getOpcode() == TargetOpcode::PATCHPOINT) {
++#endif
+     StackOffset Offset =
+         TFI->resolveFrameIndexReference(MF, FrameIndex, FrameReg,
+                                         /*PreferFP=*/true,
+diff --git a/llvm/lib/Target/AArch64/AArch64StackOffset.h b/llvm/lib/Target/AArch64/AArch64StackOffset.h
+index f95b5dc5246..99f5905565a 100644
+--- a/llvm/lib/Target/AArch64/AArch64StackOffset.h
++++ b/llvm/lib/Target/AArch64/AArch64StackOffset.h
+@@ -37,7 +37,7 @@ namespace llvm {
+ class StackOffset {
+   int64_t Bytes;
+   int64_t ScalableBytes;
+-
++public:
+   explicit operator int() const;
+ 
+ public:
+diff --git a/llvm/lib/Target/AArch64/AArch64TargetTransformInfo.cpp b/llvm/lib/Target/AArch64/AArch64TargetTransformInfo.cpp
+index 4724d6b8dae..2155ad923f9 100644
+--- a/llvm/lib/Target/AArch64/AArch64TargetTransformInfo.cpp
++++ b/llvm/lib/Target/AArch64/AArch64TargetTransformInfo.cpp
+@@ -189,6 +189,12 @@ int AArch64TTIImpl::getIntImmCostIntrin(Intrinsic::ID IID, unsigned Idx,
+     if ((Idx < 4) || (Imm.getBitWidth() <= 64 && isInt<64>(Imm.getSExtValue())))
+       return TTI::TCC_Free;
+     break;
++#ifdef ARK_GC_SUPPORT
++  case Intrinsic::experimental_gc_statepoint:
++    if ((Idx < 5) || (Imm.getBitWidth() <= 64 && isInt<64>(Imm.getSExtValue())))
++      return TTI::TCC_Free;
++    break;
++#endif
+   }
+   return AArch64TTIImpl::getIntImmCost(Imm, Ty);
+ }
+diff --git a/llvm/lib/Target/ARM/ARMAsmPrinter.cpp b/llvm/lib/Target/ARM/ARMAsmPrinter.cpp
+index 6f26ca127f9..8db2d2c4b0b 100644
+--- a/llvm/lib/Target/ARM/ARMAsmPrinter.cpp
++++ b/llvm/lib/Target/ARM/ARMAsmPrinter.cpp
+@@ -55,7 +55,11 @@ using namespace llvm;
+ ARMAsmPrinter::ARMAsmPrinter(TargetMachine &TM,
+                              std::unique_ptr<MCStreamer> Streamer)
+     : AsmPrinter(TM, std::move(Streamer)), Subtarget(nullptr), AFI(nullptr),
++#ifdef ARK_GC_SUPPORT
++      MCP(nullptr), InConstantPool(false), OptimizationGoals(-1), SM(*this) {}
++#else
+       MCP(nullptr), InConstantPool(false), OptimizationGoals(-1) {}
++#endif
+ 
+ void ARMAsmPrinter::EmitFunctionBodyEnd() {
+   // Make sure to terminate any constant pools that were at the end
+@@ -567,6 +571,10 @@ void ARMAsmPrinter::EmitEndOfAsmFile(Module &M) {
+   OptimizationGoals = -1;
+ 
+   ATS.finishAttributeSection();
++
++#ifdef ARK_GC_SUPPORT
++  SM.serializeToStackMapSection();
++#endif
+ }
+ 
+ //===----------------------------------------------------------------------===//
+@@ -2135,6 +2143,14 @@ void ARMAsmPrinter::EmitInstruction(const MachineInstr *MI) {
+   case ARM::PATCHABLE_TAIL_CALL:
+     LowerPATCHABLE_TAIL_CALL(*MI);
+     return;
++#ifdef ARK_GC_SUPPORT
++  case TargetOpcode::STACKMAP:
++    return LowerSTACKMAP(*OutStreamer, SM, *MI);
++  case TargetOpcode::PATCHPOINT:
++    return LowerPATCHPOINT(*OutStreamer, SM, *MI);
++  case TargetOpcode::STATEPOINT:
++    return LowerSTATEPOINT(*OutStreamer, SM, *MI);
++#endif
+   }
+ 
+   MCInst TmpInst;
+@@ -2143,6 +2159,75 @@ void ARMAsmPrinter::EmitInstruction(const MachineInstr *MI) {
+   EmitToStreamer(*OutStreamer, TmpInst);
+ }
+ 
++#ifdef ARK_GC_SUPPORT
++static unsigned roundUpTo4ByteAligned(unsigned n) {
++  unsigned mask = 3;
++  unsigned rev = ~3;
++  n = (n & rev) + (((n & mask) + mask) & rev);
++  return n;
++}
++
++void ARMAsmPrinter::LowerSTACKMAP(MCStreamer &OutStreamer, StackMaps &SM,
++                                  const MachineInstr &MI) {
++  llvm_unreachable("Stackmap lowering is not implemented");
++}
++
++void ARMAsmPrinter::LowerPATCHPOINT(MCStreamer &OutStreamer, StackMaps &SM,
++                                    const MachineInstr &MI) {
++  llvm_unreachable("Patchpoint lowering is not implemented");
++}
++
++void ARMAsmPrinter::LowerSTATEPOINT(MCStreamer &OutStreamer, StackMaps &SM,
++                                    const MachineInstr &MI) {
++  assert(!AFI->isThumbFunction());
++
++  StatepointOpers SOpers(&MI);
++  MCInst Noop;
++  Subtarget->getInstrInfo()->getNoop(Noop);
++  if (unsigned PatchBytes = SOpers.getNumPatchBytes()) {
++    unsigned NumBytes = roundUpTo4ByteAligned(PatchBytes);
++    unsigned EncodedBytes = 0;
++    assert(NumBytes >= EncodedBytes &&
++    "Statepoint can't request size less than the length of a call.");
++    assert((NumBytes - EncodedBytes) % 4 == 0 &&
++    "Invalid number of NOP bytes requested!");
++    MCInst Noop;
++    Subtarget->getInstrInfo()->getNoop(Noop);
++    for (unsigned i = EncodedBytes; i < NumBytes; i += 4)
++      EmitToStreamer(OutStreamer, Noop);
++  } else {
++      const MachineOperand &CallTarget = SOpers.getCallTarget();
++      MCOperand CallTargetMCOp;
++      unsigned CallOpcode;
++      switch (CallTarget.getType()) {
++        case MachineOperand::MO_GlobalAddress:
++        case MachineOperand::MO_ExternalSymbol:
++          ARMAsmPrinter::lowerOperand(CallTarget, CallTargetMCOp);
++          CallOpcode = ARM::BL;
++          break;
++        case MachineOperand::MO_Immediate:
++          CallTargetMCOp = MCOperand::createImm(CallTarget.getImm());
++          CallOpcode = ARM::BL;
++          break;
++        case MachineOperand::MO_Register:
++          CallTargetMCOp = MCOperand::createReg(CallTarget.getReg());
++          CallOpcode = ARM::BLX;
++          break;
++        default:
++          llvm_unreachable("Unsupported operand type in statepoint call target");
++          break;
++      }
++
++      EmitToStreamer(OutStreamer,
++                     MCInstBuilder(CallOpcode).addOperand(CallTargetMCOp));
++  }
++  auto &Ctx = OutStreamer.getContext();
++  MCSymbol *MILabel = Ctx.createTempSymbol();
++  OutStreamer.EmitLabel(MILabel);
++  SM.recordStatepoint(*MILabel, MI);
++}
++#endif
++
+ //===----------------------------------------------------------------------===//
+ // Target Registry Stuff
+ //===----------------------------------------------------------------------===//
+diff --git a/llvm/lib/Target/ARM/ARMAsmPrinter.h b/llvm/lib/Target/ARM/ARMAsmPrinter.h
+index a4b37fa2331..be62b1875f4 100644
+--- a/llvm/lib/Target/ARM/ARMAsmPrinter.h
++++ b/llvm/lib/Target/ARM/ARMAsmPrinter.h
+@@ -11,6 +11,9 @@
+ 
+ #include "ARMSubtarget.h"
+ #include "llvm/CodeGen/AsmPrinter.h"
++#ifdef ARK_GC_SUPPORT
++#include "llvm/CodeGen/StackMaps.h"
++#endif
+ #include "llvm/Target/TargetMachine.h"
+ 
+ namespace llvm {
+@@ -65,6 +68,10 @@ class LLVM_LIBRARY_VISIBILITY ARMAsmPrinter : public AsmPrinter {
+   /// debug info can link properly.
+   SmallPtrSet<const GlobalVariable*,2> EmittedPromotedGlobalLabels;
+ 
++#ifdef ARK_GC_SUPPORT
++  StackMaps SM;
++#endif
++
+ public:
+   explicit ARMAsmPrinter(TargetMachine &TM,
+                          std::unique_ptr<MCStreamer> Streamer);
+@@ -129,6 +136,17 @@ private:
+   bool emitPseudoExpansionLowering(MCStreamer &OutStreamer,
+                                    const MachineInstr *MI);
+ 
++#ifdef ARK_GC_SUPPORT
++  void LowerSTACKMAP(MCStreamer &OutStreamer, StackMaps &SM,
++                     const MachineInstr &MI);
++
++  void LowerPATCHPOINT(MCStreamer &OutStreamer, StackMaps &SM,
++                       const MachineInstr &MI);
++
++  void LowerSTATEPOINT(MCStreamer &OutStreamer, StackMaps &SM,
++                       const MachineInstr &MI);
++#endif
++
+ public:
+   unsigned getISAEncoding() override {
+     // ARM/Darwin adds ISA to the DWARF info for each function.
+diff --git a/llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp b/llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp
+index 48f78151025..0970a6259ad 100644
+--- a/llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp
++++ b/llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp
+@@ -712,6 +712,11 @@ unsigned ARMBaseInstrInfo::getInstSizeInBytes(const MachineInstr &MI) const {
+     return 0;
+   case TargetOpcode::BUNDLE:
+     return getInstBundleLength(MI);
++#ifdef ARK_GC_SUPPORT
++  case TargetOpcode::PATCHPOINT:
++  case TargetOpcode::STATEPOINT:
++    return MI.getOperand(1).getImm();
++#endif
+   case ARM::MOVi16_ga_pcrel:
+   case ARM::MOVTi16_ga_pcrel:
+   case ARM::t2MOVi16_ga_pcrel:
+diff --git a/llvm/lib/Target/ARM/ARMFrameLowering.cpp b/llvm/lib/Target/ARM/ARMFrameLowering.cpp
+index cb98b2b34ef..b39bdf6f48e 100644
+--- a/llvm/lib/Target/ARM/ARMFrameLowering.cpp
++++ b/llvm/lib/Target/ARM/ARMFrameLowering.cpp
+@@ -353,6 +353,13 @@ static int getMaxFPOffset(const Function &F, const ARMFunctionInfo &AFI) {
+   return -AFI.getArgRegsSaveSize() - (8 * 4);
+ }
+ 
++#ifdef ARK_GC_SUPPORT
++Triple::ArchType ARMFrameLowering::GetArkSupportTarget() const
++{
++    return Triple::arm;
++}
++#endif
++
+ void ARMFrameLowering::emitPrologue(MachineFunction &MF,
+                                     MachineBasicBlock &MBB) const {
+   MachineBasicBlock::iterator MBBI = MBB.begin();
+@@ -967,6 +974,33 @@ ARMFrameLowering::ResolveFrameIndexReference(const MachineFunction &MF,
+   return Offset;
+ }
+ 
++void ARMFrameLowering::emitPushJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
++  unsigned StrOpc, unsigned MIFlags) const
++{
++    using RegAndKill = std::pair<unsigned, bool>;
++    MachineFunction &MF = *MBB.getParent();
++    const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
++    bool isLiveIn = true;
++    DebugLoc DL;
++    SmallVector<RegAndKill, 4> Regs;
++    Regs.push_back(std::make_pair(ARM::R11, /*isKill=*/!isLiveIn));
++    BuildMI(MBB, MI, DL, TII.get(StrOpc), ARM::SP)
++      .addReg(Regs[0].first, getKillRegState(Regs[0].second))
++      .addReg(ARM::SP)
++      .setMIFlags(MIFlags)
++      .addImm(-4)
++      .add(predOps(ARMCC::AL));
++}
++#ifdef ARK_GC_SUPPORT
++void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
++                                    MachineBasicBlock::iterator MI,
++                                    const std::vector<CalleeSavedInfo> &CSI,
++                                    unsigned StmOpc, unsigned StrOpc,
++                                    bool NoGap,
++                                    bool(*Func)(unsigned, bool),
++                                    unsigned NumAlignedDPRCS2Regs,
++                                    unsigned MIFlags, int multiCall) const {
++#else
+ void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
+                                     MachineBasicBlock::iterator MI,
+                                     const std::vector<CalleeSavedInfo> &CSI,
+@@ -975,6 +1009,7 @@ void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
+                                     bool(*Func)(unsigned, bool),
+                                     unsigned NumAlignedDPRCS2Regs,
+                                     unsigned MIFlags) const {
++#endif
+   MachineFunction &MF = *MBB.getParent();
+   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
+   const TargetRegisterInfo &TRI = *STI.getRegisterInfo();
+@@ -1019,7 +1054,26 @@ void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
+     llvm::sort(Regs, [&](const RegAndKill &LHS, const RegAndKill &RHS) {
+       return TRI.getEncodingValue(LHS.first) < TRI.getEncodingValue(RHS.first);
+     });
++#ifdef ARK_GC_SUPPORT
++    SmallVector<RegAndKill, 4> BeforeRegs = Regs;
++    if (multiCall != 0) {
++      Regs.clear();
++    }
++    if (multiCall == 1) {
++      for (auto it: BeforeRegs) {
++        if (it.first == ARM::LR || it.first == ARM::R11) {
++          Regs.push_back(it);
++        }
++      }
+ 
++    } else if (multiCall == 2) {
++      for (auto it: BeforeRegs) {
++        if ((it.first != ARM::LR) && (it.first != ARM::R11)) {
++          Regs.push_back(it);
++        }
++      }
++    }
++#endif
+     if (Regs.size() > 1 || StrOpc== 0) {
+       MachineInstrBuilder MIB = BuildMI(MBB, MI, DL, TII.get(StmOpc), ARM::SP)
+                                     .addReg(ARM::SP)
+@@ -1045,6 +1099,38 @@ void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
+   }
+ }
+ 
++void ARMFrameLowering::emitPopJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
++                                     unsigned LdrOpc) const
++{
++    MachineFunction &MF = *MBB.getParent();
++    const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
++    SmallVector<unsigned, 4> Regs;
++    unsigned Reg = ARM::R11;
++    Regs.push_back(Reg);
++    DebugLoc DL;
++    MachineInstrBuilder MIB =
++    BuildMI(MBB, MI, DL, TII.get(LdrOpc), Regs[0])
++      .addReg(ARM::SP, RegState::Define)
++      .addReg(ARM::SP);
++    // ARM mode needs an extra reg0 here due to addrmode2. Will go away once
++    // that refactoring is complete (eventually).
++    if (LdrOpc == ARM::LDR_POST_REG || LdrOpc == ARM::LDR_POST_IMM) {
++      MIB.addReg(0);
++      MIB.addImm(ARM_AM::getAM2Opc(ARM_AM::add, 4, ARM_AM::no_shift));
++    } else
++      MIB.addImm(4);
++    MIB.add(predOps(ARMCC::AL));
++}
++
++#ifdef ARK_GC_SUPPORT
++void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
++                                   MachineBasicBlock::iterator MI,
++                                   std::vector<CalleeSavedInfo> &CSI,
++                                   unsigned LdmOpc, unsigned LdrOpc,
++                                   bool isVarArg, bool NoGap,
++                                   bool(*Func)(unsigned, bool),
++                                   unsigned NumAlignedDPRCS2Regs, int multiCall) const {
++#else
+ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
+                                    MachineBasicBlock::iterator MI,
+                                    std::vector<CalleeSavedInfo> &CSI,
+@@ -1052,6 +1138,7 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
+                                    bool isVarArg, bool NoGap,
+                                    bool(*Func)(unsigned, bool),
+                                    unsigned NumAlignedDPRCS2Regs) const {
++#endif
+   MachineFunction &MF = *MBB.getParent();
+   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
+   const TargetRegisterInfo &TRI = *STI.getRegisterInfo();
+@@ -1116,6 +1203,26 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
+       return TRI.getEncodingValue(LHS) < TRI.getEncodingValue(RHS);
+     });
+ 
++#ifdef ARK_GC_SUPPORT
++    SmallVector<unsigned, 4> BeforeRegs = Regs;
++    if (multiCall != 0) {
++      Regs.clear();
++    }
++    if (multiCall == 1) {
++      for (auto it: BeforeRegs) {
++        if ((it != ARM::LR) && (it != ARM::R11)) {
++          Regs.push_back(it);
++        }
++      }
++    } else if (multiCall == 2) {
++      for (auto it: BeforeRegs) {
++        if ((it == ARM::LR) || (it == ARM::R11)) {
++          Regs.push_back(it);
++        }
++      }
++    }
++#endif
++
+     if (Regs.size() > 1 || LdrOpc == 0) {
+       MachineInstrBuilder MIB = BuildMI(MBB, MI, DL, TII.get(LdmOpc), ARM::SP)
+                                     .addReg(ARM::SP)
+@@ -1422,6 +1529,27 @@ static void emitAlignedDPRCS2Restores(MachineBasicBlock &MBB,
+   std::prev(MI)->addRegisterKilled(ARM::R4, TRI);
+ }
+ 
++#ifdef ARK_GC_SUPPORT
++int ARMFrameLowering::GetSlotForJSInfo(const MachineFunction &MF) const {
++  int reserverSlot = 0;
++  if (MF.getFunction().hasFnAttribute("js-stub-call")) {
++          int64_t marker = 0x0;
++          MF.getFunction()
++          .getFnAttribute("js-stub-call")
++          .getValueAsString()
++          .getAsInteger(10, marker);//marker 1 break frame
++          if (marker == JS_ENTRY_FRAME_MARK) {
++            reserverSlot = 3; // 3 * slotSize;/* frameType + threadSP */
++          } else if (marker == JS_FRAME_MARK){
++            reserverSlot = 2; /* frameType */
++          } else {
++            assert("js-stub-call is illeagl ! ");
++          }
++  }
++  return reserverSlot;
++}
++#endif
++
+ bool ARMFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
+                                         MachineBasicBlock::iterator MI,
+                                         const std::vector<CalleeSavedInfo> &CSI,
+@@ -1436,9 +1564,23 @@ bool ARMFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
+   unsigned PushOneOpc = AFI->isThumbFunction() ?
+     ARM::t2STR_PRE : ARM::STR_PRE_IMM;
+   unsigned FltOpc = ARM::VSTMDDB_UPD;
++#ifdef ARK_GC_SUPPORT
++  DebugLoc DL;
++  const ARMBaseInstrInfo &TII =
++    *static_cast<const ARMBaseInstrInfo *>(MF.getSubtarget().getInstrInfo());
+   unsigned NumAlignedDPRCS2Regs = AFI->getNumAlignedDPRCS2Regs();
++  emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea1Register, 0,
++               MachineInstr::FrameSetup, 1);
++  for (int i = 0; i < GetSlotForJSInfo(MF); i++) {
++    emitPushJSInfo(MBB, MI, PushOneOpc, MachineInstr::FrameSetup);
++  }
++
++  emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea1Register, 0,
++               MachineInstr::FrameSetup, 2);
++#else
+   emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea1Register, 0,
+                MachineInstr::FrameSetup);
++#endif
+   emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea2Register, 0,
+                MachineInstr::FrameSetup);
+   emitPushInst(MBB, MI, CSI, FltOpc, 0, true, &isARMArea3Register,
+@@ -1477,8 +1619,20 @@ bool ARMFrameLowering::restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
+               NumAlignedDPRCS2Regs);
+   emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
+               &isARMArea2Register, 0);
++#ifdef ARK_GC_SUPPORT
++  emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
++              &isARMArea1Register, 0, 1);
++
++  for (int i = 0; i < GetSlotForJSInfo(MF); i++) {
++    emitPopJSInfo(MBB, MI, LdrOpc);
++  }
++
++  emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
++              &isARMArea1Register, 0, 2);
++#else
+   emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
+               &isARMArea1Register, 0);
++#endif
+ 
+   return true;
+ }
+@@ -1573,7 +1727,7 @@ static unsigned estimateRSStackSizeLimit(MachineFunction &MF,
+           Limit = std::min(Limit, ((1U << 7) - 1) * 4);
+           break;
+         default:
+-          llvm_unreachable("Unhandled addressing mode in stack size limit calculation");
++          break;
+         }
+         break; // At most one FI per instruction
+       }
+diff --git a/llvm/lib/Target/ARM/ARMFrameLowering.h b/llvm/lib/Target/ARM/ARMFrameLowering.h
+index 0462b01af70..c410326f432 100644
+--- a/llvm/lib/Target/ARM/ARMFrameLowering.h
++++ b/llvm/lib/Target/ARM/ARMFrameLowering.h
+@@ -13,6 +13,9 @@
+ #include "llvm/CodeGen/TargetFrameLowering.h"
+ #include <vector>
+ 
++#define JS_ENTRY_FRAME_MARK 1
++#define JS_FRAME_MARK       0
++
+ namespace llvm {
+ 
+ class ARMSubtarget;
+@@ -30,6 +33,9 @@ public:
+   /// the function.
+   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
++#ifdef ARK_GC_SUPPORT
++  Triple::ArchType GetArkSupportTarget() const override;
++#endif
+ 
+   bool spillCalleeSavedRegisters(MachineBasicBlock &MBB,
+                                  MachineBasicBlock::iterator MI,
+@@ -72,6 +78,24 @@ public:
+   }
+ 
+ private:
++
++#ifdef ARK_GC_SUPPORT
++  void emitPushInst(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
++                    const std::vector<CalleeSavedInfo> &CSI, unsigned StmOpc,
++                    unsigned StrOpc, bool NoGap,
++                    bool(*Func)(unsigned, bool), unsigned NumAlignedDPRCS2Regs,
++                    unsigned MIFlags = 0, int multiCall = 0) const;
++  void emitPushJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
++                    unsigned StrOpc, unsigned MIFlags) const;
++  void emitPopInst(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
++                   std::vector<CalleeSavedInfo> &CSI, unsigned LdmOpc,
++                   unsigned LdrOpc, bool isVarArg, bool NoGap,
++                   bool(*Func)(unsigned, bool),
++                   unsigned NumAlignedDPRCS2Regs, int multiCall = 0) const;
++  void emitPopJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
++                                     unsigned LdrOpc) const;
++  int GetSlotForJSInfo(const MachineFunction &MF) const;
++#else
+   void emitPushInst(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+                     const std::vector<CalleeSavedInfo> &CSI, unsigned StmOpc,
+                     unsigned StrOpc, bool NoGap,
+@@ -82,7 +106,7 @@ private:
+                    unsigned LdrOpc, bool isVarArg, bool NoGap,
+                    bool(*Func)(unsigned, bool),
+                    unsigned NumAlignedDPRCS2Regs) const;
+-
++#endif
+   MachineBasicBlock::iterator
+   eliminateCallFramePseudoInstr(MachineFunction &MF,
+                                 MachineBasicBlock &MBB,
+diff --git a/llvm/lib/Target/ARM/ARMISelLowering.cpp b/llvm/lib/Target/ARM/ARMISelLowering.cpp
+index 9f504b1eaa4..cf2f5f50b14 100644
+--- a/llvm/lib/Target/ARM/ARMISelLowering.cpp
++++ b/llvm/lib/Target/ARM/ARMISelLowering.cpp
+@@ -10551,6 +10551,13 @@ ARMTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
+     llvm_unreachable("Unexpected instr type to insert");
+   }
+ 
++#ifdef ARK_GC_SUPPORT
++  case TargetOpcode::STATEPOINT:
++  case TargetOpcode::STACKMAP:
++  case TargetOpcode::PATCHPOINT:
++    return emitPatchPoint(MI, BB);
++#endif
++
+   // Thumb1 post-indexed loads are really just single-register LDMs.
+   case ARM::tLDR_postidx: {
+     MachineOperand Def(MI.getOperand(1));
+diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
+index 1da20371caf..a73d3cd8053 100644
+--- a/llvm/lib/Target/X86/X86FrameLowering.cpp
++++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
+@@ -1168,6 +1168,25 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
+     else
+       MFI.setOffsetAdjustment(-StackSize);
+   }
++#ifdef ARK_GC_SUPPORT
++    // push marker
++    if (MF.getFunction().hasFnAttribute("js-stub-call"))
++    {
++      int64_t marker = 0x0;
++      MF.getFunction()
++        .getFnAttribute("js-stub-call")
++        .getValueAsString()
++        .getAsInteger(10, marker);//marker 1 break frame
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup);
++      if (marker == JS_ENTRY_FRAME_MARK) {
++        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup);
++      }
++    }
++#endif
+ 
+   // For EH funclets, only allocate enough space for outgoing calls. Save the
+   // NumBytes value that we would've used for the parent frame.
+@@ -1635,6 +1654,27 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
+   uint64_t SEHStackAllocAmt = NumBytes;
+ 
+   if (HasFP) {
++#ifdef ARK_GC_SUPPORT
++    if (MF.getFunction().hasFnAttribute("js-stub-call"))
++    {
++      int64_t marker = 0x0;
++      MF.getFunction()
++      .getFnAttribute("js-stub-call")
++      .getValueAsString()
++      .getAsInteger(10, marker);//marker 1 break frame
++
++      // pop marker
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
++              MachineFramePtr)
++          .setMIFlag(MachineInstr::FrameDestroy);
++      if (marker == JS_ENTRY_FRAME_MARK) {
++        // pop thread.fp
++        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
++            MachineFramePtr)
++        .setMIFlag(MachineInstr::FrameDestroy);
++      }
++    }
++#endif
+     // Pop EBP.
+     BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
+             MachineFramePtr)
+@@ -1993,8 +2033,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+ 
+   if (hasFP(MF)) {
+     // emitPrologue always spills frame register the first thing.
++#ifdef ARK_GC_SUPPORT
++    if (MF.getFunction().hasFnAttribute("js-stub-call")) {
++        int64_t marker = 0x0;
++        MF.getFunction()
++        .getFnAttribute("js-stub-call")
++        .getValueAsString()
++        .getAsInteger(10, marker);//marker 1 break frame
++        if (marker == JS_ENTRY_FRAME_MARK) {
++          SpillSlotOffset -=  3 * SlotSize; // add type and thread.fp
++          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++          CalleeSavedFrameSize += (2 * SlotSize);
++        } else {
++          SpillSlotOffset -=  2 * SlotSize; // add type
++          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++          CalleeSavedFrameSize += SlotSize;
++        }
++    } else {
++      SpillSlotOffset -= SlotSize; // add type and thread.fp
++      MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++    }
++#else
+     SpillSlotOffset -= SlotSize;
+     MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++#endif
+ 
+     // Since emitPrologue and emitEpilogue will handle spilling and restoring of
+     // the frame register, we can delete it from CSI list and not have to worry
+diff --git a/llvm/lib/Target/X86/X86FrameLowering.h b/llvm/lib/Target/X86/X86FrameLowering.h
+index 2103d6471ea..3fd89b0d9ee 100644
+--- a/llvm/lib/Target/X86/X86FrameLowering.h
++++ b/llvm/lib/Target/X86/X86FrameLowering.h
+@@ -15,6 +15,8 @@
+ 
+ #include "llvm/CodeGen/TargetFrameLowering.h"
+ 
++#define JS_ENTRY_FRAME_MARK 1
++
+ namespace llvm {
+ 
+ class MachineInstrBuilder;

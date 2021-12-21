@@ -34,11 +34,7 @@ public:
 
     static const std::map<CaseFirstOption, UColAttributeValue> uColAttributeValueMap;
 
-    static JSCollator *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSCollator());
-        return reinterpret_cast<JSCollator *>(object);
-    }
+    CAST_CHECK(JSCollator, IsJSCollator);
 
     static constexpr size_t ICU_FIELD_OFFSET = JSObject::SIZE;
 
@@ -72,7 +68,8 @@ public:
         icuCollator->~Collator();
     }
 
-    void SetIcuCollator(JSThread *thread, icu::Collator *icuCollator, const DeleteEntryPoint &callback);
+    static void SetIcuCollator(JSThread *thread, const JSHandle<JSCollator> &collator,
+        icu::Collator *icuCollator, const DeleteEntryPoint &callback);
 
     // 11.1.1 InitializeCollator ( collator, locales, options )
     static JSHandle<JSCollator> InitializeCollator(JSThread *thread, const JSHandle<JSCollator> &collator,

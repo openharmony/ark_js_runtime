@@ -70,7 +70,7 @@ public:
 
 private:
     DeleteEntryPoint deleter_{nullptr};
-    void *data_{nullptr};
+    alignas(sizeof(uint64_t)) void *data_ {nullptr};
 };
 }  // namespace panda::ecmascript
 

@@ -23,6 +23,7 @@
 #include "ecmascript/base/json_stringifier.h"
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/base/typed_array_helper-inl.h"
+#include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/ecma_global_storage-inl.h"
 #include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_module.h"
@@ -31,6 +32,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_dataview.h"
@@ -94,7 +96,10 @@ using ecmascript::base::JsonParser;
 using ecmascript::base::JsonStringifier;
 using ecmascript::base::StringHelper;
 using ecmascript::base::TypedArrayHelper;
+using ecmascript::job::MicroJobQueue;
+using ecmascript::job::QueueType;
 using ecmascript::JSRuntimeOptions;
+using ecmascript::CpuProfiler;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -137,9 +142,6 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
         runtimeOptions.SetMobileLog(reinterpret_cast<void *>(option.GetLogBufPrint()));
     }
 
-    // Debugger
-    runtimeOptions.SetDebuggerLibraryPath(option.GetDebuggerLibraryPath());
-
     runtimeOptions.SetEnableArkTools(option.GetEnableArkTools());
     SetOptions(runtimeOptions);
     static EcmaLanguageContext lcEcma;
@@ -150,7 +152,7 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     return true;
 }
 
-bool JSNApi::DestoryRuntime()
+bool JSNApi::DestroyRuntime()
 {
     return Runtime::Destroy();
 }
@@ -159,7 +161,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 {
     auto runtime = Runtime::GetCurrent();
     if (runtime == nullptr) {
-        // Art java + Panda js or L2 pure JS app
+        // Only Ark js app
         if (!CreateRuntime(option)) {
             return nullptr;
         }
@@ -174,14 +176,14 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
     return EcmaVM::Cast(EcmaVM::Create(runtimeOptions));
 }
 
-void JSNApi::DestoryJSVM(EcmaVM *ecmaVm)
+void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
 {
     auto runtime = Runtime::GetCurrent();
     if (runtime != nullptr) {
         PandaVM *mainVm = runtime->GetPandaVM();
-        // Art java + Panda js
+        // Only Ark js app
         if (mainVm == ecmaVm) {
-            DestoryRuntime();
+            DestroyRuntime();
         } else {
             EcmaVM::Destroy(ecmaVm);
         }
@@ -213,14 +215,14 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
     thread->SetException(JSNApiHelper::ToJSTaggedValue(*error));
 }
 
-bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm)
+bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMode)
 {
     auto handle = panda::os::library_loader::Load(std::string(library_path));
     if (!handle) {
         return false;
     }
 
-    using StartDebugger = bool (*)(const std::string &, EcmaVM *);
+    using StartDebugger = bool (*)(const std::string &, EcmaVM *, bool);
 
     auto sym = panda::os::library_loader::ResolveSymbol(handle.Value(), "StartDebug");
     if (!sym) {
@@ -228,10 +230,10 @@ bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm)
         return false;
     }
 
-    bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm);
+    bool ret = reinterpret_cast<StartDebugger>(sym.Value())("PandaDebugger", vm, isDebugMode);
     if (ret) {
         auto runtime = Runtime::GetCurrent();
-        runtime->SetDebugMode(true);
+        runtime->SetDebugMode(isDebugMode);
         runtime->SetDebuggerLibrary(std::move(handle.Value()));
     }
     return ret;
@@ -248,7 +250,6 @@ bool JSNApi::Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> ent
         std::cerr << "Cannot execute ark file '" << file << "' with entry '" << entryPoint << "'" << std::endl;
         return false;
     }
-
     return true;
 }
 
@@ -261,7 +262,6 @@ bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size, Local<String
                   << "' with entry '" << entryPoint << "'" << std::endl;
         return false;
     }
-
     return true;
 }
 
@@ -357,6 +357,60 @@ void JSNApi::DeleteSerializationData(void *data)
     delete value;
 }
 
+void HostPromiseRejectionTracker(const EcmaVM *vm,
+                                 const JSHandle<JSPromise> promise,
+                                 const JSHandle<JSTaggedValue> reason,
+                                 const ecmascript::PromiseRejectionEvent operation,
+                                 void* data)
+{
+    ecmascript::PromiseRejectCallback promiseRejectCallback = vm->GetPromiseRejectCallback();
+    if (promiseRejectCallback != nullptr) {
+        Local<JSValueRef> promiseVal = JSNApiHelper::ToLocal<JSValueRef>(JSHandle<JSTaggedValue>::Cast(promise));
+        PromiseRejectInfo promiseRejectInfo(promiseVal, JSNApiHelper::ToLocal<JSValueRef>(reason),
+                              static_cast<PromiseRejectInfo::PROMISE_REJECTION_EVENT>(operation), data);
+        promiseRejectCallback(reinterpret_cast<void*>(&promiseRejectInfo));
+    }
+}
+
+void JSNApi::SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data)
+{
+    vm->SetHostPromiseRejectionTracker(HostPromiseRejectionTracker);
+    vm->SetPromiseRejectCallback(reinterpret_cast<ecmascript::PromiseRejectCallback>(cb));
+    vm->SetData(data);
+}
+
+void JSNApi::SetHostEnqueueJob(const EcmaVM *vm, Local<JSValueRef> cb)
+{
+    JSHandle<JSFunction> fun = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(cb));
+    JSHandle<TaggedArray> array = vm->GetFactory()->EmptyArray();
+    JSHandle<MicroJobQueue> job = vm->GetMicroJobQueue();
+    MicroJobQueue::EnqueueJob(vm->GetJSThread(), job, QueueType::QUEUE_PROMISE, fun, array);
+}
+
+PromiseRejectInfo::PromiseRejectInfo(Local<JSValueRef> promise, Local<JSValueRef> reason,
+                                     PromiseRejectInfo::PROMISE_REJECTION_EVENT operation, void* data)
+    : promise_(promise), reason_(reason), operation_(operation), data_(data) {}
+
+Local<JSValueRef> PromiseRejectInfo::GetPromise() const
+{
+    return promise_;
+}
+
+Local<JSValueRef> PromiseRejectInfo::GetReason() const
+{
+    return reason_;
+}
+
+PromiseRejectInfo::PROMISE_REJECTION_EVENT PromiseRejectInfo::GetOperation() const
+{
+    return operation_;
+}
+
+void* PromiseRejectInfo::GetData() const
+{
+    return data_;
+}
+
 bool JSNApi::ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file)
 {
     auto moduleManager = vm->GetModuleManager();
@@ -397,20 +451,23 @@ LocalScope::LocalScope(const EcmaVM *vm) : thread_(vm->GetJSThread())
     prevNext_ = thread->GetHandleScopeStorageNext();
     prevEnd_ = thread->GetHandleScopeStorageEnd();
     prevHandleStorageIndex_ = thread->GetCurrentHandleStorageIndex();
+    thread->HandleScopeCountAdd();
 }
 
 LocalScope::LocalScope(const EcmaVM *vm, JSTaggedType value) : thread_(vm->GetJSThread())
 {
     auto thread = reinterpret_cast<JSThread *>(thread_);
+    ecmascript::EcmaHandleScope::NewHandle(thread, value);
     prevNext_ = thread->GetHandleScopeStorageNext();
     prevEnd_ = thread->GetHandleScopeStorageEnd();
     prevHandleStorageIndex_ = thread->GetCurrentHandleStorageIndex();
-    ecmascript::EcmaHandleScope::NewHandle(thread, value);
+    thread->HandleScopeCountAdd();
 }
 
 LocalScope::~LocalScope()
 {
     auto thread = reinterpret_cast<JSThread *>(thread_);
+    thread->HandleScopeCountDec();
     thread->SetHandleScopeStorageNext(static_cast<JSTaggedType *>(prevNext_));
     if (thread->GetHandleScopeStorageEnd() != prevEnd_) {
         thread->SetHandleScopeStorageEnd(static_cast<JSTaggedType *>(prevEnd_));
@@ -1846,5 +1903,16 @@ bool JSValueRef::IsGeneratorFunction()
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
     bool rst  = obj->IsGeneratorFunction();
     return rst;
+}
+void JSNApi::StartCpuProfiler(const EcmaVM *vm)
+{
+    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
+    singleton->StartCpuProfiler(vm);
+}
+
+void JSNApi::StopCpuProfiler()
+{
+    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
+    singleton->StopCpuProfiler();
 }
 }  // namespace panda

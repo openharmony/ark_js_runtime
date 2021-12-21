@@ -86,11 +86,7 @@ private:
 
 class JSDateTimeFormat : public JSObject {
 public:
-    static JSDateTimeFormat *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSDateTimeFormat());
-        return reinterpret_cast<JSDateTimeFormat *>(object);
-    }
+    CAST_CHECK(JSDateTimeFormat, IsJSDateTimeFormat);
 
     static constexpr size_t LOCALE_OFFSET = JSObject::SIZE;
 
@@ -110,12 +106,13 @@ public:
     DECL_DUMP()
 
     icu::Locale *GetIcuLocale() const;
-    void SetIcuLocale(JSThread *thread, const icu::Locale &icuLocale, const DeleteEntryPoint &callback);
+    static void SetIcuLocale(JSThread *thread, JSHandle<JSDateTimeFormat> obj,
+        const icu::Locale &icuLocale, const DeleteEntryPoint &callback);
     static void FreeIcuLocale(void *pointer, void *data);
 
     icu::SimpleDateFormat *GetIcuSimpleDateFormat() const;
-    void SetIcuSimpleDateFormat(JSThread *thread, const icu::SimpleDateFormat &icuSimpleDateTimeFormat,
-                                const DeleteEntryPoint &callback);
+    static void SetIcuSimpleDateFormat(JSThread *thread, JSHandle<JSDateTimeFormat> obj,
+        const icu::SimpleDateFormat &icuSimpleDateTimeFormat, const DeleteEntryPoint &callback);
     static void FreeSimpleDateFormat(void *pointer, void *data);
 
     // 13.1.1 InitializeDateTimeFormat (dateTimeFormat, locales, options)

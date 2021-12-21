@@ -64,9 +64,9 @@ JSHandle<GlobalEnv> GetGlobal(JSThread *thread)
     return thread->GetEcmaVM()->GetGlobalEnv();
 }
 
-#ifndef NDEBUG
 HWTEST_F_L0(ObjectFactoryTest, NewJSObjectByConstructor)
 {
+    thread->GetEcmaVM()->SetEnableForceGC(false);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> objFun = GetGlobal(thread)->GetObjectFunction();
 
@@ -90,12 +90,11 @@ HWTEST_F_L0(ObjectFactoryTest, NewJSObjectByConstructor)
 
     // check gc handle update
     auto *prototype = cls->GetPrototype().GetTaggedObject();
-    [[maybe_unused]] JSHandle<JSObject> newObj2 =
-        factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFun), objFun);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
     // CompressGC not the same
     EXPECT_TRUE(prototype != newObjCls->GetPrototype().GetTaggedObject());
+    thread->GetEcmaVM()->SetEnableForceGC(true);
 }
-#endif
 
 HWTEST_F_L0(ObjectFactoryTest, NewJSFunction)
 {

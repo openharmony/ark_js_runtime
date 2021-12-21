@@ -784,9 +784,15 @@ inline bool JSTaggedValue::IsGeneratorFunction() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsGeneratorFunction();
 }
+
 inline bool JSTaggedValue::IsGeneratorObject() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsGeneratorObject();
+}
+
+inline bool JSTaggedValue::IsGeneratorContext() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsGeneratorContext();
 }
 
 inline bool JSTaggedValue::IsAsyncFuncObject() const

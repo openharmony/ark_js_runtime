@@ -36,7 +36,7 @@ public:
 
     void SweepPhases(bool compressGC = false);
 
-    void EnsureAllTaskFinish();
+    void EnsureAllTaskFinished();
     // Ensure task finish
     void WaitingTaskFinish(MemSpaceType type);
 
@@ -52,7 +52,7 @@ private:
     public:
         SweeperTask(ConcurrentSweeper *sweeper, MemSpaceType type) : sweeper_(sweeper), type_(type) {};
         ~SweeperTask() override = default;
-        bool Run() override;
+        bool Run(uint32_t threadIndex) override;
 
         NO_COPY_SEMANTIC(SweeperTask);
         NO_MOVE_SEMANTIC(SweeperTask);
@@ -63,7 +63,7 @@ private:
     };
 
     void SweepSpace(MemSpaceType type, bool isMain = true);
-    void SweepSpace(Space *space, FreeListAllocator &allocator);
+    void SweepSpace(MemSpaceType type, Space *space, FreeListAllocator &allocator);
     void SweepHugeSpace();
     void FinishSweeping(MemSpaceType type);
 

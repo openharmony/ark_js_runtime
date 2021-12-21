@@ -41,18 +41,18 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
     JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
     if (transitions.IsJSHClass()) {
         auto cachedHClass = JSHClass::Cast(transitions.GetTaggedObject());
-        int last = cachedHClass->GetPropertiesNumber() - 1;
-        LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetAttributes().GetTaggedObject());
+        int last = cachedHClass->NumberOfProps() - 1;
+        LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
         auto lastKey = JSHandle<JSTaggedValue>(thread, layoutInfo->GetKey(last));
         auto lastHClass = JSHandle<JSTaggedValue>(thread, cachedHClass);
-        dict.Update(JSTaggedValue(TransitionsDictionary::Create(thread)));
-        transitions = JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, lastKey, lastHClass, attr));
+        dict.Update(TransitionsDictionary::Create(thread));
+        transitions = TransitionsDictionary::PutIfAbsent(thread, dict, lastKey, lastHClass, attr).GetTaggedValue();
     }
     auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(attributes.GetPropertyMetaData()));
     dict.Update(transitions);
     transitions =
-        JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), attr));
+        TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), attr).GetTaggedValue();
     parent->SetTransitions(thread, transitions);
     child->SetParent(thread, parent.GetTaggedValue());
 }
@@ -71,21 +71,21 @@ void JSHClass::AddProtoTransitions(const JSThread *thread, const JSHandle<JSHCla
     JSTaggedValue transitions = parent->GetTransitions();
     JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
     if (transitions.IsNull()) {
-        transitions = JSTaggedValue(TransitionsDictionary::Create(thread));
+        transitions = TransitionsDictionary::Create(thread).GetTaggedValue();
     } else if (transitions.IsJSHClass()) {
         auto cachedHClass = JSHClass::Cast(transitions.GetTaggedObject());
-        int last = cachedHClass->GetPropertiesNumber() - 1;
-        LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetAttributes().GetTaggedObject());
+        int last = cachedHClass->NumberOfProps() - 1;
+        LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
         auto lastKey = JSHandle<JSTaggedValue>(thread, layoutInfo->GetKey(last));
         auto lastHClass = JSHandle<JSTaggedValue>(thread, cachedHClass);
-        dict.Update(JSTaggedValue(TransitionsDictionary::Create(thread)));
-        transitions = JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, lastKey, lastHClass, attr));
+        dict.Update(TransitionsDictionary::Create(thread));
+        transitions = TransitionsDictionary::PutIfAbsent(thread, dict, lastKey, lastHClass, attr).GetTaggedValue();
     }
 
     dict.Update(transitions);
     transitions =
-        JSTaggedValue(TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), proto));
+        TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), proto).GetTaggedValue();
     parent->SetTransitions(thread, transitions);
     child->SetParent(thread, parent.GetTaggedValue());
 }
@@ -99,8 +99,8 @@ inline JSHClass *JSHClass::FindTransitions(const JSTaggedValue &key, const JSTag
     }
     if (transitions.IsJSHClass()) {
         auto cachedHClass = JSHClass::Cast(transitions.GetTaggedObject());
-        int last = cachedHClass->GetPropertiesNumber() - 1;
-        LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetAttributes().GetTaggedObject());
+        int last = cachedHClass->NumberOfProps() - 1;
+        LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = layoutInfo->GetAttr(last).GetPropertyMetaData();
         auto cachedKey = layoutInfo->GetKey(last);
         if (attr == attributes.GetInt() && key == cachedKey) {
@@ -139,34 +139,45 @@ inline void JSHClass::UpdatePropertyMetaData(const JSThread *thread, [[maybe_unu
                                              const PropertyAttributes &metaData)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    ASSERT(!GetAttributes().IsNull());
-    LayoutInfo *layoutInfo = LayoutInfo::Cast(GetAttributes().GetTaggedObject());
+    ASSERT(!GetLayout().IsNull());
+    LayoutInfo *layoutInfo = LayoutInfo::Cast(GetLayout().GetTaggedObject());
     ASSERT(layoutInfo->GetLength() != 0);
     int entry = metaData.GetOffset();
 
     layoutInfo->SetNormalAttr(thread, entry, metaData);
 }
 
-inline bool JSHClass::HasReferenceField(JSType type)
+inline bool JSHClass::HasReferenceField()
 {
+    auto type = GetObjectType();
     return type != JSType::STRING && type != JSType::JS_NATIVE_POINTER;
 }
 
-inline size_t JSHClass::SizeFromJSHClass(JSType type, TaggedObject *header)
+inline size_t JSHClass::SizeFromJSHClass(TaggedObject *header)
 {
-    if (type == JSType::TAGGED_ARRAY || type == JSType::TAGGED_DICTIONARY) {
-        auto length = reinterpret_cast<TaggedArray *>(header)->GetLength();
-        return TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
+    auto type = GetObjectType();
+    size_t size = 0;
+    switch (type) {
+        case JSType::TAGGED_ARRAY:
+        case JSType::TAGGED_DICTIONARY:
+            size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(),
+                reinterpret_cast<TaggedArray *>(header)->GetLength());
+            break;
+        case JSType::STRING:
+            size = reinterpret_cast<EcmaString *>(header)->ObjectSize();
+            size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+            break;
+        case JSType::MACHINE_CODE_OBJECT:
+            size = reinterpret_cast<MachineCode *>(header)->GetMachineCodeObjectSize();
+            size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+            break;
+        default:
+            ASSERT(GetObjectSize() != 0);
+            size = GetObjectSize();
+            break;
     }
-
-    if (type == JSType::STRING) {
-        return reinterpret_cast<EcmaString *>(header)->ObjectSize();
-    }
-    if (type == JSType::MACHINE_CODE_OBJECT) {
-        return reinterpret_cast<MachineCode *>(header)->GetMachineCodeObjectSize();
-    }
-    ASSERT(GetObjectSize() != 0);
-    return GetObjectSize();
+    ASSERT(AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT)) == size);
+    return size;
 }
 
 inline void JSHClass::Copy(const JSThread *thread, const JSHClass *jshcalss)
@@ -176,6 +187,7 @@ inline void JSHClass::Copy(const JSThread *thread, const JSHClass *jshcalss)
     // copy jshclass
     SetPrototype(thread, jshcalss->GetPrototype());
     SetBitField(jshcalss->GetBitField());
+    SetNumberOfProps(jshcalss->NumberOfProps());
 }
 }  // namespace panda::ecmascript
 

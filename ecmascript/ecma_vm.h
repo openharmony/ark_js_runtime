@@ -32,6 +32,7 @@
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_roots.h"
 #include "ecmascript/mem/space.h"
+#include "ecmascript/platform/task.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "include/panda_vm.h"
@@ -47,14 +48,15 @@ class File;
 namespace ecmascript {
 class GlobalEnv;
 class ObjectFactory;
-class PropertiesCache;
 class RegExpParserCache;
 class EcmaRuntimeStat;
 class EcmaHeapManager;
 class Heap;
 class HeapTracker;
 class Program;
-
+class RegExpExecResultCache;
+class JSPromise;
+enum class PromiseRejectionEvent : uint32_t;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
@@ -66,6 +68,12 @@ class JSFunction;
 class Program;
 class ModuleManager;
 class EcmaModule;
+using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
+                                             const JSHandle<JSPromise> promise,
+                                             const JSHandle<JSTaggedValue> reason,
+                                             const PromiseRejectionEvent operation,
+                                             void* data);
+using PromiseRejectCallback = void (*)(void* info);
 
 class EcmaVM : public PandaVM {
     using PtJSExtractor = tooling::ecmascript::PtJSExtractor;
@@ -227,11 +235,6 @@ public:
 
     bool ExecutePromisePendingJob() const;
 
-    PropertiesCache *GetPropertiesCache() const
-    {
-        return propertiesCache_;
-    }
-
     RegExpParserCache *GetRegExpParserCache() const
     {
         ASSERT(regExpParserCache_ != nullptr);
@@ -249,9 +252,8 @@ public:
     JSThread *GetJSThread() const
     {
 #if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && ECMASCRIPT_ENABLE_THREAD_CHECK
-        ThreadPool *pool = GetHeap()->GetThreadPool();
         // Exclude GC thread
-        if (!pool->IsInThreadPool(std::this_thread::get_id()) &&
+        if (!Platform::GetCurrentPlatform()->IsInThreadPool(std::this_thread::get_id()) &&
             thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
                 LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!";
         }
@@ -338,9 +340,15 @@ public:
     }
 
     void SetupRegExpResultCache();
-    JSHandle<JSTaggedValue> GetRegExpCache()
+
+    JSHandle<JSTaggedValue> GetRegExpCache() const
     {
         return JSHandle<JSTaggedValue>(reinterpret_cast<uintptr_t>(&regexpCache_));
+    }
+
+    void SetRegExpCache(JSTaggedValue newCache)
+    {
+        regexpCache_ = newCache;
     }
 
     RuntimeNotificationManager *GetNotificationManager() const
@@ -348,6 +356,38 @@ public:
         return notificationManager_;
     }
 
+    void SetEnableForceGC(bool enable)
+    {
+        options_.SetEnableForceGC(enable);
+    }
+
+    void SetData(void* data)
+    {
+        data_ = data;
+    }
+
+    void SetPromiseRejectCallback(PromiseRejectCallback cb)
+    {
+        promiseRejectCallback_ = cb;
+    }
+
+    PromiseRejectCallback GetPromiseRejectCallback() const
+    {
+        return promiseRejectCallback_;
+    }
+
+    void SetHostPromiseRejectionTracker(HostPromiseRejectionTracker cb)
+    {
+        hostPromiseRejectionTracker_ = cb;
+    }
+
+    void PromiseRejectionTracker(const JSHandle<JSPromise> &promise,
+                                 const JSHandle<JSTaggedValue> &reason, const PromiseRejectionEvent operation)
+    {
+        if (hostPromiseRejectionTracker_ != nullptr) {
+            hostPromiseRejectionTracker_(this, promise, reason, operation, data_);
+        }
+    }
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
     {
@@ -362,6 +402,21 @@ protected:
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 
 private:
+    static constexpr uint32_t THREAD_SLEEP_TIME = 16 * 1000;
+    static constexpr uint32_t THREAD_SLEEP_COUNT = 100;
+    class TrimNewSpaceLimitTask : public Task {
+    public:
+        explicit TrimNewSpaceLimitTask(Heap *heap) : heap_(heap) {};
+        ~TrimNewSpaceLimitTask() override = default;
+        bool Run(uint32_t threadIndex) override;
+
+        NO_COPY_SEMANTIC(TrimNewSpaceLimitTask);
+        NO_MOVE_SEMANTIC(TrimNewSpaceLimitTask);
+
+    private:
+        Heap *heap_;
+    };
+
     void AddPandaFile(const panda_file::File *pf, bool isModule);
     void SetProgram(Program *program, const panda_file::File *pf);
     bool IsFrameworkPandaFile(std::string_view filename) const;
@@ -409,7 +464,6 @@ private:
     JSThread *thread_{nullptr};
 
     // init EcmaVM Initialize
-    PropertiesCache *propertiesCache_{nullptr};
     RegExpParserCache *regExpParserCache_{nullptr};
     Heap *heap_{nullptr};
     ObjectFactory *factory_{nullptr};
@@ -431,6 +485,10 @@ private:
     JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};  // no mark for gc
     CVector<JSNativePointer *> arrayBufferDataList_;
     CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
+
+    PromiseRejectCallback promiseRejectCallback_ {nullptr};
+    HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
+    void* data_ {nullptr};
 
     friend class SnapShotSerialize;
     friend class ObjectFactory;

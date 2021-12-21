@@ -454,6 +454,7 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::INPUT_INDEX, factory->NewFromCanBeCompressString("input").GetTaggedValue());
     SetConstant(ConstantIndex::UNICODE_INDEX, factory->NewFromCanBeCompressString("unicode").GetTaggedValue());
     SetConstant(ConstantIndex::ZERO_INDEX, factory->NewFromCanBeCompressString("0").GetTaggedValue());
+    SetConstant(ConstantIndex::VALUES_INDEX, factory->NewFromCanBeCompressString("values").GetTaggedValue());
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));

@@ -186,7 +186,7 @@ int LinkedHashTable<Derived, HashObject>::FindElement(JSTaggedValue key) const
     if (!IsKey(key)) {
         return -1;
     }
-    int hash = HashObject::Hash(key);
+    int hash = LinkedHash::Hash(key);
     int bucket = HashToBucket(hash);
     for (JSTaggedValue entry = GetElement(BucketToIndex(bucket)); !entry.IsHole();
          entry = GetNextEntry(entry.GetInt())) {

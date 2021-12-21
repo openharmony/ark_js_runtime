@@ -155,7 +155,8 @@ JSHandle<JSRelativeTimeFormat> JSRelativeTimeFormat::InitializeRelativeTimeForma
     }
 
     std::string numberingSystem = JSLocale::GetNumberingSystem(icuLocale);
-    relativeTimeFormat->SetNumberingSystem(thread, factory->NewFromStdString(numberingSystem));
+    auto result = factory->NewFromStdString(numberingSystem);
+    relativeTimeFormat->SetNumberingSystem(thread, result);
 
     // Set RelativeTimeFormat.[[IcuRelativeTimeFormatter]]
     factory->NewJSIntlIcuData(relativeTimeFormat, rtfFormatter, JSRelativeTimeFormat::FreeIcuRTFFormatter);

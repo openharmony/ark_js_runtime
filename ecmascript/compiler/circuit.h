@@ -23,10 +23,9 @@
 #include <vector>
 
 #include "ecmascript/compiler/gate.h"
+#include "ecmascript/frames.h"
 #include "libpandabase/macros.h"
 #include "securec.h"
-#include "ecmascript/frames.h"
-
 
 namespace kungfu {
 const size_t INITIAL_SPACE = 1U << 0U;  // this should be tuned
@@ -43,41 +42,42 @@ public:
     Circuit(Circuit &&circuit) = default;
     Circuit &operator=(Circuit &&circuit) = default;
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    AddrShift NewGate(OpCode op, BitField bitfield, size_t numIns, const AddrShift inList[], TypeCode type,
+    GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
         MarkCode mark = MarkCode::EMPTY);
-    AddrShift NewGate(OpCode op, BitField bitfield, const std::vector<AddrShift> &inList, TypeCode type,
+    GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
         MarkCode mark = MarkCode::EMPTY);
     void PrintAllGates() const;
-    [[nodiscard]] std::vector<AddrShift> GetAllGates() const;
-    [[nodiscard]] static AddrShift GetCircuitRoot(OpCode opcode);
+    [[nodiscard]] std::vector<GateRef> GetAllGates() const;
+    [[nodiscard]] static GateRef GetCircuitRoot(OpCode opcode);
     void AdvanceTime() const;
     void ResetAllGateTimeStamps() const;
-    [[nodiscard]] static AddrShift NullGate();
-    [[nodiscard]] bool IsLoopHead(AddrShift gate) const;
-    [[nodiscard]] bool IsSelector(AddrShift gate) const;
-    [[nodiscard]] bool IsControlCase(AddrShift gate) const;
-    [[nodiscard]] AddrShift GetIn(AddrShift gate, size_t idx) const;
-    [[nodiscard]] bool IsInGateNull(AddrShift gate, size_t idx) const;
-    [[nodiscard]] bool IsFirstOutNull(AddrShift gate) const;
-    [[nodiscard]] std::vector<AddrShift> GetInVector(AddrShift gate) const;
-    [[nodiscard]] std::vector<AddrShift> GetOutVector(AddrShift gate) const;
-    void NewIn(AddrShift gate, size_t idx, AddrShift in);
-    void ModifyIn(AddrShift gate, size_t idx, AddrShift in);
-    void DeleteIn(AddrShift gate, size_t idx);
-    void DeleteGate(AddrShift gate);
-    [[nodiscard]] GateId GetId(AddrShift gate) const;
-    [[nodiscard]] BitField GetBitField(AddrShift gate) const;
-    void Print(AddrShift gate) const;
-    void SetOpCode(AddrShift gate, OpCode opcode);
-    [[nodiscard]] OpCode GetOpCode(AddrShift gate) const;
+    [[nodiscard]] static GateRef NullGate();
+    [[nodiscard]] bool IsLoopHead(GateRef gate) const;
+    [[nodiscard]] bool IsSelector(GateRef gate) const;
+    [[nodiscard]] bool IsControlCase(GateRef gate) const;
+    [[nodiscard]] GateRef GetIn(GateRef gate, size_t idx) const;
+    [[nodiscard]] bool IsInGateNull(GateRef gate, size_t idx) const;
+    [[nodiscard]] bool IsFirstOutNull(GateRef gate) const;
+    [[nodiscard]] std::vector<GateRef> GetInVector(GateRef gate) const;
+    [[nodiscard]] std::vector<GateRef> GetOutVector(GateRef gate) const;
+    void NewIn(GateRef gate, size_t idx, GateRef in);
+    void ModifyIn(GateRef gate, size_t idx, GateRef in);
+    void DeleteIn(GateRef gate, size_t idx);
+    void DeleteGate(GateRef gate);
+    [[nodiscard]] GateId GetId(GateRef gate) const;
+    [[nodiscard]] BitField GetBitField(GateRef gate) const;
+    void Print(GateRef gate) const;
+    void SetOpCode(GateRef gate, OpCode opcode);
+    void SetTypeCode(GateRef gate, TypeCode type);
+    [[nodiscard]] OpCode GetOpCode(GateRef gate) const;
     [[nodiscard]] TimeStamp GetTime() const;
-    [[nodiscard]] MarkCode GetMark(AddrShift gate) const;
-    [[nodiscard]] TypeCode GetTypeCode(AddrShift gate) const;
-    void SetMark(AddrShift gate, MarkCode mark) const;
-    [[nodiscard]] bool Verify(AddrShift gate) const;
-    [[nodiscard]] Gate *LoadGatePtr(AddrShift shift);
-    [[nodiscard]] const Gate *LoadGatePtrConst(AddrShift shift) const;
-    [[nodiscard]] AddrShift SaveGatePtr(const Gate *gate) const;
+    [[nodiscard]] MarkCode GetMark(GateRef gate) const;
+    [[nodiscard]] TypeCode GetTypeCode(GateRef gate) const;
+    void SetMark(GateRef gate, MarkCode mark) const;
+    [[nodiscard]] bool Verify(GateRef gate) const;
+    [[nodiscard]] Gate *LoadGatePtr(GateRef shift);
+    [[nodiscard]] const Gate *LoadGatePtrConst(GateRef shift) const;
+    [[nodiscard]] GateRef SaveGatePtr(const Gate *gate) const;
     [[nodiscard]] std::vector<uint8_t> GetDataSection() const;
     void SetDataSection(const std::vector<uint8_t> &data);
     [[nodiscard]] size_t GetCircuitDataSize() const;

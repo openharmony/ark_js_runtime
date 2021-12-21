@@ -118,9 +118,9 @@ private:
 };
 
 struct ResolvedLocale {
-    std::string locale;
-    icu::Locale localeData;
-    std::map<std::string, std::string> extensions;
+    std::string locale {};
+    icu::Locale localeData {};
+    std::map<std::string, std::string> extensions {};
 };
 
 struct MatcherResult {

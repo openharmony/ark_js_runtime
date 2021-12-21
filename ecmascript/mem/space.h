@@ -25,6 +25,7 @@
 #include "libpandafile/file.h"
 
 namespace panda::ecmascript {
+class EcmaVM;
 class Heap;
 class Program;
 
@@ -51,23 +52,33 @@ enum TriggerGCType {
     GC_TYPE_LAST  // Count of different types
 };
 
-constexpr MemSpaceType ToSpaceType(size_t index)
+static inline std::string ToSpaceTypeName(MemSpaceType type)
 {
-    return static_cast<MemSpaceType>(index);
+    switch (type) {
+        case OLD_SPACE:
+            return "old space";
+        case NON_MOVABLE:
+            return "non movable space";
+        case MACHINE_CODE_SPACE:
+            return "machine code space";
+        case HUGE_OBJECT_SPACE:
+            return "huge object space";
+        case SEMI_SPACE:
+            return "semi space";
+        case SNAPSHOT_SPACE:
+            return "snapshot space";
+        case COMPRESS_SPACE:
+            return "compress space";
+        default:
+            return "unknow space";
+    }
 }
 
 static constexpr size_t SPACE_TYPE_SIZE = helpers::ToUnderlying(MemSpaceType::SPACE_TYPE_LAST);
 
 class Space {
 public:
-    Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t maximumCapacity)
-        : heap_(heap),
-          spaceType_(spaceType),
-          initialCapacity_(initialCapacity),
-          maximumCapacity_(maximumCapacity),
-          committedSize_(0)
-    {
-    }
+    Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t maximumCapacity);
     virtual ~Space() = default;
     NO_COPY_SEMANTIC(Space);
     NO_MOVE_SEMANTIC(Space);
@@ -144,10 +155,12 @@ public:
 
     size_t GetHeapObjectSize() const;
 
-    template<class Callback>
+    template <class Callback>
     void EnumerateRegions(const Callback &cb, Region *region = nullptr) const;
 
     void AddRegion(Region *region);
+    void AddRegionToFirst(Region *region);
+    void RemoveRegion(Region *region);
 
     void Initialize();
     void Destroy();
@@ -156,13 +169,16 @@ public:
 
     void ClearAndFreeRegion(Region *region);
 
-private:
-    Heap *heap_;
-    EcmaList<Region> regionList_;
-    MemSpaceType spaceType_;
-    size_t initialCapacity_;
-    size_t maximumCapacity_;
-    size_t committedSize_;
+protected:
+    Heap *heap_ {nullptr};
+    EcmaVM *vm_ {nullptr};
+    JSThread *thread_ {nullptr};
+    RegionFactory *regionFactory_ {nullptr};
+    EcmaList<Region> regionList_ {};
+    MemSpaceType spaceType_ {};
+    size_t initialCapacity_ {0};
+    size_t maximumCapacity_ {0};
+    size_t committedSize_ {0};
 };
 
 class SemiSpace : public Space {
@@ -173,10 +189,7 @@ public:
     NO_COPY_SEMANTIC(SemiSpace);
     NO_MOVE_SEMANTIC(SemiSpace);
 
-    void SetAgeMark(uintptr_t mark)
-    {
-        ageMark_ = mark;
-    }
+    void SetAgeMark(uintptr_t mark);
 
     uintptr_t GetAgeMark() const
     {
@@ -184,6 +197,7 @@ public:
     }
 
     bool Expand(uintptr_t top);
+    bool AddRegionToList(Region *region);
 
     void Swap(SemiSpace *other);
 
@@ -203,10 +217,24 @@ public:
     NO_COPY_SEMANTIC(OldSpace);
     NO_MOVE_SEMANTIC(OldSpace);
     bool Expand();
+    bool AddRegionToList(Region *region);
     bool ContainObject(TaggedObject *object) const;
     bool IsLive(TaggedObject *object) const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
     size_t GetHeapObjectSize() const;
+    void Merge(Space *fromSpace);
+    void AddRegionToCSet(Region *region);
+    void RemoveRegionFromCSetAndList(Region *region);
+    void ClearRegionFromCSet();
+    void RemoveCSetFromList();
+    void ReclaimRegionCSet();
+    template <class Callback>
+    void EnumerateCollectRegionSet(const Callback &cb) const;
+    template <class Callback>
+    void EnumerateNonCollectRegionSet(const Callback &cb) const;
+
+private:
+    std::vector<Region *> collectRegionSet_;
 };
 
 class NonMovableSpace : public Space {
@@ -254,7 +282,7 @@ public:
                               size_t maximumCapacity = MAX_MACHINE_CODE_SPACE_SIZE);
     ~MachineCodeSpace() override = default;
     NO_COPY_SEMANTIC(MachineCodeSpace);
-    NO_MOVE_SEMANTIC(MachineCodeSpace);
+    NO_MOVE_SEMANTIC(MachineCodeSpace);  // Note: Expand(), ContainObject(), IsLive() left for define
     bool Expand();
 };
 }  // namespace panda::ecmascript

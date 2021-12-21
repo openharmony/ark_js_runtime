@@ -586,3 +586,7 @@ groups:
         prefix: ecma
         format: [pref_op_id_32_v_8]
         properties: [string_id]
+      - sig: ecma.ldfunction
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_none]

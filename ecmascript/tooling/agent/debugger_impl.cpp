@@ -224,9 +224,7 @@ void DebuggerImpl::DispatcherImpl::SetBlackboxPatterns(const DispatchRequest &re
 
 DispatchResponse DebuggerImpl::Enable([[maybe_unused]] std::unique_ptr<EnableParams> params, UniqueDebuggerId *id)
 {
-    if (id == nullptr) {
-        return DispatchResponse::Fail("id is nullptr!");
-    }
+    ASSERT(id != nullptr);
     *id = "0";
     return DispatchResponse::Ok();
 }

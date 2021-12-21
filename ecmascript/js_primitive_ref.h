@@ -31,11 +31,7 @@ enum class PrimitiveType : uint8_t {
 
 class JSPrimitiveRef : public JSObject {
 public:
-    static JSPrimitiveRef *Cast(ObjectHeader *object)
-    {
-        ASSERT(JSTaggedValue(object).IsJSPrimitiveRef());
-        return static_cast<JSPrimitiveRef *>(object);
-    }
+    CAST_CHECK(JSPrimitiveRef, IsJSPrimitiveRef);
 
     JSPrimitiveRef() = delete;
 

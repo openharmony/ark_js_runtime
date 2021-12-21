@@ -96,13 +96,15 @@ icu::Locale *JSDateTimeFormat::GetIcuLocale() const
     return reinterpret_cast<icu::Locale *>(result);
 }
 
-void JSDateTimeFormat::SetIcuLocale(JSThread *thread, const icu::Locale &icuLocale, const DeleteEntryPoint &callback)
+/* static */
+void JSDateTimeFormat::SetIcuLocale(JSThread *thread, JSHandle<JSDateTimeFormat> obj,
+    const icu::Locale &icuLocale, const DeleteEntryPoint &callback)
 {
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     icu::Locale *icuPointer = ecmaVm->GetRegionFactory()->New<icu::Locale>(icuLocale);
     ASSERT(icuPointer != nullptr);
-    JSTaggedValue data = GetLocaleIcu();
+    JSTaggedValue data = obj->GetLocaleIcu();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {
         JSNativePointer *native = JSNativePointer::Cast(data.GetTaggedObject());
         native->ResetExternalPointer(icuPointer);
@@ -111,7 +113,7 @@ void JSDateTimeFormat::SetIcuLocale(JSThread *thread, const icu::Locale &icuLoca
     JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer);
     pointer->SetDeleter(callback);
     pointer->SetData(ecmaVm);
-    SetLocaleIcu(thread, pointer.GetTaggedValue());
+    obj->SetLocaleIcu(thread, pointer.GetTaggedValue());
     ecmaVm->PushToArrayDataList(*pointer);
 }
 
@@ -134,14 +136,15 @@ icu::SimpleDateFormat *JSDateTimeFormat::GetIcuSimpleDateFormat() const
     return reinterpret_cast<icu::SimpleDateFormat *>(result);
 }
 
-void JSDateTimeFormat::SetIcuSimpleDateFormat(JSThread *thread, const icu::SimpleDateFormat &icuSimpleDateTimeFormat,
-                                              const DeleteEntryPoint &callback)
+/* static */
+void JSDateTimeFormat::SetIcuSimpleDateFormat(JSThread *thread, JSHandle<JSDateTimeFormat> obj,
+    const icu::SimpleDateFormat &icuSimpleDateTimeFormat, const DeleteEntryPoint &callback)
 {
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     icu::SimpleDateFormat *icuPointer = ecmaVm->GetRegionFactory()->New<icu::SimpleDateFormat>(icuSimpleDateTimeFormat);
     ASSERT(icuPointer != nullptr);
-    JSTaggedValue data = GetSimpleDateTimeFormatIcu();
+    JSTaggedValue data = obj->GetSimpleDateTimeFormatIcu();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {
         JSNativePointer *native = JSNativePointer::Cast(data.GetTaggedObject());
         native->ResetExternalPointer(icuPointer);
@@ -150,7 +153,7 @@ void JSDateTimeFormat::SetIcuSimpleDateFormat(JSThread *thread, const icu::Simpl
     JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer);
     pointer->SetDeleter(callback);
     pointer->SetData(ecmaVm);
-    SetSimpleDateTimeFormatIcu(thread, pointer.GetTaggedValue());
+    obj->SetSimpleDateTimeFormatIcu(thread, pointer.GetTaggedValue());
     ecmaVm->PushToArrayDataList(*pointer);
 }
 
@@ -428,7 +431,7 @@ JSHandle<JSDateTimeFormat> JSDateTimeFormat::InitializeDateTimeFormat(JSThread *
     dateTimeFormat->SetHourCycle(thread, JSTaggedValue(static_cast<int32_t>(dtfHourCycle)));
 
     // Set dateTimeFormat.[[icuLocale]].
-    dateTimeFormat->SetIcuLocale(thread, icuLocale, JSDateTimeFormat::FreeIcuLocale);
+    JSDateTimeFormat::SetIcuLocale(thread, dateTimeFormat, icuLocale, JSDateTimeFormat::FreeIcuLocale);
 
     // Creates a Calendar using the given timezone and given locale.
     // Set dateTimeFormat.[[icuSimpleDateFormat]].
@@ -445,7 +448,7 @@ JSHandle<JSDateTimeFormat> JSDateTimeFormat::InitializeDateTimeFormat(JSThread *
     std::unique_ptr<icu::Calendar> calendarPtr = BuildCalendar(icuLocale, *icuTimeZone);
     ASSERT_PRINT(calendarPtr != nullptr, "invalid calendar");
     simpleDateFormatIcu->adoptCalendar(calendarPtr.release());
-    dateTimeFormat->SetIcuSimpleDateFormat(thread, *simpleDateFormatIcu, JSDateTimeFormat::FreeSimpleDateFormat);
+    SetIcuSimpleDateFormat(thread, dateTimeFormat, *simpleDateFormatIcu, JSDateTimeFormat::FreeSimpleDateFormat);
 
     // Set dateTimeFormat.[[iso8601]].
     bool iso8601 = strstr(icuLocale.getName(), "calendar=iso8601") != nullptr;

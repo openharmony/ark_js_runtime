@@ -40,7 +40,7 @@ public:
     }
     static int Hash(const JSTaggedValue &key);
     static bool IsMatch(const JSTaggedValue &key, const JSTaggedValue &other);
-    static NameDictionary *Create(const JSThread *thread,
+    static JSHandle<NameDictionary> Create(const JSThread *thread,
                                   int numberOfElements = OrderHashTableT::DEFAULT_ELEMENTS_NUMBER);
     // Returns the property metaData for the property at entry.
     PropertyAttributes GetAttributes(int entry) const;
@@ -88,7 +88,7 @@ public:
     }
     static int Hash(const JSTaggedValue &key);
     static bool IsMatch(const JSTaggedValue &key, const JSTaggedValue &other);
-    static NumberDictionary *Create(const JSThread *thread,
+    static JSHandle<NumberDictionary> Create(const JSThread *thread,
                                     int numberOfElements = OrderHashTableT::DEFAULT_ELEMENTS_NUMBER);
     // Returns the property metaData for the property at entry.
     PropertyAttributes GetAttributes(int entry) const;

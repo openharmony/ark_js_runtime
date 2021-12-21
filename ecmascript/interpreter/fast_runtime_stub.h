@@ -92,6 +92,10 @@ public:
     static inline JSTaggedValue FastGetPropertyByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key);
     template<bool UseHole = false>
     static inline JSTaggedValue FastGetPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index);
+    static inline PropertyAttributes AddPropertyByName(JSThread *thread, JSHandle<JSObject> objHandle,
+                                                       JSHandle<JSTaggedValue> keyHandle,
+                                                       JSHandle<JSTaggedValue> valueHandle,
+                                                       PropertyAttributes attr);
 
 private:
     friend class ICRuntimeStub;
@@ -104,8 +108,6 @@ private:
                                            JSTaggedValue accessorValue);
     static inline bool ShouldCallSetter(JSTaggedValue receiver, JSTaggedValue holder, JSTaggedValue accessorValue,
                                         PropertyAttributes attr);
-    static inline JSTaggedValue AddPropertyByName(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
-                                                  JSTaggedValue value);
     static inline JSTaggedValue AddPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                    JSTaggedValue value);
 };

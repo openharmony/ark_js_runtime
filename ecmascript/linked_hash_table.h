@@ -42,19 +42,21 @@ public:
     // Don't shrink a HashTable below this capacity.
     static const int MIN_SHRINK_CAPACITY = 16;
 
-    static Derived *Create(const JSThread *thread, int numberOfElements);
+    static JSHandle<Derived> Create(const JSThread *thread, int numberOfElements);
 
-    static Derived *Insert(const JSThread *thread, const JSHandle<Derived> &table, const JSHandle<JSTaggedValue> &key,
-                           const JSHandle<JSTaggedValue> &value);
+    static JSHandle<Derived> Insert(const JSThread *thread, const JSHandle<Derived> &table,
+                                    const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
 
-    static Derived *InsertWeakRef(const JSThread *thread, const JSHandle<Derived> &table,
-                                  const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
+    static JSHandle<Derived> InsertWeakRef(const JSThread *thread, const JSHandle<Derived> &table,
+                                           const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
 
-    static Derived *GrowCapacity(const JSThread *thread, const JSHandle<Derived> &table, int numberOfAddedElements = 1);
+    static JSHandle<Derived> GrowCapacity(const JSThread *thread, const JSHandle<Derived> &table,
+                                          int numberOfAddedElements = 1);
 
-    static Derived *Remove(const JSThread *thread, const JSHandle<Derived> &table, const JSHandle<JSTaggedValue> &key);
+    static JSHandle<Derived> Remove(const JSThread *thread, const JSHandle<Derived> &table,
+                                    const JSHandle<JSTaggedValue> &key);
 
-    static Derived *Shrink(const JSThread *thread, const JSHandle<Derived> &table, int additionalCapacity = 0);
+    static JSHandle<Derived> Shrink(const JSThread *thread, const JSHandle<Derived> &table, int additionalCapacity = 0);
 
     void Rehash(const JSThread *thread, Derived *newTable);
 
@@ -122,12 +124,15 @@ protected:
     inline void SetDeletedNum(const JSThread *thread, int entry, JSTaggedValue num);
 };
 
+class LinkedHash {
+public:
+    static int Hash(JSTaggedValue key);
+};
+
 class LinkedHashMapObject {
 public:
     // key must be string now for other object has no 'equals' method
     static inline bool IsMatch(JSTaggedValue key, JSTaggedValue other);
-
-    static int Hash(JSTaggedValue key);
 
     static const int ENTRY_SIZE = 2;
     static const int ENTRY_VALUE_INDEX = 1;
@@ -139,21 +144,21 @@ public:
     {
         return static_cast<LinkedHashMap *>(obj);
     }
-    static JSTaggedValue Create(const JSThread *thread, int numberOfElements = MIN_CAPACITY);
+    static JSHandle<LinkedHashMap> Create(const JSThread *thread, int numberOfElements = MIN_CAPACITY);
 
-    static JSTaggedValue Delete(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
-                                const JSHandle<JSTaggedValue> &key);
+    static JSHandle<LinkedHashMap> Delete(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
+        const JSHandle<JSTaggedValue> &key);
 
-    static JSTaggedValue Set(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
-                             const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
+    static JSHandle<LinkedHashMap> Set(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
+        const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
 
-    static JSTaggedValue SetWeakRef(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
-                                    const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
+    static JSHandle<LinkedHashMap> SetWeakRef(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
+        const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
 
     JSTaggedValue Get(JSTaggedValue key) const;
 
-    static JSTaggedValue Shrink(const JSThread *thread, const JSHandle<LinkedHashMap> &table,
-                                int additionalCapacity = 0);
+    static JSHandle<LinkedHashMap> Shrink(const JSThread *thread, const JSHandle<LinkedHashMap> &table,
+        int additionalCapacity = 0);
 
     bool Has(JSTaggedValue key) const;
 
@@ -169,25 +174,6 @@ public:
         return JSTaggedValue::SameValueZero(key, other);
     }
 
-    static inline int Hash(JSTaggedValue key)
-    {
-        if (key.IsDouble() && key.GetDouble() == 0.0) {
-            key = JSTaggedValue(0);
-        }
-        if (key.IsSymbol()) {
-            auto symbolString = JSSymbol::Cast(key.GetTaggedObject());
-            return static_cast<JSTaggedNumber>(symbolString->GetHashField()).GetInt();
-        }
-        if (key.IsString()) {
-            auto keyString = reinterpret_cast<EcmaString *>(key.GetTaggedObject());
-            return keyString->GetHashcode();
-        }
-
-        // Int, Double, Special and HeapObject(except symbol and string)
-        uint64_t keyValue = key.GetRawData();
-        return GetHash32(reinterpret_cast<uint8_t *>(&keyValue), sizeof(keyValue) / sizeof(uint8_t));
-    }
-
     static const int ENTRY_SIZE = 1;
     static const int ENTRY_VALUE_INDEX = 0;
 };
@@ -198,19 +184,19 @@ public:
     {
         return static_cast<LinkedHashSet *>(obj);
     }
-    static JSTaggedValue Create(const JSThread *thread, int numberOfElements = MIN_CAPACITY);
+    static JSHandle<LinkedHashSet> Create(const JSThread *thread, int numberOfElements = MIN_CAPACITY);
 
-    static JSTaggedValue Delete(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
-                                const JSHandle<JSTaggedValue> &key);
+    static JSHandle<LinkedHashSet> Delete(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
+        const JSHandle<JSTaggedValue> &key);
 
-    static JSTaggedValue Add(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
-                             const JSHandle<JSTaggedValue> &key);
+    static JSHandle<LinkedHashSet> Add(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
+        const JSHandle<JSTaggedValue> &key);
 
-    static JSTaggedValue AddWeakRef(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
-                                    const JSHandle<JSTaggedValue> &key);
+    static JSHandle<LinkedHashSet> AddWeakRef(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
+        const JSHandle<JSTaggedValue> &key);
 
-    static JSTaggedValue Shrink(const JSThread *thread, const JSHandle<LinkedHashSet> &table,
-                                int additionalCapacity = 0);
+    static JSHandle<LinkedHashSet> Shrink(const JSThread *thread, const JSHandle<LinkedHashSet> &table,
+        int additionalCapacity = 0);
 
     bool Has(JSTaggedValue key) const;
 

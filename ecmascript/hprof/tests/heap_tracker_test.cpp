@@ -43,7 +43,7 @@ public:
     void SetUp() override
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        EcmaVM::Cast(instance)->GetFactory()->SetTriggerGc(false);
+        EcmaVM::Cast(instance)->SetEnableForceGC(false);
     }
 
     void TearDown() override
@@ -85,7 +85,7 @@ HWTEST_F_L0(HeapTrackerTest, HeapTracker)
     outputString.clear();
 
     heapProfile->StopHeapTracking(thread, DumpFormat::JSON, fileName.c_str());
-    HeapProfilerInterface::Destory(thread, heapProfile);
+    HeapProfilerInterface::Destroy(thread, heapProfile);
 
     // Check
     fstream inputStream(fileName, std::ios::in);

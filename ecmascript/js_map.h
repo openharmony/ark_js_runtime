@@ -23,10 +23,8 @@
 namespace panda::ecmascript {
 class JSMap : public JSObject {
 public:
-    static JSMap *Cast(ObjectHeader *object)
-    {
-        return static_cast<JSMap *>(object);
-    }
+    CAST_CHECK(JSMap, IsJSMap);
+
     static bool Delete(const JSThread *thread, const JSHandle<JSMap> &map, const JSHandle<JSTaggedValue> &key);
 
     static void Set(JSThread *thread, const JSHandle<JSMap> &map, const JSHandle<JSTaggedValue> &key,
