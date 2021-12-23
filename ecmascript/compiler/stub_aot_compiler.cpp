@@ -22,19 +22,17 @@
 
 #include "fast_stub.h"
 #include "generated/stub_aot_options_gen.h"
-#include "js_thread_offset_table.h"
 #include "libpandabase/utils/pandargs.h"
 #include "libpandabase/utils/span.h"
 #include "llvm_codegen.h"
 #include "scheduler.h"
 #include "stub-inl.h"
-#include "triple.h"
 #include "verifier.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 class PassPayLoad {
 public:
-    explicit PassPayLoad(Circuit *circuit, LLVMStubModule *module) : circuit_(circuit), module_(module) {}
+    explicit PassPayLoad(Stub *stub, LLVMStubModule *module) : module_(module), stub_(stub) {}
     ~PassPayLoad() = default;
     const ControlFlowGraph &GetScheduleResult() const
     {
@@ -46,9 +44,14 @@ public:
         cfg_ = result;
     }
 
+    const CompilationConfig *GetCompilationConfig() const
+    {
+        return module_->GetCompilationConfig();
+    }
+
     Circuit *GetCircuit() const
     {
-        return circuit_;
+        return stub_->GetEnvironment()->GetCircuit();
     }
 
     LLVMStubModule *GetStubModule() const
@@ -56,9 +59,14 @@ public:
         return module_;
     }
 
+    Stub *GetStub() const
+    {
+        return stub_;
+    }
+
 private:
-    Circuit *circuit_;
     LLVMStubModule *module_;
+    Stub *stub_;
     ControlFlowGraph cfg_;
 };
 
@@ -75,6 +83,17 @@ public:
 
 private:
     PassPayLoad *data_;
+};
+
+class BuildCircuitPass {
+public:
+    bool Run(PassPayLoad *data)
+    {
+        auto stub = data->GetStub();
+        std::cout << "Stub Name: " << stub->GetMethodName() << std::endl;
+        stub->GenerateCircuit(data->GetCompilationConfig());
+        return true;
+    }
 };
 
 class VerifierPass {
@@ -97,48 +116,41 @@ public:
 
 class LLVMCodegenPass {
 public:
-    void CreateCodeGen(const char *targetTriple, LLVMStubModule *module)
+    void CreateCodeGen(LLVMStubModule *module)
     {
-        if (targetTriple == TripleConst::GetLLVMArm64Triple()) {
-            llvmImpl_ = std::make_unique<LLVMAarch64CodeGeneratorImpl>(module);
-        } else if (targetTriple == TripleConst::GetLLVMArm32Triple()) {
-            llvmImpl_ = std::make_unique<LLVMArm32CodeGeneratorImpl>(module);
-        } else {
-            llvmImpl_ = std::make_unique<LLVMCodeGeneratorImpl>(module);
-        }
+        llvmImpl_ = std::make_unique<LLVMCodeGeneratorImpl>(module);
     }
-    bool Run(PassPayLoad *data, int index, const char* triple)
+    bool Run(PassPayLoad *data, int index)
     {
         auto stubModule = data->GetStubModule();
-        CreateCodeGen(stubModule->GetTargetTriple(), stubModule);
-        CodeGenerator codegen(llvmImpl_, triple);
-        codegen.Run(data->GetCircuit(), data->GetScheduleResult(), index);
+        CreateCodeGen(stubModule);
+        CodeGenerator codegen(llvmImpl_);
+        codegen.Run(data->GetCircuit(), data->GetScheduleResult(), index, data->GetCompilationConfig());
         return true;
     }
 private:
     std::unique_ptr<CodeGeneratorImpl> llvmImpl_{nullptr};
 };
 
-void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascript::StubModule *module,
+void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::ecmascript::StubModule *module,
                                              const std::string &filename)
 {
     LLVMStubModule stubModule("fast_stubs", triple);
-    stubModule.Initialize();
+    std::vector<int> stubSet = GetStubIndices();
+    stubModule.Initialize(stubSet);
     for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
         auto stub = stubs_[i];
         if (stub != nullptr) {
-            std::cout << "Stub Name: " << stub->GetMethodName() << std::endl;
-            stub->GenerateCircuit();
-            auto circuit = stub->GetEnvironment()->GetCircuit();
-            PassPayLoad data(circuit, &stubModule);
+            PassPayLoad data(stub, &stubModule);
             PassRunner pipeline(&data);
+            pipeline.RunPass<BuildCircuitPass>();
             pipeline.RunPass<VerifierPass>();
             pipeline.RunPass<SchedulerPass>();
-            pipeline.RunPass<LLVMCodegenPass>(i, triple);
+            pipeline.RunPass<LLVMCodegenPass>(i);
         }
     }
 
-    LLVMModuleAssembler assembler(&stubModule, triple);
+    LLVMModuleAssembler assembler(&stubModule);
     assembler.AssembleModule();
     assembler.AssembleStubModule(module);
 
@@ -155,46 +167,35 @@ void StubAotCompiler::BuildStubModuleAndSave(const char *triple, panda::ecmascri
 
     delete[] code;
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 
-#define SET_STUB_TO_MODULE(module, name, triple) \
-    kungfu::Circuit name##Circuit; \
-    kungfu::name##Stub name##Stub(& name##Circuit, triple); \
+#define SET_STUB_TO_MODULE(module, name) \
+    panda::ecmascript::kungfu::Circuit name##Circuit; \
+    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
     module.SetStub(FAST_STUB_ID(name), &name##Stub);
-#ifdef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-#define SET_ALL_STUB_TO_MODEULE(module, triple)                     \
-    SET_STUB_TO_MODULE(module, FastAdd, triple)                     \
-    SET_STUB_TO_MODULE(module, FastSub, triple)                     \
-    SET_STUB_TO_MODULE(module, FastMul, triple)                     \
-    SET_STUB_TO_MODULE(module, FastDiv, triple)                     \
-    SET_STUB_TO_MODULE(module, FastMod, triple)                     \
-    SET_STUB_TO_MODULE(module, FastTypeOf, triple)                  \
-    SET_STUB_TO_MODULE(module, FastEqual, triple)                   \
-    SET_STUB_TO_MODULE(module, FindOwnElement2, triple)             \
-    SET_STUB_TO_MODULE(module, GetPropertyByIndex, triple)          \
-    SET_STUB_TO_MODULE(module, SetPropertyByIndex, triple)          \
-    SET_STUB_TO_MODULE(module, GetPropertyByName, triple)           \
-    SET_STUB_TO_MODULE(module, GetPropertyByValue, triple)          \
-    SET_STUB_TO_MODULE(module, SetPropertyByName, triple)           \
-    SET_STUB_TO_MODULE(module, SetPropertyByNameWithOwn, triple)    \
-    SET_STUB_TO_MODULE(module, TryLoadICByName, triple)             \
-    SET_STUB_TO_MODULE(module, TryLoadICByValue, triple)            \
-    SET_STUB_TO_MODULE(module, TryStoreICByName, triple)            \
-    SET_STUB_TO_MODULE(module, TryStoreICByValue, triple)
-#else
-#define SET_ALL_STUB_TO_MODEULE(module, triple)                     \
-    SET_STUB_TO_MODULE(module, FastAdd, triple)                     \
-    SET_STUB_TO_MODULE(module, FastSub, triple)                     \
-    SET_STUB_TO_MODULE(module, FastMul, triple)                     \
-    SET_STUB_TO_MODULE(module, FastDiv, triple)                     \
-    SET_STUB_TO_MODULE(module, FastMod, triple)                     \
-    SET_STUB_TO_MODULE(module, FastTypeOf, triple)                  \
-    SET_STUB_TO_MODULE(module, FastEqual, triple)
-#endif
+#define SET_ALL_STUB_TO_MODEULE(module)                     \
+    SET_STUB_TO_MODULE(module, FastAdd)                     \
+    SET_STUB_TO_MODULE(module, FastSub)                     \
+    SET_STUB_TO_MODULE(module, FastMul)                     \
+    SET_STUB_TO_MODULE(module, FastDiv)                     \
+    SET_STUB_TO_MODULE(module, FastMod)                     \
+    SET_STUB_TO_MODULE(module, FastTypeOf)                  \
+    SET_STUB_TO_MODULE(module, FastEqual)                   \
+    SET_STUB_TO_MODULE(module, FindOwnElement2)             \
+    SET_STUB_TO_MODULE(module, GetPropertyByIndex)          \
+    SET_STUB_TO_MODULE(module, SetPropertyByIndex)          \
+    SET_STUB_TO_MODULE(module, GetPropertyByName)           \
+    SET_STUB_TO_MODULE(module, GetPropertyByValue)          \
+    SET_STUB_TO_MODULE(module, SetPropertyByName)           \
+    SET_STUB_TO_MODULE(module, SetPropertyByNameWithOwn)    \
+    SET_STUB_TO_MODULE(module, TryLoadICByName)             \
+    SET_STUB_TO_MODULE(module, TryLoadICByValue)            \
+    SET_STUB_TO_MODULE(module, TryStoreICByName)            \
+    SET_STUB_TO_MODULE(module, TryStoreICByValue)
 
 #ifndef NDEBUG
-#define SET_TEST_STUB_TO_MODEULE(module, hostTriple)                \
-    SET_STUB_TO_MODULE(module, FastMulGCTest, hostTriple)
+#define SET_TEST_STUB_TO_MODEULE(module)                \
+    SET_STUB_TO_MODULE(module, FastMulGCTest)
 #endif
 
 int main(const int argc, const char **argv)
@@ -220,20 +221,16 @@ int main(const int argc, const char **argv)
     }
 
     std::string tripleString = stubOptions.GetTargetTriple();
-    const char *triple = kungfu::TripleConst::StringTripleToConst(tripleString);
     std::string moduleFilename = stubOptions.GetStubOutputFile();
 
-    kungfu::OffsetTable::CreateInstance(triple);
-    kungfu::StubAotCompiler mouldeBuilder;
-    SET_ALL_STUB_TO_MODEULE(mouldeBuilder, triple);
+    panda::ecmascript::kungfu::StubAotCompiler mouldeBuilder;
+    SET_ALL_STUB_TO_MODEULE(mouldeBuilder);
 #ifndef NDEBUG
-    SET_TEST_STUB_TO_MODEULE(mouldeBuilder, triple);
+    SET_TEST_STUB_TO_MODEULE(mouldeBuilder);
 #endif
 
     panda::ecmascript::StubModule stubModule;
-    mouldeBuilder.BuildStubModuleAndSave(triple, &stubModule, moduleFilename);
-    kungfu::OffsetTable::Destroy();
-
+    mouldeBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
     std::cout << "BuildStubModuleAndSave success" << std::endl;
     return 0;
 }

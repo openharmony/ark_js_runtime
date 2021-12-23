@@ -24,7 +24,7 @@
 
 #include "ecmascript/compiler/circuit.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using ControlFlowGraph = std::vector<std::vector<GateRef>>;
 class Scheduler {
 public:
@@ -39,6 +39,6 @@ public:
         const std::function<size_t(size_t, size_t)> &lowestCommonAncestor, std::vector<GateRef> *order = nullptr);
     static void Print(const ControlFlowGraph *cfg, const Circuit *circuit);
 };
-};  // namespace kungfu
+};  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_SCHEDULER_H

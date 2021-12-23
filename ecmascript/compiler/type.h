@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using GateType = uint8_t;
 enum class TypeCode : GateType {
     // for AOT
@@ -61,6 +61,6 @@ public:
 private:
     GateType payload;
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_TYPE_H

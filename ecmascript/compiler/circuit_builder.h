@@ -21,7 +21,7 @@
 #include "ecmascript/compiler/machine_type.h"
 #include "ecmascript/compiler/stub_descriptor.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 class CircuitBuilder {
 public:
     explicit CircuitBuilder(Circuit *circuit) : circuit_(circuit) {}
@@ -55,8 +55,8 @@ public:
     GateRef NewIfFalse(GateRef ifBranch);
     GateRef NewSwitchCase(GateRef switchBranch, int32_t value);
     GateRef NewDefaultCase(GateRef switchBranch);
-    GateRef NewLoadGate(MachineType type, GateRef val, GateRef depend, const char *triple);
-    GateRef NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend, const char *triple);
+    GateRef NewLoadGate(MachineType type, GateRef val, GateRef depend);
+    GateRef NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend);
     GateRef NewDependRelay(GateRef state, GateRef depend);
     GateRef NewDependAnd(std::initializer_list<GateRef> args);
     GateRef NewArithMeticGate(OpCode opcode, GateRef left, GateRef right);
@@ -67,8 +67,8 @@ public:
                                  std::initializer_list<GateRef> args);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
-    static OpCode GetLoadOpCodeFromMachineType(MachineType type, const char *triple);
-    static OpCode GetStoreOpCodeFromMachineType(MachineType type, const char *triple);
+    static OpCode GetLoadOpCodeFromMachineType(MachineType type);
+    static OpCode GetStoreOpCodeFromMachineType(MachineType type);
     static OpCode GetSelectOpCodeFromMachineType(MachineType type);
     static OpCode GetCallOpCodeFromMachineType(MachineType type);
 
@@ -87,6 +87,6 @@ public:
 private:
     Circuit *circuit_;
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_H

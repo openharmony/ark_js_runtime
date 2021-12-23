@@ -17,27 +17,29 @@
 #define ECMASCRIPT_COMPILER_CODE_GENERATOR_H
 
 #include "circuit.h"
+#include "stub.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using ControlFlowGraph = std::vector<std::vector<GateRef>>;
 class CodeGeneratorImpl {
 public:
     CodeGeneratorImpl() = default;
     virtual ~CodeGeneratorImpl() = default;
-    virtual void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index) = 0;
+    virtual void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+                                     const CompilationConfig *cfg) = 0;
 };
 
 class CodeGenerator {
 public:
-    explicit CodeGenerator(std::unique_ptr<CodeGeneratorImpl> &impl, const char* triple) : impl_(std::move(impl)) {}
+    explicit CodeGenerator(std::unique_ptr<CodeGeneratorImpl> &impl) : impl_(std::move(impl)) {}
     ~CodeGenerator() = default;
-    void Run(Circuit *circuit, const ControlFlowGraph &graph, int index)
+    void Run(Circuit *circuit, const ControlFlowGraph &graph, int index, const CompilationConfig *cfg)
     {
-        impl_->GenerateCodeForStub(circuit, graph, index);
+        impl_->GenerateCodeForStub(circuit, graph, index, cfg);
     }
 
 private:
     std::unique_ptr<CodeGeneratorImpl> impl_{nullptr};
 };
-}  // namespace kungfu
-#endif  // ECMASCRIPT_COMPILER_CODE_GENERATOR_H
+} // namespace panda::ecmascript::kungfu
+#endif // ECMASCRIPT_COMPILER_CODE_GENERATOR_H

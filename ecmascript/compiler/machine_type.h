@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_COMPILER_MACHINE_TYPE_H
 #define ECMASCRIPT_COMPILER_MACHINE_TYPE_H
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 enum class MachineType {
     NONE,
     BOOL,
@@ -34,5 +34,5 @@ enum class MachineType {
     TAGGED,         // GC cares
     TAGGED_POINTER,
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_MACHINE_TYPE_H

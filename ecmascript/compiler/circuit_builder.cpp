@@ -15,10 +15,9 @@
 
 #include "ecmascript/compiler/circuit_builder.h"
 #include "include/coretypes/tagged_value.h"
-#include "triple.h"
 #include "utils/bit_utils.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using TaggedValue = panda::coretypes::TaggedValue;
 GateRef CircuitBuilder::NewArguments(size_t index)
 {
@@ -166,7 +165,7 @@ GateRef CircuitBuilder::NewDefaultCase(GateRef switchBranch)
     return circuit_->NewGate(OpCode(OpCode::DEFAULT_CASE), 0, { switchBranch }, TypeCode::NOTYPE);
 }
 
-OpCode CircuitBuilder::GetStoreOpCodeFromMachineType(MachineType type, const char *triple)
+OpCode CircuitBuilder::GetStoreOpCodeFromMachineType(MachineType type)
 {
     switch (type) {
         case MachineType::INT8:
@@ -185,14 +184,6 @@ OpCode CircuitBuilder::GetStoreOpCodeFromMachineType(MachineType type, const cha
             return OpCode(OpCode::INT16_STORE);
         case MachineType::UINT32:
             return OpCode(OpCode::INT32_STORE);
-        case MachineType::NATIVE_POINTER:
-        {
-            if (triple == TripleConst::GetLLVMArm32Triple()) {
-                return OpCode(OpCode::INT32_STORE);
-            }  else {
-                return OpCode(OpCode::INT64_STORE);
-            }
-        }
         case MachineType::UINT64:
         case MachineType::TAGGED:
         case MachineType::TAGGED_POINTER:
@@ -206,7 +197,7 @@ OpCode CircuitBuilder::GetStoreOpCodeFromMachineType(MachineType type, const cha
     }
 }
 
-OpCode CircuitBuilder::GetLoadOpCodeFromMachineType(MachineType type, const char *triple)
+OpCode CircuitBuilder::GetLoadOpCodeFromMachineType(MachineType type)
 {
     switch (type) {
         case MachineType::INT8:
@@ -225,13 +216,6 @@ OpCode CircuitBuilder::GetLoadOpCodeFromMachineType(MachineType type, const char
             return OpCode(OpCode::INT16_LOAD);
         case MachineType::UINT32:
             return OpCode(OpCode::INT32_LOAD);
-        case MachineType::NATIVE_POINTER: {
-            if (ArchRelatePtrValueCode(triple) == ValueCode::INT32) {
-                return OpCode(OpCode::INT32_LOAD);
-            } else {
-                return OpCode(OpCode::INT64_LOAD);
-            }
-        }
         case MachineType::UINT64:
         case MachineType::TAGGED:
         case MachineType::TAGGED_POINTER:
@@ -295,15 +279,15 @@ GateRef CircuitBuilder::NewDependAnd(std::initializer_list<GateRef> args)
     return circuit_->NewGate(OpCode(OpCode::DEPEND_AND), args.size(), inputs, TypeCode::NOTYPE);
 }
 
-GateRef CircuitBuilder::NewLoadGate(MachineType type, GateRef val, GateRef depend, const char *triple)
+GateRef CircuitBuilder::NewLoadGate(MachineType type, GateRef val, GateRef depend)
 {
-    OpCode op = GetLoadOpCodeFromMachineType(type, triple);
+    OpCode op = GetLoadOpCodeFromMachineType(type);
     return circuit_->NewGate(op, static_cast<BitField>(type), { depend, val }, MachineType2TypeCode(type));
 }
 
-GateRef CircuitBuilder::NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend, const char *triple)
+GateRef CircuitBuilder::NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend)
 {
-    OpCode op = GetStoreOpCodeFromMachineType(type, triple);
+    OpCode op = GetStoreOpCodeFromMachineType(type);
     return circuit_->NewGate(op, static_cast<BitField>(type), { depend, val, ptr }, MachineType2TypeCode(type));
 }
 
@@ -403,4 +387,4 @@ GateRef CircuitBuilder::Alloca(int size, TypeCode type)
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));
     return circuit_->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, type);
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

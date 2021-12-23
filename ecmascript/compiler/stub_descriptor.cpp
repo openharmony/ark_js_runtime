@@ -18,7 +18,7 @@
 #include "llvm-c/Core.h"
 #include "llvm/Support/Host.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CALL_STUB_INIT_DESCRIPTOR(name)                              \
     class Stub##name##InterfaceDescriptor final {                    \
@@ -27,7 +27,7 @@ namespace kungfu {
     };                                                               \
     void Stub##name##InterfaceDescriptor::Initialize(StubDescriptor *descriptor)
 
-#ifdef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
+
 CALL_STUB_INIT_DESCRIPTOR(FastAdd)
 {
     // 2 : 2 input parameters
@@ -39,178 +39,6 @@ CALL_STUB_INIT_DESCRIPTOR(FastAdd)
         MachineType::TAGGED,
     };
     descriptor->SetParameters(params.data());
-}
-
-
-CALL_STUB_INIT_DESCRIPTOR(FastSub)
-{
-    // 2 : 2 input parameters
-    StubDescriptor fastSub("FastSub", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64); // number or hole
-    *descriptor = fastSub;
-    // 2 : 2 input parameters
-    std::array<MachineType, 2> params = {
-        MachineType::TAGGED,
-        MachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(FastMul)
-{
-    // 2 : 2 input parameters
-    StubDescriptor fastMul("FastMul", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64); // number or hole
-    *descriptor = fastMul;
-    // 2 : 2 input parameters
-    std::array<MachineType, 2> params = {
-        MachineType::TAGGED,
-        MachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(FastDiv)
-{
-    // 2 : 2 input parameters
-    StubDescriptor fastDiv("FastDiv", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64); // float or hole
-    *descriptor = fastDiv;
-    // 2 : 2 input parameters
-    std::array<MachineType, 2> params = {
-        MachineType::TAGGED,
-        MachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-}
-
-#ifndef NDEBUG
-CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
-{
-    // 3 : 3 input parameters
-    StubDescriptor fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64);
-    *descriptor = fastMulGC;
-    // 3 : 3 input parameters
-    std::array<MachineType, 3> params = {
-        MachineType::NATIVE_POINTER,
-        MachineType::UINT64,
-        MachineType::UINT64,
-    };
-    descriptor->SetParameters(params.data());
-}
-#else
-CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest) {}
-#endif
-
-CALL_STUB_INIT_DESCRIPTOR(FastMod)
-{
-    // 3 : 3 input parameters
-    StubDescriptor fastMod("FastMod", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64); // int,float or hole
-    *descriptor = fastMod;
-    // 3 : 3 input parameters
-    std::array<MachineType, 3> params = {
-        MachineType::NATIVE_POINTER,
-        MachineType::TAGGED,
-        MachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(FastTypeOf)
-{
-    // 2 input parameters
-    StubDescriptor fastTypeOf("FastTypeOf", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED_POINTER);
-    *descriptor = fastTypeOf;
-    // 2 input parameters
-    std::array<MachineType, 2> params = {
-        MachineType::NATIVE_POINTER, // glue
-        MachineType::TAGGED, // ACC
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(FastEqual)
-{
-    // 2 input parameters, return may be true/false/hole
-    StubDescriptor fastEqual("FastEqual", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64);
-    *descriptor = fastEqual;
-    // 2 input parameters
-    std::array<MachineType, 2> params = {
-        MachineType::TAGGED,
-        MachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(GetPropertyByIndex)
-{
-    // 3 : 3 input parameters
-    StubDescriptor getPropertyByIndex("GetPropertyByIndex", 0, 3, ArgumentsOrder::DEFAULT_ORDER,
-        MachineType::TAGGED);
-    *descriptor = getPropertyByIndex;
-    // 3 : 3 input parameters
-    std::array<MachineType, 3> params = {
-        MachineType::NATIVE_POINTER, // glue
-        MachineType::TAGGED, // receiver
-        MachineType::UINT32, // index
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
-{
-    // 4 : 4 input parameters
-    StubDescriptor setPropertyByIndex("SetPropertyByIndex", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
-        MachineType::UINT64); // hole or undefined
-    *descriptor = setPropertyByIndex;
-    // 4 : 4 input parameters
-    std::array<MachineType, 4> params = {
-        MachineType::NATIVE_POINTER,
-        MachineType::TAGGED_POINTER,
-        MachineType::UINT32,
-        MachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(GetPropertyByName)
-{
-        // 3 : 3 input parameters
-    StubDescriptor getPropertyByName("GetPropertyByName", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
-    *descriptor = getPropertyByName;
-    // 3 : 3 input parameters
-    std::array<MachineType, 3> params = {
-        MachineType::NATIVE_POINTER, // glue
-        MachineType::TAGGED,         // receiver
-        MachineType::TAGGED_POINTER, // key
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(SetPropertyByNameWithOwn)
-{
-    // 4 : 4 input parameters
-    StubDescriptor setPropertyByNameWithOwn("SetPropertyByNameWithOwn", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
-        MachineType::UINT64);
-    *descriptor = setPropertyByNameWithOwn;
-
-    std::array<MachineType, 4> params = { // 4 : 4 input parameters
-        MachineType::NATIVE_POINTER, MachineType::TAGGED_POINTER, MachineType::TAGGED_POINTER,
-        MachineType::TAGGED_POINTER
-    };
-    descriptor->SetParameters(params.data());
-}
-#endif
-
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-CALL_STUB_INIT_DESCRIPTOR(FastAdd)
-{
-// 2 : 2 input parameters
-StubDescriptor fastAdd("FastAdd", 0, 2, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64); // number or hole
-*descriptor = fastAdd;
-// 2 : 2 input parameters
-std::array<MachineType, 2> params = {
-    MachineType::TAGGED,
-    MachineType::TAGGED,
-};
-descriptor->SetParameters(params.data());
 }
 
 CALL_STUB_INIT_DESCRIPTOR(FastSub)
@@ -520,7 +348,6 @@ CALL_STUB_INIT_DESCRIPTOR(TryStoreICByValue)
     };
     descriptor->SetParameters(params.data());
 }
-#endif
 
 CALL_STUB_INIT_DESCRIPTOR(FloatMod)
 {
@@ -896,7 +723,6 @@ CALL_STUB_INIT_DESCRIPTOR(DebugPrint)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
 CALL_STUB_INIT_DESCRIPTOR(PhiGateTest)
 {
     StubDescriptor phiGateTest("PhiGateTest", 0, 1, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT32);
@@ -929,7 +755,6 @@ CALL_STUB_INIT_DESCRIPTOR(LoopTest1)
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
 }
-#endif
 
 void FastStubDescriptors::InitializeStubDescriptors()
 {

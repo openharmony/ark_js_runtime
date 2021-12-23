@@ -14,14 +14,13 @@
  */
 
 #include "ecmascript/compiler/stub.h"
-#include "ecmascript/compiler/js_thread_offset_table.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/tagged_hash_table-inl.h"
 #include "libpandabase/macros.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 Stub::Label::Label(Environment *env)
 {
     impl_ = env->NewLabel(env);
@@ -58,7 +57,7 @@ GateRef Stub::Variable::TryRemoveTrivialPhi(GateRef phiVal)
             continue;  // unique value or self-reference
         }
         if (same != nullptr) {
-            return phiVal;  // the phi merges at least two values: not trivial
+            return phiVal;  // the phi merges at least two valusses: not trivial
         }
         same = op;
     }
@@ -275,7 +274,7 @@ Stub::Environment::Environment(size_t arguments, Circuit *circuit)
 
 Stub::Environment::~Environment()
 {
-    for (auto label : rawlabels_) {
+    for (auto label : rawLabels_) {
         delete label;
     }
 }
@@ -950,7 +949,7 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
 //      keyHandle.GetTaggedValue() == thread->GlobalConstants()->GetConstructorString()
 GateRef Stub::SetHasConstructorCondition(GateRef glue, GateRef receiver, GateRef key)
 {
-    GateRef gConstOffset = PtrAdd(glue, GetArchRelateConstant(OffsetTable::GetOffset(JSThread::GlueID::GLOBAL_CONST)));
+    GateRef gConstOffset = PtrAdd(glue, GetArchRelateConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
     GateRef gCtorStr = Load(MachineType::TAGGED,
         gConstOffset,
         Int64Mul(GetWord64Constant(sizeof(JSTaggedValue)),
@@ -1240,13 +1239,19 @@ GateRef Stub::Store(MachineType type, GateRef glue, GateRef base, GateRef offset
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result;
-    if (ArchRelatePtrValueCode(triple_) == ValueCode::INT64) {
+    if (env_.IsArch64Bit()) {
         GateRef ptr = Int64Add(base, offset);
-        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend, triple_);
+        if (type == MachineType::NATIVE_POINTER) {
+            type = MachineType::INT64;
+        }
+        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
         env_.GetCurrentLabel()->SetDepend(result);
-    } else if (ArchRelatePtrValueCode(triple_) == ValueCode::INT32) {
+    } else if (env_.IsArch32Bit()) {
+        if (type == MachineType::NATIVE_POINTER) {
+            type = MachineType::INT32;
+        }
         GateRef ptr = Int32Add(base, offset);
-        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend, triple_);
+        result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
         env_.GetCurrentLabel()->SetDepend(result);
     } else {
         UNREACHABLE();
@@ -3009,4 +3014,4 @@ void Stub::NotifyHClassChanged(GateRef glue, GateRef oldHClass, GateRef newHClas
     env->PopCurrentLabel();
     return;
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

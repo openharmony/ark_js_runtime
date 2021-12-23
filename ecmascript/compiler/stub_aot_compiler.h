@@ -19,7 +19,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/stub_module.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 class Stub;
 class circuit;
 class StubAotCompiler {
@@ -36,16 +36,27 @@ public:
             stubs_[i] = nullptr;
         }
     }
-    void BuildStubModuleAndSave(const char *triple, panda::ecmascript::StubModule *module,
+    void BuildStubModuleAndSave(const std::string &triple, panda::ecmascript::StubModule *module,
                                 const std::string &filename);
     void SetAllStubToModule();
-    void SetStub(int index, Stub *optimizer)
+    void SetStub(int index, Stub *stub)
     {
-        stubs_[index] = optimizer;
+        stubs_[index] = stub;
+    }
+
+    std::vector<int> GetStubIndices()
+    {
+        std::vector<int> result;
+        for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+            if (stubs_[i] != nullptr) {
+                result.push_back(i);
+            }
+        }
+        return result;
     }
 
 private:
     std::array<Stub *, FAST_STUB_MAXCOUNT> stubs_;
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_AOT_COMPILER_H

@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
 #define ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define EXTERNAL_RUNTIMESTUB_LIST(V)        \
     V(AddElementInternal, 5)                \
@@ -46,7 +46,6 @@ namespace kungfu {
     V(DebugPrint, 1)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#ifdef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
 #define FAST_RUNTIME_STUB_LIST(V)   \
     V(FastAdd, 2)                   \
     V(FastSub, 2)                   \
@@ -80,27 +79,12 @@ namespace kungfu {
     V(TryLoadICByValue, 5)          \
     V(TryStoreICByName, 5)          \
     V(TryStoreICByValue, 6)
-#else
-#define FAST_RUNTIME_STUB_LIST(V)   \
-    V(FastAdd, 2)                   \
-    V(FastSub, 2)                   \
-    V(FastMul, 2)                   \
-    V(FastDiv, 2)                   \
-    V(FastMod, 3)                   \
-    V(FastEqual, 2)                 \
-    V(FastTypeOf, 2)                \
-    V(FastMulGCTest, 3)
-#endif
 
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
     V(PhiGateTest, 1)               \
     V(LoopTest, 1)                  \
     V(LoopTest1, 1)
-#else
-#define TEST_FUNC_LIST(V)
-#endif
 
 #define CALL_STUB_LIST(V)        \
     FAST_RUNTIME_STUB_LIST(V)    \
@@ -120,6 +104,6 @@ enum CallStubId {
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FAST_STUB_ID(name) kungfu::CallStubId::NAME_##name
-}  // namespace kungfu
+#define FAST_STUB_ID(name) panda::ecmascript::kungfu::CallStubId::NAME_##name
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H

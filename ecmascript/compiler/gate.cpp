@@ -14,9 +14,8 @@
  */
 
 #include "ecmascript/compiler/gate.h"
-#include "triple.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 constexpr size_t ONE_DEPEND = 1;
 constexpr size_t MANY_DEPEND = 2;
 constexpr size_t NO_DEPEND = 0;
@@ -882,15 +881,6 @@ ValueCode PtrValueCode()
 #endif
 }
 
-ValueCode ArchRelatePtrValueCode(const char *triple)
-{
-    if (triple == TripleConst::GetLLVMArm32Triple()) {
-        return ValueCode::INT32;
-    } else {
-        return ValueCode::INT64;
-    }
-}
-
 size_t GetValueBits(ValueCode valueCode)
 {
     switch (valueCode) {
@@ -1359,4 +1349,4 @@ bool OpCode::IsNop() const
 {
     return (op_ == OpCode::NOP);
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

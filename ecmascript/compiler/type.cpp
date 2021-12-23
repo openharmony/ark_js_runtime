@@ -15,7 +15,7 @@
 
 #include "ecmascript/compiler/type.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 Type::Type(GateType payload) : payload(payload) {}
 
 bool Type::IsBitset() const
@@ -24,4 +24,4 @@ bool Type::IsBitset() const
 }
 
 Type::~Type() {}
-};  // namespace kungfu
+};  // namespace panda::ecmascript::kungfu

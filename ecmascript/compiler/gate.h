@@ -29,7 +29,7 @@
 #include "libpandabase/macros.h"
 #include "ecmascript/compiler/type.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using GateRef = int32_t; // for external users
 using GateId = uint32_t;
 using GateOp = uint8_t;
@@ -39,6 +39,7 @@ using GateRef = int32_t;
 using BitField = uint64_t;
 using OutIdx = uint32_t;
 class Gate;
+struct Properties;
 
 enum ValueCode {
     NOVALUE,
@@ -53,8 +54,6 @@ enum ValueCode {
 };
 
 std::string ValueCodeToStr(ValueCode valueCode);
-
-using Properties = struct Properties;
 
 class OpCode {
 public:
@@ -287,7 +286,6 @@ enum MarkCode : GateMark {
 
 ValueCode JSValueCode();
 ValueCode PtrValueCode();
-ValueCode ArchRelatePtrValueCode(const char *triple);
 size_t GetValueBits(ValueCode valueCode);
 
 class Out {
@@ -402,6 +400,6 @@ private:
     // in(2)
     // ...
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_GATE_H

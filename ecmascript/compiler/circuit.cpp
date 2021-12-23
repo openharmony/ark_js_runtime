@@ -16,7 +16,7 @@
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/compiler_macros.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 Circuit::Circuit() : space({}), circuitSize(0), gateCounter(0), time(1), dataSection({})
 {
     this->NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, TypeCode::NOTYPE);  // circuit root
@@ -384,4 +384,4 @@ void Circuit::SetFrameType(panda::ecmascript::FrameType type)
 {
     this->frameType = type;
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
