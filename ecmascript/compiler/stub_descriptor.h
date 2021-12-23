@@ -24,7 +24,7 @@
 #include "libpandabase/utils/bit_field.h"
 #include "llvm-c/Types.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 enum class ArgumentsOrder {
     DEFAULT_ORDER,  // Push Arguments in stack from right -> left
 };
@@ -186,5 +186,5 @@ private:
     NO_COPY_SEMANTIC(FastStubDescriptors);
     std::array<StubDescriptor, CALL_STUB_MAXCOUNT> callStubsDescriptor_ {};
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_DESCRIPTOR_H

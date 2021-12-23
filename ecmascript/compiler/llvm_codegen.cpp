@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 #include "ecmascript/compiler/compiler_macros.h"
-#include "ecmascript/compiler/triple.h"
+#include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/object_factory.h"
 #include "llvm-c/Analysis.h"
@@ -53,28 +53,12 @@
 #include "stub_descriptor.h"
 
 using namespace panda::ecmascript;
-namespace kungfu {
-void LLVMCodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index)
+namespace panda::ecmascript::kungfu {
+void LLVMCodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+                                                const CompilationConfig *cfg)
 {
     auto function = module_->GetStubFunction(index);
-
-    LLVMIRBuilder builder(&graph, circuit, module_, function, TripleConst::GetLLVMAmd64Triple());
-    builder.Build();
-}
-
-void LLVMAarch64CodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index)
-{
-    auto function = module_->GetStubFunction(index);
-
-    LLVMIRBuilder builder(&graph, circuit, module_, function, TripleConst::GetLLVMArm64Triple());
-    builder.Build();
-}
-
-void LLVMArm32CodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index)
-{
-    auto function = module_->GetStubFunction(index);
-
-    LLVMIRBuilder builder(&graph, circuit, module_, function, TripleConst::GetLLVMArm32Triple());
+    LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
     builder.Build();
 }
 
@@ -184,8 +168,8 @@ void LLVMAssembler::BuildAndRunPasses() const
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  + ";
 }
 
-LLVMAssembler::LLVMAssembler(LLVMModuleRef module, const char* triple)
-    : module_(module), triple_(triple)
+LLVMAssembler::LLVMAssembler(LLVMModuleRef module)
+    : module_(module)
 {
     Initialize();
 }
@@ -229,7 +213,8 @@ void LLVMAssembler::Run()
 
 void LLVMAssembler::Initialize()
 {
-    if (triple_ == TripleConst::GetLLVMAmd64Triple()) {
+    std::string triple(LLVMGetTarget(module_));
+    if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
         LLVMInitializeX86TargetInfo();
         LLVMInitializeX86TargetMC();
         LLVMInitializeX86Disassembler();
@@ -237,14 +222,14 @@ void LLVMAssembler::Initialize()
         LLVMInitializeX86AsmPrinter();
         LLVMInitializeX86AsmParser();
         LLVMInitializeX86Target();
-    } else if (triple_ == TripleConst::GetLLVMArm64Triple()) {
+    } else if (triple.compare("aarch64-unknown-linux-gnu") == 0) {
         LLVMInitializeAArch64TargetInfo();
         LLVMInitializeAArch64TargetMC();
         LLVMInitializeAArch64Disassembler();
         LLVMInitializeAArch64AsmPrinter();
         LLVMInitializeAArch64AsmParser();
         LLVMInitializeAArch64Target();
-    } else if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    } else if (triple.compare("arm-unknown-linux-gnu") == 0) {
         LLVMInitializeARMTargetInfo();
         LLVMInitializeARMTargetMC();
         LLVMInitializeARMDisassembler();
@@ -274,7 +259,7 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
 void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
 {
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
-    LLVMDisasmContextRef dcr = LLVMCreateDisasm(triple_, nullptr, 0, nullptr, SymbolLookupCallback);
+    LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);
     std::cout << "========================================================================" << std::endl;
     for (auto it : codeInfo_.GetCodeInfo()) {
         uint8_t *byteSp;
@@ -317,4 +302,4 @@ void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
     LLVMDisasmDispose(dcr);
 #endif
 }
-}  // namespace kungfu
+}  // panda::ecmascript::kungfu

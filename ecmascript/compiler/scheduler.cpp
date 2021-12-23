@@ -19,7 +19,7 @@
 
 #include "ecmascript/compiler/verifier.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using DominatorTreeInfo = std::tuple<std::vector<GateRef>, std::unordered_map<GateRef, size_t>,
     std::vector<size_t>>;
 DominatorTreeInfo Scheduler::CalculateDominatorTree(const Circuit *circuit)
@@ -328,4 +328,4 @@ void Scheduler::Print(const std::vector<std::vector<GateRef>> *cfg, const Circui
     }
     std::cout << "==========================================================================" << std::endl;
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

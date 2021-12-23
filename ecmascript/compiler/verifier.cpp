@@ -20,7 +20,7 @@
 
 #include "ecmascript/compiler/scheduler.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
 {
     std::unordered_set<GateRef> gatesSet;
@@ -511,4 +511,4 @@ bool Verifier::Run(const Circuit *circuit)
     }
     return true;
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

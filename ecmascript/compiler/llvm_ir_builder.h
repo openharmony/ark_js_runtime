@@ -23,12 +23,12 @@
 
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate.h"
+#include "ecmascript/compiler/stub.h"
 #include "ecmascript/compiler/stub_descriptor.h"
-#include "ecmascript/compiler/triple.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Types.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using OperandsVector = std::set<int>;
 class BasicBlock;
 using BasicBlockMap = std::map<int, std::unique_ptr<BasicBlock>>;
@@ -108,10 +108,10 @@ struct LLVMTFBuilderBasicBlockImpl {
 
 class LLVMStubModule {
 public:
-    LLVMStubModule(const char *name, const char *hostTriple);
+    LLVMStubModule(const std::string &name, const std::string &triple);
     ~LLVMStubModule();
 
-    void Initialize();
+    void Initialize(const std::vector<int> &stubIndices);
 
     LLVMModuleRef GetModule() const
     {
@@ -140,25 +140,25 @@ public:
 #endif
     }
 
-    const char *GetTargetTriple() const
+    const CompilationConfig *GetCompilationConfig() const
     {
-        return triple_;
+        return &compCfg_;
     }
 
 private:
     LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef ConvertLLVMTypeFromMachineType(MachineType type);
-    static constexpr uint32_t MAX_STUB_FUNCTION_COUNT = kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT;
-    static constexpr uint32_t MAX_TEST_FUNCTION_COUNT = kungfu::TEST_FUNC_MAXCOUNT - kungfu::TEST_FUNC_BEGIN - 1;
-    static constexpr uint32_t TEST_FUNCTION_OFFSET = kungfu::TEST_FUNC_BEGIN + 1;
+    static constexpr uint32_t MAX_STUB_FUNCTION_COUNT = panda::ecmascript::kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT;
+    static constexpr uint32_t MAX_TEST_FUNCTION_COUNT = panda::ecmascript::kungfu::TEST_FUNC_MAXCOUNT - panda::ecmascript::kungfu::TEST_FUNC_BEGIN - 1;
+    static constexpr uint32_t TEST_FUNCTION_OFFSET = panda::ecmascript::kungfu::TEST_FUNC_BEGIN + 1;
     std::array<LLVMValueRef, FAST_STUB_MAXCOUNT> stubFunctions_ {nullptr};
     std::array<LLVMTypeRef, MAX_STUB_FUNCTION_COUNT> stubFunctionType_ {nullptr};
 #ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
     std::array<LLVMValueRef, MAX_TEST_FUNCTION_COUNT> testFunctions_ {nullptr};
 #endif
     LLVMModuleRef module_;
-    const char *triple_;
+    CompilationConfig compCfg_;
 };
 
 #define OPCODES(V) \
@@ -166,51 +166,50 @@ private:
     V(Alloca, (GateRef gate)) \
     V(Block, (int id, const OperandsVector &predecessors)) \
     V(Goto, (int block, int bbout)) \
-    V(Parameter, (GateRef gate) const) \
-    V(Int32Constant, (GateRef gate, int32_t value) const) \
-    V(Int64Constant, (GateRef gate, int64_t value) const) \
-    V(Float64Constant, (GateRef gate, double value) const) \
-    V(ZExtInt, (GateRef gate, GateRef e1) const) \
-    V(SExtInt, (GateRef gate, GateRef e1) const) \
-    V(Load, (GateRef gate, GateRef base) const) \
-    V(Store, (GateRef gate, GateRef base, GateRef value) const) \
-    V(IntRev, (GateRef gate, GateRef e1) const) \
-    V(IntAdd, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(FloatAdd, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(FloatSub, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(FloatMul, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntSub, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntMul, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntOr, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntAnd, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntXor, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntLsr, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntOrUintCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMIntPredicate opcode) const) \
-    V(FloatOrDoubleCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMRealPredicate opcode) const) \
+    V(Parameter, (GateRef gate)) \
+    V(Int32Constant, (GateRef gate, int32_t value)) \
+    V(Int64Constant, (GateRef gate, int64_t value)) \
+    V(Float64Constant, (GateRef gate, double value)) \
+    V(ZExtInt, (GateRef gate, GateRef e1)) \
+    V(SExtInt, (GateRef gate, GateRef e1)) \
+    V(Load, (GateRef gate, GateRef base)) \
+    V(Store, (GateRef gate, GateRef base, GateRef value)) \
+    V(IntRev, (GateRef gate, GateRef e1)) \
+    V(IntAdd, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(FloatAdd, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(FloatSub, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(FloatMul, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntSub, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntMul, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntOr, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntAnd, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntXor, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntLsr, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntOrUintCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMIntPredicate opcode)) \
+    V(FloatOrDoubleCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMRealPredicate opcode)) \
     V(Branch, (GateRef gate, GateRef cmp, GateRef btrue, GateRef bfalse)) \
     V(Switch, (GateRef gate, GateRef input, const std::vector<GateRef> &outList)) \
     V(SwitchCase, (GateRef gate, GateRef switchBranch, GateRef out)) \
     V(Phi, (GateRef gate, const std::vector<GateRef> &srcGates)) \
-    V(Return, (GateRef gate, GateRef popCount, const std::vector<GateRef> &operands) const) \
-    V(ReturnVoid, (GateRef gate) const) \
-    V(CastIntXToIntY, (GateRef gate, GateRef e1) const) \
-    V(ChangeInt32ToDouble, (GateRef gate, GateRef e1) const) \
-    V(ChangeDoubleToInt32, (GateRef gate, GateRef e1) const) \
-    V(CastInt64ToDouble, (GateRef gate, GateRef e1) const) \
-    V(CastDoubleToInt, (GateRef gate, GateRef e1) const) \
-    V(CastInt64ToPointer, (GateRef gate, GateRef e1) const) \
-    V(IntLsl, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(IntMod, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(FloatMod, (GateRef gate, GateRef e1, GateRef e2) const) \
-    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1) const)
+    V(Return, (GateRef gate, GateRef popCount, const std::vector<GateRef> &operands)) \
+    V(ReturnVoid, (GateRef gate)) \
+    V(CastIntXToIntY, (GateRef gate, GateRef e1)) \
+    V(ChangeInt32ToDouble, (GateRef gate, GateRef e1)) \
+    V(ChangeDoubleToInt32, (GateRef gate, GateRef e1)) \
+    V(CastInt64ToDouble, (GateRef gate, GateRef e1)) \
+    V(CastDoubleToInt, (GateRef gate, GateRef e1)) \
+    V(CastInt64ToPointer, (GateRef gate, GateRef e1)) \
+    V(IntLsl, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntMod, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(FloatMod, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))
 
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
-                           LLVMStubModule *module, LLVMValueRef function,
-                           const char *hostTriple = TripleConst::GetLLVMAmd64Triple());
+                           LLVMStubModule *module, LLVMValueRef function, const CompilationConfig *cfg);
     ~LLVMIRBuilder();
     void Build();
 
@@ -222,15 +221,15 @@ private:
         OPCODES(DECLAREHANDLEOPCODE)
     #undef DECLAREHANDLEOPCODE
 
-    BasicBlock *EnsurBasicBlock(int id);
-    LLVMValueRef LLVMCallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller);
+    BasicBlock *EnsureBasicBlock(int id);
+    LLVMValueRef CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller);
     void SaveCallerSp();
-    LLVMValueRef LLVMCallerSp(LLVMModuleRef &module, LLVMBuilderRef &builder,
+    LLVMValueRef CallerSp(LLVMModuleRef &module, LLVMBuilderRef &builder,
         LLVMMetadataRef meta);
     void PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builder);
-    LLVMBasicBlockRef EnsureLLVMBB(BasicBlock *bb) const;
-    LLVMTFBuilderBasicBlockImpl *EnsureLLVMBBImpl(BasicBlock *bb) const;
-    void StartLLVMBuilder(BasicBlock *bb) const;
+    LLVMBasicBlockRef EnsureBasicBlock(BasicBlock *bb) const;
+    LLVMTFBuilderBasicBlockImpl *EnsureBasicBlockImpl(BasicBlock *bb) const;
+    void StartBuilder(BasicBlock *bb) const;
 
     LLVMTypeRef GetMachineRepType(MachineRep rep) const;
     int FindBasicBlock(GateRef gate) const;
@@ -244,20 +243,20 @@ private:
 
     LLVMTypeRef GetArchRelate() const
     {
-        if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+        if (compCfg_->IsArm32()) {
             return LLVMInt32Type();
         }
         return LLVMInt64Type();
     }
     LLVMTypeRef ConvertLLVMTypeFromGate(GateRef gate) const;
-    LLVMValueRef PointerAdd(LLVMValueRef baseAddr, LLVMValueRef offset, LLVMTypeRef rep) const;
-    LLVMValueRef VectorAdd(LLVMValueRef e1Value, LLVMValueRef e2Value, LLVMTypeRef rep) const;
-    LLVMValueRef CanonicalizeToInt(LLVMValueRef value) const;
+    LLVMValueRef PointerAdd(LLVMValueRef baseAddr, LLVMValueRef offset, LLVMTypeRef rep);
+    LLVMValueRef VectorAdd(LLVMValueRef e1Value, LLVMValueRef e2Value, LLVMTypeRef rep);
+    LLVMValueRef CanonicalizeToInt(LLVMValueRef value);
 
-    LLVMValueRef CanonicalizeToPtr(LLVMValueRef value) const;
+    LLVMValueRef CanonicalizeToPtr(LLVMValueRef value);
 
 private:
-
+    const CompilationConfig *compCfg_ {nullptr};
     const std::vector<std::vector<GateRef>> *schedule_ {nullptr};
     const Circuit *circuit_ {nullptr};
     BasicBlock *currentBb_ {nullptr};
@@ -272,9 +271,9 @@ private:
 
     std::vector<BasicBlock *> phiRebuildWorklist_;
     LLVMStubModule *stubModule_ {nullptr};
+    std::unordered_map<GateRef, LLVMValueRef> gateToLLVMMaps_;
     std::unordered_map<OpCode::Op, HandleType> opCodeHandleMap_;
     std::set<OpCode::Op> opCodeHandleIgnore;
-    const char *triple_;
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

@@ -230,7 +230,7 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(fp_ + 1));
-        bool ret = kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
+        bool ret = ::kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
             returnAddr, reinterpret_cast<uintptr_t>(fp_), v0, v1, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
@@ -264,7 +264,7 @@ void FrameIterator::HandleRuntimeTrampolines(const RootVisitor &v0, const RootRa
         LOG_ECMA(INFO) << __FUNCTION__ << " returnAddr :" << std::hex << returnAddr << " fp: " << fp << " type:" <<
             static_cast<uint64_t>(type) << std::endl;
 #endif
-        bool ret = kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
+        bool ret = ::kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
             returnAddr, reinterpret_cast<uintptr_t>(fp), v0, v1, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG

@@ -40,7 +40,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/Host.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 struct CodeInfo {
     using ByteBuffer = std::vector<uint8_t>;
     using BufferList = std::list<ByteBuffer>;
@@ -147,7 +147,7 @@ private:
 
 class LLVMAssembler {
 public:
-    explicit LLVMAssembler(LLVMModuleRef module, const char* triple);
+    explicit LLVMAssembler(LLVMModuleRef module);
     virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
@@ -188,7 +188,7 @@ private:
     LLVMMCJITCompilerOptions options_ {};
     LLVMModuleRef module_;
     LLVMExecutionEngineRef engine_ {nullptr};
-    const char *triple_;
+    const CompilationConfig *compCfg_;
     char *error_ {nullptr};
     struct CodeInfo codeInfo_ {};
 };
@@ -197,27 +197,7 @@ class LLVMCodeGeneratorImpl : public CodeGeneratorImpl {
 public:
     explicit LLVMCodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
     ~LLVMCodeGeneratorImpl() = default;
-    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index) override;
-
-private:
-    LLVMStubModule *module_;
-};
-
-class LLVMAarch64CodeGeneratorImpl : public CodeGeneratorImpl {
-public:
-    explicit LLVMAarch64CodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
-    ~LLVMAarch64CodeGeneratorImpl() = default;
-    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index) override;
-
-private:
-    LLVMStubModule *module_;
-};
-
-class LLVMArm32CodeGeneratorImpl : public CodeGeneratorImpl {
-public:
-    explicit LLVMArm32CodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
-    ~LLVMArm32CodeGeneratorImpl() = default;
-    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index) override;
+    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index, const CompilationConfig *cfg) override;
 
 private:
     LLVMStubModule *module_;
@@ -225,8 +205,8 @@ private:
 
 class LLVMModuleAssembler {
 public:
-    explicit LLVMModuleAssembler(LLVMStubModule *module, const char* triple)
-        : stubmodule_(module), assembler_(module->GetModule(), triple) {}
+    explicit LLVMModuleAssembler(LLVMStubModule *module)
+        : stubmodule_(module), assembler_(module->GetModule()) {}
     void AssembleModule();
     void AssembleStubModule(panda::ecmascript::StubModule *module);
     int GetCodeSize() const
@@ -245,5 +225,5 @@ private:
     LLVMStubModule *stubmodule_;
     LLVMAssembler assembler_;
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_CODEGEN_H

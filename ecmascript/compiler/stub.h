@@ -23,7 +23,6 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/machine_type.h"
 #include "ecmascript/compiler/stub_descriptor.h"
-#include "ecmascript/compiler/triple.h"
 #include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/js_array.h"
@@ -34,10 +33,105 @@
 #include "ecmascript/message_string.h"
 #include "ecmascript/tagged_dictionary.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEFVARIABLE(varname, type, val) Stub::Variable varname(GetEnvironment(), type, NextVariableId(), val)
+
+class CompilationConfig {
+public:
+    enum class Triple {
+        TRIPLE_AMD64,
+        TRIPLE_AARCH64,
+        TRIPLE_ARM32,
+    };
+
+    explicit CompilationConfig(const std::string &triple)
+        : triple_(GetTripleFromString(triple)),
+          glueTable_(triple_)
+    {
+    }
+    ~CompilationConfig() = default;
+
+    inline bool IsArm32() const
+    {
+        return triple_ == Triple::TRIPLE_ARM32;
+    }
+
+    inline bool IsAArch64() const
+    {
+        return triple_ == Triple::TRIPLE_AARCH64;
+    }
+
+    inline bool IsAmd64() const
+    {
+        return triple_ == Triple::TRIPLE_AMD64;
+    }
+
+    Triple GetTriple() const
+    {
+        return triple_;
+    }
+
+    uint32_t GetGlueOffset(JSThread::GlueID id) const
+    {
+        return glueTable_.GetOffset(id);
+    }
+
+    class GlueTable {
+    public:
+        explicit GlueTable(Triple triple)
+        {
+            switch (triple) {
+                case Triple::TRIPLE_AMD64:
+                case Triple::TRIPLE_AARCH64:
+                    offsetTable_ = {
+                        GLUE_EXCEPTION_OFFSET_64, GLUE_GLOBAL_CONSTANTS_OFFSET_64, GLUE_PROPERTIES_CACHE_OFFSET_64,
+                        GLUE_GLOBAL_STORAGE_OFFSET_64, GLUE_CURRENT_FRAME_OFFSET_64, GLUE_LAST_IFRAME_OFFSET_64,
+                        GLUE_RUNTIME_FUNCTIONS_OFFSET_64, GLUE_FASTSTUB_ENTRIES_OFFSET_64
+                    };
+                    break;
+                case Triple::TRIPLE_ARM32:
+                    offsetTable_ = {
+                        GLUE_EXCEPTION_OFFSET_32, GLUE_GLOBAL_CONSTANTS_OFFSET_32, GLUE_PROPERTIES_CACHE_OFFSET_32,
+                        GLUE_GLOBAL_STORAGE_OFFSET_32, GLUE_CURRENT_FRAME_OFFSET_32, GLUE_LAST_IFRAME_OFFSET_32,
+                        GLUE_RUNTIME_FUNCTIONS_OFFSET_32, GLUE_FASTSTUB_ENTRIES_OFFSET_32
+                    };
+                    break;
+                default:
+                    UNREACHABLE();
+            }
+        }
+        ~GlueTable() = default;
+
+        uint32_t GetOffset(JSThread::GlueID id) const
+        {
+            return offsetTable_[static_cast<size_t>(id)];
+        }
+
+    private:
+        std::array<uint32_t, static_cast<size_t>(JSThread::GlueID::NUMBER_OF_GLUE)> offsetTable_ {};
+    };
+
+private:
+    inline Triple GetTripleFromString(const std::string &triple)
+    {
+        if (triple.compare("x86_64-unknown-linux-gnu") == 0) {
+            return Triple::TRIPLE_AMD64;
+        }
+
+        if (triple.compare("aarch64-unknown-linux-gnu") == 0) {
+            return Triple::TRIPLE_AARCH64;
+        }
+
+        if (triple.compare("arm-unknown-linux-gnu") == 0) {
+            return Triple::TRIPLE_ARM32;
+        }
+        UNREACHABLE();
+    }
+    Triple triple_;
+    GlueTable glueTable_;
+};
 
 class Stub {
 public:
@@ -172,6 +266,40 @@ public:
         {
             return circuit_;
         }
+        void SetCompilationConfig(const CompilationConfig *cfg)
+        {
+            compCfg_ = cfg;
+        }
+        inline bool IsArm32() const
+        {
+            return compCfg_->IsArm32();
+        }
+
+        inline bool IsAArch64() const
+        {
+            return compCfg_->IsAArch64();
+        }
+
+        inline bool IsAmd64() const
+        {
+            return compCfg_->IsAmd64();
+        }
+
+        inline bool IsArch64Bit() const
+        {
+            return compCfg_->IsAmd64() ||  compCfg_->IsAArch64();
+        }
+
+        inline bool IsArch32Bit() const
+        {
+            return compCfg_->IsArm32();;
+        }
+
+        uint32_t GetGlueOffset(JSThread::GlueID id) const
+        {
+            return compCfg_->GetGlueOffset(id);
+        }
+
         inline TypeCode GetTypeCode(GateRef gate) const;
         inline Label GetLabelFromSelector(GateRef sel);
         inline void AddSelectorToLabel(GateRef sel, Label label);
@@ -181,13 +309,14 @@ public:
         inline void SetFrameType(FrameType type);
         inline GateRef GetArgument(size_t index) const;
     private:
+        const CompilationConfig *compCfg_;
         Label *currentLabel_ {nullptr};
         Circuit *circuit_;
         CircuitBuilder builder_;
-        std::unordered_map<GateRef, LabelImpl *> phi_to_labels_;
+        std::unordered_map<GateRef, LabelImpl *> phiToLabels_;
         std::vector<GateRef> arguments_;
         Label entry_;
-        std::vector<LabelImpl *> rawlabels_;
+        std::vector<LabelImpl *> rawLabels_;
         std::stack<Label *> stack_;
     };
 
@@ -265,14 +394,17 @@ public:
         Environment *env_;
     };
 
-    explicit Stub(const char *name, int argCount, Circuit *circuit, const char *triple)
-        : env_(argCount, circuit), methodName_(name), triple_(triple)
+    explicit Stub(const char *name, int argCount, Circuit *circuit)
+        : env_(argCount, circuit), methodName_(name)
     {
     }
     virtual ~Stub() = default;
     NO_MOVE_SEMANTIC(Stub);
     NO_COPY_SEMANTIC(Stub);
-    virtual void GenerateCircuit() = 0;
+    virtual void GenerateCircuit(const CompilationConfig *cfg)
+    {
+        env_.SetCompilationConfig(cfg);
+    }
     Environment *GetEnvironment()
     {
         return &env_;
@@ -601,7 +733,6 @@ private:
     Environment env_;
     std::string methodName_;
     int nextVariableId_ {0};
-    const char *triple_;
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_H

@@ -18,7 +18,7 @@
 
 #include "ecmascript/compiler/stub.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using LabelImpl = Stub::Label::LabelImpl;
 using JSTaggedValue = JSTaggedValue;
 using JSFunction = panda::ecmascript::JSFunction;
@@ -92,19 +92,19 @@ TypeCode Stub::Environment::GetTypeCode(GateRef gate) const
 
 Stub::Label Stub::Environment::GetLabelFromSelector(GateRef sel)
 {
-    LabelImpl *rawlabel = phi_to_labels_[sel];
+    LabelImpl *rawlabel = phiToLabels_[sel];
     return Stub::Label(rawlabel);
 }
 
 void Stub::Environment::AddSelectorToLabel(GateRef sel, Label label)
 {
-    phi_to_labels_[sel] = label.GetRawLabel();
+    phiToLabels_[sel] = label.GetRawLabel();
 }
 
 LabelImpl *Stub::Environment::NewLabel(Stub::Environment *env, GateRef control)
 {
     auto impl = new LabelImpl(env, control);
-    rawlabels_.emplace_back(impl);
+    rawLabels_.emplace_back(impl);
     return impl;
 }
 
@@ -154,7 +154,7 @@ GateRef Stub::GetWord64Constant(uint64_t value)
 
 GateRef Stub::GetArchRelateConstant(uint64_t value)
 {
-    if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    if (env_.IsArm32()) {
         return GetInt32Constant(value);
     }
     return GetWord64Constant(value);
@@ -203,7 +203,7 @@ GateRef Stub::GetExceptionConstant(MachineType type)
 
 GateRef Stub::ArchRelatePtrMul(GateRef x, GateRef y)
 {
-    if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    if (env_.IsArm32()) {
         return Int32Mul(x, y);
     } else {
         return Int64Mul(x, y);
@@ -257,9 +257,9 @@ GateRef Stub::PtrArgument(size_t index, TypeCode type)
 {
     GateRef argument = Argument(index);
     env_.GetCircuit()->SetTypeCode(argument, type);
-    if (ArchRelatePtrValueCode(triple_) == ValueCode::INT64) {
+    if (env_.IsArch64Bit()) {
         env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::INT64_ARG));
-    } else if (ArchRelatePtrValueCode(triple_) == ValueCode::INT32) {
+    } else if (env_.IsArch32Bit()) {
         env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::INT32_ARG));
     } else {
         UNREACHABLE();
@@ -349,15 +349,21 @@ void Stub::DebugPrint(GateRef glue, std::initializer_list<GateRef> args)
 GateRef Stub::Load(MachineType type, GateRef base, GateRef offset)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    if (ArchRelatePtrValueCode(triple_) == ValueCode::INT64) {
+    if (env_.IsArch64Bit()) {
         GateRef val = Int64Add(base, offset);
-        GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend, triple_);
+        if (type == MachineType::NATIVE_POINTER) {
+            type = MachineType::INT64;
+        }
+        GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
-    if (ArchRelatePtrValueCode(triple_) == ValueCode::INT32) {
+    if (env_.IsArch32Bit()) {
         GateRef val = Int32Add(base, offset);
-        GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend, triple_);
+        if (type == MachineType::NATIVE_POINTER) {
+            type = MachineType::INT32;
+        }
+        GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend);
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -366,8 +372,15 @@ GateRef Stub::Load(MachineType type, GateRef base, GateRef offset)
 
 GateRef Stub::Load(MachineType type, GateRef base)
 {
+    if (type == MachineType::NATIVE_POINTER) {
+        if (env_.IsArch64Bit()) {
+            type = MachineType::INT64;
+        } else {
+            type = MachineType::INT32;
+        }
+    }
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, base, depend, triple_);
+    GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, base, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -390,7 +403,7 @@ GateRef Stub::DoubleAdd(GateRef x, GateRef y)
 
 GateRef Stub::ArchRelateAdd(GateRef x, GateRef y)
 {
-    if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    if (env_.IsArm32()) {
         return Int32Add(x, y);
     }
     return Int64Add(x, y);
@@ -398,7 +411,7 @@ GateRef Stub::ArchRelateAdd(GateRef x, GateRef y)
 
 GateRef Stub::ArchRelateSub(GateRef x, GateRef y)
 {
-    if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    if (env_.IsArm32()) {
         return Int32Sub(x, y);
     }
     return Int64Sub(x, y);
@@ -802,7 +815,7 @@ GateRef Stub::ChangeInt64ToInt32(GateRef val)
 
 GateRef Stub::ChangeInt64ToUintPtr(GateRef val)
 {
-    if (ArchRelatePtrValueCode(triple_) == ValueCode::INT32) {
+    if (env_.IsArch32Bit()) {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), val);
     }
     return val;
@@ -810,7 +823,7 @@ GateRef Stub::ChangeInt64ToUintPtr(GateRef val)
 
 GateRef Stub::ChangeInt32ToUintPtr(GateRef val)
 {
-    if (ArchRelatePtrValueCode(triple_) == ValueCode::INT32) {
+    if (env_.IsArch32Bit()) {
         return val;
     }
     return ZExtInt32ToInt64(val);
@@ -870,7 +883,7 @@ void Stub::StoreHClass(GateRef glue, GateRef object, GateRef hclass)
 GateRef Stub::GetObjectType(GateRef hClass)
 {
     GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
-    if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    if (env_.IsArm32()) {
         GateRef bitfield1 = Load(MachineType::NATIVE_POINTER, hClass, ZExtInt32ToInt64(bitfieldOffset));
         return Word32And(bitfield1,
             ChangeInt64ToInt32(GetWord64Constant((1LLU << JSHClass::ObjectTypeBits::SIZE) - 1)));
@@ -1589,7 +1602,7 @@ GateRef Stub::GetGlobalConstantAddr(GateRef index)
 
 GateRef Stub::GetGlobalConstantString(ConstantIndex index)
 {
-    if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    if (env_.IsArm32()) {
         return Int32Mul(GetInt32Constant(sizeof(JSTaggedValue)), GetInt32Constant(static_cast<int>(index)));
     } else {
         return Int64Mul(GetWord64Constant(sizeof(JSTaggedValue)), GetWord64Constant(static_cast<int>(index)));
@@ -1602,7 +1615,7 @@ GateRef Stub::IsCallable(GateRef obj)
     GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
 
     // decode
-    if (triple_ == TripleConst::GetLLVMArm32Triple()) {
+    if (env_.IsArm32()) {
         GateRef bitfield = Load(MachineType::NATIVE_POINTER, hclass, ZExtInt32ToInt64(bitfieldOffset));
         return Word32NotEqual(
             Word32And(Word32LSR(bitfield, GetInt32Constant(JSHClass::CallableBit::START_BIT)),
@@ -1665,5 +1678,5 @@ void Stub::UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, Gate
     GateRef valueIndex = Int32Add(arrayIndex, GetInt32Constant(NameDictionary::ENTRY_VALUE_INDEX));
     SetValueToTaggedArray(MachineType::TAGGED, glue, elements, valueIndex, value);
 }
-} //  namespace kungfu
+} //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

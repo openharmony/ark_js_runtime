@@ -24,7 +24,7 @@
 
 #include "ecmascript/compiler/circuit.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 class Verifier {
 public:
     static bool RunDataIntegrityCheck(const Circuit *circuit);
@@ -51,6 +51,6 @@ public:
     static std::vector<GateRef> FindFixedGates(const Circuit *circuit, const std::vector<GateRef> &bbGatesList);
     static bool Run(const Circuit *circuit);
 };
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_VERIFIER_H
