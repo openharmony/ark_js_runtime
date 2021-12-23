@@ -22,7 +22,6 @@
 #include "ecmascript/tagged_dictionary.h"
 
 namespace panda::ecmascript {
-
 JSHandle<JSTaggedValue> EcmaModule::GetItem(const JSThread *thread, JSHandle<JSTaggedValue> itemName)
 {
     JSHandle<NameDictionary> moduleItems(thread, NameDictionary::Cast(GetNameDictionary().GetTaggedObject()));
@@ -248,5 +247,4 @@ void ModuleManager::DebugPrint([[maybe_unused]] const JSThread *thread, [[maybe_
              });
     std::cout << "\n";
 }
-
 }  // namespace panda::ecmascript

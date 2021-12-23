@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H
 #define ECMASCRIPT_HPROF_HEAP_ROOT_VISITOR_H
 
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 
 namespace panda::ecmascript {
 class JSThread;

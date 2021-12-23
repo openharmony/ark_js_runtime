@@ -17,7 +17,7 @@
 #define ECMASCRIPT_OBJECT_FACTORY_INL_H
 
 #include "object_factory.h"
-#include "ecmascript/mem/ecma_heap_manager-inl.h"
+#include "ecmascript/mem/mem_manager-inl.h"
 #include "ecmascript/tagged_array-inl.h"
 #include "ecmascript/lexical_env.h"
 

@@ -173,7 +173,7 @@ JSHandle<LinkedHashMap> LinkedHashMap::Create(const JSThread *thread, int number
 }
 
 JSHandle<LinkedHashMap> LinkedHashMap::Delete(const JSThread *thread, const JSHandle<LinkedHashMap> &obj,
-                                    const JSHandle<JSTaggedValue> &key)
+                                              const JSHandle<JSTaggedValue> &key)
 {
     return LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Remove(thread, obj, key);
 }
@@ -217,7 +217,7 @@ void LinkedHashMap::Clear(const JSThread *thread)
 }
 
 JSHandle<LinkedHashMap> LinkedHashMap::Shrink(const JSThread *thread, const JSHandle<LinkedHashMap> &table,
-                                    int additionalCapacity)
+                                              int additionalCapacity)
 {
     return LinkedHashTable<LinkedHashMap, LinkedHashMapObject>::Shrink(thread, table, additionalCapacity);
 }
@@ -229,13 +229,13 @@ JSHandle<LinkedHashSet> LinkedHashSet::Create(const JSThread *thread, int number
 }
 
 JSHandle<LinkedHashSet> LinkedHashSet::Delete(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
-                                    const JSHandle<JSTaggedValue> &key)
+                                              const JSHandle<JSTaggedValue> &key)
 {
     return LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Remove(thread, obj, key);
 }
 
 JSHandle<LinkedHashSet> LinkedHashSet::Add(const JSThread *thread, const JSHandle<LinkedHashSet> &obj,
-                                 const JSHandle<JSTaggedValue> &key)
+                                           const JSHandle<JSTaggedValue> &key)
 {
     return LinkedHashTable<LinkedHashSet, LinkedHashSetObject>::Insert(thread, obj, key, key);
 }

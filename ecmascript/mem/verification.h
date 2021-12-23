@@ -19,7 +19,7 @@
 #include <cstdint>
 
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/slots.h"
 
@@ -29,7 +29,7 @@ namespace panda::ecmascript {
 class VerifyObjectVisitor {
 public:
     VerifyObjectVisitor(const Heap *heap, size_t *failCount)
-        : heap_(heap), failCount_(failCount), rootManager_(heap->GetEcmaVM())
+        : heap_(heap), failCount_(failCount), objXRay_(heap->GetEcmaVM())
     {
     }
     ~VerifyObjectVisitor() = default;
@@ -49,12 +49,12 @@ private:
 
     const Heap* const heap_ {nullptr};
     size_t* const failCount_ {nullptr};
-    HeapRootManager rootManager_;
+    ObjectXRay objXRay_;
 };
 
 class Verification {
 public:
-    explicit Verification(const Heap *heap) : heap_(heap), rootManager_(heap->GetEcmaVM()) {}
+    explicit Verification(const Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()) {}
     ~Verification() = default;
 
     size_t VerifyAll() const
@@ -71,8 +71,8 @@ private:
     NO_COPY_SEMANTIC(Verification);
     NO_MOVE_SEMANTIC(Verification);
 
-    const Heap *heap_{nullptr};
-    HeapRootManager rootManager_;
+    const Heap *heap_ {nullptr};
+    ObjectXRay objXRay_;
 };
 }  // namespace panda::ecmascript
 

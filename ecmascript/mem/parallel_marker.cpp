@@ -15,14 +15,14 @@
 
 #include "ecmascript/mem/parallel_marker-inl.h"
 
-#include "ecmascript/mem/heap_roots-inl.h"
+#include "ecmascript/mem/object_xray-inl.h"
 
 namespace panda::ecmascript {
-Marker::Marker(Heap *heap) : heap_(heap), rootManager_(heap_->GetEcmaVM()) {}
+Marker::Marker(Heap *heap) : heap_(heap), objXRay_(heap_->GetEcmaVM()) {}
 
 void Marker::MarkRoots(uint32_t threadId)
 {
-    rootManager_.VisitVMRoots(
+    objXRay_.VisitVMRoots(
         std::bind(&Marker::HandleRoots, this, threadId, std::placeholders::_1, std::placeholders::_2),
         std::bind(&Marker::HandleRangeRoots, this, threadId, std::placeholders::_1, std::placeholders::_2,
                   std::placeholders::_3));
@@ -64,7 +64,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 
         Region *objectRegion = Region::ObjectAddressToRange(obj);
         bool needBarrier = !isOnlySemi && !objectRegion->InYoungAndCSetGeneration();
-        rootManager_.MarkObjectBody<GCType::OLD_GC>(obj, jsHclass,
+        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass,
                                                     std::bind(&Marker::HandleObjectVisitor, this, threadId,
                                                               objectRegion, needBarrier, std::placeholders::_1,
                                                               std::placeholders::_2, std::placeholders::_3));
@@ -89,7 +89,7 @@ void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
         auto jsHclass = obj->GetClass();
         Region *objectRegion = Region::ObjectAddressToRange(obj);
         bool promoted = !objectRegion->InYoungGeneration();
-        rootManager_.MarkObjectBody<GCType::SEMI_GC>(obj, jsHclass,
+        objXRay_.VisitObjectBody<GCType::SEMI_GC>(obj, jsHclass,
                                                      std::bind(&Marker::HandleMoveObjectVisitor, this, threadId,
                                                                promoted, std::placeholders::_1, std::placeholders::_2,
                                                                std::placeholders::_3));
@@ -110,7 +110,7 @@ void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
         ObjectSlot objectSlot(ToUintPtr(obj));
         MarkObject(threadId, jsHclass, objectSlot);
 
-        rootManager_.MarkObjectBody<GCType::OLD_GC>(obj, jsHclass,
+        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass,
                                                     std::bind(&Marker::HandleMoveObjectVisitor, this, threadId, false,
                                                               std::placeholders::_1, std::placeholders::_2,
                                                               std::placeholders::_3));

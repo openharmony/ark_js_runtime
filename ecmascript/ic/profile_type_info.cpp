@@ -77,7 +77,7 @@ void ProfileTypeAccessor::AddHandlerWithoutKey(JSHandle<JSTaggedValue> dynclass,
     }
     // MONO to POLY
     auto factory = thread_->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> newArr = factory->NewTaggedArray(POLY_DEFAULT_LEN);
+    JSHandle<TaggedArray> newArr = factory->NewTaggedArray(POLY_CASE_NUM);
     array_size_t arrIndex = 0;
     newArr->Set(thread_, arrIndex++, profileTypeInfo_->Get(index));
     newArr->Set(thread_, arrIndex++, profileTypeInfo_->Get(index + 1));
@@ -138,7 +138,7 @@ void ProfileTypeAccessor::AddHandlerWithKey(JSHandle<JSTaggedValue> key, JSHandl
     }
     // MONO
     auto factory = thread_->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> newArr = factory->NewTaggedArray(POLY_DEFAULT_LEN);
+    JSHandle<TaggedArray> newArr = factory->NewTaggedArray(POLY_CASE_NUM);
     array_size_t arrIndex = 0;
     newArr->Set(thread_, arrIndex++, arr->Get(0));
     newArr->Set(thread_, arrIndex++, arr->Get(1));
@@ -260,11 +260,11 @@ ProfileTypeAccessor::ICState ProfileTypeAccessor::GetICState() const
             }
             if (profileData.IsTaggedArray()) {
                 TaggedArray *array = TaggedArray::Cast(profileData.GetHeapObject());
-                return array->GetLength() == 2 ? ICState::MONO : ICState::POLY; // 2 : test case
+                return array->GetLength() == MONO_CASE_NUM ? ICState::MONO : ICState::POLY; // 2 : test case
             }
             profileData = profileTypeInfo_->Get(slotId_ + 1);
             TaggedArray *array = TaggedArray::Cast(profileData.GetHeapObject());
-            return array->GetLength() == 2 ? ICState::MONO : ICState::POLY; // 2 : test case
+            return array->GetLength() == MONO_CASE_NUM ? ICState::MONO : ICState::POLY; // 2 : test case
         }
         case ICKind::NamedGlobalLoadIC:
         case ICKind::NamedGlobalStoreIC:
@@ -274,7 +274,7 @@ ProfileTypeAccessor::ICState ProfileTypeAccessor::GetICState() const
         case ICKind::GlobalStoreIC: {
             ASSERT(profileData.IsTaggedArray());
             TaggedArray *array = TaggedArray::Cast(profileData.GetHeapObject());
-            return array->GetLength() == 2 ? ICState::MONO : ICState::POLY; // 2 : test case
+            return array->GetLength() == MONO_CASE_NUM ? ICState::MONO : ICState::POLY; // 2 : test case
         }
         default:
             UNREACHABLE();

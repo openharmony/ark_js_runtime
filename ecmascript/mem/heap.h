@@ -25,7 +25,7 @@
 
 namespace panda::ecmascript {
 class EcmaVM;
-class EcmaHeapManager;
+class MemManager;
 class SemiSpaceCollector;
 class MixSpaceCollector;
 class CompressCollector;
@@ -181,12 +181,12 @@ public:
 
     void ThrowOutOfMemoryError(size_t size, std::string functionName);
 
-    void SetHeapManager(EcmaHeapManager *heapManager)
+    void SetHeapManager(MemManager *heapManager)
     {
         heapManager_ = heapManager;
     }
 
-    EcmaHeapManager *GetHeapManager() const
+    MemManager *GetHeapManager() const
     {
         return heapManager_;
     }
@@ -387,7 +387,7 @@ private:
     Marker *compressGcMarker_ {nullptr};
     ParallelEvacuation *evacuation_ {nullptr};
     EvacuationAllocator *evacuationAllocator_ {nullptr};
-    EcmaHeapManager *heapManager_ {nullptr};
+    MemManager *heapManager_ {nullptr};
     RegionFactory *regionFactory_ {nullptr};
     HeapTracker *tracker_ {nullptr};
     MemController *memController_ {nullptr};

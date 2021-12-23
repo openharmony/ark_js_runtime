@@ -88,11 +88,11 @@
     static constexpr size_t lastOffset = offset + JSTaggedValue::TaggedTypeSize(); \
     void Set##name(void *fun)                                                      \
     {                                                                              \
-        Barriers::SetDynPrimitive<void *>(offset, fun);                            \
+        Barriers::SetDynPrimitive<void *>(this, offset, fun);                      \
     }                                                                              \
     void *Get##name() const                                                        \
     {                                                                              \
-        return Barriers::GetDynValue<void *>(offset);                              \
+        return Barriers::GetDynValue<void *>(this, offset);                        \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

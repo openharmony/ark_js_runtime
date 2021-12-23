@@ -17,7 +17,7 @@
 #define ECMASCRIPT_STRING_TABLE_H
 
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 
 namespace panda::ecmascript {
 class EcmaString;

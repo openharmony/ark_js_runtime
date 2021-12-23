@@ -20,7 +20,7 @@
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/heap_roots.h"
+#include "ecmascript/mem/object_xray.h"
 #include "ecmascript/frames.h"
 
 namespace panda {

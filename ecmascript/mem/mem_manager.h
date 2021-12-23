@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
-#define ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
+#ifndef ECMASCRIPT_MEM_JS_MEM_MANAGER_H
+#define ECMASCRIPT_MEM_JS_MEM_MANAGER_H
 
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/js_hclass.h"
@@ -22,13 +22,13 @@
 namespace panda::ecmascript {
 class Heap;
 
-class EcmaHeapManager {
+class MemManager {
 public:
-    explicit EcmaHeapManager(Heap *heap);
-    ~EcmaHeapManager() = default;
+    explicit MemManager(Heap *heap);
+    ~MemManager() = default;
 
-    NO_COPY_SEMANTIC(EcmaHeapManager);
-    NO_MOVE_SEMANTIC(EcmaHeapManager);
+    NO_COPY_SEMANTIC(MemManager);
+    NO_MOVE_SEMANTIC(MemManager);
 
     inline TaggedObject *AllocateYoungGenerationOrHugeObject(JSHClass *hclass);
     inline TaggedObject *TryAllocateYoungGeneration(size_t size);
@@ -79,11 +79,11 @@ public:
     }
 
 private:
-    Heap *heap_{nullptr};
+    Heap *heap_ {nullptr};
     BumpPointerAllocator newSpaceAllocator_;
     std::array<FreeListAllocator, FREE_LIST_NUM> freeListAllocator_;
     BumpPointerAllocator snapshotSpaceAllocator_;
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_MEM_ECMA_HEAP_MANAGER_H
+#endif  // ECMASCRIPT_MEM_JS_MEM_MANAGER_H

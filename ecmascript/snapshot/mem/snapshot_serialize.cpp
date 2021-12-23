@@ -62,7 +62,7 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/region_factory.h"
-#include "ecmascript/mem/space.h"
+#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript {

@@ -23,7 +23,7 @@
 #include "ecmascript/mem/compress_collector.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
-#include "ecmascript/mem/ecma_heap_manager.h"
+#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/evacuation_allocator.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem_controller.h"
@@ -33,6 +33,8 @@
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/semi_space_collector.h"
 #include "ecmascript/mem/verification.h"
+
+static constexpr int MAX_PARALLEL_THREAD_NUM = 3;
 
 namespace panda::ecmascript {
 Heap::Heap(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm), regionFactory_(ecmaVm->GetRegionFactory()) {}
@@ -101,31 +103,46 @@ void Heap::FlipCompressSpace()
 void Heap::Destroy()
 {
     Prepare();
-    toSpace_->Destroy();
-    delete toSpace_;
-    toSpace_ = nullptr;
-    fromSpace_->Destroy();
-    delete fromSpace_;
-    fromSpace_ = nullptr;
-
-    oldSpace_->Destroy();
-    delete oldSpace_;
-    oldSpace_ = nullptr;
-    compressSpace_->Destroy();
-    delete compressSpace_;
-    compressSpace_ = nullptr;
-    nonMovableSpace_->Destroy();
-    delete nonMovableSpace_;
-    nonMovableSpace_ = nullptr;
-    snapshotSpace_->Destroy();
-    delete snapshotSpace_;
-    snapshotSpace_ = nullptr;
-    machineCodeSpace_->Destroy();
-    delete machineCodeSpace_;
-    machineCodeSpace_ = nullptr;
-    hugeObjectSpace_->Destroy();
-    delete hugeObjectSpace_;
-    hugeObjectSpace_ = nullptr;
+    if (toSpace_ != nullptr) {
+        toSpace_->Destroy();
+        delete toSpace_;
+        toSpace_ = nullptr;
+    }
+    if (fromSpace_ != nullptr) {
+        fromSpace_->Destroy();
+        delete fromSpace_;
+        fromSpace_ = nullptr;
+    }
+    if (oldSpace_ != nullptr) {
+        oldSpace_->Destroy();
+        delete oldSpace_;
+        oldSpace_ = nullptr;
+    }
+    if (compressSpace_ != nullptr) {
+        compressSpace_->Destroy();
+        delete compressSpace_;
+        compressSpace_ = nullptr;
+    }
+    if (nonMovableSpace_ != nullptr) {
+        nonMovableSpace_->Destroy();
+        delete nonMovableSpace_;
+        nonMovableSpace_ = nullptr;
+    }
+    if (snapshotSpace_ != nullptr) {
+        snapshotSpace_->Destroy();
+        delete snapshotSpace_;
+        snapshotSpace_ = nullptr;
+    }
+    if (machineCodeSpace_ != nullptr) {
+        machineCodeSpace_->Destroy();
+        delete machineCodeSpace_;
+        machineCodeSpace_ = nullptr;
+    }
+    if (hugeObjectSpace_ != nullptr) {
+        hugeObjectSpace_->Destroy();
+        delete hugeObjectSpace_;
+        hugeObjectSpace_ = nullptr;
+    }
 
     delete workList_;
     workList_ = nullptr;
@@ -179,7 +196,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     }
 #endif
 
-# if ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC
+#if ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC
     gcType = TriggerGCType::COMPRESS_FULL_GC;
 #endif
     switch (gcType) {
@@ -221,7 +238,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             break;
     }
 
-# if ECMASCRIPT_ENABLE_GC_LOG
+#if ECMASCRIPT_ENABLE_GC_LOG
     ecmaVm_->GetEcmaGCStats()->PrintStatisticResult();
 #endif
 
@@ -413,7 +430,8 @@ void Heap::IncreaseTaskCount()
 bool Heap::CheckCanDistributeTask()
 {
     os::memory::LockHolder holder(waitTaskFinishedMutex_);
-    return (runningTastCount_ < Platform::GetCurrentPlatform()->GetTotalThreadNum() - 1) && (runningTastCount_ <= 3);
+    return (runningTastCount_ < Platform::GetCurrentPlatform()->GetTotalThreadNum() - 1) &&
+        (runningTastCount_ <= MAX_PARALLEL_THREAD_NUM);
 }
 
 void Heap::ReduceTaskCount()

@@ -351,7 +351,7 @@ ecma_source = [
   "ecmascript/mem/compress_collector.cpp",
   "ecmascript/mem/concurrent_marker.cpp",
   "ecmascript/mem/concurrent_sweeper.cpp",
-  "ecmascript/mem/ecma_heap_manager.cpp",
+  "ecmascript/mem/mem_manager.cpp",
   "ecmascript/mem/evacuation_allocator.cpp",
   "ecmascript/mem/free_object_kind.cpp",
   "ecmascript/mem/free_object_list.cpp",

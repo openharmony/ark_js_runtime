@@ -73,9 +73,9 @@ public:
     }
 
 private:
-    uintptr_t begin_{0};
-    uintptr_t top_{0};
-    uintptr_t end_{0};
+    uintptr_t begin_ {0};
+    uintptr_t top_ {0};
+    uintptr_t end_ {0};
 };
 
 class FreeListAllocator : public Allocator {

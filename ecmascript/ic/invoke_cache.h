@@ -22,6 +22,9 @@
 namespace panda::ecmascript {
 class InvokeCache {
 public:
+    static constexpr size_t MONO_CASE_NUM = 2;
+    static constexpr size_t POLY_CASE_NUM = 4;
+
     static bool SetMonoConstuctCacheSlot(JSThread *thread, ProfileTypeInfo *profileTypeInfo, uint32_t slotId,
                                          JSTaggedValue newTarget, JSTaggedValue initialHClass);
 

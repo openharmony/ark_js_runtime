@@ -62,7 +62,7 @@ void RegionFactory::FreeRegion(Region *region)
     auto size = region->GetCapacity();
     DecreaseAnnoMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(ToVoidPtr(region->GetAllocateBase()), size, 7, size);
+    memset_s(ToVoidPtr(region->GetAllocateBase()), size, INVALID_VALUE, size);
 #endif
     PoolManager::GetMmapMemPool()->FreePool(ToVoidPtr(region->GetAllocateBase()), size);
 }
@@ -107,7 +107,7 @@ void RegionFactory::FreeArea(Area *area)
     auto size = area->GetSize() + sizeof(Area);
     DecreaseNativeMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(area, size, 7, size);
+    memset_s(area, size, INVALID_VALUE, size);
 #endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(reinterpret_cast<std::byte *>(area));
@@ -120,7 +120,7 @@ void RegionFactory::Free(void *mem, size_t size)
     }
     DecreaseNativeMemoryUsage(size);
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(mem, size, 7, size);
+    memset_s(mem, size, INVALID_VALUE, size);
 #endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);
@@ -139,7 +139,7 @@ void *RegionFactory::AllocateBuffer(size_t size)
         UNREACHABLE();
     }
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(ptr, size, 0, size);
+    memset_s(ptr, size, INVALID_VALUE, size);
 #endif
     IncreaseNativeMemoryUsage(size);
     return ptr;
@@ -152,7 +152,7 @@ void RegionFactory::FreeBuffer(void *mem)
     }
     DecreaseNativeMemoryUsage(malloc_usable_size(mem));
 #if ECMASCRIPT_ENABLE_ZAP_MEM
-    memset_s(mem, size, 7, size);
+    memset_s(mem, size, INVALID_VALUE, size);
 #endif
     // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
     free(mem);

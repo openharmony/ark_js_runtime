@@ -25,8 +25,8 @@ class FunctionCache : public TaggedArray {
 public:
     static const array_size_t MAX_FUNC_CACHE_INDEX = std::numeric_limits<uint16_t>::max();
     static constexpr uint16_t INVALID_SLOT_INDEX = 0xFF;
-    static constexpr array_size_t CACHE_MAX_LEN = 8;
-    static constexpr array_size_t POLY_DEFAULT_LEN = 4;
+    static constexpr size_t CACHE_MAX_LEN = 8;
+    static constexpr size_t POLY_CASE_NUM = 4;
 
     static FunctionCache *Cast(ObjectHeader *object)
     {

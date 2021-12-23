@@ -123,18 +123,18 @@ public:
     }
 
 private:
-    PandArg<bool> enable_ark_tools_{"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
-    PandArg<bool> enable_cpuprofiler_{"enable-cpuprofiler", false,
+    PandArg<bool> enable_ark_tools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
+    PandArg<bool> enable_cpuprofiler_ {"enable-cpuprofiler", false,
         R"(Enable cpuprofiler to sample call stack and output to json file. Default: false)"};
-    PandArg<bool> enable_stub_aot_{"enable-stub-aot", false, R"(enable aot of fast stub. Default: false)"};
-    PandArg<std::string> stub_module_file_{"stub-module-file",
+    PandArg<bool> enable_stub_aot_ {"enable-stub-aot", false, R"(enable aot of fast stub. Default: false)"};
+    PandArg<std::string> stub_module_file_ {"stub-module-file",
         R"(stub.m)",
         R"(Path to stub module file. Default: "stub.m")"};
-    PandArg<bool> enable_force_gc_{"enable-force-gc", true, R"(enable force gc when allocating object)"};
-    PandArg<bool> force_compress_gc_{"force-compress-gc",
+    PandArg<bool> enable_force_gc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
+    PandArg<bool> force_compress_gc_ {"force-compress-gc",
         true,
         R"(if true trigger compress gc, else trigger semi and old gc)"};
-    PandArg<bool> enable_concurrent_sweep_{"enable_concurrent_sweep",
+    PandArg<bool> enable_concurrent_sweep_ {"enable_concurrent_sweep",
         true,
         R"(If true enable concurrent sweep, else disable concurrent sweep. Default: true)"};
 };

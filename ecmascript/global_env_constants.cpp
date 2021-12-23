@@ -66,7 +66,7 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_DICTIONARY).GetTaggedValue());
     SetConstant(
         ConstantIndex::JS_NATIVE_POINTER_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, sizeof(JSNativePointer), JSType::JS_NATIVE_POINTER).GetTaggedValue());
+        factory->NewEcmaDynClass(dynClassClass, JSNativePointer::SIZE, JSType::JS_NATIVE_POINTER).GetTaggedValue());
     SetConstant(ConstantIndex::ENV_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY).GetTaggedValue());
     SetConstant(ConstantIndex::FREE_OBJECT_WITH_NONE_FIELD_CLASS_INDEX,

@@ -27,7 +27,7 @@ namespace panda::ecmascript {
 class Heap;
 class EvacuationAllocator {
 public:
-    EvacuationAllocator(Heap *heap) : heap_(heap), isFreeTaskFinish_(true), oldSpaceAllocator_(){};
+    EvacuationAllocator(Heap *heap) : heap_(heap), isFreeTaskFinish_(true), oldSpaceAllocator_() {};
     ~EvacuationAllocator() = default;
     NO_COPY_SEMANTIC(EvacuationAllocator);
     NO_MOVE_SEMANTIC(EvacuationAllocator);

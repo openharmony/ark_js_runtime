@@ -18,6 +18,7 @@
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_hclass.h"
+#include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/record.h"
 

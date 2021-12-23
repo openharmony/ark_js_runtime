@@ -92,8 +92,8 @@ private:
     NO_MOVE_SEMANTIC(ModuleManager);
 
     EcmaVM *vm_{nullptr};
-    JSTaggedValue ecmaModules_{JSTaggedValue::Hole()};
-    std::vector<CString> moduleNames_{DEAULT_DICTIONART_CAPACITY};
+    JSTaggedValue ecmaModules_ {JSTaggedValue::Hole()};
+    std::vector<CString> moduleNames_ {DEAULT_DICTIONART_CAPACITY};
 
     friend class EcmaVM;
 };

@@ -17,9 +17,10 @@
 
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/allocator-inl.h"
-#include "ecmascript/mem/ecma_heap_manager.h"
 #include "ecmascript/mem/free_object_list.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/mem_manager.h"
+#include "ecmascript/mem/space-inl.h"
 #include "ecmascript/platform/platform.h"
 
 namespace panda::ecmascript {

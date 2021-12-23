@@ -32,6 +32,7 @@
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_invoker.h"
+#include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap.h"

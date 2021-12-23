@@ -80,7 +80,7 @@ bool FunctionCache::AddHandlerWithoutKey(const JSThread *thread, const JSHandle<
     // MONO to POLY
     JSHandle<JSTaggedValue> dynHandle(thread, dynclass);
     JSHandle<JSTaggedValue> handlerHandle(thread, handler);
-    JSHandle<TaggedArray> newArr = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(POLY_DEFAULT_LEN);
+    JSHandle<TaggedArray> newArr = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(POLY_CASE_NUM);
     array_size_t arrIndex = 0;
     newArr->Set(thread, arrIndex++, cache->Get(index));
     newArr->Set(thread, arrIndex++, cache->Get(index + 1));
@@ -139,7 +139,7 @@ bool FunctionCache::AddHandlerWithKey(const JSThread *thread, const JSHandle<Fun
     // MONO
     JSHandle<JSTaggedValue> dynHandle(thread, dynclass);
     JSHandle<JSTaggedValue> handlerHandle(thread, handler);
-    JSHandle<TaggedArray> newArr = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(POLY_DEFAULT_LEN);
+    JSHandle<TaggedArray> newArr = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(POLY_CASE_NUM);
     array_size_t arrIndex = 0;
     newArr->Set(thread, arrIndex++, arr->Get(0));
     newArr->Set(thread, arrIndex++, arr->Get(1));

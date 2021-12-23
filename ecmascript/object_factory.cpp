@@ -65,7 +65,7 @@
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/layout_info-inl.h"
 #include "ecmascript/linked_hash_table-inl.h"
-#include "ecmascript/mem/ecma_heap_manager.h"
+#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/record.h"
