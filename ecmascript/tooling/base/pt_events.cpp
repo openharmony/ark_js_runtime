@@ -449,6 +449,20 @@ Local<ObjectRef> ScriptFailedToParse::ToObject(const EcmaVM *ecmaVm)
     return object;
 }
 
+std::unique_ptr<ScriptParsed> ScriptParsed::Create(const std::unique_ptr<PtScript> &script)
+{
+    std::unique_ptr<ScriptParsed> scriptParsed = std::make_unique<ScriptParsed>();
+    scriptParsed->SetScriptId(script->GetScriptId())
+        .SetUrl(script->GetUrl())
+        .SetStartLine(0)
+        .SetStartColumn(0)
+        .SetEndLine(script->GetEndLine())
+        .SetEndColumn(0)
+        .SetExecutionContextId(0)
+        .SetHash(script->GetHash());
+    return scriptParsed;
+}
+
 std::unique_ptr<ScriptParsed> ScriptParsed::Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params)
 {
     if (params.IsEmpty()) {

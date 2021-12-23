@@ -105,6 +105,15 @@ void JSBackend::NotifyResume()
     frontend_->SendNotification(ecmaVm_, std::make_unique<Resumed>());
 }
 
+void JSBackend::NotifyAllScriptParsed()
+{
+    for (auto &script : scripts_) {
+        if (frontend_ != nullptr) {
+            frontend_->SendNotification(ecmaVm_, ScriptParsed::Create(script.second));
+        }
+    }
+}
+
 bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
 {
     auto scriptFunc = []([[maybe_unused]] PtScript *script) -> bool {
@@ -159,17 +168,8 @@ bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
     // Notify script parsed event
     std::unique_ptr<PtScript> script = std::make_unique<PtScript>(scriptId, fileName, url, source);
 
-    std::unique_ptr<ScriptParsed> scriptParsed = std::make_unique<ScriptParsed>();
-    scriptParsed->SetScriptId(script->GetScriptId())
-        .SetUrl(script->GetUrl())
-        .SetStartLine(0)
-        .SetStartColumn(0)
-        .SetEndLine(script->GetEndLine())
-        .SetEndColumn(0)
-        .SetExecutionContextId(0)
-        .SetHash(script->GetHash());
     if (frontend_ != nullptr) {
-        frontend_->SendNotification(ecmaVm_, std::move(scriptParsed));
+        frontend_->SendNotification(ecmaVm_, ScriptParsed::Create(script));
     }
 
     // Store parsed script in map
