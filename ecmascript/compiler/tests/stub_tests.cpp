@@ -48,9 +48,9 @@ public:
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
         std::vector<int> stubSet = {
-            #define DEF_FAST_STUB(name, counter) FAST_STUB_ID(name),
+#define DEF_FAST_STUB(name, counter) FAST_STUB_ID(name),
             FAST_RUNTIME_STUB_LIST(DEF_FAST_STUB)
-            #undef DEF_FAST_STUB
+#undef DEF_FAST_STUB
         };
         stubModule.Initialize(stubSet);
     }
@@ -988,7 +988,7 @@ void DoSafepoint()
         uintptr_t returnAddr =  *(rbp + 1);
         uintptr_t *rsp = rbp + 2;  // move 2 steps from rbp to get rsp
         rbp = reinterpret_cast<uintptr_t *>(*rbp);
-        const ::kungfu::DwarfRegAndOffsetTypeVector *infos = 
+        const ::kungfu::DwarfRegAndOffsetTypeVector *infos =
             ::kungfu::LLVMStackMapParser::GetInstance().StackMapByAddr(returnAddr);
         if (infos != nullptr) {
             for (auto &info : *infos) {

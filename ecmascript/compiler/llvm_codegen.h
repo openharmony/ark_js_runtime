@@ -197,7 +197,8 @@ class LLVMCodeGeneratorImpl : public CodeGeneratorImpl {
 public:
     explicit LLVMCodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
     ~LLVMCodeGeneratorImpl() = default;
-    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index, const CompilationConfig *cfg) override;
+    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+                             const CompilationConfig *cfg) override;
 
 private:
     LLVMStubModule *module_;

@@ -86,8 +86,7 @@ public:
 class GetPropertyByIndexStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit GetPropertyByIndexStub(Circuit *circuit)
-        : Stub("GetPropertyByIndex", 3, circuit)
+    explicit GetPropertyByIndexStub(Circuit *circuit) : Stub("GetPropertyByIndex", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -100,8 +99,7 @@ public:
 class SetPropertyByIndexStub : public Stub {
 public:
     // 4 : 4 means argument counts
-    explicit SetPropertyByIndexStub(Circuit *circuit)
-        : Stub("SetPropertyByIndex", 4, circuit)
+    explicit SetPropertyByIndexStub(Circuit *circuit) : Stub("SetPropertyByIndex", 4, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -114,8 +112,7 @@ public:
 class GetPropertyByNameStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit GetPropertyByNameStub(Circuit *circuit)
-        : Stub("GetPropertyByName", 3, circuit)
+    explicit GetPropertyByNameStub(Circuit *circuit) : Stub("GetPropertyByName", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -128,8 +125,7 @@ public:
 class SetPropertyByNameStub : public Stub {
 public:
     // 4 : 4 means argument counts
-    explicit SetPropertyByNameStub(Circuit *circuit)
-        : Stub("SetPropertyByName", 4, circuit)
+    explicit SetPropertyByNameStub(Circuit *circuit) : Stub("SetPropertyByName", 4, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -142,8 +138,7 @@ public:
 class SetPropertyByNameWithOwnStub : public Stub {
 public:
     // 4 : 4 means argument counts
-    explicit SetPropertyByNameWithOwnStub(Circuit *circuit)
-        : Stub("SetPropertyByNameWithOwn", 4, circuit)
+    explicit SetPropertyByNameWithOwnStub(Circuit *circuit) : Stub("SetPropertyByNameWithOwn", 4, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -179,8 +174,7 @@ public:
 class FunctionCallInternalStub : public Stub {
 public:
     // 5 : 5 means argument counts
-    explicit FunctionCallInternalStub(Circuit *circuit)
-        : Stub("FunctionCallInternal", 5, circuit) {}
+    explicit FunctionCallInternalStub(Circuit *circuit) : Stub("FunctionCallInternal", 5, circuit) {}
     ~FunctionCallInternalStub() = default;
     NO_MOVE_SEMANTIC(FunctionCallInternalStub);
     NO_COPY_SEMANTIC(FunctionCallInternalStub);
@@ -190,8 +184,7 @@ public:
 class GetPropertyByValueStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit GetPropertyByValueStub(Circuit *circuit)
-        : Stub("FastGetPropertyByValue", 3, circuit)
+    explicit GetPropertyByValueStub(Circuit *circuit) : Stub("FastGetPropertyByValue", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -204,8 +197,7 @@ public:
 class SetPropertyByValueStub : public Stub {
 public:
     // 4 : 4 means argument counts
-    explicit SetPropertyByValueStub(Circuit *circuit)
-        : Stub("FastSetPropertyByValue", 4, circuit)
+    explicit SetPropertyByValueStub(Circuit *circuit) : Stub("FastSetPropertyByValue", 4, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
@@ -238,8 +230,7 @@ public:
 class TryLoadICByValueStub : public Stub {
 public:
     // 5 : 5 means argument counts
-    explicit TryLoadICByValueStub(Circuit *circuit)
-        : Stub("TryLoadICByValue", 5, circuit) {}
+    explicit TryLoadICByValueStub(Circuit *circuit) : Stub("TryLoadICByValue", 5, circuit) {}
     ~TryLoadICByValueStub() = default;
     NO_MOVE_SEMANTIC(TryLoadICByValueStub);
     NO_COPY_SEMANTIC(TryLoadICByValueStub);
@@ -262,8 +253,7 @@ public:
 class TryStoreICByValueStub : public Stub {
 public:
     // 6 : 6 means argument counts
-    explicit TryStoreICByValueStub(Circuit *circuit)
-        : Stub("TryStoreICByValue", 6, circuit)
+    explicit TryStoreICByValueStub(Circuit *circuit) : Stub("TryStoreICByValue", 6, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }

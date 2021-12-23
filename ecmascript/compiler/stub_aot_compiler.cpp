@@ -44,7 +44,7 @@ public:
         cfg_ = result;
     }
 
-    const CompilationConfig * GetCompilationConfig() const
+    const CompilationConfig *GetCompilationConfig() const
     {
         return module_->GetCompilationConfig();
     }

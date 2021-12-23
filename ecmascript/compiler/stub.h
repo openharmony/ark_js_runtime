@@ -292,7 +292,7 @@ public:
 
         inline bool IsArch32Bit() const
         {
-            return compCfg_->IsArm32();;
+            return compCfg_->IsArm32();
         }
 
         uint32_t GetGlueOffset(JSThread::GlueID id) const

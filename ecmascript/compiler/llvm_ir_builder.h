@@ -150,7 +150,8 @@ private:
     LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef ConvertLLVMTypeFromMachineType(MachineType type);
     static constexpr uint32_t MAX_STUB_FUNCTION_COUNT = panda::ecmascript::kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT;
-    static constexpr uint32_t MAX_TEST_FUNCTION_COUNT = panda::ecmascript::kungfu::TEST_FUNC_MAXCOUNT - panda::ecmascript::kungfu::TEST_FUNC_BEGIN - 1;
+    static constexpr uint32_t MAX_TEST_FUNCTION_COUNT =
+        panda::ecmascript::kungfu::TEST_FUNC_MAXCOUNT - panda::ecmascript::kungfu::TEST_FUNC_BEGIN - 1;
     static constexpr uint32_t TEST_FUNCTION_OFFSET = panda::ecmascript::kungfu::TEST_FUNC_BEGIN + 1;
     std::array<LLVMValueRef, FAST_STUB_MAXCOUNT> stubFunctions_ {nullptr};
     std::array<LLVMTypeRef, MAX_STUB_FUNCTION_COUNT> stubFunctionType_ {nullptr};

@@ -537,8 +537,8 @@ void LLVMIRBuilder::VisitAlloca(GateRef gate)
     uint64_t sizeEnum = circuit_->GetBitField(gate);
     LLVMTypeRef sizeType = GetMachineRepType(static_cast<MachineRep>(sizeEnum));
     COMPILER_LOG(DEBUG) << LLVMGetTypeKind(sizeType);
-    gateToLLVMMaps_[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, sizeType, ""), ConvertLLVMTypeFromGate(gate),
-                                       "");  // NOTE: pointer val is currently viewed as 64bits
+    gateToLLVMMaps_[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, sizeType, ""),
+        ConvertLLVMTypeFromGate(gate), "");  // NOTE: pointer val is currently viewed as 64bits
     return;
 }
 
