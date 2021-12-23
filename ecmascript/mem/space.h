@@ -232,9 +232,12 @@ public:
     void EnumerateCollectRegionSet(const Callback &cb) const;
     template <class Callback>
     void EnumerateNonCollectRegionSet(const Callback &cb) const;
+    void SelectCSet();
 
 private:
-    std::vector<Region *> collectRegionSet_;
+    static constexpr size_t PARTIAL_GC_MAX_COLLECT_REGION_SIZE = 16;
+    static constexpr size_t PARTIAL_GC_MIN_COLLECT_REGION_SIZE = 5;
+    CVector<Region *> collectRegionSet_;
 };
 
 class NonMovableSpace : public Space {

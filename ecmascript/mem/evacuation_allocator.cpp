@@ -38,6 +38,8 @@ void EvacuationAllocator::Initialize(TriggerGCType type)
     } else if (type == TriggerGCType::COMPRESS_FULL_GC) {
         heap_->InitializeCompressSpace();
         auto compressSpace = const_cast<OldSpace *>(heap_->GetCompressSpace());
+        auto currentRegion = compressSpace->GetCurrentRegion();
+        currentRegion->SetAliveObject(currentRegion->GetSize());
         oldSpaceAllocator_.Reset(compressSpace);
     } else {
         oldSpaceAllocator_.Swap(heapManager->GetOldSpaceAllocator());

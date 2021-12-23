@@ -39,9 +39,8 @@ void ConcurrentMarker::ConcurrentMarking()
     ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Mark Begin";
     heap_->Prepare();
     thread_->SetMarkStatus(MarkStatus::MARKING);
-    // SelectCSet
-    if (!heap_->IsOnlyMarkSemi()) {
-        ECMA_GC_LOG() << "ConcurrentMarker: not only semi, need mark all";  // select CSet in HPPGC
+    if (!heap_->IsOnlyMarkSemi() && heap_->GetSweeper()->IsOldSpaceSwept()) {
+        const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
     }
     InitializeMarking();
     Platform::GetCurrentPlatform()->PostTask(std::make_unique<MarkerTask>(heap_));
@@ -97,7 +96,6 @@ void ConcurrentMarker::Reset(bool isClearCSet)
     }
     heap_->EnumerateRegions([this](Region *current) {
         current->SetMarking(false);
-        current->ResetAvailable();
         current->ClearFlag(RegionFlags::IS_IN_PROMOTE_SET);
     });
 }
@@ -118,8 +116,16 @@ void ConcurrentMarker::InitializeMarking()
             rememberset->ClearAllBits();
         }
         region->SetMarking(true);
-        region->ResetAvailable();
     });
+    if (heap_->IsOnlyMarkSemi()) {
+        heap_->EnumerateNewSpaceRegions([this](Region *current) {
+            current->ResetAliveObject();
+        });
+    } else {
+        heap_->EnumerateRegions([this](Region *current) {
+            current->ResetAliveObject();
+        });
+    }
     workList_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::CONCURRENT_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetNonMovableMarker()->MarkRoots(0);
 }

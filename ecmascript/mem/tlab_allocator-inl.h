@@ -46,6 +46,8 @@ inline void TlabAllocator::Finalize()
     }
     if (oldBumpPointerAllocator_.Available() != 0) {
         allocator_->FreeSafe(oldBumpPointerAllocator_.GetTop(), oldBumpPointerAllocator_.GetEnd());
+        Region *current = Region::ObjectAddressToRange(oldBumpPointerAllocator_.GetTop());
+        current->DecreaseAliveObject(oldBumpPointerAllocator_.Available());
         oldBumpPointerAllocator_.Reset();
     }
 }
@@ -97,6 +99,10 @@ uintptr_t TlabAllocator::TlabAllocatorOldSpace(size_t size)
             oldBumpPointerAllocator_.Available());
         return result;
     }
+    Region *current = Region::ObjectAddressToRange(oldBumpPointerAllocator_.GetTop());
+    if (current != nullptr) {
+        current->DecreaseAliveObject(oldBumpPointerAllocator_.Available());
+    }
     allocator_->FreeSafe(oldBumpPointerAllocator_.GetTop(), oldBumpPointerAllocator_.GetEnd());
     if (!ExpandOld()) {
         return 0;
@@ -137,6 +143,7 @@ bool TlabAllocator::ExpandOld()
         if (region == nullptr) {
             return false;
         }
+        region->SetAliveObject(region->GetSize());
         oldBumpPointerAllocator_.Reset(region->GetBegin(), region->GetEnd());
         FreeObject::FillFreeObject(heap_->GetEcmaVM(), oldBumpPointerAllocator_.GetTop(),
             oldBumpPointerAllocator_.Available());

@@ -379,6 +379,30 @@ void OldSpace::ReclaimRegionCSet()
     collectRegionSet_.clear();
 }
 
+void OldSpace::SelectCSet()
+{
+    EnumerateRegions([this](Region *region) {
+        if (!region->MostObjectAlive()) {
+            collectRegionSet_.emplace_back(region);
+        }
+    });
+    if (collectRegionSet_.size() < PARTIAL_GC_MIN_COLLECT_REGION_SIZE) {
+        heap_->SetOnlyMarkSemi(true);
+        collectRegionSet_.clear();
+        return;
+    }
+    // sort
+    std::sort(collectRegionSet_.begin(), collectRegionSet_.end(), [](Region *first, Region *second) {
+        return first->AliveObject() < second->AliveObject();
+    });
+    if (collectRegionSet_.size() > PARTIAL_GC_MAX_COLLECT_REGION_SIZE) {
+        collectRegionSet_.resize(PARTIAL_GC_MAX_COLLECT_REGION_SIZE);
+    }
+    for (Region *region : collectRegionSet_) {
+        region->SetFlag(RegionFlags::IS_IN_COLLECT_SET);
+    }
+}
+
 NonMovableSpace::NonMovableSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
     : Space(heap, MemSpaceType::NON_MOVABLE, initialCapacity, maximumCapacity)
 {

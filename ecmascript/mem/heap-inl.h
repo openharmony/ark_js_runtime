@@ -93,6 +93,10 @@ bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allow
 bool Heap::FillOldSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
 {
     if (oldSpace_->Expand()) {
+        if (!allowGc) {
+            auto currentRegion = GetCompressSpace()->GetCurrentRegion();
+            currentRegion->SetAliveObject(currentRegion->GetSize());
+        }
         spaceAllocator->AddFree(oldSpace_->GetCurrentRegion());
         return true;
     }

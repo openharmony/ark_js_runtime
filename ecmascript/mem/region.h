@@ -54,7 +54,7 @@ public:
           begin_(begin),
           end_(end),
           highWaterMark_(end),
-          available_(0)
+          aliveObject_(0)
     {
     }
     ~Region() = default;
@@ -157,6 +157,11 @@ public:
     static Region *ObjectAddressToRange(TaggedObject *obj)
     {
         return reinterpret_cast<Region *>(ToUintPtr(obj) & ~DEFAULT_REGION_MASK);
+    }
+
+    static Region *ObjectAddressToRange(uintptr_t objAddress)
+    {
+        return reinterpret_cast<Region *>(objAddress & ~DEFAULT_REGION_MASK);
     }
 
     bool InYoungGeneration() const
@@ -293,22 +298,38 @@ public:
 
     inline WorkerHelper *GetWorkList() const;
 
-    void IncrementAvailable(size_t size)
+    void IncrementAliveObject(size_t size)
     {
-        available_ += size;
+        aliveObject_ += size;
     }
 
-    void ResetAvailable()
+    void DecreaseAliveObject(size_t size)
     {
-        available_ = 0;
+        aliveObject_ -= size;
     }
 
-    size_t Available()
+    void SetAliveObject(size_t size)
     {
-        return available_;
+        aliveObject_ = size;
+    }
+
+    void ResetAliveObject()
+    {
+        aliveObject_ = 0;
+    }
+
+    size_t AliveObject() const
+    {
+        return aliveObject_;
+    }
+
+    bool MostObjectAlive() const
+    {
+        return aliveObject_ > MOST_OBJECT_ALIVE_THRESHOLD_PERCENT * GetSize();
     }
 
 private:
+    static constexpr double MOST_OBJECT_ALIVE_THRESHOLD_PERCENT = 0.8;
     Space *space_;
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now
     uintptr_t allocateBase_;
@@ -316,7 +337,7 @@ private:
     uintptr_t end_;
     uintptr_t highWaterMark_;
     bool marking_ {false};
-    std::atomic_size_t available_ = 0;
+    std::atomic_size_t aliveObject_ {0};
     Region *next_ {nullptr};
     Region *prev_ {nullptr};
     RangeBitmap *markBitmap_ {nullptr};

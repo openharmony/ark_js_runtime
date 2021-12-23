@@ -40,7 +40,6 @@ void MixSpaceCollector::RunPhases()
     ClockScope clockScope;
 
     concurrentMark_ = heap_->CheckConcurrentMark(thread);
-    // SelectCSet
     InitializePhase();
     MarkingPhase();
     SweepPhases();
@@ -55,6 +54,9 @@ void MixSpaceCollector::InitializePhase()
 {
     if (!concurrentMark_) {
         heap_->Prepare();
+        if (!heap_->IsOnlyMarkSemi() && heap_->GetSweeper()->IsOldSpaceSwept()) {
+            const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
+        }
         heap_->EnumerateRegions([](Region *current) {
             // ensure mark bitmap
             auto bitmap = current->GetMarkBitmap();
@@ -68,8 +70,16 @@ void MixSpaceCollector::InitializePhase()
                 rememberset->ClearAllBits();
             }
             current->SetMarking(false);
-            current->ResetAvailable();
         });
+        if (heap_->IsOnlyMarkSemi()) {
+            heap_->EnumerateNewSpaceRegions([this](Region *current) {
+                current->ResetAliveObject();
+            });
+        } else {
+            heap_->EnumerateRegions([this](Region *current) {
+                current->ResetAliveObject();
+            });
+        }
         workList_->Initialize(TriggerGCType::OLD_GC, ParallelGCTaskPhase::OLD_HANDLE_GLOBAL_POOL_TASK);
 
         freeSize_ = 0;
@@ -88,7 +98,6 @@ void MixSpaceCollector::FinishPhase()
         size_t aliveSize = 0;
         workList_->Finish(aliveSize);
         heap_->EnumerateRegions([this](Region *current) {
-            current->ResetAvailable();
             current->ClearFlag(RegionFlags::IS_IN_PROMOTE_SET);
         });
     }
