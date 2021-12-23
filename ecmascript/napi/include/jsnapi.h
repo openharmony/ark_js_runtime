@@ -558,6 +558,9 @@ public:
         int32_t length);
     Local<JSValueRef> Constructor(const EcmaVM *vm, const Local<JSValueRef> argv[], int32_t length);
     Local<JSValueRef> GetFunctionPrototype(const EcmaVM *vm);
+    // Inherit Prototype from parent function
+    // set this.Prototype.__proto__ to parent.Prototype, set this.__proto__ to parent function
+    bool Inherit(const EcmaVM *vm, Local<FunctionRef> parent);
     void SetName(const EcmaVM *vm, Local<StringRef> name);
     Local<StringRef> GetName(const EcmaVM *vm);
     bool IsNative(const EcmaVM *vm);
