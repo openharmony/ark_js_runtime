@@ -171,6 +171,8 @@ TaggedObject *EcmaHeapManager::AllocateOldGenerationOrHugeObject(JSHClass *hclas
     }
     SetClass(object, hclass);
     heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    Region *objectRegion = Region::ObjectAddressToRange(object);
+    objectRegion->IncrementAliveObject(size);
     return object;
 }
 

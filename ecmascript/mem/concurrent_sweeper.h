@@ -47,6 +47,11 @@ public:
         return concurrentSweep_;
     }
 
+    bool IsOldSpaceSwept() const
+    {
+        return isOldSpaceSwept_;
+    }
+
 private:
     class SweeperTask : public Task {
     public:
@@ -85,8 +90,9 @@ private:
     std::array<std::vector<Region *>, FREE_LIST_NUM> sweptList_;
 
     Heap *heap_;
-    bool concurrentSweep_ = false;
-    bool isSweeping_ = false;
+    bool concurrentSweep_ {false};
+    bool isSweeping_ {false};
+    bool isOldSpaceSwept_ {false};
     MemSpaceType startSpaceType_ = MemSpaceType::OLD_SPACE;
 };
 }  // namespace panda::ecmascript

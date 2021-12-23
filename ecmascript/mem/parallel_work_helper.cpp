@@ -60,7 +60,7 @@ bool WorkerHelper::Push(uint32_t threadId, TaggedObject *object, Region *region)
     if (Push(threadId, object)) {
         auto klass = object->GetClass();
         auto size = klass->SizeFromJSHClass(object);
-        region->IncrementAvailable(size);
+        region->IncrementAliveObject(size);
         return true;
     }
     return false;

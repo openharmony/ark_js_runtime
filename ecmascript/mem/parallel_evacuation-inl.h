@@ -28,7 +28,7 @@
 namespace panda::ecmascript {
 bool ParallelEvacuation::IsPromoteComplete(Region *region)
 {
-    return (static_cast<double>(region->Available()) / DEFAULT_REGION_SIZE) > MIN_OBJECT_SURVIVAL_RATE &&
+    return (static_cast<double>(region->AliveObject()) / DEFAULT_REGION_SIZE) > MIN_OBJECT_SURVIVAL_RATE &&
         !region->HasAgeMark();
 }
 
