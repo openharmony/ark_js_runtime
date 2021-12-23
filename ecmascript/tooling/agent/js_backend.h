@@ -36,6 +36,7 @@ public:
     void WaitForDebugger();
     void NotifyPaused(std::optional<PtLocation> location, PauseReason reason);
     void NotifyResume();
+    void NotifyAllScriptParsed();
     bool NotifyScriptParsed(int32_t scriptId, const CString &fileName);
     bool StepComplete(const PtLocation &location);
 
