@@ -239,6 +239,27 @@ bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMod
     return ret;
 }
 
+bool JSNApi::StopDebugger(const char *library_path)
+{
+    auto handle = panda::os::library_loader::Load(std::string(library_path));
+    if (!handle) {
+        return false;
+    }
+
+    using StopDebug = void (*)(const std::string &);
+
+    auto sym = panda::os::library_loader::ResolveSymbol(handle.Value(), "StopDebug");
+    if (!sym) {
+        LOG(ERROR, RUNTIME) << sym.Error().ToString();
+        return false;
+    }
+
+    reinterpret_cast<StopDebug>(sym.Value())("PandaDebugger");
+    auto runtime = Runtime::GetCurrent();
+    runtime->SetDebugMode(false);
+    return true;
+}
+
 bool JSNApi::Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> entry)
 {
     std::string file = fileName->ToString();
