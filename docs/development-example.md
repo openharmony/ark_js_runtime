@@ -12,8 +12,7 @@ This section describes how to develop and test ARK runtime.
 1.  Run the following command to compile ARK runtime:
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime  # arm platform
-./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # host side running tool
+./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # arm platform and host side running tool
 ```
 
 2.  Run the following command to compile the ARK frontend:
@@ -37,20 +36,20 @@ Run the  **hello-world.js**  file.
 1.  Use the ARK frontend to create the  **hello-world.abc**  file.
 
     ```
-    node --expose-gc /your code path/out/ohos-arm-release/clang_x64/ark/ark/build/src/index.js hello-world.js
+    node --expose-gc /your code path/out/hi3516dv300/clang_x64/ark/ark/build/src/index.js hello-world.js
     ```
 
 2.  Run the  **hello-world.abc**  file.
     1.  Set the search path.
 
         ```
-        export LD_LIBRARY_PATH=/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib/:/your code path/out/ohos-arm-release/clang_x64/ark/ark:/your code path/out/ohos-arm-release/clang_x64/global/i18n_standard
+        export LD_LIBRARY_PATH= out/hi3516dv300/clang_x64/ark/ark:out/hi3516dv300/clang_x64/ark/ark_js_runtime:out/hi3516dv300/clang_x64/global/i18n_standard:prebuilts/clang/ohos/linux-x86_64/llvm/lib
         ```
 
     2.  Run  **ark\_js\_vm**.
 
         ```
-        /your code path/out/ohos-arm-release/clang_x64/ark/ark_js_runtime//ark_js_vm hello-world.abc _GLOBAL::func_main_0
+        /your code path/out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm hello-world.abc
         ```
 
         The execution result is as follows:
@@ -66,7 +65,7 @@ Run the  **hello-world.js**  file.
 Run the following command to export the result to the  **output**  file:
 
 ```
-./your code path/out/ohos-arm-release/clang_x64/ark/ark/ark_disasm hello-world.abc output
+./your code path/out/hi3516dv300/clang_x64/ark/ark/ark_disasm hello-world.abc output
 ```
 
 The output is as follows:
