@@ -866,6 +866,7 @@ public:
     static void EnableUserUncaughtErrorHandler(EcmaVM *vm);
 
     static bool StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMode);
+    static bool StopDebugger(const char *library_path);
     // Serialize & Deserialize.
     static void* SerializeValue(const EcmaVM *vm, Local<JSValueRef> data, Local<JSValueRef> transfer);
     static Local<JSValueRef> DeserializeValue(const EcmaVM *vm, void* recoder);
