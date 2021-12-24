@@ -20,50 +20,40 @@
 
 namespace panda::ecmascript {
 enum FunctionKind : uint8_t {
-    // BEGIN constructable functions
     NORMAL_FUNCTION = 0,
-    BUILTIN_PROXY_CONSTRUCTOR,
-    BUILTIN_CONSTRUCTOR,
-    // BEGIN class constructors
-    // BEGIN base constructors
-    BASE_CONSTRUCTOR,
-    // BEGIN default constructors
-    DEFAULT_BASE_CONSTRUCTOR,
-    CLASS_CONSTRUCTOR,
-    // END base constructors
-    // BEGIN derived constructors
-    DEFAULT_DERIVED_CONSTRUCTOR,
-    // END default constructors
-    DERIVED_CONSTRUCTOR,
-    // END derived constructors
-    // END class constructors
-    // END constructable functions.
-    GENERATOR_FUNCTION,
-    // END generators
-
-    // BEGIN accessors
-    GETTER_FUNCTION,
-    SETTER_FUNCTION,
-    // END accessors
     // BEGIN arrow functions
     ARROW_FUNCTION,
     // BEGIN async functions
     ASYNC_ARROW_FUNCTION,
     // END arrow functions
     ASYNC_FUNCTION,
-    // BEGIN concise methods 1
-    ASYNC_CONCISE_METHOD,
-    // BEGIN generators
-    ASYNC_CONCISE_GENERATOR_METHOD,
-    // END concise methods 1
-    ASYNC_GENERATOR_FUNCTION,
     // END async functions
-    CONSIZE_METHDOD,
+    // BEGIN constructable functions
+    BUILTIN_PROXY_CONSTRUCTOR,
+    BUILTIN_CONSTRUCTOR,
+    // BEGIN base constructors
+    BASE_CONSTRUCTOR,
+    // BEGIN default constructors
+    DEFAULT_BASE_CONSTRUCTOR,
+    // END base constructors
+    // BEGIN class constructors
+    CLASS_CONSTRUCTOR,
+    // BEGIN derived constructors
+    DEFAULT_DERIVED_CONSTRUCTOR,
+    // END default constructors
+    DERIVED_CONSTRUCTOR,
+    // END derived constructors
+    // END class constructors
+    GENERATOR_FUNCTION,
+    // END generators
+    // END constructable functions.
 
-    CLASS_MEMBERS_INITIALIZER_FUNCTION,
-    // END concise methods 2
+    // BEGIN accessors
+    GETTER_FUNCTION,
+    SETTER_FUNCTION,
+    // END accessors
 
-    LAST_FUNCTION_KIND = CLASS_MEMBERS_INITIALIZER_FUNCTION,
+    LAST_FUNCTION_KIND,
 };
 
 enum FunctionMode : uint8_t {

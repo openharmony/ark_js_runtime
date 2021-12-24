@@ -253,6 +253,12 @@ public:
     {
         return kind >= BUILTIN_CONSTRUCTOR && kind <= GENERATOR_FUNCTION;
     }
+
+    inline static bool HasAccessor(FunctionKind kind)
+    {
+        return kind >= NORMAL_FUNCTION && kind <= ASYNC_FUNCTION;
+    }
+
     /* -------------- Common API End, Don't change those interface!!! ----------------- */
     static void InitializeJSFunction(JSThread *thread, const JSHandle<JSFunction> &func,
                                      FunctionKind kind = FunctionKind::NORMAL_FUNCTION, bool strict = true);

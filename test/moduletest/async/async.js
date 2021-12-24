@@ -19,6 +19,13 @@ async function foo() {
 }
 
 var s = foo()
+var arrow = () => {}
+var async_arrow = async () => {}
+
+print(foo.name)
+print(arrow.name)
+print(async_arrow.name)
+
 s.then(msg=>{
     print(msg)
 })
