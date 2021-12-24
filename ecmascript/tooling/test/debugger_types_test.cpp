@@ -1049,35 +1049,35 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
 
     // abnormal params of params.sub-key=["scriptId":["id3"],"lineNumber":99]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":["id3"],"lineNumber":99
+          "scriptId":["id3"],"lineNumber":99
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":"99"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":"99"
+          "scriptId":"id222","lineNumber":"99"
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":[99]]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":[99]
+          "scriptId":"id222","lineNumber":[99]
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":899,"columnNumber":"18"
+          "scriptId":"id222","lineNumber":899,"columnNumber":"18"
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
 
     // normal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":138]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":899,"columnNumber":138
+          "scriptId":"id222","lineNumber":899,"columnNumber":138
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
@@ -1087,7 +1087,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
 
     // normal params of params.sub-key=["scriptId":"id2122","lineNumber":8299]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id2122","lineNumber":8299
+          "scriptId":"id2122","lineNumber":8299
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
@@ -1102,7 +1102,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id2","lineNumber":99,"columnNumber":18
+          "scriptId":"id2","lineNumber":99,"columnNumber":18
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(location, nullptr);
@@ -1152,56 +1152,56 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
 
     // abnormal params of params.sub-key=["scriptId":10,"lineNumber":99]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":10,"lineNumber":99
+          "scriptId":10,"lineNumber":99
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":["id3"],"lineNumber":99]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":["id3"],"lineNumber":99
+          "scriptId":["id3"],"lineNumber":99
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":"99"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":"99"
+          "scriptId":"id222","lineNumber":"99"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id222","lineNumber":[99]]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":[99]
+          "scriptId":"id222","lineNumber":[99]
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":899,"columnNumber":"18"
+          "scriptId":"id222","lineNumber":899,"columnNumber":"18"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18","type":10]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":899,"columnNumber":"18","type":10
+          "scriptId":"id222","lineNumber":899,"columnNumber":"18","type":10
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // abnormal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":"18","type":"ee"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":899,"columnNumber":"18","type":"ee"
+          "scriptId":"id222","lineNumber":899,"columnNumber":"18","type":"ee"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(breakLocation, nullptr);
 
     // normal params of params.sub-key=["scriptId":"id2","lineNumber":99,"columnNumber":138,"type":"return"]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id222","lineNumber":899,"columnNumber":138,"type":"return"
+          "scriptId":"id222","lineNumber":899,"columnNumber":138,"type":"return"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
@@ -1212,7 +1212,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationCreateTest)
 
     // normal params of params.sub-key=["scriptId":"id2122","lineNumber":8299]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id2122","lineNumber":8299
+          "scriptId":"id2122","lineNumber":8299
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
@@ -1227,7 +1227,7 @@ HWTEST_F_L0(DebuggerTypesTest, BreakLocationToObjectTest)
     Local<StringRef> tmpStr;
 
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":"id12","lineNumber":919,"columnNumber":148,"type":"call"
+          "scriptId":"id12","lineNumber":919,"columnNumber":148,"type":"call"
     }})";
     breakLocation = BreakLocation::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     ASSERT_NE(breakLocation, nullptr);
