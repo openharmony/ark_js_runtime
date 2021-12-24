@@ -83,7 +83,7 @@ JSHandle<JSRelativeTimeFormat> JSRelativeTimeFormat::InitializeRelativeTimeForma
     } else {
         availableLocales = JSLocale::GetAvailableLocales(thread, "calendar", nullptr);
     }
-    std::set<std::string> relevantExtensionKeys {"nu"};
+    std::set<std::string> relevantExtensionKeys{"nu"};
     ResolvedLocale r =
         JSLocale::ResolveLocale(thread, availableLocales, requestedLocales, matcher, relevantExtensionKeys);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSRelativeTimeFormat, thread);

@@ -118,7 +118,7 @@ bool JSLocale::IsValidTimeZoneName(const icu::TimeZone &tz)
 }
 
 void JSLocale::HandleLocaleExtension(size_t &start, size_t &extensionEnd,
-                                     const std::string result, const size_t len)
+                                     const std::string result, size_t len)
 {
     bool flag = false;
     while (start < len - INTL_INDEX_TWO) {

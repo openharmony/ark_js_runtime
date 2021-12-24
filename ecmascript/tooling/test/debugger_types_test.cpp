@@ -1042,7 +1042,7 @@ HWTEST_F_L0(DebuggerTypesTest, LocationCreateTest)
 
     // abnormal params of params.sub-key=["scriptId":10,"lineNumber":99]
     msg = CString() + R"({"id":0,"method":"Debugger.Test","params":{
-        "scriptId":10,"lineNumber":99
+          "scriptId":10,"lineNumber":99
     }})";
     location = Location::Create(ecmaVm, DispatchRequest(ecmaVm, msg).GetParams());
     EXPECT_EQ(location, nullptr);
