@@ -502,6 +502,19 @@ index 48f78151025..0970a6259ad 100644
    case ARM::MOVi16_ga_pcrel:
    case ARM::MOVTi16_ga_pcrel:
    case ARM::t2MOVi16_ga_pcrel:
+diff --git a/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp b/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
+index 66ad120a111..afa4cccac6e 100644
+--- a/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
++++ b/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
+@@ -810,7 +810,7 @@ initializeFunctionInfo(const std::vector<MachineInstr*> &CPEMIs) {
+           case ARM::t2LDRpci:
+           case ARM::t2LDRHpci:
+           case ARM::t2LDRBpci:
+-            Bits = 12;  // +-offset_12
++            Bits = 11;  // +-offset_12
+             NegOk = true;
+             break;
+ 
 diff --git a/llvm/lib/Target/ARM/ARMFrameLowering.cpp b/llvm/lib/Target/ARM/ARMFrameLowering.cpp
 index cb98b2b34ef..b39bdf6f48e 100644
 --- a/llvm/lib/Target/ARM/ARMFrameLowering.cpp

@@ -1416,15 +1416,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        JSTaggedValue value = JSTaggedValue::Hole();
-        if (left.IsInt() && right.IsInt()) {
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMul));
-            typedef JSTaggedType (*PFFastMul)(JSTaggedValue, JSTaggedValue);
-            auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
-            value = JSTaggedValue(fastMulPtr(left, right));
-        } else {
-            value = FastRuntimeStub::FastMul(left, right);
-        }
+        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMul));
+        typedef JSTaggedType (*PFFastMul)(JSTaggedValue, JSTaggedValue);
+        auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
+        JSTaggedValue value = JSTaggedValue(fastMulPtr(left, right));
 #else
         JSTaggedValue value = FastRuntimeStub::FastMul(left, right);
 #endif
