@@ -938,6 +938,23 @@ Local<JSValueRef> FunctionRef::GetFunctionPrototype(const EcmaVM *vm)
     return JSNApiHelper::ToLocal<JSValueRef>(prototype);
 }
 
+bool FunctionRef::Inherit(const EcmaVM *vm, Local<FunctionRef> parent)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<JSTaggedValue> parentValue = JSNApiHelper::ToJSHandle(parent);
+    JSHandle<JSObject> parentHandle = JSHandle<JSObject>::Cast(parentValue);
+    JSHandle<JSObject> thisHandle = JSHandle<JSObject>::Cast(JSNApiHelper::ToJSHandle(this));
+    // Set this.__proto__ to parent
+    bool res = JSObject::SetPrototype(thread, thisHandle, parentValue);
+    if (!res) {
+        return false;
+    }
+    // Set this.Prototype.__proto__ to parent.Prototype
+    JSHandle<JSTaggedValue> parentProtoType(thread, JSFunction::PrototypeGetter(thread, parentHandle));
+    JSHandle<JSTaggedValue> thisProtoType(thread, JSFunction::PrototypeGetter(thread, thisHandle));
+    return JSObject::SetPrototype(thread, JSHandle<JSObject>::Cast(thisProtoType), parentProtoType);
+}
+
 void FunctionRef::SetName(const EcmaVM *vm, Local<StringRef> name)
 {
     JSThread *thread = vm->GetJSThread();

@@ -18,8 +18,10 @@
 #include <cstddef>
 
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/global_env.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/napi/include/jsnapi.h"
+#include "ecmascript/napi/jsnapi_helper-inl.h"
 #include "ecmascript/object_factory.h"
 
 using namespace panda;
@@ -627,5 +629,68 @@ HWTEST_F_L0(JSNApiTests, SyntaxError)
 
     JSNApi::ThrowException(vm_, error);
     ASSERT_TRUE(thread_->HasPendingException());
+}
+
+HWTEST_F_L0(JSNApiTests, InheritPrototype)
+{
+    LocalScope scope(vm_);
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    // new with Builtins::Set Prototype
+    JSHandle<JSTaggedValue> set = env->GetBuiltinsSetFunction();
+    Local<FunctionRef> setLocal = JSNApiHelper::ToLocal<FunctionRef>(set);
+    // new with Builtins::Map Prototype
+    JSHandle<JSTaggedValue> map = env->GetBuiltinsMapFunction();
+    Local<FunctionRef> mapLocal = JSNApiHelper::ToLocal<FunctionRef>(map);
+    JSHandle<JSTaggedValue> setPrototype(thread_, JSHandle<JSFunction>::Cast(set)->GetFunctionPrototype());
+    JSHandle<JSTaggedValue> mapPrototype(thread_, JSHandle<JSFunction>::Cast(map)->GetFunctionPrototype());
+    JSHandle<JSTaggedValue> mapPrototypeProto(thread_, JSHandle<JSObject>::Cast(mapPrototype)->GetPrototype(thread_));
+    bool same = JSTaggedValue::SameValue(setPrototype, mapPrototypeProto);
+    // before inherit, map.Prototype.__proto__ should be different from set.Prototype
+    ASSERT_FALSE(same);
+    // before inherit, map.__proto__ should be different from set
+    JSHandle<JSTaggedValue> mapProto(thread_, JSHandle<JSObject>::Cast(map)->GetPrototype(thread_));
+    bool same1 = JSTaggedValue::SameValue(set, mapProto);
+    ASSERT_FALSE(same1);
+
+    // Set property to Set Function
+    auto factory = vm_->GetFactory();
+    JSHandle<JSTaggedValue> defaultString = thread_->GlobalConstants()->GetHandledDefaultString();
+    PropertyDescriptor desc = PropertyDescriptor(thread_, defaultString);
+    bool success = JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(set), defaultString, desc);
+    ASSERT_TRUE(success);
+    JSHandle<JSTaggedValue> property1String(thread_, factory->NewFromCanBeCompressString("property1").GetTaggedValue());
+    JSHandle<JSTaggedValue> func = env->GetTypedArrayFunction();
+    PropertyDescriptor desc1 = PropertyDescriptor(thread_, func);
+    bool success1 = JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(set), property1String, desc1);
+    ASSERT_TRUE(success1);
+
+    mapLocal->Inherit(vm_, setLocal);
+    JSHandle<JSTaggedValue> sonHandle = JSNApiHelper::ToJSHandle(mapLocal);
+    JSHandle<JSTaggedValue> sonPrototype(thread_, JSHandle<JSFunction>::Cast(sonHandle)->GetFunctionPrototype());
+    JSHandle<JSTaggedValue> sonPrototypeProto(thread_, JSHandle<JSObject>::Cast(sonPrototype)->GetPrototype(thread_));
+    bool same2 = JSTaggedValue::SameValue(setPrototype, sonPrototypeProto);
+    ASSERT_TRUE(same2);
+    JSHandle<JSTaggedValue> sonProto(thread_, JSHandle<JSObject>::Cast(map)->GetPrototype(thread_));
+    bool same3 = JSTaggedValue::SameValue(set, sonProto);
+    ASSERT_TRUE(same3);
+
+    // son = new Son(), Son() inherit from Parent(), Test whether son.InstanceOf(Parent) is true
+    JSHandle<JSObject> sonObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>::Cast(sonHandle), sonHandle);
+    bool isInstance = JSObject::InstanceOf(thread_, JSHandle<JSTaggedValue>::Cast(sonObj), set);
+    ASSERT_TRUE(isInstance);
+
+    // Test whether son Function can access to property of parent Function
+    OperationResult res = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(sonHandle), defaultString);
+    bool same4 = JSTaggedValue::SameValue(defaultString, res.GetValue());
+    ASSERT_TRUE(same4);
+    OperationResult res1 = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(sonHandle), property1String);
+    bool same5 = JSTaggedValue::SameValue(func, res1.GetValue());
+    ASSERT_TRUE(same5);
+
+    // new with empty Function Constructor
+    Local<FunctionRef> son1 = FunctionRef::New(vm_, FunctionCallback, nullptr);
+    son1->Inherit(vm_, mapLocal);
+    JSHandle<JSFunction> son1Handle = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(son1));
+    ASSERT_TRUE(son1Handle->HasFunctionPrototype());
 }
 }  // namespace panda::test
