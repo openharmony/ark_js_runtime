@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "ecmascript/ic/ic_runtime.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/ic/ic_handler-inl.h"
-#include "ecmascript/ic/ic_runtime.h"
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/js_function.h"

@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "ecmascript/base/string_helper.h"
-
-#include "ecmascript/tooling/agent/debugger_impl.h"
 #include "ecmascript/tooling/protocol_handler.h"
+
+#include "ecmascript/base/string_helper.h"
+#include "ecmascript/tooling/agent/debugger_impl.h"
 #include "utils/logger.h"
 
 namespace panda::tooling::ecmascript {

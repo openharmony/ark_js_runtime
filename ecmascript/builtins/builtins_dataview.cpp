@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
-#include "ecmascript/builtins/builtins_dataview.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_arraybuffer.h"
