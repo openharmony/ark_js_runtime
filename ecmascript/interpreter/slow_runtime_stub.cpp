@@ -1589,7 +1589,7 @@ JSTaggedValue SlowRuntimeStub::DefineNCFuncDyn(JSThread *thread, JSFunction *fun
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutProto());
-    JSHandle<JSFunction> jsFunc = factory->NewJSFunctionByDynClass(method, dynclass, FunctionKind::NORMAL_FUNCTION);
+    JSHandle<JSFunction> jsFunc = factory->NewJSFunctionByDynClass(method, dynclass, FunctionKind::ARROW_FUNCTION);
     ASSERT_NO_ABRUPT_COMPLETION(thread);
     return jsFunc.GetTaggedValue();
 }

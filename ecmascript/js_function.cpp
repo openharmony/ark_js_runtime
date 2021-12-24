@@ -67,7 +67,7 @@ void JSFunction::InitializeJSFunction(JSThread *thread, const JSHandle<JSFunctio
                                                                         globalConst->GetHandledPrototypeString(), desc);
             ASSERT(success);
         }
-    } else if (kind == FunctionKind::NORMAL_FUNCTION) {
+    } else if (HasAccessor(kind)) {
         JSHandle<JSTaggedValue> accessor = globalConst->GetHandledFunctionNameAccessor();
         func->SetPropertyInlinedProps(thread, NAME_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
     }
