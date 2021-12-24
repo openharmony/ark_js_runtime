@@ -522,7 +522,7 @@ public:
     static JSHandle<EcmaString> NormalizeKeywordValue(JSThread *thread, const JSHandle<JSLocale> &locale,
                                                     const std::string &key);
 
-    static void HandleLocaleExtension(size_t &start, size_t &extensionEnd, std::string result, size_t len);
+    static void HandleLocaleExtension(size_t &start, size_t &extensionEnd, const std::string result, size_t len);
 
     static ParsedLocale HandleLocale(const JSHandle<EcmaString> &locale);
 
