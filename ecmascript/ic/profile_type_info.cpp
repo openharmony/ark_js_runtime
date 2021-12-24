@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "ecmascript/ic/ic_handler-inl.h"
 #include "ecmascript/ic/profile_type_info.h"
+#include "ecmascript/ic/ic_handler-inl.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/tagged_array-inl.h"
 

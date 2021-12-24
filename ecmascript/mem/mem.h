@@ -18,8 +18,8 @@
 
 #include <cstdint>
 
-#include "ecmascript/mem/tagged_object.h"
 #include "libpandabase/mem/mem.h"
+#include "ecmascript/mem/tagged_object.h"
 #include "libpandabase/utils/logger.h"
 #include "mem/gc/bitmap.h"
 

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "ecmascript/base/error_helper.h"
 #include "ecmascript/ecma_exceptions.h"
+#include "ecmascript/base/error_helper.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_thread.h"
