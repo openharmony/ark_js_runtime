@@ -899,7 +899,7 @@ void LLVMIRBuilder::VisitLoad(GateRef gate, GateRef base)
     baseAddr = CanonicalizeToPtr(baseAddr);
     returnType = ConvertLLVMTypeFromGate(gate);
     baseAddr = LLVMBuildPointerCast(builder_, baseAddr,
-        LLVMPointerType(returnType, LLVMGetPointerAddressSpace(ConvertLLVMTypeFromGate(base))), "");
+        LLVMPointerType(returnType, LLVMGetPointerAddressSpace(LLVMTypeOf(baseAddr))), "");
     LLVMValueRef result = LLVMBuildLoad(builder_, baseAddr, "");
     gateToLLVMMaps_[gate] = result;
 }
@@ -913,8 +913,7 @@ void LLVMIRBuilder::VisitStore(GateRef gate, GateRef base, GateRef dataToStore)
     baseAddr = CanonicalizeToPtr(baseAddr);
     LLVMValueRef data = gateToLLVMMaps_[dataToStore];
     baseAddr = LLVMBuildPointerCast(builder_, baseAddr,
-        LLVMPointerType(ConvertLLVMTypeFromGate(dataToStore),
-            LLVMGetPointerAddressSpace(ConvertLLVMTypeFromGate(base))), "");
+        LLVMPointerType(ConvertLLVMTypeFromGate(dataToStore), LLVMGetPointerAddressSpace(LLVMTypeOf(baseAddr))), "");
     LLVMValueRef value = LLVMBuildStore(builder_, data, baseAddr);
     gateToLLVMMaps_[gate] = value;
     COMPILER_LOG(DEBUG) << "store value:" << value << " " << "value type" << LLVMTypeOf(value);
@@ -965,8 +964,7 @@ LLVMValueRef LLVMIRBuilder::CanonicalizeToPtr(LLVMValueRef value)
             LLVMPointerType(LLVMInt8Type(), LLVMGetPointerAddressSpace(LLVMTypeOf(value))), "");
     } else if (LLVMGetTypeKind(LLVMTypeOf(value)) == LLVMIntegerTypeKind) {
         LLVMValueRef tmp = LLVMBuildIntToPtr(builder_, value, LLVMPointerType(LLVMInt64Type(), 0), "");
-        return LLVMBuildPointerCast(builder_, tmp,
-            LLVMPointerType(LLVMInt8Type(), LLVMGetPointerAddressSpace(LLVMTypeOf(value))), "");
+        return LLVMBuildPointerCast(builder_, tmp, LLVMPointerType(LLVMInt8Type(), 0), "");
     } else {
         COMPILER_LOG(DEBUG) << "can't Canonicalize to Ptr: ";
         abort();
