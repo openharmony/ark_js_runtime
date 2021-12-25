@@ -20,8 +20,7 @@
 1.  编译方舟运行时，编译命令：
 
 ```
-./build.sh --product-name Hi3516DV300 --build-target ark_js_runtime  # arm平台
-./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # host端运行工具
+./build.sh --product-name Hi3516DV300 --build-target ark_js_host_linux_tools_packages  # arm平台和host端运行工具
 ```
 
 2.  编译方舟前端，编译命令：
@@ -45,20 +44,20 @@
 1.  通过方舟前端生成hello-world.abc文件，编译命令：
 
     ```
-    node --expose-gc /your code path/out/ohos-arm-release/clang_x64/ark/ark/build/src/index.js hello-world.js
+    node --expose-gc /your code path/out/hi3516dv300/clang_x64/ark/ark/build/src/index.js hello-world.js
     ```
 
 2.  执行hello-world.abc文件：
     1.  设置搜索路径：
 
         ```
-        export LD_LIBRARY_PATH=/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib/:/your code path/out/ohos-arm-release/clang_x64/ark/ark:/your code path/out/ohos-arm-release/clang_x64/global/i18n_standard
+        export LD_LIBRARY_PATH= out/hi3516dv300/clang_x64/ark/ark:out/hi3516dv300/clang_x64/ark/ark_js_runtime:out/hi3516dv300/clang_x64/global/i18n_standard:prebuilts/clang/ohos/linux-x86_64/llvm/lib
         ```
 
     2.  执行ark\_js\_vm：
 
         ```
-        /your code path/out/ohos-arm-release/clang_x64/ark/ark_js_runtime//ark_js_vm hello-world.abc _GLOBAL::func_main_0
+        /your code path/out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm hello-world.abc
         ```
 
         执行结果如下：
@@ -76,7 +75,7 @@
 执行如下命令，结果输出到output文件中：
 
 ```
-./your code path/out/ohos-arm-release/clang_x64/ark/ark/ark_disasm hello-world.abc output
+./your code path/out/hi3516dv300/clang_x64/ark/ark/ark_disasm hello-world.abc output
 ```
 
 hello-world.abc反汇编结果如下：

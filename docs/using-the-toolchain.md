@@ -15,7 +15,7 @@ $ ./build.sh --product-name Hi3516DV300 --build-target ark_ts2abc
 Install `node` and `npm`, then use tools:
 
 ```
-$ cd out/ohos-arm-release/clang_x64/ark/ark/build
+$ cd out/hi3516dv300/clang_x64/ark/ark/build
 $ npm install
 $ node --expose-gc src/index.js [option] file.js
 ```
