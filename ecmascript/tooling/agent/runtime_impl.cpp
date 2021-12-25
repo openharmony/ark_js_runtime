@@ -80,6 +80,7 @@ void RuntimeImpl::DispatcherImpl::GetProperties(const DispatchRequest &request)
 DispatchResponse RuntimeImpl::Enable()
 {
     Runtime::GetCurrent()->SetDebugMode(true);
+    backend_->NotifyAllScriptParsed();
     return DispatchResponse::Ok();
 }
 

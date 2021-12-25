@@ -20,6 +20,7 @@
 #include <optional>
 
 #include "libpandabase/macros.h"
+#include "ecmascript/tooling/base/pt_script.h"
 #include "ecmascript/tooling/base/pt_types.h"
 #include "ecmascript/tooling/dispatcher.h"
 #include "ecmascript/mem/c_containers.h"
@@ -474,6 +475,7 @@ class ScriptParsed final : public PtBaseEvents {
 public:
     ScriptParsed() = default;
     ~ScriptParsed() override = default;
+    static std::unique_ptr<ScriptParsed> Create(const std::unique_ptr<PtScript> &script);
     static std::unique_ptr<ScriptParsed> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 
