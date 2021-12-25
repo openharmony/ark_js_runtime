@@ -390,6 +390,7 @@ ecma_source = [
   "ecmascript/vmstat/runtime_stat.cpp",
   "ecmascript/weak_vector.cpp",
   "ecmascript/compiler/llvm/llvm_stackmap_parser.cpp",
+  "ecmascript/class_info_extractor.cpp",
 ]
 
 ecma_source += [

@@ -159,7 +159,8 @@ class ProtoChangeDetails;
         COMPLETION_RECORD, /* JS_RECORD_END /////////////////////////////////////////////////////////////////////// */ \
         MACHINE_CODE_OBJECT,                                                                                           \
         ECMA_MODULE, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
-        JS_TYPE_LAST = ECMA_MODULE, /* ////////////////////////////////////////////////////////////////////-PADDING */ \
+        CLASS_INFO_EXTRACTOR, /* //////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_TYPE_LAST = CLASS_INFO_EXTRACTOR, /* ///////////////////////////////////////////////////////////-PADDING */ \
                                                                                                                        \
         JS_FUNCTION_BEGIN = JS_FUNCTION, /* ///////////////////////////////////////////////////////////////-PADDING */ \
         JS_FUNCTION_END = JS_ASYNC_AWAIT_STATUS_FUNCTION, /* //////////////////////////////////////////////-PADDING */ \
@@ -684,6 +685,11 @@ public:
     inline bool IsEcmaModule() const
     {
         return GetObjectType() == JSType::ECMA_MODULE;
+    }
+
+    inline bool IsClassInfoExtractor() const
+    {
+        return GetObjectType() == JSType::CLASS_INFO_EXTRACTOR;
     }
 
     inline bool IsLexicalFunction() const

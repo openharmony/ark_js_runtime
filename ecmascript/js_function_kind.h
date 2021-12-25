@@ -38,11 +38,8 @@ enum FunctionKind : uint8_t {
     // END base constructors
     // BEGIN class constructors
     CLASS_CONSTRUCTOR,
-    // BEGIN derived constructors
-    DEFAULT_DERIVED_CONSTRUCTOR,
     // END default constructors
     DERIVED_CONSTRUCTOR,
-    // END derived constructors
     // END class constructors
     GENERATOR_FUNCTION,
     // END generators

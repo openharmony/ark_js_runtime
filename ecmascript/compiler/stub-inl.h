@@ -940,16 +940,15 @@ GateRef Stub::NotBuiltinsConstructor(GateRef object)
 
 GateRef Stub::IsClassConstructor(GateRef object)
 {
-    GateRef functionInfoFlagOffset = GetArchRelateConstant(JSFunction::FUNCTION_INFO_FLAG_OFFSET);
-    GateRef functionInfoTaggedValue = Load(MachineType::UINT64, object, functionInfoFlagOffset);
-    GateRef functionInfoInt32 = TaggedCastToInt32(functionInfoTaggedValue);
-    GateRef functionInfoFlag = ZExtInt32ToInt64(functionInfoInt32);
+    GateRef hClass = LoadHClass(object);
+    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+
+    GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
     // decode
-    return Word64NotEqual(
-        Word64And(
-            Word64LSR(functionInfoFlag, GetWord64Constant(JSFunction::ClassConstructorBit::START_BIT)),
-            GetWord64Constant((1LLU << JSFunction::ClassConstructorBit::SIZE) - 1)),
-        GetWord64Constant(0));
+    return Word32NotEqual(
+        Word32And(Word32LSR(bitfield, GetInt32Constant(JSHClass::ClassConstructorBit::START_BIT)),
+                  GetInt32Constant((1LU << JSHClass::ClassConstructorBit::SIZE) - 1)),
+        GetInt32Constant(0));
 }
 
 GateRef Stub::IsExtensible(GateRef object)

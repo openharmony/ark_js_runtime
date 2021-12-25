@@ -693,4 +693,17 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype)
     JSHandle<JSFunction> son1Handle = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(son1));
     ASSERT_TRUE(son1Handle->HasFunctionPrototype());
 }
+
+HWTEST_F_L0(JSNApiTests, ClassFunction)
+{
+    LocalScope scope(vm_);
+    Local<FunctionRef> cls = FunctionRef::NewClassFunction(vm_, nullptr, nullptr, nullptr);
+
+    JSHandle<JSTaggedValue> clsObj = JSNApiHelper::ToJSHandle(Local<JSValueRef>(cls));
+    ASSERT_TRUE(clsObj->IsClassConstructor());
+
+    JSTaggedValue accessor = JSHandle<JSFunction>(clsObj)->GetPropertyInlinedProps(
+                                                           JSFunction::CLASS_PROTOTYPE_INLINE_PROPERTY_INDEX);
+    ASSERT_TRUE(accessor.IsInternalAccessor());
+}
 }  // namespace panda::test

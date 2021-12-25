@@ -17,6 +17,7 @@
 #define ECMASCRIPT_MEM_HEAP_ROOTS_INL_H
 
 #include <cstdint>
+#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
@@ -295,6 +296,9 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::MACHINE_CODE_OBJECT:
             MachineCode::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::CLASS_INFO_EXTRACTOR:
+            ClassInfoExtractor::Cast(object)->VisitRangeSlot(visitor);
             break;
         default:
             UNREACHABLE();

@@ -135,10 +135,7 @@ public:
     static JSTaggedValue DefineAsyncFunc(JSThread *thread, JSFunction *func);
     static JSTaggedValue DefineNCFuncDyn(JSThread *thread, JSFunction *func);
     static JSTaggedValue DefinefuncDyn(JSThread *thread, JSFunction *func);
-    static JSTaggedValue NewClassFunc(JSThread *thread, JSFunction *func);
 
-    static JSTaggedValue DefineClass(JSThread *thread, JSFunction *func, TaggedArray *literal, JSTaggedValue proto,
-                                     JSTaggedValue lexenv, ConstantPool *constpool);
     static JSTaggedValue SuperCall(JSThread *thread, JSTaggedValue func, JSTaggedValue newTarget, uint16_t firstVRegIdx,
                                    uint16_t length);
     static JSTaggedValue SuperCallSpread(JSThread *thread, JSTaggedValue func, JSTaggedValue newTarget,
@@ -149,12 +146,19 @@ public:
                                         JSTaggedValue thisFunc);
     static JSTaggedValue NotifyInlineCache(JSThread *thread, JSFunction *func, JSMethod *method);
     static JSTaggedValue ThrowReferenceError(JSThread *thread, JSTaggedValue prop, const char *desc);
+
+    static JSTaggedValue ResolveClass(JSThread *thread, JSTaggedValue ctor, TaggedArray *literal, JSTaggedValue base,
+                                      JSTaggedValue lexenv, ConstantPool *constpool);
+    static JSTaggedValue CloneClassFromTemplate(JSThread *thread, JSTaggedValue ctor, JSTaggedValue base,
+                                                JSTaggedValue lexenv, ConstantPool *constpool);
+    static JSTaggedValue SetClassConstructorLength(JSThread *thread, JSTaggedValue ctor, JSTaggedValue length);
     /* -------------- Common API End, Don't change those interface!!! ----------------- */
 
 private:
     static JSTaggedValue ThrowTypeError(JSThread *thread, const char *message);
     static JSTaggedValue ThrowSyntaxError(JSThread *thread, const char *message);
     static JSTaggedValue GetCallSpreadArgs(JSThread *thread, JSTaggedValue array);
+    static JSTaggedValue SetClassInheritanceRelationship(JSThread *thread, JSTaggedValue ctor, JSTaggedValue base);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H

@@ -1757,11 +1757,14 @@ JSHandle<JSForInIterator> JSObject::EnumerateObjectProperties(JSThread *thread, 
 }
 
 void JSObject::DefinePropertyByLiteral(JSThread *thread, const JSHandle<JSObject> &obj,
-                                       const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value)
+                                       const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
+                                       bool useForClass)
 {
     ASSERT_PRINT(obj->IsECMAObject(), "Obj is not a valid object");
     ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
-    auto attr = PropertyAttributes(PropertyAttributes::GetDefaultAttributes());
+    PropertyAttributes attr = useForClass ? PropertyAttributes::Default(true, false, true)
+                                          : PropertyAttributes::Default();
+
     if (value->IsAccessorData()) {
         attr.SetIsAccessor(true);
     }

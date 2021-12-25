@@ -66,7 +66,8 @@ class JSThread;
     V(JSTaggedValue, JSProxyConstructClass, JS_PROXY_CONSTRUCT_CLASS_INDEX, ecma_roots_class)                         \
     V(JSTaggedValue, JSRealmClass, JS_REALM_CLASS_INDEX, ecma_roots_class)                                            \
     V(JSTaggedValue, JSRegExpClass, JS_REGEXP_CLASS_INDEX, ecma_roots_class)                                          \
-    V(JSTaggedValue, MachineCodeClass, MACHINE_CODE_CLASS_INDEX, ecma_roots_class)
+    V(JSTaggedValue, MachineCodeClass, MACHINE_CODE_CLASS_INDEX, ecma_roots_class)                                    \
+    V(JSTaggedValue, ClassInfoExtractorHClass, CLASS_INFO_EXTRACTOR_HCLASS_INDEX, ecma_roots_class)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_SPECIAL(V)                               \

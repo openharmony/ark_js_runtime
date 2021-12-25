@@ -94,10 +94,6 @@ public:
     static bool AddRestrictedFunctionProperties(const JSHandle<JSFunction> &func, const JSHandle<JSTaggedValue> &realm);
     static bool MakeConstructor(JSThread *thread, const JSHandle<JSFunction> &func,
                                 const JSHandle<JSTaggedValue> &proto, bool writable = true);
-    static bool MakeClassConstructor(JSThread *thread, const JSHandle<JSTaggedValue> &cls,
-                                     const JSHandle<JSObject> &clsPrototype);
-    static void MakeMethod(const JSThread *thread, const JSHandle<JSFunction> &func,
-                           const JSHandle<JSObject> &homeObject);
     static bool SetFunctionLength(JSThread *thread, const JSHandle<JSFunction> &func, JSTaggedValue length,
                                   bool cfg = true);
     static JSHandle<JSObject> NewJSFunctionPrototype(JSThread *thread, ObjectFactory *factory,
@@ -171,7 +167,7 @@ public:
     inline bool IsDerivedConstructor() const
     {
         FunctionKind kind = GetFunctionKind();
-        return kind == FunctionKind::DERIVED_CONSTRUCTOR || kind == FunctionKind::DEFAULT_DERIVED_CONSTRUCTOR;
+        return kind == FunctionKind::DERIVED_CONSTRUCTOR;
     }
 
     inline void SetFunctionKind(const JSThread *thread, FunctionKind kind)
@@ -184,12 +180,6 @@ public:
     {
         JSTaggedType oldValue = GetFunctionInfoFlag().GetRawData();
         SetFunctionInfoFlag(thread, JSTaggedValue(StrictBit::Update(oldValue, flag)));
-    }
-
-    inline void SetClassConstructor(const JSThread *thread, bool flag)
-    {
-        JSTaggedType oldValue = GetFunctionInfoFlag().GetRawData();
-        SetFunctionInfoFlag(thread, JSTaggedValue(ClassConstructorBit::Update(oldValue, flag)));
     }
 
     inline void SetResolved(const JSThread *thread)
@@ -219,11 +209,6 @@ public:
         return StrictBit::Decode(GetFunctionInfoFlag().GetInt());
     }
 
-    inline bool IsClassConstructor() const
-    {
-        return ClassConstructorBit::Decode(GetFunctionInfoFlag().GetInt());
-    }
-
     inline FunctionMode GetFunctionMode() const
     {
         return ThisModeBit::Decode(GetFunctionInfoFlag().GetInt());
@@ -236,7 +221,7 @@ public:
 
     inline static bool IsClassConstructor(FunctionKind kind)
     {
-        return (kind >= CLASS_CONSTRUCTOR) && (kind <= DERIVED_CONSTRUCTOR);
+        return (kind == CLASS_CONSTRUCTOR) || (kind == DERIVED_CONSTRUCTOR);
     }
 
     inline static bool IsConstructorKind(FunctionKind kind)
@@ -259,6 +244,16 @@ public:
         return kind >= NORMAL_FUNCTION && kind <= ASYNC_FUNCTION;
     }
 
+    inline bool IsClassConstructor() const
+    {
+        return GetClass()->IsClassConstructor();
+    }
+
+    inline void SetClassConstructor(bool flag)
+    {
+        GetClass()->SetClassConstructor(flag);
+    }
+
     /* -------------- Common API End, Don't change those interface!!! ----------------- */
     static void InitializeJSFunction(JSThread *thread, const JSHandle<JSFunction> &func,
                                      FunctionKind kind = FunctionKind::NORMAL_FUNCTION, bool strict = true);
@@ -278,9 +273,8 @@ public:
     static constexpr uint32_t FUNCTION_KIND_BIT_NUM = 5;
     using FunctionKindBit = BitField<FunctionKind, 0, FUNCTION_KIND_BIT_NUM>;
     using StrictBit = FunctionKindBit::NextFlag;
-    using ClassConstructorBit = StrictBit::NextFlag;
 
-    using ResolvedBit = ClassConstructorBit::NextFlag;
+    using ResolvedBit = StrictBit::NextFlag;
     using ThisModeBit = ResolvedBit::NextField<FunctionMode, 2>;  // 2: means this flag occupies two digits.
 
     DECL_DUMP()
