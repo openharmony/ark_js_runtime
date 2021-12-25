@@ -18,6 +18,7 @@
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_global.h"
+#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
@@ -150,6 +151,9 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, JSRealm::SIZE, JSType::JS_REALM).GetTaggedValue());
     SetConstant(ConstantIndex::MACHINE_CODE_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, 0, JSType::MACHINE_CODE_OBJECT).GetTaggedValue());
+    SetConstant(ConstantIndex::CLASS_INFO_EXTRACTOR_HCLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, ClassInfoExtractor::SIZE, JSType::CLASS_INFO_EXTRACTOR)
+                .GetTaggedValue());
 }
 
 // NOLINTNEXTLINE(readability-function-size)

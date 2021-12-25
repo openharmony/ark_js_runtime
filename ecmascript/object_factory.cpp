@@ -20,6 +20,7 @@
 #include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_global.h"
+#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_module.h"
@@ -152,6 +153,7 @@ void ObjectFactory::ObtainRootClass([[maybe_unused]] const JSHandle<GlobalEnv> &
     functionExtraInfo_ = JSHClass::Cast(globalConst->GetFunctionExtraInfoClass().GetTaggedObject());
     jsRealmClass_ = JSHClass::Cast(globalConst->GetJSRealmClass().GetTaggedObject());
     machineCodeClass_ = JSHClass::Cast(globalConst->GetMachineCodeClass().GetTaggedObject());
+    classInfoExtractorHClass_ = JSHClass::Cast(globalConst->GetClassInfoExtractorHClass().GetTaggedObject());
 }
 
 void ObjectFactory::InitObjectFields(const TaggedObject *object)
@@ -395,10 +397,14 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
 }
 
 JSHandle<JSObject> ObjectFactory::CloneObjectLiteral(JSHandle<JSObject> object, const JSHandle<JSTaggedValue> &env,
-                                                     const JSHandle<JSTaggedValue> &constpool)
+                                                     const JSHandle<JSTaggedValue> &constpool, bool canShareHClass)
 {
     NewObjectHook();
     auto klass = JSHandle<JSHClass>(thread_, object->GetClass());
+
+    if (!canShareHClass) {
+        klass = JSHClass::Clone(thread_, klass);
+    }
 
     JSHandle<JSObject> cloneObject = NewJSObject(klass);
 
@@ -442,6 +448,49 @@ JSHandle<JSFunction> ObjectFactory::CloneJSFuction(JSHandle<JSFunction> obj, Fun
     JSTaggedValue length = obj->GetPropertyInlinedProps(JSFunction::LENGTH_INLINE_PROPERTY_INDEX);
     cloneFunc->SetPropertyInlinedProps(thread_, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, length);
     return cloneFunc;
+}
+
+JSHandle<JSFunction> ObjectFactory::CloneClassCtor(JSHandle<JSFunction> ctor, const JSHandle<JSTaggedValue> &lexenv,
+                                                   bool canShareHClass)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> constpool(thread_, ctor->GetConstantPool());
+    JSHandle<JSHClass> hclass(thread_, ctor->GetClass());
+
+    if (!canShareHClass) {
+        hclass = JSHClass::Clone(thread_, hclass);
+    }
+
+    FunctionKind kind = ctor->GetFunctionKind();
+    ASSERT_PRINT(kind == FunctionKind::CLASS_CONSTRUCTOR || kind == FunctionKind::DERIVED_CONSTRUCTOR,
+                 "cloned function is not class");
+    JSHandle<JSFunction> cloneCtor = NewJSFunctionByDynClass(ctor->GetCallTarget(), hclass, kind);
+
+    for (uint32_t i = 0; i < hclass->GetInlinedProperties(); i++) {
+        JSTaggedValue value = ctor->GetPropertyInlinedProps(i);
+        if (!value.IsJSFunction()) {
+            cloneCtor->SetPropertyInlinedProps(thread_, i, value);
+        } else {
+            JSHandle<JSFunction> valueHandle(thread_, value);
+            JSHandle<JSFunction> newFunc = CloneJSFuction(valueHandle, valueHandle->GetFunctionKind());
+            newFunc->SetLexicalEnv(thread_, lexenv);
+            newFunc->SetHomeObject(thread_, cloneCtor);
+            newFunc->SetConstantPool(thread_, constpool);
+            cloneCtor->SetPropertyInlinedProps(thread_, i, newFunc.GetTaggedValue());
+        }
+    }
+
+    JSHandle<TaggedArray> elements(thread_, ctor->GetElements());
+    auto newElements = CloneProperties(elements, lexenv, JSHandle<JSObject>(cloneCtor), constpool);
+    cloneCtor->SetElements(thread_, newElements.GetTaggedValue());
+
+    JSHandle<TaggedArray> properties(thread_, ctor->GetProperties());
+    auto newProperties = CloneProperties(properties, lexenv, JSHandle<JSObject>(cloneCtor), constpool);
+    cloneCtor->SetProperties(thread_, newProperties.GetTaggedValue());
+
+    cloneCtor->SetConstantPool(thread_, constpool);
+
+    return cloneCtor;
 }
 
 JSHandle<JSObject> ObjectFactory::NewNonMovableJSObject(const JSHandle<JSHClass> &jshclass)
@@ -1987,6 +2036,25 @@ JSHandle<MachineCode> ObjectFactory::NewMachineCodeObject(size_t length, const u
     }
     JSHandle<MachineCode> codeObj(thread_, code);
     return codeObj;
+}
+
+JSHandle<ClassInfoExtractor> ObjectFactory::NewClassInfoExtractor(JSMethod *ctorMethod)
+{
+    NewObjectHook();
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(classInfoExtractorHClass_);
+    JSHandle<ClassInfoExtractor> obj(thread_, header);
+    obj->InitializeBitField();
+    obj->SetConstructorMethod(ctorMethod);
+    JSHandle<TaggedArray> emptyArray = EmptyArray();
+    obj->SetPrototypeHClass(thread_, JSTaggedValue::Undefined());
+    obj->SetNonStaticKeys(thread_, emptyArray, SKIP_BARRIER);
+    obj->SetNonStaticProperties(thread_, emptyArray, SKIP_BARRIER);
+    obj->SetNonStaticElements(thread_, emptyArray, SKIP_BARRIER);
+    obj->SetConstructorHClass(thread_, JSTaggedValue::Undefined());
+    obj->SetStaticKeys(thread_, emptyArray, SKIP_BARRIER);
+    obj->SetStaticProperties(thread_, emptyArray, SKIP_BARRIER);
+    obj->SetStaticElements(thread_, emptyArray, SKIP_BARRIER);
+    return obj;
 }
 
 // ----------------------------------- new string ----------------------------------------

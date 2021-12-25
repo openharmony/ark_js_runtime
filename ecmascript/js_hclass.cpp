@@ -287,6 +287,7 @@ void JSHClass::SetPrototype(const JSThread *thread, JSTaggedValue proto)
     }
     SetProto(thread, proto);
 }
+
 void JSHClass::SetPrototype(const JSThread *thread, const JSHandle<JSTaggedValue> &proto)
 {
     SetPrototype(thread, proto.GetTaggedValue());

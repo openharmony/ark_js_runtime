@@ -16,6 +16,7 @@
 #include "js_function.h"
 
 #include "ecmascript/base/error_type.h"
+#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/global_env.h"
@@ -51,7 +52,6 @@ void JSFunction::InitializeJSFunction(JSThread *thread, const JSHandle<JSFunctio
     func->SetFunctionExtraInfo(thread, JSTaggedValue::Undefined());
     func->SetFunctionInfoFlag(thread, JSTaggedValue(flag));
 
-    ASSERT(!func->IsPropertiesDict());
     auto globalConst = thread->GlobalConstants();
     if (HasPrototype(kind)) {
         JSHandle<JSTaggedValue> accessor = globalConst->GetHandledFunctionPrototypeAccessor();
@@ -59,9 +59,7 @@ void JSFunction::InitializeJSFunction(JSThread *thread, const JSHandle<JSFunctio
             func->SetPropertyInlinedProps(thread, PROTOTYPE_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
             accessor = globalConst->GetHandledFunctionNameAccessor();
             func->SetPropertyInlinedProps(thread, NAME_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
-        } else if (JSFunction::IsClassConstructor(kind)) {
-            func->SetPropertyInlinedProps(thread, CLASS_PROTOTYPE_INLINE_PROPERTY_INDEX, accessor.GetTaggedValue());
-        } else {
+        } else if (!JSFunction::IsClassConstructor(kind)) {  // class ctor do nothing
             PropertyDescriptor desc(thread, accessor, kind != FunctionKind::BUILTIN_CONSTRUCTOR, false, false);
             [[maybe_unused]] bool success = JSObject::DefineOwnProperty(thread, JSHandle<JSObject>(func),
                                                                         globalConst->GetHandledPrototypeString(), desc);
@@ -247,21 +245,6 @@ bool JSFunction::MakeConstructor(JSThread *thread, const JSHandle<JSFunction> &f
     return status;
 }
 
-// set property constructor and prototype for class
-bool JSFunction::MakeClassConstructor(JSThread *thread, const JSHandle<JSTaggedValue> &cls,
-                                      const JSHandle<JSObject> &clsPrototype)
-{
-    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    bool status = true;
-    PropertyDescriptor ctorDesc(thread, cls, true, false, true);
-    status = status && JSTaggedValue::DefinePropertyOrThrow(thread, JSHandle<JSTaggedValue>::Cast(clsPrototype),
-                                                            globalConst->GetHandledConstructorString(), ctorDesc);
-
-    JSHandle<JSFunction>::Cast(cls)->SetFunctionPrototype(thread, clsPrototype.GetTaggedValue());
-    JSHandle<JSFunction>::Cast(cls)->SetHomeObject(thread, clsPrototype.GetTaggedValue());
-    return status;
-}
-
 JSTaggedValue JSFunction::Call(JSThread *thread, const JSHandle<JSTaggedValue> &func,
                                const JSHandle<JSTaggedValue> &thisArg, uint32_t argc, const JSTaggedType argv[])
 {
@@ -376,12 +359,6 @@ JSTaggedValue JSFunction::ConstructInternal(JSThread *thread, const JSHandle<JSF
         THROW_TYPE_ERROR_AND_RETURN(thread, "function is non-constructor", JSTaggedValue::Exception());
     }
     return obj.GetTaggedValue();
-}
-
-void JSFunction::MakeMethod(const JSThread *thread, const JSHandle<JSFunction> &func,
-                            const JSHandle<JSObject> &homeObject)
-{
-    func->SetHomeObject(thread, homeObject);
 }
 
 JSHandle<JSTaggedValue> JSFunctionBase::GetFunctionName(JSThread *thread, const JSHandle<JSFunctionBase> &func)
@@ -602,6 +579,7 @@ JSHandle<JSHClass> JSFunction::GetOrCreateDerivedJSHClass(JSThread *thread, JSHa
     JSHandle<JSHClass> newJSHClass = JSHClass::Clone(thread, ctorInitialJSHClass);
     // guarante derived has function prototype
     JSHandle<JSTaggedValue> prototype(thread, derived->GetProtoOrDynClass());
+    ASSERT(!prototype->IsHole());
     newJSHClass->SetPrototype(thread, prototype);
     derived->SetProtoOrDynClass(thread, newJSHClass);
     return newJSHClass;

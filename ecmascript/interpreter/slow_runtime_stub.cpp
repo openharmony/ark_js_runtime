@@ -1608,146 +1608,6 @@ JSTaggedValue SlowRuntimeStub::DefinefuncDyn(JSThread *thread, JSFunction *func)
     return jsFunc.GetTaggedValue();
 }
 
-JSTaggedValue SlowRuntimeStub::NewClassFunc(JSThread *thread, JSFunction *func)
-{
-    INTERPRETER_TRACE(thread, NewClassFunc);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto method = func->GetCallTarget();
-
-    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutName());
-    JSHandle<JSFunction> jsFunc = factory->NewJSFunctionByDynClass(method, dynclass, FunctionKind::CLASS_CONSTRUCTOR);
-    ASSERT_NO_ABRUPT_COMPLETION(thread);
-    return jsFunc.GetTaggedValue();
-}
-
-JSTaggedValue SlowRuntimeStub::DefineClass(JSThread *thread, JSFunction *func, TaggedArray *literal,
-                                           JSTaggedValue proto, JSTaggedValue lexenv, ConstantPool *constpool)
-{
-    INTERPRETER_TRACE(thread, DefineClass);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-
-    JSHandle<JSTaggedValue> cls(thread, func);
-    ASSERT(cls->IsJSFunction());
-    JSHandle<TaggedArray> literalBuffer(thread, literal);
-    JSMutableHandle<JSTaggedValue> parent(thread, proto);
-    JSHandle<JSTaggedValue> lexicalEnv(thread, lexenv);
-    JSHandle<ConstantPool> constantpool(thread, constpool);
-
-    cls->GetTaggedObject()->GetClass()->SetClassConstructor(true);
-    JSFunction::Cast(cls->GetTaggedObject())->SetClassConstructor(thread, true);
-
-    /*
-     *  set class __proto__
-     *
-     *         class A / class A extends null                             class A extends B
-     *                                       a                                                 a
-     *                                       |                                                 |
-     *                                       |  __proto__                                      |  __proto__
-     *                                       |                                                 |
-     *       A                  ---->   A.prototype                  A            ---->    A.prototype
-     *       |                               |                       |                         |
-     *       |  __proto__                    |  __proto__            |  __proto__              |  __proto__
-     *       |                               |                       |                         |
-     *   Function.prototype       Object.prototype / null            B             ---->    B.prototype
-     */
-    JSMutableHandle<JSTaggedValue> parentPrototype(thread, JSTaggedValue::Undefined());
-    // hole means parent is not present
-    if (parent->IsHole()) {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::CLASS_CONSTRUCTOR);
-        parentPrototype.Update(env->GetObjectFunctionPrototype().GetTaggedValue());
-        parent.Update(env->GetFunctionPrototype().GetTaggedValue());
-    } else if (parent->IsNull()) {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
-        parentPrototype.Update(JSTaggedValue::Null());
-        parent.Update(env->GetFunctionPrototype().GetTaggedValue());
-    } else if (!parent->IsConstructor()) {
-        return ThrowTypeError(thread, "parent class is not constructor");
-    } else {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
-        parentPrototype.Update(JSTaggedValue::GetProperty(thread, parent, globalConst->GetHandledPrototypeString())
-                               .GetValue()
-                               .GetTaggedValue());
-        if (!parentPrototype->IsECMAObject() && !parentPrototype->IsNull()) {
-            return ThrowTypeError(thread, "parent class have no valid prototype");
-        }
-    }
-
-    // null cannot cast JSObject
-    JSHandle<JSObject> clsPrototype = JSObject::ObjectCreate(thread, JSHandle<JSObject>(parentPrototype));
-
-    bool success = true;
-    success = success && JSFunction::MakeClassConstructor(thread, cls, clsPrototype);
-    clsPrototype.GetTaggedValue().GetTaggedObject()->GetClass()->SetClassPrototype(true);
-
-    success = success && JSObject::SetPrototype(thread, JSHandle<JSObject>::Cast(cls), parent);
-
-    uint32_t bufferLength = literalBuffer->GetLength();
-    // static location is hidden in the last index of Literal buffer
-    uint32_t staticLoc = literalBuffer->Get(thread, bufferLength - 1).GetInt();
-
-    // set property on class.prototype and class
-    JSMutableHandle<JSTaggedValue> propKey(thread, JSTaggedValue::Undefined());
-    JSMutableHandle<JSTaggedValue> propValue(thread, JSTaggedValue::Undefined());
-    for (uint32_t i = 0; i < staticLoc * 2; i += 2) {  // 2: Each literal buffer contains a pair of key-value.
-        // set non-static property on cls.prototype
-        propKey.Update(literalBuffer->Get(thread, i));
-        propValue.Update(literalBuffer->Get(thread, i + 1));
-        if (propValue->IsJSFunction()) {
-            propValue.Update(
-                factory->CloneJSFuction(JSHandle<JSFunction>::Cast(propValue), FunctionKind::NORMAL_FUNCTION)
-                    .GetTaggedValue());
-            JSHandle<JSFunction> propFunc = JSHandle<JSFunction>::Cast(propValue);
-            propFunc->SetHomeObject(thread, clsPrototype);
-            propFunc->SetLexicalEnv(thread, lexicalEnv.GetTaggedValue());
-            propFunc->SetConstantPool(thread, constantpool.GetTaggedValue());
-        }
-        PropertyDescriptor desc(thread, propValue, true, false, true);  // non-enumerable
-        success = success && JSTaggedValue::DefinePropertyOrThrow(thread, JSHandle<JSTaggedValue>::Cast(clsPrototype),
-                                                                  propKey, desc);
-    }
-    for (uint32_t i = staticLoc * 2; i < bufferLength - 1; i += 2) {  // 2: ditto
-        // set static property on cls
-        propKey.Update(literalBuffer->Get(thread, i));
-        propValue.Update(literalBuffer->Get(thread, i + 1));
-        if (propValue->IsJSFunction()) {
-            propValue.Update(
-                factory->CloneJSFuction(JSHandle<JSFunction>::Cast(propValue), FunctionKind::NORMAL_FUNCTION)
-                    .GetTaggedValue());
-            JSHandle<JSFunction> propFunc = JSHandle<JSFunction>::Cast(propValue);
-            propFunc->SetHomeObject(thread, cls);
-            propFunc->SetLexicalEnv(thread, lexicalEnv.GetTaggedValue());
-            propFunc->SetConstantPool(thread, constantpool.GetTaggedValue());
-        }
-        PropertyDescriptor desc(thread, propValue, true, false, true);  // non-enumerable
-        success = success && JSTaggedValue::DefinePropertyOrThrow(thread, cls, propKey, desc);
-    }
-
-    // ECMA2015 14.5.15: if class don't have a method which is name(), set the class a string name.
-    if (!JSTaggedValue::HasOwnProperty(thread, cls, globalConst->GetHandledNameString())) {
-        JSMethod *clsTarget = JSHandle<JSFunction>::Cast(cls)->GetCallTarget();
-        ASSERT(clsTarget != nullptr);
-        CString clsName = clsTarget->ParseFunctionName();
-        if (!clsName.empty()) {
-            success =
-                success && JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(cls),
-                                                       JSHandle<JSTaggedValue>(factory->NewFromString(clsName.c_str())),
-                                                       globalConst->GetHandledUndefined());
-        }
-    }
-
-    if (!success) {
-        return JSTaggedValue::Exception();
-    }
-
-    ASSERT_NO_ABRUPT_COMPLETION(thread);
-    return cls.GetTaggedValue();
-}
-
 JSTaggedValue SlowRuntimeStub::SuperCall(JSThread *thread, JSTaggedValue func, JSTaggedValue newTarget,
                                          uint16_t firstVRegIdx, uint16_t length)
 {
@@ -1919,6 +1779,146 @@ JSTaggedValue SlowRuntimeStub::NotifyInlineCache(JSThread *thread, JSFunction *f
         JSHandle<ProfileTypeInfo> profileTypeInfo = factory->NewProfileTypeInfo(icSlotSize);
         funcHandle->SetProfileTypeInfo(thread, profileTypeInfo.GetTaggedValue());
         return profileTypeInfo.GetTaggedValue();
+    }
+    return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue SlowRuntimeStub::ResolveClass(JSThread *thread, JSTaggedValue ctor, TaggedArray *literal,
+                                            JSTaggedValue base, JSTaggedValue lexenv, ConstantPool *constpool)
+{
+    ASSERT(ctor.IsClassConstructor());
+    JSHandle<JSFunction> cls(thread, ctor);
+    JSHandle<TaggedArray> literalBuffer(thread, literal);
+    JSHandle<JSTaggedValue> lexicalEnv(thread, lexenv);
+    JSHandle<ConstantPool> constpoolHandle(thread, constpool);
+
+    SetClassInheritanceRelationship(thread, ctor, base);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    uint32_t literalBufferLength = literalBuffer->GetLength();
+
+    // only traverse the value of key-value pair
+    for (uint32_t index = 1; index < literalBufferLength - 1; index += 2) {  // 2: key-value pair
+        JSTaggedValue value = literalBuffer->Get(index);
+        if (LIKELY(value.IsJSFunction())) {
+            JSFunction::Cast(value.GetTaggedObject())->SetLexicalEnv(thread, lexicalEnv.GetTaggedValue());
+            JSFunction::Cast(value.GetTaggedObject())->SetConstantPool(thread, constpoolHandle.GetTaggedValue());
+        }
+    }
+
+    cls->SetResolved(thread);
+    return cls.GetTaggedValue();
+}
+
+// clone class may need re-set inheritance relationship due to extends may be a variable.
+JSTaggedValue SlowRuntimeStub::CloneClassFromTemplate(JSThread *thread, JSTaggedValue ctor, JSTaggedValue base,
+                                                      JSTaggedValue lexenv, ConstantPool *constpool)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+
+    ASSERT(ctor.IsClassConstructor());
+    JSHandle<JSTaggedValue> lexenvHandle(thread, lexenv);
+    JSHandle<JSTaggedValue> constpoolHandle(thread, JSTaggedValue(constpool));
+    JSHandle<JSTaggedValue> baseHandle(thread, base);
+
+    JSHandle<JSFunction> cls(thread, ctor);
+
+    JSHandle<JSObject> clsPrototype(thread, cls->GetFunctionPrototype());
+
+    bool canShareHClass = false;
+    if (cls->GetClass()->GetProto() == baseHandle.GetTaggedValue()) {
+        canShareHClass = true;
+    }
+
+    JSHandle<JSFunction> cloneClass = factory->CloneClassCtor(cls, lexenvHandle, canShareHClass);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSObject> cloneClassPrototype = factory->CloneObjectLiteral(JSHandle<JSObject>(clsPrototype), lexenvHandle,
+                                                                         constpoolHandle, canShareHClass);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // After clone both, reset "constructor" and "prototype" properties.
+    cloneClass->SetFunctionPrototype(thread, cloneClassPrototype.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    PropertyDescriptor ctorDesc(thread, JSHandle<JSTaggedValue>(cloneClass), true, false, true);
+    JSTaggedValue::DefinePropertyOrThrow(thread, JSHandle<JSTaggedValue>(cloneClassPrototype),
+                                         globalConst->GetHandledConstructorString(), ctorDesc);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    cloneClass->SetHomeObject(thread, cloneClassPrototype);
+
+    if (!canShareHClass) {
+        SetClassInheritanceRelationship(thread, cloneClass.GetTaggedValue(), baseHandle.GetTaggedValue());
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    }
+
+    return cloneClass.GetTaggedValue();
+}
+
+JSTaggedValue SlowRuntimeStub::SetClassInheritanceRelationship(JSThread *thread, JSTaggedValue ctor, JSTaggedValue base)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+
+    JSHandle<JSTaggedValue> cls(thread, ctor);
+    ASSERT(cls->IsJSFunction());
+    JSMutableHandle<JSTaggedValue> parent(thread, base);
+
+    /*
+     *         class A / class A extends null                             class A extends B
+     *                                       a                                                 a
+     *                                       |                                                 |
+     *                                       |  __proto__                                      |  __proto__
+     *                                       |                                                 |
+     *       A            ---->         A.prototype                  A             ---->    A.prototype
+     *       |                               |                       |                         |
+     *       |  __proto__                    |  __proto__            |  __proto__              |  __proto__
+     *       |                               |                       |                         |
+     *   Function.prototype       Object.prototype / null            B             ---->    B.prototype
+     */
+
+    JSHandle<JSTaggedValue> parentPrototype;
+    // hole means parent is not present
+    if (parent->IsHole()) {
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::CLASS_CONSTRUCTOR);
+        parentPrototype = env->GetObjectFunctionPrototype();
+        parent.Update(env->GetFunctionPrototype().GetTaggedValue());
+    } else if (parent->IsNull()) {
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
+        parentPrototype = JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null());
+        parent.Update(env->GetFunctionPrototype().GetTaggedValue());
+    } else if (!parent->IsConstructor()) {
+        return ThrowTypeError(thread, "parent class is not constructor");
+    } else {
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
+        parentPrototype = JSTaggedValue::GetProperty(thread, parent,
+            globalConst->GetHandledPrototypeString()).GetValue();
+        if (!parentPrototype->IsECMAObject() && !parentPrototype->IsNull()) {
+            return ThrowTypeError(thread, "parent class have no valid prototype");
+        }
+    }
+
+    cls->GetTaggedObject()->GetClass()->SetPrototype(thread, parent);
+
+    JSHandle<JSObject> clsPrototype(thread, JSHandle<JSFunction>(cls)->GetFunctionPrototype());
+    clsPrototype->GetClass()->SetPrototype(thread, parentPrototype);
+
+    return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue SlowRuntimeStub::SetClassConstructorLength(JSThread *thread, JSTaggedValue ctor, JSTaggedValue length)
+{
+    ASSERT(ctor.IsClassConstructor());
+
+    JSFunction* cls = JSFunction::Cast(ctor.GetTaggedObject());
+    if (LIKELY(!cls->GetClass()->IsDictionaryMode())) {
+        cls->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, length);
+    } else {
+        const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+        cls->UpdatePropertyInDictionary(thread, globalConst->GetLengthString(), length);
     }
     return JSTaggedValue::Undefined();
 }

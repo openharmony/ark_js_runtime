@@ -31,20 +31,6 @@ class PandaFileTranslator {
 public:
     enum FixInstructionIndex : uint8_t { FIX_ONE = 1, FIX_TWO = 2, FIX_FOUR = 4 };
 
-    enum SecondInstructionOfMidr : uint8_t {
-        DEFINE_FUNC_DYN = 0,
-        DEFINE_NC_FUNC_DYN,
-        DEFINE_GENERATOR_FUNC_DYN,
-        DEFINE_ASYNC_FUNC_DYN,
-        DEFINE_METHOD
-    };
-
-    enum SecondInstructionOfImm : uint8_t {
-        CREATE_OBJECT_WITH_BUFFER = 2,
-        CREATE_ARRAY_WITH_BUFFER,
-        CREATE_OBJECT_HAVING_METHOD
-    };
-
     explicit PandaFileTranslator(EcmaVM *vm);
     ~PandaFileTranslator() = default;
     NO_COPY_SEMANTIC(PandaFileTranslator);
@@ -111,6 +97,7 @@ private:
     void FixInstructionId32(const BytecodeInstruction &inst, uint32_t index, uint32_t fixOrder = 0) const;
     void FixOpcode(uint8_t *pc) const;
     void UpdateICOffset(JSMethod *method, uint8_t *pc) const;
+    void DefineClassInConstPool(const JSHandle<ConstantPool> &constpool) const;
 
     void SetMethods(Span<JSMethod> methods, const uint32_t numMethods)
     {

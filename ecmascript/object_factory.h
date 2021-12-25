@@ -95,6 +95,7 @@ class ProtoChangeMarker;
 class ProtoChangeDetails;
 class ProfileTypeInfo;
 class MachineCode;
+class ClassInfoExtractor;
 
 enum class PrimitiveType : uint8_t;
 enum class IterationKind;
@@ -282,10 +283,12 @@ public:
     JSHandle<JSPromiseAllResolveElementFunction> NewJSPromiseAllResolveElementFunction(const void *nativeFunc);
 
     JSHandle<JSObject> CloneObjectLiteral(JSHandle<JSObject> object, const JSHandle<JSTaggedValue> &env,
-                                          const JSHandle<JSTaggedValue> &constpool);
+                                          const JSHandle<JSTaggedValue> &constpool, bool canShareHClass = true);
     JSHandle<JSObject> CloneObjectLiteral(JSHandle<JSObject> object);
     JSHandle<JSArray> CloneArrayLiteral(JSHandle<JSArray> object);
     JSHandle<JSFunction> CloneJSFuction(JSHandle<JSFunction> obj, FunctionKind kind);
+    JSHandle<JSFunction> CloneClassCtor(JSHandle<JSFunction> ctor, const JSHandle<JSTaggedValue> &lexenv,
+                                        bool canShareHClass);
 
     void NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, int32_t length);
 
@@ -328,6 +331,7 @@ public:
 
     uintptr_t NewSpaceBySnapShotAllocator(size_t size);
     JSHandle<MachineCode> NewMachineCodeObject(size_t length, const uint8_t *data);
+    JSHandle<ClassInfoExtractor> NewClassInfoExtractor(JSMethod *ctorMethod);
 
     ~ObjectFactory() = default;
 
@@ -407,6 +411,7 @@ private:
     JSHClass *programClass_ {nullptr};
     JSHClass *machineCodeClass_ {nullptr};
     JSHClass *ecmaModuleClass_ {nullptr};
+    JSHClass *classInfoExtractorHClass_ {nullptr};
 
     EcmaVM *vm_ {nullptr};
     Heap *heap_ {nullptr};
@@ -462,6 +467,7 @@ private:
     friend class PandaFileTranslator;
     friend class LiteralDataExtractor;
     friend class RuntimeTrampolines;
+    friend class ClassInfoExtractor;
 };
 
 class ClassLinkerFactory {

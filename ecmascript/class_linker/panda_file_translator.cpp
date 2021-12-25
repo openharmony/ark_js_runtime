@@ -19,6 +19,7 @@
 #include <string_view>
 #include <vector>
 
+#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
@@ -138,7 +139,6 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
     JSHandle<JSHClass> normalDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutProto());
     JSHandle<JSHClass> asyncDynclass = JSHandle<JSHClass>::Cast(env->GetAsyncFunctionClass());
     JSHandle<JSHClass> generatorDynclass = JSHandle<JSHClass>::Cast(env->GetGeneratorFunctionClass());
-    JSHandle<JSHClass> classDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutName());
 
     for (const auto &it : constpoolMap_) {
         ConstPoolValue value(it.second);
@@ -202,10 +202,8 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             panda_file::File::EntityId id(it.first);
             auto method = const_cast<JSMethod *>(FindMethods(it.first));
             ASSERT(method != nullptr);
-            JSHandle<JSFunction> jsFunc =
-                factory_->NewJSFunctionByDynClass(method, classDynclass, FunctionKind::CLASS_CONSTRUCTOR);
-            constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
-            jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
+            JSHandle<ClassInfoExtractor> classInfoExtractor = factory_->NewClassInfoExtractor(method);
+            constpool->Set(thread_, value.GetConstpoolIndex(), classInfoExtractor.GetTaggedValue());
         } else if (value.GetConstpoolType() == ConstPoolType::METHOD) {
             ASSERT(mainMethodIndex_ != it.first);
             panda_file::File::EntityId id(it.first);
@@ -264,6 +262,7 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
         constpool->Set(thread_, constpoolIndex_, program.GetTaggedValue());
     }
 
+    DefineClassInConstPool(constpool);
     return *program;
 }
 
@@ -577,5 +576,30 @@ JSHandle<JSFunction> PandaFileTranslator::DefineMethodInLiteral(JSThread *thread
     }
     jsFunc->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
     return jsFunc;
+}
+
+void PandaFileTranslator::DefineClassInConstPool(const JSHandle<ConstantPool> &constpool) const
+{
+    array_size_t length = constpool->GetLength();
+    array_size_t index = 0;
+    while (index < length - 1) {
+        JSTaggedValue value = constpool->Get(index);
+        if (!value.IsClassInfoExtractor()) {
+            index++;
+            continue;
+        }
+
+        // Here, using a law: when inserting ctor in index of constantpool, the index + 1 location will be inserted by
+        // corresponding class literal. Because translator fixes ECMA_DEFINECLASSWITHBUFFER two consecutive times.
+        JSTaggedValue nextValue = constpool->Get(index + 1);
+        ASSERT(nextValue.IsTaggedArray());
+
+        JSHandle<ClassInfoExtractor> extractor(thread_, value);
+        JSHandle<TaggedArray> literal(thread_, nextValue);
+        ClassInfoExtractor::BuildClassInfoExtractorFromLiteral(thread_, extractor, literal);
+        JSHandle<JSFunction> cls = ClassHelper::DefineClassTemplate(thread_, extractor, constpool);
+        constpool->Set(thread_, index, cls);
+        index += 2;  // 2: pair of extractor and literal
+    }
 }
 }  // namespace panda::ecmascript

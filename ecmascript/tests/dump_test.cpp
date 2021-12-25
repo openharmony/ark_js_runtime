@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/accessor_data.h"
+#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
@@ -612,6 +613,12 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FILEDS(ECMAObject::SIZE, EcmaModule::SIZE, 1)
                 JSHandle<EcmaModule> ecmaModule = factory->NewEmptyEcmaModule();
                 DUMP_FOR_HANDLE(ecmaModule)
+                break;
+            }
+            case JSType::CLASS_INFO_EXTRACTOR: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), ClassInfoExtractor::SIZE, 10)
+                JSHandle<ClassInfoExtractor> classInfoExtractor = factory->NewClassInfoExtractor(nullptr);
+                DUMP_FOR_HANDLE(classInfoExtractor)
                 break;
             }
             default:

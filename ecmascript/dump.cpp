@@ -19,6 +19,7 @@
 #include <string>
 
 #include "ecmascript/accessor_data.h"
+#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
@@ -251,6 +252,8 @@ CString JSHClass::DumpJSType(JSType type)
             return "MachineCode";
         case JSType::ECMA_MODULE:
             return "EcmaModule";
+        case JSType::CLASS_INFO_EXTRACTOR:
+            return "ClassInfoExtractor";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -590,6 +593,9 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::ECMA_MODULE:
             EcmaModule::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::CLASS_INFO_EXTRACTOR:
+            ClassInfoExtractor::Cast(obj)->Dump(thread, os);
             break;
         default:
             UNREACHABLE();
@@ -1890,6 +1896,34 @@ void EcmaModule::Dump(JSThread *thread, std::ostream &os) const
     os << "\n";
 }
 
+void ClassInfoExtractor::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - PrototypeHClass: ";
+    GetPrototypeHClass().D();
+    os << "\n";
+    os << " - NonStaticKeys: ";
+    GetNonStaticKeys().D();
+    os << "\n";
+    os << " - NonStaticProperties: ";
+    GetNonStaticProperties().D();
+    os << "\n";
+    os << " - NonStaticElements: ";
+    GetNonStaticElements().D();
+    os << "\n";
+    os << " - ConstructorHClass: ";
+    GetConstructorHClass().D();
+    os << "\n";
+    os << " - StaticKeys: ";
+    GetStaticKeys().D();
+    os << "\n";
+    os << " - StaticProperties: ";
+    GetStaticProperties().D();
+    os << "\n";
+    os << " - StaticElements: ";
+    GetStaticElements().D();
+    os << "\n";
+}
+
 // ########################################################################################
 // Dump for Snapshot
 // ########################################################################################
@@ -2139,6 +2173,9 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
                 return;
             case JSType::PROTOTYPE_HANDLER:
                 PrototypeHandler::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::CLASS_INFO_EXTRACTOR:
+                ClassInfoExtractor::Cast(obj)->DumpForSnapshot(thread, vec);
                 return;
             default:
                 UNREACHABLE();
@@ -2957,5 +2994,17 @@ void MachineCode::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CStrin
 void EcmaModule::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("NameDictionary"), GetNameDictionary()));
+}
+
+void ClassInfoExtractor::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("PrototypeHClass"), GetPrototypeHClass()));
+    vec.push_back(std::make_pair(CString("NonStaticKeys"), GetNonStaticKeys()));
+    vec.push_back(std::make_pair(CString("NonStaticProperties"), GetNonStaticProperties()));
+    vec.push_back(std::make_pair(CString("NonStaticElements"), GetNonStaticElements()));
+    vec.push_back(std::make_pair(CString("ConstructorHClass"), GetConstructorHClass()));
+    vec.push_back(std::make_pair(CString("StaticKeys"), GetStaticKeys()));
+    vec.push_back(std::make_pair(CString("StaticProperties"), GetStaticProperties()));
+    vec.push_back(std::make_pair(CString("StaticElements"), GetStaticElements()));
 }
 }  // namespace panda::ecmascript

@@ -856,6 +856,12 @@ Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWit
         vm->GetMethodForNativeFunction(reinterpret_cast<void *>(Callback::RegisterCallbackWithNewTarget));
     JSHandle<JSFunction> current =
         factory->NewJSFunctionByDynClass(method, dynclass, ecmascript::FunctionKind::CLASS_CONSTRUCTOR);
+
+    auto globalConst = thread->GlobalConstants();
+    JSHandle<JSTaggedValue> accessor = globalConst->GetHandledFunctionPrototypeAccessor();
+    current->SetPropertyInlinedProps(thread, JSFunction::CLASS_PROTOTYPE_INLINE_PROPERTY_INDEX,
+                                     accessor.GetTaggedValue());
+
     JSHandle<JSNativePointer> funcCallback = factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc));
     JSHandle<JSNativePointer> dataCaddress(thread, JSTaggedValue::Undefined());
     if (deleter == nullptr) {
@@ -867,14 +873,13 @@ Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWit
     JSHandle<JSFunctionExtraInfo> extraInfo(factory->NewFunctionExtraInfo(funcCallback, dataCaddress));
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
 
-    JSHandle<JSObject> clsPrototype =
-        JSObject::ObjectCreate(thread, JSHandle<JSObject>(env->GetObjectFunctionPrototype()));
+    JSHandle<JSObject> clsPrototype = JSFunction::NewJSFunctionPrototype(thread, factory, current);
     clsPrototype.GetTaggedValue().GetTaggedObject()->GetClass()->SetClassPrototype(true);
     JSHandle<JSTaggedValue>::Cast(current)->GetTaggedObject()->GetClass()->SetClassConstructor(true);
-    current->SetClassConstructor(thread, true);
+    current->SetClassConstructor(true);
     JSHandle<JSTaggedValue> parent = env->GetFunctionPrototype();
     JSObject::SetPrototype(thread, JSHandle<JSObject>::Cast(current), parent);
-    JSFunction::MakeClassConstructor(thread, JSHandle<JSTaggedValue>::Cast(current), clsPrototype);
+    current->SetHomeObject(thread, clsPrototype);
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
 }
 

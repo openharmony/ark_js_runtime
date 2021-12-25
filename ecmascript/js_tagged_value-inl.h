@@ -840,6 +840,11 @@ inline bool JSTaggedValue::IsMachineCodeObject() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsMachineCodeObject();
 }
 
+inline bool JSTaggedValue::IsClassInfoExtractor() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsClassInfoExtractor();
+}
+
 inline double JSTaggedValue::ExtractNumber() const
 {
     ASSERT(IsNumber());

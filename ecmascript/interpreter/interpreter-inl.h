@@ -3289,25 +3289,31 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         uint16_t v1 = READ_INST_8_8();
         LOG_INST() << "intrinsics::defineclasswithbuffer"
                    << " method id:" << methodId << " literal id:" << imm << " lexenv: v" << v0 << " parent: v" << v1;
-        JSFunction *cls = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
-        ASSERT(cls != nullptr);
-        if (cls->IsResolved()) {
-            auto res = SlowRuntimeStub::NewClassFunc(thread, cls);
-            INTERPRETER_RETURN_IF_ABRUPT(res);
-            cls = JSFunction::Cast(res.GetTaggedObject());
-            cls->SetConstantPool(thread, JSTaggedValue(constpool));
-        } else {
-            cls->SetResolved(thread);
-        }
-
-        cls->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
-        JSTaggedValue lexenv = GET_VREG_VALUE(v0);
-        cls->SetLexicalEnv(thread, lexenv);
+        JSFunction *classTemplate = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
+        ASSERT(classTemplate != nullptr);
 
         TaggedArray *literalBuffer = TaggedArray::Cast(constpool->GetObjectFromCache(imm).GetTaggedObject());
+        JSTaggedValue lexenv = GET_VREG_VALUE(v0);
         JSTaggedValue proto = GET_VREG_VALUE(v1);
-        JSTaggedValue res = SlowRuntimeStub::DefineClass(thread, cls, literalBuffer, proto, lexenv, constpool);
+
+        JSTaggedValue res;
+        if (LIKELY(!classTemplate->IsResolved())) {
+            res = SlowRuntimeStub::ResolveClass(thread, JSTaggedValue(classTemplate), literalBuffer,
+                                                proto, lexenv, constpool);
+        } else {
+            res = SlowRuntimeStub::CloneClassFromTemplate(thread, JSTaggedValue(classTemplate),
+                                                          proto, lexenv, constpool);
+        }
+
         INTERPRETER_RETURN_IF_ABRUPT(res);
+        ASSERT(res.IsClassConstructor());
+        JSFunction *cls = JSFunction::Cast(res.GetTaggedObject());
+
+        lexenv = GET_VREG_VALUE(v0);  // slow runtime may gc
+        cls->SetLexicalEnv(thread, lexenv);
+
+        SlowRuntimeStub::SetClassConstructorLength(thread, res, JSTaggedValue(length));
+
         SET_ACC(res);
         DISPATCH(BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8);
     }

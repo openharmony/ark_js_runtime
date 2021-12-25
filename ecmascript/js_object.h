@@ -552,7 +552,8 @@ public:
     bool IsTypedArray() const;
 
     static void DefinePropertyByLiteral(JSThread *thread, const JSHandle<JSObject> &obj,
-                                        const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
+                                        const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value,
+                                        bool useForClass = false);
     static void DefineSetter(JSThread *thread, const JSHandle<JSTaggedValue> &obj, const JSHandle<JSTaggedValue> &key,
                              const JSHandle<JSTaggedValue> &value);
     static void DefineGetter(JSThread *thread, const JSHandle<JSTaggedValue> &obj, const JSHandle<JSTaggedValue> &key,
