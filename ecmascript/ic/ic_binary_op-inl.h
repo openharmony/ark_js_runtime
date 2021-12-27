@@ -29,7 +29,7 @@ namespace panda::ecmascript {
 JSTaggedValue ICBinaryOP::AddWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
-    INTERPRETER_TRACE(thread, TryAddWithIC);
+    INTERPRETER_TRACE(thread, AddWithTSType);
     BinaryType addType = static_cast<BinaryType>(argType.GetInt());
     switch (addType) {
         // Support cases, such as: int + double, int + int, double + double
@@ -93,7 +93,7 @@ JSTaggedValue ICBinaryOP::AddWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
 JSTaggedValue ICBinaryOP::SubWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
-    INTERPRETER_TRACE(thread, TrySubWithIC);
+    INTERPRETER_TRACE(thread, SubWithTSType);
     BinaryType subType = static_cast<BinaryType>(argType.GetInt());
     switch (subType) {
         // Support int or number
@@ -126,7 +126,7 @@ JSTaggedValue ICBinaryOP::SubWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
 JSTaggedValue ICBinaryOP::MulWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
-    INTERPRETER_TRACE(thread, TryMulWithIC);
+    INTERPRETER_TRACE(thread, MulWithTSType);
     BinaryType mulType = static_cast<BinaryType>(argType.GetInt());
     switch (mulType) {
         // Support int or number
@@ -160,7 +160,7 @@ JSTaggedValue ICBinaryOP::MulWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
 JSTaggedValue ICBinaryOP::DivWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
-    INTERPRETER_TRACE(thread, TryDivWithIC);
+    INTERPRETER_TRACE(thread, DivWithTSType);
     BinaryType divType = static_cast<BinaryType>(argType.GetInt());
     switch (divType) {
         // Support int or number
@@ -194,7 +194,7 @@ JSTaggedValue ICBinaryOP::DivWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTag
 JSTaggedValue ICBinaryOP::ModWithTSType(JSThread *thread, EcmaVM *ecma_vm, JSTaggedValue left,
                                         JSTaggedValue right, JSTaggedValue argType)
 {
-    INTERPRETER_TRACE(thread, TryModWithIC);
+    INTERPRETER_TRACE(thread, ModWithTSType);
     BinaryType modType = static_cast<BinaryType>(argType.GetInt());
     switch (modType) {
         // Support int or number

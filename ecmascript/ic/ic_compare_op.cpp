@@ -19,19 +19,11 @@
 #include "ecmascript/base/error_helper.h"
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/base/string_helper.h"
-#include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string-inl.h"
-#include "ecmascript/js_hclass-inl.h"
-#include "ecmascript/js_object.h"
-#include "ecmascript/js_proxy.h"
-#include "ecmascript/js_symbol.h"
-#include "ecmascript/js_tagged_number.h"
-#include "ecmascript/js_tagged_value.h"
-#include "ecmascript/js_thread.h"
+#include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/tagged_object-inl.h"
-#include "ecmascript/object_factory.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
@@ -442,7 +434,7 @@ ComparisonResult CompareOp::Compare(JSThread *thread, JSTaggedValue left,
 JSTaggedValue CompareOp::LessDynWithIC(JSThread *thread, JSTaggedValue left,
     JSTaggedValue right, CompareOpType operationType)
 {
-    INTERPRETER_TRACE(thread, NotEqualWithIC);
+    INTERPRETER_TRACE(thread, LessDynWithIC);
     bool ret = CompareOp::Compare(thread, left, right, operationType) == ComparisonResult::LESS;
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return (ret ? JSTaggedValue::True() : JSTaggedValue::False());
@@ -451,7 +443,7 @@ JSTaggedValue CompareOp::LessDynWithIC(JSThread *thread, JSTaggedValue left,
 JSTaggedValue CompareOp::LessEqDynWithIC(JSThread *thread, JSTaggedValue left,
     JSTaggedValue right, CompareOpType operationType)
 {
-    INTERPRETER_TRACE(thread, NotEqualWithIC);
+    INTERPRETER_TRACE(thread, LessEqDynWithIC);
     bool ret = CompareOp::Compare(thread, left, right, operationType) <= ComparisonResult::EQUAL;
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return (ret ? JSTaggedValue::True() : JSTaggedValue::False());
@@ -460,7 +452,7 @@ JSTaggedValue CompareOp::LessEqDynWithIC(JSThread *thread, JSTaggedValue left,
 JSTaggedValue CompareOp::GreaterDynWithIC(JSThread *thread, JSTaggedValue left,
     JSTaggedValue right, CompareOpType operationType)
 {
-    INTERPRETER_TRACE(thread, NotEqualWithIC);
+    INTERPRETER_TRACE(thread, GreaterDynWithIC);
     bool ret = CompareOp::Compare(thread, left, right, operationType) == ComparisonResult::GREAT;
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return (ret ? JSTaggedValue::True() : JSTaggedValue::False());
@@ -469,7 +461,7 @@ JSTaggedValue CompareOp::GreaterDynWithIC(JSThread *thread, JSTaggedValue left,
 JSTaggedValue CompareOp::GreaterEqDynWithIC(JSThread *thread, JSTaggedValue left,
     JSTaggedValue right, CompareOpType operationType)
 {
-    INTERPRETER_TRACE(thread, NotEqualWithIC);
+    INTERPRETER_TRACE(thread, GreaterEqDynWithIC);
     ComparisonResult comparison = CompareOp::Compare(thread, left, right, operationType);
     bool ret = (comparison == ComparisonResult::GREAT) || (comparison == ComparisonResult::EQUAL);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
