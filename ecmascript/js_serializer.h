@@ -124,6 +124,7 @@ private:
 
     JSThread *thread_;
     uint8_t *buffer_ = nullptr;
+    uint64_t sizeLimit_ = 0;
     size_t bufferSize_ = 0;
     size_t bufferCapacity_ = 0;
     // The Reference map is used for check whether a tagged object has been serialized
