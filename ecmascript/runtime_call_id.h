@@ -206,8 +206,27 @@ namespace panda::ecmascript {
     V(LdSuperByValue)               \
     V(StSuperByValue)               \
     V(ThrowDeleteSuperProperty)     \
-    V(GetIteratorNext)
-
+    V(GetIteratorNext)              \
+    V(ModWithTSType)                \
+    V(MulWithTSType)                \
+    V(SubWithTSType)                \
+    V(DivWithTSType)                \
+    V(AddWithTSType)                \
+    V(GetBitOPDate)                 \
+    V(ShlWithTSType)                \
+    V(ShrWithTSType)                \
+    V(AshrWithTSType)               \
+    V(AndWithTSType)                \
+    V(OrWithTSType)                 \
+    V(XorWithTSType)                \
+    V(EqualWithIC)                  \
+    V(NotEqualWithIC)               \
+    V(Compare)                      \
+    V(LessDynWithIC)                \
+    V(LessEqDynWithIC)              \
+    V(GreaterDynWithIC)             \
+    V(GreaterEqDynWithIC)           \
+    V(SetPropertyByName)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUITINS_API_LIST(V)                   \
     V(Array, Constructor)                     \
