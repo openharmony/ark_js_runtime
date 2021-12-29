@@ -137,12 +137,6 @@ CALL_STUB_INIT_DESCRIPTOR(FastEqual)
     descriptor->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(FastStrictEqual) {}
-
-CALL_STUB_INIT_DESCRIPTOR(IsSpecialIndexedObjForSet) {}
-
-CALL_STUB_INIT_DESCRIPTOR(IsSpecialIndexedObjForGet) {}
-
 CALL_STUB_INIT_DESCRIPTOR(SetPropertyByName)
 {
     // 4 : 4 input parameters
@@ -181,37 +175,6 @@ CALL_STUB_INIT_DESCRIPTOR(GetPropertyByName)
         MachineType::NATIVE_POINTER, // glue
         MachineType::TAGGED,         // receiver
         MachineType::TAGGED_POINTER, // key
-    };
-    descriptor->SetParameters(params.data());
-}
-
-CALL_STUB_INIT_DESCRIPTOR(SetGlobalOwnProperty) {}
-
-CALL_STUB_INIT_DESCRIPTOR(GetGlobalOwnProperty) {}
-
-CALL_STUB_INIT_DESCRIPTOR(SetOwnPropertyByName) {}
-
-CALL_STUB_INIT_DESCRIPTOR(SetOwnElement) {}
-
-CALL_STUB_INIT_DESCRIPTOR(FastSetProperty) {}
-
-CALL_STUB_INIT_DESCRIPTOR(FastGetProperty) {}
-
-CALL_STUB_INIT_DESCRIPTOR(FindOwnProperty) {}
-
-CALL_STUB_INIT_DESCRIPTOR(NewLexicalEnvDyn) {}
-
-CALL_STUB_INIT_DESCRIPTOR(FindOwnProperty2) {}
-
-CALL_STUB_INIT_DESCRIPTOR(FindOwnElement2)
-{
-    // 6 : 6 input parameters
-    StubDescriptor findOwnElement2("FindOwnElement2", 0, 6, ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
-    *descriptor = findOwnElement2;
-    // 6 : 6 input parameters
-    std::array<MachineType, 6> params = {
-        MachineType::NATIVE_POINTER, MachineType::TAGGED_POINTER, MachineType::UINT32,
-        MachineType::BOOL, MachineType::UINT64, MachineType::NATIVE_POINTER,
     };
     descriptor->SetParameters(params.data());
 }

@@ -54,27 +54,12 @@ namespace panda::ecmascript::kungfu {
     V(FastMod, 3)                   \
     V(FastEqual, 2)                 \
     V(FastTypeOf, 2)                \
-    V(FastStrictEqual, 2)           \
-    V(IsSpecialIndexedObjForSet, 1) \
-    V(IsSpecialIndexedObjForGet, 1) \
     V(GetPropertyByName, 3)         \
     V(SetPropertyByName, 4)         \
     V(SetPropertyByNameWithOwn, 4)  \
-    V(SetGlobalOwnProperty, 5)      \
-    V(GetGlobalOwnProperty, 3)      \
-    V(SetOwnPropertyByName, 4)      \
-    V(SetOwnElement, 4)             \
-    V(FastSetProperty, 5)           \
-    V(FastGetProperty, 3)           \
-    V(FindOwnProperty, 6)           \
-    V(NewLexicalEnvDyn, 4)          \
-    V(FindOwnProperty2, 6)          \
-    V(FindOwnElement2, 6)           \
     V(GetPropertyByIndex, 3)        \
     V(SetPropertyByIndex, 4)        \
     V(GetPropertyByValue, 3)        \
-    V(SetPropertyByValue, 4)        \
-    V(FastMulGCTest, 3)             \
     V(TryLoadICByName, 4)           \
     V(TryLoadICByValue, 5)          \
     V(TryStoreICByName, 5)          \
@@ -82,6 +67,7 @@ namespace panda::ecmascript::kungfu {
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
+    V(FastMulGCTest, 3)             \
     V(PhiGateTest, 1)               \
     V(LoopTest, 1)                  \
     V(LoopTest1, 1)
