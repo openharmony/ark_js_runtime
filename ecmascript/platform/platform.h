@@ -31,7 +31,12 @@ public:
     }
 
     Platform() = default;
-    ~Platform() = default;
+    ~Platform()
+    {
+        os::memory::LockHolder lock(mutex_);
+        runner_->TerminateThread();
+        isInitialized_ = 0;
+    }
 
     NO_COPY_SEMANTIC(Platform);
     NO_MOVE_SEMANTIC(Platform);

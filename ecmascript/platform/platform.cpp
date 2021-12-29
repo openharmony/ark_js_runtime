@@ -29,7 +29,11 @@ void Platform::Initialize(int threadNum)
 void Platform::Destroy()
 {
     os::memory::LockHolder lock(mutex_);
-    if (--isInitialized_ <= 0) {
+    if (isInitialized_ <= 0) {
+        return;
+    }
+    isInitialized_--;
+    if (isInitialized_ == 0) {
         runner_->TerminateThread();
     } else {
         runner_->TerminateTask();
