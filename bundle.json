@@ -1,0 +1,58 @@
+{
+    "name": "@ohos/ark_js_runtime",
+    "version": "",
+    "description": "支持应用TS/JS语言代码的运行，行为符合ArkUI框架需要的Strict模式的ES2015标准",
+    "homePage": "https://gitee.com/openharmony",
+    "license": "Apache V2",
+    "repository": "https://gitee.com/openharmony/ark_js_runtime",
+    "domain": "os",
+    "language": "",
+    "publishAs": "code-segment",
+    "private": false,
+    "scripts": {},
+    "tags": [
+        "ark"
+    ],
+    "keywords": [
+        "js",
+        "ark",
+        "runtime"
+    ],
+    "envs": [],
+    "dirs": [],
+    "author": {
+        "name": "",
+        "email": "",
+        "url": ""
+    },
+    "contributors": [
+        {
+            "name": "",
+            "email": "",
+            "url": ""
+        }
+    ],
+    "segment": {
+        "destPath": "ark/js_runtime"
+    },
+    "component": {
+        "name": "ark_runtime",
+        "subsystem": "js_runtime",
+        "syscap": [],
+        "features": [],
+        "adapted_system_type": [
+            "standard"
+        ],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [],
+            "inner_kits": [],
+            "test": []
+        }
+    }
+}
