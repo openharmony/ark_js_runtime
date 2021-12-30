@@ -169,34 +169,6 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
 }
 }  // namespace panda::ecmascript::kungfu
 
-#define SET_STUB_TO_MODULE(module, name) \
-    panda::ecmascript::kungfu::Circuit name##Circuit; \
-    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
-    module.SetStub(FAST_STUB_ID(name), &name##Stub);
-#define SET_ALL_STUB_TO_MODEULE(module)                     \
-    SET_STUB_TO_MODULE(module, FastAdd)                     \
-    SET_STUB_TO_MODULE(module, FastSub)                     \
-    SET_STUB_TO_MODULE(module, FastMul)                     \
-    SET_STUB_TO_MODULE(module, FastDiv)                     \
-    SET_STUB_TO_MODULE(module, FastMod)                     \
-    SET_STUB_TO_MODULE(module, FastTypeOf)                  \
-    SET_STUB_TO_MODULE(module, FastEqual)                   \
-    SET_STUB_TO_MODULE(module, FindOwnElement2)             \
-    SET_STUB_TO_MODULE(module, GetPropertyByIndex)          \
-    SET_STUB_TO_MODULE(module, SetPropertyByIndex)          \
-    SET_STUB_TO_MODULE(module, GetPropertyByName)           \
-    SET_STUB_TO_MODULE(module, GetPropertyByValue)          \
-    SET_STUB_TO_MODULE(module, SetPropertyByName)           \
-    SET_STUB_TO_MODULE(module, SetPropertyByNameWithOwn)    \
-    SET_STUB_TO_MODULE(module, TryLoadICByName)             \
-    SET_STUB_TO_MODULE(module, TryLoadICByValue)            \
-    SET_STUB_TO_MODULE(module, TryStoreICByName)            \
-    SET_STUB_TO_MODULE(module, TryStoreICByValue)
-
-#ifndef NDEBUG
-#define SET_TEST_STUB_TO_MODEULE(module)                \
-    SET_STUB_TO_MODULE(module, FastMulGCTest)
-#endif
 
 int main(const int argc, const char **argv)
 {
@@ -224,11 +196,15 @@ int main(const int argc, const char **argv)
     std::string moduleFilename = stubOptions.GetStubOutputFile();
 
     panda::ecmascript::kungfu::StubAotCompiler mouldeBuilder;
-    SET_ALL_STUB_TO_MODEULE(mouldeBuilder);
+#define SET_STUB_TO_MODULE(name, counter) \
+    panda::ecmascript::kungfu::Circuit name##Circuit; \
+    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
+    mouldeBuilder.SetStub(FAST_STUB_ID(name), &name##Stub);
+    FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
 #ifndef NDEBUG
-    SET_TEST_STUB_TO_MODEULE(mouldeBuilder);
+    TEST_FUNC_LIST(SET_STUB_TO_MODULE)
 #endif
-
+#undef SET_STUB_TO_MODULE
     panda::ecmascript::StubModule stubModule;
     mouldeBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
     std::cout << "BuildStubModuleAndSave success" << std::endl;

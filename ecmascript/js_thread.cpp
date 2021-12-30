@@ -226,7 +226,7 @@ void JSThread::LoadFastStubModule(const char *moduleFile)
     std::string fileName(moduleFile);
     stubModule.Load(this, fileName);
     for (int i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
-        fastStubEntires_[i] = stubModule.GetStubEntry(i);
+        fastStubEntries_[i] = stubModule.GetStubEntry(i);
     }
 #ifdef NDEBUG
     ::kungfu::LLVMStackMapParser::GetInstance().Print();
