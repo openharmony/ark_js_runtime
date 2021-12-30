@@ -25,69 +25,88 @@
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
 
-void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
+#ifndef NDEBUG
+void PhiGateTestStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    GateRef x = TaggedArgument(0);
-    GateRef y = TaggedArgument(1);
-    DEFVARIABLE(intX, MachineType::INT32, 0);
-    DEFVARIABLE(intY, MachineType::INT32, 0);
-    DEFVARIABLE(doubleX, MachineType::FLOAT64, 0);
-    DEFVARIABLE(doubleY, MachineType::FLOAT64, 0);
-    Label xIsNumber(env);
-    Label xNotNumberOryNotNumber(env);
-    Label xIsNumberAndyIsNumber(env);
-    Label xIsDoubleAndyIsDouble(env);
-    Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
-    Bind(&xIsNumber);
-    {
-        Label yIsNumber(env);
-        // if right.IsNumber()
-        Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
-        Bind(&yIsNumber);
-        {
-            Label xIsInt(env);
-            Label xNotInt(env);
-            Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
-            Bind(&xIsInt);
-            {
-                intX = TaggedCastToInt32(x);
-                doubleX = ChangeInt32ToFloat64(*intX);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-            Bind(&xNotInt);
-            {
-                doubleX = TaggedCastToDouble(x);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-        }
-    }
-    Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
-    Label yIsInt(env);
-    Label yNotInt(env);
-    Bind(&xIsNumberAndyIsNumber);
-    {
-        Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
-        Bind(&yIsInt);
-        {
-            intY = TaggedCastToInt32(y);
-            doubleY = ChangeInt32ToFloat64(*intY);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-        Bind(&yNotInt);
-        {
-            doubleY = TaggedCastToDouble(y);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-    }
-    Bind(&xIsDoubleAndyIsDouble);
-    doubleX = DoubleAdd(*doubleX, *doubleY);
-    Return(DoubleBuildTaggedWithNoGC(*doubleX));
+    DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
+    Label ifTrue(env);
+    Label ifFalse(env);
+    Label next(env);
+
+    Branch(Word32Equal(*x, GetInt32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
+    Bind(&ifTrue);
+    z = Int32Add(*x, GetInt32Constant(10));  // 10 : size of entry
+    Jump(&next);
+    Bind(&ifFalse);
+    z = Int32Add(*x, GetInt32Constant(100));  // 100 : size of entry
+    Jump(&next);
+    Bind(&next);
+    Return(*z);
 }
 
-#ifndef NDEBUG
+void LoopTestStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label afterLoop(env);
+    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
+    LoopBegin(&loopHead);
+    Label ifTrue(env);
+    Label ifFalse(env);
+    Label next(env);
+    Branch(Word32Equal(Int32Argument(0), GetInt32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
+    Bind(&ifTrue);
+    z = Int32Add(*y, GetInt32Constant(10));  // 10 : size of entry
+    y = Int32Add(*z, GetInt32Constant(1));
+    Jump(&next);
+    Bind(&ifFalse);
+    z = Int32Add(*y, GetInt32Constant(100));  // 100 : size of entry
+    Jump(&next);
+    Bind(&next);
+    y = Int32Add(*y, GetInt32Constant(1));
+    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
+    Bind(&loopEnd);
+    LoopEnd(&loopHead);
+    Bind(&afterLoop);
+    Return(*z);
+}
+
+void LoopTest1Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
+    DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
+    DEFVARIABLE(z, MachineType::INT32, Int32Argument(0));
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label afterLoop(env);
+    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
+    LoopBegin(&loopHead);
+    x = Int32Add(*z, GetInt32Constant(3));  // 3 : size of entry
+    Label ifTrue(env);
+    Label next(env);
+    Branch(Word32Equal(*x, GetInt32Constant(9)), &ifTrue, &next);  // 9 : size of entry
+    Bind(&ifTrue);
+    y = Int32Add(*z, *x);
+    Jump(&next);
+    Bind(&next);
+    y = Int32Add(*y, GetInt32Constant(1));
+    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
+    Bind(&loopEnd);
+    LoopEnd(&loopHead);
+    Bind(&afterLoop);
+    z = *y;
+    Return(*z);
+}
+
 void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
@@ -165,6 +184,68 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
 }
 #endif
+
+void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef x = TaggedArgument(0);
+    GateRef y = TaggedArgument(1);
+    DEFVARIABLE(intX, MachineType::INT32, 0);
+    DEFVARIABLE(intY, MachineType::INT32, 0);
+    DEFVARIABLE(doubleX, MachineType::FLOAT64, 0);
+    DEFVARIABLE(doubleY, MachineType::FLOAT64, 0);
+    Label xIsNumber(env);
+    Label xNotNumberOryNotNumber(env);
+    Label xIsNumberAndyIsNumber(env);
+    Label xIsDoubleAndyIsDouble(env);
+    Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
+    Bind(&xIsNumber);
+    {
+        Label yIsNumber(env);
+        // if right.IsNumber()
+        Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
+        Bind(&yIsNumber);
+        {
+            Label xIsInt(env);
+            Label xNotInt(env);
+            Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
+            Bind(&xIsInt);
+            {
+                intX = TaggedCastToInt32(x);
+                doubleX = ChangeInt32ToFloat64(*intX);
+                Jump(&xIsNumberAndyIsNumber);
+            }
+            Bind(&xNotInt);
+            {
+                doubleX = TaggedCastToDouble(x);
+                Jump(&xIsNumberAndyIsNumber);
+            }
+        }
+    }
+    Bind(&xNotNumberOryNotNumber);
+    Return(GetHoleConstant(MachineType::UINT64));
+    Label yIsInt(env);
+    Label yNotInt(env);
+    Bind(&xIsNumberAndyIsNumber);
+    {
+        Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
+        Bind(&yIsInt);
+        {
+            intY = TaggedCastToInt32(y);
+            doubleY = ChangeInt32ToFloat64(*intY);
+            Jump(&xIsDoubleAndyIsDouble);
+        }
+        Bind(&yNotInt);
+        {
+            doubleY = TaggedCastToDouble(y);
+            Jump(&xIsDoubleAndyIsDouble);
+        }
+    }
+    Bind(&xIsDoubleAndyIsDouble);
+    doubleX = DoubleAdd(*doubleX, *doubleY);
+    Return(DoubleBuildTaggedWithNoGC(*doubleX));
+}
 
 void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
 {
