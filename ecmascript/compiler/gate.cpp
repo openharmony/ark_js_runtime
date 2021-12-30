@@ -70,6 +70,9 @@ Properties OpCode::GetProperties() const
         case IF_TRUE:
         case IF_FALSE:
             return {NOVALUE, STATE(OpCode(IF_BRANCH)), NO_DEPEND, NO_VALUE, NO_ROOT};
+        case IF_SUCCESS:
+        case IF_EXCEPTION:
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
         case SWITCH_CASE:
         case DEFAULT_CASE:
             return {NOVALUE, STATE(OpCode(SWITCH_BRANCH)), NO_DEPEND, NO_VALUE, NO_ROOT};
@@ -104,37 +107,8 @@ Properties OpCode::GetProperties() const
         case DEPEND_AND:
             return {NOVALUE, NO_STATE, MANY_DEPEND, NO_VALUE, NO_ROOT};
         // High Level IR
-        case JS_CALL:
-            return {JSValueCode(), NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
-        case JS_CONSTANT:
-            return {JSValueCode(), NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case JS_ARG:
-            return {JSValueCode(), NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
-        case JS_ADD:
-        case JS_SUB:
-        case JS_MUL:
-        case JS_EXP:
-        case JS_DIV:
-        case JS_MOD:
-        case JS_AND:
-        case JS_XOR:
-        case JS_OR:
-        case JS_LSL:
-        case JS_LSR:
-        case JS_ASR:
-        case JS_LOGIC_AND:
-        case JS_LOGIC_OR:
-        case JS_LT:
-        case JS_LE:
-        case JS_GT:
-        case JS_GE:
-        case JS_EQ:
-        case JS_NE:
-        case JS_STRICT_EQ:
-        case JS_STRICT_NE:
-            return {JSValueCode(), NO_STATE, NO_DEPEND, VALUE(JSValueCode(), JSValueCode()), NO_ROOT};
-        case JS_LOGIC_NOT:
-            return {JSValueCode(), NO_STATE, NO_DEPEND, VALUE(JSValueCode()), NO_ROOT};
+        case JS_BYTECODE:
+            return {ANYVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
         // Middle Level IR
         case CALL:
             return {NOVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
@@ -348,6 +322,8 @@ std::string OpCode::Str() const
         {SWITCH_BRANCH, "SWITCH_BRANCH"},
         {IF_TRUE, "IF_TRUE"},
         {IF_FALSE, "IF_FALSE"},
+        {IF_SUCCESS, "IF_SUCCESS"},
+        {IF_EXCEPTION, "IF_EXCEPTION"},
         {SWITCH_CASE, "SWITCH_CASE"},
         {DEFAULT_CASE, "DEFAULT_CASE"},
         {MERGE, "MERGE"},
@@ -365,32 +341,7 @@ std::string OpCode::Str() const
         {DEPEND_RELAY, "DEPEND_RELAY"},
         {DEPEND_AND, "DEPEND_AND"},
         // High Level IR
-        {JS_CALL, "JS_CALL"},
-        {JS_CONSTANT, "JS_CONSTANT"},
-        {JS_ARG, "JS_ARG"},
-        {JS_ADD, "JS_ADD"},
-        {JS_SUB, "JS_SUB"},
-        {JS_MUL, "JS_MUL"},
-        {JS_EXP, "JS_EXP"},
-        {JS_DIV, "JS_DIV"},
-        {JS_MOD, "JS_MOD"},
-        {JS_AND, "JS_AND"},
-        {JS_XOR, "JS_XOR"},
-        {JS_OR, "JS_OR"},
-        {JS_LSL, "JS_LSL"},
-        {JS_LSR, "JS_LSR"},
-        {JS_ASR, "JS_ASR"},
-        {JS_LOGIC_AND, "JS_LOGIC_AND"},
-        {JS_LOGIC_OR, "JS_LOGIC_OR"},
-        {JS_LT, "JS_LT"},
-        {JS_LE, "JS_LE"},
-        {JS_GT, "JS_GT"},
-        {JS_GE, "JS_GE"},
-        {JS_EQ, "JS_EQ"},
-        {JS_NE, "JS_NE"},
-        {JS_STRICT_EQ, "JS_STRICT_EQ"},
-        {JS_STRICT_NE, "JS_STRICT_NE"},
-        {JS_LOGIC_NOT, "JS_LOGIC_NOT"},
+        {JS_BYTECODE, "JS_BYTECODE"},
         // Middle Level IR
         {CALL, "CALL"},
         {INT1_CALL, "INT1_CALL"},
@@ -765,9 +716,9 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckRelay() const
     if (GetOpCode() == OpCode::DEPEND_RELAY) {
         auto stateOp = GetInGateConst(0)->GetOpCode();
         if (!(stateOp == OpCode::IF_TRUE || stateOp == OpCode::IF_FALSE || stateOp == OpCode::SWITCH_CASE ||
-            stateOp == OpCode::DEFAULT_CASE)) {
+            stateOp == OpCode::DEFAULT_CASE || stateOp == OpCode::IF_SUCCESS || stateOp == OpCode::IF_EXCEPTION)) {
             return std::make_pair(
-                "State input does not match (expected:[IF_TRUE|IF_FALSE|SWITCH_CASE|DEFAULT_CASE] actual:" +
+                "State input does not match (expected:[IF_TRUE|IF_FALSE|SWITCH_CASE|DEFAULT_CASE|IF_SUCCESS|IF_EXCEPTION] actual:" +
                     stateOp.Str() + ")",
                 0);
         }
@@ -1020,8 +971,8 @@ bool In::IsGateNull() const
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark)
-    : id_(id), opcode_(opcode), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
+Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, GateType gateType)
+    : id_(id), opcode_(opcode), type_(type), gateType_(gateType), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
 {
     auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {
@@ -1319,9 +1270,10 @@ bool OpCode::IsState() const
 
 bool OpCode::IsGeneralState() const
 {
-    return ((op_ == OpCode::IF_TRUE) || (op_ == OpCode::IF_FALSE) || (op_ == OpCode::SWITCH_CASE) ||
-        (op_ == OpCode::DEFAULT_CASE) || (op_ == OpCode::MERGE) || (op_ == OpCode::LOOP_BEGIN) ||
-        (op_ == OpCode::ORDINARY_BLOCK) || (op_ == OpCode::STATE_ENTRY));
+    return ((op_ == OpCode::IF_TRUE) || (op_ == OpCode::IF_FALSE) || (op_ == OpCode::IF_SUCCESS) ||
+            (op_ == OpCode::IF_EXCEPTION) || (op_ == OpCode::SWITCH_CASE) ||
+            (op_ == OpCode::DEFAULT_CASE) || (op_ == OpCode::MERGE) || (op_ == OpCode::LOOP_BEGIN) ||
+            (op_ == OpCode::ORDINARY_BLOCK) || (op_ == OpCode::STATE_ENTRY));
 }
 
 bool OpCode::IsTerminalState() const
@@ -1337,7 +1289,8 @@ bool OpCode::IsCFGMerge() const
 bool OpCode::IsControlCase() const
 {
     return (op_ == OpCode::IF_BRANCH) || (op_ == OpCode::SWITCH_BRANCH) || (op_ == OpCode::IF_TRUE) ||
-           (op_ == OpCode::IF_FALSE) || (op_ == OpCode::SWITCH_CASE) || (op_ == OpCode::DEFAULT_CASE);
+           (op_ == OpCode::IF_FALSE) || (op_ == OpCode::IF_SUCCESS) || (op_ == OpCode::IF_EXCEPTION) ||
+           (op_ == OpCode::SWITCH_CASE) || (op_ == OpCode::DEFAULT_CASE);
 }
 
 bool OpCode::IsLoopHead() const
