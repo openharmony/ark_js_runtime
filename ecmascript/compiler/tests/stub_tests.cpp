@@ -79,40 +79,13 @@ public:
     LLVMStubModule stubModule {"fast_stub", "x86_64-unknown-linux-gnu"};
 };
 
-class PhiStub : public Stub {
-public:
-    explicit PhiStub(Circuit *circuit) : Stub("Phi", 1, circuit) {}
-    ~PhiStub() = default;
-    NO_MOVE_SEMANTIC(PhiStub);
-    NO_COPY_SEMANTIC(PhiStub);
-    void GenerateCircuit(const CompilationConfig *cfg) override
-    {
-        Stub::GenerateCircuit(cfg);
-        auto env = GetEnvironment();
-        DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
-        DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
-        Label ifTrue(env);
-        Label ifFalse(env);
-        Label next(env);
-
-        Branch(Word32Equal(*x, GetInt32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
-        Bind(&ifTrue);
-        z = Int32Add(*x, GetInt32Constant(10));  // 10 : size of entry
-        Jump(&next);
-        Bind(&ifFalse);
-        z = Int32Add(*x, GetInt32Constant(100));  // 100 : size of entry
-        Jump(&next);
-        Bind(&next);
-        Return(*z);
-    }
-};
-
+#ifndef NDEBUG
 HWTEST_F_L0(StubTest, PhiGateTest)
 {
     auto module = stubModule.GetModule();
     auto function = stubModule.GetTestFunction(FAST_STUB_ID(PhiGateTest));
     Circuit netOfGates;
-    PhiStub optimizer(&netOfGates);
+    PhiGateTestStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -129,50 +102,12 @@ HWTEST_F_L0(StubTest, PhiGateTest)
     EXPECT_EQ(valB, 100); // 100 : expected res for fn(0)
 }
 
-class LoopStub : public Stub {
-public:
-    explicit LoopStub(Circuit *circuit) : Stub("loop", 1, circuit) {}
-    ~LoopStub() = default;
-    NO_MOVE_SEMANTIC(LoopStub);
-    NO_COPY_SEMANTIC(LoopStub);
-    void GenerateCircuit(const CompilationConfig *cfg) override
-    {
-        Stub::GenerateCircuit(cfg);
-        auto env = GetEnvironment();
-        DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
-        DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
-        Label loopHead(env);
-        Label loopEnd(env);
-        Label afterLoop(env);
-        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
-        LoopBegin(&loopHead);
-        Label ifTrue(env);
-        Label ifFalse(env);
-        Label next(env);
-        Branch(Word32Equal(Int32Argument(0), GetInt32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
-        Bind(&ifTrue);
-        z = Int32Add(*y, GetInt32Constant(10));  // 10 : size of entry
-        y = Int32Add(*z, GetInt32Constant(1));
-        Jump(&next);
-        Bind(&ifFalse);
-        z = Int32Add(*y, GetInt32Constant(100));  // 100 : size of entry
-        Jump(&next);
-        Bind(&next);
-        y = Int32Add(*y, GetInt32Constant(1));
-        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
-        Bind(&loopEnd);
-        LoopEnd(&loopHead);
-        Bind(&afterLoop);
-        Return(*z);
-    }
-};
-
 HWTEST_F_L0(StubTest, LoopTest)
 {
     auto module = stubModule.GetModule();
     auto function = stubModule.GetTestFunction(FAST_STUB_ID(LoopTest));
     Circuit netOfGates;
-    LoopStub optimizer(&netOfGates);
+    LoopTestStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -191,48 +126,12 @@ HWTEST_F_L0(StubTest, LoopTest)
     EXPECT_EQ(valC, 0);
 }
 
-class LoopStub1 : public Stub {
-public:
-    explicit LoopStub1(Circuit *circuit) : Stub("loop1", 1, circuit) {}
-    ~LoopStub1() = default;
-    NO_MOVE_SEMANTIC(LoopStub1);
-    NO_COPY_SEMANTIC(LoopStub1);
-    void GenerateCircuit(const CompilationConfig *cfg) override
-    {
-        Stub::GenerateCircuit(cfg);
-        auto env = GetEnvironment();
-        DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
-        DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
-        DEFVARIABLE(z, MachineType::INT32, Int32Argument(0));
-        Label loopHead(env);
-        Label loopEnd(env);
-        Label afterLoop(env);
-        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
-        LoopBegin(&loopHead);
-        x = Int32Add(*z, GetInt32Constant(3));  // 3 : size of entry
-        Label ifTrue(env);
-        Label next(env);
-        Branch(Word32Equal(*x, GetInt32Constant(9)), &ifTrue, &next);  // 9 : size of entry
-        Bind(&ifTrue);
-        y = Int32Add(*z, *x);
-        Jump(&next);
-        Bind(&next);
-        y = Int32Add(*y, GetInt32Constant(1));
-        Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
-        Bind(&loopEnd);
-        LoopEnd(&loopHead);
-        Bind(&afterLoop);
-        z = *y;
-        Return(*z);
-    }
-};
-
 HWTEST_F_L0(StubTest, LoopTest1)
 {
     auto module = stubModule.GetModule();
     auto function = stubModule.GetTestFunction(FAST_STUB_ID(LoopTest1));
     Circuit netOfGates;
-    LoopStub1 optimizer(&netOfGates);
+    LoopTest1Stub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -250,6 +149,7 @@ HWTEST_F_L0(StubTest, LoopTest1)
     EXPECT_EQ(valB, 10); // 10 : expected res for fn(9)
     EXPECT_EQ(valC, 11); // 10 : expected res for fn(11)
 }
+#endif
 
 HWTEST_F_L0(StubTest, FastAddTest)
 {
