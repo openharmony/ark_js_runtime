@@ -158,8 +158,16 @@ bool JSSerializer::WriteRawData(const void *data, size_t length)
 
 bool JSSerializer::AllocateBuffer(size_t bytes)
 {
+    // Get internal heap size
+    if (sizeLimit_ == 0) {
+        uint64_t heapSize = thread_->GetEcmaVM()->GetJSOptions().GetInternalMemorySizeLimit();
+        sizeLimit_ = heapSize;
+    }
     size_t oldSize = bufferSize_;
     size_t newSize = oldSize + bytes;
+    if (newSize > sizeLimit_) {
+        return false;
+    }
     if (bufferCapacity_ == 0) {
         if (bytes < INITIAL_CAPACITY) {
             buffer_ = reinterpret_cast<uint8_t *>(malloc(INITIAL_CAPACITY));
@@ -190,6 +198,10 @@ bool JSSerializer::AllocateBuffer(size_t bytes)
 bool JSSerializer::ExpandBuffer(size_t requestedSize)
 {
     size_t newCapacity = bufferCapacity_ * CAPACITY_INCREASE_RATE;
+    newCapacity = std::max(newCapacity, requestedSize);
+    if (newCapacity > sizeLimit_) {
+        return false;
+    }
     uint8_t *newBuffer = reinterpret_cast<uint8_t *>(malloc(newCapacity));
     if (newBuffer == nullptr) {
         return false;
