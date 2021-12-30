@@ -20,6 +20,45 @@
 #include "ecmascript/compiler/stub-inl.h"
 
 namespace panda::ecmascript::kungfu {
+#ifndef NDEBUG
+class PhiGateTestStub : public Stub {
+public:
+    explicit PhiGateTestStub(Circuit *circuit) : Stub("Phi", 1, circuit) {}
+    ~PhiGateTestStub() = default;
+    NO_MOVE_SEMANTIC(PhiGateTestStub);
+    NO_COPY_SEMANTIC(PhiGateTestStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class LoopTestStub : public Stub {
+public:
+    explicit LoopTestStub(Circuit *circuit) : Stub("LoopTest", 1, circuit) {}
+    ~LoopTestStub() = default;
+    NO_MOVE_SEMANTIC(LoopTestStub);
+    NO_COPY_SEMANTIC(LoopTestStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class LoopTest1Stub : public Stub {
+public:
+    explicit LoopTest1Stub(Circuit *circuit) : Stub("LoopTest1", 1, circuit) {}
+    ~LoopTest1Stub() = default;
+    NO_MOVE_SEMANTIC(LoopTest1Stub);
+    NO_COPY_SEMANTIC(LoopTest1Stub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+
+class FastMulGCTestStub : public Stub {
+public:
+    // 3 : 3 means argument counts
+    explicit FastMulGCTestStub(Circuit *circuit) : Stub("FastMulGCTest", 3, circuit) {}
+    ~FastMulGCTestStub() = default;
+    NO_MOVE_SEMANTIC(FastMulGCTestStub);
+    NO_COPY_SEMANTIC(FastMulGCTestStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
+#endif
+
 class FastAddStub : public Stub {
 public:
     // 2 : 2 means argument counts
@@ -50,16 +89,6 @@ public:
     ~FastMulStub() = default;
     NO_MOVE_SEMANTIC(FastMulStub);
     NO_COPY_SEMANTIC(FastMulStub);
-    void GenerateCircuit(const CompilationConfig *cfg) override;
-};
-
-class FastMulGCTestStub : public Stub {
-public:
-    // 3 : 3 means argument counts
-    explicit FastMulGCTestStub(Circuit *circuit) : Stub("FastMulGCTest", 3, circuit) {}
-    ~FastMulGCTestStub() = default;
-    NO_MOVE_SEMANTIC(FastMulGCTestStub);
-    NO_COPY_SEMANTIC(FastMulGCTestStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
