@@ -718,8 +718,6 @@ public:
     inline void SetHasConstructorToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline void UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, GateRef value);
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
-    GateRef FindOwnElement2(GateRef glue, GateRef elements, GateRef index, GateRef isDict,
-                            GateRef attr, GateRef indexOrEntry);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);
     GateRef GetPropertyByName(GateRef glue, GateRef receiver, GateRef key);
     GateRef SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, GateRef value);

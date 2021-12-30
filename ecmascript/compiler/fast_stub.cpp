@@ -803,18 +803,6 @@ void GetPropertyByNameStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(GetPropertyByName(glue, receiver, key));
 }
 
-void FindOwnElement2Stub::GenerateCircuit(const CompilationConfig *cfg)
-{
-    Stub::GenerateCircuit(cfg);
-    GateRef glue = PtrArgument(0);
-    GateRef elements = TaggedArgument(1);
-    GateRef index = Int32Argument(2);       // 2 : 3rd parameter
-    GateRef isDict = Int32Argument(3);      // 3 : 4th parameter
-    GateRef attr = PtrArgument(4);          // 4 : 5th parameter
-    GateRef indexOrEntry = PtrArgument(5);  // 5 : 6rd parameter
-    Return(FindOwnElement2(glue, elements, index, isDict, attr, indexOrEntry));
-}
-
 void SetPropertyByNameStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);

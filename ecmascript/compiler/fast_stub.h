@@ -73,16 +73,6 @@ public:
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FindOwnElement2Stub : public Stub {
-public:
-    // 6 : 6 means argument counts
-    explicit FindOwnElement2Stub(Circuit *circuit) : Stub("FindOwnElement2", 6, circuit) {}
-    ~FindOwnElement2Stub() = default;
-    NO_MOVE_SEMANTIC(FindOwnElement2Stub);
-    NO_COPY_SEMANTIC(FindOwnElement2Stub);
-    void GenerateCircuit(const CompilationConfig *cfg) override;
-};
-
 class GetPropertyByIndexStub : public Stub {
 public:
     // 3 : 3 means argument counts

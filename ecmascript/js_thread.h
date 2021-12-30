@@ -196,13 +196,13 @@ public:
     Address GetFastStubEntry(uint32_t id)
     {
         ASSERT(id < kungfu::FAST_STUB_MAXCOUNT);
-        return fastStubEntires_[id];
+        return fastStubEntries_[id];
     }
 
     void SetFastStubEntry(uint32_t id, Address entry)
     {
         ASSERT(id < kungfu::FAST_STUB_MAXCOUNT);
-        fastStubEntires_[id] = entry;
+        fastStubEntries_[id] = entry;
     }
 
     void InitializeFastRuntimeStubs();
@@ -269,9 +269,9 @@ public:
         return MEMBER_OFFSET(JSThread, runtimeFunctions_);
     }
 
-    static constexpr uint32_t GetFastStubEntiresOffset()
+    static constexpr uint32_t GetFastStubEntriesOffset()
     {
-        return MEMBER_OFFSET(JSThread, fastStubEntires_);
+        return MEMBER_OFFSET(JSThread, fastStubEntries_);
     }
 
     void SetMarkStatus(MarkStatus status)
@@ -346,7 +346,7 @@ public:
         CURRENT_FRAME,
         LAST_I_FRAME,
         RUNTIME_FUNCTIONS,
-        FAST_STUB_ENTIRES,
+        FAST_STUB_ENTRIES,
         NUMBER_OF_GLUE,
     };
 
@@ -390,61 +390,48 @@ private:
     JSTaggedType *currentFrame_ {nullptr};
     JSTaggedType *lastIFrame_ {nullptr};
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
-    Address fastStubEntires_[kungfu::FAST_STUB_MAXCOUNT];
+    Address fastStubEntries_[kungfu::FAST_STUB_MAXCOUNT];
 
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
 };
 
-static constexpr uint32_t GLUE_EXCEPTION_OFFSET_32 = 0U;
-static constexpr uint32_t GLUE_GLOBAL_CONSTANTS_OFFSET_32 = GLUE_EXCEPTION_OFFSET_32 + sizeof(JSTaggedValue);
-static constexpr uint32_t GLUE_PROPERTIES_CACHE_OFFSET_32 =
-    GLUE_GLOBAL_CONSTANTS_OFFSET_32 + sizeof(JSTaggedValue) * static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT);
-static constexpr uint32_t GLUE_GLOBAL_STORAGE_OFFSET_32 = GLUE_PROPERTIES_CACHE_OFFSET_32 + sizeof(int32_t);
-static constexpr uint32_t GLUE_CURRENT_FRAME_OFFSET_32 = GLUE_GLOBAL_STORAGE_OFFSET_32 + sizeof(int32_t);
-static constexpr uint32_t GLUE_LAST_IFRAME_OFFSET_32 = GLUE_CURRENT_FRAME_OFFSET_32 + sizeof(int32_t);
-static constexpr uint32_t GLUE_RUNTIME_FUNCTIONS_OFFSET_32 = GLUE_LAST_IFRAME_OFFSET_32 + sizeof(int32_t);
-static constexpr uint32_t GLUE_FASTSTUB_ENTRIES_OFFSET_32 =
-    GLUE_RUNTIME_FUNCTIONS_OFFSET_32 + sizeof(int32_t) * JSThread::MAX_RUNTIME_FUNCTIONS;
+#define GLUE_OFFSET_LIST(V)                                                                      \
+    V(GLOBAL_CONSTANTS, GlobalConstants, EXCEPTION,                                              \
+        JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                        \
+    V(PROPERTIES_CACHE, PropertiesCache, GLOBAL_CONSTANTS,                                       \
+        static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize(), \
+        static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize()) \
+    V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
+    V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
+    V(LAST_IFRAME, LastIFrame, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))                \
+    V(RUNTIME_FUNCTIONS, RuntimeFunctions, LAST_IFRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(FASTSTUB_ENTRIES, FastStubEntries, RUNTIME_FUNCTIONS,                                      \
+        JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint32_t),                                      \
+        JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint64_t))                                      \
 
+static constexpr uint32_t GLUE_EXCEPTION_OFFSET_32 = 0U;
 static constexpr uint32_t GLUE_EXCEPTION_OFFSET_64 = 0U;
-static constexpr uint32_t GLUE_GLOBAL_CONSTANTS_OFFSET_64 = GLUE_EXCEPTION_OFFSET_64 + sizeof(JSTaggedValue);
-static constexpr uint32_t GLUE_PROPERTIES_CACHE_OFFSET_64 =
-    GLUE_GLOBAL_CONSTANTS_OFFSET_64 + sizeof(JSTaggedValue) * static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT);
-static constexpr uint32_t GLUE_GLOBAL_STORAGE_OFFSET_64 = GLUE_PROPERTIES_CACHE_OFFSET_64 + sizeof(int64_t);
-static constexpr uint32_t GLUE_CURRENT_FRAME_OFFSET_64 = GLUE_GLOBAL_STORAGE_OFFSET_64 + sizeof(int64_t);
-static constexpr uint32_t GLUE_LAST_IFRAME_OFFSET_64 = GLUE_CURRENT_FRAME_OFFSET_64 + sizeof(int64_t);
-static constexpr uint32_t GLUE_RUNTIME_FUNCTIONS_OFFSET_64 = GLUE_LAST_IFRAME_OFFSET_64 + sizeof(int64_t);
-static constexpr uint32_t GLUE_FASTSTUB_ENTRIES_OFFSET_64 =
-    GLUE_RUNTIME_FUNCTIONS_OFFSET_64 + sizeof(int64_t) * JSThread::MAX_RUNTIME_FUNCTIONS;
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                        \
+    static constexpr uint32_t GLUE_##name##_OFFSET_32 = GLUE_##lastName##_OFFSET_32 + (lastSize32); \
+    static constexpr uint32_t GLUE_##name##_OFFSET_64 = GLUE_##lastName##_OFFSET_64 + (lastSize64);
+GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
 
 #ifdef PANDA_TARGET_32
-static_assert(GLUE_PROPERTIES_CACHE_OFFSET_32 ==
-    (JSThread::GetPropertiesCacheOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_GLOBAL_STORAGE_OFFSET_32 == (JSThread::GetGlobalStorageOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_CURRENT_FRAME_OFFSET_32 == (JSThread::GetCurrentFrameOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_LAST_IFRAME_OFFSET_32 == (JSThread::GetLastIFrameOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_GLOBAL_CONSTANTS_OFFSET_32 ==
-    (JSThread::GetGlobalConstantsOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_EXCEPTION_OFFSET_32 == (JSThread::GetExceptionOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_RUNTIME_FUNCTIONS_OFFSET_32 ==
-    (JSThread::GetRuntimeFunctionsOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_FASTSTUB_ENTRIES_OFFSET_32 ==
-    (JSThread::GetFastStubEntiresOffset() - JSThread::GetExceptionOffset()));
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
+static_assert(GLUE_##name##_OFFSET_32 ==                                                       \
+    (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
+GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
 #endif
+
 #ifdef PANDA_TARGET_64
-static_assert(GLUE_PROPERTIES_CACHE_OFFSET_64 ==
-    (JSThread::GetPropertiesCacheOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_GLOBAL_STORAGE_OFFSET_64 == (JSThread::GetGlobalStorageOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_CURRENT_FRAME_OFFSET_64 == (JSThread::GetCurrentFrameOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_LAST_IFRAME_OFFSET_64 == (JSThread::GetLastIFrameOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_GLOBAL_CONSTANTS_OFFSET_64 ==
-    (JSThread::GetGlobalConstantsOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_EXCEPTION_OFFSET_64 == (JSThread::GetExceptionOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_RUNTIME_FUNCTIONS_OFFSET_64 ==
-    (JSThread::GetRuntimeFunctionsOffset() - JSThread::GetExceptionOffset()));
-static_assert(GLUE_FASTSTUB_ENTRIES_OFFSET_64 ==
-    (JSThread::GetFastStubEntiresOffset() - JSThread::GetExceptionOffset()));
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
+static_assert(GLUE_##name##_OFFSET_64 ==                                                       \
+    (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
+GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
 #endif
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_THREAD_H
