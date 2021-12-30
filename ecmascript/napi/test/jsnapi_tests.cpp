@@ -84,8 +84,10 @@ HWTEST_F_L0(JSNApiTests, GetGlobalObject)
 HWTEST_F_L0(JSNApiTests, ThreadIdCheck)
 {
     EXPECT_TRUE(vm_->GetJSThread()->GetThreadId() == JSThread::GetCurrentThreadId());
+#if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && !ECMASCRIPT_ENABLE_THREAD_CHECK
     std::thread testThread(ThreadCheck, vm_);
     testThread.join();
+#endif
 }
 
 HWTEST_F_L0(JSNApiTests, RegisterFunction)
