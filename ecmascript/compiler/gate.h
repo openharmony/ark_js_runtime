@@ -35,7 +35,7 @@ using GateId = uint32_t;
 using GateOp = uint8_t;
 using GateMark = uint8_t;
 using TimeStamp = uint8_t;
-using GateRef = int32_t;
+using GateType = uint8_t;
 using BitField = uint64_t;
 using OutIdx = uint32_t;
 class Gate;
@@ -77,6 +77,8 @@ public:
         SWITCH_BRANCH,
         IF_TRUE,
         IF_FALSE,
+        IF_SUCCESS,
+        IF_EXCEPTION,
         SWITCH_CASE,
         DEFAULT_CASE,
         MERGE,
@@ -95,32 +97,7 @@ public:
         DEPEND_RELAY,
         DEPEND_AND,
         // High Level IR
-        JS_CALL,
-        JS_CONSTANT,
-        JS_ARG,
-        JS_ADD,
-        JS_SUB,
-        JS_MUL,
-        JS_EXP,
-        JS_DIV,
-        JS_MOD,
-        JS_AND,
-        JS_XOR,
-        JS_OR,
-        JS_LSL,
-        JS_LSR,
-        JS_ASR,
-        JS_LOGIC_AND,
-        JS_LOGIC_OR,
-        JS_LT,
-        JS_LE,
-        JS_GT,
-        JS_GE,
-        JS_EQ,
-        JS_NE,
-        JS_STRICT_EQ,
-        JS_STRICT_NE,
-        JS_LOGIC_NOT,
+        JS_BYTECODE,
         // Middle Level IR
         CALL,
         INT1_CALL,
@@ -330,7 +307,7 @@ private:
 class Gate {
 public:
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark);
+    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, GateType gateType = 0);
     [[nodiscard]] static size_t GetGateSize(size_t numIns);
     [[nodiscard]] size_t GetGateSize() const;
     [[nodiscard]] static size_t GetOutListSize(size_t numIns);
@@ -391,6 +368,7 @@ private:
     GateId id_;
     OpCode opcode_;
     TypeCode type_;
+    GateType gateType_;
     TimeStamp stamp_;
     MarkCode mark_;
     BitField bitfield_;

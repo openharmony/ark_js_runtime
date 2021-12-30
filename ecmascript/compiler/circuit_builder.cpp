@@ -22,7 +22,7 @@ using TaggedValue = panda::coretypes::TaggedValue;
 GateRef CircuitBuilder::NewArguments(size_t index)
 {
     auto argListOfCircuit = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-    return circuit_->NewGate(OpCode(OpCode::JS_ARG), index, {argListOfCircuit}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::INT64_ARG), index, {argListOfCircuit}, TypeCode::NOTYPE);
 }
 
 GateRef CircuitBuilder::NewMerge(GateRef *inList, size_t controlCount)
@@ -88,7 +88,7 @@ GateRef CircuitBuilder::HoleConstant(TypeCode type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::JS_CONSTANT), TaggedValue::VALUE_HOLE, { constantList },
+    return circuit_->NewGate(OpCode(OpCode::INT64_CONSTANT), TaggedValue::VALUE_HOLE, { constantList },
                              type);
 }
 
@@ -96,7 +96,7 @@ GateRef CircuitBuilder::NullConstant(TypeCode type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::JS_CONSTANT), TaggedValue::VALUE_NULL, { constantList },
+    return circuit_->NewGate(OpCode(OpCode::INT64_CONSTANT), TaggedValue::VALUE_NULL, { constantList },
                              type);
 }
 
@@ -104,7 +104,7 @@ GateRef CircuitBuilder::ExceptionConstant(TypeCode type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::JS_CONSTANT), TaggedValue::VALUE_EXCEPTION, { constantList }, type);
+    return circuit_->NewGate(OpCode(OpCode::INT64_CONSTANT), TaggedValue::VALUE_EXCEPTION, { constantList }, type);
 }
 
 GateRef CircuitBuilder::Branch(GateRef state, GateRef condition)

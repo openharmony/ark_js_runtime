@@ -22,6 +22,7 @@
 #include "libpandafile/code_data_accessor-inl.h"
 #include "libpandafile/file-inl.h"
 #include "utils/bit_field.h"
+#include "ecmascript/compiler/circuit.h"
 
 namespace panda::ecmascript {
 class JSThread;
@@ -40,6 +41,14 @@ struct ByteCodeBasicBlock{
     std::vector<ByteCodeBasicBlock *> domFrontiers{}; // List of dominace frontiers
     bool isDead{false};
     std::set<uint16_t> phi{}; // phi node
+    bool phiAcc{false};
+    size_t numStatePred{0};
+    size_t cntStatePred{0};
+    std::vector<std::tuple<size_t, uint8_t *, bool>> realPreds{};
+    kungfu::GateRef stateStart = kungfu::Circuit::NullGate();
+    kungfu::GateRef dependStart = kungfu::Circuit::NullGate();
+    std::map<uint16_t, kungfu::GateRef> valueSelector{};
+    kungfu::GateRef valueSelectorAcc = kungfu::Circuit::NullGate();
 
     bool operator <(const ByteCodeBasicBlock &target) const
     {
@@ -54,6 +63,11 @@ struct ByteCodeInfo {
     bool accOut{false}; // write acc
     uint8_t opcode{-1};
     uint16_t offset{-1};
+};
+
+struct ByteCodeGraph{
+    std::vector<ByteCodeBasicBlock> graph{};
+    const JSMethod *method;
 };
 
 class PandaFileTranslator {
@@ -241,7 +255,7 @@ private:
             }
 
             if (blocks[i].iDominator) {
-                std::cout << "current block " << blocks[i].id << 
+                std::cout << "current block " << blocks[i].id <<
                           " immediate dominator is " << blocks[i].iDominator->id << std::endl;
             }
             std::cout << std::endl;
@@ -251,7 +265,7 @@ private:
                 std::cout << frontier->id << " , ";
             }
             std::cout << std::endl;
-            
+
             std::cout << "current block " << blocks[i].id << " phi variable: ";
             for (auto variable : blocks[i].phi) {
                 std::cout << variable << " , " ;
@@ -260,13 +274,26 @@ private:
         }
     }
 
-    void ComputeDominatorTree(std::vector<ByteCodeBasicBlock> &graph);
-    void BuildImmediateDominator(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
-    void ComputeDomFrontiers(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
-    void GetByteCodeInfo(std::vector<ByteCodeBasicBlock> &graph);
+    // void ComputeDominatorTree(std::vector<ByteCodeBasicBlock> &graph);
+    // void BuildImmediateDominator(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
+    // void ComputeDomFrontiers(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
+    // void GetByteCodeInfo(std::vector<ByteCodeBasicBlock> &graph);
+    // void DeadCodeRemove(const std::map<size_t, size_t> &dfsTimestamp, std::vector<ByteCodeBasicBlock> &graph);
+    // void InsertPhi(std::vector<ByteCodeBasicBlock> &graph);
+    void ComputeDominatorTree(ByteCodeGraph &byteCodeGraph);
+    void BuildImmediateDominator(std::vector<size_t> &immDom, ByteCodeGraph &byteCodeGraph);
+    void ComputeDomFrontiers(std::vector<size_t> &immDom, ByteCodeGraph &byteCodeGraph);
+    void GetByteCodeInfo(ByteCodeGraph &byteCodeGraph);
     ByteCodeInfo GetByteCodeInfo(uint8_t *pc);
-    void DeadCodeRemove(const std::map<size_t, size_t> &dfsTimestamp, std::vector<ByteCodeBasicBlock> &graph);
-    void InsertPhi(std::vector<ByteCodeBasicBlock> &graph);
+    void DeadCodeRemove(const std::map<size_t, size_t> &dfsTimestamp, ByteCodeGraph &byteCodeGraph);
+    void InsertPhi(ByteCodeGraph &byteCodeGraph);
+    static bool IsJump(EcmaOpcode opcode);
+    static bool IsCondJump(EcmaOpcode opcode);
+    static bool IsMov(EcmaOpcode opcode);
+    static bool IsReturn(EcmaOpcode opcode);
+    static bool IsGeneral(EcmaOpcode opcode);
+    // void BuildCircuit(std::vector<ByteCodeBasicBlock> &byteCodeGraph);
+    void BuildCircuit(ByteCodeGraph &byteCodeGraph);
 
     EcmaVM *ecmaVm_;
     ObjectFactory *factory_;
@@ -279,6 +306,7 @@ private:
     std::unordered_map<uint32_t, uint64_t> constpoolMap_;
     std::set<const uint8_t *> translated_code_;
     std::map<const JSMethod *, std::vector<ByteCodeBasicBlock>> methodsGraphs_;
+    std::vector<ByteCodeGraph> graphs_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H

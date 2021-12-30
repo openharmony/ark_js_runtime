@@ -43,9 +43,9 @@ public:
     Circuit &operator=(Circuit &&circuit) = default;
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
     GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+        MarkCode mark = MarkCode::EMPTY, GateType gateType = 0);
     GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+        MarkCode mark = MarkCode::EMPTY, GateType gateType = 0);
     void PrintAllGates() const;
     [[nodiscard]] std::vector<GateRef> GetAllGates() const;
     [[nodiscard]] static GateRef GetCircuitRoot(OpCode opcode);

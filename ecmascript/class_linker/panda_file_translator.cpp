@@ -554,6 +554,11 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
         preIns = pc;
         CollectBytecodeBlockInfo(pc, bytecodeBlockInfo);
     }
+    byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(const_cast<uint8_t *>(bcInsLast.GetAddress()), preIns));
+
+    // for (const auto &[key, value] : byteCodeCurPrePc) {
+    //     std::cout << "cur pc" << static_cast<void *>(key) << " pre pc: " << static_cast<void *>(value) << std::endl;
+    // }
 
     // collect try catch block info
     auto expectionInfo = CollectTryCatchBlockInfo(pf, method, byteCodeCurPrePc, bytecodeBlockInfo);
@@ -714,7 +719,7 @@ std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> PandaFileTrans
         if (!flag) {
             bytecodeBlockInfo.emplace_back(byteCodeCurPrePc[tryStartPc], 2, std::vector<uint8_t *>(1, tryStartPc)); // pre block
         }
-        bytecodeBlockInfo.emplace_back(tryStartPc, 1, std::vector<uint8_t *>(1, tryStartPc));           // try block
+        bytecodeBlockInfo.emplace_back(tryStartPc, 1, std::vector<uint8_t *>(1, tryStartPc)); // try block
         flag = false;
         for (size_t i = 0; i < bytecodeBlockInfo.size(); i++) {
             if (std::get<1>(bytecodeBlockInfo[i]) == 1) {
@@ -739,8 +744,8 @@ std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> PandaFileTrans
                             break;
                         }
                     }
-                } 
-                flag = true
+                }
+                flag = true;
                 break;
             }
         }
@@ -808,6 +813,14 @@ void PandaFileTranslator::CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8_t*
     }
 
     Sort(bytecodeBlockInfo);
+
+    // handling jumps to an empty block
+    auto endPc = std::get<0>(bytecodeBlockInfo[bytecodeBlockInfo.size() - 1]);
+    std::cout << __FUNCTION__ << " , " << __LINE__ << " " << static_cast<void *>(endPc) << std::endl;
+    auto iter = --byteCodeCurPrePc.end();
+    if (endPc == iter->first) {
+        bytecodeBlockInfo.emplace_back(std::make_tuple(endPc, 2, std::vector<uint8_t *>(1, endPc)));
+    }
     // Deduplicate
     deduplicateIndex = std::unique(bytecodeBlockInfo.begin(), bytecodeBlockInfo.end());
     bytecodeBlockInfo.erase(deduplicateIndex, bytecodeBlockInfo.end());
@@ -822,7 +835,10 @@ void PandaFileTranslator::BuildBasicBlocks(const JSMethod *method,
 
     std::map<uint8_t *, ByteCodeBasicBlock *> map1; // [start, bb]
     std::map<uint8_t *, ByteCodeBasicBlock *> map2; // [end, bb]
-    std::vector<ByteCodeBasicBlock> blocks(bytecodeBlockInfo.size() / 2);
+    ByteCodeGraph byteCodeGraph;
+    auto &blocks = byteCodeGraph.graph;
+    byteCodeGraph.method = method;
+    blocks.resize(bytecodeBlockInfo.size() / 2);
     // build basic block
     int blockId = 0;
     int index = 0;
@@ -879,12 +895,15 @@ void PandaFileTranslator::BuildBasicBlocks(const JSMethod *method,
 
     PrintGraph(blocks);
     methodsGraphs_[method] = blocks;
+    graphs_.emplace_back(byteCodeGraph);
     std::cout << "===========================build basic block end=====================================" << std::endl;
-    ComputeDominatorTree(blocks);
+    PrintGraph(byteCodeGraph.graph);
+    ComputeDominatorTree(byteCodeGraph);
 }
 
-void PandaFileTranslator::ComputeDominatorTree(std::vector<ByteCodeBasicBlock> &graph)
+void PandaFileTranslator::ComputeDominatorTree(ByteCodeGraph &byteCodeGraph)
 {
+    auto &graph = byteCodeGraph.graph;
     // Construct graph backward order
     std::map<size_t, size_t> dfsTimestamp; // (basicblock id, dfs order)
     size_t timestamp = 0;
@@ -905,7 +924,7 @@ void PandaFileTranslator::ComputeDominatorTree(std::vector<ByteCodeBasicBlock> &
         }
     }
 
-    DeadCodeRemove(dfsTimestamp, graph);
+    DeadCodeRemove(dfsTimestamp, byteCodeGraph);
 
     // print cfg order
     for(auto iter : dfsTimestamp) {
@@ -986,12 +1005,12 @@ void PandaFileTranslator::ComputeDominatorTree(std::vector<ByteCodeBasicBlock> &
         std::cout << i << " immediate dominator: " << immDom[i] << std::endl;
     }
     PrintGraph(graph);
-    BuildImmediateDominator(immDom, graph);
+    BuildImmediateDominator(immDom, byteCodeGraph);
 }
 
-void PandaFileTranslator::BuildImmediateDominator(
-    std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph)
+void PandaFileTranslator::BuildImmediateDominator(std::vector<size_t> &immDom, ByteCodeGraph &byteCodeGraph)
 {
+    auto &graph = byteCodeGraph.graph;
     std::map<size_t, ByteCodeBasicBlock *> map;
     for(size_t i = 0; i < graph.size(); i++) {
         map[graph.at(i).id] = &graph.at(i);
@@ -1022,7 +1041,7 @@ void PandaFileTranslator::BuildImmediateDominator(
             block.iDominator->immDomBlocks.emplace_back(&block);
         }
     }
-    
+
     for (auto &block : graph) {
         if (block.isDead) {
             continue;
@@ -1034,12 +1053,14 @@ void PandaFileTranslator::BuildImmediateDominator(
         std::cout << std::endl;
     }
     PrintGraph(graph);
-    ComputeDomFrontiers(immDom, graph);
-    InsertPhi(graph);
+    ComputeDomFrontiers(immDom, byteCodeGraph);
+    InsertPhi(byteCodeGraph);
+    BuildCircuit(byteCodeGraph);
 }
 
-void PandaFileTranslator::ComputeDomFrontiers(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph)
+void PandaFileTranslator::ComputeDomFrontiers(std::vector<size_t> &immDom, ByteCodeGraph &byteCodeGraph)
 {
+    auto &graph = byteCodeGraph.graph;
      std::map<size_t, ByteCodeBasicBlock *> map;
     for(size_t i = 0; i < graph.size(); i++) {
         map[graph.at(i).id] = &graph.at(i);
@@ -1076,8 +1097,9 @@ void PandaFileTranslator::ComputeDomFrontiers(std::vector<size_t> &immDom, std::
     }
 }
 
-void PandaFileTranslator::DeadCodeRemove(const std::map<size_t, size_t> &dfsTimestamp, std::vector<ByteCodeBasicBlock> &graph)
+void PandaFileTranslator::DeadCodeRemove(const std::map<size_t, size_t> &dfsTimestamp, ByteCodeGraph &byteCodeGraph)
 {
+    auto &graph = byteCodeGraph.graph;
     for (auto &block : graph) {
         std::vector<ByteCodeBasicBlock *> newPreds;
         for (auto &bb : block.preds) {
@@ -1250,7 +1272,7 @@ ByteCodeInfo PandaFileTranslator::GetByteCodeInfo(uint8_t *pc)
             info.vregIn.emplace_back(funcReg);
             for (size_t i = 1; i <= copyArgs; i++) {
                 info.vregIn.emplace_back(funcReg + i);
-            } 
+            }
             info.accOut = true;
             info.offset = 5;
             break;
@@ -1275,7 +1297,7 @@ ByteCodeInfo PandaFileTranslator::GetByteCodeInfo(uint8_t *pc)
             info.vregIn.emplace_back(funcReg);
             for (size_t i = 1; i <= copyArgs; i++) {
                 info.vregIn.emplace_back(funcReg + i);
-            } 
+            }
             info.accOut = true;
             info.offset = 5;
             break;
@@ -1289,6 +1311,7 @@ ByteCodeInfo PandaFileTranslator::GetByteCodeInfo(uint8_t *pc)
         }
         case EcmaOpcode::RETURNUNDEFINED_PREF: {
             std::cout << __FUNCTION__ << " : " << __LINE__ << std::endl;
+            info.accIn = true; // todo(mingliang): this is hack and should be fixed
             info.accOut = true;
             info.offset = 2;
             break;
@@ -2281,8 +2304,9 @@ ByteCodeInfo PandaFileTranslator::GetByteCodeInfo(uint8_t *pc)
     return info;
 }
 
-void PandaFileTranslator::InsertPhi(std::vector<ByteCodeBasicBlock> &graph)
+void PandaFileTranslator::InsertPhi(ByteCodeGraph &byteCodeGraph)
 {
+    auto &graph = byteCodeGraph.graph;
     std::map<uint16_t, std::set<size_t>> defsitesInfo; // <vreg, bbs>
     for(auto &bb : graph) {
         if (bb.isDead) {
@@ -2328,6 +2352,475 @@ void PandaFileTranslator::InsertPhi(std::vector<ByteCodeBasicBlock> &graph)
     }
     std::cout << __FUNCTION__ << " : " << __LINE__ << std::endl;
     PrintGraph(graph);
+}
+
+bool PandaFileTranslator::IsJump(EcmaOpcode opcode) {
+    switch (opcode) {
+        case EcmaOpcode::JMP_IMM8:
+        case EcmaOpcode::JMP_IMM16:
+        case EcmaOpcode::JMP_IMM32:
+        case EcmaOpcode::JEQZ_IMM8:
+        case EcmaOpcode::JEQZ_IMM16:
+        case EcmaOpcode::JNEZ_IMM8:
+        case EcmaOpcode::JNEZ_IMM16:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool PandaFileTranslator::IsCondJump(EcmaOpcode opcode) {
+    switch (opcode) {
+        case EcmaOpcode::JEQZ_IMM8:
+        case EcmaOpcode::JEQZ_IMM16:
+        case EcmaOpcode::JNEZ_IMM8:
+        case EcmaOpcode::JNEZ_IMM16:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool PandaFileTranslator::IsMov(EcmaOpcode opcode) {
+    switch (opcode) {
+        case EcmaOpcode::MOV_V4_V4:
+        case EcmaOpcode::MOV_DYN_V8_V8:
+        case EcmaOpcode::MOV_DYN_V16_V16:
+        case EcmaOpcode::LDA_DYN_V8:
+        case EcmaOpcode::STA_DYN_V8:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool PandaFileTranslator::IsReturn(EcmaOpcode opcode) {
+    switch (opcode) {
+        case EcmaOpcode::RETURN_DYN:
+        case EcmaOpcode::RETURNUNDEFINED_PREF:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool PandaFileTranslator::IsGeneral(EcmaOpcode opcode) {
+    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode);
+}
+
+void PandaFileTranslator::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
+    auto &graph = byteCodeGraph.graph;
+    std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>> gateToByteCode;
+    std::map<uint8_t *, kungfu::GateRef> byteCodeToGate;
+    kungfu::Circuit circuit;
+    // workaround, remove this when the problem in preds succs trys catchs is fixed.
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        bb.preds.clear();
+        bb.trys.clear();
+        std::vector<ByteCodeBasicBlock *> newSuccs;
+        for (const auto &succ : bb.succs) {
+            if (std::count(bb.catchs.begin(), bb.catchs.end(), succ)) {
+                continue;
+            }
+            newSuccs.push_back(succ);
+        }
+        bb.succs = newSuccs;
+    }
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        for (auto &succ : bb.succs) {
+            succ->preds.push_back(&bb);
+        }
+        for (auto &catchBlock : bb.catchs) {
+            catchBlock->trys.push_back(&bb);
+        }
+    }
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        std::cout << "------------------------" << std::endl;
+        std::cout << "block: " << bb.id << std::endl;
+        std::cout << "preds: ";
+        for (auto pred : bb.preds) {
+            std::cout << pred->id << " , ";
+        }
+        std::cout << std::endl;
+        std::cout << "succs: ";
+        for (auto succ : bb.succs) {
+            std::cout << succ->id << " , ";
+        }
+        std::cout << std::endl;
+        std::cout << "catchs: ";
+        for (auto catchBlock : bb.catchs) {
+            std::cout << catchBlock->id << " , ";
+        }
+        std::cout << std::endl;
+        std::cout << "trys: ";
+        for (auto tryBlock : bb.trys) {
+            std::cout << tryBlock->id << " , ";
+        }
+        std::cout << std::endl;
+    }
+    // create arg gates
+    const size_t numArgs = byteCodeGraph.method->GetNumArgs();
+    const size_t offsetArgs = byteCodeGraph.method->GetNumVregs();
+    std::vector<kungfu::GateRef> argGates(numArgs);
+    for (size_t argIdx = 0; argIdx < numArgs; argIdx++) {
+        argGates.at(argIdx) = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::INT64_ARG), argIdx,
+                                              {kungfu::Circuit::GetCircuitRoot(
+                                                      kungfu::OpCode(kungfu::OpCode::ARG_LIST))},
+                                              kungfu::TypeCode::NOTYPE);
+    }
+    // get number of state predicates of each block
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        bb.numStatePred = 0;
+    }
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        auto pc = bb.start;
+        while (pc <= bb.end) {
+            auto bytecodeInfo = GetByteCodeInfo(pc);
+            pc = pc + bytecodeInfo.offset; // next inst start pc
+            if (IsGeneral(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                if (!bb.catchs.empty()) {
+                    bb.catchs.at(0)->numStatePred++;
+                }
+            }
+        }
+        for (auto &succ : bb.succs) {
+            succ->numStatePred++;
+        }
+    }
+    // build entry of each block
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        if (bb.numStatePred == 0) {
+            bb.stateStart = kungfu::Circuit::GetCircuitRoot(kungfu::OpCode(kungfu::OpCode::STATE_ENTRY));
+            bb.dependStart = kungfu::Circuit::GetCircuitRoot(kungfu::OpCode(kungfu::OpCode::DEPEND_ENTRY));
+        } else if (bb.numStatePred == 1) {
+            bb.stateStart = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::ORDINARY_BLOCK), 0,
+                                            {kungfu::Circuit::NullGate()}, kungfu::TypeCode::NOTYPE);
+            bb.dependStart = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::DEPEND_RELAY), 0,
+                                             {bb.stateStart, kungfu::Circuit::NullGate()}, kungfu::TypeCode::NOTYPE);
+        } else {
+            bb.stateStart = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::MERGE), bb.numStatePred,
+                                            std::vector<kungfu::GateRef>(bb.numStatePred, kungfu::Circuit::NullGate()),
+                                            kungfu::TypeCode::NOTYPE);
+            bb.dependStart = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::DEPEND_SELECTOR), bb.numStatePred,
+                                             std::vector<kungfu::GateRef>(bb.numStatePred + 1, kungfu::Circuit::NullGate()),
+                                             kungfu::TypeCode::NOTYPE);
+            circuit.NewIn(bb.dependStart, 0, bb.stateStart);
+        }
+    }
+    // build states sub-circuit of each block
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        auto stateCur = bb.stateStart;
+        auto dependCur = bb.dependStart;
+        ASSERT(stateCur != kungfu::Circuit::NullGate());
+        ASSERT(dependCur != kungfu::Circuit::NullGate());
+        auto pc = bb.start;
+        while (pc <= bb.end) {
+            auto pcPrev = pc;
+            auto bytecodeInfo = GetByteCodeInfo(pc);
+            pc = pc + bytecodeInfo.offset; // next inst start pc
+            size_t numValueInputs = (bytecodeInfo.accIn ? 1 : 0) + bytecodeInfo.vregIn.size();
+            if (IsGeneral(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                auto gate = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::JS_BYTECODE), numValueInputs,
+                                            std::vector<kungfu::GateRef>(
+                                                    2 + numValueInputs, kungfu::Circuit::NullGate()),
+                                            kungfu::TypeCode::NOTYPE);
+                circuit.NewIn(gate, 0, stateCur);
+                circuit.NewIn(gate, 1, dependCur);
+                auto ifSuccess = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::IF_SUCCESS), 0,
+                                                 {gate},
+                                                 kungfu::TypeCode::NOTYPE);
+                auto ifException = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::IF_EXCEPTION), 0,
+                                                   {gate},
+                                                   kungfu::TypeCode::NOTYPE);
+                if (!bb.catchs.empty()) {
+                    auto bbNext = bb.catchs.at(0);
+                    circuit.NewIn(bbNext->stateStart, bbNext->cntStatePred, ifException);
+                    circuit.NewIn(bbNext->dependStart, bbNext->cntStatePred + 1, gate);
+                    bbNext->cntStatePred++;
+                    bbNext->realPreds.push_back({bb.id, pcPrev, true});
+                    ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
+                } else {
+                    circuit.NewGate(kungfu::OpCode(kungfu::OpCode::THROW), 0,
+                                    {ifException, gate, gate,
+                                     kungfu::Circuit::GetCircuitRoot(kungfu::OpCode(kungfu::OpCode::THROW_LIST))},
+                                    kungfu::TypeCode::NOTYPE);
+                }
+                stateCur = ifSuccess;
+                dependCur = gate;
+                gateToByteCode[gate] = {bb.id, pcPrev};
+                if (pcPrev == bb.end) {
+                    auto bbNext = &graph.at(bb.id + 1);
+                    circuit.NewIn(bbNext->stateStart, bbNext->cntStatePred, stateCur);
+                    circuit.NewIn(bbNext->dependStart, bbNext->cntStatePred + 1, dependCur);
+                    bbNext->cntStatePred++;
+                    bbNext->realPreds.push_back({bb.id, pcPrev, false});
+                    ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
+                }
+            } else if (IsJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                if (IsCondJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                    auto gate = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::JS_BYTECODE), numValueInputs,
+                                                std::vector<kungfu::GateRef>(
+                                                        2 + numValueInputs, kungfu::Circuit::NullGate()),
+                                                kungfu::TypeCode::NOTYPE);
+                    circuit.NewIn(gate, 0, stateCur);
+                    circuit.NewIn(gate, 1, dependCur);
+                    auto ifTrue = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::IF_TRUE), 0,
+                                                  {gate},
+                                                  kungfu::TypeCode::NOTYPE);
+                    auto ifFalse = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::IF_FALSE), 0,
+                                                   {gate},
+                                                   kungfu::TypeCode::NOTYPE);
+                    ASSERT(bb.succs.size() == 2);
+                    int bitSet = 0;
+                    for (auto &bbNext: bb.succs) {
+                        if (bbNext->id == bb.id + 1) {
+                            circuit.NewIn(bbNext->stateStart, bbNext->cntStatePred, ifFalse);
+                            circuit.NewIn(bbNext->dependStart, bbNext->cntStatePred + 1, gate);
+                            bbNext->cntStatePred++;
+                            bbNext->realPreds.push_back({bb.id, pcPrev, false});
+                            ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
+                            bitSet |= 1;
+                        } else {
+                            circuit.NewIn(bbNext->stateStart, bbNext->cntStatePred, ifTrue);
+                            circuit.NewIn(bbNext->dependStart, bbNext->cntStatePred + 1, gate);
+                            bbNext->cntStatePred++;
+                            bbNext->realPreds.push_back({bb.id, pcPrev, false});
+                            ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
+                            bitSet |= 2;
+                        }
+                    }
+                    ASSERT(bitSet == 3);
+                    gateToByteCode[gate] = {bb.id, pcPrev};
+                    break;
+                } else {
+                    ASSERT(bb.succs.size() == 1);
+                    auto bbNext = bb.succs.at(0);
+                    circuit.NewIn(bbNext->stateStart, bbNext->cntStatePred, stateCur);
+                    circuit.NewIn(bbNext->dependStart, bbNext->cntStatePred + 1, dependCur);
+                    bbNext->cntStatePred++;
+                    bbNext->realPreds.push_back({bb.id, pcPrev, false});
+                    ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
+                    break;
+                }
+            } else if (IsReturn(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                ASSERT(bb.succs.empty());
+                auto gate = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::RETURN), 0,
+                                            {stateCur, dependCur, kungfu::Circuit::NullGate(),
+                                             kungfu::Circuit::GetCircuitRoot(
+                                                     kungfu::OpCode(kungfu::OpCode::RETURN_LIST))},
+                                            kungfu::TypeCode::NOTYPE);
+                gateToByteCode[gate] = {bb.id, pcPrev};
+                break;
+            } else {
+                // todo(mingliang): handle explicit throw
+                ASSERT(IsMov(static_cast<EcmaOpcode>(bytecodeInfo.opcode)));
+                if (pcPrev == bb.end) {
+                    auto bbNext = &graph.at(bb.id + 1);
+                    circuit.NewIn(bbNext->stateStart, bbNext->cntStatePred, stateCur);
+                    circuit.NewIn(bbNext->dependStart, bbNext->cntStatePred + 1, dependCur);
+                    bbNext->cntStatePred++;
+                    bbNext->realPreds.push_back({bb.id, pcPrev, false});
+                    ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
+                }
+            }
+        }
+    }
+    // set all value inputs
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        ASSERT(bb.cntStatePred == bb.numStatePred);
+    }
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        bb.phiAcc = (bb.numStatePred > 1) || (!bb.trys.empty());
+    }
+    for (auto &bb : graph) {
+        if (bb.isDead) {
+            continue;
+        }
+        auto pc = bb.start;
+        std::cout << "BB_" << bb.id << ": " << std::endl;
+        while (pc <= bb.end) {
+            auto curInfo = GetByteCodeInfo(pc);
+            std::cout << "Inst_" << static_cast<int>(curInfo.opcode) << ": ";
+            std::cout << "In=[";
+            if (curInfo.accIn) {
+                std::cout << "acc" << ",";
+            }
+            for (const auto &in : curInfo.vregIn) {
+                std::cout << in << ",";
+            }
+            std::cout << "] Out=[";
+            if (curInfo.accOut) {
+                std::cout << "acc" << ",";
+            }
+            for (const auto &out : curInfo.vregOut) {
+                std::cout << out << ",";
+            }
+            std::cout << "]";
+            std::cout << std::endl;
+            pc += curInfo.offset;
+        }
+    }
+    for (const auto &[key, value] : gateToByteCode) {
+        byteCodeToGate[value.second] = key;
+    }
+    for (auto gate : circuit.GetAllGates()) {
+        // circuit.Print(gate);
+        auto numInsArray = circuit.GetOpCode(gate).GetOpCodeNumInsArray(circuit.GetBitField(gate));
+        auto it = gateToByteCode.find(gate);
+        if (it == gateToByteCode.end()) {
+            continue;
+        }
+        const auto &[id, pc] = it->second;
+        auto bytecodeInfo = GetByteCodeInfo(pc);
+        size_t numValueInputs = (bytecodeInfo.accIn ? 1 : 0) + bytecodeInfo.vregIn.size();
+        size_t numValueOutputs = (bytecodeInfo.accOut ? 1 : 0) + bytecodeInfo.vregOut.size();
+        ASSERT(numValueInputs == numInsArray[2]);
+        ASSERT(numValueOutputs <= 1);
+        std::function<kungfu::GateRef(size_t, const uint8_t *, uint16_t, bool)> defSiteOfReg =
+                [&](size_t bbId,
+                    const uint8_t *end,
+                    uint16_t reg,
+                    bool acc) -> kungfu::GateRef {
+            auto ans = kungfu::Circuit::NullGate();
+            auto &bb = graph.at(bbId);
+            std::vector<uint8_t *> instList;
+            {
+                auto pcIter = bb.start;
+                while (pcIter <= end) {
+                    instList.push_back(pcIter);
+                    auto curInfo = GetByteCodeInfo(pcIter);
+                    pcIter += curInfo.offset;
+                }
+            }
+            std::reverse(instList.begin(), instList.end());
+            for (auto pcIter: instList) {
+                auto curInfo = GetByteCodeInfo(pcIter);
+                if (acc) {
+                    if (curInfo.accOut) {
+                        if (IsMov(static_cast<EcmaOpcode>(curInfo.opcode))) {
+                            acc = curInfo.accIn;
+                            if (!curInfo.vregIn.empty()) {
+                                ASSERT(!acc);
+                                ASSERT(curInfo.vregIn.size() == 1);
+                                reg = curInfo.vregIn.at(0);
+                            }
+                        } else {
+                            ans = byteCodeToGate.at(pcIter);
+                            break;
+                        }
+                    }
+                } else {
+                    if (!curInfo.vregOut.empty() && curInfo.vregOut.at(0) == reg) {
+                        if (IsMov(static_cast<EcmaOpcode>(curInfo.opcode))) {
+                            acc = curInfo.accIn;
+                            if (!curInfo.vregIn.empty()) {
+                                ASSERT(!acc);
+                                ASSERT(curInfo.vregIn.size() == 1);
+                                reg = curInfo.vregIn.at(0);
+                            }
+                        } else {
+                            ans = byteCodeToGate.at(pcIter);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (ans == kungfu::Circuit::NullGate() && !acc && bb.phi.count(reg)) {
+                if (!bb.valueSelector.count(reg)) {
+                    auto gate = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::VALUE_SELECTOR_INT64),
+                                                bb.numStatePred,
+                                                std::vector<kungfu::GateRef>(
+                                                        1 + bb.numStatePred, kungfu::Circuit::NullGate()),
+                                                kungfu::TypeCode::NOTYPE);
+                    bb.valueSelector[reg] = gate;
+                    circuit.NewIn(gate, 0, bb.stateStart);
+                    for (size_t i = 0; i < bb.numStatePred; ++i) {
+                        auto &[predId, predPc, isException] = bb.realPreds.at(i);
+                        circuit.NewIn(gate, i + 1, defSiteOfReg(predId, predPc, reg, acc));
+                    }
+                }
+                ans = bb.valueSelector.at(reg);
+            }
+            if (ans == kungfu::Circuit::NullGate() && acc && bb.phiAcc) {
+                if (bb.valueSelectorAcc == kungfu::Circuit::NullGate()) {
+                    auto gate = circuit.NewGate(kungfu::OpCode(kungfu::OpCode::VALUE_SELECTOR_INT64),
+                                                bb.numStatePred,
+                                                std::vector<kungfu::GateRef>(
+                                                        1 + bb.numStatePred, kungfu::Circuit::NullGate()),
+                                                kungfu::TypeCode::NOTYPE);
+                    bb.valueSelectorAcc = gate;
+                    circuit.NewIn(gate, 0, bb.stateStart);
+                    bool hasException = false;
+                    bool hasNonException = false;
+                    for (size_t i = 0; i < bb.numStatePred; ++i) {
+                        auto &[predId, predPc, isException] = bb.realPreds.at(i);
+                        if (isException) {
+                            hasException = true;
+                        } else {
+                            hasNonException = true;
+                        }
+                        if (isException) {
+                            auto ifExceptionGate = circuit.GetIn(bb.stateStart, i);
+                            ASSERT(circuit.GetOpCode(ifExceptionGate) == kungfu::OpCode::IF_EXCEPTION);
+                            circuit.NewIn(gate, i + 1, circuit.GetIn(ifExceptionGate, 0));
+                        } else {
+                            circuit.NewIn(gate, i + 1, defSiteOfReg(predId, predPc, reg, acc));
+                        }
+                    }
+                    // catch block should have only exception entries
+                    // normal block should have only normal entries
+                    ASSERT(!hasException || !hasNonException);
+                }
+                ans = bb.valueSelectorAcc;
+            }
+            if (ans == kungfu::Circuit::NullGate() && bbId == 0) {
+                ASSERT(!acc && reg >= offsetArgs && reg < offsetArgs + argGates.size());
+                return argGates.at(reg - offsetArgs);
+            }
+            if (ans == kungfu::Circuit::NullGate()) {
+                return defSiteOfReg(bb.iDominator->id, bb.iDominator->end, reg, acc);
+            } else {
+                return ans;
+            }
+        };
+        for (size_t valueIdx = 0; valueIdx < numInsArray[2]; valueIdx++) {
+            auto inIdx = valueIdx + numInsArray[0] + numInsArray[1];
+            ASSERT(circuit.IsInGateNull(gate, inIdx));
+            if (valueIdx < bytecodeInfo.vregIn.size()) {
+                circuit.NewIn(gate, inIdx, defSiteOfReg(id, pc - 1, bytecodeInfo.vregIn.at(valueIdx), false));
+            } else {
+                circuit.NewIn(gate, inIdx, defSiteOfReg(id, pc - 1, 0, true));
+            }
+        }
+    }
+    circuit.PrintAllGates();
 }
 
 uint32_t PandaFileTranslator::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset)

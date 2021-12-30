@@ -58,7 +58,7 @@ Gate *Circuit::AllocateGateSpace(size_t numIns)
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
 GateRef Circuit::NewGate(
-    OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type, MarkCode mark)
+    OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type, MarkCode mark, GateType gateType)
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
@@ -75,25 +75,23 @@ GateRef Circuit::NewGate(
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : this->LoadGatePtr(inList[idx]);
     }
-    auto newGate = new (gateSpace) Gate(this->gateCounter, opcode, bitfield, inPtrList.data(), type, mark);
+    auto newGate = new (gateSpace) Gate(this->gateCounter, opcode, bitfield, inPtrList.data(), type, mark, gateType);
     this->gateCounter++;
     return this->SaveGatePtr(newGate);
 }
 
 GateRef Circuit::NewGate(
-    OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type, MarkCode mark)
+    OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type, MarkCode mark, GateType gateType)
 {
-    return this->NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark);
+    return this->NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark, gateType);
 }
 
 void Circuit::PrintAllGates() const
 {
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
     const auto &gateList = this->GetAllGates();
-    for (auto &gate : gateList) {
+    for (const auto &gate : gateList) {
         this->LoadGatePtrConst(gate)->Print();
     }
-#endif
 }
 
 std::vector<GateRef> Circuit::GetAllGates() const
@@ -159,10 +157,10 @@ Circuit::~Circuit() {}
 
 void Circuit::AdvanceTime() const
 {
-    auto &time = const_cast<TimeStamp &>(this->time);
-    time++;
-    if (time == 0) {
-        time = 1;
+    auto &curTime = const_cast<TimeStamp &>(this->time);
+    curTime++;
+    if (curTime == 0) {
+        curTime = 1;
         this->ResetAllGateTimeStamps();
     }
 }
@@ -240,6 +238,9 @@ std::vector<GateRef> Circuit::GetInVector(GateRef gate) const
 
 GateRef Circuit::GetIn(GateRef gate, size_t idx) const
 {
+#ifndef NDEBUG
+    ASSERT(idx < this->LoadGatePtrConst(gate)->GetNumIns());
+#endif
     const Gate *curGate = this->LoadGatePtrConst(gate);
     return this->SaveGatePtr(curGate->GetInGateConst(idx));
 }
@@ -273,16 +274,28 @@ std::vector<GateRef> Circuit::GetOutVector(GateRef gate) const
 
 void Circuit::NewIn(GateRef gate, size_t idx, GateRef in)
 {
+#ifndef NDEBUG
+    ASSERT(idx < this->LoadGatePtrConst(gate)->GetNumIns());
+    ASSERT(Circuit::IsInGateNull(gate, idx));
+#endif
     this->LoadGatePtr(gate)->NewIn(idx, this->LoadGatePtr(in));
 }
 
 void Circuit::ModifyIn(GateRef gate, size_t idx, GateRef in)
 {
+#ifndef NDEBUG
+    ASSERT(idx < this->LoadGatePtrConst(gate)->GetNumIns());
+    ASSERT(!Circuit::IsInGateNull(gate, idx));
+#endif
     this->LoadGatePtr(gate)->ModifyIn(idx, this->LoadGatePtr(in));
 }
 
 void Circuit::DeleteIn(GateRef gate, size_t idx)
 {
+#ifndef NDEBUG
+    ASSERT(idx < this->LoadGatePtrConst(gate)->GetNumIns());
+    ASSERT(!Circuit::IsInGateNull(gate, idx));
+#endif
     this->LoadGatePtr(gate)->DeleteIn(idx);
 }
 
