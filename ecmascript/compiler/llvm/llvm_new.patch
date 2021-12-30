@@ -503,18 +503,21 @@ index 48f78151025..0970a6259ad 100644
    case ARM::MOVTi16_ga_pcrel:
    case ARM::t2MOVi16_ga_pcrel:
 diff --git a/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp b/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
-index 66ad120a111..afa4cccac6e 100644
+index 66ad120a111..59335c77394 100644
 --- a/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
 +++ b/llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
-@@ -810,7 +810,7 @@ initializeFunctionInfo(const std::vector<MachineInstr*> &CPEMIs) {
-           case ARM::t2LDRpci:
-           case ARM::t2LDRHpci:
-           case ARM::t2LDRBpci:
--            Bits = 12;  // +-offset_12
-+            Bits = 11;  // +-offset_12
+@@ -831,6 +831,11 @@ initializeFunctionInfo(const std::vector<MachineInstr*> &CPEMIs) {
              NegOk = true;
              break;
+           }
++          // Decrease a bit here to workaround the out of range pc-relative
++          // fixup value error during the MCJIT compilation process
++          if (Bits > 0) {
++            Bits--;
++          }
  
+           // Remember that this is a user of a CP entry.
+           unsigned CPI = I.getOperand(op).getIndex();
 diff --git a/llvm/lib/Target/ARM/ARMFrameLowering.cpp b/llvm/lib/Target/ARM/ARMFrameLowering.cpp
 index cb98b2b34ef..b39bdf6f48e 100644
 --- a/llvm/lib/Target/ARM/ARMFrameLowering.cpp
