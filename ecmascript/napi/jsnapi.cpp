@@ -1325,6 +1325,18 @@ Local<StringRef> RegExpRef::GetOriginalSource(const EcmaVM *vm)
     return JSNApiHelper::ToLocal<StringRef>(sourceHandle);
 }
 
+Local<DateRef> DateRef::New(const EcmaVM *vm, double time)
+{
+    JSThread *thread = vm->GetJSThread();
+    ObjectFactory *factory = vm->GetFactory();
+    JSHandle<GlobalEnv> globalEnv = vm->GetGlobalEnv();
+    JSHandle<JSTaggedValue> dateFunction = globalEnv->GetDateFunction();
+    JSHandle<JSDate> dateObject =
+        JSHandle<JSDate>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(dateFunction), dateFunction));
+    dateObject->SetTimeValue(thread, JSTaggedValue(time));
+    return JSNApiHelper::ToLocal<DateRef>(JSHandle<JSTaggedValue>(dateObject));
+}
+
 Local<StringRef> DateRef::ToString(const EcmaVM *vm)
 {
     JSThread *thread = vm->GetJSThread();
@@ -1336,6 +1348,15 @@ Local<StringRef> DateRef::ToString(const EcmaVM *vm)
     }
     JSHandle<JSTaggedValue> dateStrHandle(thread, dateStr);
     return JSNApiHelper::ToLocal<StringRef>(dateStrHandle);
+}
+
+double DateRef::GetTime()
+{
+    JSHandle<JSDate> date(JSNApiHelper::ToJSHandle(this));
+    if (!date->IsDate()) {
+        LOG(ERROR, RUNTIME) << "Not a Date Object";
+    }
+    return date->GetTime().GetDouble();
 }
 
 int32_t MapRef::GetSize()

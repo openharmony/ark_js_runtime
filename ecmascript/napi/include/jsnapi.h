@@ -673,7 +673,9 @@ public:
 
 class PUBLIC_API DateRef : public ObjectRef {
 public:
+    static Local<DateRef> New(const EcmaVM *vm, double time);
     Local<StringRef> ToString(const EcmaVM *vm);
+    double GetTime();
 };
 
 class PUBLIC_API MapRef : public ObjectRef {
