@@ -41,7 +41,7 @@ class ParallelEvacuation;
 class EvacuationAllocator;
 class WorkerHelper;
 
-using DerivedData = std::tuple<uintptr_t, uintptr_t, uintptr_t>;
+using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
 
 class Heap {
 public:
@@ -294,7 +294,7 @@ public:
 
     inline void ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd);
 
-    ChunkVector<DerivedData> *GetDerivedPointers() const
+    ChunkMap<DerivedDataKey, uintptr_t> *GetDerivedPointers() const
     {
         return derivedPointers_;
     }
@@ -392,7 +392,7 @@ private:
     HeapTracker *tracker_ {nullptr};
     MemController *memController_ {nullptr};
     size_t oldSpaceAllocLimit_ {OLD_SPACE_LIMIT_BEGIN};
-    ChunkVector<DerivedData> *derivedPointers_ {nullptr};
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers_ {nullptr};
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     bool isVerifying_ {false};
 #endif

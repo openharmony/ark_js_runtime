@@ -85,16 +85,6 @@ public:
         currentFrame_ = sp;
     }
 
-    const JSTaggedType *GetLastInterpretedFrameSp() const
-    {
-        return lastIFrame_;
-    }
-
-    void SetLastIFrameSp(JSTaggedType *sp)
-    {
-        lastIFrame_ = sp;
-    }
-
     bool DoStackOverflowCheck(const JSTaggedType *sp);
 
     bool IsEcmaInterpreter() const
@@ -226,14 +216,6 @@ public:
 
     void IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor);
 
-    uintptr_t* GetLastOptCallRuntimePc() const
-    {
-        return lastOptCallRuntimePc_;
-    }
-    void SetLastOptCallRuntimePc(uintptr_t* pc)
-    {
-        lastOptCallRuntimePc_ = pc;
-    }
     PropertiesCache *GetPropertiesCache() const
     {
         return propertiesCache_;
@@ -347,6 +329,9 @@ public:
         LAST_I_FRAME,
         RUNTIME_FUNCTIONS,
         FAST_STUB_ENTRIES,
+        FRAME_STATE_SIZE,
+        OPT_LEAVE_FRAME_SIZE,
+        OPT_LEAVE_FRAME_PREV_OFFSET,
         NUMBER_OF_GLUE,
     };
 
@@ -418,15 +403,32 @@ static constexpr uint32_t GLUE_EXCEPTION_OFFSET_64 = 0U;
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
 
+static constexpr uint32_t GLUE_FRAME_STATE_SIZE_64 =
+     2 * sizeof(int64_t) + 5 * sizeof(int64_t) + sizeof(int64_t) + sizeof(int64_t);
+static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_SIZE_64 = 5 * sizeof(uint64_t);
+static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64 = sizeof(uint64_t);
+static constexpr uint32_t GLUE_FRAME_STATE_SIZE_32 =
+    2 * sizeof(int32_t) + 5 * sizeof(int64_t) + sizeof(int32_t) + sizeof(int32_t) + sizeof(int64_t);
+static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_SIZE_32 = sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(uint64_t);
+static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32 = sizeof(uint64_t);
+
 #ifdef PANDA_TARGET_32
 #define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
 static_assert(GLUE_##name##_OFFSET_32 ==                                                       \
     (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
+
+static_assert(GLUE_FRAME_STATE_SIZE_32 == sizeof(struct panda::ecmascript::InterpretedFrame));
+static_assert(GLUE_OPT_LEAVE_FRAME_SIZE_32 == sizeof(struct panda::ecmascript::OptLeaveFrame));
+static_assert(GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32 == MEMBER_OFFSET(panda::ecmascript::OptLeaveFrame, prev));
 #endif
 
 #ifdef PANDA_TARGET_64
+
+static_assert(GLUE_FRAME_STATE_SIZE_64 == sizeof(struct panda::ecmascript::InterpretedFrame));
+static_assert(GLUE_OPT_LEAVE_FRAME_SIZE_64 == sizeof(struct panda::ecmascript::OptLeaveFrame));
+static_assert(GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64 == MEMBER_OFFSET(panda::ecmascript::OptLeaveFrame, prev));
 #define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
 static_assert(GLUE_##name##_OFFSET_64 ==                                                       \
     (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));

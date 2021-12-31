@@ -62,7 +62,7 @@ public:
                                    JSTaggedType argValue);
     static double FloatMod(double left, double right);
     static JSTaggedType NewInternalString(uintptr_t argGlue, JSTaggedType argKey);
-    static JSTaggedType NewEcmaDynClass(uintptr_t argGlue, uint32_t size, uint8_t type);
+    static JSTaggedType NewEcmaDynClass(uintptr_t argGlue, uint32_t size, uint32_t type, uint32_t inlinedProps);
     static void UpdateLayOutAndAddTransition(uintptr_t argGlue, JSTaggedType oldHClass, JSTaggedType newHClass,
                                             JSTaggedType key, uint32_t attr);
     static void PrintHeapReginInfo(uintptr_t argGlue);
@@ -76,32 +76,6 @@ public:
                                         JSTaggedType argElement, uint32_t elementIndex, uint32_t capacity);
     static void DebugPrint(int fmtMessageId, ...);
     static void NoticeThroughChainAndRefreshUser(uintptr_t argGlue, uint64_t argoldHClass, uint64_t argnewHClass);
-};
-
-class CallRuntimeTrampolinesScope {
-public:
-    CallRuntimeTrampolinesScope(JSThread *thread, uintptr_t *newFp, uintptr_t *pc)
-        :lastFp_(nullptr),
-        thread_(thread)
-    {
-        lastOptCallRuntimePc_ = thread->GetLastOptCallRuntimePc();
-        thread->SetLastOptCallRuntimePc(pc);
-        JSTaggedType *cursp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-        lastFp_ = static_cast<uintptr_t *>(static_cast<void *>(cursp));
-        thread->SetLastIFrameSp(cursp);
-        JSTaggedType *newSp = static_cast<JSTaggedType *>(static_cast<void *>(newFp));
-        thread_->SetCurrentSPFrame(newSp);
-    }
-    ~CallRuntimeTrampolinesScope()
-    {
-        JSTaggedType *oldSp = static_cast<JSTaggedType *>(static_cast<void *>(lastFp_));
-        thread_->SetCurrentSPFrame(oldSp);
-        thread_->SetLastOptCallRuntimePc(lastOptCallRuntimePc_);
-    }
-private:
-    uintptr_t *lastFp_;
-    JSThread *thread_;
-    uintptr_t  *lastOptCallRuntimePc_;
 };
 }  // namespace panda::ecmascript
 #endif

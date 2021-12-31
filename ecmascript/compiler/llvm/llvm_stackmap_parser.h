@@ -23,15 +23,15 @@
 #include <vector>
 #include "ecmascript/common.h"
 #include "ecmascript/ecma_macros.h"
-
+#include "ecmascript/interpreter/interpreter-inl.h"
 
 namespace kungfu {
 using OffsetType = int32_t;
 using DwarfRegType = uint16_t;
 using DwarfRegAndOffsetType = std::pair<DwarfRegType, OffsetType>;
-using DwarfRegAndOffsetTypeVector = std::vector<DwarfRegAndOffsetType>;
+using CallSiteInfo = std::vector<DwarfRegAndOffsetType>;
 using Fun2InfoType = std::pair<uintptr_t, DwarfRegAndOffsetType>;
-using DerivedData = panda::ecmascript::DerivedData;
+using DerivedDataKey = panda::ecmascript::DerivedDataKey;
 using RootVisitor = panda::ecmascript::RootVisitor;
 using RootRangeVisitor = panda::ecmascript::RootRangeVisitor;
 
@@ -201,15 +201,21 @@ public:
     {
         llvmStackMap_.Print();
     }
-    const DwarfRegAndOffsetTypeVector *StackMapByAddr(uintptr_t funcAddr) const;
-    bool StackMapByFuncAddrFp(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
-                              const RootRangeVisitor &v1, panda::ecmascript::ChunkVector<DerivedData> *data,
+    const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
+    bool GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
+                              const RootRangeVisitor &v1, panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
                               [[maybe_unused]] bool isVerifying) const;
+    bool GetStackMapIterm(panda::ecmascript::OptLeaveFrame *state,
+                            const RootVisitor &v0, const RootRangeVisitor &v1,
+                            panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
+                            [[maybe_unused]] bool isVerifying) const;
+
 private:
     LLVMStackMapParser()
     {
         stackMapAddr_ = nullptr;
-        callSiteInfos_.clear();
+        pc2CallSiteInfo_.clear();
+        pid2CallSiteInfo_.clear();
         dataInfo_ = nullptr;
     }
     ~LLVMStackMapParser()
@@ -217,13 +223,19 @@ private:
         if (stackMapAddr_) {
             stackMapAddr_.release();
         }
-        callSiteInfos_.clear();
+        pc2CallSiteInfo_.clear();
+        pid2CallSiteInfo_.clear();
         dataInfo_ = nullptr;
     }
     void CalcCallSite();
+    bool IsDeriveredPointer(int callsitetime) const;
+    const CallSiteInfo* GetCallSiteInfoByPatchID(uint64_t patchPointId) const;
+    void PrintCallSiteInfo(const CallSiteInfo *infos, panda::ecmascript::OptLeaveFrame *state);
+    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp);
     std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
-    std::unordered_map<uintptr_t, DwarfRegAndOffsetTypeVector> callSiteInfos_;
+    std::unordered_map<uintptr_t, CallSiteInfo> pc2CallSiteInfo_;
+    std::unordered_map<uint64_t, CallSiteInfo> pid2CallSiteInfo_;
     [[maybe_unused]] std::unique_ptr<DataInfo> dataInfo_;
 };
 } // namespace kungfu

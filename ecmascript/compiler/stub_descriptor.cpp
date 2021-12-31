@@ -548,13 +548,14 @@ CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
 
 CALL_STUB_INIT_DESCRIPTOR(NewEcmaDynClass)
 {
-    // 3 : 3 input parameters
-    StubDescriptor newEcmaDynClass("NewEcmaDynClass", 0, 3,
+    // 4 : 4 input parameters
+    StubDescriptor newEcmaDynClass("NewEcmaDynClass", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED_POINTER);
     *descriptor = newEcmaDynClass;
-    // 3 : 3 input parameters
-    std::array<MachineType, 3> params = {
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
         MachineType::NATIVE_POINTER,
+        MachineType::UINT32,
         MachineType::UINT32,
         MachineType::UINT32,
     };

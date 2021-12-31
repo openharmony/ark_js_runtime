@@ -78,7 +78,7 @@ namespace panda::ecmascript {
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GET_FRAME(CurrentSp) \
-    (reinterpret_cast<FrameState *>(CurrentSp) - 1)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    (reinterpret_cast<InterpretedFrame *>(CurrentSp) - 1)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SAVE_PC() (GET_FRAME(sp)->pc = pc)  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -207,24 +207,26 @@ namespace panda::ecmascript {
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
-JSTaggedType *EcmaInterpreter::GetCurrentInterpretedFrameSp(JSThread *thread)
+JSTaggedType * EcmaInterpreter::FixSpIfNeed(JSThread *thread)
 {
-    JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    auto current = originalPrevSp;
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     FrameType type = *(reinterpret_cast<FrameType*>(
-                        reinterpret_cast<long long>(current) + FrameConst::FRAME_TYPE_OFFSET));
-    JSTaggedType *sp = originalPrevSp;
-    if (type != FrameType::INTERPRETER_FRAME) {
-        JSTaggedType *lastSp = const_cast<JSTaggedType *>(thread->GetLastInterpretedFrameSp());
-        sp = lastSp;
+                        reinterpret_cast<long long>(current) + FrameCommonConstants::FRAME_TYPE_OFFSET));
+    if (type == FrameType::INTERPRETER_FRAME) {
+        return current;
+    } else if (type == FrameType::OPTIMIZED_LEAVE_FRAME) {
+        return reinterpret_cast<JSTaggedType *>(OptLeaveFrame::GetFrameFromSp(current));
+    } else {
+        abort();
     }
-    return sp;
+    return nullptr;
 }
 
 JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, ExecuteNative);
-    JSTaggedType *sp = GetCurrentInterpretedFrameSp(thread);
+    JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    JSTaggedType *fixedSp = FixSpIfNeed(thread);
 
     JSMethod *methodToCall = params.callTarget->GetCallTarget();
     ASSERT(methodToCall->GetNumVregs() == 0);
@@ -232,7 +234,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     // Tags and values of thread, new_tgt and argv_length are put into frames too for native frames
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
     size_t frameSize = FRAME_STATE_SIZE + numActualArgs;
-    JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    JSTaggedType *newSp = fixedSp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
@@ -246,8 +248,8 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
         newSp[i + RESERVED_CALL_ARGCOUNT] = params.argv[i];
     }
 
-    FrameState *state = GET_FRAME(newSp);
-    state->base.prev = sp;
+    InterpretedFrame *state = GET_FRAME(newSp);
+    state->base.prev = originalPrevSp;
     state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     state->pc = nullptr;
     state->sp = newSp;
@@ -261,7 +263,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     JSTaggedValue tagged =
         reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(methodToCall->GetNativePointer()))(&ecmaRuntimeCallInfo);
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
-    thread->SetCurrentSPFrame(sp);
+    thread->SetCurrentSPFrame(originalPrevSp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
@@ -277,15 +279,14 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
         return EcmaInterpreter::ExecuteNative(thread, params);
     }
     JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-
-    JSTaggedType *sp = GetCurrentInterpretedFrameSp(thread);
-    JSTaggedType *newSp = sp - FRAME_STATE_SIZE;
+    JSTaggedType *fixedSp = FixSpIfNeed(thread);
+    JSTaggedType *newSp = fixedSp - FRAME_STATE_SIZE;
     // push break state
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
-    FrameState *breakState = GET_FRAME(newSp);
+    InterpretedFrame *breakState = GET_FRAME(newSp);
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->function = JSTaggedValue::Hole();
@@ -356,7 +357,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     }
 
     const uint8_t *pc = method->GetBytecodeArray();
-    FrameState *state = GET_FRAME(newSp);
+    InterpretedFrame *state = GET_FRAME(newSp);
     state->pc = pc;
     state->sp = newSp;
     state->function = JSTaggedValue(params.callTarget);
@@ -405,7 +406,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     if (thread->DoStackOverflowCheck(breakSp) || thread->HasPendingException()) {
         return JSTaggedValue::Exception();
     }
-    FrameState *breakState = GET_FRAME(breakSp);
+    InterpretedFrame *breakState = GET_FRAME(breakSp);
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->function = JSTaggedValue::Hole();
@@ -431,7 +432,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     const uint8_t *resumePc = method->GetBytecodeArray() + static_cast<uint32_t>(pcOffset.GetInt()) +
                               BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8);
 
-    FrameState *state = GET_FRAME(newSp);
+    InterpretedFrame *state = GET_FRAME(newSp);
     state->pc = resumePc;
     state->sp = newSp;
     state->function = func.GetTaggedValue();
@@ -467,7 +468,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
     if (thread->DoStackOverflowCheck(breakSp) || thread->HasPendingException()) {
         return;
     }
-    FrameState *breakState = GET_FRAME(breakSp);
+    InterpretedFrame *breakState = GET_FRAME(breakSp);
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->function = JSTaggedValue::Hole();
@@ -493,7 +494,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     const uint8_t *pc = method->GetBytecodeArray() + static_cast<uint32_t>(pcOffset.GetInt());
 
-    FrameState *state = GET_FRAME(newSp);
+    InterpretedFrame *state = GET_FRAME(newSp);
     state->pc = pc;
     state->sp = newSp;
     state->function = func.GetTaggedValue();
@@ -511,7 +512,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
 void EcmaInterpreter::ResumeContext(JSThread *thread)
 {
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    FrameState *state = GET_FRAME(sp);
+    InterpretedFrame *state = GET_FRAME(sp);
     thread->SetCurrentSPFrame(state->base.prev);
 }
 
@@ -844,7 +845,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                     }
                 }
 
-                FrameState *state = GET_FRAME(newSp);
+                InterpretedFrame *state = GET_FRAME(newSp);
                 state->base.prev = sp;
                 state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
                 state->pc = nullptr;
@@ -991,7 +992,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                     InterpreterFrameCopyArgs(newSp, numVregs, copyArgs, numDeclaredArgs, haveExtra);
                 }
 
-                FrameState *state = GET_FRAME(newSp);
+                InterpretedFrame *state = GET_FRAME(newSp);
                 state->base.prev = sp;
                 state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
                 state->pc = pc = JSMethod::Cast(methodToCall)->GetBytecodeArray();
@@ -1013,7 +1014,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_RETURN_DYN) {
         LOG_INST() << "returnla ";
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(state->sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
@@ -1021,7 +1022,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
         sp = state->base.prev;
         ASSERT(sp != nullptr);
-        FrameState *prevState = GET_FRAME(sp);
+        InterpretedFrame *prevState = GET_FRAME(sp);
         pc = prevState->pc;
 
         // break frame
@@ -1038,7 +1039,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_RETURNUNDEFINED_PREF) {
         LOG_INST() << "return.undefined";
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
@@ -1046,7 +1047,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         UPDATE_HOTNESS_COUNTER_NON_ACC(-(pc - fistPC));
         sp = state->base.prev;
         ASSERT(sp != nullptr);
-        FrameState *prevState = GET_FRAME(sp);
+        InterpretedFrame *prevState = GET_FRAME(sp);
         pc = prevState->pc;
 
         // break frame
@@ -1109,7 +1110,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_LDLEXENVDYN_PREF) {
         LOG_INST() << "intrinsics::ldlexenvDyn ";
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         SET_ACC(currentLexenv);
         DISPATCH(BytecodeInstruction::Format::PREF_NONE);
@@ -1250,11 +1251,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_TYPEOFDYN_PREF) {
         LOG_INST() << "intrinsics::typeofdyn";
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
         auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastTypeOf));
-        typedef JSTaggedType (*PFFastTypeOf)(uintptr_t, JSTaggedValue);
+        typedef JSTaggedType (*PFFastTypeOf)(uintptr_t, JSTaggedType);
         auto fastTypeOfPtr = reinterpret_cast<PFFastTypeOf>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(fastTypeOfPtr(thread->GetGlueAddr(), GET_ACC()));
+        JSTaggedValue res = JSTaggedValue(fastTypeOfPtr(thread->GetGlueAddr(), GET_ACC().GetRawData()));
 #else
         JSTaggedValue res = FastRuntimeStub::FastTypeOf(thread, GET_ACC());
 #endif
@@ -1417,9 +1418,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue right = acc;
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
         auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMul));
-        typedef JSTaggedType (*PFFastMul)(JSTaggedValue, JSTaggedValue);
+        typedef JSTaggedType (*PFFastMul)(JSTaggedType, JSTaggedType);
         auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
-        JSTaggedValue value = JSTaggedValue(fastMulPtr(left, right));
+        JSTaggedValue value = JSTaggedValue(fastMulPtr(left.GetRawData(), right.GetRawData()));
 #else
         JSTaggedValue value = FastRuntimeStub::FastMul(left, right);
 #endif
@@ -1458,11 +1459,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue left = GET_VREG_VALUE(vs);
         JSTaggedValue right = GET_ACC();
 
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
         auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMod));
-        typedef JSTaggedType (*PFFastMod)(uintptr_t, JSTaggedValue, JSTaggedValue);
+        typedef JSTaggedType (*PFFastMod)(uintptr_t, JSTaggedType, JSTaggedType);
         auto fastModPtr = reinterpret_cast<PFFastMod>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(fastModPtr(thread->GetGlueAddr(), left, right));
+        JSTaggedValue res = JSTaggedValue(fastModPtr(thread->GetGlueAddr(), left.GetRawData(), right.GetRawData()));
 #else
         JSTaggedValue res = FastRuntimeStub::FastMod(left, right);
 #endif
@@ -1483,11 +1484,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
         auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastEqual));
-        typedef JSTaggedType (*PFFastEqual)(JSTaggedValue, JSTaggedValue);
+        typedef JSTaggedType (*PFFastEqual)(JSTaggedType, JSTaggedType);
         auto fastEqualPtr = reinterpret_cast<PFFastEqual>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(fastEqualPtr(left, right));
+        JSTaggedValue res = JSTaggedValue(fastEqualPtr(left.GetRawData(), right.GetRawData()));
 #else
         JSTaggedValue res = FastRuntimeStub::FastEqual(left, right);
 #endif
@@ -2017,7 +2018,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         LOG_INST() << "intrinsics::ldlexvardyn"
                    << " level:" << level << " slot:" << slot;
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         JSTaggedValue env(currentLexenv);
         for (int i = 0; i < level; i++) {
@@ -2034,7 +2035,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         LOG_INST() << "intrinsics::ldlexvardyn"
                    << " level:" << level << " slot:" << slot;
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         JSTaggedValue env(currentLexenv);
         for (int i = 0; i < level; i++) {
@@ -2051,7 +2052,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         LOG_INST() << "intrinsics::ldlexvardyn"
                    << " level:" << level << " slot:" << slot;
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         JSTaggedValue env(currentLexenv);
         for (int i = 0; i < level; i++) {
@@ -2070,7 +2071,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " level:" << level << " slot:" << slot << " v" << v0;
 
         JSTaggedValue value = GET_VREG_VALUE(v0);
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue env = state->env;
         for (int i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
@@ -2089,7 +2090,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " level:" << level << " slot:" << slot << " v" << v0;
 
         JSTaggedValue value = GET_VREG_VALUE(v0);
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue env = state->env;
         for (int i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
@@ -2108,7 +2109,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " level:" << level << " slot:" << slot << " v" << v0;
 
         JSTaggedValue value = GET_VREG_VALUE(v0);
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue env = state->env;
         for (int i = 0; i < level; i++) {
             JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
@@ -2134,7 +2135,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         DISPATCH(BytecodeInstruction::Format::PREF_IMM16);
     }
     HANDLE_OPCODE(HANDLE_POPLEXENVDYN_PREF) {
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSTaggedValue currentLexenv = state->env;
         JSTaggedValue parentLexenv = LexicalEnv::Cast(currentLexenv.GetTaggedObject())->GetParentEnv();
         GET_FRAME(sp)->env = parentLexenv;
@@ -2166,7 +2167,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         INTERPRETER_RETURN_IF_ABRUPT(res);
         SET_ACC(res);
 
-        FrameState *state = GET_FRAME(sp);
+        InterpretedFrame *state = GET_FRAME(sp);
         JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
         [[maybe_unused]] auto fistPC = method->GetInstructions();
         UPDATE_HOTNESS_COUNTER(-(pc - fistPC));
@@ -2174,7 +2175,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                                 << std::hex << reinterpret_cast<uintptr_t>(state->pc);
         sp = state->base.prev;
         ASSERT(sp != nullptr);
-        FrameState *prevState = GET_FRAME(sp);
+        InterpretedFrame *prevState = GET_FRAME(sp);
         pc = prevState->pc;
 
         // break frame
@@ -2268,11 +2269,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             JSTaggedValue value = GET_ACC();
             // fast path
             SAVE_ACC();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
             auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByNameWithOwn));
-            typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue, JSTaggedValue);
+            typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType, JSTaggedType);
             auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
-            JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(), receiver, propKey, value));
+            JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(),
+                receiver.GetRawData(), propKey.GetRawData(), value.GetRawData()));
 #else
             JSTaggedValue res = FastRuntimeStub::SetPropertyByName<true>(thread, receiver, propKey, value);
 #endif
@@ -2601,11 +2603,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue receiver = GET_VREG_VALUE(v0);
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
             auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex));
-            typedef JSTaggedType (*PFGetPropertyByIndex)(uintptr_t, JSTaggedValue, uint32_t);
+            typedef JSTaggedType (*PFGetPropertyByIndex)(uintptr_t, JSTaggedType, uint32_t);
             auto getPropertyByIndex = reinterpret_cast<PFGetPropertyByIndex>(stubAddr);
-            JSTaggedValue res = JSTaggedValue(getPropertyByIndex(thread->GetGlueAddr(), receiver, idx));
+            JSTaggedValue res = JSTaggedValue(getPropertyByIndex(thread->GetGlueAddr(), receiver.GetRawData(), idx));
 #else
             JSTaggedValue res = FastRuntimeStub::GetPropertyByIndex(thread, receiver, idx);
 #endif
@@ -2633,11 +2635,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             SAVE_ACC();
             JSTaggedValue value = GET_ACC();
             // fast path
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
             auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex));
-            typedef JSTaggedType (*PFSetPropertyByIndex)(uintptr_t, JSTaggedValue, uint32_t, JSTaggedValue);
+            typedef JSTaggedType (*PFSetPropertyByIndex)(uintptr_t, JSTaggedType, uint32_t, JSTaggedType);
             auto setPropertyByIndex = reinterpret_cast<PFSetPropertyByIndex>(stubAddr);
-            JSTaggedValue res = JSTaggedValue(setPropertyByIndex(thread->GetGlueAddr(), receiver, index, value));
+            JSTaggedValue res = JSTaggedValue(setPropertyByIndex(thread->GetGlueAddr(),
+                receiver.GetRawData(), index, value.GetRawData()));
 #else
             JSTaggedValue res = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
 #endif
@@ -2694,11 +2697,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 #endif
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
             auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue));
-            typedef JSTaggedType (*PFGetPropertyByValue)(uintptr_t, JSTaggedValue, JSTaggedValue);
+            typedef JSTaggedType (*PFGetPropertyByValue)(uintptr_t, JSTaggedType, JSTaggedType);
             auto getPropertyByValuePtr = reinterpret_cast<PFGetPropertyByValue>(stubAddr);
-            JSTaggedValue res = JSTaggedValue(getPropertyByValuePtr(thread->GetGlueAddr(), receiver, propKey));
+            JSTaggedValue res = JSTaggedValue(getPropertyByValuePtr(thread->GetGlueAddr(),
+                receiver.GetRawData(), propKey.GetRawData()));
 #else
             JSTaggedValue res = FastRuntimeStub::GetPropertyByValue(thread, receiver, propKey);
 #endif
@@ -2987,11 +2991,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             JSTaggedValue value = GET_ACC();
             // fast path
             SAVE_ACC();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
             auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByNameWithOwn));
-            typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue, JSTaggedValue);
+            typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType, JSTaggedType);
             auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
-            JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(), receiver, propKey, value));
+            JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(), receiver.GetRawData(),
+                propKey.GetRawData(), value.GetRawData()));
 #else
             JSTaggedValue res = FastRuntimeStub::SetPropertyByName<true>(thread, receiver, propKey, value);
 #endif
@@ -3083,11 +3088,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         if (LIKELY(receiver.IsHeapObject())) {
             // fast path
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
             auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName));
-            typedef JSTaggedType (*PFGetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue);
+            typedef JSTaggedType (*PFGetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType);
             auto getPropertyByNamePtr = reinterpret_cast<PFGetPropertyByName>(stubAddr);
-            JSTaggedValue res = JSTaggedValue(getPropertyByNamePtr(thread->GetGlueAddr(), receiver, propKey));
+            JSTaggedValue res = JSTaggedValue(getPropertyByNamePtr(thread->GetGlueAddr(), receiver.GetRawData(),
+                propKey.GetRawData()));
 #else
             JSTaggedValue res = FastRuntimeStub::GetPropertyByName(thread, receiver, propKey);
 #endif
@@ -3120,13 +3126,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
             if (LIKELY(firstValue.IsHeapObject())) {
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
                 auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(TryStoreICByName));
                 typedef JSTaggedType (*PFTryStoreICByName)(uintptr_t,
-                    JSTaggedValue, JSTaggedValue, JSTaggedValue, JSTaggedValue);
+                    JSTaggedType, JSTaggedType, JSTaggedType, JSTaggedType);
                 auto tryStoreICByNamePtr = reinterpret_cast<PFTryStoreICByName>(stubAddr);
                 res = JSTaggedValue(
-                    tryStoreICByNamePtr(thread->GetGlueAddr(), receiver, firstValue, secondValue, value));
+                    tryStoreICByNamePtr(thread->GetGlueAddr(), receiver.GetRawData(),
+                        firstValue.GetRawData(), secondValue.GetRawData(), value.GetRawData()));
 #else
                 res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
 #endif
@@ -3155,11 +3162,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             value = GET_ACC();
             // fast path
             SAVE_ACC();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
             auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByName));
-            typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue, JSTaggedValue);
+            typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType, JSTaggedType);
             auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
-            JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(), receiver, propKey, value));
+            JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(),
+                receiver.GetRawData(), propKey.GetRawData(), value.GetRawData()));
 #else
             JSTaggedValue res = FastRuntimeStub::SetPropertyByName(thread, receiver, propKey, value);
 #endif
@@ -3445,7 +3453,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 void EcmaInterpreter::InitStackFrame(JSThread *thread)
 {
     uint64_t *prevSp = const_cast<uint64_t *>(thread->GetCurrentSPFrame());
-    FrameState *state = GET_FRAME(prevSp);
+    InterpretedFrame *state = GET_FRAME(prevSp);
     state->pc = nullptr;
     state->sp = nullptr;
     state->function = JSTaggedValue::Hole();
@@ -3496,14 +3504,14 @@ void EcmaInterpreter::InterpreterFrameCopyArgs(JSTaggedType *newSp, uint32_t num
 JSTaggedValue EcmaInterpreter::GetThisFunction(JSTaggedType *sp)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp) - 1;
+    InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
     return state->function;
 }
 
 JSTaggedValue EcmaInterpreter::GetNewTarget(JSTaggedType *sp)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp) - 1;
+    InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     uint32_t callType = method->GetCallType();
     ASSERT(callType & HAVE_NEWTARGET_BIT);
@@ -3515,7 +3523,7 @@ JSTaggedValue EcmaInterpreter::GetNewTarget(JSTaggedType *sp)
 uint32_t EcmaInterpreter::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_t &startIdx)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp) - 1;
+    InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     uint32_t callType = method->GetCallType();
     ASSERT(callType & HAVE_EXTRA_BIT);
@@ -3569,13 +3577,13 @@ size_t EcmaInterpreter::GetJumpSizeAfterCall(const uint8_t *prevPc)
 JSTaggedValue EcmaInterpreter::GetRuntimeProfileTypeInfo(JSTaggedType *sp)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp) - 1;
+    InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
     return state->profileTypeInfo;
 }
 
 bool EcmaInterpreter::UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, JSTaggedValue acc, int32_t offset)
 {
-    FrameState *state = GET_FRAME(sp);
+    InterpretedFrame *state = GET_FRAME(sp);
     auto method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     auto hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
 

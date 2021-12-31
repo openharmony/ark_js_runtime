@@ -44,7 +44,7 @@ public:
     {
         ASSERT(HasFrame());
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+        InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
         return state->sp == nullptr;
     }
     void PrevFrame();
@@ -53,13 +53,15 @@ public:
     {
         ASSERT(HasFrame());
         FrameType type = *(reinterpret_cast<FrameType*>(
-                        reinterpret_cast<uintptr_t>(sp_) + FrameConst::FRAME_TYPE_OFFSET));
+                        reinterpret_cast<uintptr_t>(sp_) + FrameCommonConstants::FRAME_TYPE_OFFSET));
         return type;
     }
 private:
     friend class InterpretedFrameHandler;
     friend class OptimizedFrameHandler;
     friend class OptimizedEntryFrameHandler;
+    friend class OptimizedLeaveFrameHandler;
+protected:
     JSTaggedType *sp_ {nullptr};
 };
 
@@ -103,38 +105,48 @@ public:
 
 class OptimizedFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedFrameHandler(uintptr_t *fp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(fp)), fp_(fp) {}
+    explicit OptimizedFrameHandler(uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
     explicit OptimizedFrameHandler(const JSThread *thread);
     ~OptimizedFrameHandler() = default;
     void PrevFrame();
-    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1, ChunkVector<DerivedData> *derivedPointers,
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
                  bool isVerifying) const;
-private:
-    uintptr_t *fp_ {nullptr};
 };
 
 class OptimizedEntryFrameHandler : public FrameHandler {
 public:
-    explicit OptimizedEntryFrameHandler(uintptr_t *fp)
-        : FrameHandler(reinterpret_cast<JSTaggedType *>(fp)), fp_(fp) {}
+    explicit OptimizedEntryFrameHandler(uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
     explicit OptimizedEntryFrameHandler(const JSThread *thread);
     ~OptimizedEntryFrameHandler() = default;
     void PrevFrame();
-private:
-    uintptr_t *fp_ {nullptr};
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+                bool isVerifying) const;
+};
+
+class OptimizedLeaveFrameHandler : public FrameHandler {
+public:
+    explicit OptimizedLeaveFrameHandler(uintptr_t *sp)
+        : FrameHandler(reinterpret_cast<JSTaggedType *>(sp)) {}
+    explicit OptimizedLeaveFrameHandler(const JSThread *thread);
+    ~OptimizedLeaveFrameHandler() = default;
+    void PrevFrame();
+    void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+                ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers,
+                bool isVerifying) const;
 };
 
 class FrameIterator {
 public:
-    explicit FrameIterator(JSTaggedType *fp, const JSThread *thread) : fp_(fp), thread_(thread) {}
+    explicit FrameIterator(JSTaggedType *sp, const JSThread *thread) : sp_(sp), thread_(thread) {}
     ~FrameIterator() = default;
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const;
-    void HandleRuntimeTrampolines(const RootVisitor &v0, const RootRangeVisitor &v1,
-                                  ChunkVector<DerivedData> *derivedPointers, bool isVerifying) const;
     void IterateStackMapAfterGC() const;
 private:
-    JSTaggedType *fp_ {nullptr};
+    JSTaggedType *sp_ {nullptr};
     const JSThread *thread_ {nullptr};
 };
 } // namespace ecmascript
