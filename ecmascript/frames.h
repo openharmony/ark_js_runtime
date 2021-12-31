@@ -147,7 +147,7 @@ public:
     ~OptimizedFrame() = default;
     uint64_t frameType;
     JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    static OptimizedFrame * GetFrameFromSp(JSTaggedType *sp)
+    static OptimizedFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
             - MEMBER_OFFSET(OptimizedFrame, prev));
@@ -187,7 +187,7 @@ struct InterpretedFrame {
     JSTaggedValue acc;
     JSTaggedValue env;
     InterpretedFrameBase base;
-    static InterpretedFrame * GetFrameFromSp(JSTaggedType *sp)
+    static InterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<InterpretedFrame *>(sp) - 1;
     }

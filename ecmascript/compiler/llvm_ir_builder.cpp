@@ -594,7 +594,7 @@ void LLVMIRBuilder::ConstructFrame()
         interpretedFrameSize_, 1), "");
     PushFrameContext(newSp, currentSp);
     LLVMValueRef preAddr = LLVMBuildAdd(builder_, newSp, LLVMConstInt(slotType_,
-        optLeaveFramePrevOffset_, 1), "");// newSp sub type size get presize
+        optLeaveFramePrevOffset_, 1), ""); // newSp sub type size get presize
     SetCurrentSPFrame(preAddr);
 }
 
@@ -624,8 +624,6 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
-
-
     // runtime case
     if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +

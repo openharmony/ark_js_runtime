@@ -29,7 +29,6 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "libpandabase/utils/string_helpers.h"
-#include <iostream>
 
 namespace panda::ecmascript {
 bool RuntimeTrampolines::AddElementInternal(uintptr_t argGlue, JSTaggedType argReceiver, uint32_t argIndex,

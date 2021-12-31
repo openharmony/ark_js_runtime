@@ -247,7 +247,7 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
 }
 
 void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
-                                    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
     if (sp_ != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -278,7 +278,7 @@ void OptimizedLeaveFrameHandler::PrevFrame()
 }
 
 void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
-                                    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
     OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
         reinterpret_cast<intptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
