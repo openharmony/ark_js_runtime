@@ -27,22 +27,8 @@ class ConstantPool;
 class ECMAObject;
 class GeneratorContext;
 
-// align with 8
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-struct FrameState {
-    const uint8_t *pc;
-    JSTaggedType *sp;
-    // aligned with 8 bits
-    alignas(sizeof(uint64_t)) JSTaggedValue constpool;
-    JSTaggedValue function;
-    JSTaggedValue profileTypeInfo;
-    JSTaggedValue acc;
-    JSTaggedValue env;
-    InterpretedFrameStateBase base;
-};
-
 // NOLINTNEXTLINE(bugprone-sizeof-expression)
-static const uint32_t FRAME_STATE_SIZE = sizeof(FrameState) / sizeof(uint64_t);
+static const uint32_t FRAME_STATE_SIZE = sizeof(InterpretedFrame) / sizeof(uint64_t);
 
 static constexpr uint32_t RESERVED_CALL_ARGCOUNT = 3;
 static constexpr uint32_t RESERVED_INDEX_CALL_TARGET = 0;
@@ -64,7 +50,7 @@ public:
 
     static inline JSTaggedValue Execute(JSThread *thread, const CallParams& params);
     static inline JSTaggedValue ExecuteNative(JSThread *thread, const CallParams& params);
-    static inline JSTaggedType *GetCurrentInterpretedFrameSp(JSThread *thread);
+    static inline JSTaggedType *FixSpIfNeed(JSThread *thread);
     static inline JSTaggedValue GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context);
     static inline void ResumeContext(JSThread *thread);

@@ -47,6 +47,12 @@ void FrameHandler::PrevFrame()
             framehandle->PrevFrame();
             break;
         }
+        case FrameType::OPTIMIZED_LEAVE_FRAME: {
+            auto framehandle =
+                reinterpret_cast<OptimizedLeaveFrameHandler *>(this);
+            framehandle->PrevFrame();
+            break;
+        }
         default:
             UNREACHABLE();
     }
@@ -61,7 +67,7 @@ void InterpretedFrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     sp_ = state->base.prev;
 }
 
@@ -75,7 +81,7 @@ InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return InterpretedFrameHandler(state->base.prev);
 }
 
@@ -97,7 +103,7 @@ JSTaggedValue InterpretedFrameHandler::GetAcc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return state->acc;
 }
 
@@ -105,7 +111,7 @@ uint32_t InterpretedFrameHandler::GetSize() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     JSTaggedType *prevSp = state->base.prev;
     ASSERT(prevSp != nullptr);
     auto size = (prevSp - sp_) - FRAME_STATE_SIZE;
@@ -116,7 +122,7 @@ uint32_t InterpretedFrameHandler::GetBytecodeOffset() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     auto offset = state->pc - method->GetBytecodeArray();
     return static_cast<uint32_t>(offset);
@@ -126,7 +132,7 @@ JSMethod *InterpretedFrameHandler::GetMethod() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
 }
 
@@ -134,7 +140,7 @@ JSTaggedValue InterpretedFrameHandler::GetFunction() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return state->function;
 }
 
@@ -142,7 +148,7 @@ const uint8_t *InterpretedFrameHandler::GetPc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return state->pc;
 }
 
@@ -150,7 +156,7 @@ JSTaggedType *InterpretedFrameHandler::GetSp() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return state->sp;
 }
 
@@ -158,7 +164,7 @@ ConstantPool *InterpretedFrameHandler::GetConstpool() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return ConstantPool::Cast(state->constpool.GetTaggedObject());
 }
 
@@ -166,7 +172,7 @@ JSTaggedValue InterpretedFrameHandler::GetEnv() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    FrameState *state = reinterpret_cast<FrameState *>(sp_) - 1;
+    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
     return state->env;
 }
 
@@ -175,12 +181,12 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
     JSTaggedType *current = sp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        FrameState *state = reinterpret_cast<FrameState *>(current) - 1;
+        InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(current) - 1;
 
         if (state->sp != nullptr) {
             uintptr_t start = ToUintPtr(current);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            FrameState *prev_state = reinterpret_cast<FrameState *>(state->base.prev) - 1;
+            InterpretedFrame *prev_state = reinterpret_cast<InterpretedFrame *>(state->base.prev) - 1;
             uintptr_t end = ToUintPtr(prev_state);
             v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
             v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&state->function)));
@@ -218,20 +224,37 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 
 void OptimizedFrameHandler::PrevFrame()
 {
-    OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
-        reinterpret_cast<uintptr_t>(sp_) - OptimizedFrameStateBase::GetFrameStateOffsetFromSp());
+    OptimizedFrame *state = OptimizedFrame::GetFrameFromSp(sp_);
     sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
 }
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
-                                    ChunkVector<DerivedData> *derivedPointers, bool isVerifying) const
+                                    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
-    if (fp_ != nullptr) {
+    if (sp_ != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::set<uintptr_t> slotAddrs;
-        auto returnAddr = reinterpret_cast<uintptr_t>(*(fp_ + 1));
-        bool ret = ::kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
-            returnAddr, reinterpret_cast<uintptr_t>(fp_), v0, v1, derivedPointers, isVerifying);
+        auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
+        bool ret = ::kungfu::LLVMStackMapParser::GetInstance().GetStackMapIterm(
+            returnAddr, reinterpret_cast<uintptr_t>(sp_), v0, v1, derivedPointers, isVerifying);
+        if (ret == false) {
+#ifndef NDEBUG
+            LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << returnAddr;
+#endif
+            return;
+        }
+    }
+}
+
+void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+                                    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
+{
+    if (sp_ != nullptr) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        std::set<uintptr_t> slotAddrs;
+        auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
+        bool ret = ::kungfu::LLVMStackMapParser::GetInstance().GetStackMapIterm(
+            returnAddr, reinterpret_cast<uintptr_t>(sp_), v0, v1, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
             LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << returnAddr;
@@ -243,76 +266,61 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
 
 void OptimizedEntryFrameHandler::PrevFrame()
 {
-    OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
-        reinterpret_cast<uintptr_t>(sp_) - OptimizedEntryFrameState::GetFrameStateOffsetFromSp());
+    OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(sp_);
     sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
 }
 
-void FrameIterator::HandleRuntimeTrampolines(const RootVisitor &v0, const RootRangeVisitor &v1,
-                                             ChunkVector<DerivedData> *derivedPointers, bool isVerifying) const
+void OptimizedLeaveFrameHandler::PrevFrame()
 {
-    if (thread_) {
-        uintptr_t *fp = thread_->GetLastOptCallRuntimePc();
-        if (fp == nullptr) {
-            return;
-        }
-        std::set<uintptr_t> slotAddrs;
-        auto returnAddr = *(fp + 1);
+    OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
+        reinterpret_cast<uintptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+}
+
+void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
+                                    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
+{
+    OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
+        reinterpret_cast<intptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
+    bool ret = ::kungfu::LLVMStackMapParser::GetInstance().GetStackMapIterm(
+        state, v0, v1, derivedPointers, isVerifying);
+    if (ret == false) {
 #ifndef NDEBUG
-        uintptr_t *optFp = reinterpret_cast<uintptr_t *>(*fp);
-        auto type = *(optFp - 1);
-        LOG_ECMA(INFO) << __FUNCTION__ << " returnAddr :" << std::hex << returnAddr << " fp: " << fp << " type:" <<
-            static_cast<uint64_t>(type) << std::endl;
+        LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << state->patchId;
 #endif
-        bool ret = ::kungfu::LLVMStackMapParser::GetInstance().StackMapByFuncAddrFp(
-            returnAddr, reinterpret_cast<uintptr_t>(fp), v0, v1, derivedPointers, isVerifying);
-        if (ret == false) {
-#ifndef NDEBUG
-            LOG_ECMA(INFO) << " stackmap don't found returnAddr " << std::endl;
-#endif
-            return;
-        }
-        for (auto &address: slotAddrs) {
-#ifndef NDEBUG
-            LOG_ECMA(INFO) << "stackmap address : " << std::hex << address << std::endl;
-#endif
-            v0(Root::ROOT_FRAME, ObjectSlot(address));
-        }
+        return;
     }
 }
 
-
 void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) const
 {
-    ChunkVector<DerivedData> *derivedPointers = thread_->GetEcmaVM()->GetHeap()->GetDerivedPointers();
+    ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers = thread_->GetEcmaVM()->GetHeap()->GetDerivedPointers();
     bool isVerifying = false;
 
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     isVerifying = thread_->GetEcmaVM()->GetHeap()->GetIsVerifying();
 #endif
-    // handle runtimeTrampolines Frame in order get stub returnAddress which used by
-    // stackMap
-    HandleRuntimeTrampolines(v0, v1, derivedPointers, isVerifying);
 
-    JSTaggedType *current = fp_;
+    JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
         if (type == FrameType::INTERPRETER_FRAME) {
-            FrameState *state = reinterpret_cast<FrameState *>(current) - 1;
+            InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(current);
             InterpretedFrameHandler(current).Iterate(v0, v1);
             current = state->base.prev;
         } else if (type == FrameType::OPTIMIZED_FRAME) {
-            OptimizedFrameStateBase *state = reinterpret_cast<OptimizedFrameStateBase *>(
-                reinterpret_cast<intptr_t>(current) -
-                MEMBER_OFFSET(OptimizedFrameStateBase, prev));
+            OptimizedFrame *state = OptimizedFrame::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
             current = reinterpret_cast<JSTaggedType *>(state->prev);
+        } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
+            OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(current);
+                current = reinterpret_cast<JSTaggedType *>(state->threadFp);
         } else {
-            ASSERT(type == FrameType::OPTIMIZED_ENTRY_FRAME);
-            OptimizedEntryFrameState *state = reinterpret_cast<OptimizedEntryFrameState *>(
-                reinterpret_cast<intptr_t>(current) -
-                MEMBER_OFFSET(OptimizedEntryFrameState, base.prev));
-            current = reinterpret_cast<JSTaggedType *>(state->threadFp);
+            ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME);
+            OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(current);
+            OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
+                v1, derivedPointers, isVerifying);
+            current = reinterpret_cast<JSTaggedType *>(state->prev);
         }
     }
 }

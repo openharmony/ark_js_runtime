@@ -803,7 +803,7 @@ void Stub::JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRe
             // compute outOfLineProp offset, get it and return
             GateRef array = Load(MachineType::TAGGED_POINTER, obj, GetArchRelateConstant(JSObject::PROPERTIES_OFFSET));
             SetValueToTaggedArray(MachineType::TAGGED, glue, array, Int32Sub(attrOffset,
-                GetInt32Constant(GetInlinedPropertiesFromHClass(hClass))), value);
+                GetInlinedPropertiesFromHClass(hClass)), value);
             Jump(&exit);
         }
     }
@@ -921,15 +921,14 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
     Bind(&notFindHClass);
     {
         GateRef type = GetObjectType(hclass);
-        int32_t defaultCapacity = JSHClass::DEFAULT_CAPACITY_OF_IN_OBJECTS * JSTaggedValue::TaggedTypeSize();
-        GateRef size = Int32Sub(ChangeInt64ToInt32(GetObjectSizeFromHClass(hclass)),
-                                GetInt32Constant(defaultCapacity));
+        GateRef size = Int32Mul(GetInlinedPropsStartFromHClass(hclass),
+                                GetInt32Constant(JSTaggedValue::TaggedTypeSize()));
+        GateRef inlineProps = GetInlinedPropertiesFromHClass(hclass);
         StubDescriptor *newEcmaDynClass = GET_STUBDESCRIPTOR(NewEcmaDynClass);
         GateRef newJshclass = CallRuntime(newEcmaDynClass, glue, GetWord64Constant(FAST_STUB_ID(NewEcmaDynClass)), {
-                glue, size, type
+                glue, size, type, inlineProps
             });
         CopyAllHClass(glue, newJshclass, hclass);
-        IncNumberOfProps(glue, newJshclass);
         StubDescriptor *updateLayout = GET_STUBDESCRIPTOR(UpdateLayOutAndAddTransition);
         CallRuntime(updateLayout, glue, GetWord64Constant(FAST_STUB_ID(UpdateLayOutAndAddTransition)), {
                     glue, hclass, newJshclass, key, attr
@@ -2298,6 +2297,7 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     Bind(&exit);
     SetPrototypeToHClass(MachineType::TAGGED_POINTER, glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
+    SetNumberOfPropsToHClass(glue, dstHClass, GetNumberOfPropsFromHClass(srcHClass));
     SetParentToHClass(MachineType::INT64, glue, dstHClass, GetWord64Constant(JSTaggedValue::VALUE_NULL));
     SetTransitionsToHClass(MachineType::INT64, glue, dstHClass, GetWord64Constant(JSTaggedValue::VALUE_NULL));
     SetProtoChangeDetailsToHClass(MachineType::INT64, glue, dstHClass, GetWord64Constant(JSTaggedValue::VALUE_NULL));
