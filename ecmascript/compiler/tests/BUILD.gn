@@ -25,6 +25,7 @@ config("include_llvm_config") {
     include_dirs = [
       "//prebuilts/ark_js_prebuilts/llvm_prebuilts/llvm/include",
       "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/include",
+      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/include",
     ]
   }
 }
@@ -49,7 +50,9 @@ host_unittest_action("StubTest") {
   if (compile_llvm_online) {
     lib_dirs = [ "//third_party/llvm-project/build/lib" ]
   } else {
-    lib_dirs = [ "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib" ]
+    lib_dirs = [ "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib",
+                  "//prebuilts/ark_js_prebuilts/llvm_prebuilts/include",
+     ]
   }
 
   libs = [
