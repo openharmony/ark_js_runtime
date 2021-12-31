@@ -64,8 +64,9 @@ source_set("libark_jsoptimizer_static") {
   if (compile_llvm_online) {
     lib_dirs = [ "//third_party/llvm-project/build/lib" ]
   } else {
-    lib_dirs = [ "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib",
-                "//prebuilts/ark_js_prebuilts/llvm_prebuilts/include",
+    lib_dirs = [
+      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/build/lib",
+      "//prebuilts/ark_js_prebuilts/llvm_prebuilts/include",
     ]
   }
 

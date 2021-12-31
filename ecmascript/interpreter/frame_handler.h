@@ -56,13 +56,13 @@ public:
                         reinterpret_cast<uintptr_t>(sp_) + FrameCommonConstants::FRAME_TYPE_OFFSET));
         return type;
     }
+protected:
+    JSTaggedType *sp_ {nullptr};
 private:
     friend class InterpretedFrameHandler;
     friend class OptimizedFrameHandler;
     friend class OptimizedEntryFrameHandler;
     friend class OptimizedLeaveFrameHandler;
-protected:
-    JSTaggedType *sp_ {nullptr};
 };
 
 class InterpretedFrameHandler : public FrameHandler {

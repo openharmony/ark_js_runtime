@@ -88,10 +88,10 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                 LOG_ECMA(INFO) << std::hex << "visit base:" << base << " base Value: " <<
+                LOG_ECMA(INFO) << std::hex << "visit base:" << base << " base Value: " <<
                     *reinterpret_cast<uintptr_t *>(base);
             } else {
-                 LOG_ECMA(INFO) << std::hex << "push base:" << base << " base Value: " <<
+                LOG_ECMA(INFO) << std::hex << "push base:" << base << " base Value: " <<
                     *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
             }
         } else {
@@ -103,9 +103,9 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
 }
 
 bool LLVMStackMapParser::GetStackMapIterm(OptLeaveFrame *frame,
-                                              const RootVisitor &v0, const RootRangeVisitor &v1,
-                                              ChunkMap<DerivedDataKey, uintptr_t> *data,
-                                              [[maybe_unused]] bool isVerifying) const
+                                            const RootVisitor &v0, const RootRangeVisitor &v1,
+                                            ChunkMap<DerivedDataKey, uintptr_t> *data,
+                                            [[maybe_unused]] bool isVerifying) const
 {
     ASSERT(frame);
     uint64_t patchpointId = frame->patchId;
@@ -201,9 +201,9 @@ bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
 }
 
 bool LLVMStackMapParser::GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t frameFp,
-                                              const RootVisitor &v0, const RootRangeVisitor &v1,
-                                              ChunkMap<DerivedDataKey, uintptr_t> *data,
-                                              [[maybe_unused]] bool isVerifying) const
+                                            const RootVisitor &v0, const RootRangeVisitor &v1,
+                                            ChunkMap<DerivedDataKey, uintptr_t> *data,
+                                            [[maybe_unused]] bool isVerifying) const
 {
     const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
     if (infos == nullptr) {
@@ -285,7 +285,6 @@ void LLVMStackMapParser::CalcCallSite()
                     } else {
                         it2->second.emplace_back(info);
                     }
-
                 }
         }
     };

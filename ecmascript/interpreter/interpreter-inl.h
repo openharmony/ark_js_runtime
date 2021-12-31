@@ -207,7 +207,7 @@ namespace panda::ecmascript {
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
-JSTaggedType * EcmaInterpreter::FixSpOnEntry(JSThread *thread)
+JSTaggedType* EcmaInterpreter::FixSpOnEntry(JSThread *thread)
 {
     JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     FrameType type = *(reinterpret_cast<FrameType*>(
