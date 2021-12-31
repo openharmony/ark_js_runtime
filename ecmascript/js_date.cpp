@@ -452,8 +452,8 @@ JSTaggedValue JSDate::Parse(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     const CString isoPriStr = "(^|(\\+|-)(\\d{2}))";
     const CString isoDateStr =
-        "(((\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1]))"
-        "|((\\d{4})-(0[1-9]|1[0-2]))|(\\d{4}))";
+        "(((\\d{4})-(0?[1-9]|1[0-2])-(0?[1-9]|1[0-9]|2[0-9]|3[0-1]))"
+        "|((\\d{4})-(0?[1-9]|1[0-2]))|(\\d{4}))";
     const CString isoTimeStr =
         "((T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])"
         "\\.(\\d{3}))|(T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]))|"
@@ -461,7 +461,7 @@ JSTaggedValue JSDate::Parse(EcmaRuntimeCallInfo *argv)
         "($|Z|((\\+|-)(([01][0-9]|2[0-3]):([0-5][0-9]))))";
     const CString isoRegStr = isoPriStr + isoDateStr + "($|Z|(" + isoTimeStr + "))";
     const CString utcDateStr =
-        "^\\D*(0[1-9]|1[0-9]|2[0-9]|3[0-1]) "
+        "^\\D*(0?[1-9]|1[0-9]|2[0-9]|3[0-1]) "
         "(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\\d{4})";
     const CString timeStr =
         "(( ([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]))|( ([01][0-9]|2[0-3]):([0-5][0-9])))"
@@ -469,7 +469,7 @@ JSTaggedValue JSDate::Parse(EcmaRuntimeCallInfo *argv)
     const CString utcRegStr = utcDateStr + "($| *| GMT *| GMT((\\+|-)(\\d{4})) *|(" + timeStr + "))";
     const CString localDateStr =
         "^[a-zA-Z]* (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) "
-        "(0[1-9]|1[0-9]|2[0-9]|3[0-1]) (\\d{4})";
+        "(0?[1-9]|1[0-9]|2[0-9]|3[0-1]) (\\d{4})";
     const CString localRegStr = localDateStr + "($| *| GMT *| GMT((\\+|-)(\\d{4})) *|(" + timeStr + "))";
 
     std::regex isoReg(isoRegStr);
