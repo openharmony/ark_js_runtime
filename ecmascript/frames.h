@@ -147,7 +147,7 @@ public:
     ~OptimizedFrame() = default;
     uint64_t frameType;
     JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    static OptimizedFrame * GetFrameFromSp(panda::ecmascript::JSTaggedType *sp)
+    static OptimizedFrame * GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
             - MEMBER_OFFSET(OptimizedFrame, prev));
@@ -168,7 +168,7 @@ public:
     ~OptimizedEntryFrame() = default;
     JSTaggedType  *threadFp; // for gc
     OptimizedFrame base;
-    static OptimizedEntryFrame* GetFrameFromSp(panda::ecmascript::JSTaggedType *sp)
+    static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
             MEMBER_OFFSET(OptimizedEntryFrame, base.prev));
@@ -187,7 +187,7 @@ struct InterpretedFrame {
     JSTaggedValue acc;
     JSTaggedValue env;
     InterpretedFrameBase base;
-    static InterpretedFrame * GetFrameFromSp(panda::ecmascript::JSTaggedType *sp)
+    static InterpretedFrame * GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<InterpretedFrame *>(sp) - 1;
     }
@@ -199,7 +199,7 @@ struct OptLeaveFrame {
     uintptr_t sp;
     uintptr_t fp;
     uint64_t patchId;
-    static OptLeaveFrame* GetFrameFromSp(panda::ecmascript::JSTaggedType *sp)
+    static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
             MEMBER_OFFSET(OptLeaveFrame, prev));

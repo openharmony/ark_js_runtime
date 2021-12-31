@@ -63,20 +63,20 @@ const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPatchID(uint64_t patchP
 }
 
 void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
-    panda::ecmascript::OptLeaveFrame *state)
+    OptLeaveFrame *frame)
 {
     int i = 0;
     uintptr_t address = 0;
     uintptr_t base = 0;
     uintptr_t derived = 0;
     for (auto &info: *infos) {
-        if (info.first == panda::ecmascript::FrameCommonConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = state->sp;
+        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
+            uintptr_t rsp = frame->sp;
             address = rsp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rsp :" << rsp;
-        } else if (info.first == panda::ecmascript::FrameCommonConstants::FP_DWARF_REG_NUM) {
-            uintptr_t fp = state->fp;
+        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
+            uintptr_t fp = frame->fp;
             address = fp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rfp :" << fp;
@@ -102,13 +102,13 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
     i = 0;
 }
 
-bool LLVMStackMapParser::GetStackMapIterm(panda::ecmascript::OptLeaveFrame *state,
+bool LLVMStackMapParser::GetStackMapIterm(OptLeaveFrame *frame,
                                               const RootVisitor &v0, const RootRangeVisitor &v1,
-                                              panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
+                                              ChunkMap<DerivedDataKey, uintptr_t> *data,
                                               [[maybe_unused]] bool isVerifying) const
 {
-    ASSERT(state);
-    uint64_t patchpointId = state->patchId;
+    ASSERT(frame);
+    uint64_t patchpointId = frame->patchId;
     const CallSiteInfo *infos = GetCallSiteInfoByPc(patchpointId);
     if (infos == nullptr) {
         return false;
@@ -118,15 +118,15 @@ bool LLVMStackMapParser::GetStackMapIterm(panda::ecmascript::OptLeaveFrame *stat
     uintptr_t derived = 0;
     int i = 0;
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
-    PrintCallSiteInfo(infos, state);
+    PrintCallSiteInfo(infos, frame);
 #endif
 
     for (auto &info: *infos) {
-        if (info.first == panda::ecmascript::FrameCommonConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = state->sp;
+        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
+            uintptr_t rsp = frame->sp;
             address = rsp + info.second;
-        } else if (info.first == panda::ecmascript::FrameCommonConstants::FP_DWARF_REG_NUM) {
-            uintptr_t fp = state->fp;
+        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
+            uintptr_t fp = frame->fp;
             address = fp + info.second;
         } else {
             abort();
@@ -134,7 +134,7 @@ bool LLVMStackMapParser::GetStackMapIterm(panda::ecmascript::OptLeaveFrame *stat
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                v0(panda::ecmascript::Root::ROOT_FRAME, panda::ecmascript::ObjectSlot(base));
+                v0(Root::ROOT_FRAME, ObjectSlot(base));
             } else {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 if (!isVerifying) {
@@ -160,17 +160,17 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
     uintptr_t base = 0;
     uintptr_t derived = 0;
     for (auto &info: *infos) {
-    if (info.first == panda::ecmascript::FrameCommonConstants::SP_DWARF_REG_NUM) {
+    if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
 #ifdef PANDA_TARGET_ARM64
         uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
-        uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + panda::ecmascript::FrameCommonConstants::SP_OFFSET));
+        uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameCommonConstants::SP_OFFSET));
 #else
-        uintptr_t *rsp = fp + panda::ecmascript::FrameCommonConstants::SP_OFFSET;
+        uintptr_t *rsp = fp + FrameCommonConstants::SP_OFFSET;
 #endif
         address = reinterpret_cast<uintptr_t>(rsp) + info.second;
         LOG_ECMA(DEBUG) << "SP_DWARF_REG_NUM:  info.second:" << info.second << " rbp offset:" <<
             reinterpret_cast<uintptr_t>(*fp) - address << "rsp :" << rsp;
-    } else if (info.first == panda::ecmascript::FrameCommonConstants::FP_DWARF_REG_NUM) {
+    } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
         uintptr_t tmpFp = *fp;
         address = tmpFp + info.second;
         LOG_ECMA(DEBUG) << "FP_DWARF_REG_NUM:  info.second:" << info.second;
@@ -202,7 +202,7 @@ bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
 
 bool LLVMStackMapParser::GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t frameFp,
                                               const RootVisitor &v0, const RootRangeVisitor &v1,
-                                              panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
+                                              ChunkMap<DerivedDataKey, uintptr_t> *data,
                                               [[maybe_unused]] bool isVerifying) const
 {
     const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
@@ -218,15 +218,15 @@ bool LLVMStackMapParser::GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t fram
     PrintCallSiteInfo(infos, fp);
 #endif
     for (auto &info: *infos) {
-        if (info.first == panda::ecmascript::FrameCommonConstants::SP_DWARF_REG_NUM) {
+        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
 #ifdef PANDA_TARGET_ARM64
             uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
-            uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + panda::ecmascript::FrameCommonConstants::SP_OFFSET));
+            uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameCommonConstants::SP_OFFSET));
 #else
-            uintptr_t *rsp = fp + panda::ecmascript::FrameCommonConstants::SP_OFFSET;
+            uintptr_t *rsp = fp + FrameCommonConstants::SP_OFFSET;
 #endif
             address = reinterpret_cast<uintptr_t>(rsp) + info.second;
-        } else if (info.first == panda::ecmascript::FrameCommonConstants::FP_DWARF_REG_NUM) {
+        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
             uintptr_t tmpFp = *fp;
             address = tmpFp + info.second;
         } else {
@@ -236,7 +236,7 @@ bool LLVMStackMapParser::GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t fram
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                v0(panda::ecmascript::Root::ROOT_FRAME, panda::ecmascript::ObjectSlot(base));
+                v0(Root::ROOT_FRAME, ObjectSlot(base));
             } else {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 if (!isVerifying) {

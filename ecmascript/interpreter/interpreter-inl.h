@@ -207,7 +207,7 @@ namespace panda::ecmascript {
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
-JSTaggedType * EcmaInterpreter::FixSpIfNeed(JSThread *thread)
+JSTaggedType * EcmaInterpreter::FixSpOnEntry(JSThread *thread)
 {
     JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     FrameType type = *(reinterpret_cast<FrameType*>(
@@ -225,8 +225,8 @@ JSTaggedType * EcmaInterpreter::FixSpIfNeed(JSThread *thread)
 JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, ExecuteNative);
-    JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *fixedSp = FixSpIfNeed(thread);
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    JSTaggedType *fixedSp = FixSpOnEntry(thread);
 
     JSMethod *methodToCall = params.callTarget->GetCallTarget();
     ASSERT(methodToCall->GetNumVregs() == 0);
@@ -249,7 +249,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     }
 
     InterpretedFrame *state = GET_FRAME(newSp);
-    state->base.prev = originalPrevSp;
+    state->base.prev = sp;
     state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     state->pc = nullptr;
     state->sp = newSp;
@@ -263,7 +263,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     JSTaggedValue tagged =
         reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(methodToCall->GetNativePointer()))(&ecmaRuntimeCallInfo);
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
-    thread->SetCurrentSPFrame(originalPrevSp);
+    thread->SetCurrentSPFrame(sp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif
@@ -278,8 +278,8 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     if (method->IsNative()) {
         return EcmaInterpreter::ExecuteNative(thread, params);
     }
-    JSTaggedType *originalPrevSp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *fixedSp = FixSpIfNeed(thread);
+    JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
+    JSTaggedType *fixedSp = FixSpOnEntry(thread);
     JSTaggedType *newSp = fixedSp - FRAME_STATE_SIZE;
     // push break state
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -290,7 +290,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->function = JSTaggedValue::Hole();
-    breakState->base.prev = originalPrevSp;
+    breakState->base.prev = sp;
     breakState->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
     JSTaggedType *prevSp = newSp;
 
@@ -385,7 +385,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
     // pop frame
-    thread->SetCurrentSPFrame(originalPrevSp);
+    thread->SetCurrentSPFrame(sp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
     CpuProfiler::IsNeedAndGetStack(thread);
 #endif

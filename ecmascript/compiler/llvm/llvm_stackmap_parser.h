@@ -205,7 +205,7 @@ public:
     bool GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
                               const RootRangeVisitor &v1, panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
                               [[maybe_unused]] bool isVerifying) const;
-    bool GetStackMapIterm(panda::ecmascript::OptLeaveFrame *state,
+    bool GetStackMapIterm(panda::ecmascript::OptLeaveFrame *frame,
                             const RootVisitor &v0, const RootRangeVisitor &v1,
                             panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
                             [[maybe_unused]] bool isVerifying) const;
@@ -230,7 +230,7 @@ private:
     void CalcCallSite();
     bool IsDeriveredPointer(int callsitetime) const;
     const CallSiteInfo* GetCallSiteInfoByPatchID(uint64_t patchPointId) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, panda::ecmascript::OptLeaveFrame *state);
+    void PrintCallSiteInfo(const CallSiteInfo *infos, panda::ecmascript::OptLeaveFrame *frame);
     void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp);
     std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
