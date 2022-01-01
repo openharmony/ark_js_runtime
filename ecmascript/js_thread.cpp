@@ -229,7 +229,7 @@ void JSThread::LoadFastStubModule(const char *moduleFile)
         fastStubEntries_[i] = stubModule.GetStubEntry(i);
     }
 #ifdef NDEBUG
-    ::kungfu::LLVMStackMapParser::GetInstance().Print();
+    kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif
     stubCode_ = stubModule.GetCode();
 }
