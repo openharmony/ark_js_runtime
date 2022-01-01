@@ -25,15 +25,12 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using OffsetType = int32_t;
 using DwarfRegType = uint16_t;
 using DwarfRegAndOffsetType = std::pair<DwarfRegType, OffsetType>;
 using CallSiteInfo = std::vector<DwarfRegAndOffsetType>;
 using Fun2InfoType = std::pair<uintptr_t, DwarfRegAndOffsetType>;
-using DerivedDataKey = panda::ecmascript::DerivedDataKey;
-using RootVisitor = panda::ecmascript::RootVisitor;
-using RootRangeVisitor = panda::ecmascript::RootRangeVisitor;
 
 struct Header {
     uint8_t  stackmapversion; // Stack Map Version (current version is 3)
@@ -202,12 +199,12 @@ public:
         llvmStackMap_.Print();
     }
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
-    bool GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
-                              const RootRangeVisitor &v1, panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
+    bool VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
+                              const RootRangeVisitor &v1, ChunkMap<DerivedDataKey, uintptr_t> *data,
                               [[maybe_unused]] bool isVerifying) const;
-    bool GetStackMapIterm(panda::ecmascript::OptLeaveFrame *frame,
+    bool VisitStackMapSlots(OptLeaveFrame *frame,
                             const RootVisitor &v0, const RootRangeVisitor &v1,
-                            panda::ecmascript::ChunkMap<DerivedDataKey, uintptr_t> *data,
+                            ChunkMap<DerivedDataKey, uintptr_t> *data,
                             [[maybe_unused]] bool isVerifying) const;
 
 private:
@@ -230,7 +227,7 @@ private:
     void CalcCallSite();
     bool IsDeriveredPointer(int callsitetime) const;
     const CallSiteInfo* GetCallSiteInfoByPatchID(uint64_t patchPointId) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, panda::ecmascript::OptLeaveFrame *frame);
+    void PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame);
     void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp);
     std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
@@ -238,5 +235,5 @@ private:
     std::unordered_map<uint64_t, CallSiteInfo> pid2CallSiteInfo_;
     [[maybe_unused]] std::unique_ptr<DataInfo> dataInfo_;
 };
-} // namespace kungfu
+} // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_LLVMSTACKPARSE_H

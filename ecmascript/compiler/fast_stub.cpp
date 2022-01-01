@@ -1239,4 +1239,4 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&receiverNotHeapObject);
     Return(GetHoleConstant(MachineType::UINT64));
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

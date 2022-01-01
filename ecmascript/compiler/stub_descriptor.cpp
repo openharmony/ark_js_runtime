@@ -731,4 +731,4 @@ void FastStubDescriptors::InitializeStubDescriptors()
 #undef INITIALIZE_CALL_STUB_DESCRIPTOR
 #undef DEF_CALL_STUB
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

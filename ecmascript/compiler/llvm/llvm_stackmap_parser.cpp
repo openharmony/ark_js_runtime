@@ -25,7 +25,7 @@
 
 using namespace panda::ecmascript;
 
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 std::string LocationTy::TypeToString(Kind loc) const
 {
     switch (loc) {
@@ -102,10 +102,10 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
     i = 0;
 }
 
-bool LLVMStackMapParser::GetStackMapIterm(OptLeaveFrame *frame,
-                                            const RootVisitor &v0, const RootRangeVisitor &v1,
-                                            ChunkMap<DerivedDataKey, uintptr_t> *data,
-                                            [[maybe_unused]] bool isVerifying) const
+bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
+    const RootVisitor &v0, const RootRangeVisitor &v1,
+    ChunkMap<DerivedDataKey, uintptr_t> *data,
+    [[maybe_unused]] bool isVerifying) const
 {
     ASSERT(frame);
     uint64_t patchpointId = frame->patchId;
@@ -200,10 +200,10 @@ bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
     return callsitetime & 1;
 }
 
-bool LLVMStackMapParser::GetStackMapIterm(uintptr_t callSiteAddr, uintptr_t frameFp,
-                                            const RootVisitor &v0, const RootRangeVisitor &v1,
-                                            ChunkMap<DerivedDataKey, uintptr_t> *data,
-                                            [[maybe_unused]] bool isVerifying) const
+bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
+    const RootVisitor &v0, const RootRangeVisitor &v1,
+    ChunkMap<DerivedDataKey, uintptr_t> *data,
+    [[maybe_unused]] bool isVerifying) const
 {
     const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
     if (infos == nullptr) {
@@ -372,4 +372,4 @@ bool LLVMStackMapParser::CalculateStackMap(std::unique_ptr<uint8_t []> stackMapA
     CalcCallSite();
     return true;
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

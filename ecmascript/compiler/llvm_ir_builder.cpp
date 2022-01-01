@@ -1727,4 +1727,4 @@ LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
     }
     return machineTypeMap[type];
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

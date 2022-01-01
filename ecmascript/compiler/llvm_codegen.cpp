@@ -350,4 +350,4 @@ void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
     LLVMDisasmDispose(dcr);
 #endif
 }
-}  // panda::ecmascript::kungfu
+}  // namespace panda::ecmascript::kungfu

@@ -888,8 +888,8 @@ void DoSafepoint()
         uintptr_t returnAddr =  *(rbp + 1);
         uintptr_t *rsp = rbp + 2;  // move 2 steps from rbp to get rsp
         rbp = reinterpret_cast<uintptr_t *>(*rbp);
-        const ::kungfu::CallSiteInfo *infos =
-            ::kungfu::LLVMStackMapParser::GetInstance().GetCallSiteInfoByPc(returnAddr);
+        const kungfu::CallSiteInfo *infos =
+            kungfu::LLVMStackMapParser::GetInstance().GetCallSiteInfoByPc(returnAddr);
         if (infos != nullptr) {
             for (auto &info : *infos) {
                 uintptr_t **address = nullptr;
