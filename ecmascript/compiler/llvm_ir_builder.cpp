@@ -41,8 +41,13 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
 {
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
-    LLVMSetGC(function_, "statepoint-example");
     bbIdMapBb_.clear();
+    if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME) {
+        LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
+        return;
+    } else {
+        LLVMSetGC(function_, "statepoint-example");
+    }
     if (compCfg_->IsArm32()) {
         LLVMTypeRef elementTypes[] = {
             LLVMInt64Type(), // frameType
@@ -336,6 +341,9 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
         return;
     }
     auto frameType = circuit_->GetFrameType();
+    if (frameType == FrameType::INTERPRETER_FRAME) {
+        return;
+    }
     LLVMAddTargetDependentFunctionAttr(function_, "frame-pointer", "all");
     LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
 
@@ -614,20 +622,25 @@ void LLVMIRBuilder::DestoryFrame()
 
 void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
 {
-    int paraStartIndex = 2;
+    int paraStartIndex = 3;
     int index = circuit_->GetBitField(inList[1]);
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
     LLVMValueRef rtoffset;
-    StubDescriptor *callee_descriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
+    StubDescriptor *calleeDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
     LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(index);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
     // runtime case
-    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
+    if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
                                 (index - FAST_STUB_MAXCOUNT) * slotSize_, 0);
+    } else if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::BYTECODE_HANDLER) {
+        LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[paraStartIndex]];
+        rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::BYTECODE_HANDLERS), 0);
+        rtoffset = LLVMBuildAdd(builder_, opcodeOffset, rtoffset, "");
+        paraStartIndex += 1;
     } else {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::FAST_STUB_ENTRIES) +
                                 index * slotSize_, 0);
@@ -636,7 +649,6 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
     callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-    paraStartIndex += 1;
     // 16 : params limit
     LLVMValueRef params[16];
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
@@ -649,7 +661,7 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     }
     if (compCfg_->IsArm32() || compCfg_->IsAArch64() || compCfg_->IsAmd64()) {
         // callerid | idx
-        if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
+        if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
             ConstructFrame();
         }
     } else {
@@ -657,10 +669,13 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     }
 
     gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
-    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
+    if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         DestoryFrame();
     }
-    return;
+    if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::BYTECODE_HANDLER) {
+        LLVMSetTailCall(gateToLLVMMaps_[gate], true);
+        LLVMSetInstructionCallConv(gateToLLVMMaps_[gate], LLVMGHCCallConv);
+    }
 }
 
 void LLVMIRBuilder::HandleAlloca(GateRef gate)
@@ -675,7 +690,6 @@ void LLVMIRBuilder::VisitAlloca(GateRef gate)
     COMPILER_LOG(DEBUG) << LLVMGetTypeKind(sizeType);
     gateToLLVMMaps_[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, sizeType, ""),
         ConvertLLVMTypeFromGate(gate), "");  // NOTE: pointer val is currently viewed as 64bits
-    return;
 }
 
 void LLVMIRBuilder::HandlePhi(GateRef gate)
@@ -1658,21 +1672,22 @@ LLVMStubModule::~LLVMStubModule()
 
 void LLVMStubModule::Initialize(const std::vector<int> &stubIndices)
 {
-    for (auto index : stubIndices) {
+    uint32_t i;
+    for (i = 0; i < ALL_STUB_MAXCOUNT; i++) {
+        uint32_t index = stubIndices[i];
         auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
         if (!stubDescriptor->GetName().empty()) {
-            stubFunctions_[index] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
+            stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
         }
     }
-    uint32_t i;
-    for (i = 0; i < MAX_STUB_FUNCTION_COUNT; i++) {
+    for (i = 0; i < CALL_STUB_MAXCOUNT; i++) {
         auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i);
         if (!stubDescriptor->GetName().empty()) {
             stubFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
         }
     }
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-    for (i = 0; i < MAX_TEST_FUNCTION_COUNT; i++) {
+#ifndef NDEBUG
+    for (i = 0; i < TEST_FUNC_MAXCOUNT; i++) {
         auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNCTION_OFFSET);
         if (!testFuncDescriptor->GetName().empty()) {
             testFunctions_[i] = GetLLVMFunctionByStubDescriptor(testFuncDescriptor);

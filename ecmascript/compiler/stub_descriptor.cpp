@@ -66,23 +66,6 @@ CALL_STUB_INIT_DESCRIPTOR(FastMul)
     };
     descriptor->SetParameters(params.data());
 }
-#ifndef NDEBUG
-CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
-{
-    // 3 : 3 input parameters
-    StubDescriptor fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64);
-    *descriptor = fastMulGC;
-    // 3 : 3 input parameters
-    std::array<MachineType, 3> params = {
-        MachineType::NATIVE_POINTER,
-        MachineType::UINT64,
-        MachineType::UINT64,
-    };
-    descriptor->SetParameters(params.data());
-}
-#else
-CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest) {}
-#endif
 
 CALL_STUB_INIT_DESCRIPTOR(FastDiv)
 {
@@ -672,6 +655,25 @@ CALL_STUB_INIT_DESCRIPTOR(NoticeThroughChainAndRefreshUser)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(BytecodeHandler)
+{
+    // 7 : 7 input parameters
+    StubDescriptor bytecodeHandler("bytecodeHandler", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = bytecodeHandler;
+    std::array<MachineType, 7> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::INT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::BYTECODE_HANDLER);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(DebugPrint)
 {
     // 1 : 1 input parameters
@@ -687,6 +689,20 @@ CALL_STUB_INIT_DESCRIPTOR(DebugPrint)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+#ifndef NDEBUG
+CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
+{
+    // 3 : 3 input parameters
+    StubDescriptor fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64);
+    *descriptor = fastMulGC;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::UINT64,
+        MachineType::UINT64,
+    };
+    descriptor->SetParameters(params.data());
+}
 CALL_STUB_INIT_DESCRIPTOR(PhiGateTest)
 {
     StubDescriptor phiGateTest("PhiGateTest", 0, 1, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT32);
@@ -719,6 +735,7 @@ CALL_STUB_INIT_DESCRIPTOR(LoopTest1)
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
 }
+#endif
 
 void FastStubDescriptors::InitializeStubDescriptors()
 {
@@ -728,6 +745,9 @@ void FastStubDescriptors::InitializeStubDescriptors()
 #define INITIALIZE_CALL_STUB_DESCRIPTOR(name, argcounts) \
     Stub##name##InterfaceDescriptor::Initialize(&callStubsDescriptor_[DEF_CALL_STUB(name)]);
     CALL_STUB_LIST(INITIALIZE_CALL_STUB_DESCRIPTOR)
+#ifndef NDEBUG
+    TEST_FUNC_LIST(INITIALIZE_CALL_STUB_DESCRIPTOR)
+#endif
 #undef INITIALIZE_CALL_STUB_DESCRIPTOR
 #undef DEF_CALL_STUB
 }

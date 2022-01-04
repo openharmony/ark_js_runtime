@@ -44,6 +44,7 @@ source_set("libark_jsoptimizer_static") {
     "circuit.cpp",
     "circuit_builder.cpp",
     "fast_stub.cpp",
+    "interpreter_stub.cpp",
     "gate.cpp",
     "llvm_codegen.cpp",
     "llvm_ir_builder.cpp",

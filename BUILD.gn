@@ -131,9 +131,6 @@ config("ark_jsruntime_common_config") {
   if (enable_stub_aot) {
     defines += [ "ECMASCRIPT_ENABLE_STUB_AOT" ]
   }
-  if (enable_specific_stubs) {
-    defines += [ "ECMASCRIPT_ENABLE_SPECIFIC_STUBS" ]
-  }
 
   if (is_standard_system) {
     defines += [ "IS_STANDARD_SYSTEM" ]
@@ -181,6 +178,7 @@ config("ark_jsruntime_common_config") {
     ldflags = [ "-flto" ]
   }
 
+  is_debug = true
   if (is_debug) {
     cflags_cc += [
       "-Og",
