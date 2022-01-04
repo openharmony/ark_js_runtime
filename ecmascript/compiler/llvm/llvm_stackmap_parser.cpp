@@ -63,7 +63,7 @@ const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPatchID(uint64_t patchP
 }
 
 void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
-    OptLeaveFrame *frame)
+    OptLeaveFrame *frame) const
 {
     int i = 0;
     uintptr_t address = 0;
@@ -109,7 +109,7 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
 {
     ASSERT(frame);
     uint64_t patchpointId = frame->patchId;
-    const CallSiteInfo *infos = GetCallSiteInfoByPc(patchpointId);
+    const CallSiteInfo *infos = GetCallSiteInfoByPatchID(patchpointId);
     if (infos == nullptr) {
         return false;
     }
@@ -153,7 +153,7 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
 }
 
 void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
-    uintptr_t *fp)
+    uintptr_t *fp) const
 {
     int i = 0;
     uintptr_t address = 0;
