@@ -155,7 +155,7 @@ GateRef CircuitBuilder::NewIfFalse(GateRef ifBranch)
     return circuit_->NewGate(OpCode(OpCode::IF_FALSE), 0, { ifBranch }, TypeCode::NOTYPE);
 }
 
-GateRef CircuitBuilder::NewSwitchCase(GateRef switchBranch, int32_t value)
+GateRef CircuitBuilder::NewSwitchCase(GateRef switchBranch, int64_t value)
 {
     return circuit_->NewGate(OpCode(OpCode::SWITCH_CASE), value, { switchBranch }, TypeCode::NOTYPE);
 }

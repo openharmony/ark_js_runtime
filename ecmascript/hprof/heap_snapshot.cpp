@@ -339,6 +339,8 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("CompletionRecord");
         case JSType::ECMA_MODULE:
             return GetString("EcmaModule");
+        case JSType::JS_ARRAY_LIST:
+            return GetString("ArrayList");
         default:
             break;
     }

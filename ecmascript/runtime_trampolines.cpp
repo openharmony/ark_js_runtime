@@ -21,6 +21,7 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/layout_info.h"
@@ -371,5 +372,13 @@ void RuntimeTrampolines::NoticeThroughChainAndRefreshUser(uintptr_t argGlue, JST
 
     JSHClass::NoticeThroughChain(thread, oldHClassHandle);
     JSHClass::RefreshUsers(thread, oldHClassHandle, newHClassHandle);
+}
+
+void RuntimeTrampolines::JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSArrayList> arrayList(thread, obj);
+    arrayList->Set(thread, index, value);
 }
 }  // namespace panda::ecmascript
