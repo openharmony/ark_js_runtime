@@ -146,11 +146,11 @@ GateRef Stub::Environment::GetArgument(size_t index) const
 GateRef Stub::GetInt32Constant(int32_t value)
 {
     return env_.GetCircuitBuilder().NewIntegerConstant(value);
-};
+}
 GateRef Stub::GetWord64Constant(uint64_t value)
 {
     return env_.GetCircuitBuilder().NewInteger64Constant(value);
-};
+}
 
 GateRef Stub::GetArchRelateConstant(uint64_t value)
 {
@@ -158,7 +158,15 @@ GateRef Stub::GetArchRelateConstant(uint64_t value)
         return GetInt32Constant(value);
     }
     return GetWord64Constant(value);
-};
+}
+
+GateRef Stub::GetArchRelatePointerSize()
+{
+    if (env_.IsArm32()) {
+        return GetInt32Constant(sizeof(uint32_t));
+    }
+    return GetWord64Constant(sizeof(uint64_t));
+}
 
 GateRef Stub::TrueConstant()
 {
@@ -1676,6 +1684,23 @@ void Stub::UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, Gate
         Int32Mul(index, GetInt32Constant(NameDictionary::ENTRY_SIZE)));
     GateRef valueIndex = Int32Add(arrayIndex, GetInt32Constant(NameDictionary::ENTRY_VALUE_INDEX));
     SetValueToTaggedArray(MachineType::TAGGED, glue, elements, valueIndex, value);
+}
+
+void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
+                    GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
+{
+    GateRef opcode = Load(MachineType::UINT8, pc);
+    GateRef opcodeOffset = ArchRelatePtrMul(
+        ChangeInt32ToUintPtr(ZExtInt8ToInt32(opcode)), GetArchRelatePointerSize());
+    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(BytecodeHandler);
+
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    auto target = GetArchRelateConstant(FAST_STUB_ID(BytecodeHandler));
+    GateRef result = env_.GetCircuitBuilder().NewCallGate(descriptor, glue, target, depend, {
+        opcodeOffset, glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter
+    });
+    env_.GetCurrentLabel()->SetDepend(result);
+    Return();
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H
