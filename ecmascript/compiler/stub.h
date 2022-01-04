@@ -86,19 +86,26 @@ public:
                 case Triple::TRIPLE_AMD64:
                 case Triple::TRIPLE_AARCH64:
                     offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_64, GLUE_GLOBAL_CONSTANTS_OFFSET_64, GLUE_PROPERTIES_CACHE_OFFSET_64,
-                        GLUE_GLOBAL_STORAGE_OFFSET_64, GLUE_CURRENT_FRAME_OFFSET_64, GLUE_LAST_IFRAME_OFFSET_64,
-                        GLUE_RUNTIME_FUNCTIONS_OFFSET_64, GLUE_FASTSTUB_ENTRIES_OFFSET_64, GLUE_FRAME_STATE_SIZE_64,
-                        GLUE_OPT_LEAVE_FRAME_SIZE_64, GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64
-
+                        GLUE_EXCEPTION_OFFSET_64,
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)  \
+                        GLUE_##name##_OFFSET_64,
+                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
+                        GLUE_FRAME_STATE_SIZE_64,
+                        GLUE_OPT_LEAVE_FRAME_SIZE_64,
+                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64
                     };
                     break;
                 case Triple::TRIPLE_ARM32:
                     offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_32, GLUE_GLOBAL_CONSTANTS_OFFSET_32, GLUE_PROPERTIES_CACHE_OFFSET_32,
-                        GLUE_GLOBAL_STORAGE_OFFSET_32, GLUE_CURRENT_FRAME_OFFSET_32, GLUE_LAST_IFRAME_OFFSET_32,
-                        GLUE_RUNTIME_FUNCTIONS_OFFSET_32, GLUE_FASTSTUB_ENTRIES_OFFSET_32, GLUE_FRAME_STATE_SIZE_32,
-                        GLUE_OPT_LEAVE_FRAME_SIZE_32, GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32
+                        GLUE_EXCEPTION_OFFSET_32,
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)  \
+                        GLUE_##name##_OFFSET_32,
+                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
+                        GLUE_FRAME_STATE_SIZE_32,
+                        GLUE_OPT_LEAVE_FRAME_SIZE_32,
+                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32
                     };
                     break;
                 default:
@@ -424,6 +431,7 @@ public:
     inline GateRef GetInt32Constant(int32_t value);
     inline GateRef GetWord64Constant(uint64_t value);
     inline GateRef GetArchRelateConstant(uint64_t value);
+    inline GateRef GetArchRelatePointerSize();
     inline GateRef TrueConstant();
     inline GateRef FalseConstant();
     inline GateRef GetBooleanConstant(bool value);
@@ -729,6 +737,8 @@ public:
 
     GateRef SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef key,
                                GateRef value); // Do not crawl the prototype chain
+    inline void Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
+                         GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
 
 private:
     Environment env_;

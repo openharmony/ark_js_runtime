@@ -72,7 +72,7 @@ void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
     auto codeBuff = reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
     std::map<uint64_t, std::string> addr2name;
-    for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+    for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
         auto stubfunction = stubmodule_->GetStubFunction(i);
 #ifndef NDEBUG
         COMPILER_LOG(DEBUG) << "  AssembleStubModule :" << i << " th " << std::endl;

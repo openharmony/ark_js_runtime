@@ -23,13 +23,13 @@ void StubModule::Save(const std::string &filename)
     if (code_ != nullptr) {
         std::ofstream modulefile(filename.c_str(), std::ofstream::binary);
         /* write stub entries offset  */
-        modulefile.write(reinterpret_cast<char *>(fastStubEntries_.data()),
-                         sizeof(uint64_t) * (kungfu::FAST_STUB_MAXCOUNT));
+        modulefile.write(reinterpret_cast<char *>(stubEntries_.data()),
+                         sizeof(uint64_t) * (kungfu::ALL_STUB_MAXCOUNT));
         int codeSize = code_->GetInstructionSizeInBytes().GetInt();
         /* write host code section start addr */
         modulefile.write(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
         /* write stackmap offset */
-        int stackmapOffset = sizeof(uintptr_t) * (kungfu::FAST_STUB_MAXCOUNT) + 2 * sizeof(int)
+        int stackmapOffset = sizeof(uintptr_t) * (kungfu::ALL_STUB_MAXCOUNT) + 2 * sizeof(int)
             + codeSize;
         modulefile.write(reinterpret_cast<char *>(&stackmapOffset),
                          sizeof(int));
@@ -54,8 +54,8 @@ void StubModule::Load(JSThread *thread, const std::string &filename)
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     std::ifstream modulefile(filename.c_str(), std::ofstream::binary);
-    modulefile.read(reinterpret_cast<char *>(fastStubEntries_.data()),
-        sizeof(uint64_t) * (kungfu::FAST_STUB_MAXCOUNT));
+    modulefile.read(reinterpret_cast<char *>(stubEntries_.data()),
+        sizeof(uint64_t) * (kungfu::ALL_STUB_MAXCOUNT));
     /* read  host code section start addr  */
     modulefile.read(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
     int stackmapOffset;

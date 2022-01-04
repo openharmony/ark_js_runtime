@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "fast_stub.h"
+#include "interpreter_stub.h"
 #include "generated/stub_aot_options_gen.h"
 #include "libpandabase/utils/pandargs.h"
 #include "libpandabase/utils/span.h"
@@ -138,7 +139,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
     LLVMStubModule stubModule("fast_stubs", triple);
     std::vector<int> stubSet = GetStubIndices();
     stubModule.Initialize(stubSet);
-    for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+    for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
         auto stub = stubs_[i];
         if (stub != nullptr) {
             PassPayLoad data(stub, &stubModule);
@@ -199,9 +200,10 @@ int main(const int argc, const char **argv)
 #define SET_STUB_TO_MODULE(name, counter) \
     panda::ecmascript::kungfu::Circuit name##Circuit; \
     panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
-    mouldeBuilder.SetStub(FAST_STUB_ID(name), &name##Stub);
+    mouldeBuilder.SetStub(panda::ecmascript::kungfu::StubId::STUB_##name, &name##Stub);
     FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
-#ifndef NDEBUG
+    INTERPRETER_STUB_LIST(SET_STUB_TO_MODULE)
+#ifndef NDEBUG 
     TEST_FUNC_LIST(SET_STUB_TO_MODULE)
 #endif
 #undef SET_STUB_TO_MODULE
