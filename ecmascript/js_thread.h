@@ -179,7 +179,7 @@ public:
 
     void SetRuntimeFunction(uint32_t id, Address functionAddress)
     {
-        ASSERT(id < MAX_RUNTIME_FUNCTIONS);
+        ASSERT(id < EXTERNAL_RUNTIME_STUB_MAXCOUNT);
         runtimeFunctions_[id] = functionAddress;
     }
 
@@ -197,7 +197,7 @@ public:
 
     void InitializeFastRuntimeStubs();
 
-    void LoadFastStubModule(const char *moduleFile);
+    void LoadStubModule(const char *moduleFile);
 
     InternalCallParams *GetInternalCallParams() const
     {
@@ -254,6 +254,11 @@ public:
     static constexpr uint32_t GetFastStubEntriesOffset()
     {
         return MEMBER_OFFSET(JSThread, fastStubEntries_);
+    }
+
+    static constexpr uint32_t GetBytecodeHandlersOffset()
+    {
+        return MEMBER_OFFSET(JSThread, bytecodeHandlers_);
     }
 
     void SetMarkStatus(MarkStatus status)
@@ -317,8 +322,8 @@ public:
         return reinterpret_cast<JSThread *>(glue - GetExceptionOffset());
     }
 
-    static constexpr uint32_t MAX_RUNTIME_FUNCTIONS =
-        kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT - kungfu::EXTERNAL_RUNTIME_STUB_BEGIN - 1;
+    static constexpr uint32_t MAX_RUNTIME_FUNCTIONS = kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT;
+    static constexpr uint32_t MAX_BYTECODE_HANDLERS = 0x100;
     // The sequence must be the same as that of the GLUE members.
     enum class GlueID : uint8_t {
         EXCEPTION = 0U,
@@ -327,6 +332,7 @@ public:
         GLOBAL_STORAGE,
         CURRENT_FRAME,
         LAST_I_FRAME,
+        BYTECODE_HANDLERS,
         RUNTIME_FUNCTIONS,
         FAST_STUB_ENTRIES,
         FRAME_STATE_SIZE,
@@ -374,6 +380,7 @@ private:
     EcmaGlobalStorage *globalStorage_ {nullptr};
     JSTaggedType *currentFrame_ {nullptr};
     JSTaggedType *lastIFrame_ {nullptr};
+    Address bytecodeHandlers_[MAX_BYTECODE_HANDLERS];
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
     Address fastStubEntries_[kungfu::FAST_STUB_MAXCOUNT];
 
@@ -390,7 +397,10 @@ private:
     V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
     V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
     V(LAST_IFRAME, LastIFrame, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))                \
-    V(RUNTIME_FUNCTIONS, RuntimeFunctions, LAST_IFRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(BYTECODE_HANDLERS, BytecodeHandlers, LAST_IFRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(RUNTIME_FUNCTIONS, RuntimeFunctions, BYTECODE_HANDLERS,                                    \
+        JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint32_t),                                      \
+        JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint64_t))                                      \
     V(FASTSTUB_ENTRIES, FastStubEntries, RUNTIME_FUNCTIONS,                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint32_t),                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint64_t))                                      \

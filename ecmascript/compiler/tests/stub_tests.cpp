@@ -83,7 +83,7 @@ public:
 HWTEST_F_L0(StubTest, PhiGateTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetTestFunction(FAST_STUB_ID(PhiGateTest));
+    auto function = stubModule.GetTestFunction(TEST_STUB_ID(PhiGateTest));
     Circuit netOfGates;
     PhiGateTestStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -105,7 +105,7 @@ HWTEST_F_L0(StubTest, PhiGateTest)
 HWTEST_F_L0(StubTest, LoopTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetTestFunction(FAST_STUB_ID(LoopTest));
+    auto function = stubModule.GetTestFunction(TEST_STUB_ID(LoopTest));
     Circuit netOfGates;
     LoopTestStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -129,7 +129,7 @@ HWTEST_F_L0(StubTest, LoopTest)
 HWTEST_F_L0(StubTest, LoopTest1)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetTestFunction(FAST_STUB_ID(LoopTest1));
+    auto function = stubModule.GetTestFunction(TEST_STUB_ID(LoopTest1));
     Circuit netOfGates;
     LoopTest1Stub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());

@@ -126,15 +126,15 @@ public:
 
     LLVMValueRef GetStubFunction(uint32_t index)
     {
-        ASSERT(index < FAST_STUB_MAXCOUNT);
+        ASSERT(index < ALL_STUB_MAXCOUNT);
         return stubFunctions_[index];
     }
 
     LLVMValueRef GetTestFunction(uint32_t index)
     {
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-            ASSERT(index - TEST_FUNCTION_OFFSET < MAX_TEST_FUNCTION_COUNT);
-            return testFunctions_[index - TEST_FUNCTION_OFFSET];
+#ifndef NDEBUG
+            ASSERT(index < TEST_FUNC_MAXCOUNT);
+            return testFunctions_[index];
 #else
             return nullptr;
 #endif
@@ -149,14 +149,10 @@ private:
     LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef ConvertLLVMTypeFromMachineType(MachineType type);
-    static constexpr uint32_t MAX_STUB_FUNCTION_COUNT = panda::ecmascript::kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT;
-    static constexpr uint32_t MAX_TEST_FUNCTION_COUNT =
-        panda::ecmascript::kungfu::TEST_FUNC_MAXCOUNT - panda::ecmascript::kungfu::TEST_FUNC_BEGIN - 1;
-    static constexpr uint32_t TEST_FUNCTION_OFFSET = panda::ecmascript::kungfu::TEST_FUNC_BEGIN + 1;
-    std::array<LLVMValueRef, FAST_STUB_MAXCOUNT> stubFunctions_ {nullptr};
-    std::array<LLVMTypeRef, MAX_STUB_FUNCTION_COUNT> stubFunctionType_ {nullptr};
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-    std::array<LLVMValueRef, MAX_TEST_FUNCTION_COUNT> testFunctions_ {nullptr};
+    std::array<LLVMValueRef, ALL_STUB_MAXCOUNT> stubFunctions_ {nullptr};
+    std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> stubFunctionType_ {nullptr};
+#ifndef NDEBUG
+    std::array<LLVMValueRef, TEST_FUNC_MAXCOUNT> testFunctions_ {nullptr};
 #endif
     LLVMModuleRef module_;
     CompilationConfig compCfg_;

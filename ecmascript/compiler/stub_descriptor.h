@@ -35,6 +35,7 @@ public:
     enum class CallStubKind {
         CODE_STUB,
         RUNTIME_STUB,
+        BYTECODE_HANDLER,
         TEST_FUNC,
     };
     explicit StubDescriptor(std::string name, int flags, int paramCounter, ArgumentsOrder order,

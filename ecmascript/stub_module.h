@@ -26,7 +26,7 @@ class PUBLIC_API StubModule {
 public:
     uint64_t GetStubEntry(int index)
     {
-        return code_->GetDataOffsetAddress() + fastStubEntries_[index];
+        return code_->GetDataOffsetAddress() + stubEntries_[index];
     }
     void Save(const std::string &filename);
     void Load(JSThread *thread, const std::string &filename);
@@ -47,7 +47,7 @@ public:
 
     void SetStubEntry(int index, uint64_t offset)
     {
-        fastStubEntries_[index] = offset;
+        stubEntries_[index] = offset;
     }
     void SetHostCodeSectionAddr(uint64_t addr)
     {
@@ -88,7 +88,7 @@ public:
     }
 
 private:
-    std::array<uint64_t, kungfu::FAST_STUB_MAXCOUNT> fastStubEntries_ {-1};
+    std::array<uint64_t, kungfu::ALL_STUB_MAXCOUNT> stubEntries_ {-1};
     uint64_t hostCodeSectionAddr_  {0};
     uint64_t devicesCodeSectionAddr_ {0};
     MachineCode *code_ {nullptr};

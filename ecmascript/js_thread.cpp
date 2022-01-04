@@ -220,13 +220,19 @@ void JSThread::ResetGuardians()
     stableArrayElementsGuardians_ = true;
 }
 
-void JSThread::LoadFastStubModule(const char *moduleFile)
+void JSThread::LoadStubModule(const char *moduleFile)
 {
     StubModule stubModule;
     std::string fileName(moduleFile);
     stubModule.Load(this, fileName);
-    for (int i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
+    for (uint32_t i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
         fastStubEntries_[i] = stubModule.GetStubEntry(i);
+    }
+    for (uint32_t i = 0; i < kungfu::INTERPRETER_STUB_MAXCOUNT; i++) {
+        bytecodeHandlers_[i] = stubModule.GetStubEntry(i - kungfu::FAST_STUB_MAXCOUNT);
+    }
+    for (uint32_t i = kungfu::INTERPRETER_STUB_MAXCOUNT; i < MAX_BYTECODE_HANDLERS; i++) {
+        bytecodeHandlers_[i] = 0U;
     }
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
