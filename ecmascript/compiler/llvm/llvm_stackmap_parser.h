@@ -227,8 +227,8 @@ private:
     void CalcCallSite();
     bool IsDeriveredPointer(int callsitetime) const;
     const CallSiteInfo* GetCallSiteInfoByPatchID(uint64_t patchPointId) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame);
-    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp);
+    void PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame) const;
+    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const;
     std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
     std::unordered_map<uintptr_t, CallSiteInfo> pc2CallSiteInfo_;
