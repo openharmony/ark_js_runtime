@@ -54,9 +54,11 @@
 #include "ecmascript/builtins/builtins_typedarray.h"
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
+#include "ecmascript/containers/containers_private.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_collator.h"
@@ -132,6 +134,7 @@ using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
 using NumberFormat = builtins::BuiltinsNumberFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
+using ContainersPrivate = containers::ContainersPrivate;
 
 void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 {
@@ -306,8 +309,13 @@ void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHa
 
     JSRuntimeOptions options = vm_->GetJSOptions();
     if (options.IsEnableArkTools()) {
-        SetConstant(globalObject, "ArkTools", InitializeArkTools(env).GetTaggedValue());
+        JSHandle<JSTaggedValue> arkTools(InitializeArkTools(env));
+        SetConstantObject(globalObject, "ArkTools", arkTools);
     }
+
+    // Set ArkPrivate
+    JSHandle<JSTaggedValue> arkPrivate(InitializeArkPrivate(env));
+    SetConstantObject(globalObject, "ArkPrivate", arkPrivate);
 
     // Global object function
     SetFunction(env, globalObject, "eval", Global::NotSupportEval, FunctionLength::ONE);
@@ -2211,6 +2219,15 @@ void Builtins::SetFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObje
     JSObject::DefineOwnProperty(thread_, obj, key, descriptor);
 }
 
+void Builtins::SetFrozenFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key,
+                                 EcmaEntrypoint func, int length) const
+{
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    JSHandle<JSFunction> function = NewFunction(env, keyString, func, length);
+    PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>(function), false, false, false);
+    JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
+}
+
 template<int flag>
 void Builtins::SetFunctionAtSymbol(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj,
                                    const JSHandle<JSTaggedValue> &symbol, const char *name, EcmaEntrypoint func,
@@ -2274,6 +2291,14 @@ void Builtins::SetConstant(const JSHandle<JSObject> &obj, const char *key, JSTag
     PropertyDescriptor descriptor(thread_, JSHandle<JSTaggedValue>(thread_, value), false, false, false);
     JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
 }
+
+void Builtins::SetConstantObject(const JSHandle<JSObject> &obj, const char *key, JSHandle<JSTaggedValue> &value) const
+{
+    JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
+    PropertyDescriptor descriptor(thread_, value, false, false, false);
+    JSObject::DefineOwnProperty(thread_, obj, keyString, descriptor);
+}
+
 void Builtins::SetGlobalThis(const JSHandle<JSObject> &obj, const char *key, const JSHandle<JSTaggedValue> &globalValue)
 {
     JSHandle<JSTaggedValue> keyString(factory_->NewFromString(key));
@@ -2734,10 +2759,16 @@ void Builtins::InitializePluralRules(const JSHandle<GlobalEnv> &env)
 
 JSHandle<JSObject> Builtins::InitializeArkTools(const JSHandle<GlobalEnv> &env) const
 {
-    [[maybe_unused]] EcmaHandleScope scope(thread_);
-
     JSHandle<JSObject> tools = factory_->NewEmptyJSObject();
     SetFunction(env, tools, "print", builtins::BuiltinsArkTools::ObjectDump, FunctionLength::ZERO);
     return tools;
+}
+
+JSHandle<JSObject> Builtins::InitializeArkPrivate(const JSHandle<GlobalEnv> &env) const
+{
+    JSHandle<JSObject> arkPrivate = factory_->NewEmptyJSObject();
+    SetFrozenFunction(env, arkPrivate, "Load", ContainersPrivate::Load, FunctionLength::ZERO);
+    SetConstant(arkPrivate, "ArrayList", JSTaggedValue(static_cast<int>(containers::ContainerTag::ArrayList)));
+    return arkPrivate;
 }
 }  // namespace panda::ecmascript

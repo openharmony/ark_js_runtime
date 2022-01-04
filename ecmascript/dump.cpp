@@ -34,6 +34,7 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
@@ -254,6 +255,8 @@ CString JSHClass::DumpJSType(JSType type)
             return "EcmaModule";
         case JSType::CLASS_INFO_EXTRACTOR:
             return "ClassInfoExtractor";
+        case JSType::JS_ARRAY_LIST:
+            return "ArrayList";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -596,6 +599,9 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::CLASS_INFO_EXTRACTOR:
             ClassInfoExtractor::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_ARRAY_LIST:
+            JSArrayList::Cast(obj)->Dump(thread, os);
             break;
         default:
             UNREACHABLE();
@@ -1085,6 +1091,12 @@ void JSSetIterator::Dump(JSThread *thread, std::ostream &os) const
 void JSArray::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - length: " << std::dec << GetArrayLength() << "\n";
+    JSObject::Dump(thread, os);
+}
+
+void JSArrayList::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - length: " << std::dec << GetLength().GetArrayLength() << "\n";
     JSObject::Dump(thread, os);
 }
 
@@ -2139,6 +2151,9 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::ECMA_MODULE:
             EcmaModule::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
+        case JSType::JS_ARRAY_LIST:
+            JSArrayList::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
         default:
             break;
     }
@@ -2482,6 +2497,12 @@ void JSSetIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 
 void JSArray::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                               std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
+void JSArrayList::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                  std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     JSObject::DumpForSnapshot(thread, vec);
 }

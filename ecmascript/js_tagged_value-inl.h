@@ -502,6 +502,16 @@ inline bool JSTaggedValue::IsJSPluralRules() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPluralRules();
 }
 
+inline bool JSTaggedValue::IsJSArrayList() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSArrayList();
+}
+
+inline bool JSTaggedValue::IsSpecialContainer() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsSpecialContainer();
+}
+
 inline bool JSTaggedValue::IsPromiseIteratorRecord() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsPromiseIteratorRecord();

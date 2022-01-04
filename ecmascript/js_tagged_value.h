@@ -312,6 +312,8 @@ public:
     bool IsJSNumberFormat() const;
     bool IsJSCollator() const;
     bool IsJSPluralRules() const;
+    bool IsJSArrayList() const;
+    bool IsSpecialContainer() const;
 
     bool IsPrototypeHandler() const;
     bool IsTransitionHandler() const;
@@ -343,6 +345,11 @@ private:
 
     void DumpSpecialValue([[maybe_unused]] JSThread *thread, std::ostream &os) const;
     void DumpHeapObjectType([[maybe_unused]] JSThread *thread, std::ostream &os) const;
+    static bool HasContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                     const JSHandle<JSTaggedValue> &key);
+    static JSHandle<TaggedArray> GetOwnContainerPropertyKeys(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
+    static bool GetContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                     const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_TAGGED_VALUE_H

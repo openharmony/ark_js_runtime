@@ -32,6 +32,7 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
@@ -619,6 +620,12 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), ClassInfoExtractor::SIZE, 10)
                 JSHandle<ClassInfoExtractor> classInfoExtractor = factory->NewClassInfoExtractor(nullptr);
                 DUMP_FOR_HANDLE(classInfoExtractor)
+                break;
+            }
+            case JSType::JS_QUEUE:
+            case JSType::JS_ARRAY_LIST: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayList::SIZE, 1)
+                // unused
                 break;
             }
             default:

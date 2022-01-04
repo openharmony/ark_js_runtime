@@ -53,7 +53,7 @@ public:
     GateRef LoopEnd(GateRef state);
     GateRef NewIfTrue(GateRef ifBranch);
     GateRef NewIfFalse(GateRef ifBranch);
-    GateRef NewSwitchCase(GateRef switchBranch, int32_t value);
+    GateRef NewSwitchCase(GateRef switchBranch, int64_t value);
     GateRef NewDefaultCase(GateRef switchBranch);
     GateRef NewLoadGate(MachineType type, GateRef val, GateRef depend);
     GateRef NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend);

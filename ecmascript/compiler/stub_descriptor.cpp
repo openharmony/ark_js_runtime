@@ -720,6 +720,22 @@ CALL_STUB_INIT_DESCRIPTOR(LoopTest1)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(JSArrayListSetByIndex)
+{
+    // 4 : 4 input parameters
+    StubDescriptor arraylistSetByIndex("JSArrayListSetByIndex", 0, 4, ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = arraylistSetByIndex;
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::INT32,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 void FastStubDescriptors::InitializeStubDescriptors()
 {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
