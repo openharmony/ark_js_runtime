@@ -30,7 +30,7 @@ namespace panda::test {
 using panda::ecmascript::EcmaHandleScope;
 using panda::ecmascript::EcmaRuntimeCallInfo;
 using panda::ecmascript::EcmaVM;
-using panda::ecmascript::FrameState;
+using panda::ecmascript::InterpretedFrame;
 using panda::ecmascript::JSTaggedType;
 using panda::ecmascript::JSTaggedValue;
 using panda::ecmascript::JSThread;
@@ -66,7 +66,7 @@ public:
         size_t frameSize = ecmascript::FRAME_STATE_SIZE + info->GetArgsNumber() + NUM_MANDATORY_JSFUNC_ARGS;
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
-        FrameState *state = reinterpret_cast<FrameState *>(newSp) - 1;
+        InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(newSp) - 1;
         state->base.frameType = static_cast<uintptr_t>(ecmascript::FrameType::INTERPRETER_FRAME);
         state->base.prev = sp;
         state->pc = nullptr;

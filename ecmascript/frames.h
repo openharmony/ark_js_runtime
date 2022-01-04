@@ -13,11 +13,9 @@
  * limitations under the License.
  */
 
-//    in aot project, three Frame: Interpreter Frame、Runtime Frame、Optimized Frame.  Optimized Frame split
-// Optimized Entry Frame(interpreter call stub) and Optimized Frame(stub call stub) by call scenario.
-//    ​we gc trigger, we skip Runtime Frame, thus define OPTIMIZED_FRAME、OPTIMIZED_ENTRY_FRAME、
-// INTERPRETER_FRAME respectively
-// represent optimized frame、optimized entry frame、interpreter frame.
+//    in aot project, three Frame: Interpreter Frame、Runtime Frame、Optimized Frame.  Optimized Frame
+//  call Runtime function, generate OptLeaveFrame Frame(gc related context (patchid、sp、fp) is saved to frame)
+//  then return Optimized thread.sp restore orignal sp.
 
 // Frame Layout
 // Interpreter Frame(alias   **iframe** ) Layout as follow:
@@ -46,7 +44,7 @@
 //   |    env                           |        |          |
 //   |----------------------------------|        |          |
 //   |    acc                           |        |          |
-//   |----------------------------------|    FrameState     |
+//   |----------------------------------|InterpretedFrame   |
 //   |    profileTypeInfo               |        |          |
 //   |----------------------------------|        |          |
 //   |    constantpool                  |        |          |
@@ -64,95 +62,11 @@
 // pre field pointer pre stack frame point. fill JSthread's sp field with iframe sp field
 // by  calling JSThread->SetCurrentSPFrame and save pre Frame address to iframe pre field.
 
-// Runtime  Frame: comply with C-ABI without custom modify, function generat frame.
-// ​
-// Optimized Frame and Optimized Entry Frame, we also comply with C-ABI,
-// the difference from Runtime Frame is that prologue and epilogue is customed.
-
-// Optimized Entry Frame layout as follow, we reserve two stack slot for saving eparately new field  **FrameType**
-// which's value is OPTIMIZED_ENTRY_FRAME and
-// new field pre that's value is iframe.sp by calling JSThread->GetCurrentSPFrame.
-// fp field point to pre frame,  **currentfp**  is pointer to fp field address.
-// save JSthread's sp  to pre field and  fill JSthread's sp field with  **currentfp** .
-
-
-// ```
-//     +---------------------------------------------------+
-//     |  parameter n         |                            ^
-//     |- - - - - - - - - --  |                            |
-//     |  parameter n-1       |                          Caller frame
-//     |       ...            |                         comply c-abi
-//     |  parameter n-2       |                        paramters push to stack from left to right
-//     |- - - - - - - - -     |                       i-n th prameter spill to slot
-//     |  parameter i         |                            v
-//     +--------------------------+------------------------+
-//     |   return addr        |   ^                        ^
-//     |- - - - - - - - -     |   |                        |
-//     |         fp           | Fixed                      |
-//     |- - - - - - - - -     | Header <-- frame ptr       |
-//     |  FrameType           |   |                       callee frame Header
-//     |- - - - - - - - -     |   |                        |
-//     |   pre                |   v                        |
-//     +--------------------------+------------------------+
-// ```
-
-// ​	Optimized Frame layout as follow, we reserve one stack slot for saving FrameType field,
-// which's value is OPTIMIZED_FRAME.
-
-// ```
-//     +---------------------------------------------------+
-//     |  parameter n         |                            ^
-//     |- - - - - - - - - --  |                            |
-//     |  parameter n-1       |                          Caller frame
-//     |       ...            |                          comply c-abi
-//     |  parameter n-2       |                       paramters push to stack from left to right
-//     |- - - - - - - - -     |                       i-n th prameter spill to slot
-//     |  parameter i         |                            v
-//     +--------------------------+------------------------+
-//     |   return addr        |   ^                        ^
-//     |- - - - - - - - -     |   |                        |
-//     |         fp           | Fixed                      |
-//     |- - - - - - - - -     | Header <-- frame ptr      callee frame Header
-//     |  FrameType           |   V                        |
-//     +--------------------------+------------------------+
-// ```
-
-// ​	JSthread's sp will be updated dynamic, the scenarios is as follows by different Frames:
-// **SAVE**  is to save JSthread's sp to current Frame pre field,
-// **UPDATE**  is to fill  JSthread's sp with currentsp or currentfp when current frame is iframe
-// or Optimized EntryFrame/Optimized Frame.
-// **nop**  represent don't call SAVE or UPDATE,  **illegal**  represent this secnarios don't existed.
-
-// +----------------------------------------------------------------------+
-// |               | iframe	    | OptimizedEntry | Optimized | RunTime    |
-// |-----------------------------------------------------------------------
-// |iframe	       | SAVE/UPATE	| SAVE	         | illegal	 | SAVE/UPATE |
-// |-----------------------------------------------------------------------
-// |OptimizedEntry | UPATE		| illegal	     | nop	     | UPATE      |
-// |-----------------------------------------------------------------------
-// |Optimized	   | UPATE	    | illegal	     | nop	     | UPATE      |
-// |-----------------------------------------------------------------------
-// |RunTime		   | nop		| illegal	     | illegal	 | nop        |
-// +----------------------------------------------------------------------+
-// ```
-
-// ​	Iterator Frame from Runtime Frame,  the process is as flollows:
-
-// 1 calling JSThread->GetCurrentSPFrame get Current Frame, then get FrameType field
-
-// 2  Iterator previous Frame:
-
-// ​    accessing fp field when the current frame is Optimized Frame;
-
-// ​    accessing pre field when the current frame is Optimized Entry Frame or Interpreter Frame
-
-// 3 repeat process 2 until Current Frame is nullptr
-
 // For Example:
 // ```
-//                     call                call                 call
-//     foo    -----------------> bar   --------------->baz---------------------> rtfunc
-// (interpret frame)         (Optimized Entry Frame)   (Optimized Frame)      (Runtime Frame)
+//                     call                  call
+//     foo    -----------------> bar   -----------------------> rtfunc
+// (interpret frame)       (OptLeaveFrame)             (Runtime Frame)
 // ```
 
 // Frame Layout as follow:
@@ -178,7 +92,7 @@
 //   |----------------------------------|        |          |
 //   |    acc                           |        |          |
 //   |----------------------------------|        |          |
-//   |    profileTypeInfo               |    FrameState     |
+//   |    profileTypeInfo               |InterpretedFrame   |
 //   |----------------------------------|        |          |
 //   |    constantpool                  |        |          |
 //   |----------------------------------|        |          |
@@ -190,21 +104,16 @@
 //   +----------------------------------+--------+----------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
-//   |   return addr        |   ^                           ^
+//   |     patchID          |   ^                           ^
 //   |- - - - - - - - -     |   |                           |
-//   |         fp           | Fixed                         |
-//   |- - - - - - - - -     | Header <-- frame ptr          |
-//   |  FrameType           |   |                       bar's frame Header
+//   |       fp             | Fixed                         |
+//   |- - - - - - - - -     | OptLeaveFrame                 |
+//   |       sp             |   |                       bar's frame Header
 //   |- - - - - - - - -     |   |                           |
-//   |   pre                |   v                           |
+//   |       prev           |   |
+//   |- - - - - - - - -     |   |                           |
+//   |       frameType      |   v                           |
 //   +--------------------------+---------------------------+
-//   |                   .............                      |
-//   +--------------------------+---------------------------+
-//   |   return addr        |   ^                           ^
-//   |- - - - - - - - -     |   |                           |
-//   |         fp           | Fixed                         |
-//   |- - - - - - - - -     | Header <-- frame ptr          |
-//   |  FrameType           |   v                       baz's frame Header
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
 //   |                                                      |
@@ -213,8 +122,8 @@
 //   +------------------------------------------------------+
 // ```
 // Iterator:
-// rtfunc get baz's Frame **currentfp** by calling GetCurrentSPFrame.
-// baz'Frame fp field point to bar's Frame **currentfp**, then get bar's Frame pre field.
+// rtfunc get bar's Frame **currentfp** by calling GetCurrentSPFrame.
+// then get bar's Frame pre field.
 // bar's Frame pre field point to foo's Frame **currentsp**.
 // finally we can iterator foo's Frame.
 
@@ -223,67 +132,83 @@
 
 #include "ecmascript/js_tagged_value.h"
 
-#ifdef PANDA_TARGET_AMD64
-#define GET_CURRETN_FP(fp) asm("mov %%rbp, %0" : "=rm" (fp))
-#define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp)
-#define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(fp))
-#endif
-
-#ifdef PANDA_TARGET_ARM64
-#define GET_CURRETN_FP(fp) asm("mov %0, x29" : "=r" (fp))
-#define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp))
-#define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(POINTER_CAST(fp, uintptr_t *)))
-#endif
-
-#ifdef  PANDA_TARGET_ARM32
-#define GET_CURRETN_FP(fp) asm("mov %0, r11" : "=r" (fp))
-#define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp))
-#define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(POINTER_CAST(fp, uintptr_t *)))
-#endif
-
-#if !defined(PANDA_TARGET_AMD64) && !defined(PANDA_TARGET_ARM64) && !defined(PANDA_TARGET_ARM32)
-#define GET_CURRETN_FP(fp)
-#define POINTER_CAST(fp, type) static_cast<type>(static_cast<void *>(fp))
-#define GET_PREV_FP(fp)  reinterpret_cast<uintptr_t *>(*(POINTER_CAST(fp, uintptr_t *)))
-#endif
-
 namespace panda::ecmascript {
 class JSThread;
-enum class FrameType: uintptr_t {
+enum class FrameType: uint64_t {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
     INTERPRETER_FRAME = 2,
+    OPTIMIZED_LEAVE_FRAME = 3,
 };
 
-class OptimizedFrameStateBase {
+class OptimizedFrame {
 public:
-    uintptr_t frameType;
+    OptimizedFrame() = default;
+    ~OptimizedFrame() = default;
+    uint64_t frameType;
     JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    static size_t GetFrameStateOffsetFromSp()
+    static OptimizedFrame* GetFrameFromSp(JSTaggedType *sp)
     {
-        return MEMBER_OFFSET(OptimizedFrameStateBase, prev);
+        return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
+            - MEMBER_OFFSET(OptimizedFrame, prev));
     }
 };
 
-class InterpretedFrameStateBase {
+class InterpretedFrameBase {
 public:
+    InterpretedFrameBase() = default;
+    ~InterpretedFrameBase() = default;
     JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    uintptr_t frameType;
+    uint64_t frameType;
 };
 
-class OptimizedEntryFrameState {
+class OptimizedEntryFrame {
 public:
+    OptimizedEntryFrame() = default;
+    ~OptimizedEntryFrame() = default;
     JSTaggedType  *threadFp; // for gc
-    OptimizedFrameStateBase base;
-    static size_t GetFrameStateOffsetFromSp()
+    OptimizedFrame base;
+    static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
     {
-        return MEMBER_OFFSET(OptimizedEntryFrameState, base.prev);
+        return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(OptimizedEntryFrame, base.prev));
     }
 };
 
-class FrameConst {
+// align with 8
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct InterpretedFrame {
+    const uint8_t *pc;
+    JSTaggedType *sp;
+    // aligned with 8 bits
+    alignas(sizeof(uint64_t)) JSTaggedValue constpool;
+    JSTaggedValue function;
+    JSTaggedValue profileTypeInfo;
+    JSTaggedValue acc;
+    JSTaggedValue env;
+    InterpretedFrameBase base;
+    static InterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<InterpretedFrame *>(sp) - 1;
+    }
+};
+ 
+struct OptLeaveFrame {
+    uint64_t frameType;
+    JSTaggedType  *prev; // set cursp here
+    uintptr_t sp;
+    uintptr_t fp;
+    uint64_t patchId;
+    static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(OptLeaveFrame, prev));
+    }
+};
+
+class FrameCommonConstants {
 public:
-    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uintptr_t);
+    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uint64_t);
 #ifdef PANDA_TARGET_AMD64
     static constexpr int SP_DWARF_REG_NUM = 7;
     static constexpr int FP_DWARF_REG_NUM = 6;

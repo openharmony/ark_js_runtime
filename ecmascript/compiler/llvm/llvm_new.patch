@@ -47,19 +47,20 @@ index c7d4c4d7e5d..1df40696dd0 100644
    virtual void inlineStackProbe(MachineFunction &MF,
                                  MachineBasicBlock &PrologueMBB) const {}
 diff --git a/llvm/lib/CodeGen/PrologEpilogInserter.cpp b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
-index 3909b571728..c8b3c1c2928 100644
+index 3909b571728..d530c9e6c08 100644
 --- a/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 +++ b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
-@@ -79,6 +79,8 @@ using MBBVector = SmallVector<MachineBasicBlock *, 4>;
+@@ -79,6 +79,9 @@ using MBBVector = SmallVector<MachineBasicBlock *, 4>;
  STATISTIC(NumLeafFuncWithSpills, "Number of leaf functions with CSRs");
  STATISTIC(NumFuncSeen, "Number of functions seen in PEI");
  
 +#define JS_ENTRY_FRAME_MARK 1
 +#define JS_FRAME_MARK   0
++
  
  namespace {
  
-@@ -878,6 +880,35 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
+@@ -878,6 +881,35 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
    int64_t FixedCSEnd = Offset;
    unsigned MaxAlign = MFI.getMaxAlignment();
  
@@ -72,22 +73,22 @@ index 3909b571728..c8b3c1c2928 100644
 +      slotSize = 8;
 +    }
 +    if (MF.getFunction().hasFnAttribute("js-stub-call")) {
-+      int64_t marker = 0x0;
-+      MF.getFunction()
-+      .getFnAttribute("js-stub-call")
-+      .getValueAsString()
-+      .getAsInteger(10, marker);//marker 1 break frame
-+      if (marker == JS_ENTRY_FRAME_MARK) {
-+        CalleeSavedFrameSize = 3 * slotSize;/* frameType + threadSP */
-+      } else if (marker == JS_FRAME_MARK){
-+        CalleeSavedFrameSize = 2 * slotSize; /* frameType */
-+      } else {
-+        assert("js-stub-call is illeagl ! ");
-+      }
-+      if (archType == Triple::aarch64) {
-+        CalleeSavedFrameSize += slotSize; /* current SP */
-+      }
-+      Offset += CalleeSavedFrameSize;
++        int64_t marker = 0x0;
++        MF.getFunction()
++        .getFnAttribute("js-stub-call")
++        .getValueAsString()
++        .getAsInteger(10, marker);//marker 1 break frame
++        if (marker == JS_ENTRY_FRAME_MARK) {
++          CalleeSavedFrameSize = 3 * slotSize; // 3 * slotSize;/* frameType + threadSP */
++        } else if (marker == JS_FRAME_MARK){
++          CalleeSavedFrameSize = 2 * slotSize; /* frameType */
++        } else {
++          assert("js-stub-call is illeagl ! ");
++        }
++        if (archType == Triple::aarch64) {
++          CalleeSavedFrameSize += slotSize; /* current SP */
++        }
++        Offset += CalleeSavedFrameSize;
 +    }
 +  }
 +  #endif
@@ -199,23 +200,159 @@ index 6da089d1859..271b4e157d9 100644
      LowerPATCHABLE_FUNCTION_ENTER(*MI);
      return;
 diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
-index 651ad9ad4c8..6e4a674be51 100644
+index 651ad9ad4c8..540e8dab8fd 100644
 --- a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
 +++ b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
-@@ -872,6 +872,13 @@ static bool IsSVECalleeSave(MachineBasicBlock::iterator I) {
+@@ -385,6 +385,7 @@ void AArch64FrameLowering::emitCalleeSavedFrameMoves(
+     unsigned DwarfReg = MRI->getDwarfRegNum(Reg, true);
+     unsigned CFIIndex = MF.addFrameInst(
+         MCCFIInstruction::createOffset(nullptr, DwarfReg, Offset));
++
+     BuildMI(MBB, MBBI, DL, TII->get(TargetOpcode::CFI_INSTRUCTION))
+         .addCFIIndex(CFIIndex)
+         .setMIFlags(MachineInstr::FrameSetup);
+@@ -535,10 +536,11 @@ static MachineBasicBlock::iterator InsertSEH(MachineBasicBlock::iterator MBBI,
+   case AArch64::STPXpre: {
+     Register Reg0 = MBBI->getOperand(1).getReg();
+     Register Reg1 = MBBI->getOperand(2).getReg();
+-    if (Reg0 == AArch64::FP && Reg1 == AArch64::LR)
++    if (Reg0 == AArch64::FP && Reg1 == AArch64::LR) {
+       MIB = BuildMI(MF, DL, TII.get(AArch64::SEH_SaveFPLR_X))
+                 .addImm(Imm * 8)
+                 .setMIFlag(Flag);
++    }
+     else
+       MIB = BuildMI(MF, DL, TII.get(AArch64::SEH_SaveRegP_X))
+                 .addImm(RegInfo->getSEHRegNum(Reg0))
+@@ -584,10 +586,11 @@ static MachineBasicBlock::iterator InsertSEH(MachineBasicBlock::iterator MBBI,
+   case AArch64::LDPXi: {
+     Register Reg0 = MBBI->getOperand(0).getReg();
+     Register Reg1 = MBBI->getOperand(1).getReg();
+-    if (Reg0 == AArch64::FP && Reg1 == AArch64::LR)
++    if (Reg0 == AArch64::FP && Reg1 == AArch64::LR) {
+       MIB = BuildMI(MF, DL, TII.get(AArch64::SEH_SaveFPLR))
+                 .addImm(Imm * 8)
+                 .setMIFlag(Flag);
++    }
+     else
+       MIB = BuildMI(MF, DL, TII.get(AArch64::SEH_SaveRegP))
+                 .addImm(RegInfo->getSEHRegNum(Reg0))
+@@ -872,6 +875,13 @@ static bool IsSVECalleeSave(MachineBasicBlock::iterator I) {
    }
  }
  
 +#ifdef ARK_GC_SUPPORT
 +Triple::ArchType AArch64FrameLowering::GetArkSupportTarget() const
 +{
-+  return Triple::aarch64;
++    return Triple::aarch64;
 +}
 +#endif
 +
  void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
                                          MachineBasicBlock &MBB) const {
    MachineBasicBlock::iterator MBBI = MBB.begin();
+@@ -980,6 +990,7 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
+   unsigned FixedObject = getFixedObjectSize(MF, AFI, IsWin64, IsFunclet);
+ 
+   auto PrologueSaveSize = AFI->getCalleeSavedStackSize() + FixedObject;
++
+   // All of the remaining stack allocations are for locals.
+   AFI->setLocalStackSize(NumBytes - PrologueSaveSize);
+   bool CombineSPBump = shouldCombineCSRLocalStackBump(MF, NumBytes);
+@@ -1020,11 +1031,42 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
+     //          mov fp,sp          when FPOffset is zero.
+     // Note: All stores of callee-saved registers are marked as "FrameSetup".
+     // This code marks the instruction(s) that set the FP also.
++
+     emitFrameOffset(MBB, MBBI, DL, AArch64::FP, AArch64::SP,
+                     {FPOffset, MVT::i8}, TII, MachineInstr::FrameSetup, false,
+                     NeedsWinCFI, &HasWinCFI);
++#ifdef ARK_GC_SUPPORT
++if (MF.getFunction().hasFnAttribute("js-stub-call")) {
++      int64_t marker = 0x0;
++      MF.getFunction()
++      .getFnAttribute("js-stub-call")
++      .getValueAsString()
++      .getAsInteger(10, marker);//marker 1 break frame
++
++      /* x8-x15 volatile scratch registers, the callee isn't required to preserve the value
++      */
++      BuildMI(MBB, MBBI, DL, TII->get(AArch64::MOVi64imm), AArch64::X15)
++      .addImm(marker)
++      .setMIFlags(MachineInstr::FrameSetup);
++
++      BuildMI(MBB, MBBI, DL, TII->get(AArch64::STRXpre))
++      .addReg(AArch64::FP, RegState::Define)
++      .addReg(AArch64::X15)
++      .addReg(AArch64::FP)
++      .addImm(-8); // 8: 1 slot size
++
++      if (marker == JS_ENTRY_FRAME_MARK) {
++        BuildMI(MBB, MBBI, DL, TII->get(AArch64::STRXpre))
++        .addReg(AArch64::FP, RegState::Define)
++        .addReg(AArch64::X15)
++        .addReg(AArch64::FP)
++        .addImm(-16); // 16: 2 slot size
++      }
++}
++#endif
+   }
+ 
++
+   if (windowsRequiresStackProbe(MF, NumBytes)) {
+     uint64_t NumWords = NumBytes >> 4;
+     if (NeedsWinCFI) {
+@@ -1514,6 +1556,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+ 
+   const StackOffset &SVEStackSize = getSVEStackSize(MF);
+ 
++
++
+   // If there is a single SP update, insert it before the ret and we're done.
+   if (CombineSPBump) {
+     assert(!SVEStackSize && "Cannot combine SP bump with SVE");
+@@ -1552,6 +1596,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+     DeallocateAfter = SVEStackSize - DeallocateBefore;
+   }
+ 
++
++
+   // Deallocate the SVE area.
+   if (SVEStackSize) {
+     if (AFI->isStackRealigned()) {
+@@ -1632,6 +1678,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+   // This must be placed after the callee-save restore code because that code
+   // assumes the SP is at the same location as it was after the callee-save save
+   // code in the prologue.
++
+   if (AfterCSRPopSize) {
+     // Find an insertion point for the first ldp so that it goes before the
+     // shadow call stack epilog instruction. This ensures that the restore of
+@@ -2079,6 +2126,7 @@ static void computeCalleeSaveRegisterPairs(
+     RegPairs.push_back(RPI);
+     if (RPI.isPaired())
+       ++i;
++
+   }
+ }
+ 
+@@ -2234,6 +2282,8 @@ bool AArch64FrameLowering::restoreCalleeSavedRegisters(
+   SmallVector<RegPairInfo, 8> RegPairs;
+   bool NeedsWinCFI = needsWinCFI(MF);
+ 
++
++
+   if (MI != MBB.end())
+     DL = MI->getDebugLoc();
+ 
+@@ -2416,6 +2466,7 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
+       CSStackSize += RegSize;
+   }
+ 
++
+   // Save number of saved regs, so we can easily update CSStackSize later.
+   unsigned NumSavedRegs = SavedRegs.count();
+ 
 diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.h b/llvm/lib/Target/AArch64/AArch64FrameLowering.h
 index b5719feb6b1..b09aa05176d 100644
 --- a/llvm/lib/Target/AArch64/AArch64FrameLowering.h
@@ -243,15 +380,16 @@ index b5719feb6b1..b09aa05176d 100644
    bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
  
 diff --git a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
-index 23f05eaad94..9d42a9d9af9 100644
+index 23f05eaad94..974d11aa701 100644
 --- a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
 +++ b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
-@@ -1498,6 +1498,9 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
+@@ -1498,6 +1498,10 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
  
    case TargetOpcode::STACKMAP:
    case TargetOpcode::PATCHPOINT:
 +#ifdef ARK_GC_SUPPORT
 +  case TargetOpcode::STATEPOINT:
++    MI.addOperand(*BB->getParent(), MachineOperand::CreateReg(AArch64::LR, true, true));
 +#endif
      return emitPatchPoint(MI, BB);
  
@@ -326,7 +464,7 @@ index 4724d6b8dae..2155ad923f9 100644
    return AArch64TTIImpl::getIntImmCost(Imm, Ty);
  }
 diff --git a/llvm/lib/Target/ARM/ARMAsmPrinter.cpp b/llvm/lib/Target/ARM/ARMAsmPrinter.cpp
-index 6f26ca127f9..8db2d2c4b0b 100644
+index 6f26ca127f9..20b2a76518f 100644
 --- a/llvm/lib/Target/ARM/ARMAsmPrinter.cpp
 +++ b/llvm/lib/Target/ARM/ARMAsmPrinter.cpp
 @@ -55,7 +55,11 @@ using namespace llvm;
@@ -367,7 +505,7 @@ index 6f26ca127f9..8db2d2c4b0b 100644
    }
  
    MCInst TmpInst;
-@@ -2143,6 +2159,75 @@ void ARMAsmPrinter::EmitInstruction(const MachineInstr *MI) {
+@@ -2143,6 +2159,76 @@ void ARMAsmPrinter::EmitInstruction(const MachineInstr *MI) {
    EmitToStreamer(*OutStreamer, TmpInst);
  }
  
@@ -433,6 +571,7 @@ index 6f26ca127f9..8db2d2c4b0b 100644
 +      EmitToStreamer(OutStreamer,
 +                     MCInstBuilder(CallOpcode).addOperand(CallTargetMCOp));
 +  }
++
 +  auto &Ctx = OutStreamer.getContext();
 +  MCSymbol *MILabel = Ctx.createTempSymbol();
 +  OutStreamer.EmitLabel(MILabel);
@@ -519,311 +658,22 @@ index 66ad120a111..59335c77394 100644
            // Remember that this is a user of a CP entry.
            unsigned CPI = I.getOperand(op).getIndex();
 diff --git a/llvm/lib/Target/ARM/ARMFrameLowering.cpp b/llvm/lib/Target/ARM/ARMFrameLowering.cpp
-index cb98b2b34ef..b39bdf6f48e 100644
+index cb98b2b34ef..1806214932e 100644
 --- a/llvm/lib/Target/ARM/ARMFrameLowering.cpp
 +++ b/llvm/lib/Target/ARM/ARMFrameLowering.cpp
-@@ -353,6 +353,13 @@ static int getMaxFPOffset(const Function &F, const ARMFunctionInfo &AFI) {
-   return -AFI.getArgRegsSaveSize() - (8 * 4);
- }
- 
-+#ifdef ARK_GC_SUPPORT
-+Triple::ArchType ARMFrameLowering::GetArkSupportTarget() const
-+{
-+    return Triple::arm;
-+}
-+#endif
-+
- void ARMFrameLowering::emitPrologue(MachineFunction &MF,
-                                     MachineBasicBlock &MBB) const {
-   MachineBasicBlock::iterator MBBI = MBB.begin();
-@@ -967,6 +974,33 @@ ARMFrameLowering::ResolveFrameIndexReference(const MachineFunction &MF,
-   return Offset;
- }
- 
-+void ARMFrameLowering::emitPushJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-+  unsigned StrOpc, unsigned MIFlags) const
-+{
-+    using RegAndKill = std::pair<unsigned, bool>;
-+    MachineFunction &MF = *MBB.getParent();
-+    const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
-+    bool isLiveIn = true;
-+    DebugLoc DL;
-+    SmallVector<RegAndKill, 4> Regs;
-+    Regs.push_back(std::make_pair(ARM::R11, /*isKill=*/!isLiveIn));
-+    BuildMI(MBB, MI, DL, TII.get(StrOpc), ARM::SP)
-+      .addReg(Regs[0].first, getKillRegState(Regs[0].second))
-+      .addReg(ARM::SP)
-+      .setMIFlags(MIFlags)
-+      .addImm(-4)
-+      .add(predOps(ARMCC::AL));
-+}
-+#ifdef ARK_GC_SUPPORT
-+void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
-+                                    MachineBasicBlock::iterator MI,
-+                                    const std::vector<CalleeSavedInfo> &CSI,
-+                                    unsigned StmOpc, unsigned StrOpc,
-+                                    bool NoGap,
-+                                    bool(*Func)(unsigned, bool),
-+                                    unsigned NumAlignedDPRCS2Regs,
-+                                    unsigned MIFlags, int multiCall) const {
-+#else
- void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
-                                     MachineBasicBlock::iterator MI,
-                                     const std::vector<CalleeSavedInfo> &CSI,
-@@ -975,6 +1009,7 @@ void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
-                                     bool(*Func)(unsigned, bool),
-                                     unsigned NumAlignedDPRCS2Regs,
-                                     unsigned MIFlags) const {
-+#endif
-   MachineFunction &MF = *MBB.getParent();
-   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
-   const TargetRegisterInfo &TRI = *STI.getRegisterInfo();
-@@ -1019,7 +1054,26 @@ void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
-     llvm::sort(Regs, [&](const RegAndKill &LHS, const RegAndKill &RHS) {
-       return TRI.getEncodingValue(LHS.first) < TRI.getEncodingValue(RHS.first);
-     });
-+#ifdef ARK_GC_SUPPORT
-+    SmallVector<RegAndKill, 4> BeforeRegs = Regs;
-+    if (multiCall != 0) {
-+      Regs.clear();
-+    }
-+    if (multiCall == 1) {
-+      for (auto it: BeforeRegs) {
-+        if (it.first == ARM::LR || it.first == ARM::R11) {
-+          Regs.push_back(it);
-+        }
-+      }
- 
-+    } else if (multiCall == 2) {
-+      for (auto it: BeforeRegs) {
-+        if ((it.first != ARM::LR) && (it.first != ARM::R11)) {
-+          Regs.push_back(it);
-+        }
-+      }
-+    }
-+#endif
-     if (Regs.size() > 1 || StrOpc== 0) {
-       MachineInstrBuilder MIB = BuildMI(MBB, MI, DL, TII.get(StmOpc), ARM::SP)
-                                     .addReg(ARM::SP)
-@@ -1045,6 +1099,38 @@ void ARMFrameLowering::emitPushInst(MachineBasicBlock &MBB,
-   }
- }
- 
-+void ARMFrameLowering::emitPopJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-+                                     unsigned LdrOpc) const
-+{
-+    MachineFunction &MF = *MBB.getParent();
-+    const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
-+    SmallVector<unsigned, 4> Regs;
-+    unsigned Reg = ARM::R11;
-+    Regs.push_back(Reg);
-+    DebugLoc DL;
-+    MachineInstrBuilder MIB =
-+    BuildMI(MBB, MI, DL, TII.get(LdrOpc), Regs[0])
-+      .addReg(ARM::SP, RegState::Define)
-+      .addReg(ARM::SP);
-+    // ARM mode needs an extra reg0 here due to addrmode2. Will go away once
-+    // that refactoring is complete (eventually).
-+    if (LdrOpc == ARM::LDR_POST_REG || LdrOpc == ARM::LDR_POST_IMM) {
-+      MIB.addReg(0);
-+      MIB.addImm(ARM_AM::getAM2Opc(ARM_AM::add, 4, ARM_AM::no_shift));
-+    } else
-+      MIB.addImm(4);
-+    MIB.add(predOps(ARMCC::AL));
-+}
-+
-+#ifdef ARK_GC_SUPPORT
-+void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
-+                                   MachineBasicBlock::iterator MI,
-+                                   std::vector<CalleeSavedInfo> &CSI,
-+                                   unsigned LdmOpc, unsigned LdrOpc,
-+                                   bool isVarArg, bool NoGap,
-+                                   bool(*Func)(unsigned, bool),
-+                                   unsigned NumAlignedDPRCS2Regs, int multiCall) const {
-+#else
- void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
-                                    MachineBasicBlock::iterator MI,
-                                    std::vector<CalleeSavedInfo> &CSI,
-@@ -1052,6 +1138,7 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
-                                    bool isVarArg, bool NoGap,
-                                    bool(*Func)(unsigned, bool),
-                                    unsigned NumAlignedDPRCS2Regs) const {
-+#endif
-   MachineFunction &MF = *MBB.getParent();
-   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
-   const TargetRegisterInfo &TRI = *STI.getRegisterInfo();
-@@ -1116,6 +1203,26 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
-       return TRI.getEncodingValue(LHS) < TRI.getEncodingValue(RHS);
-     });
- 
-+#ifdef ARK_GC_SUPPORT
-+    SmallVector<unsigned, 4> BeforeRegs = Regs;
-+    if (multiCall != 0) {
-+      Regs.clear();
-+    }
-+    if (multiCall == 1) {
-+      for (auto it: BeforeRegs) {
-+        if ((it != ARM::LR) && (it != ARM::R11)) {
-+          Regs.push_back(it);
-+        }
-+      }
-+    } else if (multiCall == 2) {
-+      for (auto it: BeforeRegs) {
-+        if ((it == ARM::LR) || (it == ARM::R11)) {
-+          Regs.push_back(it);
-+        }
-+      }
-+    }
-+#endif
-+
-     if (Regs.size() > 1 || LdrOpc == 0) {
-       MachineInstrBuilder MIB = BuildMI(MBB, MI, DL, TII.get(LdmOpc), ARM::SP)
-                                     .addReg(ARM::SP)
-@@ -1422,6 +1529,27 @@ static void emitAlignedDPRCS2Restores(MachineBasicBlock &MBB,
-   std::prev(MI)->addRegisterKilled(ARM::R4, TRI);
- }
- 
-+#ifdef ARK_GC_SUPPORT
-+int ARMFrameLowering::GetSlotForJSInfo(const MachineFunction &MF) const {
-+  int reserverSlot = 0;
-+  if (MF.getFunction().hasFnAttribute("js-stub-call")) {
-+          int64_t marker = 0x0;
-+          MF.getFunction()
-+          .getFnAttribute("js-stub-call")
-+          .getValueAsString()
-+          .getAsInteger(10, marker);//marker 1 break frame
-+          if (marker == JS_ENTRY_FRAME_MARK) {
-+            reserverSlot = 3; // 3 * slotSize;/* frameType + threadSP */
-+          } else if (marker == JS_FRAME_MARK){
-+            reserverSlot = 2; /* frameType */
-+          } else {
-+            assert("js-stub-call is illeagl ! ");
-+          }
-+  }
-+  return reserverSlot;
-+}
-+#endif
-+
- bool ARMFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
-                                         MachineBasicBlock::iterator MI,
-                                         const std::vector<CalleeSavedInfo> &CSI,
-@@ -1436,9 +1564,23 @@ bool ARMFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
-   unsigned PushOneOpc = AFI->isThumbFunction() ?
-     ARM::t2STR_PRE : ARM::STR_PRE_IMM;
-   unsigned FltOpc = ARM::VSTMDDB_UPD;
-+#ifdef ARK_GC_SUPPORT
-+  DebugLoc DL;
-+  const ARMBaseInstrInfo &TII =
-+    *static_cast<const ARMBaseInstrInfo *>(MF.getSubtarget().getInstrInfo());
-   unsigned NumAlignedDPRCS2Regs = AFI->getNumAlignedDPRCS2Regs();
-+  emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea1Register, 0,
-+               MachineInstr::FrameSetup, 1);
-+  for (int i = 0; i < GetSlotForJSInfo(MF); i++) {
-+    emitPushJSInfo(MBB, MI, PushOneOpc, MachineInstr::FrameSetup);
-+  }
-+
-+  emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea1Register, 0,
-+               MachineInstr::FrameSetup, 2);
-+#else
-   emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea1Register, 0,
-                MachineInstr::FrameSetup);
-+#endif
-   emitPushInst(MBB, MI, CSI, PushOpc, PushOneOpc, false, &isARMArea2Register, 0,
-                MachineInstr::FrameSetup);
-   emitPushInst(MBB, MI, CSI, FltOpc, 0, true, &isARMArea3Register,
-@@ -1477,8 +1619,20 @@ bool ARMFrameLowering::restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
-               NumAlignedDPRCS2Regs);
-   emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
-               &isARMArea2Register, 0);
-+#ifdef ARK_GC_SUPPORT
-+  emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
-+              &isARMArea1Register, 0, 1);
-+
-+  for (int i = 0; i < GetSlotForJSInfo(MF); i++) {
-+    emitPopJSInfo(MBB, MI, LdrOpc);
-+  }
-+
-+  emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
-+              &isARMArea1Register, 0, 2);
-+#else
-   emitPopInst(MBB, MI, CSI, PopOpc, LdrOpc, isVarArg, false,
-               &isARMArea1Register, 0);
-+#endif
- 
-   return true;
- }
-@@ -1573,7 +1727,7 @@ static unsigned estimateRSStackSizeLimit(MachineFunction &MF,
+@@ -1573,6 +1573,7 @@ static unsigned estimateRSStackSizeLimit(MachineFunction &MF,
            Limit = std::min(Limit, ((1U << 7) - 1) * 4);
            break;
          default:
--          llvm_unreachable("Unhandled addressing mode in stack size limit calculation");
 +          break;
+           llvm_unreachable("Unhandled addressing mode in stack size limit calculation");
          }
          break; // At most one FI per instruction
-       }
-diff --git a/llvm/lib/Target/ARM/ARMFrameLowering.h b/llvm/lib/Target/ARM/ARMFrameLowering.h
-index 0462b01af70..c410326f432 100644
---- a/llvm/lib/Target/ARM/ARMFrameLowering.h
-+++ b/llvm/lib/Target/ARM/ARMFrameLowering.h
-@@ -13,6 +13,9 @@
- #include "llvm/CodeGen/TargetFrameLowering.h"
- #include <vector>
- 
-+#define JS_ENTRY_FRAME_MARK 1
-+#define JS_FRAME_MARK       0
-+
- namespace llvm {
- 
- class ARMSubtarget;
-@@ -30,6 +33,9 @@ public:
-   /// the function.
-   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
-   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
-+#ifdef ARK_GC_SUPPORT
-+  Triple::ArchType GetArkSupportTarget() const override;
-+#endif
- 
-   bool spillCalleeSavedRegisters(MachineBasicBlock &MBB,
-                                  MachineBasicBlock::iterator MI,
-@@ -72,6 +78,24 @@ public:
-   }
- 
- private:
-+
-+#ifdef ARK_GC_SUPPORT
-+  void emitPushInst(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-+                    const std::vector<CalleeSavedInfo> &CSI, unsigned StmOpc,
-+                    unsigned StrOpc, bool NoGap,
-+                    bool(*Func)(unsigned, bool), unsigned NumAlignedDPRCS2Regs,
-+                    unsigned MIFlags = 0, int multiCall = 0) const;
-+  void emitPushJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-+                    unsigned StrOpc, unsigned MIFlags) const;
-+  void emitPopInst(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-+                   std::vector<CalleeSavedInfo> &CSI, unsigned LdmOpc,
-+                   unsigned LdrOpc, bool isVarArg, bool NoGap,
-+                   bool(*Func)(unsigned, bool),
-+                   unsigned NumAlignedDPRCS2Regs, int multiCall = 0) const;
-+  void emitPopJSInfo(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-+                                     unsigned LdrOpc) const;
-+  int GetSlotForJSInfo(const MachineFunction &MF) const;
-+#else
-   void emitPushInst(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-                     const std::vector<CalleeSavedInfo> &CSI, unsigned StmOpc,
-                     unsigned StrOpc, bool NoGap,
-@@ -82,7 +106,7 @@ private:
-                    unsigned LdrOpc, bool isVarArg, bool NoGap,
-                    bool(*Func)(unsigned, bool),
-                    unsigned NumAlignedDPRCS2Regs) const;
--
-+#endif
-   MachineBasicBlock::iterator
-   eliminateCallFramePseudoInstr(MachineFunction &MF,
-                                 MachineBasicBlock &MBB,
 diff --git a/llvm/lib/Target/ARM/ARMISelLowering.cpp b/llvm/lib/Target/ARM/ARMISelLowering.cpp
-index 9f504b1eaa4..cf2f5f50b14 100644
+index 9f504b1eaa4..30a1baf5c85 100644
 --- a/llvm/lib/Target/ARM/ARMISelLowering.cpp
 +++ b/llvm/lib/Target/ARM/ARMISelLowering.cpp
-@@ -10551,6 +10551,13 @@ ARMTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
+@@ -10551,6 +10551,14 @@ ARMTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
      llvm_unreachable("Unexpected instr type to insert");
    }
  
@@ -831,6 +681,7 @@ index 9f504b1eaa4..cf2f5f50b14 100644
 +  case TargetOpcode::STATEPOINT:
 +  case TargetOpcode::STACKMAP:
 +  case TargetOpcode::PATCHPOINT:
++    MI.addOperand(*BB->getParent(), MachineOperand::CreateReg(ARM::LR, true, true));
 +    return emitPatchPoint(MI, BB);
 +#endif
 +
@@ -838,7 +689,7 @@ index 9f504b1eaa4..cf2f5f50b14 100644
    case ARM::tLDR_postidx: {
      MachineOperand Def(MI.getOperand(1));
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..a73d3cd8053 100644
+index 1da20371caf..e0264827556 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
 @@ -1168,6 +1168,25 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
@@ -907,20 +758,20 @@ index 1da20371caf..a73d3cd8053 100644
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
 +        if (marker == JS_ENTRY_FRAME_MARK) {
-+          SpillSlotOffset -=  3 * SlotSize; // add type and thread.fp
-+          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+          CalleeSavedFrameSize += (2 * SlotSize);
++            SpillSlotOffset -=  3 * SlotSize; // add type and thread.fp
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            CalleeSavedFrameSize += (2 * SlotSize);
 +        } else {
-+          SpillSlotOffset -=  2 * SlotSize; // add type
-+          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+          MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+          CalleeSavedFrameSize += SlotSize;
++            SpillSlotOffset -=  2 * SlotSize; // add type
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++            CalleeSavedFrameSize += SlotSize;
 +        }
 +    } else {
-+      SpillSlotOffset -= SlotSize; // add type and thread.fp
-+      MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
++        SpillSlotOffset -= SlotSize; // add type and thread.fp
++        MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +    }
 +#else
      SpillSlotOffset -= SlotSize;

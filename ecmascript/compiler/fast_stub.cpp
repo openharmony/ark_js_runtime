@@ -172,15 +172,17 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     doubleX = DoubleMul(*doubleX, *doubleY);
     StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtrTest);
     GateRef ptr1 = CallRuntime(getTaggedArrayPtr, glue, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
-            glue
-        });
+        glue
+    });
     GateRef ptr2 = CallRuntime(getTaggedArrayPtr, glue, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
-            glue
-        });
-    (void)ptr2;
-    auto value = Load(MachineType::UINT64, ptr1);
-    GateRef value2 = CastInt64ToFloat64(value);
-    doubleX = DoubleMul(*doubleX, value2);
+        glue
+    });
+    auto value1 = Load(MachineType::UINT64, ptr1);
+    GateRef tmp = CastInt64ToFloat64(value1);
+    doubleX = DoubleMul(*doubleX, tmp);
+    auto value2 = Load(MachineType::UINT64, ptr2);
+    tmp = CastInt64ToFloat64(value2);
+    doubleX = DoubleMul(*doubleX, tmp);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
 }
 #endif
@@ -1237,4 +1239,4 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&receiverNotHeapObject);
     Return(GetHoleConstant(MachineType::UINT64));
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

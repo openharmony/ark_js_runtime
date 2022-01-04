@@ -40,7 +40,7 @@ namespace panda::ecmascript::kungfu {
     V(SetValueWithBarrier, 4)               \
     V(PropertiesSetValue, 6)                \
     V(TaggedArraySetValue, 6)               \
-    V(NewEcmaDynClass, 3)                   \
+    V(NewEcmaDynClass, 4)                   \
     V(UpdateLayOutAndAddTransition, 5)      \
     V(NoticeThroughChainAndRefreshUser, 3)  \
     V(DebugPrint, 1)
