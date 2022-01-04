@@ -201,9 +201,6 @@ int main(const int argc, const char **argv)
     panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
     mouldeBuilder.SetStub(FAST_STUB_ID(name), &name##Stub);
     FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
-#ifndef NDEBUG
-    TEST_FUNC_LIST(SET_STUB_TO_MODULE)
-#endif
 #undef SET_STUB_TO_MODULE
     panda::ecmascript::StubModule stubModule;
     mouldeBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
