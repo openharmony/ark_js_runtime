@@ -40,6 +40,7 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
@@ -811,6 +812,9 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSDataView::Cast(*obj)->SetViewedArrayBuffer(thread_, JSTaggedValue::Undefined());
                 JSDataView::Cast(*obj)->SetByteLength(thread_, JSTaggedValue(0));
                 JSDataView::Cast(*obj)->SetByteOffset(thread_, JSTaggedValue(0));
+                break;
+            case JSType::JS_ARRAY_LIST:
+                JSArrayList::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
                 break;
             case JSType::JS_FUNCTION:
             case JSType::JS_GENERATOR_FUNCTION:

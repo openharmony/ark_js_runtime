@@ -53,6 +53,7 @@
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_for_in_iterator.h"
@@ -110,6 +111,7 @@ using NumberFormat = builtins::BuiltinsNumberFormat;
 using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
+using ArrayList = containers::ContainersArrayList;
 
 constexpr int TAGGED_SIZE = JSTaggedValue::TaggedTypeSize();
 constexpr int OBJECT_HEADER_SIZE = TaggedObject::TaggedObjectSize();
@@ -544,6 +546,9 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(PluralRules::SupportedLocalesOf),
     reinterpret_cast<uintptr_t>(PluralRules::Select),
     reinterpret_cast<uintptr_t>(PluralRules::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(ArrayList::ArrayListConstructor),
+    reinterpret_cast<uintptr_t>(ArrayList::Add),
+    reinterpret_cast<uintptr_t>(ArrayList::Iterator),
 
     // not builtins method
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeSetter),

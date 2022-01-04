@@ -112,6 +112,8 @@ class ProtoChangeDetails;
                                                                                                                        \
         /* SPECIAL indexed objects begin, DON'T CHANGE HERE ///////////////////////////////////////////////-PADDING */ \
         JS_ARRAY,       /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_ARRAY_LIST, /* /////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_QUEUE,      /* /////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_TYPED_ARRAY, /* JS_TYPED_ARRAY_BEGIN /////////////////////////////////////////////////////////////////// */ \
         JS_INT8_ARRAY,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_UINT8_ARRAY, /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -601,6 +603,21 @@ public:
     inline bool IsJSPluralRules() const
     {
         return GetObjectType() == JSType::JS_PLURAL_RULES;
+    }
+
+    inline bool IsJSArrayList() const
+    {
+        return GetObjectType() == JSType::JS_ARRAY_LIST;
+    }
+
+    inline bool IsJSQueue() const
+    {
+        return GetObjectType() == JSType::JS_QUEUE;
+    }
+
+    inline bool IsSpecialContainer() const
+    {
+        return GetObjectType() >= JSType::JS_ARRAY_LIST && GetObjectType() <= JSType::JS_QUEUE;
     }
 
     inline bool IsAccessorData() const

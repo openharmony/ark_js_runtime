@@ -1360,32 +1360,6 @@ GateRef Stub::GetValueFromTaggedArray(MachineType returnType, GateRef array, Gat
     return Load(returnType, array, dataOffset);
 }
 
-GateRef Stub::GetElementRepresentation(GateRef hClass)
-{
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
-    GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
-    return Word32And(
-        Word32LSR(bitfield, GetInt32Constant(JSHClass::ElementRepresentationBits::START_BIT)),
-        GetInt32Constant(((1LLU << JSHClass::ElementRepresentationBits::SIZE) - 1)));
-}
-
-void Stub::SetElementRepresentation(GateRef glue, GateRef hClass, GateRef value)
-{
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
-    GateRef oldValue = Load(MachineType::UINT32, hClass, bitfieldOffset);
-    GateRef oldWithMask = Word32And(oldValue,
-        GetInt32Constant(~static_cast<int32_t>(JSHClass::ElementRepresentationBits::Mask())));
-    GateRef newValue = Word32LSR(value, GetInt32Constant(JSHClass::ElementRepresentationBits::START_BIT));
-    Store(MachineType::UINT32, glue, hClass, bitfieldOffset, Word32Or(oldWithMask, newValue));
-}
-
-void Stub::UpdateAndStoreRepresention(GateRef glue, GateRef hClass, GateRef value)
-{
-    GateRef rep = GetElementRepresentation(hClass);
-    GateRef newRep = UpdateRepresention(rep, value);
-    SetElementRepresentation(glue, hClass, newRep);
-}
-
 void Stub::UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef index, GateRef value, GateRef attr)
 {
     GateRef arrayIndex =
@@ -1405,6 +1379,13 @@ void Stub::UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef inde
 GateRef Stub::IsSpecialIndexedObj(GateRef jsType)
 {
     return Int32GreaterThan(jsType, GetInt32Constant(static_cast<int32_t>(JSType::JS_ARRAY)));
+}
+
+GateRef Stub::IsSpecialContainer(GateRef jsType)
+{
+    return TruncInt32ToInt1(Word32And(
+        ZExtInt1ToInt32(Int32GreaterThanOrEqual(jsType, GetInt32Constant(static_cast<int32_t>(JSType::JS_ARRAY_LIST)))),
+        ZExtInt1ToInt32(Int32LessThanOrEqual(jsType, GetInt32Constant(static_cast<int32_t>(JSType::JS_QUEUE))))));
 }
 
 GateRef Stub::IsAccessorInternal(GateRef value)

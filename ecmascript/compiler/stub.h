@@ -450,7 +450,7 @@ public:
     inline void Bind(Label *label);
     void Jump(Label *label);
     void Branch(GateRef condition, Label *trueLabel, Label *falseLabel);
-    void Switch(GateRef index, Label *defaultLabel, int32_t *keysValue, Label *keysLabel, int numberOfKeys);
+    void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
     void Seal(Label *label)
     {
         label->Seal();
@@ -638,13 +638,10 @@ public:
     void ThrowTypeAndReturn(GateRef glue, int messageId, GateRef val);
     inline GateRef GetValueFromTaggedArray(MachineType returnType, GateRef elements, GateRef index);
     inline void SetValueToTaggedArray(MachineType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
-    inline GateRef GetElementRepresentation(GateRef hClass);
-    inline void SetElementRepresentation(GateRef glue, GateRef hClass, GateRef value);
     inline void UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef index, GateRef value, GateRef attr);
     inline GateRef IsSpecialIndexedObj(GateRef jsType);
+    inline GateRef IsSpecialContainer(GateRef jsType);
     inline GateRef IsAccessorInternal(GateRef value);
-    inline void UpdateAndStoreRepresention(GateRef glue, GateRef hClass, GateRef value);
-    GateRef UpdateRepresention(GateRef oldRep, GateRef value);
     template<typename DictionaryT = NameDictionary>
     GateRef GetAttributesFromDictionary(GateRef elements, GateRef entry);
     template<typename DictionaryT = NameDictionary>
@@ -729,6 +726,11 @@ public:
 
     GateRef SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef key,
                                GateRef value); // Do not crawl the prototype chain
+
+    // Add SpecialContainer
+    GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
+    GateRef SetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef value, GateRef jsType);
+    GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
 
 private:
     Environment env_;
