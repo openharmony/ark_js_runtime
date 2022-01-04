@@ -1013,13 +1013,14 @@ void LLVMIRBuilder::VisitSwitch(GateRef gate, GateRef input, const std::vector<G
     }
     LLVMValueRef result = LLVMBuildSwitch(builder_, cond, llvmDefaultOutBB, caseNum - 1);
     LLVMBasicBlockRef llvmCurOutBB = nullptr;
-    for (int i = 0; i < static_cast<int>(caseNum - 1); i++) {
+    for (int i = 0; i < static_cast<int>(caseNum); i++) {
         if (circuit_->GetOpCode(outList[i]) == OpCode::DEFAULT_CASE) {
             continue;
         }
         curOutBB = EnsureBasicBlock(instIdMapBbId_[circuit_->GetId(outList[i])]);
         llvmCurOutBB = curOutBB->GetImpl<LLVMTFBuilderBasicBlockImpl>()->llvm_bb_;
-        LLVMAddCase(result, LLVMConstInt(LLVMInt64Type(), circuit_->GetBitField(outList[i]), 0), llvmCurOutBB);
+        LLVMAddCase(result, LLVMConstInt(ConvertLLVMTypeFromGate(input), circuit_->GetBitField(outList[i]), 0),
+                    llvmCurOutBB);
     }
     EndCurrentBlock();
     gateToLLVMMaps_[gate] = result;

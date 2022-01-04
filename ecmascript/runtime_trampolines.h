@@ -76,6 +76,7 @@ public:
                                         JSTaggedType argElement, uint32_t elementIndex, uint32_t capacity);
     static void DebugPrint(int fmtMessageId, ...);
     static void NoticeThroughChainAndRefreshUser(uintptr_t argGlue, uint64_t argoldHClass, uint64_t argnewHClass);
+    static void JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value);
 };
 }  // namespace panda::ecmascript
 #endif

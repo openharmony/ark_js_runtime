@@ -18,6 +18,7 @@ group("ark_js_moduletest") {
     "bitwiseop:bitwiseopAction",
     "callframe:callframeAction",
     "class:classAction",
+    "container:containerAction",
     "dyninstruction:dyninstructionAction",
     "fortest:fortestAction",
     "generator:generatorAction",

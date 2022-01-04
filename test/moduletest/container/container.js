@@ -13,19 +13,5 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_BUILTINS_BUILTINS_ARK_TOOLS_H
-#define ECMASCRIPT_BUILTINS_BUILTINS_ARK_TOOLS_H
-
-#include "ecmascript/base/builtins_base.h"
-#include "ecmascript/js_thread.h"
-
-namespace panda::ecmascript::builtins {
-class BuiltinsArkTools : public base::BuiltinsBase {
-public:
-    // Make sure the ECMASCRIPT_OBJECT_DUMP in config.h has been opened before use it
-    // Use through ArkTools.print(msg, [obj1, obj2, ... objn]) in js
-    static JSTaggedValue ObjectDump(EcmaRuntimeCallInfo *msg);
-};
-}  // namespace panda::ecmascript::builtins
-
-#endif  // ECMASCRIPT_BUILTINS_BUILTINS_ARK_TOOLS_H
+var helloworld = "container test start"
+print(helloworld)
