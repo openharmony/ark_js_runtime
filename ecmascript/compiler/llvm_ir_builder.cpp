@@ -43,6 +43,37 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
     context_ = LLVMGetGlobalContext();
     LLVMSetGC(function_, "statepoint-example");
     bbIdMapBb_.clear();
+    if (compCfg_->IsArm32()) {
+        LLVMTypeRef elementTypes[] = {
+            LLVMInt64Type(), // frameType
+            LLVMPointerType(LLVMInt64Type(), 0), // prev
+            LLVMInt32Type(), // sp
+            LLVMInt32Type(), // fp
+            LLVMInt64Type(), // patchpointId
+        };
+        slotSize_ = panda::ecmascript::FrameCommonConstants::ARM32_SLOT_SIZE;
+        slotType_ = LLVMInt32Type();
+        optFrameType_ = LLVMStructType(elementTypes, sizeof(elementTypes) / sizeof(LLVMTypeRef), 0);
+    } else {
+        LLVMTypeRef elementTypes[] = {
+            LLVMInt64Type(), // frameType
+            LLVMPointerType(LLVMInt64Type(), 0), // prev
+            LLVMInt64Type(), // sp
+            LLVMInt64Type(), // fp
+            LLVMInt64Type(), // patchpointId
+        };
+        slotSize_ = panda::ecmascript::FrameCommonConstants::AARCH64_SLOT_SIZE;
+        slotType_ = LLVMInt64Type();
+        optFrameType_ = LLVMStructType(elementTypes, sizeof(elementTypes) / sizeof(LLVMTypeRef), 0);
+    }
+    optFrameSize_ = compCfg_->GetGlueOffset(JSThread::GlueID::OPT_LEAVE_FRAME_SIZE);
+    interpretedFrameSize_ = compCfg_->GetGlueOffset(JSThread::GlueID::FRAME_STATE_SIZE);
+    if (compCfg_->IsArm32()) {
+        // hard float instruction
+        LLVMAddTargetDependentFunctionAttr(function_, "target-features",
+            "+armv7-a");
+    }
+    optLeaveFramePrevOffset_ = compCfg_->GetGlueOffset(JSThread::GlueID::OPT_LEAVE_FRAME_PREV_OFFSET);
 }
 
 LLVMIRBuilder::~LLVMIRBuilder()
@@ -152,7 +183,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT32_SMOD, &LLVMIRBuilder::HandleIntMod},
         {OpCode::TAGGED_POINTER_CALL, &LLVMIRBuilder::HandleCall},
     };
-    opCodeHandleIgnore= {
+    opCodeHandleIgnore = {
         OpCode::NOP, OpCode::CIRCUIT_ROOT, OpCode::DEPEND_ENTRY,
         OpCode::FRAMESTATE_ENTRY, OpCode::RETURN_LIST, OpCode::THROW_LIST,
         OpCode::CONSTANT_LIST, OpCode::ARG_LIST, OpCode::THROW,
@@ -294,39 +325,25 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
         -8    type
         -16   pre frame thread fp
      for 32 arm bit system:
-         0    pre fp  <-- fp
-        -4    type
-        -8    pre frame thread fp
+        not support
      for arm64 system
          0    pre fp/ other regs  <-- fp
         -8    type
         -16   pre frame thread fp
         -24   current sp before call other function
     */
+    if (compCfg_->IsArm32() || compCfg_->IsAArch64() || compCfg_->IsAmd64()) {
+        return;
+    }
     auto frameType = circuit_->GetFrameType();
     LLVMAddTargetDependentFunctionAttr(function_, "frame-pointer", "all");
-    if (compCfg_->IsArm32()) {
-        LLVMAddTargetDependentFunctionAttr(function_, "target-features", "+vfp2");
-    }
     LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
-    int slotSize = 0;
-    LLVMTypeRef llvmSlotType = nullptr;
-    if (compCfg_->IsAmd64() || compCfg_->IsAArch64()) {
-        slotSize = panda::ecmascript::FrameConst::AARCH64_SLOT_SIZE; // 64bit slot size
-        llvmSlotType = LLVMInt64Type();
-    } else if (compCfg_->IsArm32()) {
-        slotSize = panda::ecmascript::FrameConst::ARM32_SLOT_SIZE;    // 32bit slot size
-        llvmSlotType = LLVMInt32Type();
-        return;
-    } else {
-        ASSERT_PRINT(llvmSlotType == nullptr, " triple is not supported !");
-    }
 
-    LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder, llvmFpAddr, llvmSlotType, "cast_int_t");
-    LLVMValueRef frameTypeSlotAddr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(llvmSlotType,
-        slotSize, false), "");
+    LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder, llvmFpAddr, slotType_, "cast_int_t");
+    LLVMValueRef frameTypeSlotAddr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(slotType_,
+        slotSize_, false), "");
     LLVMValueRef addr = LLVMBuildIntToPtr(builder, frameTypeSlotAddr,
-        LLVMPointerType(llvmSlotType, 0), "frameType.Addr");
+        LLVMPointerType(slotType_, 0), "frameType.Addr");
 
     if (frameType == panda::ecmascript::FrameType::OPTIMIZED_FRAME) {
         LLVMAddTargetDependentFunctionAttr(function_, "js-stub-call", "0");
@@ -337,7 +354,7 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
         ASSERT_PRINT(static_cast<uintptr_t>(frameType), "is not support !");
     }
 
-    LLVMValueRef llvmFrameType = LLVMConstInt(llvmSlotType, static_cast<uintptr_t>(frameType), 0);
+    LLVMValueRef llvmFrameType = LLVMConstInt(slotType_, static_cast<uintptr_t>(frameType), 0);
     (void)llvmFrameType;
     LLVMValueRef value = LLVMBuildStore(builder_, llvmFrameType, addr);
 
@@ -349,12 +366,12 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
     LLVMValueRef rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME), 0);
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
-    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(llvmSlotType, 0), "");
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(slotType_, 0), "");
     LLVMValueRef threadFpValue = LLVMBuildLoad(builder_, rtbaseAddr, "");
     static constexpr int g_LLVMFrameOffset = 2;
-    addr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(llvmSlotType, g_LLVMFrameOffset * slotSize, false), "");
+    addr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(slotType_, g_LLVMFrameOffset * slotSize_, false), "");
     value = LLVMBuildStore(builder_, threadFpValue,
-        LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(llvmSlotType, 0), "cast"));
+        LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "cast"));
     LOG_ECMA(DEBUG) << "store value:" << value << " "
                 << "value type" << LLVMTypeOf(value);
 }
@@ -376,7 +393,7 @@ LLVMValueRef LLVMIRBuilder::CallingFp(LLVMModuleRef &module, LLVMBuilderRef &bui
     return fAddrRet;
 }
 
-LLVMValueRef LLVMIRBuilder::CallerSp(LLVMModuleRef &module, LLVMBuilderRef &builder,
+LLVMValueRef LLVMIRBuilder::ReadRegister(LLVMModuleRef &module, LLVMBuilderRef &builder,
     LLVMMetadataRef meta)
 {
     std::vector<LLVMValueRef> args = {LLVMMetadataAsValue(context_, meta)};
@@ -389,7 +406,6 @@ LLVMValueRef LLVMIRBuilder::CallerSp(LLVMModuleRef &module, LLVMBuilderRef &buil
         auto fnTy = LLVMFunctionType(LLVMInt64Type(), paramTys1, 1, 0);
         fn = LLVMAddFunction(module, "llvm.read_register.i64", fnTy);
     }
-    LLVMDumpValue(fn);
     LLVMValueRef fAddrRet = LLVMBuildCall(builder_, fn, args.data(), 1, "");
     return fAddrRet;
 }
@@ -468,24 +484,133 @@ void LLVMIRBuilder::HandleCall(GateRef gate)
     }
 }
 
-void LLVMIRBuilder::SaveCallerSp()
+LLVMValueRef LLVMIRBuilder::GetCurrentSP()
+{
+    LLVMMetadataRef meta;
+    if (compCfg_->IsAmd64()) {
+        meta = LLVMMDStringInContext2(context_, "rsp", 4);   // 4 : 4 means len of "rsp"
+    } else {
+        meta = LLVMMDStringInContext2(context_, "sp", 3);   // 3 : 3 means len of "sp"
+    }
+    LLVMMetadataRef metadataNode = LLVMMDNodeInContext2(context_, &meta, 1);
+    LLVMValueRef spValue = ReadRegister(module_, builder_, metadataNode);
+    return spValue;
+}
+
+void LLVMIRBuilder::SaveCurrentSP()
 {
     if (compCfg_->IsAArch64()) {
-        int slotSize = 8;
-        LLVMTypeRef llvmSlotType = LLVMInt64Type();
         LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
-        LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, llvmSlotType, "cast_int_t");
-        LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(llvmSlotType,
-            3 * slotSize, false), ""); // 3: type + threadsp + current sp
+        LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
+        LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
+            3 * slotSize_, false), ""); // 3: type + threadsp + current sp
         LLVMValueRef addr = LLVMBuildIntToPtr(builder_, frameSpSlotAddr,
-            LLVMPointerType(llvmSlotType, 0), "frameType.Addr");
+            LLVMPointerType(slotType_, 0), "frameType.Addr");
         LLVMMetadataRef meta = LLVMMDStringInContext2(context_, "sp", 3);   // 3 : 3 means len of "sp"
         LLVMMetadataRef metadataNode = LLVMMDNodeInContext2(context_, &meta, 1);
-        LLVMValueRef spValue = CallerSp(module_, builder_, metadataNode);
+        LLVMValueRef spValue = ReadRegister(module_, builder_, metadataNode);
         LLVMBuildStore(builder_, spValue, addr);
     }
 }
 
+LLVMValueRef LLVMIRBuilder::GetCurrentSPFrameAddr()
+{
+    LLVMValueRef glue = LLVMGetParam(function_, 0);
+    LLVMTypeRef glue_type = LLVMTypeOf(glue);
+    LLVMValueRef rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME), 0);
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
+    return rtbaseoffset;
+}
+
+LLVMValueRef LLVMIRBuilder::GetCurrentSPFrame()
+{
+    LLVMValueRef addr = GetCurrentSPFrameAddr();
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "");
+    LLVMValueRef currentSpFrame = LLVMBuildLoad(builder_, rtbaseAddr, "");
+    return currentSpFrame;
+}
+
+void LLVMIRBuilder::SetCurrentSPFrame(LLVMValueRef sp)
+{
+    LLVMValueRef addr = GetCurrentSPFrameAddr();
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "");
+    LLVMBuildStore(builder_, sp, rtbaseAddr);
+}
+
+LLVMValueRef LLVMIRBuilder::GetCurrentFrameType(LLVMValueRef currentSpFrameAddr)
+{
+    LLVMValueRef tmp = LLVMBuildSub(builder_, currentSpFrameAddr, LLVMConstInt(slotType_, slotSize_, 1), "");
+    LLVMValueRef frameTypeAddr = LLVMBuildIntToPtr(builder_, tmp, LLVMPointerType(LLVMInt64Type(), 1), "");
+    LLVMValueRef frameType = LLVMBuildLoad(builder_, frameTypeAddr, "");
+    return frameType;
+}
+
+void LLVMIRBuilder::PushFrameContext(LLVMValueRef newSp, LLVMValueRef oldSp)
+{
+    LLVMValueRef optFramePtr = LLVMBuildIntToPtr(builder_, newSp, LLVMPointerType(optFrameType_, 0), "");
+    // set frameType
+    LLVMValueRef typeDices[] = {LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt32Type(), 0, 0)};
+    LLVMValueRef frameTypeAddr = LLVMBuildGEP2(builder_, optFrameType_,
+        optFramePtr, typeDices, sizeof(typeDices) / sizeof(LLVMValueRef), "getFrameTypeAddr");
+    LLVMBuildStore(builder_, LLVMConstInt(LLVMInt64Type(),
+        static_cast<long long>(panda::ecmascript::FrameType::OPTIMIZED_LEAVE_FRAME), 1),
+        frameTypeAddr);
+    // set prev
+    LLVMValueRef prevDices[] = {LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt32Type(), 1, 0)};
+    LLVMValueRef prevTypeAddr = LLVMBuildGEP2(builder_, optFrameType_,
+        optFramePtr, prevDices, sizeof(prevDices) / sizeof(LLVMValueRef), "getFramePrevAddr");
+    LLVMValueRef convertOldSp = LLVMBuildIntToPtr(builder_, oldSp, LLVMPointerType(LLVMInt64Type(), 0), "");
+    LLVMBuildStore(builder_, convertOldSp, prevTypeAddr);
+    // sp
+    LLVMValueRef spDices[] = {LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt32Type(), 2, 0)};
+    LLVMValueRef spAddr = LLVMBuildGEP2(builder_, optFrameType_,
+        optFramePtr, spDices, sizeof(spDices) / sizeof(LLVMValueRef), "getFrameSpAddr");
+    LLVMValueRef sp = GetCurrentSP();
+    LLVMValueRef convertSpAddr = LLVMBuildIntCast2(builder_, sp, slotType_, 1, "");
+    LLVMBuildStore(builder_, convertSpAddr, spAddr);
+    // fp
+    LLVMValueRef fpDices[] = {LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt32Type(), 3, 0)};
+    LLVMValueRef fpAddr = LLVMBuildGEP2(builder_, optFrameType_,
+        optFramePtr, fpDices, sizeof(fpDices) / sizeof(LLVMValueRef), "getFrameFpAddr");
+    LLVMValueRef fpValue = CallingFp(module_, builder_, false);
+    LLVMValueRef convertFpValue = LLVMBuildPtrToInt(builder_, fpValue, slotType_, "");
+    LLVMBuildStore(builder_, convertFpValue, fpAddr);
+    // patchpointid
+    LLVMValueRef patchpointIdDices[] = {LLVMConstInt(LLVMInt32Type(), 0, 0), LLVMConstInt(LLVMInt32Type(), 4, 0)};
+    LLVMValueRef patchpointIdAddr = LLVMBuildGEP2(builder_, optFrameType_,
+        optFramePtr, patchpointIdDices, sizeof(patchpointIdDices) / sizeof(LLVMValueRef), "getFramePatchPointIdAddr");
+    LLVMValueRef patchPointIdVlue = LLVMConstInt(LLVMInt64Type(), 2882400000, 0); // 2882400000: default statepoint ID
+    LLVMBuildStore(builder_, patchPointIdVlue, patchpointIdAddr);
+}
+
+void LLVMIRBuilder::ConstructFrame()
+{
+    LLVMValueRef currentSp = GetCurrentSPFrame();
+    LLVMValueRef newSp = currentSp;
+    // set newsp:currentSp sub interpretedFrame and optFrame
+    newSp = LLVMBuildSub(builder_, newSp, LLVMConstInt(slotType_,
+        optFrameSize_, 1), "");
+    newSp = LLVMBuildSub(builder_, newSp, LLVMConstInt(slotType_,
+        interpretedFrameSize_, 1), "");
+    PushFrameContext(newSp, currentSp);
+    LLVMValueRef preAddr = LLVMBuildAdd(builder_, newSp, LLVMConstInt(slotType_,
+        optLeaveFramePrevOffset_, 1), ""); // newSp sub type size get presize
+    SetCurrentSPFrame(preAddr);
+}
+
+void LLVMIRBuilder::DestoryFrame()
+{
+    LLVMValueRef currentSp = GetCurrentSPFrame();
+    LLVMValueRef frameType = GetCurrentFrameType(currentSp);
+    (void)frameType;
+    LLVMValueRef preAddr = LLVMBuildSub(builder_, currentSp, LLVMConstInt(slotType_,
+        optLeaveFramePrevOffset_, 1), "");
+    preAddr = LLVMBuildAdd(builder_, preAddr, LLVMConstInt(slotType_,
+        optFrameSize_, 1), "");
+    preAddr = LLVMBuildAdd(builder_, preAddr,
+        LLVMConstInt(slotType_, interpretedFrameSize_, 1), "");
+    SetCurrentSPFrame(preAddr);
+}
 
 void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
 {
@@ -502,10 +627,10 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     // runtime case
     if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
-                                (index - FAST_STUB_MAXCOUNT) * sizeof(uintptr_t), 0);
+                                (index - FAST_STUB_MAXCOUNT) * slotSize_, 0);
     } else {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::FAST_STUB_ENTRIES) +
-                                index * sizeof(uintptr_t), 0);
+                                index * slotSize_, 0);
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
@@ -522,8 +647,19 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
         COMPILER_LOG(ERROR) << "callee nullptr";
         return;
     }
-    SaveCallerSp();
+    if (compCfg_->IsArm32() || compCfg_->IsAArch64() || compCfg_->IsAmd64()) {
+        // callerid | idx
+        if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
+            ConstructFrame();
+        }
+    } else {
+        SaveCurrentSP();
+    }
+
     gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
+    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
+        DestoryFrame();
+    }
     return;
 }
 
@@ -1591,4 +1727,4 @@ LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromMachineType(MachineType type)
     }
     return machineTypeMap[type];
 }
-}  // namespace kungfu
+}  // namespace panda::ecmascript::kungfu

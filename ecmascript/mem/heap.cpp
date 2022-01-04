@@ -74,9 +74,7 @@ void Heap::Initialize()
     semiSpaceCollector_ = new SemiSpaceCollector(this, paralledGc_);
     compressCollector_ = new CompressCollector(this);
 
-    derivedPointers_ = new ChunkVector<DerivedData>(ecmaVm_->GetChunk());
-    derivedPointers_->resize(STACK_MAP_DEFALUT_DERIVED_SIZE);
-    derivedPointers_->clear();
+    derivedPointers_ = new ChunkMap<DerivedDataKey, uintptr_t>(ecmaVm_->GetChunk());
     mixSpaceCollector_ = new MixSpaceCollector(this);
     sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().IsEnableConcurrentSweep());
     concurrentMarker_ = new ConcurrentMarker(this);
@@ -376,20 +374,24 @@ void Heap::UpdateDerivedObjectInStack()
         return;
     }
     for (auto derived : *derivedPointers_) {
-        auto baseAddr = reinterpret_cast<JSTaggedValue *>(std::get<0>(derived));
+        auto baseAddr = reinterpret_cast<JSTaggedValue *>(derived.first.first);
         JSTaggedValue base = *baseAddr;
         if (base.IsHeapObject()) {
-            uintptr_t baseOldObject = std::get<1>(derived);
-            uintptr_t *derivedAddr = reinterpret_cast<uintptr_t *>(std::get<2>(derived));
+            uintptr_t baseOldObject = derived.second;
+            uintptr_t *derivedAddr = reinterpret_cast<uintptr_t *>(derived.first.second);
+#ifndef NDEBUG
+            LOG_ECMA(DEBUG) << std::hex << "fix base before:" << baseAddr << " base old Value: " << baseOldObject <<
+                " derived:" << derivedAddr << " old Value: " << *derivedAddr << std::endl;
+#endif
             // derived is always bigger than base
             *derivedAddr = reinterpret_cast<uintptr_t>(base.GetHeapObject()) + (*derivedAddr - baseOldObject);
 #ifndef NDEBUG
-            LOG_ECMA(DEBUG) << std::hex << "fix base:" << baseAddr << " base Value: " << base.GetHeapObject() <<
-                " derived:" << derivedAddr << " New Value: " << *derivedAddr;
+            LOG_ECMA(DEBUG) << std::hex << "fix base after:" << baseAddr <<
+                " base New Value: " << base.GetHeapObject() <<
+                " derived:" << derivedAddr << " New Value: " << *derivedAddr << std::endl;
 #endif
         }
     }
-    derivedPointers_->resize(STACK_MAP_DEFALUT_DERIVED_SIZE);
     derivedPointers_->clear();
 }
 

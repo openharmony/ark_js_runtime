@@ -224,8 +224,9 @@ private:
 
     BasicBlock *EnsureBasicBlock(int id);
     LLVMValueRef CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller);
-    void SaveCallerSp();
-    LLVMValueRef CallerSp(LLVMModuleRef &module, LLVMBuilderRef &builder,
+    void SaveCurrentSP();
+    LLVMValueRef GetCurrentSP();
+    LLVMValueRef ReadRegister(LLVMModuleRef &module, LLVMBuilderRef &builder,
         LLVMMetadataRef meta);
     void PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builder);
     LLVMBasicBlockRef EnsureBasicBlock(BasicBlock *bb) const;
@@ -253,9 +254,14 @@ private:
     LLVMValueRef PointerAdd(LLVMValueRef baseAddr, LLVMValueRef offset, LLVMTypeRef rep);
     LLVMValueRef VectorAdd(LLVMValueRef e1Value, LLVMValueRef e2Value, LLVMTypeRef rep);
     LLVMValueRef CanonicalizeToInt(LLVMValueRef value);
-
     LLVMValueRef CanonicalizeToPtr(LLVMValueRef value);
-
+    LLVMValueRef GetCurrentSPFrame();
+    LLVMValueRef GetCurrentSPFrameAddr();
+    void SetCurrentSPFrame(LLVMValueRef sp);
+    LLVMValueRef GetCurrentFrameType(LLVMValueRef currentSpFrameAddr);
+    void ConstructFrame();
+    void PushFrameContext(LLVMValueRef newSp, LLVMValueRef oldSp);
+    void DestoryFrame();
 private:
     const CompilationConfig *compCfg_ {nullptr};
     const std::vector<std::vector<GateRef>> *schedule_ {nullptr};
@@ -275,6 +281,12 @@ private:
     std::unordered_map<GateRef, LLVMValueRef> gateToLLVMMaps_;
     std::unordered_map<OpCode::Op, HandleType> opCodeHandleMap_;
     std::set<OpCode::Op> opCodeHandleIgnore;
+    LLVMTypeRef optFrameType_;
+    int optFrameSize_;
+    int slotSize_;
+    int interpretedFrameSize_;
+    LLVMTypeRef slotType_;
+    int optLeaveFramePrevOffset_;
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

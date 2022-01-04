@@ -180,8 +180,10 @@ public:
 private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
-    void BuildAndRunPasses() const;
+    void BuildAndRunPasses();
     void BuildSimpleFunction();
+    void FillPatchPointIDs();
+    void RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, uint64_t &callInsNum, uint64_t &funcNum);
     void Initialize();
     void InitMember();
 

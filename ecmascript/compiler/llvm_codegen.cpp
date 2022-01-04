@@ -145,7 +145,54 @@ bool LLVMAssembler::BuildMCJITEngine()
     return true;
 }
 
-void LLVMAssembler::BuildAndRunPasses() const
+void LLVMAssembler::RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, uint64_t &callInsNum, uint64_t &funcNum)
+{
+    if (LLVMIsACallInst(instruction) && !LLVMIsAIntrinsicInst(instruction)) {
+        const char attrName[] = "statepoint-id";
+        uint64_t id =  (funcNum << 16) | callInsNum;
+        std::string patchId = std::to_string(id);
+        LLVMAttributeRef attr = LLVMCreateStringAttribute(LLVMGetGlobalContext(),
+            attrName, sizeof(attrName) - 1, patchId.c_str(), patchId.size());
+        LLVMAddCallSiteAttribute(instruction, LLVMAttributeFunctionIndex, attr);
+        callInsNum++;
+        LLVMValueRef targetStoreInst = LLVMGetPreviousInstruction(LLVMGetPreviousInstruction(
+            LLVMGetPreviousInstruction(instruction)));
+        if (LLVMGetInstructionOpcode(targetStoreInst) == LLVMStore) {
+            LLVMSetOperand(targetStoreInst, 0, LLVMConstInt(LLVMInt64Type(), id, 0));
+        }
+    }
+}
+
+void LLVMAssembler::FillPatchPointIDs()
+{
+    LLVMValueRef func;
+    uint64_t funcNum = 0;
+    func = LLVMGetFirstFunction(module_);
+    while (func) {
+        if (LLVMIsDeclaration(func)) {
+            func = LLVMGetNextFunction(func);
+            funcNum++;
+            continue;
+        }
+        LLVMBasicBlockRef bb;
+        LLVMValueRef instruction;
+        unsigned instructionNum = 0;
+        unsigned bbNum = 0;
+        uint64_t callInsNum = 0;
+        for (bb = LLVMGetFirstBasicBlock(func); bb; bb = LLVMGetNextBasicBlock(bb)) {
+            bbNum++;
+            for (instruction = LLVMGetFirstInstruction(bb); instruction;
+                instruction = LLVMGetNextInstruction(instruction)) {
+                instructionNum++;
+                RewritePatchPointIdOfStatePoint(instruction, callInsNum, funcNum);
+            }
+        }
+        func = LLVMGetNextFunction(func);
+        funcNum++;
+    }
+}
+
+void LLVMAssembler::BuildAndRunPasses()
 {
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  - ";
     LLVMPassManagerBuilderRef pmBuilder = LLVMPassManagerBuilderCreate();
@@ -161,6 +208,7 @@ void LLVMAssembler::BuildAndRunPasses() const
     for (LLVMValueRef fn = LLVMGetFirstFunction(module_); fn; fn = LLVMGetNextFunction(fn)) {
         LLVMRunFunctionPassManager(funcPass, fn);
     }
+    FillPatchPointIDs();
     LLVMFinalizeFunctionPassManager(funcPass);
     LLVMRunPassManager(modPass, module_);
     LLVMDisposePassManager(funcPass);
@@ -302,4 +350,4 @@ void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
     LLVMDisasmDispose(dcr);
 #endif
 }
-}  // panda::ecmascript::kungfu
+}  // namespace panda::ecmascript::kungfu
