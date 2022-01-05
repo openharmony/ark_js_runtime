@@ -195,7 +195,7 @@ private:
 
     inline uintptr_t GetVariableDataAddress() const
     {
-        return ToUintPtr(&variable_data_);
+        return ToUintPtr(variable_data_.data());
     }
 
     inline JSTaggedType GetVariableBuffer(uint32_t idx) const
