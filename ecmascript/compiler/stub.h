@@ -93,7 +93,10 @@ public:
 #undef GLUE_OFFSET_MACRO
                         GLUE_FRAME_STATE_SIZE_64,
                         GLUE_OPT_LEAVE_FRAME_SIZE_64,
-                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64
+                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64,
+                        GLUE_FRAME_CONSTPOOL_OFFSET_64,
+                        GLUE_FRAME_PROFILE_OFFSET_64,
+                        GLUE_FRAME_ACC_OFFSET_64,
                     };
                     break;
                 case Triple::TRIPLE_ARM32:
@@ -105,7 +108,10 @@ public:
 #undef GLUE_OFFSET_MACRO
                         GLUE_FRAME_STATE_SIZE_32,
                         GLUE_OPT_LEAVE_FRAME_SIZE_32,
-                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32
+                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32,
+                        GLUE_FRAME_CONSTPOOL_OFFSET_32,
+                        GLUE_FRAME_PROFILE_OFFSET_32,
+                        GLUE_FRAME_ACC_OFFSET_32,
                     };
                     break;
                 default:
@@ -484,6 +490,7 @@ public:
     inline GateRef Int64Add(GateRef x, GateRef y);
     inline GateRef DoubleAdd(GateRef x, GateRef y);
     inline GateRef PtrAdd(GateRef x, GateRef y);
+    inline GateRef PtrEqual(GateRef x, GateRef y);
     inline GateRef PtrSub(GateRef x, GateRef y);
     inline GateRef ArchRelateAdd(GateRef x, GateRef y);
     inline GateRef ArchRelateSub(GateRef x, GateRef y);

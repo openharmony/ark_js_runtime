@@ -44,8 +44,7 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
     bbIdMapBb_.clear();
     if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME) {
         LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
-        return;
-    } else {
+    } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
         LLVMSetGC(function_, "statepoint-example");
     }
     if (compCfg_->IsArm32()) {
@@ -341,7 +340,7 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
         return;
     }
     auto frameType = circuit_->GetFrameType();
-    if (frameType == FrameType::INTERPRETER_FRAME) {
+    if (frameType != FrameType::OPTIMIZED_FRAME) {
         return;
     }
     LLVMAddTargetDependentFunctionAttr(function_, "frame-pointer", "all");
@@ -593,6 +592,9 @@ void LLVMIRBuilder::PushFrameContext(LLVMValueRef newSp, LLVMValueRef oldSp)
 
 void LLVMIRBuilder::ConstructFrame()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     LLVMValueRef currentSp = GetCurrentSPFrame();
     LLVMValueRef newSp = currentSp;
     // set newsp:currentSp sub interpretedFrame and optFrame
@@ -608,6 +610,9 @@ void LLVMIRBuilder::ConstructFrame()
 
 void LLVMIRBuilder::DestoryFrame()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     LLVMValueRef currentSp = GetCurrentSPFrame();
     LLVMValueRef frameType = GetCurrentFrameType(currentSp);
     (void)frameType;

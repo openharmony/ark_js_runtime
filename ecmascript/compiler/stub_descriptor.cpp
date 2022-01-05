@@ -674,6 +674,43 @@ CALL_STUB_INIT_DESCRIPTOR(BytecodeHandler)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::BYTECODE_HANDLER);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(AsmInterpreterEntry)
+{
+    // 7 : 7 input parameters
+    StubDescriptor asmInterpreterEntry("AsmInterpreterEntry", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = asmInterpreterEntry;
+    std::array<MachineType, 7> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::INT32,
+    };
+    descriptor->SetParameters(params.data());
+}
+
+CALL_STUB_INIT_DESCRIPTOR(JumpToCInterpreter)
+{
+    // 7 : 7 input parameters
+    StubDescriptor bytecodeHandler("jumpToCInterpreter", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NATIVE_POINTER);
+    *descriptor = bytecodeHandler;
+    std::array<MachineType, 7> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::INT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(DebugPrint)
 {
     // 1 : 1 input parameters
@@ -702,6 +739,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
         MachineType::UINT64,
     };
     descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
 }
 CALL_STUB_INIT_DESCRIPTOR(PhiGateTest)
 {
