@@ -132,6 +132,7 @@ public:
         FLOAT64_CALL,
         TAGGED_POINTER_CALL,
         ANYVALUE_CALL,
+        BYTECODE_CALL,
         ALLOCA,
         INT1_ARG,
         INT8_ARG,

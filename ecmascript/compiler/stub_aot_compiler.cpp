@@ -200,10 +200,10 @@ int main(const int argc, const char **argv)
 #define SET_STUB_TO_MODULE(name, counter) \
     panda::ecmascript::kungfu::Circuit name##Circuit; \
     panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
-    mouldeBuilder.SetStub(panda::ecmascript::kungfu::StubId::STUB_##name, &name##Stub);
+    mouldeBuilder.SetStub(STUB_ID(name), &name##Stub);
     FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
     INTERPRETER_STUB_LIST(SET_STUB_TO_MODULE)
-#ifndef NDEBUG 
+#ifndef NDEBUG
     TEST_FUNC_LIST(SET_STUB_TO_MODULE)
 #endif
 #undef SET_STUB_TO_MODULE
