@@ -118,9 +118,18 @@ public:
         return module_;
     }
 
+    LLVMTypeRef GetBytecodeStubFunctionType() const
+    {
+        return bytecodeTypeRef_;
+    }
+
+    LLVMValueRef GetBytecodeStubFunction() const
+    {
+        return bytecodeFunRef_;
+    }
     LLVMTypeRef GetStubFunctionType(uint32_t index) const
     {
-        ASSERT(index < MAX_STUB_FUNCTION_COUNT);
+        ASSERT(index < CALL_STUB_MAXCOUNT);
         return stubFunctionType_[index];
     }
 
@@ -154,6 +163,8 @@ private:
 #ifndef NDEBUG
     std::array<LLVMValueRef, TEST_FUNC_MAXCOUNT> testFunctions_ {nullptr};
 #endif
+    LLVMTypeRef bytecodeTypeRef_;
+    LLVMValueRef bytecodeFunRef_;
     LLVMModuleRef module_;
     CompilationConfig compCfg_;
 };
@@ -218,6 +229,7 @@ private:
         OPCODES(DECLAREHANDLEOPCODE)
     #undef DECLAREHANDLEOPCODE
 
+    void VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &inList);
     BasicBlock *EnsureBasicBlock(int id);
     LLVMValueRef CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller);
     void SaveCurrentSP();

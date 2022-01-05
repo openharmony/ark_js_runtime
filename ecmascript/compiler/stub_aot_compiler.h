@@ -53,12 +53,6 @@ public:
                 result.push_back(i);
             }
         }
-        // for interpreter stub
-        for (; i < ALL_STUB_MAXCOUNT; i++) {
-            if (stubs_[i] != nullptr) {
-                result.push_back(CallStubId::NAME_BytecodeHandler);
-            }
-        }
         return result;
     }
 

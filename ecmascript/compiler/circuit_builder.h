@@ -67,6 +67,8 @@ public:
                                  std::initializer_list<GateRef> args);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
+    GateRef NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+                                GateRef depend, std::initializer_list<GateRef> args);
     static OpCode GetLoadOpCodeFromMachineType(MachineType type);
     static OpCode GetStoreOpCodeFromMachineType(MachineType type);
     static OpCode GetSelectOpCodeFromMachineType(MachineType type);
