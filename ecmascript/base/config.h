@@ -22,6 +22,7 @@ namespace panda::ecmascript {
 
 #define ECMASCRIPT_ENABLE_DEBUG_MODE 0
 #define ECMASCRIPT_ENABLE_RUNTIME_STAT 0 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define ECMASCRIPT_ENABLE_INTERPRETER_ASM 1
 
 /*
  * 1. close ic

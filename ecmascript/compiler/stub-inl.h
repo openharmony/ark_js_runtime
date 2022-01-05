@@ -430,6 +430,14 @@ GateRef Stub::PtrAdd(GateRef x, GateRef y)
     return ArchRelateAdd(x, y);
 }
 
+GateRef Stub::PtrEqual(GateRef x, GateRef y)
+{
+    if (env_.IsArm32()) {
+        return Word32Equal(x, y);
+    }
+    return Word64Equal(x, y);
+}
+
 GateRef Stub::PtrSub(GateRef x, GateRef y)
 {
     return ArchRelateSub(x, y);

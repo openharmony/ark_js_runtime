@@ -21,6 +21,7 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
+#include "ecmascript/interpreter/interpreter_assembly.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/layout_info.h"
@@ -371,5 +372,20 @@ void RuntimeTrampolines::NoticeThroughChainAndRefreshUser(uintptr_t argGlue, JST
 
     JSHClass::NoticeThroughChain(thread, oldHClassHandle);
     JSHClass::RefreshUsers(thread, oldHClassHandle, newHClassHandle);
+}
+
+uintptr_t RuntimeTrampolines::JumpToCInterpreter(uintptr_t argGlue, uintptr_t pc, uintptr_t sp,
+    JSTaggedType constpool, JSTaggedType profileTypeInfo, JSTaggedType acc, int32_t hotnessCounter)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    const uint8_t* currentPc = reinterpret_cast<const uint8_t*>(pc);
+    JSTaggedType* currentSp = reinterpret_cast<JSTaggedType*>(sp);
+
+    uint8_t opcode = currentPc[0];
+    asmDispatchTable[opcode](thread, currentPc, currentSp, JSTaggedValue(constpool),
+        JSTaggedValue(profileTypeInfo), JSTaggedValue(acc), hotnessCounter);
+    sp = reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame());
+    InterpretedFrame *frame = GET_FRAME(sp);
+    return reinterpret_cast<uintptr_t>(frame->pc);
 }
 }  // namespace panda::ecmascript

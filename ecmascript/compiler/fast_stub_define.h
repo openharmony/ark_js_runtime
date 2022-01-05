@@ -45,6 +45,7 @@ namespace panda::ecmascript::kungfu {
     V(NewEcmaDynClass, 4)                   \
     V(UpdateLayOutAndAddTransition, 5)      \
     V(NoticeThroughChainAndRefreshUser, 3)  \
+    V(JumpToCInterpreter, 7)                \
     V(DebugPrint, 1)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -65,7 +66,8 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByName, 4)           \
     V(TryLoadICByValue, 5)          \
     V(TryStoreICByName, 5)          \
-    V(TryStoreICByValue, 6)
+    V(TryStoreICByValue, 6)         \
+    V(AsmInterpreterEntry, 7)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
