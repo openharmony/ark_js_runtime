@@ -625,7 +625,8 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
     // runtime case
-    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
+    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB ||
+        callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC) {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
                                 (index - FAST_STUB_MAXCOUNT) * slotSize_, 0);
     } else {

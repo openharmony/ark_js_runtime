@@ -37,8 +37,8 @@ bool RuntimeTrampolines::AddElementInternal(uintptr_t argGlue, JSTaggedType argR
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<JSObject> receiver(thread, reinterpret_cast<TaggedObject *>(argReceiver));
-    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
+    JSHandle<JSObject> receiver(thread, JSTaggedValue(argReceiver));
+    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(argValue));
     auto attr = static_cast<PropertyAttributes>(argAttr);
     return JSObject::AddElementInternal(thread, receiver, argIndex, value, attr);
 }
@@ -48,8 +48,8 @@ bool RuntimeTrampolines::CallSetter(uintptr_t argGlue, JSTaggedType argSetter, J
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<JSTaggedValue> receiver(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
-    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
+    JSHandle<JSTaggedValue> receiver(thread, JSTaggedValue(argReceiver));
+    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(argValue));
     auto setter = AccessorData::Cast((reinterpret_cast<TaggedObject *>(argSetter)));
     return JSObject::CallSetter(thread, *setter, receiver, value, argMayThrow);
 }
@@ -60,8 +60,8 @@ JSTaggedType RuntimeTrampolines::CallSetter2(uintptr_t argGlue, JSTaggedType arg
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
-    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
+    JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(argReceiver));
+    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(argValue));
 
     auto accessor = AccessorData::Cast(JSTaggedValue(argAccessor).GetTaggedObject());
     bool success = JSObject::CallSetter(thread, *accessor, objHandle, valueHandle, true);
@@ -97,10 +97,10 @@ bool RuntimeTrampolines::JSProxySetProperty(uintptr_t argGlue, JSTaggedType argP
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<JSProxy> proxy(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argProxy)));
-    JSHandle<JSTaggedValue> index(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argKey)));
-    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argValue)));
-    JSHandle<JSTaggedValue> receiver(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
+    JSHandle<JSProxy> proxy(thread, JSTaggedValue(argProxy));
+    JSHandle<JSTaggedValue> index(thread, JSTaggedValue(argKey));
+    JSHandle<JSTaggedValue> value(thread, JSTaggedValue(argValue));
+    JSHandle<JSTaggedValue> receiver(thread, JSTaggedValue(argReceiver));
 
     return JSProxy::SetProperty(thread, proxy, index, value, receiver, argMayThrow);
 }
@@ -116,7 +116,7 @@ JSTaggedType RuntimeTrampolines::CallGetter(uintptr_t argGlue, JSTaggedType argG
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argGetter));
-    JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
+    JSHandle<JSTaggedValue> objHandle(thread, JSTaggedValue(argReceiver));
     return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
 }
 
@@ -126,7 +126,7 @@ JSTaggedType RuntimeTrampolines::CallInternalGetter(uintptr_t argGlue, JSTaggedT
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     auto accessor = AccessorData::Cast(reinterpret_cast<TaggedObject *>(argAccessor));
-    JSHandle<JSObject> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argReceiver)));
+    JSHandle<JSObject> objHandle(thread, JSTaggedValue(argReceiver));
     return accessor->CallInternalGet(thread, objHandle).GetRawData();
 }
 
@@ -227,7 +227,7 @@ double RuntimeTrampolines::FloatMod(double left, double right)
 JSTaggedType RuntimeTrampolines::NewInternalString(uintptr_t argGlue, JSTaggedType argKey)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
-    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argKey)));
+    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(argKey));
     return JSTaggedValue(thread->GetEcmaVM()->GetFactory()->InternString(keyHandle)).GetRawData();
 }
 
@@ -244,7 +244,7 @@ JSTaggedType RuntimeTrampolines::CopyArray(uintptr_t argGlue, JSTaggedType argAr
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    JSHandle<TaggedArray> array(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(argArray)));
+    JSHandle<TaggedArray> array(thread, JSTaggedValue(argArray));
     return factory->CopyArray(array, length, capacity).GetTaggedValue().GetRawData();
 }
 
@@ -253,16 +253,16 @@ JSTaggedType RuntimeTrampolines::NameDictPutIfAbsent(uintptr_t argGlue, JSTagged
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(key)));
-    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(value)));
+    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(key));
+    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value));
     PropertyAttributes propAttr(attr);
     if (needTransToDict) {
-        JSHandle<JSObject> objHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(receiver)));
+        JSHandle<JSObject> objHandle(thread, JSTaggedValue(receiver));
         JSHandle<NameDictionary> dictHandle(JSObject::TransitionToDictionary(thread, objHandle));
         return NameDictionary::
             PutIfAbsent(thread, dictHandle, keyHandle, valueHandle, propAttr).GetTaggedValue().GetRawData();
     } else {
-        JSHandle<NameDictionary> dictHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(array)));
+        JSHandle<NameDictionary> dictHandle(thread, JSTaggedValue(array));
         return NameDictionary::
             PutIfAbsent(thread, dictHandle, keyHandle, valueHandle, propAttr).GetTaggedValue().GetRawData();
     }
@@ -328,7 +328,7 @@ void RuntimeTrampolines::UpdateLayOutAndAddTransition(uintptr_t argGlue, JSTagge
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSHClass> oldHClassHandle(thread, reinterpret_cast<JSHClass *>(oldHClass));
     JSHandle<JSHClass> newHClassHandle(thread, reinterpret_cast<JSHClass *>(newHClass));
-    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(reinterpret_cast<TaggedObject *>(key)));
+    JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(key));
     PropertyAttributes attrValue(attr);
     int offset = attrValue.GetOffset();
     newHClassHandle->IncNumberOfProps();

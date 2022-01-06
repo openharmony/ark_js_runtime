@@ -236,12 +236,15 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
         bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
-            returnAddr, reinterpret_cast<uintptr_t>(sp_), v0, v1, derivedPointers, isVerifying);
+            returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
             LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << returnAddr;
 #endif
             return;
+        }
+        for (auto slot : slotAddrs) {
+            v0(Root::ROOT_FRAME, ObjectSlot(slot));
         }
     }
 }
@@ -254,12 +257,15 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
         bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
-            returnAddr, reinterpret_cast<uintptr_t>(sp_), v0, v1, derivedPointers, isVerifying);
+            returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
             LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << returnAddr;
 #endif
             return;
+        }
+        for (auto slot : slotAddrs) {
+            v0(Root::ROOT_FRAME, ObjectSlot(slot));
         }
     }
 }
@@ -282,13 +288,17 @@ void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 {
     OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
         reinterpret_cast<intptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
+    std::set<uintptr_t> slotAddrs;
     bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
-        state, v0, v1, derivedPointers, isVerifying);
+        state, slotAddrs, derivedPointers, isVerifying);
     if (ret == false) {
 #ifndef NDEBUG
         LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << state->patchId;
 #endif
         return;
+    }
+    for (auto slot : slotAddrs) {
+        v0(Root::ROOT_FRAME, ObjectSlot(slot));
     }
 }
 

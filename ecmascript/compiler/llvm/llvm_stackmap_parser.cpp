@@ -62,8 +62,7 @@ const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPatchID(uint64_t patchP
     return nullptr;
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
-    OptLeaveFrame *frame) const
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame) const
 {
     int i = 0;
     uintptr_t address = 0;
@@ -103,9 +102,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
 }
 
 bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
-    const RootVisitor &v0, const RootRangeVisitor &v1,
-    ChunkMap<DerivedDataKey, uintptr_t> *data,
-    [[maybe_unused]] bool isVerifying) const
+    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
 {
     ASSERT(frame);
     uint64_t patchpointId = frame->patchId;
@@ -134,7 +131,7 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                v0(Root::ROOT_FRAME, ObjectSlot(base));
+                baseSet.emplace(base);
             } else {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 if (!isVerifying) {
@@ -152,8 +149,7 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
     return true;
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
-    uintptr_t *fp) const
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const
 {
     int i = 0;
     uintptr_t address = 0;
@@ -201,9 +197,7 @@ bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
 }
 
 bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
-    const RootVisitor &v0, const RootRangeVisitor &v1,
-    ChunkMap<DerivedDataKey, uintptr_t> *data,
-    [[maybe_unused]] bool isVerifying) const
+    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
 {
     const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
     if (infos == nullptr) {
@@ -236,7 +230,7 @@ bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t fr
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                v0(Root::ROOT_FRAME, ObjectSlot(base));
+                baseSet.emplace(base);
             } else {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 if (!isVerifying) {
