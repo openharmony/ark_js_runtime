@@ -22,53 +22,10 @@
 #include "libpandafile/code_data_accessor-inl.h"
 #include "libpandafile/file-inl.h"
 #include "utils/bit_field.h"
-#include "ecmascript/compiler/circuit.h"
 
 namespace panda::ecmascript {
 class JSThread;
 class Program;
-
-struct ByteCodeBasicBlock{
-    size_t id;
-    uint8_t *start;
-    uint8_t *end;
-    std::vector<ByteCodeBasicBlock *> preds{}; // List of predessesor blocks
-    std::vector<ByteCodeBasicBlock *> succs{}; // List of successors blocks
-    std::vector<ByteCodeBasicBlock *> trys{};
-    std::vector<ByteCodeBasicBlock *> catchs{}; // List of catches blocks
-    std::vector<ByteCodeBasicBlock *> immDomBlocks{}; // List of dominated blocks
-    ByteCodeBasicBlock *iDominator{nullptr}; // Block that dominates the current block
-    std::vector<ByteCodeBasicBlock *> domFrontiers{}; // List of dominace frontiers
-    bool isDead{false};
-    std::set<uint16_t> phi{}; // phi node
-    bool phiAcc{false};
-    size_t numStatePred{0};
-    size_t cntStatePred{0};
-    std::vector<std::tuple<size_t, uint8_t *, bool>> realPreds{};
-    kungfu::GateRef stateStart = kungfu::Circuit::NullGate();
-    kungfu::GateRef dependStart = kungfu::Circuit::NullGate();
-    std::map<uint16_t, kungfu::GateRef> valueSelector{};
-    kungfu::GateRef valueSelectorAcc = kungfu::Circuit::NullGate();
-
-    bool operator <(const ByteCodeBasicBlock &target) const
-    {
-        return id < target.id;
-    }
-};
-
-struct ByteCodeInfo {
-    std::vector<uint16_t> vregIn{}; // read register
-    std::vector<uint16_t> vregOut{}; // write register
-    bool accIn{false}; // read acc
-    bool accOut{false}; // write acc
-    uint8_t opcode{-1};
-    uint16_t offset{-1};
-};
-
-struct ByteCodeGraph{
-    std::vector<ByteCodeBasicBlock> graph{};
-    const JSMethod *method;
-};
 
 class PandaFileTranslator {
 public:
@@ -153,26 +110,27 @@ private:
         return {methods_, numMethods_};
     }
 
+<<<<<<< HEAD
     void CollectBytecodeBlockInfo(uint8_t* pc,
-        std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo);
+        std::vector<std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>>> &bytecodeBlockInfo);
 
     std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> CollectTryCatchBlockInfo(
         const panda_file::File &file, const JSMethod *method, std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc,
-        std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo);
+        std::vector<std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>>> &bytecodeBlockInfo);
 
     void CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc,
-        std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo);
+        std::vector<std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>>> &bytecodeBlockInfo);
 
     void BuildBasicBlocks(const JSMethod *method,
                           std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> &exception,
-                          std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo,
+                          std::vector<std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>>> &bytecodeBlockInfo,
                           std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc);
 
-    void Sort(std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &markOffset)
+    void Sort(std::vector<std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>>> &markOffset)
     {
         std::sort(markOffset.begin(), markOffset.end(),
-                  [](std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>> left,
-                     std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>> right) {
+                  [](std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>> left,
+                     std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>> right) {
                       if (std::get<0>(left) != std::get<0>(right)) {
                           return std::get<0>(left) < std::get<0>(right);
                       } else {
@@ -181,7 +139,7 @@ private:
                   });
     }
 
-    void PrintCollectBlockInfo(std::vector<std::tuple<uint8_t *, int32_t, std::vector<uint8_t *>>> &bytecodeBlockInfo)
+    void PrintCollectBlockInfo(std::vector<std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>>> &bytecodeBlockInfo)
     {
         for(auto iter = bytecodeBlockInfo.begin(); iter != bytecodeBlockInfo.end(); iter++) {
             std::cout << "offset: " << static_cast<const void *>(std::get<0>(*iter)) << " position: " <<
@@ -274,12 +232,69 @@ private:
         }
     }
 
-    // void ComputeDominatorTree(std::vector<ByteCodeBasicBlock> &graph);
-    // void BuildImmediateDominator(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
-    // void ComputeDomFrontiers(std::vector<size_t> &immDom, std::vector<ByteCodeBasicBlock> &graph);
-    // void GetByteCodeInfo(std::vector<ByteCodeBasicBlock> &graph);
-    // void DeadCodeRemove(const std::map<size_t, size_t> &dfsTimestamp, std::vector<ByteCodeBasicBlock> &graph);
-    // void InsertPhi(std::vector<ByteCodeBasicBlock> &graph);
+    void PrintByteCodeInfo(std::vector<ByteCodeBasicBlock> &graph)
+    {
+        for (auto &bb : graph) {
+            if (bb.isDead) {
+                continue;
+            }
+            auto pc = bb.start;
+            std::cout << "BB_" << bb.id << ": " << std::endl;
+            while (pc <= bb.end) {
+                auto curInfo = GetByteCodeInfo(pc);
+                std::cout << "Inst_" << static_cast<int>(curInfo.opcode) << ": ";
+                std::cout << "In=[";
+                if (curInfo.accIn) {
+                    std::cout << "acc" << ",";
+                }
+                for (const auto &in : curInfo.vregIn) {
+                    std::cout << in << ",";
+                }
+                std::cout << "] Out=[";
+                if (curInfo.accOut) {
+                    std::cout << "acc" << ",";
+                }
+                for (const auto &out : curInfo.vregOut) {
+                    std::cout << out << ",";
+                }
+                std::cout << "]";
+                std::cout << std::endl;
+                pc += curInfo.offset;
+            }
+        }
+    }
+
+    void PrintBBInfo(std::vector<ByteCodeBasicBlock> &graph)
+    {
+        for (auto &bb : graph) {
+            if (bb.isDead) {
+                continue;
+            }
+            std::cout << "------------------------" << std::endl;
+            std::cout << "block: " << bb.id << std::endl;
+            std::cout << "preds: ";
+            for (auto pred : bb.preds) {
+                std::cout << pred->id << " , ";
+            }
+            std::cout << std::endl;
+            std::cout << "succs: ";
+            for (auto succ : bb.succs) {
+                std::cout << succ->id << " , ";
+            }
+            std::cout << std::endl;
+            std::cout << "catchs: ";
+            for (auto catchBlock : bb.catchs) {
+                std::cout << catchBlock->id << " , ";
+            }
+            std::cout << std::endl;
+            std::cout << "trys: ";
+            for (auto tryBlock : bb.trys) {
+                std::cout << tryBlock->id << " , ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
     void ComputeDominatorTree(ByteCodeGraph &byteCodeGraph);
     void BuildImmediateDominator(std::vector<size_t> &immDom, ByteCodeGraph &byteCodeGraph);
     void ComputeDomFrontiers(std::vector<size_t> &immDom, ByteCodeGraph &byteCodeGraph);
@@ -295,6 +310,8 @@ private:
     // void BuildCircuit(std::vector<ByteCodeBasicBlock> &byteCodeGraph);
     void BuildCircuit(ByteCodeGraph &byteCodeGraph);
 
+=======
+>>>>>>> 05bb32a... Refactor bc to ir
     EcmaVM *ecmaVm_;
     ObjectFactory *factory_;
     JSThread *thread_;
@@ -305,8 +322,6 @@ private:
 
     std::unordered_map<uint32_t, uint64_t> constpoolMap_;
     std::set<const uint8_t *> translated_code_;
-    std::map<const JSMethod *, std::vector<ByteCodeBasicBlock>> methodsGraphs_;
-    std::vector<ByteCodeGraph> graphs_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
