@@ -25,6 +25,7 @@
 #include "ecmascript/ic/ic_runtime_stub-inl.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/interpreter/interpreter_assembly.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/js_generator_object.h"
@@ -380,7 +381,12 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     thread->CheckSafepoint();
     LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
-    EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+
+#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
+    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+#else
+     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+#endif
 
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
@@ -446,7 +452,12 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     state->env = env;
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
+
+#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
+    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+#else
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+#endif
 
     JSTaggedValue res = state->acc;
     // pop frame
@@ -547,7 +558,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     ObjectFactory *factory = ecmaVm->GetFactory();
 
     constexpr size_t numOps = 0x100;
-
     static std::array<const void *, numOps> instDispatchTable{
 #include "templates/instruction_dispatch.inl"
     };

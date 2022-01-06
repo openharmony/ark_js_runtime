@@ -44,8 +44,7 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
     bbIdMapBb_.clear();
     if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME) {
         LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
-        return;
-    } else {
+    } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
         LLVMSetGC(function_, "statepoint-example");
     }
     if (compCfg_->IsArm32()) {
@@ -117,6 +116,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::VALUE_SELECTOR_INT64, &LLVMIRBuilder::HandlePhi},
         {OpCode::VALUE_SELECTOR_FLOAT64, &LLVMIRBuilder::HandlePhi},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall}, {OpCode::INT1_CALL, &LLVMIRBuilder::HandleCall},
+        {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::INT1_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::INT32_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::FLOAT64_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::INT64_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
         {OpCode::ANYVALUE_CALL, &LLVMIRBuilder::HandleCall},
@@ -341,7 +341,7 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
         return;
     }
     auto frameType = circuit_->GetFrameType();
-    if (frameType == FrameType::INTERPRETER_FRAME) {
+    if (frameType != FrameType::OPTIMIZED_FRAME) {
         return;
     }
     LLVMAddTargetDependentFunctionAttr(function_, "frame-pointer", "all");
@@ -597,6 +597,9 @@ void LLVMIRBuilder::PushFrameContext(LLVMValueRef newSp, LLVMValueRef oldSp)
 
 void LLVMIRBuilder::ConstructFrame()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     LLVMValueRef currentSp = GetCurrentSPFrame();
     LLVMValueRef newSp = currentSp;
     // set newsp:currentSp sub interpretedFrame and optFrame
@@ -612,6 +615,9 @@ void LLVMIRBuilder::ConstructFrame()
 
 void LLVMIRBuilder::DestoryFrame()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     LLVMValueRef currentSp = GetCurrentSPFrame();
     LLVMValueRef frameType = GetCurrentFrameType(currentSp);
     (void)frameType;
@@ -677,17 +683,15 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
 void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &inList)
 {
     int paraStartIndex = 3;
-    LLVMValueRef index = gateToLLVMMaps_[inList[1]];
+    LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
-    LLVMTypeRef rtfuncType = stubModule_->GetBytecodeStubFunctionType();
+    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(CallStubId::NAME_BytecodeHandler);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
     LLVMValueRef bytecodeoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::BYTECODE_HANDLERS), 0);
-    LLVMValueRef sizeofPtr = LLVMConstInt(glue_type, sizeof(uintptr_t), 0);
-    LLVMValueRef calloffset = LLVMBuildMul(builder_, index, sizeofPtr, "");
-    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, calloffset, ""), "");
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
     callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
@@ -1698,13 +1702,14 @@ LLVMStubModule::~LLVMStubModule()
 
 void LLVMStubModule::Initialize(const std::vector<int> &stubIndices)
 {
-    for (auto index : stubIndices) {
+    uint32_t i;
+    for (i = 0; i < ALL_STUB_MAXCOUNT; i++) {
+        uint32_t index = stubIndices[i];
         auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
         if (!stubDescriptor->GetName().empty()) {
-            stubFunctions_[index] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
+            stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
         }
     }
-    uint32_t i;
     for (i = 0; i < CALL_STUB_MAXCOUNT; i++) {
         auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i);
         if (!stubDescriptor->GetName().empty()) {
@@ -1719,11 +1724,6 @@ void LLVMStubModule::Initialize(const std::vector<int> &stubIndices)
         }
     }
 #endif
-    auto bytecodeHandlerDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(NAME_BytecodeHandler);
-    if (!bytecodeHandlerDescriptor->GetName().empty()) {
-        bytecodeTypeRef_ = GetLLVMFunctionTypeStubDescriptor(bytecodeHandlerDescriptor);
-        bytecodeFunRef_ = GetLLVMFunctionByStubDescriptor(bytecodeHandlerDescriptor);
-    }
 }
 
 LLVMValueRef LLVMStubModule::GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor)

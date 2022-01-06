@@ -117,16 +117,6 @@ public:
     {
         return module_;
     }
-
-    LLVMTypeRef GetBytecodeStubFunctionType() const
-    {
-        return bytecodeTypeRef_;
-    }
-
-    LLVMValueRef GetBytecodeStubFunction() const
-    {
-        return bytecodeFunRef_;
-    }
     LLVMTypeRef GetStubFunctionType(uint32_t index) const
     {
         ASSERT(index < CALL_STUB_MAXCOUNT);
@@ -163,8 +153,6 @@ private:
 #ifndef NDEBUG
     std::array<LLVMValueRef, TEST_FUNC_MAXCOUNT> testFunctions_ {nullptr};
 #endif
-    LLVMTypeRef bytecodeTypeRef_;
-    LLVMValueRef bytecodeFunRef_;
     LLVMModuleRef module_;
     CompilationConfig compCfg_;
 };
