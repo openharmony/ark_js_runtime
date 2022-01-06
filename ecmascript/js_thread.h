@@ -179,7 +179,7 @@ public:
 
     void SetRuntimeFunction(uint32_t id, Address functionAddress)
     {
-        ASSERT(id < EXTERNAL_RUNTIME_STUB_MAXCOUNT);
+        ASSERT(id < kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT);
         runtimeFunctions_[id] = functionAddress;
     }
 

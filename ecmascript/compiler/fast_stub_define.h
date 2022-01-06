@@ -79,12 +79,6 @@ namespace panda::ecmascript::kungfu {
     EXTERNAL_RUNTIMESTUB_LIST(V) \
     V(BytecodeHandler, 7)
 
-enum InterpreterStubId {
-#define DEF_STUB(name, counter) name##Id,
-    INTERPRETER_STUB_LIST(DEF_STUB) INTERPRETER_STUB_MAXCOUNT,
-#undef DEF_STUB
-};
-
 enum FastStubId {
 #define DEF_STUB(name, counter) name##Id,
     FAST_RUNTIME_STUB_LIST(DEF_STUB) FAST_STUB_MAXCOUNT,
@@ -124,6 +118,9 @@ enum StubId {
 #define DEF_STUB(name, counter) STUB_##name,
     FAST_RUNTIME_STUB_LIST(DEF_STUB)
     INTERPRETER_STUB_LIST(DEF_STUB)
+#ifndef NDEBUG
+    TEST_FUNC_LIST(DEF_STUB)
+#endif
 #undef DEF_STUB
     ALL_STUB_MAXCOUNT
 };
@@ -131,5 +128,6 @@ enum StubId {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_STUB_ID(name) panda::ecmascript::kungfu::TestFuncStubId::NAME_##name
 #define FAST_STUB_ID(name) panda::ecmascript::kungfu::CallStubId::NAME_##name
+#define STUB_ID(name) panda::ecmascript::kungfu::StubId::STUB_##name
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
