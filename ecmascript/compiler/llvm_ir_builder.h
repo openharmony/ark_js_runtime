@@ -117,10 +117,9 @@ public:
     {
         return module_;
     }
-
     LLVMTypeRef GetStubFunctionType(uint32_t index) const
     {
-        ASSERT(index < MAX_STUB_FUNCTION_COUNT);
+        ASSERT(index < CALL_STUB_MAXCOUNT);
         return stubFunctionType_[index];
     }
 
@@ -218,6 +217,7 @@ private:
         OPCODES(DECLAREHANDLEOPCODE)
     #undef DECLAREHANDLEOPCODE
 
+    void VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &inList);
     BasicBlock *EnsureBasicBlock(int id);
     LLVMValueRef CallingFp(LLVMModuleRef &module, LLVMBuilderRef &builder, bool isCaller);
     void SaveCurrentSP();

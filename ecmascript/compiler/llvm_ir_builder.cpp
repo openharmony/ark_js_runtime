@@ -116,6 +116,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::VALUE_SELECTOR_INT64, &LLVMIRBuilder::HandlePhi},
         {OpCode::VALUE_SELECTOR_FLOAT64, &LLVMIRBuilder::HandlePhi},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall}, {OpCode::INT1_CALL, &LLVMIRBuilder::HandleCall},
+        {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::INT1_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::INT32_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::FLOAT64_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::INT64_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
         {OpCode::ANYVALUE_CALL, &LLVMIRBuilder::HandleCall},
@@ -485,6 +486,10 @@ void LLVMIRBuilder::HandleCall(GateRef gate)
             VisitCall(gate, ins);
             break;
         }
+        case OpCode::BYTECODE_CALL: {
+            VisitBytecodeCall(gate, ins);
+            break;
+        }
         default: {
             break;
         }
@@ -641,11 +646,6 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
                                 (index - FAST_STUB_MAXCOUNT) * slotSize_, 0);
-    } else if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::BYTECODE_HANDLER) {
-        LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[paraStartIndex]];
-        rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::BYTECODE_HANDLERS), 0);
-        rtoffset = LLVMBuildAdd(builder_, opcodeOffset, rtoffset, "");
-        paraStartIndex += 1;
     } else {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::FAST_STUB_ENTRIES) +
                                 index * slotSize_, 0);
@@ -677,10 +677,35 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
         DestoryFrame();
     }
-    if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::BYTECODE_HANDLER) {
-        LLVMSetTailCall(gateToLLVMMaps_[gate], true);
-        LLVMSetInstructionCallConv(gateToLLVMMaps_[gate], LLVMGHCCallConv);
+    return;
+}
+
+void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &inList)
+{
+    int paraStartIndex = 3;
+    LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
+    ASSERT(stubModule_ != nullptr);
+    LLVMValueRef callee;
+    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(CallStubId::NAME_BytecodeHandler);
+    LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
+    LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
+    LLVMTypeRef glue_type = LLVMTypeOf(glue);
+    LLVMValueRef bytecodeoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::BYTECODE_HANDLERS), 0);
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
+    LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
+    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
+    // 16 : params limit
+    LLVMValueRef params[16];
+    for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
+        GateRef gateTmp = inList[paraIdx];
+        params[paraIdx - paraStartIndex] = gateToLLVMMaps_[gateTmp];
     }
+    gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
+    LLVMSetTailCall(gateToLLVMMaps_[gate], true);
+    LLVMSetInstructionCallConv(gateToLLVMMaps_[gate], LLVMGHCCallConv);
+    return;
+
 }
 
 void LLVMIRBuilder::HandleAlloca(GateRef gate)
@@ -1693,7 +1718,7 @@ void LLVMStubModule::Initialize(const std::vector<int> &stubIndices)
     }
 #ifndef NDEBUG
     for (i = 0; i < TEST_FUNC_MAXCOUNT; i++) {
-        auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNCTION_OFFSET);
+        auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNC_OFFSET);
         if (!testFuncDescriptor->GetName().empty()) {
             testFunctions_[i] = GetLLVMFunctionByStubDescriptor(testFuncDescriptor);
         }

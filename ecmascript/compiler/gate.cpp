@@ -136,6 +136,7 @@ Properties OpCode::GetProperties() const
         case JS_LOGIC_NOT:
             return {JSValueCode(), NO_STATE, NO_DEPEND, VALUE(JSValueCode()), NO_ROOT};
         // Middle Level IR
+        case BYTECODE_CALL:
         case CALL:
             return {NOVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case INT1_CALL:

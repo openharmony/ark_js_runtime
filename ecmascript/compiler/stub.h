@@ -744,8 +744,16 @@ public:
 
     GateRef SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef key,
                                GateRef value); // Do not crawl the prototype chain
+    inline void SetVreg(GateRef glue, GateRef sp, GateRef idx, GateRef val);
+    inline GateRef GetVregValue(GateRef sp, GateRef idx);
+    inline GateRef ReadInst8(GateRef pc, GateRef offset);
+    inline GateRef MoveAndReadInst8(GateRef pc, GateRef currentInst, GateRef offset);
+    inline GateRef ReadInst16(GateRef pc, GateRef offset);
+    inline GateRef GetFrame(GateRef CurrentSp);
+    inline void SavePc(GateRef glue, GateRef CurrentSp, GateRef pc);
+    inline void SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc);
     inline void Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
-                         GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
+                         GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
 
 private:
     Environment env_;

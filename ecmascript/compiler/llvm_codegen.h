@@ -201,7 +201,6 @@ public:
     ~LLVMCodeGeneratorImpl() = default;
     void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                              const CompilationConfig *cfg) override;
-
 private:
     LLVMStubModule *module_;
 };

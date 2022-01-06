@@ -17,12 +17,12 @@ void HandleLdnanPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef pc = PtrArgument(1);
     GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
     GateRef constpool = TaggedArgument(3); /* 3 : 4th parameter is value */
-    GateRef profileTypeInfo = TaggedArgument(4); /* 4 : 5rd parameter is value */
+    GateRef profileTypeInfo = TaggedArgument(4); /* 4 : 5th parameter is value */
     DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
     
-    // acc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc.Value(), hotnessCounter);
+    //acc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc.Value(), hotnessCounter, GetArchRelateConstant(2));
 }
 
 void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -69,6 +69,7 @@ void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
         acc = Load(MachineType::TAGGED, frame, accOffset);
     }
     // do not update hotnessCounter now
-    Dispatch(glue, pc.Value(), sp.Value(), constpool.Value(), profileTypeInfo.Value(), acc.Value(), hotnessCounter);
+    Dispatch(glue, pc.Value(), sp.Value(), constpool.Value(), profileTypeInfo.Value(), acc.Value(),
+             hotnessCounter, GetArchRelateConstant(0));
 }
 }  // namespace panda::ecmascript::kungfu

@@ -1252,6 +1252,6 @@ void AsmInterpreterEntryStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
 }
 }  // namespace panda::ecmascript::kungfu
