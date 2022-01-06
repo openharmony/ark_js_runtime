@@ -323,7 +323,7 @@ CALL_STUB_INIT_DESCRIPTOR(FloatMod)
         MachineType::FLOAT64,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
@@ -511,7 +511,7 @@ CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
         MachineType::TAGGED_POINTER,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(SetValueWithBarrier)
