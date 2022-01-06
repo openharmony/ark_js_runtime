@@ -281,6 +281,19 @@ public:
     NO_COPY_SEMANTIC(TryStoreICByValueStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
+
+class AsmInterpreterEntryStub : public Stub {
+public:
+    // 6 : 6 means argument counts
+    explicit AsmInterpreterEntryStub(Circuit *circuit) : Stub("AsmInterpreterEntry", 7, circuit)
+    {
+        circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
+    }
+    ~AsmInterpreterEntryStub() = default;
+    NO_MOVE_SEMANTIC(AsmInterpreterEntryStub);
+    NO_COPY_SEMANTIC(AsmInterpreterEntryStub);
+    void GenerateCircuit(const CompilationConfig *cfg) override;
+};
 }  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H

@@ -4,7 +4,8 @@
 namespace panda::ecmascript::kungfu {
 
 #define INTERPRETER_STUB_LIST(V) \
-    V(HandleLdnanPref, 7)
+    V(HandleLdnanPref, 7)        \
+    V(SingleStepDebugging, 7)
 
 enum InterpreterStubId {
 #define DEF_STUB(name, counter) name##Id,

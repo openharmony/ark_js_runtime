@@ -57,12 +57,7 @@ namespace panda::ecmascript::kungfu {
 void LLVMCodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                                                 const CompilationConfig *cfg)
 {
-    LLVMValueRef function;
-    if (circuit->GetFrameType() == FrameType::INTERPRETER_FRAME) {
-        function = module_->GetBytecodeStubFunction();
-    } else {
-        function = module_->GetStubFunction(index);
-    }
+    LLVMValueRef function = module_->GetStubFunction(index);
     LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
     builder.Build();
 }
@@ -296,7 +291,8 @@ void LLVMAssembler::Initialize()
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
     options_.OptLevel = 2; // opt level 2
     // Just ensure that this field still exists.
-    options_.NoFramePointerElim = true;
+    // tmp for interpreter stub
+    options_.NoFramePointerElim = false;
 }
 
 #if ECMASCRIPT_ENABLE_COMPILER_LOG

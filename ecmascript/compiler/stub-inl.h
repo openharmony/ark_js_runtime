@@ -430,6 +430,14 @@ GateRef Stub::PtrAdd(GateRef x, GateRef y)
     return ArchRelateAdd(x, y);
 }
 
+GateRef Stub::PtrEqual(GateRef x, GateRef y)
+{
+    if (env_.IsArm32()) {
+        return Word32Equal(x, y);
+    }
+    return Word64Equal(x, y);
+}
+
 GateRef Stub::PtrSub(GateRef x, GateRef y)
 {
     return ArchRelateSub(x, y);
@@ -1719,10 +1727,12 @@ void Stub::SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc)
 void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                         GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format)
 {
-    GateRef index = ReadInst8(pc, GetArchRelateConstant(0));
+    GateRef opcode = Load(MachineType::UINT8, pc);
+    GateRef opcodeOffset = ArchRelatePtrMul(
+        ChangeInt32ToUintPtr(ZExtInt8ToInt32(opcode)), GetArchRelatePointerSize());
     StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, index, depend,
+    GateRef result = env_.GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset, depend,
         {glue, PtrAdd(pc, format), sp, constpool, profileTypeInfo, acc, hotnessCounter});
     env_.GetCurrentLabel()->SetDepend(result);
     Return();

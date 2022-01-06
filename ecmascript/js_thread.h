@@ -195,6 +195,11 @@ public:
         fastStubEntries_[id] = entry;
     }
 
+    Address *GetBytecodeHandler()
+    {
+        return &bytecodeHandlers_[0];
+    }
+
     void InitializeFastRuntimeStubs();
 
     void LoadStubModule(const char *moduleFile);
@@ -239,11 +244,6 @@ public:
     static constexpr uint32_t GetCurrentFrameOffset()
     {
         return MEMBER_OFFSET(JSThread, currentFrame_);
-    }
-
-    static constexpr uint32_t GetLastIFrameOffset()
-    {
-        return MEMBER_OFFSET(JSThread, lastIFrame_);
     }
 
     static constexpr uint32_t GetRuntimeFunctionsOffset()
@@ -331,13 +331,16 @@ public:
         PROPERTIES_CACHE,
         GLOBAL_STORAGE,
         CURRENT_FRAME,
-        LAST_I_FRAME,
+
         BYTECODE_HANDLERS,
         RUNTIME_FUNCTIONS,
         FAST_STUB_ENTRIES,
         FRAME_STATE_SIZE,
         OPT_LEAVE_FRAME_SIZE,
         OPT_LEAVE_FRAME_PREV_OFFSET,
+        GLUE_FRAME_CONSTPOOL,
+        GLUE_FRAME_PROFILE,
+        GLUE_FRAME_ACC,
         NUMBER_OF_GLUE,
     };
 
@@ -379,7 +382,6 @@ private:
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};
     JSTaggedType *currentFrame_ {nullptr};
-    JSTaggedType *lastIFrame_ {nullptr};
     Address bytecodeHandlers_[MAX_BYTECODE_HANDLERS];
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
     Address fastStubEntries_[kungfu::FAST_STUB_MAXCOUNT];
@@ -396,8 +398,7 @@ private:
         static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize()) \
     V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
     V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
-    V(LAST_IFRAME, LastIFrame, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))                \
-    V(BYTECODE_HANDLERS, BytecodeHandlers, LAST_IFRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(BYTECODE_HANDLERS, BytecodeHandlers, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))      \
     V(RUNTIME_FUNCTIONS, RuntimeFunctions, BYTECODE_HANDLERS,                                    \
         JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint32_t),                                      \
         JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint64_t))                                      \
@@ -415,8 +416,16 @@ GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 
 static constexpr uint32_t GLUE_FRAME_STATE_SIZE_64 =
      2 * sizeof(int64_t) + 5 * sizeof(int64_t) + sizeof(int64_t) + sizeof(int64_t);
+
+static constexpr uint32_t GLUE_FRAME_CONSTPOOL_OFFSET_64 = 2 * sizeof(int64_t);
+static constexpr uint32_t GLUE_FRAME_PROFILE_OFFSET_64 = GLUE_FRAME_CONSTPOOL_OFFSET_64 + 2 * JSTaggedValue::TaggedTypeSize();
+static constexpr uint32_t GLUE_FRAME_ACC_OFFSET_64 = GLUE_FRAME_PROFILE_OFFSET_64 + JSTaggedValue::TaggedTypeSize();
 static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_SIZE_64 = 5 * sizeof(uint64_t);
 static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64 = sizeof(uint64_t);
+
+static constexpr uint32_t GLUE_FRAME_CONSTPOOL_OFFSET_32 = 2 * sizeof(int32_t);
+static constexpr uint32_t GLUE_FRAME_PROFILE_OFFSET_32 = GLUE_FRAME_CONSTPOOL_OFFSET_32 + 2 * JSTaggedValue::TaggedTypeSize();
+static constexpr uint32_t GLUE_FRAME_ACC_OFFSET_32 = GLUE_FRAME_PROFILE_OFFSET_32 + JSTaggedValue::TaggedTypeSize();
 static constexpr uint32_t GLUE_FRAME_STATE_SIZE_32 =
     2 * sizeof(int32_t) + 5 * sizeof(int64_t) + sizeof(int32_t) + sizeof(int32_t) + sizeof(int64_t);
 static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_SIZE_32 = sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(uint64_t);
