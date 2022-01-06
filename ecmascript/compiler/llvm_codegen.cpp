@@ -57,7 +57,7 @@ namespace panda::ecmascript::kungfu {
 void LLVMCodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                                                 const CompilationConfig *cfg)
 {
-    auto function = module_->GetStubFunction(index);
+    LLVMValueRef function = module_->GetStubFunction(index);
     LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
     builder.Build();
 }

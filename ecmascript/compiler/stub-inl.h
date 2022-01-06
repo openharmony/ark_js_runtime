@@ -1694,19 +1694,46 @@ void Stub::UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, Gate
     SetValueToTaggedArray(MachineType::TAGGED, glue, elements, valueIndex, value);
 }
 
+void Stub::SetVreg(GateRef glue, GateRef sp, GateRef idx, GateRef val)
+{
+    Store(MachineType::UINT64, glue, sp, Int64Mul(GetWord64Constant(sizeof(JSTaggedType)), idx), val);
+}
+
+GateRef Stub::GetVregValue(GateRef sp, GateRef idx)
+{
+    return Load(MachineType::UINT64, sp, Int64Mul(GetWord64Constant(sizeof(JSTaggedType)), idx));
+}
+
+GateRef Stub::ReadInst8(GateRef pc, GateRef offset)
+{
+    return Load(MachineType::UINT8, pc, offset);
+}
+
+GateRef Stub::GetFrame(GateRef CurrentSp)
+{
+    return Int64Sub(CurrentSp, GetWord64Constant(sizeof(InterpretedFrame)));
+}
+
+void Stub::SavePc(GateRef glue, GateRef CurrentSp, GateRef pc)
+{
+    Store(MachineType::NATIVE_POINTER, glue, GetFrame(CurrentSp), GetWord64Constant(0), pc);
+}
+
+void Stub::SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc)
+{
+    Store(MachineType::NATIVE_POINTER, glue, GetFrame(CurrentSp), GetWord64Constant(0), acc);
+}
+
 void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
-                    GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
+                        GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format)
 {
     GateRef opcode = Load(MachineType::UINT8, pc);
     GateRef opcodeOffset = ArchRelatePtrMul(
         ChangeInt32ToUintPtr(ZExtInt8ToInt32(opcode)), GetArchRelatePointerSize());
-    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(BytecodeHandler);
-
+    StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    auto target = GetArchRelateConstant(FAST_STUB_ID(BytecodeHandler));
-    GateRef result = env_.GetCircuitBuilder().NewCallGate(descriptor, glue, target, depend, {
-        opcodeOffset, glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter
-    });
+    GateRef result = env_.GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset, depend,
+        {glue, PtrAdd(pc, format), sp, constpool, profileTypeInfo, acc, hotnessCounter});
     env_.GetCurrentLabel()->SetDepend(result);
     Return();
 }
