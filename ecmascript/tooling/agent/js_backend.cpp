@@ -428,17 +428,18 @@ PtJSExtractor *JSBackend::GenerateExtractor(const panda_file::File *file)
     }
     auto extractor = std::make_unique<PtJSExtractor>(file);
     PtJSExtractor *res = extractor.get();
-    extractors_[file] = std::move(extractor);
+    extractors_[file->GetFilename()] = std::move(extractor);
     return res;
 }
 
 PtJSExtractor *JSBackend::GetExtractor(const panda_file::File *file)
 {
-    if (extractors_.find(file) == extractors_.end()) {
+    const std::string fileName = file->GetFilename();
+    if (extractors_.find(fileName) == extractors_.end()) {
         return nullptr;
     }
 
-    return extractors_[file].get();
+    return extractors_[fileName].get();
 }
 
 PtJSExtractor *JSBackend::GetExtractor(const CString &url)
