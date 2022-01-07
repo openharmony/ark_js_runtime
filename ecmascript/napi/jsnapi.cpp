@@ -1412,7 +1412,7 @@ JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info)
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
     // data
     JSHandle<JSTaggedValue> data(thread, extraInfo->GetData());
     if (!data->IsHeapObject()) {
@@ -1464,7 +1464,7 @@ JSTaggedValue Callback::RegisterCallbackWithProperty(ecmascript::EcmaRuntimeCall
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
     // data
     JSHandle<JSTaggedValue> data(thread, extraInfo->GetData());
     if (!data->IsHeapObject()) {
@@ -1516,7 +1516,7 @@ JSTaggedValue Callback::RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCal
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
     // data
     JSHandle<JSTaggedValue> data(thread, extraInfo->GetData());
     if (!data->IsHeapObject()) {
