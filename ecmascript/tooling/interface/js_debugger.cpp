@@ -115,8 +115,8 @@ bool JSDebugger::HandleStep(const JSThread *thread, const JSMethod *method, uint
 bool JSDebugger::FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const
 {
     for (const auto &bp : breakpoints_) {
-        if (bp.GetBytecodeOffset() == bcOffset && bp.GetMethod()->GetPandaFile() == method->GetPandaFile() &&
-            bp.GetMethod()->GetFileId() == method->GetFileId()) {
+        if (bp.GetBytecodeOffset() == bcOffset && bp.GetMethod()->GetPandaFile()->GetFilename() ==
+            method->GetPandaFile()->GetFilename() && bp.GetMethod()->GetFileId() == method->GetFileId()) {
             return true;
         }
     }
