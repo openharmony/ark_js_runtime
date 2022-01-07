@@ -109,6 +109,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 {
     options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
+    optionalLogEnabled_ = options_.IsEnableOptionalLog();
     rendezvous_ = chunk_.New<EmptyRendezvous>();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
     if (!snapshotSerializeEnable_) {
@@ -272,9 +273,9 @@ EcmaVM::~EcmaVM()
     ClearBufferData();
 
     if (gcStats_ != nullptr) {
-#if ECMASCRIPT_ENABLE_GC_LOG
-        gcStats_->PrintStatisticResult(true);
-#endif
+        if (options_.IsEnableGCStatsPrint()) {
+            gcStats_->PrintStatisticResult(true);
+        }
         chunk_.Delete(gcStats_);
         gcStats_ = nullptr;
     }

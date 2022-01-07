@@ -21,6 +21,15 @@
 
 // namespace panda {
 namespace panda::ecmascript {
+enum ArkProperties {
+    DEFAULT = -1,
+    OPTIONAL_LOG = 1,
+    GC_STATS_PRINT = 1 << 1,
+    PARALLEL_GC = 1 << 2,
+    CONCURRENT_MARK = 1 << 3,
+    CONCURRENT_SWEEP = 1 << 4,
+};
+
 class JSRuntimeOptions : public RuntimeOptions {
 public:
     explicit JSRuntimeOptions(const std::string &exe_path = "") : RuntimeOptions(exe_path) {}
@@ -35,6 +44,7 @@ public:
         parser->Add(&enable_stub_aot_);
         parser->Add(&stub_module_file_);
         parser->Add(&enable_cpuprofiler_);
+        parser->Add(&ark_properties_);
     }
 
     bool IsEnableArkTools() const
@@ -102,16 +112,6 @@ public:
         force_compress_gc_.SetValue(value);
     }
 
-    bool IsEnableConcurrentSweep() const
-    {
-        return enable_concurrent_sweep_.GetValue();
-    }
-
-    void SetEnableConcurrentSweep(bool value)
-    {
-        enable_concurrent_sweep_.SetValue(value);
-    }
-
     bool IsEnableCpuProfiler() const
     {
         return enable_cpuprofiler_.GetValue();
@@ -120,6 +120,48 @@ public:
     void SetEnableCpuprofiler(bool value)
     {
         enable_cpuprofiler_.SetValue(value);
+    }
+
+    void SetArkProperties(int prop)
+    {
+        if (prop != ArkProperties::DEFAULT) {
+            ark_properties_.SetValue(prop);
+        }
+    }
+
+    int GetDefaultProperties()
+    {
+        return ArkProperties::PARALLEL_GC | ArkProperties::CONCURRENT_MARK | ArkProperties::CONCURRENT_SWEEP;
+    }
+
+    int GetArkProperties()
+    {
+        return ark_properties_.GetValue();
+    }
+
+    bool IsEnableOptionalLog() const
+    {
+        return (ark_properties_.GetValue() & ArkProperties::OPTIONAL_LOG) != 0;
+    }
+
+    bool IsEnableGCStatsPrint() const
+    {
+        return (ark_properties_.GetValue() & ArkProperties::GC_STATS_PRINT) != 0;
+    }
+
+    bool IsEnableParallelGC() const
+    {
+        return (ark_properties_.GetValue() & ArkProperties::PARALLEL_GC) != 0;
+    }
+
+    bool IsEnableConcurrentMark() const
+    {
+        return (ark_properties_.GetValue() & ArkProperties::CONCURRENT_MARK) != 0;
+    }
+
+    bool IsEnableConcurrentSweep() const
+    {
+        return (ark_properties_.GetValue() & ArkProperties::CONCURRENT_SWEEP) != 0;
     }
 
 private:
@@ -134,9 +176,7 @@ private:
     PandArg<bool> force_compress_gc_ {"force-compress-gc",
         true,
         R"(if true trigger compress gc, else trigger semi and old gc)"};
-    PandArg<bool> enable_concurrent_sweep_ {"enable_concurrent_sweep",
-        true,
-        R"(If true enable concurrent sweep, else disable concurrent sweep. Default: true)"};
+    PandArg<int> ark_properties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
 };
 }  // namespace panda::ecmascript
 
