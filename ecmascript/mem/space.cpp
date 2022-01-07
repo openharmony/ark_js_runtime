@@ -516,7 +516,9 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
 {
     if (committedSize_ >= maximumCapacity_) {
         LOG_ECMA_MEM(FATAL) << "Committed size " << committedSize_ << " of huge object space is too big. "
-                            << "length: " << GetRegionList().GetLength();
+                            << " old space committed: " << heap_->GetOldSpace()->GetCommittedSize()
+                            << " old space limit: " << heap_->GetOldSpaceAllocLimit()
+                            << " length: " << GetRegionList().GetLength();
         return 0;
     }
     size_t alignedSize = AlignUp(objectSize + sizeof(Region), PANDA_POOL_ALIGNMENT_IN_BYTES);

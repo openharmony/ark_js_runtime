@@ -43,7 +43,6 @@ void ParallelEvacuation::Evacuate()
     Initialize();
     EvacuateSpace();
     UpdateReference();
-    Finalize();
 }
 
 void ParallelEvacuation::EvacuateSpace()
@@ -397,7 +396,7 @@ void ParallelEvacuation::UpdateAndSweepCompressRegionReference(Region *region, b
     uintptr_t freeEnd = region->GetEnd();
     CHECK_REGION_END(freeStart, freeEnd);
     if (freeStart < freeEnd) {
-        evacuationAllocator_->Free(freeStart, freeEnd);
+        evacuationAllocator_->Free(freeStart, freeEnd, isMain);
     }
     if (!isMain) {
         AddSweptRegionSafe(region);

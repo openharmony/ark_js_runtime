@@ -44,20 +44,20 @@ public:
         return reinterpret_cast<uintptr_t>(this) + Available();
     }
 
-    inline void SetAvailable(size_t size)
+    inline void SetAvailable(uint32_t size)
     {
         if (size >= SIZE) {
-            SetSize(size);
+            SetSize(JSTaggedValue(size));
         }
     }
 
-    inline size_t Available() const
+    inline uint32_t Available() const
     {
         auto hclass = GetClass();
         if (hclass != nullptr && (hclass->IsFreeObjectWithOneField() || hclass->IsFreeObjectWithNoneField())) {
             return hclass->GetObjectSize();
         }
-        return GetSize();
+        return GetSize().GetInt();
     }
 
     inline bool IsFreeObject() const
@@ -69,7 +69,7 @@ public:
 
     static constexpr size_t NEXT_OFFSET = TaggedObjectSize();
     SET_GET_NATIVE_FIELD(Next, FreeObject, NEXT_OFFSET, SIZE_OFFSET);
-    SET_GET_PRIMITIVE_FIELD(Size, size_t, SIZE_OFFSET, SIZE);
+    ACCESSORS(Size, SIZE_OFFSET, SIZE);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_FREE_OBJECT_H
