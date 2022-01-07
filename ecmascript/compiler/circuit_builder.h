@@ -36,7 +36,6 @@ public:
                               MachineType type = MachineType::NONE);
     GateRef NewIntegerConstant(int32_t value);
     GateRef NewInteger64Constant(int64_t value);
-    GateRef NewWord64Constant(uint64_t val);
     GateRef NewBooleanConstant(bool value);
     GateRef NewDoubleConstant(double value);
     GateRef UndefineConstant(TypeCode type);
@@ -61,6 +60,7 @@ public:
     GateRef NewDependAnd(std::initializer_list<GateRef> args);
     GateRef NewArithMeticGate(OpCode opcode, GateRef left, GateRef right);
     GateRef NewArithMeticGate(OpCode opcode, GateRef value);
+    GateRef NewNumberGate(OpCode opcode, GateRef value);
     GateRef NewLogicGate(OpCode opcode, GateRef left, GateRef right);
     GateRef NewLogicGate(OpCode opcode, GateRef value);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,

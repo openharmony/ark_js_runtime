@@ -180,6 +180,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT32_TO_FLOAT64, &LLVMIRBuilder::HandleChangeInt32ToDouble},
         {OpCode::FLOAT64_TO_INT32, &LLVMIRBuilder::HandleChangeDoubleToInt32},
         {OpCode::TAGGED_POINTER_TO_INT64, &LLVMIRBuilder::HandleChangeTaggedPointerToInt64},
+        {OpCode::INT64_TO_TAGGED, &LLVMIRBuilder::HandleChangeInt64ToTagged},
         {OpCode::BITCAST_INT64_TO_FLOAT64, &LLVMIRBuilder::HandleCastInt64ToDouble},
         {OpCode::BITCAST_FLOAT64_TO_INT64, &LLVMIRBuilder::HandleCastDoubleToInt},
         {OpCode::INT32_LSL, &LLVMIRBuilder::HandleIntLsl},
@@ -1432,6 +1433,12 @@ void LLVMIRBuilder::HandleChangeTaggedPointerToInt64(GateRef gate)
     VisitChangeTaggedPointerToInt64(gate, ins[0]);
 }
 
+void LLVMIRBuilder::HandleChangeInt64ToTagged(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitChangeInt64ToTagged(gate, ins[0]);
+}
+
 void LLVMIRBuilder::VisitFloatSub(GateRef gate, GateRef e1, GateRef e2)
 {
     COMPILER_LOG(DEBUG) << "float sub gate:" << gate;
@@ -1633,10 +1640,34 @@ void LLVMIRBuilder::VisitChangeDoubleToInt32(GateRef gate, GateRef e1)
 
 void LLVMIRBuilder::VisitChangeTaggedPointerToInt64(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "double cast2 int32 gate:" << gate;
+    COMPILER_LOG(DEBUG) << "tagged pointer cast2 int64 gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = CanonicalizeToInt(e1Value);
+    gateToLLVMMaps_[gate] = result;
+    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
+}
+
+void LLVMIRBuilder::VisitChangeInt64ToTagged(GateRef gate, GateRef e1)
+{
+    COMPILER_LOG(DEBUG) << "int64 cast2 tagged gate:" << gate;
+    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
+    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    ASSERT(LLVMGetTypeKind(LLVMTypeOf(e1Value)) == LLVMIntegerTypeKind);
+    LLVMValueRef result;
+    if (compCfg_->IsArm32()) {
+        LLVMValueRef tmp1Value =
+            LLVMBuildLShr(builder_, e1Value, LLVMConstInt(LLVMInt32Type(), 32, 0), ""); // 32: offset
+        LLVMValueRef tmp2Value = LLVMBuildIntCast(builder_, e1Value, LLVMInt32Type(), ""); // low
+        LLVMTypeRef vectorType = LLVMVectorType(LLVMPointerType(LLVMInt8Type(), 1), 2);  // 2: packed vector type
+        LLVMValueRef emptyValue = LLVMGetUndef(vectorType);
+        tmp1Value = LLVMBuildIntToPtr(builder_, tmp1Value, LLVMPointerType(LLVMInt8Type(), 1), "");
+        tmp2Value = LLVMBuildIntToPtr(builder_, tmp2Value, LLVMPointerType(LLVMInt8Type(), 1), "");
+        result = LLVMBuildInsertElement(builder_, emptyValue, tmp2Value, LLVMConstInt(LLVMInt32Type(), 0, 0), "");
+        result = LLVMBuildInsertElement(builder_, result, tmp1Value, LLVMConstInt(LLVMInt32Type(), 1, 0), "");
+    } else {
+        result = LLVMBuildIntToPtr(builder_, e1Value, LLVMPointerType(LLVMInt64Type(), 1), "");
+    }
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }

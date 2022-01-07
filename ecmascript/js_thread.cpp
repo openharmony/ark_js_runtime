@@ -228,12 +228,10 @@ void JSThread::LoadStubModule(const char *moduleFile)
     for (uint32_t i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
         fastStubEntries_[i] = stubModule.GetStubEntry(i);
     }
-    //for (uint32_t i = 0; i < kungfu::INTERPRETER_STUB_MAXCOUNT; i++) {
-    //    bytecodeHandlers_[i] = stubModule.GetStubEntry(i - kungfu::FAST_STUB_MAXCOUNT);
-    //}
     for (uint32_t i = 0; i < MAX_BYTECODE_HANDLERS; i++) {
         bytecodeHandlers_[i] = stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging);
     }
+    bytecodeHandlers_[EcmaOpcode::LDNAN_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdnanPref);
 
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
