@@ -688,18 +688,13 @@ GateRef Stub::TaggedIsBoolean(GateRef x)
 GateRef Stub::IntBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
-    return Word64Or(val, GetWord64Constant(JSTaggedValue::TAG_INT));
-}
-
-GateRef Stub::Int64BuildTaggedWithNoGC(GateRef x)
-{
-    return Word64Or(x, GetWord64Constant(JSTaggedValue::TAG_INT));
+    return ChangeInt64ToTagged(Word64Or(val, GetWord64Constant(JSTaggedValue::TAG_INT)));
 }
 
 GateRef Stub::DoubleBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
-    return Int64Add(val, GetWord64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
+    return ChangeInt64ToTagged(Int64Add(val, GetWord64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET)));
 }
 
 GateRef Stub::CastDoubleToInt64(GateRef x)
@@ -1550,6 +1545,11 @@ GateRef Stub::ChangeTaggedPointerToInt64(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TAGGED_POINTER_TO_INT64), x);
 }
 
+GateRef Stub::ChangeInt64ToTagged(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewNumberGate(OpCode(OpCode::INT64_TO_TAGGED), x);
+}
+
 GateRef Stub::CastInt64ToFloat64(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_INT64_TO_FLOAT64), x);
@@ -1727,13 +1727,14 @@ void Stub::SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc)
 void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                         GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format)
 {
-    GateRef opcode = Load(MachineType::UINT8, pc);
+    GateRef newPc = PtrAdd(pc, format);
+    GateRef opcode = Load(MachineType::UINT8, newPc);
     GateRef opcodeOffset = ArchRelatePtrMul(
         ChangeInt32ToUintPtr(ZExtInt8ToInt32(opcode)), GetArchRelatePointerSize());
     StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result = env_.GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset, depend,
-        {glue, PtrAdd(pc, format), sp, constpool, profileTypeInfo, acc, hotnessCounter});
+        {glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
     env_.GetCurrentLabel()->SetDepend(result);
     Return();
 }

@@ -150,7 +150,7 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(MachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -226,7 +226,7 @@ void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(MachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -317,7 +317,7 @@ void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(MachineType::TAGGED));
     Bind(&xNotIntOryNotInt);
     doubleX = DoubleSub(*doubleX, *doubleY);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -364,7 +364,7 @@ void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(MachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -426,7 +426,7 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(MachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -560,7 +560,7 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
             }
         }
         Bind(&xNotNumberOryNotNumber);
-        Return(GetHoleConstant(MachineType::UINT64));
+        Return(GetHoleConstant(MachineType::TAGGED));
         Label yIfInt(env);
         Label yIfNotInt(env);
         Bind(&xIsNumberAndyIsNumber);
@@ -1247,8 +1247,8 @@ void AsmInterpreterEntryStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef glue = PtrArgument(0);
     GateRef pc = PtrArgument(1);
     GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
-    GateRef constpool = TaggedArgument(3); /* 3 : 4th parameter is value */
-    GateRef profileTypeInfo = TaggedArgument(4); /* 4 : 5rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
     GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 

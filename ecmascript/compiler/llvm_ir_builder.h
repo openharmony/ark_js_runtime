@@ -200,7 +200,8 @@ private:
     V(IntLsl, (GateRef gate, GateRef e1, GateRef e2)) \
     V(IntMod, (GateRef gate, GateRef e1, GateRef e2)) \
     V(FloatMod, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))
+    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1)) \
+    V(ChangeInt64ToTagged, (GateRef gate, GateRef e1))
 
 class LLVMIRBuilder {
 public:
