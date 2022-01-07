@@ -178,8 +178,8 @@ void ConcurrentSweeper::FillSweptRegion(MemSpaceType type)
 void ConcurrentSweeper::FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart,
                                       uintptr_t freeEnd, bool isMain)
 {
-    allocator.Free(freeStart, freeEnd, isMain);
     heap_->ClearSlotsRange(current, freeStart, freeEnd);
+    allocator.Free(freeStart, freeEnd, isMain);
 }
 
 void ConcurrentSweeper::AddRegion(MemSpaceType type, Region *region)

@@ -283,9 +283,9 @@ public:
         return memController_;
     }
 
-    void SetOldSpaceAllocLimit(size_t limit)
+    size_t GetOldSpaceAllocLimit()
     {
-        oldSpaceAllocLimit_ = limit;
+        return oldSpaceAllocLimit_;
     }
 
     inline void ResetAppStartup();

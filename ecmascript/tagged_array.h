@@ -96,7 +96,7 @@ public:
 
     static inline bool ShouldTrim(JSThread *thread, array_size_t oldLength, array_size_t newLength)
     {
-        return (oldLength - newLength > MAX_END_UNUSED) && thread->IsNotBeginMark();
+        return (oldLength - newLength > MAX_END_UNUSED);
     }
     inline void Trim(JSThread *thread, array_size_t newLength);
     void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
