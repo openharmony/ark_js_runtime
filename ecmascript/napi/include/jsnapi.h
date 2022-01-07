@@ -750,6 +750,10 @@ public:
         enableCpuprofiler_ = value;
     }
 
+    void SetArkProperties(int prop) {
+        arkProperties_ = prop;
+    }
+
 private:
     std::string GetGcType() const
     {
@@ -818,6 +822,11 @@ private:
         return enableCpuprofiler_;
     }
 
+    int GetArkProperties() const
+    {
+        return arkProperties_;
+    }
+
     GC_TYPE gcType_ = GC_TYPE::EPSILON;
     LOG_LEVEL logLevel_ = LOG_LEVEL::DEBUG;
     uint32_t gcPoolSize_ = DEFAULT_GC_POOL_SIZE;
@@ -825,6 +834,7 @@ private:
     std::string debuggerLibraryPath_ {};
     bool enableArkTools_ {false};
     bool enableCpuprofiler_ {false};
+    int arkProperties_ {-1};
     friend JSNApi;
 };
 

@@ -31,6 +31,9 @@
 
 #define ECMA_GC_LOG() LOG(DEBUG, ECMASCRIPT) << " ecmascript gc log: "
 
+#define OPTIONAL_LOG(ecmaVM, level, component) \
+    LOG_IF(ecmaVM->IsOptionalLogEnabled(), level, component)
+
 /* Note: We can't statically decide the element type is a primitive or heap object, especially for */
 /*       dynamically-typed languages like JavaScript. So we simply skip the read-barrier.          */
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
