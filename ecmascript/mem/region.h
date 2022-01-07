@@ -25,6 +25,7 @@ using RangeBitmap = mem::MemBitmap<static_cast<size_t>(ecmascript::MemAlignment:
 
 namespace ecmascript {
 class Space;
+class Heap;
 class RememberedSet;
 class WorkerHelper;
 
@@ -46,8 +47,8 @@ enum RegionFlags {
 
 class Region {
 public:
-    Region(Space *space, uintptr_t allocateBase, uintptr_t begin, uintptr_t end)
-        : space_(space),
+    Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin, uintptr_t end)
+        : space_(space), heap_(heap),
           flags_(0),
           allocateBase_(allocateBase),
           // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -108,14 +109,11 @@ public:
         return end_ - begin_;
     }
 
-    Space *GetSpace() const
-    {
-        return space_;
-    }
+    inline void SetSpace(Space *space);
 
-    void SetSpace(Space *space)
+    Heap *GetHeap() const
     {
-        space_ = space;
+        return heap_;
     }
 
     void ResetFlag()
@@ -331,6 +329,7 @@ public:
 private:
     static constexpr double MOST_OBJECT_ALIVE_THRESHOLD_PERCENT = 0.8;
     Space *space_;
+    Heap *heap_;
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now
     uintptr_t allocateBase_;
     uintptr_t begin_;

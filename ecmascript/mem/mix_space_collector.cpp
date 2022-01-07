@@ -42,8 +42,9 @@ void MixSpaceCollector::RunPhases()
     concurrentMark_ = heap_->CheckConcurrentMark(thread);
     InitializePhase();
     MarkingPhase();
-    SweepPhases();
     EvacuaPhases();
+    SweepPhases();
+    heap_->GetEvacuation()->Finalize();
     FinishPhase();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticOldCollector(
         clockScope.GetPauseTime(), freeSize_, oldSpaceCommitSize_, nonMoveSpaceCommitSize_);

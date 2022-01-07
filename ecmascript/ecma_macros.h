@@ -81,6 +81,10 @@
         } else {                                                                                              \
             Barriers::SetDynPrimitive<JSTaggedType>(this, offset, value.GetRawData());                        \
         }                                                                                                     \
+    }                                                                                                         \
+    void Set##name(JSTaggedValue value)                                                                       \
+    {                                                                                                         \
+        Barriers::SetDynPrimitive<JSTaggedType>(this, offset, value.GetRawData());                             \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
