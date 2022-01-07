@@ -67,7 +67,7 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByValue, 5)          \
     V(TryStoreICByName, 5)          \
     V(TryStoreICByValue, 6)         \
-    V(AsmInterpreterEntry, 7)
+    INTERPRETER_STUB_HELPER_LIST(V) 
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \

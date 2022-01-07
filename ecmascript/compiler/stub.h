@@ -546,7 +546,6 @@ public:
     inline GateRef TaggedIsFalse(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
-    inline GateRef Int64BuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
     inline GateRef TaggedTrue();
@@ -715,6 +714,7 @@ public:
     inline GateRef ChangeInt32ToFloat64(GateRef x);
     inline GateRef ChangeFloat64ToInt32(GateRef x);
     inline GateRef ChangeTaggedPointerToInt64(GateRef x);
+    inline GateRef ChangeInt64ToTagged(GateRef x);
     inline GateRef CastInt64ToFloat64(GateRef x);
     inline GateRef SExtInt32ToInt64(GateRef x);
     inline GateRef SExtInt1ToInt64(GateRef x);

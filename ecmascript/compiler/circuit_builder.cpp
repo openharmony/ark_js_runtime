@@ -297,6 +297,11 @@ GateRef CircuitBuilder::NewArithMeticGate(OpCode opcode, GateRef left, GateRef r
     return circuit_->NewGate(opcode, 0, { left, right }, type);
 }
 
+GateRef CircuitBuilder::NewNumberGate(OpCode opcode, GateRef value)
+{
+    return circuit_->NewGate(opcode, 0, { value }, TypeCode::JS_NUMBER);
+}
+
 GateRef CircuitBuilder::NewArithMeticGate(OpCode opcode, GateRef value)
 {
     return circuit_->NewGate(opcode, 0, { value }, TypeCode::NOTYPE);
