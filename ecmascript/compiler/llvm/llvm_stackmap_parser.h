@@ -199,11 +199,9 @@ public:
         llvmStackMap_.Print();
     }
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
-    bool VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
-                              const RootRangeVisitor &v1, ChunkMap<DerivedDataKey, uintptr_t> *data,
-                              [[maybe_unused]] bool isVerifying) const;
-    bool VisitStackMapSlots(OptLeaveFrame *frame,
-                            const RootVisitor &v0, const RootRangeVisitor &v1,
+    bool VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp, std::set<uintptr_t> &baseSet,
+                            ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const;
+    bool VisitStackMapSlots(OptLeaveFrame *frame, std::set<uintptr_t> &baseSet,
                             ChunkMap<DerivedDataKey, uintptr_t> *data,
                             [[maybe_unused]] bool isVerifying) const;
 
