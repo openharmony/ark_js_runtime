@@ -124,7 +124,7 @@ private:
     const EcmaVM *ecmaVm_ {nullptr};
     std::unique_ptr<JSPtHooks> hooks_ {nullptr};
     JSDebugger *debugger_ {nullptr};
-    CMap<const panda_file::File *, std::unique_ptr<PtJSExtractor>> extractors_ {};
+    CMap<const std::string, std::unique_ptr<PtJSExtractor>> extractors_ {};
     CMap<CString, std::unique_ptr<PtScript>> scripts_ {};
     CMap<uint32_t, Global<JSValueRef>> propertiesPair_ {};
     uint32_t curObjectId_ {0};
