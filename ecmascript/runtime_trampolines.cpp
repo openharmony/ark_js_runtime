@@ -388,4 +388,14 @@ uintptr_t RuntimeTrampolines::JumpToCInterpreter(uintptr_t argGlue, uintptr_t pc
     InterpretedFrame *frame = GET_FRAME(sp);
     return reinterpret_cast<uintptr_t>(frame->pc);
 }
+
+JSTaggedType RuntimeTrampolines::IncDyn(uintptr_t argGlue, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value));
+    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, valueHandle);
+    return (++number).GetRawData();
+}
 }  // namespace panda::ecmascript

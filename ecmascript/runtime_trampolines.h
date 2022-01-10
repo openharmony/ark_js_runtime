@@ -79,6 +79,7 @@ public:
     static uintptr_t JumpToCInterpreter(uintptr_t argGlue, uintptr_t pc, uintptr_t sp,
                                            uint64_t constpool, uint64_t profileTypeInfo, uint64_t acc,
                                            int32_t hotnessCounter);
+    static JSTaggedType IncDyn(uintptr_t argGlue, JSTaggedType value);
 };
 }  // namespace panda::ecmascript
 #endif

@@ -46,7 +46,8 @@ namespace panda::ecmascript::kungfu {
     V(UpdateLayOutAndAddTransition, 5)      \
     V(NoticeThroughChainAndRefreshUser, 3)  \
     V(JumpToCInterpreter, 7)                \
-    V(DebugPrint, 1)
+    V(DebugPrint, 1)                        \
+    V(IncDyn, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

@@ -263,10 +263,10 @@ OpCode CircuitBuilder::GetSelectOpCodeFromMachineType(MachineType type)
         case MachineType::UINT32:
             return OpCode(OpCode::VALUE_SELECTOR_INT32);
         case MachineType::NATIVE_POINTER:
-            return OpCode(OpCode::VALUE_SELECTOR_ANYVALUE);
-        case MachineType::UINT64:
         case MachineType::TAGGED:
         case MachineType::TAGGED_POINTER:
+            return OpCode(OpCode::VALUE_SELECTOR_ANYVALUE);
+        case MachineType::UINT64:
             return OpCode(OpCode::VALUE_SELECTOR_INT64);
         case MachineType::FLOAT32:
             return OpCode(OpCode::VALUE_SELECTOR_FLOAT32);

@@ -726,6 +726,21 @@ CALL_STUB_INIT_DESCRIPTOR(DebugPrint)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(IncDyn)
+{
+    // 2 : 2 input parameters
+    StubDescriptor incDyn("IncDyn", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = incDyn;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 #ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {
