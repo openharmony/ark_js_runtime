@@ -22,7 +22,7 @@ void HandleLdnanPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
     
     acc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc.Value(), hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
 }
 
 void HandleLdInfinityPrefStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -36,9 +36,9 @@ void HandleLdInfinityPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
     DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
-    
+
     acc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::POSITIVE_INFINITY));
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc.Value(), hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
 }
 
 void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -52,16 +52,16 @@ void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
     DEFVARIABLE(profileTypeInfo, MachineType::TAGGED_POINTER, TaggedPointerArgument(4)); /* 4: 5th parameter is value */
     DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
-    
+
     auto stubDescriptor = GET_STUBDESCRIPTOR(JumpToCInterpreter);
     pc = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(JumpToCInterpreter)), {
-        glue, pc.Value(), sp.Value(), constpool.Value(), profileTypeInfo.Value(), acc.Value(), hotnessCounter
+        glue, *pc, *sp, *constpool, *profileTypeInfo, *acc, hotnessCounter
     });
     Label shouldReturn(env);
     Label shouldContinue(env);
-    
+
     // if (pc == nullptr) return
-    Branch(PtrEqual(pc.Value(), GetArchRelateConstant(0)), &shouldReturn, &shouldContinue);
+    Branch(PtrEqual(*pc, GetArchRelateConstant(0)), &shouldReturn, &shouldContinue);
     Bind(&shouldReturn);
     {
         Return();
@@ -75,7 +75,7 @@ void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
         sp = Load(MachineType::NATIVE_POINTER, glue, spOffset);
 
         GateRef frameSize = GetArchRelateConstant(cfg->GetGlueOffset(JSThread::GlueID::FRAME_STATE_SIZE));
-        GateRef frame = PtrSub(sp.Value(), frameSize);
+        GateRef frame = PtrSub(*sp, frameSize);
 
         GateRef profileOffset = GetArchRelateConstant(cfg->GetGlueOffset(JSThread::GlueID::GLUE_FRAME_PROFILE));
         GateRef constpoolOffset = GetArchRelateConstant(cfg->GetGlueOffset(JSThread::GlueID::GLUE_FRAME_CONSTPOOL));
@@ -85,7 +85,7 @@ void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
         acc = Load(MachineType::TAGGED, frame, accOffset);
     }
     // do not update hotnessCounter now
-    Dispatch(glue, pc.Value(), sp.Value(), constpool.Value(), profileTypeInfo.Value(), acc.Value(),
+    Dispatch(glue, *pc, *sp, *constpool, *profileTypeInfo, *acc,
              hotnessCounter, GetArchRelateConstant(0));
 }
 
@@ -103,7 +103,7 @@ void HandleLdaDynStub::GenerateCircuit(const CompilationConfig *cfg)
 
     GateRef vsrc = ReadInst8(pc, GetInt32Constant(1));
     acc = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc.Value(), hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
 }
 
 void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -229,5 +229,64 @@ void HandleLdLexVarDynPrefImm16Imm16Stub::GenerateCircuit(const CompilationConfi
     acc = variable;
     // do not update hotnessCounter now
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+}
+
+void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8(pc, GetInt32Constant(2));
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    Label valueIsInt(env);
+    Label valueNotInt(env);
+    Label accDispatch(env);
+    Branch(TaggedIsInt(value), &valueIsInt, &valueNotInt);
+    Bind(&valueIsInt);
+    {
+        GateRef valueInt = TaggedCastToInt32(value);
+        Label valueOverflow(env);
+        Label valueNoOverflow(env);
+        Branch(Word32Equal(valueInt, GetInt32Constant(INT32_MAX)), &valueOverflow, &valueNoOverflow);
+        Bind(&valueOverflow);
+        {
+            GateRef valueDoubleFromInt = ChangeInt32ToFloat64(valueInt);
+            acc = DoubleBuildTaggedWithNoGC(DoubleAdd(valueDoubleFromInt, GetDoubleConstant(1.0)));
+            Jump(&accDispatch);
+        }
+        Bind(&valueNoOverflow);
+        {
+            acc = IntBuildTaggedWithNoGC(Int32Add(valueInt, GetInt32Constant(1)));
+            Jump(&accDispatch);
+        }
+    }
+    Bind(&valueNotInt);
+    Label valueIsDouble(env);
+    Label valueNotDouble(env);
+    Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
+    Bind(&valueIsDouble);
+    {
+        GateRef valueDouble = TaggedCastToDouble(value);
+        acc = DoubleBuildTaggedWithNoGC(DoubleAdd(valueDouble, GetDoubleConstant(1.0)));
+        Jump(&accDispatch);
+    }
+    Bind(&valueNotDouble);
+    {
+        // slow path
+        StubDescriptor *incDyn = GET_STUBDESCRIPTOR(IncDyn);
+        acc = CallRuntime(incDyn, glue, GetWord64Constant(FAST_STUB_ID(IncDyn)),
+                            {glue, value});
+        Jump(&accDispatch);
+    }
+
+    Bind(&accDispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(3));
 }
 }  // namespace panda::ecmascript::kungfu

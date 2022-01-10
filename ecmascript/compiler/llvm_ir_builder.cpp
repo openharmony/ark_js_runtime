@@ -114,6 +114,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::VALUE_SELECTOR_INT1, &LLVMIRBuilder::HandlePhi},
         {OpCode::VALUE_SELECTOR_INT32, &LLVMIRBuilder::HandlePhi},
         {OpCode::VALUE_SELECTOR_INT64, &LLVMIRBuilder::HandlePhi},
+        {OpCode::VALUE_SELECTOR_ANYVALUE, &LLVMIRBuilder::HandlePhi},
         {OpCode::VALUE_SELECTOR_FLOAT64, &LLVMIRBuilder::HandlePhi},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall}, {OpCode::INT1_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleCall}, {OpCode::INT1_CALL, &LLVMIRBuilder::HandleCall},
