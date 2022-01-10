@@ -86,7 +86,7 @@ void HandleLdaDynStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 
     GateRef vsrc = ReadInst8(pc, GetInt32Constant(1));
-    acc = GetVregValue(sp, ZExtInt8ToInt32(vsrc));
+    acc = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc.Value(), hotnessCounter, GetArchRelateConstant(2));
 }
 
@@ -103,7 +103,7 @@ void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 
     GateRef vdst = ReadInst8(pc, GetInt32Constant(1));
-    SetVregValue(glue, sp, ZExtInt8ToInt32(vdst), acc);
+    SetVregValue(glue, sp, ZExtInt8ToPtr(vdst), acc);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(2));
 }
 }  // namespace panda::ecmascript::kungfu

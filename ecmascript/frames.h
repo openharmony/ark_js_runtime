@@ -175,6 +175,23 @@ public:
     }
 };
 
+#define INTERPRETED_FRAME_OFFSET_LIST(V)                                                            \
+    V(SP, PC, sizeof(uint32_t), sizeof(uint64_t))                                                   \
+    V(CONSTPOOL, SP, sizeof(uint32_t), sizeof(uint64_t))                                            \
+    V(FUNCTION, CONSTPOOL, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())        \
+    V(PROFILETYPEINFO, FUNCTION, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())  \
+    V(ACC, PROFILETYPEINFO, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())       \
+    V(ENV, ACC, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                   \
+    V(BASE, ENV, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                  \
+
+static constexpr uint32_t INTERPRETED_FRAME_PC_OFFSET_32 = 0U;
+static constexpr uint32_t INTERPRETED_FRAME_PC_OFFSET_64 = 0U;
+#define INTERPRETED_FRAME_OFFSET_MACRO(name, lastName, lastSize32, lastSize64)                        \
+    static constexpr uint32_t INTERPRETED_FRAME_##name##_OFFSET_32 = INTERPRETED_FRAME_##lastName##_OFFSET_32 + (lastSize32); \
+    static constexpr uint32_t INTERPRETED_FRAME_##name##_OFFSET_64 = INTERPRETED_FRAME_##lastName##_OFFSET_64 + (lastSize64);
+INTERPRETED_FRAME_OFFSET_LIST(INTERPRETED_FRAME_OFFSET_MACRO)
+#undef INTERPRETED_FRAME_OFFSET_MACRO
+
 // align with 8
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedFrame {
@@ -187,9 +204,66 @@ struct InterpretedFrame {
     JSTaggedValue acc;
     JSTaggedValue env;
     InterpretedFrameBase base;
+
     static InterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<InterpretedFrame *>(sp) - 1;
+    }
+
+    static constexpr uint32_t GetSpOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return INTERPRETED_FRAME_SP_OFFSET_32;
+        }
+        return INTERPRETED_FRAME_SP_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetConstpoolOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return INTERPRETED_FRAME_CONSTPOOL_OFFSET_32;
+        }
+        return INTERPRETED_FRAME_CONSTPOOL_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetFunctionOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return INTERPRETED_FRAME_FUNCTION_OFFSET_32;
+        }
+        return INTERPRETED_FRAME_FUNCTION_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetProfileTypeInfoOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return INTERPRETED_FRAME_PROFILETYPEINFO_OFFSET_32;
+        }
+        return INTERPRETED_FRAME_PROFILETYPEINFO_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetAccOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return INTERPRETED_FRAME_ACC_OFFSET_32;
+        }
+        return INTERPRETED_FRAME_ACC_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetEnvOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return INTERPRETED_FRAME_ENV_OFFSET_32;
+        }
+        return INTERPRETED_FRAME_ENV_OFFSET_64;
+    }
+    
+    static constexpr uint32_t GetBaseOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return INTERPRETED_FRAME_BASE_OFFSET_32;
+        }
+        return INTERPRETED_FRAME_BASE_OFFSET_64;
     }
 };
  

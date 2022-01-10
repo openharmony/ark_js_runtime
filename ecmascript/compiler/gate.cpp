@@ -194,6 +194,8 @@ Properties OpCode::GetProperties() const
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
         case ZEXT_INT8_TO_INT32:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
+        case ZEXT_INT8_TO_INT64:
+            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
         case ZEXT_INT16_TO_INT32:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT16), NO_ROOT};
         case ZEXT_INT1_TO_INT64:
@@ -425,6 +427,7 @@ std::string OpCode::Str() const
         {ZEXT_INT32_TO_INT64, "ZEXT_INT32_TO_INT64"},
         {ZEXT_INT1_TO_INT32, "ZEXT_INT1_TO_INT32"},
         {ZEXT_INT8_TO_INT32, "ZEXT_INT8_TO_INT32"},
+        {ZEXT_INT8_TO_INT64, "ZEXT_INT8_TO_INT64"},
         {ZEXT_INT16_TO_INT32, "ZEXT_INT16_TO_INT32"},
         {ZEXT_INT1_TO_INT64, "ZEXT_INT1_TO_INT64"},
         {SEXT_INT32_TO_INT64, "SEXT_INT32_TO_INT64"},

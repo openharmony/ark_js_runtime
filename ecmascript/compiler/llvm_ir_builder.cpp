@@ -128,6 +128,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::FLOAT64_CONSTANT, &LLVMIRBuilder::HandleFloat64Constant},
         {OpCode::ZEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT8_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_INT8_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT16_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT32_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT1_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
