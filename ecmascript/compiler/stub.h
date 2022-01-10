@@ -453,7 +453,7 @@ public:
     inline GateRef Int32Argument(size_t index);
     inline GateRef Int64Argument(size_t index);
     inline GateRef TaggedArgument(size_t index);
-    inline GateRef TaggedPointerArgument(size_t index, TypeCode type = TypeCode::NOTYPE);
+    inline GateRef TaggedPointerArgument(size_t index, TypeCode type = TypeCode::TAGGED_POINTER);
     inline GateRef PtrArgument(size_t index, TypeCode type = TypeCode::NOTYPE);
     inline GateRef Float32Argument(size_t index);
     inline GateRef Float64Argument(size_t index);
@@ -529,6 +529,7 @@ public:
     inline GateRef TaggedIsHole(GateRef x);
     inline GateRef TaggedIsNotHole(GateRef x);
     inline GateRef TaggedIsUndefined(GateRef x);
+    inline GateRef TaggedIsException(GateRef x);
     inline GateRef TaggedIsSpecial(GateRef x);
     inline GateRef TaggedIsHeapObject(GateRef x);
     inline GateRef TaggedIsPropertyBox(GateRef x);
@@ -723,6 +724,7 @@ public:
     inline GateRef ZExtInt1ToInt64(GateRef x);
     inline GateRef ZExtInt1ToInt32(GateRef x);
     inline GateRef ZExtInt8ToInt32(GateRef x);
+    inline GateRef ZExtInt8ToPtr(GateRef x);
     inline GateRef ZExtInt16ToInt32(GateRef x);
     inline GateRef TruncInt64ToInt32(GateRef x);
     inline GateRef TruncInt64ToInt1(GateRef x);
@@ -749,11 +751,23 @@ public:
     inline GateRef ReadInst8(GateRef pc, GateRef offset);
     inline GateRef MoveAndReadInst8(GateRef pc, GateRef currentInst, GateRef offset);
     inline GateRef ReadInst16(GateRef pc, GateRef offset);
-    inline GateRef GetFrame(GateRef CurrentSp);
+    inline GateRef GetFrame(GateRef frame);
+    inline GateRef GetPcFromFrame(GateRef frame);
+    inline GateRef GetSpFromFrame(GateRef frame);
+    inline GateRef GetConstpoolFromFrame(GateRef frame);
+    inline GateRef GetFunctionFromFrame(GateRef frame);
+    inline GateRef GetProfileTypeInfoFromFrame(GateRef frame);
+    inline GateRef GetAccFromFrame(GateRef frame);
+    inline GateRef GetEnvFromFrame(GateRef frame);
+    inline GateRef ReadInst32_1(GateRef pc);
+    // inline GateRef GetBaseFromFrame(GateRef frame);
     inline void SavePc(GateRef glue, GateRef CurrentSp, GateRef pc);
+    inline GateRef LoadAccFromSp(GateRef glue, GateRef CurrentSp);
     inline void SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc);
     inline void Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
+    inline void DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
+                             GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
 
 private:
     Environment env_;

@@ -591,6 +591,11 @@ GateRef Stub::TaggedIsUndefined(GateRef x)
     return Word64Equal(x, GetWord64Constant(JSTaggedValue::VALUE_UNDEFINED));
 }
 
+GateRef Stub::TaggedIsException(GateRef x)
+{
+    return Word64Equal(x, GetWord64Constant(JSTaggedValue::VALUE_EXCEPTION));
+}
+
 GateRef Stub::TaggedIsSpecial(GateRef x)
 {
     return TruncInt32ToInt1(Word32And(
@@ -1590,6 +1595,14 @@ GateRef Stub::ZExtInt8ToInt32(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT32), x);
 }
 
+GateRef Stub::ZExtInt8ToPtr(GateRef x)
+{
+    if (env_.IsArm32()) {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT32), x);
+    }
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT64), x);
+}
+
 GateRef Stub::ZExtInt16ToInt32(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT16_TO_INT32), x);
@@ -1696,12 +1709,12 @@ void Stub::UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, Gate
 
 void Stub::SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val)
 {
-    Store(MachineType::UINT64, glue, sp, Int32Mul(GetInt32Constant(sizeof(JSTaggedType)), idx), val);
+    Store(MachineType::UINT64, glue, sp, ArchRelatePtrMul(GetArchRelateConstant(sizeof(JSTaggedType)), idx), val);
 }
 
 GateRef Stub::GetVregValue(GateRef sp, GateRef idx)
 {
-    return Load(MachineType::TAGGED, sp, Int32Mul(GetInt32Constant(sizeof(JSTaggedType)), idx));
+    return Load(MachineType::TAGGED, sp, ArchRelatePtrMul(GetArchRelateConstant(sizeof(JSTaggedType)), idx));
 }
 
 GateRef Stub::ReadInst8(GateRef pc, GateRef offset)
@@ -1711,17 +1724,68 @@ GateRef Stub::ReadInst8(GateRef pc, GateRef offset)
 
 GateRef Stub::GetFrame(GateRef CurrentSp)
 {
-    return Int64Sub(CurrentSp, GetWord64Constant(sizeof(InterpretedFrame)));
+    return ArchRelateSub(CurrentSp, GetArchRelateConstant(sizeof(InterpretedFrame)));
+}
+
+GateRef Stub::GetPcFromFrame(GateRef frame)
+{
+    return Load(MachineType::NATIVE_POINTER, frame, GetArchRelateConstant(0));
+}
+
+GateRef Stub::GetSpFromFrame(GateRef frame)
+{
+    return Load(MachineType::NATIVE_POINTER, frame, GetArchRelateConstant(InterpretedFrame::GetSpOffset(env_.IsArm32())));
+}
+
+GateRef Stub::GetConstpoolFromFrame(GateRef frame)
+{
+    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetConstpoolOffset(env_.IsArm32())));
+}
+
+GateRef Stub::GetFunctionFromFrame(GateRef frame)
+{
+    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetFunctionOffset(env_.IsArm32())));
+}
+
+GateRef Stub::GetProfileTypeInfoFromFrame(GateRef frame)
+{
+    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetProfileTypeInfoOffset(env_.IsArm32())));
+}
+
+GateRef Stub::GetAccFromFrame(GateRef frame)
+{
+    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetAccOffset(env_.IsArm32())));
+}
+
+GateRef Stub::GetEnvFromFrame(GateRef frame)
+{
+    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetEnvOffset(env_.IsArm32())));
+}
+
+GateRef Stub::LoadAccFromSp(GateRef glue, GateRef CurrentSp)
+{
+    return Load(MachineType::TAGGED, CurrentSp, GetArchRelateConstant(InterpretedFrame::GetAccOffset(env_.IsArm32())));
 }
 
 void Stub::SavePc(GateRef glue, GateRef CurrentSp, GateRef pc)
 {
-    Store(MachineType::NATIVE_POINTER, glue, GetFrame(CurrentSp), GetWord64Constant(0), pc);
+    Store(MachineType::NATIVE_POINTER, glue, GetFrame(CurrentSp), GetArchRelateConstant(0), pc);
 }
 
 void Stub::SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc)
 {
-    Store(MachineType::NATIVE_POINTER, glue, GetFrame(CurrentSp), GetWord64Constant(0), acc);
+    Store(MachineType::UINT64, glue, GetFrame(CurrentSp), GetArchRelateConstant(InterpretedFrame::GetAccOffset(env_.IsArm32())), acc);
+}
+
+GateRef Stub::ReadInst32_1(GateRef pc)
+{
+    GateRef currentInst = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(5)));
+    GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
+    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(4))));
+    GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
+    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3))));
+    GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
+    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(2))));
 }
 
 void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
@@ -1731,6 +1795,20 @@ void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
     GateRef opcode = Load(MachineType::UINT8, newPc);
     GateRef opcodeOffset = ArchRelatePtrMul(
         ChangeInt32ToUintPtr(ZExtInt8ToInt32(opcode)), GetArchRelatePointerSize());
+    StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    GateRef result = env_.GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset, depend,
+        {glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
+    env_.GetCurrentLabel()->SetDepend(result);
+    Return();
+}
+
+void Stub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
+                        GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format)
+{
+    GateRef newPc = PtrAdd(pc, format);
+    GateRef opcodeOffset = ArchRelatePtrMul(
+        GetArchRelateConstant(EcmaOpcode::LAST_OPCODE), GetArchRelatePointerSize());
     StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result = env_.GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset, depend,
