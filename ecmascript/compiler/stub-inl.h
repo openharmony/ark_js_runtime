@@ -1694,14 +1694,14 @@ void Stub::UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, Gate
     SetValueToTaggedArray(MachineType::TAGGED, glue, elements, valueIndex, value);
 }
 
-void Stub::SetVreg(GateRef glue, GateRef sp, GateRef idx, GateRef val)
+void Stub::SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val)
 {
-    Store(MachineType::UINT64, glue, sp, Int64Mul(GetWord64Constant(sizeof(JSTaggedType)), idx), val);
+    Store(MachineType::UINT64, glue, sp, Int32Mul(GetInt32Constant(sizeof(JSTaggedType)), idx), val);
 }
 
 GateRef Stub::GetVregValue(GateRef sp, GateRef idx)
 {
-    return Load(MachineType::UINT64, sp, Int64Mul(GetWord64Constant(sizeof(JSTaggedType)), idx));
+    return Load(MachineType::TAGGED, sp, Int32Mul(GetInt32Constant(sizeof(JSTaggedType)), idx));
 }
 
 GateRef Stub::ReadInst8(GateRef pc, GateRef offset)

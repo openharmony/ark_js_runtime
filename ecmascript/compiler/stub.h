@@ -744,7 +744,7 @@ public:
 
     GateRef SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef key,
                                GateRef value); // Do not crawl the prototype chain
-    inline void SetVreg(GateRef glue, GateRef sp, GateRef idx, GateRef val);
+    inline void SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val);
     inline GateRef GetVregValue(GateRef sp, GateRef idx);
     inline GateRef ReadInst8(GateRef pc, GateRef offset);
     inline GateRef MoveAndReadInst8(GateRef pc, GateRef currentInst, GateRef offset);
