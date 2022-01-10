@@ -72,4 +72,38 @@ void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
     Dispatch(glue, pc.Value(), sp.Value(), constpool.Value(), profileTypeInfo.Value(), acc.Value(),
              hotnessCounter, GetArchRelateConstant(0));
 }
+
+void HandleLdaDynStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef vsrc = ReadInst8(pc, GetInt32Constant(1));
+    acc = GetVregValue(sp, ZExtInt8ToInt32(vsrc));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc.Value(), hotnessCounter, GetArchRelateConstant(2));
+}
+
+void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef vdst = ReadInst8(pc, GetInt32Constant(1));
+    SetVregValue(glue, sp, ZExtInt8ToInt32(vdst), acc);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(2));
+}
 }  // namespace panda::ecmascript::kungfu
