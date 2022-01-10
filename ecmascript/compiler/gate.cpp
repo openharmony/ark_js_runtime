@@ -188,6 +188,8 @@ Properties OpCode::GetProperties() const
             return {FLOAT32, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
         case FLOAT64_CONSTANT:
             return {FLOAT64, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
+        case ZEXT_INT8_TO_INT16:
+            return {INT16, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
         case ZEXT_INT32_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
         case ZEXT_INT1_TO_INT32:
@@ -216,6 +218,12 @@ Properties OpCode::GetProperties() const
             return {INT1, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
         case TRUNC_INT32_TO_INT1:
             return {INT1, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
+        case INT8_AND:
+        case INT8_LSR:
+            return {INT8, NO_STATE, NO_DEPEND, VALUE(INT8, INT8), NO_ROOT};
+        case INT16_ADD:
+        case INT16_LSL:
+            return {INT16, NO_STATE, NO_DEPEND, VALUE(INT16, INT16), NO_ROOT};
         case INT32_REV:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
         case INT32_ADD:
@@ -424,6 +432,7 @@ std::string OpCode::Str() const
         {INT64_CONSTANT, "INT64_CONSTANT"},
         {FLOAT32_CONSTANT, "FLOAT32_CONSTANT"},
         {FLOAT64_CONSTANT, "FLOAT64_CONSTANT"},
+        {ZEXT_INT8_TO_INT16, "ZEXT_INT8_TO_INT16"},
         {ZEXT_INT32_TO_INT64, "ZEXT_INT32_TO_INT64"},
         {ZEXT_INT1_TO_INT32, "ZEXT_INT1_TO_INT32"},
         {ZEXT_INT8_TO_INT32, "ZEXT_INT8_TO_INT32"},
@@ -438,6 +447,10 @@ std::string OpCode::Str() const
         {TRUNC_INT64_TO_INT32, "TRUNC_INT64_TO_INT32"},
         {TRUNC_INT64_TO_INT1, "TRUNC_INT64_TO_INT1"},
         {TRUNC_INT32_TO_INT1, "TRUNC_INT32_TO_INT1"},
+        {INT8_LSR, "INT8_LSR"},
+        {INT8_AND, "INT8_AND"},
+        {INT16_ADD, "INT16_ADD"},
+        {INT16_LSL, "INT16_LSL"},
         {INT32_REV, "INT32_REV"},
         {INT32_ADD, "INT32_ADD"},
         {INT32_SUB, "INT32_SUB"},

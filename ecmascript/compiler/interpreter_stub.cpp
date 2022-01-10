@@ -122,4 +122,112 @@ void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
     SetVregValue(glue, sp, ZExtInt8ToPtr(vdst), acc);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(2));
 }
+
+void HandleLdLexVarDynPrefImm4Imm4Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is sp */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is constpool */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is profileTypeInfo */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is acc */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
+
+    GateRef level = ZExtInt8ToInt32(ReadInst4_2(pc));
+    GateRef slot = ZExtInt8ToInt32(ReadInst4_3(pc));
+
+    GateRef state = GetFrame(sp);
+    DEFVARIABLE(currentEnv, MachineType::TAGGED, GetEnvFromFrame(state));
+    DEFVARIABLE(i, MachineType::INT32, GetInt32Constant(0));
+
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label afterLoop(env);
+    Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
+    LoopBegin(&loopHead);
+    currentEnv = GetParentEnv(*currentEnv);
+    i = Int32Add(*i, GetInt32Constant(1));
+    Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
+    Bind(&loopEnd);
+    LoopEnd(&loopHead);
+    Bind(&afterLoop);
+    GateRef variable = GetPropertiesFromLexicalEnv(*currentEnv, slot);
+    acc = variable;
+    // do not update hotnessCounter now
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(3));
+}
+
+void HandleLdLexVarDynPrefImm8Imm8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is sp */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is constpool */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is profileTypeInfo */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is acc */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
+
+    GateRef level = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(2)));  // 2 : skip opcode and prefix
+    GateRef slot = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3)));  // 3: the same as above
+
+    GateRef state = GetFrame(sp);
+    DEFVARIABLE(currentEnv, MachineType::TAGGED, GetEnvFromFrame(state));
+    DEFVARIABLE(i, MachineType::INT32, GetInt32Constant(0));
+
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label afterLoop(env);
+    Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
+    LoopBegin(&loopHead);
+    currentEnv = GetParentEnv(*currentEnv);
+    i = Int32Add(*i, GetInt32Constant(1));
+    Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
+    Bind(&loopEnd);
+    LoopEnd(&loopHead);
+    Bind(&afterLoop);
+    GateRef variable = GetPropertiesFromLexicalEnv(*currentEnv, slot);
+    acc = variable;
+    // do not update hotnessCounter now
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(4));
+}
+
+void HandleLdLexVarDynPrefImm16Imm16Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is sp */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is constpool */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is profileTypeInfo */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is acc */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
+
+    GateRef level = ZExtInt16ToInt32(ReadInst16_1(pc));
+    GateRef slot = ZExtInt16ToInt32(ReadInst16_3(pc));
+
+    GateRef state = GetFrame(sp);
+    DEFVARIABLE(currentEnv, MachineType::TAGGED, GetEnvFromFrame(state));
+    DEFVARIABLE(i, MachineType::INT32, GetInt32Constant(0));
+
+    Label loopHead(env);
+    Label loopEnd(env);
+    Label afterLoop(env);
+    Branch(Int32LessThan(*i, level), &loopHead, &afterLoop);
+    LoopBegin(&loopHead);
+    currentEnv = GetParentEnv(*currentEnv);
+    i = Int32Add(*i, GetInt32Constant(1));
+    Branch(Int32LessThan(*i, level), &loopEnd, &afterLoop);
+    Bind(&loopEnd);
+    LoopEnd(&loopHead);
+    Bind(&afterLoop);
+    GateRef variable = GetPropertiesFromLexicalEnv(*currentEnv, slot);
+    acc = variable;
+    // do not update hotnessCounter now
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+}
 }  // namespace panda::ecmascript::kungfu

@@ -143,10 +143,21 @@ GateRef Stub::Environment::GetArgument(size_t index) const
 }
 
 // constant
+GateRef Stub::GetInt8Constant(int8_t value)
+{
+    return env_.GetCircuitBuilder().NewInt8Constant(value);
+}
+
+GateRef Stub::GetInt16Constant(int16_t value)
+{
+    return env_.GetCircuitBuilder().NewInt16Constant(value);
+}
+
 GateRef Stub::GetInt32Constant(int32_t value)
 {
     return env_.GetCircuitBuilder().NewIntegerConstant(value);
 }
+
 GateRef Stub::GetWord64Constant(uint64_t value)
 {
     return env_.GetCircuitBuilder().NewInteger64Constant(value);
@@ -394,6 +405,11 @@ GateRef Stub::Load(MachineType type, GateRef base)
 }
 
 // arithmetic
+GateRef Stub::Int16Add(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT16_ADD), x, y);
+}
+
 GateRef Stub::Int32Add(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_ADD), x, y);
@@ -498,6 +514,11 @@ GateRef Stub::DoubleMod(GateRef x, GateRef y)
 }
 
 // bit operation
+GateRef Stub::Word8And(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT8_AND), x, y);
+}
+
 GateRef Stub::Word32Or(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_OR), x, y);
@@ -533,6 +554,11 @@ GateRef Stub::Word64Not(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_REV), x);
 }
 
+GateRef Stub::Word16LSL(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT16_LSL), x, y);
+}
+
 GateRef Stub::Word32LSL(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_LSL), x, y);
@@ -541,6 +567,11 @@ GateRef Stub::Word32LSL(GateRef x, GateRef y)
 GateRef Stub::Word64LSL(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_LSL), x, y);
+}
+
+GateRef Stub::Word8LSR(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT8_LSR), x, y);
 }
 
 GateRef Stub::Word32LSR(GateRef x, GateRef y)
@@ -1575,6 +1606,11 @@ GateRef Stub::SExtInt1ToInt32(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT1_TO_INT32), x);
 }
 
+GateRef Stub::ZExtInt8ToInt16(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT16), x);
+}
+
 GateRef Stub::ZExtInt32ToInt64(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT32_TO_INT64), x);
@@ -1722,6 +1758,72 @@ GateRef Stub::ReadInst8(GateRef pc, GateRef offset)
     return Load(MachineType::UINT8, pc, offset);
 }
 
+GateRef Stub::ReadInst4_0(GateRef pc)
+{
+    return Word8And(Load(MachineType::UINT8, pc, GetArchRelateConstant(1)), GetInt8Constant(0xf));
+}
+
+GateRef Stub::ReadInst4_1(GateRef pc)
+{
+    return Word8And(
+        Word8LSR(Load(MachineType::UINT8, pc, GetArchRelateConstant(1)), GetInt8Constant(4)), GetInt8Constant(0xf));
+}
+
+GateRef Stub::ReadInst4_2(GateRef pc)
+{
+    return Word8And(Load(MachineType::UINT8, pc, GetArchRelateConstant(2)), GetInt8Constant(0xf));
+}
+
+GateRef Stub::ReadInst4_3(GateRef pc)
+{
+    return Word8And(
+        Word8LSR(Load(MachineType::UINT8, pc, GetArchRelateConstant(2)), GetInt8Constant(4)), GetInt8Constant(0xf));
+}
+
+GateRef Stub::ReadInst16_0(GateRef pc)
+{
+    /* 2 : skip 8 bits of opcode and 8 bits of low bits */
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(2)));
+    GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(1))));
+}
+
+GateRef Stub::ReadInst16_1(GateRef pc)
+{
+    /* 3 : skip 8 bits of opcode, 8 bits of prefix and 8 bits of low bits */
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(3)));
+    GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
+    /* 2: skip 8 bits of opcode and 8 bits of prefix */
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(2))));
+}
+
+GateRef Stub::ReadInst16_2(GateRef pc)
+{
+    /* 4 : skip 8 bits of opcode, first parameter of 16 bits and 8 bits of low bits */
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(4)));
+    GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
+    /* 3: skip 8 bits of opcode and first parameter of 16 bits */
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(3))));
+}
+
+GateRef Stub::ReadInst16_3(GateRef pc)
+{
+    /* 5 : skip 8 bits of opcode, 8 bits of prefix, first parameter of 16 bits and 8 bits of low bits */
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(5)));
+    GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
+    /* 4: skip 8 bits of opcode, 8 bits of prefix and first parameter of 16 bits */
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(4))));
+}
+
+GateRef Stub::ReadInst16_5(GateRef pc)
+{
+    /* 7 : skip 8 bits of opcode, 8 bits of prefix, first 2 parameters of 16 bits and 8 bits of low bits */
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(7)));
+    GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
+    /* 6: skip 8 bits of opcode, 8 bits of prefix and first 2 parameters of 16 bits */
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(6))));
+}
+
 GateRef Stub::GetFrame(GateRef CurrentSp)
 {
     return ArchRelateSub(CurrentSp, GetArchRelateConstant(sizeof(InterpretedFrame)));
@@ -1815,6 +1917,18 @@ void Stub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
         {glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
     env_.GetCurrentLabel()->SetDepend(result);
     Return();
+}
+
+GateRef Stub::GetParentEnv(GateRef object)
+{
+    GateRef index = GetInt32Constant(LexicalEnv::PARENT_ENV_INDEX);
+    return GetValueFromTaggedArray(MachineType::TAGGED, object, index);
+}
+
+GateRef Stub::GetPropertiesFromLexicalEnv(GateRef object, GateRef index)
+{
+    GateRef valueIndex = Int32Add(index, GetInt32Constant(LexicalEnv::RESERVED_ENV_LENGTH));
+    return GetValueFromTaggedArray(MachineType::TAGGED, object, valueIndex);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

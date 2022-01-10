@@ -6,12 +6,15 @@ namespace panda::ecmascript::kungfu {
 #define INTERPRETER_STUB_HELPER_LIST(V) \
     V(AsmInterpreterEntry, 7)
 
-#define INTERPRETER_STUB_LIST(V) \
-    V(SingleStepDebugging, 7)    \
-    V(HandleLdnanPref, 7)        \
-    V(HandleLdInfinityPref, 7)   \
-    V(HandleLdaDyn, 7)           \
-    V(HandleStaDyn, 7)
+#define INTERPRETER_STUB_LIST(V)        \
+    V(SingleStepDebugging, 7)           \
+    V(HandleLdnanPref, 7)               \
+    V(HandleLdInfinityPref, 7)          \
+    V(HandleLdaDyn, 7)                  \
+    V(HandleStaDyn, 7)                  \
+    V(HandleLdLexVarDynPrefImm4Imm4, 7) \
+    V(HandleLdLexVarDynPrefImm8Imm8, 7) \
+    V(HandleLdLexVarDynPrefImm16Imm16, 7)
 
 enum InterpreterStubId {
 #define DEF_STUB(name, counter) name##Id,

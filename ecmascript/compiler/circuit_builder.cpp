@@ -53,6 +53,18 @@ GateRef CircuitBuilder::NewSelectorGate(OpCode opCode, GateRef control, std::vec
     return circuit_->NewGate(opCode, valueCounts, inList, MachineType2TypeCode(type));
 }
 
+GateRef CircuitBuilder::NewInt8Constant(int8_t val)
+{
+    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
+    return circuit_->NewGate(OpCode(OpCode::INT8_CONSTANT), val, {constantList}, TypeCode::NOTYPE);
+}
+
+GateRef CircuitBuilder::NewInt16Constant(int16_t val)
+{
+    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
+    return circuit_->NewGate(OpCode(OpCode::INT16_CONSTANT), val, {constantList}, TypeCode::NOTYPE);
+}
+
 GateRef CircuitBuilder::NewIntegerConstant(int32_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));

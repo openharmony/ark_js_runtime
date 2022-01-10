@@ -235,6 +235,12 @@ void JSThread::LoadStubModule(const char *moduleFile)
     bytecodeHandlers_[EcmaOpcode::LDINFINITY_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdInfinityPref);
     bytecodeHandlers_[EcmaOpcode::LDA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdaDyn);
     bytecodeHandlers_[EcmaOpcode::STA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStaDyn);
+    bytecodeHandlers_[EcmaOpcode::LDLEXVARDYN_PREF_IMM4_IMM4] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdLexVarDynPrefImm4Imm4);
+    bytecodeHandlers_[EcmaOpcode::LDLEXVARDYN_PREF_IMM8_IMM8] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdLexVarDynPrefImm8Imm8);
+    bytecodeHandlers_[EcmaOpcode::LDLEXVARDYN_PREF_IMM16_IMM16] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdLexVarDynPrefImm16Imm16);
 
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
