@@ -163,6 +163,8 @@ private:
     V(Block, (int id, const OperandsVector &predecessors)) \
     V(Goto, (int block, int bbout)) \
     V(Parameter, (GateRef gate)) \
+    V(Int8Constant, (GateRef gate, int8_t value)) \
+    V(Int16Constant, (GateRef gate, int16_t value)) \
     V(Int32Constant, (GateRef gate, int32_t value)) \
     V(Int64Constant, (GateRef gate, int64_t value)) \
     V(Float64Constant, (GateRef gate, double value)) \

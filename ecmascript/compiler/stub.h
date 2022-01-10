@@ -434,6 +434,8 @@ public:
         return methodName_;
     }
     // constant
+    inline GateRef GetInt8Constant(int8_t value);
+    inline GateRef GetInt16Constant(int16_t value);
     inline GateRef GetInt32Constant(int32_t value);
     inline GateRef GetWord64Constant(uint64_t value);
     inline GateRef GetArchRelateConstant(uint64_t value);
@@ -486,6 +488,7 @@ public:
     inline GateRef Load(MachineType type, GateRef base);
     GateRef Store(MachineType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
     // arithmetic
+    inline GateRef Int16Add(GateRef x, GateRef y);
     inline GateRef Int32Add(GateRef x, GateRef y);
     inline GateRef Int64Add(GateRef x, GateRef y);
     inline GateRef DoubleAdd(GateRef x, GateRef y);
@@ -507,6 +510,8 @@ public:
     inline GateRef DoubleMod(GateRef x, GateRef y);
     GateRef Int64Div(GateRef x, GateRef y);
     // bit operation
+    inline GateRef Word8And(GateRef x, GateRef y);
+    inline GateRef Word8LSR(GateRef x, GateRef y);
     inline GateRef Word32Or(GateRef x, GateRef y);
     inline GateRef Word32And(GateRef x, GateRef y);
     inline GateRef Word32Not(GateRef x);
@@ -516,6 +521,7 @@ public:
     inline GateRef Word64And(GateRef x, GateRef y);
     inline GateRef Word64Xor(GateRef x, GateRef y);
     inline GateRef Word64Not(GateRef x);
+    inline GateRef Word16LSL(GateRef x, GateRef y);
     inline GateRef Word32LSL(GateRef x, GateRef y);
     inline GateRef Word64LSL(GateRef x, GateRef y);
     inline GateRef Word32LSR(GateRef x, GateRef y);
@@ -720,6 +726,7 @@ public:
     inline GateRef SExtInt32ToInt64(GateRef x);
     inline GateRef SExtInt1ToInt64(GateRef x);
     inline GateRef SExtInt1ToInt32(GateRef x);
+    inline GateRef ZExtInt8ToInt16(GateRef x);
     inline GateRef ZExtInt32ToInt64(GateRef x);
     inline GateRef ZExtInt1ToInt64(GateRef x);
     inline GateRef ZExtInt1ToInt32(GateRef x);
@@ -749,8 +756,16 @@ public:
     inline void SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val);
     inline GateRef GetVregValue(GateRef sp, GateRef idx);
     inline GateRef ReadInst8(GateRef pc, GateRef offset);
+    inline GateRef ReadInst4_0(GateRef pc);
+    inline GateRef ReadInst4_1(GateRef pc);
+    inline GateRef ReadInst4_2(GateRef pc);
+    inline GateRef ReadInst4_3(GateRef pc);
     inline GateRef MoveAndReadInst8(GateRef pc, GateRef currentInst, GateRef offset);
-    inline GateRef ReadInst16(GateRef pc, GateRef offset);
+    inline GateRef ReadInst16_0(GateRef pc);
+    inline GateRef ReadInst16_1(GateRef pc);
+    inline GateRef ReadInst16_2(GateRef pc);
+    inline GateRef ReadInst16_3(GateRef pc);
+    inline GateRef ReadInst16_5(GateRef pc);
     inline GateRef GetFrame(GateRef frame);
     inline GateRef GetPcFromFrame(GateRef frame);
     inline GateRef GetSpFromFrame(GateRef frame);
@@ -768,6 +783,9 @@ public:
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
     inline void DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                              GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
+
+    inline GateRef GetParentEnv(GateRef object);
+    inline GateRef GetPropertiesFromLexicalEnv(GateRef object, GateRef index);
 
 private:
     Environment env_;

@@ -122,10 +122,13 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::ANYVALUE_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::INT1_ARG, &LLVMIRBuilder::HandleParameter}, {OpCode::INT32_ARG, &LLVMIRBuilder::HandleParameter},
         {OpCode::INT64_ARG, &LLVMIRBuilder::HandleParameter},
+        {OpCode::INT8_CONSTANT, &LLVMIRBuilder::HandleInt8Constant},
+        {OpCode::INT16_CONSTANT, &LLVMIRBuilder::HandleInt16Constant},
         {OpCode::INT32_CONSTANT, &LLVMIRBuilder::HandleInt32Constant},
         {OpCode::JS_CONSTANT, &LLVMIRBuilder::HandleInt64Constant},
         {OpCode::INT64_CONSTANT, &LLVMIRBuilder::HandleInt64Constant},
         {OpCode::FLOAT64_CONSTANT, &LLVMIRBuilder::HandleFloat64Constant},
+        {OpCode::ZEXT_INT8_TO_INT16, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT8_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_INT8_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
@@ -140,6 +143,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::TRUNC_INT64_TO_INT32, &LLVMIRBuilder::HandleCastIntXToIntY},
         {OpCode::INT32_REV, &LLVMIRBuilder::HandleIntRev},
         {OpCode::INT64_REV, &LLVMIRBuilder::HandleIntRev},
+        {OpCode::INT16_ADD, &LLVMIRBuilder::HandleIntAdd},
         {OpCode::INT32_ADD, &LLVMIRBuilder::HandleIntAdd},
         {OpCode::INT64_ADD, &LLVMIRBuilder::HandleIntAdd},
         {OpCode::FLOAT64_ADD, &LLVMIRBuilder::HandleFloatAdd},
@@ -150,11 +154,13 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT64_SUB, &LLVMIRBuilder::HandleIntSub},
         {OpCode::INT32_MUL, &LLVMIRBuilder::HandleIntMul},
         {OpCode::INT64_MUL, &LLVMIRBuilder::HandleIntMul},
+        {OpCode::INT8_AND, &LLVMIRBuilder::HandleIntAnd},
         {OpCode::INT32_AND, &LLVMIRBuilder::HandleIntAnd},
         {OpCode::INT64_AND, &LLVMIRBuilder::HandleIntAnd},
         {OpCode::INT32_OR, &LLVMIRBuilder::HandleIntOr},
         {OpCode::INT64_OR, &LLVMIRBuilder::HandleIntOr},
         {OpCode::INT64_XOR, &LLVMIRBuilder::HandleIntXor},
+        {OpCode::INT8_LSR, &LLVMIRBuilder::HandleIntLsr},
         {OpCode::INT32_LSR, &LLVMIRBuilder::HandleIntLsr},
         {OpCode::INT64_LSR, &LLVMIRBuilder::HandleIntLsr},
         {OpCode::INT32_SLT, &LLVMIRBuilder::HandleIntOrUintCmp},
@@ -184,6 +190,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT64_TO_TAGGED, &LLVMIRBuilder::HandleChangeInt64ToTagged},
         {OpCode::BITCAST_INT64_TO_FLOAT64, &LLVMIRBuilder::HandleCastInt64ToDouble},
         {OpCode::BITCAST_FLOAT64_TO_INT64, &LLVMIRBuilder::HandleCastDoubleToInt},
+        {OpCode::INT16_LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::INT32_LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::INT64_LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::FLOAT64_SMOD, &LLVMIRBuilder::HandleFloatMod},
@@ -876,6 +883,18 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
     EndCurrentBlock();
 }
 
+void LLVMIRBuilder::HandleInt8Constant(GateRef gate)
+{
+    int8_t value = circuit_->GetBitField(gate);
+    VisitInt8Constant(gate, value);
+}
+
+void LLVMIRBuilder::HandleInt16Constant(GateRef gate)
+{
+    int16_t value = circuit_->GetBitField(gate);
+    VisitInt16Constant(gate, value);
+}
+
 void LLVMIRBuilder::HandleInt32Constant(GateRef gate)
 {
     int32_t value = circuit_->GetBitField(gate);
@@ -905,6 +924,22 @@ void LLVMIRBuilder::HandleSExtInt(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
     VisitSExtInt(gate, ins[0]);
+}
+
+void LLVMIRBuilder::VisitInt8Constant(GateRef gate, int8_t value)
+{
+    LLVMValueRef llvmValue = LLVMConstInt(LLVMInt8Type(), value, 0);
+    gateToLLVMMaps_[gate] = llvmValue;
+    COMPILER_LOG(DEBUG) << "VisitInt8Constant set gate:" << gate << "  value:" << value;
+    COMPILER_LOG(DEBUG) << "VisitInt8Constant " << LLVMValueToString(llvmValue);
+}
+
+void LLVMIRBuilder::VisitInt16Constant(GateRef gate, int16_t value)
+{
+    LLVMValueRef llvmValue = LLVMConstInt(LLVMInt16Type(), value, 0);
+    gateToLLVMMaps_[gate] = llvmValue;
+    COMPILER_LOG(DEBUG) << "VisitInt16Constant set gate:" << gate << "  value:" << value;
+    COMPILER_LOG(DEBUG) << "VisitInt16Constant " << LLVMValueToString(llvmValue);
 }
 
 void LLVMIRBuilder::VisitInt32Constant(GateRef gate, int32_t value)

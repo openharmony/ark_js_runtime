@@ -34,6 +34,8 @@ public:
                               MachineType type = MachineType::NONE);
     GateRef NewSelectorGate(OpCode opcode, GateRef control, std::vector<GateRef> &values, int valueCounts,
                               MachineType type = MachineType::NONE);
+    GateRef NewInt8Constant(int8_t val);
+    GateRef NewInt16Constant(int16_t val);
     GateRef NewIntegerConstant(int32_t value);
     GateRef NewInteger64Constant(int64_t value);
     GateRef NewBooleanConstant(bool value);
