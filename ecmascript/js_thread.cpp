@@ -232,6 +232,7 @@ void JSThread::LoadStubModule(const char *moduleFile)
         bytecodeHandlers_[i] = stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging);
     }
     bytecodeHandlers_[EcmaOpcode::LDNAN_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdnanPref);
+    bytecodeHandlers_[EcmaOpcode::LDINFINITY_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdInfinityPref);
     bytecodeHandlers_[EcmaOpcode::LDA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdaDyn);
     bytecodeHandlers_[EcmaOpcode::STA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStaDyn);
 
