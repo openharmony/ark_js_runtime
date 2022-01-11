@@ -245,11 +245,11 @@ void JSThread::LoadStubModule(const char *moduleFile)
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdLexVarDynPrefImm16Imm16);
     bytecodeHandlers_[EcmaOpcode::INCDYN_PREF_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleIncdynPrefV8);
     bytecodeHandlers_[EcmaOpcode::STCONSTTOGLOBALRECORD_PREF_ID32] =
-        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStconsttoglobalrecordPrefId32);
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStConstToGlobalRecordPrefId32);
     bytecodeHandlers_[EcmaOpcode::STLETTOGLOBALRECORD_PREF_ID32] =
-        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStlettoglobalrecordPrefId32);
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStLetToGlobalRecordPrefId32);
     bytecodeHandlers_[EcmaOpcode::STCLASSTOGLOBALRECORD_PREF_ID32] =
-        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStclasstoglobalrecordPrefId32);
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStClassToGlobalRecordPrefId32);
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif

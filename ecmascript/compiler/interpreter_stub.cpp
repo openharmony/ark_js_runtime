@@ -22,7 +22,8 @@ void HandleLdnanPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
     
     acc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
 void HandleLdInfinityPrefStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -38,7 +39,8 @@ void HandleLdInfinityPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 
     acc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::POSITIVE_INFINITY));
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
 void HandleLdUndefinedPrefStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -54,7 +56,8 @@ void HandleLdUndefinedPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
     
     acc = GetUndefinedConstant();
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
 void HandleLdNullPrefStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -133,9 +136,10 @@ void HandleLdaDynStub::GenerateCircuit(const CompilationConfig *cfg)
     DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 
-    GateRef vsrc = ReadInst8(pc, GetInt32Constant(1));
+    GateRef vsrc = ReadInst8_0(pc);
     acc = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::V8)));
 }
 
 void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -150,9 +154,10 @@ void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 
-    GateRef vdst = ReadInst8(pc, GetInt32Constant(1));
+    GateRef vdst = ReadInst8_0(pc);
     SetVregValue(glue, sp, ZExtInt8ToPtr(vdst), acc);
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::V8)));
 }
 
 void HandleLdLexVarDynPrefImm4Imm4Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -188,7 +193,8 @@ void HandleLdLexVarDynPrefImm4Imm4Stub::GenerateCircuit(const CompilationConfig 
     GateRef variable = GetPropertiesFromLexicalEnv(*currentEnv, slot);
     acc = variable;
     // do not update hotnessCounter now
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(3));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM4_IMM4)));
 }
 
 void HandleLdLexVarDynPrefImm8Imm8Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -203,8 +209,8 @@ void HandleLdLexVarDynPrefImm8Imm8Stub::GenerateCircuit(const CompilationConfig 
     DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is acc */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
 
-    GateRef level = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(2)));  // 2 : skip opcode and prefix
-    GateRef slot = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3)));  // 3: the same as above
+    GateRef level = ZExtInt8ToInt32(ReadInst8_1(pc));
+    GateRef slot = ZExtInt8ToInt32(ReadInst8_2(pc));
 
     GateRef state = GetFrame(sp);
     DEFVARIABLE(currentEnv, MachineType::TAGGED, GetEnvFromFrame(state));
@@ -224,7 +230,8 @@ void HandleLdLexVarDynPrefImm8Imm8Stub::GenerateCircuit(const CompilationConfig 
     GateRef variable = GetPropertiesFromLexicalEnv(*currentEnv, slot);
     acc = variable;
     // do not update hotnessCounter now
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(4));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM8_IMM8)));
 }
 
 void HandleLdLexVarDynPrefImm16Imm16Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -260,7 +267,8 @@ void HandleLdLexVarDynPrefImm16Imm16Stub::GenerateCircuit(const CompilationConfi
     GateRef variable = GetPropertiesFromLexicalEnv(*currentEnv, slot);
     acc = variable;
     // do not update hotnessCounter now
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_IMM16)));
 }
 
 void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -275,7 +283,7 @@ void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
 
-    GateRef v0 = ReadInst8(pc, GetInt32Constant(2));
+    GateRef v0 = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     Label valueIsInt(env);
     Label valueNotInt(env);
@@ -319,10 +327,11 @@ void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     }
 
     Bind(&accDispatch);
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(3));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleStconsttoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleStConstToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -349,10 +358,11 @@ void HandleStconsttoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationC
     }
     Bind(&notException);
     acc = RestoreAcc(sp);
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
 }
 
-void HandleStlettoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleStLetToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -379,10 +389,11 @@ void HandleStlettoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationCon
     }
     Bind(&notException);
     acc = RestoreAcc(sp);
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
 }
 
-void HandleStclasstoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleStClassToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -409,6 +420,7 @@ void HandleStclasstoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationC
     }
     Bind(&notException);
     acc = RestoreAcc(sp);
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
 }
 }  // namespace panda::ecmascript::kungfu
