@@ -73,7 +73,42 @@ void HandleLdNullPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
     
     acc = GetNullConstant();
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(2));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleLdTruePrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    acc = ChangeInt64ToTagged(GetWord64Constant(JSTaggedValue::VALUE_TRUE));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleLdFalsePrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    acc = ChangeInt64ToTagged(GetWord64Constant(JSTaggedValue::VALUE_FALSE));
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
 void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
