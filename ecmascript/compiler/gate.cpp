@@ -57,8 +57,6 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CIRCUIT_ROOT)};
         case RETURN:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(ANYVALUE), OpCode(RETURN_LIST)};
-        case RETURN_VOID:
-            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, NO_VALUE, OpCode(RETURN_LIST)};
         case THROW:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSValueCode()), OpCode(THROW_LIST)};
         case ORDINARY_BLOCK:
@@ -66,7 +64,7 @@ Properties OpCode::GetProperties() const
         case IF_BRANCH:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, VALUE(INT1), NO_ROOT};
         case SWITCH_BRANCH:
-            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, VALUE(INT64), NO_ROOT};
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case IF_TRUE:
         case IF_FALSE:
             return {NOVALUE, STATE(OpCode(IF_BRANCH)), NO_DEPEND, NO_VALUE, NO_ROOT};
@@ -82,24 +80,8 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, STATE(OpCode(GENERAL_STATE), OpCode(LOOP_BACK)), NO_DEPEND, NO_VALUE, NO_ROOT};
         case LOOP_BACK:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
-        case VALUE_SELECTOR_JS:
-            return {JSValueCode(), STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(JSValueCode()), NO_ROOT};
-        case VALUE_SELECTOR_INT1:
-            return {INT1, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(INT1), NO_ROOT};
-        case VALUE_SELECTOR_INT8:
-            return {INT8, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(INT8), NO_ROOT};
-        case VALUE_SELECTOR_INT16:
-            return {INT16, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(INT16), NO_ROOT};
-        case VALUE_SELECTOR_INT32:
-            return {INT32, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(INT32), NO_ROOT};
-        case VALUE_SELECTOR_INT64:
-            return {INT64, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(INT64), NO_ROOT};
-        case VALUE_SELECTOR_FLOAT32:
-            return {FLOAT32, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(FLOAT32), NO_ROOT};
-        case VALUE_SELECTOR_FLOAT64:
-            return {FLOAT64, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(FLOAT64), NO_ROOT};
-        case VALUE_SELECTOR_ANYVALUE:
-            return {ANYVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
+        case VALUE_SELECTOR:
+            return {FLEX, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, MANY_VALUE(FLEX), NO_ROOT};
         case DEPEND_SELECTOR:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), MANY_DEPEND, NO_VALUE, NO_ROOT};
         case DEPEND_RELAY:
@@ -108,184 +90,79 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, MANY_DEPEND, NO_VALUE, NO_ROOT};
         // High Level IR
         case JS_BYTECODE:
-            return {ANYVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
+            return {INT64, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
         // Middle Level IR
         case CALL:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case INT1_CALL:
-            return {INT1, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case INT8_CALL:
-            return {INT8, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case INT16_CALL:
-            return {INT16, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case INT32_CALL:
-            return {INT32, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case INT64_CALL:
-            return {INT64, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case FLOAT32_CALL:
-            return {FLOAT32, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case FLOAT64_CALL:
-            return {FLOAT64, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
-        case ANYVALUE_CALL:
-            return {ANYVALUE, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
+            return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case ALLOCA:
-            return {ANYVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ALLOCA_LIST)};
-        case INT1_ARG:
-            return {INT1, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
-        case INT8_ARG:
-            return {INT8, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
-        case INT16_ARG:
-            return {INT16, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
-        case INT32_ARG:
-            return {INT32, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
-        case INT64_ARG:
-            return {INT64, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
-        case FLOAT32_ARG:
-            return {FLOAT32, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
-        case FLOAT64_ARG:
-            return {FLOAT64, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
+            return {ARCH, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ALLOCA_LIST)};
+        case ARG:
+            return {FLEX, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(ARG_LIST)};
         case MUTABLE_DATA:
         case CONST_DATA:
-            return {ANYVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case INT1_CONSTANT:
-            return {INT1, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case INT8_CONSTANT:
-            return {INT8, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case INT16_CONSTANT:
-            return {INT16, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case INT32_CONSTANT:
-            return {INT32, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case INT64_CONSTANT:
-            return {INT64, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case FLOAT32_CONSTANT:
-            return {FLOAT32, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case FLOAT64_CONSTANT:
-            return {FLOAT64, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
-        case ZEXT_INT32_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
-        case ZEXT_INT1_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
-        case ZEXT_INT8_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
-        case ZEXT_INT16_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT16), NO_ROOT};
-        case ZEXT_INT1_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
-        case SEXT_INT32_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
-        case SEXT_INT1_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
-        case SEXT_INT8_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
-        case SEXT_INT16_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT8), NO_ROOT};
-        case SEXT_INT1_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT1), NO_ROOT};
-        case TRUNC_INT64_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
-        case TRUNC_INT64_TO_INT1:
-            return {INT1, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
-        case TRUNC_INT32_TO_INT1:
-            return {INT1, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
-        case INT32_REV:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
-        case INT32_ADD:
-        case INT32_SUB:
-        case INT32_MUL:
-        case INT32_EXP:
-        case INT32_SDIV:
-        case INT32_SMOD:
-        case INT32_UDIV:
-        case INT32_UMOD:
-        case INT32_AND:
-        case INT32_XOR:
-        case INT32_OR:
-        case INT32_LSL:
-        case INT32_LSR:
-        case INT32_ASR:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(INT32, INT32), NO_ROOT};
-        case INT32_SLT:
-        case INT32_SLE:
-        case INT32_SGT:
-        case INT32_SGE:
-        case INT32_ULT:
-        case INT32_ULE:
-        case INT32_UGT:
-        case INT32_UGE:
-        case INT32_EQ:
-        case INT32_NE:
-            return {INT1, NO_STATE, NO_DEPEND, VALUE(INT32, INT32), NO_ROOT};
-        case INT64_REV:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
-        case INT64_ADD:
-        case INT64_SUB:
-        case INT64_MUL:
-        case INT64_EXP:
-        case INT64_SDIV:
-        case INT64_SMOD:
-        case INT64_UDIV:
-        case INT64_UMOD:
-        case INT64_AND:
-        case INT64_XOR:
-        case INT64_OR:
-        case INT64_LSL:
-        case INT64_LSR:
-        case INT64_ASR:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT64, INT64), NO_ROOT};
-        case INT64_SLT:
-        case INT64_SLE:
-        case INT64_SGT:
-        case INT64_SGE:
-        case INT64_ULT:
-        case INT64_ULE:
-        case INT64_UGT:
-        case INT64_UGE:
-        case INT64_EQ:
-        case INT64_NE:
-            return {INT1, NO_STATE, NO_DEPEND, VALUE(INT64, INT64), NO_ROOT};
-        case FLOAT64_ADD:
-        case FLOAT64_SUB:
-        case FLOAT64_MUL:
-        case FLOAT64_DIV:
-        case FLOAT64_EXP:
-        case FLOAT64_SMOD:
-            return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(FLOAT64, FLOAT64), NO_ROOT};
-        case FLOAT64_EQ:
-            return {INT1, NO_STATE, NO_DEPEND, VALUE(FLOAT64, FLOAT64), NO_ROOT};
-        case INT8_LOAD:
-            return {INT8, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
-        case INT16_LOAD:
-            return {INT16, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
-        case INT32_LOAD:
-            return {INT32, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
-        case INT64_LOAD:
-            return {INT64, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
-        case FLOAT32_LOAD:
-            return {FLOAT32, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
-        case FLOAT64_LOAD:
-            return {FLOAT64, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
-        case INT8_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT8, ANYVALUE), NO_ROOT};
-        case INT16_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT16, ANYVALUE), NO_ROOT};
-        case INT32_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT32, ANYVALUE), NO_ROOT};
-        case INT64_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(INT64, ANYVALUE), NO_ROOT};
-        case FLOAT32_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT32, ANYVALUE), NO_ROOT};
-        case FLOAT64_STORE:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(FLOAT64, ANYVALUE), NO_ROOT};
-        case INT32_TO_FLOAT64:
-            return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT32), NO_ROOT};
-        case FLOAT64_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
-        case TAGGED_POINTER_TO_INT64:
+            return {ARCH, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
+        case CONSTANT:
+            return {FLEX, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
+        case ZEXT_TO_INT64:
             return {INT64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
-        case BITCAST_INT64_TO_FLOAT64:
-            return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
-        case BITCAST_FLOAT64_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(FLOAT64), NO_ROOT};
+        case ZEXT_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case SEXT_TO_INT64:
+            return {INT64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case SEXT_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case TRUNC_TO_INT32:
+            return {INT32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case TRUNC_TO_INT1:
+            return {INT1, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case REV:
+            return {FLEX, NO_STATE, NO_DEPEND, VALUE(FLEX), NO_ROOT};
+        case ADD:
+        case SUB:
+        case MUL:
+        case EXP:
+        case SDIV:
+        case SMOD:
+        case UDIV:
+        case UMOD:
+        case FDIV:
+        case FMOD:
+        case AND:
+        case XOR:
+        case OR:
+        case LSL:
+        case LSR:
+        case ASR:
+            return {FLEX, NO_STATE, NO_DEPEND, VALUE(FLEX, FLEX), NO_ROOT};
+        case SLT:
+        case SLE:
+        case SGT:
+        case SGE:
+        case ULT:
+        case ULE:
+        case UGT:
+        case UGE:
+        case FLT:
+        case FLE:
+        case FGT:
+        case FGE:
+        case EQ:
+        case NE:
+            return {INT1, NO_STATE, NO_DEPEND, VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
+        case LOAD:
+            return {FLEX, NO_STATE, ONE_DEPEND, VALUE(ARCH), NO_ROOT};
+        case STORE:
+            return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE, ARCH), NO_ROOT};
+        case TAGGED_TO_INT64:
+            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
+        case SIGNED_INT_TO_FLOAT:
+        case UNSIGNED_INT_TO_FLOAT:
+            return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case FLOAT_TO_SIGNED_INT:
+        case UNSIGNED_FLOAT_TO_INT:
+            return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case BITCAST:
+            return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         default:
             std::cerr << "Please complete OpCode properties (OpCode=" << op_ << ")" << std::endl;
             UNREACHABLE();
@@ -303,7 +180,6 @@ Properties OpCode::GetProperties() const
 std::string OpCode::Str() const
 {
     const std::map<GateOp, const char *> strMap = {
-        // SHARED
         {NOP, "NOP"},
         {CIRCUIT_ROOT, "CIRCUIT_ROOT"},
         {STATE_ENTRY, "STATE_ENTRY"},
@@ -329,134 +205,62 @@ std::string OpCode::Str() const
         {MERGE, "MERGE"},
         {LOOP_BEGIN, "LOOP_BEGIN"},
         {LOOP_BACK, "LOOP_BACK"},
-        {VALUE_SELECTOR_JS, "VALUE_SELECTOR_JS"},
-        {VALUE_SELECTOR_INT1, "VALUE_SELECTOR_INT1"},
-        {VALUE_SELECTOR_INT8, "VALUE_SELECTOR_INT8"},
-        {VALUE_SELECTOR_INT16, "VALUE_SELECTOR_INT16"},
-        {VALUE_SELECTOR_INT32, "VALUE_SELECTOR_INT32"},
-        {VALUE_SELECTOR_INT64, "VALUE_SELECTOR_INT64"},
-        {VALUE_SELECTOR_FLOAT32, "VALUE_SELECTOR_FLOAT32"},
-        {VALUE_SELECTOR_FLOAT64, "VALUE_SELECTOR_FLOAT64"},
+        {VALUE_SELECTOR, "VALUE_SELECTOR"},
         {DEPEND_SELECTOR, "DEPEND_SELECTOR"},
         {DEPEND_RELAY, "DEPEND_RELAY"},
         {DEPEND_AND, "DEPEND_AND"},
-        // High Level IR
         {JS_BYTECODE, "JS_BYTECODE"},
-        // Middle Level IR
         {CALL, "CALL"},
-        {INT1_CALL, "INT1_CALL"},
-        {INT8_CALL, "INT8_CALL"},
-        {INT16_CALL, "INT16_CALL"},
-        {INT32_CALL, "INT32_CALL"},
-        {INT64_CALL, "INT64_CALL"},
-        {FLOAT32_CALL, "FLOAT32_CALL"},
-        {FLOAT64_CALL, "FLOAT64_CALL"},
-        {ANYVALUE_CALL, "ANYVALUE_CALL"},
-        {TAGGED_POINTER_CALL, "TAGGED_POINTER_CALL"},
         {ALLOCA, "ALLOCA"},
-        {INT1_ARG, "INT1_ARG"},
-        {INT8_ARG, "INT8_ARG"},
-        {INT16_ARG, "INT16_ARG"},
-        {INT32_ARG, "INT32_ARG"},
-        {INT64_ARG, "INT64_ARG"},
-        {FLOAT32_ARG, "FLOAT32_ARG"},
-        {FLOAT64_ARG, "FLOAT64_ARG"},
+        {ARG, "ARG"},
         {MUTABLE_DATA, "MUTABLE_DATA"},
         {CONST_DATA, "CONST_DATA"},
-        {INT1_CONSTANT, "INT1_CONSTANT"},
-        {INT8_CONSTANT, "INT8_CONSTANT"},
-        {INT16_CONSTANT, "INT16_CONSTANT"},
-        {INT32_CONSTANT, "INT32_CONSTANT"},
-        {INT64_CONSTANT, "INT64_CONSTANT"},
-        {FLOAT32_CONSTANT, "FLOAT32_CONSTANT"},
-        {FLOAT64_CONSTANT, "FLOAT64_CONSTANT"},
-        {ZEXT_INT32_TO_INT64, "ZEXT_INT32_TO_INT64"},
-        {ZEXT_INT1_TO_INT32, "ZEXT_INT1_TO_INT32"},
-        {ZEXT_INT8_TO_INT32, "ZEXT_INT8_TO_INT32"},
-        {ZEXT_INT16_TO_INT32, "ZEXT_INT16_TO_INT32"},
-        {ZEXT_INT1_TO_INT64, "ZEXT_INT1_TO_INT64"},
-        {SEXT_INT32_TO_INT64, "SEXT_INT32_TO_INT64"},
-        {SEXT_INT1_TO_INT32, "SEXT_INT1_TO_INT32"},
-        {SEXT_INT8_TO_INT32, "SEXT_INT8_TO_INT32"},
-        {SEXT_INT16_TO_INT32, "SEXT_INT16_TO_INT32"},
-        {SEXT_INT1_TO_INT64, "SEXT_INT1_TO_INT64"},
-        {TRUNC_INT64_TO_INT32, "TRUNC_INT64_TO_INT32"},
-        {TRUNC_INT64_TO_INT1, "TRUNC_INT64_TO_INT1"},
-        {TRUNC_INT32_TO_INT1, "TRUNC_INT32_TO_INT1"},
-        {INT32_REV, "INT32_REV"},
-        {INT32_ADD, "INT32_ADD"},
-        {INT32_SUB, "INT32_SUB"},
-        {INT32_MUL, "INT32_MUL"},
-        {INT32_EXP, "INT32_EXP"},
-        {INT32_SDIV, "INT32_SDIV"},
-        {INT32_SMOD, "INT32_SMOD"},
-        {INT32_UDIV, "INT32_UDIV"},
-        {INT32_UMOD, "INT32_UMOD"},
-        {INT32_AND, "INT32_AND"},
-        {INT32_XOR, "INT32_XOR"},
-        {INT32_OR, "INT32_OR"},
-        {INT32_LSL, "INT32_LSL"},
-        {INT32_LSR, "INT32_LSR"},
-        {INT32_ASR, "INT32_ASR"},
-        {INT32_SLT, "INT32_SLT"},
-        {INT32_SLE, "INT32_SLE"},
-        {INT32_SGT, "INT32_SGT"},
-        {INT32_SGE, "INT32_SGE"},
-        {INT32_ULT, "INT32_ULT"},
-        {INT32_ULE, "INT32_ULE"},
-        {INT32_UGT, "INT32_UGT"},
-        {INT32_UGE, "INT32_UGE"},
-        {INT32_EQ, "INT32_EQ"},
-        {INT32_NE, "INT32_NE"},
-        {INT64_ADD, "INT64_ADD"},
-        {INT64_SUB, "INT64_SUB"},
-        {INT64_MUL, "INT64_MUL"},
-        {INT64_EXP, "INT64_EXP"},
-        {INT64_SDIV, "INT64_SDIV"},
-        {INT64_SMOD, "INT64_SMOD"},
-        {INT64_UDIV, "INT64_UDIV"},
-        {INT64_UMOD, "INT64_UMOD"},
-        {INT64_AND, "INT64_AND"},
-        {INT64_XOR, "INT64_XOR"},
-        {INT64_OR, "INT64_OR"},
-        {INT64_LSL, "INT64_LSL"},
-        {INT64_LSR, "INT64_LSR"},
-        {INT64_ASR, "INT64_ASR"},
-        {INT64_SLT, "INT64_SLT"},
-        {INT64_SLE, "INT64_SLE"},
-        {INT64_SGT, "INT64_SGT"},
-        {INT64_SGE, "INT64_SGE"},
-        {INT64_ULT, "INT64_ULT"},
-        {INT64_ULE, "INT64_ULE"},
-        {INT64_UGT, "INT64_UGT"},
-        {INT64_UGE, "INT64_UGE"},
-        {INT64_EQ, "INT64_EQ"},
-        {INT64_NE, "INT64_NE"},
-        {INT64_REV, "INT64_REV"},
-        {FLOAT64_ADD, "FLOAT64_ADD"},
-        {FLOAT64_SUB, "FLOAT64_SUB"},
-        {FLOAT64_MUL, "FLOAT64_MUL"},
-        {FLOAT64_DIV, "FLOAT64_DIV"},
-        {FLOAT64_EXP, "FLOAT64_EXP"},
-        {FLOAT64_EQ, "FLOAT64_EQ"},
-        {INT8_LOAD, "INT8_LOAD"},
-        {INT16_LOAD, "INT16_LOAD"},
-        {INT32_LOAD, "INT32_LOAD"},
-        {INT64_LOAD, "INT64_LOAD"},
-        {FLOAT32_LOAD, "FLOAT32_LOAD"},
-        {FLOAT64_LOAD, "FLOAT64_LOAD"},
-        {INT8_STORE, "INT8_STORE"},
-        {INT16_STORE, "INT16_STORE"},
-        {INT32_STORE, "INT32_STORE"},
-        {INT64_STORE, "INT64_STORE"},
-        {FLOAT32_STORE, "FLOAT32_STORE"},
-        {FLOAT64_STORE, "FLOAT64_STORE"},
-        {INT32_TO_FLOAT64, "INT32_TO_FLOAT64"},
-        {FLOAT64_TO_INT32, "FLOAT64_TO_INT32"},
-        {TAGGED_POINTER_TO_INT64, "TAGGED_POINTER_TO_INT64"},
-        {BITCAST_INT64_TO_FLOAT64, "BITCAST_INT64_TO_FLOAT64"},
-        {BITCAST_FLOAT64_TO_INT64, "BITCAST_FLOAT64_TO_INT64"},
-        {VALUE_SELECTOR_ANYVALUE, "VALUE_SELECTOR_ANYVALUE"},
+        {CONSTANT, "CONSTANT"},
+        {ZEXT_TO_INT64, "ZEXT_TO_INT64"},
+        {ZEXT_TO_INT32, "ZEXT_TO_INT32"},
+        {SEXT_TO_INT64, "SEXT_TO_INT64"},
+        {SEXT_TO_INT32, "SEXT_TO_INT32"},
+        {TRUNC_TO_INT32, "TRUNC_TO_INT32"},
+        {TRUNC_TO_INT1, "TRUNC_TO_INT1"},
+        {REV, "REV"},
+        {ADD, "ADD"},
+        {SUB, "SUB"},
+        {MUL, "MUL"},
+        {EXP, "EXP"},
+        {SDIV, "SDIV"},
+        {SMOD, "SMOD"},
+        {UDIV, "UDIV"},
+        {UMOD, "UMOD"},
+        {FDIV, "FDIV"},
+        {FMOD, "FMOD"},
+        {AND, "AND"},
+        {XOR, "XOR"},
+        {OR, "OR"},
+        {LSL, "LSL"},
+        {LSR, "LSR"},
+        {ASR, "ASR"},
+        {SLT, "SLT"},
+        {SLE, "SLE"},
+        {SGT, "SGT"},
+        {SGE, "SGE"},
+        {ULT, "ULT"},
+        {ULE, "ULE"},
+        {UGT, "UGT"},
+        {UGE, "UGE"},
+        {FLT, "FLT"},
+        {FLE, "FLE"},
+        {FGT, "FGT"},
+        {FGE, "FGE"},
+        {EQ, "EQ"},
+        {NE, "NE"},
+        {LOAD, "LOAD"},
+        {STORE, "STORE"},
+        {TAGGED_TO_INT64, "TAGGED_TO_INT64"},
+        {SIGNED_INT_TO_FLOAT, "SIGNED_INT_TO_FLOAT"},
+        {UNSIGNED_INT_TO_FLOAT, "UNSIGNED_INT_TO_FLOAT"},
+        {FLOAT_TO_SIGNED_INT, "FLOAT_TO_SIGNED_INT"},
+        {UNSIGNED_FLOAT_TO_INT, "UNSIGNED_FLOAT_TO_INT"},
+        {BITCAST, "BITCAST"},
     };
     if (strMap.count(op_) > 0) {
         return strMap.at(op_);
@@ -586,6 +390,13 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckValueInput() const
     for (size_t idx = valueStart; idx < valueEnd; idx++) {
         auto expectedIn = GetOpCode().GetInValueCode(GetBitField(), idx);
         auto actualIn = GetInGateConst(idx)->GetOpCode().GetValueCode();
+        if (expectedIn == ValueCode::FLEX) {
+            expectedIn = GetValueCode();
+        }
+        if (actualIn == ValueCode::FLEX) {
+            actualIn = GetInGateConst(idx)->GetValueCode();
+        }
+
         if ((expectedIn != actualIn) && (expectedIn != ANYVALUE)) {
             return std::make_pair("Value input does not match (expected: " + ValueCodeToStr(expectedIn) +
                     " actual: " + ValueCodeToStr(actualIn) + ")",
@@ -685,9 +496,7 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckNOP() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckSelector() const
 {
-    if (GetOpCode() == OpCode::VALUE_SELECTOR_JS ||
-        (OpCode::VALUE_SELECTOR_INT1 <= GetOpCode() && GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64) ||
-        GetOpCode() == OpCode::DEPEND_SELECTOR) {
+    if (GetOpCode() == OpCode::VALUE_SELECTOR || GetOpCode() == OpCode::DEPEND_SELECTOR) {
         auto stateOp = GetInGateConst(0)->GetOpCode();
         if (stateOp == OpCode::MERGE || stateOp == OpCode::LOOP_BEGIN) {
             if (GetInGateConst(0)->GetNumIns() != GetNumIns() - 1) {
@@ -971,8 +780,25 @@ bool In::IsGateNull() const
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, GateType gateType)
-    : id_(id), opcode_(opcode), type_(type), gateType_(gateType), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
+Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, SecondaryOp secondaryOp)
+    : id_(id), opcode_(opcode), bitValue_(bitValue), type_(type), secondaryOp_(secondaryOp), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
+{
+    auto numIns = GetNumIns();
+    for (size_t idx = 0; idx < numIns; idx++) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        auto in = inList[idx];
+        if (in == nullptr) {
+            GetIn(idx)->SetGateNull();
+        } else {
+            NewIn(idx, in);
+        }
+        auto curOut = GetOut(idx);
+        curOut->SetIndex(idx);
+    }
+}
+
+Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, SecondaryOp secondaryOp)
+    : id_(id), opcode_(opcode), type_(type), secondaryOp_(secondaryOp), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
 {
     auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {
@@ -1149,6 +975,16 @@ OpCode Gate::GetOpCode() const
     return opcode_;
 }
 
+ValueCode Gate::GetValueCode() const
+{
+    return bitValue_;
+}
+
+void Gate::SetValueCode(ValueCode valueCode)
+{
+    bitValue_ = valueCode;
+}
+
 void Gate::SetOpCode(OpCode opcode)
 {
     opcode_ = opcode;
@@ -1184,12 +1020,34 @@ void Gate::SetBitField(BitField bitfield)
     bitfield_ = bitfield;
 }
 
+std::string Gate::ValueCodeStr(ValueCode valCode) const
+{
+    const std::map<ValueCode, const char *> strMap = {
+            {NOVALUE, "NOVALUE"},
+            {ANYVALUE, "ANYVALUE"},
+            {ARCH, "ARCH"},
+            {FLEX, "FLEX"},
+            {INT1, "INT1"},
+            {INT8, "INT8"},
+            {INT16, "INT16"},
+            {INT32, "INT32"},
+            {INT64, "INT64"},
+            {FLOAT32, "FLOAT32"},
+            {FLOAT64, "FLOAT64"},
+    };
+    if (strMap.count(valCode) > 0) {
+        return strMap.at(valCode);
+    }
+    return "ValueCode-" + std::to_string(valCode);
+}
+
 void Gate::Print(bool inListPreview, size_t highlightIdx) const
 {
     if (GetOpCode() != OpCode::NOP) {
         std::cerr << std::dec << "("
                   << "id=" << id_ << ", "
                   << "op=" << GetOpCode().Str() << ", "
+                  << "valCode=" << ValueCodeStr(GetValueCode()) << ", "
                   << "bitfield=" << std::to_string(bitfield_) << ", "
                   << "type=" << static_cast<uint32_t>(type_) << ", "
                   << "stamp=" << static_cast<uint32_t>(stamp_) << ", "
