@@ -399,6 +399,16 @@ JSTaggedType RuntimeTrampolines::IncDyn(uintptr_t argGlue, JSTaggedType value)
     return (++number).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::DecDyn(uintptr_t argGlue, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value));
+    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, valueHandle);
+    return (--number).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
