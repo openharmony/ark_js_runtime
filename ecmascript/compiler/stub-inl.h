@@ -1785,7 +1785,7 @@ GateRef Stub::ReadInst8_5(GateRef pc)
 
 GateRef Stub::ReadInst8_6(GateRef pc)
 {
-    return Load(MachineType::UINT8, pc, GetArchRelateConstant(5));
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(7));
 }
 
 GateRef Stub::ReadInst8_7(GateRef pc)
@@ -1996,6 +1996,12 @@ GateRef Stub::GetPropertiesFromLexicalEnv(GateRef object, GateRef index)
 {
     GateRef valueIndex = Int32Add(index, GetInt32Constant(LexicalEnv::RESERVED_ENV_LENGTH));
     return GetValueFromTaggedArray(MachineType::TAGGED, object, valueIndex);
+}
+
+void Stub::SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value)
+{
+    GateRef valueIndex = Int32Add(index, GetInt32Constant(LexicalEnv::RESERVED_ENV_LENGTH));
+    SetValueToTaggedArray(MachineType::TAGGED, glue, object, valueIndex, value);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

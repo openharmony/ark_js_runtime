@@ -797,6 +797,7 @@ public:
 
     inline GateRef GetParentEnv(GateRef object);
     inline GateRef GetPropertiesFromLexicalEnv(GateRef object, GateRef index);
+    inline void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
 
 private:
     Environment env_;
