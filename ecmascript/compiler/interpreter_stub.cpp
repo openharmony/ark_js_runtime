@@ -471,7 +471,67 @@ void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
         // slow path
         StubDescriptor *incDyn = GET_STUBDESCRIPTOR(IncDyn);
         acc = CallRuntime(incDyn, glue, GetWord64Constant(FAST_STUB_ID(IncDyn)),
-                            {glue, value});
+                          {glue, value});
+        Jump(&accDispatch);
+    }
+
+    Bind(&accDispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
+}
+
+void HandleDecdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    Label valueIsInt(env);
+    Label valueNotInt(env);
+    Label accDispatch(env);
+    Branch(TaggedIsInt(value), &valueIsInt, &valueNotInt);
+    Bind(&valueIsInt);
+    {
+        GateRef valueInt = TaggedCastToInt32(value);
+        Label valueOverflow(env);
+        Label valueNoOverflow(env);
+        Branch(Word32Equal(valueInt, GetInt32Constant(INT32_MIN)), &valueOverflow, &valueNoOverflow);
+        Bind(&valueOverflow);
+        {
+            GateRef valueDoubleFromInt = ChangeInt32ToFloat64(valueInt);
+            acc = DoubleBuildTaggedWithNoGC(DoubleSub(valueDoubleFromInt, GetDoubleConstant(1.0)));
+            Jump(&accDispatch);
+        }
+        Bind(&valueNoOverflow);
+        {
+            acc = IntBuildTaggedWithNoGC(Int32Sub(valueInt, GetInt32Constant(1)));
+            Jump(&accDispatch);
+        }
+    }
+    Bind(&valueNotInt);
+    Label valueIsDouble(env);
+    Label valueNotDouble(env);
+    Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
+    Bind(&valueIsDouble);
+    {
+        GateRef valueDouble = TaggedCastToDouble(value);
+        acc = DoubleBuildTaggedWithNoGC(DoubleSub(valueDouble, GetDoubleConstant(1.0)));
+        Jump(&accDispatch);
+    }
+    Bind(&valueNotDouble);
+    {
+        // slow path
+        StubDescriptor *decDyn = GET_STUBDESCRIPTOR(DecDyn);
+        acc = CallRuntime(decDyn, glue, GetWord64Constant(FAST_STUB_ID(DecDyn)),
+                          {glue, value});
         Jump(&accDispatch);
     }
 
