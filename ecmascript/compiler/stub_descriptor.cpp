@@ -736,6 +736,22 @@ CALL_STUB_INIT_DESCRIPTOR(IncDyn)
     std::array<MachineType, 2> params = {
         MachineType::NATIVE_POINTER,
         MachineType::TAGGED,
+        };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
+{
+    // 4 : 4 input parameters
+    StubDescriptor stGlobalRecord("StGlobalRecord", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = stGlobalRecord;
+    std::array<MachineType, 4> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::BOOL,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);

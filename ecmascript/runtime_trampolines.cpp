@@ -398,4 +398,10 @@ JSTaggedType RuntimeTrampolines::IncDyn(uintptr_t argGlue, JSTaggedType value)
     JSTaggedNumber number = JSTaggedValue::ToNumber(thread, valueHandle);
     return (++number).GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StGlobalRecord(thread, JSTaggedValue(prop), JSTaggedValue(value), isConst).GetRawData();
+}
 }  // namespace panda::ecmascript

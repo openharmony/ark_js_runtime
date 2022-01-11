@@ -191,7 +191,10 @@ static constexpr uint32_t INTERPRETED_FRAME_PC_OFFSET_64 = 0U;
     static constexpr uint32_t INTERPRETED_FRAME_##name##_OFFSET_64 = INTERPRETED_FRAME_##lastName##_OFFSET_64 + (lastSize64);
 INTERPRETED_FRAME_OFFSET_LIST(INTERPRETED_FRAME_OFFSET_MACRO)
 #undef INTERPRETED_FRAME_OFFSET_MACRO
-
+static constexpr uint32_t SIZEOF_INTERPRETED_FRAME_32 = INTERPRETED_FRAME_ENV_OFFSET_32 +
+    JSTaggedValue::TaggedTypeSize() + sizeof(uint32_t) + sizeof(uint64_t);
+static constexpr uint32_t SIZEOF_INTERPRETED_FRAME_64 = INTERPRETED_FRAME_ENV_OFFSET_64 +
+    JSTaggedValue::TaggedTypeSize() + sizeof(uint64_t) + sizeof(uint64_t);
 // align with 8
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedFrame {
@@ -264,6 +267,14 @@ struct InterpretedFrame {
             return INTERPRETED_FRAME_BASE_OFFSET_32;
         }
         return INTERPRETED_FRAME_BASE_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetSize(bool isArm32)
+    {
+        if (isArm32) {
+            return SIZEOF_INTERPRETED_FRAME_32;
+        }
+        return SIZEOF_INTERPRETED_FRAME_64;
     }
 };
  
