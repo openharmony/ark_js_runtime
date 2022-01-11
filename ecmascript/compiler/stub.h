@@ -755,12 +755,20 @@ public:
                                GateRef value); // Do not crawl the prototype chain
     inline void SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val);
     inline GateRef GetVregValue(GateRef sp, GateRef idx);
-    inline GateRef ReadInst8(GateRef pc, GateRef offset);
     inline GateRef ReadInst4_0(GateRef pc);
     inline GateRef ReadInst4_1(GateRef pc);
     inline GateRef ReadInst4_2(GateRef pc);
     inline GateRef ReadInst4_3(GateRef pc);
     inline GateRef MoveAndReadInst8(GateRef pc, GateRef currentInst, GateRef offset);
+    inline GateRef ReadInst8_0(GateRef pc);
+    inline GateRef ReadInst8_1(GateRef pc);
+    inline GateRef ReadInst8_2(GateRef pc);
+    inline GateRef ReadInst8_3(GateRef pc);
+    inline GateRef ReadInst8_4(GateRef pc);
+    inline GateRef ReadInst8_5(GateRef pc);
+    inline GateRef ReadInst8_6(GateRef pc);
+    inline GateRef ReadInst8_7(GateRef pc);
+    inline GateRef ReadInst8_8(GateRef pc);
     inline GateRef ReadInst16_0(GateRef pc);
     inline GateRef ReadInst16_1(GateRef pc);
     inline GateRef ReadInst16_2(GateRef pc);

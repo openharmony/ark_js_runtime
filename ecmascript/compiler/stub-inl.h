@@ -1753,9 +1753,49 @@ GateRef Stub::GetVregValue(GateRef sp, GateRef idx)
     return Load(MachineType::TAGGED, sp, ArchRelatePtrMul(GetArchRelateConstant(sizeof(JSTaggedType)), idx));
 }
 
-GateRef Stub::ReadInst8(GateRef pc, GateRef offset)
+GateRef Stub::ReadInst8_0(GateRef pc)
 {
-    return Load(MachineType::UINT8, pc, offset);
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(1));
+}
+
+GateRef Stub::ReadInst8_1(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(2));
+}
+
+GateRef Stub::ReadInst8_2(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(3));
+}
+
+GateRef Stub::ReadInst8_3(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(4));
+}
+
+GateRef Stub::ReadInst8_4(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(5));
+}
+
+GateRef Stub::ReadInst8_5(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(6));
+}
+
+GateRef Stub::ReadInst8_6(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(5));
+}
+
+GateRef Stub::ReadInst8_7(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(8));
+}
+
+GateRef Stub::ReadInst8_8(GateRef pc)
+{
+    return Load(MachineType::UINT8, pc, GetArchRelateConstant(9));
 }
 
 GateRef Stub::ReadInst4_0(GateRef pc)
@@ -1783,45 +1823,45 @@ GateRef Stub::ReadInst4_3(GateRef pc)
 GateRef Stub::ReadInst16_0(GateRef pc)
 {
     /* 2 : skip 8 bits of opcode and 8 bits of low bits */
-    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(2)));
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8_1(pc));
     GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
-    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(1))));
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8_0(pc)));
 }
 
 GateRef Stub::ReadInst16_1(GateRef pc)
 {
     /* 3 : skip 8 bits of opcode, 8 bits of prefix and 8 bits of low bits */
-    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(3)));
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8_2(pc));
     GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
     /* 2: skip 8 bits of opcode and 8 bits of prefix */
-    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(2))));
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8_1(pc)));
 }
 
 GateRef Stub::ReadInst16_2(GateRef pc)
 {
     /* 4 : skip 8 bits of opcode, first parameter of 16 bits and 8 bits of low bits */
-    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(4)));
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8_3(pc));
     GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
     /* 3: skip 8 bits of opcode and first parameter of 16 bits */
-    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(3))));
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8_2(pc)));
 }
 
 GateRef Stub::ReadInst16_3(GateRef pc)
 {
     /* 5 : skip 8 bits of opcode, 8 bits of prefix, first parameter of 16 bits and 8 bits of low bits */
-    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(5)));
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8_4(pc));
     GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
     /* 4: skip 8 bits of opcode, 8 bits of prefix and first parameter of 16 bits */
-    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(4))));
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8_3(pc)));
 }
 
 GateRef Stub::ReadInst16_5(GateRef pc)
 {
     /* 7 : skip 8 bits of opcode, 8 bits of prefix, first 2 parameters of 16 bits and 8 bits of low bits */
-    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(7)));
+    GateRef currentInst1 = ZExtInt8ToInt16(ReadInst8_6(pc));
     GateRef currentInst2 = Word16LSL(currentInst1, GetInt16Constant(8));  // 8 : set as high 8 bits
     /* 6: skip 8 bits of opcode, 8 bits of prefix and first 2 parameters of 16 bits */
-    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8(pc, GetArchRelateConstant(6))));
+    return Int16Add(currentInst2, ZExtInt8ToInt16(ReadInst8_5(pc)));
 }
 
 GateRef Stub::GetFrame(GateRef CurrentSp)
@@ -1886,35 +1926,35 @@ GateRef Stub::RestoreAcc(GateRef CurrentSp)
 
 GateRef Stub::ReadInst32_0(GateRef pc)
 {
-    GateRef currentInst = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(4)));
+    GateRef currentInst = ZExtInt8ToInt32(ReadInst8_3(pc));
     GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
-    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3))));
+    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_2(pc)));
     GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
-    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(2))));
+    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8_1(pc)));
     GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
-    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(1))));
+    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8_0(pc)));
 }
 
 GateRef Stub::ReadInst32_1(GateRef pc)
 {
-    GateRef currentInst = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(5)));
+    GateRef currentInst = ZExtInt8ToInt32(ReadInst8_4(pc));
     GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
-    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(4))));
+    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_3(pc)));
     GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
-    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3))));
+    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8_2(pc)));
     GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
-    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(2))));
+    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8_1(pc)));
 }
 
 GateRef Stub::ReadInst32_2(GateRef pc)
 {
-    GateRef currentInst = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(6)));
+    GateRef currentInst = ZExtInt8ToInt32(ReadInst8_5(pc));
     GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
-    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(5))));
+    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_4(pc)));
     GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
-    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(4))));
+    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8_3(pc)));
     GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
-    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3))));
+    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8_2(pc)));
 }
 
 void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
