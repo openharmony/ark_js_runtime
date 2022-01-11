@@ -162,49 +162,86 @@ private:
     CompilationConfig compCfg_;
 };
 
+//#define OPCODES(V) \
+//    V(Call, (GateRef gate, const std::vector<GateRef> &inList)) \
+//    V(Alloca, (GateRef gate)) \
+//    V(Block, (int id, const OperandsVector &predecessors)) \
+//    V(Goto, (int block, int bbout)) \
+//    V(Parameter, (GateRef gate)) \
+//    V(Int32Constant, (GateRef gate, int32_t value)) \
+//    V(Int64Constant, (GateRef gate, int64_t value)) \
+//    V(Float64Constant, (GateRef gate, double value)) \
+//    V(ZExtInt, (GateRef gate, GateRef e1)) \
+//    V(SExtInt, (GateRef gate, GateRef e1)) \
+//    V(Load, (GateRef gate, GateRef base)) \
+//    V(Store, (GateRef gate, GateRef base, GateRef value)) \
+//    V(IntRev, (GateRef gate, GateRef e1)) \
+//    V(IntAdd, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(FloatAdd, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(FloatSub, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(FloatMul, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntSub, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntMul, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntOr, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntAnd, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntXor, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntLsr, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntOrUintCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMIntPredicate opcode)) \
+//    V(FloatOrDoubleCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMRealPredicate opcode)) \
+//    V(Branch, (GateRef gate, GateRef cmp, GateRef btrue, GateRef bfalse)) \
+//    V(Switch, (GateRef gate, GateRef input, const std::vector<GateRef> &outList)) \
+//    V(SwitchCase, (GateRef gate, GateRef switchBranch, GateRef out)) \
+//    V(Phi, (GateRef gate, const std::vector<GateRef> &srcGates)) \
+//    V(Return, (GateRef gate, GateRef popCount, const std::vector<GateRef> &operands)) \
+//    V(ReturnVoid, (GateRef gate)) \
+//    V(CastIntXToIntY, (GateRef gate, GateRef e1)) \
+//    V(ChangeInt32ToDouble, (GateRef gate, GateRef e1)) \
+//    V(ChangeDoubleToInt32, (GateRef gate, GateRef e1)) \
+//    V(CastInt64ToDouble, (GateRef gate, GateRef e1)) \
+//    V(CastDoubleToInt, (GateRef gate, GateRef e1)) \
+//    V(CastInt64ToPointer, (GateRef gate, GateRef e1)) \
+//    V(IntLsl, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(IntMod, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(FloatMod, (GateRef gate, GateRef e1, GateRef e2)) \
+//    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))
+
 #define OPCODES(V) \
     V(Call, (GateRef gate, const std::vector<GateRef> &inList)) \
     V(Alloca, (GateRef gate)) \
     V(Block, (int id, const OperandsVector &predecessors)) \
     V(Goto, (int block, int bbout)) \
     V(Parameter, (GateRef gate)) \
-    V(Int32Constant, (GateRef gate, int32_t value)) \
-    V(Int64Constant, (GateRef gate, int64_t value)) \
-    V(Float64Constant, (GateRef gate, double value)) \
+    V(Constant, (GateRef gate, std::bitset<64> value)) \
     V(ZExtInt, (GateRef gate, GateRef e1)) \
     V(SExtInt, (GateRef gate, GateRef e1)) \
     V(Load, (GateRef gate, GateRef base)) \
     V(Store, (GateRef gate, GateRef base, GateRef value)) \
-    V(IntRev, (GateRef gate, GateRef e1)) \
-    V(IntAdd, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(FloatAdd, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(FloatSub, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(FloatMul, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(IntSub, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(IntMul, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(IntRev, (GateRef gate, GateRef e1))               \
+    V(Add, (GateRef gate, GateRef e1, GateRef e2))               \
+    V(Sub, (GateRef gate, GateRef e1, GateRef e2))               \
+    V(Mul, (GateRef gate, GateRef e1, GateRef e2))               \
+    V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2))         \
     V(IntOr, (GateRef gate, GateRef e1, GateRef e2)) \
     V(IntAnd, (GateRef gate, GateRef e1, GateRef e2)) \
     V(IntXor, (GateRef gate, GateRef e1, GateRef e2)) \
     V(IntLsr, (GateRef gate, GateRef e1, GateRef e2)) \
     V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2)) \
     V(IntOrUintCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMIntPredicate opcode)) \
-    V(FloatOrDoubleCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMRealPredicate opcode)) \
+    V(EqCmp, (GateRef gate, GateRef e1, GateRef e2)) \
     V(Branch, (GateRef gate, GateRef cmp, GateRef btrue, GateRef bfalse)) \
     V(Switch, (GateRef gate, GateRef input, const std::vector<GateRef> &outList)) \
     V(SwitchCase, (GateRef gate, GateRef switchBranch, GateRef out)) \
     V(Phi, (GateRef gate, const std::vector<GateRef> &srcGates)) \
     V(Return, (GateRef gate, GateRef popCount, const std::vector<GateRef> &operands)) \
-    V(ReturnVoid, (GateRef gate)) \
+    V(ReturnVoid, (GateRef gate))                               \
     V(CastIntXToIntY, (GateRef gate, GateRef e1)) \
     V(ChangeInt32ToDouble, (GateRef gate, GateRef e1)) \
     V(ChangeDoubleToInt32, (GateRef gate, GateRef e1)) \
-    V(CastInt64ToDouble, (GateRef gate, GateRef e1)) \
-    V(CastDoubleToInt, (GateRef gate, GateRef e1)) \
-    V(CastInt64ToPointer, (GateRef gate, GateRef e1)) \
+    V(BitCast, (GateRef gate, GateRef e1))               \
     V(IntLsl, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(IntMod, (GateRef gate, GateRef e1, GateRef e2)) \
-    V(FloatMod, (GateRef gate, GateRef e1, GateRef e2)) \
+    V(Mod, (GateRef gate, GateRef e1, GateRef e2))               \
     V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))
 
 class LLVMIRBuilder {
@@ -241,7 +278,6 @@ private:
     void ProcessPhiWorkList();
     void AssignHandleMap();
     std::string LLVMValueToString(LLVMValueRef val) const;
-    LLVMTypeRef ConvertLLVMTypeFromTypeCode(TypeCode type) const;
 
     LLVMTypeRef GetArchRelate() const
     {
@@ -251,6 +287,7 @@ private:
         return LLVMInt64Type();
     }
     LLVMTypeRef ConvertLLVMTypeFromGate(GateRef gate) const;
+    int64_t GetBitWidthFromValueCode(ValueCode valCode) const;
     LLVMValueRef PointerAdd(LLVMValueRef baseAddr, LLVMValueRef offset, LLVMTypeRef rep);
     LLVMValueRef VectorAdd(LLVMValueRef e1Value, LLVMValueRef e2Value, LLVMTypeRef rep);
     LLVMValueRef CanonicalizeToInt(LLVMValueRef value);

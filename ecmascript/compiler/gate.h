@@ -35,7 +35,7 @@ using GateId = uint32_t;
 using GateOp = uint8_t;
 using GateMark = uint8_t;
 using TimeStamp = uint8_t;
-using GateType = uint8_t;
+using SecondaryOp = uint8_t;
 using BitField = uint64_t;
 using OutIdx = uint32_t;
 class Gate;
@@ -44,6 +44,8 @@ struct Properties;
 enum ValueCode {
     NOVALUE,
     ANYVALUE,
+    ARCH,
+    FLEX,
     INT1,
     INT8,
     INT16,
@@ -84,15 +86,7 @@ public:
         MERGE,
         LOOP_BEGIN,
         LOOP_BACK,
-        VALUE_SELECTOR_JS,
-        VALUE_SELECTOR_INT1,
-        VALUE_SELECTOR_INT8,
-        VALUE_SELECTOR_INT16,
-        VALUE_SELECTOR_INT32,
-        VALUE_SELECTOR_INT64,
-        VALUE_SELECTOR_FLOAT32,
-        VALUE_SELECTOR_FLOAT64,
-        VALUE_SELECTOR_ANYVALUE,
+        VALUE_SELECTOR,
         DEPEND_SELECTOR,
         DEPEND_RELAY,
         DEPEND_AND,
@@ -100,120 +94,56 @@ public:
         JS_BYTECODE,
         // Middle Level IR
         CALL,
-        INT1_CALL,
-        INT8_CALL,
-        INT16_CALL,
-        INT32_CALL,
-        INT64_CALL,
-        FLOAT32_CALL,
-        FLOAT64_CALL,
-        TAGGED_POINTER_CALL,
-        ANYVALUE_CALL,
         ALLOCA,
-        INT1_ARG,
-        INT8_ARG,
-        INT16_ARG,
-        INT32_ARG,
-        INT64_ARG,
-        FLOAT32_ARG,
-        FLOAT64_ARG,
+        ARG,
         MUTABLE_DATA,
         CONST_DATA,
-        INT1_CONSTANT,
-        INT8_CONSTANT,
-        INT16_CONSTANT,
-        INT32_CONSTANT,
-        INT64_CONSTANT,
-        FLOAT32_CONSTANT,
-        FLOAT64_CONSTANT,
-        ZEXT_INT32_TO_INT64,
-        ZEXT_INT1_TO_INT32,
-        ZEXT_INT8_TO_INT32,
-        ZEXT_INT16_TO_INT32,
-        ZEXT_INT1_TO_INT64,
-        SEXT_INT32_TO_INT64,
-        SEXT_INT1_TO_INT32,
-        SEXT_INT8_TO_INT32,
-        SEXT_INT16_TO_INT32,
-        SEXT_INT1_TO_INT64,
-        TRUNC_INT64_TO_INT32,
-        TRUNC_INT64_TO_INT1,
-        TRUNC_INT32_TO_INT1,
-        INT32_REV,
-        INT32_ADD,
-        INT32_SUB,
-        INT32_MUL,
-        INT32_EXP,
-        INT32_SDIV,
-        INT32_SMOD,
-        INT32_UDIV,
-        INT32_UMOD,
-        INT32_AND,
-        INT32_XOR,
-        INT32_OR,
-        INT32_LSL,
-        INT32_LSR,
-        INT32_ASR,
-        INT32_SLT,
-        INT32_SLE,
-        INT32_SGT,
-        INT32_SGE,
-        INT32_ULT,
-        INT32_ULE,
-        INT32_UGT,
-        INT32_UGE,
-        INT32_EQ,
-        INT32_NE,
-        INT64_REV,
-        INT64_ADD,
-        INT64_SUB,
-        INT64_MUL,
-        INT64_EXP,
-        INT64_SDIV,
-        INT64_SMOD,
-        INT64_UDIV,
-        INT64_UMOD,
-        INT64_AND,
-        INT64_XOR,
-        INT64_OR,
-        INT64_LSL,
-        INT64_LSR,
-        INT64_ASR,
-        INT64_SLT,
-        INT64_SLE,
-        INT64_SGT,
-        INT64_SGE,
-        INT64_ULT,
-        INT64_ULE,
-        INT64_UGT,
-        INT64_UGE,
-        INT64_EQ,
-        INT64_NE,
-        FLOAT64_ADD,
-        FLOAT64_SUB,
-        FLOAT64_MUL,
-        FLOAT64_DIV,
-        FLOAT64_EXP,
-        FLOAT64_EQ,
-        FLOAT64_SMOD,
-        INT8_LOAD,
-        INT16_LOAD,
-        INT32_LOAD,
-        INT64_LOAD,
-        FLOAT32_LOAD,
-        FLOAT64_LOAD,
-        INT8_STORE,
-        INT16_STORE,
-        INT32_STORE,
-        INT64_STORE,
-        FLOAT32_STORE,
-        FLOAT64_STORE,
-        INT32_TO_FLOAT64,
-        FLOAT64_TO_INT32,
-        TAGGED_POINTER_TO_INT64,
-        BITCAST_INT64_TO_FLOAT64,
-        BITCAST_FLOAT64_TO_INT64,
-        TAG64_TO_INT1,
+        CONSTANT,
+        ZEXT_TO_INT64,
+        ZEXT_TO_INT32,
+        SEXT_TO_INT64,
+        SEXT_TO_INT32,
+        TRUNC_TO_INT32,
+        TRUNC_TO_INT1,
+        REV,
+        ADD,
+        SUB,
+        MUL,
+        EXP,
+        SDIV,
+        SMOD,
+        UDIV,
+        UMOD,
+        FDIV,
+        FMOD,
+        AND,
+        XOR,
+        OR,
+        LSL,
+        LSR,
+        ASR,
+        SLT,
+        SLE,
+        SGT,
+        SGE,
+        ULT,
+        ULE,
+        UGT,
+        UGE,
+        FLT,
+        FLE,
+        FGT,
+        FGE,
+        EQ,
+        NE,
+        LOAD,
+        STORE,
+        TAGGED_TO_INT64,
+        SIGNED_INT_TO_FLOAT,
+        UNSIGNED_INT_TO_FLOAT,
+        FLOAT_TO_SIGNED_INT,
+        UNSIGNED_FLOAT_TO_INT,
+        BITCAST,
     };
 
     OpCode() = default;
@@ -307,7 +237,10 @@ private:
 class Gate {
 public:
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, GateType gateType = 0);
+    Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark,
+        SecondaryOp secondaryOp = 0);
+    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark,
+        SecondaryOp secondaryOp = 0);
     [[nodiscard]] static size_t GetGateSize(size_t numIns);
     [[nodiscard]] size_t GetGateSize() const;
     [[nodiscard]] static size_t GetOutListSize(size_t numIns);
@@ -358,6 +291,9 @@ public:
     [[nodiscard]] bool Verify() const;
     [[nodiscard]] MarkCode GetMark(TimeStamp stamp) const;
     void SetMark(MarkCode mark, TimeStamp stamp);
+    [[nodiscard]] ValueCode GetValueCode() const;
+    void SetValueCode(ValueCode valueCode);
+    std::string ValueCodeStr(ValueCode valCode) const;
     ~Gate() = default;
 
 private:
@@ -367,8 +303,9 @@ private:
     // out(0)
     GateId id_;
     OpCode opcode_;
+    ValueCode bitValue_ = ValueCode::NOVALUE;
     TypeCode type_;
-    GateType gateType_;
+    SecondaryOp secondaryOp_;
     TimeStamp stamp_;
     MarkCode mark_;
     BitField bitfield_;

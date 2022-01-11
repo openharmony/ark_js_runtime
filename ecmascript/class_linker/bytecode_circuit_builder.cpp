@@ -1776,7 +1776,7 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
     const size_t offsetArgs = byteCodeGraph.method->GetNumVregs();
     std::vector<kungfu::GateRef> argGates(numArgs);
     for (size_t argIdx = 0; argIdx < numArgs; argIdx++) {
-        argGates.at(argIdx) = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::INT64_ARG), argIdx,
+        argGates.at(argIdx) = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::ARG), kungfu::ValueCode::INT64, argIdx,
                                               {kungfu::Circuit::GetCircuitRoot(
                                                       kungfu::OpCode(kungfu::OpCode::ARG_LIST))},
                                               kungfu::TypeCode::NOTYPE);
@@ -2033,7 +2033,8 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
             }
             if (ans == kungfu::Circuit::NullGate() && !acc && bb.phi.count(reg)) {
                 if (!bb.valueSelector.count(reg)) {
-                    auto gate = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::VALUE_SELECTOR_INT64),
+                    auto gate = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::VALUE_SELECTOR),
+                                                kungfu::ValueCode::INT64,
                                                 bb.numStatePred,
                                                 std::vector<kungfu::GateRef>(
                                                         1 + bb.numStatePred, kungfu::Circuit::NullGate()),
@@ -2049,7 +2050,8 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
             }
             if (ans == kungfu::Circuit::NullGate() && acc && bb.phiAcc) {
                 if (bb.valueSelectorAcc == kungfu::Circuit::NullGate()) {
-                    auto gate = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::VALUE_SELECTOR_INT64),
+                    auto gate = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::VALUE_SELECTOR),
+                                                kungfu::ValueCode::INT64,
                                                 bb.numStatePred,
                                                 std::vector<kungfu::GateRef>(
                                                         1 + bb.numStatePred, kungfu::Circuit::NullGate()),

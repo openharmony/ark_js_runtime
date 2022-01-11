@@ -139,18 +139,29 @@ GateRef LabelImpl::ReadVariable(Variable *var)
 GateRef LabelImpl::ReadVariableRecursive(Variable *var)
 {
     GateRef val;
-    OpCode opcode = CircuitBuilder::GetSelectOpCodeFromMachineType(var->Type());
+    ValueCode valueCode = CircuitBuilder::GetValueCodeFromMachineType(var->Type());
     if (!IsSealed()) {
         // only loopheader gate will be not sealed
         int valueCounts = static_cast<int>(this->predecessors_.size()) + 1;
-
-        val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, valueCounts, var->Type());
+        if (valueCode == ValueCode::NOVALUE) {
+            val = env_->GetCircuitBuilder().NewSelectorGate(
+                OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_, valueCounts, var->Type());
+        } else {
+            val = env_->GetCircuitBuilder().NewSelectorGate(
+                OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_, valueCounts, var->Type());
+        }
         env_->AddSelectorToLabel(val, Label(this));
         incompletePhis_[var] = val;
     } else if (predecessors_.size() == 1) {
         val = predecessors_[0]->ReadVariable(var);
     } else {
-        val = env_->GetCircuitBuilder().NewSelectorGate(opcode, predeControl_, this->predecessors_.size(), var->Type());
+        if (valueCode == ValueCode::NOVALUE) {
+            val = env_->GetCircuitBuilder().NewSelectorGate(
+                OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_, this->predecessors_.size(), var->Type());
+        } else {
+            val = env_->GetCircuitBuilder().NewSelectorGate(
+                OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_, this->predecessors_.size(), var->Type());
+        }
         env_->AddSelectorToLabel(val, Label(this));
         WriteVariable(var, val);
         val = var->AddPhiOperand(val);
@@ -445,6 +456,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     DEFVARIABLE(count, MachineType::INT32, GetInt32Constant(1));
 
     GateRef pKey = Alloca(static_cast<int>(MachineRep::K_WORD32));
+
     GateRef keyStore = Store(MachineType::INT32, glue, pKey, GetArchRelateConstant(0), TaggedCastToInt32(key));
     StubDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
     GateRef len = GetInt32Constant(sizeof(int) / sizeof(uint8_t));
@@ -2255,7 +2267,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
             Branch(Word64Equal(cachedKey, key), &keyMatch, &notMatch);
             Bind(&keyMatch);
             {
-                Branch(Word64Equal(metaData, cachedMetaData), &isMatch, &notMatch);
+                Branch(Word32Equal(metaData, cachedMetaData), &isMatch, &notMatch);
                 Bind(&isMatch);
                 {
 #if ECMASCRIPT_ENABLE_IC
@@ -2419,8 +2431,8 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
 GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, GateRef value)
 {
     auto env = GetEnvironment();
-    Label entry(env);
-    env->PushCurrentLabel(&entry);
+    Label entryPass(env);
+    env->PushCurrentLabel(&entryPass);
     DEFVARIABLE(result, MachineType::UINT64, GetHoleConstant(MachineType::UINT64));
     DEFVARIABLE(holder, MachineType::TAGGED_POINTER, receiver);
     Label exit(env);

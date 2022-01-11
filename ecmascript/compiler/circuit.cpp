@@ -57,8 +57,8 @@ Gate *Circuit::AllocateGateSpace(size_t numIns)
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-GateRef Circuit::NewGate(
-    OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type, MarkCode mark, GateType gateType)
+GateRef Circuit::NewGate(OpCode opcode, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
+                         TypeCode type, MarkCode mark)
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
@@ -75,15 +75,47 @@ GateRef Circuit::NewGate(
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : this->LoadGatePtr(inList[idx]);
     }
-    auto newGate = new (gateSpace) Gate(this->gateCounter, opcode, bitfield, inPtrList.data(), type, mark, gateType);
+    ASSERT(opcode.GetValueCode() == ValueCode::FLEX);
+    auto newGate = new (gateSpace) Gate(this->gateCounter, opcode, bitValue, bitfield, inPtrList.data(), type, mark);
     this->gateCounter++;
     return this->SaveGatePtr(newGate);
 }
 
 GateRef Circuit::NewGate(
-    OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type, MarkCode mark, GateType gateType)
+    OpCode opcode, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type, MarkCode mark)
 {
-    return this->NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark, gateType);
+    return this->NewGate(opcode, bitValue, bitfield, inList.size(), inList.data(), type, mark);
+}
+
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
+                         MarkCode mark)
+{
+#ifndef NDEBUG
+    if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
+        std::cerr << "Invalid input list!"
+                  << " op=" << opcode.Str() << " bitfield=" << bitfield
+                  << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns
+                  << std::endl;
+        UNREACHABLE();
+    }
+#endif
+    std::vector<Gate *> inPtrList(numIns);
+    auto gateSpace = this->AllocateGateSpace(numIns);
+    for (size_t idx = 0; idx < numIns; idx++) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : this->LoadGatePtr(inList[idx]);
+    }
+    ASSERT(opcode.GetValueCode() != ValueCode::FLEX);
+    auto newGate = new (gateSpace) Gate(this->gateCounter, opcode, opcode.GetValueCode(), bitfield, inPtrList.data(), type, mark);
+    this->gateCounter++;
+    return this->SaveGatePtr(newGate);
+}
+
+GateRef Circuit::NewGate(
+    OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type, MarkCode mark)
+{
+    return this->NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark);
 }
 
 void Circuit::PrintAllGates() const
@@ -220,8 +252,7 @@ bool Circuit::IsSelector(GateRef gate) const
 {
     if (gate != NullGate()) {
         const Gate *curGate = this->LoadGatePtrConst(gate);
-        return curGate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS &&
-            curGate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+        return curGate->GetOpCode() == OpCode::VALUE_SELECTOR;
     }
     return false;
 }
@@ -312,6 +343,11 @@ void Circuit::SetOpCode(GateRef gate, OpCode opcode)
 void Circuit::SetTypeCode(GateRef gate, TypeCode type)
 {
     this->LoadGatePtr(gate)->SetTypeCode(type);
+}
+
+void Circuit::SetValueCode(GateRef gate, ValueCode valCode)
+{
+    this->LoadGatePtr(gate)->SetValueCode(valCode);
 }
 
 TypeCode Circuit::GetTypeCode(GateRef gate) const

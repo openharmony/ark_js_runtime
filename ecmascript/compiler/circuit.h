@@ -42,10 +42,15 @@ public:
     Circuit(Circuit &&circuit) = default;
     Circuit &operator=(Circuit &&circuit) = default;
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
+        MarkCode mark = MarkCode::EMPTY);
+    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
+        MarkCode mark = MarkCode::EMPTY);
+
     GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
-        MarkCode mark = MarkCode::EMPTY, GateType gateType = 0);
+        MarkCode mark = MarkCode::EMPTY);
     GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
-        MarkCode mark = MarkCode::EMPTY, GateType gateType = 0);
+        MarkCode mark = MarkCode::EMPTY);
     void PrintAllGates() const;
     [[nodiscard]] std::vector<GateRef> GetAllGates() const;
     [[nodiscard]] static GateRef GetCircuitRoot(OpCode opcode);
@@ -69,10 +74,12 @@ public:
     void Print(GateRef gate) const;
     void SetOpCode(GateRef gate, OpCode opcode);
     void SetTypeCode(GateRef gate, TypeCode type);
+    void SetValueCode(GateRef gate, ValueCode valCode);
     [[nodiscard]] OpCode GetOpCode(GateRef gate) const;
     [[nodiscard]] TimeStamp GetTime() const;
     [[nodiscard]] MarkCode GetMark(GateRef gate) const;
     [[nodiscard]] TypeCode GetTypeCode(GateRef gate) const;
+    [[nodiscard]] ValueCode GetValueCode(GateRef gate) const;
     void SetMark(GateRef gate, MarkCode mark) const;
     [[nodiscard]] bool Verify(GateRef gate) const;
     [[nodiscard]] Gate *LoadGatePtr(GateRef shift);
