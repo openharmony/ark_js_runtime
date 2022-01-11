@@ -516,7 +516,10 @@ namespace panda::ecmascript {
     V(WeakSet, Constructor)                   \
     V(WeakSet, Delete)                        \
     V(WeakSet, Add)                           \
-    V(WeakSet, Has)
+    V(WeakSet, Has)                           \
+    V(ArrayList, Constructor)                 \
+    V(ArrayList, Add)                         \
+    V(ArrayList, Iterator)
 
 #define ABSTRACT_OPERATION_LIST(V) \
     V(JSTaggedValue, ToString)     \
