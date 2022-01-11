@@ -289,4 +289,94 @@ void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&accDispatch);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(3));
 }
+
+void HandleStconsttoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    Label isException(env);
+    Label notException(env);
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+    SaveAcc(glue, sp, *acc);
+    StubDescriptor *stGlobalRecord = GET_STUBDESCRIPTOR(StGlobalRecord);
+    GateRef result = CallRuntime(stGlobalRecord, glue, GetWord64Constant(FAST_STUB_ID(StGlobalRecord)),
+                                 { glue, propKey, *acc, TrueConstant() });
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        SavePc(glue, sp, pc);
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+    }
+    Bind(&notException);
+    acc = RestoreAcc(sp);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+}
+
+void HandleStlettoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    Label isException(env);
+    Label notException(env);
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+    SaveAcc(glue, sp, *acc);
+    StubDescriptor *stGlobalRecord = GET_STUBDESCRIPTOR(StGlobalRecord);
+    GateRef result = CallRuntime(stGlobalRecord, glue, GetWord64Constant(FAST_STUB_ID(StGlobalRecord)),
+                                 { glue, propKey, *acc, FalseConstant() });
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        SavePc(glue, sp, pc);
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+    }
+    Bind(&notException);
+    acc = RestoreAcc(sp);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+}
+
+void HandleStclasstoglobalrecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    Label isException(env);
+    Label notException(env);
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+    SaveAcc(glue, sp, *acc);
+    StubDescriptor *stGlobalRecord = GET_STUBDESCRIPTOR(StGlobalRecord);
+    GateRef result = CallRuntime(stGlobalRecord, glue, GetWord64Constant(FAST_STUB_ID(StGlobalRecord)),
+                                 { glue, propKey, *acc, FalseConstant() });
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        SavePc(glue, sp, pc);
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+    }
+    Bind(&notException);
+    acc = RestoreAcc(sp);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+}
 }  // namespace panda::ecmascript::kungfu

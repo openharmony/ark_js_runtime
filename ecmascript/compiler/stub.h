@@ -774,11 +774,14 @@ public:
     inline GateRef GetProfileTypeInfoFromFrame(GateRef frame);
     inline GateRef GetAccFromFrame(GateRef frame);
     inline GateRef GetEnvFromFrame(GateRef frame);
+    inline GateRef ReadInst32_0(GateRef pc);
     inline GateRef ReadInst32_1(GateRef pc);
+    inline GateRef ReadInst32_2(GateRef pc);
     // inline GateRef GetBaseFromFrame(GateRef frame);
     inline void SavePc(GateRef glue, GateRef CurrentSp, GateRef pc);
     inline GateRef LoadAccFromSp(GateRef glue, GateRef CurrentSp);
     inline void SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc);
+    inline GateRef RestoreAcc(GateRef CurrentSp);
     inline void Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
     inline void DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,

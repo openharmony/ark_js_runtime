@@ -21,7 +21,6 @@ namespace panda::ecmascript::kungfu {
     };
     INTERPRETER_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
 #undef DECLARE_HANDLE_STUB_CLASS
-
 }  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_INTERPRETER_STUB_H

@@ -1826,7 +1826,7 @@ GateRef Stub::ReadInst16_5(GateRef pc)
 
 GateRef Stub::GetFrame(GateRef CurrentSp)
 {
-    return ArchRelateSub(CurrentSp, GetArchRelateConstant(sizeof(InterpretedFrame)));
+    return ArchRelateSub(CurrentSp, GetArchRelateConstant(InterpretedFrame::GetSize(env_.IsArm32())));
 }
 
 GateRef Stub::GetPcFromFrame(GateRef frame)
@@ -1879,6 +1879,22 @@ void Stub::SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc)
     Store(MachineType::UINT64, glue, GetFrame(CurrentSp), GetArchRelateConstant(InterpretedFrame::GetAccOffset(env_.IsArm32())), acc);
 }
 
+GateRef Stub::RestoreAcc(GateRef CurrentSp)
+{
+    return Load(MachineType::TAGGED, GetFrame(CurrentSp), GetArchRelateConstant(InterpretedFrame::GetAccOffset(env_.IsArm32())));
+}
+
+GateRef Stub::ReadInst32_0(GateRef pc)
+{
+    GateRef currentInst = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(4)));
+    GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
+    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3))));
+    GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
+    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(2))));
+    GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
+    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(1))));
+}
+
 GateRef Stub::ReadInst32_1(GateRef pc)
 {
     GateRef currentInst = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(5)));
@@ -1888,6 +1904,17 @@ GateRef Stub::ReadInst32_1(GateRef pc)
     GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3))));
     GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
     return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(2))));
+}
+
+GateRef Stub::ReadInst32_2(GateRef pc)
+{
+    GateRef currentInst = ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(6)));
+    GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
+    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(5))));
+    GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
+    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(4))));
+    GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
+    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8(pc, GetArchRelateConstant(3))));
 }
 
 void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,

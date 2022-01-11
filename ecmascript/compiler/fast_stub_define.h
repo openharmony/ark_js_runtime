@@ -47,6 +47,7 @@ namespace panda::ecmascript::kungfu {
     V(NoticeThroughChainAndRefreshUser, 3)  \
     V(JumpToCInterpreter, 7)                \
     V(DebugPrint, 1)                        \
+    V(StGlobalRecord, 4)                    \
     V(IncDyn, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

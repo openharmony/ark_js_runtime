@@ -80,6 +80,7 @@ public:
                                            uint64_t constpool, uint64_t profileTypeInfo, uint64_t acc,
                                            int32_t hotnessCounter);
     static JSTaggedType IncDyn(uintptr_t argGlue, JSTaggedType value);
+    static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
 };
 }  // namespace panda::ecmascript
 #endif
