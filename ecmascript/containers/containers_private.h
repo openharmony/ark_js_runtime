@@ -20,7 +20,23 @@
 
 namespace panda::ecmascript::containers {
 enum FuncLength : uint8_t { ZERO = 0, ONE, TWO, THREE, FOUR };
-enum ContainerTag : uint8_t { ArrayList = 0, Queue, END };
+enum ContainerTag : uint8_t {
+    ArrayList = 0,
+    Queue,
+    Deque,
+    Stack,
+    Vector,
+    List,
+    LinkedList,
+    TreeMap,
+    TreeSet,
+    HashMap,
+    HashSet,
+    LightWightMap,
+    LightWightSet,
+    PlainArray,
+    END
+};
 // Using Lazy-loading container, including ArrayList, Queue, Stack, Vector, List, LinkedList, Deque,
 // TreeMap, TreeSet, HashMap, HashSet, LightWightMap, LightWightSet, PlainArray.
 // Use through ArkPrivate.Load([ContainerTag]) in js, ContainTag was declaerd in ArkPrivate like ArkPrivate::ArrayList.

@@ -313,9 +313,11 @@ void Builtins::InitializeGlobalObject(const JSHandle<GlobalEnv> &env, const JSHa
         SetConstantObject(globalObject, "ArkTools", arkTools);
     }
 
+#if ECMASCRIPT_ENABLE_ARK_CONTAINER
     // Set ArkPrivate
     JSHandle<JSTaggedValue> arkPrivate(InitializeArkPrivate(env));
     SetConstantObject(globalObject, "ArkPrivate", arkPrivate);
+#endif
 
     // Global object function
     SetFunction(env, globalObject, "eval", Global::NotSupportEval, FunctionLength::ONE);
@@ -2769,6 +2771,19 @@ JSHandle<JSObject> Builtins::InitializeArkPrivate(const JSHandle<GlobalEnv> &env
     JSHandle<JSObject> arkPrivate = factory_->NewEmptyJSObject();
     SetFrozenFunction(env, arkPrivate, "Load", ContainersPrivate::Load, FunctionLength::ZERO);
     SetConstant(arkPrivate, "ArrayList", JSTaggedValue(static_cast<int>(containers::ContainerTag::ArrayList)));
+    SetConstant(arkPrivate, "Queue", JSTaggedValue(static_cast<int>(containers::ContainerTag::Queue)));
+    SetConstant(arkPrivate, "Deque", JSTaggedValue(static_cast<int>(containers::ContainerTag::Deque)));
+    SetConstant(arkPrivate, "Stack", JSTaggedValue(static_cast<int>(containers::ContainerTag::Stack)));
+    SetConstant(arkPrivate, "Vector", JSTaggedValue(static_cast<int>(containers::ContainerTag::Vector)));
+    SetConstant(arkPrivate, "List", JSTaggedValue(static_cast<int>(containers::ContainerTag::List)));
+    SetConstant(arkPrivate, "LinkedList", JSTaggedValue(static_cast<int>(containers::ContainerTag::LinkedList)));
+    SetConstant(arkPrivate, "TreeMap", JSTaggedValue(static_cast<int>(containers::ContainerTag::TreeMap)));
+    SetConstant(arkPrivate, "TreeSet", JSTaggedValue(static_cast<int>(containers::ContainerTag::TreeSet)));
+    SetConstant(arkPrivate, "HashMap", JSTaggedValue(static_cast<int>(containers::ContainerTag::HashMap)));
+    SetConstant(arkPrivate, "HashSet", JSTaggedValue(static_cast<int>(containers::ContainerTag::HashSet)));
+    SetConstant(arkPrivate, "LightWightMap", JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWightMap)));
+    SetConstant(arkPrivate, "LightWightSet", JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWightSet)));
+    SetConstant(arkPrivate, "PlainArray", JSTaggedValue(static_cast<int>(containers::ContainerTag::PlainArray)));
     return arkPrivate;
 }
 }  // namespace panda::ecmascript

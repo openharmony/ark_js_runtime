@@ -21,6 +21,7 @@ namespace panda::ecmascript {
 #define ARK_NOINLINE __attribute__((noinline))
 
 #define ECMASCRIPT_ENABLE_DEBUG_MODE 0
+#define ECMASCRIPT_ENABLE_ARK_CONTAINER 0
 #define ECMASCRIPT_ENABLE_RUNTIME_STAT 0 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 
 /*
