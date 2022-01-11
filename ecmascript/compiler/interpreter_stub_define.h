@@ -12,6 +12,8 @@ namespace panda::ecmascript::kungfu {
     V(HandleLdInfinityPref, 7)                  \
     V(HandleLdUndefinedPref, 7)                 \
     V(HandleLdNullPref, 7)                      \
+    V(HandleLdTruePref, 7)                      \
+    V(HandleLdFalsePref, 7)                     \
     V(HandleLdaDyn, 7)                          \
     V(HandleStaDyn, 7)                          \
     V(HandleLdLexVarDynPrefImm4Imm4, 7)         \
