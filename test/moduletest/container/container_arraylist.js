@@ -16,15 +16,15 @@
 var fastarray = undefined;
 if (globalThis["ArkPrivate"] != undefined) {
     fastarray = ArkPrivate.Load(ArkPrivate.ArrayList);
+    let arr = new fastarray();
+    arr.add(1);
+    arr.add(2);
+    print(arr[0]);
+
+    try {
+        arr["aa"] = 3;
+    } catch (e) {
+        print(e);
+    }
 }
 
-let arr = new fastarray();
-arr.add(1);
-arr.add(2);
-print(arr[0]);
-
-try {
-    arr["aa"] = 3;
-} catch (e) {
-    print(e);
-}
