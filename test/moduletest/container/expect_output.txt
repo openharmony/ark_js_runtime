@@ -12,5 +12,3 @@
 # limitations under the License.
 
 container test start
-1
-TypeError: Cannot set property on Container
