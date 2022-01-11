@@ -17,6 +17,9 @@ namespace panda::ecmascript::kungfu {
     V(HandleLdLexVarDynPrefImm4Imm4, 7)         \
     V(HandleLdLexVarDynPrefImm8Imm8, 7)         \
     V(HandleLdLexVarDynPrefImm16Imm16, 7)       \
+    V(HandleStLexVarDynPrefImm4Imm4V8, 7)       \
+    V(HandleStLexVarDynPrefImm8Imm8V8, 7)       \
+    V(HandleStLexVarDynPrefImm16Imm16V8, 7)     \
     V(HandleIncdynPrefV8, 7)                    \
     V(HandleStConstToGlobalRecordPrefId32, 7)   \
     V(HandleStLetToGlobalRecordPrefId32, 7)     \
