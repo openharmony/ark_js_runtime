@@ -25,6 +25,10 @@ namespace panda::ecmascript::kungfu {
     V(HandleIncdynPrefV8, 7)                    \
     V(HandleDecdynPrefV8, 7)                    \
     V(HandleExpdynPrefV8, 7)                    \
+    V(HandleIsindynPrefV8, 7)                   \
+    V(HandleInstanceofdynPrefV8, 7)             \
+    V(HandleStrictnoteqdynPrefV8, 7)            \
+    V(HandleStricteqdynPrefV8, 7)               \
     V(HandleStConstToGlobalRecordPrefId32, 7)   \
     V(HandleStLetToGlobalRecordPrefId32, 7)     \
     V(HandleStClassToGlobalRecordPrefId32, 7)   \
