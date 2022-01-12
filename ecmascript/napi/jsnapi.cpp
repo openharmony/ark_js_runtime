@@ -50,6 +50,7 @@
 #include "ecmascript/mem/region.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "include/runtime_notification.h"
 #include "libpandabase/os/library_loader.h"
 #include "utils/pandargs.h"
 
@@ -178,6 +179,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 
 void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
 {
+    ecmaVm->GetNotificationManager()->VmDeathEvent();
     auto runtime = Runtime::GetCurrent();
     if (runtime != nullptr) {
         PandaVM *mainVm = runtime->GetPandaVM();
