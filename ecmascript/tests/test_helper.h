@@ -22,6 +22,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/object_factory.h"
 #include "gtest/gtest.h"
 #include "include/runtime_options.h"
@@ -82,7 +83,8 @@ public:
     }
 
     // If you want to call once create, you can refer to BuiltinsMathTest for detail.
-    static void CreateEcmaVMWithScope(PandaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope)
+    static void CreateEcmaVMWithScope(PandaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope,
+                                      const char *libraryPath = nullptr)
     {
         JSRuntimeOptions options;
         options.SetShouldLoadBootPandaFiles(false);
@@ -91,6 +93,10 @@ public:
         options.SetRuntimeType("ecmascript");
         options.SetPreGcHeapVerifyEnabled(true);
         options.SetEnableForceGC(true);
+        if (libraryPath != nullptr) {
+            // for class Runtime to StartDebugger
+            options.SetDebuggerLibraryPath(libraryPath);
+        }
         static EcmaLanguageContext lcEcma;
         [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
         ASSERT_TRUE(success) << "Cannot create Runtime";
@@ -111,8 +117,7 @@ public:
         EcmaVM::Cast(instance)->SetEnableForceGC(false);
         auto thread = EcmaVM::Cast(instance)->GetJSThread();
         thread->ClearException();
-        [[maybe_unused]] bool success = Runtime::Destroy();
-        ASSERT_TRUE(success) << "Cannot destroy Runtime";
+        JSNApi::DestroyJSVM(EcmaVM::Cast(instance));
     }
 
 private:

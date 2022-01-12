@@ -30,17 +30,17 @@ CString JSMethod::ParseFunctionName() const
 
 void JSMethod::SetCallTypeFromAnnotation()
 {
-    const panda_file::File *panda_file_ = GetPandaFile();
-    panda_file::File::EntityId field_id_ = GetFileId();
-    panda_file::MethodDataAccessor mda(*panda_file_, field_id_);
+    const panda_file::File *pandaFile = GetPandaFile();
+    panda_file::File::EntityId fieldId = GetFileId();
+    panda_file::MethodDataAccessor mda(*pandaFile, fieldId);
     mda.EnumerateAnnotations([&](panda_file::File::EntityId annotation_id) {
-        panda_file::AnnotationDataAccessor ada(*panda_file_, annotation_id);
-        auto *annotation_name = reinterpret_cast<const char *>(panda_file_->GetStringData(ada.GetClassId()).data);
+        panda_file::AnnotationDataAccessor ada(*pandaFile, annotation_id);
+        auto *annotation_name = reinterpret_cast<const char *>(pandaFile->GetStringData(ada.GetClassId()).data);
         if (::strcmp("L_ESCallTypeAnnotation;", annotation_name) == 0) {
             uint32_t elem_count = ada.GetCount();
             for (uint32_t i = 0; i < elem_count; i++) {
                 panda_file::AnnotationDataAccessor::Elem adae = ada.GetElement(i);
-                auto *elem_name = reinterpret_cast<const char *>(panda_file_->GetStringData(adae.GetNameId()).data);
+                auto *elem_name = reinterpret_cast<const char *>(pandaFile->GetStringData(adae.GetNameId()).data);
                 if (::strcmp("callType", elem_name) == 0) {
                     callType_ = adae.GetScalarValue().GetValue();
                 }

@@ -94,6 +94,14 @@ namespace panda::ecmascript {
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define INTERPRETER_HANDLE_RETURN()                                                     \
+    do {                                                                                \
+        thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method); \
+        size_t jumpSize = GetJumpSizeAfterCall(pc);                                     \
+        DISPATCH_OFFSET(jumpSize);                                                      \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHECK_SWITCH_TO_DEBUGGER_TABLE()        \
     if (Runtime::GetCurrent()->IsDebugMode()) { \
         dispatchTable = debugDispatchTable;     \
@@ -228,8 +236,8 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     JSTaggedType *fixedSp = FixSpOnEntry(thread);
 
-    JSMethod *methodToCall = params.callTarget->GetCallTarget();
-    ASSERT(methodToCall->GetNumVregs() == 0);
+    JSMethod *method = params.callTarget->GetCallTarget();
+    ASSERT(method->GetNumVregs() == 0);
     uint32_t numActualArgs = params.argc + RESERVED_CALL_ARGCOUNT;
     // Tags and values of thread, new_tgt and argv_length are put into frames too for native frames
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
@@ -261,7 +269,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     thread->CheckSafepoint();
     LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
     JSTaggedValue tagged =
-        reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(methodToCall->GetNativePointer()))(&ecmaRuntimeCallInfo);
+        reinterpret_cast<EcmaEntrypoint>(const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
     LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
     thread->SetCurrentSPFrame(sp);
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
@@ -380,7 +388,9 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     thread->CheckSafepoint();
     LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
+    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
     const JSTaggedValue resAcc = state->acc;
@@ -446,7 +456,9 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     state->env = env;
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
+    thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+    thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     JSTaggedValue res = state->acc;
     // pop frame
@@ -778,9 +790,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();
             }
             ECMAObject *thisFunc = ECMAObject::Cast(func.GetTaggedObject());
-            JSMethod *methodToCall = thisFunc->GetCallTarget();
-            if (methodToCall->IsNative()) {
-                ASSERT(methodToCall->GetNumVregs() == 0);
+            JSMethod *method = thisFunc->GetCallTarget();
+            if (method->IsNative()) {
+                ASSERT(method->GetNumVregs() == 0);
                 // Tags and values of thread, new_tgt and argv_length are put into frames too for native frames
                 // NOLINTNEXTLINE(hicpp-signed-bitwise)
                 size_t frameSize = FRAME_STATE_SIZE + actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS;
@@ -853,16 +865,16 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 state->function = func;
                 thread->SetCurrentSPFrame(newSp);
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";
+                thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
                 JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
-                    const_cast<void *>(methodToCall->GetNativePointer()))(&ecmaRuntimeCallInfo);
+                    const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
                 if (UNLIKELY(thread->HasPendingException())) {
                     INTERPRETER_GOTO_EXCEPTION_HANDLER();
                 }
                 LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";
                 thread->SetCurrentSPFrame(sp);
                 SET_ACC(retValue);
-                size_t jumpSize = GetJumpSizeAfterCall(pc);
-                DISPATCH_OFFSET(jumpSize);
+                INTERPRETER_HANDLE_RETURN();
             } else {
                 if (JSFunction::Cast(thisFunc)->IsClassConstructor()) {
                     {
@@ -875,10 +887,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 }
                 SAVE_PC();
                 JSTaggedType *newSp = nullptr;
-                uint32_t callType = methodToCall->GetCallType();
+                uint32_t callType = method->GetCallType();
                 if (callType == NORMAL_CALL_TYPE) {  // fast path
-                    uint32_t numVregs = methodToCall->GetNumVregs();
-                    uint32_t numDeclaredArgs = methodToCall->GetNumArgs();
+                    uint32_t numVregs = method->GetNumVregs();
+                    uint32_t numDeclaredArgs = method->GetNumArgs();
                     uint32_t copyArgs = std::min(numDeclaredArgs, actualNumArgs);
                     size_t frameSize = FRAME_STATE_SIZE + numVregs + numDeclaredArgs;
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -924,8 +936,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                     bool haveNewTarget = callType & HAVE_NEWTARGET_BIT;
                     bool haveExtra = callType & HAVE_EXTRA_BIT;
                     bool haveFunc = callType & HAVE_FUNC_BIT;
-                    uint32_t numVregs = methodToCall->GetNumVregs();
-                    uint32_t numDeclaredArgs = methodToCall->GetNumArgs();
+                    uint32_t numVregs = method->GetNumVregs();
+                    uint32_t numDeclaredArgs = method->GetNumArgs();
                     uint32_t copyArgs = haveFunc + haveNewTarget + haveThis;
                     size_t frameSize = FRAME_STATE_SIZE + numVregs;
                     if (haveExtra) {
@@ -995,7 +1007,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 InterpretedFrame *state = GET_FRAME(newSp);
                 state->base.prev = sp;
                 state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);
-                state->pc = pc = JSMethod::Cast(methodToCall)->GetBytecodeArray();
+                state->pc = pc = JSMethod::Cast(method)->GetBytecodeArray();
                 state->sp = sp = newSp;
                 state->function = func;
                 state->acc = JSTaggedValue::Hole();
@@ -1008,6 +1020,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 thread->SetCurrentSPFrame(newSp);
                 LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "
                                         << std::hex << reinterpret_cast<uintptr_t>(pc);
+                thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
                 DISPATCH_OFFSET(0);
             }
         }
@@ -1034,8 +1047,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         constpool = ConstantPool::Cast(prevState->constpool.GetTaggedObject());
 
-        size_t jumpSize = GetJumpSizeAfterCall(pc);
-        DISPATCH_OFFSET(jumpSize);
+        INTERPRETER_HANDLE_RETURN();
     }
     HANDLE_OPCODE(HANDLE_RETURNUNDEFINED_PREF) {
         LOG_INST() << "return.undefined";
@@ -1060,8 +1072,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         constpool = ConstantPool::Cast(prevState->constpool.GetTaggedObject());
 
         acc = JSTaggedValue::Undefined();
-        size_t jumpSize = GetJumpSizeAfterCall(pc);
-        DISPATCH_OFFSET(jumpSize);
+        INTERPRETER_HANDLE_RETURN();
     }
     HANDLE_OPCODE(HANDLE_LDNAN_PREF) {
         LOG_INST() << "intrinsics::ldnan";
@@ -2186,8 +2197,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         thread->SetCurrentSPFrame(sp);
         constpool = ConstantPool::Cast(prevState->constpool.GetTaggedObject());
 
-        size_t jumpSize = GetJumpSizeAfterCall(pc);
-        DISPATCH_OFFSET(jumpSize);
+        INTERPRETER_HANDLE_RETURN();
     }
     HANDLE_OPCODE(HANDLE_ASYNCFUNCTIONAWAITUNCAUGHT_PREF_V8_V8) {
         uint16_t v0 = READ_INST_8_1();
