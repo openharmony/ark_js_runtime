@@ -392,21 +392,43 @@ uintptr_t RuntimeTrampolines::JumpToCInterpreter(uintptr_t argGlue, uintptr_t pc
 JSTaggedType RuntimeTrampolines::IncDyn(uintptr_t argGlue, JSTaggedType value)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-
-    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value));
-    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, valueHandle);
-    return (++number).GetRawData();
+    return SlowRuntimeStub::IncDyn(thread, JSTaggedValue(value)).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::DecDyn(uintptr_t argGlue, JSTaggedType value)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    return SlowRuntimeStub::DecDyn(thread, JSTaggedValue(value)).GetRawData();
+}
 
-    JSHandle<JSTaggedValue> valueHandle(thread, JSTaggedValue(value));
-    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, valueHandle);
-    return (--number).GetRawData();
+JSTaggedType RuntimeTrampolines::ExpDyn(uintptr_t argGlue, JSTaggedType base, JSTaggedType exponent)
+{
+    JSTaggedValue baseValue(base);
+    JSTaggedValue exponentValue(exponent);
+    if (baseValue.IsNumber() && exponentValue.IsNumber()) {
+        // fast path
+        double doubleBase = baseValue.IsInt() ? baseValue.GetInt() : baseValue.GetDouble();
+        double doubleExponent = exponentValue.IsInt() ? exponentValue.GetInt() : exponentValue.GetDouble();
+        if (std::abs(doubleBase) == 1 && std::isinf(doubleExponent)) {
+            return JSTaggedValue(base::NAN_VALUE).GetRawData();
+        }
+        if ((doubleBase == 0 &&
+            ((bit_cast<uint64_t>(doubleBase)) & base::DOUBLE_SIGN_MASK) == base::DOUBLE_SIGN_MASK) &&
+            std::isfinite(doubleExponent) && base::NumberHelper::TruncateDouble(doubleExponent) == doubleExponent &&
+            base::NumberHelper::TruncateDouble(doubleExponent / 2) + base::HALF ==  // 2 : half
+            (doubleExponent / 2)) {  // 2 : half
+            if (doubleExponent > 0) {
+                return JSTaggedValue(-0.0).GetRawData();
+            }
+            if (doubleExponent < 0) {
+                return JSTaggedValue(-base::POSITIVE_INFINITY).GetRawData();
+            }
+        }
+        return JSTaggedValue(std::pow(doubleBase, doubleExponent)).GetRawData();
+    }
+    // slow path
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::ExpDyn(thread, baseValue, exponentValue).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)

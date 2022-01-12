@@ -756,6 +756,22 @@ CALL_STUB_INIT_DESCRIPTOR(DecDyn)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ExpDyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor expDyn("ExpDyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = expDyn;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters

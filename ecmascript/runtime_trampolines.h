@@ -81,6 +81,7 @@ public:
                                            int32_t hotnessCounter);
     static JSTaggedType IncDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType DecDyn(uintptr_t argGlue, JSTaggedType value);
+    static JSTaggedType ExpDyn(uintptr_t argGlue, JSTaggedType base, JSTaggedType exponent);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
 };
 }  // namespace panda::ecmascript

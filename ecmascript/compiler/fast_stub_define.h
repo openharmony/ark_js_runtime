@@ -49,7 +49,8 @@ namespace panda::ecmascript::kungfu {
     V(DebugPrint, 1)                        \
     V(StGlobalRecord, 4)                    \
     V(IncDyn, 2)                            \
-    V(DecDyn, 2)
+    V(DecDyn, 2)                            \
+    V(ExpDyn, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
