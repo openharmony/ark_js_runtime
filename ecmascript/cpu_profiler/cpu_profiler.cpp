@@ -43,12 +43,26 @@ CpuProfiler *CpuProfiler::GetInstance()
     return CpuProfiler::singleton_;
 }
 
-void CpuProfiler::StartCpuProfiler(const EcmaVM *vm)
+void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
 {
     if (isOnly_) {
         return;
     }
     isOnly_ = true;
+        if (!CheckFileName(fileName)) {
+        LOG(ERROR, RUNTIME) << "The fileName contains illegal characters";
+        return;
+    }
+    fileName_ = fileName;
+    if (fileName_.empty()) {
+        fileName_ = GetProfileName();
+    }
+    generator_->SetFileName(fileName_);
+    generator_->fileHandle_.open(fileName_.c_str());
+    if (generator_->fileHandle_.fail()) {
+        LOG(ERROR, RUNTIME) << "File open failed";
+        return;
+    }
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
 #else
     struct sigaction sa;
@@ -72,19 +86,17 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm)
 void CpuProfiler::StopCpuProfiler()
 {
     if (!isOnly_) {
-        LOG(ERROR, RUNTIME) << "Do not execute stop cpuprofiler twice in a row";
+        LOG(ERROR, RUNTIME) << "Do not execute stop cpuprofiler twice in a row or didn't execute the start";
         return;
     }
     isOnly_ = false;
     ProfileProcessor::SetIsStart(false);
-    generator_->WriteMethodsAndSampleInfo(true);
-    std::string profileName = GetProfileName();
-    std::ofstream file;
-    if (!profileName.empty()) {
-        file.open(profileName.c_str());
-        file << generator_->GetSampleData();
-        file.close();
+    if (sem_wait(&sem_) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_ wait failed";
+        return;
     }
+    generator_->WriteMethodsAndSampleInfo(true);
+    generator_->fileHandle_ << generator_->GetSampleData();
     if (singleton_ != nullptr) {
         delete singleton_;
         singleton_ = nullptr;
@@ -252,5 +264,18 @@ std::string CpuProfiler::GetProfileName() const
     profileName += time2;
     profileName += ".json";
     return profileName;
+}
+
+bool CpuProfiler::CheckFileName(const std::string fileName) const
+{
+    if (fileName.empty()) {
+        return true;
+    }
+    if (fileName[0] == '-') {
+        return false;
+    }
+    std::regex regExpress("[\\ \"/{}@#$%^&*()\\]\\[]");
+    bool res = !std::regex_search(fileName, regExpress);
+    return res;
 }
 } // namespace panda::ecmascript
