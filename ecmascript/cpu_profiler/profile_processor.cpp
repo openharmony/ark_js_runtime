@@ -101,8 +101,7 @@ void ProfileProcessor::SetIsStart(bool isStart)
 void ProfileProcessor::WriteSampleDataToFile()
 {
     static int flag = 0;
-    if (!generator_->fileHandle_.is_open() || generator_->GetSampleData().size() < 1024 * 1024) {
-        // 1024 * 1024:1M
+    if (!generator_->fileHandle_.is_open() || generator_->GetSampleData().size() < 1024 * 1024) { // 1024 * 1024:1M
         return;
     }
     if (flag == 0) {
