@@ -552,6 +552,8 @@ public:
     inline GateRef TaggedIsTrue(GateRef x);
     inline GateRef TaggedIsFalse(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
+    inline GateRef TaggedGetInt(GateRef x);
+    inline GateRef Int16BuildTaggedWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
@@ -733,6 +735,7 @@ public:
     inline GateRef ZExtInt8ToInt32(GateRef x);
     inline GateRef ZExtInt8ToPtr(GateRef x);
     inline GateRef ZExtInt16ToInt32(GateRef x);
+    inline GateRef ZExtInt16ToInt64(GateRef x);
     inline GateRef TruncInt64ToInt32(GateRef x);
     inline GateRef TruncInt64ToInt1(GateRef x);
     inline GateRef TruncInt32ToInt1(GateRef x);
@@ -798,6 +801,10 @@ public:
     inline GateRef GetParentEnv(GateRef object);
     inline GateRef GetPropertiesFromLexicalEnv(GateRef object, GateRef index);
     inline void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
+    inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
+    inline GateRef GetFunctionInfoFlagFromJSFunction(GateRef object);
+    inline void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
+    inline GateRef FunctionIsResolved(GateRef object);
 
 private:
     Environment env_;

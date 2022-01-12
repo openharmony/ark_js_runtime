@@ -251,6 +251,8 @@ void JSThread::LoadStubModule(const char *moduleFile)
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStLexVarDynPrefImm8Imm8V8);
     bytecodeHandlers_[EcmaOpcode::STLEXVARDYN_PREF_IMM16_IMM16_V8] =
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStLexVarDynPrefImm16Imm16V8);
+    bytecodeHandlers_[EcmaOpcode::DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8);
     bytecodeHandlers_[EcmaOpcode::INCDYN_PREF_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleIncdynPrefV8);
     bytecodeHandlers_[EcmaOpcode::DECDYN_PREF_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleDecdynPrefV8);
     bytecodeHandlers_[EcmaOpcode::EXPDYN_PREF_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleExpdynPrefV8);

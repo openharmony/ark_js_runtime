@@ -50,7 +50,10 @@ namespace panda::ecmascript::kungfu {
     V(StGlobalRecord, 4)                    \
     V(IncDyn, 2)                            \
     V(DecDyn, 2)                            \
-    V(ExpDyn, 3)
+    V(ExpDyn, 3)                            \
+    V(ResolveClass, 6)                      \
+    V(CloneClassFromTemplate, 5)            \
+    V(SetClassConstructorLength, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
