@@ -237,8 +237,8 @@ void JSThread::LoadStubModule(const char *moduleFile)
     bytecodeHandlers_[EcmaOpcode::LDNULL_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdNullPref);
     bytecodeHandlers_[EcmaOpcode::LDTRUE_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdTruePref);
     bytecodeHandlers_[EcmaOpcode::LDFALSE_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdFalsePref);
-    bytecodeHandlers_[EcmaOpcode::LDA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdaDyn);
-    bytecodeHandlers_[EcmaOpcode::STA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStaDyn);
+    bytecodeHandlers_[EcmaOpcode::LDA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdaDynV8);
+    bytecodeHandlers_[EcmaOpcode::STA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStaDynV8);
     bytecodeHandlers_[EcmaOpcode::LDLEXVARDYN_PREF_IMM4_IMM4] =
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdLexVarDynPrefImm4Imm4);
     bytecodeHandlers_[EcmaOpcode::LDLEXVARDYN_PREF_IMM8_IMM8] =
@@ -270,6 +270,9 @@ void JSThread::LoadStubModule(const char *moduleFile)
     bytecodeHandlers_[EcmaOpcode::STCLASSTOGLOBALRECORD_PREF_ID32] =
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStClassToGlobalRecordPrefId32);
     bytecodeHandlers_[EcmaOpcode::NEGDYN_PREF_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleNegDynPrefV8);
+    bytecodeHandlers_[EcmaOpcode::JMP_IMM8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm8);
+    bytecodeHandlers_[EcmaOpcode::JMP_IMM16] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm16);
+    bytecodeHandlers_[EcmaOpcode::JMP_IMM32] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm32);
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif

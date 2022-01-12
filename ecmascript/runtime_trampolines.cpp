@@ -494,4 +494,19 @@ JSTaggedType RuntimeTrampolines::SetClassConstructorLength(uintptr_t argGlue, JS
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::SetClassConstructorLength(thread, JSTaggedValue(ctor), JSTaggedValue(length)).GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::UpdateHotnessCounter(uintptr_t argGlue, uintptr_t sp)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    InterpretedFrame *state = GET_FRAME(sp);
+    thread->CheckSafepoint();
+    if (state->profileTypeInfo == JSTaggedValue::Undefined()) {
+        auto thisFunc = state->function;
+        auto method = ECMAObject::Cast(thisFunc.GetTaggedObject())->GetCallTarget();
+        auto res = SlowRuntimeStub::NotifyInlineCache(
+            thread, JSFunction::Cast(thisFunc.GetHeapObject()), method);
+            state->profileTypeInfo = res;
+    }
+    return state->profileTypeInfo.GetRawData();
+}
 }  // namespace panda::ecmascript
