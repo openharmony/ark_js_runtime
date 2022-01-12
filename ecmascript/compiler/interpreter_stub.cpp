@@ -159,7 +159,7 @@ void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
              hotnessCounter, GetArchRelateConstant(0));
 }
 
-void HandleLdaDynStub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleLdaDynV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -177,7 +177,7 @@ void HandleLdaDynStub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::V8)));
 }
 
-void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleStaDynV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -193,6 +193,95 @@ void HandleStaDynStub::GenerateCircuit(const CompilationConfig *cfg)
     SetVregValue(glue, sp, ZExtInt8ToPtr(vdst), acc);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::V8)));
+}
+
+void HandleJmpImm8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    DEFVARIABLE(profileTypeInfo, MachineType::TAGGED_POINTER, TaggedPointerArgument(4)); /* 4: 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    DEFVARIABLE(hotnessCounter, MachineType::INT32, TaggedArgument(6)); /* 6: 7th parameter is value */
+    Label slowPath(env);
+    Label dispatch(env);
+
+    GateRef offset = ReadInstSigned8_0(pc);
+    hotnessCounter = Int32Add(offset, *hotnessCounter);
+    Branch(Int32LessThan(*hotnessCounter, GetInt32Constant(0)), &slowPath, &dispatch);
+
+    Bind(&slowPath);
+    {
+        StubDescriptor *setClassConstructorLength = GET_STUBDESCRIPTOR(UpdateHotnessCounter);
+        profileTypeInfo = CallRuntime(setClassConstructorLength, glue,
+            GetWord64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { glue, sp });
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    Dispatch(glue, pc, sp, constpool, *profileTypeInfo, acc, *hotnessCounter, SExtInt32ToPtr(offset));
+}
+
+void HandleJmpImm16Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    DEFVARIABLE(profileTypeInfo, MachineType::TAGGED_POINTER, TaggedPointerArgument(4)); /* 4: 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    DEFVARIABLE(hotnessCounter, MachineType::INT32, TaggedArgument(6)); /* 6: 7th parameter is value */
+
+    Label slowPath(env);
+    Label dispatch(env);
+
+    GateRef offset = ReadInstSigned16_0(pc);
+    hotnessCounter = Int32Add(offset, *hotnessCounter);
+    Branch(Int32LessThan(*hotnessCounter, GetInt32Constant(0)), &slowPath, &dispatch);
+
+    Bind(&slowPath);
+    {
+        StubDescriptor *setClassConstructorLength = GET_STUBDESCRIPTOR(UpdateHotnessCounter);
+        profileTypeInfo = CallRuntime(setClassConstructorLength, glue,
+            GetWord64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { glue, sp });
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    Dispatch(glue, pc, sp, constpool, *profileTypeInfo, acc, *hotnessCounter, SExtInt32ToPtr(offset));
+}
+
+void HandleJmpImm32Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    DEFVARIABLE(profileTypeInfo, MachineType::TAGGED_POINTER, TaggedPointerArgument(4)); /* 4: 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    DEFVARIABLE(hotnessCounter, MachineType::INT32, TaggedArgument(6)); /* 6: 7th parameter is value */
+
+    Label slowPath(env);
+    Label dispatch(env);
+
+    GateRef offset = ReadInstSigned32_0(pc);
+    hotnessCounter = Int32Add(offset, *hotnessCounter);
+    Branch(Int32LessThan(*hotnessCounter, GetInt32Constant(0)), &slowPath, &dispatch);
+
+    Bind(&slowPath);
+    {
+        StubDescriptor *setClassConstructorLength = GET_STUBDESCRIPTOR(UpdateHotnessCounter);
+        profileTypeInfo = CallRuntime(setClassConstructorLength, glue,
+            GetWord64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { glue, sp });
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    Dispatch(glue, pc, sp, constpool, *profileTypeInfo, acc, *hotnessCounter, SExtInt32ToPtr(offset));
 }
 
 void HandleLdLexVarDynPrefImm4Imm4Stub::GenerateCircuit(const CompilationConfig *cfg)

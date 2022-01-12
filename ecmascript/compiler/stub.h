@@ -734,6 +734,8 @@ public:
     inline GateRef ZExtInt1ToInt32(GateRef x);
     inline GateRef ZExtInt8ToInt32(GateRef x);
     inline GateRef ZExtInt8ToPtr(GateRef x);
+    inline GateRef ZExtInt16ToPtr(GateRef x);
+    inline GateRef SExtInt32ToPtr(GateRef x);
     inline GateRef ZExtInt16ToInt32(GateRef x);
     inline GateRef ZExtInt16ToInt64(GateRef x);
     inline GateRef TruncInt64ToInt32(GateRef x);
@@ -777,6 +779,9 @@ public:
     inline GateRef ReadInst16_2(GateRef pc);
     inline GateRef ReadInst16_3(GateRef pc);
     inline GateRef ReadInst16_5(GateRef pc);
+    inline GateRef ReadInstSigned8_0(GateRef pc);
+    inline GateRef ReadInstSigned16_0(GateRef pc);
+    inline GateRef ReadInstSigned32_0(GateRef pc);
     inline GateRef GetFrame(GateRef frame);
     inline GateRef GetPcFromFrame(GateRef frame);
     inline GateRef GetSpFromFrame(GateRef frame);

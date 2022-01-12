@@ -1644,10 +1644,26 @@ GateRef Stub::ZExtInt8ToInt32(GateRef x)
 
 GateRef Stub::ZExtInt8ToPtr(GateRef x)
 {
-    if (env_.IsArm32()) {
+    if (env_.IsArch32Bit()) {
         return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT32), x);
     }
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT64), x);
+}
+
+GateRef Stub::ZExtInt16ToPtr(GateRef x)
+{
+    if (env_.IsArch32Bit()) {
+        return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT16_TO_INT32), x);
+    }
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT16_TO_INT64), x);
+}
+
+GateRef Stub::SExtInt32ToPtr(GateRef x)
+{
+    if (env_.IsArch32Bit()) {
+        return x;
+    }
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT32_TO_INT64), x);
 }
 
 GateRef Stub::ZExtInt16ToInt32(GateRef x)
@@ -1834,6 +1850,34 @@ GateRef Stub::ReadInst4_3(GateRef pc)
 {
     return Word8And(
         Word8LSR(Load(MachineType::UINT8, pc, GetArchRelateConstant(2)), GetInt8Constant(4)), GetInt8Constant(0xf));
+}
+
+GateRef Stub::ReadInstSigned8_0(GateRef pc)
+{
+    GateRef x = Load(MachineType::INT8, pc, GetArchRelateConstant(1));
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT8_TO_INT32), x);
+}
+
+GateRef Stub::ReadInstSigned16_0(GateRef pc)
+{
+    /* 2 : skip 8 bits of opcode and 8 bits of low bits */
+    GateRef currentInst = Load(MachineType::INT8, pc, GetArchRelateConstant(2));
+    GateRef currentInst1 = env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT8_TO_INT32), currentInst);
+    GateRef currentInst2 = Word32LSL(currentInst1, GetInt32Constant(8));  // 8 : set as high 8 bits
+    return Int32Add(currentInst2, ZExtInt8ToInt32(ReadInst8_0(pc)));
+}
+
+GateRef Stub::ReadInstSigned32_0(GateRef pc)
+{
+    /* 4 : skip 8 bits of opcode and 24 bits of low bits */
+    GateRef x = Load(MachineType::INT8, pc, GetArchRelateConstant(4));
+    GateRef currentInst = env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT8_TO_INT32), x);
+    GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
+    GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_2(pc)));
+    GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
+    GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8_1(pc)));
+    GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
+    return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8_0(pc)));
 }
 
 GateRef Stub::ReadInst16_0(GateRef pc)

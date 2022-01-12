@@ -139,6 +139,8 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::ZEXT_INT1_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::SEXT_INT1_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
         {OpCode::SEXT_INT1_TO_INT64, &LLVMIRBuilder::HandleSExtInt},
+        {OpCode::SEXT_INT8_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
+        {OpCode::SEXT_INT16_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
         {OpCode::SEXT_INT32_TO_INT64, &LLVMIRBuilder::HandleSExtInt},
         {OpCode::TRUNC_INT64_TO_INT1, &LLVMIRBuilder::HandleCastIntXToIntY},
         {OpCode::TRUNC_INT32_TO_INT1, &LLVMIRBuilder::HandleCastIntXToIntY},

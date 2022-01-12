@@ -58,7 +58,8 @@ namespace panda::ecmascript::kungfu {
     V(FastStrictNotEqual, 2)                \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
-    V(SetClassConstructorLength, 3)
+    V(SetClassConstructorLength, 3)         \
+    V(UpdateHotnessCounter, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

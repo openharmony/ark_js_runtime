@@ -915,6 +915,20 @@ CALL_STUB_INIT_DESCRIPTOR(SetClassConstructorLength)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(UpdateHotnessCounter)
+{
+    // 2 : 2 input parameters
+    StubDescriptor updateHotnessCounter("UpdateHotnessCounter", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = updateHotnessCounter;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 #ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {
