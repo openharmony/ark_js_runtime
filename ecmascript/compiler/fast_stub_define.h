@@ -51,6 +51,10 @@ namespace panda::ecmascript::kungfu {
     V(IncDyn, 2)                            \
     V(DecDyn, 2)                            \
     V(ExpDyn, 3)                            \
+    V(IsInDyn, 3)                           \
+    V(InstanceOfDyn, 3)                     \
+    V(FastStrictEqual, 2)                   \
+    V(FastStrictNotEqual, 2)                \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)

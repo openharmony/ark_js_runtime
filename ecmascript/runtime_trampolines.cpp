@@ -431,6 +431,36 @@ JSTaggedType RuntimeTrampolines::ExpDyn(uintptr_t argGlue, JSTaggedType base, JS
     return SlowRuntimeStub::ExpDyn(thread, baseValue, exponentValue).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::IsInDyn(uintptr_t argGlue, JSTaggedType prop, JSTaggedType obj)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::IsInDyn(thread, JSTaggedValue(prop), JSTaggedValue(obj)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::InstanceOfDyn(uintptr_t argGlue, JSTaggedType obj, JSTaggedType target)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::InstanceofDyn(thread, JSTaggedValue(obj), JSTaggedValue(target)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::FastStrictNotEqual(JSTaggedType left, JSTaggedType right)
+{
+    bool result = FastRuntimeStub::FastStrictEqual(JSTaggedValue(left), JSTaggedValue(right));
+    if (result) {
+        return JSTaggedValue::False().GetRawData();
+    }
+    return JSTaggedValue::True().GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::FastStrictEqual(JSTaggedType left, JSTaggedType right)
+{
+    bool result = FastRuntimeStub::FastStrictEqual(JSTaggedValue(left), JSTaggedValue(right));
+    if (result) {
+        return JSTaggedValue::True().GetRawData();
+    }
+    return JSTaggedValue::False().GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);

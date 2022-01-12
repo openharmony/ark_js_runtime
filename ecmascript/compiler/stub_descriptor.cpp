@@ -772,6 +772,68 @@ CALL_STUB_INIT_DESCRIPTOR(ExpDyn)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(IsInDyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor isInDyn("IsInDyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = isInDyn;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(InstanceOfDyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor instanceOfDyn("InstanceOfDyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = instanceOfDyn;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(FastStrictNotEqual)
+{
+    // 2 : 2 input parameters
+    StubDescriptor fastStrictNotEqual("FastStrictNotEqual", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = fastStrictNotEqual;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(FastStrictEqual)
+{
+    // 2 : 2 input parameters
+    StubDescriptor fastStrictEqual("FastStrictEqual", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = fastStrictEqual;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters
