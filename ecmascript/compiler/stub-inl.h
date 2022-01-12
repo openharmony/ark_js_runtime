@@ -721,6 +721,17 @@ GateRef Stub::TaggedIsBoolean(GateRef x)
     return TruncInt32ToInt1(Word32Or(SExtInt1ToInt32(TaggedIsTrue(x)), SExtInt1ToInt32(TaggedIsFalse(x))));
 }
 
+GateRef Stub::TaggedGetInt(GateRef x)
+{
+    return TruncInt64ToInt32(Word64And(x, GetWord64Constant(~JSTaggedValue::TAG_MASK)));
+}
+
+GateRef Stub::Int16BuildTaggedWithNoGC(GateRef x)
+{
+    GateRef val = ZExtInt16ToInt64(x);
+    return ChangeInt64ToTagged(Word64Or(val, GetWord64Constant(JSTaggedValue::TAG_INT)));
+}
+
 GateRef Stub::IntBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
@@ -1644,6 +1655,11 @@ GateRef Stub::ZExtInt16ToInt32(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT16_TO_INT32), x);
 }
 
+GateRef Stub::ZExtInt16ToInt64(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT16_TO_INT64), x);
+}
+
 GateRef Stub::TruncInt64ToInt32(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), x);
@@ -2002,6 +2018,34 @@ void Stub::SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index
 {
     GateRef valueIndex = Int32Add(index, GetInt32Constant(LexicalEnv::RESERVED_ENV_LENGTH));
     SetValueToTaggedArray(MachineType::TAGGED, glue, object, valueIndex, value);
+}
+
+GateRef Stub::GetObjectFromConstPool(GateRef constpool, GateRef index)
+{
+    return GetValueFromTaggedArray(MachineType::TAGGED, constpool, index);
+}
+
+GateRef Stub::GetFunctionInfoFlagFromJSFunction(GateRef object)
+{
+    GateRef offset = GetArchRelateConstant(JSFunction::FUNCTION_INFO_FLAG_OFFSET);
+    return Load(MachineType::TAGGED, object, offset);
+}
+
+void Stub::SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv)
+{
+    GateRef offset = GetArchRelateConstant(JSFunction::LEXICAL_ENV_OFFSET);
+    Store(MachineType::TAGGED, glue, object, offset, lexicalEnv);
+}
+
+GateRef Stub::FunctionIsResolved(GateRef object)
+{
+    GateRef bitfield = TaggedGetInt(GetFunctionInfoFlagFromJSFunction(object));
+    // decode
+    return Word32NotEqual(
+        Word32And(
+            Word32LSR(bitfield, GetInt32Constant(JSFunction::ResolvedBit::START_BIT)),
+            GetInt32Constant((1LU << JSFunction::ResolvedBit::SIZE) - 1)),
+        GetInt32Constant(0));
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

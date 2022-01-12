@@ -156,6 +156,7 @@ public:
         ZEXT_INT8_TO_INT32,
         ZEXT_INT8_TO_INT64,
         ZEXT_INT16_TO_INT32,
+        ZEXT_INT16_TO_INT64,
         ZEXT_INT1_TO_INT64,
         SEXT_INT32_TO_INT64,
         SEXT_INT1_TO_INT32,

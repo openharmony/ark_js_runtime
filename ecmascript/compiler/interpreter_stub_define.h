@@ -27,7 +27,8 @@ namespace panda::ecmascript::kungfu {
     V(HandleExpdynPrefV8, 7)                    \
     V(HandleStConstToGlobalRecordPrefId32, 7)   \
     V(HandleStLetToGlobalRecordPrefId32, 7)     \
-    V(HandleStClassToGlobalRecordPrefId32, 7)
+    V(HandleStClassToGlobalRecordPrefId32, 7)   \
+    V(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8, 7)
 
 enum InterpreterStubId {
 #define DEF_STUB(name, counter) name##Id,

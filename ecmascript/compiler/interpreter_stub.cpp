@@ -683,4 +683,68 @@ void HandleStClassToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationC
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
 }
+
+void HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is sp */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is constpool */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is profileTypeInfo */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
+
+    GateRef methodId = ReadInst16_1(pc);
+    GateRef literalId = ReadInst16_3(pc);
+    GateRef length = ReadInst16_5(pc);
+    GateRef v0 = ReadInst8_7(pc);
+    GateRef v1 = ReadInst8_8(pc);
+
+    GateRef classTemplate = GetObjectFromConstPool(constpool, ZExtInt16ToInt32(methodId));
+    GateRef literalBuffer = GetObjectFromConstPool(constpool, ZExtInt16ToInt32(literalId));
+    GateRef lexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef proto = GetVregValue(sp, ZExtInt8ToPtr(v1));
+
+    DEFVARIABLE(res, MachineType::TAGGED, GetUndefinedConstant());
+
+    Label isResolved(env);
+    Label isNotResolved(env);
+    Label afterCheckResolved(env);
+    Branch(FunctionIsResolved(classTemplate), &isResolved, &isNotResolved);
+    Bind(&isResolved);
+    {
+        StubDescriptor *cloneClassFromTemplate = GET_STUBDESCRIPTOR(CloneClassFromTemplate);
+        res = CallRuntime(cloneClassFromTemplate, glue, GetWord64Constant(FAST_STUB_ID(CloneClassFromTemplate)),
+                          { glue, classTemplate, proto, lexicalEnv, constpool });
+        Jump(&afterCheckResolved);
+    }
+    Bind(&isNotResolved);
+    {
+        StubDescriptor *resolveClass = GET_STUBDESCRIPTOR(ResolveClass);
+        res = CallRuntime(resolveClass, glue, GetWord64Constant(FAST_STUB_ID(ResolveClass)),
+                          { glue, classTemplate, literalBuffer, proto, lexicalEnv, constpool });
+        Jump(&afterCheckResolved);
+    }
+    Bind(&afterCheckResolved);
+    Label isException(env);
+    Label isNotException(env);
+    Branch(TaggedIsException(*res), &isException, &isNotException);
+    Bind(&isException);
+    {
+        SavePc(glue, sp, pc);
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+            GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8)));
+    }
+    Bind(&isNotException);
+    GateRef newLexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));  // slow runtime may gc
+    SetLexicalEnvToFunction(glue, *res, newLexicalEnv);
+    StubDescriptor *setClassConstructorLength = GET_STUBDESCRIPTOR(SetClassConstructorLength);
+    CallRuntime(setClassConstructorLength, glue, GetWord64Constant(FAST_STUB_ID(SetClassConstructorLength)),
+                { glue, *res, Int16BuildTaggedWithNoGC(length) });
+    acc = *res;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8)));
+}
 }  // namespace panda::ecmascript::kungfu

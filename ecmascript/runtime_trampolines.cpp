@@ -436,4 +436,26 @@ JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType 
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::StGlobalRecord(thread, JSTaggedValue(prop), JSTaggedValue(value), isConst).GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal,
+    JSTaggedType base, JSTaggedType lexenv, JSTaggedType constpool)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::ResolveClass(thread, JSTaggedValue(ctor), reinterpret_cast<TaggedArray *>(literal),
+                JSTaggedValue(base), JSTaggedValue(lexenv), reinterpret_cast<ConstantPool *>(constpool)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::CloneClassFromTemplate(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType base,
+    JSTaggedType lexenv, JSTaggedType constpool)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::CloneClassFromTemplate(thread, JSTaggedValue(ctor), JSTaggedValue(base),
+        JSTaggedValue(lexenv), reinterpret_cast<ConstantPool *>(constpool)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::SetClassConstructorLength(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType length)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::SetClassConstructorLength(thread, JSTaggedValue(ctor), JSTaggedValue(length)).GetRawData();
+}
 }  // namespace panda::ecmascript

@@ -62,6 +62,7 @@ namespace panda::ecmascript {
         InterpretedFrame *frame = GET_FRAME(sp);                                                              \
         auto currentMethod = ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();            \
         currentMethod->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));                              \
+        return;                                                                                               \
     } while (false)
 
 #define DISPATCH(format)  DISPATCH_OFFSET(BytecodeInstruction::Size(format))

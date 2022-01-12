@@ -83,6 +83,11 @@ public:
     static JSTaggedType DecDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType ExpDyn(uintptr_t argGlue, JSTaggedType base, JSTaggedType exponent);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
+    static JSTaggedType ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal, JSTaggedType base,
+                                     JSTaggedType lexenv, JSTaggedType constpool);
+    static JSTaggedType CloneClassFromTemplate(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType base,
+                                               JSTaggedType lexenv, JSTaggedType constpool);
+    static JSTaggedType SetClassConstructorLength(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType length);
 };
 }  // namespace panda::ecmascript
 #endif
