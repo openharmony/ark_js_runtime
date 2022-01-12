@@ -17,6 +17,7 @@
 #define ECMASCRIPT_PROFILE_GENERSTOR_H
 
 #include <ctime>
+#include <fstream>
 #include <string>
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -63,8 +64,12 @@ public:
     std::string GetSampleData() const;
     void SetThreadStartTime(time_t threadStartTime);
     void SetStartsampleData(std::string sampleData);
+    void SetFileName(std::string &fileName);
+    std::string GetFileName() const;
+    void ClearSampleData();
 
     static int staticGcState_;
+    std::ofstream fileHandle_;
 private:
     void WriteAddNodes();
     void WriteAddSamples();
@@ -77,6 +82,7 @@ private:
     CDeque<struct SampleInfo> samples_;
     std::string sampleData_;
     time_t threadStartTime_;
+    std::string fileName_;
 };
 } // namespace panda::ecmascript
 #endif // ECMASCRIPT_PROFILE_GENERSTOR_H
