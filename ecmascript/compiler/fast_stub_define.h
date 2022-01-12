@@ -48,6 +48,7 @@ namespace panda::ecmascript::kungfu {
     V(JumpToCInterpreter, 7)                \
     V(DebugPrint, 1)                        \
     V(StGlobalRecord, 4)                    \
+    V(NegDyn, 2)                            \
     V(IncDyn, 2)                            \
     V(DecDyn, 2)                            \
     V(ExpDyn, 3)                            \
