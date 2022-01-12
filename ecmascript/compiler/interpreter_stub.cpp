@@ -470,8 +470,18 @@ void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     {
         // slow path
         StubDescriptor *incDyn = GET_STUBDESCRIPTOR(IncDyn);
-        acc = CallRuntime(incDyn, glue, GetWord64Constant(FAST_STUB_ID(IncDyn)),
-                          {glue, value});
+        GateRef result = CallRuntime(incDyn, glue, GetWord64Constant(FAST_STUB_ID(IncDyn)),
+                                     {glue, value});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(result), &isException, &notException);
+        Bind(&isException);
+        {
+            SavePc(glue, sp, pc);
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        }
+        Bind(&notException);
+        acc = result;
         Jump(&accDispatch);
     }
 
@@ -530,12 +540,53 @@ void HandleDecdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     {
         // slow path
         StubDescriptor *decDyn = GET_STUBDESCRIPTOR(DecDyn);
-        acc = CallRuntime(decDyn, glue, GetWord64Constant(FAST_STUB_ID(DecDyn)),
-                          {glue, value});
+        GateRef result = CallRuntime(decDyn, glue, GetWord64Constant(FAST_STUB_ID(DecDyn)),
+                                     {glue, value});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(result), &isException, &notException);
+        Bind(&isException);
+        {
+            SavePc(glue, sp, pc);
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        }
+        Bind(&notException);
+        acc = result;
         Jump(&accDispatch);
     }
 
     Bind(&accDispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
+}
+
+void HandleExpdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef base = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    StubDescriptor *expDyn = GET_STUBDESCRIPTOR(ExpDyn);
+    GateRef result = CallRuntime(expDyn, glue, GetWord64Constant(FAST_STUB_ID(ExpDyn)),
+                                 {glue, base, *acc}); // acc is exponent
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        SavePc(glue, sp, pc);
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+    }
+    Bind(&notException);
+    acc = result;
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
