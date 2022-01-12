@@ -266,7 +266,7 @@ std::string CpuProfiler::GetProfileName() const
     return profileName;
 }
 
-bool CpuProfiler::CheckFileName(const std::string fileName) const
+bool CpuProfiler::CheckFileName(const std::string &fileName) const
 {
     if (fileName.empty()) {
         return true;
