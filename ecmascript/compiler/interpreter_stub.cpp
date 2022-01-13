@@ -112,6 +112,95 @@ void HandleLdFalsePrefStub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
+void HandleLdLexEnvDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    GateRef state = GetFrame(sp);
+    acc = GetEnvFromFrame(state);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandlePopLexEnvDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    GateRef state = GetFrame(sp);
+    GateRef currentLexEnv = GetEnvFromFrame(state);
+    GateRef parentLexEnv = GetParentEnv(currentLexEnv);
+    SetEnvToFrame(glue, state, parentLexEnv);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleLdHolePrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    acc = GetHoleConstant();
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleLdHomeObjectPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    GateRef thisFunc = GetFunctionFromFrame(GetFrame(sp));
+    acc = GetHomeObjectFromJSFunction(thisFunc);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleDebuggerPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    GateRef acc = TaggedArgument(5);
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
 void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
