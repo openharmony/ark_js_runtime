@@ -92,7 +92,8 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName
 void CpuProfiler::StopCpuProfiler()
 {
     if (!isOnly_) {
-        LOG(ERROR, RUNTIME) << "Do not execute stop cpuprofiler twice in a row or didn't execute the start";
+        LOG(ERROR, RUNTIME) << "Do not execute stop cpuprofiler twice in a row or didn't execute the start\
+                                or the sampling thread is not started";
         return;
     }
     isOnly_ = false;
