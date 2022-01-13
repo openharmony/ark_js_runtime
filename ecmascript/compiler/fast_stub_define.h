@@ -48,6 +48,10 @@ namespace panda::ecmascript::kungfu {
     V(JumpToCInterpreter, 7)                \
     V(DebugPrint, 1)                        \
     V(StGlobalRecord, 4)                    \
+    V(SetPropertyByValue, 4)                \
+    V(SetFunctionNameNoPrefix, 3)           \
+    V(StOwnByValueWithNameSet, 4)           \
+    V(StOwnByNameWithNameSet, 7)            \
     V(NegDyn, 2)                            \
     V(IncDyn, 2)                            \
     V(DecDyn, 2)                            \

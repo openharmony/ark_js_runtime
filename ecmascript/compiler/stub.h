@@ -605,12 +605,14 @@ public:
     inline GateRef IsDictionaryElement(GateRef hClass);
     inline GateRef NotBuiltinsConstructor(GateRef object);
     inline GateRef IsClassConstructor(GateRef object);
+    inline GateRef IsClassPrototype(GateRef object);
     inline GateRef IsExtensible(GateRef object);
     inline GateRef IsEcmaObject(GateRef obj);
     inline GateRef IsSymbol(GateRef obj);
     inline GateRef IsString(GateRef obj);
     inline GateRef IsJsProxy(GateRef obj);
     inline GateRef IsJsArray(GateRef obj);
+    inline GateRef IsJSObject(GateRef obj);
     inline GateRef IsWritable(GateRef attr);
     inline GateRef IsAccessor(GateRef attr);
     inline GateRef IsInlinedProperty(GateRef attr);

@@ -279,6 +279,18 @@ void JSThread::LoadStubModule(const char *moduleFile)
     bytecodeHandlers_[EcmaOpcode::JMP_IMM8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm8);
     bytecodeHandlers_[EcmaOpcode::JMP_IMM16] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm16);
     bytecodeHandlers_[EcmaOpcode::JMP_IMM32] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm32);
+    bytecodeHandlers_[EcmaOpcode::STOWNBYVALUEWITHNAMESET_PREF_V8_V8] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStOwnByValueWithNameSetPrefV8V8);
+    // bytecodeHandlers_[EcmaOpcode::STOWNBYNAMEWITHNAMESET_PREF_ID32_V8] =
+    //     stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStOwnByNameWithNameSetPrefId32V8);
+    bytecodeHandlers_[EcmaOpcode::LDFUNCTION_PREF] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdFunctionPref);
+    bytecodeHandlers_[EcmaOpcode::MOV_V4_V4] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleMovV4V4);
+    bytecodeHandlers_[EcmaOpcode::MOV_DYN_V8_V8] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleMovDynV8V8);
+    bytecodeHandlers_[EcmaOpcode::MOV_DYN_V16_V16] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleMovDynV16V16);
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif
