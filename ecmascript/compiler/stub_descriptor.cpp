@@ -940,6 +940,50 @@ CALL_STUB_INIT_DESCRIPTOR(UpdateHotnessCounter)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ImportModule)
+{
+    // 2 : 2 input parameters
+    StubDescriptor importModule("ImportModule", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = importModule;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StModuleVar)
+{
+    // 3 : 3 input parameters
+    StubDescriptor stModuleVar("StModuleVar", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = stModuleVar;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(LdModvarByName)
+{
+    // 3 : 3 input parameters
+    StubDescriptor ldModvarByName("LdModvarByName", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = ldModvarByName;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 #ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {

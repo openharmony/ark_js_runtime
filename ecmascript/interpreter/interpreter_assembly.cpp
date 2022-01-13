@@ -1253,19 +1253,7 @@ void InterpreterAssembly::HandleMul2DynPrefV8(
                 << " v" << v0;
     JSTaggedValue left = GET_VREG_VALUE(v0);
     JSTaggedValue right = acc;
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
-    JSTaggedValue value = JSTaggedValue::Hole();
-    if (left.IsInt() && right.IsInt()) {
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMul));
-        typedef JSTaggedType (*PFFastMul)(JSTaggedValue, JSTaggedValue);
-        auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
-        value = JSTaggedValue(fastMulPtr(left, right));
-    } else {
-        value = FastRuntimeStub::FastMul(left, right);
-    }
-#else
     JSTaggedValue value = FastRuntimeStub::FastMul(left, right);
-#endif
     if (!value.IsHole()) {
         SET_ACC(value);
     } else {
@@ -2273,14 +2261,7 @@ void InterpreterAssembly::HandleStOwnByNamePrefId32V8(
         JSTaggedValue value = GET_ACC();
         // fast path
         SAVE_ACC();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByName));
-        typedef JSTaggedValue (*PFSetPropertyByName)(JSThread *, JSTaggedValue, JSTaggedValue, JSTaggedValue, bool);
-        auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
-        JSTaggedValue res = setPropertyByNamePtr(thread, receiver, propKey, value, true);
-#else
         JSTaggedValue res = FastRuntimeStub::SetPropertyByName<true>(thread, receiver, propKey, value);
-#endif
         if (!res.IsHole()) {
             INTERPRETER_RETURN_IF_ABRUPT(res);
             RESTORE_ACC();
@@ -2288,7 +2269,6 @@ void InterpreterAssembly::HandleStOwnByNamePrefId32V8(
         }
         RESTORE_ACC();
     }
-
     SAVE_ACC();
     receiver = GET_VREG_VALUE(v0);                           // Maybe moved by GC
     auto propKey = ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(stringId);  // Maybe moved by GC

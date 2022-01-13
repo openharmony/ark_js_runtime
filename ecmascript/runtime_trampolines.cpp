@@ -539,4 +539,22 @@ JSTaggedType RuntimeTrampolines::StOwnByNameWithNameSet(uintptr_t argGlue, JSTag
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::StOwnByValueWithNameSet(thread, JSTaggedValue(obj), JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::ImportModule(uintptr_t argGlue, JSTaggedType moduleName)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::ImportModule(thread, JSTaggedValue(moduleName)).GetRawData();
+}
+
+void RuntimeTrampolines::StModuleVar(uintptr_t argGlue, JSTaggedType exportName, JSTaggedType exportObj)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    SlowRuntimeStub::StModuleVar(thread, JSTaggedValue(exportName), JSTaggedValue(exportObj));
+}
+
+JSTaggedType RuntimeTrampolines::LdModvarByName(uintptr_t argGlue, JSTaggedType moduleObj, JSTaggedType itemName)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::LdModvarByName(thread, JSTaggedValue(moduleObj), JSTaggedValue(itemName)).GetRawData();
+}
 }  // namespace panda::ecmascript
