@@ -2159,6 +2159,7 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
 
     // break frame
     if (pc == nullptr) {
+        thread->SetCurrentSPFrame(sp);
         state->acc = acc;
         return;
     }
