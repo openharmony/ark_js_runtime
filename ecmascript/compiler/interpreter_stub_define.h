@@ -45,7 +45,10 @@ namespace panda::ecmascript::kungfu {
     V(HandleLdFunctionPref, 7)                                  \
     V(HandleMovV4V4, 7)                                         \
     V(HandleMovDynV8V8, 7)                                      \
-    V(HandleMovDynV16V16, 7)
+    V(HandleMovDynV16V16, 7)                                    \
+    V(HandleImportModulePrefId32, 7)                            \
+    V(HandleStModuleVarPrefId32, 7)                             \
+    V(HandleLdModVarByNamePrefId32V8, 7)
 
 enum InterpreterStubId {
 #define DEF_STUB(name, counter) name##Id,

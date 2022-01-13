@@ -1299,4 +1299,72 @@ void HandleMovDynV16V16Stub::GenerateCircuit(const CompilationConfig *cfg)
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::V16_V16)));
 }
+
+void HandleImportModulePrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is sp */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is constpool */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is profileTypeInfo */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
+
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef prop = GetObjectFromConstPool(constpool, stringId);
+    StubDescriptor *importModule = GET_STUBDESCRIPTOR(ImportModule);
+    GateRef moduleRef = CallRuntime(importModule, glue, GetWord64Constant(FAST_STUB_ID(ImportModule)), { glue, prop });
+    acc = moduleRef;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
+}
+
+void HandleStModuleVarPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is sp */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is constpool */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is profileTypeInfo */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is acc */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
+
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef prop = GetObjectFromConstPool(constpool, stringId);
+    GateRef value = acc;
+
+    StubDescriptor *stModuleVar = GET_STUBDESCRIPTOR(StModuleVar);
+    CallRuntime(stModuleVar, glue, GetWord64Constant(FAST_STUB_ID(StModuleVar)), { glue, prop, value });
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
+        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
+}
+
+void HandleLdModVarByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is sp */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is constpool */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is profileTypeInfo */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is hotnessCounter */
+
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef v0 = ReadInst8_5(pc);
+    GateRef itemName = GetObjectFromConstPool(constpool, stringId);
+    GateRef moduleObj = GetVregValue(sp, ZExtInt8ToPtr(v0));
+
+    StubDescriptor *ldModvarByName = GET_STUBDESCRIPTOR(LdModvarByName);
+    GateRef moduleVar = CallRuntime(ldModvarByName, glue, GetWord64Constant(FAST_STUB_ID(LdModvarByName)),
+                                    { glue, moduleObj, itemName });
+    acc = moduleVar;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32_V8)));
+}
 }  // namespace panda::ecmascript::kungfu

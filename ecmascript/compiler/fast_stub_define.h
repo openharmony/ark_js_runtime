@@ -64,7 +64,10 @@ namespace panda::ecmascript::kungfu {
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \
-    V(UpdateHotnessCounter, 2)
+    V(UpdateHotnessCounter, 2)              \
+    V(ImportModule, 2)                      \
+    V(StModuleVar, 3)                       \
+    V(LdModvarByName, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

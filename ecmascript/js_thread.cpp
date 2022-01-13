@@ -291,6 +291,13 @@ void JSThread::LoadStubModule(const char *moduleFile)
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleMovDynV8V8);
     bytecodeHandlers_[EcmaOpcode::MOV_DYN_V16_V16] =
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleMovDynV16V16);
+    bytecodeHandlers_[EcmaOpcode::IMPORTMODULE_PREF_ID32] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleImportModulePrefId32);
+    bytecodeHandlers_[EcmaOpcode::STMODULEVAR_PREF_ID32] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStModuleVarPrefId32);
+    bytecodeHandlers_[EcmaOpcode::LDMODVARBYNAME_PREF_ID32_V8] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdModVarByNamePrefId32V8);
+
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif
