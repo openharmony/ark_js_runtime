@@ -49,7 +49,7 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName
         return;
     }
     isOnly_ = true;
-        if (!CheckFileName(fileName)) {
+    if (!CheckFileName(fileName)) {
         LOG(ERROR, RUNTIME) << "The fileName contains illegal characters";
         return;
     }
