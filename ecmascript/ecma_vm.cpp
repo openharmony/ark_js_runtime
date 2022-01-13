@@ -470,7 +470,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     JSRuntimeOptions options = this->GetJSOptions();
     if (options.IsEnableCpuProfiler()) {
         CpuProfiler *profiler = CpuProfiler::GetInstance();
-        profiler->CpuProfiler::StartCpuProfiler(this);
+        profiler->CpuProfiler::StartCpuProfiler(this, "");
         panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
         profiler->CpuProfiler::StopCpuProfiler();
     } else {
