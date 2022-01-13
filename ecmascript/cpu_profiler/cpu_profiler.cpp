@@ -15,6 +15,7 @@
 
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include <chrono>
+#include <climits>
 #include <csignal>
 #include <fstream>
 #include "ecmascript/platform/platform.h"
@@ -49,11 +50,13 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName
         return;
     }
     isOnly_ = true;
-    if (!CheckFileName(fileName)) {
+    std::string absoluteFilePath("");
+    if (!CheckFileName(fileName, absoluteFilePath)) {
         LOG(ERROR, RUNTIME) << "The fileName contains illegal characters";
+        isOnly_ = false;
         return;
     }
-    fileName_ = fileName;
+    fileName_ = absoluteFilePath;
     if (fileName_.empty()) {
         fileName_ = GetProfileName();
     }
@@ -61,6 +64,7 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName
     generator_->fileHandle_.open(fileName_.c_str());
     if (generator_->fileHandle_.fail()) {
         LOG(ERROR, RUNTIME) << "File open failed";
+        isOnly_ = false;
         return;
     }
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
@@ -69,11 +73,13 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName
     sa.sa_handler = &GetStackSignalHandler;
     if (sigemptyset(&sa.sa_mask) != 0) {
         LOG(ERROR, RUNTIME) << "Parameter set signal set initialization and emptying failed";
+        isOnly_ = false;
         return;
     }
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGINT, &sa, nullptr) != 0) {
         LOG(ERROR, RUNTIME) << "sigaction failed to set signal";
+        isOnly_ = false;
         return;
     }
 #endif
@@ -266,16 +272,24 @@ std::string CpuProfiler::GetProfileName() const
     return profileName;
 }
 
-bool CpuProfiler::CheckFileName(const std::string &fileName) const
+bool CpuProfiler::CheckFileName(const std::string &fileName, std::string &absoluteFilePath) const
 {
     if (fileName.empty()) {
         return true;
     }
-    if (fileName[0] == '-') {
+
+    if (fileName.size() > PATH_MAX) {
         return false;
     }
-    std::regex regExpress("[\\ \"/{}@#$%^&*()\\]\\[]");
-    bool res = !std::regex_search(fileName, regExpress);
-    return res;
+
+    CVector<char> resolvedPath(PATH_MAX);
+    realpath(fileName.c_str(), resolvedPath.data());
+    std::ifstream file(resolvedPath.data());
+    if (!file.good()) {
+        return false;
+    }
+    file.close();
+    absoluteFilePath = resolvedPath.data();
+    return true;
 }
 } // namespace panda::ecmascript

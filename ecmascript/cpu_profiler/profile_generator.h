@@ -65,7 +65,7 @@ public:
     void SetThreadStartTime(time_t threadStartTime);
     void SetStartsampleData(std::string sampleData);
     void SetFileName(std::string &fileName);
-    std::string GetFileName() const;
+    const std::string GetFileName() const;
     void ClearSampleData();
 
     static int staticGcState_;

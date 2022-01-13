@@ -213,7 +213,7 @@ void ProfileGenerator::SetFileName(std::string &fileName)
     fileName_ = fileName;
 }
 
-std::string ProfileGenerator::GetFileName() const
+const std::string ProfileGenerator::GetFileName() const
 {
     return fileName_;
 }
