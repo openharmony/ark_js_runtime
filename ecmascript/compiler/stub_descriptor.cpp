@@ -863,6 +863,21 @@ CALL_STUB_INIT_DESCRIPTOR(CreateGeneratorObj)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ThrowConstAssignment)
+{
+    // 2 : 2 input parameters
+    StubDescriptor throwConstAssignment("ThrowConstAssignment", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = throwConstAssignment;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters
