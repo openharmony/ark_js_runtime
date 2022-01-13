@@ -880,7 +880,7 @@ public:
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
     // profile generator
-    static void StartCpuProfiler(const EcmaVM *vm);
+    static void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
     static void StopCpuProfiler();
 
 private:

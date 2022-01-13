@@ -1968,15 +1968,19 @@ bool JSValueRef::IsGeneratorFunction()
     bool rst  = obj->IsGeneratorFunction();
     return rst;
 }
-void JSNApi::StartCpuProfiler(const EcmaVM *vm)
+void JSNApi::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
 {
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StartCpuProfiler(vm);
+    singleton->StartCpuProfiler(vm, fileName);
 }
 
 void JSNApi::StopCpuProfiler()
 {
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
     singleton->StopCpuProfiler();
+    if (singleton != nullptr) {
+        delete singleton;
+        singleton = nullptr;
+    }
 }
 }  // namespace panda
