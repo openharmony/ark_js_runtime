@@ -68,7 +68,7 @@ private:
     explicit CpuProfiler();
     void SetProfileStart(time_t nowTimeStamp);
     void GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo) const;
-    bool CheckFileName(const std::string &fileName) const;
+    bool CheckFileName(const std::string &fileName, std::string &absoluteFilePath) const;
 
     bool isOnly_ = false;
     int interval_ = 500; // 500:Sampling interval 500 microseconds
