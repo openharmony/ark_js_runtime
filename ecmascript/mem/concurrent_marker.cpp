@@ -39,7 +39,7 @@ void ConcurrentMarker::ConcurrentMarking()
 {
     ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Mark Begin";
     heap_->Prepare();
-    thread_->SetMarkStatus(MarkStatus::MARKING);
+    thread_->SetGCState(GCState::MARKING);
     if (!heap_->IsOnlyMarkSemi() && heap_->GetSweeper()->IsOldSpaceSwept()) {
         const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
     }
@@ -89,7 +89,7 @@ void ConcurrentMarker::WaitConcurrentMarkingFinished()  // call in EcmaVm thread
 void ConcurrentMarker::Reset(bool isClearCSet)
 {
     FinishPhase();
-    thread_->SetMarkStatus(MarkStatus::NOT_BEGIN_MARK);
+    thread_->SetGCState(GCState::NOT_BEGIN_MARK);
     notifyMarkingFinished_ = false;
     if (isClearCSet) {
         // Mix space gc clear cset when evacuation allocator finalize
@@ -142,7 +142,7 @@ bool ConcurrentMarker::MarkerTask::Run(uint32_t threadId)
 void ConcurrentMarker::MarkingFinished()
 {
     os::memory::LockHolder lock(waitMarkingFinishedMutex_);
-    thread_->SetMarkStatus(MarkStatus::MARK_FINISHED);
+    thread_->SetGCState(GCState::MARK_FINISHED);
     if (vmThreadWaitMarkingFinished_) {
         vmThreadWaitMarkingFinished_ = false;
         waitMarkingFinishedCV_.Signal();

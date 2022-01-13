@@ -35,6 +35,8 @@ public:
     ~FrameHandler() = default;
     DEFAULT_COPY_SEMANTIC(FrameHandler);
     DEFAULT_MOVE_SEMANTIC(FrameHandler);
+    static constexpr uintptr_t kFrameTypeOffset = -sizeof(FrameType);
+
     bool HasFrame() const
     {
         // Breakframe also is a frame
@@ -52,13 +54,26 @@ public:
     FrameType GetFrameType() const
     {
         ASSERT(HasFrame());
-        FrameType type = *(reinterpret_cast<FrameType*>(
-                        reinterpret_cast<uintptr_t>(sp_) + FrameCommonConstants::FRAME_TYPE_OFFSET));
-        return type;
+        FrameType* typeAddr = reinterpret_cast<FrameType*>(reinterpret_cast<uintptr_t>(sp_) + kFrameTypeOffset);
+        return *typeAddr;
     }
+
+    bool IsInterpretedFrame() const {
+        return GetFrameType() == FrameType::INTERPRETER_FRAME;
+    }
+
+    bool IsOptimizedLeaveFrame() const {
+        return GetFrameType() == FrameType::OPTIMIZED_LEAVE_FRAME;
+    }
+
+    OptLeaveFrame* GetOptLeaveFrame() const {
+        assert(IsOptimizedLeaveFrame());
+        return OptLeaveFrame::GetFrameFromSp(sp_);
+    }
+
 protected:
     JSTaggedType *sp_ {nullptr};
-private:
+
     friend class InterpretedFrameHandler;
     friend class OptimizedFrameHandler;
     friend class OptimizedEntryFrameHandler;

@@ -893,9 +893,9 @@ void DoSafepoint()
         if (infos != nullptr) {
             for (auto &info : *infos) {
                 uintptr_t **address = nullptr;
-                if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
+                if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rsp) + info.second);
-                } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
+                } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
                     address = reinterpret_cast<uintptr_t **>(reinterpret_cast<uint8_t *>(rbp) + info.second);
                 }
                 // print ref and vlue for debug

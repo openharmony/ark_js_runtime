@@ -51,7 +51,6 @@ public:
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
         thread = EcmaVM::Cast(instance)->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        thread->SetIsEcmaInterpreter(true);
         EcmaVM::Cast(instance)->SetEnableForceGC(false);
         auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
         heap->SetConcurrentMarkingEnable(true);
