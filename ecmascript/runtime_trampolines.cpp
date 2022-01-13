@@ -515,4 +515,28 @@ JSTaggedType RuntimeTrampolines::UpdateHotnessCounter(uintptr_t argGlue, uintptr
     }
     return state->profileTypeInfo.GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::SetPropertyByValue(uintptr_t argGlue, JSTaggedType argRreceiver, JSTaggedType argKey, JSTaggedType argValue)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return FastRuntimeStub::SetPropertyByValue(thread, JSTaggedValue(argRreceiver), JSTaggedValue(argKey), JSTaggedValue(argValue)).GetRawData();
+}
+
+void RuntimeTrampolines::SetFunctionNameNoPrefix(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType argName)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    JSFunction::SetFunctionNameNoPrefix(thread, reinterpret_cast<JSFunction *>(argFunc), JSTaggedValue(argName));
+}
+
+JSTaggedType RuntimeTrampolines::StOwnByValueWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StOwnByValueWithNameSet(thread, JSTaggedValue(obj), JSTaggedValue(key), JSTaggedValue(value)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::StOwnByNameWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType prop, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StOwnByValueWithNameSet(thread, JSTaggedValue(obj), JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
+}
 }  // namespace panda::ecmascript

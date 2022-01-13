@@ -1009,6 +1009,19 @@ GateRef Stub::IsClassConstructor(GateRef object)
         GetInt32Constant(0));
 }
 
+GateRef Stub::IsClassPrototype(GateRef object)
+{
+    GateRef hClass = LoadHClass(object);
+    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+
+    GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
+    // decode
+    return Word32NotEqual(
+        Word32And(Word32LSR(bitfield, GetInt32Constant(JSHClass::ClassPrototypeBit::START_BIT)),
+                  GetInt32Constant((1LU << JSHClass::ClassPrototypeBit::SIZE) - 1)),
+        GetInt32Constant(0));
+}
+
 GateRef Stub::IsExtensible(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
@@ -1040,6 +1053,33 @@ GateRef Stub::IsEcmaObject(GateRef obj)
             ZExtInt1ToInt32(
                 Int32GreaterThanOrEqual(objectType,
                     GetInt32Constant(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
+        result = TruncInt32ToInt1(ret1);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::IsJSObject(GateRef obj)
+{
+    auto env = GetEnvironment();
+    Label subentry(env);
+    env->PushCurrentLabel(&subentry);
+    Label exit(env);
+    Label isHeapObject(env);
+    DEFVARIABLE(result, MachineType::BOOL, FalseConstant());
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        GateRef objectType = GetObjectType(LoadHClass(obj));
+        auto ret1 = Word32And(
+            ZExtInt1ToInt32(
+                Int32LessThanOrEqual(objectType, GetInt32Constant(static_cast<int32_t>(JSType::JS_OBJECT_END)))),
+            ZExtInt1ToInt32(
+                Int32GreaterThanOrEqual(objectType,
+                    GetInt32Constant(static_cast<int32_t>(JSType::JS_OBJECT_BEGIN)))));
         result = TruncInt32ToInt1(ret1);
         Jump(&exit);
     }

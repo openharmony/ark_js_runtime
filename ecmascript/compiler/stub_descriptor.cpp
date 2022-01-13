@@ -223,10 +223,6 @@ CALL_STUB_INIT_DESCRIPTOR(JSHClassAddProperty)
     descriptor->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
-{
-}
-
 CALL_STUB_INIT_DESCRIPTOR(TryLoadICByName)
 {
     // 4 : 4 input parameters
@@ -992,6 +988,69 @@ CALL_STUB_INIT_DESCRIPTOR(LoopTest1)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
 }
 #endif
+
+CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
+{
+    // 4 : 4 input parameters
+    StubDescriptor setPropertyByValue("SetPropertyByValue", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = setPropertyByValue;
+    std::array<MachineType, 4> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(SetFunctionNameNoPrefix)
+{
+    // 3 : 3 input parameters
+    StubDescriptor setFunctionNameNoPrefix("SetFunctionNameNoPrefix", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = setFunctionNameNoPrefix;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StOwnByNameWithNameSet)
+{
+    // 4 : 4 input parameters
+    StubDescriptor stOwnByNameWithNameSet("StOwnByNameWithNameSet", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = stOwnByNameWithNameSet;
+    std::array<MachineType, 4> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StOwnByValueWithNameSet)
+{
+    // 4 : 4 input parameters
+    StubDescriptor stOwnByValueWithNameSet("StOwnByValueWithNameSet", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = stOwnByValueWithNameSet;
+    std::array<MachineType, 4> params = { // 4 : 4 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
 
 void FastStubDescriptors::InitializeStubDescriptors()
 {
