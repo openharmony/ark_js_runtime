@@ -461,6 +461,12 @@ JSTaggedType RuntimeTrampolines::FastStrictEqual(JSTaggedType left, JSTaggedType
     return JSTaggedValue::False().GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::CreateGeneratorObj(uintptr_t argGlue, JSTaggedType genFunc)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::CreateGeneratorObj(thread, JSTaggedValue(genFunc)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
