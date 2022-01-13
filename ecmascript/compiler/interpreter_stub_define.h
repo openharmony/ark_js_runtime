@@ -36,6 +36,7 @@ namespace panda::ecmascript::kungfu {
     V(HandleResumegeneratorPrefV8, 7)                           \
     V(HandleGetresumemodePrefV8, 7)                             \
     V(HandleCreategeneratorobjPrefV8, 7)                        \
+    V(HandleThrowconstassignmentPrefV8, 7)                      \
     V(HandleStConstToGlobalRecordPrefId32, 7)                   \
     V(HandleStLetToGlobalRecordPrefId32, 7)                     \
     V(HandleStClassToGlobalRecordPrefId32, 7)                   \

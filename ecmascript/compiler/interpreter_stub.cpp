@@ -567,7 +567,6 @@ void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&isException);
         {
-            SavePc(glue, sp, pc);
             DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
         }
         Bind(&notException);
@@ -637,7 +636,6 @@ void HandleDecdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&isException);
         {
-            SavePc(glue, sp, pc);
             DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
         }
         Bind(&notException);
@@ -672,7 +670,6 @@ void HandleExpdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
     }
     Bind(&notException);
@@ -703,7 +700,6 @@ void HandleIsindynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
     }
     Bind(&notException);
@@ -734,7 +730,6 @@ void HandleInstanceofdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
     }
     Bind(&notException);
@@ -849,13 +844,32 @@ void HandleCreategeneratorobjPrefV8Stub::GenerateCircuit(const CompilationConfig
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
     }
     Bind(&notException);
     acc = result;
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
+}
+
+void HandleThrowconstassignmentPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    StubDescriptor *throwConstAssignment = GET_STUBDESCRIPTOR(ThrowConstAssignment);
+    CallRuntime(throwConstAssignment, glue, GetWord64Constant(FAST_STUB_ID(ThrowConstAssignment)),
+                {glue, value});
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
 }
 
 void HandleStConstToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -879,7 +893,6 @@ void HandleStConstToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationC
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
     }
     Bind(&notException);
@@ -908,7 +921,6 @@ void HandleStLetToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationCon
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
     }
     Bind(&notException);
@@ -937,7 +949,6 @@ void HandleStClassToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationC
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
     }
     Bind(&notException);
@@ -1004,7 +1015,6 @@ void HandleNegDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
             Branch(TaggedIsException(result), &isException, &notException);
             Bind(&isException);
             {
-                SavePc(glue, sp, pc);
                 DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
             }
             Bind(&notException);
@@ -1066,7 +1076,6 @@ void HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8Stub::GenerateCircuit(cons
     Branch(TaggedIsException(*res), &isException, &isNotException);
     Bind(&isException);
     {
-        SavePc(glue, sp, pc);
         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8)));
     }
@@ -1171,7 +1180,6 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
         Branch(TaggedIsException(result), &isException, &noException);
         Bind(&isException);
         {
-            SavePc(glue, sp, pc);
             DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
         }
         Bind(&noException);
@@ -1226,7 +1234,6 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
                     Branch(TaggedIsException(res), &isException, &notException);
                     Bind(&isException);
                     {
-                        SavePc(glue, sp, pc);
                         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
                     }
                     Bind(&notException);
@@ -1249,7 +1256,6 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
-            SavePc(glue, sp, pc);
             DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
         }
         Bind(&notException1);
@@ -1299,7 +1305,6 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
                     Branch(TaggedIsException(res), &isException, &notException);
                     Bind(&isException);
                     {
-                        SavePc(glue, sp, pc);
                         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
                     }
                     Bind(&notException);
@@ -1322,7 +1327,6 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
-            SavePc(glue, sp, pc);
             DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
         }
         Bind(&notException1);

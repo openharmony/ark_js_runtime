@@ -87,6 +87,7 @@ public:
     static JSTaggedType FastStrictNotEqual(JSTaggedType left, JSTaggedType right);
     static JSTaggedType FastStrictEqual(JSTaggedType left, JSTaggedType right);
     static JSTaggedType CreateGeneratorObj(uintptr_t argGlue, JSTaggedType genFunc);
+    static void ThrowConstAssignment(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
     static JSTaggedType NegDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal, JSTaggedType base,

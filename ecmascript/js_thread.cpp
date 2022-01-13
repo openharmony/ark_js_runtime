@@ -269,6 +269,8 @@ void JSThread::LoadStubModule(const char *moduleFile)
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleGetresumemodePrefV8);
     bytecodeHandlers_[EcmaOpcode::CREATEGENERATOROBJ_PREF_V8] =
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleCreategeneratorobjPrefV8);
+    bytecodeHandlers_[EcmaOpcode::THROWCONSTASSIGNMENT_PREF_V8] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleThrowconstassignmentPrefV8);
     bytecodeHandlers_[EcmaOpcode::STCONSTTOGLOBALRECORD_PREF_ID32] =
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStConstToGlobalRecordPrefId32);
     bytecodeHandlers_[EcmaOpcode::STLETTOGLOBALRECORD_PREF_ID32] =
