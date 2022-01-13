@@ -16,7 +16,7 @@
 #include "ecmascript/tests/test_helper.h"
 
 #include <cstddef>
-
+#include "ecmascript/builtins/builtins_function.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_thread.h"
@@ -28,6 +28,7 @@ using namespace panda;
 using namespace panda::ecmascript;
 
 namespace panda::test {
+using BuiltinsFunction = ecmascript::builtins::BuiltinsFunction;
 class JSNApiTests : public testing::Test {
 public:
     static void SetUpTestCase()
@@ -633,7 +634,7 @@ HWTEST_F_L0(JSNApiTests, SyntaxError)
     ASSERT_TRUE(thread_->HasPendingException());
 }
 
-HWTEST_F_L0(JSNApiTests, InheritPrototype)
+HWTEST_F_L0(JSNApiTests, InheritPrototype_001)
 {
     LocalScope scope(vm_);
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
@@ -694,6 +695,144 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype)
     son1->Inherit(vm_, mapLocal);
     JSHandle<JSFunction> son1Handle = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(son1));
     ASSERT_TRUE(son1Handle->HasFunctionPrototype());
+}
+
+HWTEST_F_L0(JSNApiTests, InheritPrototype_002)
+{
+    LocalScope scope(vm_);
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    // new with Builtins::weakSet Prototype
+    JSHandle<JSTaggedValue> weakSet = env->GetBuiltinsWeakSetFunction();
+    Local<FunctionRef> weakSetLocal = JSNApiHelper::ToLocal<FunctionRef>(weakSet);
+    // new with Builtins::weakMap Prototype
+    JSHandle<JSTaggedValue> weakMap = env->GetBuiltinsWeakMapFunction();
+    Local<FunctionRef> weakMapLocal = JSNApiHelper::ToLocal<FunctionRef>(weakMap);
+
+    weakMapLocal->Inherit(vm_, weakSetLocal);
+
+    auto factory = vm_->GetFactory();
+    JSHandle<JSTaggedValue> property1String(thread_, factory->NewFromCanBeCompressString("property1").GetTaggedValue());
+    JSHandle<JSTaggedValue> func = env->GetArrayFunction();
+    PropertyDescriptor desc1 = PropertyDescriptor(thread_, func);
+    bool success1 = JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(weakMap), property1String, desc1);
+    ASSERT_TRUE(success1);
+
+    JSHandle<JSTaggedValue> sonHandle = JSNApiHelper::ToJSHandle(weakMapLocal);
+    JSHandle<JSObject> sonObj =
+        factory->NewJSObjectByConstructor(JSHandle<JSFunction>::Cast(sonHandle), sonHandle);
+
+    JSHandle<JSTaggedValue> fatherHandle = JSNApiHelper::ToJSHandle(weakSetLocal);
+    JSHandle<JSObject> fatherObj =
+        factory->NewJSObjectByConstructor(JSHandle<JSFunction>::Cast(fatherHandle), fatherHandle);
+
+    JSHandle<JSTaggedValue> sonMethod =
+        JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>(sonObj), property1String);
+    JSHandle<JSTaggedValue> fatherMethod =
+        JSObject::GetMethod(thread_, JSHandle<JSTaggedValue>(fatherObj), property1String);
+    bool same = JSTaggedValue::SameValue(sonMethod, fatherMethod);
+    ASSERT_TRUE(same);
+}
+
+HWTEST_F_L0(JSNApiTests, InheritPrototype_003)
+{
+    LocalScope scope(vm_);
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    auto factory = vm_->GetFactory();
+
+    JSMethod *invokeSelf =
+        vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionPrototypeInvokeSelf));
+    // father type
+    JSHandle<JSHClass> protoDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
+    JSHandle<JSFunction> protoFunc = factory->NewJSFunctionByDynClass(invokeSelf, protoDynclass);
+    Local<FunctionRef> protoLocal = JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(protoFunc));
+    // son type
+    JSHandle<JSHClass> noProtoDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutProto());
+    JSHandle<JSFunction> noProtoFunc = factory->NewJSFunctionByDynClass(invokeSelf, noProtoDynclass);
+    Local<FunctionRef> noProtoLocal = JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(noProtoFunc));
+
+    JSHandle<JSFunction> sonHandle = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(noProtoLocal));
+    EXPECT_FALSE(sonHandle->HasFunctionPrototype());
+
+    JSHandle<JSTaggedValue> defaultString = thread_->GlobalConstants()->GetHandledDefaultString();
+    PropertyDescriptor desc = PropertyDescriptor(thread_, defaultString);
+    JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(protoFunc), defaultString, desc);
+   
+    noProtoLocal->Inherit(vm_, protoLocal);
+    JSHandle<JSFunction> son1Handle = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(noProtoLocal));
+    EXPECT_TRUE(son1Handle->HasFunctionPrototype());
+    
+    OperationResult res = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(son1Handle), defaultString);
+    EXPECT_EQ(JSTaggedValue::SameValue(defaultString, res.GetValue()), true);
+
+    JSHandle<JSTaggedValue> propertyString(thread_, factory->NewFromCanBeCompressString("property").GetTaggedValue());
+    JSHandle<JSTaggedValue> func = env->GetArrayFunction();
+    PropertyDescriptor desc1 = PropertyDescriptor(thread_, func);
+    JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(protoFunc), propertyString, desc1);
+    OperationResult res1 = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(son1Handle), propertyString);
+    EXPECT_EQ(JSTaggedValue::SameValue(func, res1.GetValue()), true);
+}
+
+HWTEST_F_L0(JSNApiTests, InheritPrototype_004)
+{
+    LocalScope scope(vm_);
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    auto factory = vm_->GetFactory();
+
+    JSHandle<JSTaggedValue> weakSet = env->GetBuiltinsWeakSetFunction();
+    JSHandle<JSTaggedValue> deleteString(factory->NewFromCanBeCompressString("delete"));
+    JSHandle<JSTaggedValue> addString(factory->NewFromCanBeCompressString("add"));
+    JSHandle<JSTaggedValue> defaultString = thread_->GlobalConstants()->GetHandledDefaultString();
+    JSHandle<JSTaggedValue> deleteMethod = JSObject::GetMethod(thread_, weakSet, deleteString);
+    JSHandle<JSTaggedValue> addMethod = JSObject::GetMethod(thread_, weakSet, addString);
+
+    JSMethod *invokeSelf =
+        vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionPrototypeInvokeSelf));
+    JSMethod *ctor = vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionConstructor));
+    
+    JSHandle<JSHClass> protoDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
+    JSHandle<JSFunction> funcFuncPrototype = factory->NewJSFunctionByDynClass(invokeSelf, protoDynclass);
+    // add method in funcPrototype
+    PropertyDescriptor desc = PropertyDescriptor(thread_, deleteMethod);
+    JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(funcFuncPrototype), deleteString, desc);
+    JSHandle<JSTaggedValue> funcFuncPrototypeValue(funcFuncPrototype);
+
+    JSHandle<JSHClass> funcFuncProtoIntanceDynclass =
+       factory->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, funcFuncPrototypeValue);
+    // new with NewJSFunctionByDynClass::function DynClass
+    JSHandle<JSFunction> protoFunc =
+       factory->NewJSFunctionByDynClass(ctor, funcFuncProtoIntanceDynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
+    EXPECT_TRUE(*protoFunc != nullptr);
+    // add method in funcnction
+    PropertyDescriptor desc1 = PropertyDescriptor(thread_, addMethod);
+    JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(protoFunc), addString, desc1);
+    JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(protoFunc), deleteString, desc);
+    // father type
+    Local<FunctionRef> protoLocal = JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(protoFunc));
+
+    JSHandle<JSHClass> noProtoDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithoutProto());
+    JSHandle<JSFunction> funcFuncNoProtoPrototype = factory->NewJSFunctionByDynClass(invokeSelf, noProtoDynclass);
+    JSHandle<JSTaggedValue> funcFuncNoProtoPrototypeValue(funcFuncNoProtoPrototype);
+
+    JSHandle<JSHClass> funcFuncNoProtoProtoIntanceDynclass =
+       factory->NewEcmaDynClass(JSFunction::SIZE, JSType::JS_FUNCTION, funcFuncNoProtoPrototypeValue);
+    // new with NewJSFunctionByDynClass::function DynClass
+    JSHandle<JSFunction> noProtoFunc =
+       factory->NewJSFunctionByDynClass(ctor, funcFuncNoProtoProtoIntanceDynclass, FunctionKind::BUILTIN_CONSTRUCTOR);
+    EXPECT_TRUE(*noProtoFunc != nullptr);
+    // set property that has same key with fater type
+    PropertyDescriptor desc2 = PropertyDescriptor(thread_, defaultString);
+    JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(noProtoFunc), addString, desc2);
+    // son type
+    Local<FunctionRef> noProtoLocal = JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(noProtoFunc));
+
+    noProtoLocal->Inherit(vm_, protoLocal);
+
+    JSHandle<JSFunction> sonHandle = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(noProtoLocal));
+    OperationResult res = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(sonHandle), deleteString);
+    EXPECT_EQ(JSTaggedValue::SameValue(deleteMethod, res.GetValue()), true);
+    // test if the property value changed after inherit
+    OperationResult res1 = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(sonHandle), addString);
+    EXPECT_EQ(JSTaggedValue::SameValue(defaultString, res1.GetValue()), true);
 }
 
 HWTEST_F_L0(JSNApiTests, ClassFunction)
