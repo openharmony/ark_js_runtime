@@ -792,6 +792,7 @@ public:
     inline GateRef GetProfileTypeInfoFromFrame(GateRef frame);
     inline GateRef GetAccFromFrame(GateRef frame);
     inline GateRef GetEnvFromFrame(GateRef frame);
+    inline void SetEnvToFrame(GateRef glue, GateRef frame, GateRef env);
     inline GateRef ReadInst32_0(GateRef pc);
     inline GateRef ReadInst32_1(GateRef pc);
     inline GateRef ReadInst32_2(GateRef pc);
@@ -810,6 +811,7 @@ public:
     inline void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
     inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
     inline GateRef GetFunctionInfoFlagFromJSFunction(GateRef object);
+    inline GateRef GetHomeObjectFromJSFunction(GateRef object);
     inline void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
     inline GateRef FunctionIsResolved(GateRef object);
 

@@ -2004,6 +2004,11 @@ GateRef Stub::GetEnvFromFrame(GateRef frame)
     return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetEnvOffset(env_.IsArm32())));
 }
 
+void Stub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef env)
+{
+    Store(MachineType::UINT64, glue, frame, GetArchRelateConstant(InterpretedFrame::GetEnvOffset(env_.IsArm32())), env);
+}
+
 GateRef Stub::LoadAccFromSp(GateRef glue, GateRef CurrentSp)
 {
     return Load(MachineType::TAGGED, CurrentSp, GetArchRelateConstant(InterpretedFrame::GetAccOffset(env_.IsArm32())));
@@ -2112,6 +2117,12 @@ GateRef Stub::GetObjectFromConstPool(GateRef constpool, GateRef index)
 GateRef Stub::GetFunctionInfoFlagFromJSFunction(GateRef object)
 {
     GateRef offset = GetArchRelateConstant(JSFunction::FUNCTION_INFO_FLAG_OFFSET);
+    return Load(MachineType::TAGGED, object, offset);
+}
+
+GateRef Stub::GetHomeObjectFromJSFunction(GateRef object)
+{
+    GateRef offset = GetArchRelateConstant(JSFunction::HOME_OBJECT_OFFSET);
     return Load(MachineType::TAGGED, object, offset);
 }
 

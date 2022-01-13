@@ -237,6 +237,11 @@ void JSThread::LoadStubModule(const char *moduleFile)
     bytecodeHandlers_[EcmaOpcode::LDNULL_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdNullPref);
     bytecodeHandlers_[EcmaOpcode::LDTRUE_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdTruePref);
     bytecodeHandlers_[EcmaOpcode::LDFALSE_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdFalsePref);
+    bytecodeHandlers_[EcmaOpcode::LDLEXENVDYN_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdLexEnvDynPref);
+    bytecodeHandlers_[EcmaOpcode::POPLEXENVDYN_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandlePopLexEnvDynPref);
+    bytecodeHandlers_[EcmaOpcode::LDHOLE_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdHolePref);
+    bytecodeHandlers_[EcmaOpcode::LDHOMEOBJECT_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdHomeObjectPref);
+    bytecodeHandlers_[EcmaOpcode::DEBUGGER_PREF] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleDebuggerPref);
     bytecodeHandlers_[EcmaOpcode::LDA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdaDynV8);
     bytecodeHandlers_[EcmaOpcode::STA_DYN_V8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStaDynV8);
     bytecodeHandlers_[EcmaOpcode::LDLEXVARDYN_PREF_IMM4_IMM4] =
