@@ -162,7 +162,6 @@ JSTaggedValue ErrorHelper::ErrorCommonConstructor(EcmaRuntimeCallInfo *argv,
         ASSERT_PRINT(status == true, "return result exception!");
     }
 
-    ASSERT(thread->IsEcmaInterpreter());
     JSHandle<EcmaString> handleStack = BuildEcmaStackTrace(thread);
     JSHandle<JSTaggedValue> stackkey = globalConst->GetHandledStackString();
     PropertyDescriptor stackDesc(thread, JSHandle<JSTaggedValue>::Cast(handleStack), true, false, true);

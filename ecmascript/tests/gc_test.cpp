@@ -51,7 +51,6 @@ public:
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
         thread = EcmaVM::Cast(instance)->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        thread->SetIsEcmaInterpreter(true);
     }
 
     void TearDown() override
