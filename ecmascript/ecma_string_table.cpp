@@ -26,7 +26,7 @@ EcmaStringTable::EcmaStringTable(const EcmaVM *vm) : vm_(vm) {}
 
 EcmaString *EcmaStringTable::GetString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress) const
 {
-    uint32_t hashCode = EcmaString::ComputeHashcodeUtf8(utf8Data, canBeCompress);
+    uint32_t hashCode = EcmaString::ComputeHashcodeUtf8(utf8Data, utf8Len, canBeCompress);
     for (auto it = table_.find(hashCode); it != table_.end(); it++) {
         auto foundedString = it->second;
         if (EcmaString::StringsAreEqualUtf8(foundedString, utf8Data, utf8Len, canBeCompress)) {
