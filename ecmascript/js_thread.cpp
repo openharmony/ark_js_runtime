@@ -279,6 +279,8 @@ void JSThread::LoadStubModule(const char *moduleFile)
     bytecodeHandlers_[EcmaOpcode::JMP_IMM8] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm8);
     bytecodeHandlers_[EcmaOpcode::JMP_IMM16] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm16);
     bytecodeHandlers_[EcmaOpcode::JMP_IMM32] = stubModule.GetStubEntry(kungfu::StubId::STUB_HandleJmpImm32);
+    bytecodeHandlers_[EcmaOpcode::LDOBJBYNAME_PREF_ID32_V8] =
+        stubModule.GetStubEntry(kungfu::StubId::STUB_HandleLdObjByNamePrefId32V8);
     bytecodeHandlers_[EcmaOpcode::STOWNBYVALUEWITHNAMESET_PREF_V8_V8] =
         stubModule.GetStubEntry(kungfu::StubId::STUB_HandleStOwnByValueWithNameSetPrefV8V8);
     // bytecodeHandlers_[EcmaOpcode::STOWNBYNAMEWITHNAMESET_PREF_ID32_V8] =

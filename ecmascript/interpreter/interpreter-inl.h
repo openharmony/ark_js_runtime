@@ -3136,17 +3136,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
             if (LIKELY(firstValue.IsHeapObject())) {
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT
-                auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(TryStoreICByName));
-                typedef JSTaggedType (*PFTryStoreICByName)(uintptr_t,
-                    JSTaggedType, JSTaggedType, JSTaggedType, JSTaggedType);
-                auto tryStoreICByNamePtr = reinterpret_cast<PFTryStoreICByName>(stubAddr);
-                res = JSTaggedValue(
-                    tryStoreICByNamePtr(thread->GetGlueAddr(), receiver.GetRawData(),
-                        firstValue.GetRawData(), secondValue.GetRawData(), value.GetRawData()));
-#else
                 res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
-#endif
             }
             // IC miss and not enter the megamorphic state, store as polymorphic
             if (res.IsHole() && !firstValue.IsHole()) {

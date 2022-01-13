@@ -516,6 +516,25 @@ JSTaggedType RuntimeTrampolines::UpdateHotnessCounter(uintptr_t argGlue, uintptr
     return state->profileTypeInfo.GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::LoadICByName(uintptr_t argGlue, JSTaggedType profileTypeInfo,
+    JSTaggedType receiver, JSTaggedType propKey, int32_t slotId)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    INTERPRETER_TRACE(thread, LoadICByName);
+
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    auto keyHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(propKey));
+    auto receiverHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(receiver));
+    auto profileHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(profileTypeInfo));
+    if (profileHandle->IsUndefined()) {
+        auto res = JSTaggedValue::GetProperty(thread, receiverHandle, keyHandle).GetValue().GetTaggedValue();
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception().GetRawData());
+        return res.GetRawData();
+    }
+    LoadICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileHandle), slotId, ICKind::NamedLoadIC);
+    return icRuntime.LoadMiss(receiverHandle, keyHandle).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::SetPropertyByValue(uintptr_t argGlue, JSTaggedType argRreceiver, JSTaggedType argKey, JSTaggedType argValue)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
