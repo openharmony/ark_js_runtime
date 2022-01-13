@@ -42,6 +42,7 @@ namespace panda::ecmascript::kungfu {
     V(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8, 7)     \
     V(HandleStOwnByValueWithNameSetPrefV8V8, 7)                 \
     V(HandleStOwnByNameWithNameSetPrefId32V8, 7)                \
+    V(HandleLdObjByNamePrefId32V8, 7)                           \
     V(HandleLdFunctionPref, 7)                                  \
     V(HandleMovV4V4, 7)                                         \
     V(HandleMovDynV8V8, 7)                                      \

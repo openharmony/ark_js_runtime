@@ -81,9 +81,8 @@ namespace panda::ecmascript {
 #define INTERPRETER_GOTO_EXCEPTION_HANDLER()                                                                        \
     do {                                                                                                            \
         SAVE_PC();                                                                                                  \
-        AsmDispatchEntryPoint *funcPoint = reinterpret_cast<AsmDispatchEntryPoint *>(thread->GetBytecodeHandler()); \
-        return (*(funcPoint + EcmaOpcode::LAST_OPCODE))(                                                            \
-            thread->GetGlueAddr(), pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);                        \
+        return asmDispatchTable[EcmaOpcode::LAST_OPCODE](                                                           \
+            thread, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);                                       \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -1036,14 +1035,7 @@ void InterpreterAssembly::HandleTypeOfDynPref(
     JSTaggedValue acc, int32_t hotnessCounter)
 {
     LOG_INST() << "intrinsics::typeofdyn";
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastTypeOf));
-    typedef JSTaggedType (*PFFastTypeOf)(uintptr_t, JSTaggedValue);
-    auto fastTypeOfPtr = reinterpret_cast<PFFastTypeOf>(stubAddr);
-    JSTaggedValue res = JSTaggedValue(fastTypeOfPtr(thread->GetGlueAddr(), GET_ACC()));
-#else
     JSTaggedValue res = FastRuntimeStub::FastTypeOf(thread, GET_ACC());
-#endif
     SET_ACC(res);
     DISPATCH(BytecodeInstruction::Format::PREF_NONE);
 }
@@ -1297,14 +1289,7 @@ void InterpreterAssembly::HandleMod2DynPrefV8(
     JSTaggedValue left = GET_VREG_VALUE(vs);
     JSTaggedValue right = GET_ACC();
 
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMod));
-    typedef JSTaggedType (*PFFastMod)(uintptr_t, JSTaggedValue, JSTaggedValue);
-    auto fastModPtr = reinterpret_cast<PFFastMod>(stubAddr);
-    JSTaggedValue res = JSTaggedValue(fastModPtr(thread->GetGlueAddr(), left, right));
-#else
     JSTaggedValue res = FastRuntimeStub::FastMod(left, right);
-#endif
     if (!res.IsHole()) {
         SET_ACC(res);
     } else {
@@ -1326,14 +1311,7 @@ void InterpreterAssembly::HandleEqDynPrefV8(
                 << " v" << v0;
     JSTaggedValue left = GET_VREG_VALUE(v0);
     JSTaggedValue right = acc;
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastEqual));
-    typedef JSTaggedType (*PFFastEqual)(JSTaggedValue, JSTaggedValue);
-    auto fastEqualPtr = reinterpret_cast<PFFastEqual>(stubAddr);
-    JSTaggedValue res = JSTaggedValue(fastEqualPtr(left, right));
-#else
     JSTaggedValue res = FastRuntimeStub::FastEqual(left, right);
-#endif
     if (!res.IsHole()) {
         SET_ACC(res);
     } else {
@@ -2682,14 +2660,7 @@ void InterpreterAssembly::HandleLdObjByIndexPrefV8Imm32(
     JSTaggedValue receiver = GET_VREG_VALUE(v0);
     // fast path
     if (LIKELY(receiver.IsHeapObject())) {
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex));
-        typedef JSTaggedType (*PFGetPropertyByIndex)(uintptr_t, JSTaggedValue, uint32_t);
-        auto getPropertyByIndex = reinterpret_cast<PFGetPropertyByIndex>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(getPropertyByIndex(thread->GetGlueAddr(), receiver, idx));
-#else
         JSTaggedValue res = FastRuntimeStub::GetPropertyByIndex(thread, receiver, idx);
-#endif
         if (!res.IsHole()) {
             INTERPRETER_RETURN_IF_ABRUPT(res);
             SET_ACC(res);
@@ -2718,14 +2689,7 @@ void InterpreterAssembly::HandleStObjByIndexPrefV8Imm32(
         SAVE_ACC();
         JSTaggedValue value = GET_ACC();
         // fast path
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex));
-        typedef JSTaggedType (*PFSetPropertyByIndex)(uintptr_t, JSTaggedValue, uint32_t, JSTaggedValue);
-        auto setPropertyByIndex = reinterpret_cast<PFSetPropertyByIndex>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(setPropertyByIndex(thread->GetGlueAddr(), receiver, index, value));
-#else
         JSTaggedValue res = FastRuntimeStub::SetPropertyByIndex(thread, receiver, index, value);
-#endif
         if (!res.IsHole()) {
             INTERPRETER_RETURN_IF_ABRUPT(res);
             RESTORE_ACC();
@@ -2782,14 +2746,7 @@ void InterpreterAssembly::HandleLdObjByValuePrefV8V8(
 #endif
     // fast path
     if (LIKELY(receiver.IsHeapObject())) {
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue));
-        typedef JSTaggedType (*PFGetPropertyByValue)(uintptr_t, JSTaggedValue, JSTaggedValue);
-        auto getPropertyByValuePtr = reinterpret_cast<PFGetPropertyByValue>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(getPropertyByValuePtr(thread->GetGlueAddr(), receiver, propKey));
-#else
         JSTaggedValue res = FastRuntimeStub::GetPropertyByValue(thread, receiver, propKey);
-#endif
         if (!res.IsHole()) {
             ASSERT(!res.IsAccessor());
             INTERPRETER_RETURN_IF_ABRUPT(res);
@@ -3120,14 +3077,7 @@ void InterpreterAssembly::HandleStOwnByNameWithNameSetPrefId32V8(
         JSTaggedValue value = GET_ACC();
         // fast path
         SAVE_ACC();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByNameWithOwn));
-        typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue, JSTaggedValue);
-        auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(), receiver, propKey, value));
-#else
         JSTaggedValue res = FastRuntimeStub::SetPropertyByName<true>(thread, receiver, propKey, value);
-#endif
         if (!res.IsHole()) {
             INTERPRETER_RETURN_IF_ABRUPT(res);
             JSFunction::SetFunctionNameNoPrefix(thread, JSFunction::Cast(value.GetTaggedObject()), propKey);
@@ -3223,14 +3173,7 @@ void InterpreterAssembly::HandleLdObjByNamePrefId32V8(
 
     if (LIKELY(receiver.IsHeapObject())) {
         // fast path
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName));
-        typedef JSTaggedType (*PFGetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue);
-        auto getPropertyByNamePtr = reinterpret_cast<PFGetPropertyByName>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(getPropertyByNamePtr(thread->GetGlueAddr(), receiver, propKey));
-#else
         JSTaggedValue res = FastRuntimeStub::GetPropertyByName(thread, receiver, propKey);
-#endif
         if (!res.IsHole()) {
             ASSERT(!res.IsAccessor());
             INTERPRETER_RETURN_IF_ABRUPT(res);
@@ -3263,16 +3206,7 @@ void InterpreterAssembly::HandleStObjByNamePrefId32V8(
 
         if (LIKELY(firstValue.IsHeapObject())) {
             JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(TryStoreICByName));
-            typedef JSTaggedType (*PFTryStoreICByName)(uintptr_t,
-                JSTaggedValue, JSTaggedValue, JSTaggedValue, JSTaggedValue);
-            auto tryStoreICByNamePtr = reinterpret_cast<PFTryStoreICByName>(stubAddr);
-            res = JSTaggedValue(
-                tryStoreICByNamePtr(thread->GetGlueAddr(), receiver, firstValue, secondValue, value));
-#else
             res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
-#endif
         }
         // IC miss and not enter the megamorphic state, store as polymorphic
         if (res.IsHole() && !firstValue.IsHole()) {
@@ -3298,14 +3232,7 @@ void InterpreterAssembly::HandleStObjByNamePrefId32V8(
         value = GET_ACC();
         // fast path
         SAVE_ACC();
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByName));
-        typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedValue, JSTaggedValue, JSTaggedValue);
-        auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
-        JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(), receiver, propKey, value));
-#else
         JSTaggedValue res = FastRuntimeStub::SetPropertyByName(thread, receiver, propKey, value);
-#endif
         if (!res.IsHole()) {
             INTERPRETER_RETURN_IF_ABRUPT(res);
             RESTORE_ACC();

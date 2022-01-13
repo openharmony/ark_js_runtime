@@ -1081,6 +1081,108 @@ void HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8Stub::GenerateCircuit(cons
         GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8)));
 }
 
+void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    // uint16_t slotId = READ_INST_8_0();
+    GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
+    Label receiverIsHeapObject(env);
+    Label dispatch(env);
+    Label slowPath(env);
+    Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
+    Bind(&receiverIsHeapObject);
+    {
+        Label tryIC(env);
+        Label tryFastPath(env);
+        Branch(Word64Equal(profileTypeInfo, GetUndefinedConstant()), &tryFastPath, &tryIC);
+        Bind(&tryIC);
+        {
+            Label isHeapObject(env);
+            // JSTaggedValue firstValue = profileTypeArray->Get(slotId);
+            GateRef firstValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+            // if (LIKELY(firstValue.IsHeapObject())) {
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Bind(&isHeapObject);
+            {
+                Label tryPoly(env);
+                Label loadWithHandler(env);
+                GateRef secondValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo,
+                        Int32Add(slotId, GetInt32Constant(1)));
+                DEFVARIABLE(cachedHandler, MachineType::TAGGED, secondValue);
+                GateRef hclass = LoadHClass(receiver);
+                Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+                       &loadWithHandler, &tryPoly);
+
+                Bind(&tryPoly);
+                {
+                    cachedHandler = CheckPolyHClass(firstValue, hclass);
+                    Jump(&loadWithHandler);
+                }
+
+                Bind(&loadWithHandler);
+                {
+                    Label notHole(env);
+
+                    GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
+                    Branch(Word64Equal(result, GetHoleConstant()), &slowPath, &notHole);
+                    Bind(&notHole);
+                    acc = result;
+                    Jump(&dispatch);
+                }
+            }
+        }
+        Bind(&tryFastPath);
+        {
+            Label notHole(env);
+            GateRef stringId = ZExtInt8ToInt32(ReadInst32_1(pc));
+            GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+            auto stubDescriptor = GET_STUBDESCRIPTOR(GetPropertyByName);
+            GateRef result = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(GetPropertyByName)), {
+                glue, receiver, propKey
+            });
+            Branch(Word64Equal(result, GetHoleConstant()), &slowPath, &notHole);
+
+            Bind(&notHole);
+            acc = result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&slowPath);
+    {
+        Label isException(env);
+        Label noException(env);
+        GateRef stringId = ZExtInt8ToInt32(ReadInst32_1(pc));
+        GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+        auto stubDescriptor = GET_STUBDESCRIPTOR(LoadICByName);
+        GateRef result = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(LoadICByName)), {
+            glue, profileTypeInfo, receiver, propKey, slotId
+        });
+        // INTERPRETER_RETURN_IF_ABRUPT(res);
+        Branch(TaggedIsException(result), &isException, &noException);
+        Bind(&isException);
+        {
+            SavePc(glue, sp, pc);
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        }
+        Bind(&noException);
+        acc = result;
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32_V8)));
+}
+
 void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);

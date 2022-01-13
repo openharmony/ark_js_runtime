@@ -223,6 +223,24 @@ CALL_STUB_INIT_DESCRIPTOR(JSHClassAddProperty)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(LoadICByName)
+{
+    // 5 : 5 input parameters
+    StubDescriptor loadICByName("LoadICByName", 0, 5,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = loadICByName;
+    // 5 : 5 input parameters
+    std::array<MachineType, 5> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::INT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(TryLoadICByName)
 {
     // 4 : 4 input parameters
