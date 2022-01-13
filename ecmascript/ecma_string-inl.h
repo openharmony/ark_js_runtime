@@ -63,12 +63,12 @@ inline EcmaString *EcmaString::CreateFromUtf8(const uint8_t *utf8Data, uint32_t 
             UNREACHABLE();
         }
     } else {
-        auto utf16Len = base::utf_helper::Utf8ToUtf16Size(utf8Data);
+        auto utf16Len = base::utf_helper::Utf8ToUtf16Size(utf8Data, utf8Len);
         string = AllocStringObject(utf16Len, false, vm);
         ASSERT(string != nullptr);
 
         [[maybe_unused]] auto len =
-            base::utf_helper::ConvertRegionUtf8ToUtf16(utf8Data, string->GetDataUtf16Writable(), utf16Len, 0);
+            base::utf_helper::ConvertRegionUtf8ToUtf16(utf8Data, string->GetDataUtf16Writable(), utf8Len, utf16Len, 0);
         ASSERT(len == utf16Len);
     }
 
