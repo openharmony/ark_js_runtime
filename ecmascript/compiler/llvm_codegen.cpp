@@ -80,7 +80,11 @@ void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
         if (stubfunction != nullptr) {
             uintptr_t stubEntry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, stubfunction));
             module->SetStubEntry(i, stubEntry - codeBuff);
-            addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(i)->GetName();
+            if (i >= FAST_STUB_MAXCOUNT) {
+                addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(CallStubId::NAME_BytecodeHandler)->GetName();
+            } else {
+                addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(i)->GetName();
+            }
 #ifndef NDEBUG
             COMPILER_LOG(DEBUG) << "name : " << addr2name[codeBuff] << std::endl;
 #endif
