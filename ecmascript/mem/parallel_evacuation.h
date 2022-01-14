@@ -39,6 +39,12 @@ public:
     void Initialize();
     void Finalize();
     void Evacuate();
+
+    size_t GetPromotedAccumulatorSize() const
+    {
+        return promotedAccumulatorSize_;
+    }
+
 private:
     static constexpr double MIN_OBJECT_SURVIVAL_RATE = 0.8;
 
@@ -169,6 +175,7 @@ private:
     std::vector<std::unique_ptr<Fragment>> fragments_;
     std::vector<Region *> sweptList_;
     std::atomic_int parallel_ = 0;
+    std::atomic<size_t> promotedAccumulatorSize_ = 0;
     os::memory::Mutex mutex_;
     os::memory::ConditionVariable condition_;
 };

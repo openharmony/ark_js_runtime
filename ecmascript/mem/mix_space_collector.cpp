@@ -40,6 +40,7 @@ void MixSpaceCollector::RunPhases()
     ClockScope clockScope;
 
     concurrentMark_ = heap_->CheckConcurrentMark(thread);
+    ECMA_GC_LOG() << "concurrentMark_" << concurrentMark_;
     InitializePhase();
     MarkingPhase();
     EvacuaPhases();
@@ -55,7 +56,7 @@ void MixSpaceCollector::InitializePhase()
 {
     if (!concurrentMark_) {
         heap_->Prepare();
-        if (!heap_->IsOnlyMarkSemi() && heap_->GetSweeper()->IsOldSpaceSwept()) {
+        if (!heap_->IsSemiMarkNeeded() && heap_->GetSweeper()->CanSelectCset()) {
             const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
         }
         heap_->EnumerateRegions([](Region *current) {
@@ -72,7 +73,7 @@ void MixSpaceCollector::InitializePhase()
             }
             current->SetMarking(false);
         });
-        if (heap_->IsOnlyMarkSemi()) {
+        if (heap_->IsSemiMarkNeeded()) {
             heap_->EnumerateNewSpaceRegions([this](Region *current) {
                 current->ResetAliveObject();
             });
@@ -113,7 +114,7 @@ void MixSpaceCollector::MarkingPhase()
     }
     trace::ScopedTrace scoped_trace("MixSpaceCollector::MarkingPhase");
     heap_->GetNonMovableMarker()->MarkRoots(0);
-    if (heap_->IsOnlyMarkSemi()) {
+    if (heap_->IsSemiMarkNeeded()) {
         heap_->GetNonMovableMarker()->ProcessOldToNew(0);
     } else {
         heap_->GetNonMovableMarker()->ProcessMarkStack(0);
@@ -124,7 +125,7 @@ void MixSpaceCollector::MarkingPhase()
 void MixSpaceCollector::SweepPhases()
 {
     trace::ScopedTrace scoped_trace("MixSpaceCollector::SweepPhases");
-    if (!heap_->IsOnlyMarkSemi()) {
+    if (!heap_->IsSemiMarkNeeded()) {
         heap_->GetSweeper()->SweepPhases();
     }
 }

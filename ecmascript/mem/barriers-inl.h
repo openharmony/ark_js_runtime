@@ -26,7 +26,7 @@ static inline void MarkingBarrier(uintptr_t slotAddr, Region *objectRegion, Tagg
     Region *valueRegion)
 {
     auto heap = valueRegion->GetHeap();
-    bool isOnlySemi = heap->IsOnlyMarkSemi();
+    bool isOnlySemi = heap->IsSemiMarkNeeded();
     if (!JSTaggedValue(value).IsWeak()) {
         if (isOnlySemi && !valueRegion->InYoungGeneration()) {
             return;
