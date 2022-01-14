@@ -10,7 +10,7 @@
 
 namespace panda::ecmascript::kungfu {
 
-void HandleLdnanPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleLdNanPrefStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -617,7 +617,7 @@ void HandleStLexVarDynPrefImm16Imm16V8Stub::GenerateCircuit(const CompilationCon
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_IMM16_IMM16_V8)));
 }
 
-void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleIncDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -686,7 +686,7 @@ void HandleIncdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleDecdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleDecDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -755,7 +755,7 @@ void HandleDecdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleExpdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleExpDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -785,7 +785,7 @@ void HandleExpdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleIsindynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleIsInDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -815,7 +815,7 @@ void HandleIsindynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleInstanceofdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleInstanceOfDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -845,7 +845,7 @@ void HandleInstanceofdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleStrictnoteqdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleStrictNotEqDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -867,7 +867,7 @@ void HandleStrictnoteqdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cf
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleStricteqdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleStrictEqDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -889,7 +889,7 @@ void HandleStricteqdynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleResumegeneratorPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleResumeGeneratorPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -909,7 +909,7 @@ void HandleResumegeneratorPrefV8Stub::GenerateCircuit(const CompilationConfig *c
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleGetresumemodePrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleGetResumeModePrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -929,7 +929,7 @@ void HandleGetresumemodePrefV8Stub::GenerateCircuit(const CompilationConfig *cfg
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleCreategeneratorobjPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleCreateGeneratorObjPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -959,7 +959,7 @@ void HandleCreategeneratorobjPrefV8Stub::GenerateCircuit(const CompilationConfig
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleThrowconstassignmentPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleThrowConstAssignmentPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     // auto env = GetEnvironment();
@@ -979,7 +979,7 @@ void HandleThrowconstassignmentPrefV8Stub::GenerateCircuit(const CompilationConf
     DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
 }
 
-void HandleGettemplateobjectPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleGetTemplateObjectPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -1009,7 +1009,7 @@ void HandleGettemplateobjectPrefV8Stub::GenerateCircuit(const CompilationConfig 
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
-void HandleGetnextpropnamePrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+void HandleGetNextPropNamePrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
