@@ -33,6 +33,7 @@ public:
 
     static CString BuildNativeEcmaStackTrace(JSThread *thread);
 
+    static std::string BuildNativeAndJsBackStackTrace(JSThread *thread);
 private:
     static CString DecodeFunctionName(const CString &name);
     static JSHandle<EcmaString> BuildEcmaStackTrace(JSThread *thread);

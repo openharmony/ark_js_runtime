@@ -18,8 +18,17 @@
 #include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
+HeapProfilerInterface *HeapProfilerInterface::heapProfile_ = nullptr;
+HeapProfilerInterface *HeapProfilerInterface::GetInstance(JSThread *thread)
+{
+    if (HeapProfilerInterface::heapProfile_ == nullptr) {
+        heapProfile_ = HeapProfilerInterface::CreateHeapProfiler(thread);
+    }
+    return HeapProfilerInterface::heapProfile_;
+}
+
 void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat,
-                                             const CString &filePath, bool isVmMode)
+                                             const std::string &filePath, bool isVmMode)
 {
     LOG(ERROR, RUNTIME) << "HeapProfilerInterface::DumpHeapSnapshot";
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
