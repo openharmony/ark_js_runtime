@@ -883,15 +883,15 @@ inline bool JSTaggedValue::ToArrayLength(JSThread *thread, const JSHandle<JSTagg
     return true;
 }
 
-inline array_size_t JSTaggedValue::GetArrayLength() const
+inline uint32_t JSTaggedValue::GetArrayLength() const
 {
     ASSERT(IsNumber());
     if (IsInt()) {
-        return static_cast<array_size_t>(GetInt());
+        return static_cast<uint32_t>(GetInt());
     }
     if (IsDouble()) {
         ASSERT(GetDouble() <= TaggedArray::MAX_ARRAY_INDEX);
-        return static_cast<array_size_t>(GetDouble());
+        return static_cast<uint32_t>(GetDouble());
     }
     UNREACHABLE();
 }

@@ -18,20 +18,20 @@
 #include "ecmascript/weak_vector-inl.h"
 
 namespace panda::ecmascript {
-JSHandle<WeakVector> WeakVector::Create(const JSThread *thread, array_size_t capacity)
+JSHandle<WeakVector> WeakVector::Create(const JSThread *thread, uint32_t capacity)
 {
     ASSERT(capacity < MAX_VECTOR_INDEX);
 
-    array_size_t length = VectorToArrayIndex(capacity);
+    uint32_t length = VectorToArrayIndex(capacity);
     JSHandle<WeakVector> vector = JSHandle<WeakVector>(thread->GetEcmaVM()->GetFactory()->NewTaggedArray(length));
 
     vector->SetEnd(thread, 0);
     return vector;
 }
 
-bool WeakVector::Delete(const JSThread *thread, array_size_t index)
+bool WeakVector::Delete(const JSThread *thread, uint32_t index)
 {
-    array_size_t end = GetEnd();
+    uint32_t end = GetEnd();
     if (index < end) {
         Set(thread, index, JSTaggedValue::Hole());
         return true;
@@ -39,9 +39,9 @@ bool WeakVector::Delete(const JSThread *thread, array_size_t index)
     return false;
 }
 
-JSHandle<WeakVector> WeakVector::Grow(const JSThread *thread, const JSHandle<WeakVector> &old, array_size_t newCapacity)
+JSHandle<WeakVector> WeakVector::Grow(const JSThread *thread, const JSHandle<WeakVector> &old, uint32_t newCapacity)
 {
-    array_size_t oldCapacity = old->GetCapacity();
+    uint32_t oldCapacity = old->GetCapacity();
     ASSERT(newCapacity > oldCapacity);
     if (oldCapacity == MAX_VECTOR_INDEX) {
         return old;
@@ -58,9 +58,9 @@ JSHandle<WeakVector> WeakVector::Grow(const JSThread *thread, const JSHandle<Wea
     return JSHandle<WeakVector>(newVec);
 }
 
-array_size_t WeakVector::PushBack(const JSThread *thread, JSTaggedValue value)
+uint32_t WeakVector::PushBack(const JSThread *thread, JSTaggedValue value)
 {
-    array_size_t end = GetEnd();
+    uint32_t end = GetEnd();
     if (end == GetCapacity()) {
         return TaggedArray::MAX_ARRAY_INDEX;
     }

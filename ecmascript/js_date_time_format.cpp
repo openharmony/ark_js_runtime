@@ -503,8 +503,8 @@ JSHandle<JSObject> JSDateTimeFormat::ToDateTimeOptions(JSThread *thread, const J
         array->Set(thread, 2, globalConst->GetHandledMonthString());  // 2 means the third slot
         array->Set(thread, 3, globalConst->GetHandledDayString());    // 3 means the fourth slot
         JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-        array_size_t len = array->GetLength();
-        for (array_size_t i = 0; i < len; i++) {
+        uint32_t len = array->GetLength();
+        for (uint32_t i = 0; i < len; i++) {
             key.Update(array->Get(thread, i));
             OperationResult operationResult = JSObject::GetProperty(thread, optionsResult, key);
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);
@@ -527,8 +527,8 @@ JSHandle<JSObject> JSDateTimeFormat::ToDateTimeOptions(JSThread *thread, const J
         array->Set(thread, 3, globalConst->GetHandledSecondString());   // 3 means the third slot
         array->Set(thread, 4, globalConst->GetHandledFractionalSecondDigitsString());   // 4 means the fourth slot
         JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-        array_size_t len = array->GetLength();
-        for (array_size_t i = 0; i < len; i++) {
+        uint32_t len = array->GetLength();
+        for (uint32_t i = 0; i < len; i++) {
             key.Update(array->Get(thread, i));
             OperationResult operationResult = JSObject::GetProperty(thread, optionsResult, key);
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);
@@ -570,8 +570,8 @@ JSHandle<JSObject> JSDateTimeFormat::ToDateTimeOptions(JSThread *thread, const J
         array->Set(thread, 1, globalConst->GetHandledMonthString());
         array->Set(thread, 2, globalConst->GetHandledDayString());  // 2 means the third slot
         JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-        array_size_t len = array->GetLength();
-        for (array_size_t i = 0; i < len; i++) {
+        uint32_t len = array->GetLength();
+        for (uint32_t i = 0; i < len; i++) {
             key.Update(array->Get(thread, i));
             JSObject::CreateDataPropertyOrThrow(thread, optionsResult, key, globalConst->GetHandledNumericString());
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);
@@ -587,8 +587,8 @@ JSHandle<JSObject> JSDateTimeFormat::ToDateTimeOptions(JSThread *thread, const J
         array->Set(thread, 1, globalConst->GetHandledMinuteString());
         array->Set(thread, 2, globalConst->GetHandledSecondString());  // 2 means the third slot
         JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-        array_size_t len = array->GetLength();
-        for (array_size_t i = 0; i < len; i++) {
+        uint32_t len = array->GetLength();
+        for (uint32_t i = 0; i < len; i++) {
             key.Update(array->Get(thread, i));
             JSObject::CreateDataPropertyOrThrow(thread, optionsResult, key, globalConst->GetHandledNumericString());
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);

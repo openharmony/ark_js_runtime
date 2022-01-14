@@ -25,8 +25,8 @@ class ObjectFactory;
 
 class TaggedArray : public TaggedObject {
 public:
-    static constexpr array_size_t MAX_ARRAY_INDEX = std::numeric_limits<array_size_t>::max();
-    static constexpr array_size_t MAX_END_UNUSED = 4;
+    static constexpr uint32_t MAX_ARRAY_INDEX = std::numeric_limits<uint32_t>::max();
+    static constexpr uint32_t MAX_END_UNUSED = 4;
 
     inline static TaggedArray *Cast(ObjectHeader *obj)
     {
@@ -34,30 +34,28 @@ public:
         return static_cast<TaggedArray *>(obj);
     }
 
-    array_size_t GetLength() const;
+    JSTaggedValue Get(uint32_t idx) const;
 
-    JSTaggedValue Get(array_size_t idx) const;
-
-    array_size_t GetIdx(const JSTaggedValue &value) const;
+    uint32_t GetIdx(const JSTaggedValue &value) const;
 
     template<typename T>
-    void Set(const JSThread *thread, array_size_t idx, const JSHandle<T> &value);
+    void Set(const JSThread *thread, uint32_t idx, const JSHandle<T> &value);
 
-    JSTaggedValue Get(const JSThread *thread, array_size_t idx) const;
+    JSTaggedValue Get(const JSThread *thread, uint32_t idx) const;
 
-    void Set(const JSThread *thread, array_size_t idx, const JSTaggedValue &value);
+    void Set(const JSThread *thread, uint32_t idx, const JSTaggedValue &value);
 
     static inline JSHandle<TaggedArray> Append(const JSThread *thread, const JSHandle<TaggedArray> &first,
                                                const JSHandle<TaggedArray> &second);
     static inline JSHandle<TaggedArray> AppendSkipHole(const JSThread *thread, const JSHandle<TaggedArray> &first,
-                                                       const JSHandle<TaggedArray> &second, array_size_t copyLength);
+                                                       const JSHandle<TaggedArray> &second, uint32_t copyLength);
 
-    static inline size_t ComputeSize(size_t elemSize, array_size_t length)
+    static inline size_t ComputeSize(size_t elemSize, uint32_t length)
     {
         ASSERT(elemSize != 0);
-        size_t size = sizeof(TaggedArray) + elemSize * length;
+        size_t size = DATA_OFFSET + elemSize * length;
 #ifdef PANDA_TARGET_32
-        size_t sizeLimit = (std::numeric_limits<size_t>::max() - sizeof(TaggedArray)) / elemSize;
+        size_t sizeLimit = (std::numeric_limits<size_t>::max() - DATA_OFFSET) / elemSize;
         if (UNLIKELY(sizeLimit < static_cast<size_t>(length))) {
             return 0;
         }
@@ -65,14 +63,9 @@ public:
         return size;
     }
 
-    JSTaggedType *GetData()
+    inline JSTaggedType *GetData() const
     {
-        return data_;
-    }
-
-    const JSTaggedType *GetData() const
-    {
-        return data_;
+        return reinterpret_cast<JSTaggedType *>(ToUintPtr(this) + DATA_OFFSET);
     }
 
     inline bool IsDictionaryMode() const;
@@ -80,45 +73,27 @@ public:
     bool HasDuplicateEntry() const;
 
     static JSHandle<TaggedArray> SetCapacity(const JSThread *thread, const JSHandle<TaggedArray> &array,
-                                             array_size_t capa);
+                                             uint32_t capa);
 
-    static constexpr uint32_t GetLengthOffset()
-    {
-        return MEMBER_OFFSET(TaggedArray, length_);
-    }
+    inline void InitializeWithSpecialValue(JSTaggedValue initValue, uint32_t length);
 
-    static constexpr uint32_t GetDataOffset()
-    {
-        return MEMBER_OFFSET(TaggedArray, data_);
-    }
-
-    inline void InitializeWithSpecialValue(JSTaggedValue initValue, array_size_t length);
-
-    static inline bool ShouldTrim(JSThread *thread, array_size_t oldLength, array_size_t newLength)
+    static inline bool ShouldTrim(JSThread *thread, uint32_t oldLength, uint32_t newLength)
     {
         return (oldLength - newLength > MAX_END_UNUSED);
     }
-    inline void Trim(JSThread *thread, array_size_t newLength);
-    void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
-    {
-        uintptr_t dataAddr = ToUintPtr(this) + TaggedArray::GetDataOffset();
-        v(this, ObjectSlot(dataAddr), ObjectSlot(dataAddr + GetLength() * JSTaggedValue::TaggedTypeSize()));
-    }
+    inline void Trim(JSThread *thread, uint32_t newLength);
+
+    static constexpr size_t LENGTH_OFFSET = TaggedObjectSize();
+    SET_GET_PRIMITIVE_FIELD(Length, uint32_t, LENGTH_OFFSET, DATA_OFFSET);
+    static constexpr size_t SIZE = DATA_OFFSET;  // Empty Array size
+
+    DECL_VISIT_ARRAY(DATA_OFFSET, GetLength());
 
 private:
     friend class ObjectFactory;
-
-    void SetLength(array_size_t length)
-    {
-        length_ = length;
-    }
-
-    array_size_t length_;
-    uint32_t placeholder_;  // Add for 8bits align of data_
-    // should align by 8, 32bit using TaggedType also
-    __extension__ alignas(sizeof(JSTaggedType)) JSTaggedType data_[0];  // NOLINT(modernize-avoid-c-arrays)
 };
 
-static_assert(TaggedArray::GetLengthOffset() == sizeof(TaggedObject));
+static_assert(TaggedArray::LENGTH_OFFSET == sizeof(TaggedObject));
+static_assert((TaggedArray::DATA_OFFSET % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_ARRAY_H

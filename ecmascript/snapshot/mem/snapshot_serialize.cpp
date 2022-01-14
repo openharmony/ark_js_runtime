@@ -914,10 +914,10 @@ void SnapShotSerialize::DynArraySerialize(TaggedObject *objectHeader, uintptr_t 
                                           CQueue<TaggedObject *> *queue, std::unordered_map<uint64_t, SlotBit> *data)
 {
     auto arrayObject = reinterpret_cast<TaggedArray *>(objectHeader);
-    size_t beginOffset = TaggedArray::GetDataOffset();
+    size_t beginOffset = TaggedArray::DATA_OFFSET;
     auto arrayLength = arrayObject->GetLength();
     uintptr_t startAddr = ToUintPtr(objectHeader) + beginOffset;
-    for (array_size_t i = 0; i < arrayLength; i++) {
+    for (uint32_t i = 0; i < arrayLength; i++) {
         auto fieldAddr = reinterpret_cast<JSTaggedType *>(startAddr + i * TAGGED_SIZE);
         SetObjectSlotField(snapshotObj, beginOffset + i * TAGGED_SIZE, HandleTaggedField(fieldAddr, queue, data));
     }
@@ -930,9 +930,9 @@ void SnapShotSerialize::DynArrayDeserialize(uint64_t *objectHeader)
     DeserializeHandleClassWord(object);
 
     auto arrayLength = object->GetLength();
-    size_t dataOffset = TaggedArray::GetDataOffset();
+    size_t dataOffset = TaggedArray::DATA_OFFSET;
     uintptr_t startAddr = ToUintPtr(objectHeader) + dataOffset;
-    for (array_size_t i = 0; i < arrayLength; i++) {
+    for (uint32_t i = 0; i < arrayLength; i++) {
         auto fieldAddr = reinterpret_cast<uint64_t *>(startAddr + i * TAGGED_SIZE);
         DeserializeHandleTaggedField(fieldAddr);
     }

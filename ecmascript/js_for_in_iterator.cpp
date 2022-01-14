@@ -193,8 +193,8 @@ void JSForInIterator::SlowGetAllEnumKeys(JSThread *thread, const JSHandle<JSForI
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     JSMutableHandle<TaggedQueue> remaining(thread, it->GetRemainingKeys());
     JSHandle<TaggedArray> arr = JSTaggedValue::GetOwnPropertyKeys(thread, object);
-    array_size_t len = arr->GetLength();
-    for (array_size_t i = 0; i < len; i++) {
+    uint32_t len = arr->GetLength();
+    for (uint32_t i = 0; i < len; i++) {
         value.Update(arr->Get(i));
         if (value->IsString()) {
             TaggedQueue *newQueue = TaggedQueue::Push(thread, remaining, value);
@@ -232,8 +232,8 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
             }
             JSHandle<JSTaggedValue> key(thread, r);
             bool has_same = false;
-            array_size_t len = visited->Size();
-            for (array_size_t i = 0; i < len; i++) {
+            uint32_t len = visited->Size();
+            for (uint32_t i = 0; i < len; i++) {
                 if (JSTaggedValue::SameValue(r, visited->Get(i))) {
                     has_same = true;
                     break;

@@ -219,10 +219,10 @@ public:
 
     JSHandle<JSPrimitiveRef> NewJSString(const JSHandle<JSTaggedValue> &str);
 
-    JSHandle<TaggedArray> NewTaggedArray(array_size_t length, JSTaggedValue initVal = JSTaggedValue::Hole());
-    JSHandle<TaggedArray> NewTaggedArray(array_size_t length, JSTaggedValue initVal, bool nonMovable);
-    JSHandle<TaggedArray> NewTaggedArray(array_size_t length, JSTaggedValue initVal, MemSpaceType spaceType);
-    JSHandle<TaggedArray> NewDictionaryArray(array_size_t length);
+    JSHandle<TaggedArray> NewTaggedArray(uint32_t length, JSTaggedValue initVal = JSTaggedValue::Hole());
+    JSHandle<TaggedArray> NewTaggedArray(uint32_t length, JSTaggedValue initVal, bool nonMovable);
+    JSHandle<TaggedArray> NewTaggedArray(uint32_t length, JSTaggedValue initVal, MemSpaceType spaceType);
+    JSHandle<TaggedArray> NewDictionaryArray(uint32_t length);
     JSHandle<JSForInIterator> NewJSForinIterator(const JSHandle<JSTaggedValue> &obj);
 
     JSHandle<PropertyBox> NewPropertyBox(const JSHandle<JSTaggedValue> &name);
@@ -232,10 +232,10 @@ public:
     JSHandle<ProtoChangeDetails> NewProtoChangeDetails();
 
     // use for copy properties keys's array to another array
-    JSHandle<TaggedArray> ExtendArray(const JSHandle<TaggedArray> &old, array_size_t length,
+    JSHandle<TaggedArray> ExtendArray(const JSHandle<TaggedArray> &old, uint32_t length,
                                       JSTaggedValue initVal = JSTaggedValue::Hole());
-    JSHandle<TaggedArray> CopyPartArray(const JSHandle<TaggedArray> &old, array_size_t start, array_size_t end);
-    JSHandle<TaggedArray> CopyArray(const JSHandle<TaggedArray> &old, array_size_t oldLength, array_size_t newLength,
+    JSHandle<TaggedArray> CopyPartArray(const JSHandle<TaggedArray> &old, uint32_t start, uint32_t end);
+    JSHandle<TaggedArray> CopyArray(const JSHandle<TaggedArray> &old, uint32_t oldLength, uint32_t newLength,
                                     JSTaggedValue initVal = JSTaggedValue::Hole());
     JSHandle<TaggedArray> CloneProperties(const JSHandle<TaggedArray> &old);
     JSHandle<TaggedArray> CloneProperties(const JSHandle<TaggedArray> &old, const JSHandle<JSTaggedValue> &env,
@@ -262,7 +262,7 @@ public:
 
     void InitializeExtraProperties(const JSHandle<JSHClass> &dynclass, TaggedObject *obj, int inobjPropCount);
 
-    JSHandle<TaggedQueue> NewTaggedQueue(array_size_t length);
+    JSHandle<TaggedQueue> NewTaggedQueue(uint32_t length);
 
     JSHandle<TaggedQueue> GetEmptyTaggedQueue() const;
 

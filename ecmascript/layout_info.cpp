@@ -83,7 +83,7 @@ void LayoutInfo::GetAllKeys(const JSThread *thread, int end, std::vector<JSTagge
 }
 
 void LayoutInfo::GetAllEnumKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray,
-                                array_size_t *keys)
+                                uint32_t *keys)
 {
     ASSERT(end <= NumberOfElements());
     ASSERT_PRINT(offset + end <= static_cast<int>(keyArray->GetLength()),
@@ -102,7 +102,7 @@ void LayoutInfo::GetAllEnumKeys(const JSThread *thread, int end, int offset, Tag
 }
 
 void LayoutInfo::GetAllNames(const JSThread *thread, int end, const JSHandle<TaggedArray> &keyArray,
-                             array_size_t *length)
+                             uint32_t *length)
 {
     DISALLOW_GARBAGE_COLLECTION;
     int arrayIndex = 0;

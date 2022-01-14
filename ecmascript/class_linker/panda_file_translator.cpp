@@ -237,7 +237,7 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             size_t index = it.first;
             JSHandle<TaggedArray> literal =
                 LiteralDataExtractor::GetDatasIgnoreType(thread_, &pf, static_cast<size_t>(index));
-            array_size_t length = literal->GetLength();
+            uint32_t length = literal->GetLength();
 
             JSHandle<JSArray> arr(JSArray::ArrayCreate(thread_, JSTaggedNumber(length)));
             arr->SetElements(thread_, literal);
@@ -580,8 +580,8 @@ JSHandle<JSFunction> PandaFileTranslator::DefineMethodInLiteral(JSThread *thread
 
 void PandaFileTranslator::DefineClassInConstPool(const JSHandle<ConstantPool> &constpool) const
 {
-    array_size_t length = constpool->GetLength();
-    array_size_t index = 0;
+    uint32_t length = constpool->GetLength();
+    uint32_t index = 0;
     while (index < length - 1) {
         JSTaggedValue value = constpool->Get(index);
         if (!value.IsClassInfoExtractor()) {

@@ -309,7 +309,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObject(const JSHandle<JSHClass> &jshclass
 
 JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray> &old)
 {
-    array_size_t newLength = old->GetLength();
+    uint32_t newLength = old->GetLength();
     if (newLength == 0) {
         return EmptyArray();
     }
@@ -320,7 +320,7 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
 
-    for (array_size_t i = 0; i < newLength; i++) {
+    for (uint32_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i);
         newArray->Set(thread_, i, value);
     }
@@ -374,14 +374,14 @@ JSHandle<TaggedArray> ObjectFactory::CloneProperties(const JSHandle<TaggedArray>
                                                      const JSHandle<JSTaggedValue> &env, const JSHandle<JSObject> &obj,
                                                      const JSHandle<JSTaggedValue> &constpool)
 {
-    array_size_t newLength = old->GetLength();
+    uint32_t newLength = old->GetLength();
     if (newLength == 0) {
         return EmptyArray();
     }
     NewObjectHook();
     JSHandle<TaggedArray> newArray = NewTaggedArray(newLength);
 
-    for (array_size_t i = 0; i < newLength; i++) {
+    for (uint32_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i);
         if (!value.IsJSFunction()) {
             newArray->Set(thread_, i, value);
@@ -1479,13 +1479,13 @@ JSHandle<JSRealm> ObjectFactory::NewJSRealm()
 JSHandle<TaggedArray> ObjectFactory::NewEmptyArray()
 {
     NewObjectHook();
-    auto header = heapHelper_.AllocateNonMovableOrHugeObject(arrayClass_, sizeof(TaggedArray));
+    auto header = heapHelper_.AllocateNonMovableOrHugeObject(arrayClass_, TaggedArray::SIZE);
     JSHandle<TaggedArray> array(thread_, header);
     array->SetLength(0);
     return array;
 }
 
-JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTaggedValue initVal, bool nonMovable)
+JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(uint32_t length, JSTaggedValue initVal, bool nonMovable)
 {
     if (nonMovable) {
         return NewTaggedArray(length, initVal, MemSpaceType::NON_MOVABLE);
@@ -1493,7 +1493,7 @@ JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTagge
     return NewTaggedArray(length, initVal, MemSpaceType::SEMI_SPACE);
 }
 
-JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTaggedValue initVal, MemSpaceType spaceType)
+JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(uint32_t length, JSTaggedValue initVal, MemSpaceType spaceType)
 {
     NewObjectHook();
     if (length == 0) {
@@ -1521,7 +1521,7 @@ JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTagge
     return array;
 }
 
-JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTaggedValue initVal)
+JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(uint32_t length, JSTaggedValue initVal)
 {
     NewObjectHook();
     if (length == 0) {
@@ -1535,7 +1535,7 @@ JSHandle<TaggedArray> ObjectFactory::NewTaggedArray(array_size_t length, JSTagge
     return array;
 }
 
-JSHandle<TaggedArray> ObjectFactory::NewDictionaryArray(array_size_t length)
+JSHandle<TaggedArray> ObjectFactory::NewDictionaryArray(uint32_t length)
 {
     NewObjectHook();
     ASSERT(length > 0);
@@ -1548,7 +1548,7 @@ JSHandle<TaggedArray> ObjectFactory::NewDictionaryArray(array_size_t length)
     return array;
 }
 
-JSHandle<TaggedArray> ObjectFactory::ExtendArray(const JSHandle<TaggedArray> &old, array_size_t length,
+JSHandle<TaggedArray> ObjectFactory::ExtendArray(const JSHandle<TaggedArray> &old, uint32_t length,
                                                  JSTaggedValue initVal)
 {
     ASSERT(length > old->GetLength());
@@ -1558,26 +1558,26 @@ JSHandle<TaggedArray> ObjectFactory::ExtendArray(const JSHandle<TaggedArray> &ol
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(length);
 
-    array_size_t oldLength = old->GetLength();
-    for (array_size_t i = 0; i < oldLength; i++) {
+    uint32_t oldLength = old->GetLength();
+    for (uint32_t i = 0; i < oldLength; i++) {
         JSTaggedValue value = old->Get(i);
         newArray->Set(thread_, i, value);
     }
 
-    for (array_size_t i = oldLength; i < length; i++) {
+    for (uint32_t i = oldLength; i < length; i++) {
         newArray->Set(thread_, i, initVal);
     }
 
     return newArray;
 }
 
-JSHandle<TaggedArray> ObjectFactory::CopyPartArray(const JSHandle<TaggedArray> &old, array_size_t start,
-                                                   array_size_t end)
+JSHandle<TaggedArray> ObjectFactory::CopyPartArray(const JSHandle<TaggedArray> &old, uint32_t start,
+                                                   uint32_t end)
 {
     ASSERT(start <= end);
     ASSERT(end <= old->GetLength());
 
-    array_size_t newLength = end - start;
+    uint32_t newLength = end - start;
     if (newLength == 0) {
         return EmptyArray();
     }
@@ -1588,7 +1588,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyPartArray(const JSHandle<TaggedArray> &
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
 
-    for (array_size_t i = 0; i < newLength; i++) {
+    for (uint32_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i + start);
         if (value.IsHole()) {
             break;
@@ -1599,7 +1599,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyPartArray(const JSHandle<TaggedArray> &
 }
 
 JSHandle<TaggedArray> ObjectFactory::CopyArray(const JSHandle<TaggedArray> &old,
-                                               [[maybe_unused]] array_size_t oldLength, array_size_t newLength,
+                                               [[maybe_unused]] uint32_t oldLength, uint32_t newLength,
                                                JSTaggedValue initVal)
 {
     if (newLength == 0) {
@@ -1615,7 +1615,7 @@ JSHandle<TaggedArray> ObjectFactory::CopyArray(const JSHandle<TaggedArray> &old,
     JSHandle<TaggedArray> newArray(thread_, header);
     newArray->SetLength(newLength);
 
-    for (array_size_t i = 0; i < newLength; i++) {
+    for (uint32_t i = 0; i < newLength; i++) {
         JSTaggedValue value = old->Get(i);
         newArray->Set(thread_, i, value);
     }
@@ -1811,9 +1811,9 @@ void ObjectFactory::NewObjectHook() const
 #endif
 }
 
-JSHandle<TaggedQueue> ObjectFactory::NewTaggedQueue(array_size_t length)
+JSHandle<TaggedQueue> ObjectFactory::NewTaggedQueue(uint32_t length)
 {
-    array_size_t queueLength = TaggedQueue::QueueToArrayIndex(length);
+    uint32_t queueLength = TaggedQueue::QueueToArrayIndex(length);
     auto queue = JSHandle<TaggedQueue>::Cast(NewTaggedArray(queueLength, JSTaggedValue::Hole()));
     queue->SetStart(thread_, JSTaggedValue(0));  // equal to 0 when add 1.
     queue->SetEnd(thread_, JSTaggedValue(0));

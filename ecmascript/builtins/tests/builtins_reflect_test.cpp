@@ -74,7 +74,7 @@ JSTaggedValue TestReflectApply(EcmaRuntimeCallInfo *argv)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     int result = 0;
-    for (array_size_t index = 0; index < argv->GetArgsNumber(); ++index) {
+    for (uint32_t index = 0; index < argv->GetArgsNumber(); ++index) {
         result += BuiltinsBase::GetCallArg(argv, index).GetTaggedValue().GetInt();
     }
     JSHandle<JSTaggedValue> thisValue = BuiltinsBase::GetThis(argv);

@@ -45,7 +45,7 @@ using ecmascript::JSRuntimeOptions;
 class TestHelper {
 public:
     static std::unique_ptr<EcmaRuntimeCallInfo> CreateEcmaRuntimeCallInfo(JSThread *thread, JSTaggedValue newTgt,
-                                                                          array_size_t argvLength)
+                                                                          uint32_t argvLength)
     {
         const uint8_t testDecodedSize = 2;
         // argvLength includes number of int64_t to store value and tag of function, 'this' and call args
