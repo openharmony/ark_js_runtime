@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "ecmascript/common.h"
+#include "ecmascript/js_tagged_value.h"
 #include "libpandabase/macros.h"
 
 namespace panda {
@@ -50,7 +51,8 @@ class JSRuntimeOptions;
 
 using Deleter = void (*)(void *buffer, void *data);
 using EcmaVM = ecmascript::EcmaVM;
-using JSTaggedType = uint64_t;
+using JSTaggedType = panda::ecmascript::JSTaggedType;
+
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

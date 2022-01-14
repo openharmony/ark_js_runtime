@@ -141,74 +141,8 @@ enum class FrameType: uint64_t {
     OPTIMIZED_LEAVE_FRAME = 3,
 };
 
-class OptimizedFrame {
+class FrameConstants {
 public:
-    OptimizedFrame() = default;
-    ~OptimizedFrame() = default;
-    uint64_t frameType;
-    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    static OptimizedFrame* GetFrameFromSp(JSTaggedType *sp)
-    {
-        return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
-            - MEMBER_OFFSET(OptimizedFrame, prev));
-    }
-};
-
-class InterpretedFrameBase {
-public:
-    InterpretedFrameBase() = default;
-    ~InterpretedFrameBase() = default;
-    JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    uint64_t frameType;
-};
-
-class OptimizedEntryFrame {
-public:
-    OptimizedEntryFrame() = default;
-    ~OptimizedEntryFrame() = default;
-    JSTaggedType  *threadFp; // for gc
-    OptimizedFrame base;
-    static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
-    {
-        return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptimizedEntryFrame, base.prev));
-    }
-};
-
-// align with 8
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-struct InterpretedFrame {
-    const uint8_t *pc;
-    JSTaggedType *sp;
-    // aligned with 8 bits
-    alignas(sizeof(uint64_t)) JSTaggedValue constpool;
-    JSTaggedValue function;
-    JSTaggedValue profileTypeInfo;
-    JSTaggedValue acc;
-    JSTaggedValue env;
-    InterpretedFrameBase base;
-    static InterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
-    {
-        return reinterpret_cast<InterpretedFrame *>(sp) - 1;
-    }
-};
- 
-struct OptLeaveFrame {
-    uint64_t frameType;
-    JSTaggedType  *prev; // set cursp here
-    uintptr_t sp;
-    uintptr_t fp;
-    uint64_t patchId;
-    static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
-    {
-        return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptLeaveFrame, prev));
-    }
-};
-
-class FrameCommonConstants {
-public:
-    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uint64_t);
 #ifdef PANDA_TARGET_AMD64
     static constexpr int SP_DWARF_REG_NUM = 7;
     static constexpr int FP_DWARF_REG_NUM = 6;
@@ -230,9 +164,90 @@ public:
 #endif
 #endif
 #endif
-    static constexpr int AARCH64_SLOT_SIZE = 8;
-    static constexpr int AMD64_SLOT_SIZE = 8;
-    static constexpr int ARM32_SLOT_SIZE = 4;
+    static constexpr int AARCH64_SLOT_SIZE = sizeof(uint64_t);
+    static constexpr int AMD64_SLOT_SIZE = sizeof(uint64_t);
+    static constexpr int ARM32_SLOT_SIZE = sizeof(uint32_t);
 };
+
+class OptimizedFrameBase {
+public:
+    OptimizedFrameBase() = default;
+    ~OptimizedFrameBase() = default;
+    FrameType type;
+    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    static OptimizedFrameBase* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptimizedFrameBase *>(reinterpret_cast<uintptr_t>(sp)
+            - MEMBER_OFFSET(OptimizedFrameBase, prev));
+    }
+};
+
+class OptimizedEntryFrame {
+public:
+    OptimizedEntryFrame() = default;
+    ~OptimizedEntryFrame() = default;
+    JSTaggedType *prevInterpretedFrameFp;
+    OptimizedFrameBase base;
+    static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(OptimizedEntryFrame, base.prev));
+    }
+};
+
+class InterpretedFrameBase {
+public:
+    InterpretedFrameBase() = default;
+    ~InterpretedFrameBase() = default;
+    JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    FrameType type;
+};
+
+// align with 8
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct InterpretedFrame {
+    const uint8_t *pc;
+    JSTaggedType *sp;
+    // aligned with 8 bits
+    alignas(sizeof(uint64_t)) JSTaggedValue constpool;
+    JSTaggedValue function;
+    JSTaggedValue profileTypeInfo;
+    JSTaggedValue acc;
+    JSTaggedValue env;
+    InterpretedFrameBase base;
+    static InterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<InterpretedFrame *>(sp) - 1;
+    }
+    static constexpr uint32_t kSizeOn64Platform =
+        2 * sizeof(int64_t) + 5 * sizeof(JSTaggedValue) + 2 * sizeof(uint64_t);
+    static constexpr uint32_t kSizeOn32Platform =
+        2 * sizeof(int32_t) + 5 * sizeof(JSTaggedValue) + 2 * sizeof(uint64_t);
+};
+static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);
+
+struct OptLeaveFrame {
+    FrameType type;
+    JSTaggedType *prevFp; // set cursp here
+    uintptr_t sp;
+    uintptr_t fp;
+    uint64_t patchId;
+    static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(OptLeaveFrame, prevFp));
+    }
+    static constexpr uint32_t kSizeOn64Platform = sizeof(FrameType) + 4 * sizeof(uint64_t);
+    static constexpr uint32_t kSizeOn32Platform = sizeof(FrameType) + 3 * sizeof(int32_t) + sizeof(uint64_t);
+    static constexpr uint32_t kPrevFpOffset = sizeof(FrameType);
+};
+
+#ifdef PANDA_TARGET_64
+    static_assert(InterpretedFrame::kSizeOn64Platform == sizeof(InterpretedFrame));
+#endif
+#ifdef PANDA_TARGET_32
+    static_assert(InterpretedFrame::kSizeOn32Platform == sizeof(InterpretedFrame));
+#endif
+
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H

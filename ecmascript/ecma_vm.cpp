@@ -114,7 +114,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     if (!snapshotSerializeEnable_) {
         snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
     }
-    fileName_ = options_.GetSnapshotFile();
+    snapshotFileName_ = options_.GetSnapshotFile();
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile();
 
     auto runtime = Runtime::GetCurrent();
@@ -140,7 +140,7 @@ bool EcmaVM::Initialize()
     }
 
     [[maybe_unused]] EcmaHandleScope scope(thread_);
-    if (!snapshotDeserializeEnable_ || !VerifyFilePath(fileName_)) {
+    if (!snapshotDeserializeEnable_ || !VerifyFilePath(snapshotFileName_)) {
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
 
         JSHandle<JSHClass> dynClassClassHandle =
@@ -181,7 +181,7 @@ bool EcmaVM::Initialize()
     } else {
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run snapshot";
         SnapShot snapShot(this);
-        std::unique_ptr<const panda_file::File> pf = snapShot.DeserializeGlobalEnvAndProgram(fileName_);
+        std::unique_ptr<const panda_file::File> pf = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_);
         frameworkPandaFile_ = pf.get();
         AddPandaFile(pf.release(), false);
         SetProgram(Program::Cast(frameworkProgram_.GetTaggedObject()), frameworkPandaFile_);
@@ -424,8 +424,6 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEntrypointImpl(Method *entrypoint, c
 Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::File &pf, const CString &methodName,
                                                            const std::vector<std::string> &args)
 {
-    thread_->SetIsEcmaInterpreter(true);
-    thread_->SetIsSnapshotMode(true);
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     JSHandle<Program> program;
     if (snapshotSerializeEnable_) {
@@ -436,7 +434,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
         if (index != CString::npos) {
             LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << ConvertToString(string);
             SnapShot snapShot(this);
-            snapShot.MakeSnapShotProgramObject(*program, &pf, fileName_);
+            snapShot.MakeSnapShotProgramObject(*program, &pf, snapshotFileName_);
         }
     } else {
         if (&pf != frameworkPandaFile_) {
@@ -743,7 +741,6 @@ void EcmaVM::ExecuteModule(std::string_view moduleFile, std::string_view entryPo
 {
     moduleManager_->SetCurrentExportModuleName(moduleFile);
     // Update Current Module
-    thread_->SetIsEcmaInterpreter(true);
     EcmaVM::ExecuteFromPf(moduleFile, entryPoint, args, true);
     // Restore Current Module
     moduleManager_->RestoreCurrentExportModuleName();

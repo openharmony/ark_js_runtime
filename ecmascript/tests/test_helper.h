@@ -67,7 +67,7 @@ public:
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
         InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(newSp) - 1;
-        state->base.frameType = static_cast<uintptr_t>(ecmascript::FrameType::INTERPRETER_FRAME);
+        state->base.type = ecmascript::FrameType::INTERPRETER_FRAME;
         state->base.prev = sp;
         state->pc = nullptr;
         state->sp = newSp;
@@ -99,7 +99,6 @@ public:
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
         thread = EcmaVM::Cast(instance)->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        thread->SetIsEcmaInterpreter(true);
         EcmaVM *ecmaVm = thread->GetEcmaVM();
         auto globalEnv = ecmaVm->GetGlobalEnv();
         methodFunction_ = ecmaVm->GetFactory()->NewJSFunction(globalEnv);
