@@ -370,6 +370,7 @@ ecma_source = [
   "ecmascript/mem/space.cpp",
   "ecmascript/mem/verification.cpp",
   "ecmascript/napi/jsnapi.cpp",
+  "ecmascript/napi/dfx_jsnapi.cpp",
   "ecmascript/object_factory.cpp",
   "ecmascript/object_operator.cpp",
   "ecmascript/platform/platform.cpp",
