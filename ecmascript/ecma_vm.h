@@ -305,6 +305,11 @@ public:
         return runtimeStatEnabled_;
     }
 
+    bool IsOptionalLogEnabled() const
+    {
+        return optionalLogEnabled_;
+    }
+
     void Iterate(const RootVisitor &v);
 
     const Heap *GetHeap() const
@@ -480,7 +485,7 @@ private:
     EcmaRuntimeStat *runtimeStat_ {nullptr};  // maybe nullptr
     bool runtimeStatEnabled_ {false};
     bool isUncaughtExceptionRegistered_ {false};
-
+    bool optionalLogEnabled_ {false};
     // weak reference need Redirect address
     JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};  // no mark for gc
     CVector<JSNativePointer *> arrayBufferDataList_;

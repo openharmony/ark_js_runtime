@@ -120,7 +120,7 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     // GC
     runtimeOptions.SetGcType(option.GetGcType());
     runtimeOptions.SetRunGcInPlace(true);
-
+    runtimeOptions.SetArkProperties(option.GetArkProperties());
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
     runtimeOptions.SetInternalMemorySizeLimit(INTERNAL_POOL_SIZE);
@@ -169,7 +169,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
         return EcmaVM::Cast(runtime->GetPandaVM());
     }
     JSRuntimeOptions runtimeOptions;
-
+    runtimeOptions.SetArkProperties(option.GetArkProperties());
     // GC
     runtimeOptions.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
 
