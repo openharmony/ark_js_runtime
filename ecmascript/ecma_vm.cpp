@@ -194,7 +194,7 @@ bool EcmaVM::Initialize()
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
-    notificationManager_->VmInitializationEvent(0);
+    notificationManager_->VmInitializationEvent(thread_->GetThreadId());
     Platform::GetCurrentPlatform()->PostTask(std::make_unique<TrimNewSpaceLimitTask>(heap_));
     return true;
 }
@@ -259,6 +259,7 @@ bool EcmaVM::InitializeFinish()
     vmInitialized_ = true;
     return true;
 }
+
 EcmaVM::~EcmaVM()
 {
     vmInitialized_ = false;
@@ -493,9 +494,6 @@ void EcmaVM::AddPandaFile(const panda_file::File *pf, bool isModule)
 {
     ASSERT(pf != nullptr);
     pandaFileWithProgram_.push_back(std::make_tuple(nullptr, pf, isModule));
-
-    // for debugger
-    notificationManager_->LoadModuleEvent(pf->GetFilename());
 }
 
 void EcmaVM::SetProgram(Program *program, const panda_file::File *pf)
@@ -504,6 +502,8 @@ void EcmaVM::SetProgram(Program *program, const panda_file::File *pf)
                            [pf](auto entry) { return std::get<1>(entry) == pf; });
     ASSERT(it != pandaFileWithProgram_.end());
     std::get<0>(*it) = program;
+    // for debugger
+    notificationManager_->LoadModuleEvent(pf->GetFilename());
 }
 
 bool EcmaVM::IsFrameworkPandaFile(std::string_view filename) const

@@ -13,35 +13,34 @@
  * limitations under the License.
  */
 
-#include <memory>
+#include "ecmascript/tooling/test/utils/test_entry.h"
+
 #include <thread>
 
-#include "ecmascript/tooling/test/test_runner.h"
-#include "ecmascript/tooling/test/test_util.h"
+#include "ecmascript/tooling/test/utils/testcases/test_list.h"
+#include "ecmascript/tooling/test/utils/test_hooks.h"
 
 namespace panda::tooling::ecmascript::test {
-extern const char *GetCurrentTestName();
-
 static std::thread g_debuggerThread;
+static std::unique_ptr<TestHooks> g_hooks = nullptr;
 
-static std::unique_ptr<TestRunner> g_runner{nullptr};
-
-extern "C" int32_t StartDebugger(const EcmaVM *vm)
+int StartDebuggerImpl()
 {
     const char *testName = GetCurrentTestName();
-    g_runner = std::make_unique<TestRunner>(testName, vm);
+    EcmaVM *vm = EcmaVM::Cast(Runtime::GetCurrent()->GetPandaVM());
+    g_hooks = std::make_unique<TestHooks>(testName, vm);
     g_debuggerThread = std::thread([] {
         TestUtil::WaitForInit();
-        g_runner->Run();
+        g_hooks->Run();
     });
     return 0;
 }
 
-extern "C" int32_t StopDebugger()
+int StopDebuggerImpl()
 {
     g_debuggerThread.join();
-    g_runner->TerminateTest();
-    g_runner.reset();
+    g_hooks->TerminateTest();
+    g_hooks.reset();
     return 0;
 }
 }  // namespace panda::tooling::ecmascript::test
