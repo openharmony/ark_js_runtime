@@ -60,7 +60,7 @@
         /*       dynamically-typed languages like JavaScript. So we simply skip the read-barrier.          */ \
         return JSTaggedValue(Barriers::GetDynValue<JSTaggedType>(this, offset));                              \
     }                                                                                                         \
-    template<typename T>                                                                                     \
+    template<typename T>                                                                                      \
     void Set##name(const JSThread *thread, JSHandle<T> value, BarrierMode mode = WRITE_BARRIER)               \
     {                                                                                                         \
         if (mode == WRITE_BARRIER) {                                                                          \
@@ -87,7 +87,7 @@
     }                                                                                                         \
     void Set##name(JSTaggedValue value)                                                                       \
     {                                                                                                         \
-        Barriers::SetDynPrimitive<JSTaggedType>(this, offset, value.GetRawData());                             \
+        Barriers::SetDynPrimitive<JSTaggedType>(this, offset, value.GetRawData());                            \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -235,19 +235,19 @@
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DATE_STRING(name)                                                                             \
-    static JSTaggedValue name(EcmaRuntimeCallInfo *argv)                                              \
-    {                                                                                                 \
-        ASSERT(argv);                                                                                 \
-        JSThread *thread = argv->GetThread();                                                         \
-        JSHandle<JSTaggedValue> msg = GetThis(argv);                                                  \
-        if (!msg->IsDate()) {                                                                         \
-            THROW_TYPE_ERROR_AND_RETURN(thread, "Not a Date Object", JSTaggedValue::Exception());     \
-        }                                                                                             \
-        if (std::isnan(JSDate::Cast(msg->GetTaggedObject())->GetTimeValue().GetDouble())) {           \
+#define DATE_STRING(name)                                                                                          \
+    static JSTaggedValue name(EcmaRuntimeCallInfo *argv)                                                           \
+    {                                                                                                              \
+        ASSERT(argv);                                                                                              \
+        JSThread *thread = argv->GetThread();                                                                      \
+        JSHandle<JSTaggedValue> msg = GetThis(argv);                                                               \
+        if (!msg->IsDate()) {                                                                                      \
+            THROW_TYPE_ERROR_AND_RETURN(thread, "Not a Date Object", JSTaggedValue::Exception());                  \
+        }                                                                                                          \
+        if (std::isnan(JSDate::Cast(msg->GetTaggedObject())->GetTimeValue().GetDouble())) {                        \
             return thread->GetEcmaVM()->GetFactory()->NewFromCanBeCompressString("Invalid Date").GetTaggedValue(); \
-        }                                                                                             \
-        return JSDate::Cast(msg->GetTaggedObject())->name(thread);                                    \
+        }                                                                                                          \
+        return JSDate::Cast(msg->GetTaggedObject())->name(thread);                                                 \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -350,13 +350,13 @@
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define RETURN_COMPLETION_IF_ABRUPT(thread, value)                                             \
-    do {                                                                                       \
-        if (thread->HasPendingException()) {                                                   \
-            JSHandle<CompletionRecord> completionRecord =                                      \
-                factory->NewCompletionRecord(CompletionRecord::THROW, value);                  \
-            return (completionRecord);                                                         \
-        }                                                                                      \
+#define RETURN_COMPLETION_IF_ABRUPT(thread, value)                            \
+    do {                                                                      \
+        if (thread->HasPendingException()) {                                  \
+            JSHandle<CompletionRecord> completionRecord =                     \
+                factory->NewCompletionRecord(CompletionRecord::THROW, value); \
+            return (completionRecord);                                        \
+        }                                                                     \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -379,30 +379,38 @@
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECL_VISIT_OBJECT(BEGIN_OFFSET, SIZE)                                                          \
-    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                         \
-    {                                                                                                  \
-        visitor(this, ObjectSlot(ToUintPtr(this) + BEGIN_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE)); \
+#define DECL_VISIT_ARRAY(BEGIN_OFFSET, LENGTH)                                                                \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                                \
+    {                                                                                                         \
+        size_t endOffset = (BEGIN_OFFSET) + (LENGTH) * JSTaggedValue::TaggedTypeSize();                       \
+        visitor(this, ObjectSlot(ToUintPtr(this) + (BEGIN_OFFSET)), ObjectSlot(ToUintPtr(this) + endOffset)); \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DECL_VISIT_OBJECT_FOR_JS_OBJECT(PARENTCLASS, BEGIN_OFFSET, SIZE)                               \
-    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                         \
-    {                                                                                                  \
-        VisitObjects(visitor);                                                                         \
-        /* visit in object fields */                                                                   \
-        auto objSize = this->GetClass()->GetObjectSize();                                              \
-        if (objSize > SIZE) {                                                                          \
-            visitor(this, ObjectSlot(ToUintPtr(this) + SIZE), ObjectSlot(ToUintPtr(this) + objSize));  \
-        }                                                                                              \
-    }                                                                                                  \
-    void VisitObjects(const EcmaObjectRangeVisitor &visitor)                                           \
-    {                                                                                                  \
-        PARENTCLASS::VisitObjects(visitor);                                                            \
-        if (BEGIN_OFFSET == SIZE) {                                                                    \
-            return;                                                                                    \
-        }                                                                                              \
-        visitor(this, ObjectSlot(ToUintPtr(this) + BEGIN_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE)); \
+#define DECL_VISIT_OBJECT(BEGIN_OFFSET, END_OFFSET)                                                              \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                                   \
+    {                                                                                                            \
+        visitor(this, ObjectSlot(ToUintPtr(this) + (BEGIN_OFFSET)), ObjectSlot(ToUintPtr(this) + (END_OFFSET))); \
+    }
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define DECL_VISIT_OBJECT_FOR_JS_OBJECT(PARENTCLASS, BEGIN_OFFSET, END_OFFSET)                                   \
+    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor)                                                   \
+    {                                                                                                            \
+        VisitObjects(visitor);                                                                                   \
+        /* visit in object fields */                                                                             \
+        auto objSize = this->GetClass()->GetObjectSize();                                                        \
+        if (objSize > (END_OFFSET)) {                                                                            \
+            visitor(this, ObjectSlot(ToUintPtr(this) + (END_OFFSET)), ObjectSlot(ToUintPtr(this) + objSize));    \
+        }                                                                                                        \
+    }                                                                                                            \
+    void VisitObjects(const EcmaObjectRangeVisitor &visitor)                                                     \
+    {                                                                                                            \
+        PARENTCLASS::VisitObjects(visitor);                                                                      \
+        if ((BEGIN_OFFSET) == (END_OFFSET)) {                                                                    \
+            return;                                                                                              \
+        }                                                                                                        \
+        visitor(this, ObjectSlot(ToUintPtr(this) + (BEGIN_OFFSET)), ObjectSlot(ToUintPtr(this) + (END_OFFSET))); \
     }
 
 #if ECMASCRIPT_ENABLE_CAST_CHECK

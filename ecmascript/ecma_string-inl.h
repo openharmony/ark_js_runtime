@@ -40,9 +40,9 @@ inline const EcmaString *EcmaString::ConstCast(const TaggedObject *object)
 /* static */
 inline EcmaString *EcmaString::CreateEmptyString(const EcmaVM *vm)
 {
-    auto string = vm->GetFactory()->AllocNonMovableStringObject(sizeof(EcmaString));
+    auto string = vm->GetFactory()->AllocNonMovableStringObject(EcmaString::SIZE);
     string->SetLength(0, GetCompressedStringsEnabled());
-    string->SetHashcode(0);
+    string->SetRawHashcode(0);
     return string;
 }
 
@@ -120,9 +120,10 @@ inline EcmaString *EcmaString::AllocStringObject(size_t length, bool compressed,
     size_t size = compressed ? ComputeSizeUtf8(length) : ComputeSizeUtf16(length);
     auto string = reinterpret_cast<EcmaString *>(vm->GetFactory()->AllocStringObject(size));
     string->SetLength(length, compressed);
-    string->SetHashcode(0);
+    string->SetRawHashcode(0);
     return reinterpret_cast<EcmaString *>(string);
 }
+
 void EcmaString::WriteData(EcmaString *src, uint32_t start, uint32_t destSize, uint32_t length)
 {
     if (IsUtf8()) {
@@ -147,6 +148,7 @@ void EcmaString::WriteData(EcmaString *src, uint32_t start, uint32_t destSize, u
         }
     }
 }
+
 void EcmaString::WriteData(char src, uint32_t start)
 {
     if (IsUtf8()) {

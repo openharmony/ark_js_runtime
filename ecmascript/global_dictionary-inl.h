@@ -119,7 +119,7 @@ void GlobalDictionary::GetAllKeys(const JSThread *thread, int offset, TaggedArra
 }
 
 void GlobalDictionary::GetEnumAllKeys(const JSThread *thread, int offset, TaggedArray *keyArray,
-                                      array_size_t *keys) const
+                                      uint32_t *keys) const
 {
     ASSERT_PRINT(offset + EntriesCount() <= static_cast<int>(keyArray->GetLength()),
                  "keyArray capacity is not enough for dictionary");

@@ -21,8 +21,8 @@
 namespace panda::ecmascript {
 class LexicalEnv : public TaggedArray {
 public:
-    static constexpr array_size_t PARENT_ENV_INDEX = 0;
-    static constexpr array_size_t RESERVED_ENV_LENGTH = 1;
+    static constexpr uint32_t PARENT_ENV_INDEX = 0;
+    static constexpr uint32_t RESERVED_ENV_LENGTH = 1;
 
     static LexicalEnv *Cast(ObjectHeader *object)
     {

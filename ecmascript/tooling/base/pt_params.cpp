@@ -309,7 +309,7 @@ std::unique_ptr<SetBlackboxPatternsParams> SetBlackboxPatternsParams::Create(con
             Local<ArrayRef> array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (array_size_t i = 0; i < len; i++) {
+            for (uint32_t i = 0; i < len; i++) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 if (value->IsString()) {
@@ -460,7 +460,7 @@ std::unique_ptr<StepIntoParams> StepIntoParams::Create(const EcmaVM *ecmaVm, con
             Local<ArrayRef> array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (array_size_t i = 0; i < len; i++) {
+            for (uint32_t i = 0; i < len; i++) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 if (value->IsObject()) {
@@ -503,7 +503,7 @@ std::unique_ptr<StepOverParams> StepOverParams::Create(const EcmaVM *ecmaVm, con
             Local<ArrayRef> array = Local<ArrayRef>(result);
             uint32_t len = array->Length(ecmaVm);
             Local<JSValueRef> key = JSValueRef::Undefined(ecmaVm);
-            for (array_size_t i = 0; i < len; i++) {
+            for (uint32_t i = 0; i < len; i++) {
                 key = IntegerRef::New(ecmaVm, i);
                 Local<JSValueRef> value = Local<ObjectRef>(array)->Get(ecmaVm, key->ToString(ecmaVm));
                 if (value->IsObject()) {

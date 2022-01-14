@@ -22,9 +22,9 @@ JSHandle<TaggedArray> BuiltinsBase::GetArgsArray(EcmaRuntimeCallInfo *msg)
 {
     JSThread *thread = msg->GetThread();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    array_size_t length = msg->GetArgsNumber();
+    uint32_t length = msg->GetArgsNumber();
     JSHandle<TaggedArray> array = factory->NewTaggedArray(length);
-    for (array_size_t i = 0; i < length; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
         array->Set(thread, i, GetCallArg(msg, i).GetTaggedValue());
     }
     return array;
