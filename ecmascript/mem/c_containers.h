@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef LIBPANDABASE_ECMASCRIPT_MEM_C_CONTAINERS_H
-#define LIBPANDABASE_ECMASCRIPT_MEM_C_CONTAINERS_H
+#ifndef ECMASCRIPT_MEM_C_CONTAINERS_H
+#define ECMASCRIPT_MEM_C_CONTAINERS_H
 
 #include <deque>
 #include <list>
@@ -60,4 +60,4 @@ template<class Key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<
 using CUnorderedSet = std::unordered_set<Key, Hash, KeyEqual, CAddressAllocator<Key>>;
 }  // namespace panda::ecmascript
 
-#endif  // LIBPANDABASE_ECMASCRIPT_MEM_C_CONTAINERS_H
+#endif  // ECMASCRIPT_MEM_C_CONTAINERS_H

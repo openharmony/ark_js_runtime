@@ -23,6 +23,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/tooling/js_pt_lang_ext.h"
 #include "include/tooling/pt_lang_extension.h"
 
 namespace panda {
@@ -71,7 +72,7 @@ std::unique_ptr<ClassLinkerExtension> EcmaLanguageContext::CreateClassLinkerExte
 
 PandaUniquePtr<tooling::PtLangExt> EcmaLanguageContext::CreatePtLangExt() const
 {
-    return PandaUniquePtr<tooling::PtLangExt>();
+    return MakePandaUnique<tooling::ecmascript::JSPtLangExt>();
 }
 
 void EcmaLanguageContext::ThrowException(ManagedThread *thread, const uint8_t *mutf8_name,

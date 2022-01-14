@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
-// Js
-#ifndef ECMASCRIPT_TOOLING_TEST_JS_VM_EVENT_TEST_H
-#define ECMASCRIPT_TOOLING_TEST_JS_VM_EVENT_TEST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H
+#define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H
 
-#include "js/js_breakpoint_test.h"
-#include "js/js_single_step_test.h"
+namespace panda::tooling::ecmascript::test {
+int StartDebuggerImpl();
+int StopDebuggerImpl();
+}  // namespace panda::tooling::ecmascript::test
 
-#endif  // ECMASCRIPT_TOOLING_TEST_JS_VM_EVENT_TEST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_ENTRY_H

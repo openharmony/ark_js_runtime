@@ -14,10 +14,7 @@
  */
 // Taken from panda-tools/panda-debugger/debugger
 
-#include "ecmascript/tooling/test/test_extractor.h"
-
-#include <algorithm>
-#include <limits>
+#include "ecmascript/tooling/test/utils/test_extractor.h"
 
 #include "libpandabase/utils/leb128.h"
 #include "libpandabase/utils/utf.h"

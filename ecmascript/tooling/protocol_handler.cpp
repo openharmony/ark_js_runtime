@@ -84,11 +84,11 @@ void ProtocolHandler::SendResponse(const DispatchRequest &request, const Dispatc
 
 void ProtocolHandler::SendNotification(const EcmaVM *ecmaVm, std::unique_ptr<PtBaseEvents> events)
 {
-        if (!Runtime::GetCurrent()->IsDebugMode() || events == nullptr) {
-            return;
-        }
-        LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
-        SendReply(ecmaVm, events->ToObject(ecmaVm));
+    if (!Runtime::GetCurrent()->IsDebugMode() || events == nullptr) {
+        return;
+    }
+    LOG(DEBUG, DEBUGGER) << "ProtocolHandler::SendNotification: " << events->GetName();
+    SendReply(ecmaVm, events->ToObject(ecmaVm));
 }
 
 void ProtocolHandler::SendReply(const EcmaVM *ecmaVm, Local<ObjectRef> reply)
