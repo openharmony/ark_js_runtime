@@ -120,6 +120,11 @@ public:
         sweeping_ = sweeping;
     }
 
+    size_t GetAllocatedSize() const
+    {
+        return allocationSizeAccumulator_;
+    }
+
 private:
     inline uintptr_t Allocate(FreeObject *object, size_t size);
 
@@ -128,6 +133,7 @@ private:
     Heap *heap_{nullptr};
     MemSpaceType type_ = OLD_SPACE;
     bool sweeping_ = false;
+    size_t allocationSizeAccumulator_ = 0;
 };
 }  // namespace panda::ecmascript
 

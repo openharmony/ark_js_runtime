@@ -31,7 +31,7 @@ class InternalCallParams;
 class PropertiesCache;
 
 enum class MarkStatus : uint8_t {
-    NOT_BEGIN_MARK,
+    READY_TO_MARK,
     MARKING,
     MARK_FINISHED
 };
@@ -262,10 +262,10 @@ public:
         threadStatusBitField_ = newVal;
     }
 
-    bool IsNotBeginMark() const
+    bool IsReadyToMark() const
     {
         auto status = MarkStatusBits::Decode(threadStatusBitField_);
-        return status == MarkStatus::NOT_BEGIN_MARK;
+        return status == MarkStatus::READY_TO_MARK;
     }
 
     bool IsMarking() const
