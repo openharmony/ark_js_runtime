@@ -69,12 +69,12 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFr
     uintptr_t base = 0;
     uintptr_t derived = 0;
     for (auto &info: *infos) {
-        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
             uintptr_t rsp = frame->sp;
             address = rsp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rsp :" << rsp;
-        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             uintptr_t fp = frame->fp;
             address = fp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
@@ -119,10 +119,10 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
 #endif
 
     for (auto &info: *infos) {
-        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
             uintptr_t rsp = frame->sp;
             address = rsp + info.second;
-        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             uintptr_t fp = frame->fp;
             address = fp + info.second;
         } else {
@@ -156,37 +156,37 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     uintptr_t base = 0;
     uintptr_t derived = 0;
     for (auto &info: *infos) {
-    if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
 #ifdef PANDA_TARGET_ARM64
-        uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
-        uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameCommonConstants::SP_OFFSET));
+            uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
+            uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameConstants::SP_OFFSET));
 #else
-        uintptr_t *rsp = fp + FrameCommonConstants::SP_OFFSET;
+            uintptr_t *rsp = fp + FrameConstants::SP_OFFSET;
 #endif
-        address = reinterpret_cast<uintptr_t>(rsp) + info.second;
-        LOG_ECMA(DEBUG) << "SP_DWARF_REG_NUM:  info.second:" << info.second << " rbp offset:" <<
-            reinterpret_cast<uintptr_t>(*fp) - address << "rsp :" << rsp;
-    } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
-        uintptr_t tmpFp = *fp;
-        address = tmpFp + info.second;
-        LOG_ECMA(DEBUG) << "FP_DWARF_REG_NUM:  info.second:" << info.second;
-    } else {
-        LOG_ECMA(DEBUG) << "REG_NUM :  info.first:" << info.first;
-        abort();
-    }
-
-    if (IsDeriveredPointer(i)) {
-        derived = reinterpret_cast<uintptr_t>(address);
-        if (base == derived) {
-            LOG_ECMA(DEBUG) << std::hex << "visit base:" << base << " base Value: " <<
-                *reinterpret_cast<uintptr_t *>(base);
+            address = reinterpret_cast<uintptr_t>(rsp) + info.second;
+            LOG_ECMA(DEBUG) << "SP_DWARF_REG_NUM:  info.second:" << info.second << " rbp offset:" <<
+                reinterpret_cast<uintptr_t>(*fp) - address << "rsp :" << rsp;
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+            uintptr_t tmpFp = *fp;
+            address = tmpFp + info.second;
+            LOG_ECMA(DEBUG) << "FP_DWARF_REG_NUM:  info.second:" << info.second;
         } else {
-            LOG_ECMA(DEBUG) << std::hex << "push base:" << base << " base Value: " <<
-                *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
+            LOG_ECMA(DEBUG) << "REG_NUM :  info.first:" << info.first;
+            abort();
         }
-    } else {
-        base = reinterpret_cast<uintptr_t>(address);
-    }
+
+        if (IsDeriveredPointer(i)) {
+            derived = reinterpret_cast<uintptr_t>(address);
+            if (base == derived) {
+                LOG_ECMA(DEBUG) << std::hex << "visit base:" << base << " base Value: " <<
+                    *reinterpret_cast<uintptr_t *>(base);
+            } else {
+                LOG_ECMA(DEBUG) << std::hex << "push base:" << base << " base Value: " <<
+                    *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
+            }
+        } else {
+            base = reinterpret_cast<uintptr_t>(address);
+        }
         i++;
     }
 }
@@ -212,15 +212,15 @@ bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t fr
     PrintCallSiteInfo(infos, fp);
 #endif
     for (auto &info: *infos) {
-        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
 #ifdef PANDA_TARGET_ARM64
             uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
-            uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameCommonConstants::SP_OFFSET));
+            uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameConstants::SP_OFFSET));
 #else
-            uintptr_t *rsp = fp + FrameCommonConstants::SP_OFFSET;
+            uintptr_t *rsp = fp + FrameConstants::SP_OFFSET;
 #endif
             address = reinterpret_cast<uintptr_t>(rsp) + info.second;
-        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             uintptr_t tmpFp = *fp;
             address = tmpFp + info.second;
         } else {

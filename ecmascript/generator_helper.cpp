@@ -81,14 +81,12 @@ void GeneratorHelper::ChangeGenContext(JSThread *thread, const JSHandle<Generato
                                        [[maybe_unused]] C2IBridge *c2i)
 {
     JSThread *jsThread = thread;
-    ASSERT(jsThread->IsEcmaInterpreter());
     EcmaInterpreter::ChangeGenContext(jsThread, genContext);
 }
 
 // foo->main
 void GeneratorHelper::ResumeContext(JSThread *thread)
 {
-    ASSERT(thread->IsEcmaInterpreter());
     EcmaInterpreter::ResumeContext(thread);
 }
 }  // namespace panda::ecmascript
