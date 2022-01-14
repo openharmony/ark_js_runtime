@@ -594,4 +594,10 @@ JSTaggedType RuntimeTrampolines::LdModvarByName(uintptr_t argGlue, JSTaggedType 
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::LdModvarByName(thread, JSTaggedValue(moduleObj), JSTaggedValue(itemName)).GetRawData();
 }
+
+void RuntimeTrampolines::ThrowDyn(uintptr_t argGlue, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    SlowRuntimeStub::ThrowDyn(thread, JSTaggedValue(value));
+}
 }  // namespace panda::ecmascript

@@ -107,6 +107,7 @@ public:
     static JSTaggedType ImportModule(uintptr_t argGlue, JSTaggedType moduleName);
     static void StModuleVar(uintptr_t argGlue, JSTaggedType exportName, JSTaggedType exportObj);
     static JSTaggedType LdModvarByName(uintptr_t argGlue, JSTaggedType moduleObj, JSTaggedType itemName);
+    static void ThrowDyn(uintptr_t argGlue, JSTaggedType value);
 };
 }  // namespace panda::ecmascript
 #endif

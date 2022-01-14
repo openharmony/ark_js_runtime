@@ -14,6 +14,7 @@ namespace panda::ecmascript::kungfu {
     V(HandleLdNullPref, 7)                                      \
     V(HandleLdTruePref, 7)                                      \
     V(HandleLdFalsePref, 7)                                     \
+    V(HandleThrowDynPref, 7)                                    \
     V(HandleLdLexEnvDynPref, 7)                                 \
     V(HandlePopLexEnvDynPref, 7)                                \
     V(HandleLdHolePref, 7)                                      \

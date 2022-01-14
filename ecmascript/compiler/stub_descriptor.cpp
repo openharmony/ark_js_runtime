@@ -1047,6 +1047,20 @@ CALL_STUB_INIT_DESCRIPTOR(LdModvarByName)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ThrowDyn)
+{
+    // 2 : 2 input parameters
+    StubDescriptor throwDyn("ThrowDyn", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = throwDyn;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 #ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {

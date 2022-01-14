@@ -112,6 +112,24 @@ void HandleLdFalsePrefStub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
+void HandleThrowDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    StubDescriptor *throwDyn = GET_STUBDESCRIPTOR(ThrowDyn);
+    CallRuntime(throwDyn, glue, GetWord64Constant(FAST_STUB_ID(ThrowDyn)),
+                {glue, acc});
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+}
+
 void HandleLdLexEnvDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
