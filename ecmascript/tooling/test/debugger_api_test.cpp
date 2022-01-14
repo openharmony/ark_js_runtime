@@ -16,7 +16,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/tests/test_helper.h"
-#include "ecmascript/tooling/test/test_list.h"
+#include "ecmascript/tooling/test/utils/testcases/test_list.h"
 
 namespace panda::tooling::ecmascript::test {
 using panda::ecmascript::EcmaHandleScope;
@@ -24,7 +24,7 @@ using panda::ecmascript::EcmaVM;
 using panda::ecmascript::JSThread;
 using panda::test::TestHelper;
 
-class EcmaScriptDebugApiTest : public testing::TestWithParam<const char *> {
+class DebuggerApiTest : public testing::TestWithParam<const char *> {
 public:
     static void SetUpTestCase()
     {
@@ -38,7 +38,8 @@ public:
 
     void SetUp() override
     {
-        TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
+        SetCurrentTestName(GetParam());
+        TestHelper::CreateEcmaVMWithScope(instance, thread, scope, DEBUGGER_TEST_LIBRARY);
     }
 
     void TearDown() override
@@ -49,30 +50,22 @@ public:
     PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
-
-protected:
-    void RunEcmaScriptTest(const char *testName)
-    {
-        std::cout << "Running " << testName << std::endl;
-        SetCurrentTestName(testName);
-        EcmaVM *vm = EcmaVM::Cast(instance);
-        ASSERT_NE(vm, nullptr);
-        auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);
-
-        auto fileNameRef = StringRef::NewFromUtf8(vm, pandaFile.c_str(), pandaFile.size());
-        auto entryRef = StringRef::NewFromUtf8(vm, entryPoint.c_str(), entryPoint.size());
-        auto res = JSNApi::Execute(vm, fileNameRef, entryRef);
-        ASSERT_TRUE(res);
-    }
 };
 
-HWTEST_P_L0(EcmaScriptDebugApiTest, EcmaScriptSuite)
+HWTEST_P_L0(DebuggerApiTest, EcmaScriptSuite)
 {
-    const char *testName = GetParam();
-    ASSERT_NE(testName, nullptr);
-    RunEcmaScriptTest(testName);
+    const char *testName = GetCurrentTestName();
+    std::cout << "Running " << testName << std::endl;
+    EcmaVM *vm = EcmaVM::Cast(instance);
+    ASSERT_NE(vm, nullptr);
+    auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);
+
+    auto fileNameRef = StringRef::NewFromUtf8(vm, pandaFile.c_str(), pandaFile.size());
+    auto entryRef = StringRef::NewFromUtf8(vm, entryPoint.c_str(), entryPoint.size());
+    auto res = JSNApi::Execute(vm, fileNameRef, entryRef);
+    ASSERT_TRUE(res);
 }
 
-INSTANTIATE_TEST_CASE_P(EcmaDebugApiTest, EcmaScriptDebugApiTest,
+INSTANTIATE_TEST_CASE_P(EcmaDebugApiTest, DebuggerApiTest,
                         testing::ValuesIn(GetTestList(panda::panda_file::SourceLang::ECMASCRIPT)));
 }  // namespace panda::tooling::ecmascript::test

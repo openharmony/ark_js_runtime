@@ -43,12 +43,38 @@ ts2abc_gen_abc("ark_debug_abc") {
   out_puts = [ test_abc_path ]
 }
 
+ohos_shared_library("debugger_entry") {
+  sources = [ "entry/test_debugger_entry.cpp" ]
+
+  configs = [
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    ":debug_api_test",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    ":ark_debug_abc",
+    ":jsdebugtest",
+    "$ark_root/libpandabase:libarkbase",
+    "$ark_root/libpandafile:libarkfile",
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+
+  output_extension = "so"
+  subsystem_name = "test"
+}
+
 ohos_shared_library("jsdebugtest") {
   sources = [
-    "init.cpp",
-    "test_extractor.cpp",
-    "test_list.cpp",
-    "test_util.cpp",
+    "utils/test_entry.cpp",
+    "utils/test_extractor.cpp",
+    "utils/test_util.cpp",
+    "utils/testcases/test_list.cpp",
   ]
 
   configs = [
@@ -81,8 +107,10 @@ ohos_unittest("EcmaDebugApiTest") {
 
   sources = [
     # test file
-    "launcher.cpp",
+    "debugger_api_test.cpp",
   ]
+
+  defines = [ "DEBUGGER_TEST_LIBRARY=\"libdebugger_entry.so\"" ]
 
   configs = [
     "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
@@ -93,7 +121,6 @@ ohos_unittest("EcmaDebugApiTest") {
   ]
 
   deps = [
-    ":ark_debug_abc",
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -194,6 +221,7 @@ group("unittest") {
     ":DebuggerEventsTest",
     ":DebuggerTypesTest",
     ":EcmaDebugApiTest",
+    ":debugger_entry",
   ]
 }
 

@@ -52,29 +52,35 @@ public:
     std::optional<Error> SetBreakpoint(const PtLocation &location) override;
     std::optional<Error> RemoveBreakpoint(const PtLocation &location) override;
     void BytecodePcChanged(ManagedThread *thread, Method *method, uint32_t bcOffset) override;
+    void MethodEntry(ManagedThread *thread, Method *method) override;
+    void MethodExit(ManagedThread *thread, Method *method) override;
     void LoadModule(std::string_view filename) override
     {
-        if (hooks_ != nullptr) {
-            hooks_->LoadModule(filename);
+        if (hooks_ == nullptr) {
+            return;
         }
+        hooks_->LoadModule(filename);
     }
     void VmStart() override
     {
-        if (hooks_ != nullptr) {
-            hooks_->VmStart();
+        if (hooks_ == nullptr) {
+            return;
         }
+        hooks_->VmStart();
     }
     void VmInitialization(ManagedThread::ThreadId threadId) override
     {
-        if (hooks_ != nullptr) {
-            hooks_->VmInitialization(PtThread(threadId));
+        if (hooks_ == nullptr) {
+            return;
         }
+        hooks_->VmInitialization(PtThread(threadId));
     }
     void VmDeath() override
     {
-        if (hooks_ != nullptr) {
-            hooks_->VmDeath();
+        if (hooks_ == nullptr) {
+            return;
         }
+        hooks_->VmDeath();
     }
 
     PtLangExt *GetLangExtension() const override
@@ -115,8 +121,6 @@ public:
     void GarbageCollectorFinish() override {}
     void ObjectAlloc(BaseClass *klass, ObjectHeader *object, ManagedThread *thread, size_t size) override {}
     void ExceptionCatch(const ManagedThread *thread, const Method *method, uint32_t bcOffset) override {}
-    void MethodEntry(ManagedThread *thread, Method *method) override {}
-    void MethodExit(ManagedThread *thread, Method *method) override {}
     void ClassLoad(Class *klass) override {}
     void ClassPrepare(Class *klass) override {}
     void MonitorWait(ObjectHeader *object, int64_t timeout) override {}
@@ -221,7 +225,8 @@ public:
 private:
     static constexpr uint32_t JSDEBUG_EVENT_MASK = RuntimeNotificationManager::Event::LOAD_MODULE |
                                                    RuntimeNotificationManager::Event::BYTECODE_PC_CHANGED |
-                                                   RuntimeNotificationManager::Event::VM_EVENTS;
+                                                   RuntimeNotificationManager::Event::VM_EVENTS |
+                                                   RuntimeNotificationManager::Event::METHOD_EVENTS;
 
     JSMethod *FindMethod(const PtLocation &location) const;
     bool FindBreakpoint(const JSMethod *method, uint32_t bcOffset) const;
