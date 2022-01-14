@@ -34,7 +34,7 @@ HeapProfiler::~HeapProfiler()
     jsonSerializer_ = nullptr;
 }
 
-bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const CString &filePath, bool isVmMode)
+bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, const std::string &filePath, bool isVmMode)
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(thread);
     ASSERT(heapClean);
@@ -68,7 +68,7 @@ bool HeapProfiler::StartHeapTracking(JSThread *thread, double timeInterval, bool
     return true;
 }
 
-bool HeapProfiler::StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const CString &path)
+bool HeapProfiler::StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const std::string &path)
 {
     if (heapTracker_ == nullptr) {
         return false;
@@ -93,7 +93,7 @@ bool HeapProfiler::StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, con
     return jsonSerializer_->Serialize(snapShot, realPath.second);
 }
 
-std::pair<bool, CString> HeapProfiler::FilePathValid(const CString &filePath)
+std::pair<bool, CString> HeapProfiler::FilePathValid(const std::string &filePath)
 {
     if (filePath.size() > PATH_MAX) {
         return std::make_pair(false, "");
@@ -106,7 +106,7 @@ std::pair<bool, CString> HeapProfiler::FilePathValid(const CString &filePath)
     return std::make_pair(false, "");
 }
 
-CString HeapProfiler::GenDumpFileName(DumpFormat dumpFormat)
+std::string HeapProfiler::GenDumpFileName(DumpFormat dumpFormat)
 {
     CString filename("hprof_");
     switch (dumpFormat) {
@@ -124,7 +124,7 @@ CString HeapProfiler::GenDumpFileName(DumpFormat dumpFormat)
             break;
     }
     filename.append(".heapsnapshot");
-    return filename;
+    return CstringConvertToString(filename);
 }
 
 CString HeapProfiler::GetTimeStamp()

@@ -285,7 +285,7 @@ bool CpuProfiler::CheckFileName(const std::string &fileName, std::string &absolu
 
     CVector<char> resolvedPath(PATH_MAX);
     realpath(fileName.c_str(), resolvedPath.data());
-    std::ifstream file(resolvedPath.data());
+    std::ofstream file(resolvedPath.data());
     if (!file.good()) {
         return false;
     }
