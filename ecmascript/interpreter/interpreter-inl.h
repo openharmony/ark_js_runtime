@@ -768,6 +768,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             LOG_INST() << "calli.rangedyn " << actualNumArgs << ", v" << funcReg;
 
         handlerCall:
+            thread->CheckSafepoint();
             JSTaggedValue func = GET_VREG_VALUE(funcReg);
             if (!func.IsCallable()) {
                 {
@@ -3600,11 +3601,10 @@ bool EcmaInterpreter::UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, J
             auto res = SlowRuntimeStub::NotifyInlineCache(
                 thread, JSFunction::Cast(thisFunc.GetHeapObject()), method);
             state->profileTypeInfo = res;
-            method->SetHotnessCounter(std::numeric_limits<int32_t>::max());
+            method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
             return true;
         } else {
-            hotnessCounter = std::numeric_limits<int32_t>::max();
-            method->SetHotnessCounter(static_cast<uint32_t>(hotnessCounter));
+            method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
             return needRestoreAcc;
         }
     }
