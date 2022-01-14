@@ -1682,6 +1682,11 @@ GateRef Stub::ZExtInt8ToInt32(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT32), x);
 }
 
+GateRef Stub::ZExtInt8ToInt64(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::ZEXT_INT8_TO_INT64), x);
+}
+
 GateRef Stub::ZExtInt8ToPtr(GateRef x)
 {
     if (env_.IsArch32Bit()) {
@@ -2060,6 +2065,25 @@ GateRef Stub::ReadInst32_2(GateRef pc)
     GateRef currentInst4 = Int32Add(currentInst3, ZExtInt8ToInt32(ReadInst8_3(pc)));
     GateRef currentInst5 = Word32LSL(currentInst4, GetInt32Constant(8));
     return Int32Add(currentInst5, ZExtInt8ToInt32(ReadInst8_2(pc)));
+}
+
+GateRef Stub::ReadInst64_0(GateRef pc)
+{
+    GateRef currentInst = ZExtInt8ToInt64(ReadInst8_7(pc));
+    GateRef currentInst1 = Word64LSL(currentInst, GetWord64Constant(8));
+    GateRef currentInst2 = Int64Add(currentInst1, ZExtInt8ToInt64(ReadInst8_6(pc)));
+    GateRef currentInst3 = Word64LSL(currentInst2, GetWord64Constant(8));
+    GateRef currentInst4 = Int64Add(currentInst3, ZExtInt8ToInt64(ReadInst8_5(pc)));
+    GateRef currentInst5 = Word64LSL(currentInst4, GetWord64Constant(8));
+    GateRef currentInst6 = Int64Add(currentInst5, ZExtInt8ToInt64(ReadInst8_4(pc)));
+    GateRef currentInst7 = Word64LSL(currentInst6, GetWord64Constant(8));
+    GateRef currentInst8 = Int64Add(currentInst7, ZExtInt8ToInt64(ReadInst8_3(pc)));
+    GateRef currentInst9 = Word64LSL(currentInst8, GetWord64Constant(8));
+    GateRef currentInst10 = Int64Add(currentInst9, ZExtInt8ToInt64(ReadInst8_2(pc)));
+    GateRef currentInst11 = Word64LSL(currentInst10, GetWord64Constant(8));
+    GateRef currentInst12 = Int64Add(currentInst11, ZExtInt8ToInt64(ReadInst8_1(pc)));
+    GateRef currentInst13 = Word64LSL(currentInst12, GetWord64Constant(8));
+    return Int64Add(currentInst13, ZExtInt8ToInt64(ReadInst8_0(pc)));
 }
 
 void Stub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,

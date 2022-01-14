@@ -735,6 +735,7 @@ public:
     inline GateRef ZExtInt1ToInt64(GateRef x);
     inline GateRef ZExtInt1ToInt32(GateRef x);
     inline GateRef ZExtInt8ToInt32(GateRef x);
+    inline GateRef ZExtInt8ToInt64(GateRef x);
     inline GateRef ZExtInt8ToPtr(GateRef x);
     inline GateRef ZExtInt16ToPtr(GateRef x);
     inline GateRef SExtInt32ToPtr(GateRef x);
@@ -796,6 +797,7 @@ public:
     inline GateRef ReadInst32_0(GateRef pc);
     inline GateRef ReadInst32_1(GateRef pc);
     inline GateRef ReadInst32_2(GateRef pc);
+    inline GateRef ReadInst64_0(GateRef pc);
     // inline GateRef GetBaseFromFrame(GateRef frame);
     inline void SavePc(GateRef glue, GateRef CurrentSp, GateRef pc);
     inline GateRef LoadAccFromSp(GateRef glue, GateRef CurrentSp);

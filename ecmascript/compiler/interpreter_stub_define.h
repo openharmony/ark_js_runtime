@@ -152,9 +152,9 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdFunctionPref, 7)                              \
     T(HandleMovDynV8V8, 7)                                  \
     T(HandleMovDynV16V16, 7)                                \
-    V(HandleLdaStrId32, 7)                                  \
-    V(HandleLdaiDynImm32, 7)                                \
-    V(HandleFldaiDynImm64, 7)                               \
+    T(HandleLdaStrId32, 7)                                  \
+    T(HandleLdaiDynImm32, 7)                                \
+    T(HandleFldaiDynImm64, 7)                               \
     T(HandleJmpImm8, 7)                                     \
     T(HandleJmpImm16, 7)                                    \
     T(HandleJmpImm32, 7)                                    \
