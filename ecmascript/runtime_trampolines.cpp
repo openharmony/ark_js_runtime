@@ -473,6 +473,18 @@ void RuntimeTrampolines::ThrowConstAssignment(uintptr_t argGlue, JSTaggedType va
     SlowRuntimeStub::ThrowConstAssignment(thread, JSTaggedValue(value));
 }
 
+JSTaggedType RuntimeTrampolines::GetTemplateObject(uintptr_t argGlue, JSTaggedType literal)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::GetTemplateObject(thread, JSTaggedValue(literal)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::GetNextPropName(uintptr_t argGlue, JSTaggedType iter)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::GetNextPropName(thread, JSTaggedValue(iter)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
