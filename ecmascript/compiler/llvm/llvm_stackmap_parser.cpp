@@ -211,18 +211,19 @@ bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t fr
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
     PrintCallSiteInfo(infos, fp);
 #endif
+    uintptr_t callsiteFp = *fp;
+    uintptr_t callsiteSp;
+#ifdef PANDA_TARGET_ARM64
+    callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::SP_OFFSET);
+#else
+    callsiteSp = *(reinterpret_cast<uintptr_t *>(fp) + FrameConstants::SP_OFFSET);
+#endif
+
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
-#ifdef PANDA_TARGET_ARM64
-            uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
-            uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameConstants::SP_OFFSET));
-#else
-            uintptr_t *rsp = fp + FrameConstants::SP_OFFSET;
-#endif
-            address = reinterpret_cast<uintptr_t>(rsp) + info.second;
+            address = callsiteSp + info.second;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
-            uintptr_t tmpFp = *fp;
-            address = tmpFp + info.second;
+            address = callsiteFp + info.second;
         } else {
             abort();
         }

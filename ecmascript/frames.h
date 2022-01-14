@@ -248,6 +248,5 @@ struct OptLeaveFrame {
 #ifdef PANDA_TARGET_32
     static_assert(InterpretedFrame::kSizeOn32Platform == sizeof(InterpretedFrame));
 #endif
-
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H
