@@ -15,8 +15,9 @@
 <configuration ver="2.0">
     <target name="EcmaDebugApiTest">
         <preparer>
-            <option name="push" value="obj/ark/js_runtime/ecmascript/tooling/test/Sample.abc -> /data/app" src="out"/>
+            <option name="push" value="obj/ark/js_runtime/ecmascript/tooling/test/Sample.abc -> /data/test" src="out"/>
             <option name="push" value="test/test/libjsdebugtest.so -> /data/test" src="out"/>
+            <option name="push" value="test/test/libdebugger_entry.so -> /data/test" src="out"/>
         </preparer>
     </target>
     <target name="DebuggerCommandsTest">

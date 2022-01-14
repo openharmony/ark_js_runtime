@@ -17,6 +17,7 @@
 
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/js_thread.h"
+#include "runtime/tooling/pt_method_private.h"
 
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::Program;
@@ -75,40 +76,39 @@ void JSDebugger::BytecodePcChanged(ManagedThread *thread, Method *method, uint32
 
 bool JSDebugger::HandleBreakpoint(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
 {
-    if (!FindBreakpoint(method, bcOffset)) {
+    if (hooks_ == nullptr || !FindBreakpoint(method, bcOffset)) {
         return false;
     }
 
     auto *pf = method->GetPandaFile();
     PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
-    if (hooks_ != nullptr) {
-        hooks_->Breakpoint(PtThread(thread->GetId()), location);
-    }
 
+    hooks_->Breakpoint(PtThread(thread->GetId()), location);
     return true;
 }
 
 void JSDebugger::HandleExceptionThrowEvent(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
 {
-    if (!thread->HasPendingException()) {
+    if (hooks_ == nullptr || !thread->HasPendingException()) {
         return;
     }
 
     auto *pf = method->GetPandaFile();
     PtLocation throwLocation {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
 
-    if (hooks_ != nullptr) {
-        hooks_->Exception(PtThread(thread->GetId()), throwLocation, PtObject(), throwLocation);
-    }
+    hooks_->Exception(PtThread(thread->GetId()), throwLocation, PtObject(), throwLocation);
 }
 
 bool JSDebugger::HandleStep(const JSThread *thread, const JSMethod *method, uint32_t bcOffset)
 {
+    if (hooks_ == nullptr) {
+        return false;
+    }
+
     auto *pf = method->GetPandaFile();
     PtLocation location {pf->GetFilename().c_str(), method->GetFileId(), bcOffset};
-    if (hooks_ != nullptr) {
-        hooks_->SingleStep(PtThread(thread->GetId()), location);
-    }
+
+    hooks_->SingleStep(PtThread(thread->GetId()), location);
     return true;
 }
 
@@ -154,5 +154,29 @@ JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
         return true;
     });
     return method;
+}
+
+void JSDebugger::MethodEntry(ManagedThread *thread, Method *method)
+{
+    if (hooks_ == nullptr) {
+        return;
+    }
+
+    uint32_t threadId = thread->GetId();
+    PtThread ptThread(threadId);
+    hooks_->MethodEntry(ptThread, MethodToPtMethod(method));
+}
+
+void JSDebugger::MethodExit(ManagedThread *thread, Method *method)
+{
+    if (hooks_ == nullptr) {
+        return;
+    }
+    bool isExceptionTriggered = thread->HasPendingException();
+    PtThread ptThread(thread->GetId());
+    auto sp = const_cast<JSTaggedType *>(JSThread::Cast(thread)->GetCurrentSPFrame());
+    InterpretedFrameHandler frameHandler(sp);
+    PtValue retValue(frameHandler.GetAcc().GetRawData());
+    hooks_->MethodExit(ptThread, MethodToPtMethod(method), isExceptionTriggered, retValue);
 }
 }  // panda::tooling::ecmascript

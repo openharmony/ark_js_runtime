@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_TEST_DEBUG_INFO_EXTRACTOR_H
-#define ECMASCRIPT_TOOLING_TEST_DEBUG_INFO_EXTRACTOR_H
+#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
+#define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H
 
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
@@ -58,4 +58,4 @@ public:
 };
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // ECMASCRIPT_TOOLING_TEST_DEBUG_INFO_EXTRACTOR_H
+#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EXTRACTOR_H

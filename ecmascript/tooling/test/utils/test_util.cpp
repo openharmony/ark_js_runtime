@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tooling/test/test_util.h"
+#include "ecmascript/tooling/test/utils/test_util.h"
 
 namespace panda::tooling::ecmascript::test {
 TestMap TestUtil::testMap_;
@@ -56,7 +56,7 @@ int32_t TestUtil::GetValueRegister(JSMethod *method, const char *varName)
         }
     }
 
-    return -2;
+    return -1;
 }
 
 std::ostream &operator<<(std::ostream &out, DebugEvent value)
@@ -66,7 +66,7 @@ std::ostream &operator<<(std::ostream &out, DebugEvent value)
 #define ADD_CASE(entry) \
     case (entry):       \
         s = #entry;     \
-        break;
+        break
 
     switch (value) {
         ADD_CASE(DebugEvent::BREAKPOINT);
@@ -93,7 +93,7 @@ std::ostream &operator<<(std::ostream &out, std::nullptr_t)
     return out << "nullptr";
 }
 
-ApiTest::ApiTest()
+TestEvents::TestEvents()
 {
     scenario = []() {
         ASSERT_EXITED();
