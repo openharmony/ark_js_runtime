@@ -135,7 +135,7 @@ config("ark_jsruntime_common_config") {
     defines += [ "ECMASCRIPT_ENABLE_SPECIFIC_STUBS" ]
   }
   if (enable_ts_aot) {
-    defines += ["ECMASCRIPT_ENABLE_TS_AOT"]
+    defines += [ "ECMASCRIPT_ENABLE_TS_AOT" ]
   }
 
   if (is_standard_system) {
@@ -426,6 +426,7 @@ source_set("libark_jsruntime_static") {
   deps = [
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
+    "$js_root/ecmascript/compiler:libark_jsoptimizer_static",
     sdk_libc_secshared_dep,
   ]
 
@@ -473,6 +474,7 @@ source_set("libark_jsruntime_test_static") {
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
     "$ark_root/runtime:arkruntime_header_deps",
+    "$js_root/ecmascript/compiler:libark_jsoptimizer_static",
     "//third_party/icu/icu4c:shared_icui18n",
     "//third_party/icu/icu4c:shared_icuuc",
     sdk_libc_secshared_dep,

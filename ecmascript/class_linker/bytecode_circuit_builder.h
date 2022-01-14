@@ -73,6 +73,16 @@ enum class SplitPoint : uint8_t {
     END
 };
 
+enum ByteCodeOffset {
+    ONE = 1,
+    TWO,
+    THREE,
+    FOUR,
+    FIVE,
+    SIX,
+    SEVEN
+};
+
 class ByteCodeCircuitBuilder {
 public:
     explicit ByteCodeCircuitBuilder() = default;
@@ -119,8 +129,8 @@ private:
     static bool IsCondJump(EcmaOpcode opcode);
     static bool IsMov(EcmaOpcode opcode);
     static bool IsReturn(EcmaOpcode opcode);
+    static bool IsThrow(EcmaOpcode opcode);
     static bool IsGeneral(EcmaOpcode opcode);
-    // void BuildCircuit(std::vector<ByteCodeBasicBlock> &byteCodeGraph);
     void BuildCircuit(ByteCodeGraph &byteCodeGraph);
     void Sort(std::vector<std::tuple<uint8_t *, SplitPoint, std::vector<uint8_t *>>> &markOffset);
     void PrintCollectBlockInfo(

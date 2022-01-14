@@ -631,12 +631,10 @@ void LLVMIRBuilder::HandleAlloca(GateRef gate)
 
 void LLVMIRBuilder::VisitAlloca(GateRef gate)
 {
-    // TODO(wanyanglan) : replace MachineRep to number of bytes
     uint64_t machineRep = circuit_->GetBitField(gate);
     LLVMTypeRef dataType = GetMachineRepType(static_cast<MachineRep>(machineRep));
-    std::cout << "############WYL################# " << LLVMPrintTypeToString(dataType) << std::endl;
-    std::cout << "##############WYL############## " << LLVMPrintTypeToString(ConvertLLVMTypeFromGate(gate)) << std::endl;
     COMPILER_LOG(DEBUG) << LLVMPrintTypeToString(dataType);
+    COMPILER_LOG(DEBUG) << LLVMPrintTypeToString(ConvertLLVMTypeFromGate(gate));
     gateToLLVMMaps_[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, dataType, ""),
                                               ConvertLLVMTypeFromGate(gate), "");
     return;
@@ -1423,9 +1421,6 @@ void LLVMIRBuilder::VisitIntAnd(GateRef gate, GateRef e1, GateRef e2)
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef e2Value = gateToLLVMMaps_[e2];
     COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
-//    circuit_->Print(e1);
-//    circuit_->Print(e2);
-//    circuit_->Print(gate);
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildAnd(builder_, e1Value, e2Value, "");
@@ -1486,6 +1481,8 @@ void LLVMIRBuilder::VisitZExtInt(GateRef gate, GateRef e1)
     COMPILER_LOG(DEBUG) << "int zero extension gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    ASSERT(GetBitWidthFromValueCode(circuit_->LoadGatePtrConst(e1)->GetValueCode()) <=
+        GetBitWidthFromValueCode(circuit_->LoadGatePtrConst(gate)->GetValueCode()));
     LLVMValueRef result = LLVMBuildZExt(builder_, e1Value, ConvertLLVMTypeFromGate(gate), "");
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);

@@ -26,12 +26,14 @@ void ByteCodeCircuitBuilder::BytecodeToCircuit(std::vector<uint8_t *> pcArr, con
     auto startPc = curPc;
     bytecodeBlockInfo.emplace_back(std::make_tuple(startPc, SplitPoint::START, std::vector<uint8_t *>(1, startPc)));
     byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(curPc, prePc));
-    for (size_t i = 1; i < pcArr.size(); i++) {
+    for (size_t i = 1; i < pcArr.size() - 1; i++) {
         curPc = pcArr[i];
         byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(curPc, prePc));
         prePc = curPc;
         CollectBytecodeBlockInfo(curPc, bytecodeBlockInfo);
     }
+    // handle empty
+    byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(pcArr[pcArr.size() - 1], prePc));
 
     // collect try catch block info
     auto expectionInfo = CollectTryCatchBlockInfo(pf, method, byteCodeCurPrePc, bytecodeBlockInfo);
@@ -139,7 +141,11 @@ void ByteCodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t* pc,
             bytecodeBlockInfo.emplace_back(std::make_tuple(pc, SplitPoint::END, std::vector<uint8_t *>(1, pc)));
             break;
         }
-        case EcmaOpcode::THROWDYN_PREF: {
+        case EcmaOpcode::THROWDYN_PREF:
+        case EcmaOpcode::THROWCONSTASSIGNMENT_PREF_V8:
+        case EcmaOpcode::THROWTHROWNOTEXISTS_PREF:
+        case EcmaOpcode::THROWPATTERNNONCOERCIBLE_PREF:
+        case EcmaOpcode::THROWDELETESUPERPROPERTY_PREF: {
             bytecodeBlockInfo.emplace_back(std::make_tuple(pc, SplitPoint::END, std::vector<uint8_t *>(1, pc)));
         }
             break;
@@ -249,7 +255,7 @@ void ByteCodeCircuitBuilder::CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8
     // Supplementary block information
     std::vector<uint8_t *> endBlockPc;
     std::vector<uint8_t *> startBlockPc;
-    for (size_t i = 0; i < bytecodeBlockInfo.size() -1; i++) {
+    for (size_t i = 0; i < bytecodeBlockInfo.size() - 1; i++) {
         if (std::get<1>(bytecodeBlockInfo[i]) == std::get<1>(bytecodeBlockInfo[i + 1]) &&
             std::get<1>(bytecodeBlockInfo[i]) == SplitPoint::START) {
             auto prePc = byteCodeCurPrePc[std::get<0>(bytecodeBlockInfo[i + 1])];
@@ -1733,8 +1739,22 @@ bool ByteCodeCircuitBuilder::IsReturn(EcmaOpcode opcode) {
     }
 }
 
+bool ByteCodeCircuitBuilder::IsThrow(EcmaOpcode opcode)
+{
+    switch (opcode) {
+        case EcmaOpcode::THROWDYN_PREF:
+        case EcmaOpcode::THROWCONSTASSIGNMENT_PREF_V8:
+        case EcmaOpcode::THROWTHROWNOTEXISTS_PREF:
+        case EcmaOpcode::THROWPATTERNNONCOERCIBLE_PREF:
+        case EcmaOpcode::THROWDELETESUPERPROPERTY_PREF:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool ByteCodeCircuitBuilder::IsGeneral(EcmaOpcode opcode) {
-    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode);
+    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode) && !IsThrow(opcode);
 }
 
 void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
@@ -1927,7 +1947,7 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
                     ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
                     break;
                 }
-            } else if (IsReturn(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+            } else if (static_cast<EcmaOpcode>(bytecodeInfo.opcode) == EcmaOpcode::RETURN_DYN) {
                 ASSERT(bb.succs.empty());
                 auto gate = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::RETURN), 0,
                                             {stateCur, dependCur, kungfu::Circuit::NullGate(),
@@ -1936,9 +1956,43 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
                                             kungfu::TypeCode::NOTYPE);
                 gateToByteCode_[gate] = {bb.id, pcPrev};
                 break;
-            } else {
-                // todo(mingliang): handle explicit throw
-                ASSERT(IsMov(static_cast<EcmaOpcode>(bytecodeInfo.opcode)));
+            } else if (static_cast<EcmaOpcode>(bytecodeInfo.opcode) == EcmaOpcode::RETURNUNDEFINED_PREF) {
+                ASSERT(bb.succs.empty());
+                auto constant = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::CONSTANT), kungfu::ValueCode::INT64,
+                                                 TaggedValue::VALUE_UNDEFINED, {kungfu::Circuit::GetCircuitRoot(
+                                kungfu::OpCode(kungfu::OpCode::CONSTANT_LIST))},
+                                                 kungfu::TypeCode::NOTYPE);
+                auto gate = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::RETURN), 0,
+                                             {stateCur, dependCur, constant,
+                                              kungfu::Circuit::GetCircuitRoot(
+                                                      kungfu::OpCode(kungfu::OpCode::RETURN_LIST))},
+                                             kungfu::TypeCode::NOTYPE);
+                gateToByteCode_[gate] = {bb.id, pcPrev};
+                break;
+            } else if (IsThrow(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                auto gate = circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::JS_BYTECODE), numValueInputs,
+                                             std::vector<kungfu::GateRef>(
+                                                     2 + numValueInputs, kungfu::Circuit::NullGate()),
+                                             kungfu::TypeCode::NOTYPE);
+                circuit_.NewIn(gate, 0, stateCur);
+                circuit_.NewIn(gate, 1, dependCur);
+
+                if (!bb.catchs.empty()) {
+                    auto bbNext = bb.catchs.at(0);
+                    circuit_.NewIn(bbNext->stateStart, bbNext->cntStatePred, gate);
+                    circuit_.NewIn(bbNext->dependStart, bbNext->cntStatePred + 1, gate);
+                    bbNext->cntStatePred++;
+                    bbNext->realPreds.push_back({bb.id, pcPrev, true});
+                    ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
+                } else {
+                    circuit_.NewGate(kungfu::OpCode(kungfu::OpCode::THROW), 0,
+                                     {stateCur, gate, gate,
+                                      kungfu::Circuit::GetCircuitRoot(kungfu::OpCode(kungfu::OpCode::THROW_LIST))},
+                                     kungfu::TypeCode::NOTYPE);
+                }
+                gateToByteCode_[gate] = {bb.id, pcPrev};
+                break;
+            } else if (IsMov(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                 if (pcPrev == bb.end) {
                     auto bbNext = &graph.at(bb.id + 1);
                     circuit_.NewIn(bbNext->stateStart, bbNext->cntStatePred, stateCur);
@@ -1947,6 +2001,8 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
                     bbNext->realPreds.push_back({bb.id, pcPrev, false});
                     ASSERT(bbNext->cntStatePred <= bbNext->numStatePred);
                 }
+            } else {
+                abort();
             }
         }
     }
@@ -1970,7 +2026,6 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
         byteCodeToGate_[value.second] = key;
     }
     for (auto gate : circuit_.GetAllGates()) {
-        // circuit_.Print(gate);
         auto numInsArray = circuit_.GetOpCode(gate).GetOpCodeNumInsArray(circuit_.GetBitField(gate));
         auto it = gateToByteCode_.find(gate);
         if (it == gateToByteCode_.end()) {
@@ -1983,10 +2038,7 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
         ASSERT(numValueInputs == numInsArray[2]);
         ASSERT(numValueOutputs <= 1);
         std::function<kungfu::GateRef(size_t, const uint8_t *, uint16_t, bool)> defSiteOfReg =
-                [&](size_t bbId,
-                    const uint8_t *end,
-                    uint16_t reg,
-                    bool acc) -> kungfu::GateRef {
+                [&](size_t bbId, const uint8_t *end, uint16_t reg, bool acc) -> kungfu::GateRef {
             auto ans = kungfu::Circuit::NullGate();
             auto &bb = graph.at(bbId);
             std::vector<uint8_t *> instList;
@@ -2093,7 +2145,9 @@ void ByteCodeCircuitBuilder::BuildCircuit(ByteCodeGraph &byteCodeGraph) {
         };
         for (size_t valueIdx = 0; valueIdx < numInsArray[2]; valueIdx++) {
             auto inIdx = valueIdx + numInsArray[0] + numInsArray[1];
-            ASSERT(circuit_.IsInGateNull(gate, inIdx));
+            if (!circuit_.IsInGateNull(gate, inIdx)) {
+                continue;
+            }
             if (valueIdx < bytecodeInfo.vregIn.size()) {
                 circuit_.NewIn(gate, inIdx, defSiteOfReg(id, pc - 1, bytecodeInfo.vregIn.at(valueIdx), false));
             } else {
