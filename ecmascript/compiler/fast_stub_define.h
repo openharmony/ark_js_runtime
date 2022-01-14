@@ -62,6 +62,8 @@ namespace panda::ecmascript::kungfu {
     V(FastStrictNotEqual, 2)                \
     V(CreateGeneratorObj, 2)                \
     V(ThrowConstAssignment, 2)              \
+    V(GetTemplateObject, 2)                 \
+    V(GetNextPropName, 2)                   \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \
