@@ -123,4 +123,14 @@ CString ConvertToString(JSTaggedValue key)
 
     return ConvertToString(EcmaString::ConstCast(desc.GetTaggedObject()));
 }
+
+std::string CstringConvertToString(const CString &str)
+{
+    std::string res;
+    res.reserve(str.size());
+    for (auto c : str) {
+        res.push_back(c);
+    }
+    return res;
+}
 }  // namespace panda::ecmascript

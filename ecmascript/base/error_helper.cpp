@@ -230,4 +230,13 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 
     return data;
 }
+
+std::string ErrorHelper::BuildNativeAndJsBackStackTrace(JSThread *thread)
+{
+    CString data = BuildNativeEcmaStackTrace(thread);
+    std::string temp = CstringConvertToString(data);
+    std::string result = nullptr;
+    result += temp;
+    return result;
+}
 }  // namespace panda::ecmascript::base
