@@ -90,6 +90,9 @@ public:
     static void ThrowConstAssignment(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType GetTemplateObject(uintptr_t argGlue, JSTaggedType literal);
     static JSTaggedType GetNextPropName(uintptr_t argGlue, JSTaggedType iter);
+    static void ThrowIfNotObject(uintptr_t argGlue);
+    static JSTaggedType IterNext(uintptr_t argGlue, JSTaggedType iter);
+    static JSTaggedType CloseIterator(uintptr_t argGlue, JSTaggedType iter);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
     static JSTaggedType NegDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal, JSTaggedType base,

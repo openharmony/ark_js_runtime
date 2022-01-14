@@ -75,10 +75,10 @@ namespace panda::ecmascript::kungfu {
     T(HandleThrowConstAssignmentPrefV8, 7)                  \
     T(HandleGetTemplateObjectPrefV8, 7)                     \
     T(HandleGetNextPropNamePrefV8, 7)                       \
-    V(HandleCallArg7DynPrefV8, 7)                           \
-    V(HandleThrowIfNotObjectPrefV8, 7)                      \
-    V(HandleIternextPrefV8, 7)                              \
-    V(HandleCloseIteratorPrefV8, 7)                         \
+    V(HandleCallArg0DynPrefV8, 7)                           \
+    T(HandleThrowIfNotObjectPrefV8, 7)                      \
+    T(HandleIterNextPrefV8, 7)                              \
+    T(HandleCloseIteratorPrefV8, 7)                         \
     V(HandleCopyModulePrefV8, 7)                            \
     V(HandleSuperCallSpreadPrefV8, 7)                       \
     V(HandleDelObjPropPrefV8V8, 7)                          \

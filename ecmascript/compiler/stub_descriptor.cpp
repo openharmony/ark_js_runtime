@@ -927,6 +927,50 @@ CALL_STUB_INIT_DESCRIPTOR(GetNextPropName)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ThrowIfNotObject)
+{
+    // 1 : 1 input parameter
+    StubDescriptor throwIfNotObject("ThrowIfNotObject", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = throwIfNotObject;
+    // 1 : 1 input parameter
+    std::array<MachineType, 1> params = {
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(IterNext)
+{
+    // 2 : 2 input parameters
+    StubDescriptor iterNext("IterNext", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = iterNext;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CloseIterator)
+{
+    // 2 : 2 input parameters
+    StubDescriptor closeIterator("CloseIterator", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = closeIterator;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters
