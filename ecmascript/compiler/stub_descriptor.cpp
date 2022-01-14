@@ -688,6 +688,25 @@ CALL_STUB_INIT_DESCRIPTOR(BytecodeHandler)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::BYTECODE_HANDLER);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(SingleStepDebugging)
+{
+    // 7 : 7 input parameters
+    StubDescriptor bytecodeHandler("singleStepDebugging", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = bytecodeHandler;
+    std::array<MachineType, 7> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED,
+        MachineType::INT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::BYTECODE_HANDLER);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(AsmInterpreterEntry)
 {
     // 7 : 7 input parameters
