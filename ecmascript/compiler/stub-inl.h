@@ -713,32 +713,32 @@ GateRef Stub::TaggedFalse()
 // compare operation
 GateRef Stub::Word32Equal(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
 }
 
 GateRef Stub::Word32NotEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::NE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::NE), x, y);
 }
 
 GateRef Stub::Word64Equal(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
 }
 
 GateRef Stub::DoubleEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
 }
 
 GateRef Stub::Word64NotEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::NE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::NE), x, y);
 }
 
 GateRef Stub::Int32GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT), x, y);
 }
 
 GateRef Stub::Int32LessThan(GateRef x, GateRef y)
@@ -753,57 +753,57 @@ GateRef Stub::Int32GreaterThanOrEqual(GateRef x, GateRef y)
 
 GateRef Stub::Int32LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE), x, y);
 }
 
 GateRef Stub::Word32GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGT),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGT), x, y);
 }
 
 GateRef Stub::Word32LessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULT),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULT), x, y);
 }
 
 GateRef Stub::Word32LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULE), x, y);
 }
 
 GateRef Stub::Word32GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGE), x, y);
 }
 
 GateRef Stub::Int64GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT), x, y);
 }
 
 GateRef Stub::Int64LessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLT),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLT), x, y);
 }
 
 GateRef Stub::Int64LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE), x, y);
 }
 
 GateRef Stub::Int64GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGE), x, y);
 }
 
 GateRef Stub::Word64GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGT),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGT), x, y);
 }
 
 GateRef Stub::Word64LessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULT),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULT), x, y);
 }
 
 GateRef Stub::Word64LessThanOrEqual(GateRef x, GateRef y)
@@ -813,7 +813,7 @@ GateRef Stub::Word64LessThanOrEqual(GateRef x, GateRef y)
 
 GateRef Stub::Word64GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGE),x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGE), x, y);
 }
 
 // cast operation
@@ -825,7 +825,7 @@ GateRef Stub::ChangeInt64ToInt32(GateRef val)
 GateRef Stub::ChangeInt64ToUintPtr(GateRef val)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32),val);
+        return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32), val);
     }
     return val;
 }
