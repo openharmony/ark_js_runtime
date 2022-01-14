@@ -305,6 +305,11 @@ public:
         return runtimeStatEnabled_;
     }
 
+    bool IsOptionalLogEnabled() const
+    {
+        return optionalLogEnabled_;
+    }
+
     void Iterate(const RootVisitor &v);
 
     const Heap *GetHeap() const
@@ -483,6 +488,8 @@ private:
     CString snapshotFileName_;
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
+    bool optionalLogEnabled_ {false};
+    // weak reference need Redirect address
     CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
 
     // Debugger

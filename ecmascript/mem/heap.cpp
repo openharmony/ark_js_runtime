@@ -62,7 +62,8 @@ void Heap::Initialize()
     machineCodeSpace_ = new MachineCodeSpace(this);
     machineCodeSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(this);
-    paralledGc_ = ecmaVm_->GetJSOptions().IsEnableParalledYoungGc();
+    paralledGc_ = ecmaVm_->GetJSOptions().IsEnableParallelGC();
+    concurrentMarkingEnable_ = ecmaVm_->GetJSOptions().IsEnableConcurrentMark();
 #if ECMASCRIPT_DISABLE_PARALLEL_GC
     paralledGc_ = false;
 #endif
@@ -198,6 +199,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
 #if ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC
     gcType = TriggerGCType::COMPRESS_FULL_GC;
 #endif
+    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Heap::CollectGarbage, gcType = " << gcType;
     switch (gcType) {
         case TriggerGCType::SEMI_GC:
             if (GetMemController()->IsInAppStartup()) {
