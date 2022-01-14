@@ -58,26 +58,24 @@ public:
         return *typeAddr;
     }
 
-    bool IsInterpretedFrame() const {
+    bool IsInterpretedFrame() const
+    {
         return GetFrameType() == FrameType::INTERPRETER_FRAME;
     }
 
-    bool IsOptimizedLeaveFrame() const {
+    bool IsOptimizedLeaveFrame() const
+    {
         return GetFrameType() == FrameType::OPTIMIZED_LEAVE_FRAME;
     }
 
-    OptLeaveFrame* GetOptLeaveFrame() const {
+    OptLeaveFrame* GetOptLeaveFrame() const
+    {
         assert(IsOptimizedLeaveFrame());
         return OptLeaveFrame::GetFrameFromSp(sp_);
     }
 
 protected:
     JSTaggedType *sp_ {nullptr};
-
-    friend class InterpretedFrameHandler;
-    friend class OptimizedFrameHandler;
-    friend class OptimizedEntryFrameHandler;
-    friend class OptimizedLeaveFrameHandler;
 };
 
 class InterpretedFrameHandler : public FrameHandler {

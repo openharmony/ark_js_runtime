@@ -21,7 +21,6 @@
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
-
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {
