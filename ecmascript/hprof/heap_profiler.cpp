@@ -24,7 +24,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/assert_scope-inl.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
-#include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/heap-inl.h"
 
 namespace panda::ecmascript {
 HeapProfiler::~HeapProfiler()
@@ -38,9 +38,7 @@ bool HeapProfiler::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat, con
 {
     [[maybe_unused]] bool heapClean = ForceFullGC(thread);
     ASSERT(heapClean);
-    auto heap = thread->GetEcmaVM()->GetHeap();
-    size_t heapSize = heap->GetNewSpace()->GetHeapObjectSize() + heap->GetOldSpace()->GetHeapObjectSize()
-                         + heap->GetNonMovableSpace()->GetHeapObjectSize();
+    size_t heapSize = thread->GetEcmaVM()->GetHeap()->GetHeapObjectSize();
     LOG(ERROR, RUNTIME) << "HeapProfiler DumpSnapshot heap size " << heapSize;
     HeapSnapShot *snapShot = MakeHeapSnapShot(thread, SampleType::ONE_SHOT, isVmMode);
     ASSERT(snapShot != nullptr);

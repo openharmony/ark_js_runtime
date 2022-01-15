@@ -208,10 +208,10 @@ bool EcmaVM::TrimNewSpaceLimitTask::Run(uint32_t threadIndex)
         usleep(THREAD_SLEEP_TIME);
     }
 
-    if (!IsTerminate() && heap_->GetMemController()->IsInAppStartup()) {
+    if (!IsTerminate() && heap_->GetMemController()->IsDelayGCMode()) {
         heap_->SetFromSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
         heap_->SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
-        heap_->ResetAppStartup();
+        heap_->ResetDelayGCMode();
     }
     return true;
 }
