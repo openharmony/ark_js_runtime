@@ -439,7 +439,6 @@ bool JSNApi::ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size,
     auto moduleManager = vm->GetModuleManager();
     moduleManager->SetCurrentExportModuleName(file);
     // Update Current Module
-    vm->GetJSThread()->SetIsEcmaInterpreter(true);
     std::vector<std::string> argv;
     if (!vm->ExecuteFromBuffer(data, size, ENTRY_POINTER, argv)) {
         std::cerr << "Cannot execute panda file from memory" << std::endl;

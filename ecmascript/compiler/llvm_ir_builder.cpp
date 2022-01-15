@@ -51,7 +51,7 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
             LLVMInt32Type(), // fp
             LLVMInt64Type(), // patchpointId
         };
-        slotSize_ = panda::ecmascript::FrameCommonConstants::ARM32_SLOT_SIZE;
+        slotSize_ = panda::ecmascript::FrameConstants::ARM32_SLOT_SIZE;
         slotType_ = LLVMInt32Type();
         optFrameType_ = LLVMStructType(elementTypes, sizeof(elementTypes) / sizeof(LLVMTypeRef), 0);
     } else {
@@ -62,7 +62,7 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
             LLVMInt64Type(), // fp
             LLVMInt64Type(), // patchpointId
         };
-        slotSize_ = panda::ecmascript::FrameCommonConstants::AARCH64_SLOT_SIZE;
+        slotSize_ = panda::ecmascript::FrameConstants::AARCH64_SLOT_SIZE;
         slotType_ = LLVMInt64Type();
         optFrameType_ = LLVMStructType(elementTypes, sizeof(elementTypes) / sizeof(LLVMTypeRef), 0);
     }
