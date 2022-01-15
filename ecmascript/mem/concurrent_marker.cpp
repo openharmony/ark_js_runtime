@@ -38,14 +38,21 @@ ConcurrentMarker::ConcurrentMarker(Heap *heap)
 void ConcurrentMarker::ConcurrentMarking()
 {
     ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Mark Begin";
+
     heap_->Prepare();
     thread_->SetMarkStatus(MarkStatus::MARKING);
-    if (!heap_->IsOnlyMarkSemi() && heap_->GetSweeper()->IsOldSpaceSwept()) {
-        const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
+    if (!heap_->IsSemiMarkNeeded()) {
+        heapObjectSize_ = heap_->GetHeapObjectSize();
+        if (heap_->GetSweeper()->CanSelectCset()) {
+            const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
+        }
+    } else {
+        heapObjectSize_ = heap_->GetNewSpace()->GetHeapObjectSize();
     }
+
     InitializeMarking();
     Platform::GetCurrentPlatform()->PostTask(std::make_unique<MarkerTask>(heap_));
-    if (heap_->IsOnlyMarkSemi() && heap_->IsEnableParallelGC()) {
+    if (heap_->IsSemiMarkNeeded() && heap_->IsParallelGCEnabled()) {
         heap_->PostParallelGCTask(ParallelGCTaskPhase::CONCURRENT_HANDLE_OLD_TO_NEW_TASK);
     }
 }
@@ -61,7 +68,7 @@ void ConcurrentMarker::ReMarking()
     ECMA_GC_LOG() << "ConcurrentMarker: Remarking Begin";
     Marker *nonMoveMarker =  heap_->GetNonMovableMarker();
     nonMoveMarker->MarkRoots(0);
-    if (heap_->IsOnlyMarkSemi() && !heap_->IsEnableParallelGC()) {
+    if (heap_->IsSemiMarkNeeded() && !heap_->IsParallelGCEnabled()) {
         heap_->GetNonMovableMarker()->ProcessOldToNew(0);
     } else {
         nonMoveMarker->ProcessMarkStack(0);
@@ -89,8 +96,9 @@ void ConcurrentMarker::WaitConcurrentMarkingFinished()  // call in EcmaVm thread
 void ConcurrentMarker::Reset(bool isClearCSet)
 {
     FinishPhase();
-    thread_->SetMarkStatus(MarkStatus::NOT_BEGIN_MARK);
+    thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
     notifyMarkingFinished_ = false;
+    duration_ = 0.0;
     if (isClearCSet) {
         // Mix space gc clear cset when evacuation allocator finalize
         const_cast<OldSpace *>(heap_->GetOldSpace())->ClearRegionFromCSet();
@@ -118,7 +126,7 @@ void ConcurrentMarker::InitializeMarking()
         }
         region->SetMarking(true);
     });
-    if (heap_->IsOnlyMarkSemi()) {
+    if (heap_->IsSemiMarkNeeded()) {
         heap_->EnumerateNewSpaceRegions([this](Region *current) {
             current->ResetAliveObject();
         });
@@ -133,9 +141,11 @@ void ConcurrentMarker::InitializeMarking()
 
 bool ConcurrentMarker::MarkerTask::Run(uint32_t threadId)
 {
+    ClockScope clockScope;
     heap_->GetNonMovableMarker()->ProcessMarkStack(threadId);
     heap_->WaitRunningTaskFinished();
     heap_->GetConcurrentMarker()->MarkingFinished();
+    heap_->GetConcurrentMarker()->SetDuration(clockScope.TotalSpentTime());
     return true;
 }
 

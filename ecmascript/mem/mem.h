@@ -39,13 +39,16 @@ static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 2 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 3 * 1024 * 1024;
 static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 3 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 2.5 * 1024 * 1024;
+static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
 #else
 static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 4 * 1024 * 1024;
 static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 16 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 3.5 * 1024 * 1024;
+static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
 #endif
 
 static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 10 * 1024 * 1024;
+static constexpr size_t GLOBAL_SPACE_LIMIT_BEGIN = 20 * 1024 * 1024;
 
 static constexpr size_t DEFAULT_OLD_SPACE_SIZE = 2 * 1024 * 1024;
 static constexpr size_t MAX_OLD_SPACE_SIZE = 256 * 1024 * 1024;
@@ -63,6 +66,8 @@ static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_LIMIT = 1024 * 1024;
 static constexpr size_t MAX_MACHINE_CODE_SPACE_SIZE = 8 * 1024 * 1024;
 
 static constexpr size_t MAX_HEAP_SIZE = 256 * 1024 * 1024;
+static constexpr size_t HALF_MAX_HEAP_SIZE = MAX_HEAP_SIZE / 2;
+static constexpr size_t DEFAULT_HEAP_SIZE = 5 * 1024 * 1024;
 
 static constexpr size_t DEFAULT_REGION_SIZE = 1U << REGION_SIZE_LOG2;
 static constexpr size_t DEFAULT_REGION_MASK = DEFAULT_REGION_SIZE - 1;
@@ -74,7 +79,7 @@ static constexpr size_t DEFAULT_MARK_STACK_SIZE = 4 * 1024;
 // They will never be moved to huge object space. So we take half of a regular
 // region as the border of regular objects.
 static constexpr size_t MAX_32BIT_OBJECT_SPACE_SIZE = 1 * 1024 * 1024 * 1024;
-static constexpr size_t MAX_REGULAR_HEAP_OBJECT_SIZE = 1U << (REGION_SIZE_LOG2 - 1);
+static constexpr size_t MAX_REGULAR_HEAP_OBJECT_SIZE = DEFAULT_REGION_SIZE * 2 / 3;
 static constexpr size_t MAX_HUGE_OBJECT_SIZE = 256 * 1024 * 1024;
 static constexpr size_t MAX_HUGE_OBJECT_SPACE_SIZE = 256 * 1024 * 1024;
 static constexpr size_t LARGE_BITMAP_MIN_SIZE = static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)
@@ -89,6 +94,7 @@ static constexpr size_t MAX_CACHED_CHUNK_AREA_SIZE = 16 * 1024;
 static constexpr size_t MAX_CHUNK_AREA_SIZE = 1 * 1024 * 1024;
 
 static constexpr uintptr_t PANDA_32BITS_HEAP_START_ADDRESS_256 = 256_KB;
+static constexpr double SEMI_SPACE_RETENTION_RATIO = 0.75;
 
 template<typename T>
 constexpr inline bool IsAligned(T value, size_t alignment)

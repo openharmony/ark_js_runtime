@@ -205,6 +205,8 @@ public:
     bool IsLive(TaggedObject *object) const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 
+    size_t GetAllocatedSizeSinceGC() const;
+
 private:
     uintptr_t ageMark_;
 };
@@ -233,9 +235,13 @@ public:
     template <class Callback>
     void EnumerateNonCollectRegionSet(const Callback &cb) const;
     void SelectCSet();
-
+    unsigned long GetSelectedRegionNumber() const
+    {
+        return std::max(committedSize_ / PARTIAL_GC_MAX_COLLECT_REGION_RATE, PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE);
+    }
 private:
-    static constexpr size_t PARTIAL_GC_MAX_COLLECT_REGION_SIZE = 16;
+    static constexpr unsigned long PARTIAL_GC_MAX_COLLECT_REGION_RATE =  1024 * 1024 * 2;
+    static constexpr unsigned long PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE = 16;
     static constexpr size_t PARTIAL_GC_MIN_COLLECT_REGION_SIZE = 5;
     CVector<Region *> collectRegionSet_;
 };
@@ -287,6 +293,7 @@ public:
     NO_COPY_SEMANTIC(MachineCodeSpace);
     NO_MOVE_SEMANTIC(MachineCodeSpace);  // Note: Expand(), ContainObject(), IsLive() left for define
     bool Expand();
+    size_t GetHeapObjectSize() const;
 };
 }  // namespace panda::ecmascript
 

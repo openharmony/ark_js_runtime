@@ -57,9 +57,9 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
 
         if (!compressGC) {
             Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
-            isOldSpaceSwept_ = true;
+            canSelectCset_ = true;
         } else {
-            isOldSpaceSwept_ = false;
+            canSelectCset_ = false;
         }
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
@@ -67,9 +67,9 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
         if (!compressGC) {
             SweepSpace(OLD_SPACE,
                 const_cast<OldSpace *>(heap_->GetOldSpace()), heap_->GetHeapManager()->GetOldSpaceAllocator());
-            isOldSpaceSwept_ = true;
+            canSelectCset_ = true;
         } else {
-            isOldSpaceSwept_ = false;
+            canSelectCset_ = false;
         }
         SweepSpace(NON_MOVABLE, const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace()),
                    heap_->GetHeapManager()->GetNonMovableSpaceAllocator());
