@@ -224,7 +224,7 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 
 void OptimizedFrameHandler::PrevFrame()
 {
-    OptimizedFrame *state = OptimizedFrame::GetFrameFromSp(sp_);
+    OptimizedFrameBase *state = OptimizedFrameBase::GetFrameFromSp(sp_);
     sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
 }
 
@@ -273,21 +273,19 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 void OptimizedEntryFrameHandler::PrevFrame()
 {
     OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prevInterpretedFrameFp);
 }
 
 void OptimizedLeaveFrameHandler::PrevFrame()
 {
-    OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
-        reinterpret_cast<uintptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
-    sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+    OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prevFp);
 }
 
 void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
-    OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
-        reinterpret_cast<intptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
+    OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(sp_);
     std::set<uintptr_t> slotAddrs;
     bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
         state, slotAddrs, derivedPointers, isVerifying);
@@ -319,18 +317,18 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             InterpretedFrameHandler(current).Iterate(v0, v1);
             current = state->base.prev;
         } else if (type == FrameType::OPTIMIZED_FRAME) {
-            OptimizedFrame *state = OptimizedFrame::GetFrameFromSp(current);
+            OptimizedFrameBase *state = OptimizedFrameBase::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
             current = reinterpret_cast<JSTaggedType *>(state->prev);
         } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
             OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(current);
-                current = reinterpret_cast<JSTaggedType *>(state->threadFp);
+                current = reinterpret_cast<JSTaggedType *>(state->prevInterpretedFrameFp);
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME);
             OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(current);
             OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
-            current = reinterpret_cast<JSTaggedType *>(state->prev);
+            current = reinterpret_cast<JSTaggedType *>(state->prevFp);
         }
     }
 }

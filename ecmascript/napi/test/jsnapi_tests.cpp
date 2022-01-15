@@ -48,7 +48,6 @@ public:
         vm_ = JSNApi::CreateJSVM(option);
         ASSERT_TRUE(vm_ != nullptr) << "Cannot create Runtime";
         thread_ = vm_->GetJSThread();
-        thread_->SetIsEcmaInterpreter(true);
         vm_->SetEnableForceGC(true);
     }
 
