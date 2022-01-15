@@ -21,7 +21,6 @@
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
-using JSTaggedType = panda::ecmascript::JSTaggedType;
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {

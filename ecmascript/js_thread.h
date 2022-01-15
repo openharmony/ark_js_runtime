@@ -65,16 +65,6 @@ public:
         nestedLevel_ = level;
     }
 
-    bool IsSnapshotMode() const
-    {
-        return isSnapshotMode_;
-    }
-
-    void SetIsSnapshotMode(bool value)
-    {
-        isSnapshotMode_ = value;
-    }
-
     const JSTaggedType *GetCurrentSPFrame() const
     {
         return currentFrame_;
@@ -86,16 +76,6 @@ public:
     }
 
     bool DoStackOverflowCheck(const JSTaggedType *sp);
-
-    bool IsEcmaInterpreter() const
-    {
-        return isEcmaInterpreter_;
-    }
-
-    void SetIsEcmaInterpreter(bool value)
-    {
-        isEcmaInterpreter_ = value;
-    }
 
     RegionFactory *GetRegionFactory() const
     {
@@ -241,11 +221,6 @@ public:
         return MEMBER_OFFSET(JSThread, currentFrame_);
     }
 
-    static constexpr uint32_t GetLastIFrameOffset()
-    {
-        return MEMBER_OFFSET(JSThread, lastIFrame_);
-    }
-
     static constexpr uint32_t GetRuntimeFunctionsOffset()
     {
         return MEMBER_OFFSET(JSThread, runtimeFunctions_);
@@ -258,25 +233,25 @@ public:
 
     void SetMarkStatus(MarkStatus status)
     {
-        uint64_t newVal = MarkStatusBits::Update(threadStatusBitField_, status);
-        threadStatusBitField_ = newVal;
+        uint64_t newVal = MarkStatusBits::Update(threadStateBitField_, status);
+        threadStateBitField_ = newVal;
     }
 
     bool IsReadyToMark() const
     {
-        auto status = MarkStatusBits::Decode(threadStatusBitField_);
+        auto status = MarkStatusBits::Decode(threadStateBitField_);
         return status == MarkStatus::READY_TO_MARK;
     }
 
     bool IsMarking() const
     {
-        auto status = MarkStatusBits::Decode(threadStatusBitField_);
+        auto status = MarkStatusBits::Decode(threadStateBitField_);
         return status == MarkStatus::MARKING;
     }
 
     bool IsMarkFinished() const
     {
-        auto status = MarkStatusBits::Decode(threadStatusBitField_);
+        auto status = MarkStatusBits::Decode(threadStateBitField_);
         return status == MarkStatus::MARK_FINISHED;
     }
 
@@ -326,7 +301,6 @@ public:
         PROPERTIES_CACHE,
         GLOBAL_STORAGE,
         CURRENT_FRAME,
-        LAST_I_FRAME,
         RUNTIME_FUNCTIONS,
         FAST_STUB_ENTRIES,
         FRAME_STATE_SIZE,
@@ -347,25 +321,23 @@ private:
     static const uint32_t NODE_BLOCK_SIZE = 1U << NODE_BLOCK_SIZE_LOG2;
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
 
-    JSTaggedValue stubCode_ {JSTaggedValue::Hole()};
-    os::memory::ConditionVariable initializationVar_ GUARDED_BY(initializationLock_);
-    os::memory::Mutex initializationLock_;
+    // MM: handles, global-handles, and aot-stubs.
     int nestedLevel_ = 0;
-    JSTaggedType *frameBase_ {nullptr};
-    bool isSnapshotMode_ {false};
-    bool isEcmaInterpreter_ {false};
-    bool getStackSignal_ {false};
-    bool gcState_ {false};
     RegionFactory *regionFactory_ {nullptr};
     JSTaggedType *handleScopeStorageNext_ {nullptr};
     JSTaggedType *handleScopeStorageEnd_ {nullptr};
     std::vector<std::array<JSTaggedType, NODE_BLOCK_SIZE> *> handleStorageNodes_ {};
     int32_t currentHandleStorageIndex_ {-1};
     int32_t handleScopeCount_ {0};
+    JSTaggedValue stubCode_ {JSTaggedValue::Hole()};
+
+    // Run-time state
+    bool getStackSignal_ {false};
+    bool gcState_ {false};
+    volatile uint64_t threadStateBitField_ {0ULL};
+    JSTaggedType *frameBase_ {nullptr};
     bool stableArrayElementsGuardians_ {true};
     InternalCallParams *internalCallParams_ {nullptr};
-    uintptr_t *lastOptCallRuntimePc_ {nullptr};
-    volatile uint64_t threadStatusBitField_ {0ULL};
 
     // GLUE members start, very careful to modify here
     JSTaggedValue exception_ {JSTaggedValue::Hole()};
@@ -373,7 +345,6 @@ private:
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};
     JSTaggedType *currentFrame_ {nullptr};
-    JSTaggedType *lastIFrame_ {nullptr};
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
     Address fastStubEntries_[kungfu::FAST_STUB_MAXCOUNT];
 
@@ -389,8 +360,7 @@ private:
         static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize()) \
     V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
     V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
-    V(LAST_IFRAME, LastIFrame, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))                \
-    V(RUNTIME_FUNCTIONS, RuntimeFunctions, LAST_IFRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(RUNTIME_FUNCTIONS, RuntimeFunctions, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))    \
     V(FASTSTUB_ENTRIES, FastStubEntries, RUNTIME_FUNCTIONS,                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint32_t),                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint64_t))                                      \
@@ -403,32 +373,15 @@ static constexpr uint32_t GLUE_EXCEPTION_OFFSET_64 = 0U;
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
 
-static constexpr uint32_t GLUE_FRAME_STATE_SIZE_64 =
-     2 * sizeof(int64_t) + 5 * sizeof(int64_t) + sizeof(int64_t) + sizeof(int64_t);
-static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_SIZE_64 = 5 * sizeof(uint64_t);
-static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64 = sizeof(uint64_t);
-static constexpr uint32_t GLUE_FRAME_STATE_SIZE_32 =
-    2 * sizeof(int32_t) + 5 * sizeof(int64_t) + sizeof(int32_t) + sizeof(int32_t) + sizeof(int64_t);
-static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_SIZE_32 = sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(uint64_t);
-static constexpr uint32_t GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32 = sizeof(uint64_t);
-
 #ifdef PANDA_TARGET_32
 #define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
 static_assert(GLUE_##name##_OFFSET_32 ==                                                       \
     (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
-
-static_assert(GLUE_FRAME_STATE_SIZE_32 == sizeof(struct panda::ecmascript::InterpretedFrame));
-static_assert(GLUE_OPT_LEAVE_FRAME_SIZE_32 == sizeof(struct panda::ecmascript::OptLeaveFrame));
-static_assert(GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32 == MEMBER_OFFSET(panda::ecmascript::OptLeaveFrame, prev));
 #endif
 
 #ifdef PANDA_TARGET_64
-
-static_assert(GLUE_FRAME_STATE_SIZE_64 == sizeof(struct panda::ecmascript::InterpretedFrame));
-static_assert(GLUE_OPT_LEAVE_FRAME_SIZE_64 == sizeof(struct panda::ecmascript::OptLeaveFrame));
-static_assert(GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64 == MEMBER_OFFSET(panda::ecmascript::OptLeaveFrame, prev));
 #define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
 static_assert(GLUE_##name##_OFFSET_64 ==                                                       \
     (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));

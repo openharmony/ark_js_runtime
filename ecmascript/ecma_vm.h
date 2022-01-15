@@ -448,49 +448,55 @@ private:
     NO_MOVE_SEMANTIC(EcmaVM);
     NO_COPY_SEMANTIC(EcmaVM);
 
-    // init EcmaVM construct
+    // Useless/deprecated fields in the future:
+    Rendezvous *rendezvous_{nullptr};
+    bool isTestMode_ {false};
+
+    // VM startup states.
     static JSRuntimeOptions options_;
-    EcmaStringTable *stringTable_;
+    bool icEnable_ {true};
+    bool vmInitialized_ {false};
+    GCStats *gcStats_ {nullptr};
+    bool snapshotSerializeEnable_ {false};
+    bool snapshotDeserializeEnable_ {false};
+    bool isUncaughtExceptionRegistered_ {false};
+
+    // VM memory management.
+    EcmaStringTable *stringTable_ {nullptr};
     std::unique_ptr<RegionFactory> regionFactory_;
     Chunk chunk_;
-    ChunkVector<JSMethod *> nativeMethods_;
-    bool icEnable_{true};
-    GCStats *gcStats_ = nullptr;
-    Rendezvous *rendezvous_{nullptr};
-    bool snapshotSerializeEnable_{false};
-    bool snapshotDeserializeEnable_{false};
-    CString fileName_;
+    Heap *heap_ {nullptr};
+    ObjectFactory *factory_ {nullptr};
+    CVector<JSNativePointer *> arrayBufferDataList_;
+
+    // VM execution states.
+    JSThread *thread_ {nullptr};
+    RegExpParserCache *regExpParserCache_ {nullptr};
+    JSTaggedValue globalEnv_ {JSTaggedValue::Hole()};
+    JSTaggedValue regexpCache_ {JSTaggedValue::Hole()};
+    JSTaggedValue microJobQueue_ {JSTaggedValue::Hole()};
+    bool runtimeStatEnabled_ {false};
+    EcmaRuntimeStat *runtimeStat_ {nullptr};
+
+    // App framework resources.
+    JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};
     CString frameworkAbcFileName_;
-
-    bool isTestMode_{false};
-    RuntimeNotificationManager *notificationManager_ {nullptr};
-
-    // init EcmaVM Create
-    JSThread *thread_{nullptr};
-
-    // init EcmaVM Initialize
-    RegExpParserCache *regExpParserCache_{nullptr};
-    Heap *heap_{nullptr};
-    ObjectFactory *factory_{nullptr};
-    JSTaggedValue globalEnv_{JSTaggedValue::Hole()};
-    JSTaggedValue regexpCache_{JSTaggedValue::Hole()};
-    JSTaggedValue microJobQueue_{JSTaggedValue::Hole()};
-    ModuleManager *moduleManager_{nullptr};
-    bool vmInitialized_{false};
-
-    // Runtime initialization
-    CUnorderedMap<const panda_file::File *, std::unique_ptr<PtJSExtractor>> extractorCache_;
     const panda_file::File *frameworkPandaFile_ {nullptr};
     CVector<JSMethod *> frameworkProgramMethods_;
-    EcmaRuntimeStat *runtimeStat_ {nullptr};  // maybe nullptr
-    bool runtimeStatEnabled_ {false};
-    bool isUncaughtExceptionRegistered_ {false};
+
+    // VM resources.
+    CString snapshotFileName_;
+    ChunkVector<JSMethod *> nativeMethods_;
+    ModuleManager *moduleManager_ {nullptr};
     bool optionalLogEnabled_ {false};
     // weak reference need Redirect address
-    JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};  // no mark for gc
-    CVector<JSNativePointer *> arrayBufferDataList_;
     CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
 
+    // Debugger
+    RuntimeNotificationManager *notificationManager_ {nullptr};
+    CUnorderedMap<const panda_file::File *, std::unique_ptr<PtJSExtractor>> extractorCache_;
+
+    // Registered Callbacks
     PromiseRejectCallback promiseRejectCallback_ {nullptr};
     HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
     void* data_ {nullptr};
