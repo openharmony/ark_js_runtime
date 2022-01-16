@@ -1647,7 +1647,7 @@ HWTEST_F_L0(EcmaStringTest, ComputeHashcodeUtf8)
     for (uint32_t i = 0; i < lengthEcmaStrU8; i++) {
         hashExpect = hashExpect * 31 + arrayU8[i];
     }
-    EXPECT_EQ(EcmaString::ComputeHashcodeUtf8(&arrayU8[0], lengthEcmaStrU8), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(EcmaString::ComputeHashcodeUtf8(&arrayU8[0], lengthEcmaStrU8, true), static_cast<int32_t>(hashExpect));
 }
 
 /*

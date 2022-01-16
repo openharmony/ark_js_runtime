@@ -35,7 +35,7 @@ bool IsValidUTF8(const std::vector<uint8_t> &data)
     uint32_t length = data.size();
     switch (length) {
         case UtfLength::ONE:
-            if (data.at(0) > BIT_MASK_1) {
+            if (data.at(0) >= BIT_MASK_1) {
                 return false;
             }
             break;
@@ -216,48 +216,14 @@ std::pair<uint32_t, size_t> ConvertUtf8ToUtf16Pair(const uint8_t *data, bool com
     return {pair, UtfLength::FOUR};
 }
 
-size_t Utf8ToUtf16Size(const uint8_t *utf8)
+size_t Utf8ToUtf16Size(const uint8_t *utf8, size_t utf8Len)
 {
-    size_t res = 0;
-    while (*utf8 != '\0') {  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto [pair, nbytes] = ConvertUtf8ToUtf16Pair(utf8);
-        res += pair > 0xffff ? UtfLength::TWO : UtfLength::ONE;  // NOLINT(readability-magic-numbers)
-        utf8 += nbytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    }
-    return res;
+    return utf::MUtf8ToUtf16Size(utf8, utf8Len);
 }
 
-size_t ConvertRegionUtf8ToUtf16(const uint8_t *utf8In, uint16_t *utf16Out, size_t utf16Len, size_t start)
+size_t ConvertRegionUtf8ToUtf16(const uint8_t *utf8In, uint16_t *utf16Out, size_t utf8Len, size_t utf16Len,
+                                size_t start)
 {
-    ASSERT(utf16Out != nullptr);
-    size_t outPos = 0;
-    while (*utf8In != '\0') {  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        auto [pair, nbytes] = ConvertUtf8ToUtf16Pair(utf8In);
-        auto [pHi, pLo] = utf::SplitUtf16Pair(pair);
-
-        utf8In += nbytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        if (start > 0) {
-            start -= nbytes;
-            continue;
-        }
-
-        if (pHi != 0) {
-            if (outPos >= utf16Len - 1) {  // check for place for two uint16
-                break;
-            }
-            outPos++;
-            *utf16Out++ = pHi;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        }
-        if (outPos >= utf16Len) {
-            break;
-        }
-        outPos++;
-        *utf16Out++ = pLo;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        if (outPos >= utf16Len) {
-            break;
-        }
-    }
-
-    return outPos;
+    return utf::ConvertRegionMUtf8ToUtf16(utf8In, utf16Out, utf8Len, utf16Len, start);
 }
 }  // namespace panda::ecmascript::base::utf_helper

@@ -171,7 +171,7 @@ public:
             }
             return length;
         }
-        return base::utf_helper::ConvertRegionUtf8ToUtf16(GetDataUtf8(), buf, maxLength, start);
+        return base::utf_helper::ConvertRegionUtf8ToUtf16(GetDataUtf8(), buf, len, maxLength, start);
     }
 
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
@@ -245,7 +245,7 @@ public:
      * Compares strings by bytes, It doesn't check canonical unicode equivalence.
      */
     static bool StringsAreEqualUtf16(const EcmaString *str1, const uint16_t *utf16Data, uint32_t utf16Len);
-    static uint32_t ComputeHashcodeUtf8(const uint8_t *utf8Data, bool canBeCompress);
+    static uint32_t ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len, bool canBeCompress);
     static uint32_t ComputeHashcodeUtf16(const uint16_t *utf16Data, uint32_t length);
 
     static void SetCompressedStringsEnabled(bool val)
@@ -303,7 +303,8 @@ private:
      * str1 should have the same length as utf16_data.
      * Converts utf8Data to utf16 and compare it with given utf16_data.
      */
-    static bool IsUtf8EqualsUtf16(const uint8_t *utf8Data, const uint16_t *utf16Data, uint32_t utf16Len);
+    static bool IsUtf8EqualsUtf16(const uint8_t *utf8Data, size_t utf8Len, const uint16_t *utf16Data,
+                                  uint32_t utf16Len);
 
     template<typename T>
     /**
