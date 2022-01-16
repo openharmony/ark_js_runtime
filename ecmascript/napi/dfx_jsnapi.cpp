@@ -17,6 +17,7 @@
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/hprof/heap_profiler.h"
+#include "ecmascript/mem/heap-inl.h"
 namespace panda {
 using ecmascript::CString;
 using ecmascript::EcmaString;

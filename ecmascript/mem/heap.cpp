@@ -584,4 +584,14 @@ bool Heap::ParallelGCTask::Run(uint32_t threadIndex)
     heap_->ReduceTaskCount();
     return true;
 }
+
+size_t Heap::GetArrayBufferSize() const
+{
+    size_t result = 0;
+    this->IteratorOverObjects([&result](TaggedObject *obj) {
+        JSHClass* jsClass = obj->GetClass();
+        result += jsClass->IsArrayBuffer() ? jsClass->GetObjectSize() : 0;
+    });
+    return result;
+}
 }  // namespace panda::ecmascript
