@@ -232,6 +232,7 @@ void EcmaVM::InitializeEcmaScriptRunStat()
             ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_NAME)
 #undef ABSTRACT_OPERATION_NAME
     };
+    static_assert(sizeof(runtimeCallerNames) == sizeof(const char *) * ecmascript::RUNTIME_CALLER_NUMBER, "Invalid runtime caller number");
     runtimeStat_ = chunk_.New<EcmaRuntimeStat>(runtimeCallerNames, ecmascript::RUNTIME_CALLER_NUMBER);
     if (UNLIKELY(runtimeStat_ == nullptr)) {
         LOG_ECMA(FATAL) << "alloc runtimeStat_ failed";
