@@ -354,6 +354,8 @@ public:
     {
         return compressGcMarker_;
     }
+    
+    size_t GetArrayBufferSize() const;
 
     inline size_t GetCommittedSize() const;
 
