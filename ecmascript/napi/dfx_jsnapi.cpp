@@ -17,10 +17,12 @@
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/hprof/heap_profiler.h"
+#include "ecmascript/mem/heap-inl.h"
 namespace panda {
 using ecmascript::CString;
 using ecmascript::EcmaString;
 using ecmascript::JSTaggedValue;
+using ecmascript::GCStats;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -66,5 +68,36 @@ bool DFXJSNApi::StopHeapTracking(EcmaVM *vm,  int dumpFormat, const std::string 
     const ecmascript::Heap *heap = vm->GetJSThread()->GetEcmaVM()->GetHeap();
     const_cast<ecmascript::RegionFactory *>(heap->GetRegionFactory())->Delete(heapProfile);
     return result;
+}
+
+void DFXJSNApi::PrintStatisticResult(const EcmaVM *vm)
+{
+    ecmascript::GCStats gcstats(vm->GetHeap());
+    gcstats.PrintStatisticResult(true);
+}
+
+void DFXJSNApi::StartRuntimeStat(EcmaVM *vm)
+{
+    vm->SetRuntimeStatEnable(true);
+}
+
+void DFXJSNApi::StopRuntimeStat(EcmaVM *vm)
+{
+    vm->SetRuntimeStatEnable(false);
+}
+
+size_t DFXJSNApi::GetArrayBufferSize(EcmaVM *vm)
+{
+    return vm->GetHeap()->GetArrayBufferSize();
+}
+
+size_t DFXJSNApi::GetHeapTotalSize(EcmaVM *vm)
+{
+    return vm->GetHeap()->GetCommittedSize();
+}
+
+size_t DFXJSNApi::GetHeapUsedSize(EcmaVM *vm)
+{
+    return vm->GetHeap()->GetHeapObjectSize();
 }
 }

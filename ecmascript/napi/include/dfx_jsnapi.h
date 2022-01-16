@@ -37,6 +37,12 @@ public:
     static std::string BuildNativeAndJsBackStackTrace(EcmaVM *vm);
     static bool StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode = true);
     static bool StopHeapTracking(EcmaVM *vm, int dumpFormat, const std::string &filePath);
+    static void PrintStatisticResult(const EcmaVM *vm);
+    static void StartRuntimeStat(EcmaVM *vm);
+    static void StopRuntimeStat(EcmaVM *vm);
+    static size_t GetArrayBufferSize(EcmaVM *vm);
+    static size_t GetHeapTotalSize(EcmaVM *vm);
+    static size_t GetHeapUsedSize(EcmaVM *vm);
 };
 }
 #endif
