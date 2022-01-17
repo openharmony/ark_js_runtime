@@ -29,3 +29,12 @@ options:
     - arm-unknown-linux-gnu
     - aarch64-unknown-linux-gnu
   description: stub aot compiler target triple
+
+- name: compiled-stubs
+  type: std::string
+  default: All
+  description: generated assembly for stubs in the list
+  # e.g:
+  # using default value: xxx/ark_stub_opt ..
+  # specify single stub: xxx/ark_stub_opt --compiled-stubs=FastAdd
+  # specify multiple stubs: xxx/ark_stub_opt --compiled-stubs=FastAddFastSubFastMulFastDiv
