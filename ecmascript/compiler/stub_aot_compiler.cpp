@@ -194,16 +194,17 @@ int main(const int argc, const char **argv)
 
     std::string tripleString = stubOptions.GetTargetTriple();
     std::string moduleFilename = stubOptions.GetStubOutputFile();
-
-    panda::ecmascript::kungfu::StubAotCompiler mouldeBuilder;
+    std::string compiledStubList = stubOptions.GetCompiledStubs();
+    panda::ecmascript::kungfu::StubAotCompiler moduleBuilder;
 #define SET_STUB_TO_MODULE(name, counter) \
-    panda::ecmascript::kungfu::Circuit name##Circuit; \
-    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
-    mouldeBuilder.SetStub(FAST_STUB_ID(name), &name##Stub);
+    panda::ecmascript::kungfu::Circuit name##Circuit;                                                \
+    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit);                               \
+    if (compiledStubList.compare("All") == 0 || compiledStubList.find(#name) != std::string::npos) { \
+        moduleBuilder.SetStub(FAST_STUB_ID(name), &name##Stub);                                      \
+    }
     FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
-#undef SET_STUB_TO_MODULE
     panda::ecmascript::StubModule stubModule;
-    mouldeBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
+    moduleBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
     std::cout << "BuildStubModuleAndSave success" << std::endl;
     return 0;
 }
