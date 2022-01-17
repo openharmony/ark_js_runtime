@@ -120,7 +120,7 @@ HWTEST_F_L0(BuiltinsProxyTest, Revocable)
     JSHandle<TaggedArray> keys = JSObject::GetOwnPropertyKeys(thread, resultHandle);
     bool pflag = false;
     bool rflag = false;
-    for (array_size_t i = 0; i < keys->GetLength(); i++) {
+    for (uint32_t i = 0; i < keys->GetLength(); i++) {
         if (JSTaggedValue::SameValue(keys->Get(i), proxyKey.GetTaggedValue())) {
             pflag = true;
         }

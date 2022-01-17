@@ -163,7 +163,7 @@ public:
     static bool ToArrayLength(JSThread *thread, const JSHandle<JSTaggedValue> &tagged, uint32_t *output);
     static bool ToElementIndex(JSTaggedValue key, uint32_t *output);
     static bool StringToElementIndex(JSTaggedValue key, uint32_t *output);
-    array_size_t GetArrayLength() const;
+    uint32_t GetArrayLength() const;
 
     // ecma6 7.2 Testing and Comparison Operations
     bool IsCallable() const;

@@ -461,7 +461,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
     JSHandle<JSTaggedValue> newTarget(thread_, JSTaggedValue::Undefined());
     JSHandle<TaggedArray> jsargs = factory_->NewTaggedArray(args.size());
-    array_size_t i = 0;
+    uint32_t i = 0;
     for (const std::string &str : args) {
         JSHandle<JSTaggedValue> strobj(factory_->NewFromStdString(str));
         jsargs->Set(thread_, i++, strobj);

@@ -702,9 +702,9 @@ void JSBackend::GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly
         return;
     }
     Local<ArrayRef> keys = Local<ObjectRef>(value)->GetOwnPropertyNames(ecmaVm_);
-    array_size_t length = keys->Length(ecmaVm_);
+    uint32_t length = keys->Length(ecmaVm_);
     Local<JSValueRef> name = JSValueRef::Undefined(ecmaVm_);
-    for (array_size_t i = 0; i < length; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
         name = keys->Get(ecmaVm_, i);
         PropertyAttribute jsProperty = PropertyAttribute::Default();
         if (!Local<ObjectRef>(value)->GetOwnProperty(ecmaVm_, name, jsProperty)) {

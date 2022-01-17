@@ -51,13 +51,13 @@ public:
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LENGTH_OFFSET, SIZE)
     DECL_DUMP()
 private:
-    inline static array_size_t ComputeCapacity(array_size_t oldCapacity)
+    inline static uint32_t ComputeCapacity(uint32_t oldCapacity)
     {
-        array_size_t newCapacity = oldCapacity + (oldCapacity >> 1U);
+        uint32_t newCapacity = oldCapacity + (oldCapacity >> 1U);
         return newCapacity > DEFAULT_CAPACITY_LENGTH ? newCapacity : DEFAULT_CAPACITY_LENGTH;
     }
     static JSHandle<TaggedArray> GrowCapacity(const JSThread *thread, const JSHandle<JSArrayList> &obj,
-                                              array_size_t capacity);
+                                              uint32_t capacity);
 };
 }  // namespace panda::ecmascript
 

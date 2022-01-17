@@ -63,8 +63,8 @@ JSTaggedValue InvokeCache::CheckPolyInvokeCache(JSTaggedValue cachedArray, JSTag
 {
     ASSERT(cachedArray.IsTaggedArray());
     TaggedArray *array = TaggedArray::Cast(cachedArray.GetHeapObject());
-    array_size_t length = array->GetLength();
-    for (array_size_t index = 0; index < length; index += 2) {  // 2: means one ic, two slot
+    uint32_t length = array->GetLength();
+    for (uint32_t index = 0; index < length; index += 2) {  // 2: means one ic, two slot
         auto result = array->Get(index);
         if (JSFunction::Cast(result.GetTaggedObject())->GetMethod() ==
             JSFunction::Cast(func.GetTaggedObject())->GetMethod()) {
@@ -114,7 +114,7 @@ JSTaggedValue InvokeCache::Construct(JSThread *thread, JSTaggedValue firstValue,
     params.newTarget = newTgt.GetTaggedType();
     params.thisArg = obj.GetTaggedType();
     params.argc = length;
-    for (array_size_t i = 0; i < length; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
         JSTaggedValue value = frameHandler.GetVRegValue(firstArgIdx + i);
         values.emplace_back(value.GetRawData());
     }

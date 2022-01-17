@@ -440,7 +440,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     GateRef capcityoffset =
         ArchRelatePtrMul(GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()),
             GetArchRelateConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
-    GateRef dataoffset = GetArchRelateConstant(TaggedArray::GetDataOffset());
+    GateRef dataoffset = GetArchRelateConstant(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(MachineType::UINT64, elements, ArchRelateAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, MachineType::INT32, GetInt32Constant(1));
 
@@ -538,7 +538,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     GateRef capcityoffset =
         ArchRelatePtrMul(GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()),
             GetArchRelateConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
-    GateRef dataoffset = GetArchRelateConstant(TaggedArray::GetDataOffset());
+    GateRef dataoffset = GetArchRelateConstant(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(MachineType::UINT64, elements, PtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, MachineType::INT32, GetInt32Constant(1));
     DEFVARIABLE(hash, MachineType::INT32, GetInt32Constant(0));
@@ -648,7 +648,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     GateRef capcityoffset =
         ArchRelatePtrMul(GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()),
             GetArchRelateConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
-    GateRef dataoffset = GetArchRelateConstant(TaggedArray::GetDataOffset());
+    GateRef dataoffset = GetArchRelateConstant(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(MachineType::UINT64, elements, PtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, MachineType::INT32, GetInt32Constant(1));
     DEFVARIABLE(hash, MachineType::INT32, GetInt32Constant(0));
@@ -1242,7 +1242,7 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
 GateRef Stub::IsUtf16String(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::GetLengthOffset()));
+    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
     return Word32Equal(
         Word32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
         GetInt32Constant(EcmaString::STRING_UNCOMPRESSED));
@@ -1251,7 +1251,7 @@ GateRef Stub::IsUtf16String(GateRef string)
 GateRef Stub::IsUtf8String(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::GetLengthOffset()));
+    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
     return Word32Equal(
         Word32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
         GetInt32Constant(EcmaString::STRING_COMPRESSED));
@@ -1260,7 +1260,7 @@ GateRef Stub::IsUtf8String(GateRef string)
 GateRef Stub::IsInternalString(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::GetLengthOffset()));
+    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
     return Word32NotEqual(
         Word32And(len, GetInt32Constant(EcmaString::STRING_INTERN_BIT)),
         GetInt32Constant(0));
@@ -1282,14 +1282,14 @@ GateRef Stub::StringToElementIndex(GateRef string)
     DEFVARIABLE(result, MachineType::INT32, GetInt32Constant(-1));
     Label greatThanZero(env);
     Label inRange(env);
-    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::GetLengthOffset()));
+    GateRef len = Load(MachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
     len = Word32LSR(len, GetInt32Constant(2));  // 2 : 2 means len must be right shift 2 bits
     Branch(Word32Equal(len, GetInt32Constant(0)), &exit, &greatThanZero);
     Bind(&greatThanZero);
     Branch(Int32GreaterThan(len, GetInt32Constant(MAX_INDEX_LEN)), &exit, &inRange);
     Bind(&inRange);
     {
-        GateRef dataUtf16 = PtrAdd(string, GetArchRelateConstant(EcmaString::GetDataOffset()));
+        GateRef dataUtf16 = PtrAdd(string, GetArchRelateConstant(EcmaString::DATA_OFFSET));
         DEFVARIABLE(c, MachineType::UINT32, GetInt32Constant(0));
         Label isUtf16(env);
         Label isUtf8(env);
@@ -1865,7 +1865,7 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         }
         Bind(&indexLessCapacity);
         {
-            Store(MachineType::UINT64, glue, ArchRelateAdd(array, GetArchRelateConstant(TaggedArray::GetDataOffset())),
+            Store(MachineType::UINT64, glue, ArchRelateAdd(array, GetArchRelateConstant(TaggedArray::DATA_OFFSET)),
                 ArchRelatePtrMul(ChangeInt32ToUintPtr(index), GetArchRelateConstant(JSTaggedValue::TaggedTypeSize())),
                 value);
             Jump(&exit);

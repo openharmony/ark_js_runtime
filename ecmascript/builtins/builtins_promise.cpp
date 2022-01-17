@@ -451,7 +451,7 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
     JSHandle<PromiseRecord> remainCnt = factory->NewPromiseRecord();
     remainCnt->SetValue(thread, JSTaggedNumber(1));
     // 5. Let index be 0.
-    array_size_t index = 0;
+    uint32_t index = 0;
     // 6. Repeat
     JSHandle<JSTaggedValue> itor(thread, itRecord->GetIterator());
     JSMutableHandle<JSTaggedValue> next(thread, globalConst->GetUndefined());

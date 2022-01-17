@@ -122,7 +122,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeBind(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
-    array_size_t argsLength = 0;
+    uint32_t argsLength = 0;
     if (argv->GetArgsNumber() > 1) {
         argsLength = argv->GetArgsNumber() - 1;
     }
@@ -130,7 +130,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeBind(EcmaRuntimeCallInfo *argv)
     // 3. Let args be a new (possibly empty) List consisting of all of the argument
     //    values provided after thisArg in order.
     JSHandle<TaggedArray> argsArray = factory->NewTaggedArray(argsLength);
-    for (array_size_t index = 0; index < argsLength; ++index) {
+    for (uint32_t index = 0; index < argsLength; ++index) {
         argsArray->Set(thread, index, GetCallArg(argv, index + 1));
     }
     // 4. Let F be BoundFunctionCreate(Target, thisArg, args).
@@ -212,7 +212,7 @@ JSTaggedValue BuiltinsFunction::FunctionPrototypeCall(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> func = GetThis(argv);
     JSHandle<JSTaggedValue> thisArg = GetCallArg(argv, 0);
-    array_size_t argsLength = 0;
+    uint32_t argsLength = 0;
     if (argv->GetArgsNumber() > 1) {
         argsLength = argv->GetArgsNumber() - 1;
     }

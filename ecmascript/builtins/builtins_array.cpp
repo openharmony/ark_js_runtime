@@ -49,7 +49,7 @@ JSTaggedValue BuiltinsArray::ArrayConstructor(EcmaRuntimeCallInfo *argv)
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     // 1. Let numberOfArgs be the number of arguments passed to this function call.
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 3. If NewTarget is undefined, let newTarget be the active function object, else let newTarget be NewTarget.
     JSHandle<JSTaggedValue> constructor = GetConstructor(argv);
@@ -328,7 +328,7 @@ JSTaggedValue BuiltinsArray::Of(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> lengthKey = globalConst->GetHandledLengthString();
 
     // 1. Let len be the actual number of arguments passed to this function.
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 3. Let C be the this value.
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
@@ -391,7 +391,7 @@ JSTaggedValue BuiltinsArray::Concat(EcmaRuntimeCallInfo *argv)
     BUILTINS_API_TRACE(argv->GetThread(), Array, Concat);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 1. Let O be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
@@ -1067,7 +1067,7 @@ JSTaggedValue BuiltinsArray::IndexOf(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 1. Let O be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
@@ -1255,7 +1255,7 @@ JSTaggedValue BuiltinsArray::LastIndexOf(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 1. Let O be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
@@ -1464,7 +1464,7 @@ JSTaggedValue BuiltinsArray::Push(EcmaRuntimeCallInfo *argv)
         return JSStableArray::Push(JSHandle<JSArray>::Cast(thisHandle), argv);
     }
     // 6. Let argCount be the number of elements in items.
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 1. Let O be ToObject(this value).
     JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
@@ -1517,7 +1517,7 @@ JSTaggedValue BuiltinsArray::Reduce(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
     // 1. Let O be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
     JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
@@ -1618,7 +1618,7 @@ JSTaggedValue BuiltinsArray::ReduceRight(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
 
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 1. Let O be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
@@ -1969,7 +1969,7 @@ JSTaggedValue BuiltinsArray::Slice(EcmaRuntimeCallInfo *argv)
         TaggedArray *destElements = *JSObject::GrowElementsCapacity(thread, newArrayHandle, count);
         TaggedArray *srcElements = TaggedArray::Cast(thisObjHandle->GetElements().GetTaggedObject());
 
-        for (array_size_t idx = 0; idx < count; idx++) {
+        for (uint32_t idx = 0; idx < count; idx++) {
             destElements->Set(thread, idx, srcElements->Get(k + idx));
         }
 
@@ -2156,7 +2156,7 @@ JSTaggedValue BuiltinsArray::Splice(EcmaRuntimeCallInfo *argv)
     BUILTINS_API_TRACE(argv->GetThread(), Array, Splice);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
     // 1. Let O be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
     JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
@@ -2493,7 +2493,7 @@ JSTaggedValue BuiltinsArray::Unshift(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
     // 5. Let argCount be the number of actual arguments.
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     // 1. Let O be ToObject(this value).
     JSHandle<JSTaggedValue> thisHandle = GetThis(argv);

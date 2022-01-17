@@ -1281,7 +1281,7 @@ Local<ArrayBufferRef> TypedArrayRef::GetArrayBuffer(const EcmaVM *vm)
         JSHandle<JSArrayBuffer> arrayBuffer(JSNApiHelper::ToJSHandle(buffer));                          \
         ecmascript::InternalCallParams *argv = thread->GetInternalCallParams();                         \
         argv->MakeArgv(arrayBuffer.GetTaggedValue(), JSTaggedValue(byteOffset), JSTaggedValue(length)); \
-        array_size_t argc = 3;                                                                          \
+        uint32_t argc = 3;                                                                          \
         JSTaggedValue result = JSFunction::Construct(thread, func, argc, argv->GetArgv(), func);        \
         RETURN_VALUE_IF_ABRUPT(thread, JSValueRef::Exception(vm));                                      \
         JSHandle<JSTaggedValue> resultHandle(thread, result);                                           \
@@ -1439,8 +1439,8 @@ JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info)
 
     // arguments
     std::vector<Local<JSValueRef>> arguments;
-    array_size_t length = info->GetArgsNumber();
-    for (array_size_t i = 0; i < length; ++i) {
+    uint32_t length = info->GetArgsNumber();
+    for (uint32_t i = 0; i < length; ++i) {
         arguments.emplace_back(JSNApiHelper::ToLocal<JSValueRef>(BuiltinsBase::GetCallArg(info, i)));
     }
 
@@ -1491,8 +1491,8 @@ JSTaggedValue Callback::RegisterCallbackWithProperty(ecmascript::EcmaRuntimeCall
 
     // arguments
     std::vector<Local<JSValueRef>> arguments;
-    array_size_t length = info->GetArgsNumber();
-    for (array_size_t i = 0; i < length; ++i) {
+    uint32_t length = info->GetArgsNumber();
+    for (uint32_t i = 0; i < length; ++i) {
         arguments.emplace_back(JSNApiHelper::ToLocal<JSValueRef>(BuiltinsBase::GetCallArg(info, i)));
     }
 
@@ -1547,8 +1547,8 @@ JSTaggedValue Callback::RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCal
 
     // arguments
     std::vector<Local<JSValueRef>> arguments;
-    array_size_t length = info->GetArgsNumber();
-    for (array_size_t i = 0; i < length; ++i) {
+    uint32_t length = info->GetArgsNumber();
+    for (uint32_t i = 0; i < length; ++i) {
         arguments.emplace_back(JSNApiHelper::ToLocal<JSValueRef>(BuiltinsBase::GetCallArg(info, i)));
     }
 

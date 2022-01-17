@@ -22,7 +22,7 @@ namespace panda::ecmascript {
 void JSArrayList::Add(JSThread *thread, const JSHandle<JSArrayList> &arrayList, const JSHandle<JSTaggedValue> &value)
 {
     // GrowCapacity
-    array_size_t length = arrayList->GetLength().GetArrayLength();
+    uint32_t length = arrayList->GetLength().GetArrayLength();
     JSHandle<TaggedArray> elements = GrowCapacity(thread, arrayList, length + 1);
 
     ASSERT(!elements->IsDictionaryMode());
@@ -31,14 +31,14 @@ void JSArrayList::Add(JSThread *thread, const JSHandle<JSArrayList> &arrayList, 
 }
 
 JSHandle<TaggedArray> JSArrayList::GrowCapacity(const JSThread *thread, const JSHandle<JSArrayList> &obj,
-                                                array_size_t capacity)
+                                                uint32_t capacity)
 {
     JSHandle<TaggedArray> oldElements(thread, obj->GetElements());
-    array_size_t oldLength = oldElements->GetLength();
+    uint32_t oldLength = oldElements->GetLength();
     if (capacity < oldLength) {
         return oldElements;
     }
-    array_size_t newCapacity = ComputeCapacity(capacity);
+    uint32_t newCapacity = ComputeCapacity(capacity);
     JSHandle<TaggedArray> newElements =
         thread->GetEcmaVM()->GetFactory()->CopyArray(oldElements, oldLength, newCapacity);
 
@@ -73,12 +73,12 @@ bool JSArrayList::Delete(JSThread *thread, const JSHandle<JSArrayList> &obj, con
     if (UNLIKELY(JSTaggedValue::ToElementIndex(key.GetTaggedValue(), &index))) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not delete a type other than number", false);
     }
-    array_size_t length = obj->GetLength().GetArrayLength();
+    uint32_t length = obj->GetLength().GetArrayLength();
     if (index < 0 || index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "Delete property index out-of-bounds", false);
     }
     TaggedArray *elements = TaggedArray::Cast(obj->GetElements().GetTaggedObject());
-    for (array_size_t i = 0; i < length - 1; i++) {
+    for (uint32_t i = 0; i < length - 1; i++) {
         elements->Set(thread, i, elements->Get(i + 1));
     }
     obj->SetLength(thread, JSTaggedValue(--length));
@@ -93,11 +93,11 @@ bool JSArrayList::Has(JSTaggedValue value) const
 
 JSHandle<TaggedArray> JSArrayList::OwnKeys(JSThread *thread, const JSHandle<JSArrayList> &obj)
 {
-    array_size_t length = obj->GetLength().GetArrayLength();
+    uint32_t length = obj->GetLength().GetArrayLength();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> keys = factory->NewTaggedArray(length);
 
-    for (array_size_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         keys->Set(thread, i, JSTaggedValue(i));
     }
 
@@ -112,7 +112,7 @@ bool JSArrayList::GetOwnProperty(JSThread *thread, const JSHandle<JSArrayList> &
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not get property whose type is not number", false);
     }
 
-    array_size_t length = obj->GetLength().GetArrayLength();
+    uint32_t length = obj->GetLength().GetArrayLength();
     if (index < 0 || index >= length) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "Get property index out-of-bounds", false);
     }
