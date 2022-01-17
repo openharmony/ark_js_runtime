@@ -70,8 +70,7 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
     interpretedFrameSize_ = compCfg_->GetGlueOffset(JSThread::GlueID::FRAME_STATE_SIZE);
     if (compCfg_->IsArm32()) {
         // hard float instruction
-        LLVMAddTargetDependentFunctionAttr(function_, "target-features",
-            "+armv7-a");
+        LLVMAddTargetDependentFunctionAttr(function_, "target-features", "+armv8-a");
     }
     optLeaveFramePrevOffset_ = compCfg_->GetGlueOffset(JSThread::GlueID::OPT_LEAVE_FRAME_PREV_OFFSET);
 }
