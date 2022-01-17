@@ -79,14 +79,14 @@ namespace panda::ecmascript::kungfu {
     T(HandleThrowIfNotObjectPrefV8, 7)                      \
     T(HandleIterNextPrefV8, 7)                              \
     T(HandleCloseIteratorPrefV8, 7)                         \
-    V(HandleCopyModulePrefV8, 7)                            \
+    T(HandleCopyModulePrefV8, 7)                            \
     V(HandleSuperCallSpreadPrefV8, 7)                       \
-    V(HandleDelObjPropPrefV8V8, 7)                          \
-    V(HandleNewObjSpreadDynPrefV8V8, 7)                     \
-    V(HandleCreateIterResultObjPrefV8V8, 7)                 \
+    T(HandleDelObjPropPrefV8V8, 7)                          \
+    T(HandleNewObjSpreadDynPrefV8V8, 7)                     \
+    T(HandleCreateIterResultObjPrefV8V8, 7)                 \
     V(HandleSuspendGeneratorPrefV8V8, 7)                    \
-    V(HandleAsyncFunctionAwaitUncaughtPrefV8V8, 7)          \
-    V(HandleThrowUndefinedIfHolePrefV8V8, 7)                \
+    T(HandleAsyncFunctionAwaitUncaughtPrefV8V8, 7)          \
+    T(HandleThrowUndefinedIfHolePrefV8V8, 7)                \
     V(HandleCallArg1DynPrefV8V8, 7)                         \
     V(HandleCopyDataPropertiesPrefV8V8, 7)                  \
     V(HandleStArraySpreadPrefV8V8, 7)                       \

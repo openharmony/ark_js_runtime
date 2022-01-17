@@ -971,6 +971,101 @@ CALL_STUB_INIT_DESCRIPTOR(CloseIterator)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(CopyModule)
+{
+    // 2 : 2 input parameters
+    StubDescriptor copyModule("CopyModule", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = copyModule;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(DelObjProp)
+{
+    // 3 : 3 input parameters
+    StubDescriptor delObjProp("DelObjProp", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = delObjProp;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(NewObjSpreadDyn)
+{
+    // 4 : 4 input parameters
+    StubDescriptor newObjSpreadDyn("NewObjSpreadDyn", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = newObjSpreadDyn;
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CreateIterResultObj)
+{
+    // 3 : 3 input parameters
+    StubDescriptor createIterResultObj("CreateIterResultObj", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = createIterResultObj;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(AsyncFunctionAwaitUncaught)
+{
+    // 3 : 3 input parameters
+    StubDescriptor asyncFunctionAwaitUncaught("AsyncFunctionAwaitUncaught", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = asyncFunctionAwaitUncaught;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(ThrowUndefinedIfHole)
+{
+    // 2 : 2 input parameters
+    StubDescriptor throwUndefinedIfHole("ThrowUndefinedIfHole", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = throwUndefinedIfHole;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters
