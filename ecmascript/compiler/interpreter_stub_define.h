@@ -158,8 +158,8 @@ namespace panda::ecmascript::kungfu {
     T(HandleJmpImm8, 7)                                     \
     T(HandleJmpImm16, 7)                                    \
     T(HandleJmpImm32, 7)                                    \
-    V(HandleJeqzImm8, 7)                                    \
-    V(HandleJeqzImm16, 7)                                   \
+    T(HandleJeqzImm8, 7)                                    \
+    T(HandleJeqzImm16, 7)                                   \
     T(HandleLdaDynV8, 7)                                    \
     T(HandleStaDynV8, 7)                                    \
     V(HandleReturnDyn, 7)                                   \
