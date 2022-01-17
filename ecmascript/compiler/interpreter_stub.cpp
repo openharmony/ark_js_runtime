@@ -1128,6 +1128,188 @@ void HandleCloseIteratorPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
 
+void HandleCopyModulePrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef srcModule = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    StubDescriptor *copyModule = GET_STUBDESCRIPTOR(CopyModule);
+    CallRuntime(copyModule, glue, GetWord64Constant(FAST_STUB_ID(CopyModule)),
+                {glue, srcModule});
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
+}
+
+void HandleDelObjPropPrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    StubDescriptor *delObjProp = GET_STUBDESCRIPTOR(DelObjProp);
+    GateRef result = CallRuntime(delObjProp, glue, GetWord64Constant(FAST_STUB_ID(DelObjProp)),
+                                 {glue, obj, prop});
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+    }
+    Bind(&notException);
+    acc = result;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
+}
+
+void HandleNewObjSpreadDynPrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef newTarget = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    StubDescriptor *newObjSpreadDyn = GET_STUBDESCRIPTOR(NewObjSpreadDyn);
+    GateRef result = CallRuntime(newObjSpreadDyn, glue, GetWord64Constant(FAST_STUB_ID(NewObjSpreadDyn)),
+                                 {glue, func, newTarget, *acc}); // acc is array
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+    }
+    Bind(&notException);
+    acc = result;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
+}
+
+void HandleCreateIterResultObjPrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef flag = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    StubDescriptor *createIterResultObj = GET_STUBDESCRIPTOR(CreateIterResultObj);
+    GateRef result = CallRuntime(createIterResultObj, glue, GetWord64Constant(FAST_STUB_ID(CreateIterResultObj)),
+                                 {glue, value, flag});
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+    }
+    Bind(&notException);
+    acc = result;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
+}
+
+void HandleAsyncFunctionAwaitUncaughtPrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef flag = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    StubDescriptor *asyncFunctionAwaitUncaught = GET_STUBDESCRIPTOR(AsyncFunctionAwaitUncaught);
+    GateRef result = CallRuntime(asyncFunctionAwaitUncaught, glue,
+                                 GetWord64Constant(FAST_STUB_ID(AsyncFunctionAwaitUncaught)),
+                                 {glue, asyncFuncObj, flag});
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+    }
+    Bind(&notException);
+    acc = result;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
+}
+
+void HandleThrowUndefinedIfHolePrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef hole = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    Label isHole(env);
+    Label notHole(env);
+    Branch(TaggedIsHole(hole), &isHole, &notHole);
+    Bind(&notHole);
+    {
+        Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
+                 GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
+    }
+    Bind(&isHole);
+    GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    // assert obj.IsString()
+    StubDescriptor *throwUndefinedIfHole = GET_STUBDESCRIPTOR(ThrowUndefinedIfHole);
+    CallRuntime(throwUndefinedIfHole, glue, GetWord64Constant(FAST_STUB_ID(ThrowUndefinedIfHole)),
+                {glue, obj});
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+}
+
 void HandleStConstToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);

@@ -503,6 +503,46 @@ JSTaggedType RuntimeTrampolines::CloseIterator(uintptr_t argGlue, JSTaggedType i
     return SlowRuntimeStub::CloseIterator(thread, JSTaggedValue(iter)).GetRawData();
 }
 
+void RuntimeTrampolines::CopyModule(uintptr_t argGlue, JSTaggedType srcModule)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    SlowRuntimeStub::CopyModule(thread, JSTaggedValue(srcModule));
+}
+
+JSTaggedType RuntimeTrampolines::DelObjProp(uintptr_t argGlue, JSTaggedType obj, JSTaggedType prop)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::DelObjProp(thread, JSTaggedValue(obj), JSTaggedValue(prop)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::NewObjSpreadDyn(uintptr_t argGlue,
+                                                 JSTaggedType func, JSTaggedType newTarget, JSTaggedType array)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::NewObjSpreadDyn(thread,
+        JSTaggedValue(func), JSTaggedValue(newTarget), JSTaggedValue(array)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::CreateIterResultObj(uintptr_t argGlue, JSTaggedType value, JSTaggedType flag)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::CreateIterResultObj(thread, JSTaggedValue(value), JSTaggedValue(flag)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::AsyncFunctionAwaitUncaught(uintptr_t argGlue,
+                                                            JSTaggedType asyncFuncObj, JSTaggedType object)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::AsyncFunctionAwaitUncaught(thread,
+        JSTaggedValue(asyncFuncObj), JSTaggedValue(object)).GetRawData();
+}
+
+void RuntimeTrampolines::ThrowUndefinedIfHole(uintptr_t argGlue, JSTaggedType obj)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    SlowRuntimeStub::ThrowUndefinedIfHole(thread, JSTaggedValue(obj));
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
