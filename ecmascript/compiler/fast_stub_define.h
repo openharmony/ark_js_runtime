@@ -73,6 +73,10 @@ namespace panda::ecmascript::kungfu {
     V(CreateIterResultObj, 3)               \
     V(AsyncFunctionAwaitUncaught, 3)        \
     V(ThrowUndefinedIfHole, 2)              \
+    V(CopyDataProperties, 3)                \
+    V(StArraySpread, 4)                     \
+    V(GetIteratorNext, 3)                   \
+    V(SetObjectWithProto, 3)                \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \
