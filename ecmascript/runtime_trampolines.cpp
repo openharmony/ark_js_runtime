@@ -509,6 +509,14 @@ void RuntimeTrampolines::CopyModule(uintptr_t argGlue, JSTaggedType srcModule)
     SlowRuntimeStub::CopyModule(thread, JSTaggedValue(srcModule));
 }
 
+JSTaggedType RuntimeTrampolines::SuperCallSpread(uintptr_t argGlue,
+                                                 JSTaggedType func, uintptr_t sp, JSTaggedType array)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    JSTaggedValue function = EcmaInterpreter::GetNewTarget(reinterpret_cast<JSTaggedType*>(sp));
+    return SlowRuntimeStub::SuperCallSpread(thread, JSTaggedValue(func), function, JSTaggedValue(array)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::DelObjProp(uintptr_t argGlue, JSTaggedType obj, JSTaggedType prop)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);

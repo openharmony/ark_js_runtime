@@ -69,6 +69,7 @@ namespace panda::ecmascript::kungfu {
     V(IterNext, 2)                          \
     V(CloseIterator, 2)                     \
     V(CopyModule, 2)                        \
+    V(SuperCallSpread, 4)                   \
     V(DelObjProp, 3)                        \
     V(NewObjSpreadDyn, 4)                   \
     V(CreateIterResultObj, 3)               \
