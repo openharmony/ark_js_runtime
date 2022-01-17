@@ -530,17 +530,43 @@ JSTaggedType RuntimeTrampolines::CreateIterResultObj(uintptr_t argGlue, JSTagged
 }
 
 JSTaggedType RuntimeTrampolines::AsyncFunctionAwaitUncaught(uintptr_t argGlue,
-                                                            JSTaggedType asyncFuncObj, JSTaggedType object)
+                                                            JSTaggedType asyncFuncObj, JSTaggedType value)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::AsyncFunctionAwaitUncaught(thread,
-        JSTaggedValue(asyncFuncObj), JSTaggedValue(object)).GetRawData();
+        JSTaggedValue(asyncFuncObj), JSTaggedValue(value)).GetRawData();
 }
 
 void RuntimeTrampolines::ThrowUndefinedIfHole(uintptr_t argGlue, JSTaggedType obj)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     SlowRuntimeStub::ThrowUndefinedIfHole(thread, JSTaggedValue(obj));
+}
+
+JSTaggedType RuntimeTrampolines::CopyDataProperties(uintptr_t argGlue, JSTaggedType dst, JSTaggedType src)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::CopyDataProperties(thread, JSTaggedValue(dst), JSTaggedValue(src)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::StArraySpread(uintptr_t argGlue,
+                                               JSTaggedType dst, JSTaggedType index, JSTaggedType src)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StArraySpread(thread,
+        JSTaggedValue(dst), JSTaggedValue(index), JSTaggedValue(src)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::GetIteratorNext(uintptr_t argGlue, JSTaggedType obj, JSTaggedType method)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::GetIteratorNext(thread, JSTaggedValue(obj), JSTaggedValue(method)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::SetObjectWithProto(uintptr_t argGlue, JSTaggedType proto, JSTaggedType obj)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::SetObjectWithProto(thread, JSTaggedValue(proto), JSTaggedValue(obj)).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)

@@ -1066,6 +1066,71 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowUndefinedIfHole)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(CopyDataProperties)
+{
+    // 3 : 3 input parameters
+    StubDescriptor copyDataProperties("CopyDataProperties", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = copyDataProperties;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StArraySpread)
+{
+    // 4 : 4 input parameters
+    StubDescriptor stArraySpread("StArraySpread", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = stArraySpread;
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(GetIteratorNext)
+{
+    // 3 : 3 input parameters
+    StubDescriptor getIteratorNext("GetIteratorNext", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = getIteratorNext;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(SetObjectWithProto)
+{
+    // 3 : 3 input parameters
+    StubDescriptor setObjectWithProto("SetObjectWithProto", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = setObjectWithProto;
+    // 3 : 3 input parameters
+    std::array<MachineType, 3> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters

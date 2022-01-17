@@ -98,8 +98,12 @@ public:
     static JSTaggedType NewObjSpreadDyn(uintptr_t argGlue,
                                         JSTaggedType func, JSTaggedType newTarget, JSTaggedType array);
     static JSTaggedType CreateIterResultObj(uintptr_t argGlue, JSTaggedType value, JSTaggedType flag);
-    static JSTaggedType AsyncFunctionAwaitUncaught(uintptr_t argGlue, JSTaggedType asyncFuncObj, JSTaggedType object);
+    static JSTaggedType AsyncFunctionAwaitUncaught(uintptr_t argGlue, JSTaggedType asyncFuncObj, JSTaggedType value);
     static void ThrowUndefinedIfHole(uintptr_t argGlue, JSTaggedType obj);
+    static JSTaggedType CopyDataProperties(uintptr_t argGlue, JSTaggedType dst, JSTaggedType src);
+    static JSTaggedType StArraySpread(uintptr_t argGlue, JSTaggedType dst, JSTaggedType index, JSTaggedType src);
+    static JSTaggedType GetIteratorNext(uintptr_t argGlue, JSTaggedType obj, JSTaggedType method);
+    static JSTaggedType SetObjectWithProto(uintptr_t argGlue, JSTaggedType proto, JSTaggedType obj);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
     static JSTaggedType NegDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal, JSTaggedType base,
