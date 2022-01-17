@@ -239,7 +239,7 @@ int32_t EcmaString::IndexOf(const EcmaString *rhs, int32_t pos) const
 }
 
 // static
-bool EcmaString::CanBeCompressed(const uint8_t *utf8Data,  uint32_t utf8Len)
+bool EcmaString::CanBeCompressed(const uint8_t *utf8Data, uint32_t utf8Len)
 {
     if (!compressedStringsEnabled) {
         return false;
@@ -250,7 +250,7 @@ bool EcmaString::CanBeCompressed(const uint8_t *utf8Data,  uint32_t utf8Len)
         utf8Len = strlen((const char *)utf8Data);
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    while (utf8Data[index] != '\0') {
+    while (index < (int)utf8Len) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (!IsASCIICharacter(utf8Data[index])) {
             isCompressed = false;
