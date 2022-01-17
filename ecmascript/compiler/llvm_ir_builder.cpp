@@ -1774,19 +1774,27 @@ LLVMStubModule::~LLVMStubModule()
 void LLVMStubModule::Initialize(const std::vector<int> &stubIndices)
 {
     uint32_t i;
-    for (i = 0; i < ALL_STUB_MAXCOUNT; i++) {
-        uint32_t index = stubIndices[i];
-        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
-        if (!stubDescriptor->GetName().empty()) {
-            stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
-        }
-    }
     for (i = 0; i < CALL_STUB_MAXCOUNT; i++) {
         auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i);
         if (!stubDescriptor->GetName().empty()) {
             stubFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
         }
     }
+    for (i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+        uint32_t index = stubIndices[i];
+        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
+        if (!stubDescriptor->GetName().empty()) {
+            stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
+        }
+    }
+#define DEF_STUB_FUNCTION(name, argc)                                                       \
+    {                                                                                       \
+        auto funcType = stubFunctionType_[CallStubId::NAME_BytecodeHandler];                \
+        stubFunctions_[StubId::STUB_##name] = LLVMAddFunction(module_, #name, funcType);    \
+    }
+    INTERPRETER_STUB_LIST(DEF_STUB_FUNCTION)
+#undef DEF_STUB_FUNCTION
+
 #ifndef NDEBUG
     for (i = 0; i < TEST_FUNC_MAXCOUNT; i++) {
         auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNC_OFFSET);

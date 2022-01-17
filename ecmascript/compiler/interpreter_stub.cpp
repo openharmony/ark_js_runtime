@@ -1861,11 +1861,12 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
     GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
     GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
-    GateRef v0 = ZExtInt8ToPtr(ReadInst8_1(pc));
-    GateRef v1 = ZExtInt8ToPtr(ReadInst8_2(pc));
-    DEFVARIABLE(receiver, MachineType::TAGGED, GetVregValue(sp, v0));
+
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
+
     Label isHeapObject(env);
-    Label notHeapObject(env);
+    Label slowPath(env);
     Label notClassConstructor(env);
     Label notClassPrototype(env);
     Label notHole(env);
@@ -1873,21 +1874,20 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
     Label notException(env);
     Label isException1(env);
     Label notException1(env);
-    Branch(TaggedIsHeapObject(*receiver), &isHeapObject, &notHeapObject);
+
+    Branch(TaggedIsHeapObject(receiver), &isHeapObject, &slowPath);
     Bind(&isHeapObject);
     {
-        Branch(IsClassConstructor(*receiver), &notHeapObject, &notClassConstructor);
+        Branch(IsClassConstructor(receiver), &slowPath, &notClassConstructor);
         Bind(&notClassConstructor);
         {
-            Branch(IsClassPrototype(*receiver), &notHeapObject, &notClassPrototype);
+            Branch(IsClassPrototype(receiver), &slowPath, &notClassPrototype);
             Bind(&notClassPrototype);
             {
-                DEFVARIABLE(propKey, MachineType::TAGGED, GetVregValue(sp, v1));
                 StubDescriptor *setPropertyByValue = GET_STUBDESCRIPTOR(SetPropertyByValue);
                 GateRef res = CallRuntime(setPropertyByValue, glue, GetWord64Constant(FAST_STUB_ID(SetPropertyByValue)),
-                                 { glue, *receiver, *propKey, acc });
-                propKey = GetVregValue(sp, v1);
-                Branch(TaggedIsHole(res), &notHeapObject, &notHole);
+                                 { glue, receiver, propKey, acc });
+                Branch(TaggedIsHole(res), &slowPath, &notHole);
                 Bind(&notHole);
                 {
                     Branch(TaggedIsException(res), &isException, &notException);
@@ -1898,20 +1898,18 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
                     Bind(&notException);
                     StubDescriptor *setFunctionNameNoPrefix = GET_STUBDESCRIPTOR(SetFunctionNameNoPrefix);
                     CallRuntime(setFunctionNameNoPrefix, glue, GetWord64Constant(FAST_STUB_ID(SetFunctionNameNoPrefix)),
-                                    { glue, acc, *propKey });
+                                    { glue, acc, propKey });
                     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
                         GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
                 }
             }
         }
     }
-    Bind(&notHeapObject);
+    Bind(&slowPath);
     {
-        receiver = GetVregValue(sp, v0);
-        GateRef propKey1 = GetVregValue(sp, v1);
         StubDescriptor *stOwnByValueWithNameSet = GET_STUBDESCRIPTOR(StOwnByValueWithNameSet);
         GateRef res = CallRuntime(stOwnByValueWithNameSet, glue, GetWord64Constant(FAST_STUB_ID(StOwnByValueWithNameSet)),
-                                    { glue, *receiver, propKey1, acc });
+                                    { glue, receiver, propKey, acc });
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
@@ -1920,7 +1918,6 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
         Bind(&notException1);
         Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
-        Return();
     }
 }
 
@@ -1935,9 +1932,10 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
     GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
     GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
     GateRef stringId = ReadInst32_1(pc);
-    GateRef v0 = ZExtInt8ToPtr(ReadInst8_5(pc));
-    DEFVARIABLE(receiver, MachineType::TAGGED, GetVregValue(sp, v0));
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
+    GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
     Label isJSObject(env);
     Label notJSObject(env);
     Label notClassConstructor(env);
@@ -1947,17 +1945,16 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
     Label notException(env);
     Label isException1(env);
     Label notException1(env);
-    Branch(IsJSObject(*receiver), &isJSObject, &notJSObject);
+    Branch(IsJSObject(receiver), &isJSObject, &notJSObject);
     Bind(&isJSObject);
     {
-        Branch(IsClassConstructor(*receiver), &notJSObject, &notClassConstructor);
+        Branch(IsClassConstructor(receiver), &notJSObject, &notClassConstructor);
         Bind(&notClassConstructor);
         {
-            Branch(IsClassPrototype(*receiver), &notJSObject, &notClassPrototype);
+            Branch(IsClassPrototype(receiver), &notJSObject, &notClassPrototype);
             Bind(&notClassPrototype);
             {
-                GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
-                GateRef res = SetPropertyByNameWithOwn(glue, *receiver, propKey, acc);
+                GateRef res = SetPropertyByNameWithOwn(glue, receiver, propKey, acc);
                 Branch(TaggedIsHole(res), &notJSObject, &notHole);
                 Bind(&notHole);
                 {
@@ -1978,11 +1975,9 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
     }
     Bind(&notJSObject);
     {
-        receiver = GetVregValue(sp, v0);
-        GateRef propKey1 = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
         StubDescriptor *stOwnByNameWithNameSet = GET_STUBDESCRIPTOR(StOwnByNameWithNameSet);
         GateRef res = CallRuntime(stOwnByNameWithNameSet, glue, GetWord64Constant(FAST_STUB_ID(StOwnByNameWithNameSet)),
-                                    { glue, *receiver, propKey1, acc });
+                                    { glue, receiver, propKey, acc });
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
@@ -1991,7 +1986,6 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
         Bind(&notException1);
         Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32_V8)));
-        Return();
     }
 }
 
