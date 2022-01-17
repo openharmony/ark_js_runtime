@@ -1162,6 +1162,21 @@ CALL_STUB_INIT_DESCRIPTOR(NegDyn)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(NotDyn)
+{
+    // 2 : 2 input parameters
+    StubDescriptor NotDyn("NotDyn", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = NotDyn;
+    // 2 : 2 input parameters
+    std::array<MachineType, 2> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(ResolveClass)
 {
     // 6 : 6 input parameters

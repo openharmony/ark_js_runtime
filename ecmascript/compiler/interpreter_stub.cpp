@@ -1593,6 +1593,69 @@ void HandleNegDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
 }
+
+void HandleNotDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2);
+    GateRef constpool = TaggedPointerArgument(3);
+    GateRef profileTypeInfo = TaggedPointerArgument(4);
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5));
+    GateRef hotnessCounter = Int32Argument(6);
+
+    GateRef vsrc = ReadInst8_1(pc);
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
+    DEFVARIABLE(number, MachineType::INT32, GetInt32Constant(0));
+    Label numberIsInt(env);
+    Label numberNotInt(env);
+    Label accDispatch(env);
+    Branch(TaggedIsInt(value), &numberIsInt, &numberNotInt);
+    Bind(&numberIsInt);
+    {
+        number = TaggedCastToInt32(value);
+        acc = IntBuildTaggedWithNoGC(Word32Not(*number));
+        Jump(&accDispatch);
+    }
+    Bind(&numberNotInt);
+    {
+
+        Label numberIsDouble(env);
+        Label numberNotDouble(env);
+        Branch(TaggedIsDouble(value), &numberIsDouble, &numberNotDouble);
+        Bind(&numberIsDouble);
+        {
+            GateRef valueDouble = TaggedCastToDouble(value);
+            number = CastDoubleToInt32(valueDouble);
+            acc = IntBuildTaggedWithNoGC(Word32Not(*number));
+            Jump(&accDispatch);
+        }
+        Bind(&numberNotDouble);
+        {
+            // slow path
+            StubDescriptor *NotDyn = GET_STUBDESCRIPTOR(NotDyn);
+            GateRef result = CallRuntime(NotDyn, glue, GetWord64Constant(FAST_STUB_ID(NotDyn)),
+                                        {glue, value});
+            Label isException(env);
+            Label notException(env);
+            Branch(TaggedIsException(result), &isException, &notException);
+            Bind(&isException);
+            {
+                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+            }
+            Bind(&notException);
+            acc = result;
+            Jump(&accDispatch);
+        }
+    }
+
+    Bind(&accDispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
+}
+
 void HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
