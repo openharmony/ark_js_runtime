@@ -80,7 +80,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleIterNextPrefV8, 7)                              \
     T(HandleCloseIteratorPrefV8, 7)                         \
     T(HandleCopyModulePrefV8, 7)                            \
-    V(HandleSuperCallSpreadPrefV8, 7)                       \
+    T(HandleSuperCallSpreadPrefV8, 7)                       \
     T(HandleDelObjPropPrefV8V8, 7)                          \
     T(HandleNewObjSpreadDynPrefV8V8, 7)                     \
     T(HandleCreateIterResultObjPrefV8V8, 7)                 \

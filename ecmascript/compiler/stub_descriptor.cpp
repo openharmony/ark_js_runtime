@@ -986,6 +986,23 @@ CALL_STUB_INIT_DESCRIPTOR(CopyModule)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(SuperCallSpread)
+{
+    // 4 : 4 input parameters
+    StubDescriptor superCallSpread("SuperCallSpread", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = superCallSpread;
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(DelObjProp)
 {
     // 3 : 3 input parameters
