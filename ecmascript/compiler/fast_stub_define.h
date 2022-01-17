@@ -53,6 +53,7 @@ namespace panda::ecmascript::kungfu {
     V(StOwnByValueWithNameSet, 4)           \
     V(StOwnByNameWithNameSet, 7)            \
     V(NegDyn, 2)                            \
+    V(NotDyn, 2)                            \
     V(IncDyn, 2)                            \
     V(DecDyn, 2)                            \
     V(ExpDyn, 3)                            \

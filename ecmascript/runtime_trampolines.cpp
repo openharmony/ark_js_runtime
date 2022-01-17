@@ -581,6 +581,12 @@ JSTaggedType RuntimeTrampolines::NegDyn(uintptr_t argGlue, JSTaggedType value)
     return SlowRuntimeStub::NegDyn(thread, JSTaggedValue(value)).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::NotDyn(uintptr_t argGlue, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::NotDyn(thread, JSTaggedValue(value)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal,
     JSTaggedType base, JSTaggedType lexenv, JSTaggedType constpool)
 {

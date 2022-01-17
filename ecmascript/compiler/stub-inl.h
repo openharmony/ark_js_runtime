@@ -749,6 +749,12 @@ GateRef Stub::CastDoubleToInt64(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_FLOAT64_TO_INT64), x);
 }
 
+GateRef Stub::CastDoubleToInt32(GateRef x)
+{
+    GateRef tmp = CastDoubleToInt64(x);
+    return ChangeInt64ToInt32(tmp);
+}
+
 GateRef Stub::TaggedTrue()
 {
     return GetWord64Constant(JSTaggedValue::VALUE_TRUE);

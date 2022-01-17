@@ -557,6 +557,7 @@ public:
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
+    inline GateRef CastDoubleToInt32(GateRef x);
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();
     // compare operation
