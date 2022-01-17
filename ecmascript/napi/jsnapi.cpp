@@ -262,27 +262,24 @@ bool JSNApi::StopDebugger(const char *library_path)
     return true;
 }
 
-bool JSNApi::Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> entry)
+bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry)
 {
-    std::string file = fileName->ToString();
-    std::string entryPoint = entry->ToString();
     std::vector<std::string> argv;
-    LOG_ECMA(DEBUG) << "start to execute ark file" << file;
-    if (!vm->ExecuteFromPf(file, entryPoint, argv)) {
-        LOG_ECMA(ERROR) << "Cannot execute ark file" << file;
-        std::cerr << "Cannot execute ark file '" << file << "' with entry '" << entryPoint << "'" << std::endl;
+    LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
+    if (!vm->ExecuteFromPf(fileName, entry, argv)) {
+        LOG_ECMA(ERROR) << "Cannot execute ark file" << fileName;
+        LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
     return true;
 }
 
-bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size, Local<StringRef> entry)
+bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size, const std::string &entry)
 {
-    std::string entryPoint = entry->ToString();
     std::vector<std::string> argv;
-    if (!vm->ExecuteFromBuffer(data, size, entryPoint, argv)) {
-        std::cerr << "Cannot execute panda file from memory "
-                  << "' with entry '" << entryPoint << "'" << std::endl;
+    if (!vm->ExecuteFromBuffer(data, size, entry, argv)) {
+        LOG_ECMA(ERROR) << "Cannot execute panda file from memory "
+                        << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
     return true;

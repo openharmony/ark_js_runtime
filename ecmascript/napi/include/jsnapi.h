@@ -865,8 +865,8 @@ public:
     static void DestroyJSVM(EcmaVM *ecmaVm);
 
     // JS code
-    static bool Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> entry);
-    static bool Execute(EcmaVM *vm, const uint8_t *data, int32_t size, Local<StringRef> entry);
+    static bool Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry);
+    static bool Execute(EcmaVM *vm, const uint8_t *data, int32_t size, const std::string &entry);
     static bool ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file);
     static Local<ObjectRef> GetExportObject(EcmaVM *vm, const std::string &file, const std::string &itemName);
 
