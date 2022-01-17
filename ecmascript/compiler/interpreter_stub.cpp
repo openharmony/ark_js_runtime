@@ -1710,6 +1710,104 @@ void HandleFldaiDynImm64Stub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM64)));
 }
 
+void HandleJeqzImm8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    DEFVARIABLE(profileTypeInfo, MachineType::TAGGED_POINTER, TaggedPointerArgument(4)); /* 4: 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    DEFVARIABLE(hotnessCounter, MachineType::INT32, TaggedArgument(6)); /* 6: 7th parameter is value */
+    GateRef offset = ReadInstSigned8_0(pc);
+    Label accEqualFalse(env);
+    Label accNotEqualFalse(env);
+    Label accIsInt(env);
+    Label accNotInt(env);
+    Label accEqualZero(env);
+    Label accIsDouble(env);
+    Label last(env);
+    Branch(Word64Equal(ChangeTaggedPointerToInt64(acc), TaggedFalse()), &accEqualFalse, &accNotEqualFalse);
+    Bind(&accNotEqualFalse);
+    {
+        Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
+        Bind(&accIsInt);
+        {
+            Branch(Word32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accEqualFalse, &accNotInt);
+        }
+        Bind(&accNotInt);
+        {
+            Branch(TaggedIsDouble(acc), &accIsDouble, &last);
+            Bind(&accIsDouble);
+            {
+                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &accEqualFalse, &last);
+            }
+        }
+    }
+    Bind(&accEqualFalse);
+    {
+        hotnessCounter = Int32Add(offset, *hotnessCounter);
+        StubDescriptor *updateHotnessCounter = GET_STUBDESCRIPTOR(UpdateHotnessCounter);
+        profileTypeInfo = CallRuntime(updateHotnessCounter, glue,
+            GetWord64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { glue, sp });
+        Dispatch(glue, pc, sp, constpool, *profileTypeInfo, acc, *hotnessCounter, SExtInt32ToPtr(offset));
+    }
+    Bind(&last);
+    Dispatch(glue, pc, sp, constpool, *profileTypeInfo, acc, *hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleJeqzImm16Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    DEFVARIABLE(profileTypeInfo, MachineType::TAGGED_POINTER, TaggedPointerArgument(4)); /* 4: 5th parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    DEFVARIABLE(hotnessCounter, MachineType::INT32, TaggedArgument(6)); /* 6: 7th parameter is value */
+    GateRef offset = ReadInstSigned16_0(pc);
+    Label accEqualFalse(env);
+    Label accNotEqualFalse(env);
+    Label accIsInt(env);
+    Label accNotInt(env);
+    Label accEqualZero(env);
+    Label accIsDouble(env);
+    Label last(env);
+    Branch(Word64Equal(ChangeTaggedPointerToInt64(acc), TaggedFalse()), &accEqualFalse, &accNotEqualFalse);
+    Bind(&accNotEqualFalse);
+    {
+        Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
+        Bind(&accIsInt);
+        {
+            Branch(Word32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accEqualFalse, &accNotInt);
+        }
+        Bind(&accNotInt);
+        {
+            Branch(TaggedIsDouble(acc), &accIsDouble, &last);
+            Bind(&accIsDouble);
+            {
+                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &accEqualFalse, &last);
+            }
+        }
+    }
+    Bind(&accEqualFalse);
+    {
+        hotnessCounter = Int32Add(offset, *hotnessCounter);
+        StubDescriptor *updateHotnessCounter = GET_STUBDESCRIPTOR(UpdateHotnessCounter);
+        profileTypeInfo = CallRuntime(updateHotnessCounter, glue,
+            GetWord64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { glue, sp });
+        Dispatch(glue, pc, sp, constpool, *profileTypeInfo, acc, *hotnessCounter, SExtInt32ToPtr(offset));
+    }
+    Bind(&last);
+    Dispatch(glue, pc, sp, constpool, *profileTypeInfo, acc, *hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
+}
+
 void HandleImportModulePrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
