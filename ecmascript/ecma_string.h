@@ -260,7 +260,7 @@ public:
 
     static EcmaString *AllocStringObject(size_t length, bool compressed, const EcmaVM *vm);
 
-    static bool CanBeCompressed(const uint8_t *utf8Data);
+    static bool CanBeCompressed(const uint8_t *utf8Data,  uint32_t utf8Len = UINT32_MAX);
     static bool CanBeCompressed(const uint16_t *utf16Data, uint32_t utf16Len);
 
 private:
