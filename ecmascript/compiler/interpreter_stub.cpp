@@ -1573,7 +1573,7 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
                 Bind(&tryPoly);
                 {
                     cachedHandler = CheckPolyHClass(firstValue, hclass);
-                    Jump(&loadWithHandler);
+                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &loadWithHandler);
                 }
 
                 Bind(&loadWithHandler);
