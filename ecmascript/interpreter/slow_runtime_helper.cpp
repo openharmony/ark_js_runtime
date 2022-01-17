@@ -112,7 +112,7 @@ JSTaggedValue ConstructGeneric(JSThread *thread, JSHandle<JSFunction> ctor, JSHa
         obj = JSHandle<JSTaggedValue>(factory->NewJSObjectByConstructor(ctor, newTgt));
     }
     uint32_t preArgsSize = preArgs->IsUndefined() ? 0 : JSHandle<TaggedArray>::Cast(preArgs)->GetLength();
-    const array_size_t size = preArgsSize + argsCount;
+    const uint32_t size = preArgsSize + argsCount;
     CVector<JSTaggedType> values;
     values.reserve(size);
 
@@ -131,17 +131,17 @@ JSTaggedValue ConstructGeneric(JSThread *thread, JSHandle<JSFunction> ctor, JSHa
     // add preArgs when boundfunction is encountered
     if (preArgsSize > 0) {
         JSHandle<TaggedArray> tgaPreArgs = JSHandle<TaggedArray>::Cast(preArgs);
-        for (array_size_t i = 0; i < preArgsSize; ++i) {
+        for (uint32_t i = 0; i < preArgsSize; ++i) {
             JSTaggedValue value = tgaPreArgs->Get(i);
             values.emplace_back(value.GetRawData());
         }
-        for (array_size_t i = 0; i < argsCount; ++i) {
+        for (uint32_t i = 0; i < argsCount; ++i) {
             JSTaggedValue value = frameHandler.GetVRegValue(baseArgLocation + i);
             values.emplace_back(value.GetRawData());
         }
         params.argv = values.data();
     } else {
-        for (array_size_t i = 0; i < argsCount; ++i) {
+        for (uint32_t i = 0; i < argsCount; ++i) {
             JSTaggedValue value = frameHandler.GetVRegValue(baseArgLocation + i);
             values.emplace_back(value.GetRawData());
         }
@@ -212,17 +212,17 @@ JSTaggedValue ConstructProxy(JSThread *thread, JSHandle<JSProxy> ctor, JSHandle<
 
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     uint32_t preArgsSize = preArgs->IsUndefined() ? 0 : JSHandle<TaggedArray>::Cast(preArgs)->GetLength();
-    const array_size_t size = preArgsSize + argsCount;
+    const uint32_t size = preArgsSize + argsCount;
     JSHandle<TaggedArray> args = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(size);
     JSHandle<TaggedArray> tgaPreArgs = JSHandle<TaggedArray>::Cast(preArgs);
     if (preArgsSize > 0) {
-        for (array_size_t i = 0; i < preArgsSize; ++i) {
+        for (uint32_t i = 0; i < preArgsSize; ++i) {
             JSTaggedValue value = tgaPreArgs->Get(i);
             args->Set(thread, i, value);
         }
     }
     InterpretedFrameHandler frameHandler(thread);
-    for (array_size_t i = 0; i < argsCount; ++i) {
+    for (uint32_t i = 0; i < argsCount; ++i) {
         JSTaggedValue value = frameHandler.GetVRegValue(baseArgLocation + i);
         args->Set(thread, i + preArgsSize, value);
     }

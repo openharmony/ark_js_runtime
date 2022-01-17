@@ -445,14 +445,14 @@ JSTaggedValue SlowRuntimeStub::CreateObjectWithExcludedKeys(JSThread *thread, ui
 
     ASSERT(objVal.IsJSObject());
     JSHandle<JSObject> obj(thread, objVal);
-    array_size_t numExcludedKeys = 0;
+    uint32_t numExcludedKeys = 0;
     JSHandle<TaggedArray> excludedKeys = factory->NewTaggedArray(numKeys + 1);
     InterpretedFrameHandler frameHandler(thread);
     JSTaggedValue excludedKey = frameHandler.GetVRegValue(firstArgRegIdx);
     if (!excludedKey.IsUndefined()) {
         numExcludedKeys = numKeys + 1;
         excludedKeys->Set(thread, 0, excludedKey);
-        for (array_size_t i = 1; i < numExcludedKeys; i++) {
+        for (uint32_t i = 1; i < numExcludedKeys; i++) {
             excludedKey = frameHandler.GetVRegValue(firstArgRegIdx + i);
             excludedKeys->Set(thread, i, excludedKey);
         }
@@ -672,7 +672,7 @@ JSTaggedValue SlowRuntimeStub::NewObjSpreadDyn(JSThread *thread, JSTaggedValue f
 
     uint32_t length = JSHandle<JSArray>::Cast(jsArray)->GetArrayLength();
     JSHandle<TaggedArray> argsArray = factory->NewTaggedArray(length);
-    for (array_size_t i = 0; i < length; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
         auto prop = JSTaggedValue::GetProperty(thread, jsArray, i).GetValue();
         argsArray->Set(thread, i, prop);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -1060,8 +1060,8 @@ JSTaggedValue SlowRuntimeStub::CopyDataProperties(JSThread *thread, JSTaggedValu
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
         JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-        array_size_t keysLen = keys->GetLength();
-        for (array_size_t i = 0; i < keysLen; i++) {
+        uint32_t keysLen = keys->GetLength();
+        for (uint32_t i = 0; i < keysLen; i++) {
             PropertyDescriptor desc(thread);
             key.Update(keys->Get(i));
             bool success = JSTaggedValue::GetOwnProperty(thread, srcHandle, key, desc);
@@ -1102,7 +1102,7 @@ JSTaggedValue SlowRuntimeStub::GetUnmapedArgs(JSThread *thread, JSTaggedType *sp
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs);
-    for (array_size_t i = 0; i < actualNumArgs; ++i) {
+    for (uint32_t i = 0; i < actualNumArgs; ++i) {
         argumentsList->Set(thread, i,
                            JSTaggedValue(sp[startIdx + i]));  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
@@ -1495,9 +1495,9 @@ JSTaggedValue SlowRuntimeStub::StArraySpread(JSThread *thread, JSTaggedValue dst
     if (srcHandle->IsString()) {
         JSHandle<EcmaString> srcString = JSTaggedValue::ToString(thread, srcHandle);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        array_size_t dstLen = index.GetInt();
-        array_size_t strLen = srcString->GetLength();
-        for (array_size_t i = 0; i < strLen; i++) {
+        uint32_t dstLen = index.GetInt();
+        uint32_t strLen = srcString->GetLength();
+        for (uint32_t i = 0; i < strLen; i++) {
             uint16_t res = srcString->At<false>(i);
             JSHandle<JSTaggedValue> strValue(factory->NewFromUtf16Literal(&res, 1));
             JSTaggedValue::SetProperty(thread, dstHandle, dstLen + i, strValue, true);

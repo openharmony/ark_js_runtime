@@ -256,16 +256,16 @@ JSHandle<TaggedArray> JSTypedArray::OwnPropertyKeys(JSThread *thread, const JSHa
     // 3. Let len be the value of O’s [[ArrayLength]] internal slot.
     JSHandle<JSObject> arrayObj(typedarray);
     JSHandle<TaggedArray> objKeys = JSObject::GetOwnPropertyKeys(thread, arrayObj);
-    array_size_t objKeysLen = objKeys->GetLength();
-    array_size_t bufferKeysLen = TypedArrayHelper::GetArrayLength(thread, arrayObj);
-    array_size_t length = objKeysLen + bufferKeysLen;
+    uint32_t objKeysLen = objKeys->GetLength();
+    uint32_t bufferKeysLen = TypedArrayHelper::GetArrayLength(thread, arrayObj);
+    uint32_t length = objKeysLen + bufferKeysLen;
     JSHandle<TaggedArray> nameList = factory->NewTaggedArray(length);
 
     // 4. For each integer i starting with 0 such that i < len, in ascending order,
     //   a. Add ToString(i) as the last element of keys.
-    array_size_t copyLength = 0;
+    uint32_t copyLength = 0;
     JSMutableHandle<JSTaggedValue> tKey(thread, JSTaggedValue::Undefined());
-    for (array_size_t k = 0; k < bufferKeysLen; k++) {
+    for (uint32_t k = 0; k < bufferKeysLen; k++) {
         tKey.Update(JSTaggedValue(k));
         JSHandle<JSTaggedValue> sKey(JSTaggedValue::ToString(thread, tKey));
         nameList->Set(thread, copyLength, sKey.GetTaggedValue());
@@ -275,7 +275,7 @@ JSHandle<TaggedArray> JSTypedArray::OwnPropertyKeys(JSThread *thread, const JSHa
     // 5. For each own property key P of O such that Type(P) is String and P is not an integer index, in
     // property creation order
     //   a. Add P as the last element of keys.
-    for (array_size_t i = 0; i < objKeysLen; i++) {
+    for (uint32_t i = 0; i < objKeysLen; i++) {
         JSTaggedValue key = objKeys->Get(i);
         if (JSTaggedValue(key).IsString()) {
             nameList->Set(thread, copyLength, key);
@@ -285,7 +285,7 @@ JSHandle<TaggedArray> JSTypedArray::OwnPropertyKeys(JSThread *thread, const JSHa
 
     // 6. For each own property key P of O such that Type(P) is Symbol, in property creation order
     //   a. Add P as the last element of keys.
-    for (array_size_t i = 0; i < objKeysLen; i++) {
+    for (uint32_t i = 0; i < objKeysLen; i++) {
         JSTaggedValue key = objKeys->Get(i);
         if (JSTaggedValue(key).IsSymbol()) {
             nameList->Set(thread, copyLength, key);

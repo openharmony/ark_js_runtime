@@ -77,9 +77,9 @@ constexpr uint8_t INTL_INDEX_EIGHT = 8;
 
 class JSIntlIterator : public icu::Locale::Iterator {
 public:
-    JSIntlIterator(const JSHandle<TaggedArray> &data, array_size_t length) : length_(length), curIdx_(0)
+    JSIntlIterator(const JSHandle<TaggedArray> &data, uint32_t length) : length_(length), curIdx_(0)
     {
-        for (array_size_t idx = 0; idx < length; idx++) {
+        for (uint32_t idx = 0; idx < length; idx++) {
             std::string str = base::StringHelper::ToStdString(EcmaString::Cast(data->Get(idx).GetTaggedObject()));
             data_.emplace_back(str);
         }
@@ -112,8 +112,8 @@ public:
 
 private:
     std::vector<std::string> data_{};
-    array_size_t length_{0};
-    array_size_t curIdx_{0};
+    uint32_t length_{0};
+    uint32_t curIdx_{0};
     icu::Locale locale_{};
 };
 

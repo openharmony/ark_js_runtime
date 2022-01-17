@@ -1180,7 +1180,7 @@ HWTEST_F_L0(JSObjectTest, NoticeThroughChain)
     JSTaggedValue listeners1Value = ProtoChangeDetails::Cast(protoDetails1.GetTaggedObject())->GetChangeListener();
     EXPECT_TRUE(listeners1Value != JSTaggedValue(0));
     JSHandle<ChangeListener> listeners1(thread, listeners1Value.GetTaggedObject());
-    array_size_t holeIndex = ChangeListener::CheckHole(listeners1);
+    uint32_t holeIndex = ChangeListener::CheckHole(listeners1);
     EXPECT_TRUE(holeIndex == 0);
 
     JSTaggedValue protoDetails2 = obj2Dynclass->GetProtoChangeDetails();

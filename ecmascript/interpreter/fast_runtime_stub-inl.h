@@ -248,7 +248,7 @@ PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle
     }
 
     JSMutableHandle<TaggedArray> array(thread, objHandle->GetProperties());
-    array_size_t length = array->GetLength();
+    uint32_t length = array->GetLength();
     if (length == 0) {
         length = JSObject::MIN_PROPERTIES_LENGTH;
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -259,7 +259,7 @@ PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle
     if (!array->IsDictionaryMode()) {
         attr.SetIsInlinedProps(false);
 
-        array_size_t nonInlinedProps = objHandle->GetJSHClass()->GetNextNonInlinedPropsIndex();
+        uint32_t nonInlinedProps = objHandle->GetJSHClass()->GetNextNonInlinedPropsIndex();
         ASSERT(length >= nonInlinedProps);
         // if array is full, grow array or change to dictionary mode
         if (length == nonInlinedProps) {
@@ -273,7 +273,7 @@ PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle
                 return attr;
             }
             // Grow properties array size
-            array_size_t capacity = JSObject::ComputePropertyCapacity(length);
+            uint32_t capacity = JSObject::ComputePropertyCapacity(length);
             ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
             array.Update(factory->CopyArray(array, length, capacity).GetTaggedValue());
             objHandle->SetProperties(thread, array.GetTaggedValue());

@@ -862,7 +862,7 @@ void Stub::SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray)
 
 GateRef Stub::GetLengthofTaggedArray(GateRef array)
 {
-    return Load(MachineType::UINT32, array, GetArchRelateConstant(TaggedArray::GetLengthOffset()));
+    return Load(MachineType::UINT32, array, GetArchRelateConstant(TaggedArray::LENGTH_OFFSET));
 }
 
 GateRef Stub::IsJSHClass(GateRef obj)
@@ -1348,7 +1348,7 @@ void Stub::SetValueToTaggedArray(MachineType valType, GateRef glue, GateRef arra
     // NOTE: need to translate MarkingBarrier
     GateRef offset =
         ArchRelatePtrMul(ChangeInt32ToUintPtr(index), GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = PtrAdd(offset, GetArchRelateConstant(TaggedArray::GetDataOffset()));
+    GateRef dataOffset = PtrAdd(offset, GetArchRelateConstant(TaggedArray::DATA_OFFSET));
     Store(valType, glue, array, dataOffset, val);
 }
 
@@ -1356,7 +1356,7 @@ GateRef Stub::GetValueFromTaggedArray(MachineType returnType, GateRef array, Gat
 {
     GateRef offset =
         ArchRelatePtrMul(ChangeInt32ToUintPtr(index), GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = PtrAdd(offset, GetArchRelateConstant(TaggedArray::GetDataOffset()));
+    GateRef dataOffset = PtrAdd(offset, GetArchRelateConstant(TaggedArray::DATA_OFFSET));
     return Load(returnType, array, dataOffset);
 }
 
@@ -1372,7 +1372,7 @@ void Stub::UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef inde
     SetValueToTaggedArray(MachineType::TAGGED, glue, elements, valueIndex, value);
     GateRef attroffset =
         ArchRelatePtrMul(ChangeInt32ToUintPtr(attributesIndex), GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()));
-    GateRef dataOffset = PtrAdd(attroffset, GetArchRelateConstant(TaggedArray::GetDataOffset()));
+    GateRef dataOffset = PtrAdd(attroffset, GetArchRelateConstant(TaggedArray::DATA_OFFSET));
     Store(MachineType::INT64, glue, elements, dataOffset, IntBuildTaggedWithNoGC(attr));
 }
 
@@ -1429,7 +1429,7 @@ GateRef Stub::GetKeyFromDictionary(MachineType returnType, GateRef elements, Gat
     Label gtLength(env);
     Label notGtLength(env);
     GateRef dictionaryLength =
-        Load(MachineType::INT32, elements, GetArchRelateConstant(panda::coretypes::Array::GetLengthOffset()));
+        Load(MachineType::INT32, elements, GetArchRelateConstant(TaggedArray::LENGTH_OFFSET));
     GateRef arrayIndex =
         Int32Add(GetInt32Constant(DictionaryT::TABLE_HEADER_SIZE),
                  Int32Mul(entry, GetInt32Constant(DictionaryT::ENTRY_SIZE)));
@@ -1474,7 +1474,7 @@ GateRef Stub::GetPropertiesAddrFromLayoutInfo(GateRef layout)
 {
     GateRef eleStartIdx = ArchRelatePtrMul(GetArchRelateConstant(LayoutInfo::ELEMENTS_START_INDEX),
         GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()));
-    return PtrAdd(layout, PtrAdd(GetArchRelateConstant(TaggedArray::GetDataOffset()), eleStartIdx));
+    return PtrAdd(layout, PtrAdd(GetArchRelateConstant(TaggedArray::DATA_OFFSET), eleStartIdx));
 }
 
 GateRef Stub::TaggedCastToInt64(GateRef x)

@@ -381,7 +381,7 @@ void JSHClass::RegisterOnProtoChain(const JSThread *thread, const JSHandle<JSHCl
         } else {
             listenersHandle = JSHandle<ChangeListener>(thread, listeners);
         }
-        array_size_t registerIndex = 0;
+        uint32_t registerIndex = 0;
         JSHandle<ChangeListener> newListeners = ChangeListener::Add(thread, listenersHandle, user, &registerIndex);
         userDetails->SetRegisterIndex(thread, JSTaggedValue(registerIndex));
         protoDetails->SetChangeListener(thread, newListeners.GetTaggedValue());
@@ -402,7 +402,7 @@ bool JSHClass::UnregisterOnProtoChain(const JSThread *thread, const JSHandle<JSH
         return listeners != JSTaggedValue(0);
     }
     JSHandle<ProtoChangeDetails> currentDetails = GetProtoChangeDetails(thread, jshclass);
-    array_size_t index = currentDetails->GetRegisterIndex().GetArrayLength();
+    uint32_t index = currentDetails->GetRegisterIndex().GetArrayLength();
     if (JSTaggedValue(index) == JSTaggedValue(ProtoChangeDetails::UNREGISTERED)) {
         return false;
     }
@@ -457,7 +457,7 @@ void JSHClass::NoticeThroughChain(const JSThread *thread, const JSHandle<JSHClas
         return;
     }
     ChangeListener *listeners = ChangeListener::Cast(listenersValue.GetTaggedObject());
-    for (array_size_t i = 0; i < listeners->GetEnd(); i++) {
+    for (uint32_t i = 0; i < listeners->GetEnd(); i++) {
         JSTaggedValue temp = listeners->Get(i);
         if (temp.IsJSHClass()) {
             NoticeThroughChain(thread, JSHandle<JSHClass>(thread, listeners->Get(i).GetTaggedObject()));

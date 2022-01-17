@@ -267,9 +267,9 @@ CString JSHClass::DumpJSType(JSType type)
 static void DumpArrayClass(JSThread *thread, const TaggedArray *arr, std::ostream &os)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    array_size_t len = arr->GetLength();
+    uint32_t len = arr->GetLength();
     os << " <TaggedArray[" << std::dec << len << "]>\n";
-    for (array_size_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < len; i++) {
         JSTaggedValue val(arr->Get(i));
         if (!val.IsHole()) {
             os << std::right << std::setw(DUMP_PROPERTY_OFFSET) << i << ": ";
@@ -1943,8 +1943,8 @@ static void DumpArrayClass([[maybe_unused]] JSThread *thread, const TaggedArray 
                            std::vector<std::pair<CString, JSTaggedValue>> &vec)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    array_size_t len = arr->GetLength();
-    for (array_size_t i = 0; i < len; i++) {
+    uint32_t len = arr->GetLength();
+    for (uint32_t i = 0; i < len; i++) {
         JSTaggedValue val(arr->Get(i));
         CString str = ToCString(i);
         vec.push_back(std::make_pair(str, val));
