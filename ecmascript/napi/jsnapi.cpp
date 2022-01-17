@@ -1068,6 +1068,9 @@ bool PromiseCapabilityRef::Resolve(const EcmaVM *vm, Local<JSValueRef> value)
     arguments->MakeArgv(arg);
     JSFunction::Call(thread, resolve, undefined, 1, arguments->GetArgv());
     RETURN_VALUE_IF_ABRUPT(thread, false);
+
+    vm->ExecutePromisePendingJob();
+    RETURN_VALUE_IF_ABRUPT(thread, false);
     return true;
 }
 
@@ -1083,6 +1086,9 @@ bool PromiseCapabilityRef::Reject(const EcmaVM *vm, Local<JSValueRef> reason)
     InternalCallParams *arguments = thread->GetInternalCallParams();
     arguments->MakeArgv(arg);
     JSFunction::Call(thread, reject, undefined, 1, arguments->GetArgv());
+    RETURN_VALUE_IF_ABRUPT(thread, false);
+
+    vm->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT(thread, false);
     return true;
 }
