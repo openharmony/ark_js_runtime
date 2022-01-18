@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_OBJECT_FACTORY_H
 #define ECMASCRIPT_OBJECT_FACTORY_H
 
+#include <cstring>
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/js_function_kind.h"
