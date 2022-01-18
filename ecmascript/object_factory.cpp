@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-#include <cstring>
-
 #include "ecma_string_table.h"
 #include "ecma_vm.h"
 #include "ecmascript/accessor_data.h"
@@ -2067,24 +2065,21 @@ JSHandle<ClassInfoExtractor> ObjectFactory::NewClassInfoExtractor(JSMethod *ctor
 JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
 {
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    uint32_t utf8Len = strlen((const char *)utf8Data);
-    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, utf8Len);
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, data.length());
     return GetStringFromStringTable(utf8Data, data.length(), canBeCompress);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromCanBeCompressString(const CString &data)
 {
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    uint32_t utf8Len = strlen((const char *)utf8Data);
-    ASSERT(EcmaString::CanBeCompressed(utf8Data, utf8Len));
+    ASSERT(EcmaString::CanBeCompressed(utf8Data, data.length()));
     return GetStringFromStringTable(utf8Data, data.length(), true);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
 {
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    uint32_t utf8Len = strlen((const char *)utf8Data);
-    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, utf8Len);
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, data.length());
     return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
 }
 
