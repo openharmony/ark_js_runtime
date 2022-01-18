@@ -26,17 +26,17 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdTruePref, 7)                                  \
     T(HandleLdFalsePref, 7)                                 \
     T(HandleThrowDynPref, 7)                                \
-    V(HandleTypeOfDynPref, 7)                               \
+    T(HandleTypeOfDynPref, 7)                               \
     T(HandleLdLexEnvDynPref, 7)                             \
     T(HandlePopLexEnvDynPref, 7)                            \
     V(HandleGetUnmappedArgsPref, 7)                         \
-    V(HandleGetPropIteratorPref, 7)                         \
-    V(HandleAsyncFunctionEnterPref, 7)                      \
+    T(HandleGetPropIteratorPref, 7)                         \
+    T(HandleAsyncFunctionEnterPref, 7)                      \
     T(HandleLdHolePref, 7)                                  \
     V(HandleReturnUndefinedPref, 7)                         \
     V(HandleCreateEmptyObjectPref, 7)                       \
     V(HandleCreateEmptyArrayPref, 7)                        \
-    V(HandleGetIteratorPref, 7)                             \
+    T(HandleGetIteratorPref, 7)                             \
     V(HandleThrowThrowNotExistsPref, 7)                     \
     V(HandleThrowPatternNonCoerciblePref, 7)                \
     T(HandleLdHomeObjectPref, 7)                            \

@@ -644,6 +644,16 @@ GateRef Stub::TaggedIsHeapObject(GateRef x)
                   SExtInt1ToInt32(Word32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), GetInt32Constant(0)))));
 }
 
+GateRef Stub::TaggedIsGeneratorObject(GateRef x)
+{
+    GateRef isHeapObj = SExtInt1ToInt32(TaggedIsHeapObject(x));
+    GateRef objType = GetObjectType(LoadHClass(x));
+    GateRef isGeneratorObj = Word32Or(
+        SExtInt1ToInt32(Word32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::JS_GENERATOR_OBJECT)))), 
+        SExtInt1ToInt32(Word32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::JS_ASYNC_FUNC_OBJECT)))));
+    return TruncInt32ToInt1(Word32And(isHeapObj, isGeneratorObj));
+}
+
 GateRef Stub::TaggedIsPropertyBox(GateRef x)
 {
     return TruncInt32ToInt1(

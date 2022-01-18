@@ -87,7 +87,10 @@ namespace panda::ecmascript::kungfu {
     V(ImportModule, 2)                      \
     V(StModuleVar, 3)                       \
     V(LdModvarByName, 3)                    \
-    V(ThrowDyn, 2)
+    V(ThrowDyn, 2)                          \
+    V(GetPropIterator, 2)                   \
+    V(AsyncFunctionEnter, 1)                \
+    V(GetIterator, 2)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
