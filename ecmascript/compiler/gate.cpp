@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/compiler/gate.h"
+#include "ecmascript/class_linker/bytecode_circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
 constexpr size_t ONE_DEPEND = 1;
@@ -614,7 +615,7 @@ bool Gate::Verify() const
     }
     if (failed) {
         std::cerr << "[Verifier][Error] Gate level input list schema verify failed" << std::endl;
-        Print(true, highlightIdx);
+        Print("",true, highlightIdx);
         std::cerr << "Note: " << errorString << std::endl;
     }
     return !failed;
@@ -780,8 +781,8 @@ bool In::IsGateNull() const
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, SecondaryOp secondaryOp)
-    : id_(id), opcode_(opcode), bitValue_(bitValue), type_(type), secondaryOp_(secondaryOp), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
+Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark)
+    : id_(id), opcode_(opcode), bitValue_(bitValue), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
 {
     auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {
@@ -797,8 +798,8 @@ Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate
     }
 }
 
-Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark, SecondaryOp secondaryOp)
-    : id_(id), opcode_(opcode), type_(type), secondaryOp_(secondaryOp), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
+Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark)
+    : id_(id), opcode_(opcode), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
 {
     auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {
@@ -1041,12 +1042,14 @@ std::string Gate::ValueCodeStr(ValueCode valCode) const
     return "ValueCode-" + std::to_string(valCode);
 }
 
-void Gate::Print(bool inListPreview, size_t highlightIdx) const
+void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) const
 {
     if (GetOpCode() != OpCode::NOP) {
         std::cerr << std::dec << "("
                   << "id=" << id_ << ", "
                   << "op=" << GetOpCode().Str() << ", "
+                  << ((bytecode.compare("") == 0) ? "" : "bytecode=") << bytecode
+                  << ((bytecode.compare("") == 0) ? "" : ", ")
                   << "valCode=" << ValueCodeStr(GetValueCode()) << ", "
                   << "bitfield=" << std::to_string(bitfield_) << ", "
                   << "type=" << static_cast<uint32_t>(type_) << ", "
@@ -1054,15 +1057,15 @@ void Gate::Print(bool inListPreview, size_t highlightIdx) const
                   << "mark=" << static_cast<uint32_t>(mark_) << ", ";
         std::cerr << "in="
                   << "[";
-        for (size_t idx = 0; idx < GetNumIns(); idx++) {
-            std::cerr << std::dec << ((idx == 0) ? "" : " ") << ((idx == highlightIdx) ? "\033[4;31m" : "")
-                      << ((IsInGateNull(idx)
-                                 ? "N"
-                                 : (std::to_string(GetInGateConst(idx)->GetId()) +
-                                       (inListPreview ? std::string(":" + GetInGateConst(idx)->GetOpCode().Str())
-                                                      : std::string("")))))
-                      << ((idx == highlightIdx) ? "\033[0m" : "");
-        }
+        auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
+        size_t idx = 0;
+        idx = PrintInGate(numInsArray[0], idx, 0, inListPreview, highlightIdx);
+        idx = PrintInGate(numInsArray[0] + numInsArray[1], idx, numInsArray[0], inListPreview, highlightIdx);
+        idx = PrintInGate(numInsArray[0] + numInsArray[1] + numInsArray[2], idx, numInsArray[0] + numInsArray[1],
+                          inListPreview, highlightIdx);
+        PrintInGate(numInsArray[0] + numInsArray[1] + numInsArray[2] + numInsArray[3], idx,
+                    numInsArray[0] + numInsArray[1] + numInsArray[2], inListPreview, highlightIdx, true);
+
         std::cerr << "]"
                   << ", ";
         std::cerr << "out="
@@ -1083,6 +1086,29 @@ void Gate::Print(bool inListPreview, size_t highlightIdx) const
         std::cerr << "]"
                   << ")" << std::endl;
     }
+}
+
+size_t Gate::PrintInGate(size_t numIns, size_t idx, size_t size, bool inListPreview, size_t highlightIdx,
+                         bool isEnd) const
+{
+    std::cerr << "[";
+    for (; idx < numIns; idx++) {
+        std::cerr << std::dec << ((idx == size) ? "" : " ") << ((idx == highlightIdx) ? "\033[4;31m" : "")
+                  << ((IsInGateNull(idx)
+                       ? "N"
+                       : (std::to_string(GetInGateConst(idx)->GetId()) +
+                          (inListPreview ? std::string(":" + GetInGateConst(idx)->GetOpCode().Str())
+                                         : std::string("")))))
+                  << ((idx == highlightIdx) ? "\033[0m" : "");
+    }
+    std::cerr << "]"
+              << ((isEnd) ? "" : ", ");
+    return idx;
+}
+
+void Gate::PrintByteCode(std::string bytecode) const
+{
+    Print(bytecode);
 }
 
 MarkCode Gate::GetMark(TimeStamp stamp) const

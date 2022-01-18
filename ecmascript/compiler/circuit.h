@@ -27,7 +27,9 @@
 #include "libpandabase/macros.h"
 #include "securec.h"
 
-namespace panda::ecmascript::kungfu {
+namespace panda::ecmascript {
+class ByteCodeCircuitBuilder;
+namespace kungfu {
 const size_t INITIAL_SPACE = 1U << 0U;  // this should be tuned
 const size_t MAX_SPACE = 1U << 24U;     // this should be tuned
 const size_t SCALE_RATE = 1U << 1U;     // this should be tuned
@@ -42,16 +44,17 @@ public:
     Circuit(Circuit &&circuit) = default;
     Circuit &operator=(Circuit &&circuit) = default;
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
+                    TypeCode type, MarkCode mark = MarkCode::EMPTY);
     GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+                    MarkCode mark = MarkCode::EMPTY);
 
     GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+                    MarkCode mark = MarkCode::EMPTY);
     GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+                    MarkCode mark = MarkCode::EMPTY);
     void PrintAllGates() const;
+    void PrintAllGates(panda::ecmascript::ByteCodeCircuitBuilder &builder) const;
     [[nodiscard]] std::vector<GateRef> GetAllGates() const;
     [[nodiscard]] static GateRef GetCircuitRoot(OpCode opcode);
     void AdvanceTime() const;
@@ -109,6 +112,7 @@ private:
     std::vector<uint8_t> dataSection;
     panda::ecmascript::FrameType frameType {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
 };
-}  // namespace panda::ecmascript::kungfu
+}  // namespace panda::ecmascript
+}  // kungfu
 
 #endif  // ECMASCRIPT_COMPILER_CIRCUIT_H

@@ -15,6 +15,7 @@
 
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/compiler_macros.h"
+#include "ecmascript/class_linker/bytecode_circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
 Circuit::Circuit() : space({}), circuitSize(0), gateCounter(0), time(1), dataSection({})
@@ -123,6 +124,20 @@ void Circuit::PrintAllGates() const
     const auto &gateList = this->GetAllGates();
     for (const auto &gate : gateList) {
         this->LoadGatePtrConst(gate)->Print();
+    }
+}
+
+void Circuit::PrintAllGates(panda::ecmascript::ByteCodeCircuitBuilder &builder) const
+{
+    const auto &gateList = this->GetAllGates();
+    for (const auto &gate : gateList) {
+        if (this->LoadGatePtrConst(gate)->GetOpCode() == OpCode::JS_BYTECODE) {
+            [[maybe_unused]]auto pc = builder.GetGateToByteCode().at(gate).second;
+            auto bytecodeStr = builder.ByteCodeStr(pc);
+            this->LoadGatePtrConst(gate)->PrintByteCode(bytecodeStr);
+        } else {
+            this->LoadGatePtrConst(gate)->Print();
+        }
     }
 }
 
