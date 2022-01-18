@@ -41,6 +41,8 @@ public:
     static constexpr int CONCURRENT_MARKING_BITFIELD_NUM = 2;
     using MarkStatusBits = BitField<MarkStatus, 0, CONCURRENT_MARKING_BITFIELD_NUM>;
     using Address = uintptr_t;
+    using VMNeedSuspensionBit = MarkStatusBits::NextFlag;
+    using VMHasSuspendedBit = VMNeedSuspensionBit::NextFlag;
     static JSThread *Cast(ManagedThread *thread)
     {
         ASSERT(thread != nullptr);
@@ -255,7 +257,35 @@ public:
         return status == MarkStatus::MARK_FINISHED;
     }
 
-    bool CheckSafepoint() const;
+    void SetVMNeedSuspension(bool flag)
+    {
+        uint64_t newVal = VMNeedSuspensionBit::Update(threadStateBitField_, flag);
+        threadStateBitField_ = newVal;
+    }
+
+    bool VMNeedSuspension()
+    {
+        return VMNeedSuspensionBit::Decode(threadStateBitField_);
+    }
+
+    bool CheckSafepoint();
+
+    void SuspendVM();
+
+    void ResumeVM();
+
+    bool NotifyVMThreadSuspension();
+
+    void SetVMSuspened(bool flag)
+    {
+        uint64_t newVal = VMHasSuspendedBit::Update(threadStateBitField_, flag);
+        threadStateBitField_ = newVal;
+    }
+
+    bool IsVMSuspended()
+    {
+        return VMHasSuspendedBit::Decode(threadStateBitField_);
+    }
 
     void SetGetStackSignal(bool isParseStack)
     {
@@ -335,6 +365,10 @@ private:
     bool getStackSignal_ {false};
     bool gcState_ {false};
     volatile uint64_t threadStateBitField_ {0ULL};
+    os::memory::Mutex vmThreadSuspensionMutex_;
+    os::memory::ConditionVariable vmThreadNeedSuspensionCV_;
+    os::memory::ConditionVariable vmThreadHasSuspendedCV_;
+
     JSTaggedType *frameBase_ {nullptr};
     bool stableArrayElementsGuardians_ {true};
     InternalCallParams *internalCallParams_ {nullptr};

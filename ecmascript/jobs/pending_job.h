@@ -24,8 +24,15 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/mem/c_containers.h"
+#ifndef PANDA_TARGET_LINUX
+    #include "hitrace/hitraceid.h"
+#endif
 
 namespace panda::ecmascript::job {
+#ifndef PANDA_TARGET_LINUX
+    using namespace OHOS::HiviewDFX;
+#endif
+
 class PendingJob final : public Record {
 public:
     static PendingJob *Cast(ObjectHeader *object)
@@ -52,6 +59,11 @@ public:
     DECL_DUMP()
 
     DECL_VISIT_OBJECT(JOB_OFFSET, SIZE)
+#ifndef PANDA_TARGET_LINUX
+#if ECMASCRIPT_ENABLE_HITRACE
+    HiTraceId traceId;
+#endif
+#endif
 };
 }  // namespace panda::ecmascript::job
 #endif  // ECMASCRIPT_JOBS_PENDING_JOB_H
