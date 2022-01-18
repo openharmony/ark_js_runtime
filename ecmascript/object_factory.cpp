@@ -2065,21 +2065,24 @@ JSHandle<ClassInfoExtractor> ObjectFactory::NewClassInfoExtractor(JSMethod *ctor
 JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
 {
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
+    uint32_t utf8Len = strlen(utf8Data);
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, utf8Len);
     return GetStringFromStringTable(utf8Data, data.length(), canBeCompress);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromCanBeCompressString(const CString &data)
 {
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    ASSERT(EcmaString::CanBeCompressed(utf8Data));
+    uint32_t utf8Len = strlen(utf8Data);
+    ASSERT(EcmaString::CanBeCompressed(utf8Data, utf8Len));
     return GetStringFromStringTable(utf8Data, data.length(), true);
 }
 
 JSHandle<EcmaString> ObjectFactory::NewFromStdString(const std::string &data)
 {
     auto utf8Data = reinterpret_cast<const uint8_t *>(data.c_str());
-    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data);
+    uint32_t utf8Len = strlen(utf8Data);
+    bool canBeCompress = EcmaString::CanBeCompressed(utf8Data, utf8Len);
     return GetStringFromStringTable(utf8Data, data.size(), canBeCompress);
 }
 

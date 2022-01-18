@@ -246,9 +246,6 @@ bool EcmaString::CanBeCompressed(const uint8_t *utf8Data, uint32_t utf8Len)
     }
     bool isCompressed = true;
     uint32_t index = 0;
-    if (utf8Len == UINT32_MAX) {
-        utf8Len = strlen((const char *)utf8Data);
-    }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     while (index < utf8Len) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
