@@ -91,17 +91,22 @@ public:
     NO_MOVE_SEMANTIC(ByteCodeCircuitBuilder);
     void BytecodeToCircuit(std::vector<uint8_t *> pcArr, const panda_file::File &pf, const JSMethod *method);
 
-    kungfu::Circuit GetCircuit() {
+    kungfu::Circuit GetCircuit()
+    {
         return circuit_;
     }
 
-    std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>> GetGateToByteCode() {
+    std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>> GetGateToByteCode()
+    {
         return gateToByteCode_;
     }
 
-    std::map<uint8_t *, kungfu::GateRef> GetByteCodeToGate() {
+    std::map<uint8_t *, kungfu::GateRef> GetByteCodeToGate()
+    {
         return byteCodeToGate_;
     }
+
+    std::string PUBLIC_API ByteCodeStr(uint8_t *pc) const;
 
 private:
     void CollectBytecodeBlockInfo(uint8_t* pc,

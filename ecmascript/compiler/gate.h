@@ -26,10 +26,14 @@
 #include <type_traits>
 #include <vector>
 
-#include "libpandabase/macros.h"
 #include "ecmascript/compiler/type.h"
+//#include "ecmascript/class_linker/bytecode_circuit_builder.h"
+#include "libpandabase/macros.h"
 
-namespace panda::ecmascript::kungfu {
+namespace panda::ecmascript {
+class ByteCodeCircuitBuilder;
+
+namespace kungfu {
 using GateRef = int32_t; // for external users
 using GateId = uint32_t;
 using GateOp = uint8_t;
@@ -237,10 +241,8 @@ private:
 class Gate {
 public:
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark,
-        SecondaryOp secondaryOp = 0);
-    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark,
-        SecondaryOp secondaryOp = 0);
+    Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark);
+    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark);
     [[nodiscard]] static size_t GetGateSize(size_t numIns);
     [[nodiscard]] size_t GetGateSize() const;
     [[nodiscard]] static size_t GetOutListSize(size_t numIns);
@@ -277,7 +279,10 @@ public:
     [[nodiscard]] BitField GetBitField() const;
     void SetBitField(BitField bitfield);
     void AppendIn(const Gate *in);  // considered very slow
-    void Print(bool inListPreview = false, size_t highlightIdx = -1) const;
+    void Print(std::string bytecode = "", bool inListPreview = false, size_t highlightIdx = -1) const;
+    size_t PrintInGate(size_t numIns, size_t idx, size_t size, bool inListPreview, size_t highlightIdx,
+                       bool isEnd = false) const;
+    void PrintByteCode(std::string bytecode) const;
     std::optional<std::pair<std::string, size_t>> CheckNullInput() const;
     std::optional<std::pair<std::string, size_t>> CheckStateInput() const;
     std::optional<std::pair<std::string, size_t>> CheckValueInput() const;
@@ -305,7 +310,6 @@ private:
     OpCode opcode_;
     ValueCode bitValue_ = ValueCode::NOVALUE;
     TypeCode type_;
-    SecondaryOp secondaryOp_;
     TimeStamp stamp_;
     MarkCode mark_;
     BitField bitfield_;
@@ -315,6 +319,7 @@ private:
     // in(2)
     // ...
 };
-}  // namespace panda::ecmascript::kungfu
+} // namespace panda::ecmascript
+} // namespace kungfu
 
 #endif  // ECMASCRIPT_COMPILER_GATE_H
