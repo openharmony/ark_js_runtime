@@ -130,6 +130,145 @@ void HandleThrowDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
 }
 
+void HandleTypeOfDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    GateRef gConstOffset = PtrAdd(glue, GetArchRelateConstant(env->GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
+    GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
+    GateRef gConstUndefindStr = Load(MachineType::TAGGED_POINTER, gConstOffset, booleanIndex);
+    DEFVARIABLE(resultRep, MachineType::TAGGED_POINTER, gConstUndefindStr);
+    Label objIsTrue(env);
+    Label objNotTrue(env);
+    Label dispatch(env);
+    Label defaultLabel(env);
+    GateRef gConstBooleanStr = Load(
+        MachineType::TAGGED_POINTER, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+    Branch(Word64Equal(*acc, GetWord64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
+    Bind(&objIsTrue);
+    {
+        resultRep = gConstBooleanStr;
+        Jump(&dispatch);
+    }
+    Bind(&objNotTrue);
+    {
+        Label objIsFalse(env);
+        Label objNotFalse(env);
+        Branch(Word64Equal(*acc, GetWord64Constant(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
+        Bind(&objIsFalse);
+        {
+            resultRep = gConstBooleanStr;
+            Jump(&dispatch);
+        }
+        Bind(&objNotFalse);
+        {
+            Label objIsNull(env);
+            Label objNotNull(env);
+            Branch(Word64Equal(*acc, GetWord64Constant(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
+            Bind(&objIsNull);
+            {
+                resultRep = Load(
+                    MachineType::TAGGED_POINTER, gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                Jump(&dispatch);
+            }
+            Bind(&objNotNull);
+            {
+                Label objIsUndefined(env);
+                Label objNotUndefined(env);
+                Branch(Word64Equal(*acc, GetWord64Constant(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
+                    &objNotUndefined);
+                Bind(&objIsUndefined);
+                {
+                    resultRep = Load(MachineType::TAGGED_POINTER, gConstOffset,
+                        GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
+                    Jump(&dispatch);
+                }
+                Bind(&objNotUndefined);
+                Jump(&defaultLabel);
+            }
+        }
+    }
+    Bind(&defaultLabel);
+    {
+        Label objIsHeapObject(env);
+        Label objNotHeapObject(env);
+        Branch(TaggedIsHeapObject(*acc), &objIsHeapObject, &objNotHeapObject);
+        Bind(&objIsHeapObject);
+        {
+            Label objIsString(env);
+            Label objNotString(env);
+            Branch(IsString(*acc), &objIsString, &objNotString);
+            Bind(&objIsString);
+            {
+                resultRep = Load(
+                    MachineType::TAGGED_POINTER, gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
+                Jump(&dispatch);
+            }
+            Bind(&objNotString);
+            {
+                Label objIsSymbol(env);
+                Label objNotSymbol(env);
+                Branch(IsSymbol(*acc), &objIsSymbol, &objNotSymbol);
+                Bind(&objIsSymbol);
+                {
+                    resultRep = Load(MachineType::TAGGED_POINTER, gConstOffset,
+                        GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
+                    Jump(&dispatch);
+                }
+                Bind(&objNotSymbol);
+                {
+                    Label objIsCallable(env);
+                    Label objNotCallable(env);
+                    Branch(IsCallable(*acc), &objIsCallable, &objNotCallable);
+                    Bind(&objIsCallable);
+                    {
+                        resultRep = Load(
+                            MachineType::TAGGED_POINTER, gConstOffset,
+                            GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
+                        Jump(&dispatch);
+                    }
+                    Bind(&objNotCallable);
+                    {
+                        resultRep = Load(
+                            MachineType::TAGGED_POINTER, gConstOffset,
+                            GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                        Jump(&dispatch);
+                    }
+                }
+            }
+        }
+        Bind(&objNotHeapObject);
+        {
+            Label objIsNum(env);
+            Label objNotNum(env);
+            Branch(TaggedIsNumber(*acc), &objIsNum, &objNotNum);
+            Bind(&objIsNum);
+            {
+                resultRep = Load(
+                    MachineType::TAGGED_POINTER, gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
+                Jump(&dispatch);
+            }
+            Bind(&objNotNum);
+            Jump(&dispatch);
+        }
+    }
+    Bind(&dispatch);
+    acc = *resultRep;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
 void HandleLdLexEnvDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
@@ -168,6 +307,62 @@ void HandlePopLexEnvDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }
 
+void HandleGetPropIteratorPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    StubDescriptor *getPropIterator = GET_STUBDESCRIPTOR(GetPropIterator);
+    GateRef res = CallRuntime(getPropIterator, glue, GetWord64Constant(FAST_STUB_ID(GetPropIterator)),
+                              {glue, *acc});
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+    }
+    Bind(&notException);
+    acc = res;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleAsyncFunctionEnterPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    StubDescriptor *asyncFunctionEnter = GET_STUBDESCRIPTOR(AsyncFunctionEnter);
+    GateRef res = CallRuntime(asyncFunctionEnter, glue, GetWord64Constant(FAST_STUB_ID(AsyncFunctionEnter)),
+                              {glue});
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+    }
+    Bind(&notException);
+    acc = res;
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
 void HandleLdHolePrefStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
@@ -181,6 +376,47 @@ void HandleLdHolePrefStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
     
     acc = GetHoleConstant();
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void HandleGetIteratorPrefStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+    
+    Label isGeneratorObj(env);
+    Label notGeneratorObj(env);
+    Label dispatch(env);
+    Branch(TaggedIsGeneratorObject(*acc), &isGeneratorObj, &notGeneratorObj);
+    Bind(&isGeneratorObj);
+    {
+        Jump(&dispatch);
+    }
+    Bind(&notGeneratorObj);
+    {
+        StubDescriptor *getIterator = GET_STUBDESCRIPTOR(GetIterator);
+        GateRef res = CallRuntime(getIterator, glue, GetWord64Constant(FAST_STUB_ID(GetIterator)),
+                                  {glue, *acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(res), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        }
+        Bind(&notException);
+        acc = res;
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
 }

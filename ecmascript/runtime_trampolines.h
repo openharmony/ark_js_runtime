@@ -124,6 +124,9 @@ public:
     static void StModuleVar(uintptr_t argGlue, JSTaggedType exportName, JSTaggedType exportObj);
     static JSTaggedType LdModvarByName(uintptr_t argGlue, JSTaggedType moduleObj, JSTaggedType itemName);
     static void ThrowDyn(uintptr_t argGlue, JSTaggedType value);
+    static JSTaggedType GetPropIterator(uintptr_t argGlue, JSTaggedType value);
+    static JSTaggedType AsyncFunctionEnter(uintptr_t argGlue);
+    static JSTaggedType GetIterator(uintptr_t argGlue, JSTaggedType obj);
 };
 }  // namespace panda::ecmascript
 #endif

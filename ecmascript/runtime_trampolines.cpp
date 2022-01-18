@@ -698,4 +698,22 @@ void RuntimeTrampolines::ThrowDyn(uintptr_t argGlue, JSTaggedType value)
     auto thread = JSThread::GlueToJSThread(argGlue);
     SlowRuntimeStub::ThrowDyn(thread, JSTaggedValue(value));
 }
+
+JSTaggedType RuntimeTrampolines::GetPropIterator(uintptr_t argGlue, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::GetPropIterator(thread, JSTaggedValue(value)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::AsyncFunctionEnter(uintptr_t argGlue)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::AsyncFunctionEnter(thread).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::GetIterator(uintptr_t argGlue, JSTaggedType obj)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::GetIterator(thread, JSTaggedValue(obj)).GetRawData();
+}
 }  // namespace panda::ecmascript
