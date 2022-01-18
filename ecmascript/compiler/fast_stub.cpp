@@ -1240,18 +1240,4 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(GetHoleConstant(MachineType::UINT64));
 }
 
-void AsmInterpreterEntryStub::GenerateCircuit(const CompilationConfig *cfg)
-{
-    Stub::GenerateCircuit(cfg);
-    // auto env = GetEnvironment();
-    GateRef glue = PtrArgument(0);
-    GateRef pc = PtrArgument(1);
-    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
-    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
-    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
-    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
-    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
-
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
-}
 }  // namespace panda::ecmascript::kungfu

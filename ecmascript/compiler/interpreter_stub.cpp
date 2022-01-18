@@ -1,4 +1,4 @@
-#include "interpreter_stub.h"
+#include "interpreter_stub-inl.h"
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
@@ -127,7 +127,7 @@ void HandleThrowDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     StubDescriptor *throwDyn = GET_STUBDESCRIPTOR(ThrowDyn);
     CallRuntime(throwDyn, glue, GetWord64Constant(FAST_STUB_ID(ThrowDyn)),
                 {glue, acc});
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
 }
 
 void HandleTypeOfDynPrefStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -327,7 +327,7 @@ void HandleGetPropIteratorPrefStub::GenerateCircuit(const CompilationConfig *cfg
     Branch(TaggedIsException(res), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = res;
@@ -355,7 +355,7 @@ void HandleAsyncFunctionEnterPrefStub::GenerateCircuit(const CompilationConfig *
     Branch(TaggedIsException(res), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = res;
@@ -410,7 +410,7 @@ void HandleGetIteratorPrefStub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsException(res), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
         }
         Bind(&notException);
         acc = res;
@@ -453,6 +453,21 @@ void HandleDebuggerPrefStub::GenerateCircuit(const CompilationConfig *cfg)
     
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+void AsmInterpreterEntryStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    // auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5rd parameter is value */
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
 }
 
 void SingleStepDebuggingStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -910,7 +925,7 @@ void HandleIncDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
         }
         Bind(&notException);
         acc = result;
@@ -979,7 +994,7 @@ void HandleDecDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
         }
         Bind(&notException);
         acc = result;
@@ -1013,7 +1028,7 @@ void HandleExpDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1043,7 +1058,7 @@ void HandleIsInDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1073,7 +1088,7 @@ void HandleInstanceOfDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1187,7 +1202,7 @@ void HandleCreateGeneratorObjPrefV8Stub::GenerateCircuit(const CompilationConfig
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1212,7 +1227,7 @@ void HandleThrowConstAssignmentPrefV8Stub::GenerateCircuit(const CompilationConf
     StubDescriptor *throwConstAssignment = GET_STUBDESCRIPTOR(ThrowConstAssignment);
     CallRuntime(throwConstAssignment, glue, GetWord64Constant(FAST_STUB_ID(ThrowConstAssignment)),
                 {glue, value});
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
 }
 
 void HandleGetTemplateObjectPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -1237,7 +1252,7 @@ void HandleGetTemplateObjectPrefV8Stub::GenerateCircuit(const CompilationConfig 
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1267,7 +1282,7 @@ void HandleGetNextPropNamePrefV8Stub::GenerateCircuit(const CompilationConfig *c
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1301,7 +1316,7 @@ void HandleThrowIfNotObjectPrefV8Stub::GenerateCircuit(const CompilationConfig *
     StubDescriptor *throwIfNotObject = GET_STUBDESCRIPTOR(ThrowIfNotObject);
     CallRuntime(throwIfNotObject, glue, GetWord64Constant(FAST_STUB_ID(ThrowIfNotObject)),
                 {glue});
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
 }
 
 void HandleIterNextPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -1326,7 +1341,7 @@ void HandleIterNextPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1356,7 +1371,7 @@ void HandleCloseIteratorPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1407,7 +1422,7 @@ void HandleSuperCallSpreadPrefV8Stub::GenerateCircuit(const CompilationConfig *c
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1439,7 +1454,7 @@ void HandleDelObjPropPrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1471,7 +1486,7 @@ void HandleNewObjSpreadDynPrefV8V8Stub::GenerateCircuit(const CompilationConfig 
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1503,7 +1518,7 @@ void HandleCreateIterResultObjPrefV8V8Stub::GenerateCircuit(const CompilationCon
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1536,7 +1551,7 @@ void HandleAsyncFunctionAwaitUncaughtPrefV8V8Stub::GenerateCircuit(const Compila
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1573,7 +1588,7 @@ void HandleThrowUndefinedIfHolePrefV8V8Stub::GenerateCircuit(const CompilationCo
     StubDescriptor *throwUndefinedIfHole = GET_STUBDESCRIPTOR(ThrowUndefinedIfHole);
     CallRuntime(throwUndefinedIfHole, glue, GetWord64Constant(FAST_STUB_ID(ThrowUndefinedIfHole)),
                 {glue, obj});
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
 }
 
 void HandleCopyDataPropertiesPrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
@@ -1600,7 +1615,7 @@ void HandleCopyDataPropertiesPrefV8V8Stub::GenerateCircuit(const CompilationConf
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1632,7 +1647,7 @@ void HandleStArraySpreadPrefV8V8Stub::GenerateCircuit(const CompilationConfig *c
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1664,7 +1679,7 @@ void HandleGetIteratorNextPrefV8V8Stub::GenerateCircuit(const CompilationConfig 
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1696,7 +1711,7 @@ void HandleSetObjectWithProtoPrefV8V8Stub::GenerateCircuit(const CompilationConf
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     acc = result;
@@ -1725,7 +1740,7 @@ void HandleStConstToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationC
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
@@ -1753,7 +1768,7 @@ void HandleStLetToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationCon
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
@@ -1781,7 +1796,7 @@ void HandleStClassToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationC
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(6));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&notException);
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
@@ -1847,7 +1862,7 @@ void HandleNegDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
             Branch(TaggedIsException(result), &isException, &notException);
             Bind(&isException);
             {
-                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
             }
             Bind(&notException);
             acc = result;
@@ -1909,7 +1924,7 @@ void HandleNotDynPrefV8Stub::GenerateCircuit(const CompilationConfig *cfg)
             Branch(TaggedIsException(result), &isException, &notException);
             Bind(&isException);
             {
-                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
             }
             Bind(&notException);
             acc = result;
@@ -1971,8 +1986,7 @@ void HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8Stub::GenerateCircuit(cons
     Branch(TaggedIsException(*res), &isException, &isNotException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
-            GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID16_IMM16_IMM16_V8_V8)));
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
     }
     Bind(&isNotException);
     GateRef newLexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));  // slow runtime may gc
@@ -2048,7 +2062,7 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
         Bind(&tryFastPath);
         {
             Label notHole(env);
-            GateRef stringId = ZExtInt8ToInt32(ReadInst32_1(pc));
+            GateRef stringId = ReadInst32_1(pc);
             GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
             auto stubDescriptor = GET_STUBDESCRIPTOR(GetPropertyByName);
             GateRef result = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(GetPropertyByName)), {
@@ -2065,7 +2079,7 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
     {
         Label isException(env);
         Label noException(env);
-        GateRef stringId = ZExtInt8ToInt32(ReadInst32_1(pc));
+        GateRef stringId = ReadInst32_1(pc);
         GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
         auto stubDescriptor = GET_STUBDESCRIPTOR(LoadICByName);
         GateRef result = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(LoadICByName)), {
@@ -2075,7 +2089,7 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
         Branch(TaggedIsException(result), &isException, &noException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter, GetArchRelateConstant(0));
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
         }
         Bind(&noException);
         acc = result;
@@ -2129,7 +2143,7 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
                     Branch(TaggedIsException(res), &isException, &notException);
                     Bind(&isException);
                     {
-                        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+                        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
                     }
                     Bind(&notException);
                     StubDescriptor *setFunctionNameNoPrefix = GET_STUBDESCRIPTOR(SetFunctionNameNoPrefix);
@@ -2149,7 +2163,7 @@ void HandleStOwnByValueWithNameSetPrefV8V8Stub::GenerateCircuit(const Compilatio
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
         }
         Bind(&notException1);
         Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
@@ -2197,7 +2211,7 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
                     Branch(TaggedIsException(res), &isException, &notException);
                     Bind(&isException);
                     {
-                        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+                        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
                     }
                     Bind(&notException);
                     StubDescriptor *setFunctionNameNoPrefix = GET_STUBDESCRIPTOR(SetFunctionNameNoPrefix);
@@ -2217,7 +2231,7 @@ void HandleStOwnByNameWithNameSetPrefId32V8Stub::GenerateCircuit(const Compilati
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
         }
         Bind(&notException1);
         Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
