@@ -512,7 +512,7 @@ bool EcmaVM::IsFrameworkPandaFile(std::string_view filename) const
            filename.substr(filename.size() - frameworkAbcFileName_.size()) == frameworkAbcFileName_;
 }
 
-JSHandle<JSTaggedValue> EcmaVM::GetEcmaUncaughtException() const
+JSHandle<JSTaggedValue> EcmaVM::GetAndClearEcmaUncaughtException() const
 {
     if (thread_->GetException().IsHole()) {
         return JSHandle<JSTaggedValue>();
@@ -520,6 +520,15 @@ JSHandle<JSTaggedValue> EcmaVM::GetEcmaUncaughtException() const
     JSHandle<JSTaggedValue> exceptionHandle(thread_, thread_->GetException());
     thread_->ClearException();  // clear for ohos app
 
+    return exceptionHandle;
+}
+
+JSHandle<JSTaggedValue> EcmaVM::GetEcmaUncaughtException() const
+{
+    if (thread_->GetException().IsHole()) {
+        return JSHandle<JSTaggedValue>();
+    }
+    JSHandle<JSTaggedValue> exceptionHandle(thread_, thread_->GetException());
     return exceptionHandle;
 }
 

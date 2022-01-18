@@ -59,6 +59,10 @@ ohos_shared_library("libark_ecma_debugger") {
     "//ark/js_runtime:libark_jsruntime",
   ]
 
+  if (!is_linux) {
+    external_deps = [ "hitrace_native:libhitrace" ]
+  }
+
   if (!is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime" ]
   }
@@ -95,6 +99,10 @@ ohos_shared_library("libark_ecma_debugger_test") {
     ":libark_ecma_debugger_test_static",
     "//ark/js_runtime:libark_jsruntime_test_static",
   ]
+
+  if (!is_linux) {
+    external_deps = [ "hitrace_native:libhitrace" ]
+  }
 
   configs = [
     ":ark_ecma_debugger_config",
