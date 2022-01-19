@@ -48,7 +48,6 @@ namespace panda::ecmascript::kungfu {
     V(JumpToCInterpreter, 7)                \
     V(DebugPrint, 1)                        \
     V(StGlobalRecord, 4)                    \
-    V(SetPropertyByValue, 4)                \
     V(SetFunctionNameNoPrefix, 3)           \
     V(StOwnByValueWithNameSet, 4)           \
     V(StOwnByNameWithNameSet, 7)            \
@@ -80,6 +79,7 @@ namespace panda::ecmascript::kungfu {
     V(GetIteratorNext, 3)                   \
     V(SetObjectWithProto, 3)                \
     V(LoadICByValue, 5)                     \
+    V(StoreICByValue, 6)                    \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \
@@ -111,6 +111,7 @@ namespace panda::ecmascript::kungfu {
     V(GetPropertyByIndex, 3)        \
     V(SetPropertyByIndex, 4)        \
     V(GetPropertyByValue, 3)        \
+    V(SetPropertyByValue, 4)        \
     V(TryLoadICByName, 4)           \
     V(TryLoadICByValue, 5)          \
     V(TryStoreICByName, 5)          \

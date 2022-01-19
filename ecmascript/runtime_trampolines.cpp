@@ -595,6 +595,26 @@ JSTaggedType RuntimeTrampolines::LoadICByValue(uintptr_t argGlue, JSTaggedType p
     return icRuntime.LoadMiss(receiverHandle, keyHandle).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::StoreICByValue(uintptr_t argGlue, JSTaggedType profileTypeInfo,
+                                                JSTaggedType receiver, JSTaggedType propKey, JSTaggedType value,
+                                                int32_t slotId)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    INTERPRETER_TRACE(thread, StoreICByValue);
+
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    auto profileHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(profileTypeInfo));
+    if (profileHandle->IsUndefined()) {
+        return SlowRuntimeStub::StObjByValue(thread,
+            JSTaggedValue(receiver), JSTaggedValue(propKey), JSTaggedValue(value)).GetRawData();
+    }
+    auto receiverHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(receiver));
+    auto keyHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(propKey));
+    auto valueHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(value));
+    StoreICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileHandle), slotId, ICKind::StoreIC);
+    return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
@@ -667,12 +687,6 @@ JSTaggedType RuntimeTrampolines::LoadICByName(uintptr_t argGlue, JSTaggedType pr
     }
     LoadICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileHandle), slotId, ICKind::NamedLoadIC);
     return icRuntime.LoadMiss(receiverHandle, keyHandle).GetRawData();
-}
-
-JSTaggedType RuntimeTrampolines::SetPropertyByValue(uintptr_t argGlue, JSTaggedType argRreceiver, JSTaggedType argKey, JSTaggedType argValue)
-{
-    auto thread = JSThread::GlueToJSThread(argGlue);
-    return FastRuntimeStub::SetPropertyByValue(thread, JSTaggedValue(argRreceiver), JSTaggedValue(argKey), JSTaggedValue(argValue)).GetRawData();
 }
 
 void RuntimeTrampolines::SetFunctionNameNoPrefix(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType argName)

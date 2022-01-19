@@ -1281,11 +1281,12 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    // uint16_t slotId = READ_INST_8_0();
+    // slotId = READ_INST_8_0()
     GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
     Label receiverIsHeapObject(env);
-    Label dispatch(env);
     Label slowPath(env);
+    Label isException(env);
+    Label accDispatch(env);
     Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
     Bind(&receiverIsHeapObject);
     {
@@ -1295,7 +1296,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
-            // JSTaggedValue firstValue = profileTypeArray->Get(slotId);
+            // firstValue = profileTypeArray->Get(slotId)
             GateRef firstValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
             // if (LIKELY(firstValue.IsHeapObject())) {
             Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
@@ -1303,6 +1304,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
             {
                 Label loadElement(env);
                 Label tryPoly(env);
+                // secondValue = profileTypeArray->Get(slotId + 1)
                 GateRef secondValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo,
                         Int32Add(slotId, GetInt32Constant(1)));
                 DEFVARIABLE(cachedHandler, MachineType::TAGGED, secondValue);
@@ -1316,8 +1318,11 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
                     Label notHole(env);
                     Branch(TaggedIsHole(result), &slowPath, &notHole);
                     Bind(&notHole);
+                    Label notException(env);
+                    Branch(TaggedIsException(result), &isException, &notException);
+                    Bind(&notException);
                     varAcc = result;
-                    Jump(&dispatch);
+                    Jump(&accDispatch);
                 }
                 Bind(&tryPoly);
                 {
@@ -1325,29 +1330,34 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
                     Branch(Word64Equal(firstValue, propKey), &firstIsKey, &slowPath);
                     Bind(&firstIsKey);
                     Label loadWithHandler(env);
-                    cachedHandler = CheckPolyHClass(firstValue, hclass);
+                    cachedHandler = CheckPolyHClass(secondValue, hclass);
                     Branch(TaggedIsHole(*cachedHandler), &slowPath, &loadWithHandler);
                     Bind(&loadWithHandler);
                     GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
                     Label notHole(env);
                     Branch(TaggedIsHole(result), &slowPath, &notHole);
                     Bind(&notHole);
+                    Label notException(env);
+                    Branch(TaggedIsException(result), &isException, &notException);
+                    Bind(&notException);
                     varAcc = result;
-                    Jump(&dispatch);
+                    Jump(&accDispatch);
                 }
             }
         }
         Bind(&tryFastPath);
         {
-            Label notHole(env);
             StubDescriptor *getPropertyByValue = GET_STUBDESCRIPTOR(GetPropertyByValue);
             GateRef result = CallRuntime(getPropertyByValue, glue, GetWord64Constant(FAST_STUB_ID(GetPropertyByValue)),
                                          {glue, receiver, propKey});
+            Label notHole(env);
             Branch(TaggedIsHole(result), &slowPath, &notHole);
-
             Bind(&notHole);
+            Label notException(env);
+            Branch(TaggedIsException(result), &isException, &notException);
+            Bind(&notException);
             varAcc = result;
-            Jump(&dispatch);
+            Jump(&accDispatch);
         }
     }
     Bind(&slowPath);
@@ -1355,20 +1365,108 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
         StubDescriptor *loadICByValue = GET_STUBDESCRIPTOR(LoadICByValue);
         GateRef result = CallRuntime(loadICByValue, glue, GetWord64Constant(FAST_STUB_ID(LoadICByValue)),
                                      {glue, profileTypeInfo, receiver, propKey, slotId});
-        // INTERPRETER_RETURN_IF_ABRUPT(res);
-        Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
-        Bind(&isException);
-        {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
-        }
         Bind(&notException);
         varAcc = result;
-        Jump(&dispatch);
+        Jump(&accDispatch);
     }
-    Bind(&dispatch);
+    Bind(&isException);
+    {
+        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+    }
+    Bind(&accDispatch);
     DISPATCH_WITH_ACC(PREF_V8_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    // slotId = READ_INST_8_0()
+    GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+    Label receiverIsHeapObject(env);
+    Label slowPath(env);
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
+    Bind(&receiverIsHeapObject);
+    {
+        Label tryIC(env);
+        Label tryFastPath(env);
+        Branch(TaggedIsUndefined(profileTypeInfo), &tryFastPath, &tryIC);
+        Bind(&tryIC);
+        {
+            Label isHeapObject(env);
+            // firstValue = profileTypeArray->Get(slotId)
+            GateRef firstValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+            // if (LIKELY(firstValue.IsHeapObject())) {
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Bind(&isHeapObject);
+            {
+                Label storeElement(env);
+                Label tryPoly(env);
+                // secondValue = profileTypeArray->Get(slotId + 1)
+                GateRef secondValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo,
+                        Int32Add(slotId, GetInt32Constant(1)));
+                DEFVARIABLE(cachedHandler, MachineType::TAGGED, secondValue);
+                GateRef hclass = LoadHClass(receiver);
+                Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+                       &storeElement, &tryPoly);
+                Bind(&storeElement);
+                {
+                    // acc is value
+                    GateRef result = ICStoreElement(glue, receiver, propKey, acc, TaggedGetInt(secondValue));
+                    Label notHole(env);
+                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Bind(&notHole);
+                    Branch(TaggedIsException(result), &isException, &notException);
+                }
+                Bind(&tryPoly);
+                {
+                    Label firstIsKey(env);
+                    Branch(Word64Equal(firstValue, propKey), &firstIsKey, &slowPath);
+                    Bind(&firstIsKey);
+                    Label loadWithHandler(env);
+                    cachedHandler = CheckPolyHClass(secondValue, hclass);
+                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &loadWithHandler);
+                    Bind(&loadWithHandler);
+                    GateRef result = StoreICWithHandler(glue, receiver, receiver, acc, *cachedHandler); // acc is value
+                    Label notHole(env);
+                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Bind(&notHole);
+                    Branch(TaggedIsException(result), &isException, &notException);
+                }
+            }
+        }
+        Bind(&tryFastPath);
+        {
+            StubDescriptor *setPropertyByValue = GET_STUBDESCRIPTOR(SetPropertyByValue);
+            GateRef result = CallRuntime(setPropertyByValue, glue, GetWord64Constant(FAST_STUB_ID(SetPropertyByValue)),
+                                         {glue, receiver, propKey, acc}); // acc is value
+            Label notHole(env);
+            Branch(TaggedIsHole(result), &slowPath, &notHole);
+            Bind(&notHole);
+            Branch(TaggedIsException(result), &isException, &notException);
+        }
+    }
+    Bind(&slowPath);
+    {
+        StubDescriptor *storeICByValue = GET_STUBDESCRIPTOR(StoreICByValue);
+        GateRef result = CallRuntime(storeICByValue, glue, GetWord64Constant(FAST_STUB_ID(StoreICByValue)),
+                                     {glue, profileTypeInfo, receiver, propKey, acc, slotId}); // acc is value
+        Branch(TaggedIsException(result), &isException, &notException);
+    }
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    DISPATCH(PREF_V8_V8);
 }
 
 DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
