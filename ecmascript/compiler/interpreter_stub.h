@@ -78,19 +78,27 @@ public:
     NO_MOVE_SEMANTIC(AsmInterpreterEntryStub);
     NO_COPY_SEMANTIC(AsmInterpreterEntryStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
+
+private:
+    void GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
+                             GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
 };
 
-#define DECLARE_HANDLE_STUB_CLASS(name, argc)                                         \
-    class name##Stub : public InterpreterStub {                                       \
-       public:                                                                        \
-        explicit name##Stub(Circuit *circuit) : InterpreterStub(#name, argc, circuit) \
-        {                                                                             \
-            circuit->SetFrameType(FrameType::INTERPRETER_FRAME);                      \
-        }                                                                             \
-        ~name##Stub() = default;                                                      \
-        NO_MOVE_SEMANTIC(name##Stub);                                                 \
-        NO_COPY_SEMANTIC(name##Stub);                                                 \
-        void GenerateCircuit(const CompilationConfig *cfg) override;                  \
+#define DECLARE_HANDLE_STUB_CLASS(name, argc)                                                   \
+    class name##Stub : public InterpreterStub {                                                 \
+       public:                                                                                  \
+        explicit name##Stub(Circuit *circuit) : InterpreterStub(#name, argc, circuit)           \
+        {                                                                                       \
+            circuit->SetFrameType(FrameType::INTERPRETER_FRAME);                                \
+        }                                                                                       \
+        ~name##Stub() = default;                                                                \
+        NO_MOVE_SEMANTIC(name##Stub);                                                           \
+        NO_COPY_SEMANTIC(name##Stub);                                                           \
+        void GenerateCircuit(const CompilationConfig *cfg) override;                            \
+                                                                                                \
+       private:                                                                                 \
+        void GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,       \
+                                 GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter); \
     };
     INTERPRETER_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
     DECLARE_HANDLE_STUB_CLASS(SingleStepDebugging, 7)

@@ -107,7 +107,8 @@ GateRef InterpreterStub::ReadInstSigned16_0(GateRef pc)
 {
     /* 2 : skip 8 bits of opcode and 8 bits of low bits */
     GateRef currentInst = Load(MachineType::INT8, pc, GetArchRelateConstant(2));
-    GateRef currentInst1 = GetEnvironment()->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT8_TO_INT32), currentInst);
+    GateRef currentInst1 = GetEnvironment()->GetCircuitBuilder().NewArithMeticGate(
+            OpCode(OpCode::SEXT_INT8_TO_INT32), currentInst);
     GateRef currentInst2 = Word32LSL(currentInst1, GetInt32Constant(8));  // 8 : set as high 8 bits
     return Int32Add(currentInst2, ZExtInt8ToInt32(ReadInst8_0(pc)));
 }
@@ -181,42 +182,50 @@ GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
 
 GateRef InterpreterStub::GetSpFromFrame(GateRef frame)
 {
-    return Load(MachineType::NATIVE_POINTER, frame, GetArchRelateConstant(InterpretedFrame::GetSpOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::NATIVE_POINTER, frame,
+        GetArchRelateConstant(InterpretedFrame::GetSpOffset(GetEnvironment()->IsArm32())));
 }
 
 GateRef InterpreterStub::GetConstpoolFromFrame(GateRef frame)
 {
-    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetConstpoolOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED, frame,
+        GetArchRelateConstant(InterpretedFrame::GetConstpoolOffset(GetEnvironment()->IsArm32())));
 }
 
 GateRef InterpreterStub::GetFunctionFromFrame(GateRef frame)
 {
-    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED, frame,
+        GetArchRelateConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArm32())));
 }
 
 GateRef InterpreterStub::GetProfileTypeInfoFromFrame(GateRef frame)
 {
-    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetProfileTypeInfoOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED, frame,
+        GetArchRelateConstant(InterpretedFrame::GetProfileTypeInfoOffset(GetEnvironment()->IsArm32())));
 }
 
 GateRef InterpreterStub::GetAccFromFrame(GateRef frame)
 {
-    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED, frame,
+        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
 }
 
 GateRef InterpreterStub::GetEnvFromFrame(GateRef frame)
 {
-    return Load(MachineType::TAGGED, frame, GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED, frame,
+        GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArm32())));
 }
 
 void InterpreterStub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef env)
 {
-    Store(MachineType::UINT64, glue, frame, GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArm32())), env);
+    Store(MachineType::UINT64, glue, frame,
+        GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArm32())), env);
 }
 
 GateRef InterpreterStub::LoadAccFromSp(GateRef glue, GateRef CurrentSp)
 {
-    return Load(MachineType::TAGGED, CurrentSp, GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED, CurrentSp,
+        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
 }
 
 void InterpreterStub::SavePc(GateRef glue, GateRef CurrentSp, GateRef pc)
@@ -226,12 +235,14 @@ void InterpreterStub::SavePc(GateRef glue, GateRef CurrentSp, GateRef pc)
 
 void InterpreterStub::SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc)
 {
-    Store(MachineType::UINT64, glue, GetFrame(CurrentSp), GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())), acc);
+    Store(MachineType::UINT64, glue, GetFrame(CurrentSp),
+        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())), acc);
 }
 
 GateRef InterpreterStub::RestoreAcc(GateRef CurrentSp)
 {
-    return Load(MachineType::TAGGED, GetFrame(CurrentSp), GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED, GetFrame(CurrentSp),
+        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
 }
 
 GateRef InterpreterStub::ReadInst32_0(GateRef pc)
