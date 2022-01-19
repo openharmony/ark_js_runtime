@@ -129,6 +129,9 @@ public:
     static JSTaggedType GetPropIterator(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType AsyncFunctionEnter(uintptr_t argGlue);
     static JSTaggedType GetIterator(uintptr_t argGlue, JSTaggedType obj);
+    static void ThrowThrowNotExists(uintptr_t argGlue);
+    static void ThrowPatternNonCoercible(uintptr_t argGlue);
+    static void ThrowDeleteSuperProperty(uintptr_t argGlue);
 };
 }  // namespace panda::ecmascript
 #endif

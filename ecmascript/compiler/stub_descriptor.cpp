@@ -1375,6 +1375,45 @@ CALL_STUB_INIT_DESCRIPTOR(GetIterator)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ThrowThrowNotExists)
+{
+    // 1 : 1 input parameters
+    StubDescriptor throwThrowNotExists("ThrowThrowNotExists", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = throwThrowNotExists;
+    std::array<MachineType, 1> params = { // 1 : 1 input parameters
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(ThrowPatternNonCoercible)
+{
+    // 1 : 1 input parameters
+    StubDescriptor throwPatternNonCoercible("ThrowPatternNonCoercible", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = throwPatternNonCoercible;
+    std::array<MachineType, 1> params = { // 1 : 1 input parameters
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(ThrowDeleteSuperProperty)
+{
+    // 1 : 1 input parameters
+    StubDescriptor throwDeleteSuperProperty("ThrowDeleteSuperProperty", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = throwDeleteSuperProperty;
+    std::array<MachineType, 1> params = { // 1 : 1 input parameters
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 #ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {
