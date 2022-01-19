@@ -142,10 +142,10 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
     ValueCode valueCode = CircuitBuilder::GetValueCodeFromMachineType(var->Type());
     if (!IsSealed()) {
         // only loopheader gate will be not sealed
-        int valueCounts = static_cast<int>(this->predecessors_.size()) + 1;
+        int valueCounts = static_cast<int>(predecessors_.size()) + 1;
         if (valueCode == ValueCode::NOVALUE) {
             val = env_->GetCircuitBuilder().NewSelectorGate(
-                OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_, valueCounts, var->Type());
+                OpCode(OpCode::DEPEND_SELECTOR), predeControl_, valueCounts, var->Type());
         } else {
             val = env_->GetCircuitBuilder().NewSelectorGate(
                 OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_, valueCounts, var->Type());
@@ -157,10 +157,10 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
     } else {
         if (valueCode == ValueCode::NOVALUE) {
             val = env_->GetCircuitBuilder().NewSelectorGate(
-                OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_, this->predecessors_.size(), var->Type());
+                OpCode(OpCode::DEPEND_SELECTOR), predeControl_, predecessors_.size(), var->Type());
         } else {
             val = env_->GetCircuitBuilder().NewSelectorGate(
-                OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_, this->predecessors_.size(), var->Type());
+                OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_, predecessors_.size(), var->Type());
         }
         env_->AddSelectorToLabel(val, Label(this));
         WriteVariable(var, val);
@@ -240,7 +240,7 @@ void LabelImpl::MergeAllDepend()
 
     //  Merge all depends to depend_seclector
     std::vector<GateRef> dependsList;
-    for (auto prede : this->GetPredecessors()) {
+    for (auto prede : GetPredecessors()) {
         dependsList.push_back(prede->GetDepend());
     }
     depend_ = env_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, dependsList,

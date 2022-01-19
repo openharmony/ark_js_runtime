@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/compiler/gate.h"
-#include "ecmascript/class_linker/bytecode_circuit_builder.h"
+#include "ecmascript/compiler/bytecode_circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
 constexpr size_t ONE_DEPEND = 1;
@@ -527,10 +527,9 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckRelay() const
         auto stateOp = GetInGateConst(0)->GetOpCode();
         if (!(stateOp == OpCode::IF_TRUE || stateOp == OpCode::IF_FALSE || stateOp == OpCode::SWITCH_CASE ||
             stateOp == OpCode::DEFAULT_CASE || stateOp == OpCode::IF_SUCCESS || stateOp == OpCode::IF_EXCEPTION)) {
-            return std::make_pair(
-                "State input does not match (expected:[IF_TRUE|IF_FALSE|SWITCH_CASE|DEFAULT_CASE|IF_SUCCESS|IF_EXCEPTION] actual:" +
-                    stateOp.Str() + ")",
-                0);
+            return std::make_pair("State input does not match ("
+                "expected:[IF_TRUE|IF_FALSE|SWITCH_CASE|DEFAULT_CASE|IF_SUCCESS|IF_EXCEPTION] actual:" +
+                stateOp.Str() + ")", 0);
         }
     }
     return std::nullopt;
@@ -781,8 +780,10 @@ bool In::IsGateNull() const
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark)
-    : id_(id), opcode_(opcode), bitValue_(bitValue), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
+Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type,
+     MarkCode mark)
+    : id_(id), opcode_(opcode), bitValue_(bitValue), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield),
+    firstOut_(0)
 {
     auto numIns = GetNumIns();
     for (size_t idx = 0; idx < numIns; idx++) {

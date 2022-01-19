@@ -27,9 +27,9 @@
 #include "libpandabase/macros.h"
 #include "securec.h"
 
-namespace panda::ecmascript {
+namespace panda::ecmascript::kungfu {
 class ByteCodeCircuitBuilder;
-namespace kungfu {
+
 const size_t INITIAL_SPACE = 1U << 0U;  // this should be tuned
 const size_t MAX_SPACE = 1U << 24U;     // this should be tuned
 const size_t SCALE_RATE = 1U << 1U;     // this should be tuned
@@ -54,7 +54,7 @@ public:
     GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
                     MarkCode mark = MarkCode::EMPTY);
     void PrintAllGates() const;
-    void PrintAllGates(panda::ecmascript::ByteCodeCircuitBuilder &builder) const;
+    void PrintAllGates(ByteCodeCircuitBuilder &builder) const;
     [[nodiscard]] std::vector<GateRef> GetAllGates() const;
     [[nodiscard]] static GateRef GetCircuitRoot(OpCode opcode);
     void AdvanceTime() const;
@@ -105,14 +105,13 @@ private:
     Gate *AllocateGateSpace(size_t numIns);
 
 private:
-    std::vector<uint8_t> space;
-    size_t circuitSize;
-    size_t gateCounter;
-    TimeStamp time;
-    std::vector<uint8_t> dataSection;
-    panda::ecmascript::FrameType frameType {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
+    std::vector<uint8_t> space_;
+    size_t circuitSize_;
+    size_t gateCount_;
+    TimeStamp time_;
+    std::vector<uint8_t> dataSection_;
+    panda::ecmascript::FrameType frameType_ {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
 };
-}  // namespace panda::ecmascript
-}  // kungfu
+}  // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_CIRCUIT_H

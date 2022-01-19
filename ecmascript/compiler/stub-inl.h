@@ -1518,12 +1518,12 @@ GateRef Stub::ChangeInt32ToFloat64(GateRef x)
 
 GateRef Stub::ChangeFloat64ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::FLOAT_TO_SIGNED_INT), ValueCode::INT32,x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::FLOAT_TO_SIGNED_INT), ValueCode::INT32, x);
 }
 
 GateRef Stub::ChangeTaggedPointerToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TAGGED_TO_INT64),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TAGGED_TO_INT64), x);
 }
 
 GateRef Stub::CastInt64ToFloat64(GateRef x)
@@ -1533,27 +1533,27 @@ GateRef Stub::CastInt64ToFloat64(GateRef x)
 
 GateRef Stub::SExtInt32ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 GateRef Stub::SExtInt1ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 GateRef Stub::SExtInt1ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 GateRef Stub::ZExtInt32ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 GateRef Stub::ZExtInt1ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 GateRef Stub::ZExtInt1ToInt32(GateRef x)
@@ -1563,27 +1563,27 @@ GateRef Stub::ZExtInt1ToInt32(GateRef x)
 
 GateRef Stub::ZExtInt8ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 GateRef Stub::ZExtInt16ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 GateRef Stub::TruncInt64ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32), x);
 }
 
 GateRef Stub::TruncInt64ToInt1(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT1),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT1), x);
 }
 
 GateRef Stub::TruncInt32ToInt1(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT1),x);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT1), x);
 }
 
 GateRef Stub::GetGlobalConstantAddr(GateRef index)

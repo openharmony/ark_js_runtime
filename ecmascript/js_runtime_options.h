@@ -45,6 +45,7 @@ public:
         parser->Add(&stub_module_file_);
         parser->Add(&enable_cpuprofiler_);
         parser->Add(&ark_properties_);
+        parser->Add(&enable_ts_aot_);
     }
 
     bool IsEnableArkTools() const
@@ -122,6 +123,21 @@ public:
         enable_cpuprofiler_.SetValue(value);
     }
 
+    bool IsEnableTsAot() const
+    {
+        return enable_ts_aot_.GetValue();
+    }
+
+    void SetEnableTsAot(bool value)
+    {
+        enable_ts_aot_.SetValue(value);
+    }
+
+    bool WasSetEnableTsAot() const
+    {
+        return enable_ts_aot_.WasSet();
+    }
+
     void SetArkProperties(int prop)
     {
         if (prop != ArkProperties::DEFAULT) {
@@ -177,6 +193,7 @@ private:
         true,
         R"(if true trigger compress gc, else trigger semi and old gc)"};
     PandArg<int> ark_properties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
+    PandArg<int> enable_ts_aot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
 };
 }  // namespace panda::ecmascript
 

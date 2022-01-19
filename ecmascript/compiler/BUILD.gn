@@ -41,6 +41,7 @@ config("ark_jsruntime_compiler_config") {
 
 source_set("libark_jsoptimizer_static") {
   sources = [
+    "bytecode_circuit_builder.cpp",
     "circuit.cpp",
     "circuit_builder.cpp",
     "circuit_builder_helper.cpp",
