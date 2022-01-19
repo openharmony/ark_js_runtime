@@ -315,12 +315,36 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
+DECLARE_ASM_HANDLER(HandleThrowThrowNotExistsPref)
+{
+    StubDescriptor *throwThrowNotExists = GET_STUBDESCRIPTOR(ThrowThrowNotExists);
+    CallRuntime(throwThrowNotExists, glue, GetWord64Constant(FAST_STUB_ID(ThrowThrowNotExists)),
+                {glue});
+    DISPATCH_LAST();
+}
+
+DECLARE_ASM_HANDLER(HandleThrowPatternNonCoerciblePref)
+{
+    StubDescriptor *throwPatternNonCoercible = GET_STUBDESCRIPTOR(ThrowPatternNonCoercible);
+    CallRuntime(throwPatternNonCoercible, glue, GetWord64Constant(FAST_STUB_ID(ThrowPatternNonCoercible)),
+                {glue});
+    DISPATCH_LAST();
+}
+
 DECLARE_ASM_HANDLER(HandleLdHomeObjectPref)
 {
     DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
     GateRef thisFunc = GetFunctionFromFrame(GetFrame(sp));
     varAcc = GetHomeObjectFromJSFunction(thisFunc);
     DISPATCH_WITH_ACC(PREF_NONE);
+}
+
+DECLARE_ASM_HANDLER(HandleThrowDeleteSuperPropertyPref)
+{
+    StubDescriptor *throwDeleteSuperProperty = GET_STUBDESCRIPTOR(ThrowDeleteSuperProperty);
+    CallRuntime(throwDeleteSuperProperty, glue, GetWord64Constant(FAST_STUB_ID(ThrowDeleteSuperProperty)),
+                {glue});
+    DISPATCH_LAST();
 }
 
 DECLARE_ASM_HANDLER(HandleDebuggerPref)

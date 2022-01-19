@@ -37,10 +37,10 @@ namespace panda::ecmascript::kungfu {
     V(HandleCreateEmptyObjectPref, 7)                       \
     V(HandleCreateEmptyArrayPref, 7)                        \
     T(HandleGetIteratorPref, 7)                             \
-    V(HandleThrowThrowNotExistsPref, 7)                     \
-    V(HandleThrowPatternNonCoerciblePref, 7)                \
+    T(HandleThrowThrowNotExistsPref, 7)                     \
+    T(HandleThrowPatternNonCoerciblePref, 7)                \
     T(HandleLdHomeObjectPref, 7)                            \
-    V(HandleThrowDeleteSuperPropertyPref, 7)                \
+    T(HandleThrowDeleteSuperPropertyPref, 7)                \
     T(HandleDebuggerPref, 7)                                \
     V(HandleAdd2DynPrefV8, 7)                               \
     V(HandleSub2DynPrefV8, 7)                               \

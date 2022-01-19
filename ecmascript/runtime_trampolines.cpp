@@ -734,4 +734,22 @@ JSTaggedType RuntimeTrampolines::GetIterator(uintptr_t argGlue, JSTaggedType obj
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::GetIterator(thread, JSTaggedValue(obj)).GetRawData();
 }
+
+void RuntimeTrampolines::ThrowThrowNotExists(uintptr_t argGlue)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    SlowRuntimeStub::ThrowThrowNotExists(thread);
+}
+
+void RuntimeTrampolines::ThrowPatternNonCoercible(uintptr_t argGlue)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    SlowRuntimeStub::ThrowPatternNonCoercible(thread);
+}
+
+void RuntimeTrampolines::ThrowDeleteSuperProperty(uintptr_t argGlue)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    SlowRuntimeStub::ThrowDeleteSuperProperty(thread);
+}
 }  // namespace panda::ecmascript

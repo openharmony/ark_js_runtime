@@ -91,7 +91,10 @@ namespace panda::ecmascript::kungfu {
     V(ThrowDyn, 2)                          \
     V(GetPropIterator, 2)                   \
     V(AsyncFunctionEnter, 1)                \
-    V(GetIterator, 2)
+    V(GetIterator, 2)                       \
+    V(ThrowThrowNotExists, 1)               \
+    V(ThrowPatternNonCoercible, 1)          \
+    V(ThrowDeleteSuperProperty, 1)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
