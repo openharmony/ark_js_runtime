@@ -1148,6 +1148,24 @@ CALL_STUB_INIT_DESCRIPTOR(SetObjectWithProto)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(LoadICByValue)
+{
+    // 5 : 5 input parameters
+    StubDescriptor loadICByValue("LoadICByValue", 0, 5,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = loadICByValue;
+    // 5 : 5 input parameters
+    std::array<MachineType, 5> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::INT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters

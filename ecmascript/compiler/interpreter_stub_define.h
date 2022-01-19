@@ -92,7 +92,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleStArraySpreadPrefV8V8, 7)                       \
     T(HandleGetIteratorNextPrefV8V8, 7)                     \
     T(HandleSetObjectWithProtoPrefV8V8, 7)                  \
-    V(HandleLdObjByValuePrefV8V8, 7)                        \
+    T(HandleLdObjByValuePrefV8V8, 7)                        \
     V(HandleStObjByValuePrefV8V8, 7)                        \
     V(HandleStOwnByValuePrefV8V8, 7)                        \
     V(HandleLdSuperByValuePrefV8V8, 7)                      \

@@ -1719,6 +1719,115 @@ void HandleSetObjectWithProtoPrefV8V8Stub::GenerateCircuit(const CompilationConf
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
 }
 
+void HandleLdObjByValuePrefV8V8Stub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    GateRef pc = PtrArgument(1);
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */
+    DEFVARIABLE(acc, MachineType::TAGGED, TaggedArgument(5)); /* 5: 6th parameter is value */
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    // uint16_t slotId = READ_INST_8_0();
+    GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+    Label receiverIsHeapObject(env);
+    Label dispatch(env);
+    Label slowPath(env);
+    Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
+    Bind(&receiverIsHeapObject);
+    {
+        Label tryIC(env);
+        Label tryFastPath(env);
+        Branch(TaggedIsUndefined(profileTypeInfo), &tryFastPath, &tryIC);
+        Bind(&tryIC);
+        {
+            Label isHeapObject(env);
+            // JSTaggedValue firstValue = profileTypeArray->Get(slotId);
+            GateRef firstValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+            // if (LIKELY(firstValue.IsHeapObject())) {
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Bind(&isHeapObject);
+            {
+                Label loadElement(env);
+                Label tryPoly(env);
+                GateRef secondValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo,
+                        Int32Add(slotId, GetInt32Constant(1)));
+                DEFVARIABLE(cachedHandler, MachineType::TAGGED, secondValue);
+                GateRef hclass = LoadHClass(receiver);
+                Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+                       &loadElement, &tryPoly);
+                Bind(&loadElement);
+                {
+                    // ASSERT(HandlerBase::IsElement(secondValue.GetInt()));
+                    GateRef result = LoadElement(receiver, propKey);
+                    Label notHole(env);
+                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Bind(&notHole);
+                    acc = result;
+                    Jump(&dispatch);
+                }
+                Bind(&tryPoly);
+                {
+                    Label firstIsKey(env);
+                    Branch(Word64Equal(firstValue, propKey), &firstIsKey, &slowPath);
+                    Bind(&firstIsKey);
+                    Label loadWithHandler(env);
+                    cachedHandler = CheckPolyHClass(firstValue, hclass);
+                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &loadWithHandler);
+                    Bind(&loadWithHandler);
+                    GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
+                    Label notHole(env);
+                    Branch(TaggedIsHole(result), &slowPath, &notHole);
+                    Bind(&notHole);
+                    acc = result;
+                    Jump(&dispatch);
+                }
+            }
+        }
+        Bind(&tryFastPath);
+        {
+            Label notHole(env);
+            GateRef stringId = ZExtInt8ToInt32(ReadInst32_1(pc));
+            GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+            StubDescriptor *getPropertyByValue = GET_STUBDESCRIPTOR(GetPropertyByValue);
+            GateRef result = CallRuntime(getPropertyByValue, glue, GetWord64Constant(FAST_STUB_ID(GetPropertyByValue)),
+                                         {glue, receiver, propKey});
+            Branch(TaggedIsHole(result), &slowPath, &notHole);
+
+            Bind(&notHole);
+            acc = result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&slowPath);
+    {
+        StubDescriptor *loadICByValue = GET_STUBDESCRIPTOR(LoadICByValue);
+        GateRef result = CallRuntime(loadICByValue, glue, GetWord64Constant(FAST_STUB_ID(LoadICByValue)),
+                                     {glue, profileTypeInfo, receiver, propKey, slotId});
+        // INTERPRETER_RETURN_IF_ABRUPT(res);
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(result), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter);
+        }
+        Bind(&notException);
+        acc = result;
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *acc, hotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
+}
+
 void HandleStConstToGlobalRecordPrefId32Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
@@ -2022,7 +2131,7 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
     {
         Label tryIC(env);
         Label tryFastPath(env);
-        Branch(Word64Equal(profileTypeInfo, GetUndefinedConstant()), &tryFastPath, &tryIC);
+        Branch(TaggedIsUndefined(profileTypeInfo), &tryFastPath, &tryIC);
         Bind(&tryIC);
         {
             Label isHeapObject(env);
@@ -2052,7 +2161,7 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
                     Label notHole(env);
 
                     GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
-                    Branch(Word64Equal(result, GetHoleConstant()), &slowPath, &notHole);
+                    Branch(TaggedIsHole(result), &slowPath, &notHole);
                     Bind(&notHole);
                     acc = result;
                     Jump(&dispatch);
@@ -2068,7 +2177,7 @@ void HandleLdObjByNamePrefId32V8Stub::GenerateCircuit(const CompilationConfig *c
             GateRef result = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(GetPropertyByName)), {
                 glue, receiver, propKey
             });
-            Branch(Word64Equal(result, GetHoleConstant()), &slowPath, &notHole);
+            Branch(TaggedIsHole(result), &slowPath, &notHole);
 
             Bind(&notHole);
             acc = result;

@@ -577,6 +577,24 @@ JSTaggedType RuntimeTrampolines::SetObjectWithProto(uintptr_t argGlue, JSTaggedT
     return SlowRuntimeStub::SetObjectWithProto(thread, JSTaggedValue(proto), JSTaggedValue(obj)).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::LoadICByValue(uintptr_t argGlue, JSTaggedType profileTypeInfo,
+                                               JSTaggedType receiver, JSTaggedType propKey, int32_t slotId)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    INTERPRETER_TRACE(thread, LoadICByValue);
+
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    auto profileHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(profileTypeInfo));
+    if (profileHandle->IsUndefined()) {
+        return SlowRuntimeStub::LdObjByValue(thread, JSTaggedValue(receiver), JSTaggedValue(propKey),
+            false, JSTaggedValue::Undefined()).GetRawData();
+    }
+    auto receiverHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(receiver));
+    auto keyHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(propKey));
+    LoadICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileHandle), slotId, ICKind::LoadIC);
+    return icRuntime.LoadMiss(receiverHandle, keyHandle).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
