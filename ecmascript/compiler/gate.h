@@ -306,7 +306,7 @@ private:
     // out(2)
     // out(1)
     // out(0)
-    GateId id_;
+    GateId id_ {0};
     OpCode opcode_;
     ValueCode bitValue_ = ValueCode::NOVALUE;
     TypeCode type_;

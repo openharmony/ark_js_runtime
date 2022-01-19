@@ -20,8 +20,8 @@
 #include <vector>
 
 #include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/bytecode_circuit_builder.h"
 #include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/compiler/bytecode_circuit_builder.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_array.h"
@@ -471,10 +471,7 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
 {
     auto bcIns = BytecodeInstruction(insArr);
     auto bcInsLast = bcIns.JumpTo(insSz);
-
-#ifdef ECMASCRIPT_ENABLE_TS_AOT
-    std::vector<uint8_t *> pcArr;
-#endif
+    std::vector<uint8_t *> pcArray;
 
     while (bcIns.GetAddress() != bcInsLast.GetAddress()) {
         if (bcIns.HasFlag(BytecodeInstruction::Flags::STRING_ID) &&
@@ -540,15 +537,15 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
         bcIns = bcIns.GetNext();
         FixOpcode(pc);
         UpdateICOffset(const_cast<JSMethod *>(method), pc);
-#ifdef ECMASCRIPT_ENABLE_TS_AOT
-        pcArr.emplace_back(pc);
+        if (ecmaVm_->GetJSOptions().IsEnableTsAot()) {
+            pcArray.emplace_back(pc);
+        }
     }
-    pcArr.emplace_back(const_cast<uint8_t *>(bcInsLast.GetAddress()));
-    ByteCodeCircuitBuilder builder;
-    builder.BytecodeToCircuit(pcArr, pf, method);
-#else
+    if (ecmaVm_->GetJSOptions().IsEnableTsAot()) {
+        pcArray.emplace_back(const_cast<uint8_t *>(bcInsLast.GetAddress()));
+        kungfu::ByteCodeCircuitBuilder builder;
+        builder.BytecodeToCircuit(pcArray, pf, method);
     }
-#endif
 }
 
 uint32_t PandaFileTranslator::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset)

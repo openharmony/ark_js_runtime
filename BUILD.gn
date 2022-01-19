@@ -290,7 +290,6 @@ ecma_source = [
   "ecmascript/builtins/builtins_typedarray.cpp",
   "ecmascript/builtins/builtins_weak_map.cpp",
   "ecmascript/builtins/builtins_weak_set.cpp",
-  "ecmascript/class_linker/bytecode_circuit_builder.cpp",
   "ecmascript/class_linker/panda_file_translator.cpp",
   "ecmascript/containers/containers_arraylist.cpp",
   "ecmascript/containers/containers_private.cpp",

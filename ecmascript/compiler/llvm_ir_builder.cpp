@@ -461,7 +461,7 @@ void LLVMIRBuilder::SaveCurrentSP()
         LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
             3 * slotSize_, false), ""); // 3: type + threadsp + current sp
         LLVMValueRef addr = LLVMBuildIntToPtr(builder_, frameSpSlotAddr,
-            LLVMPointerType(slotType_, 0), "frameCallSiteSP.Addr");
+                                              LLVMPointerType(slotType_, 0), "frameCallSiteSP.Addr");
         LLVMMetadataRef meta;
         if (compCfg_->IsAmd64()) {
             meta = LLVMMDStringInContext2(context_, "rsp", 4);   // 4 : 4 means len of "rsp"
@@ -794,9 +794,8 @@ void LLVMIRBuilder::VisitGoto(int block, int bbOut)
 
 void LLVMIRBuilder::HandleConstant(GateRef gate)
 {
-    std::bitset<64> value = circuit_->GetBitField(gate);
+    std::bitset<64> value = circuit_->GetBitField(gate); // 64: bit width
     VisitConstant(gate, value);
-
 }
 
 void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value)
@@ -817,7 +816,8 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value)
             LLVMValueRef emptyValue = LLVMGetUndef(type);
             tmp1Value = LLVMBuildIntToPtr(builder_, tmp1Value, LLVMPointerType(LLVMInt8Type(), 1), "");
             tmp2Value = LLVMBuildIntToPtr(builder_, tmp2Value, LLVMPointerType(LLVMInt8Type(), 1), "");
-            llvmValue = LLVMBuildInsertElement(builder_, emptyValue, tmp2Value, LLVMConstInt(LLVMInt32Type(), 0, 0), "");
+            llvmValue = LLVMBuildInsertElement(
+                builder_, emptyValue, tmp2Value, LLVMConstInt(LLVMInt32Type(), 0, 0), "");
             llvmValue = LLVMBuildInsertElement(builder_, llvmValue, tmp1Value, LLVMConstInt(LLVMInt32Type(), 1, 0), "");
         } else if (LLVMGetTypeKind(type) == LLVMIntegerTypeKind) {
             // do nothing

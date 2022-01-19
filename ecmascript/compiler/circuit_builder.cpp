@@ -128,7 +128,8 @@ GateRef CircuitBuilder::ExceptionConstant(TypeCode type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_EXCEPTION, { constantList }, type);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_EXCEPTION, { constantList },
+                             type);
 }
 
 GateRef CircuitBuilder::Branch(GateRef state, GateRef condition)
@@ -306,12 +307,14 @@ GateRef CircuitBuilder::NewDependAnd(std::initializer_list<GateRef> args)
 GateRef CircuitBuilder::NewLoadGate(MachineType type, GateRef val, GateRef depend)
 {
     ValueCode valCode = GetLoadValueCodeFromMachineType(type);
-    return circuit_->NewGate(OpCode(OpCode::LOAD), valCode, static_cast<BitField>(type), { depend, val }, MachineType2TypeCode(type));
+    return circuit_->NewGate(OpCode(OpCode::LOAD), valCode, static_cast<BitField>(type), { depend, val },
+                             MachineType2TypeCode(type));
 }
 
 GateRef CircuitBuilder::NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend)
 {
-    return circuit_->NewGate(OpCode(OpCode::STORE), static_cast<BitField>(type), { depend, val, ptr }, MachineType2TypeCode(type));
+    return circuit_->NewGate(OpCode(OpCode::STORE), static_cast<BitField>(type), { depend, val, ptr },
+                             MachineType2TypeCode(type));
 }
 
 GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right)
@@ -332,7 +335,8 @@ GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, GateRef value)
 
 GateRef CircuitBuilder::NewLogicGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right)
 {
-    return circuit_->NewGate(opcode, valCode, static_cast<BitField>(MachineType::BOOL), { left, right }, TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, valCode, static_cast<BitField>(MachineType::BOOL), { left, right },
+                             TypeCode::NOTYPE);
 }
 
 GateRef CircuitBuilder::NewLogicGate(OpCode opcode, GateRef left, GateRef right)
