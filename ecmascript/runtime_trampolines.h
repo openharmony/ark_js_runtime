@@ -105,6 +105,8 @@ public:
     static JSTaggedType StArraySpread(uintptr_t argGlue, JSTaggedType dst, JSTaggedType index, JSTaggedType src);
     static JSTaggedType GetIteratorNext(uintptr_t argGlue, JSTaggedType obj, JSTaggedType method);
     static JSTaggedType SetObjectWithProto(uintptr_t argGlue, JSTaggedType proto, JSTaggedType obj);
+    static JSTaggedType LoadICByValue(uintptr_t argGlue, JSTaggedType profileTypeInfo,
+                                      JSTaggedType receiver, JSTaggedType propKey, int32_t slotId);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
     static JSTaggedType NegDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType NotDyn(uintptr_t argGlue, JSTaggedType value);
@@ -114,8 +116,8 @@ public:
                                                JSTaggedType lexenv, JSTaggedType constpool);
     static JSTaggedType SetClassConstructorLength(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType length);
     static JSTaggedType UpdateHotnessCounter(uintptr_t argGlue, uintptr_t sp);
-    static uintptr_t LoadICByName(uintptr_t argGlue, JSTaggedType profileTypeInfo,
-                                  JSTaggedType receiver, JSTaggedType propKey, int32_t slotId);
+    static JSTaggedType LoadICByName(uintptr_t argGlue, JSTaggedType profileTypeInfo,
+                                     JSTaggedType receiver, JSTaggedType propKey, int32_t slotId);
     static JSTaggedType SetPropertyByValue(uintptr_t argGlue, JSTaggedType argRreceiver, JSTaggedType argKey, JSTaggedType argValue);
     static void SetFunctionNameNoPrefix(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType argName);
     static JSTaggedType StOwnByValueWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);

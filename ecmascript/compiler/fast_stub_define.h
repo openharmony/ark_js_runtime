@@ -79,6 +79,7 @@ namespace panda::ecmascript::kungfu {
     V(StArraySpread, 4)                     \
     V(GetIteratorNext, 3)                   \
     V(SetObjectWithProto, 3)                \
+    V(LoadICByValue, 5)                     \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \
