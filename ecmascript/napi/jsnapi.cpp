@@ -293,6 +293,11 @@ Local<ObjectRef> JSNApi::GetUncaughtException(const EcmaVM *vm)
     return JSNApiHelper::ToLocal<ObjectRef>(vm->GetEcmaUncaughtException());
 }
 
+Local<ObjectRef> JSNApi::GetAndClearUncaughtException(const EcmaVM *vm)
+{
+    return JSNApiHelper::ToLocal<ObjectRef>(vm->GetAndClearEcmaUncaughtException());
+}
+
 void JSNApi::EnableUserUncaughtErrorHandler(EcmaVM *vm)
 {
     return vm->EnableUserUncaughtErrorHandler();
@@ -1989,5 +1994,29 @@ void JSNApi::StopCpuProfiler()
         delete singleton;
         singleton = nullptr;
     }
+}
+
+bool JSNApi::SuspendVM(const EcmaVM *vm)
+{
+    ecmascript::JSThread* thread = vm->GetJSThread();
+    return thread->NotifyVMThreadSuspension();
+}
+
+void JSNApi::ResumeVM(const EcmaVM *vm)
+{
+    ecmascript::JSThread* thread = vm->GetJSThread();
+    thread->ResumeVM();
+}
+
+bool JSNApi::IsVMSuspended(const EcmaVM *vm)
+{
+    ecmascript::JSThread* thread = vm->GetJSThread();
+    return thread->IsVMSuspended();
+}
+
+bool JSNApi::CheckSafepoint(const EcmaVM *vm)
+{
+    ecmascript::JSThread* thread = vm->GetJSThread();
+    return  thread->CheckSafepoint();
 }
 }  // namespace panda

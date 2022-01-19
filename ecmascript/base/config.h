@@ -22,7 +22,6 @@ namespace panda::ecmascript {
 
 #define ECMASCRIPT_ENABLE_DEBUG_MODE 0
 #define ECMASCRIPT_ENABLE_ARK_CONTAINER 0
-#define ECMASCRIPT_ENABLE_RUNTIME_STAT 1 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 
 /*
  * 1. close ic
@@ -32,7 +31,10 @@ namespace panda::ecmascript {
  * 5. switch gc mode to full gc
  * 6. enable Cast() check
  * 7. enable verify heap
+ * 8. enable thread check
  * 9. enable Proactively interrogating and collecting information in the call stack
+ * 10.enable runtime statistic
+ * 11.enable hitrace
  */
 #if ECMASCRIPT_ENABLE_DEBUG_MODE
     #define ECMASCRIPT_ENABLE_IC 0
@@ -44,6 +46,11 @@ namespace panda::ecmascript {
     #define ECMASCRIPT_ENABLE_HEAP_VERIFY 1
     #define ECMASCRIPT_ENABLE_THREAD_CHECK 1
     #define ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER 0
+    #define ECMASCRIPT_ENABLE_RUNTIME_STAT 1
+#ifndef PANDA_TARGET_LINUX
+    #define ECMASCRIPT_ENABLE_HITRACE 1
+#endif
+
 #else
     #define ECMASCRIPT_ENABLE_IC 1
     #define ECMASCRIPT_DISABLE_PARALLEL_GC 0
@@ -54,6 +61,10 @@ namespace panda::ecmascript {
     #define ECMASCRIPT_ENABLE_HEAP_VERIFY 0
     #define ECMASCRIPT_ENABLE_THREAD_CHECK 0
     #define ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER 0
+    #define ECMASCRIPT_ENABLE_RUNTIME_STAT 0
+#ifndef PANDA_TARGET_LINUX
+    #define ECMASCRIPT_ENABLE_HITRACE 1
+#endif
 #endif
 }  // namespace panda::ecmascript
 
