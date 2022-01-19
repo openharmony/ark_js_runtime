@@ -73,7 +73,7 @@ HWTEST_F_L0(EcmaStringTest, CanBeCompressed)
     uint8_t arrayU8[7] = {12, 34, 77, 127, 99, 1};
     uint16_t arrayU16Comp[] = {1, 4, 37, 91, 127, 1};
     uint16_t arrayU16NotComp[] = {72, 43, 337, 961, 1317, 65535};
-    EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU8));
+    EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU8, sizeof(arrayU8)));
     EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU16Comp, sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0])));
     EXPECT_FALSE(EcmaString::CanBeCompressed(arrayU16NotComp, sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0])));
 
