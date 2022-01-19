@@ -223,6 +223,12 @@ config("ark_jsruntime_common_config") {
       "PANDA_USE_32_BIT_POINTER",
     ]
   }
+
+  if (!is_linux) {
+    include_dirs =
+        [ "//base/hiviewdfx/hitrace/interfaces/native/innerkits/include" ]
+    cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
+  }
 }
 
 config("ark_jsruntime_config") {
@@ -437,6 +443,10 @@ ohos_shared_library("libark_jsruntime") {
     ":libark_jsruntime_static",
   ]
 
+  if (!is_linux) {
+    external_deps = [ "hitrace_native:libhitrace" ]
+  }
+
   configs = [ ":ark_jsruntime_config" ]
 
   install_enable = true
@@ -485,6 +495,10 @@ ohos_shared_library("libark_jsruntime_test") {
   ]
 
   deps = [ ":libark_jsruntime_test_static" ]
+
+  if (!is_linux) {
+    external_deps = [ "hitrace_native:libhitrace" ]
+  }
 
   if (is_standard_system) {
     deps += [ "$ark_root/runtime:libarkruntime_static" ]

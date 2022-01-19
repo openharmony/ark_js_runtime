@@ -878,6 +878,7 @@ public:
     static void TriggerGC(const EcmaVM *vm, TRIGGER_GC_TYPE gcType = TRIGGER_GC_TYPE::SEMI_GC);
     // Exception
     static void ThrowException(const EcmaVM *vm, Local<JSValueRef> error);
+    static Local<ObjectRef> GetAndClearUncaughtException(const EcmaVM *vm);
     static Local<ObjectRef> GetUncaughtException(const EcmaVM *vm);
     static void EnableUserUncaughtErrorHandler(EcmaVM *vm);
 
@@ -893,6 +894,10 @@ public:
     // profile generator
     static void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
     static void StopCpuProfiler();
+    static void ResumeVM(const EcmaVM *vm);
+    static bool SuspendVM(const EcmaVM *vm);
+    static bool IsVMSuspended(const EcmaVM *vm);
+    static bool CheckSafepoint(const EcmaVM *vm);
 
 private:
     static bool CreateRuntime(const RuntimeOption &option);
