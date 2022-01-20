@@ -1104,6 +1104,33 @@ GateRef Stub::IsJSObject(GateRef obj)
     return ret;
 }
 
+GateRef Stub::IsJSFunctionBase(GateRef obj)
+{
+    auto env = GetEnvironment();
+    Label subentry(env);
+    env->PushCurrentLabel(&subentry);
+    Label exit(env);
+    Label isHeapObject(env);
+    DEFVARIABLE(result, MachineType::BOOL, FalseConstant());
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        GateRef objectType = GetObjectType(LoadHClass(obj));
+        auto ret1 = Word32And(
+            ZExtInt1ToInt32(
+                Int32LessThanOrEqual(objectType, GetInt32Constant(static_cast<int32_t>(JSType::JS_BOUND_FUNCTION)))),
+            ZExtInt1ToInt32(
+                Int32GreaterThanOrEqual(objectType,
+                    GetInt32Constant(static_cast<int32_t>(JSType::JS_FUNCTION_BASE)))));
+        result = TruncInt32ToInt1(ret1);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
 GateRef Stub::IsSymbol(GateRef obj)
 {
     GateRef objectType = GetObjectType(LoadHClass(obj));
@@ -1739,6 +1766,14 @@ GateRef Stub::ZExtInt16ToInt64(GateRef x)
 GateRef Stub::TruncInt64ToInt32(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::TRUNC_INT64_TO_INT32), x);
+}
+
+GateRef Stub::TruncPtrToInt32(GateRef x)
+{
+    if (env_.IsArm32()) {
+        return x;
+    }
+    return TruncInt64ToInt32(x);
 }
 
 GateRef Stub::TruncInt64ToInt1(GateRef x)
