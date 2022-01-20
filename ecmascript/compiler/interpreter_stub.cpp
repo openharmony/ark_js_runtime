@@ -3222,6 +3222,41 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
         GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
 }
+
+DECLARE_ASM_HANDLER(HandleToNumberPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    Label valueIsNumber(env);
+    Label valueNotNumber(env);
+    Branch(TaggedIsNumber(value), &valueIsNumber, &valueNotNumber);
+    Bind(&valueIsNumber);
+    {
+        varAcc = value;
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
+    Bind(&valueNotNumber);
+    {
+        StubDescriptor *toNumber = GET_STUBDESCRIPTOR(ToNumber);
+        GateRef res = CallRuntime(toNumber, glue, GetWord64Constant(FAST_STUB_ID(ToNumber)),
+                                           {glue, value});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(res), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+        Bind(&notException);
+        {
+            varAcc = res;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+}
+
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH
 #undef DISPATCH_WITH_ACC

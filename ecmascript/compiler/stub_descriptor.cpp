@@ -1883,6 +1883,20 @@ CALL_STUB_INIT_DESCRIPTOR(StOwnByValueWithNameSet)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ToNumber)
+{
+    // 4 : 4 input parameters
+    StubDescriptor toNumber("ToNumber", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = toNumber;
+    std::array<MachineType, 2> params = { // 4 : 4 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 void FastStubDescriptors::InitializeStubDescriptors()
 {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

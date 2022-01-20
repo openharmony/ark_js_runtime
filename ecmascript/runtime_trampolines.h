@@ -159,6 +159,7 @@ public:
     static JSTaggedType TryUpdateGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value);
     static JSTaggedType ThrowReferenceError(uintptr_t argGlue, JSTaggedType prop);
     static JSTaggedType StGlobalVar(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value);
+    static JSTaggedType ToNumber(uintptr_t argGlue, JSTaggedType value);
 };
 }  // namespace panda::ecmascript
 #endif

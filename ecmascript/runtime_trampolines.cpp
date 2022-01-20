@@ -713,7 +713,7 @@ JSTaggedType RuntimeTrampolines::ChangeTwoInt32AndToJSTaggedValue(uintptr_t argG
     }
 
     auto ret = static_cast<uint32_t>(leftInt) & static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(ret).GetRawData();
+    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::ChangeTwoInt32OrToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
@@ -732,7 +732,7 @@ JSTaggedType RuntimeTrampolines::ChangeTwoInt32OrToJSTaggedValue(uintptr_t argGl
     }
 
     auto ret = static_cast<uint32_t>(leftInt) | static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(ret).GetRawData();
+    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::ChangeTwoInt32XorToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
@@ -751,7 +751,7 @@ JSTaggedType RuntimeTrampolines::ChangeTwoInt32XorToJSTaggedValue(uintptr_t argG
     }
 
     auto ret = static_cast<uint32_t>(leftInt) ^ static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(ret).GetRawData();
+    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::ChangeTwoUint32AndToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
@@ -996,4 +996,10 @@ JSTaggedType RuntimeTrampolines::StGlobalVar(uintptr_t argGlue, JSTaggedType pro
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::StGlobalVar(thread, JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
 }
+JSTaggedType RuntimeTrampolines::ToNumber(uintptr_t argGlue, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::ToNumber(thread, JSTaggedValue(value)).GetRawData();
+}
+
 }  // namespace panda::ecmascript
