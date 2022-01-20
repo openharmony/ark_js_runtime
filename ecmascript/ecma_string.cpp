@@ -239,15 +239,15 @@ int32_t EcmaString::IndexOf(const EcmaString *rhs, int32_t pos) const
 }
 
 // static
-bool EcmaString::CanBeCompressed(const uint8_t *utf8Data)
+bool EcmaString::CanBeCompressed(const uint8_t *utf8Data, uint32_t utf8Len)
 {
     if (!compressedStringsEnabled) {
         return false;
     }
     bool isCompressed = true;
-    int index = 0;
+    uint32_t index = 0;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    while (utf8Data[index] != '\0') {
+    while (index < utf8Len) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (!IsASCIICharacter(utf8Data[index])) {
             isCompressed = false;
