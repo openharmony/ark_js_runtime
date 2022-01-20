@@ -114,6 +114,10 @@ public:
     static JSTaggedType LdSuperByValue(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, uintptr_t sp);
     static JSTaggedType StSuperByValue(uintptr_t argGlue,
                                        JSTaggedType obj, JSTaggedType key, JSTaggedType value, uintptr_t sp);
+    static JSTaggedType LdObjByIndex(uintptr_t argGlue, JSTaggedType obj, uint32_t idx,
+                                     bool callGetter, JSTaggedType receiver);
+    static JSTaggedType StObjByIndex(uintptr_t argGlue, JSTaggedType obj, uint32_t idx, JSTaggedType value);
+    static JSTaggedType StOwnByIndex(uintptr_t argGlue, JSTaggedType obj, uint32_t idx, JSTaggedType value);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
     static JSTaggedType NegDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType NotDyn(uintptr_t argGlue, JSTaggedType value);
