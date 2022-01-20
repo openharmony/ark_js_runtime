@@ -162,7 +162,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT32_AND, &LLVMIRBuilder::HandleIntAnd},
         {OpCode::INT64_AND, &LLVMIRBuilder::HandleIntAnd},
         {OpCode::INT32_OR, &LLVMIRBuilder::HandleIntOr},
-        {OpCode::INT32_XOR, &LLVMIRBuilder::HandleIntOr},
+        {OpCode::INT32_XOR, &LLVMIRBuilder::HandleIntXor},
         {OpCode::INT64_OR, &LLVMIRBuilder::HandleIntOr},
         {OpCode::INT64_XOR, &LLVMIRBuilder::HandleIntXor},
         {OpCode::INT8_LSR, &LLVMIRBuilder::HandleIntLsr},
