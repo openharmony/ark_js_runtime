@@ -1515,14 +1515,42 @@ CALL_STUB_INIT_DESCRIPTOR(GetPropIterator)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(LdGlobalRecord)
+{
+    // 2 : 2 input parameters
+    StubDescriptor ldGlobalRecord("LdGlobalRecord", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = ldGlobalRecord;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(AsyncFunctionEnter)
 {
     // 1 : 1 input parameters
     StubDescriptor asyncFunctionEnter("AsyncFunctionEnter", 0, 1,
         ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
     *descriptor = asyncFunctionEnter;
-    std::array<MachineType, 2> params = { // 1 : 1 input parameters
+    std::array<MachineType, 1> params = { // 1 : 1 input parameters
         MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(GetGlobalOwnProperty)
+{
+    // 2 : 2 input parameters
+    StubDescriptor getGlobalOwnProperty("GetGlobalOwnProperty", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = getGlobalOwnProperty;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
@@ -1555,6 +1583,57 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowThrowNotExists)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(TryLdGlobalByName)
+{
+    // 2 : 2 input parameters
+    StubDescriptor tryLdGlobalByName("TryLdGlobalByName", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = tryLdGlobalByName;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(LoadMiss)
+{
+    // 6 : 6 input parameters
+    StubDescriptor loadMiss("LoadMiss", 0, 6,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = loadMiss;
+    std::array<MachineType, 6> params = { // 6 : 6 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::UINT32,
+        MachineType::UINT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StoreMiss)
+{
+    // 7 : 7 input parameters
+    StubDescriptor storeMiss("StoreMiss", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = storeMiss;
+    std::array<MachineType, 7> params = { // 7 : 7 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::UINT32,
+        MachineType::UINT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(ThrowPatternNonCoercible)
 {
     // 1 : 1 input parameters
@@ -1563,6 +1642,21 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowPatternNonCoercible)
     *descriptor = throwPatternNonCoercible;
     std::array<MachineType, 1> params = { // 1 : 1 input parameters
         MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(TryUpdateGlobalRecord)
+{
+    // 3 : 3 input parameters
+    StubDescriptor tryUpdateGlobalRecord("TryUpdateGlobalRecord", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = tryUpdateGlobalRecord;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
@@ -1581,12 +1675,41 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowDeleteSuperProperty)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(ThrowReferenceError)
+{
+    // 2 : 2 input parameters
+    StubDescriptor throwReferenceError("ThrowReferenceError", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = throwReferenceError;
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(EqDyn)
 {
     // 3 : 3 input parameters
     StubDescriptor eqDyn("EqDyn", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
     *descriptor = eqDyn;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StGlobalVar)
+{
+    // 3 : 3 input parameters
+    StubDescriptor stGlobalVar("StGlobalVar", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = stGlobalVar;
     std::array<MachineType, 3> params = { // 3 : 3 input parameters
         MachineType::NATIVE_POINTER,
         MachineType::TAGGED,

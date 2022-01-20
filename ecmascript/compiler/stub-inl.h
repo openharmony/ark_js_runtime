@@ -775,6 +775,11 @@ GateRef Stub::TaggedFalse()
 }
 
 // compare operation
+GateRef Stub::Word8Equal(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT8_EQ), x, y);
+}
+
 GateRef Stub::Word32Equal(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT32_EQ), x, y);
@@ -1904,6 +1909,37 @@ void Stub::SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexical
 {
     GateRef offset = GetArchRelateConstant(JSFunction::LEXICAL_ENV_OFFSET);
     Store(MachineType::TAGGED, glue, object, offset, lexicalEnv);
+}
+
+GateRef Stub::GetGlobalObject(GateRef glue)
+{
+    GateRef offset = GetArchRelateConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_OBJECT));
+    return Load(MachineType::TAGGED, glue, offset);
+}
+
+GateRef Stub::GetEntryIndexOfGlobalDictionary(GateRef entry)
+{
+    return Int32Add(GetInt32Constant(OrderTaggedHashTable<GlobalDictionary>::TABLE_HEADER_SIZE),
+        Int32Mul(entry, GetInt32Constant(GlobalDictionary::ENTRY_SIZE)));
+}
+
+GateRef Stub::GetBoxFromGlobalDictionary(GateRef object, GateRef entry)
+{
+    GateRef index =
+        Int32Add(GetEntryIndexOfGlobalDictionary(entry), GetInt32Constant(GlobalDictionary::ENTRY_VALUE_INDEX));
+    return Load(MachineType::TAGGED_POINTER, object, index);
+}
+
+GateRef Stub::GetValueFromGlobalDictionary(GateRef object, GateRef entry)
+{
+    GateRef box = GetBoxFromGlobalDictionary(object, entry);
+    return Load(MachineType::TAGGED, box, GetArchRelateConstant(PropertyBox::VALUE_OFFSET));
+}
+
+GateRef Stub::GetPropertiesFromJSObject(GateRef object)
+{
+    GateRef offset = GetArchRelateConstant(JSObject::PROPERTIES_OFFSET);
+    return Load(MachineType::TAGGED, object, offset);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

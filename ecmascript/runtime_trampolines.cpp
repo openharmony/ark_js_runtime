@@ -916,4 +916,64 @@ JSTaggedType RuntimeTrampolines::EqDyn(uintptr_t argGlue, JSTaggedType left, JST
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::EqDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::LdGlobalRecord(uintptr_t argGlue, JSTaggedType key)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::LdGlobalRecord(thread, JSTaggedValue(key)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::GetGlobalOwnProperty(uintptr_t argGlue, JSTaggedType key)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
+    JSTaggedValue globalObj = globalEnv->GetGlobalObject();
+    return FastRuntimeStub::GetGlobalOwnProperty(globalObj, JSTaggedValue(key)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::TryLdGlobalByName(uintptr_t argGlue, JSTaggedType prop)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
+    JSTaggedValue globalObj = globalEnv->GetGlobalObject();
+    return SlowRuntimeStub::TryLdGlobalByName(thread, globalObj, JSTaggedValue(prop)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::LoadMiss(uintptr_t argGlue, JSTaggedType profileTypeInfo, JSTaggedType receiver,
+                                          JSTaggedType key, uint32_t slotId, uint32_t kind)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return ICRuntimeStub::LoadMiss(thread, reinterpret_cast<ProfileTypeInfo *>(profileTypeInfo),
+        JSTaggedValue(receiver), JSTaggedValue(key), slotId, static_cast<ICKind>(kind)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::StoreMiss(uintptr_t argGlue, JSTaggedType profileTypeInfo, JSTaggedType receiver,
+                                           JSTaggedType key, JSTaggedType value, uint32_t slotId, uint32_t kind)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return ICRuntimeStub::StoreMiss(
+        thread, reinterpret_cast<ProfileTypeInfo *>(profileTypeInfo), JSTaggedValue(receiver), JSTaggedValue(key),
+        JSTaggedValue(value), slotId, static_cast<ICKind>(kind)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::TryUpdateGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::TryUpdateGlobalRecord(thread, JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::ThrowReferenceError(uintptr_t argGlue, JSTaggedType prop)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::ThrowReferenceError(
+        thread, JSTaggedValue(prop), " is not defined").GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::StGlobalVar(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StGlobalVar(thread, JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
+}
 }  // namespace panda::ecmascript

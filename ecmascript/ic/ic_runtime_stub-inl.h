@@ -20,7 +20,6 @@
 #include "ic_runtime_stub.h"
 #include "ic_handler.h"
 #include "ic_runtime.h"
-#include "profile_type_info.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_hclass-inl.h"
@@ -48,14 +47,7 @@ JSTaggedValue ICRuntimeStub::LoadGlobalICByName(JSThread *thread, ProfileTypeInf
             return result;
         }
     }
-
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
-    auto receiverHandle = JSHandle<JSTaggedValue>(thread, globalValue);
-    auto profileInfoHandle = JSHandle<JSTaggedValue>(thread, profileTypeInfo);
-    LoadICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileInfoHandle), slotId,
-                            ICKind::NamedGlobalLoadIC);
-    return icRuntime.LoadMiss(receiverHandle, keyHandle);
+    return LoadMiss(thread, profileTypeInfo, globalValue, key, slotId, ICKind::NamedGlobalLoadIC);
 }
 
 JSTaggedValue ICRuntimeStub::StoreGlobalICByName(JSThread *thread, ProfileTypeInfo *profileTypeInfo,
@@ -70,15 +62,7 @@ JSTaggedValue ICRuntimeStub::StoreGlobalICByName(JSThread *thread, ProfileTypeIn
             return result;
         }
     }
-
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
-    auto receiverHandle = JSHandle<JSTaggedValue>(thread, globalValue);
-    auto valueHandle = JSHandle<JSTaggedValue>(thread, value);
-    auto profileInfoHandle = JSHandle<JSTaggedValue>(thread, profileTypeInfo);
-    StoreICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileInfoHandle), slotId,
-                             ICKind::NamedGlobalStoreIC);
-    return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle);
+    return StoreMiss(thread, profileTypeInfo, globalValue, key, value, slotId, ICKind::NamedGlobalStoreIC);
 }
 
 JSTaggedValue ICRuntimeStub::CheckPolyHClass(JSTaggedValue cachedValue, JSHClass* hclass)
@@ -118,12 +102,7 @@ ARK_NOINLINE JSTaggedValue ICRuntimeStub::LoadICByName(JSThread *thread, Profile
                                                        JSTaggedValue receiver, JSTaggedValue key, uint32_t slotId)
 {
     INTERPRETER_TRACE(thread, LoadICByName);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
-    auto receiverHandle = JSHandle<JSTaggedValue>(thread, receiver);
-    auto profileInfoHandle = JSHandle<ProfileTypeInfo>(thread, profileTypeInfo);
-    LoadICRuntime icRuntime(thread, profileInfoHandle, slotId, ICKind::NamedLoadIC);
-    return icRuntime.LoadMiss(receiverHandle, keyHandle);
+    return LoadMiss(thread, profileTypeInfo, receiver, key, slotId, ICKind::NamedLoadIC);
 }
 
 ARK_INLINE JSTaggedValue ICRuntimeStub::TryLoadICByValue(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key,
@@ -151,13 +130,7 @@ ARK_NOINLINE JSTaggedValue ICRuntimeStub::LoadICByValue(JSThread *thread, Profil
                                                         JSTaggedValue receiver, JSTaggedValue key, uint32_t slotId)
 {
     INTERPRETER_TRACE(thread, LoadICByValue);
-
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
-    auto receiverHandle = JSHandle<JSTaggedValue>(thread, receiver);
-    auto profileInfoHandle = JSHandle<JSTaggedValue>(thread, profileTypeInfo);
-    LoadICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileInfoHandle), slotId, ICKind::LoadIC);
-    return icRuntime.LoadMiss(receiverHandle, keyHandle);
+    return LoadMiss(thread, profileTypeInfo, receiver, key, slotId, ICKind::LoadIC);
 }
 
 ARK_INLINE JSTaggedValue ICRuntimeStub::TryStoreICByValue(JSThread *thread, JSTaggedValue receiver,
@@ -188,14 +161,7 @@ ARK_NOINLINE JSTaggedValue ICRuntimeStub::StoreICByValue(JSThread *thread, Profi
                                                          JSTaggedValue value, uint32_t slotId)
 {
     INTERPRETER_TRACE(thread, StoreICByValue);
-
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
-    auto receiverHandle = JSHandle<JSTaggedValue>(thread, receiver);
-    auto valueHandle = JSHandle<JSTaggedValue>(thread, value);
-    auto profileInfoHandle = JSHandle<JSTaggedValue>(thread, profileTypeInfo);
-    StoreICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileInfoHandle), slotId, ICKind::StoreIC);
-    return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle);
+    return StoreMiss(thread, profileTypeInfo, receiver, key, value, slotId, ICKind::StoreIC);
 }
 
 ARK_INLINE JSTaggedValue ICRuntimeStub::TryStoreICByName(JSThread *thread, JSTaggedValue receiver,
@@ -221,14 +187,7 @@ ARK_NOINLINE JSTaggedValue ICRuntimeStub::StoreICByName(JSThread *thread, Profil
                                                         JSTaggedValue value, uint32_t slotId)
 {
     INTERPRETER_TRACE(thread, StoreICByName);
-
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
-    auto receiverHandle = JSHandle<JSTaggedValue>(thread, receiver);
-    auto valueHandle = JSHandle<JSTaggedValue>(thread, value);
-    auto profileInfoHandle = JSHandle<JSTaggedValue>(thread, profileTypeInfo);
-    StoreICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileInfoHandle), slotId, ICKind::NamedStoreIC);
-    return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle);
+    return StoreMiss(thread, profileTypeInfo, receiver, key, value, slotId, ICKind::NamedStoreIC);
 }
 
 ARK_INLINE JSTaggedValue ICRuntimeStub::StoreICWithHandler(JSThread *thread, JSTaggedValue receiver,
@@ -475,6 +434,29 @@ ARK_INLINE int32_t ICRuntimeStub::TryToElementsIndex(JSTaggedValue key)
     }
 
     return -1;
+}
+
+JSTaggedValue ICRuntimeStub::LoadMiss(JSThread *thread, ProfileTypeInfo *profileTypeInfo, JSTaggedValue receiver,
+                                      JSTaggedValue key, uint32_t slotId, ICKind kind)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
+    auto receiverHandle = JSHandle<JSTaggedValue>(thread, receiver);
+    auto profileInfoHandle = JSHandle<JSTaggedValue>(thread, profileTypeInfo);
+    LoadICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileInfoHandle), slotId, kind);
+    return icRuntime.LoadMiss(receiverHandle, keyHandle);
+}
+
+JSTaggedValue ICRuntimeStub::StoreMiss(JSThread *thread, ProfileTypeInfo *profileTypeInfo, JSTaggedValue receiver,
+                                       JSTaggedValue key, JSTaggedValue value, uint32_t slotId, ICKind kind)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    auto keyHandle = JSHandle<JSTaggedValue>(thread, key);
+    auto receiverHandle = JSHandle<JSTaggedValue>(thread, receiver);
+    auto valueHandle = JSHandle<JSTaggedValue>(thread, value);
+    auto profileInfoHandle = JSHandle<JSTaggedValue>(thread, profileTypeInfo);
+    StoreICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileInfoHandle), slotId, kind);
+    return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle);
 }
 }  // namespace panda::ecmascript
 

@@ -243,6 +243,8 @@ Properties OpCode::GetProperties() const
         case INT32_LSR:
         case INT32_ASR:
             return {INT32, NO_STATE, NO_DEPEND, VALUE(INT32, INT32), NO_ROOT};
+        case INT8_EQ:
+            return {INT1, NO_STATE, NO_DEPEND, VALUE(INT8, INT8), NO_ROOT};
         case INT32_SLT:
         case INT32_SLE:
         case INT32_SGT:
@@ -469,6 +471,7 @@ std::string OpCode::Str() const
         {INT32_LSL, "INT32_LSL"},
         {INT32_LSR, "INT32_LSR"},
         {INT32_ASR, "INT32_ASR"},
+        {INT8_EQ, "INT8_EQ"},
         {INT32_SLT, "INT32_SLT"},
         {INT32_SLE, "INT32_SLE"},
         {INT32_SGT, "INT32_SGT"},

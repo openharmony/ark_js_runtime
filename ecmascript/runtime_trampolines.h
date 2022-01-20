@@ -145,6 +145,16 @@ public:
     static void ThrowPatternNonCoercible(uintptr_t argGlue);
     static void ThrowDeleteSuperProperty(uintptr_t argGlue);
     static JSTaggedType EqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType LdGlobalRecord(uintptr_t argGlue, JSTaggedType key);
+    static JSTaggedType GetGlobalOwnProperty(uintptr_t argGlue, JSTaggedType key);
+    static JSTaggedType TryLdGlobalByName(uintptr_t argGlue, JSTaggedType prop);
+    static JSTaggedType LoadMiss(uintptr_t argGlue, JSTaggedType profileTypeInfo, JSTaggedType receiver,
+                                 JSTaggedType key, uint32_t slotId, uint32_t kind);
+    static JSTaggedType StoreMiss(uintptr_t argGlue, JSTaggedType profileTypeInfo, JSTaggedType receiver,
+                                  JSTaggedType key, JSTaggedType value, uint32_t slotId, uint32_t kind);
+    static JSTaggedType TryUpdateGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value);
+    static JSTaggedType ThrowReferenceError(uintptr_t argGlue, JSTaggedType prop);
+    static JSTaggedType StGlobalVar(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value);
 };
 }  // namespace panda::ecmascript
 #endif

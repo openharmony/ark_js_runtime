@@ -139,9 +139,8 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
 
     // global variable find from global record firstly
     if (GetICKind() == ICKind::NamedGlobalLoadIC) {
-        bool found = false;
-        JSTaggedValue box = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
-        if (found) {
+        JSTaggedValue box = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue());
+        if (!box.IsUndefined()) {
             ASSERT(box.IsPropertyBox());
             icAccessor_.AddGlobalRecordHandler(JSHandle<JSTaggedValue>(thread_, box));
             return PropertyBox::Cast(box.GetTaggedObject())->GetValue();
@@ -182,9 +181,8 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
 
     // global variable find from global record firstly
     if (GetICKind() == ICKind::NamedGlobalStoreIC) {
-        bool found = false;
-        JSTaggedValue box = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue(), &found);
-        if (found) {
+        JSTaggedValue box = SlowRuntimeStub::LdGlobalRecord(thread_, key.GetTaggedValue());
+        if (!box.IsUndefined()) {
             ASSERT(box.IsPropertyBox());
             SlowRuntimeStub::TryUpdateGlobalRecord(thread_, key.GetTaggedValue(), value.GetTaggedValue());
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread_);

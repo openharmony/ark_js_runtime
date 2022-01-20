@@ -185,6 +185,7 @@ public:
         INT32_LSL,
         INT32_LSR,
         INT32_ASR,
+        INT8_EQ,
         INT32_SLT,
         INT32_SLE,
         INT32_SGT,

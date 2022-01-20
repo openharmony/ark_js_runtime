@@ -178,6 +178,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT64_SGT, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT32_SGE, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_SGE, &LLVMIRBuilder::HandleIntOrUintCmp},
+        {OpCode::INT8_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT32_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::FLOAT64_EQ, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
@@ -1418,6 +1419,7 @@ void LLVMIRBuilder::HandleIntOrUintCmp(GateRef gate)
             VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSGE);
             break;
         }
+        case OpCode::INT8_EQ:  // no break, fall through
         case OpCode::INT32_EQ:  // no break, fall through
         case OpCode::INT64_EQ: {
             VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntEQ);
