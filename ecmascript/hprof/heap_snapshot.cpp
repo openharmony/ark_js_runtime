@@ -166,21 +166,7 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
         case JSType::STRING:
             return GetString("BaseString");
         case JSType::JS_OBJECT: {
-            const GlobalEnvConstants *globalConst = thread->GlobalConstants();
             CString objName = CString("JSOBJECT(Ctor=");  // Ctor-name
-            JSTaggedValue proto = JSObject::Cast(entry)->GetPrototype(thread);
-            JSHandle<JSTaggedValue> protoHandle(thread, proto);
-            if (protoHandle->IsNull() || protoHandle->IsUndefined()) {
-                return GetString("JSObject(Ctor=UnKnown)");
-            }
-            JSHandle<JSTaggedValue> ctor =
-                JSObject::GetProperty(thread, protoHandle, globalConst->GetHandledConstructorString()).GetValue();
-            if (ctor->IsJSFunction()) {
-                JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
-                JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, ctor, nameKey).GetValue();
-                CString ctorName = EntryVisitor::ConvertKey(value.GetTaggedValue());
-                objName.append(ctorName).append(")");
-            }
             return GetString(objName);
         }
         case JSType::FREE_OBJECT_WITH_ONE_FIELD:
