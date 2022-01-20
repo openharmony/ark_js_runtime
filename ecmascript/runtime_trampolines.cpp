@@ -615,6 +615,14 @@ JSTaggedType RuntimeTrampolines::StoreICByValue(uintptr_t argGlue, JSTaggedType 
     return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::StOwnByValue(uintptr_t argGlue,
+                                              JSTaggedType obj, JSTaggedType key, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StOwnByValue(thread,
+        JSTaggedValue(obj), JSTaggedValue(key), JSTaggedValue(value)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);

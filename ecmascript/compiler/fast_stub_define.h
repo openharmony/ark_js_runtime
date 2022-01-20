@@ -80,6 +80,7 @@ namespace panda::ecmascript::kungfu {
     V(SetObjectWithProto, 3)                \
     V(LoadICByValue, 5)                     \
     V(StoreICByValue, 6)                    \
+    V(StOwnByValue, 4)                      \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \
