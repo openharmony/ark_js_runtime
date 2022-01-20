@@ -17,6 +17,7 @@
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/hprof/heap_profiler.h"
+#include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/heap-inl.h"
 namespace panda {
 using ecmascript::CString;
@@ -42,7 +43,8 @@ void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm,  int dumpFormat, const std::string 
 
 std::string DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm)
 {
-    std::string result = ecmascript::base::ErrorHelper::BuildNativeAndJsBackStackTrace(vm->GetJSThread());
+    CString trace = ecmascript::base::ErrorHelper::BuildNativeEcmaStackTrace(vm->GetJSThread());
+    std::string result = CstringConvertToString(trace);
     return result;
 }
 
