@@ -286,6 +286,10 @@ public:
         {
             compCfg_ = cfg;
         }
+        const CompilationConfig *GetCompilationConfig() const
+        {
+            return compCfg_;
+        }
         inline bool IsArm32() const
         {
             return compCfg_->IsArm32();
@@ -612,6 +616,7 @@ public:
     inline GateRef IsSymbol(GateRef obj);
     inline GateRef IsString(GateRef obj);
     inline GateRef IsJsProxy(GateRef obj);
+    inline GateRef IsJSFunctionBase(GateRef obj);
     inline GateRef IsJsArray(GateRef obj);
     inline GateRef IsJSObject(GateRef obj);
     inline GateRef IsWritable(GateRef attr);
@@ -743,6 +748,7 @@ public:
     inline GateRef ZExtInt16ToInt32(GateRef x);
     inline GateRef ZExtInt16ToInt64(GateRef x);
     inline GateRef TruncInt64ToInt32(GateRef x);
+    inline GateRef TruncPtrToInt32(GateRef x);
     inline GateRef TruncInt64ToInt1(GateRef x);
     inline GateRef TruncInt32ToInt1(GateRef x);
     inline GateRef GetGlobalConstantAddr(GateRef index);

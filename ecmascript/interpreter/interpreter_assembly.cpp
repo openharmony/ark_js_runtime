@@ -267,7 +267,7 @@ namespace panda::ecmascript {
                 }                                                                                                    \
                 INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                                \
             }                                                                                                        \
-            SAVE_PC();                                                                                               \
+            GET_FRAME(sp)->pc = pc + GetJumpSizeAfterCall(pc);                                                       \
             JSTaggedType *newSp = nullptr;                                                                           \
             uint32_t callType = methodToCall->GetCallType();                                                         \
             if (callType == NORMAL_CALL_TYPE) {                                                                      \
@@ -725,8 +725,7 @@ void InterpreterAssembly::HandleReturnDyn(
     method = ECMAObject::Cast(prevState->function.GetTaggedObject())->GetCallTarget();
     hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
 
-    size_t jumpSize = GetJumpSizeAfterCall(pc);
-    DISPATCH_OFFSET(jumpSize);
+    DISPATCH_OFFSET(0);
 }
 
 void InterpreterAssembly::HandleReturnUndefinedPref(
@@ -760,8 +759,7 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
     hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
 
     acc = JSTaggedValue::Undefined();
-    size_t jumpSize = GetJumpSizeAfterCall(pc);
-    DISPATCH_OFFSET(jumpSize);
+    DISPATCH_OFFSET(0);
 }
 
 void InterpreterAssembly::HandleLdNanPref(
@@ -2132,8 +2130,7 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
     thread->SetCurrentSPFrame(sp);
     constpool = prevState->constpool;
 
-    size_t jumpSize = GetJumpSizeAfterCall(pc);
-    DISPATCH_OFFSET(jumpSize);
+    DISPATCH_OFFSET(0);
 }
 
 void InterpreterAssembly::HandleAsyncFunctionAwaitUncaughtPrefV8V8(

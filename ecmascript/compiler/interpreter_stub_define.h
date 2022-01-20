@@ -33,7 +33,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleGetPropIteratorPref, 7)                         \
     T(HandleAsyncFunctionEnterPref, 7)                      \
     T(HandleLdHolePref, 7)                                  \
-    V(HandleReturnUndefinedPref, 7)                         \
+    T(HandleReturnUndefinedPref, 7)                         \
     V(HandleCreateEmptyObjectPref, 7)                       \
     V(HandleCreateEmptyArrayPref, 7)                        \
     T(HandleGetIteratorPref, 7)                             \
@@ -162,7 +162,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleJeqzImm16, 7)                                   \
     T(HandleLdaDynV8, 7)                                    \
     T(HandleStaDynV8, 7)                                    \
-    V(HandleReturnDyn, 7)                                   \
+    T(HandleReturnDyn, 7)                                   \
     T(HandleMovV4V4, 7)                                     \
     V(HandleJnezImm8, 7)                                    \
     V(HandleJnezImm16, 7)                                   \
