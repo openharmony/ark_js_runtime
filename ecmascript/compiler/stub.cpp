@@ -2949,4 +2949,110 @@ void Stub::NotifyHClassChanged(GateRef glue, GateRef oldHClass, GateRef newHClas
     env->PopCurrentLabel();
     return;
 }
+
+GateRef Stub::FastEqual(GateRef left, GateRef right)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    Label leftEqualRight(env);
+    Label leftNotEqualRight(env);
+    Label exit(env);
+    Branch(Word64Equal(left, right), &leftEqualRight, &leftNotEqualRight);
+    Bind(&leftEqualRight);
+    {
+        Label leftIsDouble(env);
+        Label leftNotDoubleOrLeftNotNan(env);
+        Branch(TaggedIsDouble(left), &leftIsDouble, &leftNotDoubleOrLeftNotNan);
+        Bind(&leftIsDouble);
+        {
+            GateRef doubleLeft = TaggedCastToDouble(left);
+            Label leftIsNan(env);
+            Branch(DoubleIsNAN(doubleLeft), &leftIsNan, &leftNotDoubleOrLeftNotNan);
+            Bind(&leftIsNan);
+            {
+                result = ChangeInt64ToTagged(TaggedFalse());
+                Jump(&exit);
+            }
+        }
+        Bind(&leftNotDoubleOrLeftNotNan);
+        {
+            result = ChangeInt64ToTagged(TaggedTrue());
+            Jump(&exit);
+        }
+    }
+    Bind(&leftNotEqualRight);
+    {
+        Label leftIsNumber(env);
+        Label leftNotNumberOrLeftNotIntOrRightNotInt(env);
+        Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrLeftNotIntOrRightNotInt);
+        Bind(&leftIsNumber);
+        {
+            Label leftIsInt(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftNotNumberOrLeftNotIntOrRightNotInt);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &leftNotNumberOrLeftNotIntOrRightNotInt);
+                Bind(&rightIsInt);
+                {
+                    result = ChangeInt64ToTagged(TaggedFalse());
+                    Jump(&exit);
+                }
+            }
+        }
+        Bind(&leftNotNumberOrLeftNotIntOrRightNotInt);
+        {
+            Label rightIsUndefinedOrNull(env);
+            Label leftOrRightNotUndefinedOrNull(env);
+            Branch(TaggedIsUndefinedOrNull(right), &rightIsUndefinedOrNull, &leftOrRightNotUndefinedOrNull);
+            Bind(&rightIsUndefinedOrNull);
+            {
+                Label leftIsHeapObject(env);
+                Label leftNotHeapObject(env);
+                Branch(TaggedIsHeapObject(left), &leftIsHeapObject, &leftNotHeapObject);
+                Bind(&leftIsHeapObject);
+                {
+                    result = ChangeInt64ToTagged(TaggedFalse());
+                    Jump(&exit);
+                }
+                Bind(&leftNotHeapObject);
+                {
+                    Label leftIsUndefinedOrNull(env);
+                    Branch(TaggedIsUndefinedOrNull(left), &leftIsUndefinedOrNull, &leftOrRightNotUndefinedOrNull);
+                    Bind(&leftIsUndefinedOrNull);
+                    {
+                        result = ChangeInt64ToTagged(TaggedTrue());
+                        Jump(&exit);
+                    }
+                }
+            }
+            Bind(&leftOrRightNotUndefinedOrNull);
+            {
+                Label leftIsBool(env);
+                Label leftNotBoolOrRightNotSpecial(env);
+                Branch(TaggedIsBoolean(left), &leftIsBool, &leftNotBoolOrRightNotSpecial);
+                Bind(&leftIsBool);
+                {
+                    Label rightIsSpecial(env);
+                    Branch(TaggedIsSpecial(right), &rightIsSpecial, &leftNotBoolOrRightNotSpecial);
+                    Bind(&rightIsSpecial);
+                    {
+                        result = ChangeInt64ToTagged(TaggedFalse());
+                        Jump(&exit);
+                    }
+                }
+                Bind(&leftNotBoolOrRightNotSpecial);
+                {
+                    Jump(&exit);
+                }
+            }
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
 }  // namespace panda::ecmascript::kungfu

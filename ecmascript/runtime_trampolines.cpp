@@ -774,4 +774,10 @@ void RuntimeTrampolines::ThrowDeleteSuperProperty(uintptr_t argGlue)
     auto thread = JSThread::GlueToJSThread(argGlue);
     SlowRuntimeStub::ThrowDeleteSuperProperty(thread);
 }
+
+JSTaggedType RuntimeTrampolines::EqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::EqDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
 }  // namespace panda::ecmascript

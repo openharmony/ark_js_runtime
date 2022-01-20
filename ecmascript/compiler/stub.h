@@ -769,6 +769,9 @@ public:
     inline GateRef GetFunctionInfoFlagFromJSFunction(GateRef object);
     inline GateRef GetHomeObjectFromJSFunction(GateRef object);
     inline void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
+    
+    // fast path
+    GateRef FastEqual(GateRef left, GateRef right);
 
 private:
     Environment env_;

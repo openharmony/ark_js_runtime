@@ -352,6 +352,46 @@ DECLARE_ASM_HANDLER(HandleDebuggerPref)
     DISPATCH(PREF_NONE);
 }
 
+DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    // fast path
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    result = FastEqual(left, acc);
+    Label isHole(env);
+    Label notHole(env);
+    Label dispatch(env);
+    Branch(TaggedIsHole(*result), &isHole, &notHole);
+    Bind(&isHole);
+    {
+        // slow path
+        StubDescriptor *eqDyn = GET_STUBDESCRIPTOR(EqDyn);
+        result = CallRuntime(eqDyn, glue, GetWord64Constant(FAST_STUB_ID(EqDyn)),
+                                {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = *result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&notHole);
+    {
+        varAcc = *result;
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
 DECLARE_ASM_HANDLER(AsmInterpreterEntry)
 {
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));

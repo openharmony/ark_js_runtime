@@ -135,6 +135,7 @@ public:
     static void ThrowThrowNotExists(uintptr_t argGlue);
     static void ThrowPatternNonCoercible(uintptr_t argGlue);
     static void ThrowDeleteSuperProperty(uintptr_t argGlue);
+    static JSTaggedType EqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
 };
 }  // namespace panda::ecmascript
 #endif

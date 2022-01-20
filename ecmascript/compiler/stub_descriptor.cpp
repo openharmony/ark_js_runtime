@@ -1450,6 +1450,21 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowDeleteSuperProperty)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(EqDyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor eqDyn("EqDyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = eqDyn;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 #ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {
