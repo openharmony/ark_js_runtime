@@ -1754,7 +1754,7 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
         Bind(&numberIsDouble);
         {
             GateRef valueDouble = TaggedCastToDouble(value);
-            number = CastDoubleToInt32(valueDouble);
+            number = ChangeFloat64ToInt32(valueDouble);
             varAcc = IntBuildTaggedWithNoGC(Word32Not(*number));
             Jump(&accDispatch);
         }
@@ -1779,6 +1779,572 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
 
     Bind(&accDispatch);
     DISPATCH_WITH_ACC(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef right = *varAcc;
+    DEFVARIABLE(opNumber0, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, MachineType::INT32, GetInt32Constant(0));
+
+    Label accDispatch(env);
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+        }
+    }
+    // slow path
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+        StubDescriptor *ChangeTwoInt32AndToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoInt32AndToJSTaggedValue);
+        GateRef taggedNumber = CallRuntime(ChangeTwoInt32AndToJSTaggedValue, glue, GetWord64Constant(FAST_STUB_ID(ChangeTwoInt32AndToJSTaggedValue)),
+                                           {glue, left, right});
+
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(taggedNumber), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+        Bind(&notException);
+        {
+            varAcc = taggedNumber;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+    Bind(&accDispatch);
+    {
+        GateRef ret = Word32And(*opNumber0, *opNumber1);
+        varAcc = IntBuildTaggedWithNoGC(ret);
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef right = *varAcc;
+    DEFVARIABLE(opNumber0, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, MachineType::INT32, GetInt32Constant(0));
+
+    Label accDispatch(env);
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+        }
+    }
+    // slow path
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+        StubDescriptor *ChangeTwoInt32OrToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoInt32OrToJSTaggedValue);
+        GateRef taggedNumber = CallRuntime(ChangeTwoInt32OrToJSTaggedValue, glue, GetWord64Constant(FAST_STUB_ID(ChangeTwoInt32OrToJSTaggedValue)),
+                                           {glue, left, right});
+
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(taggedNumber), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+        Bind(&notException);
+        {
+            varAcc = taggedNumber;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+    Bind(&accDispatch);
+    {
+        GateRef ret = Word32Or(*opNumber0, *opNumber1);
+        varAcc = IntBuildTaggedWithNoGC(ret);
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef right = *varAcc;
+    DEFVARIABLE(opNumber0, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, MachineType::INT32, GetInt32Constant(0));
+
+    Label accDispatch(env);
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+        }
+    }
+    // slow path
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+        StubDescriptor *ChangeTwoInt32XorToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoInt32XorToJSTaggedValue);
+        GateRef taggedNumber = CallRuntime(ChangeTwoInt32XorToJSTaggedValue, glue, GetWord64Constant(FAST_STUB_ID(ChangeTwoInt32XorToJSTaggedValue)),
+                                           {glue, left, right});
+
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(taggedNumber), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+        Bind(&notException);
+        {
+            varAcc = taggedNumber;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+    Bind(&accDispatch);
+    {
+        GateRef ret = Word32Xor(*opNumber0, *opNumber1);
+        varAcc = IntBuildTaggedWithNoGC(ret);
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef right = *varAcc;
+    DEFVARIABLE(opNumber0, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, MachineType::INT32, GetInt32Constant(0));
+
+    Label accDispatch(env);
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+        }
+    }
+    // slow path
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+        StubDescriptor *ChangeTwoUint32AndToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoUint32AndToJSTaggedValue);
+        GateRef taggedNumber = CallRuntime(ChangeTwoUint32AndToJSTaggedValue, glue, GetWord64Constant(FAST_STUB_ID(ChangeTwoUint32AndToJSTaggedValue)),
+                                           {glue, left, right});
+
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(taggedNumber), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+        Bind(&notException);
+        {
+            varAcc = taggedNumber;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+    Bind(&accDispatch);
+    {
+        GateRef shift = Word32And(*opNumber1, GetInt32Constant(0x1f));
+        GateRef ret = Word32LSR(*opNumber0, shift);
+        varAcc = IntBuildTaggedWithNoGC(ret);
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef right = *varAcc;
+    DEFVARIABLE(opNumber0, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, MachineType::INT32, GetInt32Constant(0));
+
+    Label accDispatch(env);
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+        }
+    }
+    // slow path
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+
+        StubDescriptor *ChangeUintAndIntShrToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeUintAndIntShrToJSTaggedValue);
+        GateRef taggedNumber = CallRuntime(ChangeUintAndIntShrToJSTaggedValue, glue, GetWord64Constant(FAST_STUB_ID(ChangeUintAndIntShrToJSTaggedValue)),
+                                        {glue, left, right});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(taggedNumber), &isException, &notException);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+        Bind(&notException);
+        {
+            varAcc = taggedNumber;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+    Bind(&accDispatch);
+    {
+        GateRef shift = Word32And(*opNumber1, GetInt32Constant(0x1f));
+        GateRef ret = Word32LSR(*opNumber0, shift);
+        varAcc = IntBuildTaggedWithNoGC(ret);
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
+}
+DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef right = *varAcc;
+    DEFVARIABLE(opNumber0, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, MachineType::INT32, GetInt32Constant(0));
+
+    Label accDispatch(env);
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Label rightIsInt(env);
+                Label rightIsDouble(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = TaggedCastToInt32(right);
+                    Jump(&accDispatch);
+                }
+                Bind(&rightIsDouble);
+                {
+                    GateRef rightDouble = TaggedCastToDouble(right);
+                    GateRef leftDouble = TaggedCastToDouble(left);
+                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    Jump(&accDispatch);
+                }
+            }
+        }
+    }
+    // slow path
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+
+        StubDescriptor *ChangeUintAndIntShlToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeUintAndIntShlToJSTaggedValue);
+        GateRef taggedNumber = CallRuntime(ChangeUintAndIntShlToJSTaggedValue, glue, GetWord64Constant(FAST_STUB_ID(ChangeUintAndIntShlToJSTaggedValue)),
+                                        {glue, left, right});
+        Label IsException(env);
+        Label NotException(env);
+        Branch(TaggedIsException(taggedNumber), &IsException, &NotException);
+        Bind(&IsException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+        Bind(&NotException);
+        {
+            varAcc = taggedNumber;
+            DISPATCH_WITH_ACC(PREF_V8);
+        }
+    }
+    Bind(&accDispatch);
+    {
+        GateRef shift = Word32And(*opNumber1, GetInt32Constant(0x1f));
+        GateRef ret = Word32LSL(*opNumber0, shift);
+        varAcc = IntBuildTaggedWithNoGC(ret);
+        DISPATCH_WITH_ACC(PREF_V8);
+    }
 }
 
 DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)

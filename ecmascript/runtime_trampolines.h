@@ -117,6 +117,12 @@ public:
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
     static JSTaggedType NegDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType NotDyn(uintptr_t argGlue, JSTaggedType value);
+    static JSTaggedType ChangeUintAndIntShrToJSTaggedValue(uintptr_t argGlue, JSTaggedType leftInt, JSTaggedType rightUint);
+    static JSTaggedType ChangeUintAndIntShlToJSTaggedValue(uintptr_t argGlue, JSTaggedType leftInt, JSTaggedType rightUint);
+    static JSTaggedType ChangeTwoInt32AndToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType ChangeTwoInt32XorToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType ChangeTwoInt32OrToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType ChangeTwoUint32AndToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal, JSTaggedType base,
                                      JSTaggedType lexenv, JSTaggedType constpool);
     static JSTaggedType CloneClassFromTemplate(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType base,

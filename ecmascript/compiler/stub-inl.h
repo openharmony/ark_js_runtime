@@ -534,6 +534,11 @@ GateRef Stub::Word32Not(GateRef x)
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_REV), x);
 }
 
+GateRef Stub::Word32Xor(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT32_XOR), x, y);
+}
+
 GateRef Stub::Word64Or(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::INT64_OR), x, y);
@@ -757,12 +762,6 @@ GateRef Stub::DoubleBuildTaggedWithNoGC(GateRef x)
 GateRef Stub::CastDoubleToInt64(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::BITCAST_FLOAT64_TO_INT64), x);
-}
-
-GateRef Stub::CastDoubleToInt32(GateRef x)
-{
-    GateRef tmp = CastDoubleToInt64(x);
-    return ChangeInt64ToInt32(tmp);
 }
 
 GateRef Stub::TaggedTrue()

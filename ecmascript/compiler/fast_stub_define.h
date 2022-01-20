@@ -55,6 +55,12 @@ namespace panda::ecmascript::kungfu {
     V(NotDyn, 2)                            \
     V(IncDyn, 2)                            \
     V(DecDyn, 2)                            \
+    V(ChangeUintAndIntShrToJSTaggedValue, 3)\
+    V(ChangeUintAndIntShlToJSTaggedValue, 3)\
+    V(ChangeTwoInt32AndToJSTaggedValue, 3)  \
+    V(ChangeTwoInt32XorToJSTaggedValue, 3)  \
+    V(ChangeTwoInt32OrToJSTaggedValue, 3)   \
+    V(ChangeTwoUint32AndToJSTaggedValue, 3) \
     V(ExpDyn, 3)                            \
     V(IsInDyn, 3)                           \
     V(InstanceOfDyn, 3)                     \

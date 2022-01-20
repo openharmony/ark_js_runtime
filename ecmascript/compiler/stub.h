@@ -515,7 +515,7 @@ public:
     inline GateRef Word32Or(GateRef x, GateRef y);
     inline GateRef Word32And(GateRef x, GateRef y);
     inline GateRef Word32Not(GateRef x);
-    GateRef Word32Xor(GateRef x, GateRef y);
+    inline GateRef Word32Xor(GateRef x, GateRef y);
     GateRef FixLoadType(GateRef x);
     inline GateRef Word64Or(GateRef x, GateRef y);
     inline GateRef Word64And(GateRef x, GateRef y);
@@ -558,7 +558,6 @@ public:
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
-    inline GateRef CastDoubleToInt32(GateRef x);
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();
     // compare operation
