@@ -1469,6 +1469,51 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
     DISPATCH(PREF_V8_V8);
 }
 
+DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
+    Label isHeapObject(env);
+    Label slowPath(env);
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsHeapObject(receiver), &isHeapObject, &slowPath);
+    Bind(&isHeapObject);
+    Label notClassConstructor(env);
+    Branch(IsClassConstructor(receiver), &slowPath, &notClassConstructor);
+    Bind(&notClassConstructor);
+    Label notClassPrototype(env);
+    Branch(IsClassPrototype(receiver), &slowPath, &notClassPrototype);
+    Bind(&notClassPrototype);
+    {
+        // fast path
+        StubDescriptor *setPropertyByValue = GET_STUBDESCRIPTOR(SetPropertyByValue);
+        GateRef result = CallRuntime(setPropertyByValue, glue, GetWord64Constant(FAST_STUB_ID(SetPropertyByValue)),
+                                     {glue, receiver, propKey, acc}); // acc is value
+        Label notHole(env);
+        Branch(TaggedIsHole(result), &slowPath, &notHole);
+        Bind(&notHole);
+        Branch(TaggedIsException(result), &isException, &notException);
+    }
+    Bind(&slowPath);
+    {
+        StubDescriptor *stOwnByValue = GET_STUBDESCRIPTOR(StOwnByValue);
+        GateRef result = CallRuntime(stOwnByValue, glue, GetWord64Constant(FAST_STUB_ID(StOwnByValue)),
+                                     {glue, receiver, propKey, acc}); // acc is value
+        Branch(TaggedIsException(result), &isException, &notException);
+    }
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    DISPATCH(PREF_V8_V8);
+}
+
 DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
 {
     auto env = GetEnvironment();

@@ -110,6 +110,7 @@ public:
     static JSTaggedType StoreICByValue(uintptr_t argGlue, JSTaggedType profileTypeInfo,
                                        JSTaggedType receiver, JSTaggedType propKey, JSTaggedType value,
                                        int32_t slotId);
+    static JSTaggedType StOwnByValue(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
     static JSTaggedType StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst);
     static JSTaggedType NegDyn(uintptr_t argGlue, JSTaggedType value);
     static JSTaggedType NotDyn(uintptr_t argGlue, JSTaggedType value);
