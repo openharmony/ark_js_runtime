@@ -89,6 +89,9 @@ namespace panda::ecmascript::kungfu {
     V(StOwnByValue, 4)                      \
     V(LdSuperByValue, 4)                    \
     V(StSuperByValue, 5)                    \
+    V(LdObjByIndex, 5)                      \
+    V(StObjByIndex, 4)                      \
+    V(StOwnByIndex, 4)                      \
     V(ResolveClass, 6)                      \
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \

@@ -97,9 +97,9 @@ namespace panda::ecmascript::kungfu {
     T(HandleStOwnByValuePrefV8V8, 7)                        \
     T(HandleLdSuperByValuePrefV8V8, 7)                      \
     T(HandleStSuperByValuePrefV8V8, 7)                      \
-    V(HandleLdObjByIndexPrefV8Imm32, 7)                     \
-    V(HandleStObjByIndexPrefV8Imm32, 7)                     \
-    V(HandleStOwnByIndexPrefV8Imm32, 7)                     \
+    T(HandleLdObjByIndexPrefV8Imm32, 7)                     \
+    T(HandleStObjByIndexPrefV8Imm32, 7)                     \
+    T(HandleStOwnByIndexPrefV8Imm32, 7)                     \
     V(HandleCallSpreadDynPrefV8V8V8, 7)                     \
     V(HandleAsyncFunctionResolvePrefV8V8V8, 7)              \
     V(HandleAsyncFunctionRejectPrefV8V8V8, 7)               \

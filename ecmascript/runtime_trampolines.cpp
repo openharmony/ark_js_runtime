@@ -639,6 +639,26 @@ JSTaggedType RuntimeTrampolines::StSuperByValue(uintptr_t argGlue,
         JSTaggedValue(obj), JSTaggedValue(key), JSTaggedValue(value), thisFunc).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::LdObjByIndex(uintptr_t argGlue, JSTaggedType obj, uint32_t idx,
+                                              bool callGetter, JSTaggedType receiver)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::LdObjByIndex(thread, JSTaggedValue(obj), idx,
+                                         callGetter, JSTaggedValue(receiver)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::StObjByIndex(uintptr_t argGlue, JSTaggedType obj, uint32_t idx, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StObjByIndex(thread, JSTaggedValue(obj), idx, JSTaggedValue(value)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::StOwnByIndex(uintptr_t argGlue, JSTaggedType obj, uint32_t idx, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StOwnByIndex(thread, JSTaggedValue(obj), idx, JSTaggedValue(value)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
