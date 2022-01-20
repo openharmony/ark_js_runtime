@@ -33,7 +33,6 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
 {
     if (concurrentSweep_) {
         // Add all region to region list. Ensure all task finish
-        trace::ScopedTrace scoped_trace("ConcurrentSweeper::SweepPhases");
         if (!compressGC) {
             heap_->GetOldSpace()->EnumerateNonCollectRegionSet([this](Region *current) {
                 AddRegion(OLD_SPACE, current);
@@ -81,7 +80,6 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
 
 void ConcurrentSweeper::SweepSpace(MemSpaceType type, bool isMain)
 {
-    trace::ScopedTrace scoped_trace("Sweeper::SweepSpace");
     FreeListAllocator &allocator = heap_->GetHeapManager()->GetFreeListAllocator(type);
     Region *current = GetRegionSafe(type);
     while (current != nullptr) {
@@ -118,7 +116,6 @@ void ConcurrentSweeper::SweepSpace(MemSpaceType type, Space *space, FreeListAllo
 
 void ConcurrentSweeper::SweepHugeSpace()
 {
-    trace::ScopedTrace scoped_trace("SweepSpace HugeObject");
     HugeObjectSpace *space = const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace());
     Region *currentRegion = space->GetRegionList().GetFirst();
 
@@ -159,7 +156,6 @@ void ConcurrentSweeper::FreeRegion(Region *current, FreeListAllocator &allocator
 
 void ConcurrentSweeper::FillSweptRegion(MemSpaceType type)
 {
-    trace::ScopedTrace scoped_trace("Sweeper::FillSweptRegion");
     if (sweptList_[type].empty()) {
         return;
     }
