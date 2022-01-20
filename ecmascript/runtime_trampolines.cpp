@@ -657,6 +657,126 @@ JSTaggedType RuntimeTrampolines::NotDyn(uintptr_t argGlue, JSTaggedType value)
     return SlowRuntimeStub::NotDyn(thread, JSTaggedValue(value)).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::ChangeUintAndIntShrToJSTaggedValue(uintptr_t argGlue, JSTaggedType leftInt, JSTaggedType rightUint)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> leftHandle(thread, JSTaggedValue(leftInt));
+    JSHandle<JSTaggedValue> rightHandle(thread, JSTaggedValue(rightUint));
+    int32_t leftInt32 = JSTaggedValue::ToInt32(thread, leftHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+    int32_t rightInt32 = JSTaggedValue::ToUint32(thread, rightHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+
+    uint32_t shift = static_cast<uint32_t>(rightInt32) & 0x1f;
+    auto ret = static_cast<int32_t>(leftInt32 >> shift);
+    return JSTaggedValue(ret).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::ChangeTwoInt32AndToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> leftHandle(thread, JSTaggedValue(left));
+    JSHandle<JSTaggedValue> rightHandle(thread, JSTaggedValue(right));
+    int32_t leftInt = JSTaggedValue::ToInt32(thread, leftHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+    int32_t rightInt = JSTaggedValue::ToInt32(thread, rightHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+
+    auto ret = static_cast<uint32_t>(leftInt) & static_cast<uint32_t>(rightInt);
+    return JSTaggedValue(ret).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::ChangeTwoInt32OrToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> leftHandle(thread, JSTaggedValue(left));
+    JSHandle<JSTaggedValue> rightHandle(thread, JSTaggedValue(right));
+    int32_t leftInt = JSTaggedValue::ToInt32(thread, leftHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+    int32_t rightInt = JSTaggedValue::ToInt32(thread, rightHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+
+    auto ret = static_cast<uint32_t>(leftInt) | static_cast<uint32_t>(rightInt);
+    return JSTaggedValue(ret).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::ChangeTwoInt32XorToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> leftHandle(thread, JSTaggedValue(left));
+    JSHandle<JSTaggedValue> rightHandle(thread, JSTaggedValue(right));
+    int32_t leftInt = JSTaggedValue::ToInt32(thread, leftHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+    int32_t rightInt = JSTaggedValue::ToInt32(thread, rightHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+
+    auto ret = static_cast<uint32_t>(leftInt) ^ static_cast<uint32_t>(rightInt);
+    return JSTaggedValue(ret).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::ChangeTwoUint32AndToJSTaggedValue(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> leftHandle(thread, JSTaggedValue(left));
+    JSHandle<JSTaggedValue> rightHandle(thread, JSTaggedValue(right));
+    int32_t leftInt = JSTaggedValue::ToUint32(thread, leftHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+    int32_t rightInt = JSTaggedValue::ToUint32(thread, rightHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+
+    auto ret = static_cast<uint32_t>(leftInt) & static_cast<uint32_t>(rightInt);
+    return JSTaggedValue(ret).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::ChangeUintAndIntShlToJSTaggedValue(uintptr_t argGlue, JSTaggedType leftInt, JSTaggedType rightUint)
+{
+
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> leftHandle(thread, JSTaggedValue(leftInt));
+    JSHandle<JSTaggedValue> rightHandle(thread, JSTaggedValue(rightUint));
+    int32_t leftInt32 = JSTaggedValue::ToInt32(thread, leftHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+    int32_t rightInt32 = JSTaggedValue::ToUint32(thread, rightHandle);
+    if (thread->HasPendingException()) {
+        return JSTaggedValue::Exception().GetRawData();
+    }
+
+    uint32_t shift =
+        static_cast<uint32_t>(rightInt32) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+    using unsigned_type = std::make_unsigned_t<int32_t>;
+    auto ret =
+        static_cast<int32_t>(static_cast<unsigned_type>(leftInt32) << shift);  // NOLINT(hicpp-signed-bitwise)
+    return JSTaggedValue(ret).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::ResolveClass(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType literal,
     JSTaggedType base, JSTaggedType lexenv, JSTaggedType constpool)
 {
