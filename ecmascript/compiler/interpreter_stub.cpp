@@ -739,7 +739,7 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST();
         }
         Bind(&notException);
         varAcc = result;
@@ -800,7 +800,7 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST();
         }
         Bind(&notException);
         varAcc = result;
@@ -820,13 +820,13 @@ DECLARE_ASM_HANDLER(HandleExpDynPrefV8)
     GateRef base = GetVregValue(sp, ZExtInt8ToPtr(v0));
     StubDescriptor *expDyn = GET_STUBDESCRIPTOR(ExpDyn);
     GateRef result = CallRuntime(expDyn, glue, GetWord64Constant(FAST_STUB_ID(ExpDyn)),
-                                 {glue, base, *varAcc}); // acc is exponent
+                                 {glue, base, acc}); // acc is exponent
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -842,13 +842,13 @@ DECLARE_ASM_HANDLER(HandleIsInDynPrefV8)
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v0));
     StubDescriptor *isInDyn = GET_STUBDESCRIPTOR(IsInDyn);
     GateRef result = CallRuntime(isInDyn, glue, GetWord64Constant(FAST_STUB_ID(IsInDyn)),
-                                 {glue, prop, *varAcc}); // acc is obj
+                                 {glue, prop, acc}); // acc is obj
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -864,13 +864,13 @@ DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     StubDescriptor *instanceOfDyn = GET_STUBDESCRIPTOR(InstanceOfDyn);
     GateRef result = CallRuntime(instanceOfDyn, glue, GetWord64Constant(FAST_STUB_ID(InstanceOfDyn)),
-                                 {glue, obj, *varAcc}); // acc is target
+                                 {glue, obj, acc}); // acc is target
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -884,7 +884,7 @@ DECLARE_ASM_HANDLER(HandleStrictNotEqDynPrefV8)
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     StubDescriptor *fastStrictNotEqual = GET_STUBDESCRIPTOR(FastStrictNotEqual);
     GateRef result = CallRuntime(fastStrictNotEqual, glue, GetWord64Constant(FAST_STUB_ID(FastStrictNotEqual)),
-                                 {left, *varAcc}); // acc is right
+                                 {left, acc}); // acc is right
     varAcc = result;
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -897,7 +897,7 @@ DECLARE_ASM_HANDLER(HandleStrictEqDynPrefV8)
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     StubDescriptor *fastStrictEqual = GET_STUBDESCRIPTOR(FastStrictEqual);
     GateRef result = CallRuntime(fastStrictEqual, glue, GetWord64Constant(FAST_STUB_ID(FastStrictEqual)),
-                                 {left, *varAcc}); // acc is right
+                                 {left, acc}); // acc is right
     varAcc = result;
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -939,7 +939,7 @@ DECLARE_ASM_HANDLER(HandleCreateGeneratorObjPrefV8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -953,7 +953,7 @@ DECLARE_ASM_HANDLER(HandleThrowConstAssignmentPrefV8)
     StubDescriptor *throwConstAssignment = GET_STUBDESCRIPTOR(ThrowConstAssignment);
     CallRuntime(throwConstAssignment, glue, GetWord64Constant(FAST_STUB_ID(ThrowConstAssignment)),
                 {glue, value});
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+    DISPATCH_LAST();
 }
 
 DECLARE_ASM_HANDLER(HandleGetTemplateObjectPrefV8)
@@ -971,7 +971,7 @@ DECLARE_ASM_HANDLER(HandleGetTemplateObjectPrefV8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -993,7 +993,7 @@ DECLARE_ASM_HANDLER(HandleGetNextPropNamePrefV8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1010,14 +1010,13 @@ DECLARE_ASM_HANDLER(HandleThrowIfNotObjectPrefV8)
     Branch(IsEcmaObject(value), &isEcmaObject, &notEcmaObject);
     Bind(&isEcmaObject);
     {
-        Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
-                 GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8)));
+        DISPATCH(PREF_V8);
     }
     Bind(&notEcmaObject);
     StubDescriptor *throwIfNotObject = GET_STUBDESCRIPTOR(ThrowIfNotObject);
     CallRuntime(throwIfNotObject, glue, GetWord64Constant(FAST_STUB_ID(ThrowIfNotObject)),
                 {glue});
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+    DISPATCH_LAST();
 }
 
 DECLARE_ASM_HANDLER(HandleIterNextPrefV8)
@@ -1035,7 +1034,7 @@ DECLARE_ASM_HANDLER(HandleIterNextPrefV8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1057,7 +1056,7 @@ DECLARE_ASM_HANDLER(HandleCloseIteratorPrefV8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1083,13 +1082,13 @@ DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(v0));
     StubDescriptor *superCallSpread = GET_STUBDESCRIPTOR(SuperCallSpread);
     GateRef result = CallRuntime(superCallSpread, glue, GetWord64Constant(FAST_STUB_ID(SuperCallSpread)),
-                                 {glue, *varAcc, sp, array}); // acc is thisFunc, sp for newTarget
+                                 {glue, acc, sp, array}); // acc is thisFunc, sp for newTarget
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1113,7 +1112,7 @@ DECLARE_ASM_HANDLER(HandleDelObjPropPrefV8V8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1131,13 +1130,13 @@ DECLARE_ASM_HANDLER(HandleNewObjSpreadDynPrefV8V8)
     GateRef newTarget = GetVregValue(sp, ZExtInt8ToPtr(v1));
     StubDescriptor *newObjSpreadDyn = GET_STUBDESCRIPTOR(NewObjSpreadDyn);
     GateRef result = CallRuntime(newObjSpreadDyn, glue, GetWord64Constant(FAST_STUB_ID(NewObjSpreadDyn)),
-                                 {glue, func, newTarget, *varAcc}); // acc is array
+                                 {glue, func, newTarget, acc}); // acc is array
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1161,7 +1160,7 @@ DECLARE_ASM_HANDLER(HandleCreateIterResultObjPrefV8V8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1186,7 +1185,7 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionAwaitUncaughtPrefV8V8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1204,8 +1203,7 @@ DECLARE_ASM_HANDLER(HandleThrowUndefinedIfHolePrefV8V8)
     Branch(TaggedIsHole(hole), &isHole, &notHole);
     Bind(&notHole);
     {
-        Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
-                 GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8)));
+        DISPATCH(PREF_V8_V8);
     }
     Bind(&isHole);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
@@ -1213,7 +1211,7 @@ DECLARE_ASM_HANDLER(HandleThrowUndefinedIfHolePrefV8V8)
     StubDescriptor *throwUndefinedIfHole = GET_STUBDESCRIPTOR(ThrowUndefinedIfHole);
     CallRuntime(throwUndefinedIfHole, glue, GetWord64Constant(FAST_STUB_ID(ThrowUndefinedIfHole)),
                 {glue, obj});
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+    DISPATCH_LAST();
 }
 
 DECLARE_ASM_HANDLER(HandleCopyDataPropertiesPrefV8V8)
@@ -1233,7 +1231,7 @@ DECLARE_ASM_HANDLER(HandleCopyDataPropertiesPrefV8V8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1251,13 +1249,13 @@ DECLARE_ASM_HANDLER(HandleStArraySpreadPrefV8V8)
     GateRef index = GetVregValue(sp, ZExtInt8ToPtr(v1));
     StubDescriptor *stArraySpread = GET_STUBDESCRIPTOR(StArraySpread);
     GateRef result = CallRuntime(stArraySpread, glue, GetWord64Constant(FAST_STUB_ID(StArraySpread)),
-                                 {glue, dst, index, *varAcc}); // acc is res
+                                 {glue, dst, index, acc}); // acc is res
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1281,7 +1279,7 @@ DECLARE_ASM_HANDLER(HandleGetIteratorNextPrefV8V8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1305,7 +1303,7 @@ DECLARE_ASM_HANDLER(HandleSetObjectWithProtoPrefV8V8)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&notException);
     varAcc = result;
@@ -1413,7 +1411,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
     }
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST();
     }
     Bind(&accDispatch);
     DISPATCH_WITH_ACC(PREF_V8_V8);
@@ -1546,6 +1544,54 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
                                      {glue, receiver, propKey, acc}); // acc is value
         Branch(TaggedIsException(result), &isException, &notException);
     }
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    DISPATCH(PREF_V8_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
+
+    StubDescriptor *ldSuperByValue = GET_STUBDESCRIPTOR(LdSuperByValue);
+    GateRef result = CallRuntime(ldSuperByValue, glue, GetWord64Constant(FAST_STUB_ID(LdSuperByValue)),
+                                 {glue, receiver, propKey, sp}); // sp for thisFunc
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(result), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = result;
+    DISPATCH_WITH_ACC(PREF_V8_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleStSuperByValuePrefV8V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef v0 = ReadInst8_1(pc);
+    GateRef v1 = ReadInst8_2(pc);
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
+    GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
+
+    StubDescriptor *stSuperByValue = GET_STUBDESCRIPTOR(StSuperByValue);
+    GateRef result = CallRuntime(stSuperByValue, glue, GetWord64Constant(FAST_STUB_ID(StSuperByValue)),
+                                 {glue, receiver, propKey, acc, sp}); // acc is value, sp for thisFunc
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
         DISPATCH_LAST();
