@@ -40,6 +40,7 @@ void ConcurrentMarker::ConcurrentMarking()
     ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Mark Begin";
 
     heap_->Prepare();
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "ConcurrentMarker::ConcurrentMarking");
     thread_->SetMarkStatus(MarkStatus::MARKING);
     if (!heap_->IsSemiMarkNeeded()) {
         heapObjectSize_ = heap_->GetHeapObjectSize();

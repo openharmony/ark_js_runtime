@@ -24,6 +24,10 @@
 #include "ecmascript/mem/slots.h"
 #include "utils/logger.h"
 
+#ifndef PANDA_TARGET_LINUX
+    #include "bytrace.h"
+#endif
+
 #if defined(__cplusplus)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define LOG_ECMA(type) \
@@ -33,6 +37,14 @@
 
 #define OPTIONAL_LOG(ecmaVM, level, component) \
     LOG_IF(ecmaVM->IsOptionalLogEnabled(), level, component)
+
+#ifndef PANDA_TARGET_LINUX
+    #define ECMA_BYTRACE_NAME(tag, name)                            \
+        BYTRACE_NAME(tag, name);                                    \
+        trace::ScopedTrace scopedTrace(name)
+#else
+    #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)
+#endif
 
 /* Note: We can't statically decide the element type is a primitive or heap object, especially for */
 /*       dynamically-typed languages like JavaScript. So we simply skip the read-barrier.          */

@@ -335,6 +335,7 @@ bool Heap::CheckConcurrentMark(JSThread *thread)
     if (ConcurrentMarkingEnable() && !thread->IsReadyToMark()) {
         if (thread->IsMarking()) {
             [[maybe_unused]] ClockScope clockScope;
+            ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "Heap::CheckConcurrentMark");
             WaitConcurrentMarkingFinished();
             ECMA_GC_LOG() << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();
         }
