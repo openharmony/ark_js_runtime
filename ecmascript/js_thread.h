@@ -161,6 +161,11 @@ public:
         return globalStorage_;
     }
 
+    void SetGlobalObject(JSTaggedValue globalObject)
+    {
+        globalObject_ = globalObject;
+    }
+
     const GlobalEnvConstants *GlobalConstants() const
     {
         return &globalConst_;
@@ -229,6 +234,11 @@ public:
     static constexpr uint32_t GetPropertiesCacheOffset()
     {
         return MEMBER_OFFSET(JSThread, propertiesCache_);
+    }
+
+    static constexpr uint32_t GetGlobalObjectOffset()
+    {
+        return MEMBER_OFFSET(JSThread, globalObject_);
     }
 
     static constexpr uint32_t GetGlobalConstantsOffset()
@@ -327,6 +337,7 @@ public:
     // The sequence must be the same as that of the GLUE members.
     enum class GlueID : uint8_t {
         EXCEPTION = 0U,
+        GLOBAL_OBJECT,
         GLOBAL_CONST,
         PROPERTIES_CACHE,
         GLOBAL_STORAGE,
@@ -378,6 +389,7 @@ private:
 
     // GLUE members start, very careful to modify here
     JSTaggedValue exception_ {JSTaggedValue::Hole()};
+    JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
     GlobalEnvConstants globalConst_;  // Place-Holder
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};
@@ -391,14 +403,16 @@ private:
 };
 
 #define GLUE_OFFSET_LIST(V)                                                                      \
-    V(GLOBAL_CONSTANTS, GlobalConstants, EXCEPTION,                                              \
+    V(GLOBAL_OBJECT, GlobalObject, EXCEPTION,                                                    \
+        JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                        \
+    V(GLOBAL_CONSTANTS, GlobalConstants, GLOBAL_OBJECT,                                          \
         JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                        \
     V(PROPERTIES_CACHE, PropertiesCache, GLOBAL_CONSTANTS,                                       \
         static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize(), \
         static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize()) \
     V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
     V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
-    V(BYTECODE_HANDLERS, BytecodeHandlers, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(BYTECODE_HANDLERS, BytecodeHandlers, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))    \
     V(RUNTIME_FUNCTIONS, RuntimeFunctions, BYTECODE_HANDLERS,                                    \
         JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint32_t),                                      \
         JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint64_t))                                      \

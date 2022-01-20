@@ -3,6 +3,7 @@
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/machine_type.h"
+#include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/message_string.h"
@@ -2900,6 +2901,199 @@ DECLARE_ASM_HANDLER(HandleLdModVarByNamePrefId32V8)
     DISPATCH_WITH_ACC(PREF_ID32_V8);
 }
 
+DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef prop = GetObjectFromConstPool(constpool, stringId);
+
+    Label dispatch(env);
+    Label icAvailable(env);
+    Label icNotAvailable(env);
+    Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
+    Bind(&icAvailable);
+    {
+        DEFVARIABLE(icResult, MachineType::TAGGED, GetUndefinedConstant());
+        GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+        GateRef handler = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+        Label isHeapObject(env);
+        Label ldMiss(env);
+        Label icResultCheck(env);
+        Branch(TaggedIsHeapObject(handler), &isHeapObject, &ldMiss);
+        Bind(&isHeapObject);
+        {
+            icResult = LoadGlobal(handler);
+            Branch(TaggedIsHole(*icResult), &ldMiss, &icResultCheck);
+        }
+        Bind(&ldMiss);
+        {
+            GateRef globalObject = GetGlobalObject(glue);
+            StubDescriptor *loadMiss = GET_STUBDESCRIPTOR(LoadMiss);
+            icResult = CallRuntime(loadMiss, glue, GetWord64Constant(FAST_STUB_ID(LoadMiss)), {
+                glue, profileTypeInfo, globalObject, prop, slotId,
+                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC))
+            });
+            Jump(&icResultCheck);
+        }
+        Bind(&icResultCheck);
+        {
+            Label isException(env);
+            Label isNotException(env);
+            Branch(TaggedIsException(*icResult), &isException, &isNotException);
+            Bind(&isException);
+            {
+                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            }
+            Bind(&isNotException);
+            varAcc = *icResult;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&icNotAvailable);
+    {
+        // order: 1. global record 2. global object
+        // if we find a way to get global record, we can inline LdGlobalRecord directly
+        StubDescriptor *ldGlobalRecord = GET_STUBDESCRIPTOR(LdGlobalRecord);
+        GateRef recordResult = CallRuntime(ldGlobalRecord, glue, GetWord64Constant(FAST_STUB_ID(LdGlobalRecord)),
+                                    { glue, prop });
+        Label isFound(env);
+        Label isNotFound(env);
+        Branch(TaggedIsUndefined(recordResult), &isNotFound, &isFound);
+        Bind(&isNotFound);
+        {
+            // GateRef globalObject = GetGlobalObject(glue);
+            // GateRef globalResult = GetGlobalOwnProperty(glue, globalObject, prop);
+            StubDescriptor *getGlobalOwnProperty = GET_STUBDESCRIPTOR(GetGlobalOwnProperty);
+            GateRef globalResult = CallRuntime(getGlobalOwnProperty, glue,
+                GetWord64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { glue, prop });
+            Label isFoundInGlobal(env);
+            Label slowPath(env);
+            Branch(TaggedIsHole(globalResult), &slowPath, &isFoundInGlobal);
+            Bind(&slowPath);
+            {
+                StubDescriptor *tryLdGlobalByName = GET_STUBDESCRIPTOR(TryLdGlobalByName);
+                GateRef slowResult = CallRuntime(tryLdGlobalByName, glue,
+                    GetWord64Constant(FAST_STUB_ID(TryLdGlobalByName)), { glue, prop });
+                Label isException(env);
+                Label isNotException(env);
+                Branch(TaggedIsException(slowResult), &isException, &isNotException);
+                Bind(&isException);
+                {
+                    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+                }
+                Bind(&isNotException);
+                varAcc = slowResult;
+                Jump(&dispatch);
+            }
+            Bind(&isFoundInGlobal);
+            {
+                varAcc = globalResult;
+                Jump(&dispatch);
+            }
+        }
+        Bind(&isFound);
+        {
+            varAcc = Load(MachineType::TAGGED, recordResult, GetArchRelateConstant(PropertyBox::VALUE_OFFSET));
+            Jump(&dispatch);
+        }
+    }
+    Bind(&dispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter,
+        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
+}
+
+DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
+{
+    auto env = GetEnvironment();
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef propKey = GetObjectFromConstPool(constpool, stringId);
+    DEFVARIABLE(result, MachineType::TAGGED, GetUndefinedConstant());
+
+    Label checkResult(env);
+    Label dispatch(env);
+
+    Label icAvailable(env);
+    Label icNotAvailable(env);
+    Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
+    Bind(&icAvailable);
+    {
+        GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+        GateRef handler = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+        Label isHeapObject(env);
+        Label stMiss(env);
+        Branch(TaggedIsHeapObject(handler), &isHeapObject, &stMiss);
+        Bind(&isHeapObject);
+        {
+            result = StoreGlobal(glue, acc, handler);
+            Branch(TaggedIsHole(*result), &stMiss, &checkResult);
+        }
+        Bind(&stMiss);
+        {
+            GateRef globalObject = GetGlobalObject(glue);
+            StubDescriptor *storeMiss = GET_STUBDESCRIPTOR(StoreMiss);
+            result = CallRuntime(storeMiss, glue, GetWord64Constant(FAST_STUB_ID(StoreMiss)), {
+                glue, profileTypeInfo, globalObject, propKey, acc, slotId,
+                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC))
+            });
+           Jump(&checkResult);
+        }
+    }
+    Bind(&icNotAvailable);
+    // order: 1. global record 2. global object
+    // if we find a way to get global record, we can inline LdGlobalRecord directly
+    StubDescriptor *ldGlobalRecord = GET_STUBDESCRIPTOR(LdGlobalRecord);
+    GateRef recordInfo = CallRuntime(ldGlobalRecord, glue, GetWord64Constant(FAST_STUB_ID(LdGlobalRecord)),
+                                     { glue, propKey });
+    Label isFound(env);
+    Label isNotFound(env);
+    Branch(TaggedIsUndefined(recordInfo), &isNotFound, &isFound);
+    Bind(&isFound);
+    {
+        StubDescriptor *tryUpdateGlobalRecord = GET_STUBDESCRIPTOR(TryUpdateGlobalRecord);
+        result = CallRuntime(tryUpdateGlobalRecord, glue, GetWord64Constant(FAST_STUB_ID(TryUpdateGlobalRecord)),
+                             { glue, propKey, acc });
+        Jump(&checkResult);
+    }
+    Bind(&isNotFound);
+    {
+        Label foundInGlobal(env);
+        Label notFoundInGlobal(env);
+        // GateRef globalObject = GetGlobalObject(glue);
+        // GateRef globalResult = GetGlobalOwnProperty(glue, globalObject, propKey);
+        StubDescriptor *getGlobalOwnProperty = GET_STUBDESCRIPTOR(GetGlobalOwnProperty);
+        GateRef globalResult = CallRuntime(getGlobalOwnProperty, glue,
+            GetWord64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { glue, propKey });
+        Branch(TaggedIsHole(globalResult), &notFoundInGlobal, &foundInGlobal);
+        Bind(&notFoundInGlobal);
+        {
+            StubDescriptor *throwReferenceError = GET_STUBDESCRIPTOR(ThrowReferenceError);
+            result = CallRuntime(throwReferenceError, glue,
+                GetWord64Constant(FAST_STUB_ID(ThrowReferenceError)), { glue, propKey });
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+        }
+        Bind(&foundInGlobal);
+        {
+            StubDescriptor *stGlobalVar = GET_STUBDESCRIPTOR(StGlobalVar);
+            result = CallRuntime(stGlobalVar, glue,
+                GetWord64Constant(FAST_STUB_ID(StGlobalVar)), { glue, propKey, acc });
+            Jump(&checkResult);
+        }
+    }
+    Bind(&checkResult);
+    {
+        Label isException(env);
+        Branch(TaggedIsException(*result), &isException, &dispatch);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+        }
+    }
+    Bind(&dispatch);
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
+        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
+}
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH
 #undef DISPATCH_WITH_ACC

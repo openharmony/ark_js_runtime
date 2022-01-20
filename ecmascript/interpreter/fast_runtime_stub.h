@@ -35,7 +35,7 @@ public:
     static inline JSTaggedValue FastTypeOf(JSThread *thread, JSTaggedValue obj);
     static inline bool FastStrictEqual(JSTaggedValue left, JSTaggedValue right);
     static inline JSTaggedValue NewLexicalEnvDyn(JSThread *thread, ObjectFactory *factory, uint16_t numVars);
-    static inline JSTaggedValue GetGlobalOwnProperty(JSTaggedValue receiver, JSTaggedValue key, bool *found);
+    static inline JSTaggedValue GetGlobalOwnProperty(JSTaggedValue receiver, JSTaggedValue key);
     /* -------------- Special API For Multi-Language VM Begin ----------------- */
     static inline bool IsSpecialIndexedObjForGet(JSTaggedValue obj);
     static inline bool IsSpecialIndexedObjForSet(JSTaggedValue obj);

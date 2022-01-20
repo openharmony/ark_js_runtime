@@ -104,7 +104,15 @@ namespace panda::ecmascript::kungfu {
     V(ThrowThrowNotExists, 1)               \
     V(ThrowPatternNonCoercible, 1)          \
     V(ThrowDeleteSuperProperty, 1)          \
-    V(EqDyn, 3)
+    V(EqDyn, 3)                             \
+    V(LdGlobalRecord, 2)                    \
+    V(GetGlobalOwnProperty, 2)              \
+    V(TryLdGlobalByName, 2)                 \
+    V(LoadMiss, 6)                          \
+    V(StoreMiss, 7)                         \
+    V(TryUpdateGlobalRecord, 3)             \
+    V(ThrowReferenceError, 2)               \
+    V(StGlobalVar, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

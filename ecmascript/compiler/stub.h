@@ -23,6 +23,7 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/machine_type.h"
 #include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/global_dictionary.h"
 #include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/js_array.h"
@@ -565,6 +566,7 @@ public:
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();
     // compare operation
+    inline GateRef Word8Equal(GateRef x, GateRef y);
     inline GateRef Word32Equal(GateRef x, GateRef y);
     inline GateRef Word32NotEqual(GateRef x, GateRef y);
     inline GateRef Word64Equal(GateRef x, GateRef y);
@@ -774,7 +776,13 @@ public:
     inline GateRef GetFunctionInfoFlagFromJSFunction(GateRef object);
     inline GateRef GetHomeObjectFromJSFunction(GateRef object);
     inline void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
-    
+    inline GateRef GetGlobalObject(GateRef glue);
+    inline GateRef GetEntryIndexOfGlobalDictionary(GateRef entry);
+    inline GateRef GetBoxFromGlobalDictionary(GateRef object, GateRef entry);
+    inline GateRef GetValueFromGlobalDictionary(GateRef object, GateRef entry);
+    inline GateRef GetPropertiesFromJSObject(GateRef object);
+    GateRef GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key);
+
     // fast path
     GateRef FastEqual(GateRef left, GateRef right);
 

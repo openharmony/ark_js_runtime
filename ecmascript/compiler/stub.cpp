@@ -1983,7 +1983,7 @@ GateRef Stub::StoreGlobal(GateRef glue, GateRef value, GateRef cell)
     Label exit(env);
     Label cellIsInvalid(env);
     Label cellNotInvalid(env);
-    DEFVARIABLE(result, MachineType::UINT64, GetHoleConstant(MachineType::UINT64));
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
     Branch(IsInvalidPropertyBox(cell), &cellIsInvalid, &cellNotInvalid);
     Bind(&cellIsInvalid);
     {
@@ -1992,7 +1992,7 @@ GateRef Stub::StoreGlobal(GateRef glue, GateRef value, GateRef cell)
     Bind(&cellNotInvalid);
     {
         Store(MachineType::TAGGED, glue, cell, GetArchRelateConstant(PropertyBox::VALUE_OFFSET), value);
-        result = GetUndefinedConstant(MachineType::UINT64);
+        result = GetUndefinedConstant();
         Jump(&exit);
     }
     Bind(&exit);
@@ -3049,6 +3049,28 @@ GateRef Stub::FastEqual(GateRef left, GateRef right)
                 }
             }
         }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key)
+{
+    auto env = GetEnvironment();
+    Label entryLabel(env);
+    env->PushCurrentLabel(&entryLabel);
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    GateRef properties = GetPropertiesFromJSObject(receiver);
+    GateRef entry = FindEntryFromNameDictionary(glue, properties, key);
+    Label notNegtiveOne(env);
+    Label exit(env);
+    Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &exit);
+    Bind(&notNegtiveOne);
+    {
+        result = GetValueFromGlobalDictionary(properties, entry);
+        Jump(&exit);
     }
     Bind(&exit);
     auto ret = *result;

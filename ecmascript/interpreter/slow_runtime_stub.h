@@ -127,7 +127,7 @@ public:
     static JSTaggedValue LdGlobalVar(JSThread *thread, JSTaggedValue global, JSTaggedValue prop);
     static JSTaggedValue StGlobalVar(JSThread *thread, JSTaggedValue prop, JSTaggedValue value);
     static JSTaggedValue StGlobalRecord(JSThread *thread, JSTaggedValue prop, JSTaggedValue value, bool isConst);
-    static JSTaggedValue LdGlobalRecord(JSThread *thread, JSTaggedValue key, bool *found);
+    static JSTaggedValue LdGlobalRecord(JSThread *thread, JSTaggedValue key);
     static JSTaggedValue TryUpdateGlobalRecord(JSThread *thread, JSTaggedValue prop, JSTaggedValue value);
     static JSTaggedValue StArraySpread(JSThread *thread, JSTaggedValue dst, JSTaggedValue index, JSTaggedValue src);
 

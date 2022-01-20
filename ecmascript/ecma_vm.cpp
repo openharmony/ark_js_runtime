@@ -190,6 +190,7 @@ bool EcmaVM::Initialize()
         factory_->ObtainRootClass(GetGlobalEnv());
     }
 
+    thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
