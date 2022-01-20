@@ -513,7 +513,7 @@ JSTaggedType RuntimeTrampolines::SuperCallSpread(uintptr_t argGlue,
                                                  JSTaggedType func, uintptr_t sp, JSTaggedType array)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
-    JSTaggedValue function = EcmaInterpreter::GetNewTarget(reinterpret_cast<JSTaggedType*>(sp));
+    JSTaggedValue function = EcmaInterpreter::GetNewTarget(reinterpret_cast<JSTaggedType *>(sp));
     return SlowRuntimeStub::SuperCallSpread(thread, JSTaggedValue(func), function, JSTaggedValue(array)).GetRawData();
 }
 
@@ -621,6 +621,22 @@ JSTaggedType RuntimeTrampolines::StOwnByValue(uintptr_t argGlue,
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::StOwnByValue(thread,
         JSTaggedValue(obj), JSTaggedValue(key), JSTaggedValue(value)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::LdSuperByValue(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, uintptr_t sp)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    JSTaggedValue thisFunc = EcmaInterpreter::GetThisFunction(reinterpret_cast<JSTaggedType *>(sp));
+    return SlowRuntimeStub::LdSuperByValue(thread, JSTaggedValue(obj), JSTaggedValue(key), thisFunc).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::StSuperByValue(uintptr_t argGlue,
+                                                JSTaggedType obj, JSTaggedType key, JSTaggedType value, uintptr_t sp)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    JSTaggedValue thisFunc = EcmaInterpreter::GetThisFunction(reinterpret_cast<JSTaggedType *>(sp));
+    return SlowRuntimeStub::StSuperByValue(thread,
+        JSTaggedValue(obj), JSTaggedValue(key), JSTaggedValue(value), thisFunc).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::StGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value, bool isConst)

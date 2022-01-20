@@ -95,8 +95,8 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdObjByValuePrefV8V8, 7)                        \
     T(HandleStObjByValuePrefV8V8, 7)                        \
     T(HandleStOwnByValuePrefV8V8, 7)                        \
-    V(HandleLdSuperByValuePrefV8V8, 7)                      \
-    V(HandleStSuperByValuePrefV8V8, 7)                      \
+    T(HandleLdSuperByValuePrefV8V8, 7)                      \
+    T(HandleStSuperByValuePrefV8V8, 7)                      \
     V(HandleLdObjByIndexPrefV8Imm32, 7)                     \
     V(HandleStObjByIndexPrefV8Imm32, 7)                     \
     V(HandleStOwnByIndexPrefV8Imm32, 7)                     \

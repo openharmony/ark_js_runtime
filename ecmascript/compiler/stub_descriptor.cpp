@@ -1202,6 +1202,41 @@ CALL_STUB_INIT_DESCRIPTOR(StOwnByValue)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(LdSuperByValue)
+{
+    // 4 : 4 input parameters
+    StubDescriptor ldSuperByValue("LdSuperByValue", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = ldSuperByValue;
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(StSuperByValue)
+{
+    // 5 : 5 input parameters
+    StubDescriptor stSuperByValue("StSuperByValue", 0, 5,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = stSuperByValue;
+    // 5 : 5 input parameters
+    std::array<MachineType, 5> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalRecord)
 {
     // 4 : 4 input parameters
