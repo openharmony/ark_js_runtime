@@ -39,6 +39,7 @@ void MixSpaceCollector::RunPhases()
     INTERPRETER_TRACE(thread, MixSpaceCollector_RunPhases);
     ClockScope clockScope;
 
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::RunPhases");
     concurrentMark_ = heap_->CheckConcurrentMark(thread);
     ECMA_GC_LOG() << "concurrentMark_" << concurrentMark_;
     InitializePhase();
@@ -54,6 +55,7 @@ void MixSpaceCollector::RunPhases()
 
 void MixSpaceCollector::InitializePhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::InitializePhase");
     if (!concurrentMark_) {
         heap_->Prepare();
         if (!heap_->IsSemiMarkNeeded() && heap_->GetSweeper()->CanSelectCset()) {
@@ -93,6 +95,7 @@ void MixSpaceCollector::InitializePhase()
 
 void MixSpaceCollector::FinishPhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::FinishPhase");
     if (concurrentMark_) {
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
@@ -107,12 +110,12 @@ void MixSpaceCollector::FinishPhase()
 
 void MixSpaceCollector::MarkingPhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::MarkingPhase");
     if (concurrentMark_) {
         [[maybe_unused]] ClockScope scope;
         heap_->GetConcurrentMarker()->ReMarking();
         return;
     }
-    trace::ScopedTrace scoped_trace("MixSpaceCollector::MarkingPhase");
     heap_->GetNonMovableMarker()->MarkRoots(0);
     if (heap_->IsSemiMarkNeeded()) {
         heap_->GetNonMovableMarker()->ProcessOldToNew(0);
@@ -124,7 +127,7 @@ void MixSpaceCollector::MarkingPhase()
 
 void MixSpaceCollector::SweepPhases()
 {
-    trace::ScopedTrace scoped_trace("MixSpaceCollector::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::SweepPhases");
     if (!heap_->IsSemiMarkNeeded()) {
         heap_->GetSweeper()->SweepPhases();
     }
@@ -132,6 +135,7 @@ void MixSpaceCollector::SweepPhases()
 
 void MixSpaceCollector::EvacuaPhases()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::EvacuaPhases");
     heap_->GetEvacuation()->Evacuate();
 }
 }  // namespace panda::ecmascript
