@@ -53,7 +53,6 @@
 #include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
-#include "trace/trace.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
@@ -125,7 +124,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 
 bool EcmaVM::Initialize()
 {
-    trace::ScopedTrace scoped_trace("EcmaVM::Initialize");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
     Platform::GetCurrentPlatform()->Initialize();
     RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
 
