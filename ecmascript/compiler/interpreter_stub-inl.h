@@ -172,7 +172,7 @@ GateRef InterpreterStub::ReadInst16_5(GateRef pc)
 
 GateRef InterpreterStub::GetFrame(GateRef CurrentSp)
 {
-    return ArchRelateSub(CurrentSp, GetArchRelateConstant(InterpretedFrame::GetSize(GetEnvironment()->IsArm32())));
+    return ArchRelateSub(CurrentSp, GetArchRelateConstant(InterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
@@ -180,69 +180,69 @@ GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
     return Load(MachineType::NATIVE_POINTER, frame, GetArchRelateConstant(0));
 }
 
-GateRef InterpreterStub::GetSpFromFrame(GateRef frame)
-{
-    return Load(MachineType::NATIVE_POINTER, frame,
-        GetArchRelateConstant(InterpretedFrame::GetSpOffset(GetEnvironment()->IsArm32())));
-}
-
-GateRef InterpreterStub::GetConstpoolFromFrame(GateRef frame)
-{
-    return Load(MachineType::TAGGED, frame,
-        GetArchRelateConstant(InterpretedFrame::GetConstpoolOffset(GetEnvironment()->IsArm32())));
-}
-
 GateRef InterpreterStub::GetFunctionFromFrame(GateRef frame)
 {
-    return Load(MachineType::TAGGED, frame,
-        GetArchRelateConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArm32())));
-}
-
-GateRef InterpreterStub::GetProfileTypeInfoFromFrame(GateRef frame)
-{
-    return Load(MachineType::TAGGED, frame,
-        GetArchRelateConstant(InterpretedFrame::GetProfileTypeInfoOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED_POINTER, frame,
+        GetArchRelateConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetAccFromFrame(GateRef frame)
 {
     return Load(MachineType::TAGGED, frame,
-        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
+        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetEnvFromFrame(GateRef frame)
 {
-    return Load(MachineType::TAGGED, frame,
-        GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArm32())));
+    return Load(MachineType::TAGGED_POINTER, frame,
+        GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())));
 }
 
-void InterpreterStub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef env)
+GateRef InterpreterStub::GetProfileTypeInfoFromFunction(GateRef function)
+{
+    return Load(MachineType::TAGGED_POINTER, function, GetArchRelateConstant(JSFunction::PROFILE_TYPE_INFO_OFFSET));
+}
+
+GateRef InterpreterStub::GetConstpoolFromFunction(GateRef function)
+{
+    return Load(MachineType::TAGGED_POINTER, function, GetArchRelateConstant(JSFunction::CONSTANT_POOL_OFFSET));
+}
+
+void InterpreterStub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef value)
 {
     Store(MachineType::UINT64, glue, frame,
-        GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArm32())), env);
+        GetArchRelateConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
-GateRef InterpreterStub::LoadAccFromSp(GateRef glue, GateRef CurrentSp)
+void InterpreterStub::SetPcToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    return Load(MachineType::TAGGED, CurrentSp,
-        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
+    Store(MachineType::UINT64, glue, frame, GetArchRelateConstant(0), value);
 }
 
-void InterpreterStub::SavePc(GateRef glue, GateRef CurrentSp, GateRef pc)
+void InterpreterStub::SetAccToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(MachineType::NATIVE_POINTER, glue, GetFrame(CurrentSp), GetArchRelateConstant(0), pc);
+    Store(MachineType::UINT64, glue, frame,
+          GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
-void InterpreterStub::SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc)
+void InterpreterStub::SetFunctionToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(MachineType::UINT64, glue, GetFrame(CurrentSp),
-        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())), acc);
+    Store(MachineType::UINT64, glue, frame,
+          GetArchRelateConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
-GateRef InterpreterStub::RestoreAcc(GateRef CurrentSp)
+GateRef InterpreterStub::GetCurrentSpFrame(GateRef glue)
 {
-    return Load(MachineType::TAGGED, GetFrame(CurrentSp),
-        GetArchRelateConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArm32())));
+    GateRef spOffset = GetArchRelateConstant(
+        GetEnvironment()->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME));
+    return Load(MachineType::NATIVE_POINTER, glue, spOffset);
+}
+
+void InterpreterStub::SetCurrentSpFrame(GateRef glue, GateRef value)
+{
+    GateRef spOffset = GetArchRelateConstant(
+        GetEnvironment()->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME));
+    Store(MachineType::NATIVE_POINTER, glue, glue, spOffset, value);
 }
 
 GateRef InterpreterStub::ReadInst32_0(GateRef pc)

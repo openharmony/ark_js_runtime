@@ -44,9 +44,8 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
     bbIdMapBb_.clear();
     if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME) {
         LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
-    } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
-        LLVMSetGC(function_, "statepoint-example");
     }
+    LLVMSetGC(function_, "statepoint-example");
     if (compCfg_->IsArm32()) {
         LLVMTypeRef elementTypes[] = {
             LLVMInt64Type(), // frameType
@@ -716,11 +715,15 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
         GateRef gateTmp = inList[paraIdx];
         params[paraIdx - paraStartIndex] = gateToLLVMMaps_[gateTmp];
     }
-    gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
-    LLVMSetTailCall(gateToLLVMMaps_[gate], true);
-    LLVMSetInstructionCallConv(gateToLLVMMaps_[gate], LLVMGHCCallConv);
-    return;
-
+    LLVMValueRef call = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
+    LLVMSetTailCall(call, true);
+    const char *attrName = "gc-leaf-function";
+    const char *attrValue = "true";
+    LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_,
+            attrName, strlen(attrName), attrValue, strlen(attrValue));
+    LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
+    LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
+    gateToLLVMMaps_[gate] = call;
 }
 
 void LLVMIRBuilder::HandleAlloca(GateRef gate)
