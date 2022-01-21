@@ -60,9 +60,9 @@ HWTEST_P_L0(DebuggerApiTest, EcmaScriptSuite)
     ASSERT_NE(vm, nullptr);
     auto [pandaFile, entryPoint] = GetTestEntryPoint(testName);
 
-    auto fileNameRef = StringRef::NewFromUtf8(vm, pandaFile.c_str(), pandaFile.size());
-    auto entryRef = StringRef::NewFromUtf8(vm, entryPoint.c_str(), entryPoint.size());
-    auto res = JSNApi::Execute(vm, fileNameRef, entryRef);
+    std::string fileNameStr(pandaFile);
+    std::string entryStr(entryPoint);
+    auto res = JSNApi::Execute(vm, fileNameStr, entryStr);
     ASSERT_TRUE(res);
 }
 
