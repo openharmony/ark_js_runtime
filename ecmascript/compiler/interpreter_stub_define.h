@@ -133,8 +133,8 @@ namespace panda::ecmascript::kungfu {
     T(HandleStModuleVarPrefId32, 7)                         \
     T(HandleTryLdGlobalByNamePrefId32, 7)                   \
     T(HandleTryStGlobalByNamePrefId32, 7)                   \
-    V(HandleLdGlobalVarPrefId32, 7)                         \
-    V(HandleStGlobalVarPrefId32, 7)                         \
+    T(HandleLdGlobalVarPrefId32, 7)                         \
+    T(HandleStGlobalVarPrefId32, 7)                         \
     T(HandleLdObjByNamePrefId32V8, 7)                       \
     V(HandleStObjByNamePrefId32V8, 7)                       \
     V(HandleStOwnByNamePrefId32V8, 7)                       \
@@ -142,8 +142,8 @@ namespace panda::ecmascript::kungfu {
     V(HandleStSuperByNamePrefId32V8, 7)                     \
     T(HandleLdModVarByNamePrefId32V8, 7)                    \
     V(HandleCreateRegExpWithLiteralPrefId32Imm8, 7)         \
-    V(HandleIsTruePref, 7)                                  \
-    V(HandleIsFalsePref, 7)                                 \
+    T(HandleIsTruePref, 7)                                  \
+    T(HandleIsFalsePref, 7)                                 \
     T(HandleStConstToGlobalRecordPrefId32, 7)               \
     T(HandleStLetToGlobalRecordPrefId32, 7)                 \
     T(HandleStClassToGlobalRecordPrefId32, 7)               \

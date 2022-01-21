@@ -158,8 +158,10 @@ public:
                                   JSTaggedType key, JSTaggedType value, uint32_t slotId, uint32_t kind);
     static JSTaggedType TryUpdateGlobalRecord(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value);
     static JSTaggedType ThrowReferenceError(uintptr_t argGlue, JSTaggedType prop);
+    static JSTaggedType LdGlobalVar(uintptr_t argGlue, JSTaggedType global, JSTaggedType prop);
     static JSTaggedType StGlobalVar(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value);
     static JSTaggedType ToNumber(uintptr_t argGlue, JSTaggedType value);
+    static bool ToBoolean(JSTaggedType value);
 };
 }  // namespace panda::ecmascript
 #endif

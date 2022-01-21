@@ -1756,6 +1756,21 @@ CALL_STUB_INIT_DESCRIPTOR(EqDyn)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(LdGlobalVar)
+{
+    // 3 : 3 input parameters
+    StubDescriptor ldGlobalVar("LdGlobalVar", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = ldGlobalVar;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StGlobalVar)
 {
     // 3 : 3 input parameters
@@ -1765,6 +1780,19 @@ CALL_STUB_INIT_DESCRIPTOR(StGlobalVar)
     std::array<MachineType, 3> params = { // 3 : 3 input parameters
         MachineType::NATIVE_POINTER,
         MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(ToBoolean)
+{
+    // 1 : 1 input parameters
+    StubDescriptor toBoolean("ToBoolean", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::BOOL);
+    *descriptor = toBoolean;
+    std::array<MachineType, 1> params = { // 1 : 1 input parameters
         MachineType::TAGGED,
     };
     descriptor->SetParameters(params.data());
