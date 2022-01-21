@@ -2873,6 +2873,92 @@ DECLARE_ASM_HANDLER(HandleJeqzImm16)
              GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
 }
 
+DECLARE_ASM_HANDLER(HandleJnezImm8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varProfileTypeInfo, MachineType::TAGGED, profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, MachineType::INT32, hotnessCounter);
+
+    GateRef offset = ReadInstSigned8_0(pc);
+    Label accEqualTrue(env);
+    Label accNotEqualTrue(env);
+    Label accIsInt(env);
+    Label accNotInt(env);
+    Label accEqualZero(env);
+    Label accIsDouble(env);
+    Label last(env);
+    Branch(Word64Equal(ChangeTaggedPointerToInt64(acc), TaggedTrue()), &accEqualTrue, &accNotEqualTrue);
+    Bind(&accNotEqualTrue);
+    {
+        Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
+        Bind(&accIsInt);
+        {
+            Branch(Word32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accNotInt, &accEqualTrue);
+        }
+        Bind(&accNotInt);
+        {
+            Branch(TaggedIsDouble(acc), &accIsDouble, &last);
+            Bind(&accIsDouble);
+            {
+                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &last, &accEqualTrue);
+            }
+        }
+    }
+    Bind(&accEqualTrue);
+    {
+        Label dispatch(env);
+        Label slowPath(env);
+        UPDATE_HOTNESS(sp);
+        Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+    }
+    Bind(&last);
+    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_NONE)));
+}
+
+DECLARE_ASM_HANDLER(HandleJnezImm16)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varProfileTypeInfo, MachineType::TAGGED, profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, MachineType::INT32, hotnessCounter);
+
+    GateRef offset = ReadInstSigned16_0(pc);
+    Label accEqualTrue(env);
+    Label accNotEqualTrue(env);
+    Label accIsInt(env);
+    Label accNotInt(env);
+    Label accEqualZero(env);
+    Label accIsDouble(env);
+    Label last(env);
+    Branch(Word64Equal(ChangeTaggedPointerToInt64(acc), TaggedTrue()), &accEqualTrue, &accNotEqualTrue);
+    Bind(&accNotEqualTrue);
+    {
+        Branch(TaggedIsInt(acc), &accIsInt, &accNotInt);
+        Bind(&accIsInt);
+        {
+            Branch(Word32Equal(TaggedGetInt(acc), GetInt32Constant(0)), &accNotInt, &accEqualTrue);
+        }
+        Bind(&accNotInt);
+        {
+            Branch(TaggedIsDouble(acc), &accIsDouble, &last);
+            Bind(&accIsDouble);
+            {
+                Branch(DoubleEqual(TaggedCastToDouble(acc), GetDoubleConstant(0)), &last, &accEqualTrue);
+            }
+        }
+    }
+    Bind(&accEqualTrue);
+    {
+        Label dispatch(env);
+        Label slowPath(env);
+        UPDATE_HOTNESS(sp);
+        Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter, SExtInt32ToPtr(offset));
+    }
+    Bind(&last);
+    Dispatch(glue, pc, sp, constpool, *varProfileTypeInfo, acc, *varHotnessCounter,
+             GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::IMM16)));
+}
+
 DECLARE_ASM_HANDLER(HandleReturnDyn)
 {
     auto env = GetEnvironment();
@@ -2987,6 +3073,81 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         varHotnessCounter = Load(MachineType::INT32, method,
                                  GetArchRelateConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
+                 *varHotnessCounter, GetArchRelateConstant(0));
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varPc, MachineType::NATIVE_POINTER, pc);
+    DEFVARIABLE(varSp, MachineType::NATIVE_POINTER, sp);
+    DEFVARIABLE(varConstpool, MachineType::TAGGED_POINTER, constpool);
+    DEFVARIABLE(varProfileTypeInfo, MachineType::TAGGED_POINTER, profileTypeInfo);
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    DEFVARIABLE(varHotnessCounter, MachineType::INT32, hotnessCounter);
+
+    Label pcEqualNullptr(env);
+    Label pcNotEqualNullptr(env);
+    Label updateHotness(env);
+    Label tryContinue(env);
+    Label dispatch(env);
+    Label slowPath(env);
+
+    GateRef genObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
+    GateRef frame = GetFrame(*varSp);
+    SetPcToFrame(glue, frame, pc);
+    StubDescriptor *suspendGenerator = GET_STUBDESCRIPTOR(SuspendGenerator);
+    GateRef res = CallRuntime(suspendGenerator, glue, GetWord64Constant(FAST_STUB_ID(SuspendGenerator)),
+        { glue, genObj, value });
+    
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DispatchLast(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc, *varHotnessCounter);
+    }
+    Bind(&notException);
+    varAcc = res;
+    Branch(TaggedIsUndefined(*varProfileTypeInfo), &updateHotness, &tryContinue);
+    Bind(&updateHotness);
+    {
+        GateRef function = GetFunctionFromFrame(frame);
+        GateRef method = Load(MachineType::NATIVE_POINTER, function,
+            GetArchRelateConstant(JSFunctionBase::METHOD_OFFSET));
+        GateRef fistPC = Load(MachineType::NATIVE_POINTER, method,
+            GetArchRelateConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
+        GateRef offset = Word32Not(TruncPtrToInt32(ArchRelateSub(*varPc, fistPC)));
+        UPDATE_HOTNESS(*varSp);
+        Store(MachineType::INT32, glue, method,
+              GetArchRelateConstant(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
+        Jump(&tryContinue);
+    }
+
+    Bind(&tryContinue);
+    varSp = Load(MachineType::NATIVE_POINTER, frame,
+        GetArchRelateConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+    GateRef prevState = GetFrame(*varSp);
+    varPc = GetPcFromFrame(prevState);
+    Branch(PtrEqual(*varPc, GetArchRelateConstant(0)), &pcEqualNullptr, &pcNotEqualNullptr);
+    Bind(&pcEqualNullptr);
+    {
+        SetAccToFrame(glue, frame, acc);
+        Return();
+    }
+    Bind(&pcNotEqualNullptr);
+    {
+        SetCurrentSpFrame(glue, *varSp);
+        GateRef function = GetFunctionFromFrame(prevState);
+        varConstpool = GetConstpoolFromFunction(function);
+        varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
+        GateRef method = Load(MachineType::NATIVE_POINTER, function,
+            GetArchRelateConstant(JSFunctionBase::METHOD_OFFSET));
+        varHotnessCounter = Load(MachineType::INT32, method,
+                                 GetArchRelateConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
                  *varHotnessCounter, GetArchRelateConstant(0));
     }
 }

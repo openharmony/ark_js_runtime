@@ -138,6 +138,7 @@ public:
     static void SetFunctionNameNoPrefix(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType argName);
     static JSTaggedType StOwnByValueWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
     static JSTaggedType StOwnByNameWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
+    static JSTaggedType SuspendGenerator(uintptr_t argGlue, JSTaggedType obj, JSTaggedType value);
     static JSTaggedType ImportModule(uintptr_t argGlue, JSTaggedType moduleName);
     static void StModuleVar(uintptr_t argGlue, JSTaggedType exportName, JSTaggedType exportObj);
     static JSTaggedType LdModvarByName(uintptr_t argGlue, JSTaggedType moduleObj, JSTaggedType itemName);
