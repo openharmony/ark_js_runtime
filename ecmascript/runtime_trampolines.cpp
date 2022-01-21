@@ -871,6 +871,12 @@ JSTaggedType RuntimeTrampolines::StOwnByNameWithNameSet(uintptr_t argGlue, JSTag
     return SlowRuntimeStub::StOwnByValueWithNameSet(thread, JSTaggedValue(obj), JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::SuspendGenerator(uintptr_t argGlue, JSTaggedType obj, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::SuspendGenerator(thread, JSTaggedValue(obj), JSTaggedValue(value)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::ImportModule(uintptr_t argGlue, JSTaggedType moduleName)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);

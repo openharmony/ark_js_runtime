@@ -84,7 +84,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleDelObjPropPrefV8V8, 7)                          \
     T(HandleNewObjSpreadDynPrefV8V8, 7)                     \
     T(HandleCreateIterResultObjPrefV8V8, 7)                 \
-    V(HandleSuspendGeneratorPrefV8V8, 7)                    \
+    T(HandleSuspendGeneratorPrefV8V8, 7)                    \
     T(HandleAsyncFunctionAwaitUncaughtPrefV8V8, 7)          \
     T(HandleThrowUndefinedIfHolePrefV8V8, 7)                \
     V(HandleCallArg1DynPrefV8V8, 7)                         \
@@ -164,8 +164,8 @@ namespace panda::ecmascript::kungfu {
     T(HandleStaDynV8, 7)                                    \
     T(HandleReturnDyn, 7)                                   \
     T(HandleMovV4V4, 7)                                     \
-    V(HandleJnezImm8, 7)                                    \
-    V(HandleJnezImm16, 7)                                   \
+    T(HandleJnezImm8, 7)                                    \
+    T(HandleJnezImm16, 7)                                   \
     V(ExceptionHandler, 7)                                  \
 
 enum InterpreterStubId {

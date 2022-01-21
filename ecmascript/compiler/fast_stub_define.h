@@ -51,6 +51,7 @@ namespace panda::ecmascript::kungfu {
     V(SetFunctionNameNoPrefix, 3)           \
     V(StOwnByValueWithNameSet, 4)           \
     V(StOwnByNameWithNameSet, 7)            \
+    V(SuspendGenerator, 7)                  \
     V(NegDyn, 2)                            \
     V(NotDyn, 2)                            \
     V(IncDyn, 2)                            \
