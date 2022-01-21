@@ -3352,10 +3352,19 @@ DECLARE_ASM_HANDLER(HandleIsTruePref)
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
 
+    Label objNotTrue(env);
     Label dispatch(env);
+    Label slowPath(env);
     Label isTrue(env);
     Label isFalse(env);
 
+    Branch(TaggedIsTrue(*varAcc), &isTrue, &objNotTrue);
+    Bind(&objNotTrue);
+    {
+        Branch(TaggedIsFalse(*varAcc), &isFalse, &slowPath);
+    }
+
+    Bind(&slowPath);
     StubDescriptor *toBoolean = GET_STUBDESCRIPTOR(ToBoolean);
     GateRef result = CallRuntime(toBoolean, glue,
         GetWord64Constant(FAST_STUB_ID(ToBoolean)), { *varAcc });
@@ -3370,6 +3379,7 @@ DECLARE_ASM_HANDLER(HandleIsTruePref)
         varAcc = ChangeInt64ToTagged(TaggedFalse());
         Jump(&dispatch);
     }
+
     Bind(&dispatch);
     DISPATCH_WITH_ACC(PREF_NONE);
 }
@@ -3379,10 +3389,19 @@ DECLARE_ASM_HANDLER(HandleIsFalsePref)
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
 
+    Label objNotTrue(env);
     Label dispatch(env);
+    Label slowPath(env);
     Label isTrue(env);
     Label isFalse(env);
 
+    Branch(TaggedIsTrue(*varAcc), &isTrue, &objNotTrue);
+    Bind(&objNotTrue);
+    {
+        Branch(TaggedIsFalse(*varAcc), &isFalse, &slowPath);
+    }
+
+    Bind(&slowPath);
     StubDescriptor *toBoolean = GET_STUBDESCRIPTOR(ToBoolean);
     GateRef result = CallRuntime(toBoolean, glue,
         GetWord64Constant(FAST_STUB_ID(ToBoolean)), { *varAcc });
