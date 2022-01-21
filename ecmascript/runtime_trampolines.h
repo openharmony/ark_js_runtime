@@ -131,7 +131,7 @@ public:
                                      JSTaggedType lexenv, JSTaggedType constpool);
     static JSTaggedType CloneClassFromTemplate(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType base,
                                                JSTaggedType lexenv, JSTaggedType constpool);
-    static JSTaggedType SetClassConstructorLength(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType length);
+    static JSTaggedType SetClassConstructorLength(uintptr_t argGlue, JSTaggedType ctor, uint16_t length);
     static JSTaggedType UpdateHotnessCounter(uintptr_t argGlue, uintptr_t sp);
     static JSTaggedType LoadICByName(uintptr_t argGlue, JSTaggedType profileTypeInfo,
                                      JSTaggedType receiver, JSTaggedType propKey, int32_t slotId);

@@ -32,6 +32,7 @@ static constexpr uint32_t HAVE_FUNC_BIT = 8;  // 8: the 4th to last bit means fu
 static constexpr size_t STORAGE_32_NUM = 4;
 static constexpr size_t STORAGE_PTR_NUM = 3;
 
+
 #define JS_METHOD_OFFSET_LIST(V)                                                                    \
     V(STORPTR, STOR32, STORAGE_32_NUM * sizeof(uint32_t), STORAGE_32_NUM * sizeof(uint32_t))        \
     V(PANDAFILE, STORPTR, STORAGE_PTR_NUM * sizeof(uint32_t), STORAGE_PTR_NUM * sizeof(uint64_t))   \
@@ -56,6 +57,7 @@ namespace panda::ecmascript {
 class JSMethod : public Method {
 public:
     static constexpr uint8_t MAX_SLOT_SIZE = 0xFF;
+    static constexpr uint32_t HOTNESS_COUNTER_OFFSET = 3 * sizeof(uint32_t);  // 3: the 3th field of method
 
     static JSMethod *Cast(Method *method)
     {

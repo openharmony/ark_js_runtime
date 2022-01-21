@@ -44,20 +44,20 @@ public:
     inline GateRef ReadInst64_0(GateRef pc);
 
     inline GateRef GetFrame(GateRef frame);
+    inline GateRef GetCurrentSpFrame(GateRef glue);
     inline GateRef GetPcFromFrame(GateRef frame);
-    inline GateRef GetSpFromFrame(GateRef frame);
-    inline GateRef GetConstpoolFromFrame(GateRef frame);
     inline GateRef GetFunctionFromFrame(GateRef frame);
-    inline GateRef GetProfileTypeInfoFromFrame(GateRef frame);
     inline GateRef GetAccFromFrame(GateRef frame);
     inline GateRef GetEnvFromFrame(GateRef frame);
-    inline void SetEnvToFrame(GateRef glue, GateRef frame, GateRef env);
+    inline GateRef GetConstpoolFromFunction(GateRef function);
+    inline GateRef GetProfileTypeInfoFromFunction(GateRef function);
 
-    // inline GateRef GetBaseFromFrame(GateRef frame);
-    inline void SavePc(GateRef glue, GateRef CurrentSp, GateRef pc);
-    inline GateRef LoadAccFromSp(GateRef glue, GateRef CurrentSp);
-    inline void SaveAcc(GateRef glue, GateRef CurrentSp, GateRef acc);
-    inline GateRef RestoreAcc(GateRef CurrentSp);
+    inline void SetCurrentSpFrame(GateRef glue, GateRef sp);
+    inline void SetPcToFrame(GateRef glue, GateRef frame, GateRef value);
+    inline void SetFunctionToFrame(GateRef glue, GateRef frame, GateRef value);
+    inline void SetAccToFrame(GateRef glue, GateRef frame, GateRef value);
+    inline void SetEnvToFrame(GateRef glue, GateRef frame, GateRef value);
+
     inline void Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
     inline void DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
@@ -69,7 +69,7 @@ public:
 
 class AsmInterpreterEntryStub : public InterpreterStub {
 public:
-    // 6 : 6 means argument counts
+    // 7 : 7 means argument counts
     explicit AsmInterpreterEntryStub(Circuit *circuit) : InterpreterStub("AsmInterpreterEntry", 7, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);

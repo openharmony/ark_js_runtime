@@ -1470,12 +1470,12 @@ CALL_STUB_INIT_DESCRIPTOR(SetClassConstructorLength)
 {
     // 3 : 3 input parameters
     StubDescriptor setClassConstructorLength("SetClassConstructorLength", 0, 3,
-        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
     *descriptor = setClassConstructorLength;
     std::array<MachineType, 3> params = { // 3 : 3 input parameters
         MachineType::NATIVE_POINTER,
         MachineType::TAGGED,
-        MachineType::TAGGED,
+        MachineType::UINT16,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);

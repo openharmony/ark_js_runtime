@@ -813,7 +813,7 @@ JSTaggedType RuntimeTrampolines::CloneClassFromTemplate(uintptr_t argGlue, JSTag
         JSTaggedValue(lexenv), reinterpret_cast<ConstantPool *>(constpool)).GetRawData();
 }
 
-JSTaggedType RuntimeTrampolines::SetClassConstructorLength(uintptr_t argGlue, JSTaggedType ctor, JSTaggedType length)
+JSTaggedType RuntimeTrampolines::SetClassConstructorLength(uintptr_t argGlue, JSTaggedType ctor, uint16_t length)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::SetClassConstructorLength(thread, JSTaggedValue(ctor), JSTaggedValue(length)).GetRawData();
