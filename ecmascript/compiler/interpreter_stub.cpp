@@ -3129,8 +3129,7 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
         }
     }
     Bind(&dispatch);
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter,
-        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
+    DISPATCH_WITH_ACC(PREF_ID32);
 }
 
 DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
@@ -3200,7 +3199,7 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
             StubDescriptor *throwReferenceError = GET_STUBDESCRIPTOR(ThrowReferenceError);
             result = CallRuntime(throwReferenceError, glue,
                 GetWord64Constant(FAST_STUB_ID(ThrowReferenceError)), { glue, propKey });
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+            DISPATCH_LAST();
         }
         Bind(&foundInGlobal);
         {
@@ -3216,12 +3215,190 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
         Branch(TaggedIsException(*result), &isException, &dispatch);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+            DISPATCH_LAST();
         }
     }
     Bind(&dispatch);
-    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,
-        GetArchRelateConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_ID32)));
+    DISPATCH(PREF_ID32);
+}
+
+DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef propKey = GetObjectFromConstPool(constpool, stringId);
+    DEFVARIABLE(result, MachineType::TAGGED, GetUndefinedConstant());
+
+    Label checkResult(env);
+    Label dispatch(env);
+    Label slowPath(env);
+    GateRef globalObject = GetGlobalObject(glue);
+
+    Label icAvailable(env);
+    Label icNotAvailable(env);
+    Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
+    Bind(&icAvailable);
+    {
+        GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+        GateRef handler = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+        Label isHeapObject(env);
+        Label ldMiss(env);
+        Branch(TaggedIsHeapObject(handler), &isHeapObject, &ldMiss);
+        Bind(&isHeapObject);
+        {
+            result = LoadGlobal(handler);
+            Branch(TaggedIsHole(*result), &ldMiss, &checkResult);
+        }
+        Bind(&ldMiss);
+        {
+            StubDescriptor *loadMiss = GET_STUBDESCRIPTOR(LoadMiss);
+            result = CallRuntime(loadMiss, glue, GetWord64Constant(FAST_STUB_ID(LoadMiss)), {
+                glue, profileTypeInfo, globalObject, propKey, slotId,
+                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC))
+            });
+            Jump(&checkResult);
+        }
+    }
+    Bind(&icNotAvailable);
+    {
+        // result = GetGlobalOwnProperty(glue, globalObject, propKey);
+        StubDescriptor *getGlobalOwnProperty = GET_STUBDESCRIPTOR(GetGlobalOwnProperty);
+        result = CallRuntime(getGlobalOwnProperty, glue,
+            GetWord64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { glue, propKey });
+        Branch(TaggedIsHole(*result), &slowPath, &dispatch);
+        Bind(&slowPath);
+        {
+            StubDescriptor *ldGlobalVar = GET_STUBDESCRIPTOR(LdGlobalVar);
+            result = CallRuntime(ldGlobalVar, glue,
+                GetWord64Constant(FAST_STUB_ID(LdGlobalVar)), { glue, globalObject, propKey });
+            Jump(&checkResult);
+        }
+    }
+    Bind(&checkResult);
+    {
+        Label isException(env);
+        Branch(TaggedIsException(*result), &isException, &dispatch);
+        Bind(&isException);
+        {
+            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        }
+    }
+    Bind(&dispatch);
+    varAcc = *result;
+    DISPATCH_WITH_ACC(PREF_ID32);
+}
+
+DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
+{
+    auto env = GetEnvironment();
+
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef propKey = GetObjectFromConstPool(constpool, stringId);
+    DEFVARIABLE(result, MachineType::TAGGED, GetUndefinedConstant());
+
+    Label checkResult(env);
+    Label dispatch(env);
+
+    Label icAvailable(env);
+    Label icNotAvailable(env);
+    Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
+    Bind(&icAvailable);
+    {
+        GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+        GateRef handler = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+        Label isHeapObject(env);
+        Label stMiss(env);
+        Branch(TaggedIsHeapObject(handler), &isHeapObject, &stMiss);
+        Bind(&isHeapObject);
+        {
+            result = StoreGlobal(glue, acc, handler);
+            Branch(TaggedIsHole(*result), &stMiss, &checkResult);
+        }
+        Bind(&stMiss);
+        {
+            GateRef globalObject = GetGlobalObject(glue);
+            StubDescriptor *storeMiss = GET_STUBDESCRIPTOR(StoreMiss);
+            result = CallRuntime(storeMiss, glue, GetWord64Constant(FAST_STUB_ID(StoreMiss)), {
+                glue, profileTypeInfo, globalObject, propKey, acc, slotId,
+                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC))
+            });
+           Jump(&checkResult);
+        }
+    }
+    Bind(&icNotAvailable);
+    {
+        StubDescriptor *stGlobalVar = GET_STUBDESCRIPTOR(StGlobalVar);
+        result = CallRuntime(stGlobalVar, glue,
+            GetWord64Constant(FAST_STUB_ID(StGlobalVar)), { glue, propKey, acc });
+        Jump(&checkResult);
+    }
+    Bind(&checkResult);
+    {
+        Label isException(env);
+        Branch(TaggedIsException(*result), &isException, &dispatch);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+    }
+    Bind(&dispatch);
+    DISPATCH(PREF_ID32);
+}
+
+DECLARE_ASM_HANDLER(HandleIsTruePref)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    Label dispatch(env);
+    Label isTrue(env);
+    Label isFalse(env);
+
+    StubDescriptor *toBoolean = GET_STUBDESCRIPTOR(ToBoolean);
+    GateRef result = CallRuntime(toBoolean, glue,
+        GetWord64Constant(FAST_STUB_ID(ToBoolean)), { *varAcc });
+    Branch(result, &isTrue, &isFalse);
+    Bind(&isTrue);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedTrue());
+        Jump(&dispatch);
+    }
+    Bind(&isFalse);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedFalse());
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_NONE);
+}
+
+DECLARE_ASM_HANDLER(HandleIsFalsePref)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+
+    Label dispatch(env);
+    Label isTrue(env);
+    Label isFalse(env);
+
+    StubDescriptor *toBoolean = GET_STUBDESCRIPTOR(ToBoolean);
+    GateRef result = CallRuntime(toBoolean, glue,
+        GetWord64Constant(FAST_STUB_ID(ToBoolean)), { *varAcc });
+    Branch(result, &isTrue, &isFalse);
+    Bind(&isTrue);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedFalse());
+        Jump(&dispatch);
+    }
+    Bind(&isFalse);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedTrue());
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleToNumberPrefV8)

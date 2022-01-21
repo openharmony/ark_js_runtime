@@ -991,15 +991,26 @@ JSTaggedType RuntimeTrampolines::ThrowReferenceError(uintptr_t argGlue, JSTagged
         thread, JSTaggedValue(prop), " is not defined").GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::LdGlobalVar(uintptr_t argGlue, JSTaggedType global, JSTaggedType prop)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::LdGlobalVar(thread, JSTaggedValue(global), JSTaggedValue(prop)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StGlobalVar(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::StGlobalVar(thread, JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
 }
+
 JSTaggedType RuntimeTrampolines::ToNumber(uintptr_t argGlue, JSTaggedType value)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::ToNumber(thread, JSTaggedValue(value)).GetRawData();
 }
 
+bool RuntimeTrampolines::ToBoolean(JSTaggedType value)
+{
+    return JSTaggedValue(value).ToBoolean();
+}
 }  // namespace panda::ecmascript

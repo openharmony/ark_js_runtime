@@ -116,7 +116,9 @@ namespace panda::ecmascript::kungfu {
     V(TryUpdateGlobalRecord, 3)             \
     V(ThrowReferenceError, 2)               \
     V(StGlobalVar, 3)                       \
-    V(ToNumber, 2)
+    V(LdGlobalVar, 3)                       \
+    V(ToNumber, 2)                          \
+    V(ToBoolean, 1)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
