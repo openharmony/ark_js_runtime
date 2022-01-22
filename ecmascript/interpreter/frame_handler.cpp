@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -235,7 +236,7 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
-        bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
+        bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
             returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
@@ -256,7 +257,7 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
-        bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
+        bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
             returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
@@ -287,7 +288,7 @@ void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 {
     OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(sp_);
     std::set<uintptr_t> slotAddrs;
-    bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
+    bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
         state, slotAddrs, derivedPointers, isVerifying);
     if (ret == false) {
 #ifndef NDEBUG
@@ -319,16 +320,23 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else if (type == FrameType::OPTIMIZED_FRAME) {
             OptimizedFrameBase *state = OptimizedFrameBase::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
-            current = reinterpret_cast<JSTaggedType *>(state->prev);
+            current = state->prev;
         } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
             OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(current);
-                current = reinterpret_cast<JSTaggedType *>(state->prevInterpretedFrameFp);
+            current = state->prevInterpretedFrameFp;
+            ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME);
             OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(current);
             OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
-            current = reinterpret_cast<JSTaggedType *>(state->prevFp);
+#ifdef PANDA_TARGET_ARM32
+            current = state->prevFp;
+            ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
+#else
+            current = reinterpret_cast<uintptr_t *>(state->fp);
+            ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME);
+#endif
         }
     }
 }

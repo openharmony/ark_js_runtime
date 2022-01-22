@@ -47,7 +47,7 @@ index c7d4c4d7e5d..1df40696dd0 100644
    virtual void inlineStackProbe(MachineFunction &MF,
                                  MachineBasicBlock &PrologueMBB) const {}
 diff --git a/llvm/lib/CodeGen/PrologEpilogInserter.cpp b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
-index 3909b571728..d530c9e6c08 100644
+index 3909b571728..63e5048f4b3 100644
 --- a/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 +++ b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 @@ -79,6 +79,9 @@ using MBBVector = SmallVector<MachineBasicBlock *, 4>;
@@ -60,7 +60,7 @@ index 3909b571728..d530c9e6c08 100644
  
  namespace {
  
-@@ -878,6 +881,35 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
+@@ -878,6 +881,32 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
    int64_t FixedCSEnd = Offset;
    unsigned MaxAlign = MFI.getMaxAlignment();
  
@@ -79,14 +79,11 @@ index 3909b571728..d530c9e6c08 100644
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
 +        if (marker == JS_ENTRY_FRAME_MARK) {
-+          CalleeSavedFrameSize = 3 * slotSize; // 3 * slotSize;/* frameType + threadSP */
++          CalleeSavedFrameSize = 3 * slotSize; // 3 * slotSize;/* frameType + currentSP + threadSP*/
 +        } else if (marker == JS_FRAME_MARK){
-+          CalleeSavedFrameSize = 2 * slotSize; /* frameType */
++          CalleeSavedFrameSize = 2 * slotSize; /* 2: frameType + currentSP */
 +        } else {
 +          assert("js-stub-call is illeagl ! ");
-+        }
-+        if (archType == Triple::aarch64) {
-+          CalleeSavedFrameSize += slotSize; /* current SP */
 +        }
 +        Offset += CalleeSavedFrameSize;
 +    }
@@ -200,7 +197,7 @@ index 6da089d1859..271b4e157d9 100644
      LowerPATCHABLE_FUNCTION_ENTER(*MI);
      return;
 diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
-index 651ad9ad4c8..540e8dab8fd 100644
+index 651ad9ad4c8..5e179bd3db8 100644
 --- a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
 +++ b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
 @@ -385,6 +385,7 @@ void AArch64FrameLowering::emitCalleeSavedFrameMoves(
@@ -259,7 +256,7 @@ index 651ad9ad4c8..540e8dab8fd 100644
    // All of the remaining stack allocations are for locals.
    AFI->setLocalStackSize(NumBytes - PrologueSaveSize);
    bool CombineSPBump = shouldCombineCSRLocalStackBump(MF, NumBytes);
-@@ -1020,11 +1031,42 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
+@@ -1020,11 +1031,13 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
      //          mov fp,sp          when FPOffset is zero.
      // Note: All stores of callee-saved registers are marked as "FrameSetup".
      // This code marks the instruction(s) that set the FP also.
@@ -267,42 +264,13 @@ index 651ad9ad4c8..540e8dab8fd 100644
      emitFrameOffset(MBB, MBBI, DL, AArch64::FP, AArch64::SP,
                      {FPOffset, MVT::i8}, TII, MachineInstr::FrameSetup, false,
                      NeedsWinCFI, &HasWinCFI);
-+#ifdef ARK_GC_SUPPORT
-+if (MF.getFunction().hasFnAttribute("js-stub-call")) {
-+      int64_t marker = 0x0;
-+      MF.getFunction()
-+      .getFnAttribute("js-stub-call")
-+      .getValueAsString()
-+      .getAsInteger(10, marker);//marker 1 break frame
-+
-+      /* x8-x15 volatile scratch registers, the callee isn't required to preserve the value
-+      */
-+      BuildMI(MBB, MBBI, DL, TII->get(AArch64::MOVi64imm), AArch64::X15)
-+      .addImm(marker)
-+      .setMIFlags(MachineInstr::FrameSetup);
-+
-+      BuildMI(MBB, MBBI, DL, TII->get(AArch64::STRXpre))
-+      .addReg(AArch64::FP, RegState::Define)
-+      .addReg(AArch64::X15)
-+      .addReg(AArch64::FP)
-+      .addImm(-8); // 8: 1 slot size
-+
-+      if (marker == JS_ENTRY_FRAME_MARK) {
-+        BuildMI(MBB, MBBI, DL, TII->get(AArch64::STRXpre))
-+        .addReg(AArch64::FP, RegState::Define)
-+        .addReg(AArch64::X15)
-+        .addReg(AArch64::FP)
-+        .addImm(-16); // 16: 2 slot size
-+      }
-+}
-+#endif
    }
  
 +
    if (windowsRequiresStackProbe(MF, NumBytes)) {
      uint64_t NumWords = NumBytes >> 4;
      if (NeedsWinCFI) {
-@@ -1514,6 +1556,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1514,6 +1527,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
  
    const StackOffset &SVEStackSize = getSVEStackSize(MF);
  
@@ -311,7 +279,7 @@ index 651ad9ad4c8..540e8dab8fd 100644
    // If there is a single SP update, insert it before the ret and we're done.
    if (CombineSPBump) {
      assert(!SVEStackSize && "Cannot combine SP bump with SVE");
-@@ -1552,6 +1596,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1552,6 +1567,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
      DeallocateAfter = SVEStackSize - DeallocateBefore;
    }
  
@@ -320,7 +288,7 @@ index 651ad9ad4c8..540e8dab8fd 100644
    // Deallocate the SVE area.
    if (SVEStackSize) {
      if (AFI->isStackRealigned()) {
-@@ -1632,6 +1678,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1632,6 +1649,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
    // This must be placed after the callee-save restore code because that code
    // assumes the SP is at the same location as it was after the callee-save save
    // code in the prologue.
@@ -328,7 +296,7 @@ index 651ad9ad4c8..540e8dab8fd 100644
    if (AfterCSRPopSize) {
      // Find an insertion point for the first ldp so that it goes before the
      // shadow call stack epilog instruction. This ensures that the restore of
-@@ -2079,6 +2126,7 @@ static void computeCalleeSaveRegisterPairs(
+@@ -2079,6 +2097,7 @@ static void computeCalleeSaveRegisterPairs(
      RegPairs.push_back(RPI);
      if (RPI.isPaired())
        ++i;
@@ -336,7 +304,7 @@ index 651ad9ad4c8..540e8dab8fd 100644
    }
  }
  
-@@ -2234,6 +2282,8 @@ bool AArch64FrameLowering::restoreCalleeSavedRegisters(
+@@ -2234,6 +2253,8 @@ bool AArch64FrameLowering::restoreCalleeSavedRegisters(
    SmallVector<RegPairInfo, 8> RegPairs;
    bool NeedsWinCFI = needsWinCFI(MF);
  
@@ -345,7 +313,7 @@ index 651ad9ad4c8..540e8dab8fd 100644
    if (MI != MBB.end())
      DL = MI->getDebugLoc();
  
-@@ -2416,6 +2466,7 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
+@@ -2416,6 +2437,7 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
        CSStackSize += RegSize;
    }
  
@@ -689,10 +657,10 @@ index 9f504b1eaa4..30a1baf5c85 100644
    case ARM::tLDR_postidx: {
      MachineOperand Def(MI.getOperand(1));
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..e0264827556 100644
+index 1da20371caf..3b1a4c44654 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
-@@ -1168,6 +1168,25 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
+@@ -1168,6 +1168,30 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
      else
        MFI.setOffsetAdjustment(-StackSize);
    }
@@ -707,18 +675,23 @@ index 1da20371caf..e0264827556 100644
 +        .getAsInteger(10, marker);//marker 1 break frame
 +      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
 +        .addImm(marker)
-+        .setMIFlag(MachineInstr::FrameSetup);
++        .setMIFlag(MachineInstr::FrameSetup); // type
++
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
++        .addImm(marker)
++        .setMIFlag(MachineInstr::FrameSetup); // current sp
++
 +      if (marker == JS_ENTRY_FRAME_MARK) {
 +        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::PUSH64i32 : X86::PUSH32i8))
-+        .addImm(marker)
-+        .setMIFlag(MachineInstr::FrameSetup);
++          .addImm(marker)
++          .setMIFlag(MachineInstr::FrameSetup); // thread sp
 +      }
 +    }
 +#endif
  
    // For EH funclets, only allocate enough space for outgoing calls. Save the
    // NumBytes value that we would've used for the parent frame.
-@@ -1635,6 +1654,27 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
+@@ -1635,6 +1659,31 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
    uint64_t SEHStackAllocAmt = NumBytes;
  
    if (HasFP) {
@@ -735,6 +708,10 @@ index 1da20371caf..e0264827556 100644
 +      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
 +              MachineFramePtr)
 +          .setMIFlag(MachineInstr::FrameDestroy);
++      // pop currentSP
++      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
++            MachineFramePtr)
++        .setMIFlag(MachineInstr::FrameDestroy);
 +      if (marker == JS_ENTRY_FRAME_MARK) {
 +        // pop thread.fp
 +        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
@@ -746,7 +723,7 @@ index 1da20371caf..e0264827556 100644
      // Pop EBP.
      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
              MachineFramePtr)
-@@ -1993,8 +2033,33 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+@@ -1993,8 +2042,36 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
  
    if (hasFP(MF)) {
      // emitPrologue always spills frame register the first thing.
@@ -757,17 +734,20 @@ index 1da20371caf..e0264827556 100644
 +        .getFnAttribute("js-stub-call")
 +        .getValueAsString()
 +        .getAsInteger(10, marker);//marker 1 break frame
++
 +        if (marker == JS_ENTRY_FRAME_MARK) {
-+            SpillSlotOffset -=  3 * SlotSize; // add type and thread.fp
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            CalleeSavedFrameSize += (2 * SlotSize);
++            SpillSlotOffset -=  4 * SlotSize; // add type and thread.fp
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // prev
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // type
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // currentsp
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // threadfp
++            CalleeSavedFrameSize += (3 * SlotSize);
 +        } else {
-+            SpillSlotOffset -=  2 * SlotSize; // add type
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-+            CalleeSavedFrameSize += SlotSize;
++            SpillSlotOffset -=  3 * SlotSize; // add type
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // prev
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // type
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // currentsp
++            CalleeSavedFrameSize += 2 * SlotSize;
 +        }
 +    } else {
 +        SpillSlotOffset -= SlotSize; // add type and thread.fp
