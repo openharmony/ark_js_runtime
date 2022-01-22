@@ -274,6 +274,25 @@ CALL_STUB_INIT_DESCRIPTOR(TryLoadICByValue)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(StoreICByName)
+{
+    // 6 : 6 input parameters
+    StubDescriptor storeICByName("StoreICByName", 0, 6,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64);
+    *descriptor = storeICByName;
+    // 6 : 6 input parameters
+    std::array<MachineType, 6> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::INT32,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(TryStoreICByName)
 {
     // 5 : 5 input parameters

@@ -2759,6 +2759,86 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
     DISPATCH_WITH_ACC(PREF_ID32_V8);
 }
 
+DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
+    GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
+    DEFVARIABLE(result, MachineType::UINT64, GetHoleConstant(MachineType::UINT64));
+
+    Label checkResult(env);
+    Label dispatch(env);
+    Label slowPath(env);
+
+    Label receiverIsHeapObject(env);
+    Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
+    Bind(&receiverIsHeapObject);
+    {
+        Label tryIC(env);
+        Label tryFastPath(env);
+        Branch(TaggedIsUndefined(profileTypeInfo), &tryFastPath, &tryIC);
+        Bind(&tryIC);
+        {
+            Label isHeapObject(env);
+            GateRef firstValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo, slotId);
+            Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
+            Bind(&isHeapObject);
+            {
+                Label tryPoly(env);
+                Label storeWithHandler(env);
+                GateRef secondValue = GetValueFromTaggedArray(MachineType::TAGGED, profileTypeInfo,
+                    Int32Add(slotId, GetInt32Constant(1)));
+                DEFVARIABLE(cachedHandler, MachineType::TAGGED, secondValue);
+                GateRef hclass = LoadHClass(receiver);
+                Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+                    &storeWithHandler, &tryPoly);
+                Bind(&tryPoly);
+                {
+                    cachedHandler = CheckPolyHClass(firstValue, hclass);
+                    Branch(TaggedIsHole(*cachedHandler), &slowPath, &storeWithHandler);
+                }
+                Bind(&storeWithHandler);
+                {
+                    result = StoreICWithHandler(glue, receiver, receiver, acc, *cachedHandler);
+                    Branch(TaggedIsHole(*result), &slowPath, &checkResult);
+                }
+            }
+        }
+        Bind(&tryFastPath);
+        {
+            GateRef stringId = ReadInst32_1(pc);
+            GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+            auto stubDescriptor = GET_STUBDESCRIPTOR(SetPropertyByName);
+            result = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(SetPropertyByName)), {
+                glue, receiver, propKey, acc
+            });
+            Branch(TaggedIsHole(*result), &slowPath, &checkResult);
+        }
+    }
+    Bind(&slowPath);
+    {
+        GateRef stringId = ReadInst32_1(pc);
+        GateRef propKey = GetValueFromTaggedArray(MachineType::TAGGED, constpool, stringId);
+        auto stubDescriptor = GET_STUBDESCRIPTOR(StoreICByName);
+        result = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(StoreICByName)), {
+            glue, profileTypeInfo, receiver, propKey, acc, slotId
+        });
+        Jump(&checkResult);
+    }
+    Bind(&checkResult);
+    {
+        Label isException(env);
+        Branch(TaggedIsException(*result), &isException, &dispatch);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+    }
+    Bind(&dispatch);
+    DISPATCH(PREF_ID32_V8);
+}
+
 DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
 {
     auto env = GetEnvironment();

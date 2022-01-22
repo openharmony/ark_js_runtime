@@ -136,7 +136,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdGlobalVarPrefId32, 7)                         \
     T(HandleStGlobalVarPrefId32, 7)                         \
     T(HandleLdObjByNamePrefId32V8, 7)                       \
-    V(HandleStObjByNamePrefId32V8, 7)                       \
+    T(HandleStObjByNamePrefId32V8, 7)                       \
     V(HandleStOwnByNamePrefId32V8, 7)                       \
     V(HandleLdSuperByNamePrefId32V8, 7)                     \
     V(HandleStSuperByNamePrefId32V8, 7)                     \
