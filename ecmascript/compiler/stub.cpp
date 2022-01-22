@@ -1611,7 +1611,7 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
             Bind(&iLessLength);
             {
                 GateRef element = GetValueFromTaggedArray(MachineType::TAGGED, cachedValue, *i);
-                Branch(Word64Equal(element, hclass), &hasHclass, &loopEnd);
+                Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(element), hclass), &hasHclass, &loopEnd);
                 Bind(&hasHclass);
                 result = GetValueFromTaggedArray(MachineType::TAGGED, cachedValue, Int32Add(*i, GetInt32Constant(1)));
                 Jump(&exit);

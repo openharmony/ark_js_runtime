@@ -22,19 +22,6 @@
 
 namespace panda::ecmascript {
 using JSTaggedType = panda::ecmascript::JSTaggedType;
-static constexpr uint32_t UP_FRAME_SP_OFFSET_32 = 4;
-static constexpr uint32_t UP_FRAME_SP_OFFSET_64 = 8;
-struct UpFrameResult {
-    const uint8_t *pc;
-    JSTaggedType *sp;
-    static constexpr uint32_t GetSpOffset(bool isArm32)
-    {
-        if (isArm32) {
-            return UP_FRAME_SP_OFFSET_32;
-        }
-        return UP_FRAME_SP_OFFSET_64;
-    }
-};
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {
@@ -155,7 +142,7 @@ public:
     static JSTaggedType StOwnByName(uintptr_t argGlue, JSTaggedType obj, JSTaggedType prop, JSTaggedType value);
     static JSTaggedType StOwnByNameWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
     static JSTaggedType SuspendGenerator(uintptr_t argGlue, JSTaggedType obj, JSTaggedType value);
-    static uintptr_t UpFrame(uintptr_t sp);
+    static uintptr_t UpFrame(uintptr_t argGlue, uintptr_t sp);
     static JSTaggedType ImportModule(uintptr_t argGlue, JSTaggedType moduleName);
     static void StModuleVar(uintptr_t argGlue, JSTaggedType exportName, JSTaggedType exportObj);
     static JSTaggedType LdModvarByName(uintptr_t argGlue, JSTaggedType moduleObj, JSTaggedType itemName);

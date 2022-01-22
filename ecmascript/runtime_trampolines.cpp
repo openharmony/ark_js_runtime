@@ -904,10 +904,10 @@ JSTaggedType RuntimeTrampolines::SuspendGenerator(uintptr_t argGlue, JSTaggedTyp
     return SlowRuntimeStub::SuspendGenerator(thread, JSTaggedValue(obj), JSTaggedValue(value)).GetRawData();
 }
 
-uintptr_t RuntimeTrampolines::UpFrame(uintptr_t sp)
+uintptr_t RuntimeTrampolines::UpFrame(uintptr_t argGlue, uintptr_t sp)
 {
+    auto thread = JSThread::GlueToJSThread(argGlue);
     InterpretedFrameHandler frameHandler(reinterpret_cast<JSTaggedType *>(sp));
-    UpFrameResult res;
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
     for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
         if (frameHandler.IsBreakFrame()) {
@@ -916,10 +916,8 @@ uintptr_t RuntimeTrampolines::UpFrame(uintptr_t sp)
         auto method = frameHandler.GetMethod();
         pcOffset = EcmaInterpreter::FindCatchBlock(method, frameHandler.GetBytecodeOffset());
         if (pcOffset != panda_file::INVALID_OFFSET) {
-            res.sp = frameHandler.GetSp();
-            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            res.pc = method->GetBytecodeArray() + pcOffset;
-            return reinterpret_cast<uintptr_t>(&res);
+            thread->SetCurrentSPFrame(frameHandler.GetSp());
+            return reinterpret_cast<uintptr_t>(method->GetBytecodeArray() + pcOffset);
         }
     }
     return reinterpret_cast<uintptr_t>(nullptr);
