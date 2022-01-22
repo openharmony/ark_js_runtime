@@ -466,60 +466,84 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
     DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef right = acc;
-    Label leftIsNumber(env);
+    Label leftIsInt(env);
+    Label leftOrRightNotInt(env);
+    Label leftLessRight(env);
+    Label leftNotLessRight(env);
     Label slowPath(env);
-    Label fastPath(env);
     Label dispatch(env);
-    DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
-    Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
-    Bind(&leftIsNumber);
+    Branch(TaggedIsInt(left), &leftIsInt, &leftOrRightNotInt);
+    Bind(&leftIsInt);
     {
-        Label rightIsNumber(env);
-        Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
-        Bind(&rightIsNumber);
+        Label rightIsInt(env);
+        Branch(TaggedIsInt(right), &rightIsInt, &leftOrRightNotInt);
+        Bind(&rightIsInt);
         {
-            // fast path
-            Label leftIsInt(env);
-            Label leftNotInt(env);
-            Branch(TaggedIsInt(left), &leftIsInt, &leftNotInt);
-            Bind(&leftIsInt);
+            GateRef intLeft = TaggedGetInt(left);
+            GateRef intRight = TaggedGetInt(right);
+            Branch(Int32LessThan(intLeft, intRight), &leftLessRight, &leftNotLessRight);
+        }
+    }
+    Bind(&leftOrRightNotInt);
+    {
+        Label leftIsNumber(env);
+        Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
+        Bind(&leftIsNumber);
+        {
+            Label rightIsNumber(env);
+            Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
+            Bind(&rightIsNumber);
             {
-                Label rightIsInt(env);
-                Label rightNotInt(env);
-                Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
-                Bind(&rightIsInt);
+                // fast path
+                DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+                Label leftIsInt1(env);
+                Label leftNotInt1(env);
+                Label exit1(env);
+                Label exit2(env);
+                Label rightIsInt1(env);
+                Label rightNotInt1(env);
+                Branch(TaggedIsInt(left), &leftIsInt1, &leftNotInt1);
+                Bind(&leftIsInt1);
                 {
                     doubleLeft = ChangeInt32ToFloat64(TaggedGetInt(left));
-                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
-                    Jump(&fastPath);
+                    Jump(&exit1);
                 }
-                Bind(&rightNotInt);
-                {
-                    doubleLeft = ChangeInt32ToFloat64(TaggedGetInt(left));
-                    doubleRight = TaggedCastToDouble(right);
-                    Jump(&fastPath);
-                }
-            }
-            Bind(&leftNotInt);
-            {
-                Label rightIsInt(env);
-                Label rightNotInt(env);
-                Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
-                Bind(&rightIsInt);
+                Bind(&leftNotInt1);
                 {
                     doubleLeft = TaggedCastToDouble(left);
-                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
-                    Jump(&fastPath);
+                    Jump(&exit1);
                 }
-                Bind(&rightNotInt);
+                Bind(&exit1);
                 {
-                    doubleLeft = TaggedCastToDouble(left);
+                    Branch(TaggedIsInt(right), &rightIsInt1, &rightNotInt1);
+                }
+                Bind(&rightIsInt1);
+                {
+                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
+                    Jump(&exit2);
+                }
+                Bind(&rightNotInt1);
+                {
                     doubleRight = TaggedCastToDouble(right);
-                    Jump(&fastPath);
+                    Jump(&exit2);
+                }
+                Bind(&exit2);
+                {
+                    Branch(DoubleLessThan(*doubleLeft, *doubleRight), &leftLessRight, &leftNotLessRight);
                 }
             }
         }
+    }
+    Bind(&leftLessRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedTrue());
+        Jump(&dispatch);
+    }
+    Bind(&leftNotLessRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedFalse());
+        Jump(&dispatch);
     }
     Bind(&slowPath);
     {
@@ -537,22 +561,6 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
         Bind(&notException);
         {
             varAcc = result;
-            Jump(&dispatch);
-        }
-    }
-    Bind(&fastPath);
-    {
-        Label leftLessRight(env);
-        Label leftNotLessRight(env);
-        Branch(DoubleLessThan(*doubleLeft, *doubleRight), &leftLessRight, &leftNotLessRight);
-        Bind(&leftLessRight);
-        {
-            varAcc = ChangeInt64ToTagged(TaggedTrue());
-            Jump(&dispatch);
-        }
-        Bind(&leftNotLessRight);
-        {
-            varAcc = ChangeInt64ToTagged(TaggedFalse());
             Jump(&dispatch);
         }
     }
