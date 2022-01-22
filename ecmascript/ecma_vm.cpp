@@ -173,7 +173,6 @@ bool EcmaVM::Initialize()
 #endif
         SetupRegExpResultCache();
         microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
-
         {
             Builtins builtins;
             builtins.Initialize(globalEnvHandle, thread_);
@@ -343,6 +342,30 @@ bool EcmaVM::ExecuteFromPf(std::string_view filename, std::string_view entryPoin
     return Execute(*pf_ptr, entryPoint, args);
 }
 
+bool EcmaVM::CollectInfoOfPandaFile(std::string_view filename, std::string_view entryPoint,
+                                    std::vector<BytecodeTranslationInfo> &infoList, const panda_file::File *&pf)
+{
+    const panda_file::File *pf_ptr = nullptr;
+    std::unique_ptr<const panda_file::File> file;
+    if (frameworkPandaFile_ == nullptr || !IsFrameworkPandaFile(filename)) {
+        file = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
+        if (file == nullptr) {
+            return false;
+        }
+        pf_ptr = file.get();
+    }
+    // Get ClassName and MethodName
+    size_t pos = entryPoint.find_last_of("::");
+    if (pos == std::string_view::npos) {
+        LOG_ECMA(ERROR) << "EntryPoint:" << entryPoint << " is illegal";
+        return false;
+    }
+    CString methodName(entryPoint.substr(pos + 1));
+    PandaFileTranslator::TranslateAndCollectPandaFile(this, *pf_ptr, methodName, infoList);
+    pf = file.release();
+    return true;
+}
+
 bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                                const std::vector<std::string> &args)
 {
@@ -379,7 +402,6 @@ bool EcmaVM::Execute(const panda_file::File &pf, std::string_view entryPoint, co
         return false;
     }
     CString methodName(entryPoint.substr(pos + 1));
-
     // For Ark application startup
     InvokeEcmaEntrypoint(pf, methodName, args);
     return true;

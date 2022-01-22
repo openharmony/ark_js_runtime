@@ -196,10 +196,10 @@ private:
     struct CodeInfo codeInfo_ {};
 };
 
-class LLVMCodeGeneratorImpl : public CodeGeneratorImpl {
+class LLVMIRGeneratorImpl : public CodeGeneratorImpl {
 public:
-    explicit LLVMCodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
-    ~LLVMCodeGeneratorImpl() = default;
+    explicit LLVMIRGeneratorImpl(LLVMStubModule *module) : module_(module) {}
+    ~LLVMIRGeneratorImpl() = default;
     void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                              const CompilationConfig *cfg) override;
 

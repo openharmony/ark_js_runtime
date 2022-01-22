@@ -798,7 +798,7 @@ void LLVMIRBuilder::HandleConstant(GateRef gate)
     VisitConstant(gate, value);
 }
 
-void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value)
+void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bit width
 {
     LLVMValueRef llvmValue = nullptr;
     auto valCode = circuit_->LoadGatePtrConst(gate)->GetValueCode();

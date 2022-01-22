@@ -614,7 +614,7 @@ bool Gate::Verify() const
     }
     if (failed) {
         std::cerr << "[Verifier][Error] Gate level input list schema verify failed" << std::endl;
-        Print("",true, highlightIdx);
+        Print("", true, highlightIdx);
         std::cerr << "Note: " << errorString << std::endl;
     }
     return !failed;
@@ -781,7 +781,7 @@ bool In::IsGateNull() const
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
 Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type,
-     MarkCode mark)
+           MarkCode mark)
     : id_(id), opcode_(opcode), bitValue_(bitValue), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield),
     firstOut_(0)
 {
@@ -1060,12 +1060,15 @@ void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) 
                   << "[";
         auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
         size_t idx = 0;
-        idx = PrintInGate(numInsArray[0], idx, 0, inListPreview, highlightIdx);
-        idx = PrintInGate(numInsArray[0] + numInsArray[1], idx, numInsArray[0], inListPreview, highlightIdx);
-        idx = PrintInGate(numInsArray[0] + numInsArray[1] + numInsArray[2], idx, numInsArray[0] + numInsArray[1],
-                          inListPreview, highlightIdx);
-        PrintInGate(numInsArray[0] + numInsArray[1] + numInsArray[2] + numInsArray[3], idx,
-                    numInsArray[0] + numInsArray[1] + numInsArray[2], inListPreview, highlightIdx, true);
+        auto stateSize = numInsArray[0];
+        auto dependSize = numInsArray[1];
+        auto valueSize = numInsArray[2]; // 2 : 2 means the third element.
+        auto rootSize = numInsArray[3]; // 3 : 3 means the four element.
+        idx = PrintInGate(stateSize, idx, 0, inListPreview, highlightIdx);
+        idx = PrintInGate(stateSize + dependSize, idx, stateSize, inListPreview, highlightIdx);
+        idx = PrintInGate(stateSize + dependSize + valueSize, idx, stateSize + dependSize, inListPreview, highlightIdx);
+        PrintInGate(stateSize + dependSize + valueSize + rootSize, idx, stateSize + dependSize + valueSize,
+                    inListPreview, highlightIdx, true);
 
         std::cerr << "]"
                   << ", ";

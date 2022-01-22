@@ -14,7 +14,6 @@
  */
 
 #include <chrono>
-#include <ctime>
 #include <iostream>
 #include <limits>
 #include <signal.h>  // NOLINTNEXTLINE(modernize-deprecated-headers)

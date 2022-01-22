@@ -190,7 +190,6 @@ GateRef Stub::GetHoleConstant(MachineType type)
     return env_.GetCircuitBuilder().HoleConstant(CircuitBuilder::MachineType2TypeCode(type));
 }
 
-
 GateRef Stub::GetNullConstant(MachineType type)
 {
     return env_.GetCircuitBuilder().NullConstant(CircuitBuilder::MachineType2TypeCode(type));
@@ -402,7 +401,7 @@ GateRef Stub::Int32Add(GateRef x, GateRef y)
 
 GateRef Stub::Int64Add(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), ValueCode::INT64,x, y);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), ValueCode::INT64, x, y);
 }
 
 GateRef Stub::DoubleAdd(GateRef x, GateRef y)
@@ -448,7 +447,7 @@ GateRef Stub::Int64Sub(GateRef x, GateRef y)
 
 GateRef Stub::DoubleSub(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), ValueCode::FLOAT64,x, y);
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), ValueCode::FLOAT64, x, y);
 }
 
 GateRef Stub::Int32Mul(GateRef x, GateRef y)
