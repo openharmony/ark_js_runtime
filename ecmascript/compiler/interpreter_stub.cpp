@@ -573,6 +573,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     DEFVARIABLE(varConstpool, MachineType::TAGGED_POINTER, constpool);
     DEFVARIABLE(varProfileTypeInfo, MachineType::TAGGED_POINTER, profileTypeInfo);
     DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    DEFVARIABLE(varHotnessCounter, MachineType::INT32, hotnessCounter);
 
     auto stubDescriptor = GET_STUBDESCRIPTOR(JumpToCInterpreter);
     varPc = CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(JumpToCInterpreter)), {
@@ -599,10 +600,14 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
         GateRef function = GetFunctionFromFrame(frame);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         varConstpool = GetConstpoolFromFunction(function);
+        GateRef method = Load(MachineType::NATIVE_POINTER, function,
+            GetArchRelateConstant(JSFunctionBase::METHOD_OFFSET));
+        varHotnessCounter = Load(MachineType::INT32, method,
+                                 GetArchRelateConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+
     }
-    // do not update hotnessCounter now
     Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
-             hotnessCounter, GetArchRelateConstant(0));
+             *varHotnessCounter, GetArchRelateConstant(0));
 }
 
 DECLARE_ASM_HANDLER(HandleLdaDynV8)
@@ -3491,24 +3496,23 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     DEFVARIABLE(varProfileTypeInfo, MachineType::TAGGED_POINTER, profileTypeInfo);
     DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
     DEFVARIABLE(varHotnessCounter, MachineType::INT32, hotnessCounter);
+
     Label pcIsInvalid(env);
     Label pcNotInvalid(env);
     GateRef exception = Load(MachineType::TAGGED, glue, GetArchRelateConstant(0));
     StubDescriptor *upFrame = GET_STUBDESCRIPTOR(UpFrame);
-    GateRef res = CallRuntime(upFrame, glue, GetWord64Constant(FAST_STUB_ID(UpFrame)), { sp });
-    Branch(PtrEqual(res, GetArchRelateConstant(0)), &pcIsInvalid, &pcNotInvalid);
+    varPc = CallRuntime(upFrame, glue, GetWord64Constant(FAST_STUB_ID(UpFrame)), { glue, sp });
+    Branch(PtrEqual(*varPc, GetArchRelateConstant(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
         Return();
     }
     Bind(&pcNotInvalid);
     {
-        varPc = Load(MachineType::NATIVE_POINTER, res, GetArchRelateConstant(0));
-        varSp = Load(MachineType::NATIVE_POINTER, res,
-            GetArchRelateConstant(UpFrameResult::GetSpOffset(env->IsArch32Bit())));
+        varSp = GetCurrentSpFrame(glue);
         varAcc = exception;
+        // clear exception
         Store(MachineType::UINT64, glue, glue, GetArchRelateConstant(0), GetHoleConstant());
-        SetCurrentSpFrame(glue, *varSp);
         GateRef function = GetFunctionFromFrame(GetFrame(*varSp));
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);

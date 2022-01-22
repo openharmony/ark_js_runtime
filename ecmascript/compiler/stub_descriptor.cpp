@@ -1993,10 +1993,11 @@ CALL_STUB_INIT_DESCRIPTOR(SuspendGenerator)
 CALL_STUB_INIT_DESCRIPTOR(UpFrame)
 {
     // 1 : 1 input parameters
-    StubDescriptor upFrame("UpFrame", 0, 1,
+    StubDescriptor upFrame("UpFrame", 0, 2,
         ArgumentsOrder::DEFAULT_ORDER, MachineType::NATIVE_POINTER);
     *descriptor = upFrame;
-    std::array<MachineType, 1> params = { // 1 : 1 input parameters
+    std::array<MachineType, 2> params = { // 2 : 2 input parameters
+        MachineType::NATIVE_POINTER,
         MachineType::NATIVE_POINTER,
     };
     descriptor->SetParameters(params.data());
