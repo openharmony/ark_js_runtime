@@ -48,8 +48,8 @@ namespace panda::ecmascript::kungfu {
     V(HandleDiv2DynPrefV8, 7)                               \
     V(HandleMod2DynPrefV8, 7)                               \
     T(HandleEqDynPrefV8, 7)                                 \
-    V(HandleNotEqDynPrefV8, 7)                              \
-    V(HandleLessDynPrefV8, 7)                               \
+    T(HandleNotEqDynPrefV8, 7)                              \
+    T(HandleLessDynPrefV8, 7)                               \
     V(HandleLessEqDynPrefV8, 7)                             \
     V(HandleGreaterDynPrefV8, 7)                            \
     V(HandleGreaterEqDynPrefV8, 7)                          \

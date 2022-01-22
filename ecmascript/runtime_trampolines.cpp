@@ -1019,4 +1019,16 @@ bool RuntimeTrampolines::ToBoolean(JSTaggedType value)
 {
     return JSTaggedValue(value).ToBoolean();
 }
+
+JSTaggedType RuntimeTrampolines::NotEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::NotEqDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::LessDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::LessDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
 }  // namespace panda::ecmascript

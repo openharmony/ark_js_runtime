@@ -163,6 +163,8 @@ public:
     static JSTaggedType StGlobalVar(uintptr_t argGlue, JSTaggedType prop, JSTaggedType value);
     static JSTaggedType ToNumber(uintptr_t argGlue, JSTaggedType value);
     static bool ToBoolean(JSTaggedType value);
+    static JSTaggedType NotEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType LessDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
 };
 }  // namespace panda::ecmascript
 #endif

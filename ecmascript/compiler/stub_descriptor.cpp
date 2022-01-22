@@ -1799,6 +1799,36 @@ CALL_STUB_INIT_DESCRIPTOR(ToBoolean)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(NotEqDyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor notEqDyn("NotEqDyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = notEqDyn;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(LessDyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor lessDyn("LessDyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = lessDyn;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 #ifndef NDEBUG
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {
