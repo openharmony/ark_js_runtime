@@ -139,6 +139,7 @@ public:
                                       JSTaggedType propKey, JSTaggedType value, int32_t slotId);
     static void SetFunctionNameNoPrefix(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType argName);
     static JSTaggedType StOwnByValueWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
+    static JSTaggedType StOwnByName(uintptr_t argGlue, JSTaggedType obj, JSTaggedType prop, JSTaggedType value);
     static JSTaggedType StOwnByNameWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
     static JSTaggedType SuspendGenerator(uintptr_t argGlue, JSTaggedType obj, JSTaggedType value);
     static JSTaggedType ImportModule(uintptr_t argGlue, JSTaggedType moduleName);

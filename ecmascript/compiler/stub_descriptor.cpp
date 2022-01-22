@@ -1928,13 +1928,28 @@ CALL_STUB_INIT_DESCRIPTOR(SetFunctionNameNoPrefix)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(StOwnByName)
+{
+    // 4 : 4 input parameters
+    StubDescriptor stOwnByName("StOwnByName", 0, 4, ArgumentsOrder::DEFAULT_ORDER, MachineType::UINT64);
+    *descriptor = stOwnByName;
+    std::array<MachineType, 4> params = { // 4 : 4 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(StOwnByNameWithNameSet)
 {
     // 4 : 4 input parameters
     StubDescriptor stOwnByNameWithNameSet("StOwnByNameWithNameSet", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
     *descriptor = stOwnByNameWithNameSet;
-    std::array<MachineType, 4> params = { // 7 : 7 input parameters
+    std::array<MachineType, 4> params = { // 4 : 4 input parameters
         MachineType::NATIVE_POINTER,
         MachineType::TAGGED,
         MachineType::TAGGED,
