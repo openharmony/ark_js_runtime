@@ -212,11 +212,11 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, Interprete
         }
         // line number
         int lineNumber = 0;
-        auto lineFunc = [&lineNumber](int line) -> bool {
+        auto callbackFunc = [&](size_t line, [[maybe_unused]] size_t column) -> bool {
             lineNumber = line + 1;
             return true;
         };
-        if (!debugExtractor->MatchWithOffset(lineFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
+        if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
             codeEntry.lineNumber = 0;
         } else {
             codeEntry.lineNumber = lineNumber;
