@@ -571,6 +571,7 @@ public:
     inline GateRef Word32NotEqual(GateRef x, GateRef y);
     inline GateRef Word64Equal(GateRef x, GateRef y);
     inline GateRef DoubleEqual(GateRef x, GateRef y);
+    inline GateRef DoubleLessThan(GateRef x, GateRef y);
     inline GateRef Word64NotEqual(GateRef x, GateRef y);
     inline GateRef Int32GreaterThan(GateRef x, GateRef y);
     inline GateRef Int32LessThan(GateRef x, GateRef y);

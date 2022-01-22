@@ -119,7 +119,9 @@ namespace panda::ecmascript::kungfu {
     V(StGlobalVar, 3)                       \
     V(LdGlobalVar, 3)                       \
     V(ToNumber, 2)                          \
-    V(ToBoolean, 1)
+    V(ToBoolean, 1)                         \
+    V(NotEqDyn, 3)                          \
+    V(LessDyn, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

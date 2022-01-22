@@ -386,7 +386,7 @@ DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
         // slow path
         StubDescriptor *eqDyn = GET_STUBDESCRIPTOR(EqDyn);
         result = CallRuntime(eqDyn, glue, GetWord64Constant(FAST_STUB_ID(EqDyn)),
-                                {glue, left, acc});
+                             {glue, left, acc});
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -404,6 +404,157 @@ DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
     {
         varAcc = *result;
         Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleNotEqDynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    // fast path
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    result = FastEqual(left, acc);
+    Label isHole(env);
+    Label notHole(env);
+    Label dispatch(env);
+    Branch(TaggedIsHole(*result), &isHole, &notHole);
+    Bind(&isHole);
+    {
+        // slow path
+        StubDescriptor *notEqDyn = GET_STUBDESCRIPTOR(NotEqDyn);
+        result = CallRuntime(notEqDyn, glue, GetWord64Constant(FAST_STUB_ID(NotEqDyn)),
+                             {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = *result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&notHole);
+    {
+        Label resultIsTrue(env);
+        Label resultNotTrue(env);
+        Branch(TaggedIsTrue(*result), &resultIsTrue, &resultNotTrue);
+        Bind(&resultIsTrue);
+        {
+            varAcc = ChangeInt64ToTagged(TaggedFalse());
+            Jump(&dispatch);
+        }
+        Bind(&resultNotTrue);
+        {
+            varAcc = ChangeInt64ToTagged(TaggedTrue());
+            Jump(&dispatch);
+        }
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef right = acc;
+    Label leftIsNumber(env);
+    Label slowPath(env);
+    Label fastPath(env);
+    Label dispatch(env);
+    DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+    Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
+        Bind(&rightIsNumber);
+        {
+            // fast path
+            Label leftIsInt(env);
+            Label leftNotInt(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftNotInt);
+            Bind(&leftIsInt);
+            {
+                Label rightIsInt(env);
+                Label rightNotInt(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
+                Bind(&rightIsInt);
+                {
+                    doubleLeft = ChangeInt32ToFloat64(TaggedGetInt(left));
+                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
+                    Jump(&fastPath);
+                }
+                Bind(&rightNotInt);
+                {
+                    doubleLeft = ChangeInt32ToFloat64(TaggedGetInt(left));
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&fastPath);
+                }
+            }
+            Bind(&leftNotInt);
+            {
+                Label rightIsInt(env);
+                Label rightNotInt(env);
+                Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
+                Bind(&rightIsInt);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
+                    Jump(&fastPath);
+                }
+                Bind(&rightNotInt);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&fastPath);
+                }
+            }
+        }
+    }
+    Bind(&slowPath);
+    {
+        // slow path
+        StubDescriptor *lessDyn = GET_STUBDESCRIPTOR(LessDyn);
+        GateRef result = CallRuntime(lessDyn, glue, GetWord64Constant(FAST_STUB_ID(LessDyn)),
+                                     {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&fastPath);
+    {
+        Label leftLessRight(env);
+        Label leftNotLessRight(env);
+        Branch(DoubleLessThan(*doubleLeft, *doubleRight), &leftLessRight, &leftNotLessRight);
+        Bind(&leftLessRight);
+        {
+            varAcc = ChangeInt64ToTagged(TaggedTrue());
+            Jump(&dispatch);
+        }
+        Bind(&leftNotLessRight);
+        {
+            varAcc = ChangeInt64ToTagged(TaggedFalse());
+            Jump(&dispatch);
+        }
     }
     Bind(&dispatch);
     DISPATCH_WITH_ACC(PREF_V8);

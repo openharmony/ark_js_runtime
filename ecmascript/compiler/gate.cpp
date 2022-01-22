@@ -292,6 +292,7 @@ Properties OpCode::GetProperties() const
         case FLOAT64_SMOD:
             return {FLOAT64, NO_STATE, NO_DEPEND, VALUE(FLOAT64, FLOAT64), NO_ROOT};
         case FLOAT64_EQ:
+        case FLOAT64_SLT:
             return {INT1, NO_STATE, NO_DEPEND, VALUE(FLOAT64, FLOAT64), NO_ROOT};
         case INT8_LOAD:
             return {INT8, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE), NO_ROOT};
@@ -513,6 +514,7 @@ std::string OpCode::Str() const
         {FLOAT64_DIV, "FLOAT64_DIV"},
         {FLOAT64_EXP, "FLOAT64_EXP"},
         {FLOAT64_EQ, "FLOAT64_EQ"},
+        {FLOAT64_SLT, "FLOAT64_SLT"},
         {INT8_LOAD, "INT8_LOAD"},
         {INT16_LOAD, "INT16_LOAD"},
         {INT32_LOAD, "INT32_LOAD"},

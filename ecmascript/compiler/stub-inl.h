@@ -800,6 +800,11 @@ GateRef Stub::DoubleEqual(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_EQ), x, y);
 }
 
+GateRef Stub::DoubleLessThan(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_SLT), x, y);
+}
+
 GateRef Stub::Word64NotEqual(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::INT64_NE), x, y);

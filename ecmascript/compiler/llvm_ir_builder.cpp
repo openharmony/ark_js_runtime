@@ -181,6 +181,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT32_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::FLOAT64_EQ, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
+        {OpCode::FLOAT64_SLT, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
         {OpCode::INT32_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT8_LOAD, &LLVMIRBuilder::HandleLoad},
@@ -1443,7 +1444,19 @@ void LLVMIRBuilder::HandleFloatOrDoubleCmp(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
     std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOEQ);
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::FLOAT64_EQ: {
+            VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOEQ);
+            break;
+        }
+        case OpCode::FLOAT64_SLT: {
+            VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOLT);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
 }
 
 void LLVMIRBuilder::HandleLoad(GateRef gate)
