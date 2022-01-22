@@ -853,6 +853,26 @@ JSTaggedType RuntimeTrampolines::LoadICByName(uintptr_t argGlue, JSTaggedType pr
     return icRuntime.LoadMiss(receiverHandle, keyHandle).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::StoreICByName(uintptr_t argGlue, JSTaggedType profileTypeInfo,
+    JSTaggedType receiver, JSTaggedType propKey, JSTaggedType value, int32_t slotId)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    INTERPRETER_TRACE(thread, StoreICByName);
+
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    auto profileHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(profileTypeInfo));
+    auto receiverHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(receiver));
+    auto keyHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(propKey));
+    auto valueHandle = JSHandle<JSTaggedValue>(thread, reinterpret_cast<TaggedObject *>(value));
+    if (profileHandle->IsUndefined()) {
+        JSTaggedValue::SetProperty(thread, receiverHandle, keyHandle, valueHandle, true);
+        RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception().GetRawData());
+        return JSTaggedValue::True().GetRawData();
+    }
+    StoreICRuntime icRuntime(thread, JSHandle<ProfileTypeInfo>::Cast(profileHandle), slotId, ICKind::NamedStoreIC);
+    return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle).GetRawData();
+}
+
 void RuntimeTrampolines::SetFunctionNameNoPrefix(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType argName)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);

@@ -97,6 +97,7 @@ namespace panda::ecmascript::kungfu {
     V(CloneClassFromTemplate, 5)            \
     V(SetClassConstructorLength, 3)         \
     V(LoadICByName, 5)                      \
+    V(StoreICByName, 6)                     \
     V(UpdateHotnessCounter, 2)              \
     V(ImportModule, 2)                      \
     V(StModuleVar, 3)                       \

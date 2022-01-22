@@ -135,6 +135,8 @@ public:
     static JSTaggedType UpdateHotnessCounter(uintptr_t argGlue, uintptr_t sp);
     static JSTaggedType LoadICByName(uintptr_t argGlue, JSTaggedType profileTypeInfo,
                                      JSTaggedType receiver, JSTaggedType propKey, int32_t slotId);
+    static JSTaggedType StoreICByName(uintptr_t argGlue, JSTaggedType profileTypeInfo, JSTaggedType receiver,
+                                      JSTaggedType propKey, JSTaggedType value, int32_t slotId);
     static void SetFunctionNameNoPrefix(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType argName);
     static JSTaggedType StOwnByValueWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
     static JSTaggedType StOwnByNameWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType key, JSTaggedType value);
