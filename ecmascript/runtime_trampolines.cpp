@@ -885,6 +885,13 @@ JSTaggedType RuntimeTrampolines::StOwnByValueWithNameSet(uintptr_t argGlue, JSTa
     return SlowRuntimeStub::StOwnByValueWithNameSet(thread, JSTaggedValue(obj), JSTaggedValue(key), JSTaggedValue(value)).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::StOwnByName(uintptr_t argGlue, JSTaggedType obj, JSTaggedType prop, JSTaggedType value)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::StOwnByName(
+        thread, JSTaggedValue(obj), JSTaggedValue(prop), JSTaggedValue(value)).GetRawData();
+}
+
 JSTaggedType RuntimeTrampolines::StOwnByNameWithNameSet(uintptr_t argGlue, JSTaggedType obj, JSTaggedType prop, JSTaggedType value)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
