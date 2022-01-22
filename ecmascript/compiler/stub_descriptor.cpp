@@ -1990,6 +1990,19 @@ CALL_STUB_INIT_DESCRIPTOR(SuspendGenerator)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(UpFrame)
+{
+    // 1 : 1 input parameters
+    StubDescriptor upFrame("UpFrame", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::NATIVE_POINTER);
+    *descriptor = upFrame;
+    std::array<MachineType, 1> params = { // 1 : 1 input parameters
+        MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(ToNumber)
 {
     // 4 : 4 input parameters

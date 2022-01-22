@@ -166,7 +166,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleMovV4V4, 7)                                     \
     T(HandleJnezImm8, 7)                                    \
     T(HandleJnezImm16, 7)                                   \
-    V(ExceptionHandler, 7)                                  \
+    T(ExceptionHandler, 7)                                  \
 
 enum InterpreterStubId {
 #define DEF_STUB(name, counter) name##Id,

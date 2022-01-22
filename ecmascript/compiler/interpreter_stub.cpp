@@ -3482,6 +3482,45 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     }
 }
 
+DECLARE_ASM_HANDLER(ExceptionHandler)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varPc, MachineType::NATIVE_POINTER, pc);
+    DEFVARIABLE(varSp, MachineType::NATIVE_POINTER, sp);
+    DEFVARIABLE(varConstpool, MachineType::TAGGED_POINTER, constpool);
+    DEFVARIABLE(varProfileTypeInfo, MachineType::TAGGED_POINTER, profileTypeInfo);
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    DEFVARIABLE(varHotnessCounter, MachineType::INT32, hotnessCounter);
+    Label pcIsInvalid(env);
+    Label pcNotInvalid(env);
+    GateRef exception = Load(MachineType::TAGGED, glue, GetArchRelateConstant(0));
+    StubDescriptor *upFrame = GET_STUBDESCRIPTOR(UpFrame);
+    GateRef res = CallRuntime(upFrame, glue, GetWord64Constant(FAST_STUB_ID(UpFrame)), { sp });
+    Branch(PtrEqual(res, GetArchRelateConstant(0)), &pcIsInvalid, &pcNotInvalid);
+    Bind(&pcIsInvalid);
+    {
+        Return();
+    }
+    Bind(&pcNotInvalid);
+    {
+        varPc = Load(MachineType::NATIVE_POINTER, res, GetArchRelateConstant(0));
+        varSp = Load(MachineType::NATIVE_POINTER, res,
+            GetArchRelateConstant(UpFrameResult::GetSpOffset(env->IsArch32Bit())));
+        varAcc = exception;
+        Store(MachineType::UINT64, glue, glue, GetArchRelateConstant(0), GetHoleConstant());
+        SetCurrentSpFrame(glue, *varSp);
+        GateRef function = GetFunctionFromFrame(GetFrame(*varSp));
+        varConstpool = GetConstpoolFromFunction(function);
+        varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
+        GateRef method = Load(MachineType::NATIVE_POINTER, function,
+            GetArchRelateConstant(JSFunctionBase::METHOD_OFFSET));
+        varHotnessCounter = Load(MachineType::INT32, method,
+                                 GetArchRelateConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+        Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
+                 *varHotnessCounter, GetArchRelateConstant(0));
+    }
+}
+
 DECLARE_ASM_HANDLER(HandleImportModulePrefId32)
 {
     DEFVARIABLE(varAcc, MachineType::TAGGED, acc);

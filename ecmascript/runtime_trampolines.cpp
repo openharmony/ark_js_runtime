@@ -904,6 +904,27 @@ JSTaggedType RuntimeTrampolines::SuspendGenerator(uintptr_t argGlue, JSTaggedTyp
     return SlowRuntimeStub::SuspendGenerator(thread, JSTaggedValue(obj), JSTaggedValue(value)).GetRawData();
 }
 
+uintptr_t RuntimeTrampolines::UpFrame(uintptr_t sp)
+{
+    InterpretedFrameHandler frameHandler(reinterpret_cast<JSTaggedType *>(sp));
+    UpFrameResult res;
+    uint32_t pcOffset = panda_file::INVALID_OFFSET;
+    for (; frameHandler.HasFrame(); frameHandler.PrevInterpretedFrame()) {
+        if (frameHandler.IsBreakFrame()) {
+            return reinterpret_cast<uintptr_t>(nullptr);
+        }
+        auto method = frameHandler.GetMethod();
+        pcOffset = EcmaInterpreter::FindCatchBlock(method, frameHandler.GetBytecodeOffset());
+        if (pcOffset != panda_file::INVALID_OFFSET) {
+            res.sp = frameHandler.GetSp();
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            res.pc = method->GetBytecodeArray() + pcOffset;
+            return reinterpret_cast<uintptr_t>(&res);
+        }
+    }
+    return reinterpret_cast<uintptr_t>(nullptr);
+}
+
 JSTaggedType RuntimeTrampolines::ImportModule(uintptr_t argGlue, JSTaggedType moduleName)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
