@@ -18,7 +18,7 @@
 #include "ecmascript/compiler/bytecode_circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
-Circuit::Circuit() : space_({}), circuitSize_(0), gateCount_(0), time_(1), dataSection_({})
+Circuit::Circuit() : space_(), circuitSize_(0), gateCount_(0), time_(1), dataSection_()
 {
     NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, TypeCode::NOTYPE);  // circuit root
     auto circuitRoot = Circuit::GetCircuitRoot(OpCode(OpCode::CIRCUIT_ROOT));
@@ -128,12 +128,12 @@ void Circuit::PrintAllGates() const
     }
 }
 
-void Circuit::PrintAllGates(ByteCodeCircuitBuilder &builder) const
+void Circuit::PrintAllGates(BytecodeCircuitBuilder &builder) const
 {
     const auto &gateList = GetAllGates();
     for (const auto &gate : gateList) {
         if (LoadGatePtrConst(gate)->GetOpCode() == OpCode::JS_BYTECODE) {
-            auto bytecodeStr = builder.GetByteCodeStr(gate);
+            auto bytecodeStr = builder.GetBytecodeStr(gate);
             LoadGatePtrConst(gate)->PrintByteCode(bytecodeStr);
         } else {
             LoadGatePtrConst(gate)->Print();

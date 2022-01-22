@@ -27,13 +27,9 @@
 #include <vector>
 
 #include "ecmascript/compiler/type.h"
-//#include "ecmascript/class_linker/bytecode_circuit_builder.h"
 #include "libpandabase/macros.h"
 
-namespace panda::ecmascript {
-class ByteCodeCircuitBuilder;
-
-namespace kungfu {
+namespace panda::ecmascript::kungfu {
 using GateRef = int32_t; // for external users
 using GateId = uint32_t;
 using GateOp = uint8_t;
@@ -44,6 +40,7 @@ using BitField = uint64_t;
 using OutIdx = uint32_t;
 class Gate;
 struct Properties;
+class BytecodeCircuitBuilder;
 
 enum ValueCode {
     NOVALUE,
@@ -319,7 +316,6 @@ private:
     // in(2)
     // ...
 };
-} // namespace panda::ecmascript
-} // namespace kungfu
+} // namespace panda::ecmascript::kungfu
 
 #endif  // ECMASCRIPT_COMPILER_GATE_H

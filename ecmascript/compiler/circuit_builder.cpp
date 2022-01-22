@@ -105,7 +105,8 @@ GateRef CircuitBuilder::NewDoubleConstant(double val)
 GateRef CircuitBuilder::UndefineConstant(TypeCode type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_UNDEFINED, { constantList }, type);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_UNDEFINED, { constantList },
+                             type);
 }
 
 GateRef CircuitBuilder::HoleConstant(TypeCode type)
@@ -422,6 +423,6 @@ GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, Ga
 GateRef CircuitBuilder::Alloca(int size)
 {
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));
-    return circuit_->NewGate(OpCode(OpCode::ALLOCA),size, { allocaList }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, TypeCode::NOTYPE);
 }
 }  // namespace panda::ecmascript::kungfu

@@ -68,6 +68,7 @@ class JSFunction;
 class Program;
 class ModuleManager;
 class EcmaModule;
+struct BytecodeTranslationInfo;
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
                                              const JSHandle<JSTaggedValue> reason,
@@ -101,6 +102,9 @@ public:
 
     bool ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                            const std::vector<std::string> &args);
+
+    bool PUBLIC_API CollectInfoOfPandaFile(std::string_view filename, std::string_view entryPoint,
+                                std::vector<BytecodeTranslationInfo> &infoList, const panda_file::File *&pf);
 
     PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
@@ -490,7 +494,6 @@ private:
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     bool optionalLogEnabled_ {false};
-    // weak reference need Redirect address
     CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
 
     // Debugger

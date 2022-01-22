@@ -48,13 +48,12 @@ public:
                     TypeCode type, MarkCode mark = MarkCode::EMPTY);
     GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
                     MarkCode mark = MarkCode::EMPTY);
-
     GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
                     MarkCode mark = MarkCode::EMPTY);
     GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
                     MarkCode mark = MarkCode::EMPTY);
     void PrintAllGates() const;
-    void PrintAllGates(ByteCodeCircuitBuilder &builder) const;
+    void PrintAllGates(BytecodeCircuitBuilder &builder) const;
     [[nodiscard]] std::vector<GateRef> GetAllGates() const;
     [[nodiscard]] static GateRef GetCircuitRoot(OpCode opcode);
     void AdvanceTime() const;
@@ -105,11 +104,11 @@ private:
     Gate *AllocateGateSpace(size_t numIns);
 
 private:
-    std::vector<uint8_t> space_;
+    std::vector<uint8_t> space_ {};
     size_t circuitSize_;
     size_t gateCount_;
     TimeStamp time_;
-    std::vector<uint8_t> dataSection_;
+    std::vector<uint8_t> dataSection_ {};
     panda::ecmascript::FrameType frameType_ {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
 };
 }  // namespace panda::ecmascript::kungfu

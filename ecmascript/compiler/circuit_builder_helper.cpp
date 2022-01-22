@@ -81,11 +81,11 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
         // only loopheader gate will be not sealed
         int valueCounts = static_cast<int>(this->predecessors_.size()) + 1;
         if (valueCode == ValueCode::NOVALUE) {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(
-                    OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_, valueCounts, var->Type());
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_,
+                                                           valueCounts, var->Type());
         } else {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(
-                    OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_, valueCounts, var->Type());
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_,
+                                                           valueCounts, var->Type());
         }
         lm_->AddSelectorToLabel(val, Label(this));
         incompletePhis_[var] = val;
@@ -93,11 +93,11 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
         val = predecessors_[0]->ReadVariable(var);
     } else {
         if (valueCode == ValueCode::NOVALUE) {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(
-                    OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_, this->predecessors_.size(), var->Type());
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_,
+                                                           this->predecessors_.size(), var->Type());
         } else {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(
-                    OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_, this->predecessors_.size(), var->Type());
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_,
+                                                           this->predecessors_.size(), var->Type());
         }
         lm_->AddSelectorToLabel(val, Label(this));
         WriteVariable(var, val);
