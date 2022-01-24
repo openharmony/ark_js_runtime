@@ -2327,7 +2327,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
         Bind(&isJSHClass);
         {
             GateRef propNums = GetNumberOfPropsFromHClass(transition);
-            GateRef last = Int32Sub(propNums, GetInt32Constant(-1));
+            GateRef last = Int32Sub(propNums, GetInt32Constant(1));
             GateRef layoutInfo = GetLayoutFromHClass(transition);
             GateRef cachedKey = GetKeyFromLayoutInfo(layoutInfo, last);
             GateRef cachedAttr = TaggedCastToInt32(GetPropAttrFromLayoutInfo(layoutInfo, last));
