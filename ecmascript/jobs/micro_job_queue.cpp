@@ -27,6 +27,9 @@
 #include "utils/expected.h"
 
 namespace panda::ecmascript::job {
+#ifndef PANDA_TARGET_LINUX
+    using namespace OHOS::HiviewDFX;
+#endif
 void MicroJobQueue::EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueue, QueueType queueType,
     const JSHandle<JSFunction> &job, const JSHandle<TaggedArray> &argv)
 {
@@ -38,6 +41,29 @@ void MicroJobQueue::EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueu
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<PendingJob> pendingJob(factory->NewPendingJob(job, argv));
+#ifndef PANDA_TARGET_LINUX
+#if ECMASCRIPT_ENABLE_HITRACE
+    HiTraceId id = HiTrace::Begin("test", HITRACE_FLAG_INCLUDE_ASYNC | HITRACE_FLAG_TP_INFO);
+    id = HiTrace::GetId();
+    if (id.IsValid() && id.IsFlagEnabled(HITRACE_FLAG_INCLUDE_ASYNC)) {
+        HiTraceId childId = HiTrace::CreateSpan();
+        pendingJob->traceId = childId;
+        if (id.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {
+            if (queueType == QueueType::QUEUE_PROMISE) {
+                HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_CS,
+                                    childId, "Queue type:%s", "Promise queue");
+            } else if (queueType == QueueType::QUEUE_SCRIPT) {
+                HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_CS,
+                                    childId, "Queue type:%s", "Script queue");
+            } else {
+                HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_CS,
+                                    childId, "Queue type:%s", "Other queue");
+            }
+        }
+    }
+    HiTrace::End(id);
+#endif // ECMASCRIPT_ENABLE_HITRACE
+#endif
     if (queueType == QueueType::QUEUE_PROMISE) {
         JSHandle<TaggedQueue> promiseQueue(thread, jobQueue->GetPromiseJobQueue());
         LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
@@ -60,7 +86,9 @@ void MicroJobQueue::ExecutePendingJob(JSThread *thread, JSHandle<MicroJobQueue> 
         LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
         pendingJob.Update(promiseQueue->Pop(thread));
         LOG_ECMA(DEBUG) << "promiseQueue end length: " << promiseQueue->Size();
+        BEFORE_EXECUTE_QUEUE_JOB_TRACE(pendingJob, QueueType::QUEUE_PROMISE);
         PendingJob::ExecutePendingJob(pendingJob, thread);
+        AFTER_EXECUTE_QUEUE_JOB_TRACE(pendingJob, QueueType::QUEUE_PROMISE);
         if (thread->HasPendingException()) {
             return;
         }
@@ -70,7 +98,9 @@ void MicroJobQueue::ExecutePendingJob(JSThread *thread, JSHandle<MicroJobQueue> 
     JSHandle<TaggedQueue> scriptQueue(thread, jobQueue->GetScriptJobQueue());
     while (!scriptQueue->Empty()) {
         pendingJob.Update(scriptQueue->Pop(thread));
+        BEFORE_EXECUTE_QUEUE_JOB_TRACE(pendingJob, QueueType::QUEUE_SCRIPT);
         PendingJob::ExecutePendingJob(pendingJob, thread);
+        AFTER_EXECUTE_QUEUE_JOB_TRACE(pendingJob, QueueType::QUEUE_SCRIPT);
         if (thread->HasPendingException()) {
             return;
         }

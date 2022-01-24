@@ -127,9 +127,8 @@ CString ConvertToString(JSTaggedValue key)
 std::string CstringConvertToString(const CString &str)
 {
     std::string res;
-    res.reserve(str.size());
     for (auto c : str) {
-        res.push_back(c);
+        res += c;
     }
     return res;
 }
