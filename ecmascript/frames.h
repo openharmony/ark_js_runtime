@@ -281,7 +281,8 @@ public:
     // INTERPER_FRAME_FP_TO_FP_DELTA
     static constexpr int64_t GetInterpreterFrameFpToFpDelta()
     {
-        return MEMBER_OFFSET(OptimizedEntryFrame, prevInterpretedFrameFp) - MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
+        return MEMBER_OFFSET(OptimizedEntryFrame, prevInterpretedFrameFp) -
+            MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
     }
     static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
     {
@@ -339,9 +340,12 @@ struct OptLeaveFrame {
 
 #ifdef PANDA_TARGET_64
     static_assert(InterpretedFrame::kSizeOn64Platform == sizeof(InterpretedFrame));
-    static_assert(OptimizedFrameBase::GetCallsiteSpToFpDelta() == FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
-    static_assert(OptimizedEntryFrame::GetCallsiteSpToFpDelta() == FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
-    static_assert(OptimizedEntryFrame::GetInterpreterFrameFpToFpDelta() == FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * sizeof(uintptr_t));
+    static_assert(OptimizedFrameBase::GetCallsiteSpToFpDelta() ==
+        FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
+    static_assert(OptimizedEntryFrame::GetCallsiteSpToFpDelta() ==
+        FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
+    static_assert(OptimizedEntryFrame::GetInterpreterFrameFpToFpDelta() ==
+        FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * sizeof(uintptr_t));
 #endif
 #ifdef PANDA_TARGET_32
     static_assert(InterpretedFrame::kSizeOn32Platform == sizeof(InterpretedFrame));
