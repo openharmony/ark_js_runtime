@@ -181,7 +181,10 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::INT32_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_EQ, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::FLOAT64_EQ, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
-        {OpCode::FLOAT64_SLT, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
+        {OpCode::FLOAT64_OLT, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
+        {OpCode::FLOAT64_OLE, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
+        {OpCode::FLOAT64_OGT, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
+        {OpCode::FLOAT64_OGE, &LLVMIRBuilder::HandleFloatOrDoubleCmp},
         {OpCode::INT32_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT64_NE, &LLVMIRBuilder::HandleIntOrUintCmp},
         {OpCode::INT8_LOAD, &LLVMIRBuilder::HandleLoad},
@@ -1449,8 +1452,20 @@ void LLVMIRBuilder::HandleFloatOrDoubleCmp(GateRef gate)
             VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOEQ);
             break;
         }
-        case OpCode::FLOAT64_SLT: {
+        case OpCode::FLOAT64_OLT: {
             VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOLT);
+            break;
+        }
+        case OpCode::FLOAT64_OLE: {
+            VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOLE);
+            break;
+        }
+        case OpCode::FLOAT64_OGT: {
+            VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOGT);
+            break;
+        }
+        case OpCode::FLOAT64_OGE: {
+            VisitFloatOrDoubleCmp(gate, ins[0], ins[1], LLVMRealOGE);
             break;
         }
         default: {

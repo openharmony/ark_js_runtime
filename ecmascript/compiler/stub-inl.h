@@ -802,7 +802,22 @@ GateRef Stub::DoubleEqual(GateRef x, GateRef y)
 
 GateRef Stub::DoubleLessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_SLT), x, y);
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_OLT), x, y);
+}
+
+GateRef Stub::DoubleLessThanOrEqual(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_OLE), x, y);
+}
+
+GateRef Stub::DoubleGreaterThan(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_OGT), x, y);
+}
+
+GateRef Stub::DoubleGreaterThanOrEqual(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::FLOAT64_OGE), x, y);
 }
 
 GateRef Stub::Word64NotEqual(GateRef x, GateRef y)

@@ -169,6 +169,9 @@ public:
     static bool ToBoolean(JSTaggedType value);
     static JSTaggedType NotEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType LessDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType LessEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType GreaterDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType GreaterEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
 };
 }  // namespace panda::ecmascript
 #endif

@@ -568,6 +568,330 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
     DISPATCH_WITH_ACC(PREF_V8);
 }
 
+DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef right = acc;
+    Label leftIsInt(env);
+    Label leftOrRightNotInt(env);
+    Label leftLessEqRight(env);
+    Label leftNotLessEqRight(env);
+    Label slowPath(env);
+    Label dispatch(env);
+    Branch(TaggedIsInt(left), &leftIsInt, &leftOrRightNotInt);
+    Bind(&leftIsInt);
+    {
+        Label rightIsInt(env);
+        Branch(TaggedIsInt(right), &rightIsInt, &leftOrRightNotInt);
+        Bind(&rightIsInt);
+        {
+            GateRef intLeft = TaggedGetInt(left);
+            GateRef intRight = TaggedGetInt(right);
+            Branch(Int32LessThanOrEqual(intLeft, intRight), &leftLessEqRight, &leftNotLessEqRight);
+        }
+    }
+    Bind(&leftOrRightNotInt);
+    {
+        Label leftIsNumber(env);
+        Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
+        Bind(&leftIsNumber);
+        {
+            Label rightIsNumber(env);
+            Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
+            Bind(&rightIsNumber);
+            {
+                // fast path
+                DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+                Label leftIsInt1(env);
+                Label leftNotInt1(env);
+                Label exit1(env);
+                Label exit2(env);
+                Label rightIsInt1(env);
+                Label rightNotInt1(env);
+                Branch(TaggedIsInt(left), &leftIsInt1, &leftNotInt1);
+                Bind(&leftIsInt1);
+                {
+                    doubleLeft = ChangeInt32ToFloat64(TaggedGetInt(left));
+                    Jump(&exit1);
+                }
+                Bind(&leftNotInt1);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    Jump(&exit1);
+                }
+                Bind(&exit1);
+                {
+                    Branch(TaggedIsInt(right), &rightIsInt1, &rightNotInt1);
+                }
+                Bind(&rightIsInt1);
+                {
+                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
+                    Jump(&exit2);
+                }
+                Bind(&rightNotInt1);
+                {
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&exit2);
+                }
+                Bind(&exit2);
+                {
+                    Branch(DoubleLessThanOrEqual(*doubleLeft, *doubleRight), &leftLessEqRight, &leftNotLessEqRight);
+                }
+            }
+        }
+    }
+    Bind(&leftLessEqRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedTrue());
+        Jump(&dispatch);
+    }
+    Bind(&leftNotLessEqRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedFalse());
+        Jump(&dispatch);
+    }
+    Bind(&slowPath);
+    {
+        // slow path
+        StubDescriptor *lessEqDyn = GET_STUBDESCRIPTOR(LessEqDyn);
+        GateRef result = CallRuntime(lessEqDyn, glue, GetWord64Constant(FAST_STUB_ID(LessEqDyn)),
+                                     {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef right = acc;
+    Label leftIsInt(env);
+    Label leftOrRightNotInt(env);
+    Label leftGreaterRight(env);
+    Label leftNotGreaterRight(env);
+    Label slowPath(env);
+    Label dispatch(env);
+    Branch(TaggedIsInt(left), &leftIsInt, &leftOrRightNotInt);
+    Bind(&leftIsInt);
+    {
+        Label rightIsInt(env);
+        Branch(TaggedIsInt(right), &rightIsInt, &leftOrRightNotInt);
+        Bind(&rightIsInt);
+        {
+            GateRef intLeft = TaggedGetInt(left);
+            GateRef intRight = TaggedGetInt(right);
+            Branch(Int32GreaterThan(intLeft, intRight), &leftGreaterRight, &leftNotGreaterRight);
+        }
+    }
+    Bind(&leftOrRightNotInt);
+    {
+        Label leftIsNumber(env);
+        Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
+        Bind(&leftIsNumber);
+        {
+            Label rightIsNumber(env);
+            Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
+            Bind(&rightIsNumber);
+            {
+                // fast path
+                DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+                Label leftIsInt1(env);
+                Label leftNotInt1(env);
+                Label exit1(env);
+                Label exit2(env);
+                Label rightIsInt1(env);
+                Label rightNotInt1(env);
+                Branch(TaggedIsInt(left), &leftIsInt1, &leftNotInt1);
+                Bind(&leftIsInt1);
+                {
+                    doubleLeft = ChangeInt32ToFloat64(TaggedGetInt(left));
+                    Jump(&exit1);
+                }
+                Bind(&leftNotInt1);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    Jump(&exit1);
+                }
+                Bind(&exit1);
+                {
+                    Branch(TaggedIsInt(right), &rightIsInt1, &rightNotInt1);
+                }
+                Bind(&rightIsInt1);
+                {
+                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
+                    Jump(&exit2);
+                }
+                Bind(&rightNotInt1);
+                {
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&exit2);
+                }
+                Bind(&exit2);
+                {
+                    Branch(DoubleGreaterThan(*doubleLeft, *doubleRight), &leftGreaterRight, &leftNotGreaterRight);
+                }
+            }
+        }
+    }
+    Bind(&leftGreaterRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedTrue());
+        Jump(&dispatch);
+    }
+    Bind(&leftNotGreaterRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedFalse());
+        Jump(&dispatch);
+    }
+    Bind(&slowPath);
+    {
+        // slow path
+        StubDescriptor *greaterDyn = GET_STUBDESCRIPTOR(GreaterDyn);
+        GateRef result = CallRuntime(greaterDyn, glue, GetWord64Constant(FAST_STUB_ID(GreaterDyn)),
+                                     {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef right = acc;
+    Label leftIsInt(env);
+    Label leftOrRightNotInt(env);
+    Label leftGreaterEqRight(env);
+    Label leftNotGreaterEQRight(env);
+    Label slowPath(env);
+    Label dispatch(env);
+    Branch(TaggedIsInt(left), &leftIsInt, &leftOrRightNotInt);
+    Bind(&leftIsInt);
+    {
+        Label rightIsInt(env);
+        Branch(TaggedIsInt(right), &rightIsInt, &leftOrRightNotInt);
+        Bind(&rightIsInt);
+        {
+            GateRef intLeft = TaggedGetInt(left);
+            GateRef intRight = TaggedGetInt(right);
+            Branch(Int32GreaterThanOrEqual(intLeft, intRight), &leftGreaterEqRight, &leftNotGreaterEQRight);
+        }
+    }
+    Bind(&leftOrRightNotInt);
+    {
+        Label leftIsNumber(env);
+        Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
+        Bind(&leftIsNumber);
+        {
+            Label rightIsNumber(env);
+            Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
+            Bind(&rightIsNumber);
+            {
+                // fast path
+                DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+                Label leftIsInt1(env);
+                Label leftNotInt1(env);
+                Label exit1(env);
+                Label exit2(env);
+                Label rightIsInt1(env);
+                Label rightNotInt1(env);
+                Branch(TaggedIsInt(left), &leftIsInt1, &leftNotInt1);
+                Bind(&leftIsInt1);
+                {
+                    doubleLeft = ChangeInt32ToFloat64(TaggedGetInt(left));
+                    Jump(&exit1);
+                }
+                Bind(&leftNotInt1);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    Jump(&exit1);
+                }
+                Bind(&exit1);
+                {
+                    Branch(TaggedIsInt(right), &rightIsInt1, &rightNotInt1);
+                }
+                Bind(&rightIsInt1);
+                {
+                    doubleRight = ChangeInt32ToFloat64(TaggedGetInt(right));
+                    Jump(&exit2);
+                }
+                Bind(&rightNotInt1);
+                {
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&exit2);
+                }
+                Bind(&exit2);
+                {
+                    Branch(DoubleGreaterThanOrEqual(*doubleLeft, *doubleRight), &leftGreaterEqRight, &leftNotGreaterEQRight);
+                }
+            }
+        }
+    }
+    Bind(&leftGreaterEqRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedTrue());
+        Jump(&dispatch);
+    }
+    Bind(&leftNotGreaterEQRight);
+    {
+        varAcc = ChangeInt64ToTagged(TaggedFalse());
+        Jump(&dispatch);
+    }
+    Bind(&slowPath);
+    {
+        // slow path
+        StubDescriptor *greaterEqDyn = GET_STUBDESCRIPTOR(GreaterEqDyn);
+        GateRef result = CallRuntime(greaterEqDyn, glue, GetWord64Constant(FAST_STUB_ID(GreaterEqDyn)),
+                                     {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
 DECLARE_ASM_HANDLER(AsmInterpreterEntry)
 {
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetArchRelateConstant(0));
