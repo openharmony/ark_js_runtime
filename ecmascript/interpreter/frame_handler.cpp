@@ -226,7 +226,7 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 void OptimizedFrameHandler::PrevFrame()
 {
     OptimizedFrameBase *state = OptimizedFrameBase::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prevFp);
 }
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
@@ -320,7 +320,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else if (type == FrameType::OPTIMIZED_FRAME) {
             OptimizedFrameBase *state = OptimizedFrameBase::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
-            current = state->prev;
+            current = state->prevFp;
         } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
             OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(current);
             current = state->prevInterpretedFrameFp;
@@ -330,12 +330,17 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(current);
             OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
+            //  arm32 only support stub, optimized entry frame don't exist, when interpret call stub
+            // don't customed prologue handle. when stub call runtime, generate optimized Leave Frame.
+            //  arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
+            // Leave Frame.
 #ifdef PANDA_TARGET_ARM32
             current = state->prevFp;
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
 #else
-            current = reinterpret_cast<uintptr_t *>(state->fp);
-            ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME);
+            current = reinterpret_cast<uintptr_t *>(state->callsiteFp);
+            ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
+            FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME);
 #endif
         }
     }

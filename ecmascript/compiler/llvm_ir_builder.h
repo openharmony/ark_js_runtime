@@ -228,7 +228,7 @@ private:
     LLVMValueRef GetCurrentSP();
     LLVMValueRef ReadRegister(LLVMModuleRef &module, LLVMBuilderRef &builder,
         LLVMMetadataRef meta);
-    void PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builder);
+    void GenPrologue(LLVMModuleRef &module, LLVMBuilderRef &builder);
     LLVMBasicBlockRef EnsureBasicBlock(BasicBlock *bb) const;
     LLVMTFBuilderBasicBlockImpl *EnsureBasicBlockImpl(BasicBlock *bb) const;
     void StartBuilder(BasicBlock *bb) const;
