@@ -67,11 +67,11 @@
 //   +--------------------------+
 //   |     patchID          |   ^
 //   |- - - - - - - - -     |   |
-//   |       fp             | Fixed
+//   |       callsiteFp     | Fixed
 //   |- - - - - - - - -     | OptLeaveFrame
-//   |       sp             |   |
+//   |       callsiteSp     |   |
 //   |- - - - - - - - -     |   |
-//   |       prev           |   |
+//   |       prevFp         |   |
 //   |- - - - - - - - -     |   |
 //   |       frameType      |   v
 //   +--------------------------+
@@ -99,9 +99,9 @@
 //   |- - - - - - - - -     |   |
 //   |     frameType        |   |
 //   |- - - - - - - - -     |   |
-//   |       sp             |   v
+//   |  callsiteSp          |   v
 //   |- - - - - - - - -     |   |
-//   |       prev           |   |
+//   | prevManagedFrameFp   |   |
 //   +--------------------------+
 
 // ```
@@ -158,13 +158,13 @@
 //   |- - - - - - - - -     |   |                           |
 //   |   returnaddress      |   Fixed                       |
 //   |- - - - - - - - -     | OptimizedEntryFrame           |
-//   |       fp             |   |                           |
+//   |       prevFp         |   |                           |
 //   |- - - - - - - - -     |   |                           |
 //   |     frameType        |   |                        bar's frame
 //   |- - - - - - - - -     |   |                           |
-//   |       sp             |   v                           |
+//   |   callsiteSp         |   v                           |
 //   |- - - - - - - - -     |   |                           |
-//   |       prev           |   |                           V
+//   |prevManagedFrameFp    |   |                           V
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
@@ -173,21 +173,21 @@
 //   |- - - - - - - - -     |   |                           |
 //   |   returnaddress      | Fixed                         |
 //   |- - - - - - - - -     | OptimizedFrame                |
-//   |       fp             |   |                           |
+//   |       prevFp         |   |                           |
 //   |- - - - - - - - -     |   |                       baz's frame Header
 //   |     frameType        |   |                           |
 //   |- - - - - - - - -     |   |                           |
-//   |       sp             |   v                           V
+//   |   callsitesp         |   v                           V
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
 //   |     patchID          |   ^                           ^
 //   |- - - - - - - - -     |   |                           |
-//   |       fp             | Fixed                         |
+//   |     callsiteFp       | Fixed                         |
 //   |- - - - - - - - -     | OptLeaveFrame                 |
-//   |       sp             |   |                         OptLeaveFrame
+//   |     callsitesp       |   |                         OptLeaveFrame
 //   |- - - - - - - - -     |   |                           |
-//   |       prev           |   |                           |
+//   |       prevFp         |   |                           |
 //   |- - - - - - - - -     |   |                           |
 //   |       frameType      |   v                           |
 //   +--------------------------+---------------------------+
@@ -223,21 +223,25 @@ public:
 #ifdef PANDA_TARGET_AMD64
     static constexpr int SP_DWARF_REG_NUM = 7;
     static constexpr int FP_DWARF_REG_NUM = 6;
-    static constexpr int SP_OFFSET = -2;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -3;
 #else
 #ifdef PANDA_TARGET_ARM64
     static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
     static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
-    static constexpr int SP_OFFSET = -2;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -3;
 #else
 #ifdef PANDA_TARGET_ARM32
     static constexpr int SP_DWARF_REG_NUM = 13;
     static constexpr int FP_DWARF_REG_NUM = 11;
-    static constexpr int SP_OFFSET = 0;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = 0;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = 0;
 #else
     static constexpr int SP_DWARF_REG_NUM = 0;
     static constexpr int FP_DWARF_REG_NUM = 0;
-    static constexpr int SP_OFFSET = 0;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = 0;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = 0;
 #endif
 #endif
 #endif
@@ -250,17 +254,17 @@ class OptimizedFrameBase {
 public:
     OptimizedFrameBase() = default;
     ~OptimizedFrameBase() = default;
-    static constexpr int64_t GetSPByPrevOffset()
+    static constexpr int64_t GetCallsiteSpToFpDelta()
     {
-        return MEMBER_OFFSET(OptimizedFrameBase, sp) - MEMBER_OFFSET(OptimizedFrameBase, prev);
+        return MEMBER_OFFSET(OptimizedFrameBase, callsiteSp) - MEMBER_OFFSET(OptimizedFrameBase, prevFp);
     }
-    uintptr_t sp;
+    uintptr_t callsiteSp;
     FrameType type;
-    JSTaggedType *prev; // fp register
+    JSTaggedType *prevFp; // fp register
     static OptimizedFrameBase* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedFrameBase *>(reinterpret_cast<uintptr_t>(sp)
-            - MEMBER_OFFSET(OptimizedFrameBase, prev));
+            - MEMBER_OFFSET(OptimizedFrameBase, prevFp));
     }
 };
 
@@ -270,14 +274,19 @@ public:
     ~OptimizedEntryFrame() = default;
     JSTaggedType *prevInterpretedFrameFp;
     OptimizedFrameBase base;
-    static constexpr int64_t GetSPByPrevOffset()
+    static constexpr int64_t GetCallsiteSpToFpDelta()
     {
-        return MEMBER_OFFSET(OptimizedEntryFrame, base.sp) - MEMBER_OFFSET(OptimizedEntryFrame, base.prev);
+        return MEMBER_OFFSET(OptimizedEntryFrame, base.callsiteSp) - MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
+    }
+    // INTERPER_FRAME_FP_TO_FP_DELTA
+    static constexpr int64_t GetInterpreterFrameFpToFpDelta()
+    {
+        return MEMBER_OFFSET(OptimizedEntryFrame, prevInterpretedFrameFp) - MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
     }
     static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptimizedEntryFrame, base.prev));
+            MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp));
     }
 };
 
@@ -315,8 +324,8 @@ static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);
 struct OptLeaveFrame {
     FrameType type;
     JSTaggedType *prevFp; // set interpret frame cursp here
-    uintptr_t sp;
-    uintptr_t fp;
+    uintptr_t callsiteSp;
+    uintptr_t callsiteFp;
     uint64_t patchId;
     static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
     {
@@ -330,8 +339,9 @@ struct OptLeaveFrame {
 
 #ifdef PANDA_TARGET_64
     static_assert(InterpretedFrame::kSizeOn64Platform == sizeof(InterpretedFrame));
-    static_assert(OptimizedFrameBase::GetSPByPrevOffset() == FrameConstants::SP_OFFSET * sizeof(int64_t));
-    static_assert(OptimizedEntryFrame::GetSPByPrevOffset() == FrameConstants::SP_OFFSET * sizeof(int64_t));
+    static_assert(OptimizedFrameBase::GetCallsiteSpToFpDelta() == FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
+    static_assert(OptimizedEntryFrame::GetCallsiteSpToFpDelta() == FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
+    static_assert(OptimizedEntryFrame::GetInterpreterFrameFpToFpDelta() == FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * sizeof(uintptr_t));
 #endif
 #ifdef PANDA_TARGET_32
     static_assert(InterpretedFrame::kSizeOn32Platform == sizeof(InterpretedFrame));

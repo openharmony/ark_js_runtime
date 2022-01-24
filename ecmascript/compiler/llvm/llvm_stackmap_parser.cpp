@@ -70,12 +70,12 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFr
     uintptr_t derived = 0;
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = frame->sp;
+            uintptr_t rsp = frame->callsiteSp;
             address = rsp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rsp :" << rsp;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
-            uintptr_t fp = frame->fp;
+            uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rfp :" << fp;
@@ -120,10 +120,10 @@ bool LLVMStackMapParser::CollectStackMapSlots(OptLeaveFrame *frame,
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = frame->sp;
+            uintptr_t rsp = frame->callsiteSp;
             address = rsp + info.second;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
-            uintptr_t fp = frame->fp;
+            uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
         } else {
             abort();
@@ -157,7 +157,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
     uintptr_t derived = 0;
 
     uintptr_t callsiteFp = *fp;
-    uintptr_t callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::SP_OFFSET);
+    uintptr_t callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::CALLSITE_SP_TO_FP_DELTA);
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
@@ -205,7 +205,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     PrintCallSiteInfo(infos, fp);
 #endif
     uintptr_t callsiteFp = *fp;
-    uintptr_t callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::SP_OFFSET);
+    uintptr_t callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::CALLSITE_SP_TO_FP_DELTA);
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {

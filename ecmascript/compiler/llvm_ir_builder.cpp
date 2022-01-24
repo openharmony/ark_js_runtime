@@ -317,7 +317,7 @@ LLVMTFBuilderBasicBlockImpl *LLVMIRBuilder::EnsureBasicBlockImpl(BasicBlock *bb)
     return bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
 }
 
-void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builder)
+void LLVMIRBuilder::GenPrologue(LLVMModuleRef &module, LLVMBuilderRef &builder)
 {
     /* current frame for x86_64 system:
     for optimized entry frame
@@ -378,8 +378,8 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(slotType_, 0), "");
     LLVMValueRef threadFpValue = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    static constexpr int g_LLVMFrameOffset = 3;
-    addr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(slotType_, g_LLVMFrameOffset * slotSize_, false), "");
+    addr = LLVMBuildAdd(builder, frameAddr, LLVMConstInt(slotType_,
+        FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * slotSize_, true), "");
     value = LLVMBuildStore(builder_, threadFpValue,
         LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "cast"));
     LOG_ECMA(DEBUG) << "store value:" << value << " "
@@ -804,7 +804,7 @@ void LLVMIRBuilder::VisitBlock(int gate, const OperandsVector &predecessors)  //
         LLVMMoveBasicBlockBefore(llvmpre, llvmbb);
     }
     if (gate == 0) { // insert prologue
-        PrologueHandle(module_, builder_);
+        GenPrologue(module_, builder_);
     }
 }
 
