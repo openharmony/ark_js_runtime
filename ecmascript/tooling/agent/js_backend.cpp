@@ -71,16 +71,16 @@ void JSBackend::NotifyPaused(std::optional<PtLocation> location, PauseReason rea
             extractor = GetExtractor(detail.url_);
             return true;
         };
-        auto offsetFunc = [&detail](int32_t line) -> bool {
+        auto callbackFunc = [&detail](size_t line, size_t column) -> bool {
             detail.line_ = line;
+            detail.column_ = column;
             return true;
         };
         if (!MatchScripts(scriptFunc, location->GetPandaFile(), ScriptMatchType::FILE_NAME) || extractor == nullptr ||
-            !extractor->MatchWithOffset(offsetFunc, location->GetMethodId(), location->GetBytecodeOffset())) {
+            !extractor->MatchWithOffset(callbackFunc, location->GetMethodId(), location->GetBytecodeOffset())) {
             LOG(ERROR, DEBUGGER) << "NotifyPaused: unknown " << location->GetPandaFile();
             return;
         }
-        detail.column_ = 0;
         hitBreakpoints.emplace_back(BreakpointDetails::ToString(detail));
     }
 
@@ -184,11 +184,11 @@ bool JSBackend::StepComplete(const PtLocation &location)
         extractor = GetExtractor(script->GetUrl());
         return true;
     };
-    auto offsetFunc = [](int32_t line) -> bool {
+    auto callbackFunc = [](size_t line, [[maybe_unused]] size_t column) -> bool {
         return line == SPECIAL_LINE_MARK;
     };
     if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) && extractor != nullptr &&
-        extractor->MatchWithOffset(offsetFunc, location.GetMethodId(), location.GetBytecodeOffset())) {
+        extractor->MatchWithOffset(callbackFunc, location.GetMethodId(), location.GetBytecodeOffset())) {
         LOG(INFO, DEBUGGER) << "StepComplete: skip -1";
         return false;
     }
@@ -216,10 +216,10 @@ std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_
     }
 
     int32_t line = start->GetLine();
-    auto lineFunc = []([[maybe_unused]] File::EntityId id, [[maybe_unused]] uint32_t offset) -> bool {
+    auto callbackFunc = []([[maybe_unused]] File::EntityId id, [[maybe_unused]] uint32_t offset) -> bool {
         return true;
     };
-    if (extractor->MatchWithLine(lineFunc, line)) {
+    if (extractor->MatchWithLine(callbackFunc, line)) {
         std::unique_ptr<BreakLocation> location = std::make_unique<BreakLocation>();
         location->SetScriptId(start->GetScriptId()).SetLine(line).SetColumn(0);
         locations->emplace_back(std::move(location));
@@ -250,12 +250,12 @@ std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, int32_t l
     }
 
     std::optional<Error> ret = std::nullopt;
-    auto lineFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
+    auto callbackFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
         PtLocation location {fileName.c_str(), id, offset};
         ret = DebuggerApi::SetBreakpoint(debugger_, location);
         return true;
     };
-    if (!extractor->MatchWithLine(lineFunc, lineNumber)) {
+    if (!extractor->MatchWithLine(callbackFunc, lineNumber)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint line number: " << lineNumber;
         return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
     }
@@ -291,12 +291,12 @@ std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaDa
     }
 
     std::optional<Error> ret = std::nullopt;
-    auto lineFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
+    auto callbackFunc = [this, fileName, &ret](File::EntityId id, uint32_t offset) -> bool {
         PtLocation location {fileName.c_str(), id, offset};
         ret = DebuggerApi::RemoveBreakpoint(debugger_, location);
         return true;
     };
-    if (!extractor->MatchWithLine(lineFunc, metaData.line_)) {
+    if (!extractor->MatchWithLine(callbackFunc, metaData.line_)) {
         LOG(ERROR, DEBUGGER) << "failed to set breakpoint line number: " << metaData.line_;
         return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
     }
@@ -501,11 +501,12 @@ bool JSBackend::GenerateCallFrame(CallFrame *callFrame,
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: Unknown url: " << url;
         return false;
     }
-    auto offsetFunc = [&location](int32_t line) -> bool {
+    auto callbackFunc = [&location](size_t line, size_t column) -> bool {
         location->SetLine(line);
+        location->SetColumn(column);
         return true;
     };
-    if (!extractor->MatchWithOffset(offsetFunc, method->GetFileId(), DebuggerApi::GetBytecodeOffset(frameHandler))) {
+    if (!extractor->MatchWithOffset(callbackFunc, method->GetFileId(), DebuggerApi::GetBytecodeOffset(frameHandler))) {
         LOG(ERROR, DEBUGGER) << "GenerateCallFrame: unknown offset: " << DebuggerApi::GetBytecodeOffset(frameHandler);
         return false;
     }
