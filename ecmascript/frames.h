@@ -82,7 +82,7 @@
 //   |- - - - - - - - -     |   |
 //   |   returnaddress      | Fixed
 //   |- - - - - - - - -     | OptimizedFrame
-//   |       fp             |   |
+//   |       prevFp         |   |
 //   |- - - - - - - - -     |   |
 //   |     frameType        |   |
 //   |- - - - - - - - -     |   |
@@ -95,7 +95,7 @@
 //   |- - - - - - - - -     |   |
 //   |   returnaddress      | Fixed
 //   |- - - - - - - - -     | OptimizedEntryFrame
-//   |       fp             |   |
+//   |       prevFp         |   |
 //   |- - - - - - - - -     |   |
 //   |     frameType        |   |
 //   |- - - - - - - - -     |   |
