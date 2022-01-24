@@ -1356,7 +1356,11 @@ void InterpreterAssembly::HandleLessDynPrefV8(
                << " v" << v0;
     JSTaggedValue left = GET_VREG_VALUE(v0);
     JSTaggedValue right = GET_ACC();
-    if (left.IsNumber() && right.IsNumber()) {
+    if (left.IsInt() && right.IsInt()) {
+        // fast path
+        bool ret = left.GetInt() < right.GetInt();
+        SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False());
+    } else if (left.IsNumber() && right.IsNumber()) {
         // fast path
         double valueA = left.IsInt() ? static_cast<double>(left.GetInt()) : left.GetDouble();
         double valueB = right.IsInt() ? static_cast<double>(right.GetInt()) : right.GetDouble();
@@ -1380,7 +1384,11 @@ void InterpreterAssembly::HandleLessEqDynPrefV8(
                << " v" << vs;
     JSTaggedValue left = GET_VREG_VALUE(vs);
     JSTaggedValue right = GET_ACC();
-    if (left.IsNumber() && right.IsNumber()) {
+    if (left.IsInt() && right.IsInt()) {
+        // fast path
+        bool ret = ((left.GetInt() < right.GetInt()) || (left.GetInt() == right.GetInt()));
+        SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False());
+    } else if (left.IsNumber() && right.IsNumber()) {
         // fast path
         double valueA = left.IsInt() ? static_cast<double>(left.GetInt()) : left.GetDouble();
         double valueB = right.IsInt() ? static_cast<double>(right.GetInt()) : right.GetDouble();
@@ -1405,7 +1413,11 @@ void InterpreterAssembly::HandleGreaterDynPrefV8(
                << " v" << v0;
     JSTaggedValue left = GET_VREG_VALUE(v0);
     JSTaggedValue right = acc;
-    if (left.IsNumber() && right.IsNumber()) {
+    if (left.IsInt() && right.IsInt()) {
+        // fast path
+        bool ret = left.GetInt() > right.GetInt();
+        SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False());
+    } else if (left.IsNumber() && right.IsNumber()) {
         // fast path
         double valueA = left.IsInt() ? static_cast<double>(left.GetInt()) : left.GetDouble();
         double valueB = right.IsInt() ? static_cast<double>(right.GetInt()) : right.GetDouble();
@@ -1429,7 +1441,11 @@ void InterpreterAssembly::HandleGreaterEqDynPrefV8(
                << " v" << vs;
     JSTaggedValue left = GET_VREG_VALUE(vs);
     JSTaggedValue right = GET_ACC();
-    if (left.IsNumber() && right.IsNumber()) {
+    if (left.IsInt() && right.IsInt()) {
+        // fast path
+        bool ret = ((left.GetInt() > right.GetInt()) || (left.GetInt() == right.GetInt()));
+        SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False());
+    } else if (left.IsNumber() && right.IsNumber()) {
         // fast path
         double valueA = left.IsInt() ? static_cast<double>(left.GetInt()) : left.GetDouble();
         double valueB = right.IsInt() ? static_cast<double>(right.GetInt()) : right.GetDouble();

@@ -50,9 +50,9 @@ namespace panda::ecmascript::kungfu {
     T(HandleEqDynPrefV8, 7)                                 \
     T(HandleNotEqDynPrefV8, 7)                              \
     T(HandleLessDynPrefV8, 7)                               \
-    V(HandleLessEqDynPrefV8, 7)                             \
-    V(HandleGreaterDynPrefV8, 7)                            \
-    V(HandleGreaterEqDynPrefV8, 7)                          \
+    T(HandleLessEqDynPrefV8, 7)                             \
+    T(HandleGreaterDynPrefV8, 7)                            \
+    T(HandleGreaterEqDynPrefV8, 7)                          \
     T(HandleShl2DynPrefV8, 7)                               \
     T(HandleShr2DynPrefV8, 7)                               \
     T(HandleAshr2DynPrefV8, 7)                              \

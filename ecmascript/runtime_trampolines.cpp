@@ -1077,4 +1077,22 @@ JSTaggedType RuntimeTrampolines::LessDyn(uintptr_t argGlue, JSTaggedType left, J
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::LessDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::LessEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::LessEqDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::GreaterDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::GreaterDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::GreaterEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::GreaterEqDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
 }  // namespace panda::ecmascript
