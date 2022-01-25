@@ -26,67 +26,22 @@
 #include "libpandafile/proto_data_accessor-inl.h"
 
 namespace panda::tooling::ecmascript::test {
-std::pair<EntityId, uint32_t> TestExtractor::GetBreakpointAddress(const SourceLocation &source_location)
+std::pair<EntityId, uint32_t> TestExtractor::GetBreakpointAddress(const SourceLocation &sourceLocation)
 {
-    auto pos = source_location.path.find_last_of("/\\");
-    auto name = source_location.path;
-
-    if (pos != CString::npos) {
-        name = name.substr(pos + 1);
-    }
-
-    std::vector<panda_file::File::EntityId> methods = GetMethodIdList();
-    for (const auto &method : methods) {
-        auto srcName = CString(GetSourceFile(method));
-        auto pos_sf = srcName.find_last_of("/\\");
-        if (pos_sf != CString::npos) {
-            srcName = srcName.substr(pos_sf + 1);
-        }
-        if (srcName == name) {
-            const panda_file::LineNumberTable &lineTable = GetLineNumberTable(method);
-            if (lineTable.empty()) {
-                continue;
-            }
-
-            std::optional<size_t> offset = GetOffsetByTableLineNumber(lineTable, source_location.line);
-            if (offset == std::nullopt) {
-                continue;
-            }
-            return {method, offset.value()};
-        }
-    }
-    return {EntityId(), 0};
+    EntityId retId = EntityId();
+    uint32_t retOffset = 0;
+    auto callbackFunc = [&retId, &retOffset](File::EntityId id, uint32_t offset) -> bool {
+        retId = id;
+        retOffset = offset;
+        return true;
+    };
+    MatchWithLocation(callbackFunc, sourceLocation.line, sourceLocation.column);
+    return {retId, retOffset};
 }
 
-CList<PtStepRange> TestExtractor::GetStepRanges(EntityId method_id, uint32_t current_offset)
+std::vector<panda_file::LocalVariableInfo> TestExtractor::GetLocalVariableInfo(EntityId methodId, size_t offset)
 {
-    const panda_file::LineNumberTable &lineTable = GetLineNumberTable(method_id);
-    if (lineTable.empty()) {
-        return {};
-    }
-
-    std::optional<size_t> line = GetLineNumberByTableOffset(lineTable, current_offset);
-    if (line == std::nullopt) {
-        return {};
-    }
-
-    CList<PtStepRange> res;
-    for (auto it = lineTable.begin(); it != lineTable.end(); ++it) {
-        if (it->line == line) {
-            size_t idx = it - lineTable.begin();
-            if (it + 1 != lineTable.end()) {
-                res.push_back({lineTable[idx].offset, lineTable[idx + 1].offset});
-            } else {
-                res.push_back({lineTable[idx].offset, std::numeric_limits<uint32_t>::max()});
-            }
-        }
-    }
-    return res;
-}
-
-std::vector<panda_file::LocalVariableInfo> TestExtractor::GetLocalVariableInfo(EntityId method_id, size_t offset)
-{
-    const std::vector<panda_file::LocalVariableInfo> &variables = GetLocalVariableTable(method_id);
+    const std::vector<panda_file::LocalVariableInfo> &variables = GetLocalVariableTable(methodId);
     std::vector<panda_file::LocalVariableInfo> result;
 
     for (const auto &variable : variables) {
@@ -97,39 +52,16 @@ std::vector<panda_file::LocalVariableInfo> TestExtractor::GetLocalVariableInfo(E
     return result;
 }
 
-std::optional<size_t> TestExtractor::GetLineNumberByTableOffset(const panda_file::LineNumberTable &table,
-                                                                uint32_t offset)
+SourceLocation TestExtractor::GetSourceLocation(EntityId methodId, uint32_t bytecodeOffset)
 {
-    for (const auto &value : table) {
-        if (value.offset == offset) {
-            return value.line;
-        }
-    }
-    return std::nullopt;
-}
+    SourceLocation location {GetSourceFile(methodId), 0, 0};
+    auto callbackFunc = [&location](size_t line, size_t column) -> bool {
+        location.line = line;
+        location.column = column;
+        return true;
+    };
+    MatchWithOffset(callbackFunc, methodId, bytecodeOffset);
 
-std::optional<uint32_t> TestExtractor::GetOffsetByTableLineNumber(const panda_file::LineNumberTable &table, size_t line)
-{
-    for (const auto &value : table) {
-        if (value.line == line) {
-            return value.offset;
-        }
-    }
-    return std::nullopt;
-}
-
-SourceLocation TestExtractor::GetSourceLocation(EntityId method_id, uint32_t bytecode_offset)
-{
-    const panda_file::LineNumberTable &lineTable = GetLineNumberTable(method_id);
-    if (lineTable.empty()) {
-        return SourceLocation();
-    }
-
-    std::optional<size_t> line = GetLineNumberByTableOffset(lineTable, bytecode_offset);
-    if (line == std::nullopt) {
-        return SourceLocation();
-    }
-
-    return SourceLocation{GetSourceFile(method_id), line.value()};
+    return location;
 }
 }  // namespace  panda::tooling::ecmascript::test

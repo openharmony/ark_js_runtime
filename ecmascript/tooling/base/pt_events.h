@@ -506,40 +506,40 @@ public:
         return *this;
     }
 
-    int32_t GetStartLine() const
+    size_t GetStartLine() const
     {
         return startLine_;
     }
 
-    ScriptParsed &SetStartLine(int32_t startLine)
+    ScriptParsed &SetStartLine(size_t startLine)
     {
         startLine_ = startLine;
         return *this;
     }
 
-    int32_t GetStartColumn() const
+    size_t GetStartColumn() const
     {
         return startColumn_;
     }
 
-    ScriptParsed &SetStartColumn(int32_t startColumn)
+    ScriptParsed &SetStartColumn(size_t startColumn)
     {
         startColumn_ = startColumn;
         return *this;
     }
 
-    int32_t GetEndLine() const
+    size_t GetEndLine() const
     {
         return endLine_;
     }
 
-    ScriptParsed &SetEndLine(int32_t endLine)
+    ScriptParsed &SetEndLine(size_t endLine)
     {
         endLine_ = endLine;
         return *this;
     }
 
-    int32_t GetEndColumn() const
+    size_t GetEndColumn() const
     {
         return endColumn_;
     }
@@ -652,12 +652,12 @@ public:
         return isModule_.has_value();
     }
 
-    int32_t GetLength() const
+    uint32_t GetLength() const
     {
         return length_.value_or(0);
     }
 
-    ScriptParsed &SetLength(int32_t length)
+    ScriptParsed &SetLength(uint32_t length)
     {
         length_ = length;
         return *this;
@@ -668,12 +668,12 @@ public:
         return length_.has_value();
     }
 
-    int32_t GetCodeOffset() const
+    uint32_t GetCodeOffset() const
     {
         return codeOffset_.value_or(0);
     }
 
-    ScriptParsed &SetCodeOffset(int32_t codeOffset)
+    ScriptParsed &SetCodeOffset(uint32_t codeOffset)
     {
         codeOffset_ = codeOffset;
         return *this;
@@ -722,10 +722,10 @@ private:
 
     ScriptId scriptId_ {};
     CString url_ {};
-    int32_t startLine_ {0};
-    int32_t startColumn_ {0};
-    int32_t endLine_ {0};
-    int32_t endColumn_ {0};
+    size_t startLine_ {0};
+    size_t startColumn_ {0};
+    size_t endLine_ {0};
+    size_t endColumn_ {0};
     ExecutionContextId executionContextId_ {0};
     CString hash_ {};
     std::optional<Local<ObjectRef>> execContextAuxData_ {};
@@ -733,8 +733,8 @@ private:
     std::optional<CString> sourceMapUrl_ {};
     std::optional<bool> hasSourceUrl_ {};
     std::optional<bool> isModule_ {};
-    std::optional<int32_t> length_ {};
-    std::optional<int32_t> codeOffset_ {};
+    std::optional<uint32_t> length_ {};
+    std::optional<uint32_t> codeOffset_ {};
     std::optional<CString> scriptLanguage_ {};
     std::optional<CString> embedderName_ {};
 };

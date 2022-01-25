@@ -47,7 +47,7 @@ public:
         return debugger_;
     }
 
-    std::optional<Error> SetBreakpointByUrl(const CString &url, int32_t lineNumber, int32_t columnNumber,
+    std::optional<Error> SetBreakpointByUrl(const CString &url, size_t lineNumber, size_t columnNumber,
                                             CString *outId,
                                             CVector<std::unique_ptr<Location>> *outLocations);
     std::optional<Error> RemoveBreakpoint(const BreakpointDetails &metaData);
@@ -101,6 +101,11 @@ public:
     void SetPauseOnException(bool flag);
     void GetProperties(uint32_t objectId, bool isOwn, bool isAccessorOnly,
                        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
+    // public for testcases
+    bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
+    const EcmaVM *GetEcmaVm() const {
+        return ecmaVm_;
+    }
 
 private:
     NO_MOVE_SEMANTIC(JSBackend);
@@ -109,7 +114,6 @@ private:
     PtJSExtractor *GenerateExtractor(const panda_file::File *file);
     PtJSExtractor *GetExtractor(const panda_file::File *file);
     PtJSExtractor *GetExtractor(const CString &url);
-    bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
     bool GenerateCallFrame(CallFrame *callFrame, const InterpretedFrameHandler *frameHandler, int32_t frameId);
     std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);

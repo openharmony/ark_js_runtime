@@ -83,8 +83,8 @@ struct BreakpointDetails {
         return true;
     }
 
-    int32_t line_ {0};
-    int32_t column_ {0};
+    size_t line_ {0};
+    size_t column_ {0};
     CString url_ {};
 };
 
@@ -442,7 +442,7 @@ public:
         return line_;
     }
 
-    ExceptionDetails &SetLine(int32_t line)
+    ExceptionDetails &SetLine(size_t line)
     {
         line_ = line;
         return *this;
@@ -453,7 +453,7 @@ public:
         return column_;
     }
 
-    ExceptionDetails &SetColumn(int32_t column)
+    ExceptionDetails &SetColumn(size_t column)
     {
         column_ = column;
         return *this;
@@ -532,8 +532,8 @@ private:
 
     int32_t exceptionId_ {0};
     CString text_ {};
-    int32_t line_ {0};
-    int32_t column_ {0};
+    size_t line_ {0};
+    size_t column_ {0};
     std::optional<ScriptId> scriptId_ {};
     std::optional<CString> url_ {};
     std::optional<std::unique_ptr<RemoteObject>> exception_ {};
@@ -900,7 +900,7 @@ public:
         return line_;
     }
 
-    Location &SetLine(int32_t line)
+    Location &SetLine(size_t line)
     {
         line_ = line;
         return *this;
@@ -911,7 +911,7 @@ public:
         return column_.value_or(-1);
     }
 
-    Location &SetColumn(int32_t column)
+    Location &SetColumn(size_t column)
     {
         column_ = column;
         return *this;
@@ -927,7 +927,7 @@ private:
     NO_MOVE_SEMANTIC(Location);
 
     ScriptId scriptId_ {};
-    int32_t line_ {0};
+    size_t line_ {0};
     std::optional<int32_t> column_ {};
 };
 
@@ -945,7 +945,7 @@ public:
         return line_;
     }
 
-    ScriptPosition &SetLine(int32_t line)
+    ScriptPosition &SetLine(size_t line)
     {
         line_ = line;
         return *this;
@@ -956,7 +956,7 @@ public:
         return column_;
     }
 
-    ScriptPosition &SetColumn(int32_t column)
+    ScriptPosition &SetColumn(size_t column)
     {
         column_ = column;
         return *this;
@@ -966,8 +966,8 @@ private:
     NO_COPY_SEMANTIC(ScriptPosition);
     NO_MOVE_SEMANTIC(ScriptPosition);
 
-    int32_t line_ {0};
-    int32_t column_ {0};
+    size_t line_ {0};
+    size_t column_ {0};
 };
 
 // Debugger.SearchMatch
@@ -982,7 +982,7 @@ private:
     NO_COPY_SEMANTIC(SearchMatch);
     NO_MOVE_SEMANTIC(SearchMatch);
 
-    int32_t lineNumber_ {0};
+    size_t lineNumber_ {0};
     CString lineContent_ {};
 };
 
@@ -1073,7 +1073,7 @@ public:
         return column_.value_or(-1);
     }
 
-    BreakLocation &SetColumn(int32_t column)
+    BreakLocation &SetColumn(size_t column)
     {
         column_ = column;
         return *this;
@@ -1127,7 +1127,7 @@ private:
     NO_MOVE_SEMANTIC(BreakLocation);
 
     ScriptId scriptId_ {};
-    int32_t line_ {0};
+    size_t line_ {0};
     std::optional<int32_t> column_ {};
     std::optional<CString> type_ {};
 };
