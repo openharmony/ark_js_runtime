@@ -23,7 +23,7 @@ int NameDictionary::Hash(const JSTaggedValue &key)
         JSTaggedValue jsKey(key);
         if (jsKey.IsSymbol()) {
             auto symbolString = JSSymbol::Cast(key.GetTaggedObject());
-            return static_cast<JSTaggedNumber>(symbolString->GetHashField()).GetInt();
+            return symbolString->GetHashField();
         }
         if (jsKey.IsString()) {
             auto keyString = reinterpret_cast<EcmaString *>(key.GetTaggedObject());

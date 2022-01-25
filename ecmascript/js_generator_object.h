@@ -20,12 +20,18 @@
 
 namespace panda {
 namespace ecmascript {
-enum class JSGeneratorState {
+enum class JSGeneratorState : uint8_t {
     UNDEFINED = 0,
     SUSPENDED_START,
     SUSPENDED_YIELD,
     EXECUTING,
     COMPLETED,
+};
+enum class GeneratorResumeMode : uint8_t {
+    RETURN = 0,
+    THROW,
+    NEXT,
+    UNDEFINED
 };
 
 class GeneratorContext : TaggedObject {
@@ -35,13 +41,14 @@ public:
     static constexpr size_t GENERATOR_REGS_ARRAY_OFFSET = TaggedObjectSize();
     ACCESSORS(RegsArray, GENERATOR_REGS_ARRAY_OFFSET, GENERATOR_METHOD_OFFSET)
     ACCESSORS(Method, GENERATOR_METHOD_OFFSET, GENERATOR_ACC_OFFSET)
-    ACCESSORS(Acc, GENERATOR_ACC_OFFSET, GENERATOR_NREGS_OFFSET)
-    ACCESSORS(NRegs, GENERATOR_NREGS_OFFSET, GENERATOR_BC_OFFSET_OFFSET)
-    ACCESSORS(BCOffset, GENERATOR_BC_OFFSET_OFFSET, GENERATOR_GENERATOR_OBJECT_OFFSET)
+    ACCESSORS(Acc, GENERATOR_ACC_OFFSET, GENERATOR_GENERATOR_OBJECT_OFFSET)
     ACCESSORS(GeneratorObject, GENERATOR_GENERATOR_OBJECT_OFFSET, GENERATOR_LEXICALENV_OFFSET)
-    ACCESSORS(LexicalEnv, GENERATOR_LEXICALENV_OFFSET, SIZE)
+    ACCESSORS(LexicalEnv, GENERATOR_LEXICALENV_OFFSET, GENERATOR_NREGS_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(NRegs, uint32_t, GENERATOR_NREGS_OFFSET, GENERATOR_BC_OFFSET_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(BCOffset, uint32_t, GENERATOR_BC_OFFSET_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT(GENERATOR_REGS_ARRAY_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(GENERATOR_REGS_ARRAY_OFFSET, GENERATOR_NREGS_OFFSET)
     DECL_DUMP()
 };
 
@@ -49,14 +56,23 @@ class JSGeneratorObject : public JSObject {
 public:
     CAST_CHECK(JSGeneratorObject, IsGeneratorObject);
 
-    static constexpr size_t GENERATOR_STATE_OFFSET = JSObject::SIZE;
-    ACCESSORS(GeneratorState, GENERATOR_STATE_OFFSET, GENERATOR_CONTEXT_OFFSET)
+    static constexpr size_t GENERATOR_CONTEXT_OFFSET = JSObject::SIZE;
     ACCESSORS(GeneratorContext, GENERATOR_CONTEXT_OFFSET, GENERATOR_RESUME_RESULT_OFFSET)
-    ACCESSORS(ResumeResult, GENERATOR_RESUME_RESULT_OFFSET, GENERATOR_RESUME_MODE_OFFSET)
-    ACCESSORS(ResumeMode, GENERATOR_RESUME_MODE_OFFSET, SIZE)
+    ACCESSORS(ResumeResult, GENERATOR_RESUME_RESULT_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
+    // define BitField
+    static constexpr size_t GENERATOE_STATE_BITS = 3;
+    static constexpr size_t RESUME_MODE_BITS = 3;
+    FIRST_BIT_FIELD(BitField, GeneratorState, JSGeneratorState, GENERATOE_STATE_BITS)
+    NEXT_BIT_FIELD(BitField, ResumeMode, GeneratorResumeMode, RESUME_MODE_BITS, GeneratorState)
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, GENERATOR_CONTEXT_OFFSET, BIT_FIELD_OFFSET)
+    DECL_DUMP()
 
     // 26.4.3.2 GeneratorValidate(generator)
-    static JSTaggedValue GeneratorValidate(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
+    static JSGeneratorState GeneratorValidate(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
 
     // 26.4.3.3 GeneratorResume(generator, value)
     static JSHandle<JSObject> GeneratorResume(JSThread *thread, const JSHandle<JSGeneratorObject> &generator,
@@ -68,16 +84,13 @@ public:
 
     inline bool IsSuspendYield() const
     {
-        return GetGeneratorState() == JSTaggedValue(static_cast<int32_t>(JSGeneratorState::SUSPENDED_YIELD));
+        return GetGeneratorState() == JSGeneratorState::SUSPENDED_YIELD;
     }
 
     inline bool IsExecuting() const
     {
-        return GetGeneratorState() == JSTaggedValue(static_cast<int32_t>(JSGeneratorState::EXECUTING));
+        return GetGeneratorState() == JSGeneratorState::EXECUTING;
     }
-
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, GENERATOR_STATE_OFFSET, SIZE)
-    DECL_DUMP()
 };
 
 class JSAsyncFuncObject : public JSGeneratorObject {

@@ -253,9 +253,6 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
         case JSType::PENDING_JOB:
             job::PendingJob::Cast(object)->VisitRangeSlot(visitor);
             break;
-        case JSType::FUNCTION_EXTRA_INFO:
-            JSFunctionExtraInfo::Cast(object)->VisitRangeSlot(visitor);
-            break;
         case JSType::COMPLETION_RECORD:
             CompletionRecord::Cast(object)->VisitRangeSlot(visitor);
             break;
@@ -264,9 +261,6 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::PROGRAM:
             Program::Cast(object)->VisitRangeSlot(visitor);
-            break;
-        case JSType::LEXICAL_FUNCTION:
-            LexicalFunction::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::JS_INTL:
             JSIntl::Cast(object)->VisitRangeSlot(visitor);

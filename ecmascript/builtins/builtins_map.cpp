@@ -87,7 +87,7 @@ JSTaggedValue BuiltinsMap::MapConstructor(EcmaRuntimeCallInfo *argv)
         if (!nextValue->IsECMAObject()) {
             JSHandle<JSObject> typeError = factory->GetJSError(ErrorType::TYPE_ERROR, "nextItem is not Object");
             JSHandle<JSTaggedValue> record(
-                factory->NewCompletionRecord(CompletionRecord::THROW, JSHandle<JSTaggedValue>(typeError)));
+                factory->NewCompletionRecord(CompletionRecordType::THROW, JSHandle<JSTaggedValue>(typeError)));
             JSTaggedValue ret = JSIterator::IteratorClose(thread, iter, record).GetTaggedValue();
             if (!thread->HasPendingException()) {
                 THROW_NEW_ERROR_AND_RETURN_VALUE(thread, typeError.GetTaggedValue(), ret);

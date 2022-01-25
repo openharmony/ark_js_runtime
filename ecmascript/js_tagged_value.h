@@ -291,7 +291,6 @@ public:
     bool IsRecord() const;
     bool IsPromiseReaction() const;
     bool IsProgram() const;
-    bool IsLexicalFunction() const;
     bool IsJSPromiseReactionFunction() const;
     bool IsJSPromiseExecutorFunction() const;
     bool IsJSPromiseAllResolveElementFunction() const;
@@ -302,7 +301,6 @@ public:
     bool IsCompletionRecord() const;
     bool IsDataView() const;
     bool IsTemplateMap() const;
-    bool IsJSFunctionExtraInfo() const;
     bool IsMicroJobQueue() const;
     bool IsPendingJob() const;
     bool IsJSLocale() const;

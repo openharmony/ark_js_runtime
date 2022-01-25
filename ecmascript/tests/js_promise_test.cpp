@@ -79,9 +79,7 @@ HWTEST_F_L0(JSPromiseTest, NewPromiseCapability)
 
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promise);
     JSHandle<JSPromise> newPromise(thread, capbility->GetPromise());
-    EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseState(),
-                                       JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING))),
-              true);
+    EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::PENDING);
 
     JSHandle<JSPromiseReactionsFunction> resolve(thread, capbility->GetResolve());
     JSHandle<JSPromiseReactionsFunction> reject(thread, capbility->GetReject());
@@ -101,9 +99,7 @@ HWTEST_F_L0(JSPromiseTest, FullFillPromise)
     JSHandle<JSTaggedValue> promise = env->GetPromiseFunction();
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promise);
     JSHandle<JSPromise> newPromise(thread, capbility->GetPromise());
-    EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseState(),
-                                       JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING))),
-              true);
+    EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(newPromise->GetPromiseResult().IsUndefined(), true);
 
     JSHandle<JSTaggedValue> resolve(thread, capbility->GetResolve());
@@ -111,9 +107,7 @@ HWTEST_F_L0(JSPromiseTest, FullFillPromise)
     InternalCallParams *arguments = thread->GetInternalCallParams();
     arguments->MakeArgv(JSTaggedValue(33));
     JSFunction::Call(thread, resolve, undefined, 1, arguments->GetArgv());
-    EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseState(),
-                                       JSTaggedValue(static_cast<int32_t>(PromiseStatus::FULFILLED))),
-              true);
+    EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::FULFILLED);
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseResult(), JSTaggedValue(33)), true);
 }
 
@@ -124,9 +118,7 @@ HWTEST_F_L0(JSPromiseTest, RejectPromise)
     JSHandle<JSTaggedValue> promise = env->GetPromiseFunction();
     JSHandle<PromiseCapability> capbility = JSPromise::NewPromiseCapability(thread, promise);
     JSHandle<JSPromise> newPromise(thread, capbility->GetPromise());
-    EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseState(),
-                                       JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING))),
-              true);
+    EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::PENDING);
     EXPECT_EQ(newPromise->GetPromiseResult().IsUndefined(), true);
 
     JSHandle<JSTaggedValue> reject(thread, capbility->GetReject());
@@ -134,9 +126,7 @@ HWTEST_F_L0(JSPromiseTest, RejectPromise)
     InternalCallParams *arguments = thread->GetInternalCallParams();
     arguments->MakeArgv(JSTaggedValue(44));
     JSFunction::Call(thread, reject, undefined, 1, arguments->GetArgv());
-    EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseState(),
-                                       JSTaggedValue(static_cast<int32_t>(PromiseStatus::REJECTED))),
-              true);
+    EXPECT_EQ(newPromise->GetPromiseState(), PromiseState::REJECTED);
     EXPECT_EQ(JSTaggedValue::SameValue(newPromise->GetPromiseResult(), JSTaggedValue(44)), true);
 }
 }  // namespace panda::test

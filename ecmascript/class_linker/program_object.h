@@ -32,39 +32,13 @@ public:
     ACCESSORS(Location, LOCATION_OFFSET, CONSTANT_POOL_OFFSET)
     ACCESSORS(ConstantPool, CONSTANT_POOL_OFFSET, MAIN_FUNCTION_OFFSET)
     ACCESSORS(MainFunction, MAIN_FUNCTION_OFFSET, METHODS_DATA_OFFSET)
-    SET_GET_NATIVE_FIELD(MethodsData, JSMethod, METHODS_DATA_OFFSET, NUMBER_METHODS_OFFSET)
-    SET_GET_PRIMITIVE_FIELD(NumberMethods, uint32_t, NUMBER_METHODS_OFFSET, SIZE);
+    ACCESSORS_NATIVE_FIELD(MethodsData, JSMethod, METHODS_DATA_OFFSET, NUMBER_METHODS_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(NumberMethods, uint32_t, NUMBER_METHODS_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     inline void FreeMethodData(RegionFactory *factory);
 
     DECL_VISIT_OBJECT(LOCATION_OFFSET, METHODS_DATA_OFFSET)
-    DECL_DUMP()
-};
-
-class LexicalFunction : public ECMAObject {
-public:
-    DECL_CAST(LexicalFunction)
-
-    uint32_t GetNumVregs() const
-    {
-        return static_cast<uint32_t>(GetNumberVRegs().GetInt());
-    }
-
-    uint32_t GetNumICSlots() const
-    {
-        return static_cast<uint32_t>(GetNumberICSlots().GetInt());
-    }
-
-    inline const uint8_t *GetInstructions() const;
-
-    static constexpr size_t NAME_OFFSET = ECMAObject::SIZE;
-    ACCESSORS(Name, NAME_OFFSET, NUMBER_VREGS_OFFSET)
-    ACCESSORS(NumberVRegs, NUMBER_VREGS_OFFSET, NUMBER_IC_SLOTS_OFFSET)
-    ACCESSORS(NumberICSlots, NUMBER_IC_SLOTS_OFFSET, BYTECODE_OFFSET)
-    ACCESSORS(Bytecode, BYTECODE_OFFSET, PROGRAM_OFFSET)
-    ACCESSORS(Program, PROGRAM_OFFSET, SIZE)
-
-    DECL_VISIT_OBJECT(NAME_OFFSET, SIZE)
     DECL_DUMP()
 };
 

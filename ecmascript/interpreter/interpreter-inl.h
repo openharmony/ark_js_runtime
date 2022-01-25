@@ -422,7 +422,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     breakState->base.type = FrameType::INTERPRETER_FRAME;
 
     // create new frame and resume sp and pc
-    uint32_t nregs = context->GetNRegs().GetInt();
+    uint32_t nregs = context->GetNRegs();
     size_t newFrameSize = FRAME_STATE_SIZE + nregs;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic
     JSTaggedType *newSp = breakSp - newFrameSize;
@@ -434,10 +434,9 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
         newSp[i] = regsArray->Get(i).GetRawData();  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
     JSTaggedValue constpool = func->GetConstantPool();
-    JSTaggedValue pcOffset = context->GetBCOffset();
-    // pc = first_inst + offset + size(Opcode::SUSPENDGENERATOR_IMM8_V8_V8)
+    uint32_t pcOffset = context->GetBCOffset();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    const uint8_t *resumePc = method->GetBytecodeArray() + static_cast<uint32_t>(pcOffset.GetInt()) +
+    const uint8_t *resumePc = method->GetBytecodeArray() + pcOffset +
                               BytecodeInstruction::Size(BytecodeInstruction::Format::PREF_V8_V8);
 
     InterpretedFrame *state = GET_FRAME(newSp);
@@ -486,7 +485,7 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
     breakState->base.type = FrameType::INTERPRETER_FRAME;
 
     // create new frame and resume sp and pc
-    uint32_t nregs = context->GetNRegs().GetInt();
+    uint32_t nregs = context->GetNRegs();
     size_t newFrameSize = FRAME_STATE_SIZE + nregs;
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic
@@ -499,10 +498,9 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
         newSp[i] = regsArray->Get(i).GetRawData();  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
     JSTaggedValue constpool = func->GetConstantPool();
-    JSTaggedValue pcOffset = context->GetBCOffset();
-    // pc = first_inst + offset
+    uint32_t pcOffset = context->GetBCOffset();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    const uint8_t *pc = method->GetBytecodeArray() + static_cast<uint32_t>(pcOffset.GetInt());
+    const uint8_t *pc = method->GetBytecodeArray() + pcOffset;
 
     InterpretedFrame *state = GET_FRAME(newSp);
     state->pc = pc;
@@ -1300,7 +1298,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         LOG_INST() << "intrinsics::getresumemode";
         uint16_t vs = READ_INST_8_1();
         JSGeneratorObject *obj = JSGeneratorObject::Cast(GET_VREG_VALUE(vs).GetTaggedObject());
-        SET_ACC(obj->GetResumeMode());
+        SET_ACC(JSTaggedValue(static_cast<int>(obj->GetResumeMode())));
         DISPATCH(BytecodeInstruction::Format::PREF_V8);
     }
     HANDLE_OPCODE(HANDLE_GETITERATOR_PREF) {
@@ -1893,14 +1891,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
-        if (result->IsResolved()) {
+        if (result->GetResolved()) {
             SAVE_PC();
             auto res = SlowRuntimeStub::DefinefuncDyn(thread, result);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             result = JSFunction::Cast(res.GetTaggedObject());
             result->SetConstantPool(thread, JSTaggedValue(constpool));
         } else {
-            result->SetResolved(thread);
+            result->SetResolved(true);
         }
 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
@@ -1919,7 +1917,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
-        if (result->IsResolved()) {
+        if (result->GetResolved()) {
             SAVE_ACC();
             SAVE_PC();
             auto res = SlowRuntimeStub::DefineNCFuncDyn(thread, result);
@@ -1929,7 +1927,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             RESTORE_ACC();
             homeObject = GET_ACC();
         } else {
-            result->SetResolved(thread);
+            result->SetResolved(true);
         }
 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
@@ -1949,7 +1947,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
-        if (result->IsResolved()) {
+        if (result->GetResolved()) {
             SAVE_PC();
             auto res = SlowRuntimeStub::DefineMethod(thread, result, homeObject);
             INTERPRETER_RETURN_IF_ABRUPT(res);
@@ -1957,7 +1955,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             result->SetConstantPool(thread, JSTaggedValue(constpool));
         } else {
             result->SetHomeObject(thread, homeObject);
-            result->SetResolved(thread);
+            result->SetResolved(true);
         }
 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
@@ -2591,14 +2589,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
-        if (result->IsResolved()) {
+        if (result->GetResolved()) {
             SAVE_PC();
             auto res = SlowRuntimeStub::DefineGeneratorFunc(thread, result);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             result = JSFunction::Cast(res.GetTaggedObject());
             result->SetConstantPool(thread, JSTaggedValue(constpool));
         } else {
-            result->SetResolved(thread);
+            result->SetResolved(true);
         }
 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
@@ -2615,14 +2613,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
-        if (result->IsResolved()) {
+        if (result->GetResolved()) {
             SAVE_PC();
             auto res = SlowRuntimeStub::DefineAsyncFunc(thread, result);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             result = JSFunction::Cast(res.GetTaggedObject());
             result->SetConstantPool(thread, JSTaggedValue(constpool));
         } else {
-            result->SetResolved(thread);
+            result->SetResolved(true);
         }
 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
@@ -3404,7 +3402,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         JSTaggedValue res;
         SAVE_PC();
-        if (LIKELY(!classTemplate->IsResolved())) {
+        if (LIKELY(!classTemplate->GetResolved())) {
             res = SlowRuntimeStub::ResolveClass(thread, JSTaggedValue(classTemplate), literalBuffer,
                                                 proto, lexenv, constpool);
         } else {

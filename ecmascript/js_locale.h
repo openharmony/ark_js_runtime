@@ -62,6 +62,8 @@ enum class LocaleType : uint8_t {
     CURRENCY_PREFIX,
     CURRENCY_SUFFIX,
 };
+
+enum class TypeOption : uint8_t { CARDINAL = 0x01, ORDINAL, EXCEPTION };
 enum class RoundingType : uint8_t { FRACTIONDIGITS = 0x01, SIGNIFICANTDIGITS, COMPACTROUNDING, EXCEPTION };
 enum class NotationOption : uint8_t { STANDARD = 0x01, SCIENTIFIC, ENGINEERING, COMPACT, EXCEPTION };
 
@@ -570,7 +572,7 @@ public:
         // 11. If mnsd is not undefined or mxsd is not undefined, then
         if (!mnsd->IsUndefined() || !mxsd->IsUndefined()) {
             // a. Set intlObj.[[RoundingType]] to significantDigits.
-            intlObj->SetRoundingType(thread, JSTaggedValue(static_cast<uint32_t>(RoundingType::SIGNIFICANTDIGITS)));
+            intlObj->SetRoundingType(RoundingType::SIGNIFICANTDIGITS);
             // b. Let mnsd be ? DefaultNumberOption(mnsd, 1, 21, 1).
             mnsd = JSHandle<JSTaggedValue>(
                 thread, JSTaggedValue(JSLocale::DefaultNumberOption(thread, mnsd, 1, MAX_DIGITS, 1)));
@@ -585,7 +587,7 @@ public:
             if (!mnfd->IsUndefined() || !mxfd->IsUndefined()) {
                 // 12. Else if mnfd is not undefined or mxfd is not undefined, then
                 // a. Set intlObj.[[RoundingType]] to fractionDigits.
-                intlObj->SetRoundingType(thread, JSTaggedValue(static_cast<uint32_t>(RoundingType::FRACTIONDIGITS)));
+                intlObj->SetRoundingType(RoundingType::FRACTIONDIGITS);
                 if (!mxfd->IsUndefined()) {
                     JSTaggedValue mxfdValue =
                         JSTaggedValue(JSLocale::DefaultNumberOption(thread, mxfd, 0, MAX_FRACTION_DIGITS, mxfdDefault));
@@ -608,11 +610,11 @@ public:
             } else if (notation == NotationOption::COMPACT) {
                 // 13. Else if notation is "compact", then
                 // a. Set intlObj.[[RoundingType]] to compactRounding.
-                intlObj->SetRoundingType(thread, JSTaggedValue(static_cast<int>(RoundingType::COMPACTROUNDING)));
+                intlObj->SetRoundingType(RoundingType::COMPACTROUNDING);
             } else {
                 // 14. else,
                 // a.Set intlObj.[[RoundingType]] to fractionDigits.
-                intlObj->SetRoundingType(thread, JSTaggedValue(static_cast<int>(RoundingType::FRACTIONDIGITS)));
+                intlObj->SetRoundingType(RoundingType::FRACTIONDIGITS);
                 // b.Set intlObj.[[MinimumFractionDigits]] to mnfdDefault.
                 intlObj->SetMinimumFractionDigits(thread, JSTaggedValue(mnfdDefault));
                 // c.Set intlObj.[[MaximumFractionDigits]] to mxfdDefault.

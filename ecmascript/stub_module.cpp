@@ -25,7 +25,7 @@ void StubModule::Save(const std::string &filename)
         /* write stub entries offset  */
         modulefile.write(reinterpret_cast<char *>(fastStubEntries_.data()),
                          sizeof(uint64_t) * (kungfu::FAST_STUB_MAXCOUNT));
-        int codeSize = code_->GetInstructionSizeInBytes().GetInt();
+        int codeSize = code_->GetInstructionSizeInBytes();
         /* write host code section start addr */
         modulefile.write(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
         /* write stackmap offset */

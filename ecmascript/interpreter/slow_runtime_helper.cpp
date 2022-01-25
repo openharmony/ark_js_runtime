@@ -94,9 +94,9 @@ void SlowRuntimeHelper::SaveFrameToContext(JSThread *thread, JSHandle<GeneratorC
     context->SetMethod(thread, frameHandler.GetFunction());
 
     context->SetAcc(thread, frameHandler.GetAcc());
-    context->SetNRegs(thread, JSTaggedValue(nregs));
-    context->SetBCOffset(thread, JSTaggedValue(frameHandler.GetBytecodeOffset()));
     context->SetLexicalEnv(thread, thread->GetCurrentLexenv());
+    context->SetNRegs(nregs);
+    context->SetBCOffset(frameHandler.GetBytecodeOffset());
 }
 
 JSTaggedValue ConstructGeneric(JSThread *thread, JSHandle<JSFunction> ctor, JSHandle<JSTaggedValue> newTgt,

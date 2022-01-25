@@ -52,20 +52,20 @@
 #define GET_VALUE(addr, offset) Barriers::GetDynValue<JSTaggedType>((addr), (offset))
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SET_VALUE_WITH_BARRIER(thread, addr, offset, value)                        \
-    if (value.IsHeapObject()) {                                                    \
-        Barriers::SetDynObject<true>(thread, addr, offset, value.GetRawData());    \
-    } else {                                                                       \
-        Barriers::SetDynPrimitive<JSTaggedType>(addr, offset, value.GetRawData()); \
+#define SET_VALUE_WITH_BARRIER(thread, addr, offset, value)                          \
+    if ((value).IsHeapObject()) {                                                    \
+        Barriers::SetDynObject<true>(thread, addr, offset, (value).GetRawData());    \
+    } else {                                                                         \
+        Barriers::SetDynPrimitive<JSTaggedType>(addr, offset, (value).GetRawData()); \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define SET_VALUE_PRIMITIVE(addr, offset, value) \
-    Barriers::SetDynPrimitive<JSTaggedType>(this, offset, value.GetRawData())
+    Barriers::SetDynPrimitive<JSTaggedType>(this, offset, (value).GetRawData())
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define ACCESSORS(name, offset, lastOffset)                                                                   \
-    static constexpr size_t lastOffset = offset + JSTaggedValue::TaggedTypeSize();                            \
+#define ACCESSORS(name, offset, endOffset)                                                                    \
+    static constexpr size_t endOffset = (offset) + JSTaggedValue::TaggedTypeSize();                           \
     JSTaggedValue Get##name() const                                                                           \
     {                                                                                                         \
         /* Note: We can't statically decide the element type is a primitive or heap object, especially for */ \
@@ -103,53 +103,67 @@
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SET_GET_VOID_FIELD(name, offset, lastOffset)                               \
-    static constexpr size_t lastOffset = offset + JSTaggedValue::TaggedTypeSize(); \
-    void Set##name(void *fun)                                                      \
-    {                                                                              \
-        Barriers::SetDynPrimitive<void *>(this, offset, fun);                      \
-    }                                                                              \
-    void *Get##name() const                                                        \
-    {                                                                              \
-        return Barriers::GetDynValue<void *>(this, offset);                        \
+#define DEFINE_ALIGN_SIZE(offset) \
+    static constexpr size_t SIZE = ((offset) + sizeof(JSTaggedType) - 1U) & (~(sizeof(JSTaggedType) - 1U))
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define ACCESSORS_FIXED_SIZE_FIELD(name, type, sizeType, offset, endOffset) \
+    static_assert(sizeof(type) <= sizeof(sizeType));                        \
+    static constexpr size_t endOffset = (offset) + sizeof(sizeType);        \
+    inline void Set##name(type value)                                       \
+    {                                                                       \
+        Barriers::SetDynPrimitive<type>(this, offset, value);               \
+    }                                                                       \
+    inline type Get##name() const                                           \
+    {                                                                       \
+        return Barriers::GetDynValue<type>(this, offset);                   \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SET_GET_NATIVE_FIELD(name, type, offset, lastOffset)                       \
-    static constexpr size_t lastOffset = offset + JSTaggedValue::TaggedTypeSize(); \
-    void Set##name(type *mem)                                                      \
-    {                                                                              \
-        Barriers::SetDynPrimitive<type *>(this, offset, mem);                      \
-    }                                                                              \
-    type *Get##name() const                                                        \
-    {                                                                              \
-        return Barriers::GetDynValue<type *>(this, offset);                        \
-    }                                                                              \
-    size_t Offset##name() const                                                    \
-    {                                                                              \
-        return offset;                                                             \
+#define ACCESSORS_NATIVE_FIELD(name, type, offset, endOffset) \
+    ACCESSORS_FIXED_SIZE_FIELD(name, type *, type *, offset, endOffset)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define ACCESSORS_PRIMITIVE_FIELD(name, type, offset, endOffset) \
+    ACCESSORS_FIXED_SIZE_FIELD(name, type, type, offset, endOffset)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define ACCESSORS_BIT_FIELD(name, offset, endOffset)                        \
+    ACCESSORS_FIXED_SIZE_FIELD(name, uint32_t, uint32_t, offset, endOffset) \
+    inline void Clear##name()                                               \
+    {                                                                       \
+        Set##name(0UL);                                                     \
     }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define SET_GET_PRIMITIVE_FIELD(name, type, offset, lastOffset)                    \
-    static constexpr size_t lastOffset = offset + JSTaggedValue::TaggedTypeSize(); \
-    void Set##name(type value)                                                     \
-    {                                                                              \
-        Barriers::SetDynPrimitive<type>(this, offset, value);                      \
-    }                                                                              \
-    type Get##name() const                                                         \
-    {                                                                              \
-        return Barriers::GetDynValue<type>(this, offset);                          \
+#define SET_GET_BIT_FIELD(bitFieldName, name, type)                    \
+    inline type Get##name() const                                      \
+    {                                                                  \
+        return name##Bits::Decode(Get##bitFieldName());                \
+    }                                                                  \
+    inline void Set##name(type t)                                      \
+    {                                                                  \
+        Set##bitFieldName(name##Bits::Update(Get##bitFieldName(), t)); \
     }
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define FIRST_BIT_FIELD(bitFieldName, name, type, bits) \
+    using name##Bits = BitField<type, 0, bits>;         \
+    SET_GET_BIT_FIELD(bitFieldName, name, type)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define NEXT_BIT_FIELD(bitFieldName, name, type, bits, lastName) \
+    using name##Bits = lastName##Bits::NextField<type, bits>;    \
+    SET_GET_BIT_FIELD(bitFieldName, name, type)
 
 #if !defined(NDEBUG)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DASSERT(cond) assert(cond)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DASSERT_PRINT(cond, message)                   \
-    if (auto cond_val = cond; UNLIKELY(!(cond_val))) { \
-        std::cerr << message << std::endl;             \
-        ASSERT(#cond &&cond_val);                      \
+#define DASSERT_PRINT(cond, message)                     \
+    if (auto cond_val = (cond); UNLIKELY(!(cond_val))) { \
+        std::cerr << (message) << std::endl;             \
+        ASSERT(#cond &&cond_val);                        \
     }
 #else                                                      // NDEBUG
 #define DASSERT(cond) static_cast<void>(0)                 // NOLINT(cppcoreguidelines-macro-usage)
@@ -176,7 +190,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, value) \
     do {                                                 \
-        if (thread->HasPendingException()) {             \
+        if ((thread)->HasPendingException()) {           \
             return (value);                              \
         }                                                \
     } while (false)
@@ -184,7 +198,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread) \
     do {                                              \
-        if (thread->HasPendingException()) {          \
+        if ((thread)->HasPendingException()) {        \
             return JSTaggedValue::Exception();        \
         }                                             \
     } while (false)
@@ -192,7 +206,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RETURN_HANDLE_IF_ABRUPT_COMPLETION(type, thread)               \
     do {                                                               \
-        if (thread->HasPendingException()) {                           \
+        if ((thread)->HasPendingException()) {                         \
             return JSHandle<type>(thread, JSTaggedValue::Exception()); \
         }                                                              \
     } while (false)
@@ -203,8 +217,8 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error, value) \
     do {                                                       \
-        if (!thread->HasPendingException()) {                  \
-            thread->SetException(error);                       \
+        if (!(thread)->HasPendingException()) {                \
+            (thread)->SetException(error);                     \
         }                                                      \
         return (value);                                        \
     } while (false)
@@ -280,8 +294,8 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_NEW_ERROR_AND_RETURN(thread, error) \
     do {                                          \
-        if (!thread->HasPendingException()) {     \
-            thread->SetException(error);          \
+        if (!(thread)->HasPendingException()) {   \
+            (thread)->SetException(error);        \
         }                                         \
         return;                                   \
     } while (false)
@@ -289,7 +303,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_TYPE_ERROR_AND_RETURN(thread, message, exception)                               \
     do {                                                                                      \
-        ObjectFactory *objectFactory = thread->GetEcmaVM()->GetFactory();                     \
+        ObjectFactory *objectFactory = (thread)->GetEcmaVM()->GetFactory();                   \
         JSHandle<JSObject> error = objectFactory->GetJSError(ErrorType::TYPE_ERROR, message); \
         THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);          \
     } while (false)
@@ -297,7 +311,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_TYPE_ERROR(thread, message)                                               \
     do {                                                                                \
-        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();                     \
+        ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                   \
         JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, message); \
         THROW_NEW_ERROR_AND_RETURN(thread, error.GetTaggedValue());                     \
     } while (false)
@@ -305,7 +319,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_RANGE_ERROR_AND_RETURN(thread, message, exception)                               \
     do {                                                                                       \
-        ObjectFactory *objectFactory = thread->GetEcmaVM()->GetFactory();                      \
+        ObjectFactory *objectFactory = (thread)->GetEcmaVM()->GetFactory();                    \
         JSHandle<JSObject> error = objectFactory->GetJSError(ErrorType::RANGE_ERROR, message); \
         THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);           \
     } while (false)
@@ -313,7 +327,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_RANGE_ERROR(thread, message)                                               \
     do {                                                                                 \
-        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();                      \
+        ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                    \
         JSHandle<JSObject> error = factory->GetJSError(ErrorType::RANGE_ERROR, message); \
         THROW_NEW_ERROR_AND_RETURN(thread, error.GetTaggedValue());                      \
     } while (false)
@@ -321,14 +335,14 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_URI_ERROR_AND_RETURN(thread, message, exception)                               \
     do {                                                                                     \
-        ObjectFactory *objectFactory = thread->GetEcmaVM()->GetFactory();                    \
+        ObjectFactory *objectFactory = (thread)->GetEcmaVM()->GetFactory();                  \
         JSHandle<JSObject> error = objectFactory->GetJSError(ErrorType::URI_ERROR, message); \
         THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);         \
     } while (false)
 
 #define THROW_SYNTAX_ERROR_AND_RETURN(thread, message, exception)                         \
     do {                                                                                  \
-        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();                       \
+        ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                     \
         JSHandle<JSObject> error = factory->GetJSError(ErrorType::SYNTAX_ERROR, message); \
         THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);      \
     } while (false)
@@ -336,39 +350,39 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RETURN_REJECT_PROMISE_IF_ABRUPT(thread, value, capability)                                 \
     do {                                                                                           \
-        const GlobalEnvConstants *globalConst = thread->GlobalConstants();                         \
-        if (value.GetTaggedValue().IsCompletionRecord()) {                                         \
+        const GlobalEnvConstants *globalConst = (thread)->GlobalConstants();                       \
+        if ((value).GetTaggedValue().IsCompletionRecord()) {                                       \
             JSHandle<CompletionRecord> record = JSHandle<CompletionRecord>::Cast(value);           \
             if (record->IsThrow()) {                                                               \
-                JSHandle<JSTaggedValue> reject(thread, capability->GetReject());                   \
+                JSHandle<JSTaggedValue> reject(thread, (capability)->GetReject());                 \
                 JSHandle<JSTaggedValue> undefine = globalConst->GetHandledUndefined();             \
-                InternalCallParams *arg = thread->GetInternalCallParams();                         \
+                InternalCallParams *arg = (thread)->GetInternalCallParams();                       \
                 arg->MakeArgv(record->GetValue());                                                 \
                 JSTaggedValue res = JSFunction::Call(thread, reject, undefine, 1, arg->GetArgv()); \
                 RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, res);                                    \
-                return capability->GetPromise();                                                   \
+                return (capability)->GetPromise();                                                 \
             }                                                                                      \
         }                                                                                          \
-        if (thread->HasPendingException()) {                                                       \
-            thread->ClearException();                                                              \
-            JSHandle<JSTaggedValue> reject(thread, capability->GetReject());                       \
+        if ((thread)->HasPendingException()) {                                                     \
+            (thread)->ClearException();                                                            \
+            JSHandle<JSTaggedValue> reject(thread, (capability)->GetReject());                     \
             JSHandle<JSTaggedValue> undefined = globalConst->GetHandledUndefined();                \
-            InternalCallParams *arg = thread->GetInternalCallParams();                             \
+            InternalCallParams *arg = (thread)->GetInternalCallParams();                           \
             arg->MakeArgv(value);                                                                  \
             JSTaggedValue res = JSFunction::Call(thread, reject, undefined, 1, arg->GetArgv());    \
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, res);                                        \
-            return capability->GetPromise();                                                       \
+            return (capability)->GetPromise();                                                     \
         }                                                                                          \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define RETURN_COMPLETION_IF_ABRUPT(thread, value)                            \
-    do {                                                                      \
-        if (thread->HasPendingException()) {                                  \
-            JSHandle<CompletionRecord> completionRecord =                     \
-                factory->NewCompletionRecord(CompletionRecord::THROW, value); \
-            return (completionRecord);                                        \
-        }                                                                     \
+#define RETURN_COMPLETION_IF_ABRUPT(thread, value)                                \
+    do {                                                                          \
+        if ((thread)->HasPendingException()) {                                    \
+            JSHandle<CompletionRecord> completionRecord =                         \
+                factory->NewCompletionRecord(CompletionRecordType::THROW, value); \
+            return (completionRecord);                                            \
+        }                                                                         \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -412,8 +426,8 @@
         VisitObjects(visitor);                                                                                   \
         /* visit in object fields */                                                                             \
         auto objSize = this->GetClass()->GetObjectSize();                                                        \
-        if (objSize > (END_OFFSET)) {                                                                            \
-            visitor(this, ObjectSlot(ToUintPtr(this) + (END_OFFSET)), ObjectSlot(ToUintPtr(this) + objSize));    \
+        if (objSize > SIZE) {                                                                            \
+            visitor(this, ObjectSlot(ToUintPtr(this) + SIZE), ObjectSlot(ToUintPtr(this) + objSize));    \
         }                                                                                                        \
     }                                                                                                            \
     void VisitObjects(const EcmaObjectRangeVisitor &visitor)                                                     \
@@ -484,18 +498,18 @@
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHECK_DUMP_FILEDS(begin, end, num)                                         \
-    LOG_IF(num != (end - begin) / JSTaggedValue::TaggedTypeSize(), FATAL, RUNTIME) \
+#define CHECK_DUMP_FILEDS(begin, end, num)                                               \
+    LOG_IF((num) != ((end) - (begin)) / JSTaggedValue::TaggedTypeSize(), FATAL, RUNTIME) \
         << "Fileds in obj are not in dump list. ";
 
-#define CHECK_OBJECT_SIZE(size)                                                                   \
-    if (size == 0) {                                                                              \
-        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " objectSize is " << size; \
+#define CHECK_OBJECT_SIZE(size)                                                                     \
+    if ((size) == 0) {                                                                              \
+        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " objectSize is " << (size); \
     }
 
-#define CHECK_REGION_END(begin, end)                                                                           \
-    if (begin > end) {                                                                                         \
-        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " begin: " << begin << " end: " << end; \
+#define CHECK_REGION_END(begin, end)                                                                               \
+    if ((begin) > (end)) {                                                                                         \
+        LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " begin: " << (begin) << " end: " << (end); \
     }
 
 #endif  // ECMASCRIPT_ECMA_MACROS_H
