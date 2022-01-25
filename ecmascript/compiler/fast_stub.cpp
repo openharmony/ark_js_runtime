@@ -1239,4 +1239,23 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&receiverNotHeapObject);
     Return(GetHoleConstant(StubMachineType::UINT64));
 }
+
+void TestAbsoluteAddressRelocationStub::GenerateCircuit(const CompilationConfig *cfg)
+{
+    Stub::GenerateCircuit(cfg);
+    auto env = GetEnvironment();
+    GateRef a = Int64Argument(0);
+    GateRef b = Int64Argument(1);
+    Label start(env);
+    Jump(&start);
+    Bind(&start);
+    GateRef globalValueC = GetRelocatableData(0xabc);
+    GateRef globalValueD = GetRelocatableData(0xbcd);
+    GateRef dummyValueC = Load(StubMachineType::INT64, globalValueC);
+    GateRef dummyValueD = Load(StubMachineType::INT64, globalValueD);
+    // Load from same relocatable data twice to see if it breaks constant fold opt. Result shows it doesn't.
+    GateRef dummyValueC1 = Load(StubMachineType::INT64, globalValueC);
+    GateRef result = Int64Add(a, Int64Add(b, Int64Add(dummyValueC, Int64Add(dummyValueD, dummyValueC1))));
+    Return(result);
+}
 }  // namespace panda::ecmascript::kungfu

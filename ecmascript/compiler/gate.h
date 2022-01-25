@@ -99,6 +99,7 @@ public:
         ALLOCA,
         ARG,
         MUTABLE_DATA,
+        RELOCATABLE_DATA,
         CONST_DATA,
         CONSTANT,
         ZEXT_TO_INT64,

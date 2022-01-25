@@ -104,6 +104,8 @@ Properties OpCode::GetProperties() const
         case MUTABLE_DATA:
         case CONST_DATA:
             return {ARCH, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
+        case RELOCATABLE_DATA:
+            return {ARCH, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
         case CONSTANT:
             return {FLEX, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
         case ZEXT_TO_INT64:
@@ -218,6 +220,7 @@ std::string OpCode::Str() const
         {ALLOCA, "ALLOCA"},
         {ARG, "ARG"},
         {MUTABLE_DATA, "MUTABLE_DATA"},
+        {RELOCATABLE_DATA, "RELOCATABLE_DATA"},
         {CONST_DATA, "CONST_DATA"},
         {CONSTANT, "CONSTANT"},
         {ZEXT_TO_INT64, "ZEXT_TO_INT64"},
