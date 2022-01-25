@@ -1157,6 +1157,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             SET_ACC(value);
         } else {
             // slow path
+            SAVE_PC();
             JSTaggedValue res = SlowRuntimeStub::ToNumber(thread, value);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             SET_ACC(res);
@@ -1263,6 +1264,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_THROWDYN_PREF) {
         LOG_INST() << "intrinsics::throwdyn";
+        SAVE_PC();
         SlowRuntimeStub::ThrowDyn(thread, GET_ACC());
         INTERPRETER_GOTO_EXCEPTION_HANDLER();
     }
@@ -1892,6 +1894,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
         if (result->IsResolved()) {
+            SAVE_PC();
             auto res = SlowRuntimeStub::DefinefuncDyn(thread, result);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             result = JSFunction::Cast(res.GetTaggedObject());
@@ -1918,6 +1921,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         ASSERT(result != nullptr);
         if (result->IsResolved()) {
             SAVE_ACC();
+            SAVE_PC();
             auto res = SlowRuntimeStub::DefineNCFuncDyn(thread, result);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             result = JSFunction::Cast(res.GetTaggedObject());
@@ -1946,6 +1950,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSFunction *result = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(result != nullptr);
         if (result->IsResolved()) {
+            SAVE_PC();
             auto res = SlowRuntimeStub::DefineMethod(thread, result, homeObject);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             result = JSFunction::Cast(res.GetTaggedObject());
@@ -2351,12 +2356,14 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_CREATEEMPTYARRAY_PREF) {
         LOG_INST() << "intrinsics::createemptyarray";
+        SAVE_PC();
         JSTaggedValue res = SlowRuntimeStub::CreateEmptyArray(thread, factory, globalEnv);
         SET_ACC(res);
         DISPATCH(BytecodeInstruction::Format::PREF_NONE);
     }
     HANDLE_OPCODE(HANDLE_CREATEEMPTYOBJECT_PREF) {
         LOG_INST() << "intrinsics::createemptyobject";
+        SAVE_PC();
         JSTaggedValue res = SlowRuntimeStub::CreateEmptyObject(thread, factory, globalEnv);
         SET_ACC(res);
         DISPATCH(BytecodeInstruction::Format::PREF_NONE);
@@ -2955,11 +2962,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         bool found = false;
         SlowRuntimeStub::LdGlobalRecord(thread, propKey, &found);
+        SAVE_PC();
         // 1. find from global record
         if (found) {
             JSTaggedValue value = GET_ACC();
             SAVE_ACC();
-            SAVE_PC();
             JSTaggedValue res = SlowRuntimeStub::TryUpdateGlobalRecord(thread, propKey, value);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             RESTORE_ACC();
@@ -2967,13 +2974,11 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             // 2. find from global object
             FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey, &found);
             if (!found) {
-                SAVE_PC();
                 auto result = SlowRuntimeStub::ThrowReferenceError(thread, propKey, " is not defined");
                 INTERPRETER_RETURN_IF_ABRUPT(result);
             }
             JSTaggedValue value = GET_ACC();
             SAVE_ACC();
-            SAVE_PC();
             JSTaggedValue res = SlowRuntimeStub::StGlobalVar(thread, propKey, value);
             INTERPRETER_RETURN_IF_ABRUPT(res);
             RESTORE_ACC();
@@ -3363,6 +3368,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue dst = GET_VREG_VALUE(v0);
         JSTaggedValue index = GET_VREG_VALUE(v1);
         JSTaggedValue src = GET_ACC();
+        SAVE_PC();
         JSTaggedValue res = SlowRuntimeStub::StArraySpread(thread, dst, index, src);
         INTERPRETER_RETURN_IF_ABRUPT(res);
         SET_ACC(res);
