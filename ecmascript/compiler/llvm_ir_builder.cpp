@@ -317,21 +317,33 @@ LLVMTFBuilderBasicBlockImpl *LLVMIRBuilder::EnsureBasicBlockImpl(BasicBlock *bb)
     return bb->GetImpl<LLVMTFBuilderBasicBlockImpl>();
 }
 
-void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builder)
+void LLVMIRBuilder::GenPrologue(LLVMModuleRef &module, LLVMBuilderRef &builder)
 {
     /* current frame for x86_64 system:
+    for optimized entry frame
+         0    pre   <-- rbp register
+        -8    type
+        -16   current sp before call other function
+        -24   pre frame thread fp
+    for optimized frame
          0    pre rbp  <-- rbp
         -8    type
-        -16   pre frame thread fp
+        -16   current sp before call other function
+
      for 32 arm bit system:
         not support
      for arm64 system
-         0    pre fp/ other regs  <-- fp
+     for optimized entry frame
+         0    pre rbp  <-- x29 register
         -8    type
-        -16   pre frame thread fp
-        -24   current sp before call other function
+        -16   current sp before call other function
+        -24   pre frame thread fp
+    for optimized frame
+        0    pre rbp  <-- rbp
+        -8    type
+        -16   current sp before call other function
     */
-    if (compCfg_->IsArm32() || compCfg_->IsAArch64() || compCfg_->IsAmd64()) {
+    if (compCfg_->IsArm32()) {
         return;
     }
     auto frameType = circuit_->GetFrameType();
@@ -354,7 +366,6 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
     }
 
     LLVMValueRef llvmFrameType = LLVMConstInt(slotType_, static_cast<uintptr_t>(frameType), 0);
-    (void)llvmFrameType;
     LLVMValueRef value = LLVMBuildStore(builder_, llvmFrameType, addr);
 
     if (frameType != panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME) {
@@ -367,8 +378,8 @@ void LLVMIRBuilder::PrologueHandle(LLVMModuleRef &module, LLVMBuilderRef &builde
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(slotType_, 0), "");
     LLVMValueRef threadFpValue = LLVMBuildLoad(builder_, rtbaseAddr, "");
-    static constexpr int g_LLVMFrameOffset = 2;
-    addr = LLVMBuildSub(builder, frameAddr, LLVMConstInt(slotType_, g_LLVMFrameOffset * slotSize_, false), "");
+    addr = LLVMBuildAdd(builder, frameAddr, LLVMConstInt(slotType_,
+        FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * slotSize_, true), "");
     value = LLVMBuildStore(builder_, threadFpValue,
         LLVMBuildIntToPtr(builder_, addr, LLVMPointerType(slotType_, 0), "cast"));
     LOG_ECMA(DEBUG) << "store value:" << value << " "
@@ -498,14 +509,19 @@ LLVMValueRef LLVMIRBuilder::GetCurrentSP()
 
 void LLVMIRBuilder::SaveCurrentSP()
 {
-    if (compCfg_->IsAArch64()) {
+    if (compCfg_->IsAArch64() || compCfg_->IsAmd64()) {
         LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
         LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
         LLVMValueRef frameSpSlotAddr = LLVMBuildSub(builder_, frameAddr, LLVMConstInt(slotType_,
             3 * slotSize_, false), ""); // 3: type + threadsp + current sp
         LLVMValueRef addr = LLVMBuildIntToPtr(builder_, frameSpSlotAddr,
-            LLVMPointerType(slotType_, 0), "frameType.Addr");
-        LLVMMetadataRef meta = LLVMMDStringInContext2(context_, "sp", 3);   // 3 : 3 means len of "sp"
+            LLVMPointerType(slotType_, 0), "frameCallSiteSP.Addr");
+        LLVMMetadataRef meta;
+        if (compCfg_->IsAmd64()) {
+            meta = LLVMMDStringInContext2(context_, "rsp", 4);   // 4 : 4 means len of "rsp"
+        } else {
+            meta = LLVMMDStringInContext2(context_, "sp", 3);   // 3 : 3 means len of "sp"
+        }
         LLVMMetadataRef metadataNode = LLVMMDNodeInContext2(context_, &meta, 1);
         LLVMValueRef spValue = ReadRegister(module_, builder_, metadataNode);
         LLVMBuildStore(builder_, spValue, addr);
@@ -539,7 +555,7 @@ void LLVMIRBuilder::SetCurrentSPFrame(LLVMValueRef sp)
 LLVMValueRef LLVMIRBuilder::GetCurrentFrameType(LLVMValueRef currentSpFrameAddr)
 {
     LLVMValueRef tmp = LLVMBuildSub(builder_, currentSpFrameAddr, LLVMConstInt(slotType_, slotSize_, 1), "");
-    LLVMValueRef frameTypeAddr = LLVMBuildIntToPtr(builder_, tmp, LLVMPointerType(LLVMInt64Type(), 1), "");
+    LLVMValueRef frameTypeAddr = LLVMBuildIntToPtr(builder_, tmp, LLVMPointerType(LLVMInt64Type(), 0), "");
     LLVMValueRef frameType = LLVMBuildLoad(builder_, frameTypeAddr, "");
     return frameType;
 }
@@ -648,12 +664,11 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
         return;
     }
     if (compCfg_->IsArm32() || compCfg_->IsAArch64() || compCfg_->IsAmd64()) {
+        SaveCurrentSP();
         // callerid | idx
         if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
             ConstructFrame();
         }
-    } else {
-        SaveCurrentSP();
     }
 
     gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
@@ -789,7 +804,7 @@ void LLVMIRBuilder::VisitBlock(int gate, const OperandsVector &predecessors)  //
         LLVMMoveBasicBlockBefore(llvmpre, llvmbb);
     }
     if (gate == 0) { // insert prologue
-        PrologueHandle(module_, builder_);
+        GenPrologue(module_, builder_);
     }
 }
 
