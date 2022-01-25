@@ -1222,8 +1222,7 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
             &hclassEqualFirstValue, &hclassNotEqualFirstValue);
         Bind(&hclassEqualFirstValue);
-        GateRef handlerInfo = TaggedCastToInt32(secondValue);
-        Return(ICStoreElement(glue, receiver, key, value, handlerInfo));
+        Return(ICStoreElement(glue, receiver, key, value, secondValue));
         Bind(&hclassNotEqualFirstValue);
         {
             Branch(Word64Equal(firstValue, key), &firstValueEqualKey, &receiverNotHeapObject);

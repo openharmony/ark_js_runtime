@@ -958,7 +958,7 @@ void Stub::SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray)
     Store(MachineType::TAGGED_POINTER, glue, object, propertiesOffset, propsArray);
 }
 
-GateRef Stub::GetLengthofTaggedArray(GateRef array)
+GateRef Stub::GetLengthOfTaggedArray(GateRef array)
 {
     return Load(MachineType::UINT32, array, GetArchRelateConstant(TaggedArray::GetLengthOffset()));
 }

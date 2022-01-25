@@ -1935,7 +1935,7 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
                 Bind(&storeElement);
                 {
                     // acc is value
-                    GateRef result = ICStoreElement(glue, receiver, propKey, acc, TaggedGetInt(secondValue));
+                    GateRef result = ICStoreElement(glue, receiver, propKey, acc, secondValue);
                     Label notHole(env);
                     Branch(TaggedIsHole(result), &slowPath, &notHole);
                     Bind(&notHole);
