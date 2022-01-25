@@ -172,6 +172,8 @@ public:
     static JSTaggedType LessEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType GreaterDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType GreaterEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType Add2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType Sub2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
 };
 }  // namespace panda::ecmascript
 #endif

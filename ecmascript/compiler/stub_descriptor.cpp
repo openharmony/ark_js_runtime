@@ -2051,12 +2051,42 @@ CALL_STUB_INIT_DESCRIPTOR(UpFrame)
 
 CALL_STUB_INIT_DESCRIPTOR(ToNumber)
 {
-    // 4 : 4 input parameters
+    // 2 : 2 input parameters
     StubDescriptor toNumber("ToNumber", 0, 2,
         ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
     *descriptor = toNumber;
     std::array<MachineType, 2> params = { // 4 : 4 input parameters
         MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(Add2Dyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor add2Dyn("Add2Dyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = add2Dyn;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
+        MachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(Sub2Dyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor sub2Dyn("Sub2Dyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, MachineType::TAGGED);
+    *descriptor = sub2Dyn;
+    std::array<MachineType, 3> params = { // 3 : 3 input parameters
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED,
         MachineType::TAGGED,
     };
     descriptor->SetParameters(params.data());

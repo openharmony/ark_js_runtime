@@ -42,8 +42,8 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdHomeObjectPref, 7)                            \
     T(HandleThrowDeleteSuperPropertyPref, 7)                \
     T(HandleDebuggerPref, 7)                                \
-    V(HandleAdd2DynPrefV8, 7)                               \
-    V(HandleSub2DynPrefV8, 7)                               \
+    T(HandleAdd2DynPrefV8, 7)                               \
+    T(HandleSub2DynPrefV8, 7)                               \
     V(HandleMul2DynPrefV8, 7)                               \
     V(HandleDiv2DynPrefV8, 7)                               \
     V(HandleMod2DynPrefV8, 7)                               \
