@@ -141,8 +141,7 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::TryStoreICByValue(JSThread *thread, JSTa
     if (receiver.IsHeapObject()) {
         auto hclass = receiver.GetTaggedObject()->GetClass();
         if (firstValue.GetWeakReferentUnChecked() == hclass) {
-            auto handlerInfo = static_cast<uint32_t>(secondValue.GetInt());
-            return StoreElement(thread, JSObject::Cast(receiver.GetHeapObject()), key, value, handlerInfo);
+            return StoreElement(thread, JSObject::Cast(receiver.GetHeapObject()), key, value, secondValue);
         }
         // Check key
         if (firstValue == key) {
@@ -377,38 +376,52 @@ ARK_INLINE JSTaggedValue ICRuntimeStub::LoadElement(JSObject *receiver, JSTagged
 }
 
 JSTaggedValue ICRuntimeStub::StoreElement(JSThread *thread, JSObject *receiver, JSTaggedValue key,
-                                          JSTaggedValue value, uint32_t handlerInfo)
+                                          JSTaggedValue value, JSTaggedValue handler)
 {
     INTERPRETER_TRACE(thread, StoreElement);
-    ASSERT(HandlerBase::IsElement(handlerInfo));
     auto index = TryToElementsIndex(key);
     if (index < 0) {
         return JSTaggedValue::Hole();
     }
     uint32_t elementIndex = index;
-    if (HandlerBase::IsJSArray(handlerInfo)) {
-        JSArray *arr = JSArray::Cast(receiver);
-        uint32_t oldLength = arr->GetArrayLength();
-        if (elementIndex >= oldLength) {
-            arr->SetArrayLength(thread, elementIndex + 1);
+    if (handler.IsInt()) {
+        ASSERT(HandlerBase::IsElement(handlerInfo));
+        auto handlerInfo = static_cast<uint32_t>(handler.GetInt());
+        if (HandlerBase::IsJSArray(handlerInfo)) {
+            JSArray *arr = JSArray::Cast(receiver);
+            uint32_t oldLength = arr->GetArrayLength();
+            if (elementIndex >= oldLength) {
+                arr->SetArrayLength(thread, elementIndex + 1);
+            }
         }
-    }
-    TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetHeapObject());
-    uint32_t capacity = elements->GetLength();
-    if (elementIndex >= capacity) {
-        if (JSObject::ShouldTransToDict(capacity, elementIndex)) {
+        TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetHeapObject());
+        uint32_t capacity = elements->GetLength();
+        if (elementIndex >= capacity) {
+            if (JSObject::ShouldTransToDict(capacity, elementIndex)) {
+                return JSTaggedValue::Hole();
+            }
+            [[maybe_unused]] EcmaHandleScope handleScope(thread);
+            JSHandle<JSObject> receiverHandle(thread, receiver);
+            JSHandle<JSTaggedValue> valueHandle(thread, value);
+            elements = *JSObject::GrowElementsCapacity(thread, receiverHandle,
+                                                       JSObject::ComputeElementCapacity(elementIndex + 1));
+            receiverHandle->SetElements(thread, JSTaggedValue(elements));
+            elements->Set(thread, elementIndex, valueHandle);
+            return JSTaggedValue::Undefined();
+        }
+        elements->Set(thread, elementIndex, value);
+    } else {
+        ASSERT(handler.IsPrototypeHandler());
+        PrototypeHandler *prototypeHandler = PrototypeHandler::Cast(handler.GetTaggedObject());
+        auto cellValue = prototypeHandler->GetProtoCell();
+        ASSERT(cellValue.IsProtoChangeMarker());
+        ProtoChangeMarker *cell = ProtoChangeMarker::Cast(cellValue.GetHeapObject());
+        if (cell->GetHasChanged()) {
             return JSTaggedValue::Hole();
         }
-        [[maybe_unused]] EcmaHandleScope handleScope(thread);
-        JSHandle<JSObject> receiverHandle(thread, receiver);
-        JSHandle<JSTaggedValue> valueHandle(thread, value);
-        elements = *JSObject::GrowElementsCapacity(thread, receiverHandle,
-                                                   JSObject::ComputeElementCapacity(elementIndex + 1));
-        receiverHandle->SetElements(thread, JSTaggedValue(elements));
-        elements->Set(thread, elementIndex, valueHandle);
-        return JSTaggedValue::Undefined();
+        JSTaggedValue handlerInfo = prototypeHandler->GetHandlerInfo();
+        return StoreElement(thread, receiver, key, value, handlerInfo);
     }
-    elements->Set(thread, elementIndex, value);
     return JSTaggedValue::Undefined();
 }
 

@@ -1003,7 +1003,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     }
     Bind(&afterInPropsCon);
     DEFVARIABLE(array, MachineType::TAGGED_POINTER, GetPropertiesArray(receiver));
-    DEFVARIABLE(length, MachineType::UINT32, GetLengthofTaggedArray(*array));
+    DEFVARIABLE(length, MachineType::UINT32, GetLengthOfTaggedArray(*array));
     Label lenIsZero(env);
     Label lenNotZero(env);
     Label afterLenCon(env);
@@ -1603,7 +1603,7 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
     Branch(TaggedIsWeak(cachedValue), &exit, &cachedValueNotWeak);
     Bind(&cachedValueNotWeak);
     {
-        GateRef length = GetLengthofTaggedArray(cachedValue);
+        GateRef length = GetLengthOfTaggedArray(cachedValue);
         Jump(&loopHead);
         LoopBegin(&loopHead);
         {
@@ -1721,8 +1721,8 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
     }
     Bind(&indexNotLessZero);
     {
-        GateRef elements = GetPropertiesArray(receiver);
-        Branch(Int32LessThanOrEqual(GetLengthofTaggedArray(elements), index), &lengthLessIndex, &lengthNotLessIndex);
+        GateRef elements = GetElementsArray(receiver);
+        Branch(Int32LessThanOrEqual(GetLengthOfTaggedArray(elements), index), &lengthLessIndex, &lengthNotLessIndex);
         Bind(&lengthLessIndex);
         Jump(&exit);
         Bind(&lengthNotLessIndex);
@@ -1735,7 +1735,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
     return ret;
 }
 
-GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRef value, GateRef handlerInfo)
+GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRef value, GateRef handler)
 {
     auto env = GetEnvironment();
     Label entry(env);
@@ -1747,7 +1747,15 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     Label handerInfoNotJSArray(env);
     Label indexGreaterLength(env);
     Label indexGreaterCapacity(env);
+    Label callRuntime(env);
+    Label storeElement(env);
+    Label handlerIsInt(env);
+    Label cellHasChanged(env);
+    Label cellHasNotChanged(env);
+    Label loopHead(env);
+    Label loopEnd(env);
     DEFVARIABLE(result, MachineType::UINT64, GetHoleConstant(MachineType::UINT64));
+    DEFVARIABLE(varHandler, MachineType::TAGGED, handler);
     GateRef index = TryToElementsIndex(key);
     Branch(Int32LessThan(index, GetInt32Constant(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
@@ -1756,25 +1764,56 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     }
     Bind(&indexNotLessZero);
     {
-        Branch(HandlerBaseIsJSArray(handlerInfo), &handerInfoIsJSArray, &handerInfoNotJSArray);
-        Bind(&handerInfoIsJSArray);
+        Jump(&loopHead);
+        LoopBegin(&loopHead);
+        Branch(TaggedIsInt(*varHandler), &handlerIsInt, &loopEnd);
+        Bind(&handlerIsInt);
         {
-            GateRef oldLength = GetArrayLength(receiver);
-            Branch(Int32GreaterThanOrEqual(index, oldLength), &indexGreaterLength, &handerInfoNotJSArray);
-            Bind(&indexGreaterLength);
-            Store(MachineType::UINT64, glue, receiver, GetArchRelateConstant(panda::ecmascript::JSArray::LENGTH_OFFSET),
-                  IntBuildTaggedWithNoGC(Int32Add(index, GetInt32Constant(1))));
-            Jump(&handerInfoNotJSArray);
+            GateRef handlerInfo = TaggedCastToInt32(handler);
+            Branch(HandlerBaseIsJSArray(handlerInfo), &handerInfoIsJSArray, &handerInfoNotJSArray);
+            Bind(&handerInfoIsJSArray);
+            {
+                GateRef oldLength = GetArrayLength(receiver);
+                Branch(Int32GreaterThanOrEqual(index, oldLength), &indexGreaterLength, &handerInfoNotJSArray);
+                Bind(&indexGreaterLength);
+                Store(MachineType::UINT64, glue, receiver, GetArchRelateConstant(panda::ecmascript::JSArray::LENGTH_OFFSET),
+                      IntBuildTaggedWithNoGC(Int32Add(index, GetInt32Constant(1))));
+                Jump(&handerInfoNotJSArray);
+            }
+            Bind(&handerInfoNotJSArray);
+            {
+                GateRef elements = GetElementsArray(receiver);
+                GateRef capacity = GetLengthOfTaggedArray(elements);
+                Branch(Int32GreaterThanOrEqual(index, capacity), &callRuntime, &storeElement);
+                Bind(&callRuntime);
+                {
+                    StubDescriptor *taggedArraySetValue = GET_STUBDESCRIPTOR(TaggedArraySetValue);
+                    result = CallRuntime(taggedArraySetValue, glue, GetWord64Constant(FAST_STUB_ID(TaggedArraySetValue)), {
+                            glue, receiver, value, elements, index, capacity
+                    });
+                    Jump(&exit);
+                }
+                Bind(&storeElement);
+                {
+                    SetValueToTaggedArray(MachineType::TAGGED, glue, elements, index, value);
+                    result = GetUndefinedConstant(MachineType::UINT64);
+                    Jump(&exit);
+                }
+            }
         }
-        Bind(&handerInfoNotJSArray);
+        Bind(&loopEnd);
         {
-            GateRef elements = GetElementsArray(receiver);
-            GateRef capacity = GetLengthofTaggedArray(elements);
-            StubDescriptor *taggedArraySetValue = GET_STUBDESCRIPTOR(TaggedArraySetValue);
-            result = CallRuntime(taggedArraySetValue, glue, GetWord64Constant(FAST_STUB_ID(TaggedArraySetValue)), {
-                    glue, receiver, value, elements, index, capacity
-                });
-            Jump(&exit);
+            GateRef cellValue = GetProtoCell(*varHandler);
+            Branch(GetHasChanged(cellValue), &cellHasChanged, &cellHasNotChanged);
+            Bind(&cellHasChanged);
+            {
+                Jump(&exit);
+            }
+            Bind(&cellHasNotChanged);
+            {
+                varHandler = GetPrototypeHandlerHandlerInfo(*varHandler);
+                LoopEnd(&loopHead);
+            }
         }
     }
     Bind(&exit);
@@ -1947,7 +1986,7 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
     Bind(&handlerInfoNotInlinedProps);
     {
         GateRef array = GetPropertiesArray(receiver);
-        GateRef capacity = GetLengthofTaggedArray(array);
+        GateRef capacity = GetLengthOfTaggedArray(array);
         GateRef index = HandlerBaseGetOffset(handlerInfo);
         Branch(Int32GreaterThanOrEqual(index, capacity), &indexMoreCapacity, &indexLessCapacity);
         Bind(&indexMoreCapacity);
@@ -2036,7 +2075,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
             {
                 Label lessThanLength(env);
                 Label notLessThanLength(env);
-                Branch(Word32LessThan(index, GetLengthofTaggedArray(elements)), &lessThanLength, &notLessThanLength);
+                Branch(Word32LessThan(index, GetLengthOfTaggedArray(elements)), &lessThanLength, &notLessThanLength);
                 Bind(&lessThanLength);
                 {
                     Label notHole(env);
@@ -2417,7 +2456,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
                 Branch(Word64Equal(*holder, receiver), &isReceiver, &notReceiver);
                 Bind(&isReceiver);
                 {
-                    GateRef length = GetLengthofTaggedArray(elements);
+                    GateRef length = GetLengthOfTaggedArray(elements);
                     Label inRange(env);
                     Branch(Word64LessThan(index, length), &inRange, &loopExit);
                     Bind(&inRange);

@@ -604,7 +604,7 @@ public:
     inline GateRef GetPropertiesArray(GateRef object);
     // SetProperties in js_object.h
     inline void SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray);
-    inline GateRef GetLengthofTaggedArray(GateRef array);
+    inline GateRef GetLengthOfTaggedArray(GateRef array);
     // object operation
     inline GateRef IsJSHClass(GateRef obj);
     inline GateRef LoadHClass(GateRef object);

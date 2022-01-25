@@ -106,7 +106,9 @@ JSHandle<JSTaggedValue> StoreHandler::StoreElement(const JSThread *thread, JSHan
 
 JSHandle<JSTaggedValue> StoreHandler::StoreProperty(const JSThread *thread, const ObjectOperator &op)
 {
-    ASSERT(!op.IsElement());
+    if (op.IsElement()) {
+        return StoreElement(thread, op.GetReceiver());
+    }
     uint32_t handler = 0;
     JSTaggedValue val = op.GetValue();
     if (val.IsPropertyBox()) {
