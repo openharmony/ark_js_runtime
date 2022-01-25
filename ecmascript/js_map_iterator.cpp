@@ -42,8 +42,8 @@ JSTaggedValue JSMapIterator::Next(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> iteratedMap(thread, iter->GetIteratedMap());
 
     // 5.Let index be O.[[MapNextIndex]].
-    int index = iter->GetNextIndex().GetInt();
-    IterationKind itemKind = IterationKind(iter->GetIterationKind().GetInt());
+    int index = iter->GetNextIndex();
+    IterationKind itemKind = iter->GetIterationKind();
     // 7.If m is undefined, return CreateIterResultObject(undefined, true).
     if (iteratedMap->IsUndefined()) {
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
@@ -55,7 +55,7 @@ JSTaggedValue JSMapIterator::Next(EcmaRuntimeCallInfo *argv)
     while (index < totalElements) {
         JSTaggedValue key = map->GetKey(index);
         if (!key.IsHole()) {
-            iter->SetNextIndex(thread, JSTaggedValue(index + 1));
+            iter->SetNextIndex(index + 1);
             keyHandle.Update(key);
             // If itemKind is key, let result be e.[[Key]]
             if (itemKind == IterationKind::KEY) {
@@ -92,7 +92,7 @@ void JSMapIterator::Update(const JSThread *thread)
     if (map->GetNextTable().IsHole()) {
         return;
     }
-    int index = GetNextIndex().GetInt();
+    int index = GetNextIndex();
     JSTaggedValue nextTable = map->GetNextTable();
     while (!nextTable.IsHole()) {
         index -= map->GetDeletedElementsAt(index);
@@ -100,7 +100,7 @@ void JSMapIterator::Update(const JSThread *thread)
         nextTable = map->GetNextTable();
     }
     SetIteratedMap(thread, JSTaggedValue(map));
-    SetNextIndex(thread, JSTaggedValue(index));
+    SetNextIndex(index);
 }
 
 JSHandle<JSTaggedValue> JSMapIterator::CreateMapIterator(JSThread *thread, const JSHandle<JSTaggedValue> &obj,

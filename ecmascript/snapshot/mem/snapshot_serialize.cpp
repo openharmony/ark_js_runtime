@@ -1037,7 +1037,7 @@ void SnapShotSerialize::JSFunctionBaseSerialize(TaggedObject *objectHeader, uint
 
     // method
     auto functionBase = static_cast<JSFunctionBase *>(objectHeader);
-    size_t methodOffset = functionBase->OffsetMethod();
+    size_t methodOffset = JSFunctionBase::METHOD_OFFSET;
     auto nativePointer = reinterpret_cast<void *>(functionBase->GetMethod());
     SetObjectSlotField(snapshotObj, methodOffset, NativePointerToSlotBit(nativePointer).GetValue());
 
@@ -1065,7 +1065,7 @@ void SnapShotSerialize::JSProxySerialize(TaggedObject *objectHeader, uintptr_t s
 
     // method
     auto jsproxy = static_cast<JSProxy *>(objectHeader);
-    size_t methodOffset = jsproxy->OffsetMethod();
+    size_t methodOffset = JSProxy::METHOD_OFFSET;
     auto nativePointer = reinterpret_cast<void *>(jsproxy->GetMethod());
     SetObjectSlotField(snapshotObj, methodOffset, NativePointerToSlotBit(nativePointer).GetValue());
 

@@ -315,8 +315,6 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("AccessorData");
         case JSType::INTERNAL_ACCESSOR:
             return GetString("InternalAccessor");
-        case JSType::FUNCTION_EXTRA_INFO:
-            return GetString("FunctionExtraInfo");
         case JSType::MICRO_JOB_QUEUE:
             return GetString("MicroJobQueue");
         case JSType::PENDING_JOB:
@@ -348,8 +346,6 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
                 return GetString("TemplateMap");
             case JSType::PROGRAM:
                 return GetString("Program");
-            case JSType::LEXICAL_FUNCTION:
-                return GetString("LexicalFunction");
             case JSType::MACHINE_CODE_OBJECT:
                 return GetString("MachineCode");
             default:

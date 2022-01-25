@@ -602,10 +602,10 @@ public:
 
 class PUBLIC_API DataViewRef : public ObjectRef {
 public:
-    static Local<DataViewRef> New(const EcmaVM *vm, Local<ArrayBufferRef> arrayBuffer, int32_t byteOffset,
-                                  int32_t byteLength);
-    int32_t ByteLength();
-    int32_t ByteOffset();
+    static Local<DataViewRef> New(const EcmaVM *vm, Local<ArrayBufferRef> arrayBuffer, uint32_t byteOffset,
+                                  uint32_t byteLength);
+    uint32_t ByteLength();
+    uint32_t ByteOffset();
     Local<ArrayBufferRef> GetArrayBuffer(const EcmaVM *vm);
 };
 

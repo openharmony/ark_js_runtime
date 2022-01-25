@@ -16,31 +16,35 @@
 #ifndef ECMASCRIPT_PROMISE_H
 #define ECMASCRIPT_PROMISE_H
 
-#include "js_object.h"
+#include "ecmascript/accessor_data.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/js_object.h"
+#include "ecmascript/js_tagged_value.h"
+#include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/tagged_queue-inl.h"
-#include "ecmascript/js_tagged_value.h"
-#include "ecmascript/accessor_data.h"
-#include "ecmascript/js_tagged_value-inl.h"
 
 namespace panda::ecmascript {
-enum class PromiseStatus : uint32_t { PENDING = 0, FULFILLED, REJECTED };
-enum class PromiseType : uint32_t { RESOLVE = 0, REJECT };
-enum class PromiseRejectionEvent : uint32_t { REJECT = 0, HANDLE };
+enum class PromiseState : uint8_t { PENDING = 0, FULFILLED, REJECTED };
+enum class PromiseType : uint8_t { RESOLVE = 0, REJECT };
+enum class PromiseRejectionEvent : uint8_t { REJECT = 0, HANDLE };
 
 class PromiseReaction final : public Record {
 public:
     CAST_CHECK(PromiseReaction, IsPromiseReaction);
 
     static constexpr size_t PROMISE_CAPABILITY_OFFSET = Record::SIZE;
-    ACCESSORS(PromiseCapability, PROMISE_CAPABILITY_OFFSET, TYPE_OFFSET);
-    ACCESSORS(Type, TYPE_OFFSET, HANDLER_OFFSET);
-    ACCESSORS(Handler, HANDLER_OFFSET, SIZE);
+    ACCESSORS(PromiseCapability, PROMISE_CAPABILITY_OFFSET, HANDLER_OFFSET)
+    ACCESSORS(Handler, HANDLER_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
+    // define BitField
+    static constexpr size_t TYPE_BITS = 1;
+    FIRST_BIT_FIELD(BitField, Type, PromiseType, TYPE_BITS)
+
+    DECL_VISIT_OBJECT(PROMISE_CAPABILITY_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
-
-    DECL_VISIT_OBJECT(PROMISE_CAPABILITY_OFFSET, SIZE)
 };
 
 class PromiseCapability final : public Record {
@@ -62,12 +66,16 @@ public:
     CAST_CHECK(PromiseIteratorRecord, IsPromiseIteratorRecord);
 
     static constexpr size_t ITERATOR_OFFSET = Record::SIZE;
-    ACCESSORS(Iterator, ITERATOR_OFFSET, DONE_OFFSET);
-    ACCESSORS(Done, DONE_OFFSET, SIZE);
+    ACCESSORS(Iterator, ITERATOR_OFFSET, BIT_FIELD_OFFSET);
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
+    // define BitField
+    static constexpr size_t DONE_BITS = 1;
+    FIRST_BIT_FIELD(BitField, Done, bool, DONE_BITS)
+
+    DECL_VISIT_OBJECT(ITERATOR_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
-
-    DECL_VISIT_OBJECT(ITERATOR_OFFSET, SIZE)
 };
 
 class PromiseRecord final : public Record {
@@ -122,16 +130,21 @@ public:
 
     static JSHandle<JSTaggedValue> IfThrowGetThrowValue(JSThread *thread);
 
-    static constexpr size_t PROMISE_STATE_OFFSET = JSObject::SIZE;
-    ACCESSORS(PromiseState, PROMISE_STATE_OFFSET, PROMISE_RESULT_OFFSET);
+    static constexpr size_t PROMISE_RESULT_OFFSET = JSObject::SIZE;
     ACCESSORS(PromiseResult, PROMISE_RESULT_OFFSET, PROMISE_FULFILL_REACTIONS_OFFSET);
     ACCESSORS(PromiseFulfillReactions, PROMISE_FULFILL_REACTIONS_OFFSET, PROMISE_REJECT_REACTIONS_OFFSET);
-    ACCESSORS(PromiseRejectReactions, PROMISE_REJECT_REACTIONS_OFFSET, PROMISE_IS_HANDLED_OFFSET);
-    ACCESSORS(PromiseIsHandled, PROMISE_IS_HANDLED_OFFSET, SIZE);
+    ACCESSORS(PromiseRejectReactions, PROMISE_REJECT_REACTIONS_OFFSET, BIT_FIELD_OFFSET);
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
+    // define BitField
+    static constexpr size_t PROMISE_STATE_BITS = 2;
+    static constexpr size_t PROMISE_IS_HANDLED_BITS = 1;
+    FIRST_BIT_FIELD(BitField, PromiseState, PromiseState, PROMISE_STATE_BITS)
+    NEXT_BIT_FIELD(BitField, PromiseIsHandled, bool, PROMISE_IS_HANDLED_BITS, PromiseState)
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, PROMISE_RESULT_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
-
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, PROMISE_STATE_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
 

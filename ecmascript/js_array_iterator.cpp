@@ -47,9 +47,9 @@ JSTaggedValue JSArrayIterator::Next(EcmaRuntimeCallInfo *argv)
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
     // 6.Let index be O.[[ArrayLikeNextIndex]].
-    uint32_t index = iter->GetNextIndex().GetInt();
+    uint32_t index = iter->GetNextIndex();
     // 7.Let itemKind be O.[[ArrayLikeIterationKind]].
-    IterationKind itemKind = IterationKind(iter->GetIterationKind().GetInt());
+    IterationKind itemKind = iter->GetIterationKind();
 
     uint32_t length;
     // 8. If a has a [[TypedArrayName]] internal slot, then
@@ -71,7 +71,7 @@ JSTaggedValue JSArrayIterator::Next(EcmaRuntimeCallInfo *argv)
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
     // 11.Set O.[[ArrayLikeNextIndex]] to index + 1.
-    iter->SetNextIndex(thread, JSTaggedValue(index + 1));
+    iter->SetNextIndex(index + 1);
     // 12.If itemKind is key, return CreateIterResultObject(index, false).
     JSHandle<JSTaggedValue> key(thread, JSTaggedValue(index));
     if (itemKind == IterationKind::KEY) {

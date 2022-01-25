@@ -20,9 +20,6 @@
 #include "unicode/unum.h"
 
 namespace panda::ecmascript {
-enum class StyleOption : uint8_t { LONG = 0x01, SHORT, NARROW, EXCEPTION };
-enum class NumericOption : uint8_t { ALWAYS = 0x01, AUTO, EXCEPTION };
-
 // 14.1.1 InitializeRelativeTimeFormat ( relativeTimeFormat, locales, options )
 JSHandle<JSRelativeTimeFormat> JSRelativeTimeFormat::InitializeRelativeTimeFormat(
     JSThread *thread, const JSHandle<JSRelativeTimeFormat> &relativeTimeFormat, const JSHandle<JSTaggedValue> &locales,
@@ -106,14 +103,13 @@ JSHandle<JSRelativeTimeFormat> JSRelativeTimeFormat::InitializeRelativeTimeForma
 
     // 16. Let s be ? GetOption(options, "style", "string", «"long", "short", "narrow"», "long").
     property = JSHandle<JSTaggedValue>::Cast(globalConst->GetHandledStyleString());
-    StyleOption styleOption = JSLocale::GetOptionOfString(thread, rtfOptions, property,
-                                                          {StyleOption::LONG, StyleOption::SHORT, StyleOption::NARROW},
-                                                          {"long", "short", "narrow"}, StyleOption::LONG);
+    RelativeStyleOption styleOption = JSLocale::GetOptionOfString(thread, rtfOptions, property,
+        {RelativeStyleOption::LONG, RelativeStyleOption::SHORT, RelativeStyleOption::NARROW},
+        {"long", "short", "narrow"}, RelativeStyleOption::LONG);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSRelativeTimeFormat, thread);
 
     // 17. Set relativeTimeFormat.[[Style]] to s.
-    JSTaggedValue styleValue(static_cast<uint8_t>(styleOption));
-    relativeTimeFormat->SetStyle(thread, JSHandle<JSTaggedValue>(thread, styleValue));
+    relativeTimeFormat->SetStyle(styleOption);
 
     // 18. Let numeric be ? GetOption(options, "numeric", "string", ?"always", "auto"?, "always").
     property = JSHandle<JSTaggedValue>::Cast(globalConst->GetHandledNumericString());
@@ -123,8 +119,7 @@ JSHandle<JSRelativeTimeFormat> JSRelativeTimeFormat::InitializeRelativeTimeForma
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSRelativeTimeFormat, thread);
 
     // 19. Set relativeTimeFormat.[[Numeric]] to numeric.
-    JSTaggedValue numericValue(static_cast<uint8_t>(numericOption));
-    relativeTimeFormat->SetNumeric(thread, JSHandle<JSTaggedValue>(thread, numericValue));
+    relativeTimeFormat->SetNumeric(numericOption);
 
     // 20. Let relativeTimeFormat.[[NumberFormat]] be ! Construct(%NumberFormat%, « locale »).
     icu::NumberFormat *icuNumberFormat = icu::NumberFormat::createInstance(icuLocale, UNUM_DECIMAL, status);
@@ -133,16 +128,16 @@ JSHandle<JSRelativeTimeFormat> JSRelativeTimeFormat::InitializeRelativeTimeForma
         THROW_RANGE_ERROR_AND_RETURN(thread, "icu Number Format Error", relativeTimeFormat);
     }
 
-    // Trans StyleOption to ICU Style
+    // Trans RelativeStyleOption to ICU Style
     UDateRelativeDateTimeFormatterStyle uStyle;
     switch (styleOption) {
-        case StyleOption::LONG:
+        case RelativeStyleOption::LONG:
             uStyle = UDAT_STYLE_LONG;
             break;
-        case StyleOption::SHORT:
+        case RelativeStyleOption::SHORT:
             uStyle = UDAT_STYLE_SHORT;
             break;
-        case StyleOption::NARROW:
+        case RelativeStyleOption::NARROW:
             uStyle = UDAT_STYLE_NARROW;
             break;
         default:
@@ -264,7 +259,7 @@ icu::FormattedRelativeDateTime GetIcuFormatted(JSThread *thread,
         THROW_RANGE_ERROR_AND_RETURN(thread, "", icu::FormattedRelativeDateTime());
     }
     UErrorCode status = U_ZERO_ERROR;
-    NumericOption numeric = static_cast<NumericOption>(relativeTimeFormat->GetNumeric().GetNumber());
+    NumericOption numeric = relativeTimeFormat->GetNumeric();
 
     icu::FormattedRelativeDateTime formatted;
     switch (numeric) {
@@ -487,13 +482,13 @@ void JSRelativeTimeFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSRe
 
     // [[Style]]
     property = JSHandle<JSTaggedValue>::Cast(globalConst->GetHandledStyleString());
-    StyleOption style = static_cast<StyleOption>(relativeTimeFormat->GetStyle().GetNumber());
+    RelativeStyleOption style = relativeTimeFormat->GetStyle();
     JSHandle<JSTaggedValue> styleValue;
-    if (style == StyleOption::LONG) {
+    if (style == RelativeStyleOption::LONG) {
         styleValue = globalConst->GetHandledLongString();
-    } else if (style == StyleOption::SHORT) {
+    } else if (style == RelativeStyleOption::SHORT) {
         styleValue = globalConst->GetHandledShortString();
-    } else if (style == StyleOption::NARROW) {
+    } else if (style == RelativeStyleOption::NARROW) {
         styleValue = globalConst->GetHandledNarrowString();
     }
     PropertyDescriptor styleDesc(thread, styleValue, true, true, true);
@@ -501,7 +496,7 @@ void JSRelativeTimeFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSRe
 
     // [[Numeric]]
     property = JSHandle<JSTaggedValue>::Cast(globalConst->GetHandledNumericString());
-    NumericOption numeric = static_cast<NumericOption>(relativeTimeFormat->GetNumeric().GetNumber());
+    NumericOption numeric = relativeTimeFormat->GetNumeric();
     JSHandle<JSTaggedValue> numericValue;
     if (numeric == NumericOption::ALWAYS) {
         numericValue = globalConst->GetHandledAlwaysString();

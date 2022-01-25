@@ -275,7 +275,7 @@ int LinkedHash::Hash(JSTaggedValue key)
     }
     if (key.IsSymbol()) {
         auto symbolString = JSSymbol::Cast(key.GetHeapObject());
-        return static_cast<JSTaggedNumber>(symbolString->GetHashField()).GetInt();
+        return symbolString->GetHashField();
     }
     if (key.IsString()) {
         auto keyString = reinterpret_cast<EcmaString *>(key.GetHeapObject());

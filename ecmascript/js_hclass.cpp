@@ -359,7 +359,7 @@ void JSHClass::RegisterOnProtoChain(const JSThread *thread, const JSHandle<JSHCl
 
     while (true) {
         // Find the prototype chain as far as the hclass has not been registered.
-        if (userDetails->GetRegisterIndex() != JSTaggedValue(ProtoChangeDetails::UNREGISTERED)) {
+        if (userDetails->GetRegisterIndex() != ProtoChangeDetails::UNREGISTERED) {
             return;
         }
 
@@ -376,14 +376,14 @@ void JSHClass::RegisterOnProtoChain(const JSThread *thread, const JSHandle<JSHCl
             GetProtoChangeDetails(thread, JSHandle<JSHClass>(thread, protoHandle->GetJSHClass()));
         JSTaggedValue listeners = protoDetails->GetChangeListener();
         JSHandle<ChangeListener> listenersHandle;
-        if (listeners == JSTaggedValue(0)) {
+        if (listeners.IsUndefined()) {
             listenersHandle = JSHandle<ChangeListener>(ChangeListener::Create(thread));
         } else {
             listenersHandle = JSHandle<ChangeListener>(thread, listeners);
         }
         uint32_t registerIndex = 0;
         JSHandle<ChangeListener> newListeners = ChangeListener::Add(thread, listenersHandle, user, &registerIndex);
-        userDetails->SetRegisterIndex(thread, JSTaggedValue(registerIndex));
+        userDetails->SetRegisterIndex(registerIndex);
         protoDetails->SetChangeListener(thread, newListeners.GetTaggedValue());
         userDetails = protoDetails;
         user = JSHandle<JSHClass>(thread, protoHandle->GetJSHClass());
@@ -399,11 +399,11 @@ bool JSHClass::UnregisterOnProtoChain(const JSThread *thread, const JSHandle<JSH
     if (!jshclass->GetPrototype().IsECMAObject()) {
         JSTaggedValue listeners =
             ProtoChangeDetails::Cast(jshclass->GetProtoChangeDetails().GetTaggedObject())->GetChangeListener();
-        return listeners != JSTaggedValue(0);
+        return !listeners.IsUndefined();
     }
     JSHandle<ProtoChangeDetails> currentDetails = GetProtoChangeDetails(thread, jshclass);
-    uint32_t index = currentDetails->GetRegisterIndex().GetArrayLength();
-    if (JSTaggedValue(index) == JSTaggedValue(ProtoChangeDetails::UNREGISTERED)) {
+    uint32_t index = currentDetails->GetRegisterIndex();
+    if (index == ProtoChangeDetails::UNREGISTERED) {
         return false;
     }
     JSTaggedValue proto = jshclass->GetPrototype();
@@ -411,7 +411,7 @@ bool JSHClass::UnregisterOnProtoChain(const JSThread *thread, const JSHandle<JSH
     JSTaggedValue protoDetailsValue = JSObject::Cast(proto.GetTaggedObject())->GetJSHClass()->GetProtoChangeDetails();
     ASSERT(protoDetailsValue.IsProtoChangeDetails());
     JSTaggedValue listenersValue = ProtoChangeDetails::Cast(protoDetailsValue.GetTaggedObject())->GetChangeListener();
-    ASSERT(listenersValue != JSTaggedValue(0));
+    ASSERT(!listenersValue.IsUndefined());
     JSHandle<ChangeListener> listeners(thread, listenersValue.GetTaggedObject());
     ASSERT(listeners->Get(index) == jshclass.GetTaggedValue());
     listeners->Delete(thread, index);
@@ -473,11 +473,11 @@ void JSHClass::RefreshUsers(const JSThread *thread, const JSHandle<JSHClass> &ol
     bool onceRegistered = UnregisterOnProtoChain(thread, oldHclass);
 
     newHclass->SetProtoChangeDetails(thread, oldHclass->GetProtoChangeDetails());
-    oldHclass->SetProtoChangeDetails(thread, JSTaggedValue(0));
+    oldHclass->SetProtoChangeDetails(thread, JSTaggedValue::Undefined());
     if (onceRegistered) {
         if (newHclass->GetProtoChangeDetails().IsProtoChangeDetails()) {
             ProtoChangeDetails::Cast(newHclass->GetProtoChangeDetails().GetTaggedObject())
-                ->SetRegisterIndex(thread, JSTaggedValue(ProtoChangeDetails::UNREGISTERED));
+                ->SetRegisterIndex(ProtoChangeDetails::UNREGISTERED);
         }
         RegisterOnProtoChain(thread, newHclass);
     }

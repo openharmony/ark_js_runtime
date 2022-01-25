@@ -89,20 +89,26 @@ public:
     CAST_CHECK(JSDateTimeFormat, IsJSDateTimeFormat);
 
     static constexpr size_t LOCALE_OFFSET = JSObject::SIZE;
-
     ACCESSORS(Locale, LOCALE_OFFSET, CALENDAR_OFFSET)
     ACCESSORS(Calendar, CALENDAR_OFFSET, NUMBER_STRING_SYSTEM_OFFSET)
     ACCESSORS(NumberingSystem, NUMBER_STRING_SYSTEM_OFFSET, TIME_ZONE_OFFSET)
-    ACCESSORS(TimeZone, TIME_ZONE_OFFSET, HOUR_CYCLE_OFFSET)
-    ACCESSORS(HourCycle, HOUR_CYCLE_OFFSET, LOCALE_ICU_OFFSET)
+    ACCESSORS(TimeZone, TIME_ZONE_OFFSET, LOCALE_ICU_OFFSET)
     ACCESSORS(LocaleIcu, LOCALE_ICU_OFFSET, SIMPLE_DATE_TIME_FORMAT_ICU_OFFSET)
     ACCESSORS(SimpleDateTimeFormatIcu, SIMPLE_DATE_TIME_FORMAT_ICU_OFFSET, ISO8601_OFFSET)
-    ACCESSORS(Iso8601, ISO8601_OFFSET, DATE_STYLE_OFFSET)
-    ACCESSORS(DateStyle, DATE_STYLE_OFFSET, TIME_STYLE_OFFSET)
-    ACCESSORS(TimeStyle, TIME_STYLE_OFFSET, BOUND_FORMAT_OFFSET)
-    ACCESSORS(BoundFormat, BOUND_FORMAT_OFFSET, SIZE)
+    ACCESSORS(Iso8601, ISO8601_OFFSET, BOUND_FORMAT_OFFSET)
+    ACCESSORS(BoundFormat, BOUND_FORMAT_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, SIZE)
+    // define BitField
+    static constexpr size_t HONOR_CYCLE_BITS = 3;
+    static constexpr size_t DATE_STYLE_BITS = 3;
+    static constexpr size_t TIME_STYLE_BITS = 3;
+    FIRST_BIT_FIELD(BitField, HourCycle, HourCycleOption, HONOR_CYCLE_BITS)
+    NEXT_BIT_FIELD(BitField, DateStyle, DateTimeStyleOption, DATE_STYLE_BITS, HourCycle)
+    NEXT_BIT_FIELD(BitField, TimeStyle, DateTimeStyleOption, TIME_STYLE_BITS, DateStyle)
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
 
     icu::Locale *GetIcuLocale() const;
@@ -156,7 +162,7 @@ private:
 
     static HourCycleOption OptionToHourCycle(UDateFormatHourCycle hc);
 
-    static std::string ToHourCycleString(int32_t hc);
+    static std::string ToHourCycleString(HourCycleOption hc);
 
     static std::unique_ptr<icu::TimeZone> ConstructTimeZone(const std::string &timezone);
 

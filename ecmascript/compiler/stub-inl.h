@@ -1062,8 +1062,10 @@ GateRef Stub::GetPrototypeHandlerHandlerInfo(GateRef object)
 
 GateRef Stub::GetHasChanged(GateRef object)
 {
-    GateRef hasChangedOffset = GetArchRelateConstant(ProtoChangeMarker::HAS_CHANGED_OFFSET);
-    return Word64NotEqual(Load(MachineType::UINT64, object, hasChangedOffset), GetWord64Constant(0));
+    GateRef bitfieldOffset = GetArchRelateConstant(ProtoChangeMarker::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(MachineType::UINT32, object, bitfieldOffset);
+    GateRef mask = GetInt32Constant(1LLU << (ProtoChangeMarker::HAS_CHANGED_BITS - 1));
+    return Word32NotEqual(Word32Or(bitfield, mask), GetInt32Constant(0));
 }
 
 GateRef Stub::HclassIsPrototypeHandler(GateRef hclass)

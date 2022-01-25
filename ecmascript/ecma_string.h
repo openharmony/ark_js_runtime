@@ -262,11 +262,11 @@ public:
 
     static constexpr size_t MIX_LENGTH_OFFSET = TaggedObjectSize();
     // In last bit of mix_length we store if this string is compressed or not.
-    SET_GET_PRIMITIVE_FIELD(MixLength, uint32_t, MIX_LENGTH_OFFSET, HASHCODE_OFFSET);
-    SET_GET_PRIMITIVE_FIELD(RawHashcode, uint32_t, HASHCODE_OFFSET, DATA_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(MixLength, uint32_t, MIX_LENGTH_OFFSET, HASHCODE_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(RawHashcode, uint32_t, HASHCODE_OFFSET, SIZE)
     // DATA_OFFSET: the string data stored after the string header.
     // Data can be stored in utf8 or utf16 form according to compressed bit.
-    static constexpr size_t SIZE = DATA_OFFSET;  // Empty String size
+    static constexpr size_t DATA_OFFSET = SIZE;  // DATA_OFFSET equal to Empty String size
 
 private:
     void SetLength(uint32_t length, bool compressed = false)
@@ -321,6 +321,8 @@ private:
     template<typename T1, typename T2>
     static int32_t IndexOf(Span<const T1> &lhsSp, Span<const T2> &rhsSp, int32_t pos, int32_t max);
 };
+
+static_assert((EcmaString::DATA_OFFSET % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
 }  // namespace ecmascript
 }  // namespace panda
 #endif  // ECMASCRIPT_STRING_H

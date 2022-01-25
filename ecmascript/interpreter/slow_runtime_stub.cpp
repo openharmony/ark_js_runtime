@@ -101,7 +101,7 @@ JSTaggedValue SlowRuntimeStub::AsyncFunctionEnter(JSThread *thread)
 
     JSHandle<JSPromise> promiseObject =
         JSHandle<JSPromise>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(promiseFunc), promiseFunc));
-    promiseObject->SetPromiseState(thread, JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING)));
+    promiseObject->SetPromiseState(PromiseState::PENDING);
     // 2. create asyncfuncobj
     JSHandle<JSAsyncFuncObject> asyncFuncObj = factory->NewJSAsyncFuncObject();
     asyncFuncObj->SetPromise(thread, promiseObject);
@@ -110,7 +110,7 @@ JSTaggedValue SlowRuntimeStub::AsyncFunctionEnter(JSThread *thread)
     context->SetGeneratorObject(thread, asyncFuncObj);
 
     // change state to EXECUTING
-    asyncFuncObj->SetGeneratorState(thread, JSTaggedValue(static_cast<int>(JSGeneratorState::EXECUTING)));
+    asyncFuncObj->SetGeneratorState(JSGeneratorState::EXECUTING);
     asyncFuncObj->SetGeneratorContext(thread, context);
 
     // 3. return asyncfuncobj
@@ -584,7 +584,7 @@ JSTaggedValue SlowRuntimeStub::CreateGeneratorObj(JSThread *thread, JSTaggedValu
     context->SetGeneratorObject(thread, obj.GetTaggedValue());
 
     // change state to SUSPENDED_START
-    obj->SetGeneratorState(thread, JSTaggedValue(static_cast<int>(JSGeneratorState::SUSPENDED_START)));
+    obj->SetGeneratorState(JSGeneratorState::SUSPENDED_START);
     obj->SetGeneratorContext(thread, context);
 
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -604,8 +604,7 @@ JSTaggedValue SlowRuntimeStub::SuspendGenerator(JSThread *thread, JSTaggedValue 
 
     // change state to SuspendedYield
     if (generatorObjectHandle->IsExecuting()) {
-        generatorObjectHandle->SetGeneratorState(thread,
-                                                 JSTaggedValue(static_cast<int>(JSGeneratorState::SUSPENDED_YIELD)));
+        generatorObjectHandle->SetGeneratorState(JSGeneratorState::SUSPENDED_YIELD);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         return valueHandle.GetTaggedValue();
     }
@@ -949,10 +948,10 @@ JSTaggedValue SlowRuntimeStub::CloseIterator(JSThread *thread, JSTaggedValue ite
     JSHandle<JSTaggedValue> record;
     if (thread->HasPendingException()) {
         record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(
-            CompletionRecord::THROW, JSHandle<JSTaggedValue>(thread, thread->GetException())));
+            CompletionRecordType::THROW, JSHandle<JSTaggedValue>(thread, thread->GetException())));
     } else {
         JSHandle<JSTaggedValue> undefinedVal = globalConst->GetHandledUndefined();
-        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::NORMAL, undefinedVal));
+        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecordType::NORMAL, undefinedVal));
     }
     JSHandle<JSTaggedValue> result = JSIterator::IteratorClose(thread, iterHandle, record);
     if (result->IsCompletionRecord()) {
@@ -1226,11 +1225,11 @@ JSTaggedValue SlowRuntimeStub::DefineGetterSetterByValue(JSThread *thread, JSTag
         !(objHandle.GetTaggedValue().IsClassPrototype() || objHandle.GetTaggedValue().IsClassConstructor());
     PropertyDescriptor desc(thread, true, enumerable, true);
     if (!getterHandle->IsUndefined()) {
-        JSHandle<JSFunction>::Cast(getterHandle)->SetFunctionKind(thread, FunctionKind::GETTER_FUNCTION);
+        JSHandle<JSFunction>::Cast(getterHandle)->SetFunctionKind(FunctionKind::GETTER_FUNCTION);
         desc.SetGetter(getterHandle);
     }
     if (!setterHandle->IsUndefined()) {
-        JSHandle<JSFunction>::Cast(setterHandle)->SetFunctionKind(thread, FunctionKind::SETTER_FUNCTION);
+        JSHandle<JSFunction>::Cast(setterHandle)->SetFunctionKind(FunctionKind::SETTER_FUNCTION);
         desc.SetSetter(setterHandle);
     }
     JSObject::DefineOwnProperty(thread, objHandle, propKey, desc);
@@ -1806,7 +1805,7 @@ JSTaggedValue SlowRuntimeStub::ResolveClass(JSThread *thread, JSTaggedValue ctor
         }
     }
 
-    cls->SetResolved(thread);
+    cls->SetResolved(true);
     return cls.GetTaggedValue();
 }
 
@@ -1883,17 +1882,17 @@ JSTaggedValue SlowRuntimeStub::SetClassInheritanceRelationship(JSThread *thread,
     JSHandle<JSTaggedValue> parentPrototype;
     // hole means parent is not present
     if (parent->IsHole()) {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::CLASS_CONSTRUCTOR);
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(FunctionKind::CLASS_CONSTRUCTOR);
         parentPrototype = env->GetObjectFunctionPrototype();
         parent.Update(env->GetFunctionPrototype().GetTaggedValue());
     } else if (parent->IsNull()) {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(FunctionKind::DERIVED_CONSTRUCTOR);
         parentPrototype = JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null());
         parent.Update(env->GetFunctionPrototype().GetTaggedValue());
     } else if (!parent->IsConstructor()) {
         return ThrowTypeError(thread, "parent class is not constructor");
     } else {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(FunctionKind::DERIVED_CONSTRUCTOR);
         parentPrototype = JSTaggedValue::GetProperty(thread, parent,
             globalConst->GetHandledPrototypeString()).GetValue();
         if (!parentPrototype->IsECMAObject() && !parentPrototype->IsNull()) {
