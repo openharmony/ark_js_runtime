@@ -77,6 +77,12 @@ public:
             }, [] {});
     }
 
+    static bool WaitForException()
+    {
+        auto predicate = []() REQUIRES(eventMutex_) { return lastEvent_ == DebugEvent::EXCEPTION; };
+        return WaitForEvent(DebugEvent::EXCEPTION, predicate, [] {});
+    }
+
     static bool WaitForInit()
     {
         return WaitForEvent(DebugEvent::VM_INITIALIZATION,
@@ -117,17 +123,27 @@ public:
         return lastEvent_ == DebugEvent::VM_DEATH;
     }
 
-    static PtLocation GetLocation(const char *sourceFile, uint32_t line, const char *pandaFile)
+    static PtLocation GetLocation(const char *sourceFile, size_t line, size_t column, const char *pandaFile)
     {
         std::unique_ptr<const panda_file::File> uFile = panda_file::File::Open(pandaFile);
         const panda_file::File *pf = uFile.get();
         if (pf == nullptr) {
             return PtLocation("", EntityId(0), 0);
         }
-
         TestExtractor extractor(pf);
-        auto [id, offset] = extractor.GetBreakpointAddress({sourceFile, line});
+        auto [id, offset] = extractor.GetBreakpointAddress({sourceFile, line, column});
         return PtLocation(pandaFile, id, offset);
+    }
+
+    static SourceLocation GetSourceLocation(const PtLocation &location, const char *pandaFile)
+    {
+        std::unique_ptr<const panda_file::File> uFile = panda_file::File::Open(pandaFile);
+        const panda_file::File *pf = uFile.get();
+        if (pf == nullptr) {
+            return SourceLocation();
+        }
+        TestExtractor extractor(pf);
+        return extractor.GetSourceLocation(location.GetMethodId(), location.GetBytecodeOffset());
     }
 
     static std::vector<panda_file::LocalVariableInfo> GetVariables(JSMethod *method, uint32_t offset);

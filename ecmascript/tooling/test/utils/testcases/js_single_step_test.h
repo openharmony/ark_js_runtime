@@ -24,8 +24,8 @@ public:
     JsSingleStepTest()
     {
         vmStart = [this] {
-            locationStart_ = TestUtil::GetLocation("Sample.js", 19, pandaFile_.c_str());
-            locationEnd_ = TestUtil::GetLocation("Sample.js", 22, pandaFile_.c_str());
+            locationStart_ = TestUtil::GetLocation("Sample.js", 19, 0, pandaFile_.c_str());
+            locationEnd_ = TestUtil::GetLocation("Sample.js", 22, 0, pandaFile_.c_str());
             return true;
         };
 
@@ -41,7 +41,8 @@ public:
                     return true;
                 }
                 flag_ = false;
-                ASSERT_SUCCESS(debugInterface_->SetBreakpoint(locationEnd_));
+                auto error = debugInterface_->SetBreakpoint(locationEnd_);
+                ASSERT_FALSE(error.has_value());
             }
             return true;
         };

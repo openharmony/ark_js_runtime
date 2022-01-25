@@ -67,7 +67,14 @@ public:
                    [[maybe_unused]] const PtLocation &catchLocation) override
     {
         if (test_->exception) {
+            Local<JSValueRef> exception = DebuggerApi::GetException(backend_->GetEcmaVm());
+            DebuggerApi::ClearException(backend_->GetEcmaVm());
+
             test_->exception(thread, location);
+
+            if (!exception->IsHole()) {
+                DebuggerApi::SetException(backend_->GetEcmaVm(), exception);
+            }
         }
     }
 

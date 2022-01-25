@@ -25,7 +25,7 @@ public:
     JsBreakpointTest()
     {
         vmStart = [this] {
-            location_ = TestUtil::GetLocation("Sample.js", 22, pandaFile_.c_str());
+            location_ = TestUtil::GetLocation("Sample.js", 22, 0, pandaFile_.c_str());
             ASSERT_TRUE(location_.GetMethodId().IsValid());
             return true;
         };

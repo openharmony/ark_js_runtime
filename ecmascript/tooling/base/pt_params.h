@@ -227,7 +227,7 @@ public:
         return Local<ObjectRef>();
     }
 
-    int32_t GetMaxDepth() const
+    uint32_t GetMaxDepth() const
     {
         return maxDepth_;
     }
@@ -236,7 +236,7 @@ private:
     NO_COPY_SEMANTIC(SetAsyncCallStackDepthParams);
     NO_MOVE_SEMANTIC(SetAsyncCallStackDepthParams);
 
-    int32_t maxDepth_ {0};
+    uint32_t maxDepth_ {0};
 };
 
 class SetBlackboxPatternsParams : public PtBaseParams {
@@ -331,11 +331,11 @@ private:
     NO_COPY_SEMANTIC(SetBreakpointByUrlParams);
     NO_MOVE_SEMANTIC(SetBreakpointByUrlParams);
 
-    int32_t line_ {0};
+    size_t line_ {0};
     std::optional<CString> url_ {};
     std::optional<CString> urlRegex_ {};
     std::optional<CString> scriptHash_ {};
-    std::optional<int32_t> column_ {0};
+    std::optional<size_t> column_ {0};
     std::optional<CString> condition_ {};
 };
 
