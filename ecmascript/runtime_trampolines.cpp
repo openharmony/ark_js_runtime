@@ -1095,4 +1095,17 @@ JSTaggedType RuntimeTrampolines::GreaterEqDyn(uintptr_t argGlue, JSTaggedType le
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::GreaterEqDyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
 }
+
+JSTaggedType RuntimeTrampolines::Add2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    return SlowRuntimeStub::Add2Dyn(thread, ecmaVm, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::Sub2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::Sub2Dyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
 }  // namespace panda::ecmascript
