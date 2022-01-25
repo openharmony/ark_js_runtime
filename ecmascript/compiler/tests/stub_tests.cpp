@@ -941,6 +941,7 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
     EXPECT_EQ(resVal.GetNumber(), y);
 }
 
+#ifdef ARK_GC_SUPPORT
 HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
@@ -973,6 +974,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
                   JSArray::FastGetPropertyByValue(thread, JSHandle<JSTaggedValue>::Cast(array), i).GetTaggedValue());
     }
 }
+#endif
 
 HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
