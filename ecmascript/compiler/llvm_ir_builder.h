@@ -170,6 +170,7 @@ private:
     V(Goto, (int block, int bbout))                                                   \
     V(Parameter, (GateRef gate))                                                      \
     V(Constant, (GateRef gate, std::bitset<64> value))                                \
+    V(RelocatableData, (GateRef gate, uint64_t value))                                \
     V(ZExtInt, (GateRef gate, GateRef e1))                                            \
     V(SExtInt, (GateRef gate, GateRef e1))                                            \
     V(Load, (GateRef gate, GateRef base))                                             \

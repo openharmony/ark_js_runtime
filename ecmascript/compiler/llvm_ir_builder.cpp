@@ -114,6 +114,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
         {OpCode::ARG, &LLVMIRBuilder::HandleParameter},
         {OpCode::CONSTANT, &LLVMIRBuilder::HandleConstant},
+        {OpCode::RELOCATABLE_DATA, &LLVMIRBuilder::HandleRelocatableData},
         {OpCode::ZEXT_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::SEXT_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
@@ -659,10 +660,6 @@ void LLVMIRBuilder::VisitPhi(GateRef gate, const std::vector<GateRef> &srcGates)
     LLVMValueRef phi = LLVMBuildPhi(builder_, type, "");
     std::vector<GateRef> relMergeIns = circuit_->GetInVector(srcGates[0]);
     bool addToPhiRebuildList = false;
-    for (int j = 1; j < static_cast<int>(srcGates.size()); j++) {
-        circuit_->Print(srcGates[j]);
-    }
-    circuit_->Print(gate);
     for (int i = 1; i < static_cast<int>(srcGates.size()); i++) {
         GateId gateId = circuit_->GetId(relMergeIns[i - 1]);
         int bbIdx = instIdMapBbId_[gateId];
@@ -842,6 +839,21 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
     COMPILER_LOG(DEBUG) << "VisitConstant " << LLVMValueToString(llvmValue);
 }
 
+void LLVMIRBuilder::HandleRelocatableData(GateRef gate)
+{
+    uint64_t value = circuit_->GetBitField(gate);
+    VisitRelocatableData(gate, value);
+}
+
+void LLVMIRBuilder::VisitRelocatableData(GateRef gate, uint64_t value)
+{
+    LLVMValueRef globalValue = LLVMAddGlobal(module_, LLVMInt64Type(), "G");
+    LLVMSetInitializer(globalValue, LLVMConstInt(LLVMInt64Type(), value, 0));
+    gateToLLVMMaps_[gate] = globalValue;
+    COMPILER_LOG(DEBUG) << "VisitRelocatableData set gate:" << gate << "  value:" << value;
+    COMPILER_LOG(DEBUG) << "VisitRelocatableData " << LLVMValueToString(globalValue);
+}
+
 void LLVMIRBuilder::HandleZExtInt(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
@@ -975,8 +987,6 @@ void LLVMIRBuilder::VisitLoad(GateRef gate, GateRef base)
 {
     COMPILER_LOG(DEBUG) << "Load base gate:" << base;
     LLVMValueRef baseAddr = gateToLLVMMaps_[base];
-    LLVMTypeRef pointerType = ConvertLLVMTypeFromGate(gate);
-    LLVMDumpType(pointerType);
     LLVMTypeRef returnType;
     baseAddr = CanonicalizeToPtr(baseAddr);
     returnType = ConvertLLVMTypeFromGate(gate);
@@ -990,8 +1000,6 @@ void LLVMIRBuilder::VisitStore(GateRef gate, GateRef base, GateRef dataToStore)
 {
     COMPILER_LOG(DEBUG) << "store base gate:" << base;
     LLVMValueRef baseAddr = gateToLLVMMaps_[base];
-    LLVMDumpValue(baseAddr);
-    std::cout << std::endl;
     baseAddr = CanonicalizeToPtr(baseAddr);
     LLVMValueRef data = gateToLLVMMaps_[dataToStore];
     baseAddr = LLVMBuildPointerCast(builder_, baseAddr,

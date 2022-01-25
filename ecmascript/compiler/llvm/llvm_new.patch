@@ -18,6 +18,18 @@ index 0e85afa82c7..43756892e40 100644
  if(LLVM_BUILD_EXAMPLES)
    add_definitions(-DBUILD_EXAMPLES)
  endif(LLVM_BUILD_EXAMPLES)
+diff --git a/llvm/include/llvm-c/ExecutionEngine.h b/llvm/include/llvm-c/ExecutionEngine.h
+index f31b97ad762..ceda6a19496 100644
+--- a/llvm/include/llvm-c/ExecutionEngine.h
++++ b/llvm/include/llvm-c/ExecutionEngine.h
+@@ -42,6 +42,7 @@ typedef struct LLVMOpaqueMCJITMemoryManager *LLVMMCJITMemoryManagerRef;
+ 
+ struct LLVMMCJITCompilerOptions {
+   unsigned OptLevel;
++  LLVMRelocMode RelMode;
+   LLVMCodeModel CodeModel;
+   LLVMBool NoFramePointerElim;
+   LLVMBool EnableFastISel;
 diff --git a/llvm/include/llvm/CodeGen/TargetFrameLowering.h b/llvm/include/llvm/CodeGen/TargetFrameLowering.h
 index c7d4c4d7e5d..1df40696dd0 100644
 --- a/llvm/include/llvm/CodeGen/TargetFrameLowering.h
@@ -46,6 +58,47 @@ index c7d4c4d7e5d..1df40696dd0 100644
    /// Replace a StackProbe stub (if any) with the actual probe code inline
    virtual void inlineStackProbe(MachineFunction &MF,
                                  MachineBasicBlock &PrologueMBB) const {}
+diff --git a/llvm/include/llvm/Target/CodeGenCWrappers.h b/llvm/include/llvm/Target/CodeGenCWrappers.h
+index a9954635705..a0a533a7153 100644
+--- a/llvm/include/llvm/Target/CodeGenCWrappers.h
++++ b/llvm/include/llvm/Target/CodeGenCWrappers.h
+@@ -59,6 +59,36 @@ inline LLVMCodeModel wrap(CodeModel::Model Model) {
+   }
+   llvm_unreachable("Bad CodeModel!");
+ }
++
++inline Reloc::Model unwrap(LLVMRelocMode Model) {
++  switch (Model) {
++  case LLVMRelocDefault:
++  case LLVMRelocStatic:
++    return Reloc::Static;
++  case LLVMRelocPIC:
++    return Reloc::PIC_;
++  case LLVMRelocDynamicNoPic:
++    return Reloc::DynamicNoPIC;
++  }
++  llvm_unreachable("Invalid LLVMRelocMode!");
++}
++
++inline LLVMRelocMode unwrap(Reloc::Model Model) {
++  switch (Model) {
++  case Reloc::Static:
++    return LLVMRelocStatic;
++  case Reloc::PIC_:
++    return LLVMRelocPIC;
++  case Reloc::DynamicNoPIC:
++    return LLVMRelocDynamicNoPic;
++  case Reloc::ROPI:
++  case Reloc::RWPI:
++  case Reloc::ROPI_RWPI:
++    break;
++  }
++  llvm_unreachable("Invalid Reloc::Model!");
++}
++
+ } // namespace llvm
+ 
+ #endif
 diff --git a/llvm/lib/CodeGen/PrologEpilogInserter.cpp b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 index 3909b571728..63e5048f4b3 100644
 --- a/llvm/lib/CodeGen/PrologEpilogInserter.cpp
@@ -119,6 +172,18 @@ index e16587c44a5..bd3e99c6600 100644
      OS.EmitIntValue(FR.second.StackSize, 8);
      OS.EmitIntValue(FR.second.RecordCount, 8);
    }
+diff --git a/llvm/lib/ExecutionEngine/ExecutionEngineBindings.cpp b/llvm/lib/ExecutionEngine/ExecutionEngineBindings.cpp
+index ff1e8050c7e..a18df38ab53 100644
+--- a/llvm/lib/ExecutionEngine/ExecutionEngineBindings.cpp
++++ b/llvm/lib/ExecutionEngine/ExecutionEngineBindings.cpp
+@@ -198,6 +198,7 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
+   builder.setEngineKind(EngineKind::JIT)
+          .setErrorStr(&Error)
+          .setOptLevel((CodeGenOpt::Level)options.OptLevel)
++         .setRelocationModel(unwrap(options.RelMode))
+          .setTargetOptions(targetOptions);
+   bool JIT;
+   if (Optional<CodeModel::Model> CM = unwrap(options.CodeModel, JIT))
 diff --git a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp b/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
 index 6da089d1859..271b4e157d9 100644
 --- a/llvm/lib/Target/AArch64/AArch64AsmPrinter.cpp
