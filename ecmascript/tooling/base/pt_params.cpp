@@ -276,7 +276,7 @@ std::unique_ptr<SetAsyncCallStackDepthParams> SetAsyncCallStackDepthParams::Crea
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "maxDepth")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            paramsObject->maxDepth_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            paramsObject->maxDepth_ = static_cast<uint32_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'maxDepth' should be a Number;";
         }
@@ -348,7 +348,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            paramsObject->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            paramsObject->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -382,7 +382,7 @@ std::unique_ptr<SetBreakpointByUrlParams> SetBreakpointByUrlParams::Create(const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            paramsObject->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            paramsObject->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }

@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_BREAKPOINT_TEST_H
-#define ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_BREAKPOINT_TEST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_EXCEPTION_TEST_H
+#define ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_EXCEPTION_TEST_H
 
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/tooling/test/utils/test_util.h"
 
 namespace panda::tooling::ecmascript::test {
-class JsBreakpointTest : public TestEvents {
+class JsExceptionTest : public TestEvents {
 public:
-    JsBreakpointTest()
+    JsExceptionTest()
     {
         vmStart = [this] {
-            location_ = TestUtil::GetLocation("Sample.js", 22, 0, pandaFile_.c_str());
+            location_ = TestUtil::GetLocation("exception.js", 22, 0, pandaFile_.c_str());
             ASSERT_TRUE(location_.GetMethodId().IsValid());
             return true;
         };
@@ -34,7 +34,30 @@ public:
             ASSERT_TRUE(location.GetMethodId().IsValid());
             ASSERT_LOCATION_EQ(location, location_);
             ++breakpointCounter_;
+            CVector<std::unique_ptr<CallFrame>> callFrames;
+            ASSERT_TRUE(backend_->GenerateCallFrames(&callFrames));
+            ASSERT_TRUE(callFrames.size() > 0);
+            auto jsLocation = callFrames[0]->GetLocation();
+            ASSERT_TRUE(jsLocation != nullptr);
+            ASSERT_EQ(jsLocation->GetLine(), 22);
+            ASSERT_EQ(jsLocation->GetColumn(), 0);
             TestUtil::SuspendUntilContinue(DebugEvent::BREAKPOINT, thread, location);
+            return true;
+        };
+
+        exception = [this](PtThread thread, const PtLocation &location) {
+            auto sourceLocation = TestUtil::GetSourceLocation(location, pandaFile_.c_str());
+            ASSERT_EQ(sourceLocation.line, 17);
+            ASSERT_EQ(sourceLocation.column, 27);
+            ++exceptionCounter_;
+            CVector<std::unique_ptr<CallFrame>> callFrames;
+            ASSERT_TRUE(backend_->GenerateCallFrames(&callFrames));
+            ASSERT_TRUE(callFrames.size() > 0);
+            auto jsLocation = callFrames[0]->GetLocation();
+            ASSERT_TRUE(jsLocation != nullptr);
+            ASSERT_EQ(jsLocation->GetLine(), 17);
+            ASSERT_EQ(jsLocation->GetColumn(), 27);
+            TestUtil::SuspendUntilContinue(DebugEvent::EXCEPTION, thread, location);
             return true;
         };
 
@@ -54,7 +77,7 @@ public:
         scenario = [this]() {
             ASSERT_BREAKPOINT_SUCCESS(location_);
             TestUtil::Continue();
-            ASSERT_BREAKPOINT_SUCCESS(location_);
+            TestUtil::WaitForException();
             TestUtil::Continue();
             ASSERT_SUCCESS(debugInterface_->RemoveBreakpoint(location_));
             ASSERT_EXITED();
@@ -62,7 +85,8 @@ public:
         };
 
         vmDeath = [this]() {
-            ASSERT_EQ(breakpointCounter_, 2U);
+            ASSERT_EQ(breakpointCounter_, 1U);
+            ASSERT_EQ(exceptionCounter_, 1U);
             return true;
         };
     }
@@ -71,19 +95,20 @@ public:
     {
         return {pandaFile_, entryPoint_};
     }
-    ~JsBreakpointTest() = default;
+    ~JsExceptionTest() = default;
 private:
-    CString pandaFile_ = "/data/test/Sample.abc";
+    CString pandaFile_ = "/data/test/exception.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";
     PtLocation location_ {nullptr, PtLocation::EntityId(0), 0};
     size_t breakpointCounter_ = 0;
+    size_t exceptionCounter_ = 0;
     bool flag_ = true;
 };
 
-std::unique_ptr<TestEvents> GetJsBreakpointTest()
+std::unique_ptr<TestEvents> GetJsExceptionTest()
 {
-    return std::make_unique<JsBreakpointTest>();
+    return std::make_unique<JsExceptionTest>();
 }
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_BREAKPOINT_TEST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_JS_EXCEPTION_TEST_H

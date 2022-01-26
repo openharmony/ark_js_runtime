@@ -28,10 +28,11 @@ using panda::tooling::ecmascript::PtJSExtractor;
 struct SourceLocation {
     CString path;  // NOLINT(misc-non-private-member-variables-in-classes)
     size_t line;          // NOLINT(misc-non-private-member-variables-in-classes)
+    size_t column;
 
     bool operator==(const SourceLocation &other) const
     {
-        return path == other.path && line == other.line;
+        return path == other.path && line == other.line && column == other.column;
     }
 
     bool IsValid() const
@@ -47,14 +48,9 @@ public:
 
     std::pair<EntityId, uint32_t> GetBreakpointAddress(const SourceLocation &sourceLocation);
 
-    CList<PtStepRange> GetStepRanges(EntityId methodId, uint32_t currentOffset);
-
     std::vector<panda_file::LocalVariableInfo> GetLocalVariableInfo(EntityId methodId, size_t offset);
 
     SourceLocation GetSourceLocation(EntityId methodId, uint32_t bytecodeOffset);
-
-    std::optional<size_t> GetLineNumberByTableOffset(const panda_file::LineNumberTable &table, uint32_t offset);
-    std::optional<uint32_t> GetOffsetByTableLineNumber(const panda_file::LineNumberTable &table, size_t line);
 };
 }  // namespace panda::tooling::ecmascript::test
 

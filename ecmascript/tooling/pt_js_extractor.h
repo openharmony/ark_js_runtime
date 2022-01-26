@@ -64,15 +64,24 @@ public:
     virtual ~PtJSExtractor() = default;
 
     template<class Callback>
-    bool MatchWithLine(const Callback &cb, int32_t line)
+    bool MatchWithLocation(const Callback &cb, size_t line, size_t column)
     {
         auto methods = GetMethodIdList();
         for (const auto &method : methods) {
-            auto table = GetLineNumberTable(method);
-            for (const auto &pair : table) {
-                if (static_cast<int32_t>(pair.line) == line) {
-                    return cb(method, pair.offset);
+            auto lineTable = GetLineNumberTable(method);
+            auto columnTable = GetColumnNumberTable(method);
+            for (uint32_t i = 0; i < lineTable.size(); i++) {
+                if (lineTable[i].line != line) {
+                    continue;
                 }
+                uint32_t currentOffset = lineTable[i].offset;
+                uint32_t nextOffset = ((i == lineTable.size() - 1) ? UINT32_MAX : lineTable[i + 1].offset);
+                for (const auto &pair : columnTable) {
+                    if (pair.column == column && pair.offset >= currentOffset && pair.offset < nextOffset) {
+                        return cb(method, pair.offset);
+                    }
+                }
+                return cb(method, currentOffset);
             }
         }
         return false;

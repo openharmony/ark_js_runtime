@@ -215,21 +215,22 @@ std::optional<Error> JSBackend::GetPossibleBreakpoints(Location *start, [[maybe_
         return Error(Error::Type::INVALID_BREAKPOINT, "extractor not found");
     }
 
-    int32_t line = start->GetLine();
+    size_t line = start->GetLine();
+    size_t column = start->GetColumn();
     auto callbackFunc = []([[maybe_unused]] File::EntityId id, [[maybe_unused]] uint32_t offset) -> bool {
         return true;
     };
-    if (extractor->MatchWithLine(callbackFunc, line)) {
+    if (extractor->MatchWithLocation(callbackFunc, line, column)) {
         std::unique_ptr<BreakLocation> location = std::make_unique<BreakLocation>();
-        location->SetScriptId(start->GetScriptId()).SetLine(line).SetColumn(0);
+        location->SetScriptId(start->GetScriptId()).SetLine(line).SetColumn(column);
         locations->emplace_back(std::move(location));
     }
 
     return {};
 }
 
-std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, int32_t lineNumber,
-    [[maybe_unused]] int32_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
+std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, size_t lineNumber,
+    size_t columnNumber, CString *out_id, CVector<std::unique_ptr<Location>> *outLocations)
 {
     PtJSExtractor *extractor = GetExtractor(url);
     if (extractor == nullptr) {
@@ -255,8 +256,8 @@ std::optional<Error> JSBackend::SetBreakpointByUrl(const CString &url, int32_t l
         ret = DebuggerApi::SetBreakpoint(debugger_, location);
         return true;
     };
-    if (!extractor->MatchWithLine(callbackFunc, lineNumber)) {
-        LOG(ERROR, DEBUGGER) << "failed to set breakpoint line number: " << lineNumber;
+    if (!extractor->MatchWithLocation(callbackFunc, lineNumber, columnNumber)) {
+        LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: " << lineNumber << ":" << columnNumber;
         return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
     }
 
@@ -296,8 +297,9 @@ std::optional<Error> JSBackend::RemoveBreakpoint(const BreakpointDetails &metaDa
         ret = DebuggerApi::RemoveBreakpoint(debugger_, location);
         return true;
     };
-    if (!extractor->MatchWithLine(callbackFunc, metaData.line_)) {
-        LOG(ERROR, DEBUGGER) << "failed to set breakpoint line number: " << metaData.line_;
+    if (!extractor->MatchWithLocation(callbackFunc, metaData.line_, metaData.column_)) {
+        LOG(ERROR, DEBUGGER) << "failed to set breakpoint location number: "
+            << metaData.line_ << ":" << metaData.column_;
         return Error(Error::Type::INVALID_BREAKPOINT, "Breakpoint not found");
     }
 
@@ -572,10 +574,10 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandl
     std::unique_ptr<Location> endLoc = std::make_unique<Location>();
     auto scriptFunc = [&startLoc, &endLoc, lines](PtScript *script) -> bool {
         startLoc->SetScriptId(script->GetScriptId())
-            .SetLine(static_cast<int32_t>(lines.front().line))
+            .SetLine(lines.front().line)
             .SetColumn(0);
         endLoc->SetScriptId(script->GetScriptId())
-            .SetLine(static_cast<int32_t>(lines.back().line))
+            .SetLine(lines.back().line + 1)
             .SetColumn(0);
         return true;
     };
