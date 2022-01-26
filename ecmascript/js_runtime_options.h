@@ -28,6 +28,7 @@ enum ArkProperties {
     PARALLEL_GC = 1 << 2,
     CONCURRENT_MARK = 1 << 3,
     CONCURRENT_SWEEP = 1 << 4,
+    THREAD_CHECK = 1 << 5,
 };
 
 class JSRuntimeOptions : public RuntimeOptions {
@@ -162,6 +163,11 @@ public:
     bool IsEnableConcurrentSweep() const
     {
         return (ark_properties_.GetValue() & ArkProperties::CONCURRENT_SWEEP) != 0;
+    }
+
+    bool IsEnableThreadCheck() const
+    {
+        return (ark_properties_.GetValue() & ArkProperties::THREAD_CHECK) != 0;
     }
 
 private:
