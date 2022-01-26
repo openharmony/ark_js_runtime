@@ -91,7 +91,7 @@ CList<PtStepRange> PtJSExtractor::GetStepRanges(File::EntityId methodId, uint32_
     auto callbackFunc = [table, &ranges](size_t line, [[maybe_unused]] size_t column) -> bool {
         for (auto it = table.begin(); it != table.end(); ++it) {
             auto next = it + 1;
-            if (static_cast<int32_t>(it->line) == line) {
+            if (it->line == line) {
                 PtStepRange range {it->offset, next != table.end() ? next->offset : UINT32_MAX};
                 ranges.push_back(range);
             }

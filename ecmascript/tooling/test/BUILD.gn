@@ -17,9 +17,6 @@ import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/test.gni")
 
-test_js_path = "//ark/js_runtime/ecmascript/tooling/test/js/Sample.js"
-test_abc_path = "$target_out_dir/Sample.abc"
-
 module_output_path = "ark/js_runtime"
 
 config("debug_api_test") {
@@ -33,7 +30,21 @@ config("debug_api_test") {
   ]
 }
 
-ts2abc_gen_abc("ark_debug_abc") {
+ts2abc_gen_abc("ark_sample_abc") {
+  test_js_path = "//ark/js_runtime/ecmascript/tooling/test/js/Sample.js"
+  test_abc_path = "$target_out_dir/Sample.abc"
+  extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
+  src_js = rebase_path(test_js_path)
+  dst_file = rebase_path(test_abc_path)
+  extra_args = [ "--debug" ]
+
+  in_puts = [ test_js_path ]
+  out_puts = [ test_abc_path ]
+}
+
+ts2abc_gen_abc("ark_exception_abc") {
+  test_js_path = "//ark/js_runtime/ecmascript/tooling/test/js/exception.js"
+  test_abc_path = "$target_out_dir/exception.abc"
   extra_visibility = [ ":*" ]  # Only targets in this file can depend on this.
   src_js = rebase_path(test_js_path)
   dst_file = rebase_path(test_abc_path)
@@ -55,7 +66,8 @@ ohos_shared_library("debugger_entry") {
   ]
 
   deps = [
-    ":ark_debug_abc",
+    ":ark_exception_abc",
+    ":ark_sample_abc",
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -114,6 +126,8 @@ ohos_unittest("EcmaDebugApiTest") {
     "debugger_api_test.cpp",
   ]
 
+  resource_config_file =
+      "//ark/js_runtime/test/resource/js_runtime/ohos_test.xml"
   defines = [ "DEBUGGER_TEST_LIBRARY=\"libdebugger_entry.so\"" ]
 
   configs = [
@@ -125,6 +139,7 @@ ohos_unittest("EcmaDebugApiTest") {
   ]
 
   deps = [
+    ":debugger_api_resource",
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -216,6 +231,12 @@ host_unittest_action("DebuggerTypesTest") {
   }
 }
 
+group("debugger_api_resource") {
+  testonly = true
+
+  deps = [ ":debugger_entry" ]
+}
+
 group("unittest") {
   testonly = true
 
@@ -225,7 +246,6 @@ group("unittest") {
     ":DebuggerEventsTest",
     ":DebuggerTypesTest",
     ":EcmaDebugApiTest",
-    ":debugger_entry",
   ]
 }
 

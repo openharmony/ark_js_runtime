@@ -455,7 +455,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            exceptionDetails->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            exceptionDetails->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -465,7 +465,7 @@ std::unique_ptr<ExceptionDetails> ExceptionDetails::Create(const EcmaVM *ecmaVm,
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            exceptionDetails->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            exceptionDetails->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -951,7 +951,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            location->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            location->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -961,7 +961,7 @@ std::unique_ptr<Location> Location::Create(const EcmaVM *ecmaVm, const Local<JSV
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            location->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            location->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -1005,7 +1005,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptPosition->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            scriptPosition->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1015,7 +1015,7 @@ std::unique_ptr<ScriptPosition> ScriptPosition::Create(const EcmaVM *ecmaVm, con
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            scriptPosition->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            scriptPosition->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }
@@ -1055,7 +1055,7 @@ std::unique_ptr<SearchMatch> SearchMatch::Create(const EcmaVM *ecmaVm, const Loc
         Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            locationSearch->lineNumber_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            locationSearch->lineNumber_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1193,7 +1193,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "lineNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            breakLocation->line_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            breakLocation->line_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'lineNumber' should be a Number;";
         }
@@ -1203,7 +1203,7 @@ std::unique_ptr<BreakLocation> BreakLocation::Create(const EcmaVM *ecmaVm, const
     result = Local<ObjectRef>(params)->Get(ecmaVm, Local<JSValueRef>(StringRef::NewFromUtf8(ecmaVm, "columnNumber")));
     if (!result.IsEmpty() && !result->IsUndefined()) {
         if (result->IsNumber()) {
-            breakLocation->column_ = static_cast<int32_t>(Local<NumberRef>(result)->Value());
+            breakLocation->column_ = static_cast<size_t>(Local<NumberRef>(result)->Value());
         } else {
             error += "'columnNumber' should be a Number;";
         }

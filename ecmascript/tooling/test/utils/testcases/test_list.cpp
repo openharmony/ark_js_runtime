@@ -19,6 +19,7 @@
 
 // testcase list
 #include "js_breakpoint_test.h"
+#include "js_exception_test.h"
 #include "js_single_step_test.h"
 
 namespace panda::tooling::ecmascript::test {
@@ -27,8 +28,9 @@ static const char *g_currentTestName = nullptr;
 static void RegisterTests()
 {
     // Register testcases
-    TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsBreakpoint", GetJsBreakpointTest());
+    TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsExceptionTest", GetJsExceptionTest());
     TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsSingleStepTest", GetJsSingleStepTest());
+    TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsBreakpointTest", GetJsBreakpointTest());
 }
 
 std::vector<const char *> GetTestList(panda_file::SourceLang language)
