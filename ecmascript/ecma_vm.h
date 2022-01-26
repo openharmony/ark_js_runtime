@@ -253,9 +253,11 @@ public:
     {
 #if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && ECMASCRIPT_ENABLE_THREAD_CHECK
         // Exclude GC thread
-        if (!Platform::GetCurrentPlatform()->IsInThreadPool(std::this_thread::get_id()) &&
-            thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
-                LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!";
+        if (options_.IsEnableThreadCheck()) {
+            if (!Platform::GetCurrentPlatform()->IsInThreadPool(std::this_thread::get_id()) &&
+                thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
+                    LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!";
+            }
         }
 #endif
         return thread_;
