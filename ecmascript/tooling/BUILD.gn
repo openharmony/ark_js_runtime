@@ -97,7 +97,10 @@ ohos_shared_library("libark_ecma_debugger_test") {
   ]
 
   if (!is_linux) {
-    external_deps = [ "bytrace_standard:bytrace_core" ]
+    external_deps = [
+      "bytrace_standard:bytrace_core",
+      "hitrace_native:libhitrace",
+    ]
   }
 
   configs = [

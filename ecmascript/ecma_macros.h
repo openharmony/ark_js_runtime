@@ -26,6 +26,8 @@
 
 #ifndef PANDA_TARGET_LINUX
     #include "bytrace.h"
+    #include "hitrace/hitrace.h"
+    #include "hitrace/hitraceid.h"
 #endif
 
 #if defined(__cplusplus)
@@ -44,6 +46,44 @@
         trace::ScopedTrace scopedTrace(name)
 #else
     #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)
+#endif
+
+#ifndef PANDA_TARGET_LINUX
+#if ECMASCRIPT_ENABLE_HITRACE
+    #define BEFORE_EXECUTE_QUEUE_JOB_TRACE(pendingJob, queueType)                                       \
+        if (pendingJob->traceId.IsValid()) {                                                            \
+            HiTrace::SetId(pendingJob->traceId);                                                        \
+            if (pendingJob->traceId.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {                              \
+                if (queueType == QueueType::QUEUE_PROMISE) {                                            \
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SR,                               \
+                                        pendingJob->traceId, "Before %s queue job execute", "Promise"); \
+                } else {                                                                                \
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SR,                               \
+                                        pendingJob->traceId, "Before %s queue job execute", "Script");  \
+                }                                                                                       \
+            }                                                                                           \
+        }
+
+    #define AFTER_EXECUTE_QUEUE_JOB_TRACE(pendingJob, queueType)                                       \
+        if (pendingJob->traceId.IsValid()) {                                                           \
+            if (pendingJob->traceId.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {                             \
+                if (queueType == QueueType::QUEUE_PROMISE) {                                           \
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SS,                              \
+                                        pendingJob->traceId, "After %s queue job execute", "Promise"); \
+                } else {                                                                               \
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SS,                              \
+                                        pendingJob->traceId, "After %s queue job execute", "Script");  \
+                }                                                                                      \
+            }                                                                                          \
+            HiTrace::ClearId();                                                                        \
+        }
+#else
+    #define BEFORE_EXECUTE_QUEUE_JOB_TRACE(pendingJob, queueType)
+    #define AFTER_EXECUTE_QUEUE_JOB_TRACE(pendingJob, queueType)
+#endif
+#else
+    #define BEFORE_EXECUTE_QUEUE_JOB_TRACE(pendingJob, queueType)
+    #define AFTER_EXECUTE_QUEUE_JOB_TRACE(pendingJob, queueType)
 #endif
 
 /* Note: We can't statically decide the element type is a primitive or heap object, especially for */
