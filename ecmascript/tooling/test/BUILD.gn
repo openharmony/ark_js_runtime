@@ -66,8 +66,8 @@ ohos_shared_library("debugger_entry") {
   ]
 
   deps = [
-    ":ark_sample_abc",
     ":ark_exception_abc",
+    ":ark_sample_abc",
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -126,6 +126,8 @@ ohos_unittest("EcmaDebugApiTest") {
     "debugger_api_test.cpp",
   ]
 
+  resource_config_file =
+      "//ark/js_runtime/test/resource/js_runtime/ohos_test.xml"
   defines = [ "DEBUGGER_TEST_LIBRARY=\"libdebugger_entry.so\"" ]
 
   configs = [
@@ -137,6 +139,7 @@ ohos_unittest("EcmaDebugApiTest") {
   ]
 
   deps = [
+    ":debugger_api_resource",
     ":jsdebugtest",
     "$ark_root/libpandabase:libarkbase",
     "$ark_root/libpandafile:libarkfile",
@@ -228,6 +231,12 @@ host_unittest_action("DebuggerTypesTest") {
   }
 }
 
+group("debugger_api_resource") {
+  testonly = true
+
+  deps = [ ":debugger_entry" ]
+}
+
 group("unittest") {
   testonly = true
 
@@ -237,7 +246,6 @@ group("unittest") {
     ":DebuggerEventsTest",
     ":DebuggerTypesTest",
     ":EcmaDebugApiTest",
-    ":debugger_entry",
   ]
 }
 
