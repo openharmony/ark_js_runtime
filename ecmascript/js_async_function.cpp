@@ -67,7 +67,7 @@ void JSAsyncFunction::AsyncFunctionAwait(JSThread *thread, const JSHandle<JSAsyn
     // 9.Set throwawayCapability.[[Promise]].[[PromiseIsHandled]] to true.
     JSHandle<PromiseCapability> tcap =
         JSPromise::NewPromiseCapability(thread, JSHandle<JSTaggedValue>::Cast(env->GetPromiseFunction()));
-    JSHandle<JSPromise>(thread, tcap->GetPromise())->SetPromiseIsHandled(thread, JSTaggedValue::Undefined());
+    JSHandle<JSPromise>(thread, tcap->GetPromise())->SetPromiseIsHandled(true);
 
     // 10.Perform ! PerformPromiseThen(promiseCapability.[[Promise]], onFulfilled, onRejected, throwawayCapability).
     JSHandle<JSPromise> promise(thread, pcap->GetPromise());
@@ -89,8 +89,7 @@ JSHandle<JSTaggedValue> JSAsyncAwaitStatusFunction::AsyncFunctionAwaitFulfilled(
     JSHandle<GeneratorContext> asyncCtxt(thread, func->GetAsyncContext());
 
     // 2.Let prevContext be the running execution context.
-    C2IBridge c2i;
-    GeneratorHelper::ChangeGenContext(thread, asyncCtxt, &c2i);
+    GeneratorHelper::ChangeGenContext(thread, asyncCtxt);
     // 3.Suspend prevContext.
     // 4.Push asyncContext onto the execution context stack; asyncContext is now the running execution context.
     // 5.Resume the suspended evaluation of asyncContext using NormalCompletion(value) as the result of the
@@ -111,8 +110,7 @@ JSHandle<JSTaggedValue> JSAsyncAwaitStatusFunction::AsyncFunctionAwaitRejected(
     JSHandle<GeneratorContext> asyncCtxt(thread, func->GetAsyncContext());
 
     // 2.Let prevContext be the running execution context.
-    C2IBridge c2i;
-    GeneratorHelper::ChangeGenContext(thread, asyncCtxt, &c2i);
+    GeneratorHelper::ChangeGenContext(thread, asyncCtxt);
     // 3.Suspend prevContext.
     // 4.Push asyncContext onto the execution context stack; asyncContext is now the running execution context.
     // 5.Resume the suspended evaluation of asyncContext using Completion{[[Type]]: throw,

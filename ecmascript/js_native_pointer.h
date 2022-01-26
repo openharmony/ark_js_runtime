@@ -46,9 +46,10 @@ public:
     }
 
     static constexpr size_t POINTER_OFFSET = TaggedObjectSize();
-    SET_GET_VOID_FIELD(ExternalPointer, POINTER_OFFSET, DELETER_OFFSET);
-    SET_GET_PRIMITIVE_FIELD(Deleter, DeleteEntryPoint, DELETER_OFFSET, DATA_OFFSET);
-    SET_GET_VOID_FIELD(Data, DATA_OFFSET, SIZE);
+    ACCESSORS_NATIVE_FIELD(ExternalPointer, void, POINTER_OFFSET, DELETER_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(Deleter, DeleteEntryPoint, DELETER_OFFSET, DATA_OFFSET)
+    ACCESSORS_NATIVE_FIELD(Data, void, DATA_OFFSET, LAST_OFFSET);
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
 private:
     inline void DeleteExternalPointer()

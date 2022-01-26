@@ -91,15 +91,17 @@ public:
     static JSTaggedValue ConstructInternal(JSThread *thread, const JSHandle<JSProxy> &proxy, uint32_t argc,
                                            const JSTaggedType argv[], const JSHandle<JSTaggedValue> &newTarget);
 
-    static constexpr size_t METHOD_OFFSET = ECMAObject::SIZE;
-    SET_GET_NATIVE_FIELD(Method, JSMethod, METHOD_OFFSET, TARGET_OFFSET)
-    ACCESSORS(Target, TARGET_OFFSET, HANDLER_OFFSET)
-
-    ACCESSORS(Handler, HANDLER_OFFSET, SIZE)
     bool IsArray(JSThread *thread) const;
+
+    static constexpr size_t TARGET_OFFSET = ECMAObject::SIZE;
+    ACCESSORS(Target, TARGET_OFFSET, HANDLER_OFFSET)
+    ACCESSORS(Handler, HANDLER_OFFSET, METHOD_OFFSET)
+    ACCESSORS_NATIVE_FIELD(Method, JSMethod, METHOD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
     DECL_DUMP()
 
-    DECL_VISIT_OBJECT(TARGET_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(TARGET_OFFSET, METHOD_OFFSET)
 };
 }  // namespace panda::ecmascript
 

@@ -402,7 +402,7 @@ JSHandle<JSDateTimeFormat> JSDateTimeFormat::InitializeDateTimeFormat(JSThread *
         {DateTimeStyleOption::FULL, DateTimeStyleOption::LONG, DateTimeStyleOption::MEDIUM, DateTimeStyleOption::SHORT},
         {"full", "long", "medium", "short"}, DateTimeStyleOption::UNDEFINED);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSDateTimeFormat, thread);
-    dateTimeFormat->SetDateStyle(thread, JSTaggedValue(static_cast<int32_t>(dateStyle)));
+    dateTimeFormat->SetDateStyle(dateStyle);
 
     // Let timeStyle be ? GetOption(options, "string", «"full", "long", "medium", "short"», undefined).
     // Set dateTimeFormat.[[timeStyle]]
@@ -411,7 +411,7 @@ JSHandle<JSDateTimeFormat> JSDateTimeFormat::InitializeDateTimeFormat(JSThread *
         {DateTimeStyleOption::FULL, DateTimeStyleOption::LONG, DateTimeStyleOption::MEDIUM, DateTimeStyleOption::SHORT},
         {"full", "long", "medium", "short"}, DateTimeStyleOption::UNDEFINED);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSDateTimeFormat, thread);
-    dateTimeFormat->SetTimeStyle(thread, JSTaggedValue(static_cast<int32_t>(timeStyle)));
+    dateTimeFormat->SetTimeStyle(timeStyle);
 
     HourCycleOption dtfHourCycle = HourCycleOption::UNDEFINED;
 
@@ -426,7 +426,7 @@ JSHandle<JSDateTimeFormat> JSDateTimeFormat::InitializeDateTimeFormat(JSThread *
     }
 
     // Set dateTimeFormat.[[hourCycle]].
-    dateTimeFormat->SetHourCycle(thread, JSTaggedValue(static_cast<int32_t>(dtfHourCycle)));
+    dateTimeFormat->SetHourCycle(dtfHourCycle);
 
     // Set dateTimeFormat.[[icuLocale]].
     JSDateTimeFormat::SetIcuLocale(thread, dateTimeFormat, icuLocale, JSDateTimeFormat::FreeIcuLocale);
@@ -715,21 +715,21 @@ JSHandle<JSTaggedValue> JSDateTimeFormat::UnwrapDateTimeFormat(JSThread *thread,
     return dateTimeFormat;
 }
 
-JSHandle<JSTaggedValue> ToHourCycleEcmaString(JSThread *thread, int32_t hc)
+JSHandle<JSTaggedValue> ToHourCycleEcmaString(JSThread *thread, HourCycleOption hc)
 {
     JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
     auto globalConst = thread->GlobalConstants();
     switch (hc) {
-        case static_cast<int32_t>(HourCycleOption::H11):
+        case HourCycleOption::H11:
             result.Update(globalConst->GetHandledH11String().GetTaggedValue());
             break;
-        case static_cast<int32_t>(HourCycleOption::H12):
+        case HourCycleOption::H12:
             result.Update(globalConst->GetHandledH12String().GetTaggedValue());
             break;
-        case static_cast<int32_t>(HourCycleOption::H23):
+        case HourCycleOption::H23:
             result.Update(globalConst->GetHandledH23String().GetTaggedValue());
             break;
-        case static_cast<int32_t>(HourCycleOption::H24):
+        case HourCycleOption::H24:
             result.Update(globalConst->GetHandledH24String().GetTaggedValue());
             break;
         default:
@@ -738,21 +738,21 @@ JSHandle<JSTaggedValue> ToHourCycleEcmaString(JSThread *thread, int32_t hc)
     return result;
 }
 
-JSHandle<JSTaggedValue> ToDateTimeStyleEcmaString(JSThread *thread, int32_t style)
+JSHandle<JSTaggedValue> ToDateTimeStyleEcmaString(JSThread *thread, DateTimeStyleOption style)
 {
     JSMutableHandle<JSTaggedValue> result(thread, JSTaggedValue::Undefined());
     auto globalConst = thread->GlobalConstants();
     switch (style) {
-        case static_cast<int32_t>(DateTimeStyleOption::FULL):
+        case DateTimeStyleOption::FULL:
             result.Update(globalConst->GetHandledFullString().GetTaggedValue());
             break;
-        case static_cast<int32_t>(DateTimeStyleOption::LONG):
+        case DateTimeStyleOption::LONG:
             result.Update(globalConst->GetHandledLongString().GetTaggedValue());
             break;
-        case static_cast<int32_t>(DateTimeStyleOption::MEDIUM):
+        case DateTimeStyleOption::MEDIUM:
             result.Update(globalConst->GetHandledMediumString().GetTaggedValue());
             break;
-        case static_cast<int32_t>(DateTimeStyleOption::SHORT):
+        case DateTimeStyleOption::SHORT:
             result.Update(globalConst->GetHandledShortString().GetTaggedValue());
             break;
         default:
@@ -836,10 +836,10 @@ void JSDateTimeFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSDateTi
     // when "hourCycle" is "h11" or "h12", or to false when "hourCycle" is "h23" or "h24".
     // i. Let hc be dtf.[[HourCycle]].
     JSHandle<JSTaggedValue> hcValue;
-    HourCycleOption hc = static_cast<HourCycleOption>(dateTimeFormat->GetHourCycle().GetInt());
+    HourCycleOption hc = dateTimeFormat->GetHourCycle();
     if (hc != HourCycleOption::UNDEFINED) {
         property = globalConst->GetHandledHourCycleString();
-        hcValue = ToHourCycleEcmaString(thread, dateTimeFormat->GetHourCycle().GetInt());
+        hcValue = ToHourCycleEcmaString(thread, dateTimeFormat->GetHourCycle());
         JSObject::CreateDataPropertyOrThrow(thread, options, property, hcValue);
         if (hc == HourCycleOption::H11 || hc == HourCycleOption::H12) {
             JSHandle<JSTaggedValue> trueValue(thread, JSTaggedValue::True());
@@ -856,8 +856,8 @@ void JSDateTimeFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSDateTi
     icuSimpleDateFormat->toPattern(patternUnicode);
     std::string pattern;
     patternUnicode.toUTF8String(pattern);
-    if (dateTimeFormat->GetDateStyle() == JSTaggedValue(static_cast<int32_t>(DateTimeStyleOption::UNDEFINED)) &&
-        dateTimeFormat->GetTimeStyle() == JSTaggedValue(static_cast<int32_t>(DateTimeStyleOption::UNDEFINED))) {
+    if (dateTimeFormat->GetDateStyle() == DateTimeStyleOption::UNDEFINED &&
+        dateTimeFormat->GetTimeStyle() == DateTimeStyleOption::UNDEFINED) {
         for (const auto &item : BuildIcuPatternDescs()) {
             // fractionalSecondsDigits need to be added before timeZoneName.
             if (item.property == "timeZoneName") {
@@ -879,14 +879,14 @@ void JSDateTimeFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSDateTi
             }
         }
     }
-    if (dateTimeFormat->GetDateStyle() != JSTaggedValue(static_cast<int32_t>(DateTimeStyleOption::UNDEFINED))) {
+    if (dateTimeFormat->GetDateStyle() != DateTimeStyleOption::UNDEFINED) {
         property = globalConst->GetHandledDateStyleString();
-        hcValue = ToDateTimeStyleEcmaString(thread, dateTimeFormat->GetDateStyle().GetInt());
+        hcValue = ToDateTimeStyleEcmaString(thread, dateTimeFormat->GetDateStyle());
         JSObject::CreateDataPropertyOrThrow(thread, options, property, hcValue);
     }
-    if (dateTimeFormat->GetTimeStyle() != JSTaggedValue(static_cast<int32_t>(DateTimeStyleOption::UNDEFINED))) {
+    if (dateTimeFormat->GetTimeStyle() != DateTimeStyleOption::UNDEFINED) {
         property = globalConst->GetHandledTimeStyleString();
-        hcValue = ToDateTimeStyleEcmaString(thread, dateTimeFormat->GetTimeStyle().GetInt());
+        hcValue = ToDateTimeStyleEcmaString(thread, dateTimeFormat->GetTimeStyle());
         JSObject::CreateDataPropertyOrThrow(thread, options, property, hcValue);
     }
 }
@@ -1347,11 +1347,11 @@ std::string JSDateTimeFormat::ConstructGMTTimeZoneID(const std::string &input)
     return "";
 }
 
-std::string JSDateTimeFormat::ToHourCycleString(int32_t hc)
+std::string JSDateTimeFormat::ToHourCycleString(HourCycleOption hc)
 {
     auto mapIter = std::find_if(TO_HOUR_CYCLE_MAP.begin(), TO_HOUR_CYCLE_MAP.end(),
         [hc](const std::map<std::string, HourCycleOption>::value_type item) {
-        return static_cast<int32_t>(item.second) == hc;
+        return item.second == hc;
     });
     if (mapIter != TO_HOUR_CYCLE_MAP.end()) {
         return mapIter->first;
@@ -1439,7 +1439,7 @@ std::unique_ptr<icu::DateIntervalFormat> JSDateTimeFormat::ConstructDateInterval
 {
     icu::SimpleDateFormat *icuSimpleDateFormat = dtf->GetIcuSimpleDateFormat();
     icu::Locale locale = *(dtf->GetIcuLocale());
-    std::string hcString = ToHourCycleString(dtf->GetHourCycle().GetInt());
+    std::string hcString = ToHourCycleString(dtf->GetHourCycle());
     UErrorCode status = U_ZERO_ERROR;
     // Sets the Unicode value for a Unicode keyword.
     if (!hcString.empty()) {

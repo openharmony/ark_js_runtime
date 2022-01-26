@@ -183,7 +183,7 @@ void JSForInIterator::FastGetAllEnumKeys(const JSThread *thread, const JSHandle<
         }
     }
     it->SetRemainingKeys(thread, remaining);
-    it->SetWasVisited(thread, JSTaggedValue::True());
+    it->SetWasVisited(true);
 }
 
 void JSForInIterator::SlowGetAllEnumKeys(JSThread *thread, const JSHandle<JSForInIterator> &it,
@@ -203,7 +203,7 @@ void JSForInIterator::SlowGetAllEnumKeys(JSThread *thread, const JSHandle<JSForI
     }
     it->SetRemainingKeys(thread, remaining);
     it->SetVisitedKeys(thread, visited);
-    it->SetWasVisited(thread, JSTaggedValue::True());
+    it->SetWasVisited(true);
 }
 
 std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, const JSHandle<JSForInIterator> &it)
@@ -215,7 +215,7 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
         if (object->IsNull() || object->IsUndefined()) {
             return std::make_pair(JSTaggedValue::Undefined(), true);
         }
-        if (it->GetWasVisited().IsFalse()) {
+        if (!it->GetWasVisited()) {
             if (object->IsJSObject() && notModiObjProto) {
                 FastGetAllEnumKeys(thread, it, object);
             } else {
@@ -258,7 +258,7 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
         }
         JSTaggedValue proto = JSHandle<JSObject>::Cast(object)->GetPrototype(thread);
         it->SetObject(thread, proto);
-        it->SetWasVisited(thread, JSTaggedValue::False());
+        it->SetWasVisited(false);
     }
 }
 

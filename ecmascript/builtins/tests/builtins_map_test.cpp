@@ -341,19 +341,19 @@ HWTEST_F_L0(BuiltinsMapTest, GetIterator)
     JSTaggedValue result = BuiltinsMap::Values(ecmaRuntimeCallInfo.get());
     JSHandle<JSMapIterator> iter(thread, result);
     EXPECT_TRUE(iter->IsJSMapIterator());
-    EXPECT_EQ(IterationKind::VALUE, IterationKind(iter->GetIterationKind().GetInt()));
+    EXPECT_EQ(IterationKind::VALUE, iter->GetIterationKind());
     EXPECT_EQ(JSMap::Cast(map.GetTaggedValue().GetTaggedObject())->GetLinkedMap(), iter->GetIteratedMap());
 
     // test Keys()
     JSTaggedValue result1 = BuiltinsMap::Keys(ecmaRuntimeCallInfo.get());
     JSHandle<JSMapIterator> iter1(thread, result1);
     EXPECT_TRUE(iter1->IsJSMapIterator());
-    EXPECT_EQ(IterationKind::KEY, IterationKind(iter1->GetIterationKind().GetInt()));
+    EXPECT_EQ(IterationKind::KEY, iter1->GetIterationKind());
 
     // test entries()
     JSTaggedValue result2 = BuiltinsMap::Entries(ecmaRuntimeCallInfo.get());
     JSHandle<JSMapIterator> iter2(thread, result2);
     EXPECT_TRUE(iter2->IsJSMapIterator());
-    EXPECT_EQ(IterationKind::KEY_AND_VALUE, IterationKind(iter2->GetIterationKind().GetInt()));
+    EXPECT_EQ(IterationKind::KEY_AND_VALUE, iter2->GetIterationKind());
 }
 }  // namespace panda::test

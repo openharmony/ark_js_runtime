@@ -1035,11 +1035,11 @@ HWTEST_F_L0(JSObjectTest, EnableProtoChangeMarker)
     JSTaggedValue protoDetails1 = obj1Dynclass->GetProtoChangeDetails();
     EXPECT_TRUE(protoDetails1.IsProtoChangeDetails());
     JSTaggedValue listeners1 = ProtoChangeDetails::Cast(protoDetails1.GetTaggedObject())->GetChangeListener();
-    EXPECT_TRUE(listeners1 != JSTaggedValue(0));
+    EXPECT_TRUE(listeners1 != JSTaggedValue::Undefined());
     JSTaggedValue listeners2 = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetChangeListener();
-    EXPECT_TRUE(listeners2 == JSTaggedValue(0));
-    JSTaggedValue index = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
-    JSTaggedValue listenersResult = ChangeListener::Cast(listeners1.GetTaggedObject())->Get(index.GetArrayLength());
+    EXPECT_TRUE(listeners2 == JSTaggedValue::Undefined());
+    uint32_t index = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
+    JSTaggedValue listenersResult = ChangeListener::Cast(listeners1.GetTaggedObject())->Get(index);
     EXPECT_TRUE(listenersResult == obj2Dynclass.GetTaggedValue());
 }
 
@@ -1107,8 +1107,8 @@ HWTEST_F_L0(JSObjectTest, BuildRegisterTree)
     JSHandle<ChangeListener> listeners1(thread, listeners1Value.GetTaggedObject());
     JSTaggedValue protoDetails2 = obj2Dynclass->GetProtoChangeDetails();
     EXPECT_TRUE(protoDetails2.IsProtoChangeDetails());
-    JSTaggedValue index2 = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
-    EXPECT_TRUE(listeners1->Get(index2.GetArrayLength()) == obj2Dynclass.GetTaggedValue());
+    uint32_t index2 = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
+    EXPECT_TRUE(listeners1->Get(index2) == obj2Dynclass.GetTaggedValue());
 
     JSTaggedValue listeners2Value = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetChangeListener();
     EXPECT_TRUE(listeners2Value != JSTaggedValue(0));
@@ -1117,10 +1117,10 @@ HWTEST_F_L0(JSObjectTest, BuildRegisterTree)
     JSTaggedValue protoDetails6 = obj6Dynclass->GetProtoChangeDetails();
     EXPECT_TRUE(protoDetails4.IsProtoChangeDetails());
     EXPECT_TRUE(protoDetails6.IsProtoChangeDetails());
-    JSTaggedValue index4 = ProtoChangeDetails::Cast(protoDetails4.GetTaggedObject())->GetRegisterIndex();
-    EXPECT_TRUE(listeners2->Get(index4.GetArrayLength()) == obj4Dynclass.GetTaggedValue());
-    JSTaggedValue index6 = ProtoChangeDetails::Cast(protoDetails6.GetTaggedObject())->GetRegisterIndex();
-    EXPECT_TRUE(listeners2->Get(index6.GetArrayLength()) == obj6Dynclass.GetTaggedValue());
+    uint32_t index4 = ProtoChangeDetails::Cast(protoDetails4.GetTaggedObject())->GetRegisterIndex();
+    EXPECT_TRUE(listeners2->Get(index4) == obj4Dynclass.GetTaggedValue());
+    uint32_t index6 = ProtoChangeDetails::Cast(protoDetails6.GetTaggedObject())->GetRegisterIndex();
+    EXPECT_TRUE(listeners2->Get(index6) == obj6Dynclass.GetTaggedValue());
 
     EXPECT_TRUE(listeners1->GetEnd() == 1);
     EXPECT_TRUE(listeners2->GetEnd() == 2);
@@ -1187,8 +1187,8 @@ HWTEST_F_L0(JSObjectTest, NoticeThroughChain)
     EXPECT_TRUE(protoDetails2.IsProtoChangeDetails());
     JSTaggedValue listeners2Value = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetChangeListener();
     EXPECT_TRUE(listeners2Value != JSTaggedValue(0));
-    JSTaggedValue index2 = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
-    EXPECT_TRUE(listeners1->Get(index2.GetArrayLength()) == JSTaggedValue::Hole());
+    uint32_t index2 = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
+    EXPECT_TRUE(listeners1->Get(index2) == JSTaggedValue::Hole());
 
     JSTaggedValue obj6Marker = obj6Dynclass->GetProtoChangeMarker();
     EXPECT_TRUE(obj6Marker.IsProtoChangeMarker());
@@ -1278,15 +1278,15 @@ HWTEST_F_L0(JSObjectTest, ChangeProtoAndNoticeTheChain)
     JSTaggedValue listeners3 = ProtoChangeDetails::Cast(protoDetails3.GetTaggedObject())->GetChangeListener();
     EXPECT_TRUE(listeners3 != JSTaggedValue(0));
 
-    JSTaggedValue index2 = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
-    JSTaggedValue index3 = ProtoChangeDetails::Cast(protoDetails3.GetTaggedObject())->GetRegisterIndex();
-    JSTaggedValue index4 = ProtoChangeDetails::Cast(protoDetails4.GetTaggedObject())->GetRegisterIndex();
-    JSTaggedValue index6 = ProtoChangeDetails::Cast(protoDetails6.GetTaggedObject())->GetRegisterIndex();
+    uint32_t index2 = ProtoChangeDetails::Cast(protoDetails2.GetTaggedObject())->GetRegisterIndex();
+    uint32_t index3 = ProtoChangeDetails::Cast(protoDetails3.GetTaggedObject())->GetRegisterIndex();
+    uint32_t index4 = ProtoChangeDetails::Cast(protoDetails4.GetTaggedObject())->GetRegisterIndex();
+    uint32_t index6 = ProtoChangeDetails::Cast(protoDetails6.GetTaggedObject())->GetRegisterIndex();
 
-    JSTaggedValue result2 = ChangeListener::Cast(listeners3.GetTaggedObject())->Get(index2.GetArrayLength());
-    JSTaggedValue result3 = ChangeListener::Cast(listeners1.GetTaggedObject())->Get(index3.GetArrayLength());
-    JSTaggedValue result4 = ChangeListener::Cast(listeners2.GetTaggedObject())->Get(index4.GetArrayLength());
-    JSTaggedValue result6 = ChangeListener::Cast(listeners2.GetTaggedObject())->Get(index6.GetArrayLength());
+    JSTaggedValue result2 = ChangeListener::Cast(listeners3.GetTaggedObject())->Get(index2);
+    JSTaggedValue result3 = ChangeListener::Cast(listeners1.GetTaggedObject())->Get(index3);
+    JSTaggedValue result4 = ChangeListener::Cast(listeners2.GetTaggedObject())->Get(index4);
+    JSTaggedValue result6 = ChangeListener::Cast(listeners2.GetTaggedObject())->Get(index6);
 
     EXPECT_TRUE(result2 == obj2Dynclass.GetTaggedValue());
     EXPECT_TRUE(result3 == obj3Dynclass.GetTaggedValue());

@@ -157,8 +157,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
     auto codeSize = assembler.GetCodeSize();
     panda::ecmascript::MachineCode *code = reinterpret_cast<panda::ecmascript::MachineCode *>(
         new uint64_t[(panda::ecmascript::MachineCode::SIZE + codeSize) / sizeof(uint64_t) + 1]);
-    code->SetInstructionSizeInBytes(nullptr, panda::ecmascript::JSTaggedValue(codeSize),
-                                    panda::ecmascript::SKIP_BARRIER);
+    code->SetInstructionSizeInBytes(codeSize);
 
     assembler.CopyAssemblerToCode(code);
 

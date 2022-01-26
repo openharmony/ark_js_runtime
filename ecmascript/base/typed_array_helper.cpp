@@ -291,9 +291,7 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
         THROW_TYPE_ERROR_AND_RETURN(thread, "The srcData is detached buffer.", JSTaggedValue::Exception());
     }
     // 10. Let bufferByteLength be buffer.[[ArrayBufferByteLength]].
-    JSTaggedNumber newLengthNum =
-        JSTaggedNumber::FromIntOrDouble(thread, JSHandle<JSArrayBuffer>(buffer)->GetArrayBufferByteLength());
-    int32_t bufferByteLength = newLengthNum.ToInt32();
+    uint32_t bufferByteLength = JSHandle<JSArrayBuffer>(buffer)->GetArrayBufferByteLength();
     // 11. If length is undefined, then
     //   a. If bufferByteLength modulo elementSize ≠ 0, throw a RangeError exception.
     //   b. Let newByteLength be bufferByteLength - offset.

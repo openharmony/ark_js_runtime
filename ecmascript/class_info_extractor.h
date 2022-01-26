@@ -42,44 +42,10 @@ public:
 
     CAST_CHECK(ClassInfoExtractor, IsClassInfoExtractor);
 
-    using NonStaticWithElementsBit = BitField<bool, 0, 1>;
-    using StaticWithElementsBit = NonStaticWithElementsBit::NextFlag;
-
     static void BuildClassInfoExtractorFromLiteral(JSThread *thread, JSHandle<ClassInfoExtractor> &extractor,
                                                    const JSHandle<TaggedArray> &literal);
 
-    inline void InitializeBitField()
-    {
-        SetBitField(0UL);
-    }
-
-    inline void SetNonStaticWithElements()
-    {
-        uint8_t bits = GetBitField();
-        uint8_t newVal = NonStaticWithElementsBit::Update(bits, true);
-        SetBitField(newVal);
-    }
-
-    inline void SetStaticWithElements()
-    {
-        uint8_t bits = GetBitField();
-        uint8_t newVal = StaticWithElementsBit::Update(bits, true);
-        SetBitField(newVal);
-    }
-
-    inline bool IsNonStaticWithElements() const
-    {
-        return NonStaticWithElementsBit::Decode(GetBitField());
-    }
-
-    inline bool IsStaticWithElements() const
-    {
-        return StaticWithElementsBit::Decode(GetBitField());
-    }
-
-    static constexpr size_t BIT_FIELD_OFFSET = TaggedObjectSize();
-    SET_GET_PRIMITIVE_FIELD(BitField, uint8_t, BIT_FIELD_OFFSET, CONSTRUCTOR_METHOD_OFFSET)
-    SET_GET_NATIVE_FIELD(ConstructorMethod, JSMethod, CONSTRUCTOR_METHOD_OFFSET, PROTOTYPE_HCLASS_OFFSET)
+    static constexpr size_t PROTOTYPE_HCLASS_OFFSET = TaggedObjectSize();
     ACCESSORS(PrototypeHClass, PROTOTYPE_HCLASS_OFFSET, NON_STATIC_KEYS_OFFSET)
     ACCESSORS(NonStaticKeys, NON_STATIC_KEYS_OFFSET, NON_STATIC_PROPERTIES_OFFSET)
     ACCESSORS(NonStaticProperties, NON_STATIC_PROPERTIES_OFFSET, NON_STATIC_ELEMENTS_OFFSET)
@@ -87,9 +53,18 @@ public:
     ACCESSORS(ConstructorHClass, CONSTRUCTOR_HCLASS_OFFSET, STATIC_KEYS_OFFSET)
     ACCESSORS(StaticKeys, STATIC_KEYS_OFFSET, STATIC_PROPERTIES_OFFSET)
     ACCESSORS(StaticProperties, STATIC_PROPERTIES_OFFSET, STATIC_ELEMENTS_OFFSET)
-    ACCESSORS(StaticElements, STATIC_ELEMENTS_OFFSET, SIZE)
+    ACCESSORS(StaticElements, STATIC_ELEMENTS_OFFSET, CONSTRUCTOR_METHOD_OFFSET)
+    ACCESSORS_NATIVE_FIELD(ConstructorMethod, JSMethod, CONSTRUCTOR_METHOD_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT(PROTOTYPE_HCLASS_OFFSET, SIZE)
+    // define BitField
+    static constexpr size_t NON_STATIC_BITS = 1;
+    static constexpr size_t STATIC_BITS = 1;
+    FIRST_BIT_FIELD(BitField, NonStaticWithElements, bool, NON_STATIC_BITS)
+    NEXT_BIT_FIELD(BitField, StaticWithElements, bool, STATIC_BITS, NonStaticWithElements)
+
+    DECL_VISIT_OBJECT(PROTOTYPE_HCLASS_OFFSET, CONSTRUCTOR_METHOD_OFFSET)
     DECL_DUMP()
 
 private:

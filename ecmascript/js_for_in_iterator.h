@@ -39,16 +39,17 @@ public:
                                    const JSHandle<JSTaggedValue> &object);
 
     static constexpr size_t OBJECT_OFFSET = JSObject::SIZE;
-
-    ACCESSORS(Object, OBJECT_OFFSET, WAS_VISITED_OFFSET)
-
-    ACCESSORS(WasVisited, WAS_VISITED_OFFSET, VISITED_KEYS_OFFSET)
-
+    ACCESSORS(Object, OBJECT_OFFSET, VISITED_KEYS_OFFSET)
     ACCESSORS(VisitedKeys, VISITED_KEYS_OFFSET, REMAINING_KEYS_OFFSET)
+    ACCESSORS(RemainingKeys, REMAINING_KEYS_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    ACCESSORS(RemainingKeys, REMAINING_KEYS_OFFSET, SIZE)
+    // define BitField
+    static constexpr size_t WAS_VISITED_BITS = 3;
+    FIRST_BIT_FIELD(BitField, WasVisited, bool, WAS_VISITED_BITS)
 
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, OBJECT_OFFSET, SIZE)
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, OBJECT_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
 };
 }  // namespace panda::ecmascript

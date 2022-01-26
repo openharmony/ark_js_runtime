@@ -21,8 +21,6 @@
 #include "ecmascript/js_number_format.h"
 
 namespace panda::ecmascript {
-enum class TypeOption : uint8_t { CARDINAL = 0x01, ORDINAL, EXCEPTION };
-
 constexpr int32_t STRING_SEPARATOR_LENGTH = 4;
 
 icu::number::LocalizedNumberFormatter *JSPluralRules::GetIcuNumberFormatter() const
@@ -181,13 +179,7 @@ JSHandle<JSPluralRules> JSPluralRules::InitializePluralRules(JSThread *thread,
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSPluralRules, thread);
 
     // set pluralRules.[[type]] to type
-    JSHandle<JSTaggedValue> typeValue;
-    if (type == TypeOption::CARDINAL) {
-        typeValue = globalConst->GetHandledCardinalString();
-    } else {
-        typeValue = globalConst->GetHandledOrdinalString();
-    }
-    pluralRules->SetType(thread, typeValue.GetTaggedValue());
+    pluralRules->SetType(type);
 
     // Let r be ResolveLocale(%PluralRules%.[[AvailableLocales]], requestedLocales, opt,
     // %PluralRules%.[[RelevantExtensionKeys]], localeData).
@@ -316,7 +308,13 @@ void JSPluralRules::ResolvedOptions(JSThread *thread, const JSHandle<JSPluralRul
 
     // [[type]]
     property = JSHandle<JSTaggedValue>::Cast(globalConst->GetHandledTypeString());
-    PropertyDescriptor typeDesc(thread, JSHandle<JSTaggedValue>(thread, pluralRules->GetType()), true, true, true);
+    JSHandle<JSTaggedValue> typeValue;
+    if (pluralRules->GetType() == TypeOption::CARDINAL) {
+        typeValue = globalConst->GetHandledCardinalString();
+    } else {
+        typeValue = globalConst->GetHandledOrdinalString();
+    }
+    PropertyDescriptor typeDesc(thread, typeValue, true, true, true);
     JSObject::DefineOwnProperty(thread, options, property, typeDesc);
 
     // [[MinimumIntegerDigits]]
@@ -324,7 +322,7 @@ void JSPluralRules::ResolvedOptions(JSThread *thread, const JSHandle<JSPluralRul
     JSHandle<JSTaggedValue> minimumIntegerDigits(thread, pluralRules->GetMinimumIntegerDigits());
     JSObject::CreateDataPropertyOrThrow(thread, options, property, minimumIntegerDigits);
 
-    RoundingType roundingType = static_cast<RoundingType>(pluralRules->GetRoundingType().GetInt());
+    RoundingType roundingType = pluralRules->GetRoundingType();
     if (roundingType == RoundingType::SIGNIFICANTDIGITS) {
         // [[MinimumSignificantDigits]]
         property = globalConst->GetHandledMinimumSignificantDigitsString();
