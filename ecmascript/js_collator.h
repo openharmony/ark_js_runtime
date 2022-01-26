@@ -37,19 +37,27 @@ public:
     CAST_CHECK(JSCollator, IsJSCollator);
 
     static constexpr size_t ICU_FIELD_OFFSET = JSObject::SIZE;
-
     // icu field.
     ACCESSORS(IcuField, ICU_FIELD_OFFSET, LOCALE_OFFSET)
-    ACCESSORS(Locale, LOCALE_OFFSET, USAGE_OFFSET)
-    ACCESSORS(Usage, USAGE_OFFSET, SENSITIVITY_OFFSET)
-    ACCESSORS(Sensitivity, SENSITIVITY_OFFSET, IGNORE_PUNCTUATION_OFFSET)
-    ACCESSORS(IgnorePunctuation, IGNORE_PUNCTUATION_OFFSET, COLLATION_OFFSET)
-    ACCESSORS(Collation, COLLATION_OFFSET, NUMERIC_OFFSET)
-    ACCESSORS(Numeric, NUMERIC_OFFSET, CASE_FIRST_OFFSET)
-    ACCESSORS(CaseFirst, CASE_FIRST_OFFSET, BOUND_COMPARE_OFFSET)
-    ACCESSORS(BoundCompare, BOUND_COMPARE_OFFSET, SIZE)
+    ACCESSORS(Locale, LOCALE_OFFSET, COLLATION_OFFSET)
+    ACCESSORS(Collation, COLLATION_OFFSET, BOUND_COMPARE_OFFSET)
+    ACCESSORS(BoundCompare, BOUND_COMPARE_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, ICU_FIELD_OFFSET, SIZE)
+    // define BitField
+    static constexpr size_t USAGE_BITS = 2;
+    static constexpr size_t CASE_FIRST_BITS = 3;
+    static constexpr size_t SENSITIVITY_BITS = 3;
+    static constexpr size_t IGNORE_PUNCTUATION_BITS = 1;
+    static constexpr size_t NUMERIC_BITS = 1;
+    FIRST_BIT_FIELD(BitField, Usage, UsageOption, USAGE_BITS)
+    NEXT_BIT_FIELD(BitField, CaseFirst, CaseFirstOption, CASE_FIRST_BITS, Usage)
+    NEXT_BIT_FIELD(BitField, Sensitivity, SensitivityOption, SENSITIVITY_BITS, CaseFirst)
+    NEXT_BIT_FIELD(BitField, IgnorePunctuation, bool, IGNORE_PUNCTUATION_BITS, Sensitivity)
+    NEXT_BIT_FIELD(BitField, Numeric, bool, NUMERIC_BITS, IgnorePunctuation)
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, ICU_FIELD_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
 
     icu::Collator *GetIcuCollator() const

@@ -43,14 +43,16 @@ void JSFunction::InitializeJSFunction(JSThread *thread, const JSHandle<JSFunctio
         thisMode = FunctionMode::GLOBAL;
     }
 
-    int32_t flag = FunctionKindBit::Encode(kind) | StrictBit::Encode(strict) | ThisModeBit::Encode(thisMode);
     func->SetProtoOrDynClass(thread, JSTaggedValue::Hole(), SKIP_BARRIER);
     func->SetHomeObject(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetLexicalEnv(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetConstantPool(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetProfileTypeInfo(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetFunctionExtraInfo(thread, JSTaggedValue::Undefined());
-    func->SetFunctionInfoFlag(thread, JSTaggedValue(flag));
+    func->SetFunctionKind(kind);
+    func->SetStrict(strict);
+    func->SetThisMode(thisMode);
+    func->SetResolved(false);
 
     auto globalConst = thread->GlobalConstants();
     if (HasPrototype(kind)) {

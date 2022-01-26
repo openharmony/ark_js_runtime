@@ -19,7 +19,7 @@
 #include <cstdint>
 
 namespace panda::ecmascript {
-enum FunctionKind : uint8_t {
+enum class FunctionKind : uint8_t {
     NORMAL_FUNCTION = 0,
     // BEGIN arrow functions
     ARROW_FUNCTION,
@@ -35,9 +35,9 @@ enum FunctionKind : uint8_t {
     BASE_CONSTRUCTOR,
     // BEGIN default constructors
     DEFAULT_BASE_CONSTRUCTOR,
-    // END base constructors
     // BEGIN class constructors
     CLASS_CONSTRUCTOR,
+    // END base constructors
     // END default constructors
     DERIVED_CONSTRUCTOR,
     // END class constructors
@@ -53,7 +53,7 @@ enum FunctionKind : uint8_t {
     LAST_FUNCTION_KIND,
 };
 
-enum FunctionMode : uint8_t {
+enum class FunctionMode : uint8_t {
     LEXICAL,
     STRICT,
     GLOBAL,

@@ -437,11 +437,6 @@ inline bool JSTaggedValue::IsProgram() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsProgram();
 }
 
-inline bool JSTaggedValue::IsLexicalFunction() const
-{
-    return IsHeapObject() && GetTaggedObject()->GetClass()->IsLexicalFunction();
-}
-
 inline bool JSTaggedValue::IsJSPromiseExecutorFunction() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPromiseExecutorFunction();
@@ -525,11 +520,6 @@ inline bool JSTaggedValue::IsPromiseCapability() const
 inline bool JSTaggedValue::IsJSError() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSError();
-}
-
-inline bool JSTaggedValue::IsJSFunctionExtraInfo() const
-{
-    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSFunctionExtraInfo();
 }
 
 inline bool JSTaggedValue::IsMicroJobQueue() const
@@ -970,7 +960,7 @@ inline uint32_t JSTaggedValue::GetKeyHashCode() const
         return EcmaString::Cast(GetTaggedObject())->GetHashcode();
     }
 
-    return static_cast<uint32_t>(JSSymbol::Cast(GetTaggedObject())->GetHashField().GetInt());
+    return JSSymbol::Cast(GetTaggedObject())->GetHashField();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_VALUE__INL_H

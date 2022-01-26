@@ -64,7 +64,7 @@ JSTaggedValue BuiltinsGenerator::GeneratorPrototypeReturn(EcmaRuntimeCallInfo *a
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<CompletionRecord> completionRecord =
-        factory->NewCompletionRecord(CompletionRecord::RETURN, value);
+        factory->NewCompletionRecord(CompletionRecordType::RETURN, value);
 
     // 3.Return ? GeneratorResumeAbrupt(g, C).
     JSHandle<JSObject> result = JSGeneratorObject::GeneratorResumeAbrupt(thread, generator, completionRecord);
@@ -89,7 +89,7 @@ JSTaggedValue BuiltinsGenerator::GeneratorPrototypeThrow(EcmaRuntimeCallInfo *ar
     JSHandle<JSTaggedValue> exception = GetCallArg(argv, 0);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<CompletionRecord> completionRecord =
-        factory->NewCompletionRecord(CompletionRecord::THROW, exception);
+        factory->NewCompletionRecord(CompletionRecordType::THROW, exception);
 
     // 3.Return ? GeneratorResumeAbrupt(g, C).
     JSHandle<JSObject> result = JSGeneratorObject::GeneratorResumeAbrupt(thread, generator, completionRecord);

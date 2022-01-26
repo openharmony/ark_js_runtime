@@ -44,7 +44,7 @@ JSTaggedValue BuiltinsStringIterator::Next(EcmaRuntimeCallInfo *argv)
         return JSIterator::CreateIterResultObject(thread, string, true).GetTaggedValue();
     }
     // 6. Let position be the value of the [[StringIteratorNextIndex]] internal slot of O.
-    double position = JSTaggedNumber(thisValue.GetObject<JSStringIterator>()->GetStringIteratorNextIndex()).GetNumber();
+    uint32_t position = thisValue.GetObject<JSStringIterator>()->GetStringIteratorNextIndex();
 
     // 7. Let len be the number of elements in s.
     uint32_t len = string.GetObject<EcmaString>()->GetLength();
@@ -87,7 +87,7 @@ JSTaggedValue BuiltinsStringIterator::Next(EcmaRuntimeCallInfo *argv)
     }
     // 12. Let resultSize be the number of code units in resultString.
     // 13. Set the value of the [[StringIteratorNextIndex]] internal slot of O to position+ resultSize.
-    thisValue.GetObject<JSStringIterator>()->SetStringIteratorNextIndex(thread, JSTaggedValue(position + resultSize));
+    thisValue.GetObject<JSStringIterator>()->SetStringIteratorNextIndex(position + resultSize);
 
     // 14. Return CreateIterResultObject(resultString, false).
     return JSIterator::CreateIterResultObject(thread, result, false).GetTaggedValue();

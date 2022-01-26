@@ -49,7 +49,7 @@ public:
         if (key.IsString()) {
             hash = EcmaString::Cast(key.GetTaggedObject())->GetHashcode();
         } else if (key.IsSymbol()) {
-            hash = static_cast<JSTaggedNumber>(JSSymbol::Cast(key.GetTaggedObject())->GetHashField()).GetInt();
+            hash = JSSymbol::Cast(key.GetTaggedObject())->GetHashField();
         }
         int metaDataHash = metaData.IsInt() ? metaData.GetInt() : static_cast<int>(metaData.GetRawData());
         return hash + metaDataHash;

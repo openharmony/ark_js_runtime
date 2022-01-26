@@ -84,8 +84,9 @@ public:
     inline void Trim(JSThread *thread, uint32_t newLength);
 
     static constexpr size_t LENGTH_OFFSET = TaggedObjectSize();
-    SET_GET_PRIMITIVE_FIELD(Length, uint32_t, LENGTH_OFFSET, DATA_OFFSET);
-    static constexpr size_t SIZE = DATA_OFFSET;  // Empty Array size
+    ACCESSORS_PRIMITIVE_FIELD(Length, uint32_t, LENGTH_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+    static constexpr size_t DATA_OFFSET = SIZE;  // DATA_OFFSET equal to Empty Array size
 
     DECL_VISIT_ARRAY(DATA_OFFSET, GetLength());
 

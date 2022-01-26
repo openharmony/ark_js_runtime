@@ -89,7 +89,7 @@ HWTEST_F_L0(JSDataViewTest, SetDataView)
     JSHandle<JSTaggedValue> handleTagValFuncArrayBuf(handleFuncArrayBuf);
     JSHandle<JSArrayBuffer> handleArrayBuf(
         factory->NewJSObjectByConstructor(handleFuncArrayBuf, handleTagValFuncArrayBuf));
-    handleArrayBuf->SetArrayBufferByteLength(thread, JSTaggedValue(lengthDataArrayBuf));
+    handleArrayBuf->SetArrayBufferByteLength(lengthDataArrayBuf);
 
     // Call "SetDataView" function through "NewJSDataView" function of "object_factory.cpp"
     JSHandle<JSDataView> handleDataView = factory->NewJSDataView(handleArrayBuf, offsetDataView,
@@ -126,8 +126,8 @@ HWTEST_F_L0(JSDataViewTest, SetViewedArrayBuffer)
         factory->NewJSObjectByConstructor(handleFuncArrayBuf, handleTagValFuncArrayBuf));
     JSHandle<JSArrayBuffer> handleArrayBuf2(
         factory->NewJSObjectByConstructor(handleFuncArrayBuf, handleTagValFuncArrayBuf));
-    handleArrayBuf1->SetArrayBufferByteLength(thread, JSTaggedValue(lengthDataArrayBuf1));
-    handleArrayBuf2->SetArrayBufferByteLength(thread, JSTaggedValue(lengthDataArrayBuf2));
+    handleArrayBuf1->SetArrayBufferByteLength(lengthDataArrayBuf1);
+    handleArrayBuf2->SetArrayBufferByteLength(lengthDataArrayBuf2);
 
     // Call "SetViewedArrayBuffer" function through "NewJSDataView" function of "object_factory.cpp"
     JSHandle<JSDataView> handleDataView = factory->NewJSDataView(handleArrayBuf1, offsetDataView,
@@ -163,19 +163,18 @@ HWTEST_F_L0(JSDataViewTest, SetByteLength)
     int32_t offsetDataView = 4;
     int32_t lengthDataView1 = 4;
     int32_t lengthDataView2 = 2;
-    JSHandle<JSTaggedValue> handleTagValLengthDataView2(thread, JSTaggedValue(lengthDataView2));
     JSHandle<JSArrayBuffer> handleArrayBuf(
         factory->NewJSObjectByConstructor(handleFuncArrayBuf, handleTagValFuncArrayBuf));
-    handleArrayBuf->SetArrayBufferByteLength(thread, JSTaggedValue(lengthDataArrayBuf));
+    handleArrayBuf->SetArrayBufferByteLength(lengthDataArrayBuf);
 
     // Call "SetByteLength" function through "NewJSDataView" function of "object_factory.cpp"
     JSHandle<JSDataView> handleDataView = factory->NewJSDataView(handleArrayBuf, offsetDataView,
         lengthDataView1);
-    EXPECT_EQ(handleDataView->GetByteLength().GetNumber(), lengthDataView1);
+    EXPECT_EQ(handleDataView->GetByteLength(), lengthDataView1);
 
     // Call "SetByteLength" function in this HWTEST_F_L0.
-    handleDataView->SetByteLength(thread, handleTagValLengthDataView2);
-    EXPECT_EQ(handleDataView->GetByteLength().GetNumber(), lengthDataView2);
+    handleDataView->SetByteLength(lengthDataView2);
+    EXPECT_EQ(handleDataView->GetByteLength(), lengthDataView2);
 }
 
 /*
@@ -197,18 +196,17 @@ HWTEST_F_L0(JSDataViewTest, SetByteOffset)
     int32_t offsetDataView1 = 4;
     int32_t offsetDataView2 = 6;
     int32_t lengthDataView = 2;
-    JSHandle<JSTaggedValue> handleTagValOffsetDataView2(thread, JSTaggedValue(offsetDataView2));
     JSHandle<JSArrayBuffer> handleArrayBuf(
         factory->NewJSObjectByConstructor(handleFuncArrayBuf1, handleTagValFuncArrayBuf1));
-    handleArrayBuf->SetArrayBufferByteLength(thread, JSTaggedValue(lengthDataArrayBuf));
+    handleArrayBuf->SetArrayBufferByteLength(lengthDataArrayBuf);
 
     // Call "SetByteOffset" function through "NewJSDataView" function of "object_factory.cpp"
     JSHandle<JSDataView> handleDataView = factory->NewJSDataView(handleArrayBuf, offsetDataView1,
         lengthDataView);
-    EXPECT_EQ(handleDataView->GetByteOffset().GetNumber(), offsetDataView1);
+    EXPECT_EQ(handleDataView->GetByteOffset(), offsetDataView1);
 
     // Call "SetByteOffset" function in this HWTEST_F_L0.
-    handleDataView->SetByteOffset(thread, handleTagValOffsetDataView2);
-    EXPECT_EQ(handleDataView->GetByteOffset().GetNumber(), offsetDataView2);
+    handleDataView->SetByteOffset(offsetDataView2);
+    EXPECT_EQ(handleDataView->GetByteOffset(), offsetDataView2);
 }
 }  // namespace panda::ecmascript

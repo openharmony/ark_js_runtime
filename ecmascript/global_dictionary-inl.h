@@ -28,7 +28,7 @@ int GlobalDictionary::Hash(const JSTaggedValue &key)
     if (key.IsHeapObject()) {
         if (key.IsSymbol()) {
             auto symbolString = JSSymbol::Cast(key.GetTaggedObject());
-            return static_cast<JSTaggedNumber>(symbolString->GetHashField()).GetInt();
+            return symbolString->GetHashField();
         }
         if (key.IsString()) {
             auto keyString = EcmaString::Cast(key.GetTaggedObject());

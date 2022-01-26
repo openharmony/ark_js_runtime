@@ -344,8 +344,7 @@ public:
         EXPECT_TRUE(!res.IsEmpty()) << "[Empty] Deserialize JSArrayBuffer fail";
         EXPECT_TRUE(res->IsArrayBuffer()) << "[NotJSArrayBuffer] Deserialize JSArrayBuffer fail";
         JSHandle<JSArrayBuffer> resJSArrayBuffer = JSHandle<JSArrayBuffer>::Cast(res);
-        JSTaggedValue resTaggedLength = resJSArrayBuffer->GetArrayBufferByteLength();
-        int32_t resByteLength = static_cast<int32_t>(resTaggedLength.GetInt());
+        int32_t resByteLength = resJSArrayBuffer->GetArrayBufferByteLength();
         EXPECT_TRUE(resByteLength == byteLength) << "Not Same ByteLength"; // 10 : test case
 
         JSHandle<JSTaggedValue> bufferData(thread, originArrayBuffer->GetArrayBufferData());
@@ -429,9 +428,9 @@ public:
         // check arrayBuffer
         JSHandle<JSArrayBuffer> resJSArrayBuffer(viewedArrayBuffer);
         JSHandle<JSArrayBuffer> originArrayBuffer(thread, originTypedArray->GetViewedArrayBuffer());
-        JSTaggedValue resTaggedLength = resJSArrayBuffer->GetArrayBufferByteLength();
-        JSTaggedValue originTaggedLength = originArrayBuffer->GetArrayBufferByteLength();
-        EXPECT_TRUE(resTaggedLength.GetInt() == originTaggedLength.GetInt()) << "Not same viewedBuffer length";
+        uint32_t resTaggedLength = resJSArrayBuffer->GetArrayBufferByteLength();
+        uint32_t originTaggedLength = originArrayBuffer->GetArrayBufferByteLength();
+        EXPECT_TRUE(resTaggedLength == originTaggedLength) << "Not same viewedBuffer length";
         JSHandle<JSTaggedValue> bufferData(thread, originArrayBuffer->GetArrayBufferData());
         JSHandle<JSNativePointer> np = JSHandle<JSNativePointer>::Cast(bufferData);
         void *buffer = np->GetExternalPointer();
@@ -819,7 +818,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBuffer)
     JSHandle<JSArrayBuffer> jsArrayBuffer(thread, CreateJSArrayBuffer(thread));
     int32_t byteLength = 10;
     thread->GetEcmaVM()->GetFactory()->NewJSArrayBufferData(jsArrayBuffer, byteLength);
-    jsArrayBuffer->SetArrayBufferByteLength(thread, JSTaggedValue(static_cast<int32_t>(byteLength)));
+    jsArrayBuffer->SetArrayBufferByteLength(byteLength);
     JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>(jsArrayBuffer);
     BuiltinsArrayBuffer::SetValueInBuffer(obj.GetTaggedValue(), 1, DataViewType::UINT8, JSTaggedNumber(7), true);
     BuiltinsArrayBuffer::SetValueInBuffer(obj.GetTaggedValue(), 3, DataViewType::UINT8, JSTaggedNumber(17), true);
@@ -913,7 +912,7 @@ JSArrayBuffer *CreateTestJSArrayBuffer(JSThread *thread)
     JSHandle<JSArrayBuffer> jsArrayBuffer(thread, CreateJSArrayBuffer(thread));
     int32_t byteLength = 10;
     thread->GetEcmaVM()->GetFactory()->NewJSArrayBufferData(jsArrayBuffer, byteLength);
-    jsArrayBuffer->SetArrayBufferByteLength(thread, JSTaggedValue(static_cast<int32_t>(byteLength)));
+    jsArrayBuffer->SetArrayBufferByteLength(byteLength);
     JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>(jsArrayBuffer);
     // 7 : test case
     BuiltinsArrayBuffer::SetValueInBuffer(obj.GetTaggedValue(), 1, DataViewType::UINT8, JSTaggedNumber(7), true);

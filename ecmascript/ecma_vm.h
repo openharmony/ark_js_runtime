@@ -56,7 +56,7 @@ class JSNativePointer;
 class Program;
 class RegExpExecResultCache;
 class JSPromise;
-enum class PromiseRejectionEvent : uint32_t;
+enum class PromiseRejectionEvent : uint8_t;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
@@ -71,7 +71,7 @@ class EcmaModule;
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
                                              const JSHandle<JSTaggedValue> reason,
-                                             const PromiseRejectionEvent operation,
+                                             PromiseRejectionEvent operation,
                                              void* data);
 using PromiseRejectCallback = void (*)(void* info);
 
@@ -387,12 +387,13 @@ public:
     }
 
     void PromiseRejectionTracker(const JSHandle<JSPromise> &promise,
-                                 const JSHandle<JSTaggedValue> &reason, const PromiseRejectionEvent operation)
+                                 const JSHandle<JSTaggedValue> &reason, PromiseRejectionEvent operation)
     {
         if (hostPromiseRejectionTracker_ != nullptr) {
             hostPromiseRejectionTracker_(this, promise, reason, operation, data_);
         }
     }
+
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
     {

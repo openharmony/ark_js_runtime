@@ -265,8 +265,7 @@ FractionDigitsOption SetNumberFormatUnitOptions(JSThread *thread,
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, fractionDigitsOption);
 
     // 4. Set intlObj.[[Style]] to style.
-    JSHandle<JSTaggedValue> styleValue(thread, JSTaggedValue(static_cast<int>(style)));
-    numberFormat->SetStyle(thread, styleValue);
+    numberFormat->SetStyle(style);
 
     // 5. Let currency be ? GetOption(options, "currency", "string", undefined, undefined).
     property = globalConst->GetHandledCurrencyString();
@@ -302,8 +301,7 @@ FractionDigitsOption SetNumberFormatUnitOptions(JSThread *thread,
          CurrencyDisplayOption::NAME},
         {"code", "symbol", "narrowSymbol", "name"}, CurrencyDisplayOption::SYMBOL);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, fractionDigitsOption);
-    JSHandle<JSTaggedValue> currencyDisplayValue(thread, JSTaggedValue(static_cast<int>(currencyDisplay)));
-    numberFormat->SetCurrencyDisplay(thread, currencyDisplayValue);
+    numberFormat->SetCurrencyDisplay(currencyDisplay);
 
     // 9. Let currencySign be ? GetOption(options, "currencySign", "string", « "standard", "accounting" », "standard").
     property = globalConst->GetHandledCurrencySignString();
@@ -311,8 +309,7 @@ FractionDigitsOption SetNumberFormatUnitOptions(JSThread *thread,
         thread, optionsObject, property, {CurrencySignOption::STANDARD, CurrencySignOption::ACCOUNTING},
         {"standard", "accounting"}, CurrencySignOption::STANDARD);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, fractionDigitsOption);
-    JSHandle<JSTaggedValue> currencySignValue(thread, JSTaggedValue(static_cast<int>(currencySign)));
-    numberFormat->SetCurrencySign(thread, currencySignValue);
+    numberFormat->SetCurrencySign(currencySign);
 
     // 10. Let unit be ? GetOption(options, "unit", "string", undefined, undefined).
     property = globalConst->GetHandledUnitString();
@@ -347,8 +344,7 @@ FractionDigitsOption SetNumberFormatUnitOptions(JSThread *thread,
         thread, optionsObject, property, {UnitDisplayOption::SHORT, UnitDisplayOption::NARROW, UnitDisplayOption::LONG},
         {"short", "narrow", "long"}, UnitDisplayOption::SHORT);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, fractionDigitsOption);
-    JSHandle<JSTaggedValue> unitDisplayValue(thread, JSTaggedValue(static_cast<int>(unitDisplay)));
-    numberFormat->SetUnitDisplay(thread, unitDisplayValue);
+    numberFormat->SetUnitDisplay(unitDisplay);
 
     // 14. If style is "currency", then
     //      a. Let currency be the result of converting currency to upper case as specified in 6.1.
@@ -522,8 +518,7 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
     RETURN_IF_ABRUPT_COMPLETION(thread);
     mnfdDefault = fractionOptions.mnfdDefault;
     mxfdDefault = fractionOptions.mxfdDefault;
-    JSTaggedValue unitDisplayValue = numberFormat->GetUnitDisplay();
-    UnitDisplayOption unitDisplay = static_cast<UnitDisplayOption>(unitDisplayValue.GetInt());
+    UnitDisplayOption unitDisplay = numberFormat->GetUnitDisplay();
 
     // Trans unitDisplay option to ICU display option
     UNumberUnitWidth uNumberUnitWidth;
@@ -544,8 +539,7 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
     icuNumberFormatter = icuNumberFormatter.unitWidth(uNumberUnitWidth);
 
     // 16. Let style be numberFormat.[[Style]].
-    JSTaggedValue styleValue = numberFormat->GetStyle();
-    StyleOption style = static_cast<StyleOption>(styleValue.GetInt());
+    StyleOption style = numberFormat->GetStyle();
     if (style == StyleOption::PERCENT) {
         icuNumberFormatter = icuNumberFormatter.unit(icu::MeasureUnit::getPercent())
                                  .scale(icu::number::Scale::powerOfTen(2));  // means 10^2
@@ -559,8 +553,7 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
         {NotationOption::STANDARD, NotationOption::SCIENTIFIC, NotationOption::ENGINEERING, NotationOption::COMPACT},
         {"standard", "scientific", "engineering", "compact"}, NotationOption::STANDARD);
     RETURN_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> notationValue(thread, JSTaggedValue(static_cast<int>(notation)));
-    numberFormat->SetNotation(thread, notationValue);
+    numberFormat->SetNotation(notation);
 
     // 21. Perform ? SetNumberFormatDigitOptions(numberFormat, options, mnfdDefault, mxfdDefault, notation).
     JSLocale::SetNumberFormatDigitOptions(thread, numberFormat, JSHandle<JSTaggedValue>::Cast(optionsObject),
@@ -572,8 +565,7 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
     auto compactDisplay = JSLocale::GetOptionOfString<CompactDisplayOption>(
         thread, optionsObject, property, {CompactDisplayOption::SHORT, CompactDisplayOption::LONG}, {"short", "long"},
         CompactDisplayOption::SHORT);
-    JSHandle<JSTaggedValue> compactDisplayValue(thread, JSTaggedValue(static_cast<int>(compactDisplay)));
-    numberFormat->SetCompactDisplay(thread, compactDisplayValue);
+    numberFormat->SetCompactDisplay(compactDisplay);
 
     // Trans NotationOption to ICU Noation and set to icuNumberFormatter
     if (notation == NotationOption::COMPACT) {
@@ -623,15 +615,13 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
         {SignDisplayOption::AUTO, SignDisplayOption::NEVER, SignDisplayOption::ALWAYS, SignDisplayOption::EXCEPTZERO},
         {"auto", "never", "always", "exceptZero"}, SignDisplayOption::AUTO);
     RETURN_IF_ABRUPT_COMPLETION(thread);
-    JSHandle<JSTaggedValue> signDisplayValue(thread, JSTaggedValue(static_cast<int>(signDisplay)));
-    numberFormat->SetSignDisplay(thread, signDisplayValue);
+    numberFormat->SetSignDisplay(signDisplay);
 
     // 27. Set numberFormat.[[SignDisplay]] to signDisplay.
     // The default sign in ICU is UNUM_SIGN_AUTO which is mapped from
     // SignDisplay::AUTO and CurrencySign::STANDARD so we can skip setting
     // under that values for optimization.
-    JSTaggedValue currencySignValue = numberFormat->GetCurrencySign();
-    CurrencySignOption currencySign = static_cast<CurrencySignOption>(currencySignValue.GetInt());
+    CurrencySignOption currencySign = numberFormat->GetCurrencySign();
 
     // Trans SignDisPlayOption to ICU UNumberSignDisplay and set to icuNumberFormatter
     switch (signDisplay) {
@@ -719,7 +709,7 @@ void GroupToParts(JSThread *thread, const icu::number::FormattedNumber &formatte
     }
     ASSERT(x.IsNumber());
 
-    StyleOption styleOption = static_cast<StyleOption>(numberFormat->GetStyle().GetInt());
+    StyleOption styleOption = numberFormat->GetStyle();
 
     icu::ConstrainedFieldPosition cfpo;
     // Set constrainCategory to UFIELD_CATEGORY_NUMBER which is specified for UNumberFormatFields
@@ -909,7 +899,7 @@ void JSNumberFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSNumberFo
     JSObject::CreateDataPropertyOrThrow(thread, options, property, numberingSystem);
 
     // [[Style]]
-    StyleOption style = static_cast<StyleOption>(numberFormat->GetStyle().GetInt());
+    StyleOption style = numberFormat->GetStyle();
     property = globalConst->GetHandledStyleString();
     JSHandle<JSTaggedValue> styleString = OptionToEcmaString(thread, style);
     JSObject::CreateDataPropertyOrThrow(thread, options, property, styleString);
@@ -926,14 +916,13 @@ void JSNumberFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSNumberFo
 
         // [[CurrencyDisplay]]
         property = globalConst->GetHandledCurrencyDisplayString();
-        CurrencyDisplayOption currencyDisplay =
-            static_cast<CurrencyDisplayOption>(numberFormat->GetCurrencyDisplay().GetInt());
+        CurrencyDisplayOption currencyDisplay = numberFormat->GetCurrencyDisplay();
         JSHandle<JSTaggedValue> currencyDisplayString = OptionToEcmaString(thread, currencyDisplay);
         JSObject::CreateDataPropertyOrThrow(thread, options, property, currencyDisplayString);
 
         // [[CurrencySign]]
         property = globalConst->GetHandledCurrencySignString();
-        CurrencySignOption currencySign = static_cast<CurrencySignOption>(numberFormat->GetCurrencySign().GetInt());
+        CurrencySignOption currencySign = numberFormat->GetCurrencySign();
         JSHandle<JSTaggedValue> currencySignString = OptionToEcmaString(thread, currencySign);
         JSObject::CreateDataPropertyOrThrow(thread, options, property, currencySignString);
     }
@@ -947,7 +936,7 @@ void JSNumberFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSNumberFo
         }
         // [[UnitDisplay]]
         property = globalConst->GetHandledUnitDisplayString();
-        UnitDisplayOption unitDisplay = static_cast<UnitDisplayOption>(numberFormat->GetUnitDisplay().GetInt());
+        UnitDisplayOption unitDisplay = numberFormat->GetUnitDisplay();
         JSHandle<JSTaggedValue> unitDisplayString = OptionToEcmaString(thread, unitDisplay);
         JSObject::CreateDataPropertyOrThrow(thread, options, property, unitDisplayString);
     }
@@ -956,7 +945,7 @@ void JSNumberFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSNumberFo
     JSHandle<JSTaggedValue> minimumIntegerDigits(thread, numberFormat->GetMinimumIntegerDigits());
     JSObject::CreateDataPropertyOrThrow(thread, options, property, minimumIntegerDigits);
 
-    RoundingType roundingType = static_cast<RoundingType>(numberFormat->GetRoundingType().GetInt());
+    RoundingType roundingType = numberFormat->GetRoundingType();
     if (roundingType == RoundingType::SIGNIFICANTDIGITS) {
         // [[MinimumSignificantDigits]]
         property = globalConst->GetHandledMinimumSignificantDigitsString();
@@ -984,7 +973,7 @@ void JSNumberFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSNumberFo
 
     // [[Notation]]
     property = globalConst->GetHandledNotationString();
-    NotationOption notation = static_cast<NotationOption>(numberFormat->GetNotation().GetInt());
+    NotationOption notation = numberFormat->GetNotation();
     JSHandle<JSTaggedValue> notationString = OptionToEcmaString(thread, notation);
     JSObject::CreateDataPropertyOrThrow(thread, options, property, notationString);
 
@@ -992,15 +981,14 @@ void JSNumberFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSNumberFo
     if (notation == NotationOption::COMPACT) {
         // [[CompactDisplay]]
         property = globalConst->GetHandledCompactDisplayString();
-        CompactDisplayOption compactDisplay =
-            static_cast<CompactDisplayOption>(numberFormat->GetCompactDisplay().GetInt());
+        CompactDisplayOption compactDisplay = numberFormat->GetCompactDisplay();
         JSHandle<JSTaggedValue> compactDisplayString = OptionToEcmaString(thread, compactDisplay);
         JSObject::CreateDataPropertyOrThrow(thread, options, property, compactDisplayString);
     }
 
     // [[SignDisplay]]
     property = globalConst->GetHandledSignDisplayString();
-    SignDisplayOption signDisplay = static_cast<SignDisplayOption>(numberFormat->GetSignDisplay().GetInt());
+    SignDisplayOption signDisplay = numberFormat->GetSignDisplay();
     JSHandle<JSTaggedValue> signDisplayString = OptionToEcmaString(thread, signDisplay);
     JSObject::CreateDataPropertyOrThrow(thread, options, property, signDisplayString);
 }

@@ -73,7 +73,6 @@ class JSAsyncFunction;
 class PromiseRecord;
 class JSLocale;
 class ResolvingFunctionsRecord;
-class JSFunctionExtraInfo;
 class EcmaVM;
 class Heap;
 class ConstantPool;
@@ -97,8 +96,9 @@ class ProfileTypeInfo;
 class MachineCode;
 class ClassInfoExtractor;
 
+enum class CompletionRecordType : uint8_t;
 enum class PrimitiveType : uint8_t;
-enum class IterationKind;
+enum class IterationKind : uint8_t;
 
 using ErrorType = base::ErrorType;
 using base::ErrorType;
@@ -200,15 +200,11 @@ public:
 
     JSHandle<ResolvingFunctionsRecord> NewResolvingFunctionsRecord();
 
-    JSHandle<PromiseIteratorRecord> NewPromiseIteratorRecord(const JSHandle<JSTaggedValue> &itor,
-                                                             const JSHandle<JSTaggedValue> &done);
+    JSHandle<PromiseIteratorRecord> NewPromiseIteratorRecord(const JSHandle<JSTaggedValue> &itor, bool done);
 
     JSHandle<job::MicroJobQueue> NewMicroJobQueue();
 
     JSHandle<job::PendingJob> NewPendingJob(const JSHandle<JSFunction> &func, const JSHandle<TaggedArray> &argv);
-
-    JSHandle<JSFunctionExtraInfo> NewFunctionExtraInfo(const JSHandle<JSNativePointer> &callBack,
-                                                       const JSHandle<JSNativePointer> &data);
 
     JSHandle<JSArray> NewJSArray();
 
@@ -272,7 +268,7 @@ public:
 
     JSHandle<JSArrayIterator> NewJSArrayIterator(const JSHandle<JSObject> &array, IterationKind kind);
 
-    JSHandle<CompletionRecord> NewCompletionRecord(uint8_t type, JSHandle<JSTaggedValue> value);
+    JSHandle<CompletionRecord> NewCompletionRecord(CompletionRecordType type, JSHandle<JSTaggedValue> value);
 
     JSHandle<GeneratorContext> NewGeneratorContext();
 
@@ -297,7 +293,7 @@ public:
     JSHandle<JSArrayBuffer> NewJSArrayBuffer(void *buffer, int32_t length, const DeleteEntryPoint &deleter, void *data,
                                              bool share = false);
 
-    JSHandle<JSDataView> NewJSDataView(JSHandle<JSArrayBuffer> buffer, int32_t offset, int32_t length);
+    JSHandle<JSDataView> NewJSDataView(JSHandle<JSArrayBuffer> buffer, uint32_t offset, uint32_t length);
 
     void NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, void *buffer, size_t size);
 
@@ -406,7 +402,6 @@ private:
     JSHClass *jsNativePointerClass_ {nullptr};
     JSHClass *transitionHandlerClass_ {nullptr};
     JSHClass *prototypeHandlerClass_ {nullptr};
-    JSHClass *functionExtraInfo_ {nullptr};
     JSHClass *jsRealmClass_ {nullptr};
     JSHClass *programClass_ {nullptr};
     JSHClass *machineCodeClass_ {nullptr};
