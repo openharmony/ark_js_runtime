@@ -93,7 +93,10 @@ ohos_shared_library("jsdebugtest") {
   ]
 
   if (!is_linux) {
-    external_deps = [ "bytrace_standard:bytrace_core" ]
+    external_deps = [
+      "bytrace_standard:bytrace_core",
+      "hitrace_native:libhitrace",
+    ]
   }
 
   if (is_standard_system) {

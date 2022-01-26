@@ -19,7 +19,7 @@
 namespace panda::ecmascript::base {
 std::string StringHelper::ToStdString(EcmaString *string)
 {
-    return std::string(ConvertToString(string));
+    return CstringConvertToString(ConvertToString(string));
 }
 
 bool StringHelper::CheckDuplicate(EcmaString *string)
