@@ -52,7 +52,7 @@ namespace panda::ecmascript {
     #define ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC 0
     #define ECMASCRIPT_ENABLE_CAST_CHECK 0
     #define ECMASCRIPT_ENABLE_HEAP_VERIFY 0
-    #define ECMASCRIPT_ENABLE_THREAD_CHECK 0
+    #define ECMASCRIPT_ENABLE_THREAD_CHECK 1
     #define ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER 0
 #endif
 }  // namespace panda::ecmascript
