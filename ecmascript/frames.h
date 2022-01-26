@@ -86,7 +86,7 @@
 //   |- - - - - - - - -     |   |
 //   |     frameType        |   |
 //   |- - - - - - - - -     |   |
-//   |       sp             |   v
+//   |       callsiteSp     |   v
 //   +--------------------------+
 
 //   Optimized Entry Frame(alias OptimizedEntryFrame) layout

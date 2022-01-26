@@ -372,8 +372,7 @@ public:
         }
         bool IsSelector(const Gate *gate) const
         {
-            return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS
-                   && gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+            return gate->GetOpCode() == OpCode::VALUE_SELECTOR;
         }
         uint32_t GetId() const
         {
@@ -446,7 +445,8 @@ public:
     inline GateRef PtrArgument(size_t index, TypeCode type = TypeCode::NOTYPE);
     inline GateRef Float32Argument(size_t index);
     inline GateRef Float64Argument(size_t index);
-    inline GateRef Alloca(int size, TypeCode type = TypeCode::NOTYPE);
+    inline GateRef Alloca(int size);
+    inline GateRef NativePointerAlloca(int size);
     // control flow
     inline GateRef Return(GateRef value);
     inline GateRef Return();

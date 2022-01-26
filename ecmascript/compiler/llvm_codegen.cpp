@@ -54,7 +54,7 @@
 
 using namespace panda::ecmascript;
 namespace panda::ecmascript::kungfu {
-void LLVMCodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                                                 const CompilationConfig *cfg)
 {
     auto function = module_->GetStubFunction(index);
@@ -203,7 +203,7 @@ void LLVMAssembler::BuildAndRunPasses()
 {
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  - ";
     LLVMPassManagerBuilderRef pmBuilder = LLVMPassManagerBuilderCreate();
-    LLVMPassManagerBuilderSetOptLevel(pmBuilder, 3); // using O3 optimization level
+    LLVMPassManagerBuilderSetOptLevel(pmBuilder, options_.OptLevel); // using O3 optimization level
     LLVMPassManagerBuilderSetSizeLevel(pmBuilder, 0);
 
     // pass manager creation:rs4gc pass is the only pass in modPass, other opt module-based pass are in modPass1
@@ -306,7 +306,7 @@ void LLVMAssembler::Initialize()
     }
     llvm::linkAllBuiltinGCs();
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
-    options_.OptLevel = 2; // opt level 2
+    options_.OptLevel = 3; // opt level 2
     // Just ensure that this field still exists.
     options_.NoFramePointerElim = true;
 }
