@@ -225,8 +225,7 @@ public:
     }
     bool IsSelector(const Gate *gate) const
     {
-        return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS
-                && gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+        return gate->GetOpCode() == OpCode::VALUE_SELECTOR;
     }
     uint32_t GetId() const
     {

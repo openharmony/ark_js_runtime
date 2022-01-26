@@ -32,6 +32,7 @@ group("ark_js_host_linux_tools_packages") {
     if (is_standard_system) {
       deps += [
         "//ark/js_runtime/ecmascript/compiler:ark_stub_opt(${host_toolchain})",
+        "//ark/js_runtime/ecmascript/compiler:ark_ts_aot(${host_toolchain})",
       ]
     }
   }

@@ -31,9 +31,13 @@ public:
     GateRef NewArguments(size_t index);
     GateRef NewMerge(GateRef *in, size_t controlCount);
     GateRef NewSelectorGate(OpCode opcode, GateRef control, int valueCounts,
-                              MachineType type = MachineType::NONE);
+                            MachineType type = MachineType::NONE);
     GateRef NewSelectorGate(OpCode opcode, GateRef control, std::vector<GateRef> &values, int valueCounts,
-                              MachineType type = MachineType::NONE);
+                            MachineType type = MachineType::NONE);
+    GateRef NewSelectorGate(OpCode opcode, ValueCode valCode, GateRef control, int valueCounts,
+                            MachineType type = MachineType::NONE);
+    GateRef NewSelectorGate(OpCode opcode, ValueCode valCode, GateRef control, std::vector<GateRef> &values,
+                            int valueCounts, MachineType type = MachineType::NONE);
     GateRef NewIntegerConstant(int32_t value);
     GateRef NewInteger64Constant(int64_t value);
     GateRef NewWord64Constant(uint64_t val);
@@ -43,7 +47,7 @@ public:
     GateRef HoleConstant(TypeCode type);
     GateRef NullConstant(TypeCode type);
     GateRef ExceptionConstant(TypeCode type);
-    GateRef Alloca(int size, TypeCode type);
+    GateRef Alloca(int size);
     GateRef Branch(GateRef state, GateRef condition);
     GateRef SwitchBranch(GateRef state, GateRef index, int caseCounts);
     GateRef Return(GateRef state, GateRef depend, GateRef value);
@@ -59,18 +63,20 @@ public:
     GateRef NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend);
     GateRef NewDependRelay(GateRef state, GateRef depend);
     GateRef NewDependAnd(std::initializer_list<GateRef> args);
-    GateRef NewArithMeticGate(OpCode opcode, GateRef left, GateRef right);
-    GateRef NewArithMeticGate(OpCode opcode, GateRef value);
+    GateRef NewArithmeticGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right);
+    GateRef NewArithmeticGate(OpCode opcode, ValueCode valCode, GateRef value);
+    GateRef NewArithmeticGate(OpCode opcode, GateRef value);
+    GateRef NewLogicGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right);
     GateRef NewLogicGate(OpCode opcode, GateRef left, GateRef right);
-    GateRef NewLogicGate(OpCode opcode, GateRef value);
+    GateRef NewLogicGate(OpCode opcode, ValueCode valCode, GateRef value);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  std::initializer_list<GateRef> args);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
-    static OpCode GetLoadOpCodeFromMachineType(MachineType type);
-    static OpCode GetStoreOpCodeFromMachineType(MachineType type);
-    static OpCode GetSelectOpCodeFromMachineType(MachineType type);
-    static OpCode GetCallOpCodeFromMachineType(MachineType type);
+    static ValueCode GetLoadValueCodeFromMachineType(MachineType type);
+    static ValueCode GetStoreValueCodeFromMachineType(MachineType type);
+    static ValueCode GetValueCodeFromMachineType(MachineType type);
+    static ValueCode GetCallValueCodeFromMachineType(MachineType type);
 
     static TypeCode MachineType2TypeCode(MachineType type)
     {

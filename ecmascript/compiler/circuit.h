@@ -28,6 +28,8 @@
 #include "securec.h"
 
 namespace panda::ecmascript::kungfu {
+class ByteCodeCircuitBuilder;
+
 const size_t INITIAL_SPACE = 1U << 0U;  // this should be tuned
 const size_t MAX_SPACE = 1U << 24U;     // this should be tuned
 const size_t SCALE_RATE = 1U << 1U;     // this should be tuned
@@ -42,11 +44,16 @@ public:
     Circuit(Circuit &&circuit) = default;
     Circuit &operator=(Circuit &&circuit) = default;
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
+                    TypeCode type, MarkCode mark = MarkCode::EMPTY);
+    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
+                    MarkCode mark = MarkCode::EMPTY);
     GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+                    MarkCode mark = MarkCode::EMPTY);
     GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
-        MarkCode mark = MarkCode::EMPTY);
+                    MarkCode mark = MarkCode::EMPTY);
     void PrintAllGates() const;
+    void PrintAllGates(BytecodeCircuitBuilder &builder) const;
     [[nodiscard]] std::vector<GateRef> GetAllGates() const;
     [[nodiscard]] static GateRef GetCircuitRoot(OpCode opcode);
     void AdvanceTime() const;
@@ -69,10 +76,12 @@ public:
     void Print(GateRef gate) const;
     void SetOpCode(GateRef gate, OpCode opcode);
     void SetTypeCode(GateRef gate, TypeCode type);
+    void SetValueCode(GateRef gate, ValueCode valCode);
     [[nodiscard]] OpCode GetOpCode(GateRef gate) const;
     [[nodiscard]] TimeStamp GetTime() const;
     [[nodiscard]] MarkCode GetMark(GateRef gate) const;
     [[nodiscard]] TypeCode GetTypeCode(GateRef gate) const;
+    [[nodiscard]] ValueCode GetValueCode(GateRef gate) const;
     void SetMark(GateRef gate, MarkCode mark) const;
     [[nodiscard]] bool Verify(GateRef gate) const;
     [[nodiscard]] Gate *LoadGatePtr(GateRef shift);
@@ -95,12 +104,12 @@ private:
     Gate *AllocateGateSpace(size_t numIns);
 
 private:
-    std::vector<uint8_t> space;
-    size_t circuitSize;
-    size_t gateCounter;
-    TimeStamp time;
-    std::vector<uint8_t> dataSection;
-    panda::ecmascript::FrameType frameType {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
+    std::vector<uint8_t> space_ {};
+    size_t circuitSize_;
+    size_t gateCount_;
+    TimeStamp time_;
+    std::vector<uint8_t> dataSection_ {};
+    panda::ecmascript::FrameType frameType_ {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
 };
 }  // namespace panda::ecmascript::kungfu
 

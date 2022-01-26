@@ -114,11 +114,11 @@ public:
     }
 };
 
-class LLVMCodegenPass {
+class LLVMIRGenPass {
 public:
     void CreateCodeGen(LLVMStubModule *module)
     {
-        llvmImpl_ = std::make_unique<LLVMCodeGeneratorImpl>(module);
+        llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module);
     }
     bool Run(PassPayLoad *data, int index)
     {
@@ -146,7 +146,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
             pipeline.RunPass<BuildCircuitPass>();
             pipeline.RunPass<VerifierPass>();
             pipeline.RunPass<SchedulerPass>();
-            pipeline.RunPass<LLVMCodegenPass>(i);
+            pipeline.RunPass<LLVMIRGenPass>(i);
         }
     }
 
