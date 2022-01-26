@@ -46,7 +46,6 @@ public:
         };
 
         exception = [this](PtThread thread, const PtLocation &location) {
-            std::cout << "exception: 0" << std::endl;
             auto sourceLocation = TestUtil::GetSourceLocation(location, pandaFile_.c_str());
             ASSERT_EQ(sourceLocation.line, 17);
             ASSERT_EQ(sourceLocation.column, 27);

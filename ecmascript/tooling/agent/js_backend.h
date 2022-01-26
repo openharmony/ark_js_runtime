@@ -103,7 +103,8 @@ public:
                        CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     // public for testcases
     bool GenerateCallFrames(CVector<std::unique_ptr<CallFrame>> *callFrames);
-    const EcmaVM *GetEcmaVm() const {
+    const EcmaVM *GetEcmaVm() const
+    {
         return ecmaVm_;
     }
 

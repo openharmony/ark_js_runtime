@@ -27,6 +27,8 @@ template("host_unittest_action") {
 
   # unittest for phone running
   ohos_unittest(_target_name_) {
+    resource_config_file =
+        "//ark/js_runtime/test/resource/js_runtime/ohos_test.xml"
     forward_variables_from(invoker, "*")
   }
 
