@@ -13,26 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_TEST_TEST_RUNNER_H
-#define ECMASCRIPT_TOOLING_TEST_TEST_RUNNER_H
+#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_HOOKS_H
+#define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_HOOKS_H
 
-#include "ecmascript/tooling/test/test_util.h"
 #include "ecmascript/tooling/agent/js_pt_hooks.h"
 #include "ecmascript/tooling/agent/js_backend.h"
+#include "ecmascript/tooling/test/utils/test_util.h"
 
 namespace panda::tooling::ecmascript::test {
-class TestRunner : public PtHooks {
+class TestHooks : public PtHooks {
 public:
-    TestRunner(const char *test_name, const EcmaVM *vm)
+    TestHooks(const char *testName, const EcmaVM *vm)
     {
         backend_ = std::make_unique<JSBackend>(vm);
-        test_name_ = test_name;
-        test_ = TestUtil::GetTest(test_name);
-        test_->backend = backend_.get();
-        test_->debug_interface = backend_->GetDebugger();
-        debug_interface_ = backend_->GetDebugger();
+        testName_ = testName;
+        test_ = TestUtil::GetTest(testName);
+        test_->backend_ = backend_.get();
+        test_->debugInterface_ = backend_->GetDebugger();
+        debugInterface_ = backend_->GetDebugger();
         TestUtil::Reset();
-        debug_interface_->RegisterHooks(this);
+        debugInterface_->RegisterHooks(this);
     }
 
     void Run()
@@ -51,8 +51,8 @@ public:
 
     void LoadModule(std::string_view panda_file_name) override
     {
-        if (test_->load_module) {
-            test_->load_module(panda_file_name);
+        if (test_->loadModule) {
+            test_->loadModule(panda_file_name);
         }
     }
 
@@ -73,48 +73,48 @@ public:
 
     void MethodEntry(PtThread thread, PtMethod method) override
     {
-        if (test_->method_entry) {
-            test_->method_entry(thread, method);
+        if (test_->methodEntry) {
+            test_->methodEntry(thread, method);
         }
     }
 
     void SingleStep(PtThread thread, const PtLocation &location) override
     {
-        if (test_->single_step) {
-            test_->single_step(thread, location);
+        if (test_->singleStep) {
+            test_->singleStep(thread, location);
         }
     }
 
     void VmDeath() override
     {
-        if (test_->vm_death) {
-            test_->vm_death();
+        if (test_->vmDeath) {
+            test_->vmDeath();
         }
         TestUtil::Event(DebugEvent::VM_DEATH);
     }
 
     void VmInitialization([[maybe_unused]] PtThread thread) override
     {
-        if (test_->vm_init) {
-            test_->vm_init();
+        if (test_->vmInit) {
+            test_->vmInit();
         }
         TestUtil::Event(DebugEvent::VM_INITIALIZATION);
     }
 
     void VmStart() override
     {
-        if (test_->vm_start) {
-            test_->vm_start();
+        if (test_->vmStart) {
+            test_->vmStart();
         }
     }
 
     void TerminateTest()
     {
-        debug_interface_->RegisterHooks(nullptr);
+        debugInterface_->RegisterHooks(nullptr);
         if (TestUtil::IsTestFinished()) {
             return;
         }
-        LOG(FATAL, DEBUGGER) << "Test " << test_name_ << " failed";
+        LOG(FATAL, DEBUGGER) << "Test " << testName_ << " failed";
     }
 
     void ThreadStart(PtThread) override {}
@@ -139,14 +139,14 @@ public:
     void ExecutionContextsCleared() override {}
     void InspectRequested(PtObject, PtObject) override {}
 
-    ~TestRunner() = default;
+    ~TestHooks() = default;
 
 private:
     std::unique_ptr<JSBackend> backend_ {nullptr};
-    JSDebugger *debug_interface_;
-    const char *test_name_;
-    ApiTest *test_;
+    JSDebugger *debugInterface_;
+    const char *testName_;
+    TestEvents *test_;
 };
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // ECMASCRIPT_TOOLING_TEST_TEST_RUNNER_H
+#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_HOOKS_H

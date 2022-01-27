@@ -239,15 +239,15 @@ int32_t EcmaString::IndexOf(const EcmaString *rhs, int32_t pos) const
 }
 
 // static
-bool EcmaString::CanBeCompressed(const uint8_t *utf8Data)
+bool EcmaString::CanBeCompressed(const uint8_t *utf8Data, uint32_t utf8Len)
 {
     if (!compressedStringsEnabled) {
         return false;
     }
     bool isCompressed = true;
-    int index = 0;
+    uint32_t index = 0;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    while (utf8Data[index] != '\0') {
+    while (index < utf8Len) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         if (!IsASCIICharacter(utf8Data[index])) {
             isCompressed = false;
@@ -321,7 +321,7 @@ bool EcmaString::StringsAreEqualUtf8(const EcmaString *str1, const uint8_t *utf8
         Span<const uint8_t> data2(utf8Data, utf8Len);
         return EcmaString::StringsAreEquals(data1, data2);
     }
-    return IsUtf8EqualsUtf16(utf8Data, str1->GetDataUtf16(), str1->GetLength());
+    return IsUtf8EqualsUtf16(utf8Data, utf8Len, str1->GetDataUtf16(), str1->GetLength());
 }
 
 /* static */
@@ -331,7 +331,7 @@ bool EcmaString::StringsAreEqualUtf16(const EcmaString *str1, const uint16_t *ut
     if (str1->GetLength() != utf16Len) {
         result = false;
     } else if (!str1->IsUtf16()) {
-        result = IsUtf8EqualsUtf16(str1->GetDataUtf8(), utf16Data, utf16Len);
+        result = IsUtf8EqualsUtf16(str1->GetDataUtf8(), str1->GetLength(), utf16Data, utf16Len);
     } else {
         Span<const uint16_t> data1(str1->GetDataUtf16(), str1->GetLength());
         Span<const uint16_t> data2(utf16Data, utf16Len);
@@ -422,15 +422,16 @@ uint32_t EcmaString::ComputeHashcode() const
 }
 
 /* static */
-uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, bool canBeCompress)
+uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len, bool canBeCompress)
 {
     uint32_t hash;
     if (canBeCompress) {
         hash = ComputeHashForUtf8(utf8Data);
     } else {
-        auto utf16Len = base::utf_helper::Utf8ToUtf16Size(utf8Data);
+        auto utf16Len = base::utf_helper::Utf8ToUtf16Size(utf8Data, utf8Len);
         CVector<uint16_t> tmpBuffer(utf16Len);
-        [[maybe_unused]] auto len = base::utf_helper::ConvertRegionUtf8ToUtf16(utf8Data, tmpBuffer.data(), utf16Len, 0);
+        [[maybe_unused]] auto len = base::utf_helper::ConvertRegionUtf8ToUtf16(utf8Data, tmpBuffer.data(), utf8Len,
+                                                                               utf16Len, 0);
         ASSERT(len == utf16Len);
         hash = ComputeHashForData(tmpBuffer.data(), utf16Len);
     }
@@ -444,12 +445,13 @@ uint32_t EcmaString::ComputeHashcodeUtf16(const uint16_t *utf16Data, uint32_t le
 }
 
 /* static */
-bool EcmaString::IsUtf8EqualsUtf16(const uint8_t *utf8Data, const uint16_t *utf16Data, uint32_t utf16Len)
+bool EcmaString::IsUtf8EqualsUtf16(const uint8_t *utf8Data, size_t utf8Len, const uint16_t *utf16Data,
+                                   uint32_t utf16Len)
 {
     // length is one more than compared utf16Data, don't need convert all utf8Data to utf16Data
     uint32_t utf8ConvertLength = utf16Len + 1;
     CVector<uint16_t> tmpBuffer(utf8ConvertLength);
-    auto len = base::utf_helper::ConvertRegionUtf8ToUtf16(utf8Data, tmpBuffer.data(), utf8ConvertLength, 0);
+    auto len = base::utf_helper::ConvertRegionUtf8ToUtf16(utf8Data, tmpBuffer.data(), utf8Len, utf8ConvertLength, 0);
     if (len != utf16Len) {
         return false;
     }

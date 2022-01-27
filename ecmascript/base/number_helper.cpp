@@ -69,14 +69,14 @@ bool NumberHelper::GotoNonspace(uint8_t **ptr, const uint8_t *end)
     while (*ptr < end) {
         uint16_t c = **ptr;
         size_t size = 1;
-        if (**ptr > INT8_MAX) {
+        if (c > INT8_MAX) {
             size = 0;
             uint16_t utf8Bit = INT8_MAX + 1;  // equal 0b1000'0000
             while (utf8Bit > 0 && (c & utf8Bit) == utf8Bit) {
                 ++size;
                 utf8Bit >>= 1UL;
             }
-            if (base::utf_helper::ConvertRegionUtf8ToUtf16(*ptr, &c, 1, 0) <= 0) {
+            if (base::utf_helper::ConvertRegionUtf8ToUtf16(*ptr, &c, end - *ptr, 1, 0) <= 0) {
                 return true;
             }
         }

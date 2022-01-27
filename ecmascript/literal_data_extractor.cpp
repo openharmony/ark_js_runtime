@@ -39,8 +39,8 @@ void LiteralDataExtractor::ExtractObjectDatas(JSThread *thread, const panda_file
     uint32_t num = lda.GetLiteralValsNum(index) / 2;  // 2: half
     elements.Update(factory->NewTaggedArray(num).GetTaggedValue());
     properties.Update(factory->NewTaggedArray(num).GetTaggedValue());
-    array_size_t epos = 0;
-    array_size_t ppos = 0;
+    uint32_t epos = 0;
+    uint32_t ppos = 0;
     const uint8_t pairSize = 2;
     uint32_t methodId;
     FunctionKind kind;
@@ -125,7 +125,7 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
 
     uint32_t num = lda.GetLiteralValsNum(index) / 2;  // 2: half
     JSHandle<TaggedArray> literals = factory->NewTaggedArray(num);
-    array_size_t pos = 0;
+    uint32_t pos = 0;
     uint32_t methodId;
     FunctionKind kind;
     lda.EnumerateLiteralVals(
@@ -186,7 +186,7 @@ JSHandle<TaggedArray> LiteralDataExtractor::GetDatasIgnoreType(JSThread *thread,
             if (tag != LiteralTag::METHOD && tag != LiteralTag::GENERATORMETHOD) {
                 literals->Set(thread, pos++, jt);
             } else {
-                array_size_t oldLength = literals->GetLength();
+                uint32_t oldLength = literals->GetLength();
                 literals->Trim(thread, oldLength - 1);
             }
         });

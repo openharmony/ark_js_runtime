@@ -115,11 +115,11 @@ public:
     }
 };
 
-class LLVMCodegenPass {
+class LLVMIRGenPass {
 public:
     void CreateCodeGen(LLVMStubModule *module)
     {
-        llvmImpl_ = std::make_unique<LLVMCodeGeneratorImpl>(module);
+        llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module);
     }
     bool Run(PassPayLoad *data, int index)
     {
@@ -147,7 +147,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
             pipeline.RunPass<BuildCircuitPass>();
             pipeline.RunPass<VerifierPass>();
             pipeline.RunPass<SchedulerPass>();
-            pipeline.RunPass<LLVMCodegenPass>(i);
+            pipeline.RunPass<LLVMIRGenPass>(i);
         }
     }
 
@@ -158,8 +158,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
     auto codeSize = assembler.GetCodeSize();
     panda::ecmascript::MachineCode *code = reinterpret_cast<panda::ecmascript::MachineCode *>(
         new uint64_t[(panda::ecmascript::MachineCode::SIZE + codeSize) / sizeof(uint64_t) + 1]);
-    code->SetInstructionSizeInBytes(nullptr, panda::ecmascript::JSTaggedValue(codeSize),
-                                    panda::ecmascript::SKIP_BARRIER);
+    code->SetInstructionSizeInBytes(codeSize);
 
     assembler.CopyAssemblerToCode(code);
 
@@ -195,20 +194,18 @@ int main(const int argc, const char **argv)
 
     std::string tripleString = stubOptions.GetTargetTriple();
     std::string moduleFilename = stubOptions.GetStubOutputFile();
-
-    panda::ecmascript::kungfu::StubAotCompiler mouldeBuilder;
+    std::string compiledStubList = stubOptions.GetCompiledStubs();
+    panda::ecmascript::kungfu::StubAotCompiler moduleBuilder;
 #define SET_STUB_TO_MODULE(name, counter) \
-    panda::ecmascript::kungfu::Circuit name##Circuit; \
-    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit); \
-    mouldeBuilder.SetStub(STUB_ID(name), &name##Stub);
+    panda::ecmascript::kungfu::Circuit name##Circuit;                                                \
+    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit);                               \
+    if (compiledStubList.compare("All") == 0 || compiledStubList.find(#name) != std::string::npos) { \
+        moduleBuilder.SetStub(STUB_ID(name), &name##Stub);                                           \
+    }
     FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
     INTERPRETER_STUB_LIST(SET_STUB_TO_MODULE)
-#ifndef NDEBUG
-    TEST_FUNC_LIST(SET_STUB_TO_MODULE)
-#endif
-#undef SET_STUB_TO_MODULE
     panda::ecmascript::StubModule stubModule;
-    mouldeBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
+    moduleBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
     std::cout << "BuildStubModuleAndSave success" << std::endl;
     return 0;
 }

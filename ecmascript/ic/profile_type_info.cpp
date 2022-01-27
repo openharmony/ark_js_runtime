@@ -55,8 +55,8 @@ void ProfileTypeAccessor::AddHandlerWithoutKey(JSHandle<JSTaggedValue> dynclass,
     if (!profileData.IsWeak() && profileData.IsTaggedArray()) {  // POLY
         ASSERT(profileTypeInfo_->Get(index + 1) == JSTaggedValue::Hole());
         JSHandle<TaggedArray> arr(thread_, profileData);
-        const array_size_t step = 2;
-        array_size_t newLen = arr->GetLength() + step;
+        const uint32_t step = 2;
+        uint32_t newLen = arr->GetLength() + step;
         if (newLen > CACHE_MAX_LEN) {
             profileTypeInfo_->Set(thread_, index, JSTaggedValue::Hole());
             profileTypeInfo_->Set(thread_, index + 1, JSTaggedValue::Hole());
@@ -64,7 +64,7 @@ void ProfileTypeAccessor::AddHandlerWithoutKey(JSHandle<JSTaggedValue> dynclass,
         }
         auto factory = thread_->GetEcmaVM()->GetFactory();
         JSHandle<TaggedArray> newArr = factory->NewTaggedArray(newLen);
-        array_size_t i = 0;
+        uint32_t i = 0;
         for (; i < arr->GetLength(); i += step) {
             newArr->Set(thread_, i, arr->Get(i));
             newArr->Set(thread_, i + 1, arr->Get(i + 1));
@@ -78,7 +78,7 @@ void ProfileTypeAccessor::AddHandlerWithoutKey(JSHandle<JSTaggedValue> dynclass,
     // MONO to POLY
     auto factory = thread_->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> newArr = factory->NewTaggedArray(POLY_CASE_NUM);
-    array_size_t arrIndex = 0;
+    uint32_t arrIndex = 0;
     newArr->Set(thread_, arrIndex++, profileTypeInfo_->Get(index));
     newArr->Set(thread_, arrIndex++, profileTypeInfo_->Get(index + 1));
     newArr->Set(thread_, arrIndex++, GetWeakRef(dynclass.GetTaggedValue()));
@@ -117,9 +117,9 @@ void ProfileTypeAccessor::AddHandlerWithKey(JSHandle<JSTaggedValue> key, JSHandl
     JSTaggedValue patchValue = profileTypeInfo_->Get(index + 1);
     ASSERT(patchValue.IsTaggedArray());
     JSHandle<TaggedArray> arr(thread_, patchValue);
-    const array_size_t step = 2;
+    const uint32_t step = 2;
     if (arr->GetLength() > step) {  // POLY
-        array_size_t newLen = arr->GetLength() + step;
+        uint32_t newLen = arr->GetLength() + step;
         if (newLen > CACHE_MAX_LEN) {
             profileTypeInfo_->Set(thread_, index, JSTaggedValue::Hole());
             profileTypeInfo_->Set(thread_, index + 1, JSTaggedValue::Hole());
@@ -129,7 +129,7 @@ void ProfileTypeAccessor::AddHandlerWithKey(JSHandle<JSTaggedValue> key, JSHandl
         JSHandle<TaggedArray> newArr = factory->NewTaggedArray(newLen);
         newArr->Set(thread_, 0, GetWeakRef(dynclass.GetTaggedValue()));
         newArr->Set(thread_, 1, handler.GetTaggedValue());
-        for (array_size_t i = 0; i < arr->GetLength(); i += step) {
+        for (uint32_t i = 0; i < arr->GetLength(); i += step) {
             newArr->Set(thread_, i + step, arr->Get(i));
             newArr->Set(thread_, i + step + 1, arr->Get(i + 1));
         }
@@ -139,7 +139,7 @@ void ProfileTypeAccessor::AddHandlerWithKey(JSHandle<JSTaggedValue> key, JSHandl
     // MONO
     auto factory = thread_->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> newArr = factory->NewTaggedArray(POLY_CASE_NUM);
-    array_size_t arrIndex = 0;
+    uint32_t arrIndex = 0;
     newArr->Set(thread_, arrIndex++, arr->Get(0));
     newArr->Set(thread_, arrIndex++, arr->Get(1));
     newArr->Set(thread_, arrIndex++, GetWeakRef(dynclass.GetTaggedValue()));
@@ -163,7 +163,7 @@ void ProfileTypeAccessor::AddGlobalHandlerKey(JSHandle<JSTaggedValue> key, JSHan
     }
     ASSERT(indexVal.IsTaggedArray());
     JSHandle<TaggedArray> arr(thread_, indexVal);
-    array_size_t newLen = arr->GetLength() + step;
+    uint32_t newLen = arr->GetLength() + step;
     if (newLen > CACHE_MAX_LEN) {
         profileTypeInfo_->Set(thread_, index, JSTaggedValue::Hole());
         return;
@@ -173,7 +173,7 @@ void ProfileTypeAccessor::AddGlobalHandlerKey(JSHandle<JSTaggedValue> key, JSHan
     newArr->Set(thread_, 0, GetWeakRef(key.GetTaggedValue()));
     newArr->Set(thread_, 1, handler.GetTaggedValue());
 
-    for (array_size_t i = 0; i < arr->GetLength(); i += step) {
+    for (uint32_t i = 0; i < arr->GetLength(); i += step) {
         newArr->Set(thread_, i + step, arr->Get(i));
         newArr->Set(thread_, i + step + 1, arr->Get(i + 1));
     }

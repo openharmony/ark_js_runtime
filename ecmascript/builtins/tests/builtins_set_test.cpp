@@ -351,13 +351,13 @@ HWTEST_F_L0(BuiltinsSetTest, GetIterator)
     JSTaggedValue result = BuiltinsSet::Values(ecmaRuntimeCallInfo.get());
     JSHandle<JSSetIterator> iter(thread, result);
     EXPECT_TRUE(iter->IsJSSetIterator());
-    EXPECT_EQ(IterationKind::VALUE, IterationKind(iter->GetIterationKind().GetInt()));
+    EXPECT_EQ(IterationKind::VALUE, IterationKind(iter->GetIterationKind()));
     EXPECT_EQ(JSSet::Cast(set.GetTaggedValue().GetTaggedObject())->GetLinkedSet(), iter->GetIteratedSet());
 
     // test entrys()
     JSTaggedValue result2 = BuiltinsSet::Entries(ecmaRuntimeCallInfo.get());
     JSHandle<JSSetIterator> iter2(thread, result2);
     EXPECT_TRUE(iter2->IsJSSetIterator());
-    EXPECT_EQ(IterationKind::KEY_AND_VALUE, IterationKind(iter2->GetIterationKind().GetInt()));
+    EXPECT_EQ(IterationKind::KEY_AND_VALUE, iter2->GetIterationKind());
 }
 }  // namespace panda::test

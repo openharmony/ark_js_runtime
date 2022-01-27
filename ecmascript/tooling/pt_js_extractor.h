@@ -81,18 +81,31 @@ public:
     template<class Callback>
     bool MatchWithOffset(const Callback &cb, File::EntityId methodId, uint32_t offset)
     {
-        auto table = GetLineNumberTable(methodId);
-        panda_file::LineTableEntry prePair{0, 0};
-        for (const auto &pair : table) {
+        auto lineTable = GetLineNumberTable(methodId);
+        auto columnTable = GetColumnNumberTable(methodId);
+        size_t line = 0;
+        size_t column = 0;
+
+        for (const auto &pair : lineTable) {
             if (offset < pair.offset) {
-                return cb(static_cast<int32_t>(prePair.line));
+                break;
+            } else if (offset == pair.offset) {
+                line = pair.line;
+                break;
             }
-            if (offset == pair.offset) {
-                return cb(static_cast<int32_t>(pair.line));
-            }
-            prePair = pair;
+            line = pair.line;
         }
-        return cb(static_cast<int32_t>(table.back().line));
+
+        for (const auto &pair : columnTable) {
+            if (offset < pair.offset) {
+                break;
+            } else if (offset == pair.offset) {
+                column = pair.column;
+                break;
+            }
+            column = pair.column;
+        }
+        return cb(line, column);
     }
 
     std::unique_ptr<SingleStepper> GetStepIntoStepper(const EcmaVM *ecmaVm);

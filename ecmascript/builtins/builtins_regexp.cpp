@@ -1547,7 +1547,7 @@ JSTaggedValue BuiltinsRegExp::RegExpInitialize(JSThread *thread, const JSHandle<
         regExpParserCache->SetCache(*patternStrHandle, flagsBits, regexp->GetByteCodeBuffer(), bufferSize);
     } else {
         regexp->SetByteCodeBuffer(thread, getCache.first);
-        regexp->SetLength(thread, JSTaggedValue(static_cast<uint32_t>(getCache.second)));
+        regexp->SetLength(static_cast<uint32_t>(getCache.second));
     }
     // 14. Let setStatus be Set(obj, "lastIndex", 0, true).
     JSHandle<JSTaggedValue> lastIndexString = thread->GlobalConstants()->GetHandledLastIndexString();

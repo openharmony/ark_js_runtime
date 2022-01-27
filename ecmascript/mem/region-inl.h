@@ -24,6 +24,12 @@
 #include "ecmascript/mem/space.h"
 
 namespace panda::ecmascript {
+inline void Region::SetSpace(Space *space)
+{
+    space_ = space;
+    heap_ = space_->GetHeap();
+}
+
 inline RangeBitmap *Region::GetOrCreateMarkBitmap()
 {
     if (UNLIKELY(markBitmap_ == nullptr)) {
@@ -41,7 +47,7 @@ RangeBitmap *Region::CreateMarkBitmap()
     // Only one huge object is stored in a region. The BitmapSize of a huge region will always be 8 Bytes.
     size_t bitmapSize = RangeBitmap::GetBitMapSizeInByte(heapSize);
 
-    auto bitmapData = const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Allocate(bitmapSize);
+    auto bitmapData = const_cast<RegionFactory *>(heap_->GetRegionFactory())->Allocate(bitmapSize);
     auto *ret = new RangeBitmap(this, heapSize, bitmapData);
 
     ret->ClearAllBits();
@@ -51,7 +57,7 @@ RangeBitmap *Region::CreateMarkBitmap()
 RememberedSet *Region::CreateRememberedSet()
 {
     auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
-    auto setAddr = const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Allocate(setSize);
+    auto setAddr = const_cast<RegionFactory *>(heap_->GetRegionFactory())->Allocate(setSize);
     uintptr_t setData = ToUintPtr(setAddr);
     auto ret = new RememberedSet(ToUintPtr(this), GetCapacity(), setData);
     ret->ClearAllBits();
@@ -100,7 +106,7 @@ void Region::InsertOldToNewRememberedSet(uintptr_t addr)
 
 WorkerHelper *Region::GetWorkList() const
 {
-    return space_->GetHeap()->GetWorkList();
+    return heap_->GetWorkList();
 }
 
 void Region::AtomicInsertOldToNewRememberedSet(uintptr_t addr)
@@ -113,7 +119,7 @@ void Region::ClearMarkBitmap()
 {
     if (markBitmap_ != nullptr) {
         auto size = RangeBitmap::GetBitMapSizeInByte(GetCapacity());
-        const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Free(markBitmap_->GetBitMap().Data(), size);
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(markBitmap_->GetBitMap().Data(), size);
         delete markBitmap_;
         markBitmap_ = nullptr;
     }
@@ -123,7 +129,7 @@ void Region::ClearCrossRegionRememberedSet()
 {
     if (crossRegionSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
-        const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Free(
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(
             crossRegionSet_->GetBitMap().Data(), size);
         delete crossRegionSet_;
         crossRegionSet_ = nullptr;
@@ -134,7 +140,7 @@ void Region::ClearOldToNewRememberedSet()
 {
     if (oldToNewSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
-        const_cast<RegionFactory *>(space_->GetHeap()->GetRegionFactory())->Free(
+        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(
             oldToNewSet_->GetBitMap().Data(), size);
         delete oldToNewSet_;
         oldToNewSet_ = nullptr;

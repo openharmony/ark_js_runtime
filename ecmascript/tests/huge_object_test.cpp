@@ -71,8 +71,8 @@ static JSObject *JSObjectTestCreate(JSThread *thread)
 static TaggedArray *LargeArrayTestCreate(JSThread *thread)
 {
     [[maybe_unused]] ecmascript::EcmaHandleScope scope(thread);
-    // 20 * 10000 : test case
-    JSHandle<TaggedArray> array = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(20 * 10000);
+    static constexpr size_t SIZE = 1024 * 1024;
+    JSHandle<TaggedArray> array = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(SIZE);
     return *array;
 }
 #endif

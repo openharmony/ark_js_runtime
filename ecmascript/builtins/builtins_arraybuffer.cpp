@@ -98,7 +98,7 @@ JSTaggedValue BuiltinsArrayBuffer::GetByteLength(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<JSArrayBuffer> arrBuf(thisHandle);
     // 5. Let length be the value of O’s [[ArrayBufferByteLength]] internal slot.
-    JSTaggedValue length = arrBuf->GetArrayBufferByteLength();
+    uint32_t length = arrBuf->GetArrayBufferByteLength();
     // 6. Return length.
     return JSTaggedValue(length);
 }
@@ -128,14 +128,12 @@ JSTaggedValue BuiltinsArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "this value IsDetachedBuffer", JSTaggedValue::Exception());
     }
     // 5. Let len be the value of O’s [[ArrayBufferByteLength]] internal slot.
-    JSTaggedNumber lengthNum = JSTaggedNumber::FromIntOrDouble(thread, arrBuf->GetArrayBufferByteLength());
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    int32_t len = arrBuf->GetArrayBufferByteLength();
     JSHandle<JSTaggedValue> startHandle = GetCallArg(argv, 0);
     // 6. Let relativeStart be ToInteger(start).
     JSTaggedNumber relativeStart = JSTaggedValue::ToInteger(thread, startHandle);
     // 7. ReturnIfAbrupt(relativeStart).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    int32_t len = lengthNum.ToInt32();
     int32_t start = base::NumberHelper::DoubleInRangeInt32(relativeStart.GetNumber());
     int32_t end;
     int32_t first;
@@ -163,7 +161,7 @@ JSTaggedValue BuiltinsArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
         last = std::min(end, len);
     }
     // 12. Let newLen be max(final-first,0).
-    int32_t newLen = std::max((last - first), 0);
+    uint32_t newLen = std::max((last - first), 0);
     // 13. Let ctor be SpeciesConstructor(O, %ArrayBuffer%).
     JSHandle<JSTaggedValue> defaultConstructor = env->GetArrayBufferFunction();
     JSHandle<JSObject> objHandle(thisHandle);
@@ -192,8 +190,7 @@ JSTaggedValue BuiltinsArrayBuffer::Slice(EcmaRuntimeCallInfo *argv)
     }
     JSHandle<JSArrayBuffer> newJsArrBuf(newArrBuf);
     // 20. If the value of new’s [[ArrayBufferByteLength]] internal slot < newLen, throw a TypeError exception.
-    JSTaggedNumber newLengthNum = JSTaggedNumber::FromIntOrDouble(thread, newJsArrBuf->GetArrayBufferByteLength());
-    int32_t newArrBufLen = newLengthNum.ToInt32();
+    uint32_t newArrBufLen = newJsArrBuf->GetArrayBufferByteLength();
     if (newArrBufLen < newLen) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "new array buffer length smaller than newlen", JSTaggedValue::Exception());
     }
@@ -250,7 +247,7 @@ JSTaggedValue BuiltinsArrayBuffer::AllocateArrayBuffer(JSThread *thread, const J
     // 6. Set obj’s [[ArrayBufferData]] internal slot to block.
     factory->NewJSArrayBufferData(arrayBuffer, byteLength);
     // 7. Set obj’s [[ArrayBufferByteLength]] internal slot to byteLength.
-    arrayBuffer->SetArrayBufferByteLength(thread, JSTaggedValue(static_cast<int32_t>(byteLength)));
+    arrayBuffer->SetArrayBufferByteLength(static_cast<uint32_t>(byteLength));
     // 8. Return obj.
     return arrayBuffer.GetTaggedValue();
 }
@@ -269,7 +266,7 @@ bool BuiltinsArrayBuffer::IsDetachedBuffer(JSTaggedValue arrayBuffer)
 
 // 24.1.1.4
 JSTaggedValue BuiltinsArrayBuffer::CloneArrayBuffer(JSThread *thread, const JSHandle<JSTaggedValue> &srcBuffer,
-                                                    int32_t srcByteOffset, JSHandle<JSTaggedValue> constructor)
+                                                    uint32_t srcByteOffset, JSHandle<JSTaggedValue> constructor)
 {
     BUILTINS_API_TRACE(thread, ArrayBuffer, CloneArrayBuffer);
     // 1. Assert: Type(srcBuffer) is Object and it has an [[ArrayBufferData]] internal slot.
@@ -292,8 +289,7 @@ JSTaggedValue BuiltinsArrayBuffer::CloneArrayBuffer(JSThread *thread, const JSHa
     }
     // 4. Let srcLength be the value of srcBuffer’s [[ArrayBufferByteLength]] internal slot.
     JSHandle<JSArrayBuffer> arrBuf(srcBuffer);
-    JSTaggedNumber lengthNumber = JSTaggedNumber::FromIntOrDouble(thread, arrBuf->GetArrayBufferByteLength());
-    int32_t srcLen = lengthNumber.ToInt32();
+    uint32_t srcLen = arrBuf->GetArrayBufferByteLength();
     // 5. Assert: srcByteOffset ≤ srcLength.
     ASSERT(srcByteOffset <= srcLen);
     // 6. Let cloneLength be srcLength – srcByteOffset.
@@ -320,7 +316,7 @@ JSTaggedValue BuiltinsArrayBuffer::CloneArrayBuffer(JSThread *thread, const JSHa
 
 // 24.1.1.5
 // NOLINTNEXTLINE(readability-function-size)
-JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSTaggedValue arrBuf, int32_t byteIndex, DataViewType type,
+JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
                                                       bool littleEndian)
 {
     JSArrayBuffer *jsArrayBuffer = JSArrayBuffer::Cast(arrBuf.GetTaggedObject());
@@ -358,7 +354,7 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSTaggedValue arrBuf, int3
 }
 
 // 24.1.1.6
-JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSTaggedValue arrBuf, int32_t byteIndex, DataViewType type,
+JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
                                                     JSTaggedNumber value, bool littleEndian)
 {
     JSArrayBuffer *jsArrayBuffer = JSArrayBuffer::Cast(arrBuf.GetTaggedObject());
@@ -401,11 +397,11 @@ JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSTaggedValue arrBuf, int32_
 }
 
 template<typename T>
-void BuiltinsArrayBuffer::SetTypeData(uint8_t *block, T value, int32_t index)
+void BuiltinsArrayBuffer::SetTypeData(uint8_t *block, T value, uint32_t index)
 {
-    int32_t sizeCount = sizeof(T);
+    uint32_t sizeCount = sizeof(T);
     auto *res = reinterpret_cast<uint8_t *>(&value);
-    for (int i = 0; i < sizeCount; i++) {
+    for (uint32_t i = 0; i < sizeCount; i++) {
         *(block + index + i) = *(res + i);  // NOLINT
     }
 }
@@ -446,7 +442,7 @@ uint64_t BuiltinsArrayBuffer::LittleEndianToBigEndianUint64(uint64_t liValue)
 }
 
 template<typename T, BuiltinsArrayBuffer::NumberSize size>
-JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForInteger(uint8_t *block, int32_t byteIndex, bool littleEndian)
+JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForInteger(uint8_t *block, uint32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_integral_v<T>, "T must be integral");
     static_assert(sizeof(T) == size, "Invalid number size");
@@ -470,7 +466,7 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForInteger(uint8_t *block, 
 }
 
 template<typename T, BuiltinsArrayBuffer::NumberSize size>
-JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForFloat(uint8_t *block, int32_t byteIndex, bool littleEndian)
+JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForFloat(uint8_t *block, uint32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "T must be float type");
     static_assert(sizeof(T) == size, "Invalid number size");
@@ -500,7 +496,7 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForFloat(uint8_t *block, in
 }
 
 template<typename T>
-void BuiltinsArrayBuffer::SetValueInBufferForByte(double val, uint8_t *block, int32_t byteIndex)
+void BuiltinsArrayBuffer::SetValueInBufferForByte(double val, uint8_t *block, uint32_t byteIndex)
 {
     static_assert(std::is_same_v<T, uint8_t> || std::is_same_v<T, int8_t>, "T must be int8/uint8");
     T res;
@@ -515,7 +511,7 @@ void BuiltinsArrayBuffer::SetValueInBufferForByte(double val, uint8_t *block, in
     SetTypeData(block, res, byteIndex);
 }
 
-void BuiltinsArrayBuffer::SetValueInBufferForUint8Clamped(double val, uint8_t *block, int32_t byteIndex)
+void BuiltinsArrayBuffer::SetValueInBufferForUint8Clamped(double val, uint8_t *block, uint32_t byteIndex)
 {
     uint8_t res;
     if (std::isnan(val) || val <= 0) {
@@ -531,7 +527,7 @@ void BuiltinsArrayBuffer::SetValueInBufferForUint8Clamped(double val, uint8_t *b
 }
 
 template<typename T>
-void BuiltinsArrayBuffer::SetValueInBufferForInteger(double val, uint8_t *block, int32_t byteIndex, bool littleEndian)
+void BuiltinsArrayBuffer::SetValueInBufferForInteger(double val, uint8_t *block, uint32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_integral_v<T>, "T must be integral");
     static_assert(sizeof(T) >= sizeof(uint16_t), "T must have a size more than uint8");
@@ -559,7 +555,7 @@ void BuiltinsArrayBuffer::SetValueInBufferForInteger(double val, uint8_t *block,
 }
 
 template<typename T>
-void BuiltinsArrayBuffer::SetValueInBufferForFloat(double val, uint8_t *block, int32_t byteIndex, bool littleEndian)
+void BuiltinsArrayBuffer::SetValueInBufferForFloat(double val, uint8_t *block, uint32_t byteIndex, bool littleEndian)
 {
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "T must be float type");
     auto data = static_cast<T>(val);

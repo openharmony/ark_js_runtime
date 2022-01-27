@@ -22,6 +22,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_handle.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/object_factory.h"
 #include "gtest/gtest.h"
 #include "include/runtime_options.h"
@@ -44,7 +45,7 @@ using ecmascript::JSRuntimeOptions;
 class TestHelper {
 public:
     static std::unique_ptr<EcmaRuntimeCallInfo> CreateEcmaRuntimeCallInfo(JSThread *thread, JSTaggedValue newTgt,
-                                                                          array_size_t argvLength)
+                                                                          uint32_t argvLength)
     {
         const uint8_t testDecodedSize = 2;
         // argvLength includes number of int64_t to store value and tag of function, 'this' and call args
@@ -67,7 +68,7 @@ public:
         JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
         InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(newSp) - 1;
-        state->base.frameType = static_cast<uintptr_t>(ecmascript::FrameType::INTERPRETER_FRAME);
+        state->base.type = ecmascript::FrameType::INTERPRETER_FRAME;
         state->base.prev = sp;
         state->pc = nullptr;
         state->sp = newSp;
@@ -82,7 +83,8 @@ public:
     }
 
     // If you want to call once create, you can refer to BuiltinsMathTest for detail.
-    static void CreateEcmaVMWithScope(PandaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope)
+    static void CreateEcmaVMWithScope(PandaVM *&instance, JSThread *&thread, EcmaHandleScope *&scope,
+                                      const char *libraryPath = nullptr)
     {
         JSRuntimeOptions options;
         options.SetShouldLoadBootPandaFiles(false);
@@ -91,6 +93,10 @@ public:
         options.SetRuntimeType("ecmascript");
         options.SetPreGcHeapVerifyEnabled(true);
         options.SetEnableForceGC(true);
+        if (libraryPath != nullptr) {
+            // for class Runtime to StartDebugger
+            options.SetDebuggerLibraryPath(libraryPath);
+        }
         static EcmaLanguageContext lcEcma;
         [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
         ASSERT_TRUE(success) << "Cannot create Runtime";
@@ -99,7 +105,6 @@ public:
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
         thread = EcmaVM::Cast(instance)->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        thread->SetIsEcmaInterpreter(true);
         EcmaVM *ecmaVm = thread->GetEcmaVM();
         auto globalEnv = ecmaVm->GetGlobalEnv();
         methodFunction_ = ecmaVm->GetFactory()->NewJSFunction(globalEnv);
@@ -111,8 +116,7 @@ public:
         EcmaVM::Cast(instance)->SetEnableForceGC(false);
         auto thread = EcmaVM::Cast(instance)->GetJSThread();
         thread->ClearException();
-        [[maybe_unused]] bool success = Runtime::Destroy();
-        ASSERT_TRUE(success) << "Cannot destroy Runtime";
+        JSNApi::DestroyJSVM(EcmaVM::Cast(instance));
     }
 
 private:

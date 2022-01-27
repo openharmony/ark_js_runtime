@@ -75,7 +75,7 @@ inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
 
-    if (heap_->IsOnlyMarkSemi() && !objectRegion->InYoungGeneration()) {
+    if (heap_->IsSemiMarkNeeded() && !objectRegion->InYoungGeneration()) {
         return;
     }
 

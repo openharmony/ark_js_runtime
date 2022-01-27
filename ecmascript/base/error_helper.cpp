@@ -162,7 +162,6 @@ JSTaggedValue ErrorHelper::ErrorCommonConstructor(EcmaRuntimeCallInfo *argv,
         ASSERT_PRINT(status == true, "return result exception!");
     }
 
-    ASSERT(thread->IsEcmaInterpreter());
     JSHandle<EcmaString> handleStack = BuildEcmaStackTrace(thread);
     JSHandle<JSTaggedValue> stackkey = globalConst->GetHandledStackString();
     PropertyDescriptor stackDesc(thread, JSHandle<JSTaggedValue>::Cast(handleStack), true, false, true);
@@ -215,12 +214,14 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
                 data += sourceFile;
             }
             data.push_back(':');
-            // line number
-            auto lineFunc = [&data](int line) -> bool {
+            // line number and column number
+            auto callbackFunc = [&data](size_t line, size_t column) -> bool {
                 data += ToCString(line + 1);
+                data.push_back(':');
+                data += ToCString(column + 1);
                 return true;
             };
-            if (!debugExtractor->MatchWithOffset(lineFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
+            if (!debugExtractor->MatchWithOffset(callbackFunc, method->GetFileId(), frameHandler.GetBytecodeOffset())) {
                 data.push_back('?');
             }
             data.push_back(')');

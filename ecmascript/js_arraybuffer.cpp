@@ -35,10 +35,10 @@ void JSArrayBuffer::CopyDataBlockBytes(JSTaggedValue toBlock, JSTaggedValue from
     }
 }
 
-void JSArrayBuffer::Attach(JSThread *thread, JSTaggedValue arrayBufferByteLength, JSTaggedValue arrayBufferData)
+void JSArrayBuffer::Attach(JSThread *thread, uint32_t arrayBufferByteLength, JSTaggedValue arrayBufferData)
 {
     ASSERT(arrayBufferData.IsNativePointer());
-    SetArrayBufferByteLength(thread, arrayBufferByteLength);
+    SetArrayBufferByteLength(arrayBufferByteLength);
     SetArrayBufferData(thread, arrayBufferData);
     EcmaVM *vm = thread->GetEcmaVM();
     vm->PushToArrayDataList(JSNativePointer::Cast(arrayBufferData.GetHeapObject()));
@@ -59,6 +59,6 @@ void JSArrayBuffer::Detach(JSThread *thread)
     jsNativePointer->Destroy();
 
     SetArrayBufferData(thread, JSTaggedValue::Null());
-    SetArrayBufferByteLength(thread, JSTaggedValue(0));
+    SetArrayBufferByteLength(0);
 }
 }  // namespace panda::ecmascript

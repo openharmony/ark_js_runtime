@@ -1394,8 +1394,7 @@ DECLARE_ASM_HANDLER(HandleGetResumeModePrefV8)
 
     GateRef vs = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(vs));
-    GateRef resumeModeOffset = GetArchRelateConstant(JSGeneratorObject::GENERATOR_RESUME_MODE_OFFSET);
-    varAcc = Load(MachineType::TAGGED, obj, resumeModeOffset);
+    varAcc = ChangeInt64ToTagged(ZExtInt32ToInt64(GetGeneratorObjectResumeMode(obj)));
     DISPATCH_WITH_ACC(PREF_V8);
 }
 

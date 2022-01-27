@@ -28,7 +28,7 @@ int GlobalDictionary::Hash(const JSTaggedValue &key)
     if (key.IsHeapObject()) {
         if (key.IsSymbol()) {
             auto symbolString = JSSymbol::Cast(key.GetTaggedObject());
-            return static_cast<JSTaggedNumber>(symbolString->GetHashField()).GetInt();
+            return symbolString->GetHashField();
         }
         if (key.IsString()) {
             auto keyString = EcmaString::Cast(key.GetTaggedObject());
@@ -119,7 +119,7 @@ void GlobalDictionary::GetAllKeys(const JSThread *thread, int offset, TaggedArra
 }
 
 void GlobalDictionary::GetEnumAllKeys(const JSThread *thread, int offset, TaggedArray *keyArray,
-                                      array_size_t *keys) const
+                                      uint32_t *keys) const
 {
     ASSERT_PRINT(offset + EntriesCount() <= static_cast<int>(keyArray->GetLength()),
                  "keyArray capacity is not enough for dictionary");

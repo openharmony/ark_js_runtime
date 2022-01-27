@@ -133,7 +133,7 @@ JSTaggedValue BuiltinsPromise::All(EcmaRuntimeCallInfo *argv)
     RETURN_REJECT_PROMISE_IF_ABRUPT(thread, itor, capa);
 
     // 10. Let iteratorRecord be Record {[[iterator]]: iterator, [[done]]: false}.
-    JSHandle<JSTaggedValue> done(thread, JSTaggedValue::False());
+    bool done = false;
     JSHandle<PromiseIteratorRecord> itRecord = factory->NewPromiseIteratorRecord(itor, done);
     // 11. Let result be PerformPromiseAll(iteratorRecord, C, promiseCapability).
     JSHandle<CompletionRecord> result = PerformPromiseAll(thread, itRecord, ctor, capa);
@@ -142,7 +142,7 @@ JSTaggedValue BuiltinsPromise::All(EcmaRuntimeCallInfo *argv)
         thread->ClearException();
         // a. If iteratorRecord.[[done]] is false, let result be IteratorClose(iterator, result).
         // b. IfAbruptRejectPromise(result, promiseCapability).
-        if (itRecord->GetDone().IsFalse()) {
+        if (!itRecord->GetDone()) {
             JSHandle<JSTaggedValue> closeVal =
                 JSIterator::IteratorClose(thread, itor, JSHandle<JSTaggedValue>::Cast(result));
             if (closeVal.GetTaggedValue().IsRecord()) {
@@ -199,7 +199,7 @@ JSTaggedValue BuiltinsPromise::Race(EcmaRuntimeCallInfo *argv)
     RETURN_REJECT_PROMISE_IF_ABRUPT(thread, iterator, promiseCapability);
 
     // 10. Let iteratorRecord be Record {[[iterator]]: iterator, [[done]]: false}.
-    JSHandle<JSTaggedValue> done(thread, JSTaggedValue::False());
+    bool done = false;
     JSHandle<PromiseIteratorRecord> iteratorRecord = factory->NewPromiseIteratorRecord(iterator, done);
 
     // 11. Let result be PerformPromiseRace(iteratorRecord, promiseCapability, C).
@@ -210,7 +210,7 @@ JSTaggedValue BuiltinsPromise::Race(EcmaRuntimeCallInfo *argv)
     JSHandle<CompletionRecord> result = PerformPromiseRace(thread, iteratorRecord, promiseCapability, thisValue);
     if (result->IsThrow()) {
         thread->ClearException();
-        if (iteratorRecord->GetDone().IsFalse()) {
+        if (!iteratorRecord->GetDone()) {
             JSHandle<JSTaggedValue> value =
                 JSIterator::IteratorClose(thread, iterator, JSHandle<JSTaggedValue>::Cast(result));
             if (value.GetTaggedValue().IsCompletionRecord()) {
@@ -396,8 +396,8 @@ JSTaggedValue BuiltinsPromise::PerformPromiseThen(JSThread *thread, const JSHand
     rejectReaction->SetPromiseCapability(thread, capability.GetTaggedValue());
     rejectReaction->SetHandler(thread, rejected.GetTaggedValue());
 
-    if (JSTaggedValue::SameValue(promise->GetPromiseState(),
-                                 JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING)))) {
+    PromiseState state = promise->GetPromiseState();
+    if (state == PromiseState::PENDING) {
         JSHandle<TaggedQueue> fulfillReactions(thread, promise->GetPromiseFulfillReactions());
         TaggedQueue *newQueue =
             TaggedQueue::Push(thread, fulfillReactions, JSHandle<JSTaggedValue>::Cast(fulfillReaction));
@@ -406,29 +406,27 @@ JSTaggedValue BuiltinsPromise::PerformPromiseThen(JSThread *thread, const JSHand
         JSHandle<TaggedQueue> rejectReactions(thread, promise->GetPromiseRejectReactions());
         newQueue = TaggedQueue::Push(thread, rejectReactions, JSHandle<JSTaggedValue>::Cast(rejectReaction));
         promise->SetPromiseRejectReactions(thread, JSTaggedValue(newQueue));
-    } else if (JSTaggedValue::SameValue(promise->GetPromiseState(),
-                                        JSTaggedValue(static_cast<int32_t>(PromiseStatus::FULFILLED)))) {
+    } else if (state == PromiseState::FULFILLED) {
         JSHandle<TaggedArray> argv = factory->NewTaggedArray(2);  // 2: 2 means two args stored in array
         argv->Set(thread, 0, fulfillReaction.GetTaggedValue());
         argv->Set(thread, 1, promise->GetPromiseResult());
 
         JSHandle<JSFunction> promiseReactionsJob(env->GetPromiseReactionJob());
         job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, argv);
-    } else if (JSTaggedValue::SameValue(promise->GetPromiseState(),
-                                        JSTaggedValue(static_cast<int32_t>(PromiseStatus::REJECTED)))) {
+    } else if (state == PromiseState::REJECTED) {
         JSHandle<TaggedArray> argv = factory->NewTaggedArray(2);  // 2: 2 means two args stored in array
         argv->Set(thread, 0, rejectReaction.GetTaggedValue());
         argv->Set(thread, 1, promise->GetPromiseResult());
         // When a handler is added to a rejected promise for the first time, it is called with its operation
         // argument set to "handle".
-        if (!promise->GetPromiseIsHandled().ToBoolean()) {
+        if (!promise->GetPromiseIsHandled()) {
             JSHandle<JSTaggedValue> reason(thread, JSTaggedValue::Null());
-            thread->GetEcmaVM()->PromiseRejectionTracker(promise, reason, ecmascript::PromiseRejectionEvent::HANDLE);
+            thread->GetEcmaVM()->PromiseRejectionTracker(promise, reason, PromiseRejectionEvent::HANDLE);
         }
         JSHandle<JSFunction> promiseReactionsJob(env->GetPromiseReactionJob());
         job::MicroJobQueue::EnqueueJob(thread, job, job::QueueType::QUEUE_PROMISE, promiseReactionsJob, argv);
     }
-    promise->SetPromiseIsHandled(thread, JSTaggedValue::True());
+    promise->SetPromiseIsHandled(true);
     return capability->GetPromise();
 }
 
@@ -451,7 +449,7 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
     JSHandle<PromiseRecord> remainCnt = factory->NewPromiseRecord();
     remainCnt->SetValue(thread, JSTaggedNumber(1));
     // 5. Let index be 0.
-    array_size_t index = 0;
+    uint32_t index = 0;
     // 6. Repeat
     JSHandle<JSTaggedValue> itor(thread, itRecord->GetIterator());
     JSMutableHandle<JSTaggedValue> next(thread, globalConst->GetUndefined());
@@ -460,7 +458,7 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         next.Update(JSIterator::IteratorStep(thread, itor).GetTaggedValue());
         // b. If next is an abrupt completion, set iteratorRecord.[[done]] to true.
         if (thread->HasPendingException()) {
-            itRecord->SetDone(thread, JSTaggedValue::True());
+            itRecord->SetDone(true);
             next.Update(JSPromise::IfThrowGetThrowValue(thread).GetTaggedValue());
         }
         // c. ReturnIfAbrupt(next).
@@ -468,7 +466,7 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
         // d. If next is false,
         if (next->IsFalse()) {
             // i. Set iteratorRecord.[[done]] to true.
-            itRecord->SetDone(thread, JSTaggedValue::True());
+            itRecord->SetDone(true);
             // ii. Set remainingElementsCount.[[value]] to remainingElementsCount.[[value]] − 1.
             remainCnt->SetValue(thread, --JSTaggedNumber(remainCnt->GetValue()));
             // iii. If remainingElementsCount.[[value]] is 0,
@@ -488,14 +486,14 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseAll(JSThread *thread,
             }
             // iv. Return resultCapability.[[Promise]].
             JSHandle<CompletionRecord> resRecord = factory->NewCompletionRecord(
-                CompletionRecord::NORMAL, JSHandle<JSTaggedValue>(thread, capa->GetPromise()));
+                CompletionRecordType::NORMAL, JSHandle<JSTaggedValue>(thread, capa->GetPromise()));
             return resRecord;
         }
         // e. Let nextValue be IteratorValue(next).
         JSHandle<JSTaggedValue> nextVal = JSIterator::IteratorValue(thread, next);
         // f. If nextValue is an abrupt completion, set iteratorRecord.[[done]] to true.
         if (thread->HasPendingException()) {
-            itRecord->SetDone(thread, JSTaggedValue::True());
+            itRecord->SetDone(true);
             nextVal = JSHandle<JSTaggedValue>(thread, thread->GetException());
         }
 
@@ -574,20 +572,20 @@ JSHandle<CompletionRecord> BuiltinsPromise::PerformPromiseRace(JSThread *thread,
     while (true) {
         next.Update(JSIterator::IteratorStep(thread, iterator).GetTaggedValue());
         if (thread->HasPendingException()) {
-            iteratorRecord->SetDone(thread, JSTaggedValue::True());
+            iteratorRecord->SetDone(true);
             next.Update(JSPromise::IfThrowGetThrowValue(thread).GetTaggedValue());
         }
         RETURN_COMPLETION_IF_ABRUPT(thread, next);
         if (next->IsFalse()) {
-            iteratorRecord->SetDone(thread, JSTaggedValue::True());
+            iteratorRecord->SetDone(true);
             JSHandle<JSTaggedValue> promise(thread, capability->GetPromise());
             JSHandle<CompletionRecord> completionRecord =
-                factory->NewCompletionRecord(CompletionRecord::NORMAL, promise);
+                factory->NewCompletionRecord(CompletionRecordType::NORMAL, promise);
             return completionRecord;
         }
         JSHandle<JSTaggedValue> nextValue = JSIterator::IteratorValue(thread, next);
         if (thread->HasPendingException()) {
-            iteratorRecord->SetDone(thread, JSTaggedValue::True());
+            iteratorRecord->SetDone(true);
             nextValue = JSPromise::IfThrowGetThrowValue(thread);
         }
         RETURN_COMPLETION_IF_ABRUPT(thread, nextValue);

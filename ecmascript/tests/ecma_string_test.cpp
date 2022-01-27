@@ -70,10 +70,10 @@ HWTEST_F_L0(EcmaStringTest, SetCompressedStringsEnabled)
  */
 HWTEST_F_L0(EcmaStringTest, CanBeCompressed)
 {
-    uint8_t arrayU8[7] = {12, 34, 77, 127, 99, 1};
+    uint8_t arrayU8[] = {12, 34, 77, 127, 99, 1};
     uint16_t arrayU16Comp[] = {1, 4, 37, 91, 127, 1};
     uint16_t arrayU16NotComp[] = {72, 43, 337, 961, 1317, 65535};
-    EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU8));
+    EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU8, sizeof(arrayU8) / sizeof(arrayU8[0])));
     EXPECT_TRUE(EcmaString::CanBeCompressed(arrayU16Comp, sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0])));
     EXPECT_FALSE(EcmaString::CanBeCompressed(arrayU16NotComp, sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0])));
 
@@ -213,7 +213,7 @@ HWTEST_F_L0(EcmaStringTest, ComputeSizeUtf8)
     uint32_t scale = 3333;
     for (uint32_t i = 0x40000000U - 1; i > scale; i = i - scale) {
         uint32_t length = i;
-        EXPECT_EQ(EcmaString::ComputeSizeUtf8(length), length + sizeof(EcmaString));
+        EXPECT_EQ(EcmaString::ComputeSizeUtf8(length), length + EcmaString::SIZE);
     }
 }
 
@@ -243,7 +243,7 @@ HWTEST_F_L0(EcmaStringTest, ComputeSizeUtf16)
     uint32_t scale = 3333;
     for (uint32_t i = 0x40000000U - 1; i > scale; i = i - scale) {
         uint32_t length = i;
-        EXPECT_EQ(EcmaString::ComputeSizeUtf16(length), 2 * length + sizeof(EcmaString));
+        EXPECT_EQ(EcmaString::ComputeSizeUtf16(length), 2 * length + EcmaString::SIZE);
     }
 }
 
@@ -258,38 +258,38 @@ HWTEST_F_L0(EcmaStringTest, ObjectSize)
     EcmaVM* ecmaVMPtr = EcmaVM::Cast(instance);
 
     JSHandle<EcmaString> handleEcmaStrEmpty(thread, EcmaString::CreateEmptyString(ecmaVMPtr));
-    EXPECT_EQ(handleEcmaStrEmpty->ObjectSize(), sizeof(EcmaString) + 0);
+    EXPECT_EQ(handleEcmaStrEmpty->ObjectSize(), EcmaString::SIZE + 0);
 
     size_t lengthEcmaStrAllocComp = 5;
     JSHandle<EcmaString> handleEcmaStrAllocComp(thread,
         EcmaString::AllocStringObject(lengthEcmaStrAllocComp, true, ecmaVMPtr));
-    EXPECT_EQ(handleEcmaStrAllocComp->ObjectSize(), sizeof(EcmaString) + sizeof(uint8_t) * lengthEcmaStrAllocComp);
+    EXPECT_EQ(handleEcmaStrAllocComp->ObjectSize(), EcmaString::SIZE + sizeof(uint8_t) * lengthEcmaStrAllocComp);
 
     size_t lengthEcmaStrAllocNotComp = 5;
     JSHandle<EcmaString> handleEcmaStrAllocNotComp(thread,
         EcmaString::AllocStringObject(lengthEcmaStrAllocNotComp, false, ecmaVMPtr));
     EXPECT_EQ(handleEcmaStrAllocNotComp->ObjectSize(),
-        sizeof(EcmaString) + sizeof(uint16_t) * lengthEcmaStrAllocNotComp);
+        EcmaString::SIZE + sizeof(uint16_t) * lengthEcmaStrAllocNotComp);
 
     uint8_t arrayU8[] = {"abcde"};
     size_t lengthEcmaStrU8 = sizeof(arrayU8) - 1;
     JSHandle<EcmaString> handleEcmaStrU8(thread,
         EcmaString::CreateFromUtf8(&arrayU8[0], lengthEcmaStrU8, ecmaVMPtr, true));
-    EXPECT_EQ(handleEcmaStrU8->ObjectSize(), sizeof(EcmaString) + sizeof(uint8_t) * lengthEcmaStrU8);
+    EXPECT_EQ(handleEcmaStrU8->ObjectSize(), EcmaString::SIZE + sizeof(uint8_t) * lengthEcmaStrU8);
 
     // ObjectSize(). EcmaString made by CreateFromUtf16( , , , true).
     uint16_t arrayU16Comp[] = {1, 23, 45, 67, 127};
     size_t lengthEcmaStrU16Comp = sizeof(arrayU16Comp) / sizeof(arrayU16Comp[0]);
     JSHandle<EcmaString> handleEcmaStrU16Comp(thread,
         EcmaString::CreateFromUtf16(&arrayU16Comp[0], lengthEcmaStrU16Comp, ecmaVMPtr, true));
-    EXPECT_EQ(handleEcmaStrU16Comp->ObjectSize(), sizeof(EcmaString) + sizeof(uint8_t) * lengthEcmaStrU16Comp);
+    EXPECT_EQ(handleEcmaStrU16Comp->ObjectSize(), EcmaString::SIZE + sizeof(uint8_t) * lengthEcmaStrU16Comp);
 
     // ObjectSize(). EcmaString made by CreateFromUtf16( , , , false).
     uint16_t arrayU16NotComp[] = {127, 128, 256, 11100, 65535};
     size_t lengthEcmaStrU16NotComp = sizeof(arrayU16NotComp) / sizeof(arrayU16NotComp[0]);
     JSHandle<EcmaString> handleEcmaStrU16NotComp(thread,
         EcmaString::CreateFromUtf16(&arrayU16NotComp[0], lengthEcmaStrU16NotComp, ecmaVMPtr, false));
-    EXPECT_EQ(handleEcmaStrU16NotComp->ObjectSize(), sizeof(EcmaString) + sizeof(uint16_t) * lengthEcmaStrU16NotComp);
+    EXPECT_EQ(handleEcmaStrU16NotComp->ObjectSize(), EcmaString::SIZE + sizeof(uint16_t) * lengthEcmaStrU16NotComp);
 }
 
 /*
@@ -1647,7 +1647,7 @@ HWTEST_F_L0(EcmaStringTest, ComputeHashcodeUtf8)
     for (uint32_t i = 0; i < lengthEcmaStrU8; i++) {
         hashExpect = hashExpect * 31 + arrayU8[i];
     }
-    EXPECT_EQ(EcmaString::ComputeHashcodeUtf8(&arrayU8[0], lengthEcmaStrU8), static_cast<int32_t>(hashExpect));
+    EXPECT_EQ(EcmaString::ComputeHashcodeUtf8(&arrayU8[0], lengthEcmaStrU8, true), static_cast<int32_t>(hashExpect));
 }
 
 /*

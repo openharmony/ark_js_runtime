@@ -39,11 +39,14 @@ void MixSpaceCollector::RunPhases()
     INTERPRETER_TRACE(thread, MixSpaceCollector_RunPhases);
     ClockScope clockScope;
 
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::RunPhases");
     concurrentMark_ = heap_->CheckConcurrentMark(thread);
+    ECMA_GC_LOG() << "concurrentMark_" << concurrentMark_;
     InitializePhase();
     MarkingPhase();
-    SweepPhases();
     EvacuaPhases();
+    SweepPhases();
+    heap_->GetEvacuation()->Finalize();
     FinishPhase();
     heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticOldCollector(
         clockScope.GetPauseTime(), freeSize_, oldSpaceCommitSize_, nonMoveSpaceCommitSize_);
@@ -52,9 +55,10 @@ void MixSpaceCollector::RunPhases()
 
 void MixSpaceCollector::InitializePhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::InitializePhase");
     if (!concurrentMark_) {
         heap_->Prepare();
-        if (!heap_->IsOnlyMarkSemi() && heap_->GetSweeper()->IsOldSpaceSwept()) {
+        if (!heap_->IsSemiMarkNeeded() && heap_->GetSweeper()->CanSelectCset()) {
             const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
         }
         heap_->EnumerateRegions([](Region *current) {
@@ -71,7 +75,7 @@ void MixSpaceCollector::InitializePhase()
             }
             current->SetMarking(false);
         });
-        if (heap_->IsOnlyMarkSemi()) {
+        if (heap_->IsSemiMarkNeeded()) {
             heap_->EnumerateNewSpaceRegions([this](Region *current) {
                 current->ResetAliveObject();
             });
@@ -91,6 +95,7 @@ void MixSpaceCollector::InitializePhase()
 
 void MixSpaceCollector::FinishPhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::FinishPhase");
     if (concurrentMark_) {
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
@@ -105,14 +110,14 @@ void MixSpaceCollector::FinishPhase()
 
 void MixSpaceCollector::MarkingPhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::MarkingPhase");
     if (concurrentMark_) {
         [[maybe_unused]] ClockScope scope;
         heap_->GetConcurrentMarker()->ReMarking();
         return;
     }
-    trace::ScopedTrace scoped_trace("MixSpaceCollector::MarkingPhase");
     heap_->GetNonMovableMarker()->MarkRoots(0);
-    if (heap_->IsOnlyMarkSemi()) {
+    if (heap_->IsSemiMarkNeeded()) {
         heap_->GetNonMovableMarker()->ProcessOldToNew(0);
     } else {
         heap_->GetNonMovableMarker()->ProcessMarkStack(0);
@@ -122,14 +127,15 @@ void MixSpaceCollector::MarkingPhase()
 
 void MixSpaceCollector::SweepPhases()
 {
-    trace::ScopedTrace scoped_trace("MixSpaceCollector::SweepPhases");
-    if (!heap_->IsOnlyMarkSemi()) {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::SweepPhases");
+    if (!heap_->IsSemiMarkNeeded()) {
         heap_->GetSweeper()->SweepPhases();
     }
 }
 
 void MixSpaceCollector::EvacuaPhases()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::EvacuaPhases");
     heap_->GetEvacuation()->Evacuate();
 }
 }  // namespace panda::ecmascript

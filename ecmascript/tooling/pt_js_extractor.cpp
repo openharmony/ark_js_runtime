@@ -88,7 +88,7 @@ CList<PtStepRange> PtJSExtractor::GetStepRanges(File::EntityId methodId, uint32_
 {
     CList<PtStepRange> ranges {};
     auto table = GetLineNumberTable(methodId);
-    auto offsetFunc = [table, &ranges](int32_t line) -> bool {
+    auto callbackFunc = [table, &ranges](size_t line, [[maybe_unused]] size_t column) -> bool {
         for (auto it = table.begin(); it != table.end(); ++it) {
             auto next = it + 1;
             if (static_cast<int32_t>(it->line) == line) {
@@ -98,7 +98,7 @@ CList<PtStepRange> PtJSExtractor::GetStepRanges(File::EntityId methodId, uint32_
         }
         return true;
     };
-    MatchWithOffset(offsetFunc, methodId, offset);
+    MatchWithOffset(callbackFunc, methodId, offset);
 
     return ranges;
 }

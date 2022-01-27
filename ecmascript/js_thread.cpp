@@ -63,10 +63,14 @@ JSThread::~JSThread()
     GetRegionFactory()->Free(frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
     frameBase_ = nullptr;
     regionFactory_ = nullptr;
-    delete internalCallParams_;
-    internalCallParams_ = nullptr;
-    delete propertiesCache_;
-    propertiesCache_ = nullptr;
+    if (internalCallParams_ != nullptr) {
+        delete internalCallParams_;
+        internalCallParams_ = nullptr;
+    }
+    if (propertiesCache_ != nullptr) {
+        delete propertiesCache_;
+        propertiesCache_ = nullptr;
+    }
 }
 
 EcmaVM *JSThread::GetEcmaVM() const

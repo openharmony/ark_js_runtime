@@ -339,7 +339,7 @@ CALL_STUB_INIT_DESCRIPTOR(FloatMod)
         MachineType::FLOAT64,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
@@ -527,7 +527,7 @@ CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
         MachineType::TAGGED_POINTER,
     };
     descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(SetValueWithBarrier)
@@ -955,6 +955,22 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowIfNotObject)
     // 1 : 1 input parameter
     std::array<MachineType, 1> params = {
         MachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(JSArrayListSetByIndex)
+{
+    // 4 : 4 input parameters
+    StubDescriptor arraylistSetByIndex("JSArrayListSetByIndex", 0, 4, ArgumentsOrder::DEFAULT_ORDER, MachineType::NONE);
+    *descriptor = arraylistSetByIndex;
+    // 4 : 4 input parameters
+    std::array<MachineType, 4> params = {
+        MachineType::NATIVE_POINTER,
+        MachineType::TAGGED_POINTER,
+        MachineType::INT32,
+        MachineType::TAGGED,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);

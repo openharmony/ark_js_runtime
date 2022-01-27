@@ -36,12 +36,12 @@ inline void LayoutInfo::SetNumberOfElements(const JSThread *thread, int properti
     return TaggedArray::Set(thread, NUMBER_OF_PROPERTIES_INDEX, JSTaggedValue(properties));
 }
 
-inline array_size_t LayoutInfo::GetKeyIndex(int index) const
+inline uint32_t LayoutInfo::GetKeyIndex(int index) const
 {
     return ELEMENTS_START_INDEX + (static_cast<uint32_t>(index) << 1U);
 }
 
-inline array_size_t LayoutInfo::GetAttrIndex(int index) const
+inline uint32_t LayoutInfo::GetAttrIndex(int index) const
 {
     return ELEMENTS_START_INDEX + (static_cast<uint32_t>(index) << 1U) + 1;
 }
@@ -49,14 +49,14 @@ inline array_size_t LayoutInfo::GetAttrIndex(int index) const
 inline void LayoutInfo::SetPropertyInit(const JSThread *thread, int index, const JSTaggedValue &key,
                                         const PropertyAttributes &attr)
 {
-    array_size_t fixed_idx = GetKeyIndex(index);
+    uint32_t fixed_idx = GetKeyIndex(index);
     TaggedArray::Set(thread, fixed_idx, key);
     TaggedArray::Set(thread, fixed_idx + 1, attr.GetNormalTagged());
 }
 
 inline void LayoutInfo::SetNormalAttr(const JSThread *thread, int index, const PropertyAttributes &attr)
 {
-    array_size_t fixed_idx = GetAttrIndex(index);
+    uint32_t fixed_idx = GetAttrIndex(index);
     PropertyAttributes oldAttr(TaggedArray::Get(fixed_idx));
     oldAttr.SetNormalAttr(attr.GetNormalAttr());
     TaggedArray::Set(thread, fixed_idx, oldAttr.GetTaggedValue());
@@ -64,30 +64,30 @@ inline void LayoutInfo::SetNormalAttr(const JSThread *thread, int index, const P
 
 inline JSTaggedValue LayoutInfo::GetKey(int index) const
 {
-    array_size_t fixed_idx = GetKeyIndex(index);
+    uint32_t fixed_idx = GetKeyIndex(index);
     return TaggedArray::Get(fixed_idx);
 }
 
 inline PropertyAttributes LayoutInfo::GetAttr(int index) const
 {
-    array_size_t fixed_idx = GetAttrIndex(index);
+    uint32_t fixed_idx = GetAttrIndex(index);
     return PropertyAttributes(TaggedArray::Get(fixed_idx));
 }
 
 inline JSTaggedValue LayoutInfo::GetSortedKey(int index) const
 {
-    array_size_t fixed_idx = GetSortedIndex(index);
+    uint32_t fixed_idx = GetSortedIndex(index);
     return GetKey(fixed_idx);
 }
 
-inline array_size_t LayoutInfo::GetSortedIndex(int index) const
+inline uint32_t LayoutInfo::GetSortedIndex(int index) const
 {
     return GetAttr(index).GetSortedIndex();
 }
 
 inline void LayoutInfo::SetSortedIndex(const JSThread *thread, int index, int sortedIndex)
 {
-    array_size_t fixed_idx = GetAttrIndex(index);
+    uint32_t fixed_idx = GetAttrIndex(index);
     PropertyAttributes attr(TaggedArray::Get(fixed_idx));
     attr.SetSortedIndex(sortedIndex);
     TaggedArray::Set(thread, fixed_idx, attr.GetTaggedValue());

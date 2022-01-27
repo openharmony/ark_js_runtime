@@ -38,6 +38,7 @@ bool ProfileProcessor::Run(uint32_t threadIndex)
     startTime = GetMicrosecondsTimeStamp();
     generator_->SetThreadStartTime(startTime);
     while (isStart_) {
+        static int collectCount = 1;
 #if ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER
         JSThread *thread = GetJSThread();
         ProfileGenerator::staticGcState_ = thread->GetGcState();
@@ -68,6 +69,14 @@ bool ProfileProcessor::Run(uint32_t threadIndex)
             usleep(ts);
         }
         startTime = GetMicrosecondsTimeStamp();
+        if (collectCount % 50 == 0) { // 50:The sampling times reached 50 times.
+            WriteSampleDataToFile();
+        }
+        collectCount++;
+    }
+    if (sem_post(&CpuProfiler::sem_) != 0) {
+        LOG(ERROR, RUNTIME) << "sem_ post failed";
+        return false;
     }
     return true;
 }
@@ -87,5 +96,23 @@ JSThread *ProfileProcessor::GetJSThread()
 void ProfileProcessor::SetIsStart(bool isStart)
 {
     isStart_ = isStart;
+}
+
+void ProfileProcessor::WriteSampleDataToFile()
+{
+    static int flag = 0;
+    if (!generator_->fileHandle_.is_open() || generator_->GetSampleData().size() < 1024 * 1024) { // 1024 * 1024:1M
+        return;
+    }
+    if (flag == 0) {
+        generator_->fileHandle_ << generator_->GetSampleData();
+        generator_->ClearSampleData();
+        generator_->fileHandle_.close();
+        generator_->fileHandle_.open(generator_->GetFileName().c_str(), std::ios::app);
+        flag++;
+        return;
+    }
+    generator_->fileHandle_ << generator_->GetSampleData();
+    generator_->ClearSampleData();
 }
 } // namespace panda::ecmascript

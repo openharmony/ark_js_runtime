@@ -53,7 +53,10 @@ TaggedObject *MemManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass, 
     }
     object = reinterpret_cast<TaggedObject *>(newSpaceAllocator_.Allocate(size));
     if (UNLIKELY(object == nullptr)) {
-        heap_->CollectGarbage(TriggerGCType::SEMI_GC);
+        if (!heap_->FillNewSpaceAndTryGC(&newSpaceAllocator_)) {
+            LOG_ECMA_MEM(FATAL) << "OOM : extend failed" << __LINE__;
+            UNREACHABLE();
+        }
         object = reinterpret_cast<TaggedObject *>(newSpaceAllocator_.Allocate(size));
         if (UNLIKELY(object == nullptr)) {
             heap_->CollectGarbage(TriggerGCType::OLD_GC);

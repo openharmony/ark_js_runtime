@@ -223,5 +223,8 @@ enum EcmaOpcode {
     JNEZ_IMM16,
     LAST_OPCODE,
 };
+
+// if modify EcmaOpcode, please update GetEcmaOpcodeStr()
+inline std::string GetEcmaOpcodeStr(EcmaOpcode opcode);
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_INTERPRETER_INTERPRETER_H

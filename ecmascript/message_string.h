@@ -20,10 +20,12 @@
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MESSAGE_STRING_LIST(V)                                     \
-    V(SetReadOnlyProperty, "Cannot set readonly property")         \
-    V(FunctionCallNotConstructor, "class constructor cannot call") \
-    V(SetPropertyWhenNotExtensible, "Cannot add property in prevent extensions ")
+#define MESSAGE_STRING_LIST(V)                                                    \
+    V(SetReadOnlyProperty, "Cannot set readonly property")                        \
+    V(FunctionCallNotConstructor, "class constructor cannot call")                \
+    V(SetPropertyWhenNotExtensible, "Cannot add property in prevent extensions ") \
+    V(GetPropertyOutOfBounds, "Get Property index out-of-bounds")                 \
+    V(CanNotSetPropertyOnContainer, "Cannot set property on Container")
 
 class MessageString {
 public:

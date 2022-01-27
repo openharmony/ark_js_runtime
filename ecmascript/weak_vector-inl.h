@@ -20,7 +20,7 @@
 #include "tagged_array-inl.h"
 
 namespace panda::ecmascript {
-array_size_t WeakVector::GetEnd() const
+uint32_t WeakVector::GetEnd() const
 {
     return TaggedArray::Get(END_INDEX).GetArrayLength();
 }
@@ -35,24 +35,24 @@ bool WeakVector::Empty() const
     return GetEnd() == 0;
 }
 
-array_size_t WeakVector::GetCapacity() const
+uint32_t WeakVector::GetCapacity() const
 {
     return TaggedArray::GetLength() - ELEMENTS_START_INDEX;
 }
 
-JSTaggedValue WeakVector::Get(array_size_t index) const
+JSTaggedValue WeakVector::Get(uint32_t index) const
 {
     ASSERT(index < GetCapacity());
     return TaggedArray::Get(VectorToArrayIndex(index));
 }
 
-void WeakVector::Set(const JSThread *thread, array_size_t index, JSTaggedValue value)
+void WeakVector::Set(const JSThread *thread, uint32_t index, JSTaggedValue value)
 {
     ASSERT(index < GetCapacity());
     TaggedArray::Set(thread, VectorToArrayIndex(index), value);
 }
 
-void WeakVector::SetEnd(const JSThread *thread, array_size_t end)
+void WeakVector::SetEnd(const JSThread *thread, uint32_t end)
 {
     ASSERT(end <= GetCapacity());
     TaggedArray::Set(thread, END_INDEX, JSTaggedValue(end));

@@ -136,7 +136,7 @@ bool SemiSpace::Expand(uintptr_t top)
     GetCurrentRegion()->SetHighWaterMark(top);
     Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_YOUNG_GENERATION);
-    if (!thread_->IsNotBeginMark()) {
+    if (!thread_->IsReadyToMark()) {
         region->SetMarking(true);
     }
 
@@ -229,6 +229,33 @@ void SemiSpace::IterateOverObjects(const std::function<void(TaggedObject *object
     });
 }
 
+size_t SemiSpace::GetAllocatedSizeSinceGC() const
+{
+    Region *last = GetCurrentRegion();
+    if (last->BelowAgeMark()) {
+        return 0;
+    }
+    auto top = GetHeap()->GetHeapManager()->GetNewSpaceAllocator().GetTop();
+    size_t result = 0;
+    if (last->HasAgeMark()) {
+        result = last->GetAllocatedBytes(top) - last->GetAllocatedBytes(ageMark_);
+        return result;
+    } else {
+        result = last->GetAllocatedBytes(top);
+    }
+    EnumerateRegions([this, &result, &last](Region *current) {
+        if (!current->HasAgeMark() && !current->BelowAgeMark()) {
+            if (current != last) {
+                result += current->GetAllocatedBytes();
+            }
+        } else if (current->HasAgeMark()) {
+            result += current->GetAllocatedBytes();
+            result -= current->GetAllocatedBytes(this->GetAgeMark());
+        }
+    });
+    return result;
+}
+
 OldSpace::OldSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
     : Space(heap, MemSpaceType::OLD_SPACE, initialCapacity, maximumCapacity)
 {
@@ -242,7 +269,7 @@ bool OldSpace::Expand()
     }
     Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
-    if (!thread_->IsNotBeginMark()) {
+    if (!thread_->IsReadyToMark()) {
         region->SetMarking(true);
     }
     region->InitializeKind();
@@ -326,7 +353,6 @@ size_t OldSpace::GetHeapObjectSize() const
     size_t result;
     size_t availableSize = heap_->GetHeapManager()->GetOldSpaceAllocator().GetAvailableSize();
     result = committedSize_ - availableSize;
-    result += heap_->GetHugeObjectSpace()->GetHeapObjectSize();
     return result;
 }
 
@@ -395,8 +421,9 @@ void OldSpace::SelectCSet()
     std::sort(collectRegionSet_.begin(), collectRegionSet_.end(), [](Region *first, Region *second) {
         return first->AliveObject() < second->AliveObject();
     });
-    if (collectRegionSet_.size() > PARTIAL_GC_MAX_COLLECT_REGION_SIZE) {
-        collectRegionSet_.resize(PARTIAL_GC_MAX_COLLECT_REGION_SIZE);
+    unsigned long selectedRegionNumber = GetSelectedRegionNumber();
+    if (collectRegionSet_.size() > selectedRegionNumber) {
+        collectRegionSet_.resize(selectedRegionNumber);
     }
     for (Region *region : collectRegionSet_) {
         region->SetFlag(RegionFlags::IS_IN_COLLECT_SET);
@@ -416,7 +443,7 @@ bool NonMovableSpace::Expand()
     }
     Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(IS_IN_NON_MOVABLE_GENERATION);
-    if (!thread_->IsNotBeginMark()) {
+    if (!thread_->IsReadyToMark()) {
         region->SetMarking(true);
     }
     region->InitializeKind();
@@ -448,7 +475,7 @@ bool SnapShotSpace::Expand(uintptr_t top)
     }
     Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_SNAPSHOT_SPACE_SIZE);
     region->SetFlag(RegionFlags::IS_IN_SNAPSHOT_GENERATION);
-    if (!thread_->IsNotBeginMark()) {
+    if (!thread_->IsReadyToMark()) {
         region->SetMarking(true);
     }
     AddRegion(region);
@@ -516,7 +543,9 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
 {
     if (committedSize_ >= maximumCapacity_) {
         LOG_ECMA_MEM(FATAL) << "Committed size " << committedSize_ << " of huge object space is too big. "
-                            << "length: " << GetRegionList().GetLength();
+                            << " old space committed: " << heap_->GetOldSpace()->GetCommittedSize()
+                            << " old space limit: " << heap_->GetOldSpaceAllocLimit()
+                            << " length: " << GetRegionList().GetLength();
         return 0;
     }
     size_t alignedSize = AlignUp(objectSize + sizeof(Region), PANDA_POOL_ALIGNMENT_IN_BYTES);
@@ -526,7 +555,7 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
     }
     Region *region = regionFactory_->AllocateAlignedRegion(this, alignedSize);
     region->SetFlag(RegionFlags::IS_HUGE_OBJECT);
-    if (!thread_->IsNotBeginMark()) {
+    if (!thread_->IsReadyToMark()) {
         region->SetMarking(true);
     }
     AddRegion(region);
@@ -584,11 +613,19 @@ bool MachineCodeSpace::Expand()
     region->SetFlag(IS_IN_NON_MOVABLE_GENERATION);
     region->InitializeKind();
     AddRegion(region);
-    if (!thread_->IsNotBeginMark()) {
+    if (!thread_->IsReadyToMark()) {
         region->SetMarking(true);
     }
     int res = region->SetCodeExecutableAndReadable();
     LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;
     return true;
+}
+
+size_t MachineCodeSpace::GetHeapObjectSize() const
+{
+    size_t result = 0;
+    size_t availableSize = GetHeap()->GetHeapManager()->GetMachineCodeSpaceAllocator().GetAvailableSize();
+    result = committedSize_ - availableSize;
+    return result;
 }
 }  // namespace panda::ecmascript

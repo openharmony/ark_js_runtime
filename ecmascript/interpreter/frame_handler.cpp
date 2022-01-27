@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -222,8 +223,8 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 
 void OptimizedFrameHandler::PrevFrame()
 {
-    OptimizedFrame *state = OptimizedFrame::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+    OptimizedFrameBase *state = OptimizedFrameBase::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prevFp);
 }
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
@@ -233,13 +234,16 @@ void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisito
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
-        bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
-            returnAddr, reinterpret_cast<uintptr_t>(sp_), v0, v1, derivedPointers, isVerifying);
+        bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
+            returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
             LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << returnAddr;
 #endif
             return;
+        }
+        for (auto slot : slotAddrs) {
+            v0(Root::ROOT_FRAME, ObjectSlot(slot));
         }
     }
 }
@@ -251,13 +255,16 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         std::set<uintptr_t> slotAddrs;
         auto returnAddr = reinterpret_cast<uintptr_t>(*(reinterpret_cast<uintptr_t*>(sp_) + 1));
-        bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
-            returnAddr, reinterpret_cast<uintptr_t>(sp_), v0, v1, derivedPointers, isVerifying);
+        bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
+            returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
         if (ret == false) {
 #ifndef NDEBUG
             LOG_ECMA(DEBUG) << " stackmap don't found returnAddr " << returnAddr;
 #endif
             return;
+        }
+        for (auto slot : slotAddrs) {
+            v0(Root::ROOT_FRAME, ObjectSlot(slot));
         }
     }
 }
@@ -265,28 +272,30 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 void OptimizedEntryFrameHandler::PrevFrame()
 {
     OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(state->threadFp);
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prevInterpretedFrameFp);
 }
 
 void OptimizedLeaveFrameHandler::PrevFrame()
 {
-    OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
-        reinterpret_cast<uintptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
-    sp_ = reinterpret_cast<JSTaggedType *>(state->prev);
+    OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(state->prevFp);
 }
 
 void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
-    OptLeaveFrame *state = reinterpret_cast<OptLeaveFrame *>(
-        reinterpret_cast<intptr_t>(sp_) - MEMBER_OFFSET(OptLeaveFrame, prev));
-    bool ret = kungfu::LLVMStackMapParser::GetInstance().VisitStackMapSlots(
-        state, v0, v1, derivedPointers, isVerifying);
+    OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(sp_);
+    std::set<uintptr_t> slotAddrs;
+    bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
+        state, slotAddrs, derivedPointers, isVerifying);
     if (ret == false) {
 #ifndef NDEBUG
         LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << state->patchId;
 #endif
         return;
+    }
+    for (auto slot : slotAddrs) {
+        v0(Root::ROOT_FRAME, ObjectSlot(slot));
     }
 }
 
@@ -307,18 +316,30 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             InterpretedFrameHandler(current).Iterate(v0, v1);
             current = state->base.prev;
         } else if (type == FrameType::OPTIMIZED_FRAME) {
-            OptimizedFrame *state = OptimizedFrame::GetFrameFromSp(current);
+            OptimizedFrameBase *frame = OptimizedFrameBase::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
-            current = reinterpret_cast<JSTaggedType *>(state->prev);
+            current = frame->prevFp;
         } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
-            OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(current);
-                current = reinterpret_cast<JSTaggedType *>(state->threadFp);
+            OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(current);
+            current = frame->prevInterpretedFrameFp;
+            ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME);
-            OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(current);
+            OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(current);
             OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
-            current = reinterpret_cast<JSTaggedType *>(state->prev);
+            //  arm32 only support stub, optimized entry frame don't exist, when interpret call stub
+            // don't customed prologue handle. when stub call runtime, generate optimized Leave Frame.
+            //  arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
+            // Leave Frame.
+#ifdef PANDA_TARGET_ARM32
+            current = frame->prevFp;
+            ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
+#else
+            current = reinterpret_cast<uintptr_t *>(frame->callsiteFp);
+            ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
+            FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME);
+#endif
         }
     }
 }

@@ -93,7 +93,7 @@ public:
      * The number of arguments pairs excluding the 'func', 'new.target' and 'this'. For instance:
      * for code fragment: " foo(v1); ", GetArgsNumber() returns 1
      */
-    inline array_size_t GetArgsNumber() const
+    inline uint32_t GetArgsNumber() const
     {
         return numArgs_ - NUM_MANDATORY_JSFUNC_ARGS;
     }

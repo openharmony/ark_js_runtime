@@ -39,6 +39,7 @@ float CStringToF(const CString &str);
 double CStringToD(const CString &str);
 
 CString ConvertToString(const std::string &str);
+std::string CstringConvertToString(const CString &str);
 
 // '\u0000' is skip according to holdZero
 CString ConvertToString(const ecmascript::EcmaString *s, StringConvertedUsage usage = StringConvertedUsage::PRINT);
