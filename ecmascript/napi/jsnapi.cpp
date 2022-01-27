@@ -104,9 +104,6 @@ template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
 namespace {
-constexpr uint32_t INTERNAL_POOL_SIZE = 0;
-constexpr uint32_t CODE_POOL_SIZE = 0;
-constexpr uint32_t COMPILER_POOL_SIZE = 0;
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 constexpr std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 }
@@ -123,9 +120,6 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     runtimeOptions.SetArkProperties(option.GetArkProperties());
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
-    runtimeOptions.SetInternalMemorySizeLimit(INTERNAL_POOL_SIZE);
-    runtimeOptions.SetCodeCacheSizeLimit(CODE_POOL_SIZE);
-    runtimeOptions.SetCompilerMemorySizeLimit(COMPILER_POOL_SIZE);
     runtimeOptions.SetInternalAllocatorType("malloc");
 
     // Boot
