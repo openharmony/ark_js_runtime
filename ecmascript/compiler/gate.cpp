@@ -29,11 +29,11 @@ Properties OpCode::GetProperties() const
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define STATE(...) (std::make_pair(std::vector<OpCode>{__VA_ARGS__}, false))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define VALUE(...) (std::make_pair(std::vector<ValueCode>{__VA_ARGS__}, false))
+#define VALUE(...) (std::make_pair(std::vector<MachineType>{__VA_ARGS__}, false))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MANY_STATE(...) (std::make_pair(std::vector<OpCode>{__VA_ARGS__}, true))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MANY_VALUE(...) (std::make_pair(std::vector<ValueCode>{__VA_ARGS__}, true))
+#define MANY_VALUE(...) (std::make_pair(std::vector<MachineType>{__VA_ARGS__}, true))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define NO_STATE (std::nullopt)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -59,7 +59,7 @@ Properties OpCode::GetProperties() const
         case RETURN:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(ANYVALUE), OpCode(RETURN_LIST)};
         case THROW:
-            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSValueCode()), OpCode(THROW_LIST)};
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSMachineType()), OpCode(THROW_LIST)};
         case ORDINARY_BLOCK:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
         case IF_BRANCH:
@@ -69,9 +69,6 @@ Properties OpCode::GetProperties() const
         case IF_TRUE:
         case IF_FALSE:
             return {NOVALUE, STATE(OpCode(IF_BRANCH)), NO_DEPEND, NO_VALUE, NO_ROOT};
-        case IF_SUCCESS:
-        case IF_EXCEPTION:
-            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
         case SWITCH_CASE:
         case DEFAULT_CASE:
             return {NOVALUE, STATE(OpCode(SWITCH_BRANCH)), NO_DEPEND, NO_VALUE, NO_ROOT};
@@ -91,7 +88,14 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, MANY_DEPEND, NO_VALUE, NO_ROOT};
         // High Level IR
         case JS_BYTECODE:
-            return {INT64, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
+            return {FLEX, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, MANY_VALUE(ANYVALUE), NO_ROOT};
+        case IF_SUCCESS:
+        case IF_EXCEPTION:
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
+        case EXCEPTION_VALUE:
+            return {FLEX, NO_STATE, NO_DEPEND, VALUE(FLEX), NO_ROOT};
+        case EXCEPTION_DEPEND:
+            return {NOVALUE, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
         // Middle Level IR
         case CALL:
             return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
@@ -199,8 +203,6 @@ std::string OpCode::Str() const
         {SWITCH_BRANCH, "SWITCH_BRANCH"},
         {IF_TRUE, "IF_TRUE"},
         {IF_FALSE, "IF_FALSE"},
-        {IF_SUCCESS, "IF_SUCCESS"},
-        {IF_EXCEPTION, "IF_EXCEPTION"},
         {SWITCH_CASE, "SWITCH_CASE"},
         {DEFAULT_CASE, "DEFAULT_CASE"},
         {MERGE, "MERGE"},
@@ -211,6 +213,10 @@ std::string OpCode::Str() const
         {DEPEND_RELAY, "DEPEND_RELAY"},
         {DEPEND_AND, "DEPEND_AND"},
         {JS_BYTECODE, "JS_BYTECODE"},
+        {IF_SUCCESS, "IF_SUCCESS"},
+        {IF_EXCEPTION, "IF_EXCEPTION"},
+        {EXCEPTION_VALUE, "EXCEPTION_VALUE"},
+        {EXCEPTION_DEPEND, "EXCEPTION_DEPEND"},
         {CALL, "CALL"},
         {ALLOCA, "ALLOCA"},
         {ARG, "ARG"},
@@ -292,12 +298,12 @@ size_t OpCode::GetOpCodeNumIns(BitField bitfield) const
     return numInsArray[0] + numInsArray[1] + numInsArray[2] + numInsArray[3];
 }
 
-ValueCode OpCode::GetValueCode() const
+MachineType OpCode::GetMachineType() const
 {
     return GetProperties().returnValue;
 }
 
-ValueCode OpCode::GetInValueCode(BitField bitfield, size_t idx) const
+MachineType OpCode::GetInMachineType(BitField bitfield, size_t idx) const
 {
     auto numInsArray = GetOpCodeNumInsArray(bitfield);
     auto valueProp = GetProperties().valuesIn;
@@ -320,9 +326,9 @@ OpCode OpCode::GetInStateCode(size_t idx) const
     return stateProp->first.at(idx);
 }
 
-std::string ValueCodeToStr(ValueCode valueCode)
+std::string MachineTypeToStr(MachineType machineType)
 {
-    switch (valueCode) {
+    switch (machineType) {
         case NOVALUE:
             return "NOVALUE";
         case ANYVALUE:
@@ -389,18 +395,18 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckValueInput() const
     size_t valueStart = numInsArray[0] + numInsArray[1];
     size_t valueEnd = numInsArray[0] + numInsArray[1] + numInsArray[2]; // 2 : 2 means the third element.
     for (size_t idx = valueStart; idx < valueEnd; idx++) {
-        auto expectedIn = GetOpCode().GetInValueCode(GetBitField(), idx);
-        auto actualIn = GetInGateConst(idx)->GetOpCode().GetValueCode();
-        if (expectedIn == ValueCode::FLEX) {
-            expectedIn = GetValueCode();
+        auto expectedIn = GetOpCode().GetInMachineType(GetBitField(), idx);
+        auto actualIn = GetInGateConst(idx)->GetOpCode().GetMachineType();
+        if (expectedIn == MachineType::FLEX) {
+            expectedIn = GetMachineType();
         }
-        if (actualIn == ValueCode::FLEX) {
-            actualIn = GetInGateConst(idx)->GetValueCode();
+        if (actualIn == MachineType::FLEX) {
+            actualIn = GetInGateConst(idx)->GetMachineType();
         }
 
         if ((expectedIn != actualIn) && (expectedIn != ANYVALUE)) {
-            return std::make_pair("Value input does not match (expected: " + ValueCodeToStr(expectedIn) +
-                    " actual: " + ValueCodeToStr(actualIn) + ")",
+            return std::make_pair("Value input does not match (expected: " + MachineTypeToStr(expectedIn) +
+                    " actual: " + MachineTypeToStr(actualIn) + ")",
                 idx);
         }
     }
@@ -620,49 +626,9 @@ bool Gate::Verify() const
     return !failed;
 }
 
-ValueCode JSValueCode()
+MachineType JSMachineType()
 {
-    return ValueCode::INT64;
-}
-
-ValueCode PtrValueCode()
-{
-#ifdef PANDA_TARGET_AMD64
-    return ValueCode::INT64;
-#endif
-#ifdef PANDA_TARGET_X86
-    return ValueCode::INT32;
-#endif
-#ifdef PANDA_TARGET_ARM64
-    return ValueCode::INT64;
-#endif
-#ifdef PANDA_TARGET_ARM32
-    return ValueCode::INT32;
-#endif
-}
-
-size_t GetValueBits(ValueCode valueCode)
-{
-    switch (valueCode) {
-        case NOVALUE:
-            return 0;  // 0: 0 means 0 bits
-        case INT1:
-            return 1;  // 1: 1 means 1 bits
-        case INT8:
-            return 8;  // 8: 8 means 8 bits
-        case INT16:
-            return 16;  // 16: 16 means 16 bits
-        case INT32:
-            return 32;  // 32: 32 means 32 bits
-        case INT64:
-            return 64;  // 64: 64 means 64 bits
-        case FLOAT32:
-            return 32;  // 32: 32 means 32 bits
-        case FLOAT64:
-            return 64;  // 64: 64 means 64 bits
-        default:
-            UNREACHABLE();
-    }
+    return MachineType::INT64;
 }
 
 size_t GetOpCodeNumIns(OpCode opcode, BitField bitfield)
@@ -780,7 +746,7 @@ bool In::IsGateNull() const
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type,
+Gate::Gate(GateId id, OpCode opcode, MachineType bitValue, BitField bitfield, Gate *inList[], GateType type,
            MarkCode mark)
     : id_(id), opcode_(opcode), bitValue_(bitValue), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield),
     firstOut_(0)
@@ -799,7 +765,7 @@ Gate::Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate
     }
 }
 
-Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark)
+Gate::Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], GateType type, MarkCode mark)
     : id_(id), opcode_(opcode), type_(type), stamp_(1), mark_(mark), bitfield_(bitfield), firstOut_(0)
 {
     auto numIns = GetNumIns();
@@ -977,14 +943,14 @@ OpCode Gate::GetOpCode() const
     return opcode_;
 }
 
-ValueCode Gate::GetValueCode() const
+MachineType Gate::GetMachineType() const
 {
     return bitValue_;
 }
 
-void Gate::SetValueCode(ValueCode valueCode)
+void Gate::SetMachineType(MachineType MachineType)
 {
-    bitValue_ = valueCode;
+    bitValue_ = MachineType;
 }
 
 void Gate::SetOpCode(OpCode opcode)
@@ -992,12 +958,12 @@ void Gate::SetOpCode(OpCode opcode)
     opcode_ = opcode;
 }
 
-TypeCode Gate::GetTypeCode() const
+GateType Gate::GetGateType() const
 {
     return type_;
 }
 
-void Gate::SetTypeCode(TypeCode type)
+void Gate::SetGateType(GateType type)
 {
     type_ = type;
 }
@@ -1022,9 +988,9 @@ void Gate::SetBitField(BitField bitfield)
     bitfield_ = bitfield;
 }
 
-std::string Gate::ValueCodeStr(ValueCode valCode) const
+std::string Gate::MachineTypeStr(MachineType machineType) const
 {
-    const std::map<ValueCode, const char *> strMap = {
+    const std::map<MachineType, const char *> strMap = {
             {NOVALUE, "NOVALUE"},
             {ANYVALUE, "ANYVALUE"},
             {ARCH, "ARCH"},
@@ -1037,10 +1003,27 @@ std::string Gate::ValueCodeStr(ValueCode valCode) const
             {FLOAT32, "FLOAT32"},
             {FLOAT64, "FLOAT64"},
     };
-    if (strMap.count(valCode) > 0) {
-        return strMap.at(valCode);
+    if (strMap.count(machineType) > 0) {
+        return strMap.at(machineType);
     }
-    return "ValueCode-" + std::to_string(valCode);
+    return "MachineType-" + std::to_string(machineType);
+}
+
+std::string Gate::GateTypeStr(GateType gateType) const
+{
+    const std::map<GateType, const char *> strMap = {
+            {C_VALUE, "C_VALUE"},
+            {TAGGED_VALUE, "TAGGED_VALUE"},
+            {TAGGED_POINTER, "TAGGED_POINTER"},
+            {TAGGED_NO_POINTER, "TAGGED_NO_POINTER"},
+            {EMPTY, "EMPTY"},
+            {JS_ANY, "JS_ANY"},
+    };
+
+    if (strMap.count(gateType) > 0) {
+        return strMap.at(gateType);
+    }
+    return "GateType-" + std::to_string(gateType);
 }
 
 void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) const
@@ -1051,9 +1034,9 @@ void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) 
                   << "op=" << GetOpCode().Str() << ", "
                   << ((bytecode.compare("") == 0) ? "" : "bytecode=") << bytecode
                   << ((bytecode.compare("") == 0) ? "" : ", ")
-                  << "valCode=" << ValueCodeStr(GetValueCode()) << ", "
+                  << "machineType=" << MachineTypeStr(GetMachineType()) << ", "
                   << "bitfield=" << std::to_string(bitfield_) << ", "
-                  << "type=" << static_cast<uint32_t>(type_) << ", "
+                  << "type=" << GateTypeStr(type_) << ", "
                   << "stamp=" << static_cast<uint32_t>(stamp_) << ", "
                   << "mark=" << static_cast<uint32_t>(mark_) << ", ";
         std::cerr << "in="
@@ -1117,7 +1100,7 @@ void Gate::PrintByteCode(std::string bytecode) const
 
 MarkCode Gate::GetMark(TimeStamp stamp) const
 {
-    return (stamp_ == stamp) ? mark_ : MarkCode::EMPTY;
+    return (stamp_ == stamp) ? mark_ : MarkCode::NO_MARK;
 }
 
 void Gate::SetMark(MarkCode mark, TimeStamp stamp)
@@ -1139,7 +1122,7 @@ bool OpCode::IsProlog() const
 bool OpCode::IsFixed() const
 {
     return (GetOpCodeNumInsArray(1)[0] > 0) &&
-        ((GetValueCode() != NOVALUE) ||
+        ((GetMachineType() != NOVALUE) ||
             ((GetOpCodeNumInsArray(1)[1] > 0) && (GetOpCodeNumInsArray(1)[2] == 0) &&
              (GetOpCodeNumInsArray(1)[3] == 0)));
 }

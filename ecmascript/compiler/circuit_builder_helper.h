@@ -160,7 +160,7 @@ public:
     {
         return nextVariableId_++;
     }
-    inline TypeCode GetTypeCode(GateRef gate) const;
+    inline GateType GetGateType(GateRef gate) const;
     inline Label GetLabelFromSelector(GateRef sel);
     inline void AddSelectorToLabel(GateRef sel, Label label);
     inline LabelImpl *NewLabel(LabelManager *lm, GateRef control = -1);
@@ -181,7 +181,7 @@ private:
 
 class Variable {
 public:
-    Variable(LabelManager *lm, MachineType type, uint32_t id, GateRef value) : id_(id), type_(type), lm_(lm)
+    Variable(LabelManager *lm, StubMachineType type, uint32_t id, GateRef value) : id_(id), type_(type), lm_(lm)
     {
         Bind(value);
         lm_->GetCurrentLabel()->WriteVariable(this, value);
@@ -197,7 +197,7 @@ public:
     {
         return currentValue_;
     }
-    MachineType Type() const
+    StubMachineType Type() const
     {
         return type_;
     }
@@ -233,7 +233,7 @@ public:
     }
 private:
     uint32_t id_;
-    MachineType type_;
+    StubMachineType type_;
     GateRef currentValue_ {0};
     LabelManager *lm_;
 };

@@ -22,15 +22,15 @@ using TaggedValue = panda::coretypes::TaggedValue;
 GateRef CircuitBuilder::NewArguments(size_t index)
 {
     auto argListOfCircuit = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-    return circuit_->NewGate(OpCode(OpCode::ARG), ValueCode::INT64, index, {argListOfCircuit}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::ARG), MachineType::INT64, index, {argListOfCircuit}, GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewMerge(GateRef *inList, size_t controlCount)
 {
-    return circuit_->NewGate(OpCode(OpCode::MERGE), controlCount, controlCount, inList, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::MERGE), controlCount, controlCount, inList, GateType::EMPTY);
 }
 
-GateRef CircuitBuilder::NewSelectorGate(OpCode opCode, GateRef control, int valueCounts, MachineType type)
+GateRef CircuitBuilder::NewSelectorGate(OpCode opCode, GateRef control, int valueCounts, StubMachineType type)
 {
     std::vector<GateRef> inList;
     inList.push_back(control);
@@ -38,11 +38,11 @@ GateRef CircuitBuilder::NewSelectorGate(OpCode opCode, GateRef control, int valu
         inList.push_back(Circuit::NullGate());
     }
 
-    return circuit_->NewGate(opCode, valueCounts, inList, MachineType2TypeCode(type));
+    return circuit_->NewGate(opCode, valueCounts, inList, StubMachineType2GateType(type));
 }
 
 GateRef CircuitBuilder::NewSelectorGate(OpCode opCode, GateRef control, std::vector<GateRef> &values,
-                                        int valueCounts, MachineType type)
+                                        int valueCounts, StubMachineType type)
 {
     std::vector<GateRef> inList;
     inList.push_back(control);
@@ -50,11 +50,11 @@ GateRef CircuitBuilder::NewSelectorGate(OpCode opCode, GateRef control, std::vec
         inList.push_back(values[i]);
     }
 
-    return circuit_->NewGate(opCode, valueCounts, inList, MachineType2TypeCode(type));
+    return circuit_->NewGate(opCode, valueCounts, inList, StubMachineType2GateType(type));
 }
 
-GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, ValueCode valCode, GateRef control, int valueCounts,
-                                        MachineType type)
+GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, MachineType machineType, GateRef control, int valueCounts,
+                                        StubMachineType type)
 {
     std::vector<GateRef> inList;
     inList.push_back(control);
@@ -62,11 +62,11 @@ GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, ValueCode valCode, GateRe
         inList.push_back(Circuit::NullGate());
     }
 
-    return circuit_->NewGate(opcode, valCode, valueCounts, inList, MachineType2TypeCode(type));
+    return circuit_->NewGate(opcode, machineType, valueCounts, inList, StubMachineType2GateType(type));
 }
 
-GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, ValueCode valCode, GateRef control, std::vector<GateRef> &values,
-                                        int valueCounts, MachineType type)
+GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, MachineType machineType, GateRef control,
+                                        std::vector<GateRef> &values, int valueCounts, StubMachineType type)
 {
     std::vector<GateRef> inList;
     inList.push_back(control);
@@ -74,218 +74,219 @@ GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, ValueCode valCode, GateRe
         inList.push_back(values[i]);
     }
 
-    return circuit_->NewGate(opcode, valCode, valueCounts, inList, MachineType2TypeCode(type));
+    return circuit_->NewGate(opcode, machineType, valueCounts, inList, StubMachineType2GateType(type));
 }
 
 GateRef CircuitBuilder::NewIntegerConstant(int32_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT32, val, {constantList}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT32, val, {constantList}, GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewInteger64Constant(int64_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, val, {constantList}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, val, {constantList}, GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewBooleanConstant(bool val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT32, val ? 1 : 0, {constantList}, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT32, val ? 1 : 0, {constantList},
+                             GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewDoubleConstant(double val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::FLOAT64, bit_cast<int64_t>(val), {constantList},
-                             TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::FLOAT64, bit_cast<int64_t>(val), {constantList},
+                             GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::UndefineConstant(TypeCode type)
+GateRef CircuitBuilder::UndefineConstant(GateType type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_UNDEFINED, { constantList },
-                             type);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_UNDEFINED,
+                             { constantList }, type);
 }
 
-GateRef CircuitBuilder::HoleConstant(TypeCode type)
-{
-    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_HOLE, { constantList },
-                             type);
-}
-
-GateRef CircuitBuilder::NullConstant(TypeCode type)
+GateRef CircuitBuilder::HoleConstant(GateType type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_NULL, { constantList },
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_HOLE, { constantList },
                              type);
 }
 
-GateRef CircuitBuilder::ExceptionConstant(TypeCode type)
+GateRef CircuitBuilder::NullConstant(GateType type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64, TaggedValue::VALUE_EXCEPTION, { constantList },
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_NULL, { constantList },
                              type);
+}
+
+GateRef CircuitBuilder::ExceptionConstant(GateType type)
+{
+    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
+    // NOTE: add bitfield value here
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_EXCEPTION,
+                             { constantList }, type);
 }
 
 GateRef CircuitBuilder::Branch(GateRef state, GateRef condition)
 {
-    return circuit_->NewGate(OpCode(OpCode::IF_BRANCH), 0, { state, condition }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::IF_BRANCH), 0, { state, condition }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::SwitchBranch(GateRef state, GateRef index, int caseCounts)
 {
-    return circuit_->NewGate(OpCode(OpCode::SWITCH_BRANCH), caseCounts, { state, index }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::SWITCH_BRANCH), caseCounts, { state, index }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::Return(GateRef state, GateRef depend, GateRef value)
 {
     auto returnList = Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST));
-    return circuit_->NewGate(OpCode(OpCode::RETURN), 0, { state, depend, value, returnList }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::RETURN), 0, { state, depend, value, returnList }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::ReturnVoid(GateRef state, GateRef depend)
 {
     auto returnList = Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST));
-    return circuit_->NewGate(OpCode(OpCode::RETURN_VOID), 0, { state, depend, returnList }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::RETURN_VOID), 0, { state, depend, returnList }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::Goto(GateRef state)
 {
-    return circuit_->NewGate(OpCode(OpCode::ORDINARY_BLOCK), 0, { state }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::ORDINARY_BLOCK), 0, { state }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::LoopBegin(GateRef state)
 {
     auto nullGate = Circuit::NullGate();
-    return circuit_->NewGate(OpCode(OpCode::LOOP_BEGIN), 0, { state, nullGate }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::LOOP_BEGIN), 0, { state, nullGate }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::LoopEnd(GateRef state)
 {
-    return circuit_->NewGate(OpCode(OpCode::LOOP_BACK), 0, { state }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::LOOP_BACK), 0, { state }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::NewIfTrue(GateRef ifBranch)
 {
-    return circuit_->NewGate(OpCode(OpCode::IF_TRUE), 0, { ifBranch }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::IF_TRUE), 0, { ifBranch }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::NewIfFalse(GateRef ifBranch)
 {
-    return circuit_->NewGate(OpCode(OpCode::IF_FALSE), 0, { ifBranch }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::IF_FALSE), 0, { ifBranch }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::NewSwitchCase(GateRef switchBranch, int64_t value)
 {
-    return circuit_->NewGate(OpCode(OpCode::SWITCH_CASE), value, { switchBranch }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::SWITCH_CASE), value, { switchBranch }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::NewDefaultCase(GateRef switchBranch)
 {
-    return circuit_->NewGate(OpCode(OpCode::DEFAULT_CASE), 0, { switchBranch }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::DEFAULT_CASE), 0, { switchBranch }, GateType::EMPTY);
 }
 
-ValueCode CircuitBuilder::GetStoreValueCodeFromMachineType(MachineType type)
+MachineType CircuitBuilder::GetStoreMachineTypeFromStubMachineType(StubMachineType type)
 {
     switch (type) {
-        case MachineType::INT8:
-            return ValueCode::INT8;
-        case MachineType::INT16:
-            return ValueCode::INT16;
-        case MachineType::INT32:
-            return ValueCode::INT32;
-        case MachineType::INT64:
-            return ValueCode::INT64;
-        case MachineType::BOOL:
-            return ValueCode::INT32;
-        case MachineType::UINT8:
-            return ValueCode::INT8;
-        case MachineType::UINT16:
-            return ValueCode::INT16;
-        case MachineType::UINT32:
-            return ValueCode::INT32;
-        case MachineType::UINT64:
-        case MachineType::TAGGED:
-        case MachineType::TAGGED_POINTER:
-            return ValueCode::INT64;
-        case MachineType::FLOAT32:
-            return ValueCode::FLOAT32;
-        case MachineType::FLOAT64:
-            return ValueCode::FLOAT64;
+        case StubMachineType::INT8:
+            return MachineType::INT8;
+        case StubMachineType::INT16:
+            return MachineType::INT16;
+        case StubMachineType::INT32:
+            return MachineType::INT32;
+        case StubMachineType::INT64:
+            return MachineType::INT64;
+        case StubMachineType::BOOL:
+            return MachineType::INT1;
+        case StubMachineType::UINT8:
+            return MachineType::INT8;
+        case StubMachineType::UINT16:
+            return MachineType::INT16;
+        case StubMachineType::UINT32:
+            return MachineType::INT32;
+        case StubMachineType::UINT64:
+        case StubMachineType::TAGGED:
+        case StubMachineType::TAGGED_POINTER:
+            return MachineType::INT64;
+        case StubMachineType::FLOAT32:
+            return MachineType::FLOAT32;
+        case StubMachineType::FLOAT64:
+            return MachineType::FLOAT64;
         default:
             UNREACHABLE();
     }
 }
 
-ValueCode CircuitBuilder::GetLoadValueCodeFromMachineType(MachineType type)
+MachineType CircuitBuilder::GetLoadMachineTypeFromStubMachineType(StubMachineType type)
 {
     switch (type) {
-        case MachineType::INT8:
-            return ValueCode::INT8;
-        case MachineType::INT16:
-            return ValueCode::INT16;
-        case MachineType::INT32:
-            return ValueCode::INT32;
-        case MachineType::INT64:
-            return ValueCode::INT64;
-        case MachineType::BOOL:
-            return ValueCode::INT32;
-        case MachineType::UINT8:
-            return ValueCode::INT8;
-        case MachineType::UINT16:
-            return ValueCode::INT16;
-        case MachineType::UINT32:
-            return ValueCode::INT32;
-        case MachineType::UINT64:
-        case MachineType::TAGGED:
-        case MachineType::TAGGED_POINTER:
-            return ValueCode::INT64;
-        case MachineType::FLOAT32:
-            return ValueCode::FLOAT32;
-        case MachineType::FLOAT64:
-            return ValueCode::FLOAT64;
+        case StubMachineType::INT8:
+            return MachineType::INT8;
+        case StubMachineType::INT16:
+            return MachineType::INT16;
+        case StubMachineType::INT32:
+            return MachineType::INT32;
+        case StubMachineType::INT64:
+            return MachineType::INT64;
+        case StubMachineType::BOOL:
+            return MachineType::INT1;
+        case StubMachineType::UINT8:
+            return MachineType::INT8;
+        case StubMachineType::UINT16:
+            return MachineType::INT16;
+        case StubMachineType::UINT32:
+            return MachineType::INT32;
+        case StubMachineType::UINT64:
+        case StubMachineType::TAGGED:
+        case StubMachineType::TAGGED_POINTER:
+            return MachineType::INT64;
+        case StubMachineType::FLOAT32:
+            return MachineType::FLOAT32;
+        case StubMachineType::FLOAT64:
+            return MachineType::FLOAT64;
         default:
             UNREACHABLE();
     }
 }
 
-ValueCode CircuitBuilder::GetValueCodeFromMachineType(MachineType type)
+MachineType CircuitBuilder::GetMachineTypeFromStubMachineType(StubMachineType stubType)
 {
-    switch (type) {
-        case MachineType::NONE:
-            return ValueCode::NOVALUE;
-        case MachineType::INT8:
-            return ValueCode::INT8;
-        case MachineType::INT16:
-            return ValueCode::INT16;
-        case MachineType::INT32:
-            return ValueCode::INT32;
-        case MachineType::INT64:
-            return ValueCode::INT64;
-        case MachineType::BOOL:
-            return ValueCode::INT1;
-        case MachineType::UINT8:
-            return ValueCode::INT8;
-        case MachineType::UINT16:
-            return ValueCode::INT16;
-        case MachineType::UINT32:
-            return ValueCode::INT32;
-        case MachineType::NATIVE_POINTER:
-            return ValueCode::ANYVALUE;
-        case MachineType::UINT64:
-        case MachineType::TAGGED:
-        case MachineType::TAGGED_POINTER:
-            return ValueCode::INT64;
-        case MachineType::FLOAT32:
-            return ValueCode::FLOAT32;
-        case MachineType::FLOAT64:
-            return ValueCode::FLOAT64;
+    switch (stubType) {
+        case StubMachineType::NONE:
+            return MachineType::NOVALUE;
+        case StubMachineType::INT8:
+            return MachineType::INT8;
+        case StubMachineType::INT16:
+            return MachineType::INT16;
+        case StubMachineType::INT32:
+            return MachineType::INT32;
+        case StubMachineType::INT64:
+            return MachineType::INT64;
+        case StubMachineType::BOOL:
+            return MachineType::INT1;
+        case StubMachineType::UINT8:
+            return MachineType::INT8;
+        case StubMachineType::UINT16:
+            return MachineType::INT16;
+        case StubMachineType::UINT32:
+            return MachineType::INT32;
+        case StubMachineType::NATIVE_POINTER:
+            return MachineType::ANYVALUE;
+        case StubMachineType::UINT64:
+        case StubMachineType::TAGGED:
+        case StubMachineType::TAGGED_POINTER:
+            return MachineType::INT64;
+        case StubMachineType::FLOAT32:
+            return MachineType::FLOAT32;
+        case StubMachineType::FLOAT64:
+            return MachineType::FLOAT64;
         default:
             UNREACHABLE();
     }
@@ -293,7 +294,7 @@ ValueCode CircuitBuilder::GetValueCodeFromMachineType(MachineType type)
 
 GateRef CircuitBuilder::NewDependRelay(GateRef state, GateRef depend)
 {
-    return circuit_->NewGate(OpCode(OpCode::DEPEND_RELAY), 0, { state, depend }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::DEPEND_RELAY), 0, { state, depend }, GateType::EMPTY);
 }
 
 GateRef CircuitBuilder::NewDependAnd(std::initializer_list<GateRef> args)
@@ -302,85 +303,86 @@ GateRef CircuitBuilder::NewDependAnd(std::initializer_list<GateRef> args)
     for (auto arg : args) {
         inputs.push_back(arg);
     }
-    return circuit_->NewGate(OpCode(OpCode::DEPEND_AND), args.size(), inputs, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::DEPEND_AND), args.size(), inputs, GateType::EMPTY);
 }
 
-GateRef CircuitBuilder::NewLoadGate(MachineType type, GateRef val, GateRef depend)
+GateRef CircuitBuilder::NewLoadGate(StubMachineType type, GateRef val, GateRef depend)
 {
-    ValueCode valCode = GetLoadValueCodeFromMachineType(type);
-    return circuit_->NewGate(OpCode(OpCode::LOAD), valCode, static_cast<BitField>(type), { depend, val },
-                             MachineType2TypeCode(type));
+    MachineType machineType = GetLoadMachineTypeFromStubMachineType(type);
+    return circuit_->NewGate(OpCode(OpCode::LOAD), machineType, static_cast<BitField>(type), { depend, val },
+                             StubMachineType2GateType(type));
 }
 
-GateRef CircuitBuilder::NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend)
+GateRef CircuitBuilder::NewStoreGate(StubMachineType type, GateRef ptr, GateRef val, GateRef depend)
 {
     return circuit_->NewGate(OpCode(OpCode::STORE), static_cast<BitField>(type), { depend, val, ptr },
-                             MachineType2TypeCode(type));
+                             StubMachineType2GateType(type));
 }
 
-GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right)
+GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, MachineType machineType, GateRef left, GateRef right)
 {
-    TypeCode type = circuit_->LoadGatePtr(left)->GetTypeCode();
-    return circuit_->NewGate(opcode, valCode, 0, { left, right }, type);
+    GateType type = circuit_->LoadGatePtr(left)->GetGateType();
+    return circuit_->NewGate(opcode, machineType, 0, { left, right }, type);
 }
 
-GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, ValueCode valCode, GateRef value)
+GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, MachineType machineType, GateRef value)
 {
-    return circuit_->NewGate(opcode, valCode, 0, { value }, TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, machineType, 0, { value }, GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, GateRef value)
 {
-    return circuit_->NewGate(opcode, 0, { value }, TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, 0, { value }, GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::NewLogicGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right)
+GateRef CircuitBuilder::NewLogicGate(OpCode opcode, MachineType machineType, GateRef left, GateRef right)
 {
-    return circuit_->NewGate(opcode, valCode, static_cast<BitField>(MachineType::BOOL), { left, right },
-                             TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, machineType, static_cast<BitField>(StubMachineType::BOOL), { left, right },
+                             GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewLogicGate(OpCode opcode, GateRef left, GateRef right)
 {
-    return circuit_->NewGate(opcode, static_cast<BitField>(MachineType::BOOL), { left, right }, TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, static_cast<BitField>(StubMachineType::BOOL), { left, right }, GateType::C_VALUE);
 }
 
-GateRef CircuitBuilder::NewLogicGate(OpCode opcode, ValueCode valCode, GateRef value)
+GateRef CircuitBuilder::NewLogicGate(OpCode opcode, MachineType machineType, GateRef value)
 {
-    return circuit_->NewGate(opcode, valCode, static_cast<BitField>(MachineType::BOOL), { value }, TypeCode::NOTYPE);
+    return circuit_->NewGate(opcode, machineType, static_cast<BitField>(StubMachineType::BOOL), { value },
+                             GateType::C_VALUE);
 }
 
-ValueCode CircuitBuilder::GetCallValueCodeFromMachineType(MachineType type)
+MachineType CircuitBuilder::GetCallMachineTypeFromStubMachineType(StubMachineType type)
 {
     switch (type) {
-        case MachineType::NONE:
-            return ValueCode::NOVALUE;
-        case MachineType::INT8:
-            return ValueCode::INT8;
-        case MachineType::INT16:
-            return ValueCode::INT64;
-        case MachineType::INT32:
-            return ValueCode::INT32;
-        case MachineType::INT64:
-            return ValueCode::INT64;
-        case MachineType::BOOL:
-            return ValueCode::INT1;
-        case MachineType::UINT8:
-            return ValueCode::INT8;
-        case MachineType::UINT16:
-            return ValueCode::INT16;
-        case MachineType::UINT32:
-            return ValueCode::INT32;
-        case MachineType::NATIVE_POINTER:
-            return ValueCode::ANYVALUE;
-        case MachineType::UINT64:
-        case MachineType::TAGGED:
-        case MachineType::TAGGED_POINTER:
-            return ValueCode::INT64;
-        case MachineType::FLOAT32:
-            return ValueCode::FLOAT32;
-        case MachineType::FLOAT64:
-            return ValueCode::FLOAT64;
+        case StubMachineType::NONE:
+            return MachineType::NOVALUE;
+        case StubMachineType::INT8:
+            return MachineType::INT8;
+        case StubMachineType::INT16:
+            return MachineType::INT64;
+        case StubMachineType::INT32:
+            return MachineType::INT32;
+        case StubMachineType::INT64:
+            return MachineType::INT64;
+        case StubMachineType::BOOL:
+            return MachineType::INT1;
+        case StubMachineType::UINT8:
+            return MachineType::INT8;
+        case StubMachineType::UINT16:
+            return MachineType::INT16;
+        case StubMachineType::UINT32:
+            return MachineType::INT32;
+        case StubMachineType::NATIVE_POINTER:
+            return MachineType::ANYVALUE;
+        case StubMachineType::UINT64:
+        case StubMachineType::TAGGED:
+        case StubMachineType::TAGGED_POINTER:
+            return MachineType::INT64;
+        case StubMachineType::FLOAT32:
+            return MachineType::FLOAT32;
+        case StubMachineType::FLOAT64:
+            return MachineType::FLOAT64;
         default:
             UNREACHABLE();
     }
@@ -399,9 +401,9 @@ GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, Ga
     for (auto arg : args) {
         inputs.push_back(arg);
     }
-    ValueCode valCode = GetCallValueCodeFromMachineType(descriptor->GetReturnType());
-    TypeCode type = MachineType2TypeCode(descriptor->GetReturnType());
-    return circuit_->NewGate(OpCode(OpCode::CALL), valCode, args.size() + extraparamCnt, inputs, type);
+    MachineType machineType = GetCallMachineTypeFromStubMachineType(descriptor->GetReturnType());
+    GateType type = StubMachineType2GateType(descriptor->GetReturnType());
+    return circuit_->NewGate(OpCode(OpCode::CALL), machineType, args.size() + extraparamCnt, inputs, type);
 }
 
 GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
@@ -414,15 +416,15 @@ GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, Ga
     for (auto arg : args) {
         inputs.push_back(arg);
     }
-    ValueCode valCode = GetCallValueCodeFromMachineType(descriptor->GetReturnType());
-    TypeCode type = MachineType2TypeCode(descriptor->GetReturnType());
+    MachineType machineType = GetCallMachineTypeFromStubMachineType(descriptor->GetReturnType());
+    GateType type = StubMachineType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)
-    return circuit_->NewGate(OpCode(OpCode::CALL), valCode, args.size() + 2, inputs, type);
+    return circuit_->NewGate(OpCode(OpCode::CALL), machineType, args.size() + 2, inputs, type);
 }
 
 GateRef CircuitBuilder::Alloca(int size)
 {
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));
-    return circuit_->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, TypeCode::NOTYPE);
+    return circuit_->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, GateType::C_VALUE);
 }
 }  // namespace panda::ecmascript::kungfu

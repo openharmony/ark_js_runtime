@@ -30,8 +30,8 @@ void PhiGateTestStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
+    DEFVARIABLE(z, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(x, StubMachineType::INT32, Int32Argument(0));
     Label ifTrue(env);
     Label ifFalse(env);
     Label next(env);
@@ -51,8 +51,8 @@ void LoopTestStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    DEFVARIABLE(z, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
+    DEFVARIABLE(z, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(y, StubMachineType::INT32, Int32Argument(0));
     Label loopHead(env);
     Label loopEnd(env);
     Label afterLoop(env);
@@ -82,9 +82,9 @@ void LoopTest1Stub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    DEFVARIABLE(y, MachineType::INT32, Int32Argument(0));
-    DEFVARIABLE(x, MachineType::INT32, Int32Argument(0));
-    DEFVARIABLE(z, MachineType::INT32, Int32Argument(0));
+    DEFVARIABLE(y, StubMachineType::INT32, Int32Argument(0));
+    DEFVARIABLE(x, StubMachineType::INT32, Int32Argument(0));
+    DEFVARIABLE(z, StubMachineType::INT32, Int32Argument(0));
     Label loopHead(env);
     Label loopEnd(env);
     Label afterLoop(env);
@@ -116,11 +116,11 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef x = Int64Argument(1);
     GateRef y = Int64Argument(2); // 2: 3rd argument
 
-    DEFVARIABLE(intX, MachineType::INT64, GetWord64Constant(0));
-    DEFVARIABLE(intY, MachineType::INT64, GetWord64Constant(0));
-    DEFVARIABLE(valuePtr, MachineType::INT64, GetWord64Constant(0));
-    DEFVARIABLE(doubleX, MachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(intX, StubMachineType::INT64, GetWord64Constant(0));
+    DEFVARIABLE(intY, StubMachineType::INT64, GetWord64Constant(0));
+    DEFVARIABLE(valuePtr, StubMachineType::INT64, GetWord64Constant(0));
+    DEFVARIABLE(doubleX, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleY, StubMachineType::FLOAT64, GetDoubleConstant(0));
     Label xIsNumber(env);
     Label xNotNumberOryNotNumber(env);
     Label xIsNumberAndyIsNumber(env);
@@ -150,7 +150,7 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -177,10 +177,10 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef ptr2 = CallRuntime(getTaggedArrayPtr, glue, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
         glue
     });
-    auto value1 = Load(MachineType::UINT64, ptr1);
+    auto value1 = Load(StubMachineType::UINT64, ptr1);
     GateRef tmp = CastInt64ToFloat64(value1);
     doubleX = DoubleMul(*doubleX, tmp);
-    auto value2 = Load(MachineType::UINT64, ptr2);
+    auto value2 = Load(StubMachineType::UINT64, ptr2);
     tmp = CastInt64ToFloat64(value2);
     doubleX = DoubleMul(*doubleX, tmp);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -193,10 +193,10 @@ void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
     auto env = GetEnvironment();
     GateRef x = TaggedArgument(0);
     GateRef y = TaggedArgument(1);
-    DEFVARIABLE(intX, MachineType::INT32, 0);
-    DEFVARIABLE(intY, MachineType::INT32, 0);
-    DEFVARIABLE(doubleX, MachineType::FLOAT64, 0);
-    DEFVARIABLE(doubleY, MachineType::FLOAT64, 0);
+    DEFVARIABLE(intX, StubMachineType::INT32, 0);
+    DEFVARIABLE(intY, StubMachineType::INT32, 0);
+    DEFVARIABLE(doubleX, StubMachineType::FLOAT64, 0);
+    DEFVARIABLE(doubleY, StubMachineType::FLOAT64, 0);
     Label xIsNumber(env);
     Label xNotNumberOryNotNumber(env);
     Label xIsNumberAndyIsNumber(env);
@@ -226,7 +226,7 @@ void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -255,10 +255,10 @@ void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
     auto env = GetEnvironment();
     GateRef x = TaggedArgument(0);
     GateRef y = TaggedArgument(1);
-    DEFVARIABLE(intX, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(intY, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(doubleX, MachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(intX, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(intY, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(doubleX, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleY, StubMachineType::FLOAT64, GetDoubleConstant(0));
     Label xIsNumber(env);
     Label xNotNumberOryNotNumber(env);
     Label xNotIntOryNotInt(env);
@@ -317,7 +317,7 @@ void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
     Bind(&xNotIntOryNotInt);
     doubleX = DoubleSub(*doubleX, *doubleY);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -331,10 +331,10 @@ void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
     auto env = GetEnvironment();
     GateRef x = TaggedArgument(0);
     GateRef y = TaggedArgument(1);
-    DEFVARIABLE(intX, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(intY, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(doubleX, MachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(intX, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(intY, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(doubleX, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleY, StubMachineType::FLOAT64, GetDoubleConstant(0));
     Label xIsNumber(env);
     Label xNotNumberOryNotNumber(env);
     Label xIsNumberAndyIsNumber(env);
@@ -364,7 +364,7 @@ void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -393,10 +393,10 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
     auto env = GetEnvironment();
     GateRef x = TaggedArgument(0);
     GateRef y = TaggedArgument(1);
-    DEFVARIABLE(intX, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(intY, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(doubleX, MachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(intX, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(intY, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(doubleX, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleY, StubMachineType::FLOAT64, GetDoubleConstant(0));
     Label xIsNumber(env);
     Label xNotNumberOryNotNumber(env);
     Label xIsNumberAndyIsNumber(env);
@@ -426,7 +426,7 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -494,10 +494,10 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef glue = PtrArgument(0);
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2); // 2: 3rd argument
-    DEFVARIABLE(intX, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(intY, MachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(doubleX, MachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(intX, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(intY, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(doubleX, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleY, StubMachineType::FLOAT64, GetDoubleConstant(0));
     Label xIsInt(env);
     Label xNotIntOryNotInt(env);
     Branch(TaggedIsInt(x), &xIsInt, &xNotIntOryNotInt);
@@ -560,7 +560,7 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
             }
         }
         Bind(&xNotNumberOryNotNumber);
-        Return(GetHoleConstant(MachineType::UINT64));
+        Return(GetHoleConstant(StubMachineType::UINT64));
         Label yIfInt(env);
         Label yIfNotInt(env);
         Bind(&xIsNumberAndyIsNumber);
@@ -649,17 +649,17 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
     auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     GateRef obj = TaggedArgument(1);
-    DEFVARIABLE(holder, MachineType::TAGGED, obj);
+    DEFVARIABLE(holder, StubMachineType::TAGGED, obj);
     GateRef gConstOffset = PtrAdd(glue, GetArchRelateConstant(env->GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
     GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
-    GateRef gConstUndefindStr = Load(MachineType::TAGGED_POINTER, gConstOffset, booleanIndex);
-    DEFVARIABLE(resultRep, MachineType::TAGGED_POINTER, gConstUndefindStr);
+    GateRef gConstUndefindStr = Load(StubMachineType::TAGGED_POINTER, gConstOffset, booleanIndex);
+    DEFVARIABLE(resultRep, StubMachineType::TAGGED_POINTER, gConstUndefindStr);
     Label objIsTrue(env);
     Label objNotTrue(env);
     Label exit(env);
     Label defaultLabel(env);
     GateRef gConstBooleanStr = Load(
-        MachineType::TAGGED_POINTER, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+        StubMachineType::TAGGED_POINTER, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
     Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
     Bind(&objIsTrue);
     {
@@ -684,7 +684,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
             Bind(&objIsNull);
             {
                 resultRep = Load(
-                    MachineType::TAGGED_POINTER, gConstOffset,
+                    StubMachineType::TAGGED_POINTER, gConstOffset,
                     GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                 Jump(&exit);
             }
@@ -696,7 +696,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
                     &objNotUndefined);
                 Bind(&objIsUndefined);
                 {
-                    resultRep = Load(MachineType::TAGGED_POINTER, gConstOffset,
+                    resultRep = Load(StubMachineType::TAGGED_POINTER, gConstOffset,
                         GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
                     Jump(&exit);
                 }
@@ -718,7 +718,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
             Bind(&objIsString);
             {
                 resultRep = Load(
-                    MachineType::TAGGED_POINTER, gConstOffset,
+                    StubMachineType::TAGGED_POINTER, gConstOffset,
                     GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
                 Jump(&exit);
             }
@@ -729,7 +729,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
                 Branch(IsSymbol(obj), &objIsSymbol, &objNotSymbol);
                 Bind(&objIsSymbol);
                 {
-                    resultRep = Load(MachineType::TAGGED_POINTER, gConstOffset,
+                    resultRep = Load(StubMachineType::TAGGED_POINTER, gConstOffset,
                         GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
                     Jump(&exit);
                 }
@@ -741,14 +741,14 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
                     Bind(&objIsCallable);
                     {
                         resultRep = Load(
-                            MachineType::TAGGED_POINTER, gConstOffset,
+                            StubMachineType::TAGGED_POINTER, gConstOffset,
                             GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
                         Jump(&exit);
                     }
                     Bind(&objNotCallable);
                     {
                         resultRep = Load(
-                            MachineType::TAGGED_POINTER, gConstOffset,
+                            StubMachineType::TAGGED_POINTER, gConstOffset,
                             GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                         Jump(&exit);
                     }
@@ -763,7 +763,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
             Bind(&objIsNum);
             {
                 resultRep = Load(
-                    MachineType::TAGGED_POINTER, gConstOffset,
+                    StubMachineType::TAGGED_POINTER, gConstOffset,
                     GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
                 Jump(&exit);
             }
@@ -851,7 +851,7 @@ void FastEqualStub::GenerateCircuit(const CompilationConfig *cfg)
                 }
                 Bind(&xNotBooleanAndyNotSpecial);
                 {
-                    Return(GetHoleConstant(MachineType::UINT64));
+                    Return(GetHoleConstant(StubMachineType::UINT64));
                 }
             }
         }
@@ -911,7 +911,7 @@ void FunctionCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
-    GateRef func = PtrArgument(1, TypeCode::TAGGED_POINTER);
+    GateRef func = PtrArgument(1, GateType::TAGGED_POINTER);
     GateRef thisArg = TaggedArgument(2); /* 2 : 3rd parameter is value */
     GateRef argc = Int32Argument(3); /* 3 : 4th parameter is value */
     GateRef argv = PtrArgument(4); /* 4 : 5th parameter is ptr */
@@ -925,7 +925,7 @@ void FunctionCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcIsBuiltinsConstructorOrFuncNotClassConstructor);
         Bind(&funcIsClassConstructor);
         ThrowTypeAndReturn(glue, GET_MESSAGE_STRING_ID(FunctionCallNotConstructor),
-                           GetExceptionConstant(MachineType::UINT64));
+                           GetExceptionConstant(StubMachineType::UINT64));
     }
     Bind(&funcIsBuiltinsConstructorOrFuncNotClassConstructor);
     StubDescriptor *execute = GET_STUBDESCRIPTOR(Execute);
@@ -940,7 +940,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     GateRef receiver = TaggedArgument(1);
-    DEFVARIABLE(key, MachineType::TAGGED, TaggedArgument(2)); /* 2 : 3rd parameter is key */
+    DEFVARIABLE(key, StubMachineType::TAGGED, TaggedArgument(2)); /* 2 : 3rd parameter is key */
 
     Label isNumberOrStringSymbol(env);
     Label notNumber(env);
@@ -1013,7 +1013,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     GateRef receiver = TaggedArgument(1);
-    DEFVARIABLE(key, MachineType::TAGGED, TaggedArgument(2)); /* 2 : 3rd parameter is key */
+    DEFVARIABLE(key, StubMachineType::TAGGED, TaggedArgument(2)); /* 2 : 3rd parameter is key */
     GateRef value = TaggedArgument(3);            /* 3 : 4th parameter is value */
 
     Label isNumberOrStringSymbol(env);
@@ -1028,7 +1028,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(TaggedIsStringOrSymbol(*key), &isNumberOrStringSymbol, &notStringOrSymbol);
         Bind(&notStringOrSymbol);
         {
-            Return(GetHoleConstant(MachineType::UINT64));
+            Return(GetHoleConstant(StubMachineType::UINT64));
         }
     }
     Bind(&isNumberOrStringSymbol);
@@ -1078,7 +1078,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&exit);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
 }
 
 void TryLoadICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -1196,7 +1196,7 @@ void TryStoreICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&receiverNotHeapObject);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
 }
 
 void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
@@ -1237,6 +1237,6 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&receiverNotHeapObject);
-    Return(GetHoleConstant(MachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::UINT64));
 }
 }  // namespace panda::ecmascript::kungfu

@@ -104,7 +104,7 @@ int Main(const int argc, const char **argv)
 
     runtimeOptions.SetShouldLoadBootPandaFiles(false);
     runtimeOptions.SetShouldInitializeIntrinsics(false);
-    runtimeOptions.SetBootClassSpaces({"ecmascript"});
+    runtimeOptions.SetBootClassSpaces( {"ecmascript"} );
     runtimeOptions.SetRuntimeType("ecmascript");
     JSNApi::SetOptions(runtimeOptions);
     static EcmaLanguageContext lcEcma;
@@ -125,7 +125,6 @@ int Main(const int argc, const char **argv)
     std::string entry = entrypoint.GetValue();
 
     arg_list_t fileNames = files.GetValue();
-    BytecodeCircuitBuilder builder;
     for (const auto &fileName : fileNames) {
         LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
         std::vector<BytecodeTranslationInfo> infoList;
@@ -137,6 +136,7 @@ int Main(const int argc, const char **argv)
             break;
         }
         for (auto &info : infoList) {
+            BytecodeCircuitBuilder builder;
             builder.BytecodeToCircuit(info.pcArray, *info.file, info.method);
         }
     }

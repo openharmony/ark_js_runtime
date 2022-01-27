@@ -264,7 +264,7 @@ bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<GateRef> *s
     for (const auto &gate : bbGatesList) {
         for (const auto &predGate : circuit->GetInVector(gate)) {
             if (circuit->GetOpCode(predGate).IsSchedulable()) {
-                if (circuit->GetMark(predGate) == MarkCode::EMPTY) {
+                if (circuit->GetMark(predGate) == MarkCode::NO_MARK) {
                     startGateList.push_back(predGate);
                     circuit->SetMark(predGate, MarkCode::VISITED);
                 }
@@ -274,7 +274,7 @@ bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<GateRef> *s
     for (const auto &gate : fixedGatesList) {
         for (const auto &predGate : circuit->GetInVector(gate)) {
             if (circuit->GetOpCode(predGate).IsSchedulable()) {
-                if (circuit->GetMark(predGate) == MarkCode::EMPTY) {
+                if (circuit->GetMark(predGate) == MarkCode::NO_MARK) {
                     startGateList.push_back(predGate);
                     circuit->SetMark(predGate, MarkCode::VISITED);
                 }
@@ -320,7 +320,7 @@ bool Verifier::RunFlowCyclesFind(const Circuit *circuit, std::vector<GateRef> *s
         return true;
     };
     for (const auto &startGate : startGateList) {
-        if (circuit->GetMark(startGate) == MarkCode::EMPTY) {
+        if (circuit->GetMark(startGate) == MarkCode::NO_MARK) {
             if (!dfs(startGate)) {
                 std::cerr << "Path:" << std::endl;
                 for (const auto &cycleGate : cycleGatesList) {
