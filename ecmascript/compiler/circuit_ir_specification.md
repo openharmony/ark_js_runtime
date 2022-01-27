@@ -46,13 +46,27 @@ There are two levels of types of values in Circuit IR:
 
 Validation rules of primary type are already builtin for Circuit IR. Validation rules of secondary types need to be additionally provided.
 
+### Layout of type representation bits (GateType)
+
+GateType is represented by 64 bits:
+
+* The 31st bit is used to distinguish between MIR type and TS type, `0` means TS type, `1` means MIR type.
+
+* The 30th and 29th bits are used to indicate whether the output values of the MIR gates are GC related (when within the category of tagged values) as follows:
+    * `00` means GC may or may not occur (within the `GC` or `NOGC` tagged value category)
+    * `01` means GC will occur (within the `GC` tagged value category)
+    * `10` means GC will not occur (within the `NOGC` tagged value category)
+    * `11` means not within the category of tagged values (within the C++ world category)
+
+* In the case of MIR type, the 1st bit in GateType is used to indicate whether there are output values. When MachineType is `NOVALUE`, GateType is always `EMPTY`.
+
 ### Type inference
 
 Primary types are all set during construction of Circuit IR, so no furthermore type inference is required. Circuit IR verifier will verify consistency of primary types. Secondary types can be not precisely set during construction (e.g. leaving many intermediate values as `JS_ANY`), and the compiler should be able to do type inference and check type consistency following data flow paths (e.g. `c:<JS_ANY>=JS_ADD(a:<JS_NUMBER>, b:<JS_STRING>) -> c:<JS_STRING>=JS_ADD(a:<JS_NUMBER>, b:<JS_STRING>)` and `c:<JS_ANY>=VALUE_SELECTOR(a:<JS_STRING>, b:<JS_ARRAY>) -> c:<JS_HEAP_OBJECT>=JS_ADD(a:<JS_STRING>, b:<JS_ARRAY>)`), thus the secondary types will be more precise than initially set at the end.
 
 ## Instructions
 
-There are three levels of instructions in Circuit IR: high-level instructions (HIR), middle-level instructions (MIR) and low-level instructions (LIR). They have the same underlying basic structure, so they can co-occur in the same Circuit IR graphs, and the semantics are still consistent. Instructions are not necessarily computational gates. Some instructions may throw an exception and lead to state transition, so they are state gates doing computations. There are also some "pure" state gates that does not do computation, they are compatible with all levels of instructions.
+There are three levels of instructions in Circuit IR: high-level instructions (HIR), middle-level instructions (MIR), and low-level instructions (LIR). They have the same underlying basic structure, so they can co-occur in the same Circuit IR graphs, and the semantics are still consistent. Instructions are not necessarily computational gates. Some instructions may throw an exception and lead to state transition, so they are state gates doing computations. There are also some "pure" state gates that do not do computations, they are compatible with all levels of instructions.
 
 * HIR instructions represent language-related computational process, which usually correspond to the bytecodes of specific languages.
 * MIR instructions are language-independent and target-independent, which are similar to LLVM IR, but having a completely different type system. The type system is very lightweight, designed to better support fast compilation and garbage collection.

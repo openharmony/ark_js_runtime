@@ -39,7 +39,7 @@ public:
         TEST_FUNC,
     };
     explicit StubDescriptor(std::string name, int flags, int paramCounter, ArgumentsOrder order,
-                                     MachineType returnType)
+                                     StubMachineType returnType)
         : name_(name), flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
     {
     }
@@ -54,7 +54,7 @@ public:
         kind_ = other.kind_;
         returnType_ = other.returnType_;
         if (paramCounter_ > 0 && other.paramsType_ != nullptr) {
-            paramsType_ = std::make_unique<std::vector<MachineType>>(paramCounter_);
+            paramsType_ = std::make_unique<std::vector<StubMachineType>>(paramCounter_);
             for (int i = 0; i < paramCounter_; i++) {
                 (*paramsType_)[i] = other.GetParametersType()[i];
             }
@@ -70,7 +70,7 @@ public:
         kind_ = other.kind_;
         returnType_ = other.returnType_;
         if (paramCounter_ > 0 && other.paramsType_ != nullptr) {
-            paramsType_ = std::make_unique<std::vector<MachineType>>(paramCounter_);
+            paramsType_ = std::make_unique<std::vector<StubMachineType>>(paramCounter_);
             for (int i = 0; i < paramCounter_; i++) {
                 (*paramsType_)[i] = other.GetParametersType()[i];
             }
@@ -78,17 +78,17 @@ public:
         return *this;
     }
 
-    void SetParameters(MachineType *paramsType)
+    void SetParameters(StubMachineType *paramsType)
     {
         if (paramCounter_ > 0 && paramsType_ == nullptr) {
-            paramsType_ = std::make_unique<std::vector<MachineType>>(paramCounter_);
+            paramsType_ = std::make_unique<std::vector<StubMachineType>>(paramCounter_);
             for (int i = 0; i < paramCounter_; i++) {
                 (*paramsType_)[i] = paramsType[i];
             }
         }
     }
 
-    MachineType *GetParametersType() const
+    StubMachineType *GetParametersType() const
     {
         if (paramsType_ != nullptr) {
             return paramsType_->data();
@@ -102,7 +102,7 @@ public:
         return paramCounter_;
     }
 
-    MachineType GetReturnType() const
+    StubMachineType GetReturnType() const
     {
         return returnType_;
     }
@@ -155,8 +155,8 @@ private:
     int paramCounter_ {0};
     ArgumentsOrder order_ {ArgumentsOrder::DEFAULT_ORDER};
 
-    MachineType returnType_ {MachineType::NONE};
-    std::unique_ptr<std::vector<MachineType>> paramsType_ {nullptr};
+    StubMachineType returnType_ {StubMachineType::NONE};
+    std::unique_ptr<std::vector<StubMachineType>> paramsType_ {nullptr};
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

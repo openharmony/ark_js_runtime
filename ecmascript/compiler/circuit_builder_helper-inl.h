@@ -95,9 +95,9 @@ void Label::SetDepend(GateRef depend)
     return impl_->SetDepend(depend);
 }
 
-TypeCode LabelManager::GetTypeCode(GateRef gate) const
+GateType LabelManager::GetGateType(GateRef gate) const
 {
-    return circuit_->LoadGatePtr(gate)->GetTypeCode();
+    return circuit_->LoadGatePtr(gate)->GetGateType();
 }
 
 Label LabelManager::GetLabelFromSelector(GateRef sel)

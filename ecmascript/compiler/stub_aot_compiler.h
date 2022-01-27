@@ -21,7 +21,6 @@
 
 namespace panda::ecmascript::kungfu {
 class Stub;
-class circuit;
 class StubAotCompiler {
 public:
     StubAotCompiler()

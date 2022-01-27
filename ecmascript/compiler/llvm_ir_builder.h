@@ -148,7 +148,7 @@ public:
 private:
     LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
-    LLVMTypeRef ConvertLLVMTypeFromMachineType(MachineType type);
+    LLVMTypeRef ConvertLLVMTypeFromStubMachineType(StubMachineType type);
     static constexpr uint32_t MAX_STUB_FUNCTION_COUNT = panda::ecmascript::kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT;
     static constexpr uint32_t MAX_TEST_FUNCTION_COUNT =
         panda::ecmascript::kungfu::TEST_FUNC_MAXCOUNT - panda::ecmascript::kungfu::TEST_FUNC_BEGIN - 1;
@@ -242,7 +242,7 @@ private:
         return LLVMInt64Type();
     }
     LLVMTypeRef ConvertLLVMTypeFromGate(GateRef gate) const;
-    int64_t GetBitWidthFromValueCode(ValueCode valCode) const;
+    int64_t GetBitWidthFromMachineType(MachineType machineType) const;
     LLVMValueRef PointerAdd(LLVMValueRef baseAddr, LLVMValueRef offset, LLVMTypeRef rep);
     LLVMValueRef VectorAdd(LLVMValueRef e1Value, LLVMValueRef e2Value, LLVMTypeRef rep);
     LLVMValueRef CanonicalizeToInt(LLVMValueRef value);
@@ -254,6 +254,8 @@ private:
     void ConstructFrame();
     void PushFrameContext(LLVMValueRef newSp, LLVMValueRef oldSp);
     void DestoryFrame();
+    bool IsGCRelated(GateType typeCode) const;
+
 private:
     const CompilationConfig *compCfg_ {nullptr};
     const std::vector<std::vector<GateRef>> *schedule_ {nullptr};
