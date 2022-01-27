@@ -122,7 +122,7 @@ std::string HeapProfiler::GenDumpFileName(DumpFormat dumpFormat)
             break;
     }
     filename.append(".heapsnapshot");
-    return CstringConvertToString(filename);
+    return CstringConvertToStdString(filename);
 }
 
 CString HeapProfiler::GetTimeStamp()
