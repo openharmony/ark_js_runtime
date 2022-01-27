@@ -64,7 +64,7 @@ void EvacuationAllocator::Finalize(TriggerGCType type)
     heapManager->GetNewSpaceAllocator().Swap(newSpaceAllocator_);
 
     // Reclaim Region
-    if (heap_->IsEnableParallelGC()) {
+    if (heap_->IsParallelGCEnabled()) {
         isFreeTaskFinish_ = false;
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<AsyncFreeRegionTask>(this, type));
     } else {

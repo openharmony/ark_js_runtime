@@ -21,13 +21,6 @@
 
 namespace panda {
 namespace ecmascript {
-const uint8_t *LexicalFunction::GetInstructions() const
-{
-    JSTaggedValue inst = GetBytecode();
-    void *buffer = JSNativePointer::Cast(inst.GetTaggedObject())->GetExternalPointer();
-    return static_cast<uint8_t *>(buffer);
-}
-
 JSTaggedValue ConstantPool::GetObjectFromCache(uint32_t index) const
 {
     return Get(index);

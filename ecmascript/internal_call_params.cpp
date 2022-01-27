@@ -22,14 +22,14 @@ void InternalCallParams::MakeArgv(const EcmaRuntimeCallInfo *info, uint32_t posi
     uint32_t length =  mayLenth > 0 ? mayLenth : 0;
     if (LIKELY(length <= InternalCallParams::RESERVE_INTERNAL_CALL_PARAMS_FIXED_LENGTH)) {
         EnableFixedModeAndSetLength(length);
-        for (array_size_t index = 0; index < length; ++index) {
+        for (uint32_t index = 0; index < length; ++index) {
             SetFixedBuffer(index, info->GetCallArg(index + position));
         }
         return;
     }
 
     EnableVariableModeAndSetLength(length);
-    for (array_size_t index = 0; index < length; ++index) {
+    for (uint32_t index = 0; index < length; ++index) {
         SetVariableBuffer(index, info->GetCallArg(index + position));
     }
 }
@@ -42,7 +42,7 @@ void InternalCallParams::MakeArgListWithHole(const TaggedArray *argv, uint32_t l
     ASSERT(length <= argv->GetLength());
     if (LIKELY(length <= InternalCallParams::RESERVE_INTERNAL_CALL_PARAMS_FIXED_LENGTH)) {
         EnableFixedModeAndSetLength(length);
-        for (array_size_t index = 0; index < length; ++index) {
+        for (uint32_t index = 0; index < length; ++index) {
             auto value = argv->Get(index);
             SetFixedBuffer(index, value.IsHole() ? JSTaggedValue::Undefined() : value);
         }
@@ -50,7 +50,7 @@ void InternalCallParams::MakeArgListWithHole(const TaggedArray *argv, uint32_t l
     }
 
     EnableVariableModeAndSetLength(length);
-    for (array_size_t index = 0; index < length; ++index) {
+    for (uint32_t index = 0; index < length; ++index) {
         auto value = argv->Get(index);
         SetVariableBuffer(index, value.IsHole() ? JSTaggedValue::Undefined() : value);
     }
@@ -61,14 +61,14 @@ void InternalCallParams::MakeArgList(const TaggedArray *argv)
     uint32_t length = argv->GetLength();
     if (LIKELY(length <= InternalCallParams::RESERVE_INTERNAL_CALL_PARAMS_FIXED_LENGTH)) {
         EnableFixedModeAndSetLength(length);
-        for (array_size_t index = 0; index < length; ++index) {
+        for (uint32_t index = 0; index < length; ++index) {
             SetFixedBuffer(index, argv->Get(index));
         }
         return;
     }
 
     EnableVariableModeAndSetLength(length);
-    for (array_size_t index = 0; index < length; ++index) {
+    for (uint32_t index = 0; index < length; ++index) {
         SetVariableBuffer(index, argv->Get(index));
     }
 }
@@ -87,7 +87,7 @@ void InternalCallParams::MakeBoundArgv(const JSThread *thread, const JSHandle<JS
             SetFixedBuffer(index, GetFixedBuffer(index - boundLength));
         }
 
-        for (array_size_t index = 0; index < boundLength; ++index) {
+        for (uint32_t index = 0; index < boundLength; ++index) {
             SetFixedBuffer(index, boundArgs->Get(index));
         }
         return;
@@ -97,11 +97,11 @@ void InternalCallParams::MakeBoundArgv(const JSThread *thread, const JSHandle<JS
     if (IsFixedMode()) {
         // enable variable mode not clear fixed buffer
         EnableVariableModeAndSetLength(length);
-        for (array_size_t index = 0; index < boundLength; ++index) {
+        for (uint32_t index = 0; index < boundLength; ++index) {
             SetVariableBuffer(index, boundArgs->Get(index));
         }
 
-        for (array_size_t index = boundLength; index < length; ++index) {
+        for (uint32_t index = boundLength; index < length; ++index) {
             SetVariableBuffer(index, GetFixedBuffer(index - boundLength));
         }
         return;

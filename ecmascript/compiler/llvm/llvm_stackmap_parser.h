@@ -199,11 +199,9 @@ public:
         llvmStackMap_.Print();
     }
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
-    bool VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp, const RootVisitor &v0,
-                              const RootRangeVisitor &v1, ChunkMap<DerivedDataKey, uintptr_t> *data,
-                              [[maybe_unused]] bool isVerifying) const;
-    bool VisitStackMapSlots(OptLeaveFrame *frame,
-                            const RootVisitor &v0, const RootRangeVisitor &v1,
+    bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp, std::set<uintptr_t> &baseSet,
+                            ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const;
+    bool CollectStackMapSlots(OptLeaveFrame *frame, std::set<uintptr_t> &baseSet,
                             ChunkMap<DerivedDataKey, uintptr_t> *data,
                             [[maybe_unused]] bool isVerifying) const;
 
@@ -227,8 +225,8 @@ private:
     void CalcCallSite();
     bool IsDeriveredPointer(int callsitetime) const;
     const CallSiteInfo* GetCallSiteInfoByPatchID(uint64_t patchPointId) const;
-    void PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame);
-    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp);
+    void PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame) const;
+    void PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const;
     std::unique_ptr<uint8_t[]> stackMapAddr_;
     struct LLVMStackMap llvmStackMap_;
     std::unordered_map<uintptr_t, CallSiteInfo> pc2CallSiteInfo_;

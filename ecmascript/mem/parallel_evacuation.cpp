@@ -43,7 +43,6 @@ void ParallelEvacuation::Evacuate()
     Initialize();
     EvacuateSpace();
     UpdateReference();
-    Finalize();
 }
 
 void ParallelEvacuation::EvacuateSpace()
@@ -51,12 +50,12 @@ void ParallelEvacuation::EvacuateSpace()
     heap_->GetFromSpace()->EnumerateRegions([this] (Region *current) {
         AddFragment(std::make_unique<EvacuationFragment>(this, current));
     });
-    if (!heap_->IsOnlyMarkSemi()) {
+    if (!heap_->IsSemiMarkNeeded()) {
         heap_->GetOldSpace()->EnumerateCollectRegionSet([this](Region *current) {
             AddFragment(std::make_unique<EvacuationFragment>(this, current));
         });
     }
-    if (heap_->IsEnableParallelGC()) {
+    if (heap_->IsParallelGCEnabled()) {
         os::memory::LockHolder holder(mutex_);
         parallel_ = CalculateEvacuationThreadNum();
         for (int i = 0; i < parallel_; i++) {
@@ -91,10 +90,16 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
     if (IsPromoteComplete(region)) {
         bool ret = false;
         if (isPromoted) {
+            if (region->InYoungGeneration()) {
+                promotedAccumulatorSize_.fetch_add(region->AliveObject());
+            }
             ret = evacuationAllocator_->AddRegionToOld(region);
         } else {
             ret = evacuationAllocator_->AddRegionToYoung(region);
             if (!ret) {
+                if (region->InYoungGeneration()) {
+                    promotedAccumulatorSize_.fetch_add(region->AliveObject());
+                }
                 ret = evacuationAllocator_->AddRegionToOld(region);
             }
         }
@@ -113,10 +118,12 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
             uintptr_t address = 0;
             if (isPromoted || (region->HasAgeMark() && ToUintPtr(mem) < ageMark_)) {
                 address = allocator->Allocate(size, SpaceAlloc::OLD_SPACE);
+                promotedAccumulatorSize_.fetch_add(size);
             } else {
                 address = allocator->Allocate(size, SpaceAlloc::YOUNG_SPACE);
                 if (address == 0) {
                     address = allocator->Allocate(size, SpaceAlloc::OLD_SPACE);
+                    promotedAccumulatorSize_.fetch_add(size);
                 }
             }
             LOG_IF(address == 0, FATAL, RUNTIME) << "Evacuate object failed:" << size;
@@ -145,7 +152,7 @@ void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
                         continue;
                     }
                     Region *object_region = Region::ObjectAddressToRange(value.GetTaggedObject());
-                    if (heap_->IsOnlyMarkSemi() && !object_region->InYoungGeneration()) {
+                    if (heap_->IsSemiMarkNeeded() && !object_region->InYoungGeneration()) {
                         continue;
                     }
                     auto reset = object_region->GetMarkBitmap();
@@ -197,7 +204,7 @@ void ParallelEvacuation::UpdateReference()
 
     // Optimization weak reference for native pointer
     UpdateWeakReference();
-    if (heap_->IsEnableParallelGC()) {
+    if (heap_->IsParallelGCEnabled()) {
         os::memory::LockHolder holder(mutex_);
         parallel_ = CalculateUpdateThreadNum();
         for (int i = 0; i < parallel_; i++) {
@@ -227,7 +234,7 @@ void ParallelEvacuation::UpdateRoot()
 
 void ParallelEvacuation::UpdateWeakReference()
 {
-    bool isOnlySemi = heap_->IsOnlyMarkSemi();
+    bool isOnlySemi = heap_->IsSemiMarkNeeded();
     auto stringTable = heap_->GetEcmaVM()->GetEcmaStringTable();
     WeakRootVisitor gcUpdateWeak = [&](TaggedObject *header) {
         Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(header));
@@ -267,7 +274,7 @@ void ParallelEvacuation::UpdateRSet(Region *region)
             return true;
         });
     }
-    if (!heap_->IsOnlyMarkSemi()) {
+    if (!heap_->IsSemiMarkNeeded()) {
         rememberedSet = region->GetCrossRegionRememberedSet();
         if (LIKELY(rememberedSet != nullptr)) {
             rememberedSet->IterateOverMarkedChunks([this](void *mem) -> bool {
@@ -397,7 +404,7 @@ void ParallelEvacuation::UpdateAndSweepCompressRegionReference(Region *region, b
     uintptr_t freeEnd = region->GetEnd();
     CHECK_REGION_END(freeStart, freeEnd);
     if (freeStart < freeEnd) {
-        evacuationAllocator_->Free(freeStart, freeEnd);
+        evacuationAllocator_->Free(freeStart, freeEnd, isMain);
     }
     if (!isMain) {
         AddSweptRegionSafe(region);

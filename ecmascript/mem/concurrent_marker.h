@@ -42,6 +42,16 @@ public:
     void WaitConcurrentMarkingFinished();  // call in main thread
     void Reset(bool isClearCSet = true);
 
+    double GetDuration() const
+    {
+        return duration_;
+    }
+
+    double GetHeapObjectSize() const
+    {
+        return heapObjectSize_;
+    }
+
 private:
     NO_COPY_SEMANTIC(ConcurrentMarker);
     NO_MOVE_SEMANTIC(ConcurrentMarker);
@@ -59,6 +69,11 @@ private:
         Heap *heap_ {nullptr};
     };
 
+    void SetDuration(double duration)
+    {
+        duration_ = duration;
+    }
+
     void InitializeMarking();
     void MarkingFinished();
 
@@ -68,6 +83,8 @@ private:
 
     // obtain from heap
     WorkerHelper *workList_ {nullptr};
+    size_t heapObjectSize_ {0};
+    double duration_ {0.0};
 
     bool notifyMarkingFinished_ {false};             // notify js-thread that marking is finished and need sweep
     bool vmThreadWaitMarkingFinished_ {false};   // jsMainThread waiting for concurrentGC FINISHED

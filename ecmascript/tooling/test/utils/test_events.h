@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_TEST_API_TEST_H
-#define ECMASCRIPT_TOOLING_TEST_API_TEST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EVENTS_H
+#define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EVENTS_H
 
 #include <utility>
 #include "ecmascript/tooling/agent/js_backend.h"
@@ -47,25 +47,25 @@ enum class DebugEvent {
 
 std::ostream &operator<<(std::ostream &out, DebugEvent value);
 
-struct ApiTest {
+struct TestEvents {
     BreakpointCallback breakpoint;
-    LoadModuleCallback load_module;
+    LoadModuleCallback loadModule;
     PausedCallback paused;
     ExceptionCallback exception;
-    MethodEntryCallback method_entry;
-    SingleStepCallback single_step;
-    VmStartCallback vm_start;
-    VmInitializationCallback vm_init;
-    VmDeathCallback vm_death;
+    MethodEntryCallback methodEntry;
+    SingleStepCallback singleStep;
+    VmStartCallback vmStart;
+    VmInitializationCallback vmInit;
+    VmDeathCallback vmDeath;
 
     Scenario scenario;
-    JSDebugger *debug_interface {nullptr};
-    JSBackend *backend {nullptr};
-    ApiTest();
-    virtual ~ApiTest() = default;
+    JSDebugger *debugInterface_ {nullptr};
+    JSBackend *backend_ {nullptr};
+    TestEvents();
+    virtual ~TestEvents() = default;
 
     virtual std::pair<CString, CString> GetEntryPoint() = 0;
 };
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // ECMASCRIPT_TOOLING_TEST_API_TEST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_EVENTS_H

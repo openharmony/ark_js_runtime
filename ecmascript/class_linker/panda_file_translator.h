@@ -24,6 +24,12 @@
 #include "utils/bit_field.h"
 
 namespace panda::ecmascript {
+struct BytecodeTranslationInfo {
+    std::vector<uint8_t *> pcArray {};
+    const panda_file::File *file {nullptr};
+    const JSMethod *method {nullptr};
+};
+
 class JSThread;
 class Program;
 
@@ -37,6 +43,8 @@ public:
     NO_MOVE_SEMANTIC(PandaFileTranslator);
     static JSHandle<Program> TranslatePandaFile(EcmaVM *vm, const panda_file::File &pf,
                                                 const CString &methodName);
+    static void TranslateAndCollectPandaFile(EcmaVM *vm, const panda_file::File &pf, const CString &methodName,
+                                             std::vector<BytecodeTranslationInfo> &infoList);
     JSHandle<JSFunction> DefineMethodInLiteral(JSThread *thread, uint32_t methodId, FunctionKind kind,
                                                uint16_t length) const;
 
@@ -92,8 +100,10 @@ private:
     uint32_t GetOrInsertConstantPool(ConstPoolType type, uint32_t offset);
     const JSMethod *FindMethods(uint32_t offset) const;
     Program *GenerateProgram(const panda_file::File &pf);
-    void TranslateClasses(const panda_file::File &pf, const CString &methodName);
-    void TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf, const JSMethod *method);
+    void TranslateClasses(const panda_file::File &pf, const CString &methodName,
+                          std::vector<BytecodeTranslationInfo> &infoList);
+    void TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf, const JSMethod *method,
+                           std::vector<BytecodeTranslationInfo> &infoList);
     void FixInstructionId32(const BytecodeInstruction &inst, uint32_t index, uint32_t fixOrder = 0) const;
     void FixOpcode(uint8_t *pc) const;
     void UpdateICOffset(JSMethod *method, uint8_t *pc) const;

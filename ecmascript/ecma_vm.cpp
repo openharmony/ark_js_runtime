@@ -53,7 +53,6 @@
 #include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
-#include "trace/trace.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
@@ -109,12 +108,13 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 {
     options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
+    optionalLogEnabled_ = options_.IsEnableOptionalLog();
     rendezvous_ = chunk_.New<EmptyRendezvous>();
     snapshotSerializeEnable_ = options_.IsSnapshotSerializeEnabled();
     if (!snapshotSerializeEnable_) {
         snapshotDeserializeEnable_ = options_.IsSnapshotDeserializeEnabled();
     }
-    fileName_ = options_.GetSnapshotFile();
+    snapshotFileName_ = options_.GetSnapshotFile();
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile();
 
     auto runtime = Runtime::GetCurrent();
@@ -124,7 +124,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
 
 bool EcmaVM::Initialize()
 {
-    trace::ScopedTrace scoped_trace("EcmaVM::Initialize");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
     Platform::GetCurrentPlatform()->Initialize();
     RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
 
@@ -140,7 +140,7 @@ bool EcmaVM::Initialize()
     }
 
     [[maybe_unused]] EcmaHandleScope scope(thread_);
-    if (!snapshotDeserializeEnable_ || !VerifyFilePath(fileName_)) {
+    if (!snapshotDeserializeEnable_ || !VerifyFilePath(snapshotFileName_)) {
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
 
         JSHandle<JSHClass> dynClassClassHandle =
@@ -173,7 +173,6 @@ bool EcmaVM::Initialize()
 #endif
         SetupRegExpResultCache();
         microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
-
         {
             Builtins builtins;
             builtins.Initialize(globalEnvHandle, thread_);
@@ -181,7 +180,7 @@ bool EcmaVM::Initialize()
     } else {
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run snapshot";
         SnapShot snapShot(this);
-        std::unique_ptr<const panda_file::File> pf = snapShot.DeserializeGlobalEnvAndProgram(fileName_);
+        std::unique_ptr<const panda_file::File> pf = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_);
         frameworkPandaFile_ = pf.get();
         AddPandaFile(pf.release(), false);
         SetProgram(Program::Cast(frameworkProgram_.GetTaggedObject()), frameworkPandaFile_);
@@ -194,7 +193,7 @@ bool EcmaVM::Initialize()
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
-    notificationManager_->VmInitializationEvent(0);
+    notificationManager_->VmInitializationEvent(thread_->GetThreadId());
     Platform::GetCurrentPlatform()->PostTask(std::make_unique<TrimNewSpaceLimitTask>(heap_));
     return true;
 }
@@ -208,10 +207,10 @@ bool EcmaVM::TrimNewSpaceLimitTask::Run(uint32_t threadIndex)
         usleep(THREAD_SLEEP_TIME);
     }
 
-    if (!IsTerminate() && heap_->GetMemController()->IsInAppStartup()) {
+    if (!IsTerminate() && heap_->GetMemController()->IsDelayGCMode()) {
         heap_->SetFromSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
         heap_->SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
-        heap_->ResetAppStartup();
+        heap_->ResetDelayGCMode();
     }
     return true;
 }
@@ -232,6 +231,8 @@ void EcmaVM::InitializeEcmaScriptRunStat()
             ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_NAME)
 #undef ABSTRACT_OPERATION_NAME
     };
+    static_assert(sizeof(runtimeCallerNames) == sizeof(const char *) * ecmascript::RUNTIME_CALLER_NUMBER,
+                  "Invalid runtime caller number");
     runtimeStat_ = chunk_.New<EcmaRuntimeStat>(runtimeCallerNames, ecmascript::RUNTIME_CALLER_NUMBER);
     if (UNLIKELY(runtimeStat_ == nullptr)) {
         LOG_ECMA(FATAL) << "alloc runtimeStat_ failed";
@@ -259,6 +260,7 @@ bool EcmaVM::InitializeFinish()
     vmInitialized_ = true;
     return true;
 }
+
 EcmaVM::~EcmaVM()
 {
     vmInitialized_ = false;
@@ -273,9 +275,9 @@ EcmaVM::~EcmaVM()
     ClearBufferData();
 
     if (gcStats_ != nullptr) {
-#if ECMASCRIPT_ENABLE_GC_LOG
-        gcStats_->PrintStatisticResult(true);
-#endif
+        if (options_.IsEnableGCStatsPrint()) {
+            gcStats_->PrintStatisticResult(true);
+        }
         chunk_.Delete(gcStats_);
         gcStats_ = nullptr;
     }
@@ -341,6 +343,30 @@ bool EcmaVM::ExecuteFromPf(std::string_view filename, std::string_view entryPoin
     return Execute(*pf_ptr, entryPoint, args);
 }
 
+bool EcmaVM::CollectInfoOfPandaFile(std::string_view filename, std::string_view entryPoint,
+                                    std::vector<BytecodeTranslationInfo> &infoList, const panda_file::File *&pf)
+{
+    const panda_file::File *pf_ptr = nullptr;
+    std::unique_ptr<const panda_file::File> file;
+    if (frameworkPandaFile_ == nullptr || !IsFrameworkPandaFile(filename)) {
+        file = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
+        if (file == nullptr) {
+            return false;
+        }
+        pf_ptr = file.get();
+    }
+    // Get ClassName and MethodName
+    size_t pos = entryPoint.find_last_of("::");
+    if (pos == std::string_view::npos) {
+        LOG_ECMA(ERROR) << "EntryPoint:" << entryPoint << " is illegal";
+        return false;
+    }
+    CString methodName(entryPoint.substr(pos + 1));
+    PandaFileTranslator::TranslateAndCollectPandaFile(this, *pf_ptr, methodName, infoList);
+    pf = file.release();
+    return true;
+}
+
 bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                                const std::vector<std::string> &args)
 {
@@ -377,7 +403,6 @@ bool EcmaVM::Execute(const panda_file::File &pf, std::string_view entryPoint, co
         return false;
     }
     CString methodName(entryPoint.substr(pos + 1));
-
     // For Ark application startup
     InvokeEcmaEntrypoint(pf, methodName, args);
     return true;
@@ -425,8 +450,6 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEntrypointImpl(Method *entrypoint, c
 Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::File &pf, const CString &methodName,
                                                            const std::vector<std::string> &args)
 {
-    thread_->SetIsEcmaInterpreter(true);
-    thread_->SetIsSnapshotMode(true);
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     JSHandle<Program> program;
     if (snapshotSerializeEnable_) {
@@ -437,7 +460,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
         if (index != CString::npos) {
             LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << ConvertToString(string);
             SnapShot snapShot(this);
-            snapShot.MakeSnapShotProgramObject(*program, &pf, fileName_);
+            snapShot.MakeSnapShotProgramObject(*program, &pf, snapshotFileName_);
         }
     } else {
         if (&pf != frameworkPandaFile_) {
@@ -460,7 +483,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
     JSHandle<JSTaggedValue> newTarget(thread_, JSTaggedValue::Undefined());
     JSHandle<TaggedArray> jsargs = factory_->NewTaggedArray(args.size());
-    array_size_t i = 0;
+    uint32_t i = 0;
     for (const std::string &str : args) {
         JSHandle<JSTaggedValue> strobj(factory_->NewFromStdString(str));
         jsargs->Set(thread_, i++, strobj);
@@ -471,7 +494,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     JSRuntimeOptions options = this->GetJSOptions();
     if (options.IsEnableCpuProfiler()) {
         CpuProfiler *profiler = CpuProfiler::GetInstance();
-        profiler->CpuProfiler::StartCpuProfiler(this);
+        profiler->CpuProfiler::StartCpuProfiler(this, "");
         panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
         profiler->CpuProfiler::StopCpuProfiler();
     } else {
@@ -493,9 +516,6 @@ void EcmaVM::AddPandaFile(const panda_file::File *pf, bool isModule)
 {
     ASSERT(pf != nullptr);
     pandaFileWithProgram_.push_back(std::make_tuple(nullptr, pf, isModule));
-
-    // for debugger
-    notificationManager_->LoadModuleEvent(pf->GetFilename());
 }
 
 void EcmaVM::SetProgram(Program *program, const panda_file::File *pf)
@@ -504,6 +524,8 @@ void EcmaVM::SetProgram(Program *program, const panda_file::File *pf)
                            [pf](auto entry) { return std::get<1>(entry) == pf; });
     ASSERT(it != pandaFileWithProgram_.end());
     std::get<0>(*it) = program;
+    // for debugger
+    notificationManager_->LoadModuleEvent(pf->GetFilename());
 }
 
 bool EcmaVM::IsFrameworkPandaFile(std::string_view filename) const
@@ -744,7 +766,6 @@ void EcmaVM::ExecuteModule(std::string_view moduleFile, std::string_view entryPo
 {
     moduleManager_->SetCurrentExportModuleName(moduleFile);
     // Update Current Module
-    thread_->SetIsEcmaInterpreter(true);
     EcmaVM::ExecuteFromPf(moduleFile, entryPoint, args, true);
     // Restore Current Module
     moduleManager_->RestoreCurrentExportModuleName();

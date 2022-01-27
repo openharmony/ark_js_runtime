@@ -82,6 +82,14 @@ bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allow
         spaceAllocator->Reset(toSpace_);
         TryTriggerConcurrentMarking(allowGc);
         return true;
+    } else if (toSpace_->GetCommittedSize() == SEMI_SPACE_SIZE_CAPACITY
+               && !GetEcmaVM()->GetAssociatedJSThread()->IsReadyToMark()) {
+        toSpace_->SetMaximumCapacity(std::min(SEMI_SPACE_SIZE_CAPACITY + SEMI_SPACE_OVERSHOOT_SIZE,
+                                              MAX_SEMI_SPACE_SIZE_STARTUP));
+        if (toSpace_->Expand(spaceAllocator->GetTop())) {
+            spaceAllocator->Reset(toSpace_);
+            return true;
+        }
     }
     if (allowGc) {
         CollectGarbage(TriggerGCType::SEMI_GC);
@@ -219,10 +227,10 @@ void Heap::SetFromSpaceMaximumCapacity(size_t maximumCapacity)
     SetMaximumCapacity(fromSpace_, maximumCapacity);
 }
 
-void Heap::ResetAppStartup()
+void Heap::ResetDelayGCMode()
 {
     ASSERT(memController_ != nullptr);
-    memController_->ResetAppStartup();
+    memController_->ResetDelayGCMode();
 }
 
 void Heap::SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity)
@@ -240,6 +248,21 @@ void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeE
     if (set != nullptr) {
         set->ClearRange(freeStart, freeEnd);
     }
+}
+
+size_t Heap::GetCommittedSize() const
+{
+    size_t result = toSpace_->GetCommittedSize() + oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize()
+                    + nonMovableSpace_->GetCommittedSize() + machineCodeSpace_->GetCommittedSize();
+    return result;
+}
+
+size_t Heap::GetHeapObjectSize() const
+{
+    size_t result = toSpace_->GetHeapObjectSize() + oldSpace_->GetHeapObjectSize()
+                    + hugeObjectSpace_->GetHeapObjectSize() + nonMovableSpace_->GetHeapObjectSize()
+                    + machineCodeSpace_->GetCommittedSize();
+    return result;
 }
 }  // namespace panda::ecmascript
 

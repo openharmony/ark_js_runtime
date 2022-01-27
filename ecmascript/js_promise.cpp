@@ -63,10 +63,7 @@ JSTaggedValue JSPromise::FulfillPromise(JSThread *thread, const JSHandle<JSPromi
 {
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     // 1. Assert: the value of promise's [[PromiseState]] internal slot is "pending".
-    JSHandle<JSTaggedValue> handleStatus(thread, promise->GetPromiseState());
-    ASSERT_PRINT(JSTaggedValue::SameValue(handleStatus.GetTaggedValue(),
-                                          JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING))),
-                 "FulfillPromise: state must be pending");
+    ASSERT_PRINT(promise->GetPromiseState() == PromiseState::PENDING, "FulfillPromise: state must be pending");
     // 2. Let reactions be the value of promise's [[PromiseFulfillReactions]] internal slot.
     JSHandle<TaggedQueue> reactions(thread, promise->GetPromiseFulfillReactions());
     // 3. Set the value of promise's [[PromiseResult]] internal slot to value.
@@ -76,7 +73,7 @@ JSTaggedValue JSPromise::FulfillPromise(JSThread *thread, const JSHandle<JSPromi
     // 5. Set the value of promise's [[PromiseRejectReactions]] internal slot to undefined.
     promise->SetPromiseRejectReactions(thread, globalConst->GetHandledUndefined());
     // 6. Set the value of promise's [[PromiseState]] internal slot to "fulfilled".
-    promise->SetPromiseState(thread, JSTaggedValue(static_cast<int32_t>(PromiseStatus::FULFILLED)));
+    promise->SetPromiseState(PromiseState::FULFILLED);
     // 7. Return TriggerPromiseReactions(reactions, reason).
     return TriggerPromiseReactions(thread, reactions, value);
 }
@@ -143,11 +140,7 @@ JSTaggedValue JSPromise::RejectPromise(JSThread *thread, const JSHandle<JSPromis
 {
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
     // 1. Assert: the value of promise's [[PromiseState]] internal slot is "pending".
-    JSHandle<JSTaggedValue> handleStatus(thread, promise->GetPromiseState());
-
-    ASSERT_PRINT(JSTaggedValue::SameValue(handleStatus.GetTaggedValue(),
-                                          JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING))),
-                 "RejectPromise: state must be pending");
+    ASSERT_PRINT(promise->GetPromiseState() == PromiseState::PENDING, "RejectPromise: state must be pending");
     // 2. Let reactions be the value of promise's [[PromiseRejectReactions]] internal slot.
     JSHandle<TaggedQueue> reactions(thread, TaggedQueue::Cast(promise->GetPromiseRejectReactions().GetTaggedObject()));
     // 3. Set the value of promise's [[PromiseResult]] internal slot to reason.
@@ -157,9 +150,9 @@ JSTaggedValue JSPromise::RejectPromise(JSThread *thread, const JSHandle<JSPromis
     // 5. Set the value of promise's [[PromiseRejectReactions]] internal slot to undefined.
     promise->SetPromiseRejectReactions(thread, globalConst->GetHandledUndefined());
     // 6. Set the value of promise's [[PromiseState]] internal slot to "rejected".
-    promise->SetPromiseState(thread, JSTaggedValue(static_cast<int32_t>(PromiseStatus::REJECTED)));
+    promise->SetPromiseState(PromiseState::REJECTED);
     // 7. When a promise is rejected without any handlers, it is called with its operation argument set to "reject".
-    if (!promise->GetPromiseIsHandled().ToBoolean()) {
+    if (!promise->GetPromiseIsHandled()) {
         thread->GetEcmaVM()->PromiseRejectionTracker(promise, reason, PromiseRejectionEvent::REJECT);
     }
     // 8. Return TriggerPromiseReactions(reactions, reason).

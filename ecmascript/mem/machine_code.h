@@ -33,8 +33,9 @@ public:
     }
 
     static constexpr size_t INS_SIZE_OFFSET = TaggedObjectSize();
-    ACCESSORS(InstructionSizeInBytes, INS_SIZE_OFFSET, DATA_OFFSET);
-    static constexpr size_t SIZE = DATA_OFFSET;
+    ACCESSORS_PRIMITIVE_FIELD(InstructionSizeInBytes, uint32_t, INS_SIZE_OFFSET, LAST_OFFSET);
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+    static constexpr size_t DATA_OFFSET = SIZE;
 
     DECL_DUMP()
 
@@ -50,7 +51,7 @@ public:
             return;
         }
         if (memcpy_s(reinterpret_cast<void *>(this->GetDataOffsetAddress()),
-            this->GetInstructionSizeInBytes().GetInt(), stackMapData, codeLength) != EOK) {
+            this->GetInstructionSizeInBytes(), stackMapData, codeLength) != EOK) {
             LOG_ECMA_MEM(ERROR) << "memcpy fail in creating new code object ";
             return;
         }
@@ -68,7 +69,7 @@ public:
 
     size_t GetMachineCodeObjectSize(void)
     {
-        return SIZE + this->GetInstructionSizeInBytes().GetInt();
+        return SIZE + this->GetInstructionSizeInBytes();
     }
 };
 }  // namespace ecmascript

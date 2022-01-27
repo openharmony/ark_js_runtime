@@ -24,8 +24,9 @@ enum class DumpFormat { JSON, BINARY, OTHER };
 
 class HeapProfilerInterface {
 public:
+    static HeapProfilerInterface *GetInstance(JSThread *thread);
     static void DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFormat,
-                                 const CString &filePath, bool isVmMode = true);
+                                 const std::string &filePath, bool isVmMode = true);
 
     static HeapProfilerInterface *CreateHeapProfiler(JSThread *thread);
     static void Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler);
@@ -34,10 +35,12 @@ public:
     virtual ~HeapProfilerInterface() = default;
 
     virtual bool StartHeapTracking(JSThread *thread, double timeInterval, bool isVmMode = true) = 0;
-    virtual bool StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const CString &filePath) = 0;
+    virtual bool StopHeapTracking(JSThread *thread, DumpFormat dumpFormat, const std::string &filePath) = 0;
 
     NO_MOVE_SEMANTIC(HeapProfilerInterface);
     NO_COPY_SEMANTIC(HeapProfilerInterface);
+private:
+    static HeapProfilerInterface *heapProfile_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_HPROF_HEAP_PROFILER_INTERFACE_H

@@ -37,6 +37,7 @@ void CompressCollector::RunPhases()
     INTERPRETER_TRACE(thread, CompressCollector_RunPhases);
     ClockScope clockScope;
 
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::RunPhases");
     bool concurrentMark = heap_->CheckConcurrentMark(thread);
     if (concurrentMark) {
         ECMA_GC_LOG() << "CompressCollector after ConcurrentMarking";
@@ -54,6 +55,7 @@ void CompressCollector::RunPhases()
 
 void CompressCollector::InitializePhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::InitializePhase");
     heap_->Prepare();
     auto callback = [](Region *current) {
         // ensure mark bitmap
@@ -82,6 +84,7 @@ void CompressCollector::InitializePhase()
 
 void CompressCollector::MarkingPhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::MarkingPhase");
     heap_->GetCompressGcMarker()->MarkRoots(0);
     heap_->GetCompressGcMarker()->ProcessMarkStack(0);
     heap_->WaitRunningTaskFinished();
@@ -89,7 +92,7 @@ void CompressCollector::MarkingPhase()
 
 void CompressCollector::SweepPhases()
 {
-    trace::ScopedTrace scoped_trace("CompressCollector::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::SweepPhases");
     // process weak reference
     auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1; // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
@@ -150,6 +153,7 @@ void CompressCollector::SweepPhases()
 
 void CompressCollector::FinishPhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::FinishPhase");
     workList_->Finish(youngAndOldAliveSize_);
     heap_->GetEvacuationAllocator()->Finalize(TriggerGCType::COMPRESS_FULL_GC);
 }

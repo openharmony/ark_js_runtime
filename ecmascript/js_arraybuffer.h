@@ -26,7 +26,7 @@ public:
     // 6.2.6.2
     static void CopyDataBlockBytes(JSTaggedValue toBlock, JSTaggedValue fromBlock, int32_t fromIndex, int32_t count);
 
-    void Attach(JSThread *thread, JSTaggedValue arrayBufferByteLength, JSTaggedValue arrayBufferData);
+    void Attach(JSThread *thread, uint32_t arrayBufferByteLength, JSTaggedValue arrayBufferData);
     void Detach(JSThread *thread);
 
     bool IsDetach()
@@ -35,13 +35,18 @@ public:
         return arrayBufferData == JSTaggedValue::Null();
     }
 
-    static constexpr size_t ARRAY_BUFFER_BYTE_LENGTH_OFFSET = JSObject::SIZE;
-    ACCESSORS(ArrayBufferByteLength, ARRAY_BUFFER_BYTE_LENGTH_OFFSET, ARRAY_BUFFER_DATA_OFFSET)
-    ACCESSORS(ArrayBufferData, ARRAY_BUFFER_DATA_OFFSET, ARRAY_BUFFER_SHARED_OFFSET)
-    ACCESSORS(Shared, ARRAY_BUFFER_SHARED_OFFSET, SIZE)
+    static constexpr size_t DATA_OFFSET = JSObject::SIZE;
+    ACCESSORS(ArrayBufferData, DATA_OFFSET, BYTE_LENGTH_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(ArrayBufferByteLength, uint32_t, BYTE_LENGTH_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
+    // define BitField
+    static constexpr size_t SHARED_BITS = 2;
+    FIRST_BIT_FIELD(BitField, Shared, bool, SHARED_BITS)
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, DATA_OFFSET, BYTE_LENGTH_OFFSET)
     DECL_DUMP()
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, ARRAY_BUFFER_BYTE_LENGTH_OFFSET, SIZE)
 };
 }  // namespace panda::ecmascript
 

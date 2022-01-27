@@ -69,10 +69,16 @@ public:
     DECL_VISIT_OBJECT(GETTER_OFFSET, SIZE)
 };
 
+enum class CompletionRecordType : uint8_t {
+    NORMAL = 0U,
+    BREAK,
+    CONTINUE,
+    RETURN,
+    THROW
+};
+
 class CompletionRecord final : public Record {
 public:
-    enum : uint8_t { NORMAL = 0U, BREAK, CONTINUE, RETURN, THROW };
-
     static CompletionRecord *Cast(ObjectHeader *object)
     {
         ASSERT(JSTaggedValue(object).IsCompletionRecord());
@@ -81,16 +87,21 @@ public:
 
     bool IsThrow() const
     {
-        return JSTaggedValue::SameValue(this->GetType(), JSTaggedValue(static_cast<int32_t>(THROW)));
+        return GetType() == CompletionRecordType::THROW;
     }
 
-    static constexpr size_t TYPE_OFFSET = Record::SIZE;
-    ACCESSORS(Type, TYPE_OFFSET, VALUE_OFFSET);
-    ACCESSORS(Value, VALUE_OFFSET, SIZE);
+    static constexpr size_t VALUE_OFFSET = Record::SIZE;
+    ACCESSORS(Value, VALUE_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
+    // define BitField
+    static constexpr size_t TYPE_BITS = 3;
+    FIRST_BIT_FIELD(BitField, Type, CompletionRecordType, TYPE_BITS)
 
     DECL_DUMP()
 
-    DECL_VISIT_OBJECT(TYPE_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(VALUE_OFFSET, BIT_FIELD_OFFSET)
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_ACCESSOR_DATA_H

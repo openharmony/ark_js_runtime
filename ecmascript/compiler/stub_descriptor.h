@@ -36,6 +36,7 @@ public:
         CODE_STUB,
         RUNTIME_STUB,
         BYTECODE_HANDLER,
+        RUNTIME_STUB_NO_GC,
         TEST_FUNC,
     };
     explicit StubDescriptor(std::string name, int flags, int paramCounter, ArgumentsOrder order,

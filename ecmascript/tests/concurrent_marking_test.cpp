@@ -51,7 +51,6 @@ public:
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";
         thread = EcmaVM::Cast(instance)->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        thread->SetIsEcmaInterpreter(true);
         EcmaVM::Cast(instance)->SetEnableForceGC(false);
         auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
         heap->SetConcurrentMarkingEnable(true);
@@ -62,7 +61,7 @@ public:
         TestHelper::DestroyEcmaVMWithScope(instance, scope);
     }
 
-    JSHandle<TaggedArray> CreateTaggedArray(array_size_t length, JSTaggedValue initVal, MemSpaceType spaceType)
+    JSHandle<TaggedArray> CreateTaggedArray(uint32_t length, JSTaggedValue initVal, MemSpaceType spaceType)
     {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
         return factory->NewTaggedArray(length, initVal, spaceType);
@@ -75,18 +74,18 @@ public:
 
 HWTEST_F_L0(ConcurrentMarkingTest, PerformanceWithConcurrentMarking)
 {
-    array_size_t rootLength = 1024;
+    uint32_t rootLength = 1024;
     JSHandle<TaggedArray> rootArray =
         CreateTaggedArray(rootLength, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
-    for (array_size_t i = 0; i < rootLength; i++) {
-        array_size_t subArrayLength = 1024;
+    for (uint32_t i = 0; i < rootLength; i++) {
+        uint32_t subArrayLength = 1024;
         auto array = CreateTaggedArray(subArrayLength, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
         rootArray->Set(thread, i, array);
     }
     auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
     heap->TriggerConcurrentMarking();  // concurrent mark
-    for (array_size_t i = 0; i < rootLength; i++) {
-        array_size_t subArrayLength = 1024;
+    for (uint32_t i = 0; i < rootLength; i++) {
+        uint32_t subArrayLength = 1024;
         auto array = CreateTaggedArray(subArrayLength, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
         rootArray->Set(thread, i, array);
     }
@@ -95,17 +94,17 @@ HWTEST_F_L0(ConcurrentMarkingTest, PerformanceWithConcurrentMarking)
 
 HWTEST_F_L0(ConcurrentMarkingTest, PerformanceWithoutConcurrentMarking)
 {
-    array_size_t rootLength = 1024;
+    uint32_t rootLength = 1024;
     JSHandle<TaggedArray> rootArray =
         CreateTaggedArray(rootLength, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
-    for (array_size_t i = 0; i < rootLength; i++) {
-        array_size_t subArrayLength = 1024;
+    for (uint32_t i = 0; i < rootLength; i++) {
+        uint32_t subArrayLength = 1024;
         auto array = CreateTaggedArray(subArrayLength, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
         rootArray->Set(thread, i, array);
     }
     auto heap = const_cast<Heap *>(thread->GetEcmaVM()->GetHeap());
-    for (array_size_t i = 0; i < rootLength; i++) {
-        array_size_t subArrayLength = 1024;
+    for (uint32_t i = 0; i < rootLength; i++) {
+        uint32_t subArrayLength = 1024;
         auto array = CreateTaggedArray(subArrayLength, JSTaggedValue::Undefined(), MemSpaceType::OLD_SPACE);
         rootArray->Set(thread, i, array);
     }

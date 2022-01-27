@@ -492,7 +492,7 @@ bool JSSerializer::WriteJSRegExp(const JSHandle<JSTaggedValue> &value)
         bufferSize_ = oldSize;
         return false;
     }
-    uint32_t bufferSize = static_cast<uint32_t>(regExp->GetLength().GetInt());
+    uint32_t bufferSize = regExp->GetLength();
     if (!WriteLength(bufferSize)) {
         bufferSize_ = oldSize;
         return false;
@@ -592,14 +592,14 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
     }
 
     // Write Accessors(ArrayBufferByteLength)
-    JSTaggedValue taggedLength = arrayBuffer->GetArrayBufferByteLength();
-    if (!WriteRawData(&taggedLength, sizeof(JSTaggedValue))) {
+    uint32_t arrayLength = arrayBuffer->GetArrayBufferByteLength();
+    if (!WriteInt(arrayLength)) {
         bufferSize_ = oldSize;
         return false;
     }
 
     // write Accessor shared which indicate the C memeory is shared
-    bool shared = arrayBuffer->GetShared().ToBoolean();
+    bool shared = arrayBuffer->GetShared();
     if (!WriteBoolean(shared)) {
         bufferSize_ = oldSize;
         return false;
@@ -614,11 +614,10 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
             return false;
         }
     } else {
-        uint32_t byteLength = JSTaggedNumber(taggedLength).ToUint32();
         // Write Accessors(ArrayBufferData) which is a pointer to a DynBuffer
         JSHandle<JSNativePointer> np(thread_, arrayBuffer->GetArrayBufferData());
         void *buffer = np->GetExternalPointer();
-        if (!WriteRawData(buffer, byteLength)) {
+        if (!WriteRawData(buffer, arrayLength)) {
             bufferSize_ = oldSize;
             return false;
         }
@@ -1204,8 +1203,8 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArrayBuffer()
 {
     ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
     // read access length
-    JSTaggedValue taggedLength;
-    if (!ReadJSTaggedValue(&taggedLength)) {
+    uint32_t arrayLength;
+    if (!ReadInt(&arrayLength)) {
         return JSHandle<JSTaggedValue>();
     }
     // read access shared
@@ -1215,24 +1214,23 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArrayBuffer()
     }
     // create jsarraybuffer
     JSHandle<JSTaggedValue> arrayBufferTag;
-    uint32_t byteLength = JSTaggedNumber(taggedLength).ToUint32();
     if (shared) {
         uint64_t *bufferAddr = (uint64_t*)GetBuffer(sizeof(uint64_t));
         void* bufferData = ToVoidPtr(*bufferAddr);
-        JSHandle<JSArrayBuffer> arrayBuffer = factory->NewJSArrayBuffer(bufferData, byteLength, nullptr, nullptr);
+        JSHandle<JSArrayBuffer> arrayBuffer = factory->NewJSArrayBuffer(bufferData, arrayLength, nullptr, nullptr);
         arrayBufferTag = JSHandle<JSTaggedValue>::Cast(arrayBuffer);
         referenceMap_.insert(std::pair(objectId_++, arrayBufferTag));
     } else {
-        void *fromBuffer = GetBuffer(byteLength);
+        void *fromBuffer = GetBuffer(arrayLength);
         if (fromBuffer == nullptr) {
             return arrayBufferTag;
         }
-        JSHandle<JSArrayBuffer> arrayBuffer = factory->NewJSArrayBuffer(byteLength);
+        JSHandle<JSArrayBuffer> arrayBuffer = factory->NewJSArrayBuffer(arrayLength);
         arrayBufferTag = JSHandle<JSTaggedValue>::Cast(arrayBuffer);
         referenceMap_.insert(std::pair(objectId_++, arrayBufferTag));
         JSHandle<JSNativePointer> np(thread_, arrayBuffer->GetArrayBufferData());
         void *toBuffer = np->GetExternalPointer();
-        if (memcpy_s(toBuffer, byteLength, fromBuffer, byteLength) != EOK) {
+        if (memcpy_s(toBuffer, arrayLength, fromBuffer, arrayLength) != EOK) {
             UNREACHABLE();
         }
     }

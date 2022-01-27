@@ -52,7 +52,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 {
     WorkerHelper *worklist = heap_->GetWorkList();
     TaggedObject *obj = nullptr;
-    bool isOnlySemi = heap_->IsOnlyMarkSemi();
+    bool isOnlySemi = heap_->IsSemiMarkNeeded();
     while (true) {
         obj = nullptr;
         if (!worklist->Pop(threadId, &obj)) {

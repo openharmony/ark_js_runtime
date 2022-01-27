@@ -54,7 +54,7 @@
 
 using namespace panda::ecmascript;
 namespace panda::ecmascript::kungfu {
-void LLVMCodeGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                                                 const CompilationConfig *cfg)
 {
     LLVMValueRef function = module_->GetStubFunction(index);
@@ -149,6 +149,24 @@ bool LLVMAssembler::BuildMCJITEngine()
     return true;
 }
 
+// rewrite patchpoint id value that is planned to be stored into JS thread temporarily
+void LLVMAssembler::RewritePatchPointIdStoredOnThread(LLVMValueRef instruction, uint64_t id)
+{
+    LLVMValueRef targetInst = LLVMGetPreviousInstruction(instruction);
+    while (targetInst != nullptr) {
+        if (LLVMGetInstructionOpcode(targetInst) == LLVMStore) {
+            size_t len = 0;
+            std::string destName(LLVMGetValueName2(LLVMGetOperand(targetInst, 1), &len));
+            std::string targetName("getFramePatchPointIdAddr");
+            // find the store instruction that planned to change getFramePatchPointIdAddr and rewrite src value
+            if (len >= targetName.size() && destName.substr(0, targetName.size()) == targetName) {
+                LLVMSetOperand(targetInst, 0, LLVMConstInt(LLVMInt64Type(), id, 0));
+            }
+        }
+        targetInst = LLVMGetPreviousInstruction(targetInst);
+    }
+}
+
 void LLVMAssembler::RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, uint64_t &callInsNum, uint64_t &funcNum)
 {
     if (LLVMIsACallInst(instruction) && !LLVMIsAIntrinsicInst(instruction)) {
@@ -159,35 +177,24 @@ void LLVMAssembler::RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, ui
             attrName, sizeof(attrName) - 1, patchId.c_str(), patchId.size());
         LLVMAddCallSiteAttribute(instruction, LLVMAttributeFunctionIndex, attr);
         callInsNum++;
-        LLVMValueRef targetStoreInst = LLVMGetPreviousInstruction(LLVMGetPreviousInstruction(
-            LLVMGetPreviousInstruction(instruction)));
-        if (LLVMGetInstructionOpcode(targetStoreInst) == LLVMStore) {
-            LLVMSetOperand(targetStoreInst, 0, LLVMConstInt(LLVMInt64Type(), id, 0));
-        }
+        RewritePatchPointIdStoredOnThread(instruction, id);
     }
 }
 
 void LLVMAssembler::FillPatchPointIDs()
 {
-    LLVMValueRef func;
     uint64_t funcNum = 0;
-    func = LLVMGetFirstFunction(module_);
+    LLVMValueRef func = LLVMGetFirstFunction(module_);
     while (func) {
         if (LLVMIsDeclaration(func)) {
             func = LLVMGetNextFunction(func);
             funcNum++;
             continue;
         }
-        LLVMBasicBlockRef bb;
-        LLVMValueRef instruction;
-        unsigned instructionNum = 0;
-        unsigned bbNum = 0;
         uint64_t callInsNum = 0;
-        for (bb = LLVMGetFirstBasicBlock(func); bb; bb = LLVMGetNextBasicBlock(bb)) {
-            bbNum++;
-            for (instruction = LLVMGetFirstInstruction(bb); instruction;
+        for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(func); bb; bb = LLVMGetNextBasicBlock(bb)) {
+            for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
                 instruction = LLVMGetNextInstruction(instruction)) {
-                instructionNum++;
                 RewritePatchPointIdOfStatePoint(instruction, callInsNum, funcNum);
             }
         }
@@ -200,23 +207,33 @@ void LLVMAssembler::BuildAndRunPasses()
 {
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  - ";
     LLVMPassManagerBuilderRef pmBuilder = LLVMPassManagerBuilderCreate();
-    LLVMPassManagerBuilderSetOptLevel(pmBuilder, 3); // using O3 optimization level
+    LLVMPassManagerBuilderSetOptLevel(pmBuilder, options_.OptLevel); // using O3 optimization level
     LLVMPassManagerBuilderSetSizeLevel(pmBuilder, 0);
+
+    // pass manager creation:rs4gc pass is the only pass in modPass, other opt module-based pass are in modPass1
     LLVMPassManagerRef funcPass = LLVMCreateFunctionPassManagerForModule(module_);
     LLVMPassManagerRef modPass = LLVMCreatePassManager();
+    LLVMPassManagerRef modPass1 = LLVMCreatePassManager();
+
+    // add pass into pass managers
     LLVMPassManagerBuilderPopulateFunctionPassManager(pmBuilder, funcPass);
-    llvm::unwrap(modPass)->add(llvm::createRewriteStatepointsForGCLegacyPass());
-    LLVMPassManagerBuilderPopulateModulePassManager(pmBuilder, modPass);
-    LLVMPassManagerBuilderDispose(pmBuilder);
+    llvm::unwrap(modPass)->add(llvm::createRewriteStatepointsForGCLegacyPass()); // rs4gc pass added
+    LLVMPassManagerBuilderPopulateModulePassManager(pmBuilder, modPass1);
+
+    // run module pass, function pass, module pass1
+    FillPatchPointIDs(); // add "statepoint-id" callsite attribute for statepoint ID rewrite and rewrite store value
+    LLVMRunPassManager(modPass, module_); // make sure rs4gc pass run first
     LLVMInitializeFunctionPassManager(funcPass);
     for (LLVMValueRef fn = LLVMGetFirstFunction(module_); fn; fn = LLVMGetNextFunction(fn)) {
         LLVMRunFunctionPassManager(funcPass, fn);
     }
-    FillPatchPointIDs();
     LLVMFinalizeFunctionPassManager(funcPass);
-    LLVMRunPassManager(modPass, module_);
+    LLVMRunPassManager(modPass1, module_);
+
+    LLVMPassManagerBuilderDispose(pmBuilder);
     LLVMDisposePassManager(funcPass);
     LLVMDisposePassManager(modPass);
+    LLVMDisposePassManager(modPass1);
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  + ";
 }
 
@@ -293,7 +310,7 @@ void LLVMAssembler::Initialize()
     }
     llvm::linkAllBuiltinGCs();
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
-    options_.OptLevel = 2; // opt level 2
+    options_.OptLevel = 3; // opt level 2
     // Just ensure that this field still exists.
     // tmp for interpreter stub
     options_.NoFramePointerElim = false;

@@ -122,15 +122,13 @@ HWTEST_F_L0(JSArrayIteratorTest, SetNextIndex)
     // Call "SetNextIndex" function through "NewJSArrayIterator" function of "object_factory.cpp".
     JSHandle<JSArrayIterator> handleJSArrayIter = factory->NewJSArrayIterator(handleJSObjectTaggedArray,
         IterationKind::KEY);
-    EXPECT_EQ(handleJSArrayIter->GetNextIndex().GetNumber(), 0);
+    EXPECT_EQ(handleJSArrayIter->GetNextIndex(), 0);
 
     int testQuantity = 100;
     for (int i = 1; i <= testQuantity; i++) {
-        JSHandle<JSTaggedValue> handleTagValNextIndex(thread, JSTaggedValue(i));
-
         // Call "SetNextIndex" function in this HWTEST_F_L0.
-        handleJSArrayIter->SetNextIndex(thread, handleTagValNextIndex);
-        EXPECT_EQ(handleJSArrayIter->GetNextIndex().GetNumber(), i);
+        handleJSArrayIter->SetNextIndex(i);
+        EXPECT_EQ(handleJSArrayIter->GetNextIndex(), i);
     }
 }
 
@@ -153,26 +151,23 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIterationKind)
     for (int i = 0; i < numArray; i++) {
         handleTaggedArray->Set(thread, i, JSTaggedValue(array[i]));
     }
-    JSHandle<JSTaggedValue> handleTagVal0(thread, JSTaggedValue(0));
-    JSHandle<JSTaggedValue> handleTagVal1(thread, JSTaggedValue(1));
-    JSHandle<JSTaggedValue> handleTagVal2(thread, JSTaggedValue(2));
     JSHandle<JSObject> handleJSObjectTaggedArray(JSArray::CreateArrayFromList(thread, handleTaggedArray));
 
     // Call "SetIterationKind" function through "NewJSArrayIterator" function of "object_factory.cpp".
     JSHandle<JSArrayIterator> handleJSArrayIter = factory->NewJSArrayIterator(handleJSObjectTaggedArray,
         IterationKind::KEY);
-    EXPECT_EQ(handleJSArrayIter->GetIterationKind().GetNumber(), 0);
+    EXPECT_EQ(handleJSArrayIter->GetIterationKind(), IterationKind::KEY);
     handleJSArrayIter = factory->NewJSArrayIterator(handleJSObjectTaggedArray, IterationKind::VALUE);
-    EXPECT_EQ(handleJSArrayIter->GetIterationKind().GetNumber(), 1);
+    EXPECT_EQ(handleJSArrayIter->GetIterationKind(), IterationKind::VALUE);
     handleJSArrayIter = factory->NewJSArrayIterator(handleJSObjectTaggedArray, IterationKind::KEY_AND_VALUE);
-    EXPECT_EQ(handleJSArrayIter->GetIterationKind().GetNumber(), 2);
+    EXPECT_EQ(handleJSArrayIter->GetIterationKind(), IterationKind::KEY_AND_VALUE);
 
     // Call "SetIterationKind" function in this HWTEST_F_L0.
-    handleJSArrayIter->SetIterationKind(thread, handleTagVal0);
-    EXPECT_EQ(handleJSArrayIter->GetIterationKind().GetNumber(), 0);
-    handleJSArrayIter->SetIterationKind(thread, handleTagVal1);
-    EXPECT_EQ(handleJSArrayIter->GetIterationKind().GetNumber(), 1);
-    handleJSArrayIter->SetIterationKind(thread, handleTagVal2);
-    EXPECT_EQ(handleJSArrayIter->GetIterationKind().GetNumber(), 2);
+    handleJSArrayIter->SetIterationKind(IterationKind::KEY);
+    EXPECT_EQ(handleJSArrayIter->GetIterationKind(), IterationKind::KEY);
+    handleJSArrayIter->SetIterationKind(IterationKind::VALUE);
+    EXPECT_EQ(handleJSArrayIter->GetIterationKind(), IterationKind::VALUE);
+    handleJSArrayIter->SetIterationKind(IterationKind::KEY_AND_VALUE);
+    EXPECT_EQ(handleJSArrayIter->GetIterationKind(), IterationKind::KEY_AND_VALUE);
 }
 }  // namespace panda::ecmascript

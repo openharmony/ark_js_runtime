@@ -20,7 +20,12 @@
 #include "tagged_array-inl.h"
 
 namespace panda::ecmascript {
-enum class IterationKind { KEY = 0, VALUE, KEY_AND_VALUE };
+enum class IterationKind : uint8_t {
+    KEY = 0,
+    VALUE,
+    KEY_AND_VALUE
+};
+
 class JSIterator final {
 public:
     static JSTaggedValue IteratorCloseAndReturn(JSThread *thread, const JSHandle<JSTaggedValue> &iter,

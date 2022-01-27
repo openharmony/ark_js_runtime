@@ -28,16 +28,16 @@ namespace panda::ecmascript {
 JSTaggedValue JSStableArray::Push(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo *argv)
 {
     JSThread *thread = argv->GetThread();
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
     uint32_t oldLength = receiver->GetArrayLength();
-    array_size_t newLength = argc + oldLength;
+    uint32_t newLength = argc + oldLength;
 
     TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
     if (newLength > elements->GetLength()) {
         elements = *JSObject::GrowElementsCapacity(thread, JSHandle<JSObject>::Cast(receiver), newLength);
     }
 
-    for (array_size_t k = 0; k < argc; k++) {
+    for (uint32_t k = 0; k < argc; k++) {
         JSHandle<JSTaggedValue> value = argv->GetCallArg(k);
         elements->Set(thread, oldLength + k, value.GetTaggedValue());
     }
@@ -56,8 +56,8 @@ JSTaggedValue JSStableArray::Pop(JSHandle<JSArray> receiver, EcmaRuntimeCallInfo
     }
 
     TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
-    array_size_t capacity = elements->GetLength();
-    array_size_t index = length - 1;
+    uint32_t capacity = elements->GetLength();
+    uint32_t index = length - 1;
     auto result = elements->Get(index);
     if (TaggedArray::ShouldTrim(thread, capacity, index)) {
         elements->Trim(thread, index);
@@ -73,7 +73,7 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
 {
     JSThread *thread = argv->GetThread();
     uint32_t len = receiver->GetArrayLength();
-    array_size_t argc = argv->GetArgsNumber();
+    uint32_t argc = argv->GetArgsNumber();
 
     JSHandle<JSObject> thisObjHandle(receiver);
     JSTaggedValue newArray = JSArray::ArraySpeciesCreate(thread, thisObjHandle, JSTaggedNumber(actualDeleteCount));
@@ -90,7 +90,7 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
             destElements = *JSObject::GrowElementsCapacity(thread, newArrayHandle, actualDeleteCount);
         }
 
-        for (array_size_t idx = 0; idx < actualDeleteCount; idx++) {
+        for (uint32_t idx = 0; idx < actualDeleteCount; idx++) {
             destElements->Set(thread, idx, srcElementsHandle->Get(start + idx));
         }
         JSHandle<JSArray>::Cast(newArrayHandle)->SetArrayLength(thread, actualDeleteCount);
@@ -122,10 +122,10 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     }
 
-    array_size_t oldCapacity = srcElementsHandle->GetLength();
-    array_size_t newCapacity = len - actualDeleteCount + insertCount;
+    uint32_t oldCapacity = srcElementsHandle->GetLength();
+    uint32_t newCapacity = len - actualDeleteCount + insertCount;
     if (insertCount < actualDeleteCount) {
-        for (array_size_t idx = start; idx < len - actualDeleteCount; idx++) {
+        for (uint32_t idx = start; idx < len - actualDeleteCount; idx++) {
             auto element = srcElementsHandle->Get(idx + actualDeleteCount);
             element = element.IsHole() ? JSTaggedValue::Undefined() : element;
             srcElementsHandle->Set(thread, idx + insertCount, element);
@@ -134,7 +134,7 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
         if (TaggedArray::ShouldTrim(thread, oldCapacity, newCapacity)) {
             srcElementsHandle->Trim(thread, newCapacity);
         } else {
-            for (array_size_t idx = newCapacity; idx < len; idx++) {
+            for (uint32_t idx = newCapacity; idx < len; idx++) {
                 srcElementsHandle->Set(thread, idx, JSTaggedValue::Hole());
             }
         }
@@ -142,14 +142,14 @@ JSTaggedValue JSStableArray::Splice(JSHandle<JSArray> receiver, EcmaRuntimeCallI
         if (newCapacity > oldCapacity) {
             srcElementsHandle = JSObject::GrowElementsCapacity(thread, thisObjHandle, newCapacity);
         }
-        for (array_size_t idx = len - actualDeleteCount; idx > start; idx--) {
+        for (uint32_t idx = len - actualDeleteCount; idx > start; idx--) {
             auto element = srcElementsHandle->Get(idx + actualDeleteCount - 1);
             element = element.IsHole() ? JSTaggedValue::Undefined() : element;
             srcElementsHandle->Set(thread, idx + insertCount - 1, element);
         }
     }
 
-    for (array_size_t i = 2, idx = start; i < argc; i++, idx++) {
+    for (uint32_t i = 2, idx = start; i < argc; i++, idx++) {
         srcElementsHandle->Set(thread, idx, argv->GetCallArg(i));
     }
 
@@ -170,7 +170,7 @@ JSTaggedValue JSStableArray::Shift(JSHandle<JSArray> receiver, EcmaRuntimeCallIn
 
     TaggedArray *elements = TaggedArray::Cast(receiver->GetElements().GetTaggedObject());
     auto result = elements->Get(0);
-    for (array_size_t k = 1; k < length; k++) {
+    for (uint32_t k = 1; k < length; k++) {
         auto kValue = elements->Get(k);
         if (kValue.IsHole()) {
             elements->Set(thread, k - 1, JSTaggedValue::Undefined());
@@ -178,8 +178,8 @@ JSTaggedValue JSStableArray::Shift(JSHandle<JSArray> receiver, EcmaRuntimeCallIn
             elements->Set(thread, k - 1, kValue);
         }
     }
-    array_size_t capacity = elements->GetLength();
-    array_size_t index = length - 1;
+    uint32_t capacity = elements->GetLength();
+    uint32_t index = length - 1;
     if (TaggedArray::ShouldTrim(thread, capacity, index)) {
         elements->Trim(thread, index);
     } else {
@@ -225,7 +225,7 @@ JSTaggedValue JSStableArray::Join(JSHandle<JSArray> receiver, EcmaRuntimeCallInf
     CVector<JSHandle<EcmaString>> vec;
     JSMutableHandle<JSTaggedValue> elementHandle(thread, JSTaggedValue::Undefined());
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    for (array_size_t k = 0; k < length; k++) {
+    for (uint32_t k = 0; k < length; k++) {
         JSTaggedValue element = elements->Get(k);
         if (!element.IsUndefinedOrNull() && !element.IsHole()) {
             if (!element.IsString()) {
@@ -248,7 +248,7 @@ JSTaggedValue JSStableArray::Join(JSHandle<JSArray> receiver, EcmaRuntimeCallInf
     auto newString = EcmaString::AllocStringObject(allocateLength, isOneByte, thread->GetEcmaVM());
     int current = 0;
     DISALLOW_GARBAGE_COLLECTION;
-    for (array_size_t k = 0; k < length; k++) {
+    for (uint32_t k = 0; k < length; k++) {
         if (k > 0) {
             if (sep >= 0) {
                 newString->WriteData(static_cast<char>(sep), current);

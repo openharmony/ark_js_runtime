@@ -16,8 +16,8 @@
 #ifndef ECMASCRIPT_JS_SET_ITERATOR_H
 #define ECMASCRIPT_JS_SET_ITERATOR_H
 
-#include "js_object.h"
-#include "js_iterator.h"
+#include "ecmascript/js_object.h"
+#include "ecmascript/js_iterator.h"
 
 namespace panda::ecmascript {
 class JSSetIterator : public JSObject {
@@ -33,10 +33,15 @@ public:
 
     static constexpr size_t ITERATED_SET_OFFSET = JSObject::SIZE;
     ACCESSORS(IteratedSet, ITERATED_SET_OFFSET, NEXT_INDEX_OFFSET);
-    ACCESSORS(NextIndex, NEXT_INDEX_OFFSET, ITERATION_KIND_OFFSET);
-    ACCESSORS(IterationKind, ITERATION_KIND_OFFSET, SIZE);
+    ACCESSORS_PRIMITIVE_FIELD(NextIndex, uint32_t, NEXT_INDEX_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, ITERATED_SET_OFFSET, SIZE)
+    // define BitField
+    static constexpr size_t ITERATION_KIND_BITS = 2;
+    FIRST_BIT_FIELD(BitField, IterationKind, IterationKind, ITERATION_KIND_BITS)
+
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, ITERATED_SET_OFFSET, NEXT_INDEX_OFFSET)
 
     DECL_DUMP()
 };

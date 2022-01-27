@@ -19,6 +19,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_proxy.h"
@@ -552,6 +553,10 @@ bool JSTaggedValue::DeleteProperty(JSThread *thread, const JSHandle<JSTaggedValu
         return JSProxy::DeleteProperty(thread, JSHandle<JSProxy>(obj), key);
     }
 
+    if (obj->IsSpecialContainer()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Can not delete property in Container Object", false);
+    }
+
     return JSObject::DeleteProperty(thread, JSHandle<JSObject>(obj), key);
 }
 
@@ -609,6 +614,10 @@ bool JSTaggedValue::DefineOwnProperty(JSThread *thread, const JSHandle<JSTaggedV
         return JSTypedArray::DefineOwnProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), desc);
     }
 
+    if (obj->IsSpecialContainer()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Can not defineProperty on Container Object", false);
+    }
+
     return JSObject::DefineOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
 }
 
@@ -621,6 +630,9 @@ bool JSTaggedValue::GetOwnProperty(JSThread *thread, const JSHandle<JSTaggedValu
     if (obj->IsTypedArray()) {
         return JSTypedArray::GetOwnProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), desc);
     }
+    if (obj->IsSpecialContainer()) {
+        return GetContainerProperty(thread, obj, key, desc);
+    }
     return JSObject::GetOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
 }
 
@@ -629,6 +641,9 @@ bool JSTaggedValue::SetPrototype(JSThread *thread, const JSHandle<JSTaggedValue>
 {
     if (obj->IsJSProxy()) {
         return JSProxy::SetPrototype(thread, JSHandle<JSProxy>(obj), proto);
+    }
+    if (obj->IsSpecialContainer()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Can not set Prototype on Container Object", false);
     }
 
     return JSObject::SetPrototype(thread, JSHandle<JSObject>(obj), proto);
@@ -650,6 +665,9 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnPropertyKeys(JSThread *thread, const 
     if (obj->IsTypedArray()) {
         return JSTypedArray::OwnPropertyKeys(thread, obj);
     }
+    if (obj->IsSpecialContainer()) {
+        return GetOwnContainerPropertyKeys(thread, obj);
+    }
     return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
 }
 
@@ -663,6 +681,9 @@ bool JSTaggedValue::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
     if (obj->IsTypedArray()) {
         return JSTypedArray::HasProperty(thread, obj, JSTypedArray::ToPropKey(thread, key));
     }
+    if (obj->IsSpecialContainer()) {
+        return HasContainerProperty(thread, obj, key);
+    }
     return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
 }
 
@@ -675,6 +696,9 @@ bool JSTaggedValue::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
     if (obj->IsTypedArray()) {
         JSHandle<JSTaggedValue> key_handle(thread, JSTaggedValue(key));
         return JSTypedArray::HasProperty(thread, obj, JSHandle<JSTaggedValue>(ToString(thread, key_handle)));
+    }
+    if (obj->IsSpecialContainer()) {
+        return HasContainerProperty(thread, obj, JSHandle<JSTaggedValue>(thread, JSTaggedValue(key)));
     }
     return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
 }
@@ -747,5 +771,58 @@ JSTaggedValue JSTaggedValue::GetSuperBase(JSThread *thread, const JSHandle<JSTag
 
     ASSERT(obj->IsECMAObject());
     return JSObject::Cast(obj.GetTaggedValue())->GetPrototype(thread);
+}
+
+bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                         const JSHandle<JSTaggedValue> &key)
+{
+    auto *hclass = obj->GetTaggedObject()->GetClass();
+    JSType jsType = hclass->GetObjectType();
+    switch (jsType) {
+        case JSType::JS_ARRAY_LIST: {
+            return JSHandle<JSArrayList>::Cast(obj)->Has(key.GetTaggedValue());
+        }
+        case JSType::JS_QUEUE:
+            break;
+        default: {
+            UNREACHABLE();
+        }
+    }
+    return false;
+}
+
+JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *thread, const JSHandle<JSTaggedValue> &obj)
+{
+    auto *hclass = obj->GetTaggedObject()->GetClass();
+    JSType jsType = hclass->GetObjectType();
+    switch (jsType) {
+        case JSType::JS_ARRAY_LIST: {
+            return JSArrayList::OwnKeys(thread, JSHandle<JSArrayList>::Cast(obj));
+        }
+        case JSType::JS_QUEUE:
+            break;
+        default: {
+            UNREACHABLE();
+        }
+    }
+    return thread->GetEcmaVM()->GetFactory()->EmptyArray();
+}
+
+bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                         const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc)
+{
+    auto *hclass = obj->GetTaggedObject()->GetClass();
+    JSType jsType = hclass->GetObjectType();
+    switch (jsType) {
+        case JSType::JS_ARRAY_LIST: {
+            return JSArrayList::GetOwnProperty(thread, JSHandle<JSArrayList>::Cast(obj), key, desc);
+        }
+        case JSType::JS_QUEUE:
+            break;
+        default: {
+            UNREACHABLE();
+        }
+    }
+    return false;
 }
 }  // namespace panda::ecmascript

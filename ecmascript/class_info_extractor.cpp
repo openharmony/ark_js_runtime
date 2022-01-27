@@ -44,7 +44,7 @@ void ClassInfoExtractor::BuildClassInfoExtractorFromLiteral(JSThread *thread, JS
 
         if (UNLIKELY(ExtractAndReturnWhetherWithElements(thread, literal, nonStaticDetail, nonStaticKeys,
                                                          nonStaticProperties, nonStaticElements))) {
-            extractor->SetNonStaticWithElements();
+            extractor->SetNonStaticWithElements(true);
             extractor->SetNonStaticElements(thread, nonStaticElements);
         }
     }
@@ -77,7 +77,7 @@ void ClassInfoExtractor::BuildClassInfoExtractorFromLiteral(JSThread *thread, JS
 
         if (UNLIKELY(ExtractAndReturnWhetherWithElements(thread, literal, staticDetail, staticKeys,
                                                          staticProperties, staticElements))) {
-            extractor->SetStaticWithElements();
+            extractor->SetStaticWithElements(true);
             extractor->SetStaticElements(thread, staticElements);
         }
     } else {
@@ -310,7 +310,7 @@ JSHandle<JSFunction> ClassHelper::DefineClassTemplate(JSThread *thread, JSHandle
     }
 
     // non-static elements
-    if (UNLIKELY(extractor->IsNonStaticWithElements())) {
+    if (UNLIKELY(extractor->GetNonStaticWithElements())) {
         JSHandle<TaggedArray> nonStaticElements(thread, extractor->GetNonStaticElements());
         ClassHelper::HandleElementsProperties(thread, prototype, nonStaticElements, constantpool);
     }
@@ -338,7 +338,7 @@ JSHandle<JSFunction> ClassHelper::DefineClassTemplate(JSThread *thread, JSHandle
     }
 
     // static elements
-    if (UNLIKELY(extractor->IsStaticWithElements())) {
+    if (UNLIKELY(extractor->GetStaticWithElements())) {
         JSHandle<TaggedArray> staticElements(thread, extractor->GetStaticElements());
         ClassHelper::HandleElementsProperties(thread, JSHandle<JSObject>(constructor), staticElements, constantpool);
     }

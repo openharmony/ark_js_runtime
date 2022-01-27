@@ -25,8 +25,8 @@ namespace panda::ecmascript {
 static inline void MarkingBarrier(uintptr_t slotAddr, Region *objectRegion, TaggedObject *value,
     Region *valueRegion)
 {
-    auto heap = valueRegion->GetSpace()->GetHeap();
-    bool isOnlySemi = heap->IsOnlyMarkSemi();
+    auto heap = valueRegion->GetHeap();
+    bool isOnlySemi = heap->IsSemiMarkNeeded();
     if (!JSTaggedValue(value).IsWeak()) {
         if (isOnlySemi && !valueRegion->InYoungGeneration()) {
             return;

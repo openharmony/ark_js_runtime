@@ -73,7 +73,6 @@ class JSAsyncFunction;
 class PromiseRecord;
 class JSLocale;
 class ResolvingFunctionsRecord;
-class JSFunctionExtraInfo;
 class EcmaVM;
 class Heap;
 class ConstantPool;
@@ -97,8 +96,9 @@ class ProfileTypeInfo;
 class MachineCode;
 class ClassInfoExtractor;
 
+enum class CompletionRecordType : uint8_t;
 enum class PrimitiveType : uint8_t;
-enum class IterationKind;
+enum class IterationKind : uint8_t;
 
 using ErrorType = base::ErrorType;
 using base::ErrorType;
@@ -200,15 +200,11 @@ public:
 
     JSHandle<ResolvingFunctionsRecord> NewResolvingFunctionsRecord();
 
-    JSHandle<PromiseIteratorRecord> NewPromiseIteratorRecord(const JSHandle<JSTaggedValue> &itor,
-                                                             const JSHandle<JSTaggedValue> &done);
+    JSHandle<PromiseIteratorRecord> NewPromiseIteratorRecord(const JSHandle<JSTaggedValue> &itor, bool done);
 
     JSHandle<job::MicroJobQueue> NewMicroJobQueue();
 
     JSHandle<job::PendingJob> NewPendingJob(const JSHandle<JSFunction> &func, const JSHandle<TaggedArray> &argv);
-
-    JSHandle<JSFunctionExtraInfo> NewFunctionExtraInfo(const JSHandle<JSNativePointer> &callBack,
-                                                       const JSHandle<JSNativePointer> &data);
 
     JSHandle<JSArray> NewJSArray();
 
@@ -219,10 +215,10 @@ public:
 
     JSHandle<JSPrimitiveRef> NewJSString(const JSHandle<JSTaggedValue> &str);
 
-    JSHandle<TaggedArray> NewTaggedArray(array_size_t length, JSTaggedValue initVal = JSTaggedValue::Hole());
-    JSHandle<TaggedArray> NewTaggedArray(array_size_t length, JSTaggedValue initVal, bool nonMovable);
-    JSHandle<TaggedArray> NewTaggedArray(array_size_t length, JSTaggedValue initVal, MemSpaceType spaceType);
-    JSHandle<TaggedArray> NewDictionaryArray(array_size_t length);
+    JSHandle<TaggedArray> NewTaggedArray(uint32_t length, JSTaggedValue initVal = JSTaggedValue::Hole());
+    JSHandle<TaggedArray> NewTaggedArray(uint32_t length, JSTaggedValue initVal, bool nonMovable);
+    JSHandle<TaggedArray> NewTaggedArray(uint32_t length, JSTaggedValue initVal, MemSpaceType spaceType);
+    JSHandle<TaggedArray> NewDictionaryArray(uint32_t length);
     JSHandle<JSForInIterator> NewJSForinIterator(const JSHandle<JSTaggedValue> &obj);
 
     JSHandle<PropertyBox> NewPropertyBox(const JSHandle<JSTaggedValue> &name);
@@ -232,10 +228,10 @@ public:
     JSHandle<ProtoChangeDetails> NewProtoChangeDetails();
 
     // use for copy properties keys's array to another array
-    JSHandle<TaggedArray> ExtendArray(const JSHandle<TaggedArray> &old, array_size_t length,
+    JSHandle<TaggedArray> ExtendArray(const JSHandle<TaggedArray> &old, uint32_t length,
                                       JSTaggedValue initVal = JSTaggedValue::Hole());
-    JSHandle<TaggedArray> CopyPartArray(const JSHandle<TaggedArray> &old, array_size_t start, array_size_t end);
-    JSHandle<TaggedArray> CopyArray(const JSHandle<TaggedArray> &old, array_size_t oldLength, array_size_t newLength,
+    JSHandle<TaggedArray> CopyPartArray(const JSHandle<TaggedArray> &old, uint32_t start, uint32_t end);
+    JSHandle<TaggedArray> CopyArray(const JSHandle<TaggedArray> &old, uint32_t oldLength, uint32_t newLength,
                                     JSTaggedValue initVal = JSTaggedValue::Hole());
     JSHandle<TaggedArray> CloneProperties(const JSHandle<TaggedArray> &old);
     JSHandle<TaggedArray> CloneProperties(const JSHandle<TaggedArray> &old, const JSHandle<JSTaggedValue> &env,
@@ -262,7 +258,7 @@ public:
 
     void InitializeExtraProperties(const JSHandle<JSHClass> &dynclass, TaggedObject *obj, int inobjPropCount);
 
-    JSHandle<TaggedQueue> NewTaggedQueue(array_size_t length);
+    JSHandle<TaggedQueue> NewTaggedQueue(uint32_t length);
 
     JSHandle<TaggedQueue> GetEmptyTaggedQueue() const;
 
@@ -272,7 +268,7 @@ public:
 
     JSHandle<JSArrayIterator> NewJSArrayIterator(const JSHandle<JSObject> &array, IterationKind kind);
 
-    JSHandle<CompletionRecord> NewCompletionRecord(uint8_t type, JSHandle<JSTaggedValue> value);
+    JSHandle<CompletionRecord> NewCompletionRecord(CompletionRecordType type, JSHandle<JSTaggedValue> value);
 
     JSHandle<GeneratorContext> NewGeneratorContext();
 
@@ -297,7 +293,7 @@ public:
     JSHandle<JSArrayBuffer> NewJSArrayBuffer(void *buffer, int32_t length, const DeleteEntryPoint &deleter, void *data,
                                              bool share = false);
 
-    JSHandle<JSDataView> NewJSDataView(JSHandle<JSArrayBuffer> buffer, int32_t offset, int32_t length);
+    JSHandle<JSDataView> NewJSDataView(JSHandle<JSArrayBuffer> buffer, uint32_t offset, uint32_t length);
 
     void NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, void *buffer, size_t size);
 
@@ -406,7 +402,6 @@ private:
     JSHClass *jsNativePointerClass_ {nullptr};
     JSHClass *transitionHandlerClass_ {nullptr};
     JSHClass *prototypeHandlerClass_ {nullptr};
-    JSHClass *functionExtraInfo_ {nullptr};
     JSHClass *jsRealmClass_ {nullptr};
     JSHClass *programClass_ {nullptr};
     JSHClass *machineCodeClass_ {nullptr};

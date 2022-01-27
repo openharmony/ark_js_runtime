@@ -184,6 +184,7 @@ private:
     void BuildSimpleFunction();
     void FillPatchPointIDs();
     void RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, uint64_t &callInsNum, uint64_t &funcNum);
+    void RewritePatchPointIdStoredOnThread(LLVMValueRef instruction, uint64_t id);
     void Initialize();
     void InitMember();
 
@@ -195,10 +196,10 @@ private:
     struct CodeInfo codeInfo_ {};
 };
 
-class LLVMCodeGeneratorImpl : public CodeGeneratorImpl {
+class LLVMIRGeneratorImpl : public CodeGeneratorImpl {
 public:
-    explicit LLVMCodeGeneratorImpl(LLVMStubModule *module) : module_(module) {}
-    ~LLVMCodeGeneratorImpl() = default;
+    explicit LLVMIRGeneratorImpl(LLVMStubModule *module) : module_(module) {}
+    ~LLVMIRGeneratorImpl() = default;
     void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                              const CompilationConfig *cfg) override;
 private:

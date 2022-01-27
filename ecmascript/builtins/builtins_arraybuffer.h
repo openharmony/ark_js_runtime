@@ -44,14 +44,14 @@ public:
     // 24.1.1.2 IsDetachedBuffer(arrayBuffer)
     static bool IsDetachedBuffer(JSTaggedValue arrayBuffer);
     // 24.1.1.5 GetValueFromBuffer ( arrayBuffer, byteIndex, type, isLittleEndian )
-    static JSTaggedValue GetValueFromBuffer(JSTaggedValue arrBuf, int32_t byteIndex, DataViewType type,
+    static JSTaggedValue GetValueFromBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
                                             bool littleEndian);
     // 24.1.1.6 SetValueInBuffer ( arrayBuffer, byteIndex, type, value, isLittleEndian )
-    static JSTaggedValue SetValueInBuffer(JSTaggedValue arrBuf, int32_t byteIndex, DataViewType type,
+    static JSTaggedValue SetValueInBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
                                           JSTaggedNumber value, bool littleEndian);
     // 24.1.1.4 CloneArrayBuffer( srcBuffer, srcByteOffset [, cloneConstructor] )
     static JSTaggedValue CloneArrayBuffer(JSThread *thread, const JSHandle<JSTaggedValue> &srcBuffer,
-                                          int32_t srcByteOffset, JSHandle<JSTaggedValue> constructor);
+                                          uint32_t srcByteOffset, JSHandle<JSTaggedValue> constructor);
     // 24.1.1.1 AllocateArrayBuffer(constructor, byteLength)
     static JSTaggedValue AllocateArrayBuffer(JSThread *thread, const JSHandle<JSTaggedValue> &newTarget,
                                              double byteLength);
@@ -63,24 +63,24 @@ private:
     static uint64_t LittleEndianToBigEndianUint64(uint64_t liValue);
 
     template<typename T>
-    static void SetTypeData(uint8_t *block, T value, int32_t index);
+    static void SetTypeData(uint8_t *block, T value, uint32_t index);
 
     template<typename T, NumberSize size>
-    static JSTaggedValue GetValueFromBufferForInteger(uint8_t *block, int32_t byteIndex, bool littleEndian);
+    static JSTaggedValue GetValueFromBufferForInteger(uint8_t *block, uint32_t byteIndex, bool littleEndian);
 
     template<typename T, NumberSize size>
-    static JSTaggedValue GetValueFromBufferForFloat(uint8_t *block, int32_t byteIndex, bool littleEndian);
+    static JSTaggedValue GetValueFromBufferForFloat(uint8_t *block, uint32_t byteIndex, bool littleEndian);
 
     template<typename T>
-    static void SetValueInBufferForByte(double val, uint8_t *block, int32_t byteIndex);
+    static void SetValueInBufferForByte(double val, uint8_t *block, uint32_t byteIndex);
 
-    static void SetValueInBufferForUint8Clamped(double val, uint8_t *block, int32_t byteIndex);
-
-    template<typename T>
-    static void SetValueInBufferForInteger(double val, uint8_t *block, int32_t byteIndex, bool littleEndian);
+    static void SetValueInBufferForUint8Clamped(double val, uint8_t *block, uint32_t byteIndex);
 
     template<typename T>
-    static void SetValueInBufferForFloat(double val, uint8_t *block, int32_t byteIndex, bool littleEndian);
+    static void SetValueInBufferForInteger(double val, uint8_t *block, uint32_t byteIndex, bool littleEndian);
+
+    template<typename T>
+    static void SetValueInBufferForFloat(double val, uint8_t *block, uint32_t byteIndex, bool littleEndian);
 };
 }  // namespace panda::ecmascript::builtins
 

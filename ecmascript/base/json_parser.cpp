@@ -31,10 +31,10 @@ JSHandle<JSTaggedValue> Internalize::InternalizeJsonProperty(JSThread *thread, c
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
             JSTaggedNumber lenNumber = JSTaggedValue::ToLength(thread, lenResult);
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
-            array_size_t length = lenNumber.ToUint32();
+            uint32_t length = lenNumber.ToUint32();
             JSMutableHandle<JSTaggedValue> keyUnknow(thread, JSTaggedValue::Undefined());
             JSMutableHandle<JSTaggedValue> keyName(thread, JSTaggedValue::Undefined());
-            for (array_size_t i = 0; i < length; i++) {
+            for (uint32_t i = 0; i < length; i++) {
                 // Let prop be ! ToString((I)).
                 keyUnknow.Update(JSTaggedValue(i));
                 keyName.Update(JSTaggedValue::ToString(thread, keyUnknow).GetTaggedValue());
@@ -44,9 +44,9 @@ JSHandle<JSTaggedValue> Internalize::InternalizeJsonProperty(JSThread *thread, c
             // Let keys be ? EnumerableOwnPropertyNames(val, key).
             JSHandle<TaggedArray> ownerNames(JSObject::EnumerableOwnNames(thread, obj));
             RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSTaggedValue, thread);
-            array_size_t namesLength = ownerNames->GetLength();
+            uint32_t namesLength = ownerNames->GetLength();
             JSMutableHandle<JSTaggedValue> keyName(thread, JSTaggedValue::Undefined());
-            for (array_size_t i = 0; i < namesLength; i++) {
+            for (uint32_t i = 0; i < namesLength; i++) {
                 keyName.Update(JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(ownerNames), i)
                     .GetValue().GetTaggedValue());
                 RecurseAndApply(thread, obj, keyName, receiver);

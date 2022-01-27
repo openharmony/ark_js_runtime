@@ -21,7 +21,6 @@
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
-using JSTaggedType = panda::ecmascript::JSTaggedType;
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {
@@ -174,6 +173,7 @@ public:
     static JSTaggedType GreaterEqDyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType Add2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType Sub2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static void JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value);
 };
 }  // namespace panda::ecmascript
 #endif

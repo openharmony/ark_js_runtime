@@ -34,23 +34,29 @@
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript {
+enum class RelativeStyleOption : uint8_t { LONG = 0x01, SHORT, NARROW, EXCEPTION };
+enum class NumericOption : uint8_t { ALWAYS = 0x01, AUTO, EXCEPTION };
+
 class JSRelativeTimeFormat : public JSObject {
 public:
     CAST_CHECK(JSRelativeTimeFormat, IsJSRelativeTimeFormat);
 
     static constexpr size_t LOCALE_OFFSET = JSObject::SIZE;
-
     ACCESSORS(Locale, LOCALE_OFFSET, INITIALIZED_RELATIVE_TIME_FORMAT)
     ACCESSORS(InitializedRelativeTimeFormat, INITIALIZED_RELATIVE_TIME_FORMAT, NUMBERING_SYSTEM_OFFSET)
-    ACCESSORS(NumberingSystem, NUMBERING_SYSTEM_OFFSET, STYLE_OFFSET)
-    ACCESSORS(Style, STYLE_OFFSET, NUMERIC_OFFSET)
-    ACCESSORS(Numeric, NUMERIC_OFFSET, AVAILABLE_LOCALES_OFFSET)
+    ACCESSORS(NumberingSystem, NUMBERING_SYSTEM_OFFSET, AVAILABLE_LOCALES_OFFSET)
     ACCESSORS(AvailableLocales, AVAILABLE_LOCALES_OFFSET, ICU_FIELD_OFFSET)
+    ACCESSORS(IcuField, ICU_FIELD_OFFSET, BIT_FIELD_OFFSET)  // icu field
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    // icu field
-    ACCESSORS(IcuField, ICU_FIELD_OFFSET, SIZE)
+    // define BitField
+    static constexpr size_t STYLE_BITS = 3;
+    static constexpr size_t NUMERIC_BITS = 2;
+    FIRST_BIT_FIELD(BitField, Style, RelativeStyleOption, STYLE_BITS)
+    NEXT_BIT_FIELD(BitField, Numeric, NumericOption, NUMERIC_BITS, Style)
 
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, SIZE)
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
 
     // 14.1.1 InitializeRelativeTimeFormat ( relativeTimeFormat, locales, options )
