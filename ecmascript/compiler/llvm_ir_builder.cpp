@@ -109,6 +109,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::LOOP_BEGIN, &LLVMIRBuilder::HandleGoto}, {OpCode::LOOP_BACK, &LLVMIRBuilder::HandleGoto},
         {OpCode::VALUE_SELECTOR, &LLVMIRBuilder::HandlePhi},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall},
+        {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
         {OpCode::ARG, &LLVMIRBuilder::HandleParameter},
         {OpCode::CONSTANT, &LLVMIRBuilder::HandleConstant},
@@ -467,6 +468,9 @@ LLVMValueRef LLVMIRBuilder::GetCurrentSP()
 
 void LLVMIRBuilder::SaveCurrentSP()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     if (compCfg_->IsAArch64() || compCfg_->IsAmd64()) {
         LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
         LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
@@ -875,6 +879,10 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
     } else if (valCode == ValueCode::FLOAT64) {
         auto doubleValue = bit_cast<double>(value.to_ullong()); // actual double value
         llvmValue = LLVMConstReal(LLVMDoubleType(), doubleValue);
+    } else if (valCode == ValueCode::INT8) {
+        llvmValue = LLVMConstInt(LLVMInt8Type(), value.to_ulong(), 0);
+    } else if (valCode == ValueCode::INT16) {
+        llvmValue = LLVMConstInt(LLVMInt16Type(), value.to_ulong(), 0);
     } else {
         abort();
     }
@@ -1209,7 +1217,8 @@ void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
     */
     LLVMTypeRef returnType = ConvertLLVMTypeFromGate(gate);
     auto valCode = circuit_->LoadGatePtrConst(gate)->GetValueCode();
-    if (valCode == ValueCode::INT32 || valCode == ValueCode::INT64) {
+    if (valCode == ValueCode::INT32 || valCode == ValueCode::INT64 ||
+        valCode == ValueCode::INT8 || valCode == ValueCode::INT16) {
         auto e1Type = LLVMGetTypeKind(ConvertLLVMTypeFromGate(e1));
         if (e1Type == LLVMVectorTypeKind) {
             result = VectorAdd(e1Value, e2Value, returnType);
@@ -1371,18 +1380,19 @@ void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
             break;
         }
         default: {
-            UNREACHABLE();
+            abort();
             break;
         }
     }
-    if (e1ValCode == ValueCode::INT32 || e1ValCode == ValueCode::INT64) {
+    if (e1ValCode == ValueCode::INT32 || e1ValCode == ValueCode::INT64 ||
+        e1ValCode == ValueCode::ARCH) {
         e1Value = CanonicalizeToInt(e1Value);
         e2Value = CanonicalizeToInt(e2Value);
         result = LLVMBuildICmp(builder_, intOpcode, e1Value, e2Value, "");
     } else if (e1ValCode == ValueCode::FLOAT64) {
         result = LLVMBuildFCmp(builder_, realOpcode, e1Value, e2Value, "");
     } else {
-        UNREACHABLE();
+        abort();
     }
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);

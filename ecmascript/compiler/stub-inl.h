@@ -684,9 +684,7 @@ GateRef Stub::TaggedIsWeak(GateRef x)
 
 GateRef Stub::TaggedIsPrototypeHandler(GateRef x)
 {
-    return TruncInt32ToInt1(
-        Word32And(SExtInt1ToInt32(TaggedIsHeapObject(x)),
-                  SExtInt1ToInt32(HclassIsPrototypeHandler(LoadHClass(x)))));
+    return HclassIsPrototypeHandler(LoadHClass(x));
 }
 
 GateRef Stub::TaggedIsTransitionHandler(GateRef x)
@@ -990,11 +988,7 @@ GateRef Stub::GetObjectType(GateRef hClass)
 {
     GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
-    GateRef result = Word32And(bitfield, GetInt32Constant((1LU << JSHClass::ObjectTypeBits::SIZE) - 1));
-    if (env_.IsArch32Bit()) {
-        return result;
-    }
-    return ZExtInt32ToInt64(result);
+    return Word32And(bitfield, GetInt32Constant((1LU << JSHClass::ObjectTypeBits::SIZE) - 1));
 }
 
 GateRef Stub::GetGeneratorObjectResumeMode(GateRef obj)
@@ -1013,18 +1007,18 @@ GateRef Stub::IsDictionaryMode(GateRef object)
 
 GateRef Stub::IsDictionaryModeByHClass(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
     return Word32NotEqual(
         Word32And(
             Word32LSR(bitfield, GetInt32Constant(JSHClass::IsDictionaryBit::START_BIT)),
-            GetInt32Constant((1LLU << JSHClass::IsDictionaryBit::SIZE) - 1)),
+            GetInt32Constant((1LU << JSHClass::IsDictionaryBit::SIZE) - 1)),
         GetInt32Constant(0));
 }
 
 GateRef Stub::IsDictionaryElement(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
     // decode
     return Word32NotEqual(
@@ -1037,7 +1031,7 @@ GateRef Stub::IsDictionaryElement(GateRef hClass)
 GateRef Stub::NotBuiltinsConstructor(GateRef object)
 {
     GateRef hclass = LoadHClass(object);
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(MachineType::UINT32, hclass, bitfieldOffset);
     // decode
@@ -1051,7 +1045,7 @@ GateRef Stub::NotBuiltinsConstructor(GateRef object)
 GateRef Stub::IsClassConstructor(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
     // decode
@@ -1064,7 +1058,7 @@ GateRef Stub::IsClassConstructor(GateRef object)
 GateRef Stub::IsClassPrototype(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
     // decode
@@ -1077,7 +1071,7 @@ GateRef Stub::IsClassPrototype(GateRef object)
 GateRef Stub::IsExtensible(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(MachineType::UINT32, hClass, bitfieldOffset);
     // decode
@@ -1239,10 +1233,10 @@ GateRef Stub::GetPrototypeHandlerHandlerInfo(GateRef object)
 
 GateRef Stub::GetHasChanged(GateRef object)
 {
-    GateRef bitfieldOffset = GetArchRelateConstant(ProtoChangeMarker::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(ProtoChangeMarker::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(MachineType::UINT32, object, bitfieldOffset);
     GateRef mask = GetInt32Constant(1LLU << (ProtoChangeMarker::HAS_CHANGED_BITS - 1));
-    return Word32NotEqual(Word32Or(bitfield, mask), GetInt32Constant(0));
+    return Word32NotEqual(Word32And(bitfield, mask), GetInt32Constant(0));
 }
 
 GateRef Stub::HclassIsPrototypeHandler(GateRef hclass)
@@ -1387,13 +1381,13 @@ GateRef Stub::GetLayoutFromHClass(GateRef hClass)
 
 GateRef Stub::GetBitFieldFromHClass(GateRef hClass)
 {
-    GateRef offset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef offset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
     return Load(MachineType::UINT32, hClass, offset);
 }
 
 GateRef Stub::SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield)
 {
-    GateRef offset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef offset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
     return Store(MachineType::UINT32, glue, hClass, offset, bitfield);
 }
 
@@ -1435,22 +1429,22 @@ GateRef Stub::SetTransitionsToHClass(MachineType type, GateRef glue, GateRef hCl
 
 void Stub::SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value)
 {
-    GateRef oldValue = ZExtInt1ToInt64(value);
+    GateRef oldValue = ZExtInt1ToInt32(value);
     GateRef bitfield = GetBitFieldFromHClass(hClass);
-    GateRef mask = Word64LSL(
-        GetWord64Constant((1LLU << JSHClass::IsPrototypeBit::SIZE) - 1),
-        GetWord64Constant(JSHClass::IsPrototypeBit::START_BIT));
-    GateRef newVal = Word64Or(Word64And(bitfield, Word64Not(mask)),
-        Word64LSL(oldValue, GetWord64Constant(JSHClass::IsPrototypeBit::START_BIT)));
+    GateRef mask = Word32LSL(
+        GetInt32Constant((1LU << JSHClass::IsPrototypeBit::SIZE) - 1),
+        GetInt32Constant(JSHClass::IsPrototypeBit::START_BIT));
+    GateRef newVal = Word32Or(Word32And(bitfield, Word32Not(mask)),
+        Word32LSL(oldValue, GetInt32Constant(JSHClass::IsPrototypeBit::START_BIT)));
     SetBitFieldToHClass(glue, hClass, newVal);
 }
 
 GateRef Stub::IsProtoTypeHClass(GateRef hClass)
 {
     GateRef bitfield = GetBitFieldFromHClass(hClass);
-    return TruncInt64ToInt1(Word64And(Word64LSR(bitfield,
-        GetWord64Constant(JSHClass::IsPrototypeBit::START_BIT)),
-        GetWord64Constant((1LLU << JSHClass::IsPrototypeBit::SIZE) - 1)));
+    return TruncInt32ToInt1(Word32And(Word32LSR(bitfield,
+        GetInt32Constant(JSHClass::IsPrototypeBit::START_BIT)),
+        GetInt32Constant((1LU << JSHClass::IsPrototypeBit::SIZE) - 1)));
 }
 
 void Stub::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
@@ -1863,13 +1857,13 @@ GateRef Stub::SetIsInlinePropsFieldInPropAttr(GateRef attr, GateRef value)
 
 void Stub::SetHasConstructorToHClass(GateRef glue, GateRef hClass, GateRef value)
 {
-    GateRef bitfield = Load(MachineType::UINT32, hClass, GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET));
+    GateRef bitfield = Load(MachineType::UINT32, hClass, GetInt32Constant(JSHClass::BIT_FIELD_OFFSET));
     GateRef mask = Word32LSL(
         GetInt32Constant((1LU << JSHClass::HasConstructorBits::SIZE) - 1),
         GetInt32Constant(JSHClass::HasConstructorBits::START_BIT));
     GateRef newVal = Word32Or(Word32And(bitfield, Word32Not(mask)),
         Word32LSL(value, GetInt32Constant(JSHClass::HasConstructorBits::START_BIT)));
-    Store(MachineType::UINT32, glue, hClass, GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET), newVal);
+    Store(MachineType::UINT32, glue, hClass, GetInt32Constant(JSHClass::BIT_FIELD_OFFSET), newVal);
 }
 
 void Stub::UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, GateRef value)

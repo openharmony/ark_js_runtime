@@ -441,7 +441,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
     return ret;
 }
 
-GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef key)
+GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef index)
 {
     auto env = GetEnvironment();
     Label subentry(env);
@@ -457,7 +457,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
 
     GateRef pKey = Alloca(static_cast<int>(MachineRep::K_WORD32));
 
-    GateRef keyStore = Store(MachineType::INT32, glue, pKey, GetArchRelateConstant(0), TaggedCastToInt32(key));
+    GateRef keyStore = Store(MachineType::INT32, glue, pKey, GetArchRelateConstant(0), index);
     StubDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
     GateRef len = GetInt32Constant(sizeof(int) / sizeof(uint8_t));
     GateRef hash =
@@ -484,7 +484,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     Bind(&notUndefined);
     Label isMatch(env);
     Label notMatch(env);
-    Branch(IsMatchInNumberDictionary(key, element), &isMatch, &notMatch);
+    Branch(Word32Equal(index, TaggedCastToInt32(element)), &isMatch, &notMatch);
     Bind(&isMatch);
     result = *entry;
     Jump(&exit);
@@ -494,45 +494,6 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     entry = GetNextPositionForHash(*entry, *count, capacity);
     count = Int32Add(*count, GetInt32Constant(1));
     LoopEnd(&loopHead);
-    Bind(&exit);
-    auto ret = *result;
-    env->PopCurrentLabel();
-    return ret;
-}
-
-GateRef Stub::IsMatchInNumberDictionary(GateRef key, GateRef other)
-{
-    auto env = GetEnvironment();
-    Label entry(env);
-    env->PushCurrentLabel(&entry);
-    Label exit(env);
-    DEFVARIABLE(result, MachineType::BOOL, FalseConstant());
-    Label isHole(env);
-    Label notHole(env);
-    Label isUndefined(env);
-    Label notUndefined(env);
-    Branch(TaggedIsHole(key), &isHole, &notHole);
-    Bind(&isHole);
-    Jump(&exit);
-    Bind(&notHole);
-    Branch(TaggedIsUndefined(key), &isUndefined, &notUndefined);
-    Bind(&isUndefined);
-    Jump(&exit);
-    Bind(&notUndefined);
-    Label keyIsInt(env);
-    Label keyNotInt(env);
-    Label otherIsInt(env);
-    Label otherNotInt(env);
-    Branch(TaggedIsInt(key), &keyIsInt, &keyNotInt);
-    Bind(&keyIsInt);
-    Branch(TaggedIsInt(other), &otherIsInt, &otherNotInt);
-    Bind(&otherIsInt);
-    result = Word32Equal(TaggedCastToInt32(key), TaggedCastToInt32(other));
-    Jump(&exit);
-    Bind(&otherNotInt);
-    Jump(&exit);
-    Bind(&keyNotInt);
-    Jump(&exit);
     Bind(&exit);
     auto ret = *result;
     env->PopCurrentLabel();
@@ -1556,9 +1517,9 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
     Label handlerInfoNotField(env);
     Label handlerInfoIsNonExist(env);
     Label handlerInfoNotNonExist(env);
+    Label handlerIsPrototypeHandler(env);
     Label handlerNotPrototypeHandler(env);
     Label cellHasChanged(env);
-    Label cellNotChanged(env);
     Label loopHead(env);
     Label loopEnd(env);
     DEFVARIABLE(result, MachineType::TAGGED, GetUndefinedConstant());
@@ -1593,17 +1554,17 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
             }
         }
         Bind(&handlerNotInt);
-        Branch(TaggedIsPrototypeHandler(*handler), &loopEnd, &handlerNotPrototypeHandler);
-        Bind(&loopEnd);
+        Branch(TaggedIsPrototypeHandler(*handler), &handlerIsPrototypeHandler, &handlerNotPrototypeHandler);
+        Bind(&handlerIsPrototypeHandler);
         {
             GateRef cellValue = GetProtoCell(*handler);
-            Branch(GetHasChanged(cellValue), &cellHasChanged, &cellNotChanged);
+            Branch(GetHasChanged(cellValue), &cellHasChanged, &loopEnd);
             Bind(&cellHasChanged);
             {
                 result = GetHoleConstant();
                 Jump(&exit);
             }
-            Bind(&cellNotChanged);
+            Bind(&loopEnd);
             holder = GetPrototypeHandlerHolder(*handler);
             handler = GetPrototypeHandlerHandlerInfo(*handler);
             LoopEnd(&loopHead);
@@ -1667,6 +1628,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     Label callRuntime(env);
     Label storeElement(env);
     Label handlerIsInt(env);
+    Label handlerNotInt(env);
     Label cellHasChanged(env);
     Label cellHasNotChanged(env);
     Label loopHead(env);
@@ -1683,7 +1645,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     {
         Jump(&loopHead);
         LoopBegin(&loopHead);
-        Branch(TaggedIsInt(*varHandler), &handlerIsInt, &loopEnd);
+        Branch(TaggedIsInt(*varHandler), &handlerIsInt, &handlerNotInt);
         Bind(&handlerIsInt);
         {
             GateRef handlerInfo = TaggedCastToInt32(handler);
@@ -1718,15 +1680,15 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
                 }
             }
         }
-        Bind(&loopEnd);
+        Bind(&handlerNotInt);
         {
             GateRef cellValue = GetProtoCell(*varHandler);
-            Branch(GetHasChanged(cellValue), &cellHasChanged, &cellHasNotChanged);
+            Branch(GetHasChanged(cellValue), &cellHasChanged, &loopEnd);
             Bind(&cellHasChanged);
             {
                 Jump(&exit);
             }
-            Bind(&cellHasNotChanged);
+            Bind(&loopEnd);
             {
                 varHandler = GetPrototypeHandlerHandlerInfo(*varHandler);
                 LoopEnd(&loopHead);
@@ -1784,7 +1746,6 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
     Label handlerIsPropertyBox(env);
     Label handlerNotPropertyBox(env);
     Label cellHasChanged(env);
-    Label cellHasNotChanged(env);
     Label loopHead(env);
     Label loopEnd(env);
     DEFVARIABLE(result, MachineType::UINT64, GetUndefinedConstant(MachineType::UINT64));
@@ -1823,7 +1784,7 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
             }
             Bind(&handlerNotTransitionHandler);
             {
-                Branch(TaggedIsPrototypeHandler(*handler), &loopEnd, &handlerNotPrototypeHandler);
+                Branch(TaggedIsPrototypeHandler(*handler), &handlerIsPrototypeHandler, &handlerNotPrototypeHandler);
                 Bind(&handlerNotPrototypeHandler);
                 {
                     Branch(TaggedIsPropertyBox(*handler), &handlerIsPropertyBox, &handlerNotPropertyBox);
@@ -1835,16 +1796,16 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
                 }
             }
         }
-        Bind(&loopEnd);
+        Bind(&handlerIsPrototypeHandler);
         {
             GateRef cellValue = GetProtoCell(*handler);
-            Branch(GetHasChanged(cellValue), &cellHasChanged, &cellHasNotChanged);
+            Branch(GetHasChanged(cellValue), &cellHasChanged, &loopEnd);
             Bind(&cellHasChanged);
             {
                 result = GetHoleConstant(MachineType::UINT64);
                 Jump(&exit);
             }
-            Bind(&cellHasNotChanged);
+            Bind(&loopEnd);
             {
                 holder = GetPrototypeHandlerHolder(*handler);
                 handler = GetPrototypeHandlerHandlerInfo(*handler);
@@ -2029,7 +1990,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
             }
             Bind(&isDictionaryElement);
             {
-                GateRef entry = FindElementFromNumberDictionary(glue, elements, IntBuildTaggedWithNoGC(index));
+                GateRef entry = FindElementFromNumberDictionary(glue, elements, index);
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
                 Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
