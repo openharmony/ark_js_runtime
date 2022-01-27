@@ -309,6 +309,7 @@ void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef con
     GateRef result = GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset, depend,
         {glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+    Return();
 }
 
 void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
@@ -321,6 +322,7 @@ void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef
     GateRef result = GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset, depend,
         {glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
     GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+    Return();
 }
 
 GateRef InterpreterStub::GetObjectFromConstPool(GateRef constpool, GateRef index)

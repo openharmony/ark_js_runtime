@@ -289,7 +289,7 @@ ValueCode CircuitBuilder::GetValueCodeFromMachineType(MachineType type)
         case MachineType::UINT32:
             return ValueCode::INT32;
         case MachineType::NATIVE_POINTER:
-            return ValueCode::ANYVALUE;
+            return ValueCode::ARCH;
         case MachineType::UINT64:
         case MachineType::TAGGED:
         case MachineType::TAGGED_POINTER:
@@ -389,7 +389,7 @@ ValueCode CircuitBuilder::GetCallValueCodeFromMachineType(MachineType type)
         case MachineType::UINT32:
             return ValueCode::INT32;
         case MachineType::NATIVE_POINTER:
-            return ValueCode::ANYVALUE;
+            return ValueCode::ARCH;
         case MachineType::UINT64:
         case MachineType::TAGGED:
         case MachineType::TAGGED_POINTER:

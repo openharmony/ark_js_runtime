@@ -58,6 +58,8 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CIRCUIT_ROOT)};
         case RETURN:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(ANYVALUE), OpCode(RETURN_LIST)};
+        case RETURN_VOID:
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, NO_VALUE, OpCode(RETURN_LIST)};
         case THROW:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSValueCode()), OpCode(THROW_LIST)};
         case ORDINARY_BLOCK:

@@ -88,9 +88,11 @@ public:
                 case Triple::TRIPLE_AMD64:
                 case Triple::TRIPLE_AARCH64:
                     offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_64, GLUE_GLOBAL_CONSTANTS_OFFSET_64, GLUE_PROPERTIES_CACHE_OFFSET_64,
-                        GLUE_GLOBAL_STORAGE_OFFSET_64, GLUE_CURRENT_FRAME_OFFSET_64,
-                        GLUE_RUNTIME_FUNCTIONS_OFFSET_64, GLUE_FASTSTUB_ENTRIES_OFFSET_64,
+                        GLUE_EXCEPTION_OFFSET_64,
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
+                        GLUE_##name##_OFFSET_64,
+                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
                         InterpretedFrame::kSizeOn64Platform,
                         OptLeaveFrame::kSizeOn64Platform,
                         OptLeaveFrame::kPrevFpOffset
@@ -98,9 +100,11 @@ public:
                     break;
                 case Triple::TRIPLE_ARM32:
                     offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_32, GLUE_GLOBAL_CONSTANTS_OFFSET_32, GLUE_PROPERTIES_CACHE_OFFSET_32,
-                        GLUE_GLOBAL_STORAGE_OFFSET_32, GLUE_CURRENT_FRAME_OFFSET_32,
-                        GLUE_RUNTIME_FUNCTIONS_OFFSET_32, GLUE_FASTSTUB_ENTRIES_OFFSET_32,
+                        GLUE_EXCEPTION_OFFSET_32,
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
+                        GLUE_##name##_OFFSET_32,
+                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
                         InterpretedFrame::kSizeOn64Platform,
                         OptLeaveFrame::kSizeOn64Platform,
                         OptLeaveFrame::kPrevFpOffset
@@ -681,10 +685,9 @@ public:
     inline GateRef GetPropertiesAddrFromLayoutInfo(GateRef layout);
     inline GateRef GetPropertyMetaDataFromAttr(GateRef attr);
     inline GateRef GetKeyFromLayoutInfo(GateRef layout, GateRef entry);
-    GateRef IsMatchInNumberDictionary(GateRef key, GateRef other);
     GateRef FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hClass,
         GateRef key, GateRef propsNum);
-    GateRef FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef key);
+    GateRef FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef index);
     GateRef FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key);
     GateRef IsMatchInTransitionDictionary(GateRef element, GateRef key, GateRef metaData, GateRef attr);
     GateRef FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, GateRef key, GateRef metaData);
