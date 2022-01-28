@@ -415,6 +415,10 @@ bool JSSerializer::WriteEcmaString(const JSHandle<JSTaggedValue> &value)
         bufferSize_ = oldSize;
         return false;
     }
+    // skip writeRawData for empty EcmaString
+    if (length == 0) {
+        return true;
+    }
     const uint8_t *data = string->GetDataUtf8();
     const uint8_t strEnd = '\0';
     if (!WriteRawData(data, length) || !WriteRawData(&strEnd, sizeof(uint8_t))) {
@@ -990,6 +994,11 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadEcmaString()
         return JSHandle<JSTaggedValue>();
     }
     ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
+    if (stringLength == 0) {
+        JSHandle<JSTaggedValue> emptyString = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
+        return emptyString;
+    }
+
     uint8_t *string = reinterpret_cast<uint8_t*>(GetBuffer(stringLength + 1));
     if (string == nullptr) {
         return JSHandle<JSTaggedValue>();
