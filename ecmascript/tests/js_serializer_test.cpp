@@ -264,6 +264,20 @@ public:
         Destroy();
     }
 
+    void EcmaStringTest3(std::pair<uint8_t *, size_t> data)
+    {
+        Init();
+        JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->GetEmptyString();
+
+        JSDeserializer deserializer(thread, data.first, data.second);
+        JSHandle<JSTaggedValue> res = deserializer.DeserializeJSTaggedValue();
+        EXPECT_TRUE(res->IsString()) << "[NotString] Deserialize ecmaString fail";
+        JSHandle<EcmaString> resEcmaString = JSHandle<EcmaString>::Cast(res);
+        EXPECT_TRUE(ecmaString->GetHashcode() == resEcmaString->GetHashcode()) << "Not same HashCode";
+        EXPECT_TRUE(EcmaString::StringsAreEqual(*ecmaString, *resEcmaString)) << "Not same EcmaString";
+        Destroy();
+    }
+
     void Int32Test(std::pair<uint8_t *, size_t> data)
     {
         Init();
@@ -710,6 +724,19 @@ HWTEST_F_L0(JSSerializerTest, SerializeEcmaString2)
     std::pair<uint8_t *, size_t> data = serializer->ReleaseBuffer();
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::EcmaStringTest2, jsDeserializerTest, data);
+    t1.join();
+    delete serializer;
+};
+
+HWTEST_F_L0(JSSerializerTest, SerializeEcmaString3)
+{
+    JSHandle<EcmaString> ecmaString = thread->GetEcmaVM()->GetFactory()->GetEmptyString();
+    JSSerializer *serializer = new JSSerializer(thread);
+    bool success = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>(ecmaString));
+    EXPECT_TRUE(success) << "Serialize EcmaString fail";
+    std::pair<uint8_t *, size_t> data = serializer->ReleaseBuffer();
+    JSDeserializerTest jsDeserializerTest;
+    std::thread t1(&JSDeserializerTest::EcmaStringTest3, jsDeserializerTest, data);
     t1.join();
     delete serializer;
 };
