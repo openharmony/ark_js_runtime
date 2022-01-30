@@ -28,13 +28,13 @@
 #endif
 #include "ecmascript/ecma_global_storage-inl.h"
 #include "ecmascript/ecma_language_context.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/jobs/micro_job_queue.h"
+#include "ecmascript/jspandafile/js_pandafile_executor.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_dataview.h"
@@ -50,6 +50,8 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/mem/region.h"
+#include "ecmascript/module/js_module_manager.h"
+#include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "generated/base_options.h"
@@ -282,7 +284,8 @@ bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string 
 {
     std::vector<std::string> argv;
     LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
-    if (!vm->ExecuteFromPf(fileName, entry, argv)) {
+    JSThread *thread = vm->GetAssociatedJSThread();
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromFile(thread, fileName, entry, argv)) {
         LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
@@ -294,7 +297,8 @@ bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size,
                      const std::string &entry, const std::string &filename)
 {
     std::vector<std::string> argv;
-    if (!vm->ExecuteFromBuffer(data, size, entry, argv, filename)) {
+    JSThread *thread = vm->GetAssociatedJSThread();
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, entry, argv, filename)) {
         LOG_ECMA(ERROR) << "Cannot execute ark buffer file '" << filename
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
@@ -468,29 +472,25 @@ void* PromiseRejectInfo::GetData() const
 
 bool JSNApi::ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file)
 {
-    auto moduleManager = vm->GetModuleManager();
-    moduleManager->SetCurrentExportModuleName(file);
-    // Update Current Module
     std::vector<std::string> argv;
-    if (!vm->ExecuteFromBuffer(data, size, ENTRY_POINTER, argv)) {
+    JSThread *thread = vm->GetAssociatedJSThread();
+    if (!ecmascript::JSPandaFileExecutor::ExecuteFromBuffer(thread, data, size, ENTRY_POINTER, argv, file)) {
         std::cerr << "Cannot execute panda file from memory" << std::endl;
-        moduleManager->RestoreCurrentExportModuleName();
         return false;
     }
-
-    // Restore Current Module
-    moduleManager->RestoreCurrentExportModuleName();
     return true;
 }
 
-Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, const std::string &itemName)
+Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, const std::string &key)
 {
-    auto moduleManager = vm->GetModuleManager();
+    ecmascript::ModuleManager *moduleManager = vm->GetModuleManager();
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<ecmascript::SourceTextModule> ecmaModule = moduleManager->HostResolveImportedModule(file);
+
     ObjectFactory *factory = vm->GetFactory();
-    JSHandle<JSTaggedValue> moduleName(factory->NewFromStdStringUnCheck(file, true));
-    JSHandle<JSTaggedValue> moduleObj = moduleManager->GetModule(vm->GetJSThread(), moduleName);
-    JSHandle<JSTaggedValue> itemString(factory->NewFromStdString(itemName));
-    JSHandle<JSTaggedValue> exportObj = moduleManager->GetModuleItem(vm->GetJSThread(), moduleObj, itemString);
+    JSHandle<EcmaString> keyHandle = factory->NewFromStdStringUnCheck(key, true);
+
+    JSHandle<JSTaggedValue> exportObj(thread, ecmaModule->GetModuleValue(thread, keyHandle.GetTaggedValue(), false));
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
 }
 

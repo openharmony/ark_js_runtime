@@ -17,8 +17,8 @@
 #define ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/class_linker/panda_file_translator.h"
 #include "ecmascript/jspandafile/constpool_value.h"
+#include "ecmascript/jspandafile/panda_file_translator.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
@@ -30,6 +30,8 @@ class File;
 
 namespace ecmascript {
 #define ENTRY_FUNCTION_NAME "func_main_0"
+#define MODULE_CLASS "L_ESModuleRecord;"
+#define ENTRY_MAIN_FUNCTION "_GLOBAL::func_main_0"
 
 class JSPandaFile {
 public:
@@ -87,8 +89,10 @@ public:
         return pf_->GetClasses();
     }
 
+    bool IsModule() const;
+
 private:
-    void InitMethods();
+    void Initialize();
 
     uint32_t constpoolIndex_ {0};
     std::unordered_map<uint32_t, uint64_t> constpoolMap_;
@@ -98,6 +102,7 @@ private:
     const panda_file::File *pf_ {nullptr};
     std::unique_ptr<tooling::ecmascript::PtJSExtractor> ptJSExtractor_;
     CString desc_;
+    bool isModule_ {false};
 };
 }  // namespace ecmascript
 }  // namespace panda

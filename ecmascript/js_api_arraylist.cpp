@@ -39,7 +39,7 @@ void JSAPIArrayList::Insert(JSThread *thread, const JSHandle<JSAPIArrayList> &ar
 {
     int length = static_cast<int>(arrayList->GetLength().GetArrayLength());
     if (index < 0 || index >= length) {
-        THROW_RANGE_ERROR(thread, "ArrayList: set out-of-bounds");
+        THROW_ERROR(thread, ErrorType::RANGE_ERROR, "ArrayList: set out-of-bounds");
     }
     JSHandle<TaggedArray> elements = GrowCapacity(thread, arrayList, length + 1);
 

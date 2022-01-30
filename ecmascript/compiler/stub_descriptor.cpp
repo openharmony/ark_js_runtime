@@ -1621,12 +1621,12 @@ CALL_STUB_INIT_DESCRIPTOR(UpdateHotnessCounter)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(ImportModule)
+CALL_STUB_INIT_DESCRIPTOR(GetModuleNamespace)
 {
     // 2 : 2 input parameters
-    StubDescriptor importModule("ImportModule", 0, 2,
+    StubDescriptor getModuleNamespace("GetModuleNamespace", 0, 2,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = importModule;
+    *descriptor = getModuleNamespace;
     std::array<VariableType, 2> params = { // 2 : 2 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY(),
@@ -1650,16 +1650,16 @@ CALL_STUB_INIT_DESCRIPTOR(StModuleVar)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(LdModvarByName)
+CALL_STUB_INIT_DESCRIPTOR(LdModuleVar)
 {
     // 3 : 3 input parameters
-    StubDescriptor ldModvarByName("LdModvarByName", 0, 3,
+    StubDescriptor ldModuleVar("LdModuleVar", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = ldModvarByName;
+    *descriptor = ldModuleVar;
     std::array<VariableType, 3> params = { // 3 : 3 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY(),
-        VariableType::JS_ANY(),
+        VariableType::INT16(),
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);

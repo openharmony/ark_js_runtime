@@ -351,7 +351,7 @@ public:
     static void HandleCreateArrayWithBufferPrefImm16(
         JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
         JSTaggedValue acc, int32_t hotnessCounter);
-    static void HandleImportModulePrefId32(
+    static void HandleGetModuleNamespacePrefId32(
         JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
         JSTaggedValue acc, int32_t hotnessCounter);
     static void HandleStModuleVarPrefId32(
@@ -360,7 +360,7 @@ public:
     static void HandleCopyModulePrefV8(
         JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
         JSTaggedValue acc, int32_t hotnessCounter);
-    static void HandleLdModVarByNamePrefId32V8(
+    static void HandleLdModuleVarPrefId32Imm8(
         JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
         JSTaggedValue acc, int32_t hotnessCounter);
     static void HandleCreateRegExpWithLiteralPrefId32Imm8(
@@ -623,7 +623,7 @@ static std::array<DispatchEntryPoint, BCHandlers::MAX_BYTECODE_HANDLERS> asmDisp
     InterpreterAssembly::HandleStLexVarDynPrefImm8Imm8V8,
     InterpreterAssembly::HandleStLexVarDynPrefImm16Imm16V8,
     InterpreterAssembly::HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8,
-    InterpreterAssembly::HandleImportModulePrefId32,
+    InterpreterAssembly::HandleGetModuleNamespacePrefId32,
     InterpreterAssembly::HandleStModuleVarPrefId32,
     InterpreterAssembly::HandleTryLdGlobalByNamePrefId32,
     InterpreterAssembly::HandleTryStGlobalByNamePrefId32,
@@ -634,7 +634,7 @@ static std::array<DispatchEntryPoint, BCHandlers::MAX_BYTECODE_HANDLERS> asmDisp
     InterpreterAssembly::HandleStOwnByNamePrefId32V8,
     InterpreterAssembly::HandleLdSuperByNamePrefId32V8,
     InterpreterAssembly::HandleStSuperByNamePrefId32V8,
-    InterpreterAssembly::HandleLdModVarByNamePrefId32V8,
+    InterpreterAssembly::HandleLdModuleVarPrefId32Imm8,
     InterpreterAssembly::HandleCreateRegExpWithLiteralPrefId32Imm8,
     InterpreterAssembly::HandleIsTruePref,
     InterpreterAssembly::HandleIsFalsePref,

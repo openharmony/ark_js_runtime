@@ -19,15 +19,15 @@
 #include <string_view>
 #include <vector>
 
-#include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/literal_data_extractor.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/literal_data_extractor.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/ts_types/ts_type_table.h"
@@ -351,9 +351,9 @@ void PandaFileTranslator::UpdateICOffset(JSMethod *method, uint8_t *pc)
         case EcmaOpcode::STSUPERBYVALUE_PREF_V8_V8:
         case EcmaOpcode::LDSUPERBYNAME_PREF_ID32_V8:
         case EcmaOpcode::STSUPERBYNAME_PREF_ID32_V8:
-        case EcmaOpcode::LDMODVARBYNAME_PREF_ID32_V8:
+        case EcmaOpcode::LDMODULEVAR_PREF_ID32_IMM8:
         case EcmaOpcode::STMODULEVAR_PREF_ID32:
-            method->UpdateSlotSize(2);
+            method->UpdateSlotSize(2); // 2: occupy two ic slot
             break;
         default:
             return;

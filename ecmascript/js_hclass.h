@@ -132,6 +132,7 @@ class ProtoChangeDetails;
         JS_FLOAT32_ARRAY,       /* ////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_FLOAT64_ARRAY,       /* JS_TYPED_ARRAY_END ///////////////////////////////////////////////////////////// */ \
         JS_PRIMITIVE_REF, /* number\boolean\string. SPECIAL indexed objects end, DON'T CHANGE HERE ////////-PADDING */ \
+        JS_MODULE_NAMESPACE, /* ///////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_GLOBAL_OBJECT, /* JS_OBJECT_END/////////////////////////////////////////////////////////////////-PADDING */ \
         JS_PROXY, /* ECMA_OBJECT_END ////////////////////////////////////////////////////////////////////////////// */ \
                                                                                                                        \
@@ -163,9 +164,13 @@ class ProtoChangeDetails;
         PROMISE_ITERATOR_RECORD,    /* ////////////////////////////////////////////////////////////////////-PADDING */ \
         MICRO_JOB_QUEUE, /* /////////////////////////////////////////////////////////////////////////////-PADDING */   \
         PENDING_JOB,     /* /////////////////////////////////////////////////////////////////////////////-PADDING */   \
+        MODULE_RECORD, /* //////////////////////////////////////////////////////////////////////////////-PADDING */    \
+        SOURCE_TEXT_MODULE_RECORD, /* //////////////////////////////////////////////////////////////////-PADDING */    \
+        IMPORTENTRY_RECORD, /* /////////////////////////////////////////////////////////////////////////-PADDING */    \
+        EXPORTENTRY_RECORD, /* /////////////////////////////////////////////////////////////////////////-PADDING */    \
+        RESOLVEDBINDING_RECORD, /* /////////////////////////////////////////////////////////////////////-PADDING */    \
         COMPLETION_RECORD, /* JS_RECORD_END /////////////////////////////////////////////////////////////////////// */ \
         MACHINE_CODE_OBJECT,                                                                                           \
-        ECMA_MODULE, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         CLASS_INFO_EXTRACTOR, /* //////////////////////////////////////////////////////////////////////////-PADDING */ \
         TS_ARRAY_TYPE,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         TS_UNION_TYPE,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -196,7 +201,11 @@ class ProtoChangeDetails;
         JS_RECORD_END = COMPLETION_RECORD,    /* ///////////////////////////////////////////////////////-PADDING */    \
                                                                                                                        \
         JS_TYPED_ARRAY_BEGIN = JS_TYPED_ARRAY, /* /////////////////////////////////////////////////////////-PADDING */ \
-        JS_TYPED_ARRAY_END = JS_FLOAT64_ARRAY  /* /////////////////////////////////////////////////////////-PADDING */
+        JS_TYPED_ARRAY_END = JS_FLOAT64_ARRAY, /* /////////////////////////////////////////////////////////-PADDING */ \
+                                                                                                                       \
+        MODULE_RECORD_BEGIN = MODULE_RECORD, /* ///////////////////////////////////////////////////////////-PADDING */ \
+        MODULE_RECORD_END = SOURCE_TEXT_MODULE_RECORD /* //////////////////////////////////////////////////-PADDING */
+
 
 enum class JSType : uint8_t {
     JSTYPE_DECL,
@@ -732,11 +741,6 @@ public:
         return GetObjectType() == JSType::PROGRAM;
     }
 
-    inline bool IsEcmaModule() const
-    {
-        return GetObjectType() == JSType::ECMA_MODULE;
-    }
-
     inline bool IsClassInfoExtractor() const
     {
         return GetObjectType() == JSType::CLASS_INFO_EXTRACTOR;
@@ -949,6 +953,37 @@ public:
     inline bool IsTSArrayType() const
     {
         return GetObjectType() == JSType::TS_ARRAY_TYPE;
+    }
+
+    inline bool IsModuleRecord() const
+    {
+        JSType jsType = GetObjectType();
+        return jsType >= JSType::MODULE_RECORD_BEGIN && jsType <= JSType::MODULE_RECORD_END;
+    }
+
+    inline bool IsSourceTextModule() const
+    {
+        return GetObjectType() == JSType::SOURCE_TEXT_MODULE_RECORD;
+    }
+
+    inline bool IsImportEntry() const
+    {
+        return GetObjectType() == JSType::IMPORTENTRY_RECORD;
+    }
+
+    inline bool IsExportEntry() const
+    {
+        return GetObjectType() == JSType::EXPORTENTRY_RECORD;
+    }
+
+    inline bool IsResolvedBinding() const
+    {
+        return GetObjectType() == JSType::RESOLVEDBINDING_RECORD;
+    }
+
+    inline bool IsModuleNamespace() const
+    {
+        return GetObjectType() == JSType::JS_MODULE_NAMESPACE;
     }
 
     inline void SetElementRepresentation(Representation representation)
