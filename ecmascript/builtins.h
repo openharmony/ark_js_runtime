@@ -171,6 +171,8 @@ private:
 
     void InitializePromiseJob(const JSHandle<GlobalEnv> &env);
 
+    void InitializeModuleNamespace(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const;
+
     void SetFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key,
                      EcmaEntrypoint func, int length) const;
 

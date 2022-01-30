@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H
 #define ECMASCRIPT_INTERPRETER_SLOW_RUNTIME_STUB_H
 
-#include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 
@@ -103,10 +103,8 @@ public:
     static JSTaggedValue GetIterator(JSThread *thread, JSTaggedValue obj);
     static JSTaggedValue IterNext(JSThread *thread, JSTaggedValue iter);
     static JSTaggedValue CloseIterator(JSThread *thread, JSTaggedValue iter);
-    static JSTaggedValue ImportModule(JSThread *thread, JSTaggedValue moduleName);
-    static void StModuleVar(JSThread *thread, JSTaggedValue exportName, JSTaggedValue exportObj);
-    static void CopyModule(JSThread *thread, JSTaggedValue srcModule);
-    static JSTaggedValue LdModvarByName(JSThread *thread, JSTaggedValue moduleObj, JSTaggedValue itemName);
+    static void StModuleVar(JSThread *thread, JSTaggedValue key, JSTaggedValue value);
+    static JSTaggedValue LdModvarByName(JSThread *thread, JSTaggedValue key, bool inner);
     static JSTaggedValue CreateRegExpWithLiteral(JSThread *thread, JSTaggedValue pattern, uint8_t flags);
     static JSTaggedValue GetIteratorNext(JSThread *thread, JSTaggedValue obj, JSTaggedValue method);
 
@@ -152,6 +150,7 @@ public:
     static JSTaggedValue CloneClassFromTemplate(JSThread *thread, JSTaggedValue ctor, JSTaggedValue base,
                                                 JSTaggedValue lexenv, ConstantPool *constpool);
     static JSTaggedValue SetClassConstructorLength(JSThread *thread, JSTaggedValue ctor, JSTaggedValue length);
+    static JSTaggedValue GetModuleNamespace(JSThread *thread, JSTaggedValue localName);
     /* -------------- Common API End, Don't change those interface!!! ----------------- */
 
 private:

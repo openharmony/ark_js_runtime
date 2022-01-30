@@ -15,7 +15,7 @@
 
 #include "ecmascript/mem/space-inl.h"
 
-#include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/region-inl.h"

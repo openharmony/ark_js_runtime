@@ -66,10 +66,9 @@ class JSHandle;
 class JSArrayBuffer;
 class JSFunction;
 class Program;
-class ModuleManager;
-class EcmaModule;
 class TSLoader;
 struct BytecodeTranslationInfo;
+class EcmaModuleManager;
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
                                              const JSHandle<JSTaggedValue> reason,
@@ -98,8 +97,7 @@ public:
 
     ~EcmaVM() override;
 
-    bool ExecuteFromPf(std::string_view filename, std::string_view entryPoint, const std::vector<std::string> &args,
-                       bool isModule = false);
+    bool ExecuteFromPf(std::string_view filename, std::string_view entryPoint, const std::vector<std::string> &args);
 
     bool ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                            const std::vector<std::string> &args);
@@ -343,13 +341,18 @@ public:
 
     void ProcessReferences(const WeakRootVisitor &v0);
 
-    JSHandle<JSTaggedValue> GetModuleByName(JSHandle<JSTaggedValue> moduleName);
+    bool ExecuteModule(const panda_file::File &pf, std::string_view entryPoint, const std::vector<std::string> &args,
+                       const std::string &descriptor);
+    bool ExecuteModuleBuffer(const void *buffer, size_t size, std::string_view entryPoint,
+                             const std::vector<std::string> &args, const std::string &filename);
+    bool ModuleExecution(std::string_view moduleFilename, std::string_view entryPoint,
+                         JSTaggedValue moduleGlobal, const std::vector<std::string> &args);
+    bool ModuleExecution(const panda_file::File *pf, std::string_view moduleFilename, std::string_view entryPoint,
+                         JSTaggedValue module, const std::vector<std::string> &args);
 
-    void ExecuteModule(std::string_view moduleFile, std::string_view entryPoint, const std::vector<std::string> &args);
-
-    ModuleManager *GetModuleManager() const
+    EcmaModuleManager *GetEcmaModuleManager() const
     {
-        return moduleManager_;
+        return ecmaModuleManager_;
     }
 
     TSLoader *GetTSLoader() const
@@ -500,8 +503,8 @@ private:
     // VM resources.
     CString snapshotFileName_;
     ChunkVector<JSMethod *> nativeMethods_;
-    ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
+    EcmaModuleManager *ecmaModuleManager_ {nullptr};
     bool optionalLogEnabled_ {false};
     CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
 

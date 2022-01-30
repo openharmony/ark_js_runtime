@@ -14,7 +14,7 @@
  */
 
 #include "ecmascript/napi/include/dfx_jsnapi.h"
-#include "ecmascript/ecma_module.h"
+#include "ecmascript/base/error_helper.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/hprof/heap_profiler.h"
 #include "ecmascript/mem/c_string.h"

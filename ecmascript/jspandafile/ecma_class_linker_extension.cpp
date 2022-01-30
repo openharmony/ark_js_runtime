@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/ecma_class_linker_extension.h"
+#include "ecmascript/jspandafile/ecma_class_linker_extension.h"
 #include "ecmascript/ecma_string.h"
 #include "include/class_linker-inl.h"
 #include "include/coretypes/class.h"

@@ -78,7 +78,6 @@ class EcmaVM;
 class Heap;
 class ConstantPool;
 class Program;
-class EcmaModule;
 class LayoutInfo;
 class JSIntlBoundFunction;
 class FreeObject;
@@ -96,6 +95,11 @@ class JSAPITreeSet;
 class JSAPITreeMap;
 class JSAPITreeSetIterator;
 class JSAPITreeMapIterator;
+class ModuleNamespace;
+class ImportEntry;
+class ExportEntry;
+class SourceTextModule;
+class ResolvedBinding;
 
 namespace job {
 class MicroJobQueue;
@@ -126,7 +130,6 @@ public:
     JSHandle<ProfileTypeInfo> NewProfileTypeInfo(uint32_t length);
     JSHandle<ConstantPool> NewConstantPool(uint32_t capacity);
     JSHandle<Program> NewProgram();
-    JSHandle<EcmaModule> NewEmptyEcmaModule();
 
     JSHandle<JSObject> GetJSError(const ErrorType &errorType, const char *data = nullptr);
 
@@ -387,6 +390,18 @@ public:
     // It is used to provide iterators for non ECMA standard jsapi containers.
     JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
     JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);
+    // --------------------------------------module--------------------------------------------
+    JSHandle<ModuleNamespace> NewModuleNamespace();
+    JSHandle<ImportEntry> NewImportEntry();
+    JSHandle<ImportEntry> NewImportEntry(JSHandle<JSTaggedValue> &moduleRequest, JSHandle<JSTaggedValue> &importName,
+                                         JSHandle<JSTaggedValue> &localName);
+    JSHandle<ExportEntry> NewExportEntry();
+    JSHandle<ExportEntry> NewExportEntry(JSHandle<JSTaggedValue> &exportName, JSHandle<JSTaggedValue> &moduleRequest,
+                                         JSHandle<JSTaggedValue> &importName, JSHandle<JSTaggedValue> &localName);
+    JSHandle<SourceTextModule> NewSourceTextModule();
+    JSHandle<ResolvedBinding> NewResolvedBindingRecord();
+    JSHandle<ResolvedBinding> NewResolvedBindingRecord(JSHandle<SourceTextModule> module,
+                                                       JSHandle<JSTaggedValue> bindingName);
 
 private:
     friend class GlobalEnv;
@@ -434,7 +449,6 @@ private:
     JSHClass *jsRealmClass_ {nullptr};
     JSHClass *programClass_ {nullptr};
     JSHClass *machineCodeClass_ {nullptr};
-    JSHClass *ecmaModuleClass_ {nullptr};
     JSHClass *classInfoExtractorHClass_ {nullptr};
     JSHClass *tsObjectTypeClass_ {nullptr};
     JSHClass *tsClassTypeClass_ {nullptr};
@@ -442,6 +456,10 @@ private:
     JSHClass *tsUnionTypeClass_ {nullptr};
     JSHClass *tsClassInstanceTypeClass_ {nullptr};
     JSHClass *tsImportTypeClass_ {nullptr};
+    JSHClass *importEntryClass_ {nullptr};
+    JSHClass *exportEntryClass_ {nullptr};
+    JSHClass *sourceTextModuleClass_ {nullptr};
+    JSHClass *resolvedBindingClass_ {nullptr};
 
     EcmaVM *vm_ {nullptr};
     Heap *heap_ {nullptr};
@@ -503,6 +521,7 @@ private:
     friend class TSUnionType;
     friend class TSClassInstanceType;
     friend class TSImportType;
+    friend class ModuleDataExtractor;
 };
 
 class ClassLinkerFactory {

@@ -16,9 +16,9 @@
 
 #include "ecmascript/interpreter/frame_handler.h"
 
-#include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
 
