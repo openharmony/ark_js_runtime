@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H
 #define ECMASCRIPT_LITERAL_DATA_EXTRACTOR_H
 
-#include "ecmascript/class_linker/panda_file_translator.h"
+#include "ecmascript/jspandafile/panda_file_translator.h"
 #include "ecmascript/js_tagged_value-inl.h"
 
 namespace panda::ecmascript {

@@ -16,8 +16,8 @@
 #include "ecmascript/tooling/interface/debugger_api.h"
 
 #include "ecmascript/base/number_helper.h"
-#include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/mem/c_string.h"

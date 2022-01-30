@@ -19,14 +19,14 @@
 #include <string_view>
 #include <vector>
 
-#include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/literal_data_extractor.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
-#include "ecmascript/literal_data_extractor.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/ts_types/ts_type_table.h"

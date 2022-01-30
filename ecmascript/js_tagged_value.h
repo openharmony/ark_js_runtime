@@ -332,6 +332,12 @@ public:
     bool IsTSInterfaceType() const;
     bool IsTSClassInstanceType() const;
     bool IsTSImportType() const;
+    bool IsModuleRecord() const;
+    bool IsSourceTextModule() const;
+    bool IsImportEntry() const;
+    bool IsExportEntry() const;
+    bool IsResolvedBinding() const;
+    bool IsModuleNamespace() const;
     static bool IsSameTypeOrHClass(JSTaggedValue x, JSTaggedValue y);
 
     static ComparisonResult Compare(JSThread *thread, const JSHandle<JSTaggedValue> &x,

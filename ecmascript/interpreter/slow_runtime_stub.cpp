@@ -17,14 +17,13 @@
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/builtins/builtins_regexp.h"
-#include "ecmascript/class_linker/program_object-inl.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_helper.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
@@ -39,6 +38,7 @@
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
@@ -960,44 +960,26 @@ JSTaggedValue SlowRuntimeStub::CloseIterator(JSThread *thread, JSTaggedValue ite
     return result.GetTaggedValue();
 }
 
-JSTaggedValue SlowRuntimeStub::ImportModule([[maybe_unused]] JSThread *thread,
-                                            [[maybe_unused]] JSTaggedValue moduleName)
-{
-    INTERPRETER_TRACE(thread, ImportModule);
-    [[maybe_unused]] EcmaHandleScope scope(thread);
-    JSHandle<JSTaggedValue> name(thread, moduleName);
-    JSHandle<JSTaggedValue> module = thread->GetEcmaVM()->GetModuleByName(name);
-    return module.GetTaggedValue();  // return moduleRef
-}
-
-void SlowRuntimeStub::StModuleVar([[maybe_unused]] JSThread *thread, [[maybe_unused]] JSTaggedValue exportName,
-                                  [[maybe_unused]] JSTaggedValue exportObj)
+void SlowRuntimeStub::StModuleVar([[maybe_unused]] JSThread *thread, [[maybe_unused]] JSTaggedValue key,
+                                  [[maybe_unused]] JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, StModuleVar);
     [[maybe_unused]] EcmaHandleScope scope(thread);
-    JSHandle<JSTaggedValue> name(thread, exportName);
-    JSHandle<JSTaggedValue> value(thread, exportObj);
-    thread->GetEcmaVM()->GetModuleManager()->AddModuleItem(thread, name, value);
-}
-
-void SlowRuntimeStub::CopyModule(JSThread *thread, JSTaggedValue srcModule)
-{
-    INTERPRETER_TRACE(thread, CopyModule);
-    [[maybe_unused]] EcmaHandleScope scope(thread);
-    JSHandle<JSTaggedValue> srcModuleObj(thread, srcModule);
-    thread->GetEcmaVM()->GetModuleManager()->CopyModule(thread, srcModuleObj);
+    thread->GetEcmaVM()->GetEcmaModuleManager()->StoreModuleValue(thread, key, value);
 }
 
 JSTaggedValue SlowRuntimeStub::LdModvarByName([[maybe_unused]] JSThread *thread,
-                                              [[maybe_unused]] JSTaggedValue moduleObj,
-                                              [[maybe_unused]] JSTaggedValue itemName)
+                                              [[maybe_unused]] JSTaggedValue key,
+                                              [[maybe_unused]] bool inner)
 {
     INTERPRETER_TRACE(thread, LdModvarByName);
     [[maybe_unused]] EcmaHandleScope scope(thread);
-    JSHandle<JSTaggedValue> module(thread, moduleObj);
-    JSHandle<JSTaggedValue> item(thread, itemName);
-    JSHandle<JSTaggedValue> moduleVar = thread->GetEcmaVM()->GetModuleManager()->GetModuleItem(thread, module, item);
-    return moduleVar.GetTaggedValue();
+    if (inner) {
+        JSTaggedValue moduleValue = thread->GetEcmaVM()->GetEcmaModuleManager()->GetModuleValueInner(thread, key);
+        return moduleValue;
+    }
+
+    return thread->GetEcmaVM()->GetEcmaModuleManager()->GetModuleValueOutter(thread, key);
 }
 
 JSTaggedValue SlowRuntimeStub::CreateRegExpWithLiteral(JSThread *thread, JSTaggedValue pattern, uint8_t flags)
@@ -1790,6 +1772,7 @@ JSTaggedValue SlowRuntimeStub::ResolveClass(JSThread *thread, JSTaggedValue ctor
     JSHandle<TaggedArray> literalBuffer(thread, literal);
     JSHandle<JSTaggedValue> lexicalEnv(thread, lexenv);
     JSHandle<ConstantPool> constpoolHandle(thread, constpool);
+    JSHandle<JSTaggedValue> ecmaModule(thread, thread->GetEcmaVM()->GetEcmaModuleManager()->GetCurrentSourceModule());
 
     SetClassInheritanceRelationship(thread, ctor, base);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -1802,6 +1785,7 @@ JSTaggedValue SlowRuntimeStub::ResolveClass(JSThread *thread, JSTaggedValue ctor
         if (LIKELY(value.IsJSFunction())) {
             JSFunction::Cast(value.GetTaggedObject())->SetLexicalEnv(thread, lexicalEnv.GetTaggedValue());
             JSFunction::Cast(value.GetTaggedObject())->SetConstantPool(thread, constpoolHandle.GetTaggedValue());
+            JSFunction::Cast(value.GetTaggedObject())->SetEcmaModule(thread, ecmaModule);
         }
     }
 
@@ -1920,5 +1904,10 @@ JSTaggedValue SlowRuntimeStub::SetClassConstructorLength(JSThread *thread, JSTag
         cls->UpdatePropertyInDictionary(thread, globalConst->GetLengthString(), length);
     }
     return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue SlowRuntimeStub::GetModuleNamespace(JSThread *thread, JSTaggedValue localName)
+{
+    return thread->GetEcmaVM()->GetEcmaModuleManager()->GetModuleNamespace(thread, localName);
 }
 }  // namespace panda::ecmascript
