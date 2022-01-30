@@ -69,10 +69,9 @@ class JSHandle;
 class JSArrayBuffer;
 class JSFunction;
 class Program;
-class ModuleManager;
-class EcmaModule;
 class TSLoader;
 struct BytecodeTranslationInfo;
+class ModuleManager;
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
                                              const JSHandle<JSTaggedValue> reason,
@@ -100,12 +99,6 @@ public:
     EcmaVM();
 
     ~EcmaVM() override;
-
-    bool ExecuteFromPf(const std::string &filename, std::string_view entryPoint,
-                       const std::vector<std::string> &args, bool isModule = false);
-
-    bool ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
-                           const std::vector<std::string> &args, const std::string &filename = "");
 
     bool PUBLIC_API CollectInfoOfPandaFile(const std::string &filename,
                                            std::vector<BytecodeTranslationInfo> *infoList);
@@ -335,11 +328,6 @@ public:
     void ProcessNativeDelete(const WeakRootVisitor &v0);
     void ProcessReferences(const WeakRootVisitor &v0);
 
-    JSHandle<JSTaggedValue> GetModuleByName(JSHandle<JSTaggedValue> moduleName);
-
-    void ExecuteModule(const std::string &moduleFile, std::string_view entryPoint,
-                       const std::vector<std::string> &args);
-
     ModuleManager *GetModuleManager() const
     {
         return moduleManager_;
@@ -423,8 +411,6 @@ private:
 
     void SetMicroJobQueue(job::MicroJobQueue *queue);
 
-    bool Execute(const JSPandaFile *jsPandaFile, std::string_view entryPoint, const std::vector<std::string> &args);
-
     Expected<int, Runtime::Error> InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile, const CString &methodName,
                                                        const std::vector<std::string> &args);
 
@@ -493,6 +479,7 @@ private:
     friend class ObjectFactory;
     friend class ValueSerializer;
     friend class panda::JSNApi;
+    friend class JSPandaFileExecutor;
 };
 }  // namespace ecmascript
 }  // namespace panda

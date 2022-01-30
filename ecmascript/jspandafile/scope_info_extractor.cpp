@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "ecmascript/scope_info_extractor.h"
+#include "ecmascript/jspandafile/scope_info_extractor.h"
 #include "ecmascript/interpreter/frame_handler.h"
-#include "ecmascript/literal_data_extractor.h"
+#include "ecmascript/jspandafile/literal_data_extractor.h"
 #include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript {

@@ -470,7 +470,7 @@ void JSRelativeTimeFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSRe
     if (relativeTimeFormat->GetIcuRTFFormatter() != nullptr) {
         [[maybe_unused]] icu::RelativeDateTimeFormatter *formatter = relativeTimeFormat->GetIcuRTFFormatter();
     } else {
-        THROW_RANGE_ERROR(thread, "rtf is not initialized");
+        THROW_ERROR(thread, ErrorType::RANGE_ERROR, "rtf is not initialized");
     }
 
     auto globalConst = thread->GlobalConstants();
@@ -503,7 +503,7 @@ void JSRelativeTimeFormat::ResolvedOptions(JSThread *thread, const JSHandle<JSRe
     } else if (numeric == NumericOption::AUTO) {
         numericValue = globalConst->GetHandledAutoString();
     } else {
-        THROW_RANGE_ERROR(thread, "numeric is exception");
+        THROW_ERROR(thread, ErrorType::RANGE_ERROR, "numeric is exception");
     }
     PropertyDescriptor numericDesc(thread, numericValue, true, true, true);
     JSObject::DefineOwnProperty(thread, options, property, numericDesc);

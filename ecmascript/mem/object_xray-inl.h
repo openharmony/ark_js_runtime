@@ -17,9 +17,6 @@
 #define ECMASCRIPT_MEM_HEAP_ROOTS_INL_H
 
 #include <cstdint>
-#include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/ic/ic_handler.h"
@@ -28,6 +25,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -69,6 +68,8 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/ts_types/ts_type.h"
 #include "ecmascript/ts_types/ts_type_table.h"
+#include "ecmascript/module/js_module_source_text.h"
+#include "ecmascript/module/js_module_namespace.h"
 
 namespace panda::ecmascript {
 void ObjectXRay::VisitVMRoots(const RootVisitor &visitor, const RootRangeVisitor &rangeVisitor) const
@@ -265,9 +266,6 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
         case JSType::COMPLETION_RECORD:
             CompletionRecord::Cast(object)->VisitRangeSlot(visitor);
             break;
-        case JSType::ECMA_MODULE:
-            EcmaModule::Cast(object)->VisitRangeSlot(visitor);
-            break;
         case JSType::PROGRAM:
             Program::Cast(object)->VisitRangeSlot(visitor);
             break;
@@ -349,6 +347,21 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::SOURCE_TEXT_MODULE_RECORD:
+            SourceTextModule::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::IMPORTENTRY_RECORD:
+            ImportEntry::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::EXPORTENTRY_RECORD:
+            ExportEntry::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::RESOLVEDBINDING_RECORD:
+            ResolvedBinding::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_MODULE_NAMESPACE:
+            ModuleNamespace::Cast(object)->VisitRangeSlot(visitor);
             break;
         default:
             UNREACHABLE();

@@ -19,9 +19,9 @@
 #include <functional>
 
 #include "ecmascript/common.h"
+#include "ecmascript/jspandafile/scope_info_extractor.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
-#include "ecmascript/scope_info_extractor.h"
 #include "ecmascript/lexical_env.h"
 
 #include "mem/rendezvous.h"

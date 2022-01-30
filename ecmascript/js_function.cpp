@@ -16,12 +16,12 @@
 #include "js_function.h"
 
 #include "ecmascript/base/error_type.h"
-#include "ecmascript/class_info_extractor.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_promise.h"
 #include "ecmascript/js_proxy.h"
@@ -46,6 +46,7 @@ void JSFunction::InitializeJSFunction(JSThread *thread, const JSHandle<JSFunctio
     func->SetProtoOrDynClass(thread, JSTaggedValue::Hole(), SKIP_BARRIER);
     func->SetHomeObject(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetLexicalEnv(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
+    func->SetModule(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetConstantPool(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetProfileTypeInfo(thread, JSTaggedValue::Undefined(), SKIP_BARRIER);
     func->SetFunctionExtraInfo(thread, JSTaggedValue::Undefined());

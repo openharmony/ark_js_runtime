@@ -15,12 +15,12 @@
 
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 
 namespace panda::ecmascript {
 JSPandaFile::JSPandaFile(const panda_file::File *pf, const CString &descriptor) : pf_(pf), desc_(descriptor)
 {
-    InitMethods();
+    Initialize();
 }
 
 JSPandaFile::~JSPandaFile()
@@ -58,7 +58,7 @@ uint32_t JSPandaFile::GetOrInsertConstantPool(ConstPoolType type, uint32_t offse
     return index;
 }
 
-void JSPandaFile::InitMethods()
+void JSPandaFile::Initialize()
 {
     Span<const uint32_t> classIndexes = pf_->GetClasses();
     for (const uint32_t index : classIndexes) {
@@ -68,6 +68,10 @@ void JSPandaFile::InitMethods()
         }
         panda_file::ClassDataAccessor cda(*pf_, classId);
         numMethods_ += cda.GetMethodsNumber();
+        const char *desc = utf::Mutf8AsCString(cda.GetDescriptor());
+        if (!isModule_ && std::strcmp(MODULE_CLASS, desc) == 0) {
+            isModule_ = true;
+        }
     }
     methods_ = static_cast<JSMethod *>(JSPandaFileManager::AllocateBuffer(sizeof(JSMethod) * numMethods_));
 }
@@ -82,5 +86,10 @@ const JSMethod *JSPandaFile::FindMethods(uint32_t offset) const
     }
 
     return nullptr;
+}
+
+bool JSPandaFile::IsModule() const
+{
+    return isModule_;
 }
 }  // namespace panda::ecmascript

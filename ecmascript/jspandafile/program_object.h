@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_CLASS_LINKER_PROGRAM_H
-#define ECMASCRIPT_CLASS_LINKER_PROGRAM_H
+#ifndef ECMASCRIPT_JSPANDAFILE_PROGRAM_OBJECT_H
+#define ECMASCRIPT_JSPANDAFILE_PROGRAM_OBJECT_H
 
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value-inl.h"
@@ -48,4 +48,4 @@ public:
 };
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // ECMASCRIPT_CLASS_LINKER_PROGRAM_H
+#endif  // ECMASCRIPT_JSPANDAFILE_PROGRAM_OBJECT_H

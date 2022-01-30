@@ -517,9 +517,6 @@ DEF_RUNTIME_TRAMPOLINES(CloseIterator)
 
 DEF_RUNTIME_TRAMPOLINES(CopyModule)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CopyModule);
-    CONVERT_ARG_TAGGED_CHECKED(srcModule, 0);
-    SlowRuntimeStub::CopyModule(thread, srcModule);
     return JSTaggedValue::Hole().GetRawData();
 }
 
@@ -999,28 +996,29 @@ DEF_RUNTIME_TRAMPOLINES(UpFrame)
     return JSTaggedValue(static_cast<uint64_t>(0)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ImportModule)
+DEF_RUNTIME_TRAMPOLINES(GetModuleNamespace)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ImportModule);
-    CONVERT_ARG_TAGGED_CHECKED(moduleName, 0);
-    return SlowRuntimeStub::ImportModule(thread, moduleName).GetRawData();
+    RUNTIME_TRAMPOLINES_HEADER(GetModuleNamespace);
+    CONVERT_ARG_TAGGED_CHECKED(localName, 0);
+    return SlowRuntimeStub::GetModuleNamespace(thread, localName).GetRawData();
 }
 
 DEF_RUNTIME_TRAMPOLINES(StModuleVar)
 {
     RUNTIME_TRAMPOLINES_HEADER(StModuleVar);
-    CONVERT_ARG_TAGGED_CHECKED(exportName, 0);
-    CONVERT_ARG_TAGGED_CHECKED(exportObj, 1);
-    SlowRuntimeStub::StModuleVar(thread, exportName, exportObj);
+    CONVERT_ARG_TAGGED_CHECKED(key, 0);
+    CONVERT_ARG_TAGGED_CHECKED(value, 1);
+    SlowRuntimeStub::StModuleVar(thread, key, value);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LdModvarByName)
+DEF_RUNTIME_TRAMPOLINES(LdModuleVar)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LdModvarByName);
-    CONVERT_ARG_TAGGED_CHECKED(moduleObj, 0);
-    CONVERT_ARG_TAGGED_CHECKED(itemName, 1);
-    return SlowRuntimeStub::LdModvarByName(thread, moduleObj, itemName).GetRawData();
+    RUNTIME_TRAMPOLINES_HEADER(LdModuleVar);
+    CONVERT_ARG_TAGGED_CHECKED(key, 0);
+    CONVERT_ARG_TAGGED_CHECKED(taggedFlag, 1);
+    bool innerFlag = taggedFlag.GetInt() != 0;
+    return SlowRuntimeStub::LdModuleVar(thread, JSTaggedValue(key), innerFlag).GetRawData();
 }
 
 DEF_RUNTIME_TRAMPOLINES(GetPropIterator)

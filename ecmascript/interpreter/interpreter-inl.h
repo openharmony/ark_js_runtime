@@ -16,11 +16,9 @@
 #ifndef ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 
-#include "ecmascript/class_linker/program_object-inl.h"
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
-#include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
@@ -30,10 +28,12 @@
 #include "ecmascript/interpreter/interpreter_assembly.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
+#include "ecmascript/jspandafile/literal_data_extractor.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/literal_data_extractor.h"
 #include "ecmascript/mem/concurrent_marker.h"
+#include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
 #include "include/runtime_notification.h"
@@ -1932,6 +1932,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
         JSTaggedValue envHandle = GET_VREG_VALUE(v0);
         result->SetLexicalEnv(thread, envHandle);
+
+        JSFunction *currentFunc = JSFunction::Cast((GET_FRAME(sp)->function).GetTaggedObject());
+        result->SetModule(thread, currentFunc->GetModule());
         SET_ACC(JSTaggedValue(result))
 
         DISPATCH(BytecodeInstruction::Format::PREF_ID16_IMM16_V8);
@@ -1962,6 +1965,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue env = GET_VREG_VALUE(v0);
         result->SetLexicalEnv(thread, env);
         result->SetHomeObject(thread, homeObject);
+
+        JSFunction *currentFunc = JSFunction::Cast((GET_FRAME(sp)->function).GetTaggedObject());
+        result->SetModule(thread, currentFunc->GetModule());
         SET_ACC(JSTaggedValue(result));
 
         DISPATCH(BytecodeInstruction::Format::PREF_ID16_IMM16_V8);
@@ -1989,6 +1995,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
         JSTaggedValue taggedCurEnv = GET_VREG_VALUE(v0);
         result->SetLexicalEnv(thread, taggedCurEnv);
+
+        JSFunction *currentFunc = JSFunction::Cast((GET_FRAME(sp)->function).GetTaggedObject());
+        result->SetModule(thread, currentFunc->GetModule());
         SET_ACC(JSTaggedValue(result));
 
         DISPATCH(BytecodeInstruction::Format::PREF_ID16_IMM16_V8);
@@ -2568,55 +2577,48 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         SET_ACC(res);
         DISPATCH(BytecodeInstruction::Format::PREF_IMM16);
     }
-    HANDLE_OPCODE(HANDLE_IMPORTMODULE_PREF_ID32) {
+    HANDLE_OPCODE(HANDLE_GETMODULENAMESPACE_PREF_ID32) {
         uint32_t stringId = READ_INST_32_1();
-        auto prop = constpool->GetObjectFromCache(stringId);
+        auto localName = constpool->GetObjectFromCache(stringId);
 
-        LOG_INST() << "intrinsics::importmodule "
-                   << "stringId:" << stringId << ", " << ConvertToString(EcmaString::Cast(prop.GetTaggedObject()));
+        LOG_INST() << "intrinsics::getmodulenamespace "
+                   << "stringId:" << stringId << ", " << ConvertToString(EcmaString::Cast(localName.GetTaggedObject()));
 
-        JSTaggedValue moduleRef = SlowRuntimeStub::ImportModule(thread, prop);
-        SET_ACC(moduleRef);
+        JSTaggedValue moduleNamespace = SlowRuntimeStub::GetModuleNamespace(thread, localName);
+        INTERPRETER_RETURN_IF_ABRUPT(moduleNamespace);
+        SET_ACC(moduleNamespace);
         DISPATCH(BytecodeInstruction::Format::PREF_ID32);
     }
     HANDLE_OPCODE(HANDLE_STMODULEVAR_PREF_ID32) {
         uint32_t stringId = READ_INST_32_1();
-        auto prop = constpool->GetObjectFromCache(stringId);
+        auto key = constpool->GetObjectFromCache(stringId);
 
         LOG_INST() << "intrinsics::stmodulevar "
-                   << "stringId:" << stringId << ", " << ConvertToString(EcmaString::Cast(prop.GetTaggedObject()));
+                   << "stringId:" << stringId << ", " << ConvertToString(EcmaString::Cast(key.GetTaggedObject()));
 
         JSTaggedValue value = GET_ACC();
 
         SAVE_ACC();
-        SlowRuntimeStub::StModuleVar(thread, prop, value);
+        SlowRuntimeStub::StModuleVar(thread, key, value);
         RESTORE_ACC();
         DISPATCH(BytecodeInstruction::Format::PREF_ID32);
     }
     HANDLE_OPCODE(HANDLE_COPYMODULE_PREF_V8) {
-        uint16_t v0 = READ_INST_8_1();
-        JSTaggedValue srcModule = GET_VREG_VALUE(v0);
-
-        LOG_INST() << "intrinsics::copymodule ";
-
-        SAVE_ACC();
-        SlowRuntimeStub::CopyModule(thread, srcModule);
-        RESTORE_ACC();
         DISPATCH(BytecodeInstruction::Format::PREF_V8);
     }
-    HANDLE_OPCODE(HANDLE_LDMODVARBYNAME_PREF_ID32_V8) {
+    HANDLE_OPCODE(HANDLE_LDMODULEVAR_PREF_ID32_IMM8) {
         uint32_t stringId = READ_INST_32_1();
-        uint32_t v0 = READ_INST_8_5();
+        uint8_t innerFlag = READ_INST_8_5();
 
-        JSTaggedValue itemName = constpool->GetObjectFromCache(stringId);
-        JSTaggedValue moduleObj = GET_VREG_VALUE(v0);
-        LOG_INST() << "intrinsics::ldmodvarbyname "
+        JSTaggedValue key = constpool->GetObjectFromCache(stringId);
+        LOG_INST() << "intrinsics::ldmodulevar "
                    << "string_id:" << stringId << ", "
-                   << "itemName: " << ConvertToString(EcmaString::Cast(itemName.GetTaggedObject()));
+                   << "key: " << ConvertToString(EcmaString::Cast(key.GetTaggedObject()));
 
-        JSTaggedValue moduleVar = SlowRuntimeStub::LdModvarByName(thread, moduleObj, itemName);
+        JSTaggedValue moduleVar = SlowRuntimeStub::LdModuleVar(thread, key, innerFlag != 0);
+        INTERPRETER_RETURN_IF_ABRUPT(moduleVar);
         SET_ACC(moduleVar);
-        DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
+        DISPATCH(BytecodeInstruction::Format::PREF_ID32_IMM8);
     }
     HANDLE_OPCODE(HANDLE_CREATEREGEXPWITHLITERAL_PREF_ID32_IMM8) {
         uint32_t stringId = READ_INST_32_1();
@@ -2767,6 +2769,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
         JSTaggedValue env = GET_VREG_VALUE(v0);
         result->SetLexicalEnv(thread, env);
+
+        JSFunction *currentFunc = JSFunction::Cast((GET_FRAME(sp)->function).GetTaggedObject());
+        result->SetModule(thread, currentFunc->GetModule());
         SET_ACC(JSTaggedValue(result))
         DISPATCH(BytecodeInstruction::Format::PREF_ID16_IMM16_V8);
     }
@@ -2791,6 +2796,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         result->SetPropertyInlinedProps(thread, JSFunction::LENGTH_INLINE_PROPERTY_INDEX, JSTaggedValue(length));
         JSTaggedValue env = GET_VREG_VALUE(v0);
         result->SetLexicalEnv(thread, env);
+
+        JSFunction *currentFunc = JSFunction::Cast((GET_FRAME(sp)->function).GetTaggedObject());
+        result->SetModule(thread, currentFunc->GetModule());
         SET_ACC(JSTaggedValue(result))
         DISPATCH(BytecodeInstruction::Format::PREF_ID16_IMM16_V8);
     }
@@ -3579,6 +3587,9 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         lexenv = GET_VREG_VALUE(v0);  // slow runtime may gc
         cls->SetLexicalEnv(thread, lexenv);
 
+        JSFunction *currentFunc = JSFunction::Cast((GET_FRAME(sp)->function).GetTaggedObject());
+        cls->SetModule(thread, currentFunc->GetModule());
+
         SlowRuntimeStub::SetClassConstructorLength(thread, res, JSTaggedValue(length));
 
         SET_ACC(res);
@@ -4001,7 +4012,7 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
         {STLEXVARDYN_PREF_IMM16_IMM16_V8, "STLEXVARDYN"},
         {NEWLEXENVWITHNAMEDYN_PREF_IMM16_IMM16, "NEWLEXENVWITHNAMEDYN"},
         {DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8, "DEFINECLASSWITHBUFFER"},
-        {IMPORTMODULE_PREF_ID32, "IMPORTMODULE"},
+        {GETMODULENAMESPACE_PREF_ID32, "GETMODULENAMESPACE"},
         {STMODULEVAR_PREF_ID32, "STMODULEVAR"},
         {TRYLDGLOBALBYNAME_PREF_ID32, "TRYLDGLOBALBYNAME"},
         {TRYSTGLOBALBYNAME_PREF_ID32, "TRYSTGLOBALBYNAME"},
@@ -4012,7 +4023,7 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
         {STOWNBYNAME_PREF_ID32_V8, "STOWNBYNAME"},
         {LDSUPERBYNAME_PREF_ID32_V8, "LDSUPERBYNAME"},
         {STSUPERBYNAME_PREF_ID32_V8, "STSUPERBYNAME"},
-        {LDMODVARBYNAME_PREF_ID32_V8, "LDMODVARBYNAME"},
+        {LDMODULEVAR_PREF_ID32_IMM8, "LDMODULEVAR"},
         {CREATEREGEXPWITHLITERAL_PREF_ID32_IMM8, "CREATEREGEXPWITHLITERAL"},
         {ISTRUE_PREF, "ISTRUE"},
         {ISFALSE_PREF, "ISFALSE"},
