@@ -410,7 +410,7 @@ void BytecodeCircuitBuilder::ComputeDominatorTree(BytecodeGraph &byteCodeGraph)
         std::cout << "BB_" << iter.first << " depth is : " << iter.second << std::endl;
     }
 #endif
-    std::vector<size_t> immDom(graph.size()); // immediate dominator
+    std::vector<int32_t> immDom(graph.size()); // immediate dominator
     std::vector<std::vector<size_t>> doms(graph.size()); // dominators set
     doms[0] = {0};
     for (size_t i = 1; i < doms.size(); i++) {
@@ -484,7 +484,7 @@ void BytecodeCircuitBuilder::ComputeDominatorTree(BytecodeGraph &byteCodeGraph)
     BuildImmediateDominator(immDom, byteCodeGraph);
 }
 
-void BytecodeCircuitBuilder::BuildImmediateDominator(std::vector<size_t> &immDom, BytecodeGraph &byteCodeGraph)
+void BytecodeCircuitBuilder::BuildImmediateDominator(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph)
 {
     auto &graph = byteCodeGraph.graph;
 
@@ -535,7 +535,7 @@ void BytecodeCircuitBuilder::BuildImmediateDominator(std::vector<size_t> &immDom
     BuildCircuit(byteCodeGraph);
 }
 
-void BytecodeCircuitBuilder::ComputeDomFrontiers(std::vector<size_t> &immDom, BytecodeGraph &byteCodeGraph)
+void BytecodeCircuitBuilder::ComputeDomFrontiers(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph)
 {
     auto &graph = byteCodeGraph.graph;
     std::vector<std::set<BytecodeRegion *>> domFrontiers(immDom.size());
@@ -1796,9 +1796,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
     const size_t offsetArgs = byteCodeGraph.method->GetNumVregs();
     std::vector<GateRef> argGates(numArgs);
     for (size_t argIdx = 0; argIdx < numArgs; argIdx++) {
-        argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), ValueCode::INT64, argIdx,
+        argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::INT64, argIdx,
                                                {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
-                                               TypeCode::NOTYPE);
+                                               GateType::JS_ANY);
     }
     // get number of expanded state predicates of each block
     // one block-level try catch edge may correspond to multiple bytecode-level edges
@@ -1837,16 +1837,16 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
             bb.dependStart = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
         } else if (bb.numOfStatePreds == 1) {
             bb.stateStart = circuit_.NewGate(OpCode(OpCode::ORDINARY_BLOCK), 0,
-                                             {Circuit::NullGate()}, TypeCode::NOTYPE);
+                                             {Circuit::NullGate()}, GateType::EMPTY);
             bb.dependStart = circuit_.NewGate(OpCode(OpCode::DEPEND_RELAY), 0,
-                                              {bb.stateStart, Circuit::NullGate()}, TypeCode::NOTYPE);
+                                              {bb.stateStart, Circuit::NullGate()}, GateType::EMPTY);
         } else {
             bb.stateStart = circuit_.NewGate(OpCode(OpCode::MERGE), bb.numOfStatePreds,
                                              std::vector<GateRef>(bb.numOfStatePreds, Circuit::NullGate()),
-                                             TypeCode::NOTYPE);
+                                             GateType::EMPTY);
             bb.dependStart = circuit_.NewGate(OpCode(OpCode::DEPEND_SELECTOR), bb.numOfStatePreds,
                                               std::vector<GateRef>(bb.numOfStatePreds + 1, Circuit::NullGate()),
-                                              TypeCode::NOTYPE);
+                                              GateType::EMPTY);
             circuit_.NewIn(bb.dependStart, 0, bb.stateStart);
         }
     }
@@ -1867,17 +1867,22 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
             size_t numValueInputs = (bytecodeInfo.accIn ? 1 : 0) + bytecodeInfo.vregIn.size();
             if (IsGeneral(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                 // handle general ecma.* bytecodes
-                auto gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), numValueInputs,
-                                             std::vector<GateRef>(2 + numValueInputs, Circuit::NullGate()),
-                                             TypeCode::NOTYPE);
+                GateRef gate = 0;
+                if (!bytecodeInfo.vregOut.empty() || bytecodeInfo.accOut) {
+                    gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::INT64, numValueInputs,
+                                            std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
+                                                                 Circuit::NullGate()),
+                                            GateType::JS_ANY);
+                } else {
+                    gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::NOVALUE, numValueInputs,
+                                            std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
+                                                                 Circuit::NullGate()),
+                                            GateType::EMPTY);
+                }
                 circuit_.NewIn(gate, 0, stateCur);
                 circuit_.NewIn(gate, 1, dependCur);
-                auto ifSuccess = circuit_.NewGate(OpCode(OpCode::IF_SUCCESS), 0,
-                                                  {gate},
-                                                  TypeCode::NOTYPE);
-                auto ifException = circuit_.NewGate(OpCode(OpCode::IF_EXCEPTION), 0,
-                                                    {gate},
-                                                    TypeCode::NOTYPE);
+                auto ifSuccess = circuit_.NewGate(OpCode(OpCode::IF_SUCCESS), 0, {gate}, GateType::EMPTY);
+                auto ifException = circuit_.NewGate(OpCode(OpCode::IF_EXCEPTION), 0, {gate}, GateType::EMPTY);
                 if (!bb.catchs.empty()) {
                     auto bbNext = bb.catchs.at(0);
                     circuit_.NewIn(bbNext->stateStart, bbNext->statePredIndex, ifException);
@@ -1889,14 +1894,14 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     circuit_.NewGate(OpCode(OpCode::THROW), 0,
                                      {ifException, gate, gate,
                                       Circuit::GetCircuitRoot(OpCode(OpCode::THROW_LIST))},
-                                     TypeCode::NOTYPE);
+                                     GateType::JS_ANY);
                 }
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 if (IsThrow(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                     circuit_.NewGate(OpCode(OpCode::RETURN), 0,
                                      {ifSuccess, gate, TaggedValue::VALUE_HOLE,
                                       Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
-                                     TypeCode::NOTYPE);
+                                     GateType::JS_ANY);
                     break;
                 }
                 stateCur = ifSuccess;
@@ -1912,13 +1917,22 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
             } else if (IsJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                 // handle conditional jump and unconditional jump bytecodes
                 if (IsCondJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
-                    auto gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), numValueInputs,
-                                                 std::vector<GateRef>(2 + numValueInputs, Circuit::NullGate()),
-                                                 TypeCode::NOTYPE);
+                    GateRef gate = 0;
+                    if (!bytecodeInfo.vregOut.empty() || bytecodeInfo.accOut) {
+                        gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::INT64, numValueInputs,
+                                                std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
+                                                                     Circuit::NullGate()),
+                                                GateType::JS_ANY);
+                    } else {
+                        gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::NOVALUE, numValueInputs,
+                                                std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
+                                                                     Circuit::NullGate()),
+                                                GateType::EMPTY);
+                    }
                     circuit_.NewIn(gate, 0, stateCur);
                     circuit_.NewIn(gate, 1, dependCur);
-                    auto ifTrue = circuit_.NewGate(OpCode(OpCode::IF_TRUE), 0, {gate}, TypeCode::NOTYPE);
-                    auto ifFalse = circuit_.NewGate(OpCode(OpCode::IF_FALSE), 0, {gate}, TypeCode::NOTYPE);
+                    auto ifTrue = circuit_.NewGate(OpCode(OpCode::IF_TRUE), 0, {gate}, GateType::EMPTY);
+                    auto ifFalse = circuit_.NewGate(OpCode(OpCode::IF_FALSE), 0, {gate}, GateType::EMPTY);
                     ASSERT(bb.succs.size() == 2); // 2 : 2 num of successors
                     int bitSet = 0;
                     for (auto &bbNext: bb.succs) {
@@ -1957,20 +1971,20 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
                                              {stateCur, dependCur, Circuit::NullGate(),
                                               Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
-                                             TypeCode::NOTYPE);
+                                             GateType::EMPTY);
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 break;
             } else if (static_cast<EcmaOpcode>(bytecodeInfo.opcode) == EcmaOpcode::RETURNUNDEFINED_PREF) {
                 // handle returnundefined bytecode
                 ASSERT(bb.succs.empty());
-                auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), ValueCode::INT64,
+                auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64,
                                                  TaggedValue::VALUE_UNDEFINED,
                                                  {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
-                                                 TypeCode::NOTYPE);
+                                                 GateType::JS_ANY);
                 auto gate = circuit_.NewGate(OpCode(OpCode::RETURN), 0,
                                              {stateCur, dependCur, constant,
                                               Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
-                                             TypeCode::NOTYPE);
+                                             GateType::EMPTY);
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
                 break;
             } else if (IsMov(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
@@ -2072,14 +2086,14 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     // find def-site in value selectors of vregs
                     if (ans == Circuit::NullGate() && !acc && bb.phi.count(reg)) {
                         if (!bb.vregToValSelectorGate.count(reg)) {
-                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), ValueCode::INT64,
+                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::INT64,
                                                          bb.numOfStatePreds,
                                                          std::vector<GateRef>(
                                                                  1 + bb.numOfStatePreds, Circuit::NullGate()),
-                                                         TypeCode::NOTYPE);
+                                                         GateType::JS_ANY);
                             bb.vregToValSelectorGate[reg] = gate;
                             circuit_.NewIn(gate, 0, bb.stateStart);
-                            for (size_t i = 0; i < bb.numOfStatePreds; ++i) {
+                            for (int32_t i = 0; i < bb.numOfStatePreds; ++i) {
                                 auto &[predId, predPc, isException] = bb.expandedPreds.at(i);
                                 circuit_.NewIn(gate, i + 1, defSiteOfReg(predId, predPc, reg, acc));
                             }
@@ -2089,16 +2103,16 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     // find def-site in value selectors of acc
                     if (ans == Circuit::NullGate() && acc && bb.phiAcc) {
                         if (bb.valueSelectorAccGate == Circuit::NullGate()) {
-                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), ValueCode::INT64,
+                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::INT64,
                                                          bb.numOfStatePreds,
                                                          std::vector<GateRef>(
                                                              1 + bb.numOfStatePreds, Circuit::NullGate()),
-                                                         TypeCode::NOTYPE);
+                                                         GateType::JS_ANY);
                             bb.valueSelectorAccGate = gate;
                             circuit_.NewIn(gate, 0, bb.stateStart);
                             bool hasException = false;
                             bool hasNonException = false;
-                            for (size_t i = 0; i < bb.numOfStatePreds; ++i) {
+                            for (int32_t i = 0; i < bb.numOfStatePreds; ++i) {
                                 auto &[predId, predPc, isException] = bb.expandedPreds.at(i);
                                 if (isException) {
                                     hasException = true;

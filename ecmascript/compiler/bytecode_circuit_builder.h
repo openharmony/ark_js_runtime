@@ -120,17 +120,22 @@ public:
     void PUBLIC_API BytecodeToCircuit(const std::vector<uint8_t *> &pcArray, const panda_file::File &pf,
                                       const JSMethod *method);
 
-    [[nodiscard]] kungfu::Circuit GetCircuit() const
+    [[nodiscard]] kungfu::Circuit& GetCircuit()
     {
         return circuit_;
     }
 
-    [[nodiscard]] std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>> GetGateToBytecode() const
+    [[nodiscard]] const kungfu::Circuit& GetCircuit() const
+    {
+        return circuit_;
+    }
+
+    [[nodiscard]] const std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>>& GetGateToBytecode() const
     {
         return jsgateToBytecode_;
     }
 
-    [[nodiscard]] std::map<uint8_t *, kungfu::GateRef> GetBytecodeToGate() const
+    [[nodiscard]] const std::map<uint8_t *, kungfu::GateRef>& GetBytecodeToGate() const
     {
         return byteCodeToJSGate_;
     }
@@ -156,8 +161,8 @@ private:
                           std::vector<CfgInfo> &bytecodeBlockInfo,
                           std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc);
     void ComputeDominatorTree(BytecodeGraph &byteCodeGraph);
-    void BuildImmediateDominator(std::vector<size_t> &immDom, BytecodeGraph &byteCodeGraph);
-    void ComputeDomFrontiers(std::vector<size_t> &immDom, BytecodeGraph &byteCodeGraph);
+    void BuildImmediateDominator(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph);
+    void ComputeDomFrontiers(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph);
     BytecodeInfo GetBytecodeInfo(uint8_t *pc);
     void RemoveDeadRegions(const std::map<size_t, size_t> &dfsTimestamp, BytecodeGraph &byteCodeGraph);
     void InsertPhi(BytecodeGraph &byteCodeGraph);

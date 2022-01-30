@@ -306,7 +306,7 @@ public:
             return compCfg_->GetGlueOffset(id);
         }
 
-        inline TypeCode GetTypeCode(GateRef gate) const;
+        inline GateType GetGateType(GateRef gate) const;
         inline Label GetLabelFromSelector(GateRef sel);
         inline void AddSelectorToLabel(GateRef sel, Label label);
         inline LabelImpl *NewLabel(Environment *env, GateRef control = -1);
@@ -328,7 +328,7 @@ public:
 
     class Variable {
     public:
-        Variable(Environment *env, MachineType type, uint32_t id, GateRef value) : id_(id), type_(type), env_(env)
+        Variable(Environment *env, StubMachineType type, uint32_t id, GateRef value) : id_(id), type_(type), env_(env)
         {
             Bind(value);
             env_->GetCurrentLabel()->WriteVariable(this, value);
@@ -344,7 +344,7 @@ public:
         {
             return currentValue_;
         }
-        MachineType Type() const
+        StubMachineType Type() const
         {
             return type_;
         }
@@ -380,7 +380,7 @@ public:
         }
     private:
         uint32_t id_;
-        MachineType type_;
+        StubMachineType type_;
         GateRef currentValue_ {0};
         Environment *env_;
     };
@@ -430,10 +430,10 @@ public:
     inline GateRef FalseConstant();
     inline GateRef GetBooleanConstant(bool value);
     inline GateRef GetDoubleConstant(double value);
-    inline GateRef GetUndefinedConstant(MachineType type = MachineType::TAGGED);
-    inline GateRef GetHoleConstant(MachineType type = MachineType::TAGGED);
-    inline GateRef GetNullConstant(MachineType type = MachineType::TAGGED);
-    inline GateRef GetExceptionConstant(MachineType type = MachineType::TAGGED);
+    inline GateRef GetUndefinedConstant(StubMachineType type = StubMachineType::TAGGED);
+    inline GateRef GetHoleConstant(StubMachineType type = StubMachineType::TAGGED);
+    inline GateRef GetNullConstant(StubMachineType type = StubMachineType::TAGGED);
+    inline GateRef GetExceptionConstant(StubMachineType type = StubMachineType::TAGGED);
     inline GateRef ArchRelatePtrMul(GateRef x, GateRef y);
     // parameter
     inline GateRef Argument(size_t index);
@@ -441,12 +441,10 @@ public:
     inline GateRef Int32Argument(size_t index);
     inline GateRef Int64Argument(size_t index);
     inline GateRef TaggedArgument(size_t index);
-    inline GateRef TaggedPointerArgument(size_t index, TypeCode type = TypeCode::NOTYPE);
-    inline GateRef PtrArgument(size_t index, TypeCode type = TypeCode::NOTYPE);
+    inline GateRef PtrArgument(size_t index, GateType type = GateType::C_VALUE);
     inline GateRef Float32Argument(size_t index);
     inline GateRef Float64Argument(size_t index);
     inline GateRef Alloca(int size);
-    inline GateRef NativePointerAlloca(int size);
     // control flow
     inline GateRef Return(GateRef value);
     inline GateRef Return();
@@ -471,9 +469,9 @@ public:
                                  std::initializer_list<GateRef> args);
     inline void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
     // memory
-    inline GateRef Load(MachineType type, GateRef base, GateRef offset);
-    inline GateRef Load(MachineType type, GateRef base);
-    GateRef Store(MachineType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
+    inline GateRef Load(StubMachineType type, GateRef base, GateRef offset);
+    inline GateRef Load(StubMachineType type, GateRef base);
+    GateRef Store(StubMachineType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
     // arithmetic
     inline GateRef Int32Add(GateRef x, GateRef y);
     inline GateRef Int64Add(GateRef x, GateRef y);
@@ -499,7 +497,6 @@ public:
     inline GateRef Word32And(GateRef x, GateRef y);
     inline GateRef Word32Not(GateRef x);
     GateRef Word32Xor(GateRef x, GateRef y);
-    GateRef FixLoadType(GateRef x);
     inline GateRef Word64Or(GateRef x, GateRef y);
     inline GateRef Word64And(GateRef x, GateRef y);
     inline GateRef Word64Xor(GateRef x, GateRef y);
@@ -508,8 +505,6 @@ public:
     inline GateRef Word64LSL(GateRef x, GateRef y);
     inline GateRef Word32LSR(GateRef x, GateRef y);
     inline GateRef Word64LSR(GateRef x, GateRef y);
-    GateRef Word32Sar(GateRef x, GateRef y);
-    GateRef Word64Sar(GateRef x, GateRef y);
     inline GateRef TaggedIsInt(GateRef x);
     inline GateRef TaggedIsDouble(GateRef x);
     inline GateRef TaggedIsObject(GateRef x);
@@ -620,13 +615,13 @@ public:
     inline GateRef GetLayoutFromHClass(GateRef hClass);
     inline GateRef GetBitFieldFromHClass(GateRef hClass);
     inline GateRef SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield);
-    inline GateRef SetPrototypeToHClass(MachineType type, GateRef glue, GateRef hClass, GateRef proto);
-    inline GateRef SetProtoChangeDetailsToHClass(MachineType type, GateRef glue, GateRef hClass,
+    inline GateRef SetPrototypeToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef proto);
+    inline GateRef SetProtoChangeDetailsToHClass(StubMachineType type, GateRef glue, GateRef hClass,
 	                                               GateRef protoChange);
     inline GateRef SetLayoutToHClass(GateRef glue, GateRef hClass, GateRef attr);
-    inline GateRef SetParentToHClass(MachineType type, GateRef glue, GateRef hClass, GateRef parent);
-    inline GateRef SetEnumCacheToHClass(MachineType type, GateRef glue, GateRef hClass, GateRef key);
-    inline GateRef SetTransitionsToHClass(MachineType type, GateRef glue, GateRef hClass, GateRef transition);
+    inline GateRef SetParentToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef parent);
+    inline GateRef SetEnumCacheToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef key);
+    inline GateRef SetTransitionsToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef transition);
     inline void SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline GateRef IsProtoTypeHClass(GateRef hClass);
     inline void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
@@ -639,8 +634,8 @@ public:
     inline GateRef GetInlinedPropsStartFromHClass(GateRef hClass);
     inline GateRef GetInlinedPropertiesFromHClass(GateRef hClass);
     void ThrowTypeAndReturn(GateRef glue, int messageId, GateRef val);
-    inline GateRef GetValueFromTaggedArray(MachineType returnType, GateRef elements, GateRef index);
-    inline void SetValueToTaggedArray(MachineType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
+    inline GateRef GetValueFromTaggedArray(StubMachineType returnType, GateRef elements, GateRef index);
+    inline void SetValueToTaggedArray(StubMachineType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
     inline void UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef index, GateRef value, GateRef attr);
     inline GateRef IsSpecialIndexedObj(GateRef jsType);
     inline GateRef IsSpecialContainer(GateRef jsType);
@@ -648,9 +643,9 @@ public:
     template<typename DictionaryT = NameDictionary>
     GateRef GetAttributesFromDictionary(GateRef elements, GateRef entry);
     template<typename DictionaryT = NameDictionary>
-    GateRef GetValueFromDictionary(MachineType returnType, GateRef elements, GateRef entry);
+    GateRef GetValueFromDictionary(StubMachineType returnType, GateRef elements, GateRef entry);
     template<typename DictionaryT = NameDictionary>
-    GateRef GetKeyFromDictionary(MachineType returnType, GateRef elements, GateRef entry);
+    GateRef GetKeyFromDictionary(StubMachineType returnType, GateRef elements, GateRef entry);
     inline GateRef GetPropAttrFromLayoutInfo(GateRef layout, GateRef entry);
     inline GateRef GetPropertiesAddrFromLayoutInfo(GateRef layout);
     inline GateRef GetPropertyMetaDataFromAttr(GateRef attr);
@@ -662,7 +657,7 @@ public:
     GateRef FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key);
     GateRef IsMatchInTransitionDictionary(GateRef element, GateRef key, GateRef metaData, GateRef attr);
     GateRef FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, GateRef key, GateRef metaData);
-    GateRef JSObjectGetProperty(MachineType returnType, GateRef obj, GateRef hClass, GateRef propAttr);
+    GateRef JSObjectGetProperty(StubMachineType returnType, GateRef obj, GateRef hClass, GateRef propAttr);
     void JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRef attr, GateRef value);
     GateRef ShouldCallSetter(GateRef receiver, GateRef holder, GateRef accessor, GateRef attr);
     GateRef CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor,  GateRef value);

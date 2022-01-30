@@ -18,38 +18,24 @@
 
 #include <cstdint>
 
-namespace panda::ecmascript::kungfu {
-using GateType = uint8_t;
-enum class TypeCode : GateType {
-    // for AOT
-    NOTYPE = 0,
-    JS_NULL,
-    JS_UNDEFINED,
-    JS_BOOLEAN,
-    JS_ANY,
-    JS_NUMBER,
-    JS_STRING,
-    JS_BIGINT,
-    JS_SYMBOL,
-    JS_OBJECT,
-    JS_FUNCTION,
-    JS_ARRAY,
-    JS_INT8ARRAY,
-    JS_INT16ARRAY,
-    JS_INT32ARRAY,
-    JS_UINT8ARRAY,
-    JS_UINT16ARRAY,
-    JS_UINT32ARRAY,
-    JS_FLOAT32ARRAY,
-    JS_FLOAT64ARRAY,
-    // for Stub
-    TAGGED_POINTER,
+const uint64_t GC_MASK = ~(1 << 30); // 30 : the 30-th bit is unset implies GC-related type
+const uint64_t NO_GC_MASK = ~(1 << 29); // 29 : the 29-th bit is unset implies NO-GC-related type
+const uint64_t MIR_BASE_BITS = (1 << 31) | (1 << 30) | (1 << 29); // 31 : the 31-st bit is set implies MIR type
+const uint64_t EMPTY_TYPE_OFFSET = 1; // 1 : means offset of empty type
 
-    JS_TYPE_START = JS_NULL,
-    JS_TYPE_SPECIAL_START = JS_NULL,
-    JS_TYPE_SPECIAL_STOP = JS_BOOLEAN,
-    JS_TYPE_OBJECT_START = JS_ANY,
-    JS_TYPE_OBJECT_STOP = JS_FLOAT64ARRAY,
+namespace panda::ecmascript::kungfu {
+enum GateType : uint64_t {
+    // for MIR
+    C_VALUE = MIR_BASE_BITS, // (111)
+    TAGGED_VALUE = MIR_BASE_BITS & GC_MASK & NO_GC_MASK, // (100)
+    TAGGED_POINTER = MIR_BASE_BITS & GC_MASK, // (101)
+    TAGGED_NO_POINTER = MIR_BASE_BITS & NO_GC_MASK, // (110)
+
+    // for no value
+    EMPTY = C_VALUE + EMPTY_TYPE_OFFSET,
+
+    // for TS
+    JS_ANY = 0,
 };
 
 class Type {

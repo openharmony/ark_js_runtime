@@ -17,7 +17,7 @@
 #define ECMASCRIPT_COMPILER_MACHINE_TYPE_H
 
 namespace panda::ecmascript::kungfu {
-enum class MachineType {
+enum class StubMachineType {
     NONE,
     BOOL,
     INT8,

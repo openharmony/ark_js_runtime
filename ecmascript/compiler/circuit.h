@@ -28,13 +28,10 @@
 #include "securec.h"
 
 namespace panda::ecmascript::kungfu {
-class ByteCodeCircuitBuilder;
-
 const size_t INITIAL_SPACE = 1U << 0U;  // this should be tuned
 const size_t MAX_SPACE = 1U << 24U;     // this should be tuned
 const size_t SCALE_RATE = 1U << 1U;     // this should be tuned
-class ControlFlowBuilder;
-class RegAllocLinearScan;
+
 class Circuit {  // note: calling NewGate could make all saved Gate* invalid
 public:
     Circuit();
@@ -44,14 +41,14 @@ public:
     Circuit(Circuit &&circuit) = default;
     Circuit &operator=(Circuit &&circuit) = default;
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
-                    TypeCode type, MarkCode mark = MarkCode::EMPTY);
-    GateRef NewGate(OpCode op, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
-                    MarkCode mark = MarkCode::EMPTY);
-    GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
-                    MarkCode mark = MarkCode::EMPTY);
-    GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
-                    MarkCode mark = MarkCode::EMPTY);
+    GateRef NewGate(OpCode op, MachineType bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
+                    GateType type, MarkCode mark = MarkCode::NO_MARK);
+    GateRef NewGate(OpCode op, MachineType bitValue, BitField bitfield, const std::vector<GateRef> &inList,
+                    GateType type, MarkCode mark = MarkCode::NO_MARK);
+    GateRef NewGate(OpCode op, BitField bitfield, size_t numIns, const GateRef inList[], GateType type,
+                    MarkCode mark = MarkCode::NO_MARK);
+    GateRef NewGate(OpCode op, BitField bitfield, const std::vector<GateRef> &inList, GateType type,
+                    MarkCode mark = MarkCode::NO_MARK);
     void PrintAllGates() const;
     void PrintAllGates(BytecodeCircuitBuilder &builder) const;
     [[nodiscard]] std::vector<GateRef> GetAllGates() const;
@@ -75,13 +72,13 @@ public:
     [[nodiscard]] BitField GetBitField(GateRef gate) const;
     void Print(GateRef gate) const;
     void SetOpCode(GateRef gate, OpCode opcode);
-    void SetTypeCode(GateRef gate, TypeCode type);
-    void SetValueCode(GateRef gate, ValueCode valCode);
+    void SetGateType(GateRef gate, GateType type);
+    void SetMachineType(GateRef gate, MachineType machineType);
     [[nodiscard]] OpCode GetOpCode(GateRef gate) const;
     [[nodiscard]] TimeStamp GetTime() const;
     [[nodiscard]] MarkCode GetMark(GateRef gate) const;
-    [[nodiscard]] TypeCode GetTypeCode(GateRef gate) const;
-    [[nodiscard]] ValueCode GetValueCode(GateRef gate) const;
+    [[nodiscard]] GateType GetGateType(GateRef gate) const;
+    [[nodiscard]] MachineType GetMachineType(GateRef gate) const;
     void SetMark(GateRef gate, MarkCode mark) const;
     [[nodiscard]] bool Verify(GateRef gate) const;
     [[nodiscard]] Gate *LoadGatePtr(GateRef shift);

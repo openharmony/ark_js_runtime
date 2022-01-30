@@ -76,15 +76,15 @@ GateRef LabelImpl::ReadVariable(Variable *var)
 GateRef LabelImpl::ReadVariableRecursive(Variable *var)
 {
     GateRef val;
-    ValueCode valueCode = CircuitBuilder::GetValueCodeFromMachineType(var->Type());
+    MachineType MachineType = CircuitBuilder::GetMachineTypeFromStubMachineType(var->Type());
     if (!IsSealed()) {
         // only loopheader gate will be not sealed
         int valueCounts = static_cast<int>(this->predecessors_.size()) + 1;
-        if (valueCode == ValueCode::NOVALUE) {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_,
+        if (MachineType == MachineType::NOVALUE) {
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), MachineType, predeControl_,
                                                            valueCounts, var->Type());
         } else {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_,
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), MachineType, predeControl_,
                                                            valueCounts, var->Type());
         }
         lm_->AddSelectorToLabel(val, Label(this));
@@ -92,11 +92,11 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
     } else if (predecessors_.size() == 1) {
         val = predecessors_[0]->ReadVariable(var);
     } else {
-        if (valueCode == ValueCode::NOVALUE) {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), valueCode, predeControl_,
+        if (MachineType == MachineType::NOVALUE) {
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), MachineType, predeControl_,
                                                            this->predecessors_.size(), var->Type());
         } else {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), valueCode, predeControl_,
+            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), MachineType, predeControl_,
                                                            this->predecessors_.size(), var->Type());
         }
         lm_->AddSelectorToLabel(val, Label(this));
@@ -245,7 +245,7 @@ GateRef Variable::TryRemoveTrivialPhi(GateRef phiVal)
     }
     if (same == nullptr) {
         // the phi is unreachable or in the start block
-        TypeCode type = lm_->GetCircuit()->GetTypeCode(phiVal);
+        GateType type = lm_->GetCircuit()->GetGateType(phiVal);
         same = lm_->GetCircuit()->LoadGatePtr(lm_->GetCircuitBuilder().UndefineConstant(type));
     }
     auto same_addr_shift = lm_->GetCircuit()->SaveGatePtr(same);

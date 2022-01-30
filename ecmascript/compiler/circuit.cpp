@@ -20,16 +20,16 @@
 namespace panda::ecmascript::kungfu {
 Circuit::Circuit() : space_(), circuitSize_(0), gateCount_(0), time_(1), dataSection_()
 {
-    NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, TypeCode::NOTYPE);  // circuit root
+    NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, GateType::EMPTY);  // circuit root
     auto circuitRoot = Circuit::GetCircuitRoot(OpCode(OpCode::CIRCUIT_ROOT));
-    NewGate(OpCode(OpCode::STATE_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
-    NewGate(OpCode(OpCode::DEPEND_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
-    NewGate(OpCode(OpCode::FRAMESTATE_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
-    NewGate(OpCode(OpCode::RETURN_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    NewGate(OpCode(OpCode::THROW_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    NewGate(OpCode(OpCode::CONSTANT_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    NewGate(OpCode(OpCode::ALLOCA_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    NewGate(OpCode(OpCode::ARG_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::STATE_ENTRY), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::DEPEND_ENTRY), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::FRAMESTATE_ENTRY), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::RETURN_LIST), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::THROW_LIST), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::CONSTANT_LIST), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::ALLOCA_LIST), 0, {circuitRoot}, GateType::EMPTY);
+    NewGate(OpCode(OpCode::ARG_LIST), 0, {circuitRoot}, GateType::EMPTY);
 }
 
 uint8_t *Circuit::AllocateSpace(size_t gateSize)
@@ -58,8 +58,8 @@ Gate *Circuit::AllocateGateSpace(size_t numIns)
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-GateRef Circuit::NewGate(OpCode opcode, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
-                         TypeCode type, MarkCode mark)
+GateRef Circuit::NewGate(OpCode opcode, MachineType bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
+                         GateType type, MarkCode mark)
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
@@ -76,20 +76,20 @@ GateRef Circuit::NewGate(OpCode opcode, ValueCode bitValue, BitField bitfield, s
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : LoadGatePtr(inList[idx]);
     }
-    ASSERT(opcode.GetValueCode() == ValueCode::FLEX);
+    ASSERT(opcode.GetMachineType() == MachineType::FLEX);
     auto newGate = new (gateSpace) Gate(gateCount_, opcode, bitValue, bitfield, inPtrList.data(), type, mark);
     gateCount_++;
     return SaveGatePtr(newGate);
 }
 
-GateRef Circuit::NewGate(OpCode opcode, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList,
-                         TypeCode type, MarkCode mark)
+GateRef Circuit::NewGate(OpCode opcode, MachineType bitValue, BitField bitfield, const std::vector<GateRef> &inList,
+                         GateType type, MarkCode mark)
 {
     return NewGate(opcode, bitValue, bitfield, inList.size(), inList.data(), type, mark);
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
+GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], GateType type,
                          MarkCode mark)
 {
 #ifndef NDEBUG
@@ -107,14 +107,14 @@ GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, size_t numIns, const 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : LoadGatePtr(inList[idx]);
     }
-    ASSERT(opcode.GetValueCode() != ValueCode::FLEX);
-    auto newGate = new (gateSpace) Gate(gateCount_, opcode, opcode.GetValueCode(), bitfield, inPtrList.data(), type,
+    ASSERT(opcode.GetMachineType() != MachineType::FLEX);
+    auto newGate = new (gateSpace) Gate(gateCount_, opcode, opcode.GetMachineType(), bitfield, inPtrList.data(), type,
                                         mark);
     gateCount_++;
     return SaveGatePtr(newGate);
 }
 
-GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
+GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, GateType type,
                          MarkCode mark)
 {
     return NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark);
@@ -214,7 +214,7 @@ void Circuit::ResetAllGateTimeStamps() const
 {
     const auto &gateList = GetAllGates();
     for (auto &gate : gateList) {
-        const_cast<Gate *>(LoadGatePtrConst(gate))->SetMark(MarkCode::EMPTY, 0);
+        const_cast<Gate *>(LoadGatePtrConst(gate))->SetMark(MarkCode::NO_MARK, 0);
     }
 }
 
@@ -349,19 +349,24 @@ void Circuit::SetOpCode(GateRef gate, OpCode opcode)
     LoadGatePtr(gate)->SetOpCode(opcode);
 }
 
-void Circuit::SetTypeCode(GateRef gate, TypeCode type)
+void Circuit::SetGateType(GateRef gate, GateType type)
 {
-    LoadGatePtr(gate)->SetTypeCode(type);
+    LoadGatePtr(gate)->SetGateType(type);
 }
 
-void Circuit::SetValueCode(GateRef gate, ValueCode valCode)
+void Circuit::SetMachineType(GateRef gate, MachineType machineType)
 {
-    LoadGatePtr(gate)->SetValueCode(valCode);
+    LoadGatePtr(gate)->SetMachineType(machineType);
 }
 
-TypeCode Circuit::GetTypeCode(GateRef gate) const
+GateType Circuit::GetGateType(GateRef gate) const
 {
-    return LoadGatePtrConst(gate)->GetTypeCode();
+    return LoadGatePtrConst(gate)->GetGateType();
+}
+
+MachineType Circuit::GetMachineType(GateRef gate) const
+{
+    return LoadGatePtrConst(gate)->GetMachineType();
 }
 
 OpCode Circuit::GetOpCode(GateRef gate) const

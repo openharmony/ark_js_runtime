@@ -31,22 +31,22 @@ public:
     GateRef NewArguments(size_t index);
     GateRef NewMerge(GateRef *in, size_t controlCount);
     GateRef NewSelectorGate(OpCode opcode, GateRef control, int valueCounts,
-                            MachineType type = MachineType::NONE);
+                            StubMachineType type = StubMachineType::NONE);
     GateRef NewSelectorGate(OpCode opcode, GateRef control, std::vector<GateRef> &values, int valueCounts,
-                            MachineType type = MachineType::NONE);
-    GateRef NewSelectorGate(OpCode opcode, ValueCode valCode, GateRef control, int valueCounts,
-                            MachineType type = MachineType::NONE);
-    GateRef NewSelectorGate(OpCode opcode, ValueCode valCode, GateRef control, std::vector<GateRef> &values,
-                            int valueCounts, MachineType type = MachineType::NONE);
+                            StubMachineType type = StubMachineType::NONE);
+    GateRef NewSelectorGate(OpCode opcode, MachineType machineType, GateRef control, int valueCounts,
+                            StubMachineType type = StubMachineType::NONE);
+    GateRef NewSelectorGate(OpCode opcode, MachineType machineType, GateRef control, std::vector<GateRef> &values,
+                            int valueCounts, StubMachineType type = StubMachineType::NONE);
     GateRef NewIntegerConstant(int32_t value);
     GateRef NewInteger64Constant(int64_t value);
     GateRef NewWord64Constant(uint64_t val);
     GateRef NewBooleanConstant(bool value);
     GateRef NewDoubleConstant(double value);
-    GateRef UndefineConstant(TypeCode type);
-    GateRef HoleConstant(TypeCode type);
-    GateRef NullConstant(TypeCode type);
-    GateRef ExceptionConstant(TypeCode type);
+    GateRef UndefineConstant(GateType type);
+    GateRef HoleConstant(GateType type);
+    GateRef NullConstant(GateType type);
+    GateRef ExceptionConstant(GateType type);
     GateRef Alloca(int size);
     GateRef Branch(GateRef state, GateRef condition);
     GateRef SwitchBranch(GateRef state, GateRef index, int caseCounts);
@@ -59,34 +59,34 @@ public:
     GateRef NewIfFalse(GateRef ifBranch);
     GateRef NewSwitchCase(GateRef switchBranch, int64_t value);
     GateRef NewDefaultCase(GateRef switchBranch);
-    GateRef NewLoadGate(MachineType type, GateRef val, GateRef depend);
-    GateRef NewStoreGate(MachineType type, GateRef ptr, GateRef val, GateRef depend);
+    GateRef NewLoadGate(StubMachineType type, GateRef val, GateRef depend);
+    GateRef NewStoreGate(StubMachineType type, GateRef ptr, GateRef val, GateRef depend);
     GateRef NewDependRelay(GateRef state, GateRef depend);
     GateRef NewDependAnd(std::initializer_list<GateRef> args);
-    GateRef NewArithmeticGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right);
-    GateRef NewArithmeticGate(OpCode opcode, ValueCode valCode, GateRef value);
+    GateRef NewArithmeticGate(OpCode opcode, MachineType machineType, GateRef left, GateRef right);
+    GateRef NewArithmeticGate(OpCode opcode, MachineType machineType, GateRef value);
     GateRef NewArithmeticGate(OpCode opcode, GateRef value);
-    GateRef NewLogicGate(OpCode opcode, ValueCode valCode, GateRef left, GateRef right);
+    GateRef NewLogicGate(OpCode opcode, MachineType machineType, GateRef left, GateRef right);
     GateRef NewLogicGate(OpCode opcode, GateRef left, GateRef right);
-    GateRef NewLogicGate(OpCode opcode, ValueCode valCode, GateRef value);
+    GateRef NewLogicGate(OpCode opcode, MachineType machineType, GateRef value);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  std::initializer_list<GateRef> args);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
-    static ValueCode GetLoadValueCodeFromMachineType(MachineType type);
-    static ValueCode GetStoreValueCodeFromMachineType(MachineType type);
-    static ValueCode GetValueCodeFromMachineType(MachineType type);
-    static ValueCode GetCallValueCodeFromMachineType(MachineType type);
+    static MachineType GetLoadMachineTypeFromStubMachineType(StubMachineType type);
+    static MachineType GetStoreMachineTypeFromStubMachineType(StubMachineType type);
+    static MachineType GetMachineTypeFromStubMachineType(StubMachineType type);
+    static MachineType GetCallMachineTypeFromStubMachineType(StubMachineType type);
 
-    static TypeCode MachineType2TypeCode(MachineType type)
+    static GateType StubMachineType2GateType(StubMachineType type)
     {
         switch (type) {
-            case MachineType::TAGGED_POINTER:
-                return TypeCode::TAGGED_POINTER;
-            case MachineType::TAGGED:
-                return TypeCode::JS_ANY;
+            case StubMachineType::TAGGED_POINTER:
+                return GateType::TAGGED_POINTER;
+            case StubMachineType::TAGGED:
+                return GateType::TAGGED_VALUE;
             default:
-                return TypeCode::NOTYPE;
+                return GateType::C_VALUE;
         }
     }
 
