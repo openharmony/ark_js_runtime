@@ -41,7 +41,7 @@ DominatorTreeInfo Scheduler::CalculateDominatorTree(const Circuit *circuit)
             bbGatesList.push_back(curGate);
             if (circuit->GetOpCode(curGate) != OpCode::LOOP_BACK) {
                 for (const auto &succGate : circuit->GetOutVector(curGate)) {
-                    if (circuit->GetOpCode(succGate).IsState() && circuit->GetMark(succGate) == MarkCode::EMPTY) {
+                    if (circuit->GetOpCode(succGate).IsState() && circuit->GetMark(succGate) == MarkCode::NO_MARK) {
                         circuit->SetMark(succGate, MarkCode::VISITED);
                         pendingList.push_back(succGate);
                     }

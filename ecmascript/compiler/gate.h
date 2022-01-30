@@ -42,7 +42,7 @@ class Gate;
 struct Properties;
 class BytecodeCircuitBuilder;
 
-enum ValueCode {
+enum MachineType { // bit whith
     NOVALUE,
     ANYVALUE,
     ARCH,
@@ -56,7 +56,7 @@ enum ValueCode {
     FLOAT64,
 };
 
-std::string ValueCodeToStr(ValueCode valueCode);
+std::string MachineTypeToStr(MachineType machineType);
 
 class OpCode {
 public:
@@ -80,8 +80,6 @@ public:
         SWITCH_BRANCH,
         IF_TRUE,
         IF_FALSE,
-        IF_SUCCESS,
-        IF_EXCEPTION,
         SWITCH_CASE,
         DEFAULT_CASE,
         MERGE,
@@ -93,6 +91,10 @@ public:
         DEPEND_AND,
         // High Level IR
         JS_BYTECODE,
+        IF_SUCCESS,
+        IF_EXCEPTION,
+        EXCEPTION_VALUE,
+        EXCEPTION_DEPEND,
         // Middle Level IR
         CALL,
         ALLOCA,
@@ -157,8 +159,8 @@ public:
     [[nodiscard]] Properties GetProperties() const;
     [[nodiscard]] std::array<size_t, 4> GetOpCodeNumInsArray(BitField bitfield) const;
     [[nodiscard]] size_t GetOpCodeNumIns(BitField bitfield) const;
-    [[nodiscard]] ValueCode GetValueCode() const;
-    [[nodiscard]] ValueCode GetInValueCode(BitField bitfield, size_t idx) const;
+    [[nodiscard]] MachineType GetMachineType() const;
+    [[nodiscard]] MachineType GetInMachineType(BitField bitfield, size_t idx) const;
     [[nodiscard]] OpCode GetInStateCode(size_t idx) const;
     [[nodiscard]] std::string Str() const;
     [[nodiscard]] bool IsRoot() const;
@@ -179,22 +181,20 @@ private:
 };
 
 struct Properties {
-    ValueCode returnValue;
+    MachineType returnValue;
     std::optional<std::pair<std::vector<OpCode>, bool>> statesIn;
     size_t dependsIn;
-    std::optional<std::pair<std::vector<ValueCode>, bool>> valuesIn;
+    std::optional<std::pair<std::vector<MachineType>, bool>> valuesIn;
     std::optional<OpCode> states;
 };
 
 enum MarkCode : GateMark {
-    EMPTY,
+    NO_MARK,
     VISITED,
     FINISHED,
 };
 
-ValueCode JSValueCode();
-ValueCode PtrValueCode();
-size_t GetValueBits(ValueCode valueCode);
+MachineType JSMachineType();
 
 class Out {
 public:
@@ -238,8 +238,9 @@ private:
 class Gate {
 public:
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-    Gate(GateId id, OpCode opcode, ValueCode bitValue, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark);
-    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], TypeCode type, MarkCode mark);
+    Gate(GateId id, OpCode opcode, MachineType bitValue, BitField bitfield, Gate *inList[], GateType type,
+         MarkCode mark);
+    Gate(GateId id, OpCode opcode, BitField bitfield, Gate *inList[], GateType type, MarkCode mark);
     [[nodiscard]] static size_t GetGateSize(size_t numIns);
     [[nodiscard]] size_t GetGateSize() const;
     [[nodiscard]] static size_t GetOutListSize(size_t numIns);
@@ -268,8 +269,8 @@ public:
     [[nodiscard]] bool IsInGateNull(size_t idx) const;
     [[nodiscard]] OpCode GetOpCode() const;
     void SetOpCode(OpCode opcode);
-    [[nodiscard]] TypeCode GetTypeCode() const;
-    void SetTypeCode(TypeCode type);
+    [[nodiscard]] GateType GetGateType() const;
+    void SetGateType(GateType type);
     [[nodiscard]] GateId GetId() const;
     [[nodiscard]] size_t GetNumIns() const;
     [[nodiscard]] std::array<size_t, 4> GetNumInsArray() const;
@@ -293,9 +294,10 @@ public:
     [[nodiscard]] bool Verify() const;
     [[nodiscard]] MarkCode GetMark(TimeStamp stamp) const;
     void SetMark(MarkCode mark, TimeStamp stamp);
-    [[nodiscard]] ValueCode GetValueCode() const;
-    void SetValueCode(ValueCode valueCode);
-    std::string ValueCodeStr(ValueCode valCode) const;
+    [[nodiscard]] MachineType GetMachineType() const;
+    void SetMachineType(MachineType MachineType);
+    std::string MachineTypeStr(MachineType machineType) const;
+    std::string GateTypeStr(GateType gateType) const;
     ~Gate() = default;
 
 private:
@@ -305,8 +307,8 @@ private:
     // out(0)
     GateId id_ {0};
     OpCode opcode_;
-    ValueCode bitValue_ = ValueCode::NOVALUE;
-    TypeCode type_;
+    MachineType bitValue_ = MachineType::NOVALUE;
+    GateType type_;
     TimeStamp stamp_;
     MarkCode mark_;
     BitField bitfield_;
