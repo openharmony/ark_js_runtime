@@ -23,6 +23,7 @@
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/jsnapi_helper-inl.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/jspandafile/js_pandafile.h"
 
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::JSHandle;
@@ -147,9 +148,9 @@ void DebuggerApi::ClearException(const EcmaVM *ecmaVm)
 const panda_file::File *DebuggerApi::FindPandaFile(const EcmaVM *ecmaVm, const CString &fileName)
 {
     const panda_file::File *pfs = nullptr;
-    ecmaVm->EnumeratePandaFiles([&pfs, fileName]([[maybe_unused]] const Program *pg, const panda_file::File *pf) {
-        if (ConvertToString(pf->GetFilename()) == fileName) {
-            pfs = pf;
+    ecmaVm->EnumerateJSPandaFiles([&pfs, fileName](const panda::ecmascript::JSPandaFile *jsPandaFile) {
+        if (ConvertToString(jsPandaFile->GetJSPandaFileDesc()) == fileName) {
+            pfs = jsPandaFile->GetPandaFile();
             return false;
         }
         return true;
