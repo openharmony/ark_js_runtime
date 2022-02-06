@@ -57,6 +57,7 @@ class Program;
 class RegExpExecResultCache;
 class JSPromise;
 enum class PromiseRejectionEvent : uint8_t;
+class JsPandaFileManager;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
@@ -89,6 +90,9 @@ public:
 
     static bool Destroy(PandaVM *vm);
 
+    static void PUBLIC_API DestroyJsPandaFileManager();
+    static void PUBLIC_API CreateJsPandaFileManager();
+
     explicit EcmaVM(JSRuntimeOptions options);
 
     static Expected<EcmaVM *, CString> Create([[maybe_unused]] Runtime *runtime);
@@ -105,6 +109,9 @@ public:
 
     bool PUBLIC_API CollectInfoOfPandaFile(std::string_view filename, std::string_view entryPoint,
                                 std::vector<BytecodeTranslationInfo> &infoList, const panda_file::File *&pf);
+
+    bool ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
+                           const std::vector<std::string> &args, const std::string &filename);
 
     PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
@@ -283,19 +290,12 @@ public:
     void EnumeratePandaFiles(Callback cb) const
     {
         for (const auto &iter : pandaFileWithProgram_) {
-            if (!cb(std::get<0>(iter), std::get<1>(iter))) {
-                break;
-            }
-        }
-    }
-
-    template<typename Callback>
-    void EnumerateProgram(Callback cb, std::string pandaFile) const
-    {
-        for (const auto &iter : pandaFileWithProgram_) {
-            if (pandaFile == std::get<1>(iter)->GetFilename()) {
-                cb(std::get<0>(iter));
-                break;
+            auto pf = iter.first;
+            const CList<Program *> &programs = iter.second;
+            for (auto &it : programs) {
+                if (!cb(it, pf)) {
+                    return;
+                }
             }
         }
     }
@@ -420,7 +420,7 @@ protected:
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 
 private:
-    void AddPandaFile(const panda_file::File *pf, bool isModule);
+    void AddPandaFile(const panda_file::File *pf);
     void SetProgram(Program *program, const panda_file::File *pf);
     bool IsFrameworkPandaFile(std::string_view filename) const;
 
@@ -431,7 +431,8 @@ private:
     bool Execute(const panda_file::File &pf, std::string_view entryPoint, const std::vector<std::string> &args);
 
     Expected<int, Runtime::Error> InvokeEcmaEntrypoint(const panda_file::File &pf, const CString &methodName,
-                                                       const std::vector<std::string> &args);
+                                                       const std::vector<std::string> &args,
+                                                       const std::string &filename);
 
     void InitializeEcmaScriptRunStat();
 
@@ -488,16 +489,18 @@ private:
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     bool optionalLogEnabled_ {false};
-    ChunkVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
+    ChunkUnorderedMap<const panda_file::File *, CList<Program *>> pandaFileWithProgram_;
 
     // Debugger
     RuntimeNotificationManager *notificationManager_ {nullptr};
-    CUnorderedMap<const panda_file::File *, std::unique_ptr<PtJSExtractor>> extractorCache_;
 
     // Registered Callbacks
     PromiseRejectCallback promiseRejectCallback_ {nullptr};
     HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
     void* data_ {nullptr};
+
+    // shared reference cross EcmaVM
+    static JsPandaFileManager *jsPandaFileManager_;
 
     friend class SnapShotSerialize;
     friend class ObjectFactory;

@@ -36,8 +36,6 @@ public:
     ACCESSORS_PRIMITIVE_FIELD(NumberMethods, uint32_t, NUMBER_METHODS_OFFSET, LAST_OFFSET)
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    inline void FreeMethodData(NativeAreaAllocator *allocator);
-
     DECL_VISIT_OBJECT(LOCATION_OFFSET, METHODS_DATA_OFFSET)
     DECL_DUMP()
 };
