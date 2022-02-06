@@ -118,6 +118,9 @@ int Main(const int argc, const char **argv)
         std::cerr << "Error: cannot Create Runtime" << std::endl;
         return -1;
     }
+
+    // create jspandafile manager for process
+    EcmaVM::CreateJSPandaFileManager();
     auto runtime = Runtime::GetCurrent();
 
     if (options.GetValue()) {
@@ -143,6 +146,7 @@ int Main(const int argc, const char **argv)
         std::cerr << "Error: cannot destroy Runtime" << std::endl;
         return -1;
     }
+    EcmaVM::DestroyJSPandaFileManager();
     paParser.DisableTail();
     return ret ? 0 : -1;
 }

@@ -23,6 +23,7 @@
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_thread.h"
@@ -38,19 +39,12 @@
 #include "libpandafile/class_data_accessor-inl.h"
 
 namespace panda::ecmascript {
-PandaFileTranslator::PandaFileTranslator(EcmaVM *vm)
-    : ecmaVm_(vm), factory_(vm->GetFactory()), thread_(vm->GetJSThread())
+PandaFileTranslator::PandaFileTranslator(EcmaVM *vm, const JSPandaFile *jsPandaFile_)
+    : ecmaVm_(vm),
+      factory_(vm->GetFactory()),
+      thread_(vm->GetJSThread()),
+      jsPandaFile_(jsPandaFile_)
 {
-}
-
-JSHandle<Program> PandaFileTranslator::TranslatePandaFile(EcmaVM *vm, const panda_file::File &pf,
-                                                          const CString &methodName)
-{
-    PandaFileTranslator translator(vm);
-    std::vector<BytecodeTranslationInfo> infoList {};
-    translator.TranslateClasses(pf, methodName, infoList);
-    auto result = translator.GenerateProgram(pf);
-    return JSHandle<Program>(translator.thread_, result);
 }
 
 void PandaFileTranslator::TranslateAndCollectPandaFile(EcmaVM *vm, const panda_file::File &pf,
@@ -61,8 +55,9 @@ void PandaFileTranslator::TranslateAndCollectPandaFile(EcmaVM *vm, const panda_f
         TSLoader *tsLoader = vm->GetTSLoader();
         tsLoader->DecodeTSTypes(pf);
     }
-    PandaFileTranslator translator(vm);
-    translator.TranslateClasses(pf, methodName, infoList);
+    JSPandaFile jsPandaFile_(&pf);
+    PandaFileTranslator translator(vm, &jsPandaFile_);
+    translator.TranslateClasses(methodName, infoList);
 }
 
 template<class T, class... Args>
@@ -71,84 +66,61 @@ static T *InitializeMemory(T *mem, Args... args)
     return new (mem) T(std::forward<Args>(args)...);
 }
 
-const JSMethod *PandaFileTranslator::FindMethods(uint32_t offset) const
+void PandaFileTranslator::TranslateClasses(const CString &methodName, std::vector<BytecodeTranslationInfo> &infoList)
 {
-    Span<JSMethod> methods = GetMethods();
-    auto pred = [offset](const JSMethod &method) { return method.GetFileId().GetOffset() == offset; };
-    auto it = std::find_if(methods.begin(), methods.end(), pred);
-    if (it != methods.end()) {
-        return &*it;
-    }
-    return nullptr;
-}
-
-void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CString &methodName,
-                                           std::vector<BytecodeTranslationInfo> &infoList)
-{
-    NativeAreaAllocator *allocator = ecmaVm_->GetNativeAreaAllocator();
-    Span<const uint32_t> classIndexes = pf.GetClasses();
-    uint32_t numMethods = 0;
-
-    for (const uint32_t index : classIndexes) {
-        panda_file::File::EntityId classId(index);
-        if (pf.IsExternal(classId)) {
-            continue;
-        }
-        panda_file::ClassDataAccessor cda(pf, classId);
-        numMethods += cda.GetMethodsNumber();
-    }
-
-    auto methodsData = allocator->AllocateBuffer(sizeof(JSMethod) * numMethods);
-    Span<JSMethod> methods {static_cast<JSMethod *>(methodsData), numMethods};
+    const_cast<JSPandaFile *>(jsPandaFile_)->ParseMethods();
+    Span<JSMethod> methods = jsPandaFile_->GetMethodSpan();
+    const panda_file::File *pf = jsPandaFile_->GetPandaFile();
     size_t methodIdx = 0;
-
     panda_file::File::StringData sd = {static_cast<uint32_t>(methodName.size()),
                                        reinterpret_cast<const uint8_t *>(methodName.c_str())};
+    std::set<const uint8_t *> translatedCode;
+    uint32_t constpoolIndex = 0;
+    std::unordered_map<uint32_t, uint64_t> constpoolMap;
+    Span<const uint32_t> classIndexes = jsPandaFile_->GetClasses();
     for (const uint32_t index : classIndexes) {
         panda_file::File::EntityId classId(index);
-        if (pf.IsExternal(classId)) {
+        if (pf->IsExternal(classId)) {
             continue;
         }
-        panda_file::ClassDataAccessor cda(pf, classId);
-        cda.EnumerateMethods([this, &sd, &methods, &methodIdx, &pf, &infoList](panda_file::MethodDataAccessor &mda) {
+        panda_file::ClassDataAccessor cda(*pf, classId);
+        cda.EnumerateMethods([this, &translatedCode, &sd, &methods, &methodIdx, pf, &infoList,
+                              &constpoolIndex, &constpoolMap] (panda_file::MethodDataAccessor &mda) {
             auto codeId = mda.GetCodeId();
             ASSERT(codeId.has_value());
 
             JSMethod *method = &methods[methodIdx++];
-            panda_file::CodeDataAccessor codeDataAccessor(pf, codeId.value());
+            panda_file::CodeDataAccessor codeDataAccessor(*pf, codeId.value());
             uint32_t codeSize = codeDataAccessor.GetCodeSize();
 
-            if (mainMethodIndex_ == 0 && pf.GetStringData(mda.GetNameId()) == sd) {
-                mainMethodIndex_ = mda.GetMethodId().GetOffset();
+            uint32_t mainMethodIndex = jsPandaFile_->GetMainMethodIndex();
+            if (mainMethodIndex == 0 && pf->GetStringData(mda.GetNameId()) == sd) {
+                const_cast<JSPandaFile *>(jsPandaFile_)->UpdateMainMethodIndex(mda.GetMethodId().GetOffset());
             }
 
-            panda_file::ProtoDataAccessor pda(pf, mda.GetProtoId());
-            InitializeMemory(method, nullptr, &pf, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
+            panda_file::ProtoDataAccessor pda(*pf, mda.GetProtoId());
+            InitializeMemory(method, nullptr, pf, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
                              mda.GetAccessFlags(), codeDataAccessor.GetNumArgs(), nullptr);
             method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
             method->InitializeCallField();
             const uint8_t *insns = codeDataAccessor.GetInstructions();
-            if (this->translated_code_.find(insns) == this->translated_code_.end()) {
-                this->translated_code_.insert(insns);
-                this->TranslateBytecode(codeSize, insns, pf, method, infoList);
+            if (translatedCode.find(insns) == translatedCode.end()) {
+                translatedCode.insert(insns);
+                this->TranslateBytecode(codeSize, insns, *pf, method, infoList, constpoolIndex, constpoolMap);
             }
         });
     }
-
-    SetMethods(methods, numMethods);
+    const_cast<JSPandaFile *>(jsPandaFile_)->UpdateConstpoolInfo(constpoolIndex, constpoolMap);
 }
 
-Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
+Program *PandaFileTranslator::GenerateProgram()
 {
     EcmaHandleScope handleScope(thread_);
 
     JSHandle<Program> program = factory_->NewProgram();
-    JSHandle<EcmaString> location = factory_->NewFromStdStringUnCheck(pf.GetFilename(), true);
-
-    // +1 for program
-    JSHandle<ConstantPool> constpool = factory_->NewConstantPool(constpoolIndex_ + 1);
-    program->SetConstantPool(thread_, constpool.GetTaggedValue());
-    program->SetLocation(thread_, location.GetTaggedValue());
+    uint32_t constpoolIndex = jsPandaFile_->GetConstpoolIndex();
+    JSHandle<ConstantPool> constpool = factory_->NewConstantPool(constpoolIndex + 1);
+    const panda_file::File *pf = jsPandaFile_->GetPandaFile();
 
     JSHandle<GlobalEnv> env = ecmaVm_->GetGlobalEnv();
     JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
@@ -156,18 +128,20 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
     JSHandle<JSHClass> asyncDynclass = JSHandle<JSHClass>::Cast(env->GetAsyncFunctionClass());
     JSHandle<JSHClass> generatorDynclass = JSHandle<JSHClass>::Cast(env->GetGeneratorFunctionClass());
 
-    for (const auto &it : constpoolMap_) {
+    std::unordered_map<uint32_t, uint64_t> constpoolMap = jsPandaFile_->GetConstpoolMap();
+    uint32_t mainMethodIndex = jsPandaFile_->GetMainMethodIndex();
+    for (const auto &it : constpoolMap) {
         ConstPoolValue value(it.second);
         if (value.GetConstpoolType() == ConstPoolType::STRING) {
             panda_file::File::EntityId id(it.first);
-            auto foundStr = pf.GetStringData(id);
+            auto foundStr = pf->GetStringData(id);
             auto string = factory_->GetRawStringFromStringTable(foundStr.data,
                                                                 foundStr.utf16_length, foundStr.is_ascii);
             constpool->Set(thread_, value.GetConstpoolIndex(), JSTaggedValue(string));
         } else if (value.GetConstpoolType() == ConstPoolType::BASE_FUNCTION) {
-            ASSERT(mainMethodIndex_ != it.first);
+            ASSERT(mainMethodIndex != it.first);
             panda_file::File::EntityId id(it.first);
-            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(it.first));
             ASSERT(method != nullptr);
 
             JSHandle<JSFunction> jsFunc =
@@ -175,9 +149,9 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
             jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
         } else if (value.GetConstpoolType() == ConstPoolType::NC_FUNCTION) {
-            ASSERT(mainMethodIndex_ != it.first);
+            ASSERT(mainMethodIndex != it.first);
             panda_file::File::EntityId id(it.first);
-            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(it.first));
             ASSERT(method != nullptr);
 
             JSHandle<JSFunction> jsFunc =
@@ -185,9 +159,9 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
             jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
         } else if (value.GetConstpoolType() == ConstPoolType::GENERATOR_FUNCTION) {
-            ASSERT(mainMethodIndex_ != it.first);
+            ASSERT(mainMethodIndex != it.first);
             panda_file::File::EntityId id(it.first);
-            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(it.first));
             ASSERT(method != nullptr);
 
             JSHandle<JSFunction> jsFunc =
@@ -204,9 +178,9 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
             jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
         } else if (value.GetConstpoolType() == ConstPoolType::ASYNC_FUNCTION) {
-            ASSERT(mainMethodIndex_ != it.first);
+            ASSERT(mainMethodIndex != it.first);
             panda_file::File::EntityId id(it.first);
-            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(it.first));
             ASSERT(method != nullptr);
 
             JSHandle<JSFunction> jsFunc =
@@ -214,16 +188,16 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             constpool->Set(thread_, value.GetConstpoolIndex(), jsFunc.GetTaggedValue());
             jsFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
         } else if (value.GetConstpoolType() == ConstPoolType::CLASS_FUNCTION) {
-            ASSERT(mainMethodIndex_ != it.first);
+            ASSERT(mainMethodIndex != it.first);
             panda_file::File::EntityId id(it.first);
-            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(it.first));
             ASSERT(method != nullptr);
             JSHandle<ClassInfoExtractor> classInfoExtractor = factory_->NewClassInfoExtractor(method);
             constpool->Set(thread_, value.GetConstpoolIndex(), classInfoExtractor.GetTaggedValue());
         } else if (value.GetConstpoolType() == ConstPoolType::METHOD) {
-            ASSERT(mainMethodIndex_ != it.first);
+            ASSERT(mainMethodIndex != it.first);
             panda_file::File::EntityId id(it.first);
-            auto method = const_cast<JSMethod *>(FindMethods(it.first));
+            auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(it.first));
             ASSERT(method != nullptr);
 
             JSHandle<JSFunction> jsFunc =
@@ -234,7 +208,7 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             size_t index = it.first;
             JSMutableHandle<TaggedArray> elements(thread_, JSTaggedValue::Undefined());
             JSMutableHandle<TaggedArray> properties(thread_, JSTaggedValue::Undefined());
-            LiteralDataExtractor::ExtractObjectDatas(thread_, &pf, index, elements, properties, this);
+            LiteralDataExtractor::ExtractObjectDatas(thread_, pf, index, elements, properties, this);
             JSHandle<JSObject> obj = JSObject::CreateObjectFromProperties(thread_, properties);
 
             JSMutableHandle<JSTaggedValue> key(thread_, JSTaggedValue::Undefined());
@@ -252,7 +226,7 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
         } else if (value.GetConstpoolType() == ConstPoolType::ARRAY_LITERAL) {
             size_t index = it.first;
             JSHandle<TaggedArray> literal =
-                LiteralDataExtractor::GetDatasIgnoreType(thread_, &pf, static_cast<size_t>(index));
+                LiteralDataExtractor::GetDatasIgnoreType(thread_, pf, static_cast<size_t>(index));
             uint32_t length = literal->GetLength();
 
             JSHandle<JSArray> arr(JSArray::ArrayCreate(thread_, JSTaggedNumber(length)));
@@ -261,21 +235,21 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
         } else if (value.GetConstpoolType() == ConstPoolType::CLASS_LITERAL) {
             size_t index = it.first;
             JSHandle<TaggedArray> literal =
-                LiteralDataExtractor::GetDatasIgnoreType(thread_, &pf, static_cast<size_t>(index), this);
+                LiteralDataExtractor::GetDatasIgnoreType(thread_, pf, static_cast<size_t>(index), this);
             constpool->Set(thread_, value.GetConstpoolIndex(), literal.GetTaggedValue());
         }
     }
     {
-        auto method = const_cast<JSMethod *>(FindMethods(mainMethodIndex_));
+        auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(mainMethodIndex));
         ASSERT(method != nullptr);
         JSHandle<JSFunction> mainFunc =
             factory_->NewJSFunctionByDynClass(method, dynclass, FunctionKind::BASE_CONSTRUCTOR);
         mainFunc->SetConstantPool(thread_, constpool.GetTaggedValue());
         program->SetMainFunction(thread_, mainFunc.GetTaggedValue());
-        program->SetMethodsData(methods_);
-        program->SetNumberMethods(numMethods_);
-        // link program
-        constpool->Set(thread_, constpoolIndex_, program.GetTaggedValue());
+        // link JSPandaFile
+        JSHandle<JSNativePointer> jsPandaFilePointer = factory_->NewJSNativePointer(
+            const_cast<JSPandaFile *>(jsPandaFile_), JSPandaFileManager::RemoveJSPandaFile, ecmaVm_);
+        constpool->Set(thread_, constpoolIndex, jsPandaFilePointer.GetTaggedValue());
     }
 
     DefineClassInConstPool(constpool);
@@ -482,7 +456,9 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[
 }
 
 void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf,
-                                            const JSMethod *method, std::vector<BytecodeTranslationInfo> &infoList)
+                                            const JSMethod *method, std::vector<BytecodeTranslationInfo> &infoList,
+                                            uint32_t &constpoolIndex,
+                                            std::unordered_map<uint32_t, uint64_t> &constpoolMap)
 {
     auto bcIns = BytecodeInstruction(insArr);
     auto bcInsLast = bcIns.JumpTo(insSz);
@@ -492,7 +468,8 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
     while (bcIns.GetAddress() != bcInsLast.GetAddress()) {
         if (bcIns.HasFlag(BytecodeInstruction::Flags::STRING_ID) &&
             BytecodeInstruction::HasId(bcIns.GetFormat(), 0)) {
-            auto index = GetOrInsertConstantPool(ConstPoolType::STRING, bcIns.GetId().AsFileId().GetOffset());
+            auto index = GetOrInsertConstantPool(
+                ConstPoolType::STRING, bcIns.GetId().AsFileId().GetOffset(), constpoolIndex, constpoolMap);
             FixInstructionId32(bcIns, index);
         } else {
             BytecodeInstruction::Opcode opcode = static_cast<BytecodeInstruction::Opcode>(bcIns.GetOpcode());
@@ -501,47 +478,55 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
                 uint32_t methodId;
                 case BytecodeInstruction::Opcode::ECMA_DEFINEFUNCDYN_PREF_ID16_IMM16_V8:
                     methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                    index = GetOrInsertConstantPool(ConstPoolType::BASE_FUNCTION, methodId);
+                    index =
+                        GetOrInsertConstantPool(ConstPoolType::BASE_FUNCTION, methodId, constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_DEFINENCFUNCDYN_PREF_ID16_IMM16_V8:
                     methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                    index = GetOrInsertConstantPool(ConstPoolType::NC_FUNCTION, methodId);
+                    index =
+                        GetOrInsertConstantPool(ConstPoolType::NC_FUNCTION, methodId, constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_DEFINEGENERATORFUNC_PREF_ID16_IMM16_V8:
                     methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                    index = GetOrInsertConstantPool(ConstPoolType::GENERATOR_FUNCTION, methodId);
+                    index = GetOrInsertConstantPool(
+                        ConstPoolType::GENERATOR_FUNCTION, methodId, constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_DEFINEASYNCFUNC_PREF_ID16_IMM16_V8:
                     methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                    index = GetOrInsertConstantPool(ConstPoolType::ASYNC_FUNCTION, methodId);
+                    index =
+                        GetOrInsertConstantPool(ConstPoolType::ASYNC_FUNCTION, methodId, constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_DEFINEMETHOD_PREF_ID16_IMM16_V8:
                     methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                    index = GetOrInsertConstantPool(ConstPoolType::METHOD, methodId);
+                    index = GetOrInsertConstantPool(ConstPoolType::METHOD, methodId, constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_CREATEOBJECTWITHBUFFER_PREF_IMM16:
                 case BytecodeInstruction::Opcode::ECMA_CREATEOBJECTHAVINGMETHOD_PREF_IMM16:
                     index = GetOrInsertConstantPool(ConstPoolType::OBJECT_LITERAL,
-                                                    bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>());
+                                                    bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>(),
+                                                    constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_CREATEARRAYWITHBUFFER_PREF_IMM16:
                     index = GetOrInsertConstantPool(ConstPoolType::ARRAY_LITERAL,
-                                                    bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>());
+                                                    bcIns.GetImm<BytecodeInstruction::Format::PREF_IMM16>(),
+                                                    constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     break;
                 case BytecodeInstruction::Opcode::ECMA_DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8:
                     methodId = pf.ResolveMethodIndex(method->GetFileId(), bcIns.GetId().AsIndex()).GetOffset();
-                    index = GetOrInsertConstantPool(ConstPoolType::CLASS_FUNCTION, methodId);
+                    index =
+                        GetOrInsertConstantPool(ConstPoolType::CLASS_FUNCTION, methodId, constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index);
                     index = GetOrInsertConstantPool(ConstPoolType::CLASS_LITERAL,
                                                     bcIns.GetImm<BytecodeInstruction::Format::
-                                                    PREF_ID16_IMM16_IMM16_V8_V8>());
+                                                    PREF_ID16_IMM16_IMM16_V8_V8>(),
+                                                    constpoolIndex, constpoolMap);
                     FixInstructionId32(bcIns, index, 1);
                     break;
                 default:
@@ -562,24 +547,25 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
     }
 }
 
-uint32_t PandaFileTranslator::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset)
+uint32_t PandaFileTranslator::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset, uint32_t &constpoolIndex,
+                                                      std::unordered_map<uint32_t, uint64_t> &constpoolMap)
 {
-    auto it = constpoolMap_.find(offset);
-    if (it != constpoolMap_.cend()) {
+    auto it = constpoolMap.find(offset);
+    if (it != constpoolMap.cend()) {
         ConstPoolValue value(it->second);
         return value.GetConstpoolIndex();
     }
-    ASSERT(constpoolIndex_ != UINT32_MAX);
-    uint32_t index = constpoolIndex_++;
+    ASSERT(constpoolIndex != UINT32_MAX);
+    uint32_t index = constpoolIndex++;
     ConstPoolValue value(type, index);
-    constpoolMap_.insert({offset, value.GetValue()});
+    constpoolMap.insert({offset, value.GetValue()});
     return index;
 }
 
 JSHandle<JSFunction> PandaFileTranslator::DefineMethodInLiteral(JSThread *thread, uint32_t methodId, FunctionKind kind,
                                                                 uint16_t length) const
 {
-    auto method = const_cast<JSMethod *>(FindMethods(methodId));
+    auto method = const_cast<JSMethod *>(jsPandaFile_->FindMethods(methodId));
     ASSERT(method != nullptr);
 
     JSHandle<GlobalEnv> env = thread_->GetEcmaVM()->GetGlobalEnv();

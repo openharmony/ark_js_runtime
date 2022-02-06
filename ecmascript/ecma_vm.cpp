@@ -31,6 +31,8 @@
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/jobs/micro_job_queue.h"
+#include "ecmascript/jspandafile/js_pandafile.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_invoker.h"
@@ -72,6 +74,7 @@ namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 static const std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 JSRuntimeOptions EcmaVM::options_;  // NOLINT(fuchsia-statically-constructed-objects)
+JSPandaFileManager *EcmaVM::jsPandaFileManager_ = nullptr;
 
 /* static */
 EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options)
@@ -100,6 +103,21 @@ bool EcmaVM::Destroy(PandaVM *vm)
 }
 
 // static
+void EcmaVM::CreateJSPandaFileManager()
+{
+    ASSERT(jsPandaFileManager_ == nullptr);
+    jsPandaFileManager_= new JSPandaFileManager();
+}
+
+// static
+void EcmaVM::DestroyJSPandaFileManager()
+{
+    ASSERT(jsPandaFileManager_ != nullptr);
+    delete jsPandaFileManager_;
+    jsPandaFileManager_ = nullptr;
+}
+
+// static
 Expected<EcmaVM *, CString> EcmaVM::Create(Runtime *runtime)
 {
     EcmaVM *vm = runtime->GetInternalAllocator()->New<EcmaVM>();
@@ -122,7 +140,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
       arrayBufferDataList_(&chunk_),
       frameworkProgramMethods_(&chunk_),
       nativeMethods_(&chunk_),
-      pandaFileWithProgram_(&chunk_)
+      jsPandaFiles_(&chunk_)
 {
     options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
@@ -201,9 +219,8 @@ bool EcmaVM::Initialize()
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run snapshot";
         SnapShot snapShot(this);
         std::unique_ptr<const panda_file::File> pf = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_);
-        frameworkPandaFile_ = pf.get();
-        AddPandaFile(pf.release(), false);
-        SetProgram(Program::Cast(frameworkProgram_.GetTaggedObject()), frameworkPandaFile_);
+        frameworkPandaFile_ = new JSPandaFile(pf.release(), true);
+        AddJSPandaFile(frameworkPandaFile_);
         globalConst->InitGlobalUndefined();
 #endif
     }
@@ -331,26 +348,24 @@ EcmaVM::~EcmaVM()
         thread_ = nullptr;
     }
 
-    extractorCache_.clear();
     frameworkProgramMethods_.clear();
 }
 
-bool EcmaVM::ExecuteFromPf(std::string_view filename, std::string_view entryPoint, const std::vector<std::string> &args,
-                           bool isModule)
+bool EcmaVM::ExecuteFromPf(const std::string &filename, std::string_view entryPoint,
+                           const std::vector<std::string> &args, bool isModule)
 {
-    const panda_file::File *pf_ptr = nullptr;
+    const JSPandaFile *jsPandaFile = nullptr;
     if (frameworkPandaFile_ == nullptr || !IsFrameworkPandaFile(filename)) {
-        auto pf = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
-        if (pf == nullptr) {
+        ASSERT(jsPandaFileManager_ != nullptr);
+        jsPandaFile = jsPandaFileManager_->LoadPfAbc(filename);
+        if (jsPandaFile == nullptr) {
             return false;
         }
-        pf_ptr = pf.get();
-        AddPandaFile(pf.release(), isModule);  // Store here prevent from being automatically cleared
+        AddJSPandaFile(jsPandaFile);
     } else {
-        pf_ptr = frameworkPandaFile_;
+        jsPandaFile = frameworkPandaFile_;
     }
-
-    return Execute(*pf_ptr, entryPoint, args);
+    return Execute(jsPandaFile, entryPoint, args);
 }
 
 bool EcmaVM::CollectInfoOfPandaFile(std::string_view filename, std::string_view entryPoint,
@@ -378,33 +393,33 @@ bool EcmaVM::CollectInfoOfPandaFile(std::string_view filename, std::string_view 
 }
 
 bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
-                               const std::vector<std::string> &args)
+                               const std::vector<std::string> &args, const std::string &filename)
 {
-    auto pf = panda_file::OpenPandaFileFromMemory(buffer, size);
-    if (pf == nullptr) {
+    // Get ClassName and MethodName
+    size_t pos = entryPoint.find_last_of("::");
+    if (pos == std::string_view::npos) {
+        LOG_ECMA(ERROR) << "EntryPoint:" << entryPoint << " is illegal";
         return false;
     }
-    const panda_file::File *pf_ptr = pf.get();
-    AddPandaFile(pf.release(), false);  // Store here prevent from being automatically cleared
-
-    return Execute(*pf_ptr, entryPoint, args);
+    CString methodName(entryPoint.substr(pos + 1));
+    ASSERT(jsPandaFileManager_ != nullptr);
+    const JSPandaFile *jsPandaFile = jsPandaFileManager_->LoadBufferAbc(filename, buffer, size);
+    if (jsPandaFile == nullptr) {
+        return false;
+    }
+    AddJSPandaFile(jsPandaFile);
+    InvokeEcmaEntrypoint(jsPandaFile, methodName, args);
+    return true;
 }
 
 tooling::ecmascript::PtJSExtractor *EcmaVM::GetDebugInfoExtractor(const panda_file::File *file)
 {
-    tooling::ecmascript::PtJSExtractor *res = nullptr;
-    auto it = extractorCache_.find(file);
-    if (it == extractorCache_.end()) {
-        auto extractor = std::make_unique<tooling::ecmascript::PtJSExtractor>(file);
-        res = extractor.get();
-        extractorCache_[file] = std::move(extractor);
-    } else {
-        res = it->second.get();
-    }
+    ASSERT(jsPandaFileManager_ != nullptr);
+    tooling::ecmascript::PtJSExtractor *res = jsPandaFileManager_->GetOrCreatePtJSExtractor(file);
     return res;
 }
 
-bool EcmaVM::Execute(const panda_file::File &pf, std::string_view entryPoint, const std::vector<std::string> &args)
+bool EcmaVM::Execute(const JSPandaFile *jsPandaFile, std::string_view entryPoint, const std::vector<std::string> &args)
 {
     // Get ClassName and MethodName
     size_t pos = entryPoint.find_last_of("::");
@@ -414,7 +429,7 @@ bool EcmaVM::Execute(const panda_file::File &pf, std::string_view entryPoint, co
     }
     CString methodName(entryPoint.substr(pos + 1));
     // For Ark application startup
-    InvokeEcmaEntrypoint(pf, methodName, args);
+    InvokeEcmaEntrypoint(jsPandaFile, methodName, args);
     return true;
 }
 
@@ -454,39 +469,38 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEntrypointImpl(Method *entrypoint, c
 {
     // For testcase startup
     const panda_file::File *file = entrypoint->GetPandaFile();
-    AddPandaFile(file, false);
-    return InvokeEcmaEntrypoint(*file, utf::Mutf8AsCString(entrypoint->GetName().data), args);
+    const JSPandaFile *jsPandaFile = jsPandaFileManager_->GetOrCreateJSPandaFile(file);
+    AddJSPandaFile(jsPandaFile);
+    return InvokeEcmaEntrypoint(jsPandaFile, utf::Mutf8AsCString(entrypoint->GetName().data), args);
 }
 
-Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::File &pf, const CString &methodName,
+Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile, const CString &methodName,
                                                            const std::vector<std::string> &args)
 {
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     JSHandle<Program> program;
     if (snapshotSerializeEnable_) {
-        program = PandaFileTranslator::TranslatePandaFile(this, pf, methodName);
-        auto string = EcmaString::Cast(program->GetLocation().GetTaggedObject());
+        ASSERT(jsPandaFileManager_ != nullptr);
+        program = jsPandaFileManager_->GenerateProgram(this, jsPandaFile, methodName);
 
-        auto index = ConvertToString(string).find(frameworkAbcFileName_);
+        auto index = jsPandaFile->GetJSPandaFileDesc().find(frameworkAbcFileName_);
         if (index != CString::npos) {
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
-            LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << ConvertToString(string);
+            LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << jsPandaFile->GetJSPandaFileDesc();
             SnapShot snapShot(this);
-            snapShot.MakeSnapShotProgramObject(*program, &pf, snapshotFileName_);
+            snapShot.MakeSnapShotProgramObject(*program, jsPandaFile->GetPandaFile(), snapshotFileName_);
 #endif
         }
     } else {
-        if (&pf != frameworkPandaFile_) {
-            program = PandaFileTranslator::TranslatePandaFile(this, pf, methodName);
+        if (jsPandaFile != frameworkPandaFile_) {
+            ASSERT(jsPandaFileManager_ != nullptr);
+            program = jsPandaFileManager_->GenerateProgram(this, jsPandaFile, methodName);
         } else {
-            JSHandle<EcmaString> string = factory_->NewFromStdStringUnCheck(pf.GetFilename(), true);
             program = JSHandle<Program>(thread_, frameworkProgram_);
-            program->SetLocation(thread_, string);
-            RedirectMethod(pf);
+            RedirectMethod(*jsPandaFile->GetPandaFile());
         }
     }
 
-    SetProgram(*program, &pf);
     if (program.IsEmpty()) {
         LOG_ECMA(ERROR) << "program is empty, invoke entrypoint failed";
         return Unexpected(Runtime::Error::PANDA_FILE_LOAD_ERROR);
@@ -527,20 +541,9 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     return 0;
 }
 
-void EcmaVM::AddPandaFile(const panda_file::File *pf, bool isModule)
+void EcmaVM::AddJSPandaFile(const JSPandaFile *jsPandaFile)
 {
-    ASSERT(pf != nullptr);
-    pandaFileWithProgram_.push_back(std::make_tuple(nullptr, pf, isModule));
-}
-
-void EcmaVM::SetProgram(Program *program, const panda_file::File *pf)
-{
-    auto it = std::find_if(pandaFileWithProgram_.begin(), pandaFileWithProgram_.end(),
-                           [pf](auto entry) { return std::get<1>(entry) == pf; });
-    ASSERT(it != pandaFileWithProgram_.end());
-    std::get<0>(*it) = program;
-    // for debugger
-    notificationManager_->LoadModuleEvent(pf->GetFilename());
+    jsPandaFiles_.push_back(jsPandaFile);
 }
 
 bool EcmaVM::IsFrameworkPandaFile(std::string_view filename) const
@@ -624,29 +627,6 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
         }
     }
 
-    // program vector
-    for (auto iter = pandaFileWithProgram_.begin(); iter != pandaFileWithProgram_.end();) {
-        auto object = std::get<0>(*iter);
-        if (object != nullptr) {
-            auto fwd = v0(object);
-            if (fwd == nullptr) {
-                object->FreeMethodData(nativeAreaAllocator_.get());
-                auto pf = std::get<1>(*iter);
-                extractorCache_.erase(pf);
-                delete pf;
-                iter = pandaFileWithProgram_.erase(iter);
-            } else if (fwd != object) {
-                *iter = std::make_tuple(reinterpret_cast<Program *>(fwd), std::get<1>(*iter),
-                                        std::get<2>(*iter));  // 2: index
-                ++iter;
-            } else {
-                ++iter;
-            }
-        } else {
-            ++iter;
-        }
-    }
-
     // framework program
     if (!frameworkProgram_.IsHole()) {
         auto fwd = v0(frameworkProgram_.GetTaggedObject());
@@ -705,18 +685,12 @@ void EcmaVM::ClearBufferData()
     }
     arrayBufferDataList_.clear();
 
-    for (auto iter = pandaFileWithProgram_.begin(); iter != pandaFileWithProgram_.end();) {
-        std::get<0>(*iter)->FreeMethodData(nativeAreaAllocator_.get());
-        auto pf = std::get<1>(*iter);
-        // 2 : 2 means the third element.
-        if (pf == frameworkPandaFile_ || !isTestMode_ || std::get<2>(*iter)) {
-            // In testmode, panda file will free in classlinker
-            extractorCache_.erase(pf);
-            delete pf;
-        }
-        iter = pandaFileWithProgram_.erase(iter);
+    if (frameworkPandaFile_) {
+        delete frameworkPandaFile_;
+        frameworkPandaFile_ = nullptr;
     }
-    pandaFileWithProgram_.clear();
+
+    jsPandaFiles_.clear();
 }
 
 bool EcmaVM::ExecutePromisePendingJob() const
@@ -766,9 +740,9 @@ void EcmaVM::SetMicroJobQueue(job::MicroJobQueue *queue)
 
 JSHandle<JSTaggedValue> EcmaVM::GetModuleByName(JSHandle<JSTaggedValue> moduleName)
 {
-    auto currentFileTuple = pandaFileWithProgram_.back();
-    auto currentFileInfo = std::get<1>(currentFileTuple);
-    std::string currentPathFile = currentFileInfo->GetFilename();
+    // only used in testcase, pandaFileWithProgram_ only one item. this interface will delete
+    auto currentJSPandaFile = *jsPandaFiles_.begin();
+    std::string currentPathFile = currentJSPandaFile->GetJSPandaFileDesc();
     CString relativeFile = ConvertToString(EcmaString::Cast(moduleName->GetTaggedObject()));
 
     // generate full path
@@ -779,7 +753,7 @@ JSHandle<JSTaggedValue> EcmaVM::GetModuleByName(JSHandle<JSTaggedValue> moduleNa
 
     JSHandle<JSTaggedValue> module = moduleManager_->GetModule(thread_, JSHandle<JSTaggedValue>::Cast(abcModuleName));
     if (module->IsUndefined()) {
-        CString file = ConvertToString(abcModuleName.GetObject<EcmaString>());
+        std::string file = base::StringHelper::ToStdString(abcModuleName.GetObject<EcmaString>());
         std::vector<std::string> argv;
         ExecuteModule(file, ENTRY_POINTER, argv);
         module = moduleManager_->GetModule(thread_, JSHandle<JSTaggedValue>::Cast(abcModuleName));
@@ -787,7 +761,7 @@ JSHandle<JSTaggedValue> EcmaVM::GetModuleByName(JSHandle<JSTaggedValue> moduleNa
     return module;
 }
 
-void EcmaVM::ExecuteModule(std::string_view moduleFile, std::string_view entryPoint,
+void EcmaVM::ExecuteModule(const std::string &moduleFile, std::string_view entryPoint,
                            const std::vector<std::string> &args)
 {
     moduleManager_->SetCurrentExportModuleName(moduleFile);
@@ -808,5 +782,13 @@ void EcmaVM::ClearNativeMethodsData()
 void EcmaVM::SetupRegExpResultCache()
 {
     regexpCache_ = builtins::RegExpExecResultCache::CreateCacheTable(thread_);
+}
+
+void EcmaVM::RemoveJSPandaFileRecord(const JSPandaFile *jsPandaFile)
+{
+    auto iter = std::find(jsPandaFiles_.begin(), jsPandaFiles_.end(), jsPandaFile);
+    if (iter != jsPandaFiles_.end()) {
+        jsPandaFiles_.erase(iter);
+    }
 }
 }  // namespace panda::ecmascript
