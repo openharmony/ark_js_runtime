@@ -151,11 +151,14 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
         std::cerr << "Error: cannot create runtime" << std::endl;
         return false;
     }
+    // create jspandafile manager for process
+    EcmaVM::CreateJsPandaFileManager();
     return true;
 }
 
 bool JSNApi::DestroyRuntime()
 {
+    EcmaVM::DestroyJsPandaFileManager();
     return Runtime::Destroy();
 }
 
@@ -1989,5 +1992,17 @@ bool JSNApi::CheckSafepoint(const EcmaVM *vm)
 {
     ecmascript::JSThread* thread = vm->GetJSThread();
     return  thread->CheckSafepoint();
+}
+
+bool JSNApi::ExecuteBufferWithDescriptor(EcmaVM *vm, const uint8_t *data, int32_t size,
+                                         const std::string &entry, const std::string &filename)
+{
+    std::vector<std::string> argv;
+    if (!vm->ExecuteFromBuffer(data, size, entry, argv, filename)) {
+        LOG_ECMA(ERROR) << "Cannot execute ark file" << filename;
+        std::cerr << "Cannot execute ark file '" << filename << "' with entry '" << entry << "'" << std::endl;
+        return false;
+    }
+    return true;
 }
 }  // namespace panda
