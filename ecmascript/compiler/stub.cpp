@@ -18,8 +18,10 @@
 #include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_object.h"
+#include "ecmascript/message_string.h"
 #include "ecmascript/tagged_hash_table-inl.h"
 #include "libpandabase/macros.h"
+
 
 namespace panda::ecmascript::kungfu {
 Stub::Label::Label(Environment *env)
@@ -442,7 +444,7 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
             GetArchRelateConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = GetArchRelateConstant(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
-                                              ArchRelateAdd(dataoffset, capcityoffset)));
+                                              UintPtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
 
     GateRef pKey = Alloca(static_cast<int>(MachineRep::K_WORD32));
@@ -1163,11 +1165,9 @@ GateRef Stub::Store(StubMachineType type, GateRef glue, GateRef base, GateRef of
     } else {
         UNREACHABLE();
     }
-    // write barrier will implemented in IR later
     if (type == StubMachineType::TAGGED_POINTER || type == StubMachineType::TAGGED) {
         SetValueWithBarrier(glue, base, offset, value);
     }
-
     return result;
 }
 
@@ -1177,16 +1177,73 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-
     Label isHeapObject(env);
+    Label isVailedIndex(env);
+    Label notValidIndex(env);
+    Label marking(env);
+
     Branch(TaggedIsHeapObject(value), &isHeapObject, &exit);
     Bind(&isHeapObject);
     {
-        StubDescriptor *setValueWithBarrier = GET_STUBDESCRIPTOR(SetValueWithBarrier);
-        CallRuntime(setValueWithBarrier, glue, GetWord64Constant(FAST_STUB_ID(SetValueWithBarrier)), {
-                glue, obj, offset, value
-            });
-        Jump(&exit);
+        GateRef objectRegion = ObjectAddressToRange(obj);
+        GateRef valueRegion = ObjectAddressToRange(value);
+        GateRef slotAddr = UintPtrAdd(TaggedCastToUintPtr(obj), offset);
+        GateRef objectNotInYoung = BoolNot(InYoungGeneration(glue, objectRegion));
+        GateRef valueRegionInYoung = InYoungGeneration(glue, valueRegion);
+        Branch(BoolAnd(objectNotInYoung, valueRegionInYoung), &isVailedIndex, &notValidIndex);
+        Bind(&isVailedIndex);
+        {
+            GateRef offset = GetArchRelateConstant(Region::GetOldToNewSetOffset(env_.Is32Bit()));
+            auto oldToNewSet = Load(StubMachineType::NATIVE_POINTER, objectRegion, offset);
+            Label isNullPtr(env);
+            Label notNullPtr(env);
+            Branch(UintPtrEuqal(oldToNewSet, GetArchRelateConstant(0)), &isNullPtr, &notNullPtr);
+            Bind(&notNullPtr);
+            {
+                // 1. bit_offset set AddrToBitOffset(address)
+                GateRef bitOffset = AddrToBitOffset(oldToNewSet, slotAddr);
+                // bit_offset >> LOG_BITSPERWORD
+                // 2. bitmap_[GetWordIdx(bit_offset)] |= GetBitMask(bit_offset)
+                // 2.0: wordIdx GetWordIdx(bit_offset)
+                uint64_t logbitsperword = BitmapHelper::GetLogBitSperWordOffset(env_.Is32Bit());
+                GateRef wordIdx = UintPtrLSR(bitOffset, GetArchRelateConstant(logbitsperword));
+                // 2.1 bitmap_[wordIdx]
+                GateRef bitmapoffset = GetArchRelateConstant(0);
+                GateRef bitmap = UintPtrAdd(oldToNewSet, bitmapoffset);
+                GateRef bitmapdata = Load(StubMachineType::NATIVE_POINTER, bitmap, GetArchRelateConstant(0));
+                GateRef bitmapAddr = UintPtrAdd(bitmapdata,
+                    ArchRelatePtrMul(wordIdx, GetArchRelateConstant(GetUintPtrSize())));
+                // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset);
+                GateRef oldmapValue = Load(StubMachineType::NATIVE_POINTER, bitmapAddr, GetArchRelateConstant(0));
+                Store(StubMachineType::NATIVE_POINTER, glue, bitmapAddr, GetArchRelateConstant(0),
+                    UintPtrOr(oldmapValue, GetBitMask(bitOffset)));
+                Jump(&notValidIndex);
+            }
+            Bind(&isNullPtr);
+            {
+                StubDescriptor *insertOldToNewRememberedSet = GET_STUBDESCRIPTOR(InsertOldToNewRememberedSet);
+                CallRuntime(insertOldToNewRememberedSet, glue,
+                            GetArchRelateConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)), {
+                            glue, objectRegion, slotAddr
+                });
+                Jump(&notValidIndex);
+            }
+        }
+        Bind(&notValidIndex);
+        {
+            Label markLable(env);
+            GateRef offset = GetArchRelateConstant(Region::GetMarkingOffset(env_.Is32Bit()));
+            GateRef mark = Load(StubMachineType::BOOL, valueRegion, offset);
+            Branch(mark, &exit, &markLable);
+            Bind(&markLable);
+            {
+                StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
+                    CallRuntime(markingBarrier, glue, GetArchRelateConstant(FAST_STUB_ID(MarkingBarrier)), {
+                            glue, slotAddr, objectRegion, TaggedCastToUintPtr(value), valueRegion
+                    });
+            }
+            Jump(&exit);
+        }
     }
     Bind(&exit);
     env->PopCurrentLabel();
@@ -1870,7 +1927,7 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         }
         Bind(&indexLessCapacity);
         {
-            Store(StubMachineType::UINT64, glue, ArchRelateAdd(array, GetArchRelateConstant(TaggedArray::DATA_OFFSET)),
+            Store(StubMachineType::UINT64, glue, UintPtrAdd(array, GetArchRelateConstant(TaggedArray::DATA_OFFSET)),
                 ArchRelatePtrMul(ChangeInt32ToUintPtr(index), GetArchRelateConstant(JSTaggedValue::TaggedTypeSize())),
                 value);
             Jump(&exit);

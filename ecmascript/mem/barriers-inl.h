@@ -31,7 +31,7 @@ static inline void MarkingBarrier(uintptr_t slotAddr, Region *objectRegion, Tagg
         if (isOnlySemi && !valueRegion->InYoungGeneration()) {
             return;
         }
-        auto valueBitmap = valueRegion->GetOrCreateMarkBitmap();
+        auto valueBitmap = valueRegion->GetMarkBitmap();
         if (!RuntimeApi::AtomicTestAndSet(valueBitmap, value)) {
             RuntimeApi::PushWorkList(heap->GetWorkList(), 0, value, valueRegion);
         }

@@ -121,7 +121,8 @@ void ConcurrentSweeper::SweepHugeSpace()
 
     while (currentRegion != nullptr) {
         Region *next = currentRegion->GetNext();
-        auto markBitmap = currentRegion->GetOrCreateMarkBitmap();
+        auto markBitmap = currentRegion->GetMarkBitmap();
+        ASSERT(markBitmap != nullptr);
         bool isMarked = false;
         markBitmap->IterateOverMarkedChunks([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
         if (!isMarked) {
@@ -133,7 +134,7 @@ void ConcurrentSweeper::SweepHugeSpace()
 
 void ConcurrentSweeper::FreeRegion(Region *current, FreeListAllocator &allocator, bool isMain)
 {
-    auto markBitmap = current->GetOrCreateMarkBitmap();
+    auto markBitmap = current->GetMarkBitmap();
     ASSERT(markBitmap != nullptr);
     uintptr_t freeStart = current->GetBegin();
     markBitmap->IterateOverMarkedChunks([this, &current, &freeStart, &allocator, isMain](void *mem) {

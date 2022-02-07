@@ -17,6 +17,7 @@
 #define ECMASCRIPT_COMPILER_STUB_INL_H
 
 #include "ecmascript/compiler/stub.h"
+#include "mem/region_space.h"
 
 namespace panda::ecmascript::kungfu {
 using LabelImpl = Stub::Label::LabelImpl;
@@ -154,11 +155,13 @@ GateRef Stub::GetWord64Constant(uint64_t value)
 
 GateRef Stub::GetArchRelateConstant(uint64_t value)
 {
-    if (env_.IsArm32()) {
-        return GetInt32Constant(value);
-    }
-    return GetWord64Constant(value);
+    return env_.Is32Bit() ? GetInt32Constant(value) : GetWord64Constant(value);
 };
+
+uint64_t Stub::GetUintPtrSize()
+{
+    return env_.Is32Bit() ? sizeof(uint32_t) : sizeof(uint64_t);
+}
 
 GateRef Stub::TrueConstant()
 {
@@ -202,7 +205,7 @@ GateRef Stub::GetExceptionConstant(StubMachineType type)
 
 GateRef Stub::ArchRelatePtrMul(GateRef x, GateRef y)
 {
-    if (env_.IsArm32()) {
+    if (env_.Is32Bit()) {
         return Int32Mul(x, y);
     } else {
         return Int64Mul(x, y);
@@ -400,17 +403,22 @@ GateRef Stub::DoubleAdd(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), MachineType::FLOAT64, x, y);
 }
 
-GateRef Stub::ArchRelateAdd(GateRef x, GateRef y)
+GateRef Stub::UintPtrAdd(GateRef x, GateRef y)
 {
-    if (env_.IsArm32()) {
+    if (env_.Is32Bit()) {
         return Int32Add(x, y);
     }
     return Int64Add(x, y);
 }
 
-GateRef Stub::ArchRelateSub(GateRef x, GateRef y)
+GateRef Stub::UintPtrAnd(GateRef x, GateRef y)
 {
-    if (env_.IsArm32()) {
+    return env_.Is32Bit() ? Word32And(x, y) : Word64And(x, y);
+}
+
+GateRef Stub::UintPtrSub(GateRef x, GateRef y)
+{
+    if (env_.Is32Bit()) {
         return Int32Sub(x, y);
     }
     return Int64Sub(x, y);
@@ -418,12 +426,12 @@ GateRef Stub::ArchRelateSub(GateRef x, GateRef y)
 
 GateRef Stub::PtrAdd(GateRef x, GateRef y)
 {
-    return ArchRelateAdd(x, y);
+    return UintPtrAdd(x, y);
 }
 
 GateRef Stub::PtrSub(GateRef x, GateRef y)
 {
-    return ArchRelateSub(x, y);
+    return UintPtrSub(x, y);
 }
 
 GateRef Stub::Int32Sub(GateRef x, GateRef y)
@@ -460,9 +468,20 @@ GateRef Stub::DoubleDiv(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::FDIV), MachineType::FLOAT64, x, y);
 }
+
 GateRef Stub::Int32Div(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SDIV), MachineType::INT32, x, y);
+}
+
+GateRef Stub::Int64Div(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SDIV), MachineType::INT64, x, y);
+}
+
+GateRef Stub::UintPtrDiv(GateRef x, GateRef y)
+{
+    return env_.Is32Bit() ? Int32Div(x, y) : Int64Div(x, y);
 }
 
 GateRef Stub::Word32Div(GateRef x, GateRef y)
@@ -491,14 +510,30 @@ GateRef Stub::Word32And(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::INT32, x, y);
 }
 
+GateRef Stub::BoolAnd(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::INT1, x, y);
+}
+
 GateRef Stub::Word32Not(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::REV), MachineType::INT32, x);
 }
 
+GateRef Stub::BoolNot(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::REV), MachineType::INT1, x);
+}
+
 GateRef Stub::Word64Or(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), MachineType::INT64, x, y);
+}
+
+GateRef Stub::UintPtrOr(GateRef x, GateRef y)
+{
+    auto ptrsize = env_.Is32Bit() ? MachineType::INT32 : MachineType::INT64;
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), ptrsize, x, y);
 }
 
 GateRef Stub::Word64And(GateRef x, GateRef y)
@@ -509,6 +544,11 @@ GateRef Stub::Word64And(GateRef x, GateRef y)
 GateRef Stub::Word64Xor(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::XOR), MachineType::INT64, x, y);
+}
+
+GateRef Stub::Word32Xor(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::XOR), MachineType::INT32, x, y);
 }
 
 GateRef Stub::Word64Not(GateRef x)
@@ -526,6 +566,12 @@ GateRef Stub::Word64LSL(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::INT64, x, y);
 }
 
+GateRef Stub::UintPtrLSL(GateRef x, GateRef y)
+{
+    auto ptrSize = env_.Is32Bit() ? MachineType::INT32 : MachineType::INT64;
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), ptrSize, x, y);
+}
+
 GateRef Stub::Word32LSR(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), MachineType::INT32, x, y);
@@ -535,6 +581,13 @@ GateRef Stub::Word64LSR(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), MachineType::INT64, x, y);
 }
+
+GateRef Stub::UintPtrLSR(GateRef x, GateRef y)
+{
+    auto ptrSize = env_.Is32Bit() ? MachineType::INT32 : MachineType::INT64;
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), ptrSize, x, y);
+}
+
 
 GateRef Stub::TaggedIsInt(GateRef x)
 {
@@ -882,7 +935,7 @@ void Stub::StoreHClass(GateRef glue, GateRef object, GateRef hclass)
 GateRef Stub::GetObjectType(GateRef hClass)
 {
     GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
-    if (env_.IsArm32()) {
+    if (env_.Is32Bit()) {
         GateRef bitfield1 = Load(StubMachineType::NATIVE_POINTER, hClass, ZExtInt32ToInt64(bitfieldOffset));
         return Word32And(bitfield1,
             ChangeInt64ToInt32(GetWord64Constant((1LLU << JSHClass::ObjectTypeBits::SIZE) - 1)));
@@ -1489,6 +1542,11 @@ GateRef Stub::TaggedCastToInt32(GateRef x)
     return ChangeInt64ToInt32(TaggedCastToInt64(x));
 }
 
+GateRef Stub::TaggedCastToUintPtr(GateRef x)
+{
+    return env_.Is32Bit() ? ChangeInt64ToInt32(TaggedCastToInt64(x)) : TaggedCastToInt64(x);
+}
+
 GateRef Stub::TaggedCastToDouble(GateRef x)
 {
     GateRef tagged = ChangeTaggedPointerToInt64(x);
@@ -1583,7 +1641,7 @@ GateRef Stub::GetGlobalConstantAddr(GateRef index)
 
 GateRef Stub::GetGlobalConstantString(ConstantIndex index)
 {
-    if (env_.IsArm32()) {
+    if (env_.Is32Bit()) {
         return Int32Mul(GetInt32Constant(sizeof(JSTaggedValue)), GetInt32Constant(static_cast<int>(index)));
     } else {
         return Int64Mul(GetWord64Constant(sizeof(JSTaggedValue)), GetWord64Constant(static_cast<int>(index)));
@@ -1596,7 +1654,7 @@ GateRef Stub::IsCallable(GateRef obj)
     GateRef bitfieldOffset = GetArchRelateConstant(JSHClass::BIT_FIELD_OFFSET);
 
     // decode
-    if (env_.IsArm32()) {
+    if (env_.Is32Bit()) {
         GateRef bitfield = Load(StubMachineType::NATIVE_POINTER, hclass, ZExtInt32ToInt64(bitfieldOffset));
         return Word32NotEqual(
             Word32And(Word32LSR(bitfield, GetInt32Constant(JSHClass::CallableBit::START_BIT)),
@@ -1658,6 +1716,53 @@ void Stub::UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, Gate
         Int32Mul(index, GetInt32Constant(NameDictionary::ENTRY_SIZE)));
     GateRef valueIndex = Int32Add(arrayIndex, GetInt32Constant(NameDictionary::ENTRY_VALUE_INDEX));
     SetValueToTaggedArray(StubMachineType::TAGGED, glue, elements, valueIndex, value);
+}
+GateRef Stub::UintPtrEuqal(GateRef x, GateRef y)
+{
+    return env_.Is32Bit() ? Word32Equal(x, y) : Word64Equal(x, y);
+}
+
+GateRef Stub::AddrToBitOffset(GateRef memberset, GateRef addr)
+{
+    //  (addr - begin_addr_) / BYTESPERCHUNK
+    auto beginAddrOffset = RememberedSet::GetBeginAddrOffset();
+    auto beginAddr = Load(StubMachineType::NATIVE_POINTER, memberset, GetArchRelateConstant(beginAddrOffset));
+    return UintPtrDiv(UintPtrSub(addr, beginAddr), GetArchRelateConstant(RememberedSet::BYTESPERCHUNK));
+}
+
+GateRef Stub::GetBitMask(GateRef bitoffset)
+{
+    auto bitIndexMask = UintPtrLSL(GetArchRelateConstant(1), GetArchRelateConstant(mem::Bitmap::LOG_BITSPERWORD));
+    bitIndexMask = UintPtrSub(bitIndexMask, GetArchRelateConstant(1));
+    // bit_offset & BIT_INDEX_MASK
+    auto mask = UintPtrAnd(bitoffset, bitIndexMask);
+    // 1UL << GetBitIdxWithinWord(bit_offset)
+    mask = UintPtrLSL(GetArchRelateConstant(1), mask);
+    return mask;
+}
+
+GateRef Stub::ObjectAddressToRange(GateRef x)
+{
+    if (env_.Is32Bit()) {
+        return UintPtrAnd(TaggedCastToInt32(x),
+            Word32Xor(GetArchRelateConstant(panda::mem::DEFAULT_REGION_MASK), GetArchRelateConstant(-1)));
+    }
+    return UintPtrAnd(TaggedCastToInt64(x),
+        Word64Xor(GetArchRelateConstant(panda::mem::DEFAULT_REGION_MASK), GetArchRelateConstant(-1)));
+}
+
+GateRef Stub::InYoungGeneration(GateRef glue, GateRef region)
+{
+    auto offset = env_.Is32Bit() ? Region::REGION_FLAG_OFFSET_32 : Region::REGION_FLAG_OFFSET_64;
+    GateRef x = Load(StubMachineType::NATIVE_POINTER, UintPtrAdd(GetArchRelateConstant(offset), region),
+        GetArchRelateConstant(0));
+    if (env_.Is32Bit()) {
+        return Word32NotEqual(Word32And(x,
+            GetInt32Constant(RegionFlags::IS_IN_YOUNG_GENERATION)), GetArchRelateConstant(0));
+    } else {
+        return Word64NotEqual(Word64And(x,
+            GetWord64Constant(RegionFlags::IS_IN_YOUNG_GENERATION)), GetArchRelateConstant(0));
+    }
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H

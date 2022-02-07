@@ -77,6 +77,11 @@ public:
         return (range_size >> mem::Bitmap::LOG_BITSPERWORD) / BYTESPERCHUNK * sizeof(mem::Bitmap::BitmapWordType);
     }
 
+    static constexpr uint32_t GetBeginAddrOffset()
+    {
+        return MEMBER_OFFSET(RememberedSet, begin_addr_);
+    }
+
 private:
     void *BitOffsetToAddr(size_t bit_offset) const
     {
