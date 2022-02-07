@@ -24,6 +24,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_runtime_options.h"
 #include "ecmascript/napi/include/jsnapi.h"
+#include "generated/base_options.h"
 #include "include/runtime.h"
 #include "libpandabase/os/native_stack.h"
 #include "libpandabase/utils/pandargs.h"
@@ -60,6 +61,7 @@ int Main(const int argc, const char **argv)
     BlockSignals();
     Span<const char *> sp(argv, argc);
     JSRuntimeOptions runtimeOptions(sp[0]);
+    base_options::Options baseOptions(sp[0]);
 
     panda::PandArg<bool> help("help", false, "Print this message and exit");
     panda::PandArg<bool> options("options", false, "Print compiler and runtime options");
@@ -70,6 +72,7 @@ int Main(const int argc, const char **argv)
     panda::PandArgParser paParser;
 
     runtimeOptions.AddOptions(&paParser);
+    baseOptions.AddOptions(&paParser);
 
     paParser.Add(&help);
     paParser.Add(&options);
@@ -88,6 +91,8 @@ int Main(const int argc, const char **argv)
         std::cerr << paParser.GetHelpString() << std::endl;
         return 1;
     }
+
+    Logger::Initialize(baseOptions);
 
     arg_list_t arguments = paParser.GetRemainder();
 
