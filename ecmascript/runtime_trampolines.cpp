@@ -208,17 +208,6 @@ JSTaggedType RuntimeTrampolines::Execute(uintptr_t argGlue, JSTaggedType argFunc
     return EcmaInterpreter::Execute(thread, params).GetRawData();
 }
 
-void RuntimeTrampolines::SetValueWithBarrier([[maybe_unused]] uintptr_t argGlue, JSTaggedType argAddr,
-                                             size_t argOffset, JSTaggedType argValue)
-{
-    auto addr = reinterpret_cast<void *>(argAddr);
-    auto offset = static_cast<size_t>(argOffset);
-    auto value = static_cast<JSTaggedValue>(argValue);
-    if (value.IsHeapObject()) {
-        WriteBarrier(addr, offset, value.GetRawData());
-    }
-}
-
 double RuntimeTrampolines::FloatMod(double left, double right)
 {
     return std::fmod(left, right);
@@ -380,5 +369,20 @@ void RuntimeTrampolines::JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue 
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSArrayList> arrayList(thread, obj);
     arrayList->Set(thread, index, value);
+}
+
+void RuntimeTrampolines::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)
+{
+    return region->InsertOldToNewRememberedSet(addr);
+}
+
+void RuntimeTrampolines::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
+    Region *objectRegion, TaggedObject *value,
+    Region *valueRegion)
+{
+    if (!valueRegion->IsMarking()) {
+        return;
+    }
+    ::panda::ecmascript::MarkingBarrier(slotAddr, objectRegion, value, valueRegion);
 }
 }  // namespace panda::ecmascript

@@ -515,23 +515,6 @@ CALL_STUB_INIT_DESCRIPTOR(StringGetHashCode)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(SetValueWithBarrier)
-{
-    // 4 : 4 input parameters
-    static StubDescriptor SetValueWithBarrier("SetValueWithBarrier", 0, 4,
-        ArgumentsOrder::DEFAULT_ORDER, StubMachineType::NONE);
-    *descriptor = SetValueWithBarrier;
-    // 4 : 4 input parameters
-    std::array<StubMachineType, 4> params = {
-        StubMachineType::NATIVE_POINTER,
-        StubMachineType::TAGGED_POINTER,
-        StubMachineType::NATIVE_POINTER,
-        StubMachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
-}
-
 CALL_STUB_INIT_DESCRIPTOR(NewInternalString)
 {
     // 2 : 2 input parameters
@@ -736,6 +719,38 @@ CALL_STUB_INIT_DESCRIPTOR(JSArrayListSetByIndex)
         StubMachineType::TAGGED_POINTER,
         StubMachineType::INT32,
         StubMachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(InsertOldToNewRememberedSet)
+{
+    // 3 : 3 input parameters
+    StubDescriptor index("InsertOldToNewRememberedSet", 0, 3, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::NONE);
+    *descriptor = index;
+    // 3 : 3 input parameters
+    std::array<StubMachineType, 3> params = {
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::NATIVE_POINTER,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(MarkingBarrier)
+{
+    // 5 : 5 input parameters
+    StubDescriptor index("MarkingBarrier", 0, 5, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::NONE);
+    *descriptor = index;
+    // 5 : 5 input parameters
+    std::array<StubMachineType, 5> params = {
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::NATIVE_POINTER,
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);

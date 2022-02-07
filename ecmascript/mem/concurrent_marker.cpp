@@ -116,11 +116,8 @@ void ConcurrentMarker::InitializeMarking()
     heap_->EnumerateRegions([](Region *region) {
         // ensure mark bitmap
         auto markBitmap = region->GetMarkBitmap();
-        if (markBitmap == nullptr) {
-            region->GetOrCreateMarkBitmap();
-        } else {
-            markBitmap->ClearAllBits();
-        }
+        ASSERT(markBitmap != nullptr);
+        markBitmap->ClearAllBits();
         auto rememberset = region->GetCrossRegionRememberedSet();
         if (rememberset != nullptr) {
             rememberset->ClearAllBits();
