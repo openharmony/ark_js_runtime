@@ -44,9 +44,9 @@ namespace panda::ecmascript::kungfu {
     T(HandleDebuggerPref, 7)                                \
     T(HandleAdd2DynPrefV8, 7)                               \
     T(HandleSub2DynPrefV8, 7)                               \
-    V(HandleMul2DynPrefV8, 7)                               \
-    V(HandleDiv2DynPrefV8, 7)                               \
-    V(HandleMod2DynPrefV8, 7)                               \
+    T(HandleMul2DynPrefV8, 7)                               \
+    T(HandleDiv2DynPrefV8, 7)                               \
+    T(HandleMod2DynPrefV8, 7)                               \
     T(HandleEqDynPrefV8, 7)                                 \
     T(HandleNotEqDynPrefV8, 7)                              \
     T(HandleLessDynPrefV8, 7)                               \

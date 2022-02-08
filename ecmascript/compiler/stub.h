@@ -781,6 +781,9 @@ public:
 
     // fast path
     GateRef FastEqual(GateRef left, GateRef right);
+    GateRef FastMul(GateRef left, GateRef right);
+    GateRef FastDiv(GateRef left, GateRef right);
+    GateRef FastMod(GateRef glue, GateRef left, GateRef right);
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);

@@ -3073,6 +3073,321 @@ GateRef Stub::FastEqual(GateRef left, GateRef right)
     env->PopCurrentLabel();
     return ret;
 }
+
+GateRef Stub::FastMul(GateRef left, GateRef right)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Label leftIsNumberAndRightIsNumber(env);
+    Label leftIsDoubleAndRightIsDouble(env);
+    Label exit(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftNotInt(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftNotInt);
+            Bind(&leftIsInt);
+            {
+                doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                Jump(&leftIsNumberAndRightIsNumber);
+            }
+            Bind(&leftNotInt);
+            {
+                doubleLeft = TaggedCastToDouble(left);
+                Jump(&leftIsNumberAndRightIsNumber);
+            }
+        }
+    }
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+        Jump(&exit);
+    }
+    Bind(&leftIsNumberAndRightIsNumber);
+    {
+        Label rightIsInt(env);
+        Label rightNotInt(env);
+        Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
+        Bind(&rightIsInt);
+        {
+            doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+            Jump(&leftIsDoubleAndRightIsDouble);
+        }
+        Bind(&rightNotInt);
+        {
+            doubleRight = TaggedCastToDouble(right);
+            Jump(&leftIsDoubleAndRightIsDouble);
+        }
+    }
+    Bind(&leftIsDoubleAndRightIsDouble);
+    {
+        result = DoubleBuildTaggedWithNoGC(DoubleMul(*doubleLeft, *doubleRight));
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::FastDiv(GateRef left, GateRef right)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+    Label leftIsNumber(env);
+    Label leftNotNumberOrRightNotNumber(env);
+    Label leftIsNumberAndRightIsNumber(env);
+    Label leftIsDoubleAndRightIsDouble(env);
+    Label exit(env);
+    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Bind(&leftIsNumber);
+    {
+        Label rightIsNumber(env);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftNotInt(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftNotInt);
+            Bind(&leftIsInt);
+            {
+                doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                Jump(&leftIsNumberAndRightIsNumber);
+            }
+            Bind(&leftNotInt);
+            {
+                doubleLeft = TaggedCastToDouble(left);
+                Jump(&leftIsNumberAndRightIsNumber);
+            }
+        }
+    }
+    Bind(&leftNotNumberOrRightNotNumber);
+    {
+        Jump(&exit);
+    }
+    Bind(&leftIsNumberAndRightIsNumber);
+    {
+        Label rightIsInt(env);
+        Label rightNotInt(env);
+        Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
+        Bind(&rightIsInt);
+        {
+            doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+            Jump(&leftIsDoubleAndRightIsDouble);
+        }
+        Bind(&rightNotInt);
+        {
+            doubleRight = TaggedCastToDouble(right);
+            Jump(&leftIsDoubleAndRightIsDouble);
+        }
+    }
+    Bind(&leftIsDoubleAndRightIsDouble);
+    {
+        Label rightIsZero(env);
+        Label rightNotZero(env);
+        Branch(DoubleEqual(*doubleRight, GetDoubleConstant(0.0)), &rightIsZero, &rightNotZero);
+        Bind(&rightIsZero);
+        {
+            Label leftIsZero(env);
+            Label leftNotZero(env);
+            Label leftIsZeroOrNan(env);
+            Label leftNotZeroAndNotNan(env);
+            Branch(DoubleEqual(*doubleLeft, GetDoubleConstant(0.0)), &leftIsZero, &leftNotZero);
+            Bind(&leftIsZero);
+            {
+                Jump(&leftIsZeroOrNan);
+            }
+            Bind(&leftNotZero);
+            {
+                Label leftIsNan(env);
+                Branch(DoubleIsNAN(*doubleLeft), &leftIsNan, &leftNotZeroAndNotNan);
+                Bind(&leftIsNan);
+                {
+                    Jump(&leftIsZeroOrNan);
+                }
+            }
+            Bind(&leftIsZeroOrNan);
+            {
+                result = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
+                Jump(&exit);
+            }
+            Bind(&leftNotZeroAndNotNan);
+            {
+                GateRef intLeftTmp = CastDoubleToInt64(*doubleLeft);
+                GateRef intRightTmp = CastDoubleToInt64(*doubleRight);
+                GateRef flagBit = Word64And(Word64Xor(intLeftTmp, intRightTmp), GetWord64Constant(base::DOUBLE_SIGN_MASK));
+                GateRef tmpResult = Word64Xor(flagBit, CastDoubleToInt64(GetDoubleConstant(base::POSITIVE_INFINITY)));
+                result = DoubleBuildTaggedWithNoGC(CastInt64ToFloat64(tmpResult));
+                Jump(&exit);
+            }
+        }
+        Bind(&rightNotZero);
+        {
+            result = DoubleBuildTaggedWithNoGC(DoubleDiv(*doubleLeft, *doubleRight));
+            Jump(&exit);
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(intLeft, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(intRight, MachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(doubleLeft, MachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, MachineType::FLOAT64, GetDoubleConstant(0));
+    Label leftIsInt(env);
+    Label leftNotIntOrRightNotInt(env);
+    Label exit(env);
+    Branch(TaggedIsInt(left), &leftIsInt, &leftNotIntOrRightNotInt);
+    Bind(&leftIsInt);
+    {
+        Label rightIsInt(env);
+        Branch(TaggedIsInt(right), &rightIsInt, &leftNotIntOrRightNotInt);
+        Bind(&rightIsInt);
+        {
+            intLeft = TaggedCastToInt32(left);
+            intRight = TaggedCastToInt32(right);
+            Label leftGreaterZero(env);
+            Branch(Int32GreaterThan(*intLeft, GetInt32Constant(0)), &leftGreaterZero, &leftNotIntOrRightNotInt);
+            Bind(&leftGreaterZero);
+            {
+                Label rightGreaterZero(env);
+                Branch(Int32GreaterThan(*intRight, GetInt32Constant(0)), &rightGreaterZero, &leftNotIntOrRightNotInt);
+                Bind(&rightGreaterZero);
+                {
+                    result = IntBuildTaggedWithNoGC(Int32Mod(*intLeft, *intRight));
+                    Jump(&exit);
+                }
+            }
+        }
+    }
+    Bind(&leftNotIntOrRightNotInt);
+    {
+        Label leftIsNumber(env);
+        Label leftNotNumberOrRightNotNumber(env);
+        Label leftIsNumberAndRightIsNumber(env);
+        Label leftIsDoubleAndRightIsDouble(env);
+        Branch(TaggedIsNumber(left), &leftIsNumber ,&leftNotNumberOrRightNotNumber);
+        Bind(&leftIsNumber);
+        {
+            Label rightIsNumber(env);
+            Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+            Bind(&rightIsNumber);
+            {
+                Label leftIsInt1(env);
+                Label leftNotInt1(env);
+                Branch(TaggedIsInt(left), &leftIsInt1, &leftNotInt1);
+                Bind(&leftIsInt1);
+                {
+                    doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                    Jump(&leftIsNumberAndRightIsNumber);
+                }
+                Bind(&leftNotInt1);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    Jump(&leftIsNumberAndRightIsNumber);
+                }
+            }
+        }
+        Bind(&leftNotNumberOrRightNotNumber);
+        {
+            Jump(&exit);
+        }
+        Bind(&leftIsNumberAndRightIsNumber);
+        {
+            Label rightIsInt1(env);
+            Label rightNotInt1(env);
+            Branch(TaggedIsInt(right), &rightIsInt1, &rightNotInt1);
+            Bind(&rightIsInt1);
+            {
+                doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                Jump(&leftIsDoubleAndRightIsDouble);
+            }
+            Bind(&rightNotInt1);
+            {
+                doubleRight = TaggedCastToDouble(right);
+                Jump(&leftIsDoubleAndRightIsDouble);
+            }
+        }
+        Bind(&leftIsDoubleAndRightIsDouble);
+        {
+            Label rightNotZero(env);
+            Label rightIsZeroOrNanOrLeftIsNanOrInf(env);
+            Label rightNotZeroAndNanAndLeftNotNanAndInf(env);
+            Branch(DoubleEqual(*doubleRight, GetDoubleConstant(0.0)), &rightIsZeroOrNanOrLeftIsNanOrInf, &rightNotZero);
+            Bind(&rightNotZero);
+            {
+                Label rightNotNan(env);
+                Branch(DoubleIsNAN(*doubleRight), &rightIsZeroOrNanOrLeftIsNanOrInf, &rightNotNan);
+                Bind(&rightNotNan);
+                {
+                    Label leftNotNan(env);
+                    Branch(DoubleIsNAN(*doubleLeft), &rightIsZeroOrNanOrLeftIsNanOrInf, &leftNotNan);
+                    Bind(&leftNotNan);
+                    {
+                        Branch(DoubleIsINF(*doubleLeft), &rightIsZeroOrNanOrLeftIsNanOrInf, &rightNotZeroAndNanAndLeftNotNanAndInf);
+                    }
+                }
+            }
+            Bind(&rightIsZeroOrNanOrLeftIsNanOrInf);
+            {
+                result = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
+                Jump(&exit);
+            }
+            Bind(&rightNotZeroAndNanAndLeftNotNanAndInf);
+            {
+                Label leftNotZero(env);
+                Label leftIsZeroOrRightIsInf(env);
+                Branch(DoubleEqual(*doubleLeft, GetDoubleConstant(0.0)), &leftIsZeroOrRightIsInf, &leftNotZero);
+                Bind(&leftNotZero);
+                {
+                    Label rightNotInf(env);
+                    Branch(DoubleIsINF(*doubleRight), &leftIsZeroOrRightIsInf, &rightNotInf);
+                    Bind(&rightNotInf);
+                    {
+                        StubDescriptor *floatMod = GET_STUBDESCRIPTOR(FloatMod);
+                        doubleLeft = CallRuntime(floatMod, glue, GetWord64Constant(FAST_STUB_ID(FloatMod)),
+                                                 {*doubleLeft, *doubleRight});
+                        result = DoubleBuildTaggedWithNoGC(*doubleLeft);
+                        Jump(&exit);
+                    }
+                }
+                Bind(&leftIsZeroOrRightIsInf);
+                {
+                    result = DoubleBuildTaggedWithNoGC(*doubleLeft);
+                    Jump(&exit);
+                }
+            }
+        }
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
 GateRef Stub::GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key)
 {
     auto env = GetEnvironment();

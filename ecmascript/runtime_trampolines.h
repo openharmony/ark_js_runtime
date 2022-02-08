@@ -174,6 +174,9 @@ public:
     static JSTaggedType Add2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType Sub2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static void JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value);
+    static JSTaggedType Mul2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType Div2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
+    static JSTaggedType Mod2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
 };
 }  // namespace panda::ecmascript
 #endif
