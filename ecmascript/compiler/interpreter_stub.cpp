@@ -369,6 +369,126 @@ DECLARE_ASM_HANDLER(HandleDebuggerPref)
     DISPATCH(PREF_NONE);
 }
 
+DECLARE_ASM_HANDLER(HandleMul2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    // fast path
+    result = FastMul(left, acc);
+    Label isHole(env);
+    Label notHole(env);
+    Label dispatch(env);
+    Branch(TaggedIsHole(*result), &isHole, &notHole);
+    Bind(&isHole);
+    {
+        // slow path
+        StubDescriptor *mul2Dyn = GET_STUBDESCRIPTOR(Mul2Dyn);
+        result = CallRuntime(mul2Dyn, glue, GetWord64Constant(FAST_STUB_ID(Mul2Dyn)),
+                             {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = *result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&notHole);
+    {
+        varAcc = *result;
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    // fast path
+    result = FastDiv(left, acc);
+    Label isHole(env);
+    Label notHole(env);
+    Label dispatch(env);
+    Branch(TaggedIsHole(*result), &isHole, &notHole);
+    Bind(&isHole);
+    {
+        // slow path
+        StubDescriptor *div2Dyn = GET_STUBDESCRIPTOR(Div2Dyn);
+        result = CallRuntime(div2Dyn, glue, GetWord64Constant(FAST_STUB_ID(Div2Dyn)),
+                             {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = *result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&notHole);
+    {
+        varAcc = *result;
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleMod2DynPrefV8)
+{
+    auto env = GetEnvironment();
+    DEFVARIABLE(varAcc, MachineType::TAGGED, acc);
+    GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    DEFVARIABLE(result, MachineType::TAGGED, GetHoleConstant());
+    // fast path
+    result = FastMod(glue, left, acc);
+    Label isHole(env);
+    Label notHole(env);
+    Label dispatch(env);
+    Branch(TaggedIsHole(*result), &isHole, &notHole);
+    Bind(&isHole);
+    {
+        // slow path
+        StubDescriptor *mod2Dyn = GET_STUBDESCRIPTOR(Mod2Dyn);
+        result = CallRuntime(mod2Dyn, glue, GetWord64Constant(FAST_STUB_ID(Mod2Dyn)),
+                             {glue, left, acc});
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            varAcc = *result;
+            Jump(&dispatch);
+        }
+    }
+    Bind(&notHole);
+    {
+        varAcc = *result;
+        Jump(&dispatch);
+    }
+    Bind(&dispatch);
+    DISPATCH_WITH_ACC(PREF_V8);
+}
+
 DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
 {
     auto env = GetEnvironment();
@@ -2335,7 +2455,7 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
         Bind(&valueIsZero);
         {
             // Format::PREF_V8： size = 3
-            varAcc = IntBuildTaggedWithNoGC(GetInt32Constant(0));
+            varAcc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(-0.0));
             Jump(&accDispatch);
         }
         Bind(&valueNotZero);

@@ -1109,11 +1109,30 @@ JSTaggedType RuntimeTrampolines::Sub2Dyn(uintptr_t argGlue, JSTaggedType left, J
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::Sub2Dyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
 }
+
 void RuntimeTrampolines::JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSArrayList> arrayList(thread, obj);
     arrayList->Set(thread, index, value);
+}
+
+JSTaggedType RuntimeTrampolines::Mul2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::Mul2Dyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::Div2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::Div2Dyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
+}
+
+JSTaggedType RuntimeTrampolines::Mod2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::Mod2Dyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
 }
 }  // namespace panda::ecmascript
