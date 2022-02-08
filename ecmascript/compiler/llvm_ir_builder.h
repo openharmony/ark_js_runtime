@@ -180,6 +180,7 @@ private:
     V(Mul, (GateRef gate, GateRef e1, GateRef e2))                                    \
     V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2))                               \
     V(IntDiv, (GateRef gate, GateRef e1, GateRef e2))                                 \
+    V(UDiv, (GateRef gate, GateRef e1, GateRef e2))                                   \
     V(IntOr, (GateRef gate, GateRef e1, GateRef e2))                                  \
     V(IntAnd, (GateRef gate, GateRef e1, GateRef e2))                                 \
     V(IntXor, (GateRef gate, GateRef e1, GateRef e2))                                 \
@@ -236,7 +237,7 @@ private:
     void AssignHandleMap();
     std::string LLVMValueToString(LLVMValueRef val) const;
 
-    LLVMTypeRef GetArchRelate() const
+    LLVMTypeRef GetIntPtr() const
     {
         if (compCfg_->Is32Bit()) {
             return LLVMInt32Type();
