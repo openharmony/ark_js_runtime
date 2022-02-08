@@ -28,21 +28,13 @@
 #include "scheduler.h"
 #include "stub-inl.h"
 #include "verifier.h"
+#include "pass.h"
 
 namespace panda::ecmascript::kungfu {
-class PassPayLoad {
+class StubPassData : public PassData {
 public:
-    explicit PassPayLoad(Stub *stub, LLVMStubModule *module) : module_(module), stub_(stub) {}
-    ~PassPayLoad() = default;
-    const ControlFlowGraph &GetScheduleResult() const
-    {
-        return cfg_;
-    }
-
-    void SetScheduleResult(const ControlFlowGraph &result)
-    {
-        cfg_ = result;
-    }
+    explicit StubPassData(Stub *stub, LLVMStubModule *module) : PassData(nullptr), module_(module), stub_(stub) {}
+    ~StubPassData() = default;
 
     const CompilationConfig *GetCompilationConfig() const
     {
@@ -67,27 +59,11 @@ public:
 private:
     LLVMStubModule *module_;
     Stub *stub_;
-    ControlFlowGraph cfg_;
 };
 
-class PassRunner {
+class StubBuildCircuitPass {
 public:
-    explicit PassRunner(PassPayLoad *data) : data_(data) {}
-    ~PassRunner() = default;
-    template<typename T, typename... Args>
-    bool RunPass(Args... args)
-    {
-        T pass;
-        return pass.Run(data_, std::forward<Args>(args)...);
-    }
-
-private:
-    PassPayLoad *data_;
-};
-
-class BuildCircuitPass {
-public:
-    bool Run(PassPayLoad *data)
+    bool Run(StubPassData *data)
     {
         auto stub = data->GetStub();
         std::cout << "Stub Name: " << stub->GetMethodName() << std::endl;
@@ -96,31 +72,13 @@ public:
     }
 };
 
-class VerifierPass {
-public:
-    bool Run(PassPayLoad *data)
-    {
-        Verifier::Run(data->GetCircuit());
-        return true;
-    }
-};
-
-class SchedulerPass {
-public:
-    bool Run(PassPayLoad *data)
-    {
-        data->SetScheduleResult(Scheduler::Run(data->GetCircuit()));
-        return true;
-    }
-};
-
-class LLVMIRGenPass {
+class StubLLVMIRGenPass {
 public:
     void CreateCodeGen(LLVMStubModule *module)
     {
         llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module);
     }
-    bool Run(PassPayLoad *data, int index)
+    bool Run(StubPassData *data, int index)
     {
         auto stubModule = data->GetStubModule();
         CreateCodeGen(stubModule);
@@ -141,12 +99,12 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
     for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
         auto stub = stubs_[i];
         if (stub != nullptr) {
-            PassPayLoad data(stub, &stubModule);
-            PassRunner pipeline(&data);
-            pipeline.RunPass<BuildCircuitPass>();
+            StubPassData data(stub, &stubModule);
+            PassRunner<StubPassData> pipeline(&data);
+            pipeline.RunPass<StubBuildCircuitPass>();
             pipeline.RunPass<VerifierPass>();
-            pipeline.RunPass<SchedulerPass>();
-            pipeline.RunPass<LLVMIRGenPass>(i);
+            pipeline.RunPass<SchedulingPass>();
+            pipeline.RunPass<StubLLVMIRGenPass>(i);
         }
     }
 
