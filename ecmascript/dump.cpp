@@ -34,6 +34,7 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
@@ -41,7 +42,6 @@
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_function.h"
-#include "ecmascript/js_function_extra_info.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_global_object.h"
 #include "ecmascript/js_handle.h"
@@ -244,16 +244,14 @@ CString JSHClass::DumpJSType(JSType type)
             return "PrototypeInfo";
         case JSType::PROGRAM:
             return "program";
-        case JSType::LEXICAL_FUNCTION:
-            return "LexicalFunction";
-        case JSType::FUNCTION_EXTRA_INFO:
-            return "FunctionExtraInfo";
         case JSType::MACHINE_CODE_OBJECT:
             return "MachineCode";
         case JSType::ECMA_MODULE:
             return "EcmaModule";
         case JSType::CLASS_INFO_EXTRACTOR:
             return "ClassInfoExtractor";
+        case JSType::JS_ARRAY_LIST:
+            return "ArrayList";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -264,9 +262,9 @@ CString JSHClass::DumpJSType(JSType type)
 static void DumpArrayClass(JSThread *thread, const TaggedArray *arr, std::ostream &os)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    array_size_t len = arr->GetLength();
+    uint32_t len = arr->GetLength();
     os << " <TaggedArray[" << std::dec << len << "]>\n";
-    for (array_size_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < len; i++) {
         JSTaggedValue val(arr->Get(i));
         if (!val.IsHole()) {
             os << std::right << std::setw(DUMP_PROPERTY_OFFSET) << i << ": ";
@@ -582,12 +580,6 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
         case JSType::PROGRAM:
             Program::Cast(obj)->Dump(thread, os);
             break;
-        case JSType::LEXICAL_FUNCTION:
-            LexicalFunction::Cast(obj)->Dump(thread, os);
-            break;
-        case JSType::FUNCTION_EXTRA_INFO:
-            JSFunctionExtraInfo::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::MACHINE_CODE_OBJECT:
             MachineCode::Cast(obj)->Dump(thread, os);
             break;
@@ -596,6 +588,9 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::CLASS_INFO_EXTRACTOR:
             ClassInfoExtractor::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_ARRAY_LIST:
+            JSArrayList::Cast(obj)->Dump(thread, os);
             break;
         default:
             UNREACHABLE();
@@ -935,8 +930,13 @@ void JSFunction::Dump(JSThread *thread, std::ostream &os) const
     os << " - HomeObject: ";
     GetHomeObject().D();
     os << "\n";
-    os << " - FunctionInfoFlag: ";
-    GetFunctionInfoFlag().D();
+    os << " - FunctionKind: " << static_cast<int>(GetFunctionKind());
+    os << "\n";
+    os << " - Strict: " << GetStrict();
+    os << "\n";
+    os << " - Resolved: " << GetResolved();
+    os << "\n";
+    os << " - ThisMode: " << static_cast<int>(GetThisMode());
     os << "\n";
     os << " - FunctionExtraInfo: ";
     GetFunctionExtraInfo().D();
@@ -1004,8 +1004,7 @@ void JSForInIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - Object : ";
     GetObject().DumpTaggedValue(thread, os);
     os << "\n";
-    os << " - WasVisited : ";
-    GetWasVisited().DumpTaggedValue(thread, os);
+    os << " - WasVisited : " << GetWasVisited();
     os << "\n";
     os << " - VisitedKeys : ";
     GetVisitedKeys().DumpTaggedValue(thread, os);
@@ -1022,8 +1021,8 @@ void JSMapIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - elements: " << std::dec << map->NumberOfElements() << "\n";
     os << " - deleted-elements: " << std::dec << map->NumberOfDeletedElements() << "\n";
     os << " - capacity: " << std::dec << map->Capacity() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
-    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(thread, os);
 
     os << " <NameDictionary[" << map->NumberOfElements() << "]>\n";
@@ -1074,8 +1073,8 @@ void JSSetIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - elements: " << std::dec << set->NumberOfElements() << "\n";
     os << " - deleted-elements: " << std::dec << set->NumberOfDeletedElements() << "\n";
     os << " - capacity: " << std::dec << set->Capacity() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
-    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(thread, os);
 
     os << " <NameDictionary[" << set->NumberOfElements() << "]>\n";
@@ -1088,12 +1087,18 @@ void JSArray::Dump(JSThread *thread, std::ostream &os) const
     JSObject::Dump(thread, os);
 }
 
+void JSArrayList::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - length: " << std::dec << GetLength().GetArrayLength() << "\n";
+    JSObject::Dump(thread, os);
+}
+
 void JSArrayIterator::Dump(JSThread *thread, std::ostream &os) const
 {
     JSArray *array = JSArray::Cast(GetIteratedArray().GetTaggedObject());
     os << " - length: " << std::dec << array->GetArrayLength() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
-    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(thread, os);
 }
 
@@ -1101,7 +1106,7 @@ void JSStringIterator::Dump(JSThread *thread, std::ostream &os) const
 {
     EcmaString *str = EcmaString::Cast(GetIteratedString().GetTaggedObject());
     os << " - IteratedString: " << str->GetCString().get() << "\n";
-    os << " - StringIteratorNextIndex: " << std::dec << GetStringIteratorNextIndex().GetInt() << "\n";
+    os << " - StringIteratorNextIndex: " << std::dec << GetStringIteratorNextIndex() << "\n";
     JSObject::Dump(thread, os);
 }
 void JSTypedArray::Dump(JSThread *thread, std::ostream &os) const
@@ -1121,8 +1126,6 @@ void JSTypedArray::Dump(JSThread *thread, std::ostream &os) const
 
 void JSRegExp::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - LastIndex: ";
-    GetLastIndex().D();
     os << "\n";
     os << " - ByteCodeBuffer: ";
     GetByteCodeBuffer().D();
@@ -1133,8 +1136,7 @@ void JSRegExp::Dump(JSThread *thread, std::ostream &os) const
     os << " - OriginalFlags: ";
     GetOriginalFlags().D();
     os << "\n";
-    os << " - Length: ";
-    GetLength().D();
+    os << " - Length: " << GetLength();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1152,13 +1154,9 @@ void JSProxy::Dump(JSThread *thread, std::ostream &os) const
 
 void JSSymbol::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - hash-field: ";
-    JSTaggedValue hashField = GetHashField();
-    hashField.D();
-    os << " - flags: ";
-    JSTaggedValue flags = GetFlags();
-    flags.D();
-    os << " - description: ";
+    os << " - hash-field: " << GetHashField();
+    os << "\n - flags: " << GetFlags();
+    os << "\n - description: ";
     JSTaggedValue description = GetDescription();
     description.D();
 }
@@ -1384,28 +1382,23 @@ void JSDataView::Dump(JSThread *thread, std::ostream &os) const
     GetDataView().D();
     os << " - buffer: ";
     GetViewedArrayBuffer().D();
-    os << " - byte-length: ";
-    GetByteLength().D();
-    os << " - byte-offset: ";
-    GetByteOffset().D();
+    os << "- byte-length: " << GetByteLength();
+    os << "\n - byte-offset: " << GetByteOffset();
 }
 
 void JSArrayBuffer::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - byte-length: ";
-    GetArrayBufferByteLength().D();
+    os << " - byte-length: " << GetArrayBufferByteLength();
     os << " - buffer-data: ";
     GetArrayBufferData().D();
-    os << " - Shared: ";
-    GetShared().D();
+    os << " - Shared: " << GetShared();
 }
 
 void PromiseReaction::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - promise-capability: ";
     GetPromiseCapability().D();
-    os << " - type: ";
-    GetType().D();
+    os << " - type: " << static_cast<int>(GetType());
     os << " - handler: ";
     GetHandler().D();
 }
@@ -1424,8 +1417,7 @@ void PromiseIteratorRecord::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - iterator: ";
     GetIterator().D();
-    os << " - done: ";
-    GetDone().D();
+    os << " - done: " << GetDone();
 }
 
 void PromiseRecord::Dump(JSThread *thread, std::ostream &os) const
@@ -1444,16 +1436,14 @@ void ResolvingFunctionsRecord::Dump(JSThread *thread, std::ostream &os) const
 
 void JSPromise::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - promise-state: ";
-    GetPromiseState().D();
-    os << " - promise-result: ";
+    os << " - promise-state: " << static_cast<int>(GetPromiseState());
+    os << "\n - promise-result: ";
     GetPromiseResult().D();
     os << " - promise-fulfill-reactions: ";
     GetPromiseFulfillReactions().D();
     os << " - promise-reject-reactions: ";
     GetPromiseRejectReactions().D();
-    os << " - promise-is-handled: ";
-    GetPromiseIsHandled().D();
+    os << " - promise-is-handled: " << GetPromiseIsHandled();
     JSObject::Dump(thread, os);
 }
 
@@ -1506,8 +1496,7 @@ void PendingJob::Dump(JSThread *thread, std::ostream &os) const
 
 void CompletionRecord::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - type: ";
-    GetType().D();
+    os << " - type: " << static_cast<int>(GetType());
     os << " - value: ";
     GetValue().D();
 }
@@ -1623,8 +1612,7 @@ void JSDateTimeFormat::Dump(JSThread *thread, std::ostream &os) const
     os << " - TimeZone: ";
     GetTimeZone().D();
     os << "\n";
-    os << " - HourCycle: ";
-    GetHourCycle().D();
+    os << " - HourCycle: " << static_cast<int>(GetHourCycle());
     os << "\n";
     os << " - LocaleIcu: ";
     GetLocaleIcu().D();
@@ -1635,11 +1623,9 @@ void JSDateTimeFormat::Dump(JSThread *thread, std::ostream &os) const
     os << " - Iso8601: ";
     GetIso8601().D();
     os << "\n";
-    os << " - DateStyle: ";
-    GetDateStyle().D();
+    os << " - DateStyle: " << static_cast<int>(GetDateStyle());
     os << "\n";
-    os << " - TimeStyle: ";
-    GetTimeStyle().D();
+    os << " - TimeStyle: " << static_cast<int>(GetTimeStyle());
     os << "\n";
     os << " - BoundFormat: ";
     GetBoundFormat().D();
@@ -1658,11 +1644,9 @@ void JSRelativeTimeFormat::Dump(JSThread *thread, std::ostream &os) const
     os << " - NumberingSystem: ";
     GetNumberingSystem().D();
     os << "\n";
-    os << " - Style: ";
-    GetStyle().D();
+    os << " - Style: " << static_cast<int>(GetStyle());
     os << "\n";
-    os << " - Numeric: ";
-    GetNumeric().D();
+    os << " - Numeric: " << static_cast<int>(GetNumeric());
     os << "\n";
     os << " - AvailableLocales: ";
     GetAvailableLocales().D();
@@ -1679,18 +1663,14 @@ void JSNumberFormat::Dump(JSThread *thread, std::ostream &os) const
     GetLocale().D();
     os << "\n" << " - NumberingSystem: ";
     GetNumberingSystem().D();
-    os << "\n" << " - Style: ";
-    GetStyle().D();
+    os << "\n" << " - Style: " << static_cast<int>(GetStyle());
     os << "\n" << " - Currency: ";
     GetCurrency().D();
-    os << "\n" << " - CurrencyDisplay: ";
-    GetCurrencyDisplay().D();
-    os << "\n" << " - CurrencySign: ";
-    GetCurrencySign().D();
+    os << "\n" << " - CurrencyDisplay: " << static_cast<int>(GetCurrencyDisplay());
+    os << "\n" << " - CurrencySign: " << static_cast<int>(GetCurrencySign());
     os << "\n" << " - Unit: ";
     GetUnit().D();
-    os << "\n" << " - UnitDisplay: ";
-    GetUnitDisplay().D();
+    os << "\n" << " - UnitDisplay: " << static_cast<int>(GetUnitDisplay());
     os << "\n" << " - MinimumIntegerDigits: ";
     GetMinimumIntegerDigits().D();
     os << "\n" << " - MinimumFractionDigits: ";
@@ -1703,18 +1683,14 @@ void JSNumberFormat::Dump(JSThread *thread, std::ostream &os) const
     GetMaximumSignificantDigits().D();
     os << "\n" << " - UseGrouping: ";
     GetUseGrouping().D();
-    os << "\n" << " - RoundingType: ";
-    GetUseGrouping().D();
-    os << "\n" << " - Notation: ";
-    GetMinimumIntegerDigits().D();
-    os << "\n" << " - CompactDisplay: ";
-    GetMaximumSignificantDigits().D();
-    os << "\n" << " - SignDisplay: ";
-    GetMinimumFractionDigits().D();
+    os << "\n" << " - RoundingType: " << static_cast<int>(GetRoundingType());
+    os << "\n" << " - Notation: " << static_cast<int>(GetNotation());
+    os << "\n" << " - CompactDisplay: " << static_cast<int>(GetCompactDisplay());
+    os << "\n" << " - SignDisplay: " << static_cast<int>(GetSignDisplay());
     os << "\n" << " - BoundFormat: ";
-    GetMaximumFractionDigits().D();
+    GetBoundFormat().D();
     os << "\n" << " - IcuField: ";
-    GetMinimumSignificantDigits().D();
+    GetIcuField().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1723,29 +1699,16 @@ void JSCollator::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - IcuField: ";
     GetIcuField().D();
-    os << "\n";
-    os << " - Locale: ";
+    os << "\n - Locale: ";
     GetLocale().D();
-    os << "\n";
-    os << " - Usage: ";
-    GetUsage().D();
-    os << "\n";
-    os << " - Sensitivity: ";
-    GetSensitivity().D();
-    os << "\n";
-    os << " - IgnorePunctuation: ";
-    GetIgnorePunctuation().D();
-    os << "\n";
-    os << " - Collation: ";
+    os << "\n - Usage: " << static_cast<int>(GetUsage());
+    os << "\n - Sensitivity: " << static_cast<int>(GetSensitivity());
+    os << "\n - IgnorePunctuation: " << GetIgnorePunctuation();
+    os << "\n - Collation: ";
     GetCollation().D();
-    os << "\n";
-    os << " - Numeric: ";
-    GetNumeric().D();
-    os << "\n";
-    os << " - CaseFirst: ";
-    GetCaseFirst().D();
-    os << "\n";
-    os << " - BoundCompare: ";
+    os << "\n - Numeric: " << GetNumeric();
+    os << "\n - CaseFirst: " << static_cast<int>(GetCaseFirst());
+    os << "\n - BoundCompare: ";
     GetBoundCompare().D();
     os << "\n";
     JSObject::Dump(thread, os);
@@ -1759,8 +1722,7 @@ void JSPluralRules::Dump(JSThread *thread, std::ostream &os) const
     os << " - InitializedPluralRules: ";
     GetInitializedPluralRules().D();
     os << "\n";
-    os << " - Type: ";
-    GetType().D();
+    os << " - Type: " << static_cast<int>(GetType());
     os << "\n";
     os << " - MinimumIntegerDigits: ";
     GetMinimumIntegerDigits().D();
@@ -1777,8 +1739,7 @@ void JSPluralRules::Dump(JSThread *thread, std::ostream &os) const
     os << " - MaximumSignificantDigits: ";
     GetMaximumSignificantDigits().D();
     os << "\n";
-    os << " - RoundingType: ";
-    GetRoundingType().D();
+    os << " - RoundingType: " << static_cast<int>(GetRoundingType());
     os << "\n";
     os << " - IcuPR: ";
     GetIcuPR().D();
@@ -1791,17 +1752,15 @@ void JSPluralRules::Dump(JSThread *thread, std::ostream &os) const
 
 void JSGeneratorObject::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - GeneratorState: ";
-    GetGeneratorState().D();
-    os << "\n";
     os << " - GeneratorContext: ";
     GetGeneratorContext().D();
     os << "\n";
     os << " - ResumeResult: ";
     GetResumeResult().D();
     os << "\n";
-    os << " - ResumeMode: ";
-    GetResumeMode().D();
+    os << " - GeneratorState: " << static_cast<uint8_t>(GetGeneratorState());
+    os << "\n";
+    os << " - ResumeMode: " << static_cast<uint8_t>(GetResumeMode());
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -1824,17 +1783,15 @@ void GeneratorContext::Dump(JSThread *thread, std::ostream &os) const
     os << " - Acc: ";
     GetAcc().D();
     os << "\n";
-    os << " - NRegs: ";
-    GetNRegs().D();
-    os << "\n";
-    os << " - BCOffset: ";
-    GetBCOffset().D();
-    os << "\n";
     os << " - GeneratorObject: ";
     GetGeneratorObject().D();
     os << "\n";
     os << " - LexicalEnv: ";
     GetLexicalEnv().D();
+    os << "\n";
+    os << " - NRegs: " << GetNRegs();
+    os << "\n";
+    os << " - BCOffset: " << GetBCOffset();
     os << "\n";
 }
 
@@ -1848,44 +1805,13 @@ void ProtoChangeDetails::Dump(JSThread *thread, std::ostream &os) const
     os << " - ChangeListener: ";
     GetChangeListener().D();
     os << "\n";
-    os << " - RegisterIndex: ";
-    GetRegisterIndex().D();
-    os << "\n";
-}
-
-void LexicalFunction::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - Name: ";
-    GetName().D();
-    os << "\n";
-    os << " - NumberVRegs: ";
-    GetNumberVRegs().D();
-    os << "\n";
-    os << " - NumberICSlots: ";
-    GetNumberICSlots().D();
-    os << "\n";
-    os << " - Bytecode: ";
-    GetBytecode().D();
-    os << "\n";
-    os << " - Program: ";
-    GetProgram().D();
-    os << "\n";
-}
-
-void JSFunctionExtraInfo::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - Callback: ";
-    GetCallback().D();
-    os << "\n";
-    os << " - Data: ";
-    GetData().D();
+    os << " - RegisterIndex: " << GetRegisterIndex();
     os << "\n";
 }
 
 void MachineCode::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - InstructionSizeInBytes: ";
-    GetInstructionSizeInBytes().D();
+    os << " - InstructionSizeInBytes: " << GetInstructionSizeInBytes();
     os << "\n";
 }
 
@@ -1931,8 +1857,8 @@ static void DumpArrayClass([[maybe_unused]] JSThread *thread, const TaggedArray 
                            std::vector<std::pair<CString, JSTaggedValue>> &vec)
 {
     DISALLOW_GARBAGE_COLLECTION;
-    array_size_t len = arr->GetLength();
-    for (array_size_t i = 0; i < len; i++) {
+    uint32_t len = arr->GetLength();
+    for (uint32_t i = 0; i < len; i++) {
         JSTaggedValue val(arr->Get(i));
         CString str = ToCString(i);
         vec.push_back(std::make_pair(str, val));
@@ -2133,11 +2059,11 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::JS_GENERATOR_CONTEXT:
             GeneratorContext::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
-        case JSType::FUNCTION_EXTRA_INFO:
-            JSFunctionExtraInfo::Cast(obj)->DumpForSnapshot(thread, vec);
-            return;
         case JSType::ECMA_MODULE:
             EcmaModule::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::JS_ARRAY_LIST:
+            JSArrayList::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
         default:
             break;
@@ -2149,9 +2075,6 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
                 return;
             case JSType::TEMPLATE_MAP:
                 DumpArrayClass(thread, TaggedArray::Cast(obj), vec);
-                return;
-            case JSType::LEXICAL_FUNCTION:
-                LexicalFunction::Cast(obj)->DumpForSnapshot(thread, vec);
                 return;
             case JSType::GLOBAL_ENV:
                 GlobalEnv::Cast(obj)->DumpForSnapshot(thread, vec);
@@ -2366,7 +2289,10 @@ void JSFunction::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     vec.push_back(std::make_pair(CString("ProtoOrDynClass"), GetProtoOrDynClass()));
     vec.push_back(std::make_pair(CString("LexicalEnv"), GetLexicalEnv()));
     vec.push_back(std::make_pair(CString("HomeObject"), GetHomeObject()));
-    vec.push_back(std::make_pair(CString("FunctionInfoFlag"), GetFunctionInfoFlag()));
+    vec.push_back(std::make_pair(CString("FunctionKind"), JSTaggedValue(static_cast<int>(GetFunctionKind()))));
+    vec.push_back(std::make_pair(CString("Strict"), JSTaggedValue(GetStrict())));
+    vec.push_back(std::make_pair(CString("Resolved"), JSTaggedValue(GetResolved())));
+    vec.push_back(std::make_pair(CString("ThisMode"), JSTaggedValue(static_cast<int>(GetThisMode()))));
     vec.push_back(std::make_pair(CString("FunctionExtraInfo"), GetFunctionExtraInfo()));
     vec.push_back(std::make_pair(CString("ConstantPool"), GetConstantPool()));
     vec.push_back(std::make_pair(CString("ProfileTypeInfo"), GetProfileTypeInfo()));
@@ -2428,7 +2354,7 @@ void JSForInIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                       std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("Object"), GetObject()));
-    vec.push_back(std::make_pair(CString("WasVisited"), GetWasVisited()));
+    vec.push_back(std::make_pair(CString("WasVisited"), JSTaggedValue(GetWasVisited())));
     vec.push_back(std::make_pair(CString("VisitedKeys"), GetVisitedKeys()));
     vec.push_back(std::make_pair(CString("RemainingKeys"), GetRemainingKeys()));
     JSObject::DumpForSnapshot(thread, vec);
@@ -2439,8 +2365,8 @@ void JSMapIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 {
     LinkedHashMap *map = LinkedHashMap::Cast(GetIteratedMap().GetTaggedObject());
     map->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
-    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2475,8 +2401,8 @@ void JSSetIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 {
     LinkedHashSet *set = LinkedHashSet::Cast(GetIteratedSet().GetTaggedObject());
     set->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
-    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2486,13 +2412,19 @@ void JSArray::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     JSObject::DumpForSnapshot(thread, vec);
 }
 
+void JSArrayList::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                  std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
 void JSArrayIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                       std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     JSArray *array = JSArray::Cast(GetIteratedArray().GetTaggedObject());
     array->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
-    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2500,7 +2432,7 @@ void JSStringIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                        std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("IteratedString"), GetIteratedString()));
-    vec.push_back(std::make_pair(CString("StringIteratorNextIndex"), GetStringIteratorNextIndex()));
+    vec.push_back(std::make_pair(CString("StringIteratorNextIndex"), JSTaggedValue(GetStringIteratorNextIndex())));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2533,8 +2465,8 @@ void JSProxy::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 void JSSymbol::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("hash-field"), GetHashField()));
-    vec.push_back(std::make_pair(CString("flags"), GetFlags()));
+    vec.push_back(std::make_pair(CString("hash-field"), JSTaggedValue(GetHashField())));
+    vec.push_back(std::make_pair(CString("flags"), JSTaggedValue(GetFlags())));
     vec.push_back(std::make_pair(CString("description"), GetDescription()));
 }
 
@@ -2672,24 +2604,24 @@ void JSDataView::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 {
     vec.push_back(std::make_pair(CString("data-view"), GetDataView()));
     vec.push_back(std::make_pair(CString("buffer"), GetViewedArrayBuffer()));
-    vec.push_back(std::make_pair(CString("byte-length"), GetByteLength()));
-    vec.push_back(std::make_pair(CString("byte-offset"), GetByteOffset()));
+    vec.push_back(std::make_pair(CString("byte-length"), JSTaggedValue(GetByteLength())));
+    vec.push_back(std::make_pair(CString("byte-offset"), JSTaggedValue(GetByteOffset())));
 }
 
 void JSArrayBuffer::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                     std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("byte-length"), GetArrayBufferByteLength()));
     vec.push_back(std::make_pair(CString("buffer-data"), GetArrayBufferData()));
-    vec.push_back(std::make_pair(CString("shared"), GetShared()));
+    vec.push_back(std::make_pair(CString("byte-length"), JSTaggedValue(GetArrayBufferByteLength())));
+    vec.push_back(std::make_pair(CString("shared"), JSTaggedValue(GetShared())));
 }
 
 void PromiseReaction::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                       std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("promise-capability"), GetPromiseCapability()));
-    vec.push_back(std::make_pair(CString("type"), GetType()));
     vec.push_back(std::make_pair(CString("handler"), GetHandler()));
+    vec.push_back(std::make_pair(CString("type"), JSTaggedValue(static_cast<int>(GetType()))));
 }
 
 void PromiseCapability::DumpForSnapshot([[maybe_unused]] JSThread *thread,
@@ -2704,7 +2636,7 @@ void PromiseIteratorRecord::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                             std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("iterator"), GetIterator()));
-    vec.push_back(std::make_pair(CString("done"), GetDone()));
+    vec.push_back(std::make_pair(CString("done"), JSTaggedValue(GetDone())));
 }
 
 void PromiseRecord::DumpForSnapshot([[maybe_unused]] JSThread *thread,
@@ -2723,11 +2655,11 @@ void ResolvingFunctionsRecord::DumpForSnapshot([[maybe_unused]] JSThread *thread
 void JSPromise::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                 std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("promise-state"), GetPromiseState()));
+    vec.push_back(std::make_pair(CString("promise-state"), JSTaggedValue(static_cast<int>(GetPromiseState()))));
     vec.push_back(std::make_pair(CString("promise-result"), GetPromiseResult()));
     vec.push_back(std::make_pair(CString("promise-fulfill-reactions"), GetPromiseFulfillReactions()));
     vec.push_back(std::make_pair(CString("promise-reject-reactions"), GetPromiseRejectReactions()));
-    vec.push_back(std::make_pair(CString("promise-is-handled"), GetPromiseIsHandled()));
+    vec.push_back(std::make_pair(CString("promise-is-handled"), JSTaggedValue(GetPromiseIsHandled())));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2774,8 +2706,8 @@ void PendingJob::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 void CompletionRecord::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                        std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("type"), GetType()));
     vec.push_back(std::make_pair(CString("value"), GetValue()));
+    vec.push_back(std::make_pair(CString("type"), JSTaggedValue(static_cast<int>(GetType()))));
 }
 
 void JSProxyRevocFunction::DumpForSnapshot([[maybe_unused]] JSThread *thread,
@@ -2858,12 +2790,12 @@ void JSDateTimeFormat::DumpForSnapshot(JSThread *thread, std::vector<std::pair<C
     vec.push_back(std::make_pair(CString("Calendar"), GetCalendar()));
     vec.push_back(std::make_pair(CString("NumberingSystem"), GetNumberingSystem()));
     vec.push_back(std::make_pair(CString("TimeZone"), GetTimeZone()));
-    vec.push_back(std::make_pair(CString("HourCycle"), GetHourCycle()));
+    vec.push_back(std::make_pair(CString("HourCycle"), JSTaggedValue(static_cast<int>(GetHourCycle()))));
     vec.push_back(std::make_pair(CString("LocaleIcu"), GetLocaleIcu()));
     vec.push_back(std::make_pair(CString("SimpleDateTimeFormatIcu"), GetSimpleDateTimeFormatIcu()));
     vec.push_back(std::make_pair(CString("Iso8601"), GetIso8601()));
-    vec.push_back(std::make_pair(CString("DateStyle"), GetDateStyle()));
-    vec.push_back(std::make_pair(CString("TimeStyle"), GetTimeStyle()));
+    vec.push_back(std::make_pair(CString("DateStyle"), JSTaggedValue(static_cast<int>(GetDateStyle()))));
+    vec.push_back(std::make_pair(CString("TimeStyle"), JSTaggedValue(static_cast<int>(GetTimeStyle()))));
     vec.push_back(std::make_pair(CString("BoundFormat"), GetBoundFormat()));
     JSObject::DumpForSnapshot(thread, vec);
 }
@@ -2873,8 +2805,8 @@ void JSRelativeTimeFormat::DumpForSnapshot(JSThread *thread, std::vector<std::pa
     vec.push_back(std::make_pair(CString("Locale"), GetLocale()));
     vec.push_back(std::make_pair(CString("InitializedRelativeTimeFormat"), GetInitializedRelativeTimeFormat()));
     vec.push_back(std::make_pair(CString("NumberingSystem"), GetNumberingSystem()));
-    vec.push_back(std::make_pair(CString("Style"), GetStyle()));
-    vec.push_back(std::make_pair(CString("Numeric"), GetNumeric()));
+    vec.push_back(std::make_pair(CString("Style"), JSTaggedValue(static_cast<int>(GetStyle()))));
+    vec.push_back(std::make_pair(CString("Numeric"), JSTaggedValue(static_cast<int>(GetNumeric()))));
     vec.push_back(std::make_pair(CString("AvailableLocales"), GetAvailableLocales()));
     vec.push_back(std::make_pair(CString("IcuField"), GetIcuField()));
     JSObject::DumpForSnapshot(thread, vec);
@@ -2884,22 +2816,22 @@ void JSNumberFormat::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CSt
 {
     vec.push_back(std::make_pair(CString("Locale"), GetLocale()));
     vec.push_back(std::make_pair(CString("NumberingSystem"), GetNumberingSystem()));
-    vec.push_back(std::make_pair(CString("Style"), GetStyle()));
+    vec.push_back(std::make_pair(CString("Style"), JSTaggedValue(static_cast<int>(GetStyle()))));
     vec.push_back(std::make_pair(CString("Currency"), GetCurrency()));
-    vec.push_back(std::make_pair(CString("CurrencyDisplay"), GetCurrencyDisplay()));
-    vec.push_back(std::make_pair(CString("CurrencySign"), GetCurrencySign()));
+    vec.push_back(std::make_pair(CString("CurrencyDisplay"), JSTaggedValue(static_cast<int>(GetCurrencyDisplay()))));
+    vec.push_back(std::make_pair(CString("CurrencySign"), JSTaggedValue(static_cast<int>(GetCurrencySign()))));
     vec.push_back(std::make_pair(CString("Unit"), GetUnit()));
-    vec.push_back(std::make_pair(CString("UnitDisplay"), GetUnitDisplay()));
+    vec.push_back(std::make_pair(CString("UnitDisplay"), JSTaggedValue(static_cast<int>(GetUnitDisplay()))));
     vec.push_back(std::make_pair(CString("MinimumIntegerDigits"), GetMinimumIntegerDigits()));
     vec.push_back(std::make_pair(CString("MinimumFractionDigits"), GetMinimumFractionDigits()));
     vec.push_back(std::make_pair(CString("MaximumFractionDigits"), GetMaximumFractionDigits()));
     vec.push_back(std::make_pair(CString("MinimumSignificantDigits"), GetMinimumSignificantDigits()));
     vec.push_back(std::make_pair(CString("MaximumSignificantDigits"), GetMaximumSignificantDigits()));
     vec.push_back(std::make_pair(CString("UseGrouping"), GetUseGrouping()));
-    vec.push_back(std::make_pair(CString("RoundingType"), GetRoundingType()));
-    vec.push_back(std::make_pair(CString("Notation"), GetNotation()));
-    vec.push_back(std::make_pair(CString("CompactDisplay"), GetCompactDisplay()));
-    vec.push_back(std::make_pair(CString("SignDisplay"), GetSignDisplay()));
+    vec.push_back(std::make_pair(CString("RoundingType"), JSTaggedValue(static_cast<int>(GetRoundingType()))));
+    vec.push_back(std::make_pair(CString("Notation"), JSTaggedValue(static_cast<int>(GetNotation()))));
+    vec.push_back(std::make_pair(CString("CompactDisplay"), JSTaggedValue(static_cast<int>(GetCompactDisplay()))));
+    vec.push_back(std::make_pair(CString("SignDisplay"), JSTaggedValue(static_cast<int>(GetSignDisplay()))));
     vec.push_back(std::make_pair(CString("BoundFormat"), GetBoundFormat()));
     vec.push_back(std::make_pair(CString("IcuField"), GetIcuField()));
     JSObject::DumpForSnapshot(thread, vec);
@@ -2909,13 +2841,13 @@ void JSCollator::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString
 {
     vec.push_back(std::make_pair(CString("IcuField"), GetIcuField()));
     vec.push_back(std::make_pair(CString("Locale"), GetLocale()));
-    vec.push_back(std::make_pair(CString("Usage"), GetUsage()));
-    vec.push_back(std::make_pair(CString("Sensitivity"), GetSensitivity()));
-    vec.push_back(std::make_pair(CString("IgnorePunctuation"), GetIgnorePunctuation()));
     vec.push_back(std::make_pair(CString("Collation"), GetCollation()));
-    vec.push_back(std::make_pair(CString("Numeric"), GetNumeric()));
-    vec.push_back(std::make_pair(CString("CaseFirst"), GetCaseFirst()));
     vec.push_back(std::make_pair(CString("BoundCompare"), GetBoundCompare()));
+    vec.push_back(std::make_pair(CString("CaseFirst"), JSTaggedValue(static_cast<int>(GetCaseFirst()))));
+    vec.push_back(std::make_pair(CString("Usage"), JSTaggedValue(static_cast<int>(GetUsage()))));
+    vec.push_back(std::make_pair(CString("Sensitivity"), JSTaggedValue(static_cast<int>(GetSensitivity()))));
+    vec.push_back(std::make_pair(CString("IgnorePunctuation"), JSTaggedValue(GetIgnorePunctuation())));
+    vec.push_back(std::make_pair(CString("Numeric"), JSTaggedValue(GetNumeric())));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2923,24 +2855,24 @@ void JSPluralRules::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CStr
 {
     vec.push_back(std::make_pair(CString("Locale"), GetLocale()));
     vec.push_back(std::make_pair(CString("InitializedPluralRules"), GetInitializedPluralRules()));
-    vec.push_back(std::make_pair(CString("Type"), GetType()));
     vec.push_back(std::make_pair(CString("MinimumIntegerDigits"), GetMinimumIntegerDigits()));
     vec.push_back(std::make_pair(CString("MinimumFractionDigits"), GetMinimumFractionDigits()));
     vec.push_back(std::make_pair(CString("MaximumFractionDigits"), GetMaximumFractionDigits()));
     vec.push_back(std::make_pair(CString("MinimumSignificantDigits"), GetMinimumSignificantDigits()));
     vec.push_back(std::make_pair(CString("MaximumSignificantDigits"), GetMaximumSignificantDigits()));
-    vec.push_back(std::make_pair(CString("RoundingType"), GetRoundingType()));
+    vec.push_back(std::make_pair(CString("RoundingType"), JSTaggedValue(static_cast<int>(GetRoundingType()))));
     vec.push_back(std::make_pair(CString("IcuPR"), GetIcuPR()));
     vec.push_back(std::make_pair(CString("IcuNF"), GetIcuNF()));
+    vec.push_back(std::make_pair(CString("Type"), JSTaggedValue(static_cast<int>(GetType()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
 void JSGeneratorObject::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("GeneratorState"), GetGeneratorState()));
     vec.push_back(std::make_pair(CString("GeneratorContext"), GetGeneratorContext()));
     vec.push_back(std::make_pair(CString("ResumeResult"), GetResumeResult()));
-    vec.push_back(std::make_pair(CString("ResumeMode"), GetResumeMode()));
+    vec.push_back(std::make_pair(CString("GeneratorState"), JSTaggedValue(static_cast<int>(GetGeneratorState()))));
+    vec.push_back(std::make_pair(CString("ResumeMode"), JSTaggedValue(static_cast<int>(GetResumeMode()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2954,10 +2886,10 @@ void GeneratorContext::DumpForSnapshot(JSThread *thread, std::vector<std::pair<C
     vec.push_back(std::make_pair(CString("RegsArray"), GetRegsArray()));
     vec.push_back(std::make_pair(CString("Method"), GetMethod()));
     vec.push_back(std::make_pair(CString("Acc"), GetAcc()));
-    vec.push_back(std::make_pair(CString("NRegs"), GetNRegs()));
-    vec.push_back(std::make_pair(CString("BCOffset"), GetBCOffset()));
     vec.push_back(std::make_pair(CString("GeneratorObject"), GetGeneratorObject()));
     vec.push_back(std::make_pair(CString("LexicalEnv"), GetLexicalEnv()));
+    vec.push_back(std::make_pair(CString("NRegs"),  JSTaggedValue(GetNRegs())));
+    vec.push_back(std::make_pair(CString("BCOffset"),  JSTaggedValue(GetBCOffset())));
 }
 
 void ProtoChangeMarker::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
@@ -2968,27 +2900,12 @@ void ProtoChangeMarker::DumpForSnapshot(JSThread *thread, std::vector<std::pair<
 void ProtoChangeDetails::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("ChangeListener"), GetChangeListener()));
-    vec.push_back(std::make_pair(CString("RegisterIndex"), GetRegisterIndex()));
-}
-
-void LexicalFunction::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("Name"), GetName()));
-    vec.push_back(std::make_pair(CString("NumberVRegs"), GetNumberVRegs()));
-    vec.push_back(std::make_pair(CString("NumberICSlots"), GetNumberICSlots()));
-    vec.push_back(std::make_pair(CString("Bytecode"), GetBytecode()));
-    vec.push_back(std::make_pair(CString("Program"), GetProgram()));
-}
-
-void JSFunctionExtraInfo::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("Callback"), GetCallback()));
-    vec.push_back(std::make_pair(CString("Data"), GetData()));
+    vec.push_back(std::make_pair(CString("RegisterIndex"), JSTaggedValue(GetRegisterIndex())));
 }
 
 void MachineCode::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("InstructionSizeInBytes"), GetInstructionSizeInBytes()));
+    vec.push_back(std::make_pair(CString("InstructionSizeInBytes"), JSTaggedValue(GetInstructionSizeInBytes())));
 }
 
 void EcmaModule::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const

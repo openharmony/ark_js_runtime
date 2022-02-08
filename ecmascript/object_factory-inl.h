@@ -78,7 +78,7 @@ void ObjectFactory::NewJSIntlIcuData(const JSHandle<T> &obj, const S &icu, const
         native->ResetExternalPointer(icuPoint);
         return;
     }
-    JSHandle<JSNativePointer> pointer(thread_, NewJSNativePointer(icuPoint, callback, vm_).GetTaggedValue());
+    JSHandle<JSNativePointer> pointer(thread_, NewJSNativePointer(icuPoint, callback, nullptr).GetTaggedValue());
     obj->SetIcuField(thread_, pointer.GetTaggedValue());
     // push uint8_t* to ecma array_data_list
     vm_->PushToArrayDataList(*pointer);

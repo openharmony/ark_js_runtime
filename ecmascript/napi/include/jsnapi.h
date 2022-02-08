@@ -51,6 +51,7 @@ class JSRuntimeOptions;
 using Deleter = void (*)(void *buffer, void *data);
 using EcmaVM = ecmascript::EcmaVM;
 using JSTaggedType = uint64_t;
+
 static constexpr uint32_t DEFAULT_GC_POOL_SIZE = 256 * 1024 * 1024;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -601,10 +602,10 @@ public:
 
 class PUBLIC_API DataViewRef : public ObjectRef {
 public:
-    static Local<DataViewRef> New(const EcmaVM *vm, Local<ArrayBufferRef> arrayBuffer, int32_t byteOffset,
-                                  int32_t byteLength);
-    int32_t ByteLength();
-    int32_t ByteOffset();
+    static Local<DataViewRef> New(const EcmaVM *vm, Local<ArrayBufferRef> arrayBuffer, uint32_t byteOffset,
+                                  uint32_t byteLength);
+    uint32_t ByteLength();
+    uint32_t ByteOffset();
     Local<ArrayBufferRef> GetArrayBuffer(const EcmaVM *vm);
 };
 
@@ -750,6 +751,10 @@ public:
         enableCpuprofiler_ = value;
     }
 
+    void SetArkProperties(int prop) {
+        arkProperties_ = prop;
+    }
+
 private:
     std::string GetGcType() const
     {
@@ -818,6 +823,11 @@ private:
         return enableCpuprofiler_;
     }
 
+    int GetArkProperties() const
+    {
+        return arkProperties_;
+    }
+
     GC_TYPE gcType_ = GC_TYPE::EPSILON;
     LOG_LEVEL logLevel_ = LOG_LEVEL::DEBUG;
     uint32_t gcPoolSize_ = DEFAULT_GC_POOL_SIZE;
@@ -825,6 +835,7 @@ private:
     std::string debuggerLibraryPath_ {};
     bool enableArkTools_ {false};
     bool enableCpuprofiler_ {false};
+    int arkProperties_ {-1};
     friend JSNApi;
 };
 
@@ -854,8 +865,8 @@ public:
     static void DestroyJSVM(EcmaVM *ecmaVm);
 
     // JS code
-    static bool Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> entry);
-    static bool Execute(EcmaVM *vm, const uint8_t *data, int32_t size, Local<StringRef> entry);
+    static bool Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry);
+    static bool Execute(EcmaVM *vm, const uint8_t *data, int32_t size, const std::string &entry);
     static bool ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file);
     static Local<ObjectRef> GetExportObject(EcmaVM *vm, const std::string &file, const std::string &itemName);
 
@@ -880,7 +891,7 @@ public:
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
     // profile generator
-    static void StartCpuProfiler(const EcmaVM *vm);
+    static void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
     static void StopCpuProfiler();
 
 private:

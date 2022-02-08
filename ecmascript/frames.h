@@ -13,9 +13,16 @@
  * limitations under the License.
  */
 
-//    in aot project, three Frame: Interpreter Frame、Runtime Frame、Optimized Frame.  Optimized Frame
-//  call Runtime function, generate OptLeaveFrame Frame(gc related context (patchid、sp、fp) is saved to frame)
-//  then return Optimized thread.sp restore orignal sp.
+//    in aot project, five Frames: Interpreter Frame、Runtime Frame、Optimized Entry Frame、Optimized Frame、
+// Optimized Leave Frame.
+//    Optimized Entry Frame: when Interpreter/RuntimeFrame call aot code, generate this kind of frame.
+// following c-abi, we'll add the following field: frameType(distinguish frame)、sp(record callite sp register
+// for llvm stackmap)、prev(record previous frame position).
+//    Optimized Leave Frame: when aot code call Interpreter/RuntimeFrame, generate this kind of frame.
+// gc related context (patchid、sp、fp) is saved to frame, prev field point to previous frame.
+//    Optimized Frame: when aot code call aot code, generate this kind of frame.
+// following c-abi, we'll add the following field: frameType(distinguish frame)、sp(record callite sp register
+// for llvm stackmap).
 
 // Frame Layout
 // Interpreter Frame(alias   **iframe** ) Layout as follow:
@@ -55,6 +62,48 @@
 //   |----------------------------------|        |          |
 //   |    pc(bytecode addr)             |        v          v
 //   +----------------------------------+--------+----------+
+
+//   Optimized Leave Frame(alias OptLeaveFrame) layout
+//   +--------------------------+
+//   |     patchID          |   ^
+//   |- - - - - - - - -     |   |
+//   |       callsiteFp     | Fixed
+//   |- - - - - - - - -     | OptLeaveFrame
+//   |       callsiteSp     |   |
+//   |- - - - - - - - -     |   |
+//   |       prevFp         |   |
+//   |- - - - - - - - -     |   |
+//   |       frameType      |   v
+//   +--------------------------+
+
+//   Optimized Frame(alias OptimizedFrame) layout
+//   +--------------------------+
+//   | calleesave registers |   ^
+//   |- - - - - - - - -     |   |
+//   |   returnaddress      | Fixed
+//   |- - - - - - - - -     | OptimizedFrame
+//   |       prevFp         |   |
+//   |- - - - - - - - -     |   |
+//   |     frameType        |   |
+//   |- - - - - - - - -     |   |
+//   |       callsiteSp     |   v
+//   +--------------------------+
+
+//   Optimized Entry Frame(alias OptimizedEntryFrame) layout
+//   +--------------------------+
+//   | calleesave registers |   ^
+//   |- - - - - - - - -     |   |
+//   |   returnaddress      | Fixed
+//   |- - - - - - - - -     | OptimizedEntryFrame
+//   |       prevFp         |   |
+//   |- - - - - - - - -     |   |
+//   |     frameType        |   |
+//   |- - - - - - - - -     |   |
+//   |  callsiteSp          |   v
+//   |- - - - - - - - -     |   |
+//   | prevManagedFrameFp   |   |
+//   +--------------------------+
+
 // ```
 // address space grow from high address to low address.we add new field  **FrameType** ,
 // the field's value is INTERPRETER_FRAME(represent interpreter frame).
@@ -64,9 +113,9 @@
 
 // For Example:
 // ```
-//                     call                  call
-//     foo    -----------------> bar   -----------------------> rtfunc
-// (interpret frame)       (OptLeaveFrame)             (Runtime Frame)
+//                     call                   call
+//     foo    -----------------> bar   ----------------------->baz ---------------------> rtfunc
+// (interpret frame)       (OptimizedEntryFrame)      (OptimizedFrame)     (OptLeaveFrame + Runtime Frame)
 // ```
 
 // Frame Layout as follow:
@@ -104,13 +153,41 @@
 //   +----------------------------------+--------+----------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
+//   +--------------------------+---------------------------+
+//   | calleesave registers |   ^                           ^
+//   |- - - - - - - - -     |   |                           |
+//   |   returnaddress      |   Fixed                       |
+//   |- - - - - - - - -     | OptimizedEntryFrame           |
+//   |       prevFp         |   |                           |
+//   |- - - - - - - - -     |   |                           |
+//   |     frameType        |   |                        bar's frame
+//   |- - - - - - - - -     |   |                           |
+//   |   callsiteSp         |   v                           |
+//   |- - - - - - - - -     |   |                           |
+//   |prevManagedFrameFp    |   |                           V
+//   +--------------------------+---------------------------+
+//   |                   .............                      |
+//   +--------------------------+---------------------------+
+//   +--------------------------+---------------------------+
+//   | calleesave registers |   ^                           ^
+//   |- - - - - - - - -     |   |                           |
+//   |   returnaddress      | Fixed                         |
+//   |- - - - - - - - -     | OptimizedFrame                |
+//   |       prevFp         |   |                           |
+//   |- - - - - - - - -     |   |                       baz's frame Header
+//   |     frameType        |   |                           |
+//   |- - - - - - - - -     |   |                           |
+//   |   callsitesp         |   v                           V
+//   +--------------------------+---------------------------+
+//   |                   .............                      |
+//   +--------------------------+---------------------------+
 //   |     patchID          |   ^                           ^
 //   |- - - - - - - - -     |   |                           |
-//   |       fp             | Fixed                         |
+//   |     callsiteFp       | Fixed                         |
 //   |- - - - - - - - -     | OptLeaveFrame                 |
-//   |       sp             |   |                       bar's frame Header
+//   |     callsitesp       |   |                         OptLeaveFrame
 //   |- - - - - - - - -     |   |                           |
-//   |       prev           |   |
+//   |       prevFp         |   |                           |
 //   |- - - - - - - - -     |   |                           |
 //   |       frameType      |   v                           |
 //   +--------------------------+---------------------------+
@@ -122,10 +199,10 @@
 //   +------------------------------------------------------+
 // ```
 // Iterator:
-// rtfunc get bar's Frame **currentfp** by calling GetCurrentSPFrame.
-// then get bar's Frame pre field.
-// bar's Frame pre field point to foo's Frame **currentsp**.
-// finally we can iterator foo's Frame.
+// rtfunc get OptLeaveFrame by calling GetCurrentSPFrame.
+// get baz's Frame by OptLeaveFrame.prev field.
+// get bar's Frame by baz's frame fp field
+// get foo's Frame by bar's Frame prev field
 
 #ifndef ECMASCRIPT_FRAMES_H
 #define ECMASCRIPT_FRAMES_H
@@ -141,37 +218,76 @@ enum class FrameType: uint64_t {
     OPTIMIZED_LEAVE_FRAME = 3,
 };
 
-class OptimizedFrame {
+class FrameConstants {
 public:
-    OptimizedFrame() = default;
-    ~OptimizedFrame() = default;
-    uint64_t frameType;
-    JSTaggedType *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    static OptimizedFrame* GetFrameFromSp(JSTaggedType *sp)
-    {
-        return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
-            - MEMBER_OFFSET(OptimizedFrame, prev));
-    }
+#ifdef PANDA_TARGET_AMD64
+    static constexpr int SP_DWARF_REG_NUM = 7;
+    static constexpr int FP_DWARF_REG_NUM = 6;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -3;
+#else
+#ifdef PANDA_TARGET_ARM64
+    static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
+    static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -3;
+#else
+#ifdef PANDA_TARGET_ARM32
+    static constexpr int SP_DWARF_REG_NUM = 13;
+    static constexpr int FP_DWARF_REG_NUM = 11;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = 0;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = 0;
+#else
+    static constexpr int SP_DWARF_REG_NUM = 0;
+    static constexpr int FP_DWARF_REG_NUM = 0;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = 0;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = 0;
+#endif
+#endif
+#endif
+    static constexpr int AARCH64_SLOT_SIZE = sizeof(uint64_t);
+    static constexpr int AMD64_SLOT_SIZE = sizeof(uint64_t);
+    static constexpr int ARM32_SLOT_SIZE = sizeof(uint32_t);
 };
 
-class InterpretedFrameBase {
+class OptimizedFrameBase {
 public:
-    InterpretedFrameBase() = default;
-    ~InterpretedFrameBase() = default;
-    JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
-    uint64_t frameType;
+    OptimizedFrameBase() = default;
+    ~OptimizedFrameBase() = default;
+    static constexpr int64_t GetCallsiteSpToFpDelta()
+    {
+        return MEMBER_OFFSET(OptimizedFrameBase, callsiteSp) - MEMBER_OFFSET(OptimizedFrameBase, prevFp);
+    }
+    uintptr_t callsiteSp;
+    FrameType type;
+    JSTaggedType *prevFp; // fp register
+    static OptimizedFrameBase* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptimizedFrameBase *>(reinterpret_cast<uintptr_t>(sp)
+            - MEMBER_OFFSET(OptimizedFrameBase, prevFp));
+    }
 };
 
 class OptimizedEntryFrame {
 public:
     OptimizedEntryFrame() = default;
     ~OptimizedEntryFrame() = default;
-    JSTaggedType  *threadFp; // for gc
-    OptimizedFrame base;
+    JSTaggedType *prevInterpretedFrameFp;
+    OptimizedFrameBase base;
+    static constexpr int64_t GetCallsiteSpToFpDelta()
+    {
+        return MEMBER_OFFSET(OptimizedEntryFrame, base.callsiteSp) - MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
+    }
+    // INTERPER_FRAME_FP_TO_FP_DELTA
+    static constexpr int64_t GetInterpreterFrameFpToFpDelta()
+    {
+        return MEMBER_OFFSET(OptimizedEntryFrame, prevInterpretedFrameFp) -
+            MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
+    }
     static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptimizedEntryFrame, base.prev));
+            MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp));
     }
 };
 
@@ -195,6 +311,15 @@ static constexpr uint32_t SIZEOF_INTERPRETED_FRAME_32 = INTERPRETED_FRAME_ENV_OF
     JSTaggedValue::TaggedTypeSize() + sizeof(uint32_t) + sizeof(uint64_t);
 static constexpr uint32_t SIZEOF_INTERPRETED_FRAME_64 = INTERPRETED_FRAME_ENV_OFFSET_64 +
     JSTaggedValue::TaggedTypeSize() + sizeof(uint64_t) + sizeof(uint64_t);
+
+class InterpretedFrameBase {
+public:
+    InterpretedFrameBase() = default;
+    ~InterpretedFrameBase() = default;
+    JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
+    FrameType type;
+};
+
 // align with 8
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct InterpretedFrame {
@@ -213,111 +338,104 @@ struct InterpretedFrame {
         return reinterpret_cast<InterpretedFrame *>(sp) - 1;
     }
 
-    static constexpr uint32_t GetSpOffset(bool isArm32)
+    static constexpr uint32_t GetSpOffset(bool isArch32)
     {
-        if (isArm32) {
+        if (isArch32) {
             return INTERPRETED_FRAME_SP_OFFSET_32;
         }
         return INTERPRETED_FRAME_SP_OFFSET_64;
     }
 
-    static constexpr uint32_t GetConstpoolOffset(bool isArm32)
+    static constexpr uint32_t GetConstpoolOffset(bool isArch32)
     {
-        if (isArm32) {
+        if (isArch32) {
             return INTERPRETED_FRAME_CONSTPOOL_OFFSET_32;
         }
         return INTERPRETED_FRAME_CONSTPOOL_OFFSET_64;
     }
 
-    static constexpr uint32_t GetFunctionOffset(bool isArm32)
+    static constexpr uint32_t GetFunctionOffset(bool isArch32)
     {
-        if (isArm32) {
+        if (isArch32) {
             return INTERPRETED_FRAME_FUNCTION_OFFSET_32;
         }
         return INTERPRETED_FRAME_FUNCTION_OFFSET_64;
     }
 
-    static constexpr uint32_t GetProfileTypeInfoOffset(bool isArm32)
+    static constexpr uint32_t GetProfileTypeInfoOffset(bool isArch32)
     {
-        if (isArm32) {
+        if (isArch32) {
             return INTERPRETED_FRAME_PROFILETYPEINFO_OFFSET_32;
         }
         return INTERPRETED_FRAME_PROFILETYPEINFO_OFFSET_64;
     }
 
-    static constexpr uint32_t GetAccOffset(bool isArm32)
+    static constexpr uint32_t GetAccOffset(bool isArch32)
     {
-        if (isArm32) {
+        if (isArch32) {
             return INTERPRETED_FRAME_ACC_OFFSET_32;
         }
         return INTERPRETED_FRAME_ACC_OFFSET_64;
     }
 
-    static constexpr uint32_t GetEnvOffset(bool isArm32)
+    static constexpr uint32_t GetEnvOffset(bool isArch32)
     {
-        if (isArm32) {
+        if (isArch32) {
             return INTERPRETED_FRAME_ENV_OFFSET_32;
         }
         return INTERPRETED_FRAME_ENV_OFFSET_64;
     }
     
-    static constexpr uint32_t GetBaseOffset(bool isArm32)
+    static constexpr uint32_t GetBaseOffset(bool isArch32)
     {
-        if (isArm32) {
+        if (isArch32) {
             return INTERPRETED_FRAME_BASE_OFFSET_32;
         }
         return INTERPRETED_FRAME_BASE_OFFSET_64;
     }
 
-    static constexpr uint32_t GetSize(bool isArm32)
+    static constexpr uint32_t GetSize(bool isArch32)
     {
-        if (isArm32) {
-            return SIZEOF_INTERPRETED_FRAME_32;
+        if (isArch32) {
+            return kSizeOn32Platform;
         }
-        return SIZEOF_INTERPRETED_FRAME_64;
+        return kSizeOn64Platform;
     }
+
+    static constexpr uint32_t kSizeOn64Platform =
+        2 * sizeof(int64_t) + 5 * sizeof(JSTaggedValue) + 2 * sizeof(uint64_t);
+    static constexpr uint32_t kSizeOn32Platform =
+        2 * sizeof(int32_t) + 5 * sizeof(JSTaggedValue) + 2 * sizeof(uint64_t);
 };
- 
+static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);
+
 struct OptLeaveFrame {
-    uint64_t frameType;
-    JSTaggedType  *prev; // set cursp here
-    uintptr_t sp;
-    uintptr_t fp;
+    FrameType type;
+    JSTaggedType *prevFp; // set interpret frame cursp here
+    uintptr_t callsiteSp;
+    uintptr_t callsiteFp;
     uint64_t patchId;
     static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptLeaveFrame, prev));
+            MEMBER_OFFSET(OptLeaveFrame, prevFp));
     }
+    static constexpr uint32_t kSizeOn64Platform = sizeof(FrameType) + 4 * sizeof(uint64_t);
+    static constexpr uint32_t kSizeOn32Platform = sizeof(FrameType) + 3 * sizeof(int32_t) + sizeof(uint64_t);
+    static constexpr uint32_t kPrevFpOffset = sizeof(FrameType);
 };
 
-class FrameCommonConstants {
-public:
-    static constexpr size_t FRAME_TYPE_OFFSET = -sizeof(uint64_t);
-#ifdef PANDA_TARGET_AMD64
-    static constexpr int SP_DWARF_REG_NUM = 7;
-    static constexpr int FP_DWARF_REG_NUM = 6;
-    static constexpr int SP_OFFSET = 2;
-#else
-#ifdef PANDA_TARGET_ARM64
-    static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
-    static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
-    static constexpr int SP_OFFSET = -3;
-#else
-#ifdef PANDA_TARGET_ARM32
-    static constexpr int SP_DWARF_REG_NUM = 13;
-    static constexpr int FP_DWARF_REG_NUM = 11;
-    static constexpr int SP_OFFSET = 0;
-#else
-    static constexpr int SP_DWARF_REG_NUM = 0;
-    static constexpr int FP_DWARF_REG_NUM = 0;
-    static constexpr int SP_OFFSET = 0;
+#ifdef PANDA_TARGET_64
+    static_assert(InterpretedFrame::kSizeOn64Platform == sizeof(InterpretedFrame));
+    static_assert(OptimizedFrameBase::GetCallsiteSpToFpDelta() ==
+        FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
+    static_assert(OptimizedEntryFrame::GetCallsiteSpToFpDelta() ==
+        FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
+    static_assert(OptimizedEntryFrame::GetInterpreterFrameFpToFpDelta() ==
+        FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * sizeof(uintptr_t));
 #endif
+#ifdef PANDA_TARGET_32
+    static_assert(InterpretedFrame::kSizeOn32Platform == sizeof(InterpretedFrame));
 #endif
-#endif
-    static constexpr int AARCH64_SLOT_SIZE = 8;
-    static constexpr int AMD64_SLOT_SIZE = 8;
-    static constexpr int ARM32_SLOT_SIZE = 4;
-};
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H

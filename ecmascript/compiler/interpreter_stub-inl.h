@@ -100,15 +100,15 @@ GateRef InterpreterStub::ReadInst4_3(GateRef pc)
 GateRef InterpreterStub::ReadInstSigned8_0(GateRef pc)
 {
     GateRef x = Load(MachineType::INT8, pc, GetArchRelateConstant(1));
-    return GetEnvironment()->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT8_TO_INT32), x);
+    return GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 GateRef InterpreterStub::ReadInstSigned16_0(GateRef pc)
 {
     /* 2 : skip 8 bits of opcode and 8 bits of low bits */
     GateRef currentInst = Load(MachineType::INT8, pc, GetArchRelateConstant(2));
-    GateRef currentInst1 = GetEnvironment()->GetCircuitBuilder().NewArithMeticGate(
-            OpCode(OpCode::SEXT_INT8_TO_INT32), currentInst);
+    GateRef currentInst1 = GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(
+            OpCode(OpCode::SEXT_TO_INT32), currentInst);
     GateRef currentInst2 = Word32LSL(currentInst1, GetInt32Constant(8));  // 8 : set as high 8 bits
     return Int32Add(currentInst2, ZExtInt8ToInt32(ReadInst8_0(pc)));
 }
@@ -117,7 +117,7 @@ GateRef InterpreterStub::ReadInstSigned32_0(GateRef pc)
 {
     /* 4 : skip 8 bits of opcode and 24 bits of low bits */
     GateRef x = Load(MachineType::INT8, pc, GetArchRelateConstant(4));
-    GateRef currentInst = GetEnvironment()->GetCircuitBuilder().NewArithMeticGate(OpCode(OpCode::SEXT_INT8_TO_INT32), x);
+    GateRef currentInst = GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
     GateRef currentInst1 = Word32LSL(currentInst, GetInt32Constant(8));
     GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_2(pc)));
     GateRef currentInst3 = Word32LSL(currentInst2, GetInt32Constant(8));
@@ -332,12 +332,12 @@ GateRef InterpreterStub::GetObjectFromConstPool(GateRef constpool, GateRef index
 
 GateRef InterpreterStub::FunctionIsResolved(GateRef object)
 {
-    GateRef bitfield = TaggedGetInt(GetFunctionInfoFlagFromJSFunction(object));
+    GateRef bitfield = TaggedGetInt(GetFunctionBitFieldFromJSFunction(object));
     // decode
     return Word32NotEqual(
         Word32And(
-            Word32LSR(bitfield, GetInt32Constant(JSFunction::ResolvedBit::START_BIT)),
-            GetInt32Constant((1LU << JSFunction::ResolvedBit::SIZE) - 1)),
+            Word32LSR(bitfield, GetInt32Constant(JSFunction::ResolvedBits::START_BIT)),
+            GetInt32Constant((1LU << JSFunction::ResolvedBits::SIZE) - 1)),
         GetInt32Constant(0));
 }
 } //  namespace panda::ecmascript::kungfu

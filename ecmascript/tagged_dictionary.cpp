@@ -23,7 +23,7 @@ int NameDictionary::Hash(const JSTaggedValue &key)
         JSTaggedValue jsKey(key);
         if (jsKey.IsSymbol()) {
             auto symbolString = JSSymbol::Cast(key.GetTaggedObject());
-            return static_cast<JSTaggedNumber>(symbolString->GetHashField()).GetInt();
+            return symbolString->GetHashField();
         }
         if (jsKey.IsString()) {
             auto keyString = reinterpret_cast<EcmaString *>(key.GetTaggedObject());
@@ -59,9 +59,9 @@ void NameDictionary::GetAllKeys(const JSThread *thread, int offset, TaggedArray 
     }
 }
 
-void NameDictionary::GetAllEnumKeys(const JSThread *thread, int offset, TaggedArray *keyArray, array_size_t *keys) const
+void NameDictionary::GetAllEnumKeys(const JSThread *thread, int offset, TaggedArray *keyArray, uint32_t *keys) const
 {
-    array_size_t arrayIndex = 0;
+    uint32_t arrayIndex = 0;
     int size = Size();
     CVector<std::pair<JSTaggedValue, PropertyAttributes>> sortArr;
     for (int hashIndex = 0; hashIndex < size; hashIndex++) {
@@ -177,11 +177,11 @@ void NumberDictionary::GetAllKeys(const JSThread *thread, const JSHandle<NumberD
 }
 
 void NumberDictionary::GetAllEnumKeys(const JSThread *thread, const JSHandle<NumberDictionary> &obj, int offset,
-                                      const JSHandle<TaggedArray> &keyArray, array_size_t *keys)
+                                      const JSHandle<TaggedArray> &keyArray, uint32_t *keys)
 {
     ASSERT_PRINT(offset + obj->EntriesCount() <= static_cast<int>(keyArray->GetLength()),
                  "keyArray capacity is not enough for dictionary");
-    array_size_t arrayIndex = 0;
+    uint32_t arrayIndex = 0;
     int size = obj->Size();
     CVector<JSTaggedValue> sortArr;
     for (int hashIndex = 0; hashIndex < size; hashIndex++) {

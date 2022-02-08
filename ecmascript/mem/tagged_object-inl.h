@@ -60,7 +60,7 @@ inline JSThread *TaggedObject::GetJSThread() const
 {
     Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ToUintPtr(this)));
     ASSERT(region != nullptr);
-    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
     return vm->GetAssociatedJSThread();
 }
 }  //  namespace panda::ecmascript

@@ -516,7 +516,10 @@ namespace panda::ecmascript {
     V(WeakSet, Constructor)                   \
     V(WeakSet, Delete)                        \
     V(WeakSet, Add)                           \
-    V(WeakSet, Has)
+    V(WeakSet, Has)                           \
+    V(ArrayList, Constructor)                 \
+    V(ArrayList, Add)                         \
+    V(ArrayList, Iterator)
 
 #define ABSTRACT_OPERATION_LIST(V) \
     V(JSTaggedValue, ToString)     \
@@ -533,7 +536,6 @@ namespace panda::ecmascript {
 enum EcmaRuntimeCallerId {
     INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_ID) BUITINS_API_LIST(BUILTINS_API_ID)
     ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_ID)
-    GC_INITIALIZE,
     RUNTIME_CALLER_NUMBER,
 };
 

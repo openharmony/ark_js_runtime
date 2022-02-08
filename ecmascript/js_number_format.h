@@ -54,31 +54,40 @@ public:
     CAST_CHECK(JSNumberFormat, IsJSNumberFormat);
 
     static constexpr size_t LOCALE_OFFSET = JSObject::SIZE;
-
     ACCESSORS(Locale, LOCALE_OFFSET, NUMBER_STRING_SYSTEM_OFFSET)
-    ACCESSORS(NumberingSystem, NUMBER_STRING_SYSTEM_OFFSET, STYLE_OFFSET)
-    ACCESSORS(Style, STYLE_OFFSET, CURRENCY_OFFSET)
-    ACCESSORS(Currency, CURRENCY_OFFSET, CURRENCY_DISPLAY_OFFSET)
-    ACCESSORS(CurrencyDisplay, CURRENCY_DISPLAY_OFFSET, CURRENCY_SIGN_OFFSET)
-    ACCESSORS(CurrencySign, CURRENCY_SIGN_OFFSET, UNIT_OFFSET)
-    ACCESSORS(Unit, UNIT_OFFSET, UNIT_DISPLAY_OFFSET)
-    ACCESSORS(UnitDisplay, UNIT_DISPLAY_OFFSET, MINIMUM_INTEGER_DIGITS_OFFSET)
+    ACCESSORS(NumberingSystem, NUMBER_STRING_SYSTEM_OFFSET, CURRENCY_OFFSET)
+    ACCESSORS(Currency, CURRENCY_OFFSET, UNIT_OFFSET)
+    ACCESSORS(Unit, UNIT_OFFSET, MINIMUM_INTEGER_DIGITS_OFFSET)
     ACCESSORS(MinimumIntegerDigits, MINIMUM_INTEGER_DIGITS_OFFSET, MINIMUM_FRACTION_DIGITS_OFFSET)
     ACCESSORS(MinimumFractionDigits, MINIMUM_FRACTION_DIGITS_OFFSET, MAXIMUM_FRACTION_DIGITS_OFFSET)
     ACCESSORS(MaximumFractionDigits, MAXIMUM_FRACTION_DIGITS_OFFSET, MININUM_SIGNIFICANT_DIGITS_OFFSET)
     ACCESSORS(MinimumSignificantDigits, MININUM_SIGNIFICANT_DIGITS_OFFSET, MAXINUM_SIGNIFICANT_DIGITS_OFFSET)
     ACCESSORS(MaximumSignificantDigits, MAXINUM_SIGNIFICANT_DIGITS_OFFSET, USER_GROUPING_OFFSET)
-    ACCESSORS(UseGrouping, USER_GROUPING_OFFSET, ROUNDING_TYPE_OFFSET)
-    ACCESSORS(RoundingType, ROUNDING_TYPE_OFFSET, NOTATION_OFFSET)
-    ACCESSORS(Notation, NOTATION_OFFSET, COMPACT_DISPLAY_OFFSET)
-    ACCESSORS(CompactDisplay, COMPACT_DISPLAY_OFFSET, SIGN_DISPLAY_OFFSET)
-    ACCESSORS(SignDisplay, SIGN_DISPLAY_OFFSET, ICU_NUMBER_FORMAT_OFFSET)
-    ACCESSORS(BoundFormat, ICU_NUMBER_FORMAT_OFFSET, BOUND_FORMAT_OFFSET)
+    ACCESSORS(UseGrouping, USER_GROUPING_OFFSET, BOUND_FORMAT_OFFSET)
+    ACCESSORS(BoundFormat, BOUND_FORMAT_OFFSET, ICU_FIELD_OFFSET)
+    ACCESSORS(IcuField, ICU_FIELD_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    // icu field.
-    ACCESSORS(IcuField, BOUND_FORMAT_OFFSET, SIZE)
+    // define BitField
+    static constexpr size_t STYLE_BITS = 3;
+    static constexpr size_t CURRENCY_SIGN_BITS = 2;
+    static constexpr size_t CURRENCY_DISPLAY_BITS = 3;
+    static constexpr size_t UNIT_DISPLAY_BITS = 3;
+    static constexpr size_t SIGN_DISPLAY_BITS = 3;
+    static constexpr size_t COMPACT_DISPLAY_BITS = 2;
+    static constexpr size_t NOTATION_BITS = 3;
+    static constexpr size_t ROUNDING_TYPE_BITS = 3;
+    FIRST_BIT_FIELD(BitField, Style, StyleOption, STYLE_BITS)
+    NEXT_BIT_FIELD(BitField, CurrencySign, CurrencySignOption, CURRENCY_SIGN_BITS, Style)
+    NEXT_BIT_FIELD(BitField, CurrencyDisplay, CurrencyDisplayOption, CURRENCY_DISPLAY_BITS, CurrencySign)
+    NEXT_BIT_FIELD(BitField, UnitDisplay, UnitDisplayOption, UNIT_DISPLAY_BITS, CurrencyDisplay)
+    NEXT_BIT_FIELD(BitField, SignDisplay, SignDisplayOption, SIGN_DISPLAY_BITS, UnitDisplay)
+    NEXT_BIT_FIELD(BitField, CompactDisplay, CompactDisplayOption, COMPACT_DISPLAY_BITS, SignDisplay)
+    NEXT_BIT_FIELD(BitField, Notation, NotationOption, NOTATION_BITS, CompactDisplay)
+    NEXT_BIT_FIELD(BitField, RoundingType, RoundingType, ROUNDING_TYPE_BITS, Notation)
 
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, SIZE)
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
 
     icu::number::LocalizedNumberFormatter *GetIcuCallTarget() const
@@ -137,7 +146,7 @@ public:
         int maximumFractionDigits = formatter->GetMaximumFractionDigits().GetInt();
 
         // If roundingtype is "compact-rounding" return ICU formatter
-        auto roundingType = static_cast<RoundingType>(formatter->GetRoundingType().GetInt());
+        RoundingType roundingType = formatter->GetRoundingType();
         if (roundingType == RoundingType::COMPACTROUNDING) {
             return icuNumberformatter;
         }

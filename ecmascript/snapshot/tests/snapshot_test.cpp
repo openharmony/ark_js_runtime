@@ -52,7 +52,6 @@ public:
         ASSERT_TRUE(ecmaVm != nullptr) << "Cannot create Runtime";
         thread = ecmaVm->GetJSThread();
         scope = new EcmaHandleScope(thread);
-        thread->SetIsEcmaInterpreter(true);
     }
 
     void TearDown() override

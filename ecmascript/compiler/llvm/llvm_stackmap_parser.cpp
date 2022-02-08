@@ -62,21 +62,20 @@ const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPatchID(uint64_t patchP
     return nullptr;
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
-    OptLeaveFrame *frame)
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame) const
 {
     int i = 0;
     uintptr_t address = 0;
     uintptr_t base = 0;
     uintptr_t derived = 0;
     for (auto &info: *infos) {
-        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = frame->sp;
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+            uintptr_t rsp = frame->callsiteSp;
             address = rsp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rsp :" << rsp;
-        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
-            uintptr_t fp = frame->fp;
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+            uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rfp :" << fp;
@@ -102,14 +101,12 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
     i = 0;
 }
 
-bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
-    const RootVisitor &v0, const RootRangeVisitor &v1,
-    ChunkMap<DerivedDataKey, uintptr_t> *data,
-    [[maybe_unused]] bool isVerifying) const
+bool LLVMStackMapParser::CollectStackMapSlots(OptLeaveFrame *frame,
+    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
 {
     ASSERT(frame);
     uint64_t patchpointId = frame->patchId;
-    const CallSiteInfo *infos = GetCallSiteInfoByPc(patchpointId);
+    const CallSiteInfo *infos = GetCallSiteInfoByPatchID(patchpointId);
     if (infos == nullptr) {
         return false;
     }
@@ -122,11 +119,11 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
 #endif
 
     for (auto &info: *infos) {
-        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = frame->sp;
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+            uintptr_t rsp = frame->callsiteSp;
             address = rsp + info.second;
-        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
-            uintptr_t fp = frame->fp;
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+            uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
         } else {
             abort();
@@ -134,7 +131,7 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                v0(Root::ROOT_FRAME, ObjectSlot(base));
+                baseSet.emplace(base);
             } else {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 if (!isVerifying) {
@@ -152,45 +149,37 @@ bool LLVMStackMapParser::VisitStackMapSlots(OptLeaveFrame *frame,
     return true;
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos,
-    uintptr_t *fp)
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t *fp) const
 {
     int i = 0;
     uintptr_t address = 0;
     uintptr_t base = 0;
     uintptr_t derived = 0;
-    for (auto &info: *infos) {
-    if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
-#ifdef PANDA_TARGET_ARM64
-        uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
-        uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameCommonConstants::SP_OFFSET));
-#else
-        uintptr_t *rsp = fp + FrameCommonConstants::SP_OFFSET;
-#endif
-        address = reinterpret_cast<uintptr_t>(rsp) + info.second;
-        LOG_ECMA(DEBUG) << "SP_DWARF_REG_NUM:  info.second:" << info.second << " rbp offset:" <<
-            reinterpret_cast<uintptr_t>(*fp) - address << "rsp :" << rsp;
-    } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
-        uintptr_t tmpFp = *fp;
-        address = tmpFp + info.second;
-        LOG_ECMA(DEBUG) << "FP_DWARF_REG_NUM:  info.second:" << info.second;
-    } else {
-        LOG_ECMA(DEBUG) << "REG_NUM :  info.first:" << info.first;
-        abort();
-    }
 
-    if (IsDeriveredPointer(i)) {
-        derived = reinterpret_cast<uintptr_t>(address);
-        if (base == derived) {
-            LOG_ECMA(DEBUG) << std::hex << "visit base:" << base << " base Value: " <<
-                *reinterpret_cast<uintptr_t *>(base);
+    uintptr_t callsiteFp = *fp;
+    uintptr_t callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::CALLSITE_SP_TO_FP_DELTA);
+
+    for (auto &info: *infos) {
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+            address = callsiteSp + info.second;
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+            address = callsiteFp + info.second;
         } else {
-            LOG_ECMA(DEBUG) << std::hex << "push base:" << base << " base Value: " <<
-                *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
+            abort();
         }
-    } else {
-        base = reinterpret_cast<uintptr_t>(address);
-    }
+
+        if (IsDeriveredPointer(i)) {
+            derived = reinterpret_cast<uintptr_t>(address);
+            if (base == derived) {
+                LOG_ECMA(DEBUG) << std::hex << "visit base:" << base << " base Value: " <<
+                    *reinterpret_cast<uintptr_t *>(base);
+            } else {
+                LOG_ECMA(DEBUG) << std::hex << "push base:" << base << " base Value: " <<
+                    *reinterpret_cast<uintptr_t *>(base) << " derived:" << derived;
+            }
+        } else {
+            base = reinterpret_cast<uintptr_t>(address);
+        }
         i++;
     }
 }
@@ -200,10 +189,8 @@ bool LLVMStackMapParser::IsDeriveredPointer(int callsitetime) const
     return callsitetime & 1;
 }
 
-bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
-    const RootVisitor &v0, const RootRangeVisitor &v1,
-    ChunkMap<DerivedDataKey, uintptr_t> *data,
-    [[maybe_unused]] bool isVerifying) const
+bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp,
+    std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
 {
     const CallSiteInfo *infos = GetCallSiteInfoByPc(callSiteAddr);
     if (infos == nullptr) {
@@ -217,18 +204,14 @@ bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t fr
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
     PrintCallSiteInfo(infos, fp);
 #endif
+    uintptr_t callsiteFp = *fp;
+    uintptr_t callsiteSp = *(reinterpret_cast<uintptr_t *>(callsiteFp) + FrameConstants::CALLSITE_SP_TO_FP_DELTA);
+
     for (auto &info: *infos) {
-        if (info.first == FrameCommonConstants::SP_DWARF_REG_NUM) {
-#ifdef PANDA_TARGET_ARM64
-            uintptr_t *curFp = reinterpret_cast<uintptr_t *>(*fp);
-            uintptr_t *rsp = reinterpret_cast<uintptr_t *>(*(curFp + FrameCommonConstants::SP_OFFSET));
-#else
-            uintptr_t *rsp = fp + FrameCommonConstants::SP_OFFSET;
-#endif
-            address = reinterpret_cast<uintptr_t>(rsp) + info.second;
-        } else if (info.first == FrameCommonConstants::FP_DWARF_REG_NUM) {
-            uintptr_t tmpFp = *fp;
-            address = tmpFp + info.second;
+        if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
+            address = callsiteSp + info.second;
+        } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+            address = callsiteFp + info.second;
         } else {
             abort();
         }
@@ -236,7 +219,7 @@ bool LLVMStackMapParser::VisitStackMapSlots(uintptr_t callSiteAddr, uintptr_t fr
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
             if (base == derived) {
-                v0(Root::ROOT_FRAME, ObjectSlot(base));
+                baseSet.emplace(base);
             } else {
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
                 if (!isVerifying) {

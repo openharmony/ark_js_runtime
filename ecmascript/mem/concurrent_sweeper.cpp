@@ -33,7 +33,6 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
 {
     if (concurrentSweep_) {
         // Add all region to region list. Ensure all task finish
-        trace::ScopedTrace scoped_trace("ConcurrentSweeper::SweepPhases");
         if (!compressGC) {
             heap_->GetOldSpace()->EnumerateNonCollectRegionSet([this](Region *current) {
                 AddRegion(OLD_SPACE, current);
@@ -57,9 +56,9 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
 
         if (!compressGC) {
             Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
-            isOldSpaceSwept_ = true;
+            canSelectCset_ = true;
         } else {
-            isOldSpaceSwept_ = false;
+            canSelectCset_ = false;
         }
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
@@ -67,9 +66,9 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
         if (!compressGC) {
             SweepSpace(OLD_SPACE,
                 const_cast<OldSpace *>(heap_->GetOldSpace()), heap_->GetHeapManager()->GetOldSpaceAllocator());
-            isOldSpaceSwept_ = true;
+            canSelectCset_ = true;
         } else {
-            isOldSpaceSwept_ = false;
+            canSelectCset_ = false;
         }
         SweepSpace(NON_MOVABLE, const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace()),
                    heap_->GetHeapManager()->GetNonMovableSpaceAllocator());
@@ -81,7 +80,6 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
 
 void ConcurrentSweeper::SweepSpace(MemSpaceType type, bool isMain)
 {
-    trace::ScopedTrace scoped_trace("Sweeper::SweepSpace");
     FreeListAllocator &allocator = heap_->GetHeapManager()->GetFreeListAllocator(type);
     Region *current = GetRegionSafe(type);
     while (current != nullptr) {
@@ -118,7 +116,6 @@ void ConcurrentSweeper::SweepSpace(MemSpaceType type, Space *space, FreeListAllo
 
 void ConcurrentSweeper::SweepHugeSpace()
 {
-    trace::ScopedTrace scoped_trace("SweepSpace HugeObject");
     HugeObjectSpace *space = const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace());
     Region *currentRegion = space->GetRegionList().GetFirst();
 
@@ -159,7 +156,6 @@ void ConcurrentSweeper::FreeRegion(Region *current, FreeListAllocator &allocator
 
 void ConcurrentSweeper::FillSweptRegion(MemSpaceType type)
 {
-    trace::ScopedTrace scoped_trace("Sweeper::FillSweptRegion");
     if (sweptList_[type].empty()) {
         return;
     }
@@ -178,8 +174,8 @@ void ConcurrentSweeper::FillSweptRegion(MemSpaceType type)
 void ConcurrentSweeper::FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart,
                                       uintptr_t freeEnd, bool isMain)
 {
-    allocator.Free(freeStart, freeEnd, isMain);
     heap_->ClearSlotsRange(current, freeStart, freeEnd);
+    allocator.Free(freeStart, freeEnd, isMain);
 }
 
 void ConcurrentSweeper::AddRegion(MemSpaceType type, Region *region)

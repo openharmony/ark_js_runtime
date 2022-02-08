@@ -57,7 +57,7 @@ public:
     static sem_t sem_;
     static CVector<JSMethod *> staticFrameStack_;
 
-    void StartCpuProfiler(const EcmaVM *vm);
+    void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
     void StopCpuProfiler();
     std::string GetProfileName() const;
     virtual ~CpuProfiler();
@@ -68,9 +68,11 @@ private:
     explicit CpuProfiler();
     void SetProfileStart(time_t nowTimeStamp);
     void GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo) const;
+    bool CheckFileName(const std::string &fileName, std::string &absoluteFilePath) const;
 
     bool isOnly_ = false;
     int interval_ = 500; // 500:Sampling interval 500 microseconds
+    std::string fileName_ = "";
     ProfileGenerator *generator_ = nullptr;
 };
 } // namespace panda::ecmascript

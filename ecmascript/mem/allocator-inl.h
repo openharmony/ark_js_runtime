@@ -110,6 +110,7 @@ uintptr_t FreeListAllocator::Allocate(size_t size)
     auto ret = bpAllocator_.Allocate(size);
     if (LIKELY(ret != 0)) {
         FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
+        allocationSizeAccumulator_ += size;
         return ret;
     }
     FreeObject *object = freeList_->Allocator(size);
@@ -143,6 +144,7 @@ uintptr_t FreeListAllocator::Allocate(FreeObject *object, size_t size)
     auto ret = bpAllocator_.Allocate(size);
     if (ret != 0 && bpAllocator_.Available() > 0) {
         FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
+        allocationSizeAccumulator_ += size;
     }
     return ret;
 }

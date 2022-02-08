@@ -22,14 +22,6 @@
 #include "ecmascript/js_handle.h"
 
 namespace panda::ecmascript {
-enum class GeneratorResumeMode {
-    RETURN = 0,
-    THROW,
-    NEXT,
-};
-
-using C2IBridge = std::array<uintptr_t, 4>;  // 4: means array length
-
 class GeneratorHelper {
 public:
     static JSHandle<JSObject> Next(JSThread *thread, const JSHandle<GeneratorContext> &genContext, JSTaggedValue value);
@@ -39,7 +31,7 @@ public:
 
     static JSHandle<JSObject> Throw(JSThread *thread, const JSHandle<GeneratorContext> &genContext,
                                     JSTaggedValue value);
-    static void ChangeGenContext(JSThread *thread, const JSHandle<GeneratorContext> &genContext, C2IBridge *c2i);
+    static void ChangeGenContext(JSThread *thread, const JSHandle<GeneratorContext> &genContext);
     static void ResumeContext(JSThread *thread);
 };
 }  // namespace panda::ecmascript

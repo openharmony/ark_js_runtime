@@ -19,7 +19,6 @@
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_runtime_call_info.h"
-#include "ecmascript/js_function_extra_info.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/lexical_env.h"
 
@@ -47,10 +46,13 @@ public:
     }
 
     static constexpr size_t METHOD_OFFSET = JSObject::SIZE;
-    SET_GET_NATIVE_FIELD(Method, JSMethod, METHOD_OFFSET, SIZE)
+    ACCESSORS_NATIVE_FIELD(Method, JSMethod, METHOD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, SIZE, SIZE)
 };
+
+static_assert((JSFunctionBase::SIZE % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
 
 class JSFunction : public JSFunctionBase {
 public:
@@ -170,78 +172,34 @@ public:
         return kind == FunctionKind::DERIVED_CONSTRUCTOR;
     }
 
-    inline void SetFunctionKind(const JSThread *thread, FunctionKind kind)
-    {
-        JSTaggedType oldValue = GetFunctionInfoFlag().GetRawData();
-        SetFunctionInfoFlag(thread, JSTaggedValue(FunctionKindBit::Update(oldValue, kind)));
-    }
-
-    inline void SetStrict(const JSThread *thread, bool flag)
-    {
-        JSTaggedType oldValue = GetFunctionInfoFlag().GetRawData();
-        SetFunctionInfoFlag(thread, JSTaggedValue(StrictBit::Update(oldValue, flag)));
-    }
-
-    inline void SetResolved(const JSThread *thread)
-    {
-        TaggedType oldValue = GetFunctionInfoFlag().GetRawData();
-        SetFunctionInfoFlag(thread, JSTaggedValue(ResolvedBit::Update(oldValue, true)));
-    }
-
-    inline bool IsResolved() const
-    {
-        return ResolvedBit::Decode(GetFunctionInfoFlag().GetInt());
-    }
-
-    inline void SetFunctionMode(const JSThread *thread, FunctionMode mode)
-    {
-        JSTaggedType oldValue = GetFunctionInfoFlag().GetRawData();
-        SetFunctionInfoFlag(thread, JSTaggedValue(ThisModeBit::Update(oldValue, mode)));
-    }
-
-    inline FunctionKind GetFunctionKind() const
-    {
-        return FunctionKindBit::Decode(GetFunctionInfoFlag().GetInt());
-    }
-
-    inline bool IsStrict() const
-    {
-        return StrictBit::Decode(GetFunctionInfoFlag().GetInt());
-    }
-
-    inline FunctionMode GetFunctionMode() const
-    {
-        return ThisModeBit::Decode(GetFunctionInfoFlag().GetInt());
-    }
-
     inline static bool IsArrowFunction(FunctionKind kind)
     {
-        return (kind >= ARROW_FUNCTION) && (kind <= ASYNC_ARROW_FUNCTION);
+        return (kind >= FunctionKind::ARROW_FUNCTION) && (kind <= FunctionKind::ASYNC_ARROW_FUNCTION);
     }
 
     inline static bool IsClassConstructor(FunctionKind kind)
     {
-        return (kind == CLASS_CONSTRUCTOR) || (kind == DERIVED_CONSTRUCTOR);
+        return (kind == FunctionKind::CLASS_CONSTRUCTOR) || (kind == FunctionKind::DERIVED_CONSTRUCTOR);
     }
 
     inline static bool IsConstructorKind(FunctionKind kind)
     {
-        return (kind >= BUILTIN_PROXY_CONSTRUCTOR) && (kind <= DERIVED_CONSTRUCTOR);
+        return (kind >= FunctionKind::BUILTIN_PROXY_CONSTRUCTOR) && (kind <= FunctionKind::DERIVED_CONSTRUCTOR);
     }
 
     inline static bool IsBuiltinConstructor(FunctionKind kind)
     {
-        return kind >= BUILTIN_PROXY_CONSTRUCTOR && kind <= BUILTIN_CONSTRUCTOR;
+        return kind >= FunctionKind::BUILTIN_PROXY_CONSTRUCTOR && kind <= FunctionKind::BUILTIN_CONSTRUCTOR;
     }
 
     inline static bool HasPrototype(FunctionKind kind)
     {
-        return kind >= BUILTIN_CONSTRUCTOR && kind <= GENERATOR_FUNCTION;
+        return kind >= FunctionKind::BUILTIN_CONSTRUCTOR && kind <= FunctionKind::GENERATOR_FUNCTION;
     }
 
     inline static bool HasAccessor(FunctionKind kind)
     {
-        return kind >= NORMAL_FUNCTION && kind <= ASYNC_FUNCTION;
+        return kind >= FunctionKind::NORMAL_FUNCTION && kind <= FunctionKind::ASYNC_FUNCTION;
     }
 
     inline bool IsClassConstructor() const
@@ -264,22 +222,25 @@ public:
     static constexpr size_t PROTO_OR_DYNCLASS_OFFSET = JSFunctionBase::SIZE;
     ACCESSORS(ProtoOrDynClass, PROTO_OR_DYNCLASS_OFFSET, LEXICAL_ENV_OFFSET)
     ACCESSORS(LexicalEnv, LEXICAL_ENV_OFFSET, HOME_OBJECT_OFFSET)
-    ACCESSORS(HomeObject, HOME_OBJECT_OFFSET, FUNCTION_INFO_FLAG_OFFSET)
-    ACCESSORS(FunctionInfoFlag, FUNCTION_INFO_FLAG_OFFSET, FUNCTION_EXTRA_INFO_OFFSET)
+    ACCESSORS(HomeObject, HOME_OBJECT_OFFSET, FUNCTION_EXTRA_INFO_OFFSET)
     ACCESSORS(FunctionExtraInfo, FUNCTION_EXTRA_INFO_OFFSET, CONSTANT_POOL_OFFSET)
     ACCESSORS(ConstantPool, CONSTANT_POOL_OFFSET, PROFILE_TYPE_INFO_OFFSET)
-    ACCESSORS(ProfileTypeInfo, PROFILE_TYPE_INFO_OFFSET, SIZE)
+    ACCESSORS(ProfileTypeInfo, PROFILE_TYPE_INFO_OFFSET, BIT_FIELD_OFFSET)
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    static constexpr uint32_t FUNCTION_KIND_BIT_NUM = 5;
-    using FunctionKindBit = BitField<FunctionKind, 0, FUNCTION_KIND_BIT_NUM>;
-    using StrictBit = FunctionKindBit::NextFlag;
+    // define BitField
+    static constexpr uint32_t FUNCTION_KIND_BITS = 4;
+    static constexpr uint32_t STRICT_BITS = 1;
+    static constexpr uint32_t RESOLVED_BITS = 1;
+    static constexpr uint32_t THIS_MODE_BITS = 2;
+    FIRST_BIT_FIELD(BitField, FunctionKind, FunctionKind, FUNCTION_KIND_BITS)
+    NEXT_BIT_FIELD(BitField, Strict, bool, STRICT_BITS, FunctionKind)
+    NEXT_BIT_FIELD(BitField, Resolved, bool, RESOLVED_BITS, Strict)
+    NEXT_BIT_FIELD(BitField, ThisMode, FunctionMode, THIS_MODE_BITS, Resolved)
 
-    using ResolvedBit = StrictBit::NextFlag;
-    using ThisModeBit = ResolvedBit::NextField<FunctionMode, 2>;  // 2: means this flag occupies two digits.
-
+    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunctionBase, PROTO_OR_DYNCLASS_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
-
-    DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSFunctionBase, PROTO_OR_DYNCLASS_OFFSET, SIZE)
 
 private:
     static JSHandle<JSHClass> GetOrCreateDerivedJSHClass(JSThread *thread, JSHandle<JSFunction> derived,

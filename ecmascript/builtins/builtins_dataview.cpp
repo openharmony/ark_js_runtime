@@ -51,24 +51,24 @@ JSTaggedValue BuiltinsDataView::DataViewConstructor(EcmaRuntimeCallInfo *argv)
     JSTaggedNumber offsetNumber = JSTaggedValue::ToNumber(thread, offsetHandle);
     // 6. ReturnIfAbrupt(offset).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    int32_t offset = base::NumberHelper::DoubleInRangeInt32(offsetNumber.GetNumber());
+    int32_t offsetInt = base::NumberHelper::DoubleInRangeInt32(offsetNumber.GetNumber());
     // 7. If numberOffset ≠ offset or offset < 0, throw a RangeError exception.
-    if (offset < 0) {
+    if (offsetInt < 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "Offset out of range", JSTaggedValue::Exception());
     }
+    uint32_t offset = offsetInt;
     // 8. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
     if (BuiltinsArrayBuffer::IsDetachedBuffer(bufferHandle.GetTaggedValue())) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "buffer is Detached Buffer", JSTaggedValue::Exception());
     }
     // 9. Let bufferByteLength be the value of buffer’s [[ArrayBufferByteLength]] internal slot.
     JSHandle<JSArrayBuffer> arrBufHandle(bufferHandle);
-    JSTaggedNumber bufLenNum = JSTaggedNumber::FromIntOrDouble(thread, arrBufHandle->GetArrayBufferByteLength());
-    int32_t bufByteLen = bufLenNum.ToInt32();
+    uint32_t bufByteLen = arrBufHandle->GetArrayBufferByteLength();
     // 10. If offset > bufferByteLength, throw a RangeError exception.
     if (offset > bufByteLen) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "offset > bufferByteLength", JSTaggedValue::Exception());
     }
-    int32_t viewByteLen;
+    uint32_t viewByteLen;
     JSHandle<JSTaggedValue> byteLenHandle = GetCallArg(argv, BuiltinsBase::ArgsPosition::THIRD);
     // 11. If byteLength is undefined, then Let viewByteLength be bufferByteLength – offset.
     if (byteLenHandle->IsUndefined()) {
@@ -96,9 +96,9 @@ JSTaggedValue BuiltinsDataView::DataViewConstructor(EcmaRuntimeCallInfo *argv)
     // 16. Set O’s [[ViewedArrayBuffer]] internal slot to buffer.
     dataView->SetViewedArrayBuffer(thread, bufferHandle.GetTaggedValue());
     // 17. Set O’s [[ByteLength]] internal slot to viewByteLength.
-    dataView->SetByteLength(thread, JSTaggedValue(viewByteLen));
+    dataView->SetByteLength(viewByteLen);
     // 18. Set O’s [[ByteOffset]] internal slot to offset.
-    dataView->SetByteOffset(thread, JSTaggedValue(offset));
+    dataView->SetByteOffset(offset);
     // 19. Return O.
     return JSTaggedValue(dataView.GetTaggedValue());
 }
@@ -152,7 +152,7 @@ JSTaggedValue BuiltinsDataView::GetByteLength(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", JSTaggedValue::Exception());
     }
     // 6. Let size be the value of O’s [[ByteLength]] internal slot.
-    JSTaggedValue size = dataView->GetByteLength();
+    uint32_t size = dataView->GetByteLength();
     // 7. Return size.
     return JSTaggedValue(size);
 }
@@ -182,7 +182,7 @@ JSTaggedValue BuiltinsDataView::GetOffset(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", JSTaggedValue::Exception());
     }
     // 6. Let offset be the value of O’s [[ByteOffset]] internal slot.
-    JSTaggedValue offset = dataView->GetByteOffset();
+    uint32_t offset = dataView->GetByteOffset();
     // 7. Return offset.
     return JSTaggedValue(offset);
 }
@@ -317,11 +317,12 @@ JSTaggedValue BuiltinsDataView::GetViewValue(JSThread *thread, const JSHandle<JS
     JSTaggedNumber numberIndex = JSTaggedValue::ToNumber(thread, requestIndex);
     // 5. ReturnIfAbrupt(getIndex).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    int64_t index = base::NumberHelper::DoubleInRangeInt32(numberIndex.GetNumber());
+    int32_t indexInt = base::NumberHelper::DoubleInRangeInt32(numberIndex.GetNumber());
     // 6. If numberIndex ≠ getIndex or getIndex < 0, throw a RangeError exception.
-    if (index < 0) {
+    if (indexInt < 0) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "getIndex < 0", JSTaggedValue::Exception());
     }
+    uint32_t index = indexInt;
     // 7. Let isLittleEndian be ToBoolean(isLittleEndian).
     bool isLittleEndian;
     if (littleEndian.IsUndefined()) {
@@ -337,19 +338,17 @@ JSTaggedValue BuiltinsDataView::GetViewValue(JSThread *thread, const JSHandle<JS
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", JSTaggedValue::Exception());
     }
     // 10. Let viewOffset be the value of view’s [[ByteOffset]] internal slot.
-    JSTaggedNumber offsetNum = JSTaggedNumber::FromIntOrDouble(thread, dataView->GetByteOffset());
-    int32_t offset = offsetNum.ToInt32();
+    uint32_t offset = dataView->GetByteOffset();
     // 11. Let viewSize be the value of view’s [[ByteLength]] internal slot.
-    JSTaggedNumber viewNum = JSTaggedNumber::FromIntOrDouble(thread, dataView->GetByteLength());
-    int32_t size = viewNum.ToInt32();
+    uint32_t size = dataView->GetByteLength();
     // 12. Let elementSize be the Number value of the Element Size value specified in Table 49 for Element Type type.
-    int32_t elementSize = JSDataView::GetElementSize(type);
+    uint32_t elementSize = JSDataView::GetElementSize(type);
     // 13. If getIndex +elementSize > viewSize, throw a RangeError exception.
     if (index + elementSize > size) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "getIndex +elementSize > viewSize", JSTaggedValue::Exception());
     }
     // 14. Let bufferIndex be getIndex + viewOffset.
-    int32_t bufferIndex = index + offset;
+    uint32_t bufferIndex = index + offset;
     // 15. Return GetValueFromBuffer(buffer, bufferIndex, type, isLittleEndian).
     return BuiltinsArrayBuffer::GetValueFromBuffer(buffer, bufferIndex, type, isLittleEndian);
 }
@@ -394,19 +393,17 @@ JSTaggedValue BuiltinsDataView::SetViewValue(JSThread *thread, const JSHandle<JS
         THROW_TYPE_ERROR_AND_RETURN(thread, "Is Detached Buffer", JSTaggedValue::Exception());
     }
     // 10. Let viewOffset be the value of view’s [[ByteOffset]] internal slot.
-    JSTaggedNumber offsetNum = JSTaggedNumber::FromIntOrDouble(thread, dataView->GetByteOffset());
-    int32_t offset = offsetNum.ToInt32();
+    uint32_t offset = dataView->GetByteOffset();
     // 11. Let viewSize be the value of view’s [[ByteLength]] internal slot.
-    JSTaggedNumber viewNum = JSTaggedNumber::FromIntOrDouble(thread, dataView->GetByteLength());
-    int32_t size = viewNum.ToInt32();
+    uint32_t size = dataView->GetByteLength();
     // 12. Let elementSize be the Number value of the Element Size value specified in Table 49 for Element Type type.
-    int32_t elementSize = JSDataView::GetElementSize(type);
+    uint32_t elementSize = JSDataView::GetElementSize(type);
     // 13. If getIndex +elementSize > viewSize, throw a RangeError exception.
     if (index + elementSize > size) {
         THROW_RANGE_ERROR_AND_RETURN(thread, "getIndex +elementSize > viewSize", JSTaggedValue::Exception());
     }
     // 14. Let bufferIndex be getIndex + viewOffset.
-    int32_t bufferIndex = index + offset;
+    uint32_t bufferIndex = index + offset;
     // 15. Return SetValueFromBuffer(buffer, bufferIndex, type, value, isLittleEndian).
     return BuiltinsArrayBuffer::SetValueInBuffer(buffer, bufferIndex, type, numVal, isLittleEndian);
 }

@@ -28,6 +28,7 @@ namespace panda::ecmascript::kungfu {
     V(CallGetter2, 4)                       \
     V(CallInternalGetter, 3)                \
     V(ThrowTypeError, 2)                    \
+    V(JSArrayListSetByIndex, 4)             \
     V(JSProxySetProperty, 6)                \
     V(GetHash32, 2)                         \
     V(FindElementWithCache, 4)              \
@@ -204,9 +205,6 @@ enum StubId {
 #define DEF_STUB(name, counter) STUB_##name,
     FAST_RUNTIME_STUB_LIST(DEF_STUB)
     INTERPRETER_STUB_LIST(DEF_STUB)
-#ifndef NDEBUG
-    TEST_FUNC_LIST(DEF_STUB)
-#endif
 #undef DEF_STUB
     ALL_STUB_MAXCOUNT
 };

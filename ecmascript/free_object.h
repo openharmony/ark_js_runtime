@@ -44,14 +44,14 @@ public:
         return reinterpret_cast<uintptr_t>(this) + Available();
     }
 
-    inline void SetAvailable(size_t size)
+    inline void SetAvailable(uint32_t size)
     {
         if (size >= SIZE) {
             SetSize(size);
         }
     }
 
-    inline size_t Available() const
+    inline uint32_t Available() const
     {
         auto hclass = GetClass();
         if (hclass != nullptr && (hclass->IsFreeObjectWithOneField() || hclass->IsFreeObjectWithNoneField())) {
@@ -68,8 +68,11 @@ public:
     }
 
     static constexpr size_t NEXT_OFFSET = TaggedObjectSize();
-    SET_GET_NATIVE_FIELD(Next, FreeObject, NEXT_OFFSET, SIZE_OFFSET);
-    SET_GET_PRIMITIVE_FIELD(Size, size_t, SIZE_OFFSET, SIZE);
+    ACCESSORS_FIXED_SIZE_FIELD(Next, FreeObject *, JSTaggedType, NEXT_OFFSET, SIZE_OFFSET)
+    ACCESSORS_FIXED_SIZE_FIELD(Size, uint32_t, JSTaggedType, SIZE_OFFSET, SIZE)
 };
+
+static_assert((FreeObject::SIZE % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
 }  // namespace panda::ecmascript
+
 #endif  // ECMASCRIPT_MEM_FREE_OBJECT_H

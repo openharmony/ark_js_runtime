@@ -43,8 +43,8 @@ JSTaggedValue JSSetIterator::Next(EcmaRuntimeCallInfo *argv)
     JSHandle<JSTaggedValue> iteratedSet(thread, iter->GetIteratedSet());
 
     // 5.Let index be O.[[SetNextIndex]].
-    int index = iter->GetNextIndex().GetInt();
-    IterationKind itemKind = IterationKind(iter->GetIterationKind().GetInt());
+    int index = iter->GetNextIndex();
+    IterationKind itemKind = iter->GetIterationKind();
     // 7.If s is undefined, return CreateIterResultObject(undefined, true).
     if (iteratedSet->IsUndefined()) {
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
@@ -54,7 +54,7 @@ JSTaggedValue JSSetIterator::Next(EcmaRuntimeCallInfo *argv)
 
     while (index < totalElements) {
         if (!set->GetKey(index).IsHole()) {
-            iter->SetNextIndex(thread, JSTaggedValue(index + 1));
+            iter->SetNextIndex(index + 1);
             JSHandle<JSTaggedValue> key(thread, set->GetKey(index));
             // If itemKind is value
             if (itemKind == IterationKind::VALUE || itemKind == IterationKind::KEY) {
@@ -86,7 +86,7 @@ void JSSetIterator::Update(const JSThread *thread)
     if (set->GetNextTable().IsHole()) {
         return;
     }
-    int index = GetNextIndex().GetInt();
+    int index = GetNextIndex();
     JSTaggedValue nextTable = set->GetNextTable();
     while (!nextTable.IsHole()) {
         index -= set->GetDeletedElementsAt(index);
@@ -94,7 +94,7 @@ void JSSetIterator::Update(const JSThread *thread)
         nextTable = set->GetNextTable();
     }
     SetIteratedSet(thread, JSTaggedValue(set));
-    SetNextIndex(thread, JSTaggedValue(index));
+    SetNextIndex(index);
 }
 
 JSHandle<JSTaggedValue> JSSetIterator::CreateSetIterator(JSThread *thread, const JSHandle<JSTaggedValue> &obj,

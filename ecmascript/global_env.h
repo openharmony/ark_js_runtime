@@ -200,12 +200,9 @@ public:
     static constexpr size_t HEADER_SIZE = TaggedObjectSize();
     static constexpr size_t SIZE = HEADER_SIZE + FINAL_INDEX * JSTaggedValue::TaggedTypeSize();
 
-    DECL_DUMP()
+    DECL_VISIT_OBJECT(HEADER_SIZE, SIZE);
 
-    inline void VisitRangeSlot(const EcmaObjectRangeVisitor &v)
-    {
-        v(this, ObjectSlot(ToUintPtr(this) + HEADER_SIZE), ObjectSlot(ToUintPtr(this) + SIZE));
-    }
+    DECL_DUMP()
 };
 }  // namespace panda::ecmascript
 

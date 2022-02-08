@@ -239,7 +239,7 @@ namespace panda::ecmascript {
                                                                                                                      \
             InterpretedFrame *state = GET_FRAME(newSp);                                                              \
             state->base.prev = sp;                                                                                   \
-            state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);                            \
+            state->base.type = FrameType::INTERPRETER_FRAME;                                                         \
             state->pc = nullptr;                                                                                     \
             state->sp = newSp;                                                                                       \
             state->function = func;                                                                                  \
@@ -372,7 +372,7 @@ namespace panda::ecmascript {
                                                                                                                      \
             InterpretedFrame *state = GET_FRAME(newSp);                                                              \
             state->base.prev = sp;                                                                                   \
-            state->base.frameType = static_cast<uintptr_t>(FrameType::INTERPRETER_FRAME);                            \
+            state->base.type = FrameType::INTERPRETER_FRAME;                                                         \
             state->pc = pc = JSMethod::Cast(methodToCall)->GetBytecodeArray();                                       \
             state->sp = sp = newSp;                                                                                  \
             state->function = func;                                                                                  \
@@ -1067,7 +1067,7 @@ void InterpreterAssembly::HandleGetResumeModePrefV8(
     LOG_INST() << "intrinsics::getresumemode";
     uint16_t vs = READ_INST_8_1();
     JSGeneratorObject *obj = JSGeneratorObject::Cast(GET_VREG_VALUE(vs).GetTaggedObject());
-    SET_ACC(obj->GetResumeMode());
+    SET_ACC(JSTaggedValue(static_cast<int>(obj->GetResumeMode())));
     DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 
@@ -1734,7 +1734,7 @@ void InterpreterAssembly::HandleDefineFuncDynPrefId16Imm16V8(
                << " v" << v0;
     JSFunction *result = JSFunction::Cast(ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(methodId).GetTaggedObject());
     ASSERT(result != nullptr);
-    if (result->IsResolved()) {
+    if (result->GetResolved()) {
         auto res = SlowRuntimeStub::DefinefuncDyn(thread, result);
         INTERPRETER_RETURN_IF_ABRUPT(res);
         result = JSFunction::Cast(res.GetTaggedObject());
@@ -1763,7 +1763,7 @@ void InterpreterAssembly::HandleDefineNCFuncDynPrefId16Imm16V8(
                << " v" << v0;
     JSFunction *result = JSFunction::Cast(ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(methodId).GetTaggedObject());
     ASSERT(result != nullptr);
-    if (result->IsResolved()) {
+    if (result->GetResolved()) {
         SAVE_ACC();
         auto res = SlowRuntimeStub::DefineNCFuncDyn(thread, result);
         INTERPRETER_RETURN_IF_ABRUPT(res);
@@ -1796,7 +1796,7 @@ void InterpreterAssembly::HandleDefineMethodPrefId16Imm16V8(
                << " v" << v0;
     JSFunction *result = JSFunction::Cast(ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(methodId).GetTaggedObject());
     ASSERT(result != nullptr);
-    if (result->IsResolved()) {
+    if (result->GetResolved()) {
         auto res = SlowRuntimeStub::DefineMethod(thread, result, homeObject);
         INTERPRETER_RETURN_IF_ABRUPT(res);
         result = JSFunction::Cast(res.GetTaggedObject());
@@ -2569,7 +2569,7 @@ void InterpreterAssembly::HandleDefineGeneratorFuncPrefId16Imm16V8(
                << " v" << v0;
     JSFunction *result = JSFunction::Cast(ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(methodId).GetTaggedObject());
     ASSERT(result != nullptr);
-    if (result->IsResolved()) {
+    if (result->GetResolved()) {
         auto res = SlowRuntimeStub::DefineGeneratorFunc(thread, result);
         INTERPRETER_RETURN_IF_ABRUPT(res);
         result = JSFunction::Cast(res.GetTaggedObject());
@@ -2596,7 +2596,7 @@ void InterpreterAssembly::HandleDefineAsyncFuncPrefId16Imm16V8(
                << " v" << v0;
     JSFunction *result = JSFunction::Cast(ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(methodId).GetTaggedObject());
     ASSERT(result != nullptr);
-    if (result->IsResolved()) {
+    if (result->GetResolved()) {
         auto res = SlowRuntimeStub::DefineAsyncFunc(thread, result);
         INTERPRETER_RETURN_IF_ABRUPT(res);
         result = JSFunction::Cast(res.GetTaggedObject());
@@ -3407,7 +3407,7 @@ void InterpreterAssembly::HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8(
     JSTaggedValue proto = GET_VREG_VALUE(v1);
 
     JSTaggedValue res;
-    if (LIKELY(!classTemplate->IsResolved())) {
+    if (LIKELY(!classTemplate->GetResolved())) {
         res = SlowRuntimeStub::ResolveClass(thread, JSTaggedValue(classTemplate), literalBuffer,
                                             proto, lexenv, ConstantPool::Cast(constpool.GetTaggedObject()));
     } else {

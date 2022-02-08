@@ -21,7 +21,9 @@ namespace panda::ecmascript {
 #define ARK_NOINLINE __attribute__((noinline))
 
 #define ECMASCRIPT_ENABLE_DEBUG_MODE 0
-#define ECMASCRIPT_ENABLE_RUNTIME_STAT 0 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define ECMASCRIPT_ENABLE_ARK_CONTAINER 0
+#define ECMASCRIPT_ENABLE_RUNTIME_STAT 1 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define ECMASCRIPT_ENABLE_TS_AOT_PRINT 1
 #define ECMASCRIPT_ENABLE_INTERPRETER_ASM 1
 
 /*
@@ -52,7 +54,7 @@ namespace panda::ecmascript {
     #define ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC 0
     #define ECMASCRIPT_ENABLE_CAST_CHECK 0
     #define ECMASCRIPT_ENABLE_HEAP_VERIFY 0
-    #define ECMASCRIPT_ENABLE_THREAD_CHECK 0
+    #define ECMASCRIPT_ENABLE_THREAD_CHECK 1
     #define ECMASCRIPT_ENABLE_ACTIVE_CPUPROFILER 0
 #endif
 }  // namespace panda::ecmascript

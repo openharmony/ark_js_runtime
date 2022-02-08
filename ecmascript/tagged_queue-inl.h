@@ -19,9 +19,9 @@
 #include "ecmascript/tagged_queue.h"
 
 namespace panda::ecmascript {
-inline TaggedQueue *TaggedQueue::Create(JSThread *thread, array_size_t capacity, JSTaggedValue initVal)
+inline TaggedQueue *TaggedQueue::Create(JSThread *thread, uint32_t capacity, JSTaggedValue initVal)
 {
-    array_size_t length = QueueToArrayIndex(capacity);
+    uint32_t length = QueueToArrayIndex(capacity);
 
     auto queue = TaggedQueue::Cast(*thread->GetEcmaVM()->GetFactory()->NewTaggedArray(length, initVal));
     queue->SetStart(thread, JSTaggedValue(0));  // equal to 0 when add 1.
@@ -36,10 +36,10 @@ inline JSTaggedValue TaggedQueue::Pop(JSThread *thread)
         return JSTaggedValue::Hole();
     }
 
-    array_size_t start = GetStart().GetArrayLength();
+    uint32_t start = GetStart().GetArrayLength();
     JSTaggedValue value = Get(start);
 
-    array_size_t capacity = GetCapacity().GetArrayLength();
+    uint32_t capacity = GetCapacity().GetArrayLength();
     ASSERT(capacity != 0);
     SetStart(thread, JSTaggedValue((start + 1) % capacity));
     return value;

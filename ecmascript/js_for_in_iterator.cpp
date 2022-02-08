@@ -183,7 +183,7 @@ void JSForInIterator::FastGetAllEnumKeys(const JSThread *thread, const JSHandle<
         }
     }
     it->SetRemainingKeys(thread, remaining);
-    it->SetWasVisited(thread, JSTaggedValue::True());
+    it->SetWasVisited(true);
 }
 
 void JSForInIterator::SlowGetAllEnumKeys(JSThread *thread, const JSHandle<JSForInIterator> &it,
@@ -193,8 +193,8 @@ void JSForInIterator::SlowGetAllEnumKeys(JSThread *thread, const JSHandle<JSForI
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     JSMutableHandle<TaggedQueue> remaining(thread, it->GetRemainingKeys());
     JSHandle<TaggedArray> arr = JSTaggedValue::GetOwnPropertyKeys(thread, object);
-    array_size_t len = arr->GetLength();
-    for (array_size_t i = 0; i < len; i++) {
+    uint32_t len = arr->GetLength();
+    for (uint32_t i = 0; i < len; i++) {
         value.Update(arr->Get(i));
         if (value->IsString()) {
             TaggedQueue *newQueue = TaggedQueue::Push(thread, remaining, value);
@@ -203,7 +203,7 @@ void JSForInIterator::SlowGetAllEnumKeys(JSThread *thread, const JSHandle<JSForI
     }
     it->SetRemainingKeys(thread, remaining);
     it->SetVisitedKeys(thread, visited);
-    it->SetWasVisited(thread, JSTaggedValue::True());
+    it->SetWasVisited(true);
 }
 
 std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, const JSHandle<JSForInIterator> &it)
@@ -215,7 +215,7 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
         if (object->IsNull() || object->IsUndefined()) {
             return std::make_pair(JSTaggedValue::Undefined(), true);
         }
-        if (it->GetWasVisited().IsFalse()) {
+        if (!it->GetWasVisited()) {
             if (object->IsJSObject() && notModiObjProto) {
                 FastGetAllEnumKeys(thread, it, object);
             } else {
@@ -232,8 +232,8 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
             }
             JSHandle<JSTaggedValue> key(thread, r);
             bool has_same = false;
-            array_size_t len = visited->Size();
-            for (array_size_t i = 0; i < len; i++) {
+            uint32_t len = visited->Size();
+            for (uint32_t i = 0; i < len; i++) {
                 if (JSTaggedValue::SameValue(r, visited->Get(i))) {
                     has_same = true;
                     break;
@@ -258,7 +258,7 @@ std::pair<JSTaggedValue, bool> JSForInIterator::NextInternal(JSThread *thread, c
         }
         JSTaggedValue proto = JSHandle<JSObject>::Cast(object)->GetPrototype(thread);
         it->SetObject(thread, proto);
-        it->SetWasVisited(thread, JSTaggedValue::False());
+        it->SetWasVisited(false);
     }
 }
 

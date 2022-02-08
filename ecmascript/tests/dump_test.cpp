@@ -32,6 +32,7 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
@@ -41,7 +42,6 @@
 #include "ecmascript/js_date_time_format.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_function.h"
-#include "ecmascript/js_function_extra_info.h"
 #include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_global_object.h"
 #include "ecmascript/js_handle.h"
@@ -262,7 +262,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_REG_EXP: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSRegExp::SIZE, 5)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSRegExp::SIZE, 4)
                 NEW_OBJECT_AND_DUMP(JSRegExp, JS_REG_EXP)
                 break;
             }
@@ -316,21 +316,21 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_MAP_ITERATOR: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSMapIterator::SIZE, 3)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSMapIterator::SIZE, 2)
                 JSHandle<JSMapIterator> jsMapIter =
                     factory->NewJSMapIterator(NewJSMap(thread, factory, proto), IterationKind::KEY);
                 DUMP_FOR_HANDLE(jsMapIter)
                 break;
             }
             case JSType::JS_SET_ITERATOR: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSSetIterator::SIZE, 3)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSSetIterator::SIZE, 2)
                 JSHandle<JSSetIterator> jsSetIter =
                     factory->NewJSSetIterator(NewJSSet(thread, factory, proto), IterationKind::KEY);
                 DUMP_FOR_HANDLE(jsSetIter)
                 break;
             }
             case JSType::JS_ARRAY_ITERATOR: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayIterator::SIZE, 3)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayIterator::SIZE, 2)
                 JSHandle<JSArrayIterator> arrayIter =
                     factory->NewJSArrayIterator(JSHandle<JSObject>::Cast(factory->NewJSArray()), IterationKind::KEY);
                 DUMP_FOR_HANDLE(arrayIter)
@@ -353,42 +353,42 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_DATE_TIME_FORMAT: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSDateTimeFormat::SIZE, 11)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSDateTimeFormat::SIZE, 9)
                 NEW_OBJECT_AND_DUMP(JSDateTimeFormat, JS_DATE_TIME_FORMAT)
                 break;
             }
             case JSType::JS_RELATIVE_TIME_FORMAT: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSRelativeTimeFormat::SIZE, 7)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSRelativeTimeFormat::SIZE, 6)
                 NEW_OBJECT_AND_DUMP(JSRelativeTimeFormat, JS_RELATIVE_TIME_FORMAT)
                 break;
             }
             case JSType::JS_NUMBER_FORMAT: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSNumberFormat::SIZE, 20)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSNumberFormat::SIZE, 13)
                 NEW_OBJECT_AND_DUMP(JSNumberFormat, JS_NUMBER_FORMAT)
                 break;
             }
             case JSType::JS_COLLATOR: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSCollator::SIZE, 9)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSCollator::SIZE, 5)
                 NEW_OBJECT_AND_DUMP(JSCollator, JS_COLLATOR)
                 break;
             }
             case JSType::JS_PLURAL_RULES: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSPluralRules::SIZE, 11)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSPluralRules::SIZE, 10)
                 NEW_OBJECT_AND_DUMP(JSPluralRules, JS_PLURAL_RULES)
                 break;
             }
             case JSType::JS_ARRAY_BUFFER: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayBuffer::SIZE, 3)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayBuffer::SIZE, 2)
                 NEW_OBJECT_AND_DUMP(JSArrayBuffer, JS_ARRAY_BUFFER)
                 break;
             }
             case JSType::JS_PROMISE: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSPromise::SIZE, 5)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSPromise::SIZE, 4)
                 NEW_OBJECT_AND_DUMP(JSPromise, JS_PROMISE)
                 break;
             }
             case JSType::JS_DATA_VIEW: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSDataView::SIZE, 4)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSDataView::SIZE, 3)
                 NEW_OBJECT_AND_DUMP(JSDataView, JS_DATA_VIEW)
                 break;
             }
@@ -398,7 +398,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_GENERATOR_OBJECT: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSGeneratorObject::SIZE, 4)
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSGeneratorObject::SIZE, 3)
                 NEW_OBJECT_AND_DUMP(JSGeneratorObject, JS_GENERATOR_OBJECT)
                 break;
             }
@@ -447,7 +447,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::HCLASS: {
-                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), JSHClass::SIZE, 9)
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), JSHClass::SIZE, 8)
                 JSHandle<JSHClass> hclass = factory->NewEcmaDynClass(JSHClass::SIZE, JSType::HCLASS, proto);
                 DUMP_FOR_HANDLE(hclass)
                 break;
@@ -487,13 +487,13 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::SYMBOL: {
-                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), JSSymbol::SIZE, 3)
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), JSSymbol::SIZE, 2)
                 JSHandle<JSSymbol> symbol = factory->NewJSSymbol();
                 DUMP_FOR_HANDLE(symbol)
                 break;
             }
             case JSType::JS_GENERATOR_CONTEXT: {
-                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), GeneratorContext::SIZE, 7)
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), GeneratorContext::SIZE, 6)
                 JSHandle<GeneratorContext> genContext = factory->NewGeneratorContext();
                 DUMP_FOR_HANDLE(genContext)
                 break;
@@ -534,14 +534,13 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::PROGRAM: {
+#ifdef PANDA_TARGET_64
                 CHECK_DUMP_FILEDS(ECMAObject::SIZE, Program::SIZE, 5)
+#else
+                CHECK_DUMP_FILEDS(ECMAObject::SIZE, Program::SIZE, 4)
+#endif
                 JSHandle<Program> program = factory->NewProgram();
                 DUMP_FOR_HANDLE(program)
-                break;
-            }
-            case JSType::LEXICAL_FUNCTION: {
-                CHECK_DUMP_FILEDS(ECMAObject::SIZE, LexicalFunction::SIZE, 5)
-                // unused
                 break;
             }
             case JSType::PROMISE_CAPABILITY: {
@@ -571,7 +570,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::PROMISE_ITERATOR_RECORD: {
                 CHECK_DUMP_FILEDS(Record::SIZE, PromiseIteratorRecord::SIZE, 2)
                 JSHandle<JSTaggedValue> emptyObj(thread, NewJSObject(thread, factory, globalEnv).GetTaggedValue());
-                JSHandle<PromiseIteratorRecord> promiseIter = factory->NewPromiseIteratorRecord(emptyObj, emptyObj);
+                JSHandle<PromiseIteratorRecord> promiseIter = factory->NewPromiseIteratorRecord(emptyObj, false);
                 DUMP_FOR_HANDLE(promiseIter)
                 break;
             }
@@ -589,17 +588,10 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(pendingJob)
                 break;
             }
-            case JSType::FUNCTION_EXTRA_INFO: {
-                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), JSFunctionExtraInfo::SIZE, 2)
-                JSHandle<JSHClass> funcExtraClass(thread,
-                    JSHClass::Cast(globalConst->GetFunctionExtraInfoClass().GetTaggedObject()));
-                JSHandle<TaggedObject> funcInfo(thread, factory->NewDynObject(funcExtraClass));
-                DUMP_FOR_HANDLE(funcInfo)
-                break;
-            }
             case JSType::COMPLETION_RECORD: {
                 CHECK_DUMP_FILEDS(Record::SIZE, CompletionRecord::SIZE, 2)
-                JSHandle<CompletionRecord> comRecord = factory->NewCompletionRecord(0, globalEnv->GetEmptyArray());
+                JSHandle<CompletionRecord> comRecord =
+                    factory->NewCompletionRecord(CompletionRecordType::NORMAL, globalEnv->GetEmptyArray());
                 DUMP_FOR_HANDLE(comRecord)
                 break;
             }
@@ -616,9 +608,19 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::CLASS_INFO_EXTRACTOR: {
+#ifdef PANDA_TARGET_64
                 CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), ClassInfoExtractor::SIZE, 10)
+#else
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), ClassInfoExtractor::SIZE, 9)
+#endif
                 JSHandle<ClassInfoExtractor> classInfoExtractor = factory->NewClassInfoExtractor(nullptr);
                 DUMP_FOR_HANDLE(classInfoExtractor)
+                break;
+            }
+            case JSType::JS_QUEUE:
+            case JSType::JS_ARRAY_LIST: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayList::SIZE, 1)
+                // unused
                 break;
             }
             default:

@@ -30,7 +30,7 @@ JSTaggedValue JSIterator::IteratorCloseAndReturn(JSThread *thread, const JSHandl
     ASSERT(thread->HasPendingException());
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSTaggedValue exception = thread->GetException();
-    JSHandle<JSTaggedValue> record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::THROW,
+    JSHandle<JSTaggedValue> record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecordType::THROW,
         JSHandle<JSTaggedValue>(thread, exception)));
     JSHandle<JSTaggedValue> result = JSIterator::IteratorClose(thread, iter, record);
     if (result->IsCompletionRecord()) {

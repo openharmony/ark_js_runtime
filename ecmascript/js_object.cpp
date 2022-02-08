@@ -72,7 +72,7 @@ JSHandle<TaggedArray> JSObject::GrowElementsCapacity(const JSThread *thread, con
     uint32_t newCapacity = ComputeElementCapacity(capacity);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> oldElements(thread, obj->GetElements());
-    array_size_t oldLength = oldElements->GetLength();
+    uint32_t oldLength = oldElements->GetLength();
     JSHandle<TaggedArray> newElements = factory->CopyArray(oldElements, oldLength, newCapacity);
 
     obj->SetElements(thread, newElements);
@@ -136,7 +136,7 @@ JSHandle<NameDictionary> JSObject::TransitionToDictionary(const JSThread *thread
     // trim in-obj properties space
     if (numberInlinedProps > 0) {
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-        array_size_t newSize = receiver->GetClass()->GetObjectSize();
+        uint32_t newSize = receiver->GetClass()->GetObjectSize();
         size_t trimBytes = numberInlinedProps * JSTaggedValue::TaggedTypeSize();
         factory->FillFreeObject(ToUintPtr(*receiver) + newSize, trimBytes, RemoveSlots::YES);
     }
@@ -294,7 +294,7 @@ void JSObject::GetAllKeys(const JSThread *thread, const JSHandle<JSObject> &obj,
 }
 
 JSHandle<TaggedArray> JSObject::GetAllEnumKeys(const JSThread *thread, const JSHandle<JSObject> &obj, int offset,
-                                               uint32_t numOfKeys, array_size_t *keys)
+                                               uint32_t numOfKeys, uint32_t *keys)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     if (obj->IsJSGlobalObject()) {
@@ -376,7 +376,7 @@ void JSObject::GetALLElementKeysIntoVector(const JSThread *thread, const JSHandl
 }
 
 JSHandle<TaggedArray> JSObject::GetEnumElementKeys(JSThread *thread, const JSHandle<JSObject> &obj, int offset,
-                                                   uint32_t numOfElements, array_size_t *keys)
+                                                   uint32_t numOfElements, uint32_t *keys)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> elementArray = factory->NewTaggedArray(numOfElements);
@@ -1195,13 +1195,13 @@ bool JSObject::SetIntegrityLevel(JSThread *thread, const JSHandle<JSObject> &obj
     descNoConfWrite.SetConfigurable(false);
 
     if (level == IntegrityLevel::SEALED) {
-        array_size_t length = jshandleKeys->GetLength();
+        uint32_t length = jshandleKeys->GetLength();
         if (length == 0) {
             return true;
         }
         auto key = jshandleKeys->Get(0);
         JSMutableHandle<JSTaggedValue> handleKey(thread, key);
-        for (array_size_t i = 0; i < length; i++) {
+        for (uint32_t i = 0; i < length; i++) {
             auto taggedKey = JSTaggedValue(jshandleKeys->Get(i));
             handleKey.Update(taggedKey);
             [[maybe_unused]] bool success =
@@ -1209,13 +1209,13 @@ bool JSObject::SetIntegrityLevel(JSThread *thread, const JSHandle<JSObject> &obj
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
         }
     } else {
-        array_size_t length = jshandleKeys->GetLength();
+        uint32_t length = jshandleKeys->GetLength();
         if (length == 0) {
             return true;
         }
         auto key = jshandleKeys->Get(0);
         JSMutableHandle<JSTaggedValue> handleKey(thread, key);
-        for (array_size_t i = 0; i < length; i++) {
+        for (uint32_t i = 0; i < length; i++) {
             auto taggedKey = JSTaggedValue(jshandleKeys->Get(i));
             handleKey.Update(taggedKey);
             PropertyDescriptor currentDesc(thread);
@@ -1247,13 +1247,13 @@ bool JSObject::TestIntegrityLevel(JSThread *thread, const JSHandle<JSObject> &ob
 
     JSHandle<TaggedArray> jshandleKeys = GetOwnPropertyKeys(thread, obj);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
-    array_size_t length = jshandleKeys->GetLength();
+    uint32_t length = jshandleKeys->GetLength();
     if (length == 0) {
         return true;
     }
     auto key = jshandleKeys->Get(0);
     JSMutableHandle<JSTaggedValue> handleKey(thread, key);
-    for (array_size_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         auto taggedKey = JSTaggedValue(jshandleKeys->Get(i));
         handleKey.Update(taggedKey);
         PropertyDescriptor currentDesc(thread);
@@ -1278,7 +1278,7 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> keys;
     JSHandle<JSTaggedValue> tagObj(obj);
-    array_size_t copyLength = 0;
+    uint32_t copyLength = 0;
     // fast mode
     if (tagObj->IsJSObject() && !tagObj->IsTypedArray()) {
         uint32_t numOfKeys = obj->GetNumberOfKeys();
@@ -1307,10 +1307,10 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
 
     keys = JSTaggedValue::GetOwnPropertyKeys(thread, tagObj);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
-    array_size_t length = keys->GetLength();
+    uint32_t length = keys->GetLength();
 
     JSHandle<TaggedArray> names = factory->NewTaggedArray(length);
-    for (array_size_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         JSTaggedValue key(keys->Get(i));
         if (key.IsString()) {
             PropertyDescriptor desc(thread);
@@ -1338,7 +1338,7 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnPropertyNames(JSThread *thread, con
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(TaggedArray, thread);
 
     // 3. Let properties be a new empty List.
-    array_size_t length = ownKeys->GetLength();
+    uint32_t length = ownKeys->GetLength();
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> properties = factory->NewTaggedArray(length);
 
@@ -1355,8 +1355,8 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnPropertyNames(JSThread *thread, con
     //               ii. Let entry be ! CreateArrayFromList(« key, value »).
     //               iii. Append entry to properties.
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    array_size_t index = 0;
-    for (array_size_t i = 0; i < length; i++) {
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < length; i++) {
         key.Update(ownKeys->Get(thread, i));
         if (key->IsString()) {
             PropertyDescriptor desc(thread);

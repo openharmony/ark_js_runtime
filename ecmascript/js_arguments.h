@@ -59,7 +59,6 @@ public:
     // 9.4.4.6 CreateUnmappedArgumentsObject(argumentsList)
     // 9.4.4.7 CreateMappedArgumentsObject ( func, formals, argumentsList, env )
 
-    // ACCESSORS(JSTaggedValue, Length, LENGTH_OFFSET)
     static constexpr size_t PARAMETER_MAP_OFFSET = JSObject::SIZE;
     ACCESSORS(ParameterMap, PARAMETER_MAP_OFFSET, SIZE)
 

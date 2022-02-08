@@ -45,9 +45,18 @@ JSHandle<Program> PandaFileTranslator::TranslatePandaFile(EcmaVM *vm, const pand
                                                           const CString &methodName)
 {
     PandaFileTranslator translator(vm);
-    translator.TranslateClasses(pf, methodName);
+    std::vector<BytecodeTranslationInfo> infoList {};
+    translator.TranslateClasses(pf, methodName, infoList);
     auto result = translator.GenerateProgram(pf);
     return JSHandle<Program>(translator.thread_, result);
+}
+
+void PandaFileTranslator::TranslateAndCollectPandaFile(EcmaVM *vm, const panda_file::File &pf,
+                                                       const CString &methodName,
+                                                       std::vector<BytecodeTranslationInfo> &infoList)
+{
+    PandaFileTranslator translator(vm);
+    translator.TranslateClasses(pf, methodName, infoList);
 }
 
 template<class T, class... Args>
@@ -67,7 +76,8 @@ const JSMethod *PandaFileTranslator::FindMethods(uint32_t offset) const
     return nullptr;
 }
 
-void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CString &methodName)
+void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CString &methodName,
+                                           std::vector<BytecodeTranslationInfo> &infoList)
 {
     RegionFactory *factory = ecmaVm_->GetRegionFactory();
     Span<const uint32_t> classIndexes = pf.GetClasses();
@@ -94,7 +104,7 @@ void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CSt
             continue;
         }
         panda_file::ClassDataAccessor cda(pf, classId);
-        cda.EnumerateMethods([this, &sd, &methods, &methodIdx, &pf](panda_file::MethodDataAccessor &mda) {
+        cda.EnumerateMethods([this, &sd, &methods, &methodIdx, &pf, &infoList](panda_file::MethodDataAccessor &mda) {
             auto codeId = mda.GetCodeId();
             ASSERT(codeId.has_value());
 
@@ -114,7 +124,7 @@ void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CSt
             const uint8_t *insns = codeDataAccessor.GetInstructions();
             if (this->translated_code_.find(insns) == this->translated_code_.end()) {
                 this->translated_code_.insert(insns);
-                this->TranslateBytecode(codeSize, insns, pf, method);
+                this->TranslateBytecode(codeSize, insns, pf, method, infoList);
             }
         });
     }
@@ -237,7 +247,7 @@ Program *PandaFileTranslator::GenerateProgram(const panda_file::File &pf)
             size_t index = it.first;
             JSHandle<TaggedArray> literal =
                 LiteralDataExtractor::GetDatasIgnoreType(thread_, &pf, static_cast<size_t>(index));
-            array_size_t length = literal->GetLength();
+            uint32_t length = literal->GetLength();
 
             JSHandle<JSArray> arr(JSArray::ArrayCreate(thread_, JSTaggedNumber(length)));
             arr->SetElements(thread_, literal);
@@ -466,10 +476,12 @@ void PandaFileTranslator::FixInstructionId32(const BytecodeInstruction &inst, [[
 }
 
 void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf,
-                                            const JSMethod *method)
+                                            const JSMethod *method, std::vector<BytecodeTranslationInfo> &infoList)
 {
     auto bcIns = BytecodeInstruction(insArr);
     auto bcInsLast = bcIns.JumpTo(insSz);
+    infoList.push_back(BytecodeTranslationInfo{{}, &pf, method});
+    auto &pcArray = infoList.back().pcArray;
 
     while (bcIns.GetAddress() != bcInsLast.GetAddress()) {
         if (bcIns.HasFlag(BytecodeInstruction::Flags::STRING_ID) &&
@@ -535,6 +547,12 @@ void PandaFileTranslator::TranslateBytecode(uint32_t insSz, const uint8_t *insAr
         bcIns = bcIns.GetNext();
         FixOpcode(pc);
         UpdateICOffset(const_cast<JSMethod *>(method), pc);
+        if (ecmaVm_->GetJSOptions().IsEnableTsAot()) {
+            pcArray.emplace_back(pc);
+        }
+    }
+    if (ecmaVm_->GetJSOptions().IsEnableTsAot()) {
+        pcArray.emplace_back(const_cast<uint8_t *>(bcInsLast.GetAddress()));
     }
 }
 
@@ -580,8 +598,8 @@ JSHandle<JSFunction> PandaFileTranslator::DefineMethodInLiteral(JSThread *thread
 
 void PandaFileTranslator::DefineClassInConstPool(const JSHandle<ConstantPool> &constpool) const
 {
-    array_size_t length = constpool->GetLength();
-    array_size_t index = 0;
+    uint32_t length = constpool->GetLength();
+    uint32_t index = 0;
     while (index < length - 1) {
         JSTaggedValue value = constpool->Get(index);
         if (!value.IsClassInfoExtractor()) {

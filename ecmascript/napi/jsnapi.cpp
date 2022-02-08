@@ -50,6 +50,7 @@
 #include "ecmascript/mem/region.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "include/runtime_notification.h"
 #include "libpandabase/os/library_loader.h"
 #include "utils/pandargs.h"
 
@@ -68,7 +69,6 @@ using ecmascript::JSDataView;
 using ecmascript::JSDate;
 using ecmascript::JSFunction;
 using ecmascript::JSFunctionBase;
-using ecmascript::JSFunctionExtraInfo;
 using ecmascript::JSHClass;
 using ecmascript::JSMap;
 using ecmascript::JSMethod;
@@ -120,7 +120,7 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     // GC
     runtimeOptions.SetGcType(option.GetGcType());
     runtimeOptions.SetRunGcInPlace(true);
-
+    runtimeOptions.SetArkProperties(option.GetArkProperties());
     // Mem
     runtimeOptions.SetHeapSizeLimit(option.GetGcPoolSize());
     runtimeOptions.SetInternalMemorySizeLimit(INTERNAL_POOL_SIZE);
@@ -169,7 +169,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
         return EcmaVM::Cast(runtime->GetPandaVM());
     }
     JSRuntimeOptions runtimeOptions;
-
+    runtimeOptions.SetArkProperties(option.GetArkProperties());
     // GC
     runtimeOptions.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
 
@@ -178,6 +178,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 
 void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
 {
+    ecmaVm->GetNotificationManager()->VmDeathEvent();
     auto runtime = Runtime::GetCurrent();
     if (runtime != nullptr) {
         PandaVM *mainVm = runtime->GetPandaVM();
@@ -260,27 +261,24 @@ bool JSNApi::StopDebugger(const char *library_path)
     return true;
 }
 
-bool JSNApi::Execute(EcmaVM *vm, Local<StringRef> fileName, Local<StringRef> entry)
+bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry)
 {
-    std::string file = fileName->ToString();
-    std::string entryPoint = entry->ToString();
     std::vector<std::string> argv;
-    LOG_ECMA(DEBUG) << "start to execute ark file" << file;
-    if (!vm->ExecuteFromPf(file, entryPoint, argv)) {
-        LOG_ECMA(ERROR) << "Cannot execute ark file" << file;
-        std::cerr << "Cannot execute ark file '" << file << "' with entry '" << entryPoint << "'" << std::endl;
+    LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
+    if (!vm->ExecuteFromPf(fileName, entry, argv)) {
+        LOG_ECMA(ERROR) << "Cannot execute ark file" << fileName;
+        LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
     return true;
 }
 
-bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size, Local<StringRef> entry)
+bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size, const std::string &entry)
 {
-    std::string entryPoint = entry->ToString();
     std::vector<std::string> argv;
-    if (!vm->ExecuteFromBuffer(data, size, entryPoint, argv)) {
-        std::cerr << "Cannot execute panda file from memory "
-                  << "' with entry '" << entryPoint << "'" << std::endl;
+    if (!vm->ExecuteFromBuffer(data, size, entry, argv)) {
+        LOG_ECMA(ERROR) << "Cannot execute panda file from memory "
+                        << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
     return true;
@@ -437,7 +435,6 @@ bool JSNApi::ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size,
     auto moduleManager = vm->GetModuleManager();
     moduleManager->SetCurrentExportModuleName(file);
     // Update Current Module
-    vm->GetJSThread()->SetIsEcmaInterpreter(true);
     std::vector<std::string> argv;
     if (!vm->ExecuteFromBuffer(data, size, ENTRY_POINTER, argv)) {
         std::cerr << "Cannot execute panda file from memory" << std::endl;
@@ -831,9 +828,8 @@ Local<FunctionRef> FunctionRef::New(EcmaVM *vm, FunctionCallback nativeFunc, voi
     ObjectFactory *factory = vm->GetFactory();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     JSHandle<JSFunction> current(factory->NewJSFunction(env, reinterpret_cast<void *>(Callback::RegisterCallback)));
-    JSHandle<JSNativePointer> funcCallback = factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc));
-    JSHandle<JSNativePointer> dataCaddress = factory->NewJSNativePointer(data);
-    JSHandle<JSFunctionExtraInfo> extraInfo(factory->NewFunctionExtraInfo(funcCallback, dataCaddress));
+    JSHandle<JSNativePointer> extraInfo =
+        factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc), nullptr, data);
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
 }
@@ -844,10 +840,9 @@ Local<FunctionRef> FunctionRef::New(EcmaVM *vm, FunctionCallback nativeFunc, Del
     ObjectFactory *factory = vm->GetFactory();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     JSHandle<JSFunction> current(factory->NewJSFunction(env, reinterpret_cast<void *>(Callback::RegisterCallback)));
-    JSHandle<JSNativePointer> funcCallback = factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc));
-    JSHandle<JSNativePointer> dataCaddress = factory->NewJSNativePointer(data, deleter, nullptr);
-    vm->PushToArrayDataList(*dataCaddress);
-    JSHandle<JSFunctionExtraInfo> extraInfo(factory->NewFunctionExtraInfo(funcCallback, dataCaddress));
+    JSHandle<JSNativePointer> extraInfo =
+        factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc), deleter, data);
+    vm->PushToArrayDataList(*extraInfo);
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
 }
@@ -858,10 +853,9 @@ Local<FunctionRef> FunctionRef::NewWithProperty(EcmaVM *vm, FunctionCallback nat
     ObjectFactory *factory = vm->GetFactory();
     JSHandle<GlobalEnv> env = vm->GetGlobalEnv();
     JSHandle<JSFunction> current =
-            factory->NewJSFunction(env, reinterpret_cast<void *>(Callback::RegisterCallbackWithProperty));
-    JSHandle<JSNativePointer> funcCallback = factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc));
-    JSHandle<JSNativePointer> dataCaddress = factory->NewJSNativePointer(data);
-    JSHandle<JSFunctionExtraInfo> extraInfo(factory->NewFunctionExtraInfo(funcCallback, dataCaddress));
+        factory->NewJSFunction(env, reinterpret_cast<void *>(Callback::RegisterCallbackWithProperty));
+    JSHandle<JSNativePointer> extraInfo =
+        factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc), nullptr, data);
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
 }
@@ -883,15 +877,11 @@ Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWit
     current->SetPropertyInlinedProps(thread, JSFunction::CLASS_PROTOTYPE_INLINE_PROPERTY_INDEX,
                                      accessor.GetTaggedValue());
 
-    JSHandle<JSNativePointer> funcCallback = factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc));
-    JSHandle<JSNativePointer> dataCaddress(thread, JSTaggedValue::Undefined());
-    if (deleter == nullptr) {
-        dataCaddress = factory->NewJSNativePointer(data);
-    } else {
-        dataCaddress = factory->NewJSNativePointer(data, deleter, nullptr);
-        vm->PushToArrayDataList(*dataCaddress);
+    JSHandle<JSNativePointer> extraInfo =
+        factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc), deleter, data);
+    if (deleter != nullptr) {
+        vm->PushToArrayDataList(*extraInfo);
     }
-    JSHandle<JSFunctionExtraInfo> extraInfo(factory->NewFunctionExtraInfo(funcCallback, dataCaddress));
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
 
     JSHandle<JSObject> clsPrototype = JSFunction::NewJSFunctionPrototype(thread, factory, current);
@@ -1067,6 +1057,9 @@ bool PromiseCapabilityRef::Resolve(const EcmaVM *vm, Local<JSValueRef> value)
     arguments->MakeArgv(arg);
     JSFunction::Call(thread, resolve, undefined, 1, arguments->GetArgv());
     RETURN_VALUE_IF_ABRUPT(thread, false);
+
+    vm->ExecutePromisePendingJob();
+    RETURN_VALUE_IF_ABRUPT(thread, false);
     return true;
 }
 
@@ -1082,6 +1075,9 @@ bool PromiseCapabilityRef::Reject(const EcmaVM *vm, Local<JSValueRef> reason)
     InternalCallParams *arguments = thread->GetInternalCallParams();
     arguments->MakeArgv(arg);
     JSFunction::Call(thread, reject, undefined, 1, arguments->GetArgv());
+    RETURN_VALUE_IF_ABRUPT(thread, false);
+
+    vm->ExecutePromisePendingJob();
     RETURN_VALUE_IF_ABRUPT(thread, false);
     return true;
 }
@@ -1161,13 +1157,8 @@ Local<ArrayBufferRef> ArrayBufferRef::New(
 
 int32_t ArrayBufferRef::ByteLength(const EcmaVM *vm)
 {
-    JSThread *thread = vm->GetJSThread();
     JSHandle<JSArrayBuffer> arrayBuffer(JSNApiHelper::ToJSHandle(this));
-    JSHandle<JSTaggedValue> length(thread, arrayBuffer->GetArrayBufferByteLength());
-    if (!length->IsNumber()) {
-        return 0;
-    }
-    return length->GetNumber();
+    return arrayBuffer->GetArrayBufferByteLength();
 }
 
 void *ArrayBufferRef::GetBuffer()
@@ -1183,7 +1174,7 @@ void *ArrayBufferRef::GetBuffer()
 
 // ---------------------------------- DataView -----------------------------------
 Local<DataViewRef> DataViewRef::New(
-    const EcmaVM *vm, Local<ArrayBufferRef> arrayBuffer, int32_t byteOffset, int32_t byteLength)
+    const EcmaVM *vm, Local<ArrayBufferRef> arrayBuffer, uint32_t byteOffset, uint32_t byteLength)
 {
     JSThread *thread = vm->GetJSThread();
     ObjectFactory *factory = vm->GetFactory();
@@ -1194,24 +1185,16 @@ Local<DataViewRef> DataViewRef::New(
     return JSNApiHelper::ToLocal<DataViewRef>(JSHandle<JSTaggedValue>(dataView));
 }
 
-int32_t DataViewRef::ByteLength()
+uint32_t DataViewRef::ByteLength()
 {
     JSHandle<JSDataView> dataView(JSNApiHelper::ToJSHandle(this));
-    JSTaggedValue length = dataView->GetByteLength();
-    if (!length.IsNumber()) {
-        return 0;
-    }
-    return length.GetNumber();
+    return dataView->GetByteLength();
 }
 
-int32_t DataViewRef::ByteOffset()
+uint32_t DataViewRef::ByteOffset()
 {
     JSHandle<JSDataView> dataView(JSNApiHelper::ToJSHandle(this));
-    JSTaggedValue offset = dataView->GetByteOffset();
-    if (!offset.IsNumber()) {
-        return 0;
-    }
-    return offset.GetNumber();
+    return dataView->GetByteOffset();
 }
 
 Local<ArrayBufferRef> DataViewRef::GetArrayBuffer(const EcmaVM *vm)
@@ -1274,7 +1257,7 @@ Local<ArrayBufferRef> TypedArrayRef::GetArrayBuffer(const EcmaVM *vm)
         JSHandle<JSArrayBuffer> arrayBuffer(JSNApiHelper::ToJSHandle(buffer));                          \
         ecmascript::InternalCallParams *argv = thread->GetInternalCallParams();                         \
         argv->MakeArgv(arrayBuffer.GetTaggedValue(), JSTaggedValue(byteOffset), JSTaggedValue(length)); \
-        array_size_t argc = 3;                                                                          \
+        uint32_t argc = 3;                                                                          \
         JSTaggedValue result = JSFunction::Construct(thread, func, argc, argv->GetArgv(), func);        \
         RETURN_VALUE_IF_ABRUPT(thread, JSValueRef::Exception(vm));                                      \
         JSHandle<JSTaggedValue> resultHandle(thread, result);                                           \
@@ -1403,37 +1386,28 @@ JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info)
     }
     JSHandle<JSFunction> function(constructor);
     JSHandle<JSTaggedValue> extraInfoValue(thread, function->GetFunctionExtraInfo());
-    if (!extraInfoValue->IsJSFunctionExtraInfo()) {
+    if (!extraInfoValue->IsJSNativePointer()) {
         return JSTaggedValue::False();
     }
-    JSHandle<JSFunctionExtraInfo> extraInfo(extraInfoValue);
+    JSHandle<JSNativePointer> extraInfo(extraInfoValue);
     // vm
     Region *region = Region::ObjectAddressToRange(extraInfo.GetTaggedValue().GetTaggedObject());
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
     // data
-    JSHandle<JSTaggedValue> data(thread, extraInfo->GetData());
-    if (!data->IsHeapObject()) {
-        return JSTaggedValue::False();
-    }
-    JSHandle<JSNativePointer> dataObj(data);
+    void *data = extraInfo->GetData();
     // callBack
-    JSHandle<JSTaggedValue> callBack(thread, extraInfo->GetCallback());
-    if (!callBack->IsHeapObject()) {
-        return JSTaggedValue::False();
-    }
-    JSHandle<JSNativePointer> callBackObj(callBack);
-    FunctionCallback nativeFunc = (reinterpret_cast<FunctionCallback>(callBackObj->GetExternalPointer()));
+    FunctionCallback nativeFunc = reinterpret_cast<FunctionCallback>(extraInfo->GetExternalPointer());
 
     // this
     JSHandle<JSTaggedValue> thisValue(BuiltinsBase::GetThis(info));
 
     // arguments
     std::vector<Local<JSValueRef>> arguments;
-    array_size_t length = info->GetArgsNumber();
-    for (array_size_t i = 0; i < length; ++i) {
+    uint32_t length = info->GetArgsNumber();
+    for (uint32_t i = 0; i < length; ++i) {
         arguments.emplace_back(JSNApiHelper::ToLocal<JSValueRef>(BuiltinsBase::GetCallArg(info, i)));
     }
 
@@ -1441,7 +1415,7 @@ JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info)
         JSNApiHelper::ToLocal<JSValueRef>(thisValue),
         arguments.data(),
         arguments.size(),
-        dataObj->GetExternalPointer());
+        data);
     return JSNApiHelper::ToJSHandle(result).GetTaggedValue();
 }
 
@@ -1455,37 +1429,28 @@ JSTaggedValue Callback::RegisterCallbackWithProperty(ecmascript::EcmaRuntimeCall
     }
     JSHandle<JSFunction> function(constructor);
     JSHandle<JSTaggedValue> extraInfoValue(thread, function->GetFunctionExtraInfo());
-    if (!extraInfoValue->IsJSFunctionExtraInfo()) {
+    if (!extraInfoValue->IsJSNativePointer()) {
         return JSTaggedValue::False();
     }
-    JSHandle<JSFunctionExtraInfo> extraInfo(extraInfoValue);
+    JSHandle<JSNativePointer> extraInfo(extraInfoValue);
     // vm
     Region *region = Region::ObjectAddressToRange(extraInfo.GetTaggedValue().GetTaggedObject());
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
     // data
-    JSHandle<JSTaggedValue> data(thread, extraInfo->GetData());
-    if (!data->IsHeapObject()) {
-        return JSTaggedValue::False();
-    }
-    JSHandle<JSNativePointer> dataObj(data);
+    void *data = extraInfo->GetData();
     // callBack
-    JSHandle<JSTaggedValue> callBack(thread, extraInfo->GetCallback());
-    if (!callBack->IsHeapObject()) {
-        return JSTaggedValue::False();
-    }
-    JSHandle<JSNativePointer> callBackObj(callBack);
-    FunctionCallback nativeFunc = (reinterpret_cast<FunctionCallback>(callBackObj->GetExternalPointer()));
+    FunctionCallback nativeFunc = reinterpret_cast<FunctionCallback>(extraInfo->GetExternalPointer());
 
     // constructor
     JSHandle<JSTaggedValue> thisValue(BuiltinsBase::GetConstructor(info));
 
     // arguments
     std::vector<Local<JSValueRef>> arguments;
-    array_size_t length = info->GetArgsNumber();
-    for (array_size_t i = 0; i < length; ++i) {
+    uint32_t length = info->GetArgsNumber();
+    for (uint32_t i = 0; i < length; ++i) {
         arguments.emplace_back(JSNApiHelper::ToLocal<JSValueRef>(BuiltinsBase::GetCallArg(info, i)));
     }
 
@@ -1493,7 +1458,7 @@ JSTaggedValue Callback::RegisterCallbackWithProperty(ecmascript::EcmaRuntimeCall
         JSNApiHelper::ToLocal<JSValueRef>(thisValue),
         arguments.data(),
         arguments.size(),
-        dataObj->GetExternalPointer());
+        data);
     return JSNApiHelper::ToJSHandle(result).GetTaggedValue();
 }
 
@@ -1507,30 +1472,21 @@ JSTaggedValue Callback::RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCal
     }
     JSHandle<JSFunction> function(constructor);
     JSHandle<JSTaggedValue> extraInfoValue(thread, function->GetFunctionExtraInfo());
-    if (!extraInfoValue->IsJSFunctionExtraInfo()) {
+    if (!extraInfoValue->IsJSNativePointer()) {
         return JSTaggedValue::False();
     }
-    JSHandle<JSFunctionExtraInfo> extraInfo(extraInfoValue);
+    JSHandle<JSNativePointer> extraInfo(extraInfoValue);
     // vm
     Region *region = Region::ObjectAddressToRange(extraInfo.GetTaggedValue().GetTaggedObject());
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetSpace()->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
     // data
-    JSHandle<JSTaggedValue> data(thread, extraInfo->GetData());
-    if (!data->IsHeapObject()) {
-        return JSTaggedValue::False();
-    }
-    JSHandle<JSNativePointer> dataObj(data);
+    void *data = extraInfo->GetData();
     // callBack
-    JSHandle<JSTaggedValue> callBack(thread, extraInfo->GetCallback());
-    if (!callBack->IsHeapObject()) {
-        return JSTaggedValue::False();
-    }
-    JSHandle<JSNativePointer> callBackObj(callBack);
     FunctionCallbackWithNewTarget nativeFunc =
-        (reinterpret_cast<FunctionCallbackWithNewTarget>(callBackObj->GetExternalPointer()));
+        reinterpret_cast<FunctionCallbackWithNewTarget>(extraInfo->GetExternalPointer());
 
     // newTarget
     JSHandle<JSTaggedValue> newTarget(BuiltinsBase::GetNewTarget(info));
@@ -1540,8 +1496,8 @@ JSTaggedValue Callback::RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCal
 
     // arguments
     std::vector<Local<JSValueRef>> arguments;
-    array_size_t length = info->GetArgsNumber();
-    for (array_size_t i = 0; i < length; ++i) {
+    uint32_t length = info->GetArgsNumber();
+    for (uint32_t i = 0; i < length; ++i) {
         arguments.emplace_back(JSNApiHelper::ToLocal<JSValueRef>(BuiltinsBase::GetCallArg(info, i)));
     }
 
@@ -1550,7 +1506,7 @@ JSTaggedValue Callback::RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCal
         JSNApiHelper::ToLocal<JSValueRef>(newTarget),
         arguments.data(),
         arguments.size(),
-        dataObj->GetExternalPointer());
+        data);
     return JSNApiHelper::ToJSHandle(result).GetTaggedValue();
 }
 
@@ -1968,15 +1924,19 @@ bool JSValueRef::IsGeneratorFunction()
     bool rst  = obj->IsGeneratorFunction();
     return rst;
 }
-void JSNApi::StartCpuProfiler(const EcmaVM *vm)
+void JSNApi::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
 {
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StartCpuProfiler(vm);
+    singleton->StartCpuProfiler(vm, fileName);
 }
 
 void JSNApi::StopCpuProfiler()
 {
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
     singleton->StopCpuProfiler();
+    if (singleton != nullptr) {
+        delete singleton;
+        singleton = nullptr;
+    }
 }
 }  // namespace panda

@@ -47,9 +47,9 @@ public:
         return concurrentSweep_;
     }
 
-    bool IsOldSpaceSwept() const
+    bool CanSelectCset() const
     {
-        return isOldSpaceSwept_;
+        return canSelectCset_;
     }
 
 private:
@@ -92,7 +92,7 @@ private:
     Heap *heap_;
     bool concurrentSweep_ {false};
     bool isSweeping_ {false};
-    bool isOldSpaceSwept_ {false};
+    bool canSelectCset_ {false};
     MemSpaceType startSpaceType_ = MemSpaceType::OLD_SPACE;
 };
 }  // namespace panda::ecmascript

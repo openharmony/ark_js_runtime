@@ -112,6 +112,8 @@ class ProtoChangeDetails;
                                                                                                                        \
         /* SPECIAL indexed objects begin, DON'T CHANGE HERE ///////////////////////////////////////////////-PADDING */ \
         JS_ARRAY,       /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_ARRAY_LIST, /* /////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_QUEUE,      /* /////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_TYPED_ARRAY, /* JS_TYPED_ARRAY_BEGIN /////////////////////////////////////////////////////////////////// */ \
         JS_INT8_ARRAY,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_UINT8_ARRAY, /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -146,7 +148,6 @@ class ProtoChangeDetails;
         PROTOTYPE_INFO,     /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
         TEMPLATE_MAP,       /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
         PROGRAM, /* /////////////////////////////////////////////////////////////////////////////////-PADDING */       \
-        LEXICAL_FUNCTION, /* ////////////////////////////////////////////////////////////////////////-PADDING */       \
                                                                                                                        \
         PROMISE_CAPABILITY, /* JS_RECORD_BEGIN //////////////////////////////////////////////////////////////////// */ \
         PROMISE_RECORD,     /* ////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -155,7 +156,6 @@ class ProtoChangeDetails;
         PROMISE_ITERATOR_RECORD,    /* ////////////////////////////////////////////////////////////////////-PADDING */ \
         MICRO_JOB_QUEUE, /* /////////////////////////////////////////////////////////////////////////////-PADDING */   \
         PENDING_JOB,     /* /////////////////////////////////////////////////////////////////////////////-PADDING */   \
-        FUNCTION_EXTRA_INFO, /* ////////////////////////////////////////////////////////////////////////-PADDING */    \
         COMPLETION_RECORD, /* JS_RECORD_END /////////////////////////////////////////////////////////////////////// */ \
         MACHINE_CODE_OBJECT,                                                                                           \
         ECMA_MODULE, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -497,11 +497,6 @@ public:
         return GetObjectType() == JSType::JS_PROMISE_ALL_RESOLVE_ELEMENT_FUNCTION;
     }
 
-    inline bool IsJSFunctionExtraInfo() const
-    {
-        return GetObjectType() == JSType::FUNCTION_EXTRA_INFO;
-    }
-
     inline bool IsMicroJobQueue() const
     {
         return GetObjectType() == JSType::MICRO_JOB_QUEUE;
@@ -603,6 +598,21 @@ public:
         return GetObjectType() == JSType::JS_PLURAL_RULES;
     }
 
+    inline bool IsJSArrayList() const
+    {
+        return GetObjectType() == JSType::JS_ARRAY_LIST;
+    }
+
+    inline bool IsJSQueue() const
+    {
+        return GetObjectType() == JSType::JS_QUEUE;
+    }
+
+    inline bool IsSpecialContainer() const
+    {
+        return GetObjectType() >= JSType::JS_ARRAY_LIST && GetObjectType() <= JSType::JS_QUEUE;
+    }
+
     inline bool IsAccessorData() const
     {
         return GetObjectType() == JSType::ACCESSOR_DATA;
@@ -690,11 +700,6 @@ public:
     inline bool IsClassInfoExtractor() const
     {
         return GetObjectType() == JSType::CLASS_INFO_EXTRACTOR;
-    }
-
-    inline bool IsLexicalFunction() const
-    {
-        return GetObjectType() == JSType::LEXICAL_FUNCTION;
     }
 
     inline bool IsCallable() const
@@ -864,7 +869,7 @@ public:
 
     inline void SetIsDictionaryElement(bool value)
     {
-        JSTaggedType newVal = DictionaryElementBits::Update(GetBitField(), value);
+        uint32_t newVal = DictionaryElementBits::Update(GetBitField(), value);
         SetBitField(newVal);
     }
     inline bool IsDictionaryElement() const
@@ -873,7 +878,7 @@ public:
     }
     inline void SetIsStableElements(bool value)
     {
-        JSTaggedType newVal = IsStableElementsBit::Update(GetBitField(), value);
+        uint32_t newVal = IsStableElementsBit::Update(GetBitField(), value);
         SetBitField(newVal);
     }
     inline bool IsStableElements() const
@@ -994,16 +999,17 @@ public:
 
     JSTaggedValue GetAccessor(const JSTaggedValue &key);
 
-    static constexpr size_t BIT_FIELD_OFFSET = TaggedObjectSize();
-    SET_GET_PRIMITIVE_FIELD(BitField, uint32_t, BIT_FIELD_OFFSET, BIT_FIELD1_OFFSET);
-    SET_GET_PRIMITIVE_FIELD(BitField1, uint32_t, BIT_FIELD1_OFFSET, PROTOTYPE_OFFSET);
+    static constexpr size_t PROTOTYPE_OFFSET = TaggedObjectSize();
     ACCESSORS(Proto, PROTOTYPE_OFFSET, LAYOUT_OFFSET);
     ACCESSORS(Layout, LAYOUT_OFFSET, TRANSTIONS_OFFSET);
     ACCESSORS(Transitions, TRANSTIONS_OFFSET, PARENT_OFFSET);
     ACCESSORS(Parent, PARENT_OFFSET, VALIDITY_CELL_OFFSET);
     ACCESSORS(ProtoChangeMarker, VALIDITY_CELL_OFFSET, PROTOTYPE_INFO_OFFSET);
     ACCESSORS(ProtoChangeDetails, PROTOTYPE_INFO_OFFSET, ENUM_CACHE_OFFSET);
-    ACCESSORS(EnumCache, ENUM_CACHE_OFFSET, SIZE);
+    ACCESSORS(EnumCache, ENUM_CACHE_OFFSET, BIT_FIELD_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(BitField, uint32_t, BIT_FIELD_OFFSET, BIT_FIELD1_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(BitField1, uint32_t, BIT_FIELD1_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     void SetPrototype(const JSThread *thread, JSTaggedValue proto);
     void SetPrototype(const JSThread *thread, const JSHandle<JSTaggedValue> &proto);
@@ -1015,7 +1021,7 @@ public:
 
     static CString DumpJSType(JSType type);
 
-    DECL_VISIT_OBJECT(PROTOTYPE_OFFSET, SIZE);
+    DECL_VISIT_OBJECT(PROTOTYPE_OFFSET, BIT_FIELD_OFFSET);
 
 private:
     static inline void AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &parent,

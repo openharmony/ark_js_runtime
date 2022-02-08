@@ -59,17 +59,17 @@ public:
 
     bool IsUtf16() const
     {
-        return compressedStringsEnabled ? ((length_ & STRING_COMPRESSED_BIT) == STRING_UNCOMPRESSED) : true;
+        return compressedStringsEnabled ? ((GetMixLength() & STRING_COMPRESSED_BIT) == STRING_UNCOMPRESSED) : true;
     }
 
     bool IsUtf8() const
     {
-        return compressedStringsEnabled ? ((length_ & STRING_COMPRESSED_BIT) == STRING_COMPRESSED) : false;
+        return compressedStringsEnabled ? ((GetMixLength() & STRING_COMPRESSED_BIT) == STRING_COMPRESSED) : false;
     }
 
     static size_t ComputeDataSizeUtf16(uint32_t length)
     {
-        return length * sizeof(dataUtf16_[0]);
+        return length * sizeof(uint16_t);
     }
 
     /**
@@ -77,13 +77,18 @@ public:
      */
     static size_t ComputeSizeUtf16(uint32_t utf16Len)
     {
-        return sizeof(EcmaString) + ComputeDataSizeUtf16(utf16Len);
+        return DATA_OFFSET + ComputeDataSizeUtf16(utf16Len);
+    }
+
+    inline uint16_t *GetData() const
+    {
+        return reinterpret_cast<uint16_t *>(ToUintPtr(this) + DATA_OFFSET);
     }
 
     const uint16_t *GetDataUtf16() const
     {
         LOG_IF(!IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf16 for utf8 string";
-        return dataUtf16_;
+        return GetData();
     }
 
     /**
@@ -91,7 +96,7 @@ public:
      */
     static size_t ComputeSizeUtf8(uint32_t utf8Len)
     {
-        return sizeof(EcmaString) + utf8Len;
+        return DATA_OFFSET + utf8Len;
     }
 
     /**
@@ -100,7 +105,7 @@ public:
     const uint8_t *GetDataUtf8() const
     {
         LOG_IF(IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf8 for utf16 string";
-        return reinterpret_cast<const uint8_t *>(dataUtf16_);
+        return reinterpret_cast<uint8_t *>(GetData());
     }
 
     size_t GetUtf8Length() const
@@ -108,7 +113,7 @@ public:
         if (!IsUtf16()) {
             return GetLength() + 1;  // add place for zero in the end
         }
-        return base::utf_helper::Utf16ToUtf8Size(dataUtf16_, GetLength());
+        return base::utf_helper::Utf16ToUtf8Size(GetData(), GetLength());
     }
 
     size_t GetUtf16Length() const
@@ -171,7 +176,7 @@ public:
             }
             return length;
         }
-        return base::utf_helper::ConvertRegionUtf8ToUtf16(GetDataUtf8(), buf, maxLength, start);
+        return base::utf_helper::ConvertRegionUtf8ToUtf16(GetDataUtf8(), buf, len, maxLength, start);
     }
 
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
@@ -188,17 +193,17 @@ public:
     inline void WriteData(char src, uint32_t start);
     uint32_t GetLength() const
     {
-        return length_ >> 2U;
+        return GetMixLength() >> 2U;
     }
 
     void SetIsInternString()
     {
-        length_ |= STRING_INTERN_BIT;
+        SetMixLength(GetMixLength() | STRING_INTERN_BIT);
     }
 
     bool IsInternString() const
     {
-        return (length_ & STRING_INTERN_BIT) != 0;
+        return (GetMixLength() & STRING_INTERN_BIT) != 0;
     }
 
     size_t ObjectSize() const
@@ -209,23 +214,15 @@ public:
 
     uint32_t GetHashcode()
     {
-        if (hashcode_ == 0) {
-            hashcode_ = ComputeHashcode();
+        uint32_t hashcode = GetRawHashcode();
+        if (hashcode == 0) {
+            hashcode = ComputeHashcode();
+            SetRawHashcode(hashcode);
         }
-        return hashcode_;
+        return hashcode;
     }
 
     int32_t IndexOf(const EcmaString *rhs, int pos = 0) const;
-
-    static constexpr uint32_t GetLengthOffset()
-    {
-        return MEMBER_OFFSET(EcmaString, length_);
-    }
-
-    static constexpr uint32_t GetDataOffset()
-    {
-        return MEMBER_OFFSET(EcmaString, dataUtf16_);
-    }
 
     static constexpr uint32_t GetStringCompressionMask()
     {
@@ -245,7 +242,7 @@ public:
      * Compares strings by bytes, It doesn't check canonical unicode equivalence.
      */
     static bool StringsAreEqualUtf16(const EcmaString *str1, const uint16_t *utf16Data, uint32_t utf16Len);
-    static uint32_t ComputeHashcodeUtf8(const uint8_t *utf8Data, bool canBeCompress);
+    static uint32_t ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len, bool canBeCompress);
     static uint32_t ComputeHashcodeUtf16(const uint16_t *utf16Data, uint32_t length);
 
     static void SetCompressedStringsEnabled(bool val)
@@ -260,32 +257,35 @@ public:
 
     static EcmaString *AllocStringObject(size_t length, bool compressed, const EcmaVM *vm);
 
-    static bool CanBeCompressed(const uint8_t *utf8Data);
+    static bool CanBeCompressed(const uint8_t *utf8Data, uint32_t utf8Len);
     static bool CanBeCompressed(const uint16_t *utf16Data, uint32_t utf16Len);
+
+    static constexpr size_t MIX_LENGTH_OFFSET = TaggedObjectSize();
+    // In last bit of mix_length we store if this string is compressed or not.
+    ACCESSORS_PRIMITIVE_FIELD(MixLength, uint32_t, MIX_LENGTH_OFFSET, HASHCODE_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(RawHashcode, uint32_t, HASHCODE_OFFSET, SIZE)
+    // DATA_OFFSET: the string data stored after the string header.
+    // Data can be stored in utf8 or utf16 form according to compressed bit.
+    static constexpr size_t DATA_OFFSET = SIZE;  // DATA_OFFSET equal to Empty String size
 
 private:
     void SetLength(uint32_t length, bool compressed = false)
     {
         ASSERT(length < 0x40000000U);
         // Use 0u for compressed/utf8 expression
-        length_ = (length << 2U) | (compressed ? STRING_COMPRESSED : STRING_UNCOMPRESSED);
-    }
-
-    void SetHashcode(uint32_t hashcode)
-    {
-        hashcode_ = hashcode;
+        SetMixLength((length << 2U) | (compressed ? STRING_COMPRESSED : STRING_UNCOMPRESSED));
     }
 
     uint16_t *GetDataUtf16Writable()
     {
         LOG_IF(!IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf16 for utf8 string";
-        return dataUtf16_;
+        return GetData();
     }
 
     uint8_t *GetDataUtf8Writable()
     {
         LOG_IF(IsUtf16(), FATAL, RUNTIME) << "EcmaString: Read data as utf8 for utf16 string";
-        return reinterpret_cast<uint8_t *>(dataUtf16_);
+        return reinterpret_cast<uint8_t *>(GetData());
     }
 
     uint32_t ComputeHashcode() const;
@@ -303,7 +303,8 @@ private:
      * str1 should have the same length as utf16_data.
      * Converts utf8Data to utf16 and compare it with given utf16_data.
      */
-    static bool IsUtf8EqualsUtf16(const uint8_t *utf8Data, const uint16_t *utf16Data, uint32_t utf16Len);
+    static bool IsUtf8EqualsUtf16(const uint8_t *utf8Data, size_t utf8Len, const uint16_t *utf16Data,
+                                  uint32_t utf16Len);
 
     template<typename T>
     /**
@@ -319,14 +320,9 @@ private:
 
     template<typename T1, typename T2>
     static int32_t IndexOf(Span<const T1> &lhsSp, Span<const T2> &rhsSp, int32_t pos, int32_t max);
-
-    // In last bit of length_ we store if this string is compressed or not.
-    uint32_t length_;
-    uint32_t hashcode_;
-    // A pointer to the string data stored after the string header.
-    // Data can be stored in utf8 or utf16 form according to compressed bit.
-    __extension__ uint16_t dataUtf16_[0];  // NOLINT(modernize-avoid-c-arrays)
 };
+
+static_assert((EcmaString::DATA_OFFSET % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);
 }  // namespace ecmascript
 }  // namespace panda
 #endif  // ECMASCRIPT_STRING_H

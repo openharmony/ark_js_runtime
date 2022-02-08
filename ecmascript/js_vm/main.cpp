@@ -14,7 +14,6 @@
  */
 
 #include <chrono>
-#include <ctime>
 #include <iostream>
 #include <limits>
 #include <signal.h>  // NOLINTNEXTLINE(modernize-deprecated-headers)
@@ -124,12 +123,10 @@ int Main(const int argc, const char **argv)
 
     LocalScope scope(vm);
     std::string entry = entrypoint.GetValue();    
-    auto entryRef = StringRef::NewFromUtf8(vm, entry.c_str(), entry.size());
 
     arg_list_t fileNames = files.GetValue();
     for (const auto &fileName : fileNames) {
-        auto fileNameRef = StringRef::NewFromUtf8(vm, fileName.c_str(), fileName.size());
-        auto res = JSNApi::Execute(vm, fileNameRef, entryRef);
+        auto res = JSNApi::Execute(vm, fileName, entry);
         if (!res) {
             std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry << "'" << std::endl;
             ret = false;

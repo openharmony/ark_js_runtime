@@ -165,7 +165,7 @@ JSHandle<JSTaggedValue> JsonStringifier::Stringify(const JSHandle<JSTaggedValue>
         if (len > 0) {
             JSMutableHandle<JSTaggedValue> propHandle(thread_, JSTaggedValue::Undefined());
             // Repeat while k<len.
-            for (array_size_t i = 0; i < len; i++) {
+            for (uint32_t i = 0; i < len; i++) {
                 // a. Let v be Get(replacer, ToString(k)).
                 JSTaggedValue prop = FastRuntimeStub::FastGetPropertyByIndex(thread_, replacer.GetTaggedValue(), i);
                 // b. ReturnIfAbrupt(v).
@@ -237,8 +237,8 @@ JSHandle<JSTaggedValue> JsonStringifier::Stringify(const JSHandle<JSTaggedValue>
 
 void JsonStringifier::AddDeduplicateProp(const JSHandle<JSTaggedValue> &property)
 {
-    array_size_t propLen = propList_.size();
-    for (array_size_t i = 0; i < propLen; i++) {
+    uint32_t propLen = propList_.size();
+    for (uint32_t i = 0; i < propLen; i++) {
         if (JSTaggedValue::SameValue(propList_[i], property)) {
             return;
         }
@@ -414,9 +414,9 @@ void JsonStringifier::SerializeObjectKey(const JSHandle<JSTaggedValue> &key, boo
 
 bool JsonStringifier::PushValue(const JSHandle<JSTaggedValue> &value)
 {
-    array_size_t thisLen = stack_.size();
+    uint32_t thisLen = stack_.size();
 
-    for (array_size_t i = 0; i < thisLen; i++) {
+    for (uint32_t i = 0; i < thisLen; i++) {
         bool equal = JSTaggedValue::SameValue(stack_[i].GetTaggedValue(), value.GetTaggedValue());
         if (equal) {
             return true;
@@ -458,8 +458,8 @@ bool JsonStringifier::SerializeJSONObject(const JSHandle<JSTaggedValue> &value, 
             RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
         }
     } else {
-        array_size_t propLen = propList_.size();
-        for (array_size_t i = 0; i < propLen; i++) {
+        uint32_t propLen = propList_.size();
+        for (uint32_t i = 0; i < propLen; i++) {
             JSTaggedValue tagVal =
                 FastRuntimeStub::FastGetPropertyByValue(thread_, obj.GetTaggedValue(), propList_[i].GetTaggedValue());
             handleValue_.Update(tagVal);
@@ -511,7 +511,7 @@ bool JsonStringifier::SerializeJSProxy(const JSHandle<JSTaggedValue> &object, co
     JSTaggedNumber lenNumber = JSTaggedValue::ToLength(thread_, lenghHandle);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
     uint32_t length = lenNumber.ToUint32();
-    for (array_size_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         handleKey_.Update(JSTaggedValue(i));
         JSHandle<JSTaggedValue> valHandle = JSProxy::GetProperty(thread_, proxy, handleKey_).GetValue();
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread_, false);
@@ -559,7 +559,7 @@ bool JsonStringifier::SerializeJSArray(const JSHandle<JSTaggedValue> &value, con
     JSHandle<JSArray> jsArr(value);
     uint32_t len = jsArr->GetArrayLength();
     if (len > 0) {
-        for (array_size_t i = 0; i < len; i++) {
+        for (uint32_t i = 0; i < len; i++) {
             JSTaggedValue tagVal = FastRuntimeStub::FastGetPropertyByIndex(thread_, value.GetTaggedValue(), i);
             if (UNLIKELY(tagVal.IsAccessor())) {
                 tagVal = JSObject::CallGetter(thread_, AccessorData::Cast(tagVal.GetTaggedObject()), value);

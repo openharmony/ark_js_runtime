@@ -28,6 +28,7 @@ For more infomation, see: [ARK Runtime Subsystem](https://gitee.com/openharmony/
 │   ├─ builtins           # ECMAScript library
 │   ├─ class_linker       # Bytecode pre-processing module
 │   ├─ compiler           # JS compiler
+│   ├─ containers         # Non-ECMAScript container library
 │   ├─ cpu_profiler       # CPU Performance Analyzer
 │   ├─ hprof              # Memory analysis utility class
 │   ├─ ic                 # Inline cache module

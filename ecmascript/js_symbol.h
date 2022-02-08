@@ -23,12 +23,12 @@ namespace panda {
 namespace ecmascript {
 class JSSymbol : public TaggedObject {
 public:
-    static constexpr uint64_t IS_PRIVATE = 1U << 0U;
-    static constexpr uint64_t IS_WELL_KNOWN_SYMBOL = 1U << 1U;
-    static constexpr uint64_t IS_IN_PUBLIC_SYMBOL_TABLE = 1U << 2U;
-    static constexpr uint64_t IS_INTERESTING_SYMBOL = 1U << 3U;
-    static constexpr uint64_t IS_PRIVATE_NAME = 1U << 4U;
-    static constexpr uint64_t IS_PRIVATE_BRAND = 1U << 5U;
+    static constexpr uint32_t IS_PRIVATE = 1U << 0U;
+    static constexpr uint32_t IS_WELL_KNOWN_SYMBOL = 1U << 1U;
+    static constexpr uint32_t IS_IN_PUBLIC_SYMBOL_TABLE = 1U << 2U;
+    static constexpr uint32_t IS_INTERESTING_SYMBOL = 1U << 3U;
+    static constexpr uint32_t IS_PRIVATE_NAME = 1U << 4U;
+    static constexpr uint32_t IS_PRIVATE_BRAND = 1U << 5U;
 
     static constexpr int SYMBOL_HAS_INSTANCE_TYPE = 0;
     static constexpr int SYMBOL_TO_PRIMITIVE_TYPE = 1;
@@ -50,91 +50,52 @@ public:
 
     bool IsPrivate() const
     {
-        JSTaggedValue flags = this->GetFlags();
-        ASSERT(flags.IsInteger());
-        return (flags.GetRawData() & IS_PRIVATE) != 0U;
+        return (GetFlags() & IS_PRIVATE) != 0U;
     }
 
     void SetPrivate(const JSThread *thread)
     {
-        JSTaggedValue flags = this->GetFlags();
-        if (flags.IsUndefined()) {
-            SetFlags(thread, JSTaggedValue(IS_PRIVATE));
-            return;
-        }
-        SetFlags(thread, JSTaggedValue(flags.GetRawData() | IS_PRIVATE));
+        SetFlags(GetFlags() | IS_PRIVATE);
     }
 
     bool IsWellKnownSymbol() const
     {
-        JSTaggedValue flags = this->GetFlags();
-        ASSERT(flags.IsInteger());
-        return (flags.GetRawData() & IS_WELL_KNOWN_SYMBOL) != 0U;
+        return (GetFlags() & IS_WELL_KNOWN_SYMBOL) != 0U;
     }
 
     void SetWellKnownSymbol(const JSThread *thread)
     {
-        JSTaggedValue flags = this->GetFlags();
-        if (flags.IsUndefined()) {
-            SetFlags(thread, JSTaggedValue(static_cast<int>(IS_WELL_KNOWN_SYMBOL)));
-            return;
-        }
-        flags = JSTaggedValue(static_cast<int>(flags.GetRawData() | IS_WELL_KNOWN_SYMBOL));
-        SetFlags(thread, flags);
+        SetFlags(GetFlags() | IS_WELL_KNOWN_SYMBOL);
     }
 
     bool IsInPublicSymbolTable() const
     {
-        JSTaggedValue flags = this->GetFlags();
-        ASSERT(flags.IsInteger());
-        return (flags.GetRawData() & IS_IN_PUBLIC_SYMBOL_TABLE) != 0U;
+        return (GetFlags() & IS_IN_PUBLIC_SYMBOL_TABLE) != 0U;
     }
 
     void SetInPublicSymbolTable(const JSThread *thread)
     {
-        JSTaggedValue flags = this->GetFlags();
-        if (flags.IsUndefined()) {
-            SetFlags(thread, JSTaggedValue(static_cast<int>(IS_IN_PUBLIC_SYMBOL_TABLE)));
-            return;
-        }
-        flags = JSTaggedValue(static_cast<int>(flags.GetRawData() | IS_IN_PUBLIC_SYMBOL_TABLE));
-        SetFlags(thread, flags);
+        SetFlags(GetFlags() | IS_IN_PUBLIC_SYMBOL_TABLE);
     }
 
     bool IsInterestingSymbol() const
     {
-        JSTaggedValue flags = this->GetFlags();
-        ASSERT(flags.IsInteger());
-        return (flags.GetRawData() & IS_INTERESTING_SYMBOL) != 0U;
+        return (GetFlags() & IS_INTERESTING_SYMBOL) != 0U;
     }
 
     void SetInterestingSymbol(const JSThread *thread)
     {
-        JSTaggedValue flags = this->GetFlags();
-        if (flags.IsUndefined()) {
-            SetFlags(thread, JSTaggedValue(static_cast<int>(IS_INTERESTING_SYMBOL)));
-            return;
-        }
-        flags = JSTaggedValue(static_cast<int>(flags.GetRawData() | IS_INTERESTING_SYMBOL));
-        SetFlags(thread, flags);
+        SetFlags(GetFlags() | IS_INTERESTING_SYMBOL);
     }
 
     bool IsPrivateNameSymbol() const
     {
-        JSTaggedValue flags = this->GetFlags();
-        ASSERT(flags.IsInteger());
-        return (flags.GetRawData() & IS_PRIVATE_NAME) != 0U;
+        return (GetFlags() & IS_PRIVATE_NAME) != 0U;
     }
 
     void SetPrivateNameSymbol(const JSThread *thread)
     {
-        JSTaggedValue flags = this->GetFlags();
-        if (flags.IsUndefined()) {
-            SetFlags(thread, JSTaggedValue(static_cast<int>(IS_PRIVATE_NAME)));
-            return;
-        }
-        flags = JSTaggedValue(static_cast<int>(flags.GetRawData() | IS_PRIVATE_NAME));
-        SetFlags(thread, flags);
+        SetFlags(GetFlags() | IS_PRIVATE_NAME);
     }
 
     static bool Equal(const JSSymbol &src, const JSSymbol &dst)
@@ -148,14 +109,15 @@ public:
     }
 
 public:
-    static constexpr size_t HASHFIELD_OFFSET = TaggedObjectSize();
-    ACCESSORS(HashField, HASHFIELD_OFFSET, FLAGS_OFFSET)
-    ACCESSORS(Flags, FLAGS_OFFSET, DESCRIPTION_OFFSET)
-    ACCESSORS(Description, DESCRIPTION_OFFSET, SIZE)
+    static constexpr size_t DESCRIPTION_OFFSET = TaggedObjectSize();
+    ACCESSORS(Description, DESCRIPTION_OFFSET, HASHFIELD_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(HashField, uint32_t, HASHFIELD_OFFSET, FLAGS_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(Flags, uint32_t, FLAGS_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     DECL_DUMP()
 
-    DECL_VISIT_OBJECT(HASHFIELD_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(DESCRIPTION_OFFSET, HASHFIELD_OFFSET)
 };
 }  // namespace ecmascript
 }  // namespace panda

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_TEST_TEST_LIST_H
-#define ECMASCRIPT_TOOLING_TEST_TEST_LIST_H
+#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_TEST_LIST_H
+#define ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_TEST_LIST_H
 
 #include <utility>
 #include <vector>
@@ -28,8 +28,9 @@ using panda::ecmascript::CString;
 std::vector<const char *> GetTestList(panda_file::SourceLang language);
 
 void SetCurrentTestName(const char *testName);
+const char *GetCurrentTestName();
 
 std::pair<CString, CString> GetTestEntryPoint(const char *testName);
 }  // namespace panda::tooling::ecmascript::test
 
-#endif  // ECMASCRIPT_TOOLING_TEST_TEST_LIST_H
+#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TESTCASES_TEST_LIST_H
