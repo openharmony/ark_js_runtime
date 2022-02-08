@@ -99,11 +99,16 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::STATE_ENTRY, &LLVMIRBuilder::HandleGoto},
         {OpCode::RETURN, &LLVMIRBuilder::HandleReturn},
         {OpCode::RETURN_VOID, &LLVMIRBuilder::HandleReturnVoid},
-        {OpCode::IF_BRANCH, &LLVMIRBuilder::HandleBranch}, {OpCode::SWITCH_BRANCH, &LLVMIRBuilder::HandleSwitch},
-        {OpCode::ORDINARY_BLOCK, &LLVMIRBuilder::HandleGoto}, {OpCode::IF_TRUE, &LLVMIRBuilder::HandleGoto},
-        {OpCode::IF_FALSE, &LLVMIRBuilder::HandleGoto}, {OpCode::SWITCH_CASE, &LLVMIRBuilder::HandleGoto},
-        {OpCode::MERGE, &LLVMIRBuilder::HandleGoto}, {OpCode::DEFAULT_CASE, &LLVMIRBuilder::HandleGoto},
-        {OpCode::LOOP_BEGIN, &LLVMIRBuilder::HandleGoto}, {OpCode::LOOP_BACK, &LLVMIRBuilder::HandleGoto},
+        {OpCode::IF_BRANCH, &LLVMIRBuilder::HandleBranch},
+        {OpCode::SWITCH_BRANCH, &LLVMIRBuilder::HandleSwitch},
+        {OpCode::ORDINARY_BLOCK, &LLVMIRBuilder::HandleGoto},
+        {OpCode::IF_TRUE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::IF_FALSE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::SWITCH_CASE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::MERGE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::DEFAULT_CASE, &LLVMIRBuilder::HandleGoto},
+        {OpCode::LOOP_BEGIN, &LLVMIRBuilder::HandleGoto},
+        {OpCode::LOOP_BACK, &LLVMIRBuilder::HandleGoto},
         {OpCode::VALUE_SELECTOR, &LLVMIRBuilder::HandlePhi},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
@@ -121,6 +126,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::MUL, &LLVMIRBuilder::HandleMul},
         {OpCode::FDIV, &LLVMIRBuilder::HandleFloatDiv},
         {OpCode::SDIV, &LLVMIRBuilder::HandleIntDiv},
+        {OpCode::UDIV, &LLVMIRBuilder::HandleUDiv},
         {OpCode::AND, &LLVMIRBuilder::HandleIntAnd},
         {OpCode::OR, &LLVMIRBuilder::HandleIntOr},
         {OpCode::XOR, &LLVMIRBuilder::HandleIntXor},
@@ -882,8 +888,9 @@ void LLVMIRBuilder::HandleBranch(GateRef gate)
 
 void LLVMIRBuilder::HandleMod(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    VisitMod(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitMod(gate, g0, g1);
 }
 
 void LLVMIRBuilder::VisitMod(GateRef gate, GateRef e1, GateRef e2)
@@ -1161,9 +1168,9 @@ int64_t LLVMIRBuilder::GetBitWidthFromMachineType(MachineType machineType) const
 
 void LLVMIRBuilder::HandleAdd(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitAdd(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitAdd(gate, g0, g1);
 }
 
 void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
@@ -1205,9 +1212,9 @@ void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
 
 void LLVMIRBuilder::HandleSub(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitSub(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitSub(gate, g0, g1);
 }
 
 void LLVMIRBuilder::VisitSub(GateRef gate, GateRef e1, GateRef e2)
@@ -1232,9 +1239,9 @@ void LLVMIRBuilder::VisitSub(GateRef gate, GateRef e1, GateRef e2)
 
 void LLVMIRBuilder::HandleMul(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitMul(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitMul(gate, g0, g1);
 }
 
 void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
@@ -1259,37 +1266,44 @@ void LLVMIRBuilder::VisitMul(GateRef gate, GateRef e1, GateRef e2)
 
 void LLVMIRBuilder::HandleFloatDiv(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitFloatDiv(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitFloatDiv(gate, g0, g1);
 }
 
 void LLVMIRBuilder::HandleIntDiv(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitIntDiv(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntDiv(gate, g0, g1);
+}
+
+void LLVMIRBuilder::HandleUDiv(GateRef gate)
+{
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitUDiv(gate, g0, g1);
 }
 
 void LLVMIRBuilder::HandleIntOr(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitIntOr(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntOr(gate, g0, g1);
 }
 
 void LLVMIRBuilder::HandleIntXor(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitIntXor(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntXor(gate, g0, g1);
 }
 
 void LLVMIRBuilder::HandleIntLsr(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitIntLsr(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntLsr(gate, g0, g1);
 }
 
 
@@ -1330,9 +1344,9 @@ void LLVMIRBuilder::HandleIntOrUintCmp(GateRef gate)
 
 void LLVMIRBuilder::HandleEqCmp(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    VisitEqCmp(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitEqCmp(gate, g0, g1);
 }
 
 void LLVMIRBuilder::VisitEqCmp(GateRef gate, GateRef e1, GateRef e2)
@@ -1400,6 +1414,14 @@ void LLVMIRBuilder::VisitIntDiv(GateRef gate, GateRef e1, GateRef e2)
     gateToLLVMMaps_[gate] = result;
 }
 
+void LLVMIRBuilder::VisitUDiv(GateRef gate, GateRef e1, GateRef e2)
+{
+    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
+    LLVMValueRef e2Value = gateToLLVMMaps_[e2];
+    LLVMValueRef result = LLVMBuildUDiv(builder_, e1Value, e2Value, "");
+    gateToLLVMMaps_[gate] = result;
+}
+
 void LLVMIRBuilder::VisitFloatDiv(GateRef gate, GateRef e1, GateRef e2)
 {
     COMPILER_LOG(DEBUG) << "float div gate:" << gate;
@@ -1430,8 +1452,9 @@ void LLVMIRBuilder::VisitIntOr(GateRef gate, GateRef e1, GateRef e2)
 
 void LLVMIRBuilder::HandleIntAnd(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    VisitIntAnd(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntAnd(gate, g0, g1);
 }
 
 void LLVMIRBuilder::VisitIntAnd(GateRef gate, GateRef e1, GateRef e2)
@@ -1478,8 +1501,9 @@ void LLVMIRBuilder::VisitIntLsr(GateRef gate, GateRef e1, GateRef e2)
 
 void LLVMIRBuilder::HandleIntLsl(GateRef gate)
 {
-    std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    VisitIntLsl(gate, ins[0], ins[1]);
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntLsl(gate, g0, g1);
 }
 
 void LLVMIRBuilder::VisitIntLsl(GateRef gate, GateRef e1, GateRef e2)
