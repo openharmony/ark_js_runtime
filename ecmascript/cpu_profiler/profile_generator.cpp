@@ -32,7 +32,7 @@ ProfileGenerator::~ProfileGenerator()
     }
 }
 
-void ProfileGenerator::AddSample(CVector<JSMethod *> sample, time_t sampleTimeStamp)
+void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp)
 {
     static int PreviousId = 0;
     struct MethodKey methodkey;
@@ -72,9 +72,9 @@ void ProfileGenerator::AddSample(CVector<JSMethod *> sample, time_t sampleTimeSt
             }
         }
     }
-    static time_t threadStartTime = 0;
+    static uint64_t threadStartTime = 0;
     struct SampleInfo sampleInfo;
-    sampleInfo.id = methodNode.id;
+    sampleInfo.id = methodNode.id == 0 ? PreviousId = 1, 1 : methodNode.id;
     sampleInfo.line = stackTopLines_[methodNode.id];
     if (threadStartTime == 0) {
         sampleInfo.timeStamp = sampleTimeStamp - threadStartTime_;
@@ -154,11 +154,11 @@ void ProfileGenerator::WriteMethodsAndSampleInfo(bool timeEnd)
                     "\"0x2\",\"name\":\"ProfileChunk\",\"ph\":\"P\",\"pid\":";
     pid_t pid = getpid();
     pthread_t tid = syscall(SYS_gettid);
-    time_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
+    uint64_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
     ts = ts % TIME_CHANGE;
     struct timespec time = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &time);
-    time_t tts = time.tv_nsec / 1000; // 1000:Nanoseconds to milliseconds.
+    uint64_t tts = time.tv_nsec / 1000; // 1000:Nanoseconds to milliseconds.
     sampleData_ += std::to_string(pid) + ",\"tid\":" +
                    std::to_string(tid) + ",\"ts\":" +
                    std::to_string(ts) + ",\"tts\":" +
@@ -198,7 +198,7 @@ struct StackInfo ProfileGenerator::GetGcInfo()
     return gcEntry;
 }
 
-void ProfileGenerator::SetThreadStartTime(time_t threadStartTime)
+void ProfileGenerator::SetThreadStartTime(uint64_t threadStartTime)
 {
     threadStartTime_ = threadStartTime;
 }

@@ -41,7 +41,7 @@ struct MethodNode {
 struct SampleInfo {
     int id = 0;
     int line = 0;
-    time_t timeStamp = 0;
+    uint64_t timeStamp = 0;
 };
 struct MethodKey {
     JSMethod *method = nullptr;
@@ -57,12 +57,12 @@ public:
     explicit ProfileGenerator();
     virtual ~ProfileGenerator();
 
-    void AddSample(CVector<JSMethod *> sample, time_t sampleTimeStamp);
+    void AddSample(CVector<JSMethod *> sample, uint64_t sampleTimeStamp);
     void WriteMethodsAndSampleInfo(bool timeEnd);
     CVector<struct MethodNode> GetMethodNodes() const;
     CDeque<struct SampleInfo> GetSamples() const;
     std::string GetSampleData() const;
-    void SetThreadStartTime(time_t threadStartTime);
+    void SetThreadStartTime(uint64_t threadStartTime);
     void SetStartsampleData(std::string sampleData);
     void SetFileName(std::string &fileName);
     const std::string GetFileName() const;
@@ -81,7 +81,7 @@ private:
     CMap<struct MethodKey, int> methodMap_;
     CDeque<struct SampleInfo> samples_;
     std::string sampleData_;
-    time_t threadStartTime_;
+    uint64_t threadStartTime_;
     std::string fileName_;
 };
 } // namespace panda::ecmascript
