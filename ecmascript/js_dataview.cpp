@@ -16,9 +16,9 @@
 #include "ecmascript/js_dataview.h"
 
 namespace panda::ecmascript {
-int32_t JSDataView::GetElementSize(DataViewType type)
+uint32_t JSDataView::GetElementSize(DataViewType type)
 {
-    int32_t size;
+    uint32_t size;
     switch (type) {
         case DataViewType::INT8:
         case DataViewType::UINT8:

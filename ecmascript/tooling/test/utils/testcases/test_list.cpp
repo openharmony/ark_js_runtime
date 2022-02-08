@@ -13,15 +13,20 @@
  * limitations under the License.
  */
 
-#include "ecmascript/tooling/test/test_list.h"
-#include "ecmascript/tooling/test/api_tests/api_tests.h"
-#include "ecmascript/tooling/test/test_util.h"
+#include "ecmascript/tooling/test/utils/testcases/test_list.h"
+
+#include "ecmascript/tooling/test/utils/test_util.h"
+
+// testcase list
+#include "js_breakpoint_test.h"
+#include "js_single_step_test.h"
 
 namespace panda::tooling::ecmascript::test {
 static const char *g_currentTestName = nullptr;
 
 static void RegisterTests()
 {
+    // Register testcases
     TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsBreakpoint", GetJsBreakpointTest());
     TestUtil::RegisterTest(panda_file::SourceLang::ECMASCRIPT, "JsSingleStepTest", GetJsSingleStepTest());
 }

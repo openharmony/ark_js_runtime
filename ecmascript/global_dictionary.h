@@ -73,7 +73,7 @@ public:
 
     inline void GetAllKeys(const JSThread *thread, int offset, TaggedArray *keyArray) const;
 
-    inline void GetEnumAllKeys(const JSThread *thread, int offset, TaggedArray *keyArray, array_size_t *keys) const;
+    inline void GetEnumAllKeys(const JSThread *thread, int offset, TaggedArray *keyArray, uint32_t *keys) const;
 
     static bool inline CompKey(const std::pair<JSTaggedValue, uint32_t> &a,
                                const std::pair<JSTaggedValue, uint32_t> &b);

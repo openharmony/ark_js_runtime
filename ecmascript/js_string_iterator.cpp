@@ -35,7 +35,7 @@ JSHandle<JSStringIterator> JSStringIterator::CreateStringIterator(const JSThread
     // 3. Set iterator’s [[IteratedString]] internal slot to string.
     // 4. Set iterator’s [[StringIteratorNextIndex]] internal slot to 0.
     iterator->SetIteratedString(thread, string);
-    iterator->SetStringIteratorNextIndex(thread, JSTaggedValue(0));
+    iterator->SetStringIteratorNextIndex(0);
     return iterator;
 }
 }  // namespace panda::ecmascript

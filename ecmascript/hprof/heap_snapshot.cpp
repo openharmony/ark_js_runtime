@@ -166,21 +166,7 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
         case JSType::STRING:
             return GetString("BaseString");
         case JSType::JS_OBJECT: {
-            const GlobalEnvConstants *globalConst = thread->GlobalConstants();
             CString objName = CString("JSOBJECT(Ctor=");  // Ctor-name
-            JSTaggedValue proto = JSObject::Cast(entry)->GetPrototype(thread);
-            JSHandle<JSTaggedValue> protoHandle(thread, proto);
-            if (protoHandle->IsNull() || protoHandle->IsUndefined()) {
-                return GetString("JSObject(Ctor=UnKnown)");
-            }
-            JSHandle<JSTaggedValue> ctor =
-                JSObject::GetProperty(thread, protoHandle, globalConst->GetHandledConstructorString()).GetValue();
-            if (ctor->IsJSFunction()) {
-                JSHandle<JSTaggedValue> nameKey = globalConst->GetHandledNameString();
-                JSHandle<JSTaggedValue> value = JSObject::GetProperty(thread, ctor, nameKey).GetValue();
-                CString ctorName = EntryVisitor::ConvertKey(value.GetTaggedValue());
-                objName.append(ctorName).append(")");
-            }
             return GetString(objName);
         }
         case JSType::FREE_OBJECT_WITH_ONE_FIELD:
@@ -329,8 +315,6 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("AccessorData");
         case JSType::INTERNAL_ACCESSOR:
             return GetString("InternalAccessor");
-        case JSType::FUNCTION_EXTRA_INFO:
-            return GetString("FunctionExtraInfo");
         case JSType::MICRO_JOB_QUEUE:
             return GetString("MicroJobQueue");
         case JSType::PENDING_JOB:
@@ -339,6 +323,8 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("CompletionRecord");
         case JSType::ECMA_MODULE:
             return GetString("EcmaModule");
+        case JSType::JS_ARRAY_LIST:
+            return GetString("ArrayList");
         default:
             break;
     }
@@ -360,8 +346,6 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
                 return GetString("TemplateMap");
             case JSType::PROGRAM:
                 return GetString("Program");
-            case JSType::LEXICAL_FUNCTION:
-                return GetString("LexicalFunction");
             case JSType::MACHINE_CODE_OBJECT:
                 return GetString("MachineCode");
             default:

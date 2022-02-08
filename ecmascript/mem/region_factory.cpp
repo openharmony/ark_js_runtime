@@ -54,7 +54,7 @@ Region *RegionFactory::AllocateAlignedRegion(Space *space, size_t capacity)
     uintptr_t begin = AlignUp(mem + sizeof(Region), static_cast<size_t>(MemAlignment::MEM_ALIGN_REGION));
     uintptr_t end = mem + capacity;
 
-    return new (ToVoidPtr(mem)) Region(space, mem, begin, end);
+    return new (ToVoidPtr(mem)) Region(space, space->GetHeap(), mem, begin, end);
 }
 
 void RegionFactory::FreeRegion(Region *region)

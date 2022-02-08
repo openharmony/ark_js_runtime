@@ -744,13 +744,13 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
     //        i.Append key as an element of targetNonconfigurableKeys.
     //     d.Else,
     //        i.Append key as an element of targetConfigurableKeys.
-    array_size_t length = targetKeys->GetLength();
+    uint32_t length = targetKeys->GetLength();
     JSHandle<TaggedArray> tgtCfigKeys = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(length);
     JSHandle<TaggedArray> tgtNoCfigKeys = thread->GetEcmaVM()->GetFactory()->NewTaggedArray(length);
 
-    array_size_t cfigLength = 0;
-    array_size_t noCfigLength = 0;
-    for (array_size_t i = 0; i < length; i++) {
+    uint32_t cfigLength = 0;
+    uint32_t noCfigLength = 0;
+    for (uint32_t i = 0; i < length; i++) {
         JSHandle<JSTaggedValue> targetKey(thread, targetKeys->Get(i));
         ASSERT(targetKey->IsStringOrSymbol());
 
@@ -776,13 +776,13 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
     // 20.Let uncheckedResultKeys be a new List which is a copy of trapResult.
     JSHandle<TaggedArray> uncheckFesKeys =
         thread->GetEcmaVM()->GetFactory()->CopyArray(trapRes, trapRes->GetLength(), trapRes->GetLength());
-    array_size_t uncheckLength = uncheckFesKeys->GetLength();
+    uint32_t uncheckLength = uncheckFesKeys->GetLength();
 
     // 21.Repeat, for each key that is an element of targetNonconfigurableKeys,
     //     a.If key is not an element of uncheckedResultKeys, throw a TypeError exception.
     //     b.Remove key from uncheckedResultKeys
-    for (array_size_t i = 0; i < noCfigLength; i++) {
-        array_size_t idx = uncheckFesKeys->GetIdx(tgtNoCfigKeys->Get(i));
+    for (uint32_t i = 0; i < noCfigLength; i++) {
+        uint32_t idx = uncheckFesKeys->GetIdx(tgtNoCfigKeys->Get(i));
         if (idx == TaggedArray::MAX_ARRAY_INDEX) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "OwnPropertyKeys: key is not an element of uncheckedResultKeys",
                                         JSHandle<TaggedArray>(thread, JSTaggedValue::Exception()));
@@ -799,8 +799,8 @@ JSHandle<TaggedArray> JSProxy::OwnPropertyKeys(JSThread *thread, const JSHandle<
     // 23.Repeat, for each key that is an element of targetConfigurableKeys,
     //     a.If key is not an element of uncheckedResultKeys, throw a TypeError exception.
     //     b.Remove key from uncheckedResultKeys
-    for (array_size_t i = 0; i < cfigLength; i++) {
-        array_size_t idx = uncheckFesKeys->GetIdx(tgtCfigKeys->Get(i));
+    for (uint32_t i = 0; i < cfigLength; i++) {
+        uint32_t idx = uncheckFesKeys->GetIdx(tgtCfigKeys->Get(i));
         if (idx == TaggedArray::MAX_ARRAY_INDEX) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "OwnPropertyKeys: key is not an element of uncheckedResultKeys",
                                         JSHandle<TaggedArray>(thread, JSTaggedValue::Exception()));
@@ -846,7 +846,7 @@ JSTaggedValue JSProxy::CallInternal(JSThread *thread, const JSHandle<JSProxy> &p
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
-    for (array_size_t index = 0; index < argc; ++index) {
+    for (uint32_t index = 0; index < argc; ++index) {
         taggedArray->Set(thread, index, JSTaggedValue(argv[index]));
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);
@@ -886,7 +886,7 @@ JSTaggedValue JSProxy::ConstructInternal(JSThread *thread, const JSHandle<JSProx
     // 8.Let argArray be CreateArrayFromList(argumentsList).
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(argc);
-    for (array_size_t index = 0; index < argc; ++index) {
+    for (uint32_t index = 0; index < argc; ++index) {
         taggedArray->Set(thread, index, JSTaggedValue(argv[index]));
     }
     JSHandle<JSArray> arrHandle = JSArray::CreateArrayFromList(thread, taggedArray);

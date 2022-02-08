@@ -42,37 +42,37 @@ public:
     int GetPropertiesCapacity() const;
     int NumberOfElements() const;
     void SetNumberOfElements(const JSThread *thread, int properties);
-    array_size_t GetKeyIndex(int index) const;
-    array_size_t GetAttrIndex(int index) const;
+    uint32_t GetKeyIndex(int index) const;
+    uint32_t GetAttrIndex(int index) const;
     void SetPropertyInit(const JSThread *thread, int index, const JSTaggedValue &key, const PropertyAttributes &attr);
     void SetKey(const JSThread *thread, int index, const JSTaggedValue &key);
     void SetNormalAttr(const JSThread *thread, int index, const PropertyAttributes &attr);
     JSTaggedValue GetKey(int index) const;
     PropertyAttributes GetAttr(int index) const;
     JSTaggedValue GetSortedKey(int index) const;
-    array_size_t GetSortedIndex(int index) const;
+    uint32_t GetSortedIndex(int index) const;
     void SetSortedIndex(const JSThread *thread, int index, int sortedIndex);
     void AddKey(const JSThread *thread, int index, const JSTaggedValue &key, const PropertyAttributes &attr);
 
-    inline array_size_t GetLength() const
+    inline uint32_t GetLength() const
     {
         return TaggedArray::GetLength();
     }
 
     inline Properties *GetProperties() const
     {
-        return reinterpret_cast<Properties *>(reinterpret_cast<uintptr_t>(this) + TaggedArray::GetDataOffset() +
+        return reinterpret_cast<Properties *>(reinterpret_cast<uintptr_t>(this) + TaggedArray::DATA_OFFSET +
                                               ELEMENTS_START_INDEX * JSTaggedValue::TaggedTypeSize());
     }
 
-    static inline array_size_t ComputeArrayLength(array_size_t properties_number)
+    static inline uint32_t ComputeArrayLength(uint32_t properties_number)
     {
         return (properties_number << 1U) + ELEMENTS_START_INDEX;
     }
 
-    static inline array_size_t ComputeGrowCapacity(uint32_t old_capacity)
+    static inline uint32_t ComputeGrowCapacity(uint32_t old_capacity)
     {
-        array_size_t new_capacity = old_capacity + MIN_PROPERTIES_LENGTH;
+        uint32_t new_capacity = old_capacity + MIN_PROPERTIES_LENGTH;
         return new_capacity > MAX_PROPERTIES_LENGTH ? MAX_PROPERTIES_LENGTH : new_capacity;
     }
 
@@ -81,8 +81,8 @@ public:
     int BinarySearch(JSTaggedValue key, int propertiesNumber);
     void GetAllKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray);
     void GetAllKeys(const JSThread *thread, int end, std::vector<JSTaggedValue> &keyVector);
-    void GetAllEnumKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray, array_size_t *keys);
-    void GetAllNames(const JSThread *thread, int end, const JSHandle<TaggedArray> &keyArray, array_size_t *length);
+    void GetAllEnumKeys(const JSThread *thread, int end, int offset, TaggedArray *keyArray, uint32_t *keys);
+    void GetAllNames(const JSThread *thread, int end, const JSHandle<TaggedArray> &keyArray, uint32_t *length);
 
     DECL_DUMP()
 };

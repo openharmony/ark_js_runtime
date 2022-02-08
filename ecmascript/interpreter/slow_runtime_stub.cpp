@@ -101,7 +101,7 @@ JSTaggedValue SlowRuntimeStub::AsyncFunctionEnter(JSThread *thread)
 
     JSHandle<JSPromise> promiseObject =
         JSHandle<JSPromise>::Cast(factory->NewJSObjectByConstructor(JSHandle<JSFunction>(promiseFunc), promiseFunc));
-    promiseObject->SetPromiseState(thread, JSTaggedValue(static_cast<int32_t>(PromiseStatus::PENDING)));
+    promiseObject->SetPromiseState(PromiseState::PENDING);
     // 2. create asyncfuncobj
     JSHandle<JSAsyncFuncObject> asyncFuncObj = factory->NewJSAsyncFuncObject();
     asyncFuncObj->SetPromise(thread, promiseObject);
@@ -110,7 +110,7 @@ JSTaggedValue SlowRuntimeStub::AsyncFunctionEnter(JSThread *thread)
     context->SetGeneratorObject(thread, asyncFuncObj);
 
     // change state to EXECUTING
-    asyncFuncObj->SetGeneratorState(thread, JSTaggedValue(static_cast<int>(JSGeneratorState::EXECUTING)));
+    asyncFuncObj->SetGeneratorState(JSGeneratorState::EXECUTING);
     asyncFuncObj->SetGeneratorContext(thread, context);
 
     // 3. return asyncfuncobj
@@ -445,14 +445,14 @@ JSTaggedValue SlowRuntimeStub::CreateObjectWithExcludedKeys(JSThread *thread, ui
 
     ASSERT(objVal.IsJSObject());
     JSHandle<JSObject> obj(thread, objVal);
-    array_size_t numExcludedKeys = 0;
+    uint32_t numExcludedKeys = 0;
     JSHandle<TaggedArray> excludedKeys = factory->NewTaggedArray(numKeys + 1);
     InterpretedFrameHandler frameHandler(thread);
     JSTaggedValue excludedKey = frameHandler.GetVRegValue(firstArgRegIdx);
     if (!excludedKey.IsUndefined()) {
         numExcludedKeys = numKeys + 1;
         excludedKeys->Set(thread, 0, excludedKey);
-        for (array_size_t i = 1; i < numExcludedKeys; i++) {
+        for (uint32_t i = 1; i < numExcludedKeys; i++) {
             excludedKey = frameHandler.GetVRegValue(firstArgRegIdx + i);
             excludedKeys->Set(thread, i, excludedKey);
         }
@@ -584,7 +584,7 @@ JSTaggedValue SlowRuntimeStub::CreateGeneratorObj(JSThread *thread, JSTaggedValu
     context->SetGeneratorObject(thread, obj.GetTaggedValue());
 
     // change state to SUSPENDED_START
-    obj->SetGeneratorState(thread, JSTaggedValue(static_cast<int>(JSGeneratorState::SUSPENDED_START)));
+    obj->SetGeneratorState(JSGeneratorState::SUSPENDED_START);
     obj->SetGeneratorContext(thread, context);
 
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -604,8 +604,7 @@ JSTaggedValue SlowRuntimeStub::SuspendGenerator(JSThread *thread, JSTaggedValue 
 
     // change state to SuspendedYield
     if (generatorObjectHandle->IsExecuting()) {
-        generatorObjectHandle->SetGeneratorState(thread,
-                                                 JSTaggedValue(static_cast<int>(JSGeneratorState::SUSPENDED_YIELD)));
+        generatorObjectHandle->SetGeneratorState(JSGeneratorState::SUSPENDED_YIELD);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         return valueHandle.GetTaggedValue();
     }
@@ -672,7 +671,7 @@ JSTaggedValue SlowRuntimeStub::NewObjSpreadDyn(JSThread *thread, JSTaggedValue f
 
     uint32_t length = JSHandle<JSArray>::Cast(jsArray)->GetArrayLength();
     JSHandle<TaggedArray> argsArray = factory->NewTaggedArray(length);
-    for (array_size_t i = 0; i < length; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
         auto prop = JSTaggedValue::GetProperty(thread, jsArray, i).GetValue();
         argsArray->Set(thread, i, prop);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -949,10 +948,10 @@ JSTaggedValue SlowRuntimeStub::CloseIterator(JSThread *thread, JSTaggedValue ite
     JSHandle<JSTaggedValue> record;
     if (thread->HasPendingException()) {
         record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(
-            CompletionRecord::THROW, JSHandle<JSTaggedValue>(thread, thread->GetException())));
+            CompletionRecordType::THROW, JSHandle<JSTaggedValue>(thread, thread->GetException())));
     } else {
         JSHandle<JSTaggedValue> undefinedVal = globalConst->GetHandledUndefined();
-        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecord::NORMAL, undefinedVal));
+        record = JSHandle<JSTaggedValue>(factory->NewCompletionRecord(CompletionRecordType::NORMAL, undefinedVal));
     }
     JSHandle<JSTaggedValue> result = JSIterator::IteratorClose(thread, iterHandle, record);
     if (result->IsCompletionRecord()) {
@@ -1060,8 +1059,8 @@ JSTaggedValue SlowRuntimeStub::CopyDataProperties(JSThread *thread, JSTaggedValu
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
         JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-        array_size_t keysLen = keys->GetLength();
-        for (array_size_t i = 0; i < keysLen; i++) {
+        uint32_t keysLen = keys->GetLength();
+        for (uint32_t i = 0; i < keysLen; i++) {
             PropertyDescriptor desc(thread);
             key.Update(keys->Get(i));
             bool success = JSTaggedValue::GetOwnProperty(thread, srcHandle, key, desc);
@@ -1102,7 +1101,7 @@ JSTaggedValue SlowRuntimeStub::GetUnmapedArgs(JSThread *thread, JSTaggedType *sp
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<TaggedArray> argumentsList = factory->NewTaggedArray(actualNumArgs);
-    for (array_size_t i = 0; i < actualNumArgs; ++i) {
+    for (uint32_t i = 0; i < actualNumArgs; ++i) {
         argumentsList->Set(thread, i,
                            JSTaggedValue(sp[startIdx + i]));  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
@@ -1226,11 +1225,11 @@ JSTaggedValue SlowRuntimeStub::DefineGetterSetterByValue(JSThread *thread, JSTag
         !(objHandle.GetTaggedValue().IsClassPrototype() || objHandle.GetTaggedValue().IsClassConstructor());
     PropertyDescriptor desc(thread, true, enumerable, true);
     if (!getterHandle->IsUndefined()) {
-        JSHandle<JSFunction>::Cast(getterHandle)->SetFunctionKind(thread, FunctionKind::GETTER_FUNCTION);
+        JSHandle<JSFunction>::Cast(getterHandle)->SetFunctionKind(FunctionKind::GETTER_FUNCTION);
         desc.SetGetter(getterHandle);
     }
     if (!setterHandle->IsUndefined()) {
-        JSHandle<JSFunction>::Cast(setterHandle)->SetFunctionKind(thread, FunctionKind::SETTER_FUNCTION);
+        JSHandle<JSFunction>::Cast(setterHandle)->SetFunctionKind(FunctionKind::SETTER_FUNCTION);
         desc.SetSetter(setterHandle);
     }
     JSObject::DefineOwnProperty(thread, objHandle, propKey, desc);
@@ -1494,9 +1493,9 @@ JSTaggedValue SlowRuntimeStub::StArraySpread(JSThread *thread, JSTaggedValue dst
     if (srcHandle->IsString()) {
         JSHandle<EcmaString> srcString = JSTaggedValue::ToString(thread, srcHandle);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        array_size_t dstLen = index.GetInt();
-        array_size_t strLen = srcString->GetLength();
-        for (array_size_t i = 0; i < strLen; i++) {
+        uint32_t dstLen = index.GetInt();
+        uint32_t strLen = srcString->GetLength();
+        for (uint32_t i = 0; i < strLen; i++) {
             uint16_t res = srcString->At<false>(i);
             JSHandle<JSTaggedValue> strValue(factory->NewFromUtf16Literal(&res, 1));
             JSTaggedValue::SetProperty(thread, dstHandle, dstLen + i, strValue, true);
@@ -1805,7 +1804,7 @@ JSTaggedValue SlowRuntimeStub::ResolveClass(JSThread *thread, JSTaggedValue ctor
         }
     }
 
-    cls->SetResolved(thread);
+    cls->SetResolved(true);
     return cls.GetTaggedValue();
 }
 
@@ -1882,17 +1881,17 @@ JSTaggedValue SlowRuntimeStub::SetClassInheritanceRelationship(JSThread *thread,
     JSHandle<JSTaggedValue> parentPrototype;
     // hole means parent is not present
     if (parent->IsHole()) {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::CLASS_CONSTRUCTOR);
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(FunctionKind::CLASS_CONSTRUCTOR);
         parentPrototype = env->GetObjectFunctionPrototype();
         parent.Update(env->GetFunctionPrototype().GetTaggedValue());
     } else if (parent->IsNull()) {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(FunctionKind::DERIVED_CONSTRUCTOR);
         parentPrototype = JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null());
         parent.Update(env->GetFunctionPrototype().GetTaggedValue());
     } else if (!parent->IsConstructor()) {
         return ThrowTypeError(thread, "parent class is not constructor");
     } else {
-        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(thread, FunctionKind::DERIVED_CONSTRUCTOR);
+        JSHandle<JSFunction>::Cast(cls)->SetFunctionKind(FunctionKind::DERIVED_CONSTRUCTOR);
         parentPrototype = JSTaggedValue::GetProperty(thread, parent,
             globalConst->GetHandledPrototypeString()).GetValue();
         if (!parentPrototype->IsECMAObject() && !parentPrototype->IsNull()) {

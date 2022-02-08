@@ -53,6 +53,7 @@
 #include "ecmascript/builtins/builtins_weak_map.h"
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/class_linker/program_object.h"
+#include "ecmascript/containers/containers_arraylist.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_for_in_iterator.h"
@@ -110,6 +111,7 @@ using NumberFormat = builtins::BuiltinsNumberFormat;
 using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
+using ArrayList = containers::ContainersArrayList;
 
 constexpr int TAGGED_SIZE = JSTaggedValue::TaggedTypeSize();
 constexpr int OBJECT_HEADER_SIZE = TaggedObject::TaggedObjectSize();
@@ -544,6 +546,9 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(PluralRules::SupportedLocalesOf),
     reinterpret_cast<uintptr_t>(PluralRules::Select),
     reinterpret_cast<uintptr_t>(PluralRules::ResolvedOptions),
+    reinterpret_cast<uintptr_t>(ArrayList::ArrayListConstructor),
+    reinterpret_cast<uintptr_t>(ArrayList::Add),
+    reinterpret_cast<uintptr_t>(ArrayList::Iterator),
 
     // not builtins method
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeSetter),
@@ -909,10 +914,10 @@ void SnapShotSerialize::DynArraySerialize(TaggedObject *objectHeader, uintptr_t 
                                           CQueue<TaggedObject *> *queue, std::unordered_map<uint64_t, SlotBit> *data)
 {
     auto arrayObject = reinterpret_cast<TaggedArray *>(objectHeader);
-    size_t beginOffset = TaggedArray::GetDataOffset();
+    size_t beginOffset = TaggedArray::DATA_OFFSET;
     auto arrayLength = arrayObject->GetLength();
     uintptr_t startAddr = ToUintPtr(objectHeader) + beginOffset;
-    for (array_size_t i = 0; i < arrayLength; i++) {
+    for (uint32_t i = 0; i < arrayLength; i++) {
         auto fieldAddr = reinterpret_cast<JSTaggedType *>(startAddr + i * TAGGED_SIZE);
         SetObjectSlotField(snapshotObj, beginOffset + i * TAGGED_SIZE, HandleTaggedField(fieldAddr, queue, data));
     }
@@ -925,9 +930,9 @@ void SnapShotSerialize::DynArrayDeserialize(uint64_t *objectHeader)
     DeserializeHandleClassWord(object);
 
     auto arrayLength = object->GetLength();
-    size_t dataOffset = TaggedArray::GetDataOffset();
+    size_t dataOffset = TaggedArray::DATA_OFFSET;
     uintptr_t startAddr = ToUintPtr(objectHeader) + dataOffset;
-    for (array_size_t i = 0; i < arrayLength; i++) {
+    for (uint32_t i = 0; i < arrayLength; i++) {
         auto fieldAddr = reinterpret_cast<uint64_t *>(startAddr + i * TAGGED_SIZE);
         DeserializeHandleTaggedField(fieldAddr);
     }
@@ -1032,7 +1037,7 @@ void SnapShotSerialize::JSFunctionBaseSerialize(TaggedObject *objectHeader, uint
 
     // method
     auto functionBase = static_cast<JSFunctionBase *>(objectHeader);
-    size_t methodOffset = functionBase->OffsetMethod();
+    size_t methodOffset = JSFunctionBase::METHOD_OFFSET;
     auto nativePointer = reinterpret_cast<void *>(functionBase->GetMethod());
     SetObjectSlotField(snapshotObj, methodOffset, NativePointerToSlotBit(nativePointer).GetValue());
 
@@ -1060,7 +1065,7 @@ void SnapShotSerialize::JSProxySerialize(TaggedObject *objectHeader, uintptr_t s
 
     // method
     auto jsproxy = static_cast<JSProxy *>(objectHeader);
-    size_t methodOffset = jsproxy->OffsetMethod();
+    size_t methodOffset = JSProxy::METHOD_OFFSET;
     auto nativePointer = reinterpret_cast<void *>(jsproxy->GetMethod());
     SetObjectSlotField(snapshotObj, methodOffset, NativePointerToSlotBit(nativePointer).GetValue());
 

@@ -28,6 +28,7 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
@@ -252,9 +253,6 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
         case JSType::PENDING_JOB:
             job::PendingJob::Cast(object)->VisitRangeSlot(visitor);
             break;
-        case JSType::FUNCTION_EXTRA_INFO:
-            JSFunctionExtraInfo::Cast(object)->VisitRangeSlot(visitor);
-            break;
         case JSType::COMPLETION_RECORD:
             CompletionRecord::Cast(object)->VisitRangeSlot(visitor);
             break;
@@ -263,9 +261,6 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::PROGRAM:
             Program::Cast(object)->VisitRangeSlot(visitor);
-            break;
-        case JSType::LEXICAL_FUNCTION:
-            LexicalFunction::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::JS_INTL:
             JSIntl::Cast(object)->VisitRangeSlot(visitor);
@@ -299,6 +294,10 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::CLASS_INFO_EXTRACTOR:
             ClassInfoExtractor::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_QUEUE:
+        case JSType::JS_ARRAY_LIST:
+            JSArrayList::Cast(object)->VisitRangeSlot(visitor);
             break;
         default:
             UNREACHABLE();

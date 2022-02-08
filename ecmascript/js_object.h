@@ -352,13 +352,9 @@ public:
     int32_t GetNativePointerFieldCount() const;
     void SetNativePointerFieldCount(int32_t count);
 
-    void VisitRangeSlot(const EcmaObjectRangeVisitor &visitor) const
-    {
-        TaggedObject *object = const_cast<TaggedObject *>(reinterpret_cast<const TaggedObject *>(this));
-        visitor(object, ObjectSlot(ToUintPtr(this) + HASH_OFFSET), ObjectSlot(ToUintPtr(this) + SIZE));
-    }
+    DECL_VISIT_OBJECT(HASH_OFFSET, SIZE);
 
-    void VisitObjects([[maybe_unused]] const EcmaObjectRangeVisitor &visitor) const
+    void VisitObjects(const EcmaObjectRangeVisitor &visitor)
     {
         // no field in this object
         VisitRangeSlot(visitor);
@@ -572,9 +568,9 @@ public:
     uint32_t GetNumberOfElements();
 
     static JSHandle<TaggedArray> GetEnumElementKeys(JSThread *thread, const JSHandle<JSObject> &obj, int offset,
-                                                    uint32_t numOfElements, array_size_t *keys);
+                                                    uint32_t numOfElements, uint32_t *keys);
     static JSHandle<TaggedArray> GetAllEnumKeys(const JSThread *thread, const JSHandle<JSObject> &obj, int offset,
-                                                uint32_t numOfKeys, array_size_t *keys);
+                                                uint32_t numOfKeys, uint32_t *keys);
 
     static void AddAccessor(JSThread *thread, const JSHandle<JSTaggedValue> &obj, const JSHandle<JSTaggedValue> &key,
                             const JSHandle<AccessorData> &value, PropertyAttributes attr);

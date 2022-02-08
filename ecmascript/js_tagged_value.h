@@ -163,7 +163,7 @@ public:
     static bool ToArrayLength(JSThread *thread, const JSHandle<JSTaggedValue> &tagged, uint32_t *output);
     static bool ToElementIndex(JSTaggedValue key, uint32_t *output);
     static bool StringToElementIndex(JSTaggedValue key, uint32_t *output);
-    array_size_t GetArrayLength() const;
+    uint32_t GetArrayLength() const;
 
     // ecma6 7.2 Testing and Comparison Operations
     bool IsCallable() const;
@@ -291,7 +291,6 @@ public:
     bool IsRecord() const;
     bool IsPromiseReaction() const;
     bool IsProgram() const;
-    bool IsLexicalFunction() const;
     bool IsJSPromiseReactionFunction() const;
     bool IsJSPromiseExecutorFunction() const;
     bool IsJSPromiseAllResolveElementFunction() const;
@@ -302,7 +301,6 @@ public:
     bool IsCompletionRecord() const;
     bool IsDataView() const;
     bool IsTemplateMap() const;
-    bool IsJSFunctionExtraInfo() const;
     bool IsMicroJobQueue() const;
     bool IsPendingJob() const;
     bool IsJSLocale() const;
@@ -312,6 +310,8 @@ public:
     bool IsJSNumberFormat() const;
     bool IsJSCollator() const;
     bool IsJSPluralRules() const;
+    bool IsJSArrayList() const;
+    bool IsSpecialContainer() const;
 
     bool IsPrototypeHandler() const;
     bool IsTransitionHandler() const;
@@ -343,6 +343,11 @@ private:
 
     void DumpSpecialValue([[maybe_unused]] JSThread *thread, std::ostream &os) const;
     void DumpHeapObjectType([[maybe_unused]] JSThread *thread, std::ostream &os) const;
+    static bool HasContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                     const JSHandle<JSTaggedValue> &key);
+    static JSHandle<TaggedArray> GetOwnContainerPropertyKeys(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
+    static bool GetContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                     const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_TAGGED_VALUE_H

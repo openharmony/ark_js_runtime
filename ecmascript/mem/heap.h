@@ -278,17 +278,22 @@ public:
 
     void RecomputeLimits();
 
-    const MemController *GetMemController() const
+    MemController *GetMemController() const
     {
         return memController_;
     }
 
-    void SetOldSpaceAllocLimit(size_t limit)
+    size_t GetOldSpaceAllocLimit()
     {
-        oldSpaceAllocLimit_ = limit;
+        return oldSpaceAllocLimit_;
     }
 
-    inline void ResetAppStartup();
+    void SetGlobalSpaceAllocLimit(size_t limit)
+    {
+        globalSpaceAllocLimit_ = limit;
+    }
+
+    inline void ResetDelayGCMode();
 
     size_t VerifyHeapObjects() const;
 
@@ -314,7 +319,7 @@ public:
 
     void PostParallelGCTask(ParallelGCTaskPhase gcTask);
 
-    bool IsEnableParallelGC() const
+    bool IsParallelGCEnabled() const
     {
         return paralledGc_;
     }
@@ -325,7 +330,7 @@ public:
 
     bool ConcurrentMarkingEnable() const;
 
-    inline bool IsOnlyMarkSemi() const
+    inline bool IsSemiMarkNeeded() const
     {
         return isOnlySemi_;
     }
@@ -349,6 +354,12 @@ public:
     {
         return compressGcMarker_;
     }
+    
+    size_t GetArrayBufferSize() const;
+
+    inline size_t GetCommittedSize() const;
+
+    inline size_t GetHeapObjectSize() const;
 
 private:
     void IncreaseTaskCount();
@@ -392,6 +403,7 @@ private:
     HeapTracker *tracker_ {nullptr};
     MemController *memController_ {nullptr};
     size_t oldSpaceAllocLimit_ {OLD_SPACE_LIMIT_BEGIN};
+    size_t globalSpaceAllocLimit_ {GLOBAL_SPACE_LIMIT_BEGIN};
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers_ {nullptr};
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     bool isVerifying_ {false};
@@ -404,8 +416,9 @@ private:
     bool paralledGc_ {true};
     WorkerHelper *workList_ {nullptr};
 
-    bool concurrentMarkingEnable_ {true};
+    bool concurrentMarkingEnabled_ {true};
     bool isOnlySemi_ {true};
+    bool isCompressGCRequested_ {false};
     inline void SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity);
 };
 }  // namespace panda::ecmascript

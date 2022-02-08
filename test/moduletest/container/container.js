@@ -13,11 +13,5 @@
  * limitations under the License.
  */
 
-// Js
-#ifndef ECMASCRIPT_TOOLING_TEST_JS_VM_EVENT_TEST_H
-#define ECMASCRIPT_TOOLING_TEST_JS_VM_EVENT_TEST_H
-
-#include "js/js_breakpoint_test.h"
-#include "js/js_single_step_test.h"
-
-#endif  // ECMASCRIPT_TOOLING_TEST_JS_VM_EVENT_TEST_H
+var helloworld = "container test start"
+print(helloworld)

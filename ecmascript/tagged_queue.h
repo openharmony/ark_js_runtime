@@ -33,7 +33,7 @@ public:
     static TaggedQueue *Push(const JSThread *thread, const JSHandle<TaggedQueue> &queue,
                              const JSHandle<JSTaggedValue> &value)
     {
-        array_size_t capacity = queue->GetCapacity().GetArrayLength();
+        uint32_t capacity = queue->GetCapacity().GetArrayLength();
         if (capacity == 0) {
             // If there is no capacity, directly create a queue whose capacity is MIN_CAPACITY. Add elements.
             ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -45,9 +45,9 @@ public:
             return *newQueue;
         }
 
-        array_size_t start = queue->GetStart().GetArrayLength();
-        array_size_t end = queue->GetEnd().GetArrayLength();
-        array_size_t size = queue->Size();
+        uint32_t start = queue->GetStart().GetArrayLength();
+        uint32_t end = queue->GetEnd().GetArrayLength();
+        uint32_t size = queue->Size();
         if ((end + 1) % capacity == start) {
             // The original queue is full and needs to be expanded.
             if (capacity == MAX_QUEUE_INDEX) {
@@ -56,11 +56,11 @@ public:
             }
             ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
             // Grow Array for 1.5 times
-            array_size_t newCapacity = capacity + (capacity >> 1U);
+            uint32_t newCapacity = capacity + (capacity >> 1U);
             newCapacity = newCapacity < capacity ? MAX_QUEUE_INDEX : newCapacity;
             JSHandle<TaggedQueue> newQueue = factory->NewTaggedQueue(newCapacity);
-            array_size_t newEnd = 0;
-            for (array_size_t i = start; newEnd < size; i = (i + 1) % capacity) {
+            uint32_t newEnd = 0;
+            for (uint32_t i = start; newEnd < size; i = (i + 1) % capacity) {
                 newQueue->Set(thread, newEnd, queue->Get(i));
                 newEnd++;
             }
@@ -80,8 +80,8 @@ public:
     static inline void PushFixedQueue(const JSThread *thread, const JSHandle<TaggedQueue> &queue,
                                       const JSHandle<JSTaggedValue> &value)
     {
-        array_size_t end = queue->GetEnd().GetArrayLength();
-        array_size_t capacity = queue->GetCapacity().GetArrayLength();
+        uint32_t end = queue->GetEnd().GetArrayLength();
+        uint32_t capacity = queue->GetCapacity().GetArrayLength();
         ASSERT(capacity != 0);
         queue->Set(thread, end, value.GetTaggedValue());
         queue->SetEnd(thread, JSTaggedValue((end + 1) % capacity));
@@ -97,7 +97,7 @@ public:
         if (Empty()) {
             return JSTaggedValue::Hole();
         }
-        array_size_t start = GetStart().GetArrayLength();
+        uint32_t start = GetStart().GetArrayLength();
         return JSTaggedValue(Get(start));
     }
 
@@ -109,38 +109,38 @@ public:
         return JSTaggedValue(Get(GetEnd().GetArrayLength() - 1));
     }
 
-    inline array_size_t Size()
+    inline uint32_t Size()
     {
-        array_size_t capacity = GetCapacity().GetArrayLength();
+        uint32_t capacity = GetCapacity().GetArrayLength();
         if (capacity == 0) {
             return 0;
         }
-        array_size_t end = GetEnd().GetArrayLength();
-        array_size_t start = GetStart().GetArrayLength();
+        uint32_t end = GetEnd().GetArrayLength();
+        uint32_t start = GetStart().GetArrayLength();
         return (end - start + capacity) % capacity;
     }
 
-    inline JSTaggedValue Get(array_size_t index) const
+    inline JSTaggedValue Get(uint32_t index) const
     {
         return TaggedArray::Get(QueueToArrayIndex(index));
     }
 
-    inline void Set(const JSThread *thread, array_size_t index, JSTaggedValue value)
+    inline void Set(const JSThread *thread, uint32_t index, JSTaggedValue value)
     {
         return TaggedArray::Set(thread, QueueToArrayIndex(index), value);
     }
 
-    static const array_size_t MIN_CAPACITY = 2;
-    static const array_size_t CAPACITY_INDEX = 0;
-    static const array_size_t START_INDEX = 1;
-    static const array_size_t END_INDEX = 2;
-    static const array_size_t ELEMENTS_START_INDEX = 3;
-    static const array_size_t MAX_QUEUE_INDEX = TaggedArray::MAX_ARRAY_INDEX - ELEMENTS_START_INDEX;
+    static const uint32_t MIN_CAPACITY = 2;
+    static const uint32_t CAPACITY_INDEX = 0;
+    static const uint32_t START_INDEX = 1;
+    static const uint32_t END_INDEX = 2;
+    static const uint32_t ELEMENTS_START_INDEX = 3;
+    static const uint32_t MAX_QUEUE_INDEX = TaggedArray::MAX_ARRAY_INDEX - ELEMENTS_START_INDEX;
 
 private:
     friend class ObjectFactory;
 
-    inline static constexpr array_size_t QueueToArrayIndex(array_size_t index)
+    inline static constexpr uint32_t QueueToArrayIndex(uint32_t index)
     {
         return index + ELEMENTS_START_INDEX;
     }
@@ -175,7 +175,7 @@ private:
         return TaggedArray::Get(END_INDEX);
     }
 
-    static TaggedQueue *Create(JSThread *thread, array_size_t capacity, JSTaggedValue initVal = JSTaggedValue::Hole());
+    static TaggedQueue *Create(JSThread *thread, uint32_t capacity, JSTaggedValue initVal = JSTaggedValue::Hole());
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_QUEUE_H

@@ -13,37 +13,34 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TOOLING_TEST_TEST_UTIL_H
-#define ECMASCRIPT_TOOLING_TEST_TEST_UTIL_H
+#ifndef ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H
+#define ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H
 
-#include <climits>
-#include <cstdlib>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-
-#include "api_test.h"
+#include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tooling/interface/js_debugger.h"
+#include "ecmascript/tooling/test/utils/test_events.h"
+#include "ecmascript/tooling/test/utils/test_extractor.h"
 #include "os/mutex.h"
-#include "test_extractor.h"
 
 namespace panda::tooling::ecmascript::test {
-using TestMap = std::unordered_map<panda_file::SourceLang, std::unordered_map<const char *, std::unique_ptr<ApiTest>>>;
+template<class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+using CUnorderedMap = panda::ecmascript::CUnorderedMap<Key, T, Hash, KeyEqual>;
+using TestMap = CUnorderedMap<panda_file::SourceLang, CUnorderedMap<const char *, std::unique_ptr<TestEvents>>>;
 
 class TestUtil {
 public:
-    static void RegisterTest(panda_file::SourceLang language, const char *testName, std::unique_ptr<ApiTest> test)
+    static void RegisterTest(panda_file::SourceLang language, const char *testName, std::unique_ptr<TestEvents> test)
     {
         auto it = testMap_.find(language);
         if (it == testMap_.end()) {
-            std::unordered_map<const char *, std::unique_ptr<ApiTest>> entry;
+            CUnorderedMap<const char *, std::unique_ptr<TestEvents>> entry;
             auto res = testMap_.emplace(language, std::move(entry));
             it = res.first;
         }
         it->second.insert({testName, std::move(test)});
     }
 
-    static ApiTest *GetTest(const char *name)
+    static TestEvents *GetTest(const char *name)
     {
         for (auto it = testMap_.begin(); it != testMap_.end(); ++it) {
             auto &internalMap = it->second;
@@ -75,13 +72,17 @@ public:
     static bool WaitForExit()
     {
         return WaitForEvent(DebugEvent::VM_DEATH,
-            []() REQUIRES(eventMutex_) { return lastEvent_ == DebugEvent::VM_DEATH; }, [] {});
+            []() REQUIRES(eventMutex_) {
+                return lastEvent_ == DebugEvent::VM_DEATH;
+            }, [] {});
     }
 
     static bool WaitForInit()
     {
         return WaitForEvent(DebugEvent::VM_INITIALIZATION,
-            []() REQUIRES(eventMutex_) { return initialized_; }, [] {});
+            []() REQUIRES(eventMutex_) {
+                return initialized_;
+            }, [] {});
     }
 
     static void Event(DebugEvent event, PtThread thread = PtThread::NONE,
@@ -126,14 +127,7 @@ public:
 
         TestExtractor extractor(pf);
         auto [id, offset] = extractor.GetBreakpointAddress({sourceFile, line});
-#if PANDA_LIBCORE_SUPPORT
-        static std::unordered_set<std::string> absolute_paths;
-        static char buf[PATH_MAX];
-        auto res = absolute_paths.insert(::realpath(pandaFile, buf));
-        return PtLocation(res.first->c_str(), id, offset);
-#else   // PANDA_LIBCORE_SUPPORT
         return PtLocation(pandaFile, id, offset);
-#endif  // PANDA_LIBCORE_SUPPORT
     }
 
     static std::vector<panda_file::LocalVariableInfo> GetVariables(JSMethod *method, uint32_t offset);
@@ -205,88 +199,91 @@ private:
 
 std::ostream &operator<<(std::ostream &out, std::nullptr_t);
 
-#define _ASSERT_FAIL(val1, val2, strval1, strval2, msg)                              \
-    std::cerr << "Assertion failed at " << __FILE__ << ':' << __LINE__ << std::endl; \
-    std::cerr << "Expected that " strval1 " is " << msg << " " strval2 << std::endl; \
-    std::cerr << "\t" strval1 ": " << (val1) << std::endl;                           \
-    std::cerr << "\t" strval2 ": " << (val2) << std::endl;                           \
-    std::abort();
-
-#define ASSERT_TRUE(cond)                                      \
-    do {                                                       \
-        auto res = (cond);                                     \
-        if (!res) {                                            \
-            _ASSERT_FAIL(res, true, #cond, "true", "equal to") \
-        }                                                      \
+#define ASSERT_FAIL_(val1, val2, strval1, strval2, msg)                                    \
+    do {                                                                                   \
+        std::cerr << "Assertion failed at " << __FILE__ << ':' << __LINE__ << std::endl;   \
+        std::cerr << "Expected that " strval1 " is " << (msg) << " " strval2 << std::endl; \
+        std::cerr << "\t" strval1 ": " << (val1) << std::endl;                             \
+        std::cerr << "\t" strval2 ": " << (val2) << std::endl;                             \
+        std::abort();                                                                      \
     } while (0)
 
-#define ASSERT_FALSE(cond)                                       \
-    do {                                                         \
-        auto res = (cond);                                       \
-        if (res) {                                               \
-            _ASSERT_FAIL(res, false, #cond, "false", "equal to") \
-        }                                                        \
+#define ASSERT_TRUE(cond)                                       \
+    do {                                                        \
+        auto res = (cond);                                      \
+        if (!res) {                                             \
+            ASSERT_FAIL_(res, true, #cond, "true", "equal to"); \
+        }                                                       \
     } while (0)
 
-#define ASSERT_EQ(lhs, rhs)                                  \
+#define ASSERT_FALSE(cond)                                        \
+    do {                                                          \
+        auto res = (cond);                                        \
+        if (res) {                                                \
+            ASSERT_FAIL_(res, false, #cond, "false", "equal to"); \
+        }                                                         \
+    } while (0)
+
+#define ASSERT_EQ(lhs, rhs)                                   \
+    do {                                                      \
+        auto res1 = (lhs);                                    \
+        decltype(res1) res2 = (rhs);                          \
+        if (res1 != res2) {                                   \
+            ASSERT_FAIL_(res1, res2, #lhs, #rhs, "equal to"); \
+        }                                                     \
+    } while (0)
+
+#define ASSERT_NE(lhs, rhs)                                       \
+    do {                                                          \
+        auto res1 = (lhs);                                        \
+        decltype(res1) res2 = (rhs);                              \
+        if (res1 == res2) {                                       \
+            ASSERT_FAIL_(res1, res2, #lhs, #rhs, "not equal to"); \
+        }                                                         \
+    } while (0)
+
+#define ASSERT_STREQ(lhs, rhs)                                \
+    do {                                                      \
+        auto res1 = (lhs);                                    \
+        decltype(res1) res2 = (rhs);                          \
+        if (::strcmp(res1, res2) != 0) {                      \
+            ASSERT_FAIL_(res1, res2, #lhs, #rhs, "equal to"); \
+        }                                                     \
+    } while (0)
+
+#define ASSERT_SUCCESS(api_call)                                                                    \
+    do {                                                                                            \
+        auto error = api_call;                                                                      \
+        if (error) {                                                                                \
+            ASSERT_FAIL_(error.value().GetMessage(), "Success", "API call result", "Expected", ""); \
+        }                                                                                           \
+    } while (0)
+
+#define ASSERT_EXITED()                                                                               \
+    do {                                                                                              \
+        bool res = TestUtil::WaitForExit();                                                           \
+        if (!res) {                                                                                   \
+            ASSERT_FAIL_(TestUtil::IsTestFinished(), true, "TestUtil::IsTestFinished()", "true", ""); \
+        }                                                                                             \
+    } while (0)
+
+#define ASSERT_LOCATION_EQ(lhs, rhs)                                                 \
+    do {                                                                             \
+        ASSERT_STREQ((lhs).GetPandaFile(), (rhs).GetPandaFile());                    \
+        ASSERT_EQ((lhs).GetMethodId().GetOffset(), (rhs).GetMethodId().GetOffset()); \
+        ASSERT_EQ((lhs).GetBytecodeOffset(), (rhs).GetBytecodeOffset());             \
+    } while (0)
+
+#define ASSERT_THREAD_VALID(ecmaVm)                          \
     do {                                                     \
-        auto res1 = (lhs);                                   \
-        decltype(res1) res2 = (rhs);                         \
-        if (res1 != res2) {                                  \
-            _ASSERT_FAIL(res1, res2, #lhs, #rhs, "equal to") \
-        }                                                    \
+        ASSERT_NE((ecmaVm).GetId(), PtThread::NONE.GetId()); \
     } while (0)
-
-#define ASSERT_NE(lhs, rhs)                                      \
-    do {                                                         \
-        auto res1 = (lhs);                                       \
-        decltype(res1) res2 = (rhs);                             \
-        if (res1 == res2) {                                      \
-            _ASSERT_FAIL(res1, res2, #lhs, #rhs, "not equal to") \
-        }                                                        \
-    } while (0)
-
-#define ASSERT_STREQ(lhs, rhs)                               \
-    do {                                                     \
-        auto res1 = (lhs);                                   \
-        decltype(res1) res2 = (rhs);                         \
-        if (::strcmp(res1, res2) != 0) {                     \
-            _ASSERT_FAIL(res1, res2, #lhs, #rhs, "equal to") \
-        }                                                    \
-    } while (0)
-
-#define ASSERT_SUCCESS(api_call)                                                                   \
-    do {                                                                                           \
-        auto error = api_call;                                                                     \
-        if (error) {                                                                               \
-            _ASSERT_FAIL(error.value().GetMessage(), "Success", "API call result", "Expected", "") \
-        }                                                                                          \
-    } while (0)
-
-#define ASSERT_EXITED()                                                                              \
-    do {                                                                                             \
-        bool res = TestUtil::WaitForExit();                                                          \
-        if (!res) {                                                                                  \
-            _ASSERT_FAIL(TestUtil::IsTestFinished(), true, "TestUtil::IsTestFinished()", "true", "") \
-        }                                                                                            \
-    } while (0)
-
-#define ASSERT_LOCATION_EQ(lhs, rhs)                                             \
-    do {                                                                         \
-        ASSERT_STREQ(lhs.GetPandaFile(), rhs.GetPandaFile());                    \
-        ASSERT_EQ(lhs.GetMethodId().GetOffset(), rhs.GetMethodId().GetOffset()); \
-        ASSERT_EQ(lhs.GetBytecodeOffset(), rhs.GetBytecodeOffset());             \
-    } while (0);
-
-#define ASSERT_THREAD_VALID(ecmaVm)                        \
-    do {                                                   \
-        ASSERT_NE(ecmaVm.GetId(), PtThread::NONE.GetId()); \
-    } while (0);
 
 #define ASSERT_BREAKPOINT_SUCCESS(location)                         \
     do {                                                            \
         PtThread suspended = TestUtil::WaitForBreakpoint(location); \
         ASSERT_THREAD_VALID(suspended);                             \
-    } while (0);
+    } while (0)
 }  // namespace panda::tooling::ecmascript::test
-#endif  // ECMASCRIPT_TOOLING_TEST_TEST_UTIL_H
+
+#endif  // ECMASCRIPT_TOOLING_TEST_UTILS_TEST_UTIL_H

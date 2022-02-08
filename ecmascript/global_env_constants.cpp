@@ -128,9 +128,6 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
         factory->NewEcmaDynClass(dynClassClass, TransitionHandler::SIZE, JSType::TRANSITION_HANDLER).GetTaggedValue());
     SetConstant(ConstantIndex::PROPERTY_BOX_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, PropertyBox::SIZE, JSType::PROPERTY_BOX).GetTaggedValue());
-    SetConstant(ConstantIndex::FUNCTION_EXTRA_INFO_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, JSFunctionExtraInfo::SIZE, JSType::FUNCTION_EXTRA_INFO)
-                    .GetTaggedValue());
     SetConstant(ConstantIndex::PROGRAM_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, Program::SIZE, JSType::PROGRAM).GetTaggedValue());
     SetConstant(ConstantIndex::ECMA_MODULE_CLASS_INDEX,

@@ -80,7 +80,7 @@ std::string ICKindToString(ICKind kind);
 
 class ProfileTypeInfo : public TaggedArray {
 public:
-    static const array_size_t MAX_FUNC_CACHE_INDEX = std::numeric_limits<uint32_t>::max();
+    static const uint32_t MAX_FUNC_CACHE_INDEX = std::numeric_limits<uint32_t>::max();
     static constexpr uint32_t INVALID_SLOT_INDEX = 0xFF;
 
     static ProfileTypeInfo *Cast(TaggedObject *object)

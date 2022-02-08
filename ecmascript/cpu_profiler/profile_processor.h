@@ -33,6 +33,7 @@ public:
     virtual ~ProfileProcessor();
 
     bool Run(uint32_t threadIndex) override;
+    void WriteSampleDataToFile();
 
     NO_COPY_SEMANTIC(ProfileProcessor);
     NO_MOVE_SEMANTIC(ProfileProcessor);

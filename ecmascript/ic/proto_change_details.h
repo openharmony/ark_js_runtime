@@ -25,16 +25,20 @@ namespace panda {
 namespace ecmascript {
 class ProtoChangeMarker : public TaggedObject {
 public:
-
-    using HasChangedField = BitField<bool, 0, 1>;
     static ProtoChangeMarker *Cast(ObjectHeader *object)
     {
         ASSERT(JSTaggedValue(object).IsProtoChangeMarker());
         return static_cast<ProtoChangeMarker *>(object);
     }
 
-    static constexpr size_t HAS_CHANGED_OFFSET = TaggedObjectSize();
-    SET_GET_PRIMITIVE_FIELD(HasChanged, bool, HAS_CHANGED_OFFSET, SIZE);
+    static constexpr size_t BIT_FIELD_OFFSET = TaggedObjectSize();
+    ACCESSORS_BIT_FIELD(BitField, BIT_FIELD_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
+    // define BitField
+    static constexpr size_t HAS_CHANGED_BITS = 1;
+    FIRST_BIT_FIELD(BitField, HasChanged, bool, HAS_CHANGED_BITS);
+
     DECL_DUMP()
 };
 
@@ -49,9 +53,10 @@ public:
 
     static constexpr size_t CHANGE_LISTENER_OFFSET = TaggedObjectSize();
     ACCESSORS(ChangeListener, CHANGE_LISTENER_OFFSET, REGISTER_INDEX_OFFSET);
-    ACCESSORS(RegisterIndex, REGISTER_INDEX_OFFSET, SIZE);
+    ACCESSORS_PRIMITIVE_FIELD(RegisterIndex, uint32_t, REGISTER_INDEX_OFFSET, LAST_OFFSET);
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT(CHANGE_LISTENER_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(CHANGE_LISTENER_OFFSET, REGISTER_INDEX_OFFSET)
     DECL_DUMP()
 };
 
@@ -63,11 +68,11 @@ public:
     }
 
     static JSHandle<ChangeListener> Add(const JSThread *thread, const JSHandle<ChangeListener> &array,
-                                        const JSHandle<JSHClass> &value, array_size_t *index);
+                                        const JSHandle<JSHClass> &value, uint32_t *index);
 
-    static array_size_t CheckHole(const JSHandle<ChangeListener> &array);
+    static uint32_t CheckHole(const JSHandle<ChangeListener> &array);
 
-    JSTaggedValue Get(array_size_t index);
+    JSTaggedValue Get(uint32_t index);
 };
 }  // namespace ecmascript
 }  // namespace panda

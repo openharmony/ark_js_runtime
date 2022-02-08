@@ -56,7 +56,7 @@ class JSNativePointer;
 class Program;
 class RegExpExecResultCache;
 class JSPromise;
-enum class PromiseRejectionEvent : uint32_t;
+enum class PromiseRejectionEvent : uint8_t;
 namespace job {
 class MicroJobQueue;
 }  // namespace job
@@ -68,10 +68,11 @@ class JSFunction;
 class Program;
 class ModuleManager;
 class EcmaModule;
+struct BytecodeTranslationInfo;
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
                                              const JSHandle<JSTaggedValue> reason,
-                                             const PromiseRejectionEvent operation,
+                                             PromiseRejectionEvent operation,
                                              void* data);
 using PromiseRejectCallback = void (*)(void* info);
 
@@ -101,6 +102,9 @@ public:
 
     bool ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                            const std::vector<std::string> &args);
+
+    bool PUBLIC_API CollectInfoOfPandaFile(std::string_view filename, std::string_view entryPoint,
+                                std::vector<BytecodeTranslationInfo> &infoList, const panda_file::File *&pf);
 
     PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
@@ -253,9 +257,11 @@ public:
     {
 #if defined(ECMASCRIPT_ENABLE_THREAD_CHECK) && ECMASCRIPT_ENABLE_THREAD_CHECK
         // Exclude GC thread
-        if (!Platform::GetCurrentPlatform()->IsInThreadPool(std::this_thread::get_id()) &&
-            thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
-                LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!";
+        if (options_.IsEnableThreadCheck()) {
+            if (!Platform::GetCurrentPlatform()->IsInThreadPool(std::this_thread::get_id()) &&
+                thread_->GetThreadId() != JSThread::GetCurrentThreadId()) {
+                    LOG(FATAL, RUNTIME) << "Fatal: ecma_vm cannot run in multi-thread!";
+            }
         }
 #endif
         return thread_;
@@ -303,6 +309,11 @@ public:
     bool IsRuntimeStatEnabled() const
     {
         return runtimeStatEnabled_;
+    }
+
+    bool IsOptionalLogEnabled() const
+    {
+        return optionalLogEnabled_;
     }
 
     void Iterate(const RootVisitor &v);
@@ -382,12 +393,13 @@ public:
     }
 
     void PromiseRejectionTracker(const JSHandle<JSPromise> &promise,
-                                 const JSHandle<JSTaggedValue> &reason, const PromiseRejectionEvent operation)
+                                 const JSHandle<JSTaggedValue> &reason, PromiseRejectionEvent operation)
     {
         if (hostPromiseRejectionTracker_ != nullptr) {
             hostPromiseRejectionTracker_(this, promise, reason, operation, data_);
         }
     }
+
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
     {
@@ -443,49 +455,54 @@ private:
     NO_MOVE_SEMANTIC(EcmaVM);
     NO_COPY_SEMANTIC(EcmaVM);
 
-    // init EcmaVM construct
-    static JSRuntimeOptions options_;
-    EcmaStringTable *stringTable_;
-    std::unique_ptr<RegionFactory> regionFactory_;
-    Chunk chunk_;
-    ChunkVector<JSMethod *> nativeMethods_;
-    bool icEnable_{true};
-    GCStats *gcStats_ = nullptr;
+    // Useless/deprecated fields in the future:
     Rendezvous *rendezvous_{nullptr};
-    bool snapshotSerializeEnable_{false};
-    bool snapshotDeserializeEnable_{false};
-    CString fileName_;
-    CString frameworkAbcFileName_;
+    bool isTestMode_ {false};
 
-    bool isTestMode_{false};
-    RuntimeNotificationManager *notificationManager_ {nullptr};
-
-    // init EcmaVM Create
-    JSThread *thread_{nullptr};
-
-    // init EcmaVM Initialize
-    RegExpParserCache *regExpParserCache_{nullptr};
-    Heap *heap_{nullptr};
-    ObjectFactory *factory_{nullptr};
-    JSTaggedValue globalEnv_{JSTaggedValue::Hole()};
-    JSTaggedValue regexpCache_{JSTaggedValue::Hole()};
-    JSTaggedValue microJobQueue_{JSTaggedValue::Hole()};
-    ModuleManager *moduleManager_{nullptr};
-    bool vmInitialized_{false};
-
-    // Runtime initialization
-    CUnorderedMap<const panda_file::File *, std::unique_ptr<PtJSExtractor>> extractorCache_;
-    const panda_file::File *frameworkPandaFile_ {nullptr};
-    CVector<JSMethod *> frameworkProgramMethods_;
-    EcmaRuntimeStat *runtimeStat_ {nullptr};  // maybe nullptr
-    bool runtimeStatEnabled_ {false};
+    // VM startup states.
+    static JSRuntimeOptions options_;
+    bool icEnable_ {true};
+    bool vmInitialized_ {false};
+    GCStats *gcStats_ {nullptr};
+    bool snapshotSerializeEnable_ {false};
+    bool snapshotDeserializeEnable_ {false};
     bool isUncaughtExceptionRegistered_ {false};
 
-    // weak reference need Redirect address
-    JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};  // no mark for gc
+    // VM memory management.
+    EcmaStringTable *stringTable_ {nullptr};
+    std::unique_ptr<RegionFactory> regionFactory_;
+    Chunk chunk_;
+    Heap *heap_ {nullptr};
+    ObjectFactory *factory_ {nullptr};
     CVector<JSNativePointer *> arrayBufferDataList_;
+
+    // VM execution states.
+    JSThread *thread_ {nullptr};
+    RegExpParserCache *regExpParserCache_ {nullptr};
+    JSTaggedValue globalEnv_ {JSTaggedValue::Hole()};
+    JSTaggedValue regexpCache_ {JSTaggedValue::Hole()};
+    JSTaggedValue microJobQueue_ {JSTaggedValue::Hole()};
+    bool runtimeStatEnabled_ {false};
+    EcmaRuntimeStat *runtimeStat_ {nullptr};
+
+    // App framework resources.
+    JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};
+    CString frameworkAbcFileName_;
+    const panda_file::File *frameworkPandaFile_ {nullptr};
+    CVector<JSMethod *> frameworkProgramMethods_;
+
+    // VM resources.
+    CString snapshotFileName_;
+    ChunkVector<JSMethod *> nativeMethods_;
+    ModuleManager *moduleManager_ {nullptr};
+    bool optionalLogEnabled_ {false};
     CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
 
+    // Debugger
+    RuntimeNotificationManager *notificationManager_ {nullptr};
+    CUnorderedMap<const panda_file::File *, std::unique_ptr<PtJSExtractor>> extractorCache_;
+
+    // Registered Callbacks
     PromiseRejectCallback promiseRejectCallback_ {nullptr};
     HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
     void* data_ {nullptr};

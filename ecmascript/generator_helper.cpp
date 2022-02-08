@@ -24,9 +24,9 @@ JSHandle<JSObject> GeneratorHelper::Next(JSThread *thread, const JSHandle<Genera
                                          JSTaggedValue value)
 {
     JSHandle<JSGeneratorObject> genObject(thread, genContext->GetGeneratorObject());
-    genObject->SetGeneratorState(thread, JSTaggedValue(static_cast<int32_t>(JSGeneratorState::EXECUTING)));
-    genObject->SetResumeMode(thread, JSTaggedValue(static_cast<int32_t>(GeneratorResumeMode::NEXT)));
     genObject->SetResumeResult(thread, value);
+    genObject->SetGeneratorState(JSGeneratorState::EXECUTING);
+    genObject->SetResumeMode(GeneratorResumeMode::NEXT);
 
     JSTaggedValue next = EcmaInterpreter::GeneratorReEnterInterpreter(thread, genContext);
     JSHandle<JSTaggedValue> nextValue(thread, next);
@@ -34,7 +34,7 @@ JSHandle<JSObject> GeneratorHelper::Next(JSThread *thread, const JSHandle<Genera
     if (genObject->IsSuspendYield()) {
         return JSHandle<JSObject>::Cast(nextValue);
     }
-    genObject->SetGeneratorState(thread, JSTaggedValue(static_cast<int32_t>(JSGeneratorState::COMPLETED)));
+    genObject->SetGeneratorState(JSGeneratorState::COMPLETED);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);
     return JSIterator::CreateIterResultObject(thread, nextValue, true);
 }
@@ -43,14 +43,14 @@ JSHandle<JSObject> GeneratorHelper::Return(JSThread *thread, const JSHandle<Gene
                                            JSTaggedValue value)
 {
     JSHandle<JSGeneratorObject> genObject(thread, genContext->GetGeneratorObject());
-    genObject->SetResumeMode(thread, JSTaggedValue(static_cast<int32_t>(GeneratorResumeMode::RETURN)));
+    genObject->SetResumeMode(GeneratorResumeMode::RETURN);
     genObject->SetResumeResult(thread, value);
 
     JSTaggedValue res = EcmaInterpreter::GeneratorReEnterInterpreter(thread, genContext);
     JSHandle<JSTaggedValue> returnValue(thread, res);
     // change state to completed
     if (genObject->IsExecuting()) {
-        genObject->SetGeneratorState(thread, JSTaggedValue(static_cast<int32_t>(JSGeneratorState::COMPLETED)));
+        genObject->SetGeneratorState(JSGeneratorState::COMPLETED);
     }
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);
     return JSIterator::CreateIterResultObject(thread, returnValue, true);
@@ -60,7 +60,7 @@ JSHandle<JSObject> GeneratorHelper::Throw(JSThread *thread, const JSHandle<Gener
                                           JSTaggedValue value)
 {
     JSHandle<JSGeneratorObject> genObject(thread, genContext->GetGeneratorObject());
-    genObject->SetResumeMode(thread, JSTaggedValue(static_cast<int32_t>(GeneratorResumeMode::THROW)));
+    genObject->SetResumeMode(GeneratorResumeMode::THROW);
     genObject->SetResumeResult(thread, value);
 
     JSTaggedValue res = EcmaInterpreter::GeneratorReEnterInterpreter(thread, genContext);
@@ -71,24 +71,21 @@ JSHandle<JSObject> GeneratorHelper::Throw(JSThread *thread, const JSHandle<Gener
     }
 
     // change state to completed
-    genObject->SetGeneratorState(thread, JSTaggedValue(static_cast<int32_t>(JSGeneratorState::COMPLETED)));
+    genObject->SetGeneratorState(JSGeneratorState::COMPLETED);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSObject, thread);
     return JSIterator::CreateIterResultObject(thread, throwValue, true);
 }
 
 // main->foo
-void GeneratorHelper::ChangeGenContext(JSThread *thread, const JSHandle<GeneratorContext> &genContext,
-                                       [[maybe_unused]] C2IBridge *c2i)
+void GeneratorHelper::ChangeGenContext(JSThread *thread, const JSHandle<GeneratorContext> &genContext)
 {
     JSThread *jsThread = thread;
-    ASSERT(jsThread->IsEcmaInterpreter());
     EcmaInterpreter::ChangeGenContext(jsThread, genContext);
 }
 
 // foo->main
 void GeneratorHelper::ResumeContext(JSThread *thread)
 {
-    ASSERT(thread->IsEcmaInterpreter());
     EcmaInterpreter::ResumeContext(thread);
 }
 }  // namespace panda::ecmascript

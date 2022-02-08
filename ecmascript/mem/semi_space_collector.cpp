@@ -41,6 +41,7 @@ void SemiSpaceCollector::RunPhases()
     INTERPRETER_TRACE(thread, SemiSpaceCollector_RunPhases);
     [[maybe_unused]] ClockScope clockScope;
 
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::RunPhases");
     bool concurrentMark = heap_->CheckConcurrentMark(thread);
     if (concurrentMark) {
         ECMA_GC_LOG() << "SemiSpaceCollector after ConcurrentMarking";
@@ -57,6 +58,7 @@ void SemiSpaceCollector::RunPhases()
 
 void SemiSpaceCollector::InitializePhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::InitializePhase");
     heap_->Prepare();
     workList_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetSemiGcMarker()->Initialized();
@@ -68,7 +70,7 @@ void SemiSpaceCollector::InitializePhase()
 
 void SemiSpaceCollector::ParallelMarkingPhase()
 {
-    trace::ScopedTrace scoped_trace("SemiSpaceCollector::ParallelMarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::ParallelMarkingPhase");
     auto region = heap_->GetOldSpace()->GetCurrentRegion();
 
     if (paralledGc_) {
@@ -94,7 +96,7 @@ void SemiSpaceCollector::ParallelMarkingPhase()
 
 void SemiSpaceCollector::SweepPhases()
 {
-    trace::ScopedTrace scoped_trace("SemiSpaceCollector::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::SweepPhases");
     auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1;  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
         ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
@@ -139,6 +141,7 @@ void SemiSpaceCollector::SweepPhases()
 
 void SemiSpaceCollector::FinishPhase()
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::FinishPhase");
     workList_->Finish(semiCopiedSize_, promotedSize_);
     heap_->GetEvacuationAllocator()->Finalize(TriggerGCType::SEMI_GC);
 }

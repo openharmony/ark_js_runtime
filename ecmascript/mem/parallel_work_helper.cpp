@@ -72,7 +72,7 @@ void WorkerHelper::PushWorkNodeToGlobal(uint32_t threadId, bool postTask)
     if (!pushNode->IsEmpty()) {
         globalWork_.Push(pushNode);
         pushNode = AllocalWorkNode();
-        if (postTask && heap_->IsEnableParallelGC() && heap_->CheckCanDistributeTask()) {
+        if (postTask && heap_->IsParallelGCEnabled() && heap_->CheckCanDistributeTask()) {
             heap_->PostParallelGCTask(parallelTask_);
         }
     }

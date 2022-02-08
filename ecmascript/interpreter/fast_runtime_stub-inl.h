@@ -21,6 +21,7 @@
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
+#include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_proxy.h"
@@ -161,6 +162,11 @@ bool FastRuntimeStub::IsSpecialReceiverObj(JSType jsType)
     return jsType > JSType::JS_PRIMITIVE_REF;
 }
 
+bool FastRuntimeStub::IsSpecialContainer(JSType jsType)
+{
+    return jsType >= JSType::JS_ARRAY_LIST && jsType <= JSType::JS_QUEUE;
+}
+
 int32_t FastRuntimeStub::TryToElementsIndex(JSTaggedValue key)
 {
     if (LIKELY(key.IsInt())) {
@@ -242,7 +248,7 @@ PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle
     }
 
     JSMutableHandle<TaggedArray> array(thread, objHandle->GetProperties());
-    array_size_t length = array->GetLength();
+    uint32_t length = array->GetLength();
     if (length == 0) {
         length = JSObject::MIN_PROPERTIES_LENGTH;
         ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -253,7 +259,7 @@ PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle
     if (!array->IsDictionaryMode()) {
         attr.SetIsInlinedProps(false);
 
-        array_size_t nonInlinedProps = objHandle->GetJSHClass()->GetNextNonInlinedPropsIndex();
+        uint32_t nonInlinedProps = objHandle->GetJSHClass()->GetNextNonInlinedPropsIndex();
         ASSERT(length >= nonInlinedProps);
         // if array is full, grow array or change to dictionary mode
         if (length == nonInlinedProps) {
@@ -267,7 +273,7 @@ PropertyAttributes FastRuntimeStub::AddPropertyByName(JSThread *thread, JSHandle
                 return attr;
             }
             // Grow properties array size
-            array_size_t capacity = JSObject::ComputePropertyCapacity(length);
+            uint32_t capacity = JSObject::ComputePropertyCapacity(length);
             ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
             array.Update(factory->CopyArray(array, length, capacity).GetTaggedValue());
             objHandle->SetProperties(thread, array.GetTaggedValue());
@@ -309,6 +315,9 @@ JSTaggedValue FastRuntimeStub::GetPropertyByIndex(JSThread *thread, JSTaggedValu
         auto *hclass = holder.GetTaggedObject()->GetClass();
         JSType jsType = hclass->GetObjectType();
         if (IsSpecialIndexedObj(jsType)) {
+            if (IsSpecialContainer(jsType)) {
+                return GetContainerProperty(thread, holder, index, jsType);
+            }
             return JSTaggedValue::Hole();
         }
         TaggedArray *elements = TaggedArray::Cast(JSObject::Cast(holder)->GetElements().GetTaggedObject());
@@ -437,6 +446,9 @@ JSTaggedValue FastRuntimeStub::SetPropertyByName(JSThread *thread, JSTaggedValue
         auto *hclass = holder.GetTaggedObject()->GetClass();
         JSType jsType = hclass->GetObjectType();
         if (IsSpecialIndexedObj(jsType)) {
+            if (IsSpecialContainer(jsType)) {
+                THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot set property on Container", JSTaggedValue::Exception());
+            }
             return JSTaggedValue::Hole();
         }
         // UpdateRepresentation
@@ -518,6 +530,9 @@ JSTaggedValue FastRuntimeStub::SetPropertyByIndex(JSThread *thread, JSTaggedValu
         auto *hclass = holder.GetTaggedObject()->GetClass();
         JSType jsType = hclass->GetObjectType();
         if (IsSpecialIndexedObj(jsType)) {
+            if (IsSpecialContainer(jsType)) {
+                return SetContainerProperty(thread, holder, index, value, jsType);
+            }
             return JSTaggedValue::Hole();
         }
         TaggedArray *elements = TaggedArray::Cast(JSObject::Cast(holder)->GetElements().GetTaggedObject());
@@ -1314,6 +1329,34 @@ JSTaggedValue FastRuntimeStub::HasOwnProperty(JSThread *thread, JSObject *obj, J
     }
 
     return FastRuntimeStub::FindOwnProperty(thread, obj, key);
+}
+
+JSTaggedValue FastRuntimeStub::GetContainerProperty(JSThread *thread, JSTaggedValue receiver, uint32_t index,
+                                                    JSType jsType)
+{
+    JSTaggedValue res = JSTaggedValue::Undefined();
+    switch (jsType) {
+        case JSType::JS_ARRAY_LIST:
+            res = JSArrayList::Cast(receiver.GetTaggedObject())->Get(thread, index);
+            break;
+        default:
+            break;
+    }
+    return res;
+}
+
+JSTaggedValue FastRuntimeStub::SetContainerProperty(JSThread *thread, JSTaggedValue receiver, uint32_t index,
+                                                    JSTaggedValue value, JSType jsType)
+{
+    JSTaggedValue res = JSTaggedValue::Undefined();
+    switch (jsType) {
+        case JSType::JS_ARRAY_LIST:
+            res = JSArrayList::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
+            break;
+        default:
+            break;
+    }
+    return res;
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_INL_H

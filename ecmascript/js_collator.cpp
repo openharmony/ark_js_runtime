@@ -91,8 +91,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
                                                           {UsageOption::SORT, UsageOption::SEARCH}, {"sort", "search"},
                                                           UsageOption::SORT);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
-    JSHandle<JSTaggedValue> usageValue(thread, JSTaggedValue(static_cast<int>(usage)));
-    collator->SetUsage(thread, usageValue);
+    collator->SetUsage(usage);
 
     // 5. Let matcher be ? GetOption(options, "localeMatcher", "string", « "lookup", "best fit" », "best fit").
     auto matcher = JSLocale::GetOptionOfString<LocaleMatcherOption>(
@@ -123,17 +122,15 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
     bool foundNumeric =
         JSLocale::GetOptionOfBool(thread, optionsObject, globalConst->GetHandledNumericString(), false, &numeric);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
-    JSHandle<JSTaggedValue> numericValue(thread, JSTaggedValue(numeric));
-    collator->SetNumeric(thread, numericValue);
+    collator->SetNumeric(numeric);
 
     // 14. Let caseFirst be ? GetOption(options, "caseFirst", "string", « "upper", "lower", "false" », undefined).
-    auto caseFirst = JSLocale::GetOptionOfString<CaseFirstOption>(
+    CaseFirstOption caseFirst = JSLocale::GetOptionOfString<CaseFirstOption>(
         thread, optionsObject, globalConst->GetHandledCaseFirstString(),
         {CaseFirstOption::UPPER, CaseFirstOption::LOWER, CaseFirstOption::FALSE_OPTION}, {"upper", "lower", "false"},
         CaseFirstOption::UNDEFINED);
     RETURN_HANDLE_IF_ABRUPT_COMPLETION(JSCollator, thread);
-    JSHandle<JSTaggedValue> caseFirstValue(thread, JSTaggedValue(static_cast<int>(caseFirst)));
-    collator->SetCaseFirst(thread, caseFirstValue);
+    collator->SetCaseFirst(caseFirst);
 
     // 16. Let relevantExtensionKeys be %Collator%.[[RelevantExtensionKeys]].
     std::set<std::string> relevantExtensionKeys = {"co", "kn", "kf"};
@@ -204,8 +201,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
         if (extensionIter != r.extensions.end()) {
             ASSERT(icuCollator.get() != nullptr);
             bool found = (extensionIter->second == "true");
-            JSHandle<JSTaggedValue> isNumeric(thread, JSTaggedValue(found));
-            collator->SetNumeric(thread, isNumeric);
+            collator->SetNumeric(found);
             icuCollator.get()->setAttribute(UCOL_NUMERIC_COLLATION, found ? UCOL_ON : UCOL_OFF, status);
             ASSERT(U_SUCCESS(status));
         }
@@ -226,8 +222,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
             auto mapIter = caseFirstMap.find(extensionIter->second);
             if (mapIter != caseFirstMap.end()) {
                 icuCollator.get()->setAttribute(UCOL_CASE_FIRST, OptionToUColAttribute(mapIter->second), status);
-                JSHandle<JSTaggedValue> caseFirstValue(thread, JSTaggedValue(static_cast<int>(mapIter->second)));
-                collator->SetCaseFirst(thread, caseFirstValue);
+                collator->SetCaseFirst(mapIter->second);
             } else {
                 icuCollator.get()->setAttribute(UCOL_CASE_FIRST, OptionToUColAttribute(CaseFirstOption::UNDEFINED),
                                                 status);
@@ -238,7 +233,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
 
     // 24. Let sensitivity be ? GetOption(options, "sensitivity", "string", « "base", "accent", "case", "variant" »,
     //     undefined).
-    auto sensitivity = JSLocale::GetOptionOfString<SensitivityOption>(
+    SensitivityOption sensitivity = JSLocale::GetOptionOfString<SensitivityOption>(
         thread, optionsObject, globalConst->GetHandledSensitivityString(),
         {SensitivityOption::BASE, SensitivityOption::ACCENT, SensitivityOption::CASE, SensitivityOption::VARIANT},
         {"base", "accent", "case", "variant"}, SensitivityOption::UNDEFINED);
@@ -251,8 +246,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
             sensitivity = SensitivityOption::VARIANT;
         }
     }
-    JSHandle<JSTaggedValue> sensitivityValue(thread, JSTaggedValue(static_cast<int>(sensitivity)));
-    collator->SetSensitivity(thread, sensitivityValue);
+    collator->SetSensitivity(sensitivity);
 
     // Trans SensitivityOption to Icu strength option
     switch (sensitivity) {
@@ -280,8 +274,7 @@ JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHa
     bool ignorePunctuation = false;
     JSLocale::GetOptionOfBool(thread, optionsObject, globalConst->GetHandledIgnorePunctuationString(), false,
                               &ignorePunctuation);
-    JSHandle<JSTaggedValue> ignorePunctuationValue(thread, JSTaggedValue(ignorePunctuation));
-    collator->SetIgnorePunctuation(thread, ignorePunctuationValue);
+    collator->SetIgnorePunctuation(ignorePunctuation);
     if (ignorePunctuation) {
         status = U_ZERO_ERROR;
         icuCollator->setAttribute(UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, status);
@@ -385,17 +378,17 @@ JSHandle<JSObject> JSCollator::ResolvedOptions(JSThread *thread, const JSHandle<
     JSObject::CreateDataPropertyOrThrow(thread, options, property, locale);
 
     // [[Usage]]
-    UsageOption usageOption = static_cast<UsageOption>(collator->GetUsage().GetNumber());
+    UsageOption usageOption = collator->GetUsage();
     JSHandle<JSTaggedValue> usageValue = OptionsToEcmaString(thread, usageOption);
     JSObject::CreateDataProperty(thread, options, globalConst->GetHandledUsageString(), usageValue);
 
     // [[Sensitivity]]
-    auto sentivityOption = static_cast<SensitivityOption>(collator->GetSensitivity().GetNumber());
+    auto sentivityOption = collator->GetSensitivity();
     JSHandle<JSTaggedValue> sensitivityValue = OptionsToEcmaString(thread, sentivityOption);
     JSObject::CreateDataProperty(thread, options, globalConst->GetHandledSensitivityString(), sensitivityValue);
 
     // [[IgnorePunctuation]]
-    JSHandle<JSTaggedValue> ignorePunctuationValue(thread, collator->GetIgnorePunctuation());
+    JSHandle<JSTaggedValue> ignorePunctuationValue(thread, JSTaggedValue(collator->GetIgnorePunctuation()));
     JSObject::CreateDataProperty(thread, options, globalConst->GetHandledIgnorePunctuationString(),
                                  ignorePunctuationValue);
 
@@ -407,11 +400,11 @@ JSHandle<JSObject> JSCollator::ResolvedOptions(JSThread *thread, const JSHandle<
     JSObject::CreateDataProperty(thread, options, globalConst->GetHandledCollationString(), collationValue);
 
     // [[Numeric]]
-    JSHandle<JSTaggedValue> numericValue(thread, collator->GetNumeric());
+    JSHandle<JSTaggedValue> numericValue(thread, JSTaggedValue(collator->GetNumeric()));
     JSObject::CreateDataProperty(thread, options, globalConst->GetHandledNumericString(), numericValue);
 
     // [[CaseFirst]]
-    CaseFirstOption caseFirstOption = static_cast<CaseFirstOption>(collator->GetCaseFirst().GetNumber());
+    CaseFirstOption caseFirstOption = collator->GetCaseFirst();
     // In Ecma402 spec, caseFirst is an optional property so we set it to Upper when input is undefined
     // the requirement maybe change in the future
     JSHandle<JSTaggedValue> caseFirstValue = OptionsToEcmaString(thread, caseFirstOption);

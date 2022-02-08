@@ -24,7 +24,14 @@ ProfileGenerator::ProfileGenerator()
 {
     stackTopLines_.push_back(0);
 }
-ProfileGenerator::~ProfileGenerator() {}
+
+ProfileGenerator::~ProfileGenerator()
+{
+    if (fileHandle_.is_open()) {
+        fileHandle_.close();
+    }
+}
+
 void ProfileGenerator::AddSample(CVector<JSMethod *> sample, time_t sampleTimeStamp)
 {
     static int PreviousId = 0;
@@ -199,5 +206,20 @@ void ProfileGenerator::SetThreadStartTime(time_t threadStartTime)
 void ProfileGenerator::SetStartsampleData(std::string sampleData)
 {
     sampleData_ += sampleData;
+}
+
+void ProfileGenerator::SetFileName(std::string &fileName)
+{
+    fileName_ = fileName;
+}
+
+const std::string ProfileGenerator::GetFileName() const
+{
+    return fileName_;
+}
+
+void ProfileGenerator::ClearSampleData()
+{
+    sampleData_.clear();
 }
 } // namespace panda::ecmascript

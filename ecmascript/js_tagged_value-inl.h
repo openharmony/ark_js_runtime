@@ -437,11 +437,6 @@ inline bool JSTaggedValue::IsProgram() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsProgram();
 }
 
-inline bool JSTaggedValue::IsLexicalFunction() const
-{
-    return IsHeapObject() && GetTaggedObject()->GetClass()->IsLexicalFunction();
-}
-
 inline bool JSTaggedValue::IsJSPromiseExecutorFunction() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPromiseExecutorFunction();
@@ -502,6 +497,16 @@ inline bool JSTaggedValue::IsJSPluralRules() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPluralRules();
 }
 
+inline bool JSTaggedValue::IsJSArrayList() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSArrayList();
+}
+
+inline bool JSTaggedValue::IsSpecialContainer() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsSpecialContainer();
+}
+
 inline bool JSTaggedValue::IsPromiseIteratorRecord() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsPromiseIteratorRecord();
@@ -515,11 +520,6 @@ inline bool JSTaggedValue::IsPromiseCapability() const
 inline bool JSTaggedValue::IsJSError() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSError();
-}
-
-inline bool JSTaggedValue::IsJSFunctionExtraInfo() const
-{
-    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSFunctionExtraInfo();
 }
 
 inline bool JSTaggedValue::IsMicroJobQueue() const
@@ -873,15 +873,15 @@ inline bool JSTaggedValue::ToArrayLength(JSThread *thread, const JSHandle<JSTagg
     return true;
 }
 
-inline array_size_t JSTaggedValue::GetArrayLength() const
+inline uint32_t JSTaggedValue::GetArrayLength() const
 {
     ASSERT(IsNumber());
     if (IsInt()) {
-        return static_cast<array_size_t>(GetInt());
+        return static_cast<uint32_t>(GetInt());
     }
     if (IsDouble()) {
         ASSERT(GetDouble() <= TaggedArray::MAX_ARRAY_INDEX);
-        return static_cast<array_size_t>(GetDouble());
+        return static_cast<uint32_t>(GetDouble());
     }
     UNREACHABLE();
 }
@@ -960,7 +960,7 @@ inline uint32_t JSTaggedValue::GetKeyHashCode() const
         return EcmaString::Cast(GetTaggedObject())->GetHashcode();
     }
 
-    return static_cast<uint32_t>(JSSymbol::Cast(GetTaggedObject())->GetHashField().GetInt());
+    return JSSymbol::Cast(GetTaggedObject())->GetHashField();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_TAGGED_VALUE__INL_H

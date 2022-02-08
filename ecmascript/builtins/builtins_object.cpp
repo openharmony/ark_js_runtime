@@ -81,7 +81,7 @@ JSTaggedValue BuiltinsObject::Assign(EcmaRuntimeCallInfo *argv)
     //     ii.Let keys be from.[[OwnPropertyKeys]]().
     //     iii.ReturnIfAbrupt(keys).
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
-    for (array_size_t i = 1; i < numArgs; i++) {
+    for (uint32_t i = 1; i < numArgs; i++) {
         JSHandle<JSTaggedValue> source = GetCallArg(argv, i);
         if (!source->IsNull() && !source->IsUndefined()) {
             JSHandle<JSObject> from = JSTaggedValue::ToObject(thread, source);
@@ -99,8 +99,8 @@ JSTaggedValue BuiltinsObject::Assign(EcmaRuntimeCallInfo *argv)
             //      2.ReturnIfAbrupt(propValue).
             //      3.Let status be Set(to, nextKey, propValue, true).
             //      4.ReturnIfAbrupt(status).
-            array_size_t keysLen = keys->GetLength();
-            for (array_size_t j = 0; j < keysLen; j++) {
+            uint32_t keysLen = keys->GetLength();
+            for (uint32_t j = 0; j < keysLen; j++) {
                 PropertyDescriptor desc(thread);
                 key.Update(keys->Get(j));
                 bool success = JSTaggedValue::GetOwnProperty(thread, JSHandle<JSTaggedValue>::Cast(from), key, desc);
@@ -152,7 +152,7 @@ JSTaggedValue BuiltinsObject::ObjectDefineProperties(JSThread *thread, const JSH
 
     // 6.Let descriptors be an empty List.
     // new an empty array and append
-    array_size_t length = handleKeys->GetLength();
+    uint32_t length = handleKeys->GetLength();
     [[maybe_unused]] JSHandle<TaggedArray> descriptors =
         factory->NewTaggedArray(2 * length);  // 2: 2 means two element list
 
@@ -166,7 +166,7 @@ JSTaggedValue BuiltinsObject::ObjectDefineProperties(JSThread *thread, const JSH
     //     iv.ReturnIfAbrupt(desc).
     //     v.Append the pair (a two element List) consisting of nextKey and desc to the end of descriptors.
     JSMutableHandle<JSTaggedValue> handleKey(thread, JSTaggedValue::Undefined());
-    for (array_size_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         PropertyDescriptor propDesc(thread);
         handleKey.Update(handleKeys->Get(i));
 
@@ -364,14 +364,14 @@ JSTaggedValue BuiltinsObject::GetOwnPropertyKeys(JSThread *thread, const JSHandl
 
     // 5.Let nameList be a new empty List.
     // new an empty array and append
-    array_size_t length = handleKeys->GetLength();
+    uint32_t length = handleKeys->GetLength();
     JSHandle<TaggedArray> nameList = factory->NewTaggedArray(length);
 
     // 6.Repeat for each element nextKey of keys in List order,
-    array_size_t copyLength = 0;
+    uint32_t copyLength = 0;
     switch (type) {
         case KeyType::STRING_TYPE: {
-            for (array_size_t i = 0; i < length; i++) {
+            for (uint32_t i = 0; i < length; i++) {
                 JSTaggedValue key = handleKeys->Get(i);
                 if (key.IsString()) {
                     nameList->Set(thread, copyLength, key);
@@ -381,7 +381,7 @@ JSTaggedValue BuiltinsObject::GetOwnPropertyKeys(JSThread *thread, const JSHandl
             break;
         }
         case KeyType::SYMBOL_TYPE: {
-            for (array_size_t i = 0; i < length; i++) {
+            for (uint32_t i = 0; i < length; i++) {
                 JSTaggedValue key = handleKeys->Get(i);
                 if (key.IsSymbol()) {
                     nameList->Set(thread, copyLength, key);

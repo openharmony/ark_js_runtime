@@ -28,6 +28,7 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/layout_info.h"
@@ -88,31 +89,25 @@ public:
                 case Triple::TRIPLE_AARCH64:
                     offsetTable_ = {
                         GLUE_EXCEPTION_OFFSET_64,
-#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)  \
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
                         GLUE_##name##_OFFSET_64,
                         GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
-                        GLUE_FRAME_STATE_SIZE_64,
-                        GLUE_OPT_LEAVE_FRAME_SIZE_64,
-                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_64,
-                        GLUE_FRAME_CONSTPOOL_OFFSET_64,
-                        GLUE_FRAME_PROFILE_OFFSET_64,
-                        GLUE_FRAME_ACC_OFFSET_64,
+                        InterpretedFrame::kSizeOn64Platform,
+                        OptLeaveFrame::kSizeOn64Platform,
+                        OptLeaveFrame::kPrevFpOffset
                     };
                     break;
                 case Triple::TRIPLE_ARM32:
                     offsetTable_ = {
                         GLUE_EXCEPTION_OFFSET_32,
-#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)  \
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
                         GLUE_##name##_OFFSET_32,
                         GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
-                        GLUE_FRAME_STATE_SIZE_32,
-                        GLUE_OPT_LEAVE_FRAME_SIZE_32,
-                        GLUE_OPT_LEAVE_FRAME_PREV_OFFSET_32,
-                        GLUE_FRAME_CONSTPOOL_OFFSET_32,
-                        GLUE_FRAME_PROFILE_OFFSET_32,
-                        GLUE_FRAME_ACC_OFFSET_32,
+                        InterpretedFrame::kSizeOn64Platform,
+                        OptLeaveFrame::kSizeOn64Platform,
+                        OptLeaveFrame::kPrevFpOffset
                     };
                     break;
                 default:
@@ -387,8 +382,7 @@ public:
         }
         bool IsSelector(const Gate *gate) const
         {
-            return gate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS
-                   && gate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+            return gate->GetOpCode() == OpCode::VALUE_SELECTOR;
         }
         uint32_t GetId() const
         {
@@ -464,14 +458,15 @@ public:
     inline GateRef PtrArgument(size_t index, TypeCode type = TypeCode::NOTYPE);
     inline GateRef Float32Argument(size_t index);
     inline GateRef Float64Argument(size_t index);
-    inline GateRef Alloca(int size, TypeCode type = TypeCode::NOTYPE);
+    inline GateRef Alloca(int size);
+    inline GateRef NativePointerAlloca(int size);
     // control flow
     inline GateRef Return(GateRef value);
     inline GateRef Return();
     inline void Bind(Label *label);
     void Jump(Label *label);
     void Branch(GateRef condition, Label *trueLabel, Label *falseLabel);
-    void Switch(GateRef index, Label *defaultLabel, int32_t *keysValue, Label *keysLabel, int numberOfKeys);
+    void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
     void Seal(Label *label)
     {
         label->Seal();
@@ -611,6 +606,7 @@ public:
     inline void StoreHClass(GateRef glue, GateRef object, GateRef hclass);
     void CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef scrHClass);
     inline GateRef GetObjectType(GateRef hClass);
+    inline GateRef GetGeneratorObjectResumeMode(GateRef obj);
     inline GateRef IsDictionaryMode(GateRef object);
     inline GateRef IsDictionaryModeByHClass(GateRef hClass);
     inline GateRef IsDictionaryElement(GateRef hClass);
@@ -675,13 +671,10 @@ public:
     void ThrowTypeAndReturn(GateRef glue, int messageId, GateRef val);
     inline GateRef GetValueFromTaggedArray(MachineType returnType, GateRef elements, GateRef index);
     inline void SetValueToTaggedArray(MachineType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
-    inline GateRef GetElementRepresentation(GateRef hClass);
-    inline void SetElementRepresentation(GateRef glue, GateRef hClass, GateRef value);
     inline void UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef index, GateRef value, GateRef attr);
     inline GateRef IsSpecialIndexedObj(GateRef jsType);
+    inline GateRef IsSpecialContainer(GateRef jsType);
     inline GateRef IsAccessorInternal(GateRef value);
-    inline void UpdateAndStoreRepresention(GateRef glue, GateRef hClass, GateRef value);
-    GateRef UpdateRepresention(GateRef oldRep, GateRef value);
     template<typename DictionaryT = NameDictionary>
     GateRef GetAttributesFromDictionary(GateRef elements, GateRef entry);
     template<typename DictionaryT = NameDictionary>
@@ -692,10 +685,9 @@ public:
     inline GateRef GetPropertiesAddrFromLayoutInfo(GateRef layout);
     inline GateRef GetPropertyMetaDataFromAttr(GateRef attr);
     inline GateRef GetKeyFromLayoutInfo(GateRef layout, GateRef entry);
-    GateRef IsMatchInNumberDictionary(GateRef key, GateRef other);
     GateRef FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hClass,
         GateRef key, GateRef propsNum);
-    GateRef FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef key);
+    GateRef FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef index);
     GateRef FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key);
     GateRef IsMatchInTransitionDictionary(GateRef element, GateRef key, GateRef metaData, GateRef attr);
     GateRef FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, GateRef key, GateRef metaData);
@@ -777,7 +769,7 @@ public:
     inline GateRef GetParentEnv(GateRef object);
     inline GateRef GetPropertiesFromLexicalEnv(GateRef object, GateRef index);
     inline void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
-    inline GateRef GetFunctionInfoFlagFromJSFunction(GateRef object);
+    inline GateRef GetFunctionBitFieldFromJSFunction(GateRef object);
     inline GateRef GetHomeObjectFromJSFunction(GateRef object);
     inline void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
     inline GateRef GetGlobalObject(GateRef glue);
@@ -789,6 +781,11 @@ public:
 
     // fast path
     GateRef FastEqual(GateRef left, GateRef right);
+
+    // Add SpecialContainer
+    GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
+    GateRef SetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef value, GateRef jsType);
+    GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
 
 private:
     Environment env_;

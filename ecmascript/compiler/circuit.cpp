@@ -15,50 +15,51 @@
 
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/compiler_macros.h"
+#include "ecmascript/compiler/bytecode_circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
-Circuit::Circuit() : space({}), circuitSize(0), gateCounter(0), time(1), dataSection({})
+Circuit::Circuit() : space_(), circuitSize_(0), gateCount_(0), time_(1), dataSection_()
 {
-    this->NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, TypeCode::NOTYPE);  // circuit root
+    NewGate(OpCode(OpCode::CIRCUIT_ROOT), 0, {}, TypeCode::NOTYPE);  // circuit root
     auto circuitRoot = Circuit::GetCircuitRoot(OpCode(OpCode::CIRCUIT_ROOT));
-    this->NewGate(OpCode(OpCode::STATE_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
-    this->NewGate(OpCode(OpCode::DEPEND_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
-    this->NewGate(OpCode(OpCode::FRAMESTATE_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
-    this->NewGate(OpCode(OpCode::RETURN_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    this->NewGate(OpCode(OpCode::THROW_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    this->NewGate(OpCode(OpCode::CONSTANT_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    this->NewGate(OpCode(OpCode::ALLOCA_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
-    this->NewGate(OpCode(OpCode::ARG_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::STATE_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::DEPEND_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::FRAMESTATE_ENTRY), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::RETURN_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::THROW_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::CONSTANT_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::ALLOCA_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
+    NewGate(OpCode(OpCode::ARG_LIST), 0, {circuitRoot}, TypeCode::NOTYPE);
 }
 
 uint8_t *Circuit::AllocateSpace(size_t gateSize)
 {
-    this->circuitSize += gateSize;
-    if (UNLIKELY(this->GetSpaceDataSize() == 0)) {
-        this->SetSpaceDataSize(INITIAL_SPACE);
+    circuitSize_ += gateSize;
+    if (UNLIKELY(GetSpaceDataSize() == 0)) {
+        SetSpaceDataSize(INITIAL_SPACE);
     }
-    while (UNLIKELY(this->GetSpaceDataSize() < this->circuitSize)) {
-        this->SetSpaceDataSize(this->GetSpaceDataSize() * SCALE_RATE);
+    while (UNLIKELY(GetSpaceDataSize() < circuitSize_)) {
+        SetSpaceDataSize(GetSpaceDataSize() * SCALE_RATE);
     }
-    if (UNLIKELY(this->GetSpaceDataSize() > MAX_SPACE)) {
+    if (UNLIKELY(GetSpaceDataSize() > MAX_SPACE)) {
         return nullptr;  // abort compilation
     }
-    if (UNLIKELY(this->GetSpaceDataStartPtrConst() == nullptr)) {
+    if (UNLIKELY(GetSpaceDataStartPtrConst() == nullptr)) {
         return nullptr;  // abort compilation
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return this->GetDataPtr(this->circuitSize - gateSize);
+    return GetDataPtr(circuitSize_ - gateSize);
 }
 
 Gate *Circuit::AllocateGateSpace(size_t numIns)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<Gate *>(this->AllocateSpace(Gate::GetGateSize(numIns)) + Gate::GetOutListSize(numIns));
+    return reinterpret_cast<Gate *>(AllocateSpace(Gate::GetGateSize(numIns)) + Gate::GetOutListSize(numIns));
 }
 
 // NOLINTNEXTLINE(modernize-avoid-c-arrays)
-GateRef Circuit::NewGate(
-    OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type, MarkCode mark)
+GateRef Circuit::NewGate(OpCode opcode, ValueCode bitValue, BitField bitfield, size_t numIns, const GateRef inList[],
+                         TypeCode type, MarkCode mark)
 {
 #ifndef NDEBUG
     if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
@@ -70,30 +71,74 @@ GateRef Circuit::NewGate(
     }
 #endif
     std::vector<Gate *> inPtrList(numIns);
-    auto gateSpace = this->AllocateGateSpace(numIns);
+    auto gateSpace = AllocateGateSpace(numIns);
     for (size_t idx = 0; idx < numIns; idx++) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : this->LoadGatePtr(inList[idx]);
+        inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : LoadGatePtr(inList[idx]);
     }
-    auto newGate = new (gateSpace) Gate(this->gateCounter, opcode, bitfield, inPtrList.data(), type, mark);
-    this->gateCounter++;
-    return this->SaveGatePtr(newGate);
+    ASSERT(opcode.GetValueCode() == ValueCode::FLEX);
+    auto newGate = new (gateSpace) Gate(gateCount_, opcode, bitValue, bitfield, inPtrList.data(), type, mark);
+    gateCount_++;
+    return SaveGatePtr(newGate);
 }
 
-GateRef Circuit::NewGate(
-    OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type, MarkCode mark)
+GateRef Circuit::NewGate(OpCode opcode, ValueCode bitValue, BitField bitfield, const std::vector<GateRef> &inList,
+                         TypeCode type, MarkCode mark)
 {
-    return this->NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark);
+    return NewGate(opcode, bitValue, bitfield, inList.size(), inList.data(), type, mark);
+}
+
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, size_t numIns, const GateRef inList[], TypeCode type,
+                         MarkCode mark)
+{
+#ifndef NDEBUG
+    if (numIns != opcode.GetOpCodeNumIns(bitfield)) {
+        std::cerr << "Invalid input list!"
+                  << " op=" << opcode.Str() << " bitfield=" << bitfield
+                  << " expected_num_in=" << opcode.GetOpCodeNumIns(bitfield) << " actual_num_in=" << numIns
+                  << std::endl;
+        UNREACHABLE();
+    }
+#endif
+    std::vector<Gate *> inPtrList(numIns);
+    auto gateSpace = AllocateGateSpace(numIns);
+    for (size_t idx = 0; idx < numIns; idx++) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        inPtrList[idx] = (inList[idx] == Circuit::NullGate()) ? nullptr : LoadGatePtr(inList[idx]);
+    }
+    ASSERT(opcode.GetValueCode() != ValueCode::FLEX);
+    auto newGate = new (gateSpace) Gate(gateCount_, opcode, opcode.GetValueCode(), bitfield, inPtrList.data(), type,
+                                        mark);
+    gateCount_++;
+    return SaveGatePtr(newGate);
+}
+
+GateRef Circuit::NewGate(OpCode opcode, BitField bitfield, const std::vector<GateRef> &inList, TypeCode type,
+                         MarkCode mark)
+{
+    return NewGate(opcode, bitfield, inList.size(), inList.data(), type, mark);
 }
 
 void Circuit::PrintAllGates() const
 {
-#if ECMASCRIPT_ENABLE_COMPILER_LOG
-    const auto &gateList = this->GetAllGates();
-    for (auto &gate : gateList) {
-        this->LoadGatePtrConst(gate)->Print();
+    const auto &gateList = GetAllGates();
+    for (const auto &gate : gateList) {
+        LoadGatePtrConst(gate)->Print();
     }
-#endif
+}
+
+void Circuit::PrintAllGates(BytecodeCircuitBuilder &builder) const
+{
+    const auto &gateList = GetAllGates();
+    for (const auto &gate : gateList) {
+        if (LoadGatePtrConst(gate)->GetOpCode() == OpCode::JS_BYTECODE) {
+            auto bytecodeStr = builder.GetBytecodeStr(gate);
+            LoadGatePtrConst(gate)->PrintByteCode(bytecodeStr);
+        } else {
+            LoadGatePtrConst(gate)->Print();
+        }
+    }
 }
 
 std::vector<GateRef> Circuit::GetAllGates() const
@@ -101,12 +146,10 @@ std::vector<GateRef> Circuit::GetAllGates() const
     std::vector<GateRef> gateList;
     gateList.push_back(0);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    for (size_t out = sizeof(Gate); out < this->circuitSize;
-         out += Gate::GetGateSize(
-             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-             reinterpret_cast<const Out *>(this->LoadGatePtrConst(GateRef(out)))->GetIndex() + 1)) {
-        gateList.push_back(
-            this->SaveGatePtr(reinterpret_cast<const Out *>(this->LoadGatePtrConst(GateRef(out)))->GetGateConst()));
+    for (size_t out = sizeof(Gate); out < circuitSize_;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        out += Gate::GetGateSize(reinterpret_cast<const Out *>(LoadGatePtrConst(GateRef(out)))->GetIndex() + 1)) {
+        gateList.push_back(SaveGatePtr(reinterpret_cast<const Out *>(LoadGatePtrConst(GateRef(out)))->GetGateConst()));
     }
     return gateList;
 }
@@ -114,19 +157,19 @@ std::vector<GateRef> Circuit::GetAllGates() const
 GateRef Circuit::SaveGatePtr(const Gate *gate) const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return static_cast<GateRef>(reinterpret_cast<const uint8_t *>(gate) - this->GetDataPtrConst(0));
+    return static_cast<GateRef>(reinterpret_cast<const uint8_t *>(gate) - GetDataPtrConst(0));
 }
 
 Gate *Circuit::LoadGatePtr(GateRef shift)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<Gate *>(this->GetDataPtr(shift));
+    return reinterpret_cast<Gate *>(GetDataPtr(shift));
 }
 
 const Gate *Circuit::LoadGatePtrConst(GateRef shift) const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return reinterpret_cast<const Gate *>(this->GetDataPtrConst(shift));
+    return reinterpret_cast<const Gate *>(GetDataPtrConst(shift));
 }
 
 GateRef Circuit::GetCircuitRoot(OpCode opcode)
@@ -159,40 +202,40 @@ Circuit::~Circuit() {}
 
 void Circuit::AdvanceTime() const
 {
-    auto &time = const_cast<TimeStamp &>(this->time);
-    time++;
-    if (time == 0) {
-        time = 1;
-        this->ResetAllGateTimeStamps();
+    auto &curTime = const_cast<TimeStamp &>(time_);
+    curTime++;
+    if (curTime == 0) {
+        curTime = 1;
+        ResetAllGateTimeStamps();
     }
 }
 
 void Circuit::ResetAllGateTimeStamps() const
 {
-    const auto &gateList = this->GetAllGates();
+    const auto &gateList = GetAllGates();
     for (auto &gate : gateList) {
-        const_cast<Gate *>(this->LoadGatePtrConst(gate))->SetMark(MarkCode::EMPTY, 0);
+        const_cast<Gate *>(LoadGatePtrConst(gate))->SetMark(MarkCode::EMPTY, 0);
     }
 }
 
 TimeStamp Circuit::GetTime() const
 {
-    return this->time;
+    return time_;
 }
 
 MarkCode Circuit::GetMark(GateRef gate) const
 {
-    return this->LoadGatePtrConst(gate)->GetMark(this->GetTime());
+    return LoadGatePtrConst(gate)->GetMark(GetTime());
 }
 
 void Circuit::SetMark(GateRef gate, MarkCode mark) const
 {
-    const_cast<Gate *>(this->LoadGatePtrConst(gate))->SetMark(mark, this->GetTime());
+    const_cast<Gate *>(LoadGatePtrConst(gate))->SetMark(mark, GetTime());
 }
 
 bool Circuit::Verify(GateRef gate) const
 {
-    return this->LoadGatePtrConst(gate)->Verify();
+    return LoadGatePtrConst(gate)->Verify();
 }
 
 GateRef Circuit::NullGate()
@@ -203,7 +246,7 @@ GateRef Circuit::NullGate()
 bool Circuit::IsLoopHead(GateRef gate) const
 {
     if (gate != NullGate()) {
-        const Gate *curGate = this->LoadGatePtrConst(gate);
+        const Gate *curGate = LoadGatePtrConst(gate);
         return curGate->GetOpCode().IsLoopHead();
     }
     return false;
@@ -212,7 +255,7 @@ bool Circuit::IsLoopHead(GateRef gate) const
 bool Circuit::IsControlCase(GateRef gate) const
 {
     if (gate != NullGate()) {
-        const Gate *curGate = this->LoadGatePtrConst(gate);
+        const Gate *curGate = LoadGatePtrConst(gate);
         return curGate->GetOpCode().IsControlCase();
     }
     return false;
@@ -221,9 +264,8 @@ bool Circuit::IsControlCase(GateRef gate) const
 bool Circuit::IsSelector(GateRef gate) const
 {
     if (gate != NullGate()) {
-        const Gate *curGate = this->LoadGatePtrConst(gate);
-        return curGate->GetOpCode() >= OpCode::VALUE_SELECTOR_JS &&
-            curGate->GetOpCode() <= OpCode::VALUE_SELECTOR_FLOAT64;
+        const Gate *curGate = LoadGatePtrConst(gate);
+        return curGate->GetOpCode() == OpCode::VALUE_SELECTOR;
     }
     return false;
 }
@@ -231,41 +273,42 @@ bool Circuit::IsSelector(GateRef gate) const
 std::vector<GateRef> Circuit::GetInVector(GateRef gate) const
 {
     std::vector<GateRef> result;
-    const Gate *curGate = this->LoadGatePtrConst(gate);
+    const Gate *curGate = LoadGatePtrConst(gate);
     for (size_t idx = 0; idx < curGate->GetNumIns(); idx++) {
-        result.push_back(this->SaveGatePtr(curGate->GetInGateConst(idx)));
+        result.push_back(SaveGatePtr(curGate->GetInGateConst(idx)));
     }
     return result;
 }
 
 GateRef Circuit::GetIn(GateRef gate, size_t idx) const
 {
-    const Gate *curGate = this->LoadGatePtrConst(gate);
-    return this->SaveGatePtr(curGate->GetInGateConst(idx));
+    ASSERT(idx < LoadGatePtrConst(gate)->GetNumIns());
+    const Gate *curGate = LoadGatePtrConst(gate);
+    return SaveGatePtr(curGate->GetInGateConst(idx));
 }
 
 bool Circuit::IsInGateNull(GateRef gate, size_t idx) const
 {
-    const Gate *curGate = this->LoadGatePtrConst(gate);
+    const Gate *curGate = LoadGatePtrConst(gate);
     return curGate->GetInConst(idx)->IsGateNull();
 }
 
 bool Circuit::IsFirstOutNull(GateRef gate) const
 {
-    const Gate *curGate = this->LoadGatePtrConst(gate);
+    const Gate *curGate = LoadGatePtrConst(gate);
     return curGate->IsFirstOutNull();
 }
 
 std::vector<GateRef> Circuit::GetOutVector(GateRef gate) const
 {
     std::vector<GateRef> result;
-    const Gate *curGate = this->LoadGatePtrConst(gate);
+    const Gate *curGate = LoadGatePtrConst(gate);
     if (!curGate->IsFirstOutNull()) {
         const Out *curOut = curGate->GetFirstOutConst();
-        result.push_back(this->SaveGatePtr(curOut->GetGateConst()));
+        result.push_back(SaveGatePtr(curOut->GetGateConst()));
         while (!curOut->IsNextOutNull()) {
             curOut = curOut->GetNextOutConst();
-            result.push_back(this->SaveGatePtr(curOut->GetGateConst()));
+            result.push_back(SaveGatePtr(curOut->GetGateConst()));
         }
     }
     return result;
@@ -273,115 +316,130 @@ std::vector<GateRef> Circuit::GetOutVector(GateRef gate) const
 
 void Circuit::NewIn(GateRef gate, size_t idx, GateRef in)
 {
-    this->LoadGatePtr(gate)->NewIn(idx, this->LoadGatePtr(in));
+#ifndef NDEBUG
+    ASSERT(idx < LoadGatePtrConst(gate)->GetNumIns());
+    ASSERT(Circuit::IsInGateNull(gate, idx));
+#endif
+    LoadGatePtr(gate)->NewIn(idx, LoadGatePtr(in));
 }
 
 void Circuit::ModifyIn(GateRef gate, size_t idx, GateRef in)
 {
-    this->LoadGatePtr(gate)->ModifyIn(idx, this->LoadGatePtr(in));
+#ifndef NDEBUG
+    ASSERT(idx < LoadGatePtrConst(gate)->GetNumIns());
+    ASSERT(!Circuit::IsInGateNull(gate, idx));
+#endif
+    LoadGatePtr(gate)->ModifyIn(idx, LoadGatePtr(in));
 }
 
 void Circuit::DeleteIn(GateRef gate, size_t idx)
 {
-    this->LoadGatePtr(gate)->DeleteIn(idx);
+    ASSERT(idx < LoadGatePtrConst(gate)->GetNumIns());
+    ASSERT(!Circuit::IsInGateNull(gate, idx));
+    LoadGatePtr(gate)->DeleteIn(idx);
 }
 
 void Circuit::DeleteGate(GateRef gate)
 {
-    this->LoadGatePtr(gate)->DeleteGate();
+    LoadGatePtr(gate)->DeleteGate();
 }
 
 void Circuit::SetOpCode(GateRef gate, OpCode opcode)
 {
-    this->LoadGatePtr(gate)->SetOpCode(opcode);
+    LoadGatePtr(gate)->SetOpCode(opcode);
 }
 
 void Circuit::SetTypeCode(GateRef gate, TypeCode type)
 {
-    this->LoadGatePtr(gate)->SetTypeCode(type);
+    LoadGatePtr(gate)->SetTypeCode(type);
+}
+
+void Circuit::SetValueCode(GateRef gate, ValueCode valCode)
+{
+    LoadGatePtr(gate)->SetValueCode(valCode);
 }
 
 TypeCode Circuit::GetTypeCode(GateRef gate) const
 {
-    return this->LoadGatePtrConst(gate)->GetTypeCode();
+    return LoadGatePtrConst(gate)->GetTypeCode();
 }
 
 OpCode Circuit::GetOpCode(GateRef gate) const
 {
-    return this->LoadGatePtrConst(gate)->GetOpCode();
+    return LoadGatePtrConst(gate)->GetOpCode();
 }
 
 GateId Circuit::GetId(GateRef gate) const
 {
-    return this->LoadGatePtrConst(gate)->GetId();
+    return LoadGatePtrConst(gate)->GetId();
 }
 
 BitField Circuit::GetBitField(GateRef gate) const
 {
-    return this->LoadGatePtrConst(gate)->GetBitField();
+    return LoadGatePtrConst(gate)->GetBitField();
 }
 
 void Circuit::Print(GateRef gate) const
 {
-    this->LoadGatePtrConst(gate)->Print();
+    LoadGatePtrConst(gate)->Print();
 }
 
 std::vector<uint8_t> Circuit::GetDataSection() const
 {
-    return this->dataSection;
+    return dataSection_;
 }
 
 void Circuit::SetDataSection(const std::vector<uint8_t> &data)
 {
-    this->dataSection = data;
+    dataSection_ = data;
 }
 
 size_t Circuit::GetCircuitDataSize() const
 {
-    return this->circuitSize;
+    return circuitSize_;
 }
 
 const void *Circuit::GetSpaceDataStartPtrConst() const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return this->GetDataPtrConst(0);
+    return GetDataPtrConst(0);
 }
 
 const void *Circuit::GetSpaceDataEndPtrConst() const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return this->GetDataPtrConst(this->circuitSize);
+    return GetDataPtrConst(circuitSize_);
 }
 
 const uint8_t *Circuit::GetDataPtrConst(size_t offset) const
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return this->space.data() + offset;
+    return space_.data() + offset;
 }
 
 uint8_t *Circuit::GetDataPtr(size_t offset)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return this->space.data() + offset;
+    return space_.data() + offset;
 }
 
 size_t Circuit::GetSpaceDataSize() const
 {
-    return this->space.size();
+    return space_.size();
 }
 
 void Circuit::SetSpaceDataSize(size_t sz)
 {
-    return this->space.resize(sz);
+    return space_.resize(sz);
 }
 
 panda::ecmascript::FrameType Circuit::GetFrameType() const
 {
-    return this->frameType;
+    return frameType_;
 }
 
 void Circuit::SetFrameType(panda::ecmascript::FrameType type)
 {
-    this->frameType = type;
+    frameType_ = type;
 }
 }  // namespace panda::ecmascript::kungfu
