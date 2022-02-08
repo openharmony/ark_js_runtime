@@ -23,8 +23,8 @@
 
 namespace panda::ecmascript {
 struct CurrentProcessInfo {
-    time_t nowTimeStamp = 0;
-    time_t tts = 0;
+    uint64_t nowTimeStamp = 0;
+    uint64_t tts = 0;
     pid_t pid = 0;
     pthread_t tid = 0;
 };
@@ -66,7 +66,7 @@ private:
     static CpuProfiler *singleton_;
 
     explicit CpuProfiler();
-    void SetProfileStart(time_t nowTimeStamp);
+    void SetProfileStart(uint64_t nowTimeStamp);
     void GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo) const;
     bool CheckFileName(const std::string &fileName, std::string &absoluteFilePath) const;
 

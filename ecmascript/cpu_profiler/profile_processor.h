@@ -25,7 +25,7 @@
 namespace panda::ecmascript {
 class ProfileProcessor : public Task {
 public:
-    static time_t GetMicrosecondsTimeStamp();
+    static uint64_t GetMicrosecondsTimeStamp();
     static JSThread *GetJSThread();
     static void SetIsStart(bool isStart);
 

@@ -33,8 +33,8 @@ ProfileProcessor::~ProfileProcessor() {}
 
 bool ProfileProcessor::Run(uint32_t threadIndex)
 {
-    time_t startTime = 0;
-    time_t endTime = 0;
+    uint64_t startTime = 0;
+    uint64_t endTime = 0;
     startTime = GetMicrosecondsTimeStamp();
     generator_->SetThreadStartTime(startTime);
     while (isStart_) {
@@ -64,7 +64,7 @@ bool ProfileProcessor::Run(uint32_t threadIndex)
             generator_->GetSamples().size() == 100) { // 100:Number of Samples currently stored
             generator_->WriteMethodsAndSampleInfo(false);
         }
-        time_t ts = interval_ - (endTime - startTime);
+        int64_t ts = interval_ - (endTime - startTime);
         if (ts > 0) {
             usleep(ts);
         }
@@ -81,7 +81,7 @@ bool ProfileProcessor::Run(uint32_t threadIndex)
     return true;
 }
 
-time_t ProfileProcessor::GetMicrosecondsTimeStamp()
+uint64_t ProfileProcessor::GetMicrosecondsTimeStamp()
 {
     struct timeval time;
     gettimeofday(&time, NULL);
