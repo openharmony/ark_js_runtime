@@ -1197,7 +1197,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             auto oldToNewSet = Load(StubMachineType::NATIVE_POINTER, objectRegion, offset);
             Label isNullPtr(env);
             Label notNullPtr(env);
-            Branch(IntPtrEuqal(oldToNewSet, GetIntPtrConstant(0)), &isNullPtr, &notNullPtr);
+            Branch(IntptrEuqal(oldToNewSet, GetIntPtrConstant(0)), &isNullPtr, &notNullPtr);
             Bind(&notNullPtr);
             {
                 // 1. bit_offset set AddrToBitOffset(address)
@@ -1205,8 +1205,8 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
                 // bit_offset >> LOG_BITSPERWORD
                 // 2. bitmap_[GetWordIdx(bit_offset)] |= GetBitMask(bit_offset)
                 // 2.0: wordIdx GetWordIdx(bit_offset)
-                uint64_t logbitsperword = BitmapHelper::GetLogBitSperWordOffset(env_.Is32Bit());
-                GateRef wordIdx = IntPtrLSR(bitOffset, GetIntPtrConstant(logbitsperword));
+                uint64_t logBitsPerWord = BitmapHelper::LogBitsPerWord(env_.Is32Bit());
+                GateRef wordIdx = IntPtrLSR(bitOffset, GetIntPtrConstant(logBitsPerWord));
                 // 2.1 bitmap_[wordIdx]
                 GateRef bitmapoffset = GetIntPtrConstant(0);
                 GateRef bitmap = IntPtrAdd(oldToNewSet, bitmapoffset);
@@ -1223,9 +1223,8 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             {
                 StubDescriptor *insertOldToNewRememberedSet = GET_STUBDESCRIPTOR(InsertOldToNewRememberedSet);
                 CallRuntime(insertOldToNewRememberedSet, glue,
-                            GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)), {
-                            glue, objectRegion, slotAddr
-                });
+                            GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
+                            {glue, objectRegion, slotAddr});
                 Jump(&notValidIndex);
             }
         }

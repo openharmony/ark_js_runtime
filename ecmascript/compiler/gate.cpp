@@ -63,7 +63,7 @@ Properties OpCode::GetProperties() const
         case ORDINARY_BLOCK:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
         case IF_BRANCH:
-            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, VALUE(INT1), NO_ROOT};
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, VALUE(I1), NO_ROOT};
         case SWITCH_BRANCH:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case IF_TRUE:
@@ -109,17 +109,17 @@ Properties OpCode::GetProperties() const
         case CONSTANT:
             return {FLEX, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CONSTANT_LIST)};
         case ZEXT_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+            return {I64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case ZEXT_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+            return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case SEXT_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+            return {I64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case SEXT_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+            return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case TRUNC_TO_INT32:
-            return {INT32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+            return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case TRUNC_TO_INT1:
-            return {INT1, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+            return {I1, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case REV:
             return {FLEX, NO_STATE, NO_DEPEND, VALUE(FLEX), NO_ROOT};
         case ADD:
@@ -153,13 +153,13 @@ Properties OpCode::GetProperties() const
         case FGE:
         case EQ:
         case NE:
-            return {INT1, NO_STATE, NO_DEPEND, VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
+            return {I1, NO_STATE, NO_DEPEND, VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case LOAD:
             return {FLEX, NO_STATE, ONE_DEPEND, VALUE(ARCH), NO_ROOT};
         case STORE:
             return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE, ARCH), NO_ROOT};
         case TAGGED_TO_INT64:
-            return {INT64, NO_STATE, NO_DEPEND, VALUE(INT64), NO_ROOT};
+            return {I64, NO_STATE, NO_DEPEND, VALUE(I64), NO_ROOT};
         case SIGNED_INT_TO_FLOAT:
         case UNSIGNED_INT_TO_FLOAT:
             return {FLEX, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
@@ -333,20 +333,20 @@ std::string MachineTypeToStr(MachineType machineType)
             return "NOVALUE";
         case ANYVALUE:
             return "ANYVALUE";
-        case INT1:
-            return "INT1";
-        case INT8:
-            return "INT8";
-        case INT16:
-            return "INT16";
-        case INT32:
-            return "INT32";
-        case INT64:
-            return "INT64";
-        case FLOAT32:
-            return "FLOAT32";
-        case FLOAT64:
-            return "FLOAT64";
+        case I1:
+            return "I1";
+        case I8:
+            return "I8";
+        case I16:
+            return "I16";
+        case I32:
+            return "I32";
+        case I64:
+            return "I64";
+        case F32:
+            return "F32";
+        case F64:
+            return "F64";
         default:
             return "???";
     }
@@ -628,7 +628,7 @@ bool Gate::Verify() const
 
 MachineType JSMachineType()
 {
-    return MachineType::INT64;
+    return MachineType::I64;
 }
 
 size_t GetOpCodeNumIns(OpCode opcode, BitField bitfield)
@@ -995,13 +995,13 @@ std::string Gate::MachineTypeStr(MachineType machineType) const
             {ANYVALUE, "ANYVALUE"},
             {ARCH, "ARCH"},
             {FLEX, "FLEX"},
-            {INT1, "INT1"},
-            {INT8, "INT8"},
-            {INT16, "INT16"},
-            {INT32, "INT32"},
-            {INT64, "INT64"},
-            {FLOAT32, "FLOAT32"},
-            {FLOAT64, "FLOAT64"},
+            {I1, "I1"},
+            {I8, "I8"},
+            {I16, "I16"},
+            {I32, "I32"},
+            {I64, "I64"},
+            {F32, "F32"},
+            {F64, "F64"},
     };
     if (strMap.count(machineType) > 0) {
         return strMap.at(machineType);

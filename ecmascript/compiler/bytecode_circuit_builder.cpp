@@ -1796,7 +1796,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
     const size_t offsetArgs = byteCodeGraph.method->GetNumVregs();
     std::vector<GateRef> argGates(numArgs);
     for (size_t argIdx = 0; argIdx < numArgs; argIdx++) {
-        argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::INT64, argIdx,
+        argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
                                                {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
                                                GateType::JS_ANY);
     }
@@ -1869,7 +1869,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 // handle general ecma.* bytecodes
                 GateRef gate = 0;
                 if (!bytecodeInfo.vregOut.empty() || bytecodeInfo.accOut) {
-                    gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::INT64, numValueInputs,
+                    gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::I64, numValueInputs,
                                             std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
                                                                  Circuit::NullGate()),
                                             GateType::JS_ANY);
@@ -1919,7 +1919,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 if (IsCondJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                     GateRef gate = 0;
                     if (!bytecodeInfo.vregOut.empty() || bytecodeInfo.accOut) {
-                        gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::INT64, numValueInputs,
+                        gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::I64, numValueInputs,
                                                 std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
                                                                      Circuit::NullGate()),
                                                 GateType::JS_ANY);
@@ -1977,7 +1977,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
             } else if (static_cast<EcmaOpcode>(bytecodeInfo.opcode) == EcmaOpcode::RETURNUNDEFINED_PREF) {
                 // handle returnundefined bytecode
                 ASSERT(bb.succs.empty());
-                auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64,
+                auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                  TaggedValue::VALUE_UNDEFINED,
                                                  {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                                  GateType::JS_ANY);
@@ -2086,7 +2086,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     // find def-site in value selectors of vregs
                     if (ans == Circuit::NullGate() && !acc && bb.phi.count(reg)) {
                         if (!bb.vregToValSelectorGate.count(reg)) {
-                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::INT64,
+                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64,
                                                          bb.numOfStatePreds,
                                                          std::vector<GateRef>(
                                                                  1 + bb.numOfStatePreds, Circuit::NullGate()),
@@ -2103,7 +2103,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     // find def-site in value selectors of acc
                     if (ans == Circuit::NullGate() && acc && bb.phiAcc) {
                         if (bb.valueSelectorAccGate == Circuit::NullGate()) {
-                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::INT64,
+                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64,
                                                          bb.numOfStatePreds,
                                                          std::vector<GateRef>(
                                                              1 + bb.numOfStatePreds, Circuit::NullGate()),

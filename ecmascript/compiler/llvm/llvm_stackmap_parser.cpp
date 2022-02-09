@@ -15,9 +15,7 @@
 
 #include "llvm_stackmap_parser.h"
 
-#include <fstream>
 #include <iostream>
-#include <string>
 #include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/mem/object_xray.h"

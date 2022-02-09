@@ -68,6 +68,11 @@ public:
         return triple_ == Triple::TRIPLE_AMD64;
     }
 
+    inline bool Is64Bit() const
+    {
+        return IsAArch64() || IsAmd64();
+    }
+
     Triple GetTriple() const
     {
         return triple_;
@@ -426,7 +431,7 @@ public:
     inline GateRef GetInt32Constant(int32_t value);
     inline GateRef GetInt64Constant(int64_t value);
     inline GateRef GetIntPtrConstant(int64_t value);
-    inline uint64_t GetIntPtrSize();
+    inline uint64_t GetIntPtrSize() const;
     inline GateRef TrueConstant();
     inline GateRef FalseConstant();
     inline GateRef GetBooleanConstant(bool value);
@@ -728,7 +733,7 @@ public:
     inline void UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, GateRef value);
     inline GateRef GetBitMask(GateRef bitoffset);
     inline GateRef AddrToBitOffset(GateRef memberset, GateRef addr);
-    inline GateRef IntPtrEuqal(GateRef x, GateRef y);
+    inline GateRef IntptrEuqal(GateRef x, GateRef y);
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);
     GateRef GetPropertyByName(GateRef glue, GateRef receiver, GateRef key);
