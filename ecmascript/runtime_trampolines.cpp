@@ -28,6 +28,7 @@
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/runtime_api.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "libpandabase/utils/string_helpers.h"
 
@@ -383,6 +384,6 @@ void RuntimeTrampolines::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintp
     if (!valueRegion->IsMarking()) {
         return;
     }
-    ::panda::ecmascript::MarkingBarrier(slotAddr, objectRegion, value, valueRegion);
+    ::panda::ecmascript::RuntimeApi::MarkObject(slotAddr, objectRegion, value, valueRegion);
 }
 }  // namespace panda::ecmascript

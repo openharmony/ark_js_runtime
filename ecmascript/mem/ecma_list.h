@@ -56,7 +56,7 @@ public:
         length_++;
     }
 
-    void AddNodeToFirst(T *node)
+    void AddNodeToFront(T *node)
     {
         ASSERT(node != nullptr);
         if (LIKELY(last_ != nullptr)) {

@@ -67,8 +67,7 @@ void MemController::StartCalculationBeforeGC()
     // It's unnecessary to calculate newSpaceAllocAccumulatorSize. newSpaceAllocBytesSinceGC can be calculated directly.
     size_t newSpaceAllocBytesSinceGC = heap_->GetNewSpace()->GetAllocatedSizeSinceGC();
     size_t hugeObjectAllocSizeSinceGC = heap_->GetHugeObjectSpace()->GetHeapObjectSize() - hugeObjectAllocSizeSinceGC_;
-    size_t oldSpaceAllocAccumulatorSize = heapManager->GetOldSpaceAllocator().GetAllocatedSize()
-                                          + heap_->GetEvacuation()->GetPromotedAccumulatorSize();
+    size_t oldSpaceAllocAccumulatorSize = heapManager->GetOldSpaceAllocator().GetAllocatedSize();
     size_t nonMovableSpaceAllocAccumulatorSize = heapManager->GetNonMovableSpaceAllocator().GetAllocatedSize();
     size_t codeSpaceAllocAccumulatorSize = heapManager->GetMachineCodeSpaceAllocator().GetAllocatedSize();
     if (allocTimeMs_ == 0) {

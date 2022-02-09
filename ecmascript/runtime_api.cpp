@@ -18,18 +18,22 @@
 #include "ecmascript/mem/parallel_work_helper.h"
 
 namespace panda::ecmascript {
-bool RuntimeApi::AtomicTestAndSet(RangeBitmap *bitmap, TaggedObject *object)
+void RuntimeApi::MarkObject(uintptr_t slotAddr, Region *objectRegion, TaggedObject *value, Region *valueRegion)
 {
-    return bitmap->AtomicTestAndSet(object);
-}
-
-void RuntimeApi::PushWorkList(WorkerHelper *worklist, uint32_t threadId, TaggedObject *object, Region *region)
-{
-    worklist->Push(threadId, object, region);
-}
-
-void RuntimeApi::AtomicInsertCrossRegionRememberedSet(RememberedSet *rset, uintptr_t addr)
-{
-    rset->AtomicInsert(addr);
+    auto heap = valueRegion->GetHeap();
+    bool isFullMark = heap->IsFullMark();
+    if (!JSTaggedValue(value).IsWeakForHeapObject()) {
+        if (!isFullMark && !valueRegion->InYoungGeneration()) {
+            return;
+        }
+        auto valueBitmap = valueRegion->GetMarkBitmap();
+        if (!valueBitmap->AtomicTestAndSet(value)) {
+            valueRegion->GetWorkList()->Push(0, value, valueRegion);
+        }
+    }
+    if (isFullMark && valueRegion->InCollectSet() && !objectRegion->InYoungOrCSetGeneration()) {
+        auto set = objectRegion->GetOrCreateCrossRegionRememberedSet();
+        set->AtomicInsert(slotAddr);
+    }
 }
 }  // namespace panda::tooling::ecmascript

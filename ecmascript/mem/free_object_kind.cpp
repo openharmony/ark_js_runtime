@@ -22,6 +22,7 @@ namespace panda::ecmascript {
 void FreeObjectKind::Free(uintptr_t begin, size_t size)
 {
     auto freeObject = FreeObject::Cast(begin);
+    ASSERT(freeObject->IsFreeObject());
     freeObject->SetNext(freeObject_);
     freeObject_ = freeObject;
     available_ += size;
@@ -36,7 +37,7 @@ void FreeObjectKind::Rebuild()
     prev_ = nullptr;
 }
 
-FreeObject *FreeObjectKind::SearchSmallFreeObject(size_t size)
+FreeObject *FreeObjectKind::ObtainSmallFreeObject(size_t size)
 {
     FreeObject *curFreeObject = nullptr;
     if (freeObject_ != nullptr && freeObject_->Available() >= size) {
@@ -48,7 +49,7 @@ FreeObject *FreeObjectKind::SearchSmallFreeObject(size_t size)
     return curFreeObject;
 }
 
-FreeObject *FreeObjectKind::SearchLargeFreeObject(size_t size)
+FreeObject *FreeObjectKind::ObtainLargeFreeObject(size_t size)
 {
     FreeObject *prevFreeObject = freeObject_;
     FreeObject *curFreeObject = freeObject_;
@@ -64,6 +65,29 @@ FreeObject *FreeObjectKind::SearchLargeFreeObject(size_t size)
             return curFreeObject;
         }
         prevFreeObject = curFreeObject;
+        curFreeObject = curFreeObject->GetNext();
+    }
+    return nullptr;
+}
+
+FreeObject *FreeObjectKind::LookupSmallFreeObject(size_t size)
+{
+    if (freeObject_ != nullptr && freeObject_->Available() >= size) {
+        return freeObject_;
+    }
+    return nullptr;
+}
+
+FreeObject *FreeObjectKind::LookupLargeFreeObject(size_t size)
+{
+    if (available_ < size) {
+        return nullptr;
+    }
+    FreeObject *curFreeObject = freeObject_;
+    while (curFreeObject != nullptr) {
+        if (curFreeObject->Available() >= size) {
+            return curFreeObject;
+        }
         curFreeObject = curFreeObject->GetNext();
     }
     return nullptr;

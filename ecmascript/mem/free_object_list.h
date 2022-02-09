@@ -27,7 +27,9 @@ public:
     FreeObjectList();
     ~FreeObjectList();
 
-    FreeObject *Allocator(size_t size);
+    FreeObject *Allocate(size_t size);
+
+    FreeObject *LookupSuitableFreeObject(size_t size);
 
     void Free(uintptr_t start, size_t size, bool isAdd = true);
 
@@ -51,7 +53,24 @@ public:
     NO_COPY_SEMANTIC(FreeObjectList);
     NO_MOVE_SEMANTIC(FreeObjectList);
 
-    size_t GetFreeObjectSize() const;
+#ifndef NDEBUG
+    size_t GetFreeObjectSize() const
+    {
+        return available_;
+    }
+    size_t GetWastedSize() const
+    {
+        return wasted_;
+    }
+    void DecrementWastedSize(size_t size)
+    {
+        wasted_ -= size;
+    }
+    void IncrementWastedSize(size_t size)
+    {
+        wasted_ += size;
+    }
+#endif
 
     static int NumberOfKinds()
     {
@@ -78,7 +97,10 @@ private:
     inline void ClearNoneEmptyBit(KindType type);
     inline size_t CalcNextNoneEmptyIndex(KindType start);
 
+#ifndef NDEBUG
     size_t available_ = 0;
+    size_t wasted_ = 0;
+#endif
     uint64_t noneEmptyKindBitMap_;
     Span<FreeObjectKind *> kinds_ {};
     Span<FreeObjectKind *> lastKinds_ {};

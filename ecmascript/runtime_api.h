@@ -17,18 +17,14 @@
 #define ECMASCRIPT_INTERFACE_RUNTIME_API_H
 
 #include "ecmascript/common.h"
-#include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/region.h"
-#include "ecmascript/mem/remembered_set.h"
+#include "ecmascript/mem/region-inl.h"
 
 namespace panda::ecmascript {
 class WorkerHelper;
 
 class PUBLIC_API RuntimeApi {
 public:
-    static bool AtomicTestAndSet(RangeBitmap *bitmap, TaggedObject *object);
-    static void PushWorkList(WorkerHelper *worklist, uint32_t threadId, TaggedObject *object, Region *region);
-    static void AtomicInsertCrossRegionRememberedSet(RememberedSet *rset, uintptr_t addr);
+    static void MarkObject(uintptr_t slotAddr, Region *objectRegion, TaggedObject *value, Region *valueRegion);
 };
 }  // namespace panda::ecmascript
 

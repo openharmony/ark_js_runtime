@@ -60,7 +60,7 @@ bool WorkerHelper::Push(uint32_t threadId, TaggedObject *object, Region *region)
     if (Push(threadId, object)) {
         auto klass = object->GetClass();
         auto size = klass->SizeFromJSHClass(object);
-        region->IncrementAliveObject(size);
+        region->IncrementAliveObjectSafe(size);
         return true;
     }
     return false;
@@ -107,8 +107,11 @@ void WorkerHelper::Finish(size_t &aliveSize)
         holder.weakQueue_->FinishMarking(continuousQueue_[i]);
         delete holder.weakQueue_;
         holder.weakQueue_ = nullptr;
-        delete holder.allocator_;
-        holder.allocator_ = nullptr;
+        if (holder.allocator_ != nullptr) {
+            holder.allocator_->Finalize();
+            delete holder.allocator_;
+            holder.allocator_ = nullptr;
+        }
         holder.waitUpdate_.clear();
         aliveSize += holder.aliveSize_;
     }
@@ -142,10 +145,8 @@ void WorkerHelper::Initialize(TriggerGCType gcType, ParallelGCTaskPhase parallel
         holder.weakQueue_->BeginMarking(heap_, continuousQueue_[i]);
         holder.aliveSize_ = 0;
         holder.promoteSize_ = 0;
-        if (gcType == TriggerGCType::SEMI_GC) {
-            holder.allocator_ = new TlabAllocator(heap_, TriggerGCType::SEMI_GC);
-        } else if (gcType == TriggerGCType::COMPRESS_FULL_GC) {
-            holder.allocator_ = new TlabAllocator(heap_, TriggerGCType::COMPRESS_FULL_GC);
+        if (gcType != TriggerGCType::OLD_GC) {
+            holder.allocator_ = new TlabAllocator(heap_);
         }
     }
 }

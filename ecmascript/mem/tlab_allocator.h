@@ -19,41 +19,38 @@
 #include "ecmascript/mem/allocator-inl.h"
 
 namespace panda::ecmascript {
-enum class SpaceAlloc : bool {
-    YOUNG_SPACE,
-    OLD_SPACE,
-};
-
 class Heap;
-class EvacuationAllocator;
 
 class TlabAllocator {
 public:
     TlabAllocator() = delete;
-    inline ~TlabAllocator();
+    inline explicit TlabAllocator(Heap *heap);
+    ~TlabAllocator() = default;
+
     NO_COPY_SEMANTIC(TlabAllocator);
     NO_MOVE_SEMANTIC(TlabAllocator);
 
     inline void Finalize();
 
-    inline explicit TlabAllocator(Heap *heap, TriggerGCType gcType);
-
-    inline uintptr_t Allocate(size_t size, SpaceAlloc spaceAlloc);
+    inline uintptr_t Allocate(size_t size, MemSpaceType spaceAlloc);
 
 private:
     inline uintptr_t TlabAllocatorYoungSpace(size_t size);
     inline uintptr_t TlabAllocatorOldSpace(size_t size);
+    inline uintptr_t TlabAllocatorCompressSpace(size_t size);
 
     inline bool ExpandYoung();
-    inline bool ExpandOld();
+    inline bool ExpandCompress();
+    inline bool ExpandCompressFromOld(size_t size);
 
     Heap *heap_;
-    TriggerGCType gcType_;
-    bool youngEnable_;
+    MemManager *memManager_;
 
+    bool enableExpandYoung_;
     BumpPointerAllocator youngerAllocator_;
-    BumpPointerAllocator oldBumpPointerAllocator_;
-    EvacuationAllocator *allocator_;
+
+    OldSpace localSpace_;
+    FreeListAllocator localAllocator_;
 };
 }  // namespace panda::ecmascript
 
