@@ -275,6 +275,7 @@ public:
     void PushToArrayDataList(JSNativePointer *array);
     void RemoveArrayDataList(JSNativePointer *array);
 
+    JSHandle<ecmascript::JSTaggedValue> GetAndClearEcmaUncaughtException() const;
     JSHandle<ecmascript::JSTaggedValue> GetEcmaUncaughtException() const;
     void EnableUserUncaughtErrorHandler();
 
