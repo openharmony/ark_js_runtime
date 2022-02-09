@@ -27,6 +27,7 @@
 #include "ecmascript/mem/parallel_evacuation.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 MixSpaceCollector::MixSpaceCollector(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
@@ -34,6 +35,7 @@ MixSpaceCollector::MixSpaceCollector(Heap *heap) : heap_(heap), workList_(heap->
 void MixSpaceCollector::RunPhases()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::RunPhases");
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), MixSpaceCollector_RunPhases);
     ClockScope clockScope;
 
     concurrentMark_ = heap_->CheckConcurrentMark();
@@ -44,6 +46,7 @@ void MixSpaceCollector::RunPhases()
     SweepPhases();
     EvacuaPhases();
     FinishPhase();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticMixCollector(concurrentMark_, clockScope.GetPauseTime(), freeSize_);
     ECMA_GC_LOG() << "MixSpaceCollector::RunPhases " << clockScope.TotalSpentTime();
 }
 

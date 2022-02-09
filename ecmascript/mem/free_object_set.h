@@ -13,25 +13,25 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_FREE_OBJECT_KIND_H
-#define ECMASCRIPT_MEM_FREE_OBJECT_KIND_H
+#ifndef ECMASCRIPT_MEM_FREE_OBJECT_SET_H
+#define ECMASCRIPT_MEM_FREE_OBJECT_SET_H
 
 #include <cstdint>
 
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
-using KindType = int32_t;
+using SetType = int32_t;
 
 class FreeObject;
 
-class FreeObjectKind {
+class FreeObjectSet {
 public:
-    FreeObjectKind(KindType type) : kindType_(type)
+    FreeObjectSet(SetType type) : setType_(type)
     {
         Rebuild();
     }
-    ~FreeObjectKind() = default;
+    ~FreeObjectSet() = default;
 
     inline bool Empty() const
     {
@@ -52,15 +52,15 @@ public:
     FreeObject *ObtainSmallFreeObject(size_t size);
     FreeObject *ObtainLargeFreeObject(size_t size);
 
-    NO_COPY_SEMANTIC(FreeObjectKind);
-    NO_MOVE_SEMANTIC(FreeObjectKind);
+    NO_COPY_SEMANTIC(FreeObjectSet);
+    NO_MOVE_SEMANTIC(FreeObjectSet);
 
-    static constexpr KindType INVALID_KIND_TYPE = -1;
+    static constexpr SetType INVALID_SET_TYPE = -1;
 
 private:
-    FreeObjectKind *next_ = nullptr;
-    FreeObjectKind *prev_ = nullptr;
-    KindType kindType_ = INVALID_KIND_TYPE;
+    FreeObjectSet *next_ = nullptr;
+    FreeObjectSet *prev_ = nullptr;
+    SetType setType_ = INVALID_SET_TYPE;
     size_t available_ = 0;
     bool isAdded_ = false;
     FreeObject *freeObject_ = nullptr;
@@ -68,4 +68,4 @@ private:
     friend class FreeObjectList;
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_MEM_FREE_OBJECT_LIST_H
+#endif  // ECMASCRIPT_MEM_FREE_OBJECT_SET_H

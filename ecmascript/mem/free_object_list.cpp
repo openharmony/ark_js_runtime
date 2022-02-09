@@ -16,59 +16,59 @@
 #include "ecmascript/mem/free_object_list.h"
 
 #include "ecmascript/free_object.h"
-#include "ecmascript/mem/free_object_kind.h"
+#include "ecmascript/mem/free_object_set.h"
 #include "ecmascript/mem/free_object_list-inl.h"
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
-FreeObjectList::FreeObjectList() : kinds_(new FreeObjectKind *[NUMBER_OF_KINDS](), NUMBER_OF_KINDS),
-    lastKinds_(new FreeObjectKind *[NUMBER_OF_KINDS](), NUMBER_OF_KINDS)
+FreeObjectList::FreeObjectList() : sets_(new FreeObjectSet *[NUMBER_OF_SETS](), NUMBER_OF_SETS),
+    lastSets_(new FreeObjectSet *[NUMBER_OF_SETS](), NUMBER_OF_SETS)
 {
-    for (int i = 0; i < NUMBER_OF_KINDS; i++) {
-        kinds_[i] = nullptr;
-        lastKinds_[i] = nullptr;
+    for (int i = 0; i < NUMBER_OF_SETS; i++) {
+        sets_[i] = nullptr;
+        lastSets_[i] = nullptr;
     }
-    noneEmptyKindBitMap_ = 0;
+    noneEmptySetBitMap_ = 0;
 }
 
 FreeObjectList::~FreeObjectList()
 {
-    delete[] kinds_.data();
-    delete[] lastKinds_.data();
-    noneEmptyKindBitMap_ = 0;
+    delete[] sets_.data();
+    delete[] lastSets_.data();
+    noneEmptySetBitMap_ = 0;
 }
 
 FreeObject *FreeObjectList::Allocate(size_t size)
 {
-    if (noneEmptyKindBitMap_ == 0) {
+    if (noneEmptySetBitMap_ == 0) {
         return nullptr;
     }
     // find from suitable
-    KindType type = SelectKindType(size);
-    if (type == FreeObjectKind::INVALID_KIND_TYPE) {
+    SetType type = SelectSetType(size);
+    if (type == FreeObjectSet::INVALID_SET_TYPE) {
         return nullptr;
     }
 
-    KindType lastType = type - 1;
-    for (type = CalcNextNoneEmptyIndex(type); type > lastType && type < NUMBER_OF_KINDS;
+    SetType lastType = type - 1;
+    for (type = CalcNextNoneEmptyIndex(type); type > lastType && type < NUMBER_OF_SETS;
         type = CalcNextNoneEmptyIndex(type + 1)) {
         lastType = type;
-        FreeObjectKind *current = kinds_[type];
+        FreeObjectSet *current = sets_[type];
         while (current != nullptr) {
             if (current->Available() < size) {
                 current = current->next_;
                 continue;
             }
-            FreeObjectKind *next = nullptr;
+            FreeObjectSet *next = nullptr;
             FreeObject *object = nullptr;
-            if (type <= SMALL_KIND_MAX_INDEX) {
+            if (type <= SMALL_SET_MAX_INDEX) {
                 object = current->ObtainSmallFreeObject(size);
             } else {
                 next = current->next_;
                 object = current->ObtainLargeFreeObject(size);
             }
             if (current->Empty()) {
-                RemoveKind(current);
+                RemoveSet(current);
                 current->Rebuild();
             }
             if (object != nullptr) {
@@ -85,24 +85,24 @@ FreeObject *FreeObjectList::Allocate(size_t size)
 
 FreeObject *FreeObjectList::LookupSuitableFreeObject(size_t size)
 {
-    if (noneEmptyKindBitMap_ == 0) {
+    if (noneEmptySetBitMap_ == 0) {
         return nullptr;
     }
     // find a suitable type
-    KindType type = SelectKindType(size);
-    if (type == FreeObjectKind::INVALID_KIND_TYPE) {
+    SetType type = SelectSetType(size);
+    if (type == FreeObjectSet::INVALID_SET_TYPE) {
         return nullptr;
     }
 
-    KindType lastType = type - 1;
-    for (type = CalcNextNoneEmptyIndex(type); type > lastType && type < NUMBER_OF_KINDS;
+    SetType lastType = type - 1;
+    for (type = CalcNextNoneEmptyIndex(type); type > lastType && type < NUMBER_OF_SETS;
         type = CalcNextNoneEmptyIndex(type + 1)) {
         lastType = type;
-        FreeObjectKind *current = kinds_[type];
+        FreeObjectSet *current = sets_[type];
         while (current != nullptr) {
-            FreeObjectKind *next = nullptr;
+            FreeObjectSet *next = nullptr;
             FreeObject *object = nullptr;
-            if (type <= SMALL_KIND_MAX_INDEX) {
+            if (type <= SMALL_SET_MAX_INDEX) {
                 object = current->LookupSmallFreeObject(size);
             } else {
                 next = current->next_;
@@ -132,113 +132,113 @@ void FreeObjectList::Free(uintptr_t start, size_t size, bool isAdd)
 #endif
         return;
     }
-    KindType type = SelectKindType(size);
-    if (type == FreeObjectKind::INVALID_KIND_TYPE) {
+    SetType type = SelectSetType(size);
+    if (type == FreeObjectSet::INVALID_SET_TYPE) {
         return;
     }
 
     Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(start));
-    auto kind = region->GetFreeObjectKind(type);
-    if (kind == nullptr) {
-        LOG_ECMA(FATAL) << "The kind of region is nullptr";
+    auto set = region->GetFreeObjectSet(type);
+    if (set == nullptr) {
+        LOG_ECMA(FATAL) << "The set of region is nullptr";
         return;
     }
-    kind->Free(start, size);
+    set->Free(start, size);
 
-    if (isAdd && !kind->isAdded_) {
-        AddKind(kind);
+    if (isAdd && !set->isAdded_) {
+        AddSet(set);
     }
 }
 
 void FreeObjectList::Rebuild()
 {
-    EnumerateKinds([](FreeObjectKind *kind) { kind->Rebuild(); });
-    for (int i = 0; i < NUMBER_OF_KINDS; i++) {
-        kinds_[i] = nullptr;
-        lastKinds_[i] = nullptr;
+    EnumerateSets([](FreeObjectSet *set) { set->Rebuild(); });
+    for (int i = 0; i < NUMBER_OF_SETS; i++) {
+        sets_[i] = nullptr;
+        lastSets_[i] = nullptr;
     }
 #ifndef NDEBUG
     available_ = 0;
     wasted_ = 0;
 #endif
-    noneEmptyKindBitMap_ = 0;
+    noneEmptySetBitMap_ = 0;
 }
 
-bool FreeObjectList::AddKind(FreeObjectKind *kind)
+bool FreeObjectList::AddSet(FreeObjectSet *set)
 {
-    if (kind == nullptr || kind->Empty() || kind->isAdded_) {
+    if (set == nullptr || set->Empty() || set->isAdded_) {
         return false;
     }
-    KindType type = kind->kindType_;
-    FreeObjectKind *top = kinds_[type];
-    if (kind == top) {
+    SetType type = set->setType_;
+    FreeObjectSet *top = sets_[type];
+    if (set == top) {
         return false;
     }
     if (top != nullptr) {
-        top->prev_ = kind;
+        top->prev_ = set;
     }
-    kind->isAdded_ = true;
-    kind->next_ = top;
-    kind->prev_ = nullptr;
-    if (lastKinds_[type] == nullptr) {
-        lastKinds_[type] = kind;
+    set->isAdded_ = true;
+    set->next_ = top;
+    set->prev_ = nullptr;
+    if (lastSets_[type] == nullptr) {
+        lastSets_[type] = set;
     }
-    if (kinds_[type] == nullptr) {
+    if (sets_[type] == nullptr) {
         SetNoneEmptyBit(type);
     }
-    kinds_[type] = kind;
+    sets_[type] = set;
 #ifndef NDEBUG
-    available_ += kind->Available();
+    available_ += set->Available();
 #endif
     return true;
 }
 
-void FreeObjectList::RemoveKind(FreeObjectKind *kind)
+void FreeObjectList::RemoveSet(FreeObjectSet *set)
 {
-    if (kind == nullptr) {
+    if (set == nullptr) {
         return;
     }
-    KindType type = kind->kindType_;
-    FreeObjectKind *top = kinds_[type];
-    FreeObjectKind *end = lastKinds_[type];
-    if (top == kind) {
-        kinds_[type] = top->next_;
+    SetType type = set->setType_;
+    FreeObjectSet *top = sets_[type];
+    FreeObjectSet *end = lastSets_[type];
+    if (top == set) {
+        sets_[type] = top->next_;
     }
-    if (end == kind) {
-        lastKinds_[type] = end->prev_;
+    if (end == set) {
+        lastSets_[type] = end->prev_;
     }
-    if (kind->prev_ != nullptr) {
-        kind->prev_->next_ = kind->next_;
+    if (set->prev_ != nullptr) {
+        set->prev_->next_ = set->next_;
     }
-    if (kind->next_ != nullptr) {
-        kind->next_->prev_ = kind->prev_;
+    if (set->next_ != nullptr) {
+        set->next_->prev_ = set->prev_;
     }
-    kind->isAdded_ = false;
-    kind->prev_ = nullptr;
-    kind->next_ = nullptr;
-    if (kinds_[type] == nullptr) {
+    set->isAdded_ = false;
+    set->prev_ = nullptr;
+    set->next_ = nullptr;
+    if (sets_[type] == nullptr) {
         ClearNoneEmptyBit(type);
     }
 #ifndef NDEBUG
-    available_ -= kind->Available();
+    available_ -= set->Available();
 #endif
 }
 
 void FreeObjectList::Merge(FreeObjectList *list)
 {
-    list->EnumerateTopAndLastKinds([this](FreeObjectKind *kind, FreeObjectKind *end) {
-        if (kind == nullptr || kind->Empty()) {
+    list->EnumerateTopAndLastSets([this](FreeObjectSet *set, FreeObjectSet *end) {
+        if (set == nullptr || set->Empty()) {
             return;
         }
-        KindType type = kind->kindType_;
-        FreeObjectKind *top = kinds_[type];
+        SetType type = set->setType_;
+        FreeObjectSet *top = sets_[type];
         if (top == nullptr) {
-            top = kind;
+            top = set;
         } else {
-            lastKinds_[type]->next_ = kind;
-            kind->prev_ = lastKinds_[type];
+            lastSets_[type]->next_ = set;
+            set->prev_ = lastSets_[type];
         }
-        lastKinds_[type] = end;
+        lastSets_[type] = end;
         SetNoneEmptyBit(type);
     });
 #ifndef NDEBUG
@@ -248,30 +248,30 @@ void FreeObjectList::Merge(FreeObjectList *list)
 }
 
 template<class Callback>
-void FreeObjectList::EnumerateKinds(const Callback &cb) const
+void FreeObjectList::EnumerateSets(const Callback &cb) const
 {
-    for (KindType i = 0; i < NUMBER_OF_KINDS; i++) {
-        EnumerateKinds(i, cb);
+    for (SetType i = 0; i < NUMBER_OF_SETS; i++) {
+        EnumerateSets(i, cb);
     }
 }
 
 template<class Callback>
-void FreeObjectList::EnumerateKinds(KindType type, const Callback &cb) const
+void FreeObjectList::EnumerateSets(SetType type, const Callback &cb) const
 {
-    FreeObjectKind *current = kinds_[type];
+    FreeObjectSet *current = sets_[type];
     while (current != nullptr) {
         // maybe reset
-        FreeObjectKind *next = current->next_;
+        FreeObjectSet *next = current->next_;
         cb(current);
         current = next;
     }
 }
 
 template<class Callback>
-void FreeObjectList::EnumerateTopAndLastKinds(const Callback &cb) const
+void FreeObjectList::EnumerateTopAndLastSets(const Callback &cb) const
 {
-    for (KindType i = 0; i < NUMBER_OF_KINDS; i++) {
-        cb(kinds_[i], lastKinds_[i]);
+    for (SetType i = 0; i < NUMBER_OF_SETS; i++) {
+        cb(sets_[i], lastSets_[i]);
     }
 }
 }  // namespace panda::ecmascript

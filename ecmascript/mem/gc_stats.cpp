@@ -21,7 +21,15 @@
 namespace panda::ecmascript {
 void GCStats::PrintStatisticResult(bool isForce)
 {
-    LOG(ERROR, RUNTIME) << "GCStats statistic: ";
+    LOG(ERROR, RUNTIME) << "/******************* GCStats statistic: *******************/";
+    PrintSemiStatisticResult(isForce);
+    PrintMixStatisticResult(isForce);
+    PrintCompressStatisticResult(isForce);
+    PrintHeapStatisticResult(isForce);
+}
+
+void GCStats::PrintSemiStatisticResult(bool isForce)
+{
     if ((isForce && semiGCCount_ != 0) || (!isForce && semiGCCount_ != lastSemiGCCount_)) {
         lastSemiGCCount_ = semiGCCount_;
         LOG(ERROR, RUNTIME) << " SemiCollector statistic: total semi gc count " << semiGCCount_;
@@ -38,26 +46,51 @@ void GCStats::PrintStatisticResult(bool isForce)
                             << " total promote size: " << sizeToMB(semiTotalPromoteSize_) << "MB"
                             << " average promote size: " << sizeToMB(semiTotalPromoteSize_ / semiGCCount_) << "MB";
     }
+}
 
-    if ((isForce && oldGCCount_ != 0) || (!isForce && lastOldGCCount_ != oldGCCount_)) {
-        lastOldGCCount_ = oldGCCount_;
-        LOG(ERROR, RUNTIME) << " MixCollector statistic: total old gc count " << oldGCCount_;
-        LOG(ERROR, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(oldGCMinPause_) << "ms"
-                            << " MAX pause time: " << PrintTimeMilliseconds(oldGCMAXPause_) << "ms"
-                            << " total pause time: " << PrintTimeMilliseconds(oldGCTotalPause_) << "ms"
-                            << " average pause time: " << PrintTimeMilliseconds(oldGCTotalPause_ / oldGCCount_) << "ms"
-                            << " total free size: " << sizeToMB(oldTotalFreeSize_) << "MB"
-                            << " average free size: " << sizeToMB(oldTotalFreeSize_ / oldGCCount_) << "MB"
-                            << " old space total commit size: " << sizeToMB(oldSpaceTotalCommitSize_) << "MB"
-                            << " old space average commit size: " << sizeToMB(oldSpaceTotalCommitSize_ / oldGCCount_)
-                            << "MB"
-                            << " non move space total commit size: " << sizeToMB(oldNonMoveTotalCommitSize_) << "MB"
-                            << " non move space average commit size: "
-                            << sizeToMB(oldNonMoveTotalCommitSize_ / oldGCCount_) << "MB"
-                            << " old free rate: "
-                            << float(oldTotalFreeSize_) / (oldSpaceTotalCommitSize_ + oldNonMoveTotalCommitSize_);
+void GCStats::PrintMixStatisticResult(bool isForce)
+{
+    if ((isForce && mixGCCount_ != 0) || (!isForce && lastOldGCCount_ != mixGCCount_)) {
+        lastOldGCCount_ = mixGCCount_;
+        LOG(ERROR, RUNTIME) << " MixCollector with non-concurrent mark statistic: total old gc count " << mixGCCount_;
+        LOG(ERROR, RUNTIME) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(mixGCMinPause_)
+                            << "ms"
+                            << " MAX pause time: " << PrintTimeMilliseconds(mixGCMAXPause_) << "ms"
+                            << " total pause time: " << PrintTimeMilliseconds(mixGCTotalPause_) << "ms"
+                            << " average pause time: " << PrintTimeMilliseconds(mixGCTotalPause_ / mixGCCount_) << "ms";
+        if (!isForce) {
+            PrintHeapStatisticResult(true);
+        }
     }
 
+    if ((isForce && mixConcurrentMarkGCCount_ != 0) ||
+            (!isForce && lastOldConcurrentMarkGCCount_ != mixConcurrentMarkGCCount_)) {
+        lastOldConcurrentMarkGCCount_ = mixConcurrentMarkGCCount_;
+        LOG(ERROR, RUNTIME) << " MixCollector with concurrent mark statistic: total old gc count "
+                            << mixConcurrentMarkGCCount_;
+        LOG(ERROR, RUNTIME) << " Pause time statistic:: Current GC pause time: "
+                            << PrintTimeMilliseconds(mixConcurrentMarkGCPauseTime_) << "ms"
+                            << " Concurrent mark pause time: " << PrintTimeMilliseconds(mixConcurrentMarkMarkPause_)
+                            << "ms"
+                            << " Concurrent mark wait time: " << PrintTimeMilliseconds(mixConcurrentMarkWaitPause_)
+                            << "ms"
+                            << " Remark pause time: " << PrintTimeMilliseconds(mixConcurrentMarkRemarkPause_) << "ms"
+                            << " Evacuate pause time: " << PrintTimeMilliseconds(mixConcurrentMarkEvacuatePause_)
+                            << "ms"
+                            << " MIN pause time: " << PrintTimeMilliseconds(mixConcurrentMarkGCMinPause_) << "ms"
+                            << " MAX pause time: " << PrintTimeMilliseconds(mixConcurrentMarkGCMAXPause_) << "ms"
+                            << " total pause time: " << PrintTimeMilliseconds(mixConcurrentMarkGCTotalPause_) << "ms"
+                            << " average pause time: "
+                            << PrintTimeMilliseconds(mixConcurrentMarkGCTotalPause_ / mixConcurrentMarkGCCount_)
+                            << "ms";
+        if (!isForce) {
+            PrintHeapStatisticResult(true);
+        }
+    }
+}
+
+void GCStats::PrintCompressStatisticResult(bool isForce)
+{
     if ((isForce && compressGCCount_ != 0) || (!isForce && compressGCCount_ != lastCompressGCCount_)) {
         lastCompressGCCount_ = compressGCCount_;
         LOG(ERROR, RUNTIME) << " compressCollector statistic: total compress gc count " << compressGCCount_;
@@ -79,14 +112,31 @@ void GCStats::PrintStatisticResult(bool isForce)
             << " non move total commit size: " << sizeToMB(compressNonMoveTotalCommitSize_) << "MB"
             << " non move free rate: " << float(compressNonMoveTotalFreeSize_) / compressNonMoveTotalCommitSize_;
     }
+}
 
+void GCStats::PrintHeapStatisticResult(bool isForce)
+{
     if (isForce && heap_ != nullptr) {
         RegionFactory *regionFactory = const_cast<RegionFactory *>(heap_->GetRegionFactory());
-        LOG(ERROR, RUNTIME) << "Memory statistic:";
-        LOG(ERROR, RUNTIME) << "  anno memory usage size:" << regionFactory->GetAnnoMemoryUsage()
-                            << "  anno memory max usage size:" << regionFactory->GetMaxAnnoMemoryUsage()
-                            << "  native memory usage size:" << regionFactory->GetNativeMemoryUsage()
-                            << "  native memory max usage size:" << regionFactory->GetMaxNativeMemoryUsage();
+        LOG(ERROR, RUNTIME) << "/******************* Memory statistic: *******************/";
+        LOG(ERROR, RUNTIME) << " Anno memory usage size:" << sizeToMB(regionFactory->GetAnnoMemoryUsage()) << "MB"
+                            << " anno memory max usage size:" << sizeToMB(regionFactory->GetMaxAnnoMemoryUsage())
+                            << "MB"
+                            << " native memory usage size:" << sizeToMB(regionFactory->GetNativeMemoryUsage())
+                            << "MB"
+                            << " native memory max usage size:" << sizeToMB(regionFactory->GetMaxNativeMemoryUsage())
+                            << "MB";
+        LOG(ERROR, RUNTIME) << " Semi space commit size" << sizeToMB(heap_->GetNewSpace()->GetCommittedSize()) << "MB"
+                            << " semi space heap object size: " << sizeToMB(heap_->GetNewSpace()->GetHeapObjectSize())
+                            << "MB"
+                            << " old space commit size: "
+                            << sizeToMB(heap_->GetOldSpace()->GetCommittedSize()) << "MB"
+                            << " old space heap object size: " << sizeToMB(heap_->GetOldSpace()->GetHeapObjectSize())
+                            << "MB"
+                            << " non move space commit size: "
+                            << sizeToMB(heap_->GetNonMovableSpace()->GetCommittedSize()) << "MB"
+                            << " huge object space commit size: "
+                            << sizeToMB(heap_->GetHugeObjectSpace()->GetCommittedSize()) << "MB";
     }
 }
 
@@ -107,22 +157,35 @@ void GCStats::StatisticSemiCollector(Duration time, size_t aliveSize, size_t pro
     semiGCCount_++;
 }
 
-void GCStats::StatisticOldCollector(Duration time, size_t freeSize, size_t oldSpaceCommitSize,
-                                    size_t nonMoveSpaceCommitSize)
+void GCStats::StatisticMixCollector(bool concurrentMark, Duration time, size_t freeSize)
 {
     auto timeToMillion = TimeToMicroseconds(time);
-    if (oldGCCount_ == 0) {
-        oldGCMinPause_ = timeToMillion;
-        oldGCMAXPause_ = timeToMillion;
+    if (concurrentMark) {
+        timeToMillion += mixConcurrentMarkMarkPause_;
+        timeToMillion += mixConcurrentMarkWaitPause_;
+        if (mixConcurrentMarkGCCount_ == 0) {
+            mixConcurrentMarkGCMinPause_ = timeToMillion;
+            mixConcurrentMarkGCMAXPause_ = timeToMillion;
+        } else {
+            mixConcurrentMarkGCMinPause_ = std::min(mixConcurrentMarkGCMinPause_, timeToMillion);
+            mixConcurrentMarkGCMAXPause_ = std::max(mixConcurrentMarkGCMAXPause_, timeToMillion);
+        }
+        mixConcurrentMarkGCPauseTime_ = timeToMillion;
+        mixConcurrentMarkGCTotalPause_ += timeToMillion;
+        mixOldSpaceConcurrentMarkFreeSize_ = freeSize;
+        mixConcurrentMarkGCCount_++;
     } else {
-        oldGCMinPause_ = std::min(oldGCMinPause_, timeToMillion);
-        oldGCMAXPause_ = std::max(oldGCMAXPause_, timeToMillion);
+        if (mixGCCount_ == 0) {
+            mixGCMinPause_ = timeToMillion;
+            mixGCMAXPause_ = timeToMillion;
+        } else {
+            mixGCMinPause_ = std::min(mixGCMinPause_, timeToMillion);
+            mixGCMAXPause_ = std::max(mixGCMAXPause_, timeToMillion);
+        }
+        mixGCTotalPause_ += timeToMillion;
+        mixOldSpaceFreeSize_ = freeSize;
+        mixGCCount_++;
     }
-    oldGCTotalPause_ += timeToMillion;
-    oldTotalFreeSize_ += freeSize;
-    oldSpaceTotalCommitSize_ += oldSpaceCommitSize;
-    oldNonMoveTotalCommitSize_ += nonMoveSpaceCommitSize;
-    oldGCCount_++;
 }
 
 void GCStats::StatisticCompressCollector(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
@@ -144,5 +207,25 @@ void GCStats::StatisticCompressCollector(Duration time, size_t youngAndOldAliveS
     compressNonMoveTotalFreeSize_ += nonMoveSpaceFreeSize;
     compressNonMoveTotalCommitSize_ += nonMoveSpaceCommitSize;
     compressGCCount_++;
+}
+
+void GCStats::StatisticConcurrentMark(Duration time)
+{
+    mixConcurrentMarkMarkPause_ = TimeToMicroseconds(time);
+}
+
+void GCStats::StatisticConcurrentMarkWait(Duration time)
+{
+    mixConcurrentMarkWaitPause_ = TimeToMicroseconds(time);
+}
+
+void GCStats::StatisticConcurrentEvacuate(Duration time)
+{
+    mixConcurrentMarkEvacuatePause_ = TimeToMicroseconds(time);
+}
+
+void GCStats::StatisticConcurrentRemark(Duration time)
+{
+    mixConcurrentMarkRemarkPause_ = TimeToMicroseconds(time);
 }
 }  // namespace panda::ecmascript

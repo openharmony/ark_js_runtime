@@ -24,6 +24,7 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 CompressCollector::CompressCollector(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
@@ -31,6 +32,7 @@ CompressCollector::CompressCollector(Heap *heap) : heap_(heap), workList_(heap->
 void CompressCollector::RunPhases()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::RunPhases");
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), CompressCollector_RunPhases);
     ClockScope clockScope;
 
     bool concurrentMark = heap_->CheckConcurrentMark();

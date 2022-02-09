@@ -177,12 +177,6 @@ void Heap::OnMoveEvent(uintptr_t address, uintptr_t forwardAddress)
     }
 }
 
-void Heap::SetNewSpaceMaximumCapacity(size_t maximumCapacity)
-{
-    ASSERT(toSpace_ != nullptr);
-    SetMaximumCapacity(toSpace_, maximumCapacity);
-}
-
 void Heap::ResetNewSpace()
 {
     toSpace_->GetCurrentRegion()->SetHighWaterMark(heapManager_->GetNewSpaceAllocator().GetTop());
@@ -220,23 +214,6 @@ void Heap::ReclaimRegions(TriggerGCType gcType)
         isClearTaskFinished_ = true;
         waitClearTaskFinishedCV_.SignalAll();
     }
-}
-
-void Heap::SetFromSpaceMaximumCapacity(size_t maximumCapacity)
-{
-    ASSERT(fromSpace_ != nullptr);
-    SetMaximumCapacity(fromSpace_, maximumCapacity);
-}
-
-void Heap::ResetDelayGCMode()
-{
-    ASSERT(memController_ != nullptr);
-    memController_->ResetDelayGCMode();
-}
-
-void Heap::SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity)
-{
-    space->SetMaximumCapacity(maximumCapacity);
 }
 
 void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd)

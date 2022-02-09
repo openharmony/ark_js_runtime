@@ -26,6 +26,7 @@
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 SemiSpaceCollector::SemiSpaceCollector(Heap *heap, bool paralledGc)
@@ -35,6 +36,7 @@ SemiSpaceCollector::SemiSpaceCollector(Heap *heap, bool paralledGc)
 
 void SemiSpaceCollector::RunPhases()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), SemiSpaceCollector_RunPhases);
     [[maybe_unused]] ClockScope clockScope;
 
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::RunPhases");

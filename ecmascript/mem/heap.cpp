@@ -39,17 +39,12 @@ Heap::Heap(EcmaVM *ecmaVm)
 
 void Heap::Initialize()
 {
-    memController_ = CreateMemController(this, "no-gc-for-start-up");
+    memController_ = new MemController(this);
 
-    if (memController_->IsDelayGCMode()) {
-        toSpace_ = new SemiSpace(this, DEFAULT_SEMI_SPACE_SIZE, MAX_SEMI_SPACE_CAPACITY);
-        fromSpace_ = new SemiSpace(this, DEFAULT_SEMI_SPACE_SIZE, MAX_SEMI_SPACE_CAPACITY);
-    } else {
-        toSpace_ = new SemiSpace(this);
-        fromSpace_ = new SemiSpace(this);
-    }
-
+    toSpace_ = new SemiSpace(this);
     toSpace_->Initialize();
+    fromSpace_ = new SemiSpace(this);
+
     // not set up from space
     oldSpace_ = new OldSpace(this);
     compressSpace_ = new OldSpace(this);
@@ -169,6 +164,7 @@ void Heap::Destroy()
 
 void Heap::Prepare()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(GetEcmaVM(), HeapPrepare);
     WaitRunningTaskFinished();
     sweeper_->EnsureAllTaskFinished();
     WaitClearTaskFinished();
@@ -215,9 +211,8 @@ void Heap::CollectGarbage(TriggerGCType gcType)
 #if ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC
     gcType = TriggerGCType::COMPRESS_FULL_GC;
 #endif
-    bool isDelayGCMode = memController_->IsDelayGCMode();
-    if (isCompressGCRequested_ && GetEcmaVM()->GetAssociatedJSThread()->IsReadyToMark()
-        && gcType != TriggerGCType::COMPRESS_FULL_GC && !isDelayGCMode) {
+    if (isCompressGCRequested_ && thread_->IsReadyToMark()
+        && gcType != TriggerGCType::COMPRESS_FULL_GC) {
         gcType = TriggerGCType::COMPRESS_FULL_GC;
     }
     memController_->StartCalculationBeforeGC();
@@ -228,12 +223,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
                                              << " old space limit" << oldSpaceAllocLimit_;
     switch (gcType) {
         case TriggerGCType::SEMI_GC:
-            if (isDelayGCMode) {
-                SetFromSpaceMaximumCapacity(SEMI_SPACE_CAPACITY);
-                SetNewSpaceMaximumCapacity(SEMI_SPACE_CAPACITY);
-                compressCollector_->RunPhases();
-                ResetDelayGCMode();
-            } else {
+            {
                 bool isOldGCTriggered = false;
                 if (!concurrentMarkingEnabled_) {
                     isOldGCTriggered = GetCommittedSize() > HALF_MAX_HEAP_SIZE ? CheckAndTriggerOldGC()
@@ -331,7 +321,7 @@ void Heap::RecomputeLimits()
 
     double growingFactor = memController_->CalculateGrowingFactor(gcSpeed, mutatorSpeed);
     auto newOldSpaceLimit = memController_->CalculateAllocLimit(oldSpaceSize, DEFAULT_OLD_SPACE_SIZE,
-                                                                MAX_OLD_SPACE_SIZE - MAX_SEMI_SPACE_CAPACITY - SEMI_SPACE_OVERSHOOT_SIZE,
+                                                                MAX_OLD_SPACE_SIZE - MAX_SEMI_SPACE_CAPACITY,
                                                                 newSpaceCapacity, growingFactor);
     auto newGlobalSpaceLimit = memController_->CalculateAllocLimit(GetCommittedSize(), DEFAULT_HEAP_SIZE,
                                                                    MAX_HEAP_SIZE, newSpaceCapacity, growingFactor);
@@ -345,8 +335,10 @@ bool Heap::CheckConcurrentMark()
         if (thread_->IsMarking()) {
             [[maybe_unused]] ClockScope clockScope;
             ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "Heap::CheckConcurrentMark");
+            MEM_ALLOCATE_AND_GC_TRACE(GetEcmaVM(), WaitConcurrentMarkingFinished);
             GetNonMovableMarker()->ProcessMarkStack(0);
             WaitConcurrentMarkingFinished();
+            ecmaVm_->GetEcmaGCStats()->StatisticConcurrentMarkWait(clockScope.GetPauseTime());
             ECMA_GC_LOG() << "wait concurrent marking finish pause time " << clockScope.TotalSpentTime();
         }
         memController_->RecordAfterConcurrentMark(IsFullMark(), concurrentMarker_);
