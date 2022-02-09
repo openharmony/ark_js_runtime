@@ -48,7 +48,7 @@ class EcmaVM;
 class JSRuntimeOptions;
 }  // namespace ecmascript
 
-using Deleter = void (*)(void *buffer, void *data);
+using Deleter = void (*)(void *nativePointer, void *data);
 using EcmaVM = ecmascript::EcmaVM;
 using JSTaggedType = uint64_t;
 
