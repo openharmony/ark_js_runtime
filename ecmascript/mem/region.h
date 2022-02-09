@@ -46,9 +46,9 @@ enum RegionFlags {
     IS_INVALID = 1 << 10,
 };
 
-#define REGION_OFFSET_LIST(V)                                                         \
-    V(MARKING, Marking, marking_, FLAG, sizeof(uint32_t), sizeof(uint64_t))                     \
-    V(BITMAP, BitMap, markBitmap_, MARKING, sizeof(uint32_t), sizeof(uint64_t))                    \
+#define REGION_OFFSET_LIST(V)                                                                \
+    V(MARKING, Marking, marking_, FLAG, sizeof(uint32_t), sizeof(uint64_t))                  \
+    V(BITMAP, BitMap, markBitmap_, MARKING, sizeof(uint32_t), sizeof(uint64_t))              \
     V(OLDTONEWSET, OldToNewSet, oldToNewSet_, BITMAP, sizeof(uint32_t), sizeof(uint64_t))
 
 class Region {
@@ -343,29 +343,24 @@ public:
         return aliveObject_ > MOST_OBJECT_ALIVE_THRESHOLD_PERCENT * GetSize();
     }
 
-    static constexpr uint32_t GetOldToNewSetOffset(bool isArm32 = false)
+    static constexpr uint32_t GetOldToNewSetOffset(bool is32Bit = false)
     {
-        return isArm32 ? REGION_OLDTONEWSET_OFFSET_32 : REGION_OLDTONEWSET_OFFSET_64;
+        return is32Bit ? REGION_OLDTONEWSET_OFFSET_32 : REGION_OLDTONEWSET_OFFSET_64;
     }
 
-    static constexpr uint32_t GetMarkingOffset(bool isArm32 = false)
+    static constexpr uint32_t GetMarkingOffset(bool is32Bit = false)
     {
-        return isArm32 ? REGION_MARKING_OFFSET_32 : REGION_MARKING_OFFSET_64;
+        return is32Bit ? REGION_MARKING_OFFSET_32 : REGION_MARKING_OFFSET_64;
     }
 
-    static constexpr uint32_t GetBitMapOffset(bool isArm32 = false)
+    static constexpr uint32_t GetBitMapOffset(bool is32Bit = false)
     {
-        return isArm32 ? REGION_BITMAP_OFFSET_32 : REGION_BITMAP_OFFSET_64;
+        return is32Bit ? REGION_BITMAP_OFFSET_32 : REGION_BITMAP_OFFSET_64;
     }
 
-    static constexpr uint32_t GetFlagOffset(bool isArm32 = false)
+    static constexpr uint32_t GetFlagOffset(bool is32Bit = false)
     {
-        return isArm32 ? REGION_FLAG_OFFSET_32 : REGION_FLAG_OFFSET_64;
-    }
-
-    uintptr_t* GetFlagAddr()
-    {
-        return &flags_;
+        return is32Bit ? REGION_FLAG_OFFSET_32 : REGION_FLAG_OFFSET_64;
     }
 
     #define REGION_OFFSET_MACRO(name, camelName, memberName, lastName, lastSize32, lastSize64)                                                                 \
@@ -429,16 +424,16 @@ public:
         static_cast<uint64_t>(BITSPERWORD_32));
     NO_COPY_SEMANTIC(BitmapHelper);
     NO_MOVE_SEMANTIC(BitmapHelper);
-    static constexpr uint32_t GetLogBitSperWordOffset(bool isArm32 = false)
+    static constexpr uint32_t LogBitsPerWord(bool is32Bit = false)
     {
-        return isArm32 ? LOG_BITSPERWORD_32 : LOG_BITSPERWORD_64;
+        return is32Bit ? LOG_BITSPERWORD_32 : LOG_BITSPERWORD_64;
     }
     static constexpr bool CheckLayout()
     {
     #ifdef PANDA_TARGET_32
-        static_assert(GetLogBitSperWordOffset(true) == mem::Bitmap::LOG_BITSPERWORD);
+        static_assert(LogBitsPerWord(true) == mem::Bitmap::LOG_BITSPERWORD);
     #else
-        static_assert(GetLogBitSperWordOffset(false) == mem::Bitmap::LOG_BITSPERWORD);
+        static_assert(LogBitsPerWord(false) == mem::Bitmap::LOG_BITSPERWORD);
     #endif
         return true;
     }
