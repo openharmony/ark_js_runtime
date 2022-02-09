@@ -238,8 +238,11 @@ void JSThread::LoadFastStubModule(const char *moduleFile)
     stubCode_ = stubModule.GetCode();
 }
 
-bool JSThread::CheckSafepoint() const
+bool JSThread::CheckSafepoint()
 {
+    if (VMNeedSuspension()) {
+        SuspendVM();
+    }
 #ifndef NDEBUG
     EcmaVM::Cast(GetVM())->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
     return true;
@@ -250,5 +253,36 @@ bool JSThread::CheckSafepoint() const
         return true;
     }
     return false;
+}
+
+bool JSThread::NotifyVMThreadSuspension() // block caller thread
+{
+    if (VMNeedSuspension()) { // only enable one thread to post suspension
+        return false;
+    }
+    SetVMNeedSuspension(true);
+    os::memory::LockHolder lock(vmThreadSuspensionMutex_);
+    while (!IsSuspended()) {
+        vmThreadNeedSuspensionCV_.Wait(&vmThreadSuspensionMutex_);
+    }
+    return true;
+}
+
+void JSThread::SuspendVM() // block vm thread
+{
+    os::memory::LockHolder lock(vmThreadSuspensionMutex_);
+    SetVMSuspened(true);
+    vmThreadNeedSuspensionCV_.Signal(); // wake up the thread who needs suspend vmthread
+    while (VMNeedSuspension()) {
+        vmThreadHasSuspendedCV_.Wait(&vmThreadSuspensionMutex_);
+    }
+    SetVMSuspened(false);
+}
+
+void JSThread::ResumeVM()
+{
+    os::memory::LockHolder lock(vmThreadSuspensionMutex_);
+    SetVMNeedSuspension(false);
+    vmThreadHasSuspendedCV_.Signal();
 }
 }  // namespace panda::ecmascript
