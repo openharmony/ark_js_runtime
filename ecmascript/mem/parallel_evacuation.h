@@ -33,21 +33,13 @@ class JSHClass;
 class TlabAllocator;
 class ParallelEvacuation {
 public:
-    ParallelEvacuation(Heap *heap)
-        : heap_(heap), objXRay_(heap->GetEcmaVM()), evacuationAllocator_(heap_->GetEvacuationAllocator()) {}
+    ParallelEvacuation(Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()) {}
     ~ParallelEvacuation() = default;
     void Initialize();
     void Finalize();
     void Evacuate();
 
-    size_t GetPromotedAccumulatorSize() const
-    {
-        return promotedAccumulatorSize_;
-    }
-
 private:
-    static constexpr double MIN_OBJECT_SURVIVAL_RATE = 0.8;
-
     class EvacuationTask : public Task {
     public:
         EvacuationTask(ParallelEvacuation *evacuation);
@@ -113,22 +105,9 @@ private:
         bool Process(bool isMain) override;
     };
 
-    class UpdateCompressRegionFragment : public Fragment {
-    public:
-        UpdateCompressRegionFragment(ParallelEvacuation *evacuation, Region *region) : Fragment(evacuation, region) {}
-        bool Process(bool isMain) override;
-    };
-
     class UpdateAndSweepNewRegionFragment : public Fragment {
     public:
         UpdateAndSweepNewRegionFragment(ParallelEvacuation *evacuation, Region *region)
-            : Fragment(evacuation, region) {}
-        bool Process(bool isMain) override;
-    };
-
-    class UpdateAndSweepCompressRegionFragment : public Fragment {
-    public:
-        UpdateAndSweepCompressRegionFragment(ParallelEvacuation *evacuation, Region *region)
             : Fragment(evacuation, region) {}
         bool Process(bool isMain) override;
     };
@@ -138,8 +117,9 @@ private:
     void EvacuateSpace();
     bool EvacuateSpace(TlabAllocator *allocation, bool isMain = false);
     void EvacuateRegion(TlabAllocator *allocator, Region *region);
+    inline void SetObjectFieldRSet(TaggedObject *object, JSHClass *cls);
 
-    inline bool IsPromoteComplete(Region *region);
+    inline bool IsWholeRegionEvacuate(Region *region);
     void VerifyHeapObject(TaggedObject *object);
 
     void UpdateReference();
@@ -147,20 +127,14 @@ private:
     void UpdateWeakReference();
     void UpdateRSet(Region *region);
     void UpdateNewRegionReference(Region *region);
-    void UpdateCompressRegionReference(Region *region);
     void UpdateAndSweepNewRegionReference(Region *region);
-    void UpdateAndSweepCompressRegionReference(Region *region, bool isMain);
     void UpdateNewObjectField(TaggedObject *object, JSHClass *cls);
-    void UpdateCompressObjectField(Region *region, TaggedObject *object, JSHClass *cls);
 
     inline bool UpdateObjectSlot(ObjectSlot &slot);
     inline bool UpdateWeakObjectSlot(TaggedObject *object, ObjectSlot &slot);
 
     inline std::unique_ptr<Fragment> GetFragmentSafe();
     inline void AddFragment(std::unique_ptr<Fragment> region);
-
-    inline void AddSweptRegionSafe(Region *region);
-    inline void FillSweptRegion();
 
     inline int CalculateEvacuationThreadNum();
     inline int CalculateUpdateThreadNum();
@@ -169,13 +143,10 @@ private:
     Heap *heap_;
     TlabAllocator *allocator_;
     ObjectXRay objXRay_;
-    EvacuationAllocator *evacuationAllocator_;
 
     uintptr_t ageMark_;
     std::vector<std::unique_ptr<Fragment>> fragments_;
-    std::vector<Region *> sweptList_;
     std::atomic_int parallel_ = 0;
-    std::atomic<size_t> promotedAccumulatorSize_ = 0;
     os::memory::Mutex mutex_;
     os::memory::ConditionVariable condition_;
 };

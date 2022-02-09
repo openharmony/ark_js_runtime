@@ -41,14 +41,13 @@ enum RegionFlags {
     IS_IN_NON_MOVABLE_GENERATION = 1 << 7,
     IS_IN_YOUNG_OR_OLD_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_OLD_GENERATION,
     IS_IN_COLLECT_SET = 1 << 8,
-    IS_IN_PROMOTE_SET = 1 << 9,
+    IS_IN_NEW_TO_NEW_SET = 1 << 9,
     IS_IN_YOUNG_OR_CSET_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_COLLECT_SET,
     IS_INVALID = 1 << 10,
 };
 
-#define REGION_OFFSET_LIST(V)                                                                \
-    V(MARKING, Marking, marking_, FLAG, sizeof(uint32_t), sizeof(uint64_t))                  \
-    V(BITMAP, BitMap, markBitmap_, MARKING, sizeof(uint32_t), sizeof(uint64_t))              \
+#define REGION_OFFSET_LIST(V)                                                             \
+    V(BITMAP, BitMap, markBitmap_, FLAG, sizeof(uint32_t), sizeof(uint64_t))              \
     V(OLDTONEWSET, OldToNewSet, oldToNewSet_, BITMAP, sizeof(uint32_t), sizeof(uint64_t))
 
 class Region {
@@ -62,6 +61,7 @@ public:
         end_(end),
         highWaterMark_(end),
         aliveObject_(0),
+        wasted_(0),
         regionFactory_(regionFactory)
     {
         markBitmap_ = CreateMarkBitmap();
@@ -185,14 +185,14 @@ public:
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_OLD_GENERATION);
     }
 
-    bool InYoungAndCSetGeneration() const
+    bool InYoungOrCSetGeneration() const
     {
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_CSET_GENERATION);
     }
 
-    bool InPromoteSet() const
+    bool InNewToNewSet() const
     {
-        return IsFlagSet(RegionFlags::IS_IN_PROMOTE_SET);
+        return IsFlagSet(RegionFlags::IS_IN_NEW_TO_NEW_SET);
     }
 
     bool InCollectSet() const
@@ -226,16 +226,18 @@ public:
         ret->ClearAllBits();
         return ret;
     }
-    inline void ClearMarkBitmap();
     inline RememberedSet *CreateRememberedSet();
     inline RememberedSet *GetOrCreateCrossRegionRememberedSet();
     inline RememberedSet *GetOrCreateOldToNewRememberedSet();
+    inline void DeleteMarkBitmap();
+    inline void DeleteCrossRegionRememberedSet();
+    inline void DeleteOldToNewRememberedSet();
+    inline void ClearMarkBitmap();
+    inline void ClearCrossRegionRememberedSet();
     inline void InsertCrossRegionRememberedSet(uintptr_t addr);
     inline void AtomicInsertCrossRegionRememberedSet(uintptr_t addr);
     inline void InsertOldToNewRememberedSet(uintptr_t addr);
     inline void AtomicInsertOldToNewRememberedSet(uintptr_t addr);
-    inline void ClearCrossRegionRememberedSet();
-    inline void ClearOldToNewRememberedSet();
 
     uintptr_t GetAllocateBase() const
     {
@@ -301,31 +303,20 @@ public:
         }
     }
 
-    bool IsMarking() const
-    {
-        return marking_;
-    }
-
-    void SetMarking(bool isMarking)
-    {
-        marking_ = isMarking;
-    }
+    inline bool IsMarking() const;
 
     inline WorkerHelper *GetWorkList() const;
 
-    void IncrementAliveObject(size_t size)
+    void IncrementAliveObjectSafe(size_t size)
     {
+        ASSERT(aliveObject_ + size <= GetSize());
         aliveObject_ += size;
     }
 
-    void DecreaseAliveObject(size_t size)
+    void IncrementAliveObject(size_t size)
     {
-        aliveObject_ -= size;
-    }
-
-    void SetAliveObject(size_t size)
-    {
-        aliveObject_ = size;
+        ASSERT(aliveObject_ + size <= GetSize());
+        aliveObject_.fetch_add(size, std::memory_order_relaxed);
     }
 
     void ResetAliveObject()
@@ -343,14 +334,22 @@ public:
         return aliveObject_ > MOST_OBJECT_ALIVE_THRESHOLD_PERCENT * GetSize();
     }
 
+    void ResetWasted()
+    {
+        wasted_ = 0;
+    }
+    void IncrementWasted(size_t size)
+    {
+        wasted_ += size;
+    }
+    size_t GetWastedSize()
+    {
+        return wasted_;
+    }
+
     static constexpr uint32_t GetOldToNewSetOffset(bool is32Bit = false)
     {
         return is32Bit ? REGION_OLDTONEWSET_OFFSET_32 : REGION_OLDTONEWSET_OFFSET_64;
-    }
-
-    static constexpr uint32_t GetMarkingOffset(bool is32Bit = false)
-    {
-        return is32Bit ? REGION_MARKING_OFFSET_32 : REGION_MARKING_OFFSET_64;
     }
 
     static constexpr uint32_t GetBitMapOffset(bool is32Bit = false)
@@ -392,7 +391,6 @@ public:
 private:
     static constexpr double MOST_OBJECT_ALIVE_THRESHOLD_PERCENT = 0.8;
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now
-    bool marking_ {false};
     RangeBitmap *markBitmap_ {nullptr};
     RememberedSet *oldToNewSet_ {nullptr};
     Space *space_;
@@ -402,13 +400,13 @@ private:
     uintptr_t begin_;
     uintptr_t end_;
     uintptr_t highWaterMark_;
-
     std::atomic_size_t aliveObject_ {0};
     Region *next_ {nullptr};
     Region *prev_ {nullptr};
 
     RememberedSet *crossRegionSet_ {nullptr};
     Span<FreeObjectKind *> kinds_;
+    size_t wasted_;
     os::memory::Mutex lock_;
     RegionFactory* regionFactory_ {nullptr};
     friend class SnapShot;

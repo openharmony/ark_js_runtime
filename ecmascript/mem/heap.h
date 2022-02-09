@@ -17,11 +17,12 @@
 #define ECMASCRIPT_MEM_HEAP_H
 
 #include "ecmascript/base/config.h"
+#include "ecmascript/js_thread.h"
 #include "ecmascript/mem/chunk_containers.h"
 #include "ecmascript/mem/mark_stack.h"
+#include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/platform/platform.h"
-#include "ecmascript/mem/parallel_work_helper.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
@@ -38,10 +39,14 @@ class ConcurrentSweeper;
 class ConcurrentMarker;
 class Marker;
 class ParallelEvacuation;
-class EvacuationAllocator;
 class WorkerHelper;
 
 using DerivedDataKey = std::pair<uintptr_t, uintptr_t>;
+
+enum class MarkType : uint8_t {
+    SEMI_MARK,
+    FULL_MARK
+};
 
 class Heap {
 public:
@@ -52,13 +57,12 @@ public:
     void Initialize();
     void Destroy();
     void Prepare();
+    void Resume(TriggerGCType gcType);
 
     const SemiSpace *GetNewSpace() const
     {
         return toSpace_;
     }
-
-    inline void SetNewSpaceAgeMark(uintptr_t mark);
 
     inline void SetNewSpaceMaximumCapacity(size_t maximumCapacity);
 
@@ -72,14 +76,10 @@ public:
         return compressSpace_;
     }
 
-    inline void InitializeFromSpace();
-    inline void InitializeCompressSpace();
-
-    inline void SwapSpace();
-
-    inline void ReclaimFromSpaceRegions();
-
     inline void SetFromSpaceMaximumCapacity(size_t maximumCapacity);
+
+    inline void ResetNewSpace();
+    inline void ReclaimRegions(TriggerGCType gcType);
 
     const OldSpace *GetOldSpace() const
     {
@@ -126,11 +126,6 @@ public:
         return evacuation_;
     }
 
-    EvacuationAllocator *GetEvacuationAllocator() const
-    {
-        return evacuationAllocator_;
-    }
-
     ConcurrentMarker *GetConcurrentMarker() const
     {
         return concurrentMarker_;
@@ -139,6 +134,11 @@ public:
     EcmaVM *GetEcmaVM() const
     {
         return ecmaVm_;
+    }
+
+    JSThread *GetJSThread() const
+    {
+        return thread_;
     }
 
     WorkerHelper *GetWorkList() const
@@ -157,13 +157,16 @@ public:
     void EnumerateNewSpaceRegions(const Callback &cb) const;
 
     template<class Callback>
+    void EnumerateNonNewSpaceRegions(const Callback &cb) const;
+
+    template<class Callback>
     void EnumerateSnapShotSpaceRegions(const Callback &cb) const;
 
     template<class Callback>
     void EnumerateNonMovableRegions(const Callback &cb) const;
 
     template<class Callback>
-    void EnumerateRegions(const Callback &cb) const;
+    inline void EnumerateRegions(const Callback &cb) const;
 
     template<class Callback>
     void IteratorOverObjects(const Callback &cb) const;
@@ -175,9 +178,7 @@ public:
     inline bool FillNonMovableSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc = true);
     inline bool FillSnapShotSpace(BumpPointerAllocator *spaceAllocator);
     inline bool FillMachineCodeSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc = true);
-    inline Region *ExpandCompressSpace();
-    inline bool AddRegionToCompressSpace(Region *region);
-    inline bool AddRegionToToSpace(Region *region);
+    inline bool FillNewSpaceWithRegion(Region *region);
 
     void ThrowOutOfMemoryError(size_t size, std::string functionName);
 
@@ -204,13 +205,11 @@ public:
     inline void OnAllocateEvent(uintptr_t address);
     inline void OnMoveEvent(uintptr_t address, uintptr_t forwardAddress);
 
-    void TryTriggerConcurrentMarking(bool allowGc);
+    void TryTriggerConcurrentMarking();
 
     void TriggerConcurrentMarking();
 
-    void CheckNeedFullMark();
-
-    bool CheckConcurrentMark(JSThread *thread);
+    bool CheckConcurrentMark();
 
     bool CheckAndTriggerOldGC();
 
@@ -314,6 +313,7 @@ public:
     static constexpr uint32_t STACK_MAP_DEFALUT_DERIVED_SIZE = 8U;
 
     void WaitRunningTaskFinished();
+    void WaitClearTaskFinished();
 
     bool CheckCanDistributeTask();
 
@@ -330,14 +330,14 @@ public:
 
     bool ConcurrentMarkingEnable() const;
 
-    inline bool IsSemiMarkNeeded() const
+    void SetMarkType(MarkType markType)
     {
-        return isOnlySemi_;
+        markType_ = markType;
     }
 
-    void SetOnlyMarkSemi(bool onlySemi)
+    bool IsFullMark() const
     {
-        isOnlySemi_ = onlySemi;
+        return markType_ == MarkType::FULL_MARK;
     }
 
     Marker *GetNonMovableMarker() const
@@ -354,7 +354,7 @@ public:
     {
         return compressGcMarker_;
     }
-    
+
     size_t GetArrayBufferSize() const;
 
     inline size_t GetCommittedSize() const;
@@ -380,7 +380,21 @@ private:
         ParallelGCTaskPhase taskPhase_;
     };
 
+    class AsyncClearTask : public Task {
+    public:
+        AsyncClearTask(Heap *heap, TriggerGCType type) : heap_(heap), gcType_(type) {}
+        ~AsyncClearTask() override = default;
+        bool Run(uint32_t threadIndex) override;
+
+        NO_COPY_SEMANTIC(AsyncClearTask);
+        NO_MOVE_SEMANTIC(AsyncClearTask);
+    private:
+        Heap *heap_;
+        TriggerGCType gcType_;
+    };
+
     EcmaVM *ecmaVm_ {nullptr};
+    JSThread *thread_ {nullptr};
     SemiSpace *fromSpace_ {nullptr};
     SemiSpace *toSpace_ {nullptr};
     OldSpace *oldSpace_ {nullptr};
@@ -397,7 +411,6 @@ private:
     Marker *semiGcMarker_ {nullptr};
     Marker *compressGcMarker_ {nullptr};
     ParallelEvacuation *evacuation_ {nullptr};
-    EvacuationAllocator *evacuationAllocator_ {nullptr};
     MemManager *heapManager_ {nullptr};
     RegionFactory *regionFactory_ {nullptr};
     HeapTracker *tracker_ {nullptr};
@@ -410,14 +423,17 @@ private:
 #endif
 
     ConcurrentMarker *concurrentMarker_;
+    bool isClearTaskFinished_ = true;
+    os::memory::Mutex waitClearTaskFinishedMutex_;
+    os::memory::ConditionVariable waitClearTaskFinishedCV_;
     uint32_t runningTastCount_ {0};
     os::memory::Mutex waitTaskFinishedMutex_;
     os::memory::ConditionVariable waitTaskFinishedCV_;
     bool paralledGc_ {true};
     WorkerHelper *workList_ {nullptr};
 
+    MarkType markType_;
     bool concurrentMarkingEnabled_ {true};
-    bool isOnlySemi_ {true};
     bool isCompressGCRequested_ {false};
     inline void SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity);
 };

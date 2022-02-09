@@ -47,8 +47,10 @@ public:
 
     void Rebuild();
 
-    FreeObject *SearchSmallFreeObject(size_t size);
-    FreeObject *SearchLargeFreeObject(size_t size);
+    FreeObject *LookupSmallFreeObject(size_t size);
+    FreeObject *LookupLargeFreeObject(size_t size);
+    FreeObject *ObtainSmallFreeObject(size_t size);
+    FreeObject *ObtainLargeFreeObject(size_t size);
 
     NO_COPY_SEMANTIC(FreeObjectKind);
     NO_MOVE_SEMANTIC(FreeObjectKind);

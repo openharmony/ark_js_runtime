@@ -847,6 +847,29 @@ public:
         return GetObjectType() == JSType::TEMPLATE_MAP;
     }
 
+    inline bool IsFreeObject() const
+    {
+        switch (GetObjectType()) {
+            case JSType::FREE_OBJECT_WITH_ONE_FIELD:
+            case JSType::FREE_OBJECT_WITH_NONE_FIELD:
+            case JSType::FREE_OBJECT_WITH_TWO_FIELD:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    inline bool IsFreeObjectWithShortField() const
+    {
+        switch (GetObjectType()) {
+            case JSType::FREE_OBJECT_WITH_ONE_FIELD:
+            case JSType::FREE_OBJECT_WITH_NONE_FIELD:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     inline bool IsFreeObjectWithOneField() const
     {
         return GetObjectType() == JSType::FREE_OBJECT_WITH_ONE_FIELD;

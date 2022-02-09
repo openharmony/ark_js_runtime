@@ -38,12 +38,11 @@ FreeObjectList::~FreeObjectList()
     noneEmptyKindBitMap_ = 0;
 }
 
-FreeObject *FreeObjectList::Allocator(size_t size)
+FreeObject *FreeObjectList::Allocate(size_t size)
 {
     if (noneEmptyKindBitMap_ == 0) {
         return nullptr;
     }
-    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     // find from suitable
     KindType type = SelectKindType(size);
     if (type == FreeObjectKind::INVALID_KIND_TYPE) {
@@ -63,20 +62,54 @@ FreeObject *FreeObjectList::Allocator(size_t size)
             FreeObjectKind *next = nullptr;
             FreeObject *object = nullptr;
             if (type <= SMALL_KIND_MAX_INDEX) {
-                object = current->SearchSmallFreeObject(size);
+                object = current->ObtainSmallFreeObject(size);
             } else {
                 next = current->next_;
-                object = current->SearchLargeFreeObject(size);
+                object = current->ObtainLargeFreeObject(size);
             }
             if (current->Empty()) {
                 RemoveKind(current);
+                current->Rebuild();
             }
             if (object != nullptr) {
-                size_t objectSize = object->Available();
-                available_ -= objectSize;
-                if (objectSize >= size) {
-                    return object;
-                }
+#ifndef NDEBUG
+                available_ -= object->Available();
+#endif
+                return object;
+            }
+            current = next;
+        }
+    }
+    return nullptr;
+}
+
+FreeObject *FreeObjectList::LookupSuitableFreeObject(size_t size)
+{
+    if (noneEmptyKindBitMap_ == 0) {
+        return nullptr;
+    }
+    // find a suitable type
+    KindType type = SelectKindType(size);
+    if (type == FreeObjectKind::INVALID_KIND_TYPE) {
+        return nullptr;
+    }
+
+    KindType lastType = type - 1;
+    for (type = CalcNextNoneEmptyIndex(type); type > lastType && type < NUMBER_OF_KINDS;
+        type = CalcNextNoneEmptyIndex(type + 1)) {
+        lastType = type;
+        FreeObjectKind *current = kinds_[type];
+        while (current != nullptr) {
+            FreeObjectKind *next = nullptr;
+            FreeObject *object = nullptr;
+            if (type <= SMALL_KIND_MAX_INDEX) {
+                object = current->LookupSmallFreeObject(size);
+            } else {
+                next = current->next_;
+                object = current->LookupLargeFreeObject(size);
+            }
+            if (object != nullptr) {
+                return object;
             }
             current = next;
         }
@@ -86,10 +119,19 @@ FreeObject *FreeObjectList::Allocator(size_t size)
 
 void FreeObjectList::Free(uintptr_t start, size_t size, bool isAdd)
 {
-    if (start == 0 || size == 0) {
+    if (UNLIKELY(start == 0)) {
         return;
     }
-    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    if (UNLIKELY(size < MIN_SIZE)) {
+#ifndef NDEBUG
+        Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(start));
+        region->IncrementWasted(size);
+        if (isAdd) {
+            wasted_ += size;
+        }
+#endif
+        return;
+    }
     KindType type = SelectKindType(size);
     if (type == FreeObjectKind::INVALID_KIND_TYPE) {
         return;
@@ -103,12 +145,8 @@ void FreeObjectList::Free(uintptr_t start, size_t size, bool isAdd)
     }
     kind->Free(start, size);
 
-    if (isAdd) {
-        if (kind->isAdded_) {
-            available_ += size;
-        } else {
-            AddKind(kind);
-        }
+    if (isAdd && !kind->isAdded_) {
+        AddKind(kind);
     }
 }
 
@@ -119,13 +157,11 @@ void FreeObjectList::Rebuild()
         kinds_[i] = nullptr;
         lastKinds_[i] = nullptr;
     }
+#ifndef NDEBUG
     available_ = 0;
+    wasted_ = 0;
+#endif
     noneEmptyKindBitMap_ = 0;
-}
-
-size_t FreeObjectList::GetFreeObjectSize() const
-{
-    return available_;
 }
 
 bool FreeObjectList::AddKind(FreeObjectKind *kind)
@@ -143,12 +179,17 @@ bool FreeObjectList::AddKind(FreeObjectKind *kind)
     }
     kind->isAdded_ = true;
     kind->next_ = top;
+    kind->prev_ = nullptr;
     if (lastKinds_[type] == nullptr) {
         lastKinds_[type] = kind;
     }
+    if (kinds_[type] == nullptr) {
+        SetNoneEmptyBit(type);
+    }
     kinds_[type] = kind;
-    SetNoneEmptyBit(type);
+#ifndef NDEBUG
     available_ += kind->Available();
+#endif
     return true;
 }
 
@@ -172,11 +213,15 @@ void FreeObjectList::RemoveKind(FreeObjectKind *kind)
     if (kind->next_ != nullptr) {
         kind->next_->prev_ = kind->prev_;
     }
+    kind->isAdded_ = false;
+    kind->prev_ = nullptr;
+    kind->next_ = nullptr;
     if (kinds_[type] == nullptr) {
         ClearNoneEmptyBit(type);
     }
+#ifndef NDEBUG
     available_ -= kind->Available();
-    kind->Rebuild();
+#endif
 }
 
 void FreeObjectList::Merge(FreeObjectList *list)
@@ -196,7 +241,9 @@ void FreeObjectList::Merge(FreeObjectList *list)
         lastKinds_[type] = end;
         SetNoneEmptyBit(type);
     });
+#ifndef NDEBUG
     available_ += list->available_;
+#endif
     list->Rebuild();
 }
 

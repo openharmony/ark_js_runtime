@@ -24,21 +24,16 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
-#include "ecmascript/runtime_call_id.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
-CompressCollector::CompressCollector(Heap *heap)
-    : heap_(heap), workList_(heap->GetWorkList()) {}
+CompressCollector::CompressCollector(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
 
 void CompressCollector::RunPhases()
 {
-    ecmascript::JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
-    INTERPRETER_TRACE(thread, CompressCollector_RunPhases);
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::RunPhases");
     ClockScope clockScope;
 
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::RunPhases");
-    bool concurrentMark = heap_->CheckConcurrentMark(thread);
+    bool concurrentMark = heap_->CheckConcurrentMark();
     if (concurrentMark) {
         ECMA_GC_LOG() << "CompressCollector after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
@@ -59,18 +54,15 @@ void CompressCollector::InitializePhase()
     heap_->Prepare();
     auto callback = [](Region *current) {
         // ensure mark bitmap
-        auto bitmap = current->GetMarkBitmap();
-        ASSERT(bitmap != nullptr);
-        bitmap->ClearAllBits();
         auto rememberset = current->GetOldToNewRememberedSet();
         if (rememberset != nullptr) {
             rememberset->ClearAllBits();
         }
     };
     heap_->EnumerateNonMovableRegions(callback);
+    heap_->ResetNewSpace();
     workList_->Initialize(TriggerGCType::COMPRESS_FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetCompressGcMarker()->Initialized();
-    heap_->GetEvacuationAllocator()->Initialize(TriggerGCType::COMPRESS_FULL_GC);
 
     youngAndOldAliveSize_ = 0;
     nonMoveSpaceFreeSize_ = 0;
@@ -151,7 +143,7 @@ void CompressCollector::SweepPhases()
 void CompressCollector::FinishPhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::FinishPhase");
+    heap_->Resume(COMPRESS_FULL_GC);
     workList_->Finish(youngAndOldAliveSize_);
-    heap_->GetEvacuationAllocator()->Finalize(TriggerGCType::COMPRESS_FULL_GC);
 }
 }  // namespace panda::ecmascript

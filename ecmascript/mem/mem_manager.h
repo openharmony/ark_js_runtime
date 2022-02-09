@@ -41,6 +41,12 @@ public:
     inline TaggedObject *AllocateMachineCodeSpaceObject(JSHClass *hclass, size_t size);
     inline uintptr_t AllocateSnapShotSpace(size_t size);
 
+    inline void MergeToOldSpaceSync(Space *localSpace, FreeListAllocator *localAllocator);
+    inline void MergeToCompressSpaceSync(Space *localSpace, FreeListAllocator *localAllocator);
+    inline bool MoveYoungRegionSync(Region *region);
+    inline uintptr_t AllocateYoungSync(size_t size);
+    inline Region *TryToGetExclusiveRegion(size_t size);
+
     inline void SetClass(TaggedObject *header, JSHClass *hclass);
 
     const Heap *GetHeap() const
@@ -83,6 +89,8 @@ private:
     BumpPointerAllocator newSpaceAllocator_;
     std::array<FreeListAllocator, FREE_LIST_NUM> freeListAllocator_;
     BumpPointerAllocator snapshotSpaceAllocator_;
+    os::memory::Mutex youngSpaceLock_;
+    os::memory::Mutex oldSpaceLock_;
 };
 }  // namespace panda::ecmascript
 
