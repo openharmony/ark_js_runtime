@@ -83,7 +83,7 @@ void CpuProfiler::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName
         return;
     }
 #endif
-    time_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
+    uint64_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
     ts = ts % TIME_CHANGE;
     SetProfileStart(ts);
     Platform::GetCurrentPlatform()->PostTask(std::make_unique<ProfileProcessor>(generator_, vm, interval_));
@@ -121,9 +121,9 @@ CpuProfiler::~CpuProfiler()
     }
 }
 
-void CpuProfiler::SetProfileStart(time_t nowTimeStamp)
+void CpuProfiler::SetProfileStart(uint64_t nowTimeStamp)
 {
-    time_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
+    uint64_t ts = ProfileProcessor::GetMicrosecondsTimeStamp();
     ts = ts % TIME_CHANGE;
     struct CurrentProcessInfo currentProcessInfo = {0};
     GetCurrentProcessInfo(currentProcessInfo);
