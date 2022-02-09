@@ -255,7 +255,6 @@ void MemManager::MergeToOldSpaceSync(Space *localSpace, FreeListAllocator *local
     os::memory::LockHolder lock(oldSpaceLock_);
     OldSpace *oldSpace = const_cast<OldSpace *>(heap_->GetOldSpace());
     oldSpace->Merge(localSpace, localAllocator);
-
 }
 
 Region *MemManager::TryToGetExclusiveRegion(size_t size)
@@ -266,7 +265,7 @@ Region *MemManager::TryToGetExclusiveRegion(size_t size)
         // Remove region from global old space
         Region *region = Region::ObjectAddressToRange(result);
         const_cast<OldSpace *>(heap_->GetOldSpace())->RemoveRegion(region);
-        GetOldSpaceAllocator().UnlinkFreeObjectKind(region);
+        GetOldSpaceAllocator().DetachFreeObjectSet(region);
         return region;
     }
     return nullptr;

@@ -25,6 +25,7 @@
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/verification.h"
 #include "ecmascript/platform/platform.h"
+#include "ecmascript/runtime_call_id.h"
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
@@ -41,6 +42,7 @@ void ConcurrentMarker::ConcurrentMarking()
 {
     ECMA_GC_LOG() << "ConcurrentMarker: Concurrent Mark Begin";
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "ConcurrentMarker::ConcurrentMarking");
+    MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarking);
     ClockScope scope;
 
     InitializeMarking();
@@ -48,6 +50,7 @@ void ConcurrentMarker::ConcurrentMarking()
     if (!heap_->IsFullMark() && heap_->IsParallelGCEnabled()) {
         heap_->PostParallelGCTask(ParallelGCTaskPhase::CONCURRENT_HANDLE_OLD_TO_NEW_TASK);
     }
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentMark(scope.GetPauseTime());
 }
 
 void ConcurrentMarker::FinishPhase()
@@ -59,6 +62,7 @@ void ConcurrentMarker::FinishPhase()
 void ConcurrentMarker::ReMarking()
 {
     ECMA_GC_LOG() << "ConcurrentMarker: Remarking Begin";
+    MEM_ALLOCATE_AND_GC_TRACE(vm_, ReMarking);
     ClockScope scope;
     Marker *nonMoveMarker =  heap_->GetNonMovableMarker();
     nonMoveMarker->MarkRoots(0);
@@ -68,6 +72,7 @@ void ConcurrentMarker::ReMarking()
         nonMoveMarker->ProcessMarkStack(0);
     }
     heap_->WaitRunningTaskFinished();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentRemark(scope.GetPauseTime());
 }
 
 void ConcurrentMarker::HandleMarkFinished()  // js-thread wait for sweep
@@ -102,6 +107,7 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
 // -------------------- privete method ------------------------------------------
 void ConcurrentMarker::InitializeMarking()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarkingInitialize);
     heap_->Prepare();
     thread_->SetMarkStatus(MarkStatus::MARKING);
 

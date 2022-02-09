@@ -23,6 +23,7 @@
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/space.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 BumpPointerAllocator::BumpPointerAllocator(const Space *space)
@@ -110,6 +111,7 @@ uintptr_t FreeListAllocator::Allocate(size_t size)
     }
 
     if (sweeping_) {
+        MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingWait);
         if (heap_->GetSweeper()->FillSweptRegion(type_, this)) {
             object = freeList_->Allocate(size);
             if (object != nullptr) {
@@ -186,26 +188,26 @@ void FreeListAllocator::RebuildFreeList()
     freeList_->Rebuild();
 }
 
-inline void FreeListAllocator::LinkFreeObjectKind(Region *region)
+inline void FreeListAllocator::CollectFreeObjectSet(Region *region)
 {
-    region->EnumerateKinds([&](FreeObjectKind *kind) {
-        if (kind == nullptr || kind->Empty()) {
+    region->EnumerateSets([&](FreeObjectSet *set) {
+        if (set == nullptr || set->Empty()) {
             return;
         }
-        freeList_->AddKind(kind);
+        freeList_->AddSet(set);
     });
 #ifndef NDEBUG
     freeList_->IncrementWastedSize(region->GetWastedSize());
 #endif
 }
 
-inline void FreeListAllocator::UnlinkFreeObjectKind(Region *region)
+inline void FreeListAllocator::DetachFreeObjectSet(Region *region)
 {
-    region->EnumerateKinds([&](FreeObjectKind *kind) {
-        if (kind == nullptr || kind->Empty()) {
+    region->EnumerateSets([&](FreeObjectSet *set) {
+        if (set == nullptr || set->Empty()) {
             return;
         }
-        freeList_->RemoveKind(kind);
+        freeList_->RemoveSet(set);
     });
 #ifndef NDEBUG
     freeList_->DecrementWastedSize(region->GetWastedSize());

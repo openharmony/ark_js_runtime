@@ -21,6 +21,7 @@
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/region_factory.h"
 #include "ecmascript/mem/remembered_set.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 Space::Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t maximumCapacity)
@@ -43,15 +44,15 @@ void Space::Initialize()
     } else if (spaceType_ == MemSpaceType::SNAPSHOT_SPACE) {
         region->SetFlag(RegionFlags::IS_IN_SNAPSHOT_GENERATION);
     } else if (spaceType_ == MemSpaceType::OLD_SPACE) {
-        region->InitializeKind();
+        region->InitializeSet();
         region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
     } else if (spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
-        region->InitializeKind();
+        region->InitializeSet();
         region->SetFlag(RegionFlags::IS_IN_NON_MOVABLE_GENERATION);
         int res = region->SetCodeExecutableAndReadable();
         LOG_ECMA_MEM(DEBUG) << "Initialize SetCodeExecutableAndReadable" << res;
     } else if (spaceType_ == MemSpaceType::NON_MOVABLE) {
-        region->InitializeKind();
+        region->InitializeSet();
         region->SetFlag(RegionFlags::IS_IN_NON_MOVABLE_GENERATION);
     }
 
@@ -75,7 +76,7 @@ void Space::ClearAndFreeRegion(Region *region)
     DecrementLiveObjectSize(region->AliveObject());
     if (spaceType_ == MemSpaceType::OLD_SPACE || spaceType_ == MemSpaceType::NON_MOVABLE ||
         spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
-        region->DestroyKind();
+        region->DestroySet();
     }
     regionFactory_->FreeRegion(region);
 }
@@ -263,7 +264,7 @@ bool OldSpace::Expand()
     }
     Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
-    region->InitializeKind();
+    region->InitializeSet();
     AddRegion(region);
     return true;
 }
@@ -342,12 +343,12 @@ void OldSpace::Merge(Space *localSpace, FreeListAllocator *localAllocator)
     ASSERT(GetSpaceType() == localSpace->GetSpaceType());
     auto &allocator = heap_->GetHeapManager()->GetOldSpaceAllocator();
     localSpace->EnumerateRegions([&](Region *region) {
-        localAllocator->UnlinkFreeObjectKind(region);
+        localAllocator->DetachFreeObjectSet(region);
         localSpace->RemoveRegion(region);
         localSpace->DecrementCommitted(region->GetCapacity());
         region->SetSpace(this);
         AddRegion(region);
-        allocator.LinkFreeObjectKind(region);
+        allocator.CollectFreeObjectSet(region);
     });
     if (committedSize_ >= maximumCapacity_) {
         LOG_ECMA_MEM(FATAL) << "Merge::Committed size " << committedSize_ << " of old space is too big. ";
@@ -384,7 +385,7 @@ void OldSpace::SelectCSet()
     auto &allocator = heap_->GetHeapManager()->GetOldSpaceAllocator();
     EnumerateCollectRegionSet([&](Region *current) {
         RemoveRegion(current);
-        allocator.UnlinkFreeObjectKind(current);
+        allocator.DetachFreeObjectSet(current);
         current->SetFlag(RegionFlags::IS_IN_COLLECT_SET);
     });
     isCSetEmpty_ = false;
@@ -397,7 +398,7 @@ void OldSpace::RevertCSet()
         region->ClearFlag(RegionFlags::IS_IN_COLLECT_SET);
         region->SetSpace(this);
         AddRegion(region);
-        heap_->GetHeapManager()->GetOldSpaceAllocator().LinkFreeObjectKind(region);
+        heap_->GetHeapManager()->GetOldSpaceAllocator().CollectFreeObjectSet(region);
     });
     collectRegionSet_.clear();
     isCSetEmpty_ = true;
@@ -409,7 +410,7 @@ void OldSpace::ReclaimCSet()
         region->DeleteMarkBitmap();
         region->DeleteCrossRegionRememberedSet();
         region->DeleteOldToNewRememberedSet();
-        region->DestroyKind();
+        region->DestroySet();
         regionFactory_->FreeRegion(region);
     });
     collectRegionSet_.clear();
@@ -427,9 +428,10 @@ bool NonMovableSpace::Expand()
         LOG_ECMA_MEM(FATAL) << "Committed size " << committedSize_ << " of non movable space is too big. ";
         return false;
     }
+    MEM_ALLOCATE_AND_GC_TRACE(vm_, NonMovableSpaceExpand);
     Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(IS_IN_NON_MOVABLE_GENERATION);
-    region->InitializeKind();
+    region->InitializeSet();
     AddRegion(region);
     return true;
 }
@@ -530,6 +532,7 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
         LOG_ECMA_MEM(FATAL) << "The size is too big for this allocator. Return nullptr.";
         return 0;
     }
+    MEM_ALLOCATE_AND_GC_TRACE(vm_, HugeSpaceExpand);
     Region *region = regionFactory_->AllocateAlignedRegion(this, alignedSize);
     region->SetFlag(RegionFlags::IS_HUGE_OBJECT);
     AddRegion(region);
@@ -585,7 +588,7 @@ bool MachineCodeSpace::Expand()
     }
     Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(IS_IN_NON_MOVABLE_GENERATION);
-    region->InitializeKind();
+    region->InitializeSet();
     AddRegion(region);
     int res = region->SetCodeExecutableAndReadable();
     LOG_ECMA_MEM(DEBUG) << "MachineCodeSpace::Expand() SetCodeExecutableAndReadable" << res;

@@ -31,6 +31,7 @@ ConcurrentSweeper::ConcurrentSweeper(Heap *heap, bool concurrentSweep)
 
 void ConcurrentSweeper::SweepPhases(bool compressGC)
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingInitialize);
     if (concurrentSweep_) {
         // Add all region to region list. Ensure all task finish
         PrepareSpace(compressGC);
@@ -178,7 +179,7 @@ bool ConcurrentSweeper::FillSweptRegion(MemSpaceType type, FreeListAllocator *al
     }
     Region *region = nullptr;
     while ((region = GetSweptRegionSafe(type)) != nullptr) {
-        allocator->LinkFreeObjectKind(region);
+        allocator->CollectFreeObjectSet(region);
     }
     return true;
 }
@@ -249,6 +250,7 @@ void ConcurrentSweeper::WaitAllTaskFinished()
 
 void ConcurrentSweeper::EnsureAllTaskFinished()
 {
+    CHECK_JS_THREAD(heap_->GetEcmaVM());
     if (!isSweeping_) {
         return;
     }
@@ -260,6 +262,7 @@ void ConcurrentSweeper::EnsureAllTaskFinished()
 
 void ConcurrentSweeper::EnsureTaskFinished(MemSpaceType type)
 {
+    CHECK_JS_THREAD(heap_->GetEcmaVM());
     if (!isSweeping_) {
         return;
     }

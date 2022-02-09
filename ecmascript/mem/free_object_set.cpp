@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/free_object_kind.h"
+#include "ecmascript/mem/free_object_set.h"
 
 #include "ecmascript/free_object.h"
 #include "ecmascript/mem/free_object_list.h"
 
 namespace panda::ecmascript {
-void FreeObjectKind::Free(uintptr_t begin, size_t size)
+void FreeObjectSet::Free(uintptr_t begin, size_t size)
 {
     auto freeObject = FreeObject::Cast(begin);
     ASSERT(freeObject->IsFreeObject());
@@ -28,7 +28,7 @@ void FreeObjectKind::Free(uintptr_t begin, size_t size)
     available_ += size;
 }
 
-void FreeObjectKind::Rebuild()
+void FreeObjectSet::Rebuild()
 {
     freeObject_ = nullptr;
     available_ = 0;
@@ -37,7 +37,7 @@ void FreeObjectKind::Rebuild()
     prev_ = nullptr;
 }
 
-FreeObject *FreeObjectKind::ObtainSmallFreeObject(size_t size)
+FreeObject *FreeObjectSet::ObtainSmallFreeObject(size_t size)
 {
     FreeObject *curFreeObject = nullptr;
     if (freeObject_ != nullptr && freeObject_->Available() >= size) {
@@ -49,7 +49,7 @@ FreeObject *FreeObjectKind::ObtainSmallFreeObject(size_t size)
     return curFreeObject;
 }
 
-FreeObject *FreeObjectKind::ObtainLargeFreeObject(size_t size)
+FreeObject *FreeObjectSet::ObtainLargeFreeObject(size_t size)
 {
     FreeObject *prevFreeObject = freeObject_;
     FreeObject *curFreeObject = freeObject_;
@@ -70,7 +70,7 @@ FreeObject *FreeObjectKind::ObtainLargeFreeObject(size_t size)
     return nullptr;
 }
 
-FreeObject *FreeObjectKind::LookupSmallFreeObject(size_t size)
+FreeObject *FreeObjectSet::LookupSmallFreeObject(size_t size)
 {
     if (freeObject_ != nullptr && freeObject_->Available() >= size) {
         return freeObject_;
@@ -78,7 +78,7 @@ FreeObject *FreeObjectKind::LookupSmallFreeObject(size_t size)
     return nullptr;
 }
 
-FreeObject *FreeObjectKind::LookupLargeFreeObject(size_t size)
+FreeObject *FreeObjectSet::LookupLargeFreeObject(size_t size)
 {
     if (available_ < size) {
         return nullptr;

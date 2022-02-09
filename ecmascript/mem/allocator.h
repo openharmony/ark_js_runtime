@@ -97,8 +97,8 @@ public:
 
     inline void RebuildFreeList();
 
-    inline void LinkFreeObjectKind(Region *region);
-    inline void UnlinkFreeObjectKind(Region *region);
+    inline void CollectFreeObjectSet(Region *region);
+    inline void DetachFreeObjectSet(Region *region);
 
     inline void Swap(FreeListAllocator &other)
     {

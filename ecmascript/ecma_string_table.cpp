@@ -24,7 +24,8 @@
 namespace panda::ecmascript {
 EcmaStringTable::EcmaStringTable(const EcmaVM *vm) : vm_(vm) {}
 
-EcmaString *EcmaStringTable::GetString(const JSHandle<EcmaString> &firstString, const JSHandle<EcmaString> &secondString) const
+EcmaString *EcmaStringTable::GetString(const JSHandle<EcmaString> &firstString,
+                                       const JSHandle<EcmaString> &secondString) const
 {
     uint32_t hashCode = firstString->GetHashcode();
     hashCode = secondString->ComputeHashcode(hashCode);
@@ -94,7 +95,8 @@ void EcmaStringTable::InternEmptyString(EcmaString *emptyStr)
     InternString(emptyStr);
 }
 
-EcmaString *EcmaStringTable::GetOrInternString(const JSHandle<EcmaString> &firstString, const JSHandle<EcmaString> &secondString)
+EcmaString *EcmaStringTable::GetOrInternString(const JSHandle<EcmaString> &firstString,
+                                               const JSHandle<EcmaString> &secondString)
 {
     if (firstString->IsInternString() && secondString->IsInternString()) {
         EcmaString *concatString = GetString(firstString, secondString);

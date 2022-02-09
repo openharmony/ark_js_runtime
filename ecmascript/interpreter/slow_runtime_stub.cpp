@@ -42,7 +42,6 @@
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 JSTaggedValue SlowRuntimeStub::CallSpreadDyn(JSThread *thread, JSTaggedValue func, JSTaggedValue obj,

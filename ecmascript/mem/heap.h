@@ -64,8 +64,6 @@ public:
         return toSpace_;
     }
 
-    inline void SetNewSpaceMaximumCapacity(size_t maximumCapacity);
-
     const SemiSpace *GetFromSpace() const
     {
         return fromSpace_;
@@ -75,8 +73,6 @@ public:
     {
         return compressSpace_;
     }
-
-    inline void SetFromSpaceMaximumCapacity(size_t maximumCapacity);
 
     inline void ResetNewSpace();
     inline void ReclaimRegions(TriggerGCType gcType);
@@ -291,8 +287,6 @@ public:
     {
         globalSpaceAllocLimit_ = limit;
     }
-
-    inline void ResetDelayGCMode();
 
     size_t VerifyHeapObjects() const;
 

@@ -23,10 +23,12 @@
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 #include "ecmascript/mem/utils.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 void ParallelEvacuation::Initialize()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationInitialize);
     heap_->ResetNewSpace();
     allocator_ = new TlabAllocator(heap_);
     ageMark_ = heap_->GetFromSpace()->GetAgeMark();
@@ -34,6 +36,7 @@ void ParallelEvacuation::Initialize()
 
 void ParallelEvacuation::Finalize()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationFinalize);
     delete allocator_;
     heap_->Resume(OLD_GC);
 }
@@ -45,10 +48,12 @@ void ParallelEvacuation::Evacuate()
     EvacuateSpace();
     UpdateReference();
     Finalize();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentEvacuate(clockScope.GetPauseTime());
 }
 
 void ParallelEvacuation::EvacuateSpace()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuation);
     heap_->GetFromSpace()->EnumerateRegions([this] (Region *current) {
         AddFragment(std::make_unique<EvacuationFragment>(this, current));
     });
@@ -156,6 +161,7 @@ void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
 
 void ParallelEvacuation::UpdateReference()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelUpdateReference);
     // Update reference pointers
     uint32_t youngeRegionMoveCount = 0;
     uint32_t youngeRegionCopyCount = 0;
@@ -197,6 +203,7 @@ void ParallelEvacuation::UpdateReference()
 
 void ParallelEvacuation::UpdateRoot()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), UpdateRoot);
     RootVisitor gcUpdateYoung = [this]([[maybe_unused]] Root type, ObjectSlot slot) {
         UpdateObjectSlot(slot);
     };
@@ -211,6 +218,7 @@ void ParallelEvacuation::UpdateRoot()
 
 void ParallelEvacuation::UpdateWeakReference()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), UpdateWeakReference);
     auto stringTable = heap_->GetEcmaVM()->GetEcmaStringTable();
     bool isFullMark = heap_->IsFullMark();
     WeakRootVisitor gcUpdateWeak = [isFullMark](TaggedObject *header) {
@@ -342,6 +350,7 @@ void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cl
 
 void ParallelEvacuation::WaitFinished()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), WaitUpdateFinished);
     if (parallel_ > 0) {
         os::memory::LockHolder holder(mutex_);
         while (parallel_ > 0) {

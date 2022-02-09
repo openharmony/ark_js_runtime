@@ -263,43 +263,43 @@ public:
         return res;
     }
 
-    void InitializeKind()
+    void InitializeSet()
     {
-        kinds_ = Span<FreeObjectKind *>(new FreeObjectKind *[FreeObjectList::NumberOfKinds()](),
-                                        FreeObjectList::NumberOfKinds());
+        sets_ = Span<FreeObjectSet *>(new FreeObjectSet *[FreeObjectList::NumberOfSets()](),
+            FreeObjectList::NumberOfSets());
     }
 
-    void RebuildKind()
+    void RebuildSet()
     {
-        EnumerateKinds([](FreeObjectKind *kind) {
-            if (kind != nullptr) {
-                kind->Rebuild();
+        EnumerateSets([](FreeObjectSet *set) {
+            if (set != nullptr) {
+                set->Rebuild();
             }
         });
     }
 
-    void DestroyKind()
+    void DestroySet()
     {
-        for (auto kind : kinds_) {
-            delete kind;
+        for (auto set : sets_) {
+            delete set;
         }
-        delete[] kinds_.data();
+        delete[] sets_.data();
     }
 
-    FreeObjectKind *GetFreeObjectKind(KindType type)
+    FreeObjectSet *GetFreeObjectSet(SetType type)
     {
         // Thread safe
-        if (kinds_[type] == nullptr) {
-            kinds_[type] = new FreeObjectKind(type);
+        if (sets_[type] == nullptr) {
+            sets_[type] = new FreeObjectSet(type);
         }
-        return kinds_[type];
+        return sets_[type];
     }
 
     template<class Callback>
-    void EnumerateKinds(Callback cb)
+    void EnumerateSets(Callback cb)
     {
-        for (auto kind : kinds_) {
-            cb(kind);
+        for (auto set : sets_) {
+            cb(set);
         }
     }
 
@@ -405,7 +405,7 @@ private:
     Region *prev_ {nullptr};
 
     RememberedSet *crossRegionSet_ {nullptr};
-    Span<FreeObjectKind *> kinds_;
+    Span<FreeObjectSet *> sets_;
     size_t wasted_;
     os::memory::Mutex lock_;
     RegionFactory* regionFactory_ {nullptr};

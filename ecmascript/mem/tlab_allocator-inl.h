@@ -154,7 +154,7 @@ bool TlabAllocator::ExpandCompressFromOld(size_t size)
     auto region = memManager_->TryToGetExclusiveRegion(size);
     if (region != nullptr) {
         localSpace_.AddRegionToList(region);
-        localAllocator_.LinkFreeObjectKind(region);
+        localAllocator_.CollectFreeObjectSet(region);
         return true;
     }
     return false;
