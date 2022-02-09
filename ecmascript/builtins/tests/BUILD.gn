@@ -206,6 +206,33 @@ host_unittest_action("BuiltinsFunctionTest") {
   }
 }
 
+host_unittest_action("BuiltinsIntlTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    # test file
+    "builtins_intl_test.cpp",
+  ]
+
+  configs = [
+    "//ark/js_runtime:ecma_test_config",
+    "//ark/js_runtime:ark_jsruntime_public_config",  # should add before
+                                                     # arkruntime_public_config
+    "//ark/js_runtime:ark_jsruntime_common_config",
+    "$ark_root/runtime:arkruntime_public_config",
+  ]
+
+  deps = [
+    "$ark_root/libpandabase:libarkbase",
+    "//ark/js_runtime:libark_jsruntime_test",
+    sdk_libc_secshared_dep,
+  ]
+
+  if (!is_standard_system) {
+    deps += [ "$ark_root/runtime:libarkruntime" ]
+  }
+}
+
 host_unittest_action("BuiltinsIteratorTest") {
   module_out_path = module_output_path
 
@@ -649,6 +676,7 @@ group("unittest") {
     ":BuiltinsDateTest",
     ":BuiltinsErrorsTest",
     ":BuiltinsFunctionTest",
+    ":BuiltinsIntlTest",
     ":BuiltinsIteratorTest",
     ":BuiltinsJsonTest",
     ":BuiltinsMapTest",
@@ -680,6 +708,7 @@ group("host_unittest") {
     ":BuiltinsDateTestAction",
     ":BuiltinsErrorsTestAction",
     ":BuiltinsFunctionTestAction",
+    ":BuiltinsIntlTestAction",
     ":BuiltinsIteratorTestAction",
     ":BuiltinsJsonTestAction",
     ":BuiltinsMapTestAction",
