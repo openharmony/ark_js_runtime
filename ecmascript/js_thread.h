@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_JS_THREAD_H
 #define ECMASCRIPT_JS_THREAD_H
 
-#include "include/thread.h"
+#include "include/managed_thread.h"
 
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/ecma_global_storage.h"
