@@ -79,7 +79,8 @@ inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object
         return;
     }
 
-    auto markBitmap = objectRegion->GetOrCreateMarkBitmap();
+    auto markBitmap = objectRegion->GetMarkBitmap();
+    ASSERT(markBitmap != nullptr);
     if (!markBitmap->AtomicTestAndSet(object)) {
         heap_->GetWorkList()->Push(threadId, object, objectRegion);
     }

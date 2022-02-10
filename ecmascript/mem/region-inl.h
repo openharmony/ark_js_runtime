@@ -30,30 +30,6 @@ inline void Region::SetSpace(Space *space)
     heap_ = space_->GetHeap();
 }
 
-inline RangeBitmap *Region::GetOrCreateMarkBitmap()
-{
-    if (UNLIKELY(markBitmap_ == nullptr)) {
-        os::memory::LockHolder lock(lock_);
-        if (markBitmap_ == nullptr) {
-            markBitmap_ = CreateMarkBitmap();
-        }
-    }
-    return markBitmap_;
-}
-
-RangeBitmap *Region::CreateMarkBitmap()
-{
-    size_t heapSize = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ? LARGE_BITMAP_MIN_SIZE : GetCapacity();
-    // Only one huge object is stored in a region. The BitmapSize of a huge region will always be 8 Bytes.
-    size_t bitmapSize = RangeBitmap::GetBitMapSizeInByte(heapSize);
-
-    auto bitmapData = const_cast<RegionFactory *>(heap_->GetRegionFactory())->Allocate(bitmapSize);
-    auto *ret = new RangeBitmap(this, heapSize, bitmapData);
-
-    ret->ClearAllBits();
-    return ret;
-}
-
 RememberedSet *Region::CreateRememberedSet()
 {
     auto setSize = RememberedSet::GetSizeInByte(GetCapacity());

@@ -47,13 +47,13 @@ enum MachineType { // bit whith
     ANYVALUE,
     ARCH,
     FLEX,
-    INT1,
-    INT8,
-    INT16,
-    INT32,
-    INT64,
-    FLOAT32,
-    FLOAT64,
+    I1,
+    I8,
+    I16,
+    I32,
+    I64,
+    F32,
+    F64,
 };
 
 std::string MachineTypeToStr(MachineType machineType);

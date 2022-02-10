@@ -32,7 +32,7 @@ public:
 
     RememberedSet(uintptr_t begin_addr, size_t range_size, uintptr_t bitset_addr)
         : mem::Bitmap(reinterpret_cast<mem::Bitmap::BitmapWordType *>(bitset_addr), range_size / BYTESPERCHUNK),
-          begin_addr_(begin_addr)
+          beginAddr_(begin_addr)
     {
     }
     ~RememberedSet() = default;
@@ -77,18 +77,23 @@ public:
         return (range_size >> mem::Bitmap::LOG_BITSPERWORD) / BYTESPERCHUNK * sizeof(mem::Bitmap::BitmapWordType);
     }
 
+    static constexpr uint32_t GetBeginAddrOffset()
+    {
+        return MEMBER_OFFSET(RememberedSet, beginAddr_);
+    }
+
 private:
     void *BitOffsetToAddr(size_t bit_offset) const
     {
-        return ToVoidPtr(begin_addr_ + bit_offset * BYTESPERCHUNK);
+        return ToVoidPtr(beginAddr_ + bit_offset * BYTESPERCHUNK);
     }
 
     size_t AddrToBitOffset(uintptr_t addr) const
     {
-        return (addr - begin_addr_) / BYTESPERCHUNK;
+        return (addr - beginAddr_) / BYTESPERCHUNK;
     }
 
-    uintptr_t begin_addr_;
+    uintptr_t beginAddr_;
 };
 }  // namespace panda::ecmascript
 

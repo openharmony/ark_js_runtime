@@ -225,8 +225,8 @@ namespace panda::ecmascript {
     V(LessDynWithIC)                \
     V(LessEqDynWithIC)              \
     V(GreaterDynWithIC)             \
-    V(GreaterEqDynWithIC)           \
-    V(SetPropertyByName)
+    V(SetPropertyByName)            \
+    V(GreaterEqDynWithIC)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUITINS_API_LIST(V)                   \
     V(Array, Constructor)                     \
