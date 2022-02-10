@@ -53,6 +53,9 @@ using CDeque = std::deque<T, CAddressAllocator<T>>;
 template<class T, class Container = CDeque<T>>
 using CQueue = std::queue<T, Container>;
 
+template<class T, class Container = CDeque<T>>
+using CStack= std::stack<T, Container>;
+
 template<class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using CUnorderedMap = std::unordered_map<Key, T, Hash, KeyEqual, CAddressAllocator<std::pair<const Key, T>>>;
 

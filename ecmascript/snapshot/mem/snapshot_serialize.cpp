@@ -54,7 +54,11 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/containers/containers_arraylist.h"
+#include "ecmascript/containers/containers_treemap.h"
+#include "ecmascript/containers/containers_treeset.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/js_api_tree_map_iterator.h"
+#include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_hclass.h"
@@ -112,6 +116,8 @@ using RelativeTimeFormat = builtins::BuiltinsRelativeTimeFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
 using ArrayList = containers::ContainersArrayList;
+using TreeMap = containers::ContainersTreeMap;
+using TreeSet = containers::ContainersTreeSet;
 
 constexpr int TAGGED_SIZE = JSTaggedValue::TaggedTypeSize();
 constexpr int OBJECT_HEADER_SIZE = TaggedObject::TaggedObjectSize();
@@ -546,9 +552,48 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(PluralRules::SupportedLocalesOf),
     reinterpret_cast<uintptr_t>(PluralRules::Select),
     reinterpret_cast<uintptr_t>(PluralRules::ResolvedOptions),
+
+    // non ECMA standard jsapi containers.
     reinterpret_cast<uintptr_t>(ArrayList::ArrayListConstructor),
     reinterpret_cast<uintptr_t>(ArrayList::Add),
     reinterpret_cast<uintptr_t>(ArrayList::Iterator),
+    reinterpret_cast<uintptr_t>(TreeMap::TreeMapConstructor),
+    reinterpret_cast<uintptr_t>(TreeMap::Set),
+    reinterpret_cast<uintptr_t>(TreeMap::Get),
+    reinterpret_cast<uintptr_t>(TreeMap::Remove),
+    reinterpret_cast<uintptr_t>(TreeMap::GetFirstKey),
+    reinterpret_cast<uintptr_t>(TreeMap::GetLastKey),
+    reinterpret_cast<uintptr_t>(TreeMap::GetLowerKey),
+    reinterpret_cast<uintptr_t>(TreeMap::GetHigherKey),
+    reinterpret_cast<uintptr_t>(TreeMap::HasKey),
+    reinterpret_cast<uintptr_t>(TreeMap::HasValue),
+    reinterpret_cast<uintptr_t>(TreeMap::SetAll),
+    reinterpret_cast<uintptr_t>(TreeMap::Replace),
+    reinterpret_cast<uintptr_t>(TreeMap::Keys),
+    reinterpret_cast<uintptr_t>(TreeMap::Values),
+    reinterpret_cast<uintptr_t>(TreeMap::Entries),
+    reinterpret_cast<uintptr_t>(TreeMap::ForEach),
+    reinterpret_cast<uintptr_t>(TreeMap::Clear),
+    reinterpret_cast<uintptr_t>(TreeMap::IsEmpty),
+    reinterpret_cast<uintptr_t>(TreeMap::GetLength),
+    reinterpret_cast<uintptr_t>(TreeSet::TreeSetConstructor),
+    reinterpret_cast<uintptr_t>(TreeSet::Add),
+    reinterpret_cast<uintptr_t>(TreeSet::Has),
+    reinterpret_cast<uintptr_t>(TreeSet::Remove),
+    reinterpret_cast<uintptr_t>(TreeSet::GetFirstValue),
+    reinterpret_cast<uintptr_t>(TreeSet::GetLastValue),
+    reinterpret_cast<uintptr_t>(TreeSet::GetLowerValue),
+    reinterpret_cast<uintptr_t>(TreeSet::GetHigherValue),
+    reinterpret_cast<uintptr_t>(TreeSet::PopFirst),
+    reinterpret_cast<uintptr_t>(TreeSet::PopLast),
+    reinterpret_cast<uintptr_t>(TreeSet::IsEmpty),
+    reinterpret_cast<uintptr_t>(TreeSet::Values),
+    reinterpret_cast<uintptr_t>(TreeSet::Entries),
+    reinterpret_cast<uintptr_t>(TreeSet::ForEach),
+    reinterpret_cast<uintptr_t>(TreeSet::Clear),
+    reinterpret_cast<uintptr_t>(TreeSet::GetLength),
+    reinterpret_cast<uintptr_t>(JSAPITreeMapIterator::Next),
+    reinterpret_cast<uintptr_t>(JSAPITreeSetIterator::Next),
 
     // not builtins method
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeSetter),

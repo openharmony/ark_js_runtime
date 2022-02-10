@@ -101,7 +101,6 @@ private:
     friend class ICRuntimeStub;
     static inline bool IsSpecialIndexedObj(JSType jsType);
     static inline bool IsSpecialReceiverObj(JSType jsType);
-    static inline bool IsSpecialContainer(JSType jsType);
     static inline int32_t TryToElementsIndex(JSTaggedValue key);
     static inline JSTaggedValue CallGetter(JSThread *thread, JSTaggedValue receiver, JSTaggedValue holder,
                                            JSTaggedValue value);
@@ -111,6 +110,9 @@ private:
                                         PropertyAttributes attr);
     static inline JSTaggedValue AddPropertyByIndex(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                    JSTaggedValue value);
+
+    // non ECMA standard jsapi container
+    static inline bool IsSpecialContainer(JSType jsType);
     static inline JSTaggedValue GetContainerProperty(JSThread *thread, JSTaggedValue receiver, uint32_t index,
                                                      JSType jsType);
     static inline JSTaggedValue SetContainerProperty(JSThread *thread, JSTaggedValue receiver, uint32_t index,

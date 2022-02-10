@@ -30,6 +30,10 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_tree_map.h"
+#include "ecmascript/js_api_tree_map_iterator.h"
+#include "ecmascript/js_api_tree_set.h"
+#include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraylist.h"
@@ -74,6 +78,7 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
 #include "ecmascript/tests/test_helper.h"
 #include "ecmascript/transitions_dictionary.h"
@@ -143,6 +148,28 @@ static JSHandle<JSSet> NewJSSet(JSThread *thread, ObjectFactory *factory, JSHand
     JSHandle<LinkedHashSet> linkedSet(LinkedHashSet::Create(thread));
     jsSet->SetLinkedSet(thread, linkedSet);
     return jsSet;
+}
+
+static JSHandle<JSAPITreeMap> NewJSAPITreeMap(JSThread *thread, ObjectFactory *factory)
+{
+    auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> mapClass = factory->NewEcmaDynClass(JSAPITreeMap::SIZE, JSType::JS_API_TREE_MAP, proto);
+    JSHandle<JSAPITreeMap> jsTreeMap = JSHandle<JSAPITreeMap>::Cast(factory->NewJSObject(mapClass));
+    JSHandle<TaggedTreeMap> treeMap(thread, TaggedTreeMap::Create(thread));
+    jsTreeMap->SetTreeMap(thread, treeMap);
+    return jsTreeMap;
+}
+
+static JSHandle<JSAPITreeSet> NewJSAPITreeSet(JSThread *thread, ObjectFactory *factory)
+{
+    auto globalEnv = thread->GetEcmaVM()->GetGlobalEnv();
+    JSHandle<JSTaggedValue> proto = globalEnv->GetObjectFunctionPrototype();
+    JSHandle<JSHClass> setClass = factory->NewEcmaDynClass(JSAPITreeSet::SIZE, JSType::JS_API_TREE_SET, proto);
+    JSHandle<JSAPITreeSet> jsTreeSet = JSHandle<JSAPITreeSet>::Cast(factory->NewJSObject(setClass));
+    JSHandle<TaggedTreeSet> treeSet(thread, TaggedTreeSet::Create(thread));
+    jsTreeSet->SetTreeSet(thread, treeSet);
+    return jsTreeSet;
 }
 
 static JSHandle<JSObject> NewJSObject(JSThread *thread, ObjectFactory *factory, JSHandle<GlobalEnv> globalEnv)
@@ -621,6 +648,32 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_ARRAY_LIST: {
                 CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayList::SIZE, 1)
                 // unused
+                break;
+            }
+            case JSType::JS_API_TREE_MAP: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeMap::SIZE, 1)
+                JSHandle<JSAPITreeMap> jsTreeMap = NewJSAPITreeMap(thread, factory);
+                DUMP_FOR_HANDLE(jsTreeMap)
+                break;
+            }
+            case JSType::JS_API_TREE_SET: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeSet::SIZE, 1)
+                JSHandle<JSAPITreeSet> jsTreeSet = NewJSAPITreeSet(thread, factory);
+                DUMP_FOR_HANDLE(jsTreeSet)
+                break;
+            }
+            case JSType::JS_API_TREEMAP_ITERATOR: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeMapIterator::SIZE, 4)
+                JSHandle<JSAPITreeMapIterator> jsTreeMapIter =
+                    factory->NewJSAPITreeMapIterator(NewJSAPITreeMap(thread, factory), IterationKind::KEY);
+                DUMP_FOR_HANDLE(jsTreeMapIter)
+                break;
+            }
+            case JSType::JS_API_TREESET_ITERATOR: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeSetIterator::SIZE, 4)
+                JSHandle<JSAPITreeSetIterator> jsTreeSetIter =
+                    factory->NewJSAPITreeSetIterator(NewJSAPITreeSet(thread, factory), IterationKind::KEY);
+                DUMP_FOR_HANDLE(jsTreeSetIter)
                 break;
             }
             default:
