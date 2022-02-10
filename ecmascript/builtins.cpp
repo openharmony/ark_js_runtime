@@ -2770,6 +2770,8 @@ JSHandle<JSObject> Builtins::InitializeArkPrivate(const JSHandle<GlobalEnv> &env
 {
     JSHandle<JSObject> arkPrivate = factory_->NewEmptyJSObject();
     SetFrozenFunction(env, arkPrivate, "Load", ContainersPrivate::Load, FunctionLength::ZERO);
+
+    // It is used to provide non ECMA standard jsapi containers.
     SetConstant(arkPrivate, "ArrayList", JSTaggedValue(static_cast<int>(containers::ContainerTag::ArrayList)));
     SetConstant(arkPrivate, "Queue", JSTaggedValue(static_cast<int>(containers::ContainerTag::Queue)));
     SetConstant(arkPrivate, "Deque", JSTaggedValue(static_cast<int>(containers::ContainerTag::Deque)));
@@ -2781,8 +2783,10 @@ JSHandle<JSObject> Builtins::InitializeArkPrivate(const JSHandle<GlobalEnv> &env
     SetConstant(arkPrivate, "TreeSet", JSTaggedValue(static_cast<int>(containers::ContainerTag::TreeSet)));
     SetConstant(arkPrivate, "HashMap", JSTaggedValue(static_cast<int>(containers::ContainerTag::HashMap)));
     SetConstant(arkPrivate, "HashSet", JSTaggedValue(static_cast<int>(containers::ContainerTag::HashSet)));
-    SetConstant(arkPrivate, "LightWightMap", JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWightMap)));
-    SetConstant(arkPrivate, "LightWightSet", JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWightSet)));
+    SetConstant(arkPrivate, "LightWeightMap",
+                JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWeightMap)));
+    SetConstant(arkPrivate, "LightWeightSet",
+                JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWeightSet)));
     SetConstant(arkPrivate, "PlainArray", JSTaggedValue(static_cast<int>(containers::ContainerTag::PlainArray)));
     return arkPrivate;
 }

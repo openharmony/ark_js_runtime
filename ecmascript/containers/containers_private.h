@@ -19,6 +19,7 @@
 #include "ecmascript/base/builtins_base.h"
 
 namespace panda::ecmascript::containers {
+using InitializeFunction = JSHandle<JSTaggedValue> (*)(JSThread *);
 enum FuncLength : uint8_t { ZERO = 0, ONE, TWO, THREE, FOUR };
 enum ContainerTag : uint8_t {
     ArrayList = 0,
@@ -32,13 +33,14 @@ enum ContainerTag : uint8_t {
     TreeSet,
     HashMap,
     HashSet,
-    LightWightMap,
-    LightWightSet,
+    LightWeightMap,
+    LightWeightSet,
     PlainArray,
     END
 };
+
 // Using Lazy-loading container, including ArrayList, Queue, Stack, Vector, List, LinkedList, Deque,
-// TreeMap, TreeSet, HashMap, HashSet, LightWightMap, LightWightSet, PlainArray.
+// TreeMap, TreeSet, HashMap, HashSet, LightWeightMap, LightWeightSet, PlainArray.
 // Use through ArkPrivate.Load([ContainerTag]) in js, ContainTag was declaerd in ArkPrivate like ArkPrivate::ArrayList.
 class ContainersPrivate : public base::BuiltinsBase {
 public:
@@ -62,7 +64,14 @@ private:
                                     const char *name, EcmaEntrypoint func, int length);
     static void SetStringTagSymbol(JSThread *thread, const JSHandle<GlobalEnv> &env,
                                    const JSHandle<JSObject> &obj, const char *key);
+
+    static JSTaggedValue InitializeContainer(JSThread *thread, const JSHandle<JSObject> &obj, InitializeFunction func,
+                                             const char *name);
     static JSHandle<JSTaggedValue> InitializeArrayList(JSThread *thread);
+    static JSHandle<JSTaggedValue> InitializeTreeMap(JSThread *thread);
+    static void InitializeTreeMapIterator(JSThread *thread);
+    static JSHandle<JSTaggedValue> InitializeTreeSet(JSThread *thread);
+    static void InitializeTreeSetIterator(JSThread *thread);
 };
 }  // namespace panda::ecmascript::containers
 

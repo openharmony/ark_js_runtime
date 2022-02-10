@@ -784,6 +784,10 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
         }
         case JSType::JS_QUEUE:
             break;
+        case JSType::JS_API_TREE_MAP:
+        case JSType::JS_API_TREE_SET: {
+            return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
+        }
         default: {
             UNREACHABLE();
         }
@@ -801,6 +805,10 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
         }
         case JSType::JS_QUEUE:
             break;
+        case JSType::JS_API_TREE_MAP:
+        case JSType::JS_API_TREE_SET: {
+            return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
+        }
         default: {
             UNREACHABLE();
         }
@@ -819,6 +827,10 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
         }
         case JSType::JS_QUEUE:
             break;
+        case JSType::JS_API_TREE_MAP:
+        case JSType::JS_API_TREE_SET: {
+            return JSObject::GetOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);
+        }
         default: {
             UNREACHABLE();
         }

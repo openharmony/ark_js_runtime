@@ -310,7 +310,13 @@ public:
     bool IsJSNumberFormat() const;
     bool IsJSCollator() const;
     bool IsJSPluralRules() const;
+
+    // non ECMA standard jsapis
     bool IsJSArrayList() const;
+    bool IsJSAPITreeMap() const;
+    bool IsJSAPITreeSet() const;
+    bool IsJSAPITreeMapIterator() const;
+    bool IsJSAPITreeSetIterator() const;
     bool IsSpecialContainer() const;
 
     bool IsPrototypeHandler() const;
@@ -343,6 +349,8 @@ private:
 
     void DumpSpecialValue([[maybe_unused]] JSThread *thread, std::ostream &os) const;
     void DumpHeapObjectType([[maybe_unused]] JSThread *thread, std::ostream &os) const;
+
+    // non ECMA standard jsapis
     static bool HasContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                      const JSHandle<JSTaggedValue> &key);
     static JSHandle<TaggedArray> GetOwnContainerPropertyKeys(JSThread *thread, const JSHandle<JSTaggedValue> &obj);

@@ -519,7 +519,42 @@ namespace panda::ecmascript {
     V(WeakSet, Has)                           \
     V(ArrayList, Constructor)                 \
     V(ArrayList, Add)                         \
-    V(ArrayList, Iterator)
+    V(ArrayList, Iterator)                    \
+    V(TreeMap, Constructor)                   \
+    V(TreeMap, HasKey)                        \
+    V(TreeMap, HasValue)                      \
+    V(TreeMap, GetFirstKey)                   \
+    V(TreeMap, GetLastKey)                    \
+    V(TreeMap, Set)                           \
+    V(TreeMap, Get)                           \
+    V(TreeMap, SetAll)                        \
+    V(TreeMap, Remove)                        \
+    V(TreeMap, Clear)                         \
+    V(TreeMap, GetLowerKey)                   \
+    V(TreeMap, GetHigherKey)                  \
+    V(TreeMap, Replace)                       \
+    V(TreeMap, IsEmpty)                       \
+    V(TreeMap, GetLength)                     \
+    V(TreeMap, Keys)                          \
+    V(TreeMap, Values)                        \
+    V(TreeMap, Entries)                       \
+    V(TreeMap, ForEach)                       \
+    V(TreeSet, Constructor)                   \
+    V(TreeSet, Add)                           \
+    V(TreeSet, Remove)                        \
+    V(TreeSet, Clear)                         \
+    V(TreeSet, Has)                           \
+    V(TreeSet, GetFirstValue)                 \
+    V(TreeSet, GetLastValue)                  \
+    V(TreeSet, GetLowerValue)                 \
+    V(TreeSet, GetHigherValue)                \
+    V(TreeSet, PopFirst)                      \
+    V(TreeSet, PopLast)                       \
+    V(TreeSet, IsEmpty)                       \
+    V(TreeSet, GetLength)                     \
+    V(TreeSet, Values)                        \
+    V(TreeSet, ForEach)                       \
+    V(TreeSet, Entries)
 
 #define ABSTRACT_OPERATION_LIST(V) \
     V(JSTaggedValue, ToString)     \
