@@ -107,7 +107,7 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
             LOG(FATAL, RUNTIME) << "Add Region failed:";
         }
     } else {
-        auto markBitmap = region->GetOrCreateMarkBitmap();
+        auto markBitmap = region->GetMarkBitmap();
         ASSERT(markBitmap != nullptr);
         markBitmap->IterateOverMarkedChunks([this, &region, &isPromoted, &allocator](void *mem) {
             ASSERT(region->InRange(ToUintPtr(mem)));
@@ -246,7 +246,8 @@ void ParallelEvacuation::UpdateWeakReference()
             return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
         } else {
             if (!isOnlySemi || objectRegion->InPromoteSet()) {
-                auto markBitmap = objectRegion->GetOrCreateMarkBitmap();
+                auto markBitmap = objectRegion->GetMarkBitmap();
+                ASSERT(markBitmap != nullptr);
                 if (!markBitmap->Test(header)) {
                     return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
                 }

@@ -65,7 +65,8 @@ bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &s
         return false;
     } else {
         if (!heap_->IsSemiMarkNeeded() || objectRegion->InPromoteSet()) {
-            auto markBitmap = objectRegion->GetOrCreateMarkBitmap();
+            auto markBitmap = objectRegion->GetMarkBitmap();
+            ASSERT(markBitmap != nullptr);
             if (!markBitmap->Test(value)) {
                 slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
                 return false;

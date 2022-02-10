@@ -40,7 +40,6 @@ public:
                             int valueCounts, StubMachineType type = StubMachineType::NONE);
     GateRef NewIntegerConstant(int32_t value);
     GateRef NewInteger64Constant(int64_t value);
-    GateRef NewWord64Constant(uint64_t val);
     GateRef NewBooleanConstant(bool value);
     GateRef NewDoubleConstant(double value);
     GateRef UndefineConstant(GateType type);

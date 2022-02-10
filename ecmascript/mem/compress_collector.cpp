@@ -60,11 +60,8 @@ void CompressCollector::InitializePhase()
     auto callback = [](Region *current) {
         // ensure mark bitmap
         auto bitmap = current->GetMarkBitmap();
-        if (bitmap == nullptr) {
-            current->GetOrCreateMarkBitmap();
-        } else {
-            bitmap->ClearAllBits();
-        }
+        ASSERT(bitmap != nullptr);
+        bitmap->ClearAllBits();
         auto rememberset = current->GetOldToNewRememberedSet();
         if (rememberset != nullptr) {
             rememberset->ClearAllBits();
