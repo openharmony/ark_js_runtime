@@ -50,6 +50,7 @@
 #include "ecmascript/mem/region.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "generated/base_options.h"
 #include "include/runtime_notification.h"
 #include "libpandabase/os/library_loader.h"
 #include "utils/pandargs.h"
@@ -128,12 +129,14 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     runtimeOptions.SetBootClassSpaces({"ecmascript"});
 
     // Dfx
-    runtimeOptions.SetLogLevel(option.GetLogLevel());
+    base_options::Options baseOptions("");
+    baseOptions.SetLogLevel(option.GetLogLevel());
     arg_list_t logComponents;
     logComponents.emplace_back("all");
-    runtimeOptions.SetLogComponents(logComponents);
+    baseOptions.SetLogComponents(logComponents);
+    Logger::Initialize(baseOptions);
     if (option.GetLogBufPrint() != nullptr) {
-        runtimeOptions.SetMobileLog(reinterpret_cast<void *>(option.GetLogBufPrint()));
+        Logger::SetMobileLogPrintEntryPointByPtr(reinterpret_cast<void *>(option.GetLogBufPrint()));
     }
 
     runtimeOptions.SetEnableArkTools(option.GetEnableArkTools());
