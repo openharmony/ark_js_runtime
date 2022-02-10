@@ -16,8 +16,14 @@
 #include "ecmascript/containers/containers_private.h"
 
 #include "containers_arraylist.h"
+#include "containers_treemap.h"
+#include "containers_treeset.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/js_api_tree_map.h"
+#include "ecmascript/js_api_tree_map_iterator.h"
+#include "ecmascript/js_api_tree_set.h"
+#include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_function.h"
 
@@ -35,20 +41,18 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
         THROW_TYPE_ERROR_AND_RETURN(thread, "Incorrect input parameters", JSTaggedValue::Exception());
     }
 
-    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSTaggedValue res = JSTaggedValue::Undefined();
     switch (tag) {
         case ContainerTag::ArrayList: {
-            JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString("ArrayListConstructor"));
-            JSTaggedValue value =
-                FastRuntimeStub::GetPropertyByName<true>(thread, thisValue.GetTaggedValue(), key.GetTaggedValue());
-            if (value != JSTaggedValue::Undefined()) {
-                res = value;
-            } else {
-                JSHandle<JSTaggedValue> arrayList = InitializeArrayList(thread);
-                SetFrozenConstructor(thread, thisValue, "ArrayListConstructor", arrayList);
-                res = arrayList.GetTaggedValue();
-            }
+            res = InitializeContainer(thread, thisValue, InitializeArrayList, "ArrayListConstructor");
+            break;
+        }
+        case ContainerTag::TreeMap: {
+            res = InitializeContainer(thread, thisValue, InitializeTreeMap, "TreeMapConstructor");
+            break;
+        }
+        case ContainerTag::TreeSet: {
+            res = InitializeContainer(thread, thisValue, InitializeTreeSet, "TreeSetConstructor");
             break;
         }
         case ContainerTag::Queue:
@@ -59,6 +63,21 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
     }
 
     return res;
+}
+
+JSTaggedValue ContainersPrivate::InitializeContainer(JSThread *thread, const JSHandle<JSObject> &obj,
+                                                     InitializeFunction func, const char *name)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(name));
+    JSTaggedValue value =
+        FastRuntimeStub::GetPropertyByName<true>(thread, obj.GetTaggedValue(), key.GetTaggedValue());
+    if (value != JSTaggedValue::Undefined()) {
+        return value;
+    }
+    JSHandle<JSTaggedValue> map = func(thread);
+    SetFrozenConstructor(thread, obj, name, map);
+    return map.GetTaggedValue();
 }
 
 JSHandle<JSFunction> ContainersPrivate::NewContainerConstructor(JSThread *thread, const JSHandle<JSObject> &prototype,
@@ -73,7 +92,7 @@ JSHandle<JSFunction> ContainersPrivate::NewContainerConstructor(JSThread *thread
     JSFunction::SetFunctionLength(thread, ctor, JSTaggedValue(length));
     JSHandle<JSTaggedValue> nameString(factory->NewFromCanBeCompressString(name));
     JSFunction::SetFunctionName(thread, JSHandle<JSFunctionBase>(ctor), nameString,
-                                JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
+                                globalConst->GetHandledUndefined());
     JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
     PropertyDescriptor descriptor1(thread, JSHandle<JSTaggedValue>::Cast(ctor), true, false, true);
     JSObject::DefineOwnProperty(thread, prototype, constructorKey, descriptor1);
@@ -97,7 +116,7 @@ void ContainersPrivate::SetFrozenFunction(JSThread *thread, const JSHandle<JSObj
 void ContainersPrivate::SetFrozenConstructor(JSThread *thread, const JSHandle<JSObject> &obj, const char *keyChar,
                                              JSHandle<JSTaggedValue> &value)
 {
-    JSObject::PreventExtensions(thread, obj);
+    JSObject::PreventExtensions(thread, JSHandle<JSObject>::Cast(value));
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> key(factory->NewFromCanBeCompressString(keyChar));
     PropertyDescriptor descriptor(thread, value, false, false, false);
@@ -187,5 +206,151 @@ JSHandle<JSTaggedValue> ContainersPrivate::InitializeArrayList(JSThread *thread)
     SetFrozenFunction(thread, arrayListFuncPrototype, "add", ContainersArrayList::Add, FuncLength::ONE);
 
     return arrayListFunction;
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeTreeMap(JSThread *thread)
+{
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // TreeMap.prototype
+    JSHandle<JSObject> mapFuncPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> mapFuncPrototypeValue(mapFuncPrototype);
+    // TreeMap.prototype_or_dynclass
+    JSHandle<JSHClass> mapInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPITreeMap::SIZE, JSType::JS_API_TREE_MAP, mapFuncPrototypeValue);
+    // TreeMap() = new Function()
+    JSHandle<JSTaggedValue> mapFunction(NewContainerConstructor(
+        thread, mapFuncPrototype, ContainersTreeMap::TreeMapConstructor, "TreeMap", FuncLength::ZERO));
+    JSHandle<JSFunction>(mapFunction)->SetFunctionPrototype(thread, mapInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(mapFuncPrototype), constructorKey, mapFunction);
+
+    // TreeMap.prototype
+    SetFrozenFunction(thread, mapFuncPrototype, "set", ContainersTreeMap::Set, FuncLength::TWO);
+    SetFrozenFunction(thread, mapFuncPrototype, "get", ContainersTreeMap::Get, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "remove", ContainersTreeMap::Remove, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "hasKey", ContainersTreeMap::HasKey, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "hasValue", ContainersTreeMap::HasValue, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "getFirstKey", ContainersTreeMap::GetFirstKey, FuncLength::ZERO);
+    SetFrozenFunction(thread, mapFuncPrototype, "getLastKey", ContainersTreeMap::GetLastKey, FuncLength::ZERO);
+    SetFrozenFunction(thread, mapFuncPrototype, "setAll", ContainersTreeMap::SetAll, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "clear", ContainersTreeMap::Clear, FuncLength::ZERO);
+    SetFrozenFunction(thread, mapFuncPrototype, "getLowerKey", ContainersTreeMap::GetLowerKey, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "getHigherKey", ContainersTreeMap::GetHigherKey, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "keys", ContainersTreeMap::Keys, FuncLength::ZERO);
+    SetFrozenFunction(thread, mapFuncPrototype, "values", ContainersTreeMap::Values, FuncLength::ZERO);
+    SetFrozenFunction(thread, mapFuncPrototype, "replace", ContainersTreeMap::Replace, FuncLength::TWO);
+    SetFrozenFunction(thread, mapFuncPrototype, "forEach", ContainersTreeMap::ForEach, FuncLength::ONE);
+    SetFrozenFunction(thread, mapFuncPrototype, "entries", ContainersTreeMap::Entries, FuncLength::ZERO);
+
+    // @@ToStringTag
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetStringTagSymbol(thread, env, mapFuncPrototype, "TreeMap");
+    // %TreeMapPrototype% [ @@iterator ]
+    JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
+    JSHandle<JSTaggedValue> entries(factory->NewFromCanBeCompressString("entries"));
+    JSHandle<JSTaggedValue> entriesFunc =
+        JSObject::GetMethod(thread, JSHandle<JSTaggedValue>::Cast(mapFuncPrototype), entries);
+    PropertyDescriptor descriptor(thread, entriesFunc, false, false, false);
+    JSObject::DefineOwnProperty(thread, mapFuncPrototype, iteratorSymbol, descriptor);
+    // length
+    JSHandle<JSTaggedValue> lengthGetter =
+        CreateGetter(thread, ContainersTreeMap::GetLength, "length", FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(thread, globalConst->GetLengthString());
+    SetGetter(thread, mapFuncPrototype, lengthKey, lengthGetter);
+
+    InitializeTreeMapIterator(thread);
+    return mapFunction;
+}
+
+void ContainersPrivate::InitializeTreeMapIterator(JSThread *thread)
+{
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Iterator.dynclass
+    JSHandle<JSHClass> iteratorDynclass =
+        factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_ITERATOR, env->GetIteratorPrototype());
+
+    // TreeMapIterator.prototype
+    JSHandle<JSObject> mapIteratorPrototype(factory->NewJSObject(iteratorDynclass));
+    // TreeIterator.prototype.next()
+    SetFrozenFunction(thread, mapIteratorPrototype, "next", JSAPITreeMapIterator::Next, FuncLength::ZERO);
+    SetStringTagSymbol(thread, env, mapIteratorPrototype, "TreeMap Iterator");
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    globalConst->SetConstant(ConstantIndex::TREEMAP_ITERATOR_PROTOTYPE_INDEX, mapIteratorPrototype.GetTaggedValue());
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeTreeSet(JSThread *thread)
+{
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // TreeSet.prototype
+    JSHandle<JSObject> setFuncPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> setFuncPrototypeValue(setFuncPrototype);
+    // TreeSet.prototype_or_dynclass
+    JSHandle<JSHClass> setInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPITreeSet::SIZE, JSType::JS_API_TREE_SET, setFuncPrototypeValue);
+    // TreeSet() = new Function()
+    JSHandle<JSTaggedValue> setFunction(NewContainerConstructor(
+        thread, setFuncPrototype, ContainersTreeSet::TreeSetConstructor, "TreeSet", FuncLength::ZERO));
+    JSHandle<JSFunction>(setFunction)->SetFunctionPrototype(thread, setInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(setFuncPrototype), constructorKey, setFunction);
+
+    // TreeSet.prototype
+    SetFrozenFunction(thread, setFuncPrototype, "add", ContainersTreeSet::Add, FuncLength::TWO);
+    SetFrozenFunction(thread, setFuncPrototype, "remove", ContainersTreeSet::Remove, FuncLength::ONE);
+    SetFrozenFunction(thread, setFuncPrototype, "has", ContainersTreeSet::Has, FuncLength::ONE);
+    SetFrozenFunction(thread, setFuncPrototype, "getFirstValue", ContainersTreeSet::GetFirstValue, FuncLength::ZERO);
+    SetFrozenFunction(thread, setFuncPrototype, "getLastValue", ContainersTreeSet::GetLastValue, FuncLength::ZERO);
+    SetFrozenFunction(thread, setFuncPrototype, "clear", ContainersTreeSet::Clear, FuncLength::ZERO);
+    SetFrozenFunction(thread, setFuncPrototype, "getLowerValue", ContainersTreeSet::GetLowerValue, FuncLength::ONE);
+    SetFrozenFunction(thread, setFuncPrototype, "getHigherValue", ContainersTreeSet::GetHigherValue, FuncLength::ONE);
+    SetFrozenFunction(thread, setFuncPrototype, "popFirst", ContainersTreeSet::PopFirst, FuncLength::ZERO);
+    SetFrozenFunction(thread, setFuncPrototype, "popLast", ContainersTreeSet::PopLast, FuncLength::ZERO);
+    SetFrozenFunction(thread, setFuncPrototype, "isEmpty", ContainersTreeSet::IsEmpty, FuncLength::TWO);
+    SetFrozenFunction(thread, setFuncPrototype, "values", ContainersTreeSet::Values, FuncLength::ZERO);
+    SetFrozenFunction(thread, setFuncPrototype, "forEach", ContainersTreeSet::ForEach, FuncLength::ONE);
+    SetFrozenFunction(thread, setFuncPrototype, "entries", ContainersTreeSet::Entries, FuncLength::ZERO);
+
+    // @@ToStringTag
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetStringTagSymbol(thread, env, setFuncPrototype, "TreeSet");
+    // %TreeSetPrototype% [ @@iterator ]
+    JSHandle<JSTaggedValue> iteratorSymbol = env->GetIteratorSymbol();
+    JSHandle<JSTaggedValue> values(thread, globalConst->GetValuesString());
+    JSHandle<JSTaggedValue> valuesFunc =
+        JSObject::GetMethod(thread, JSHandle<JSTaggedValue>::Cast(setFuncPrototype), values);
+    PropertyDescriptor descriptor(thread, valuesFunc, false, false, false);
+    JSObject::DefineOwnProperty(thread, setFuncPrototype, iteratorSymbol, descriptor);
+    // length
+    JSHandle<JSTaggedValue> lengthGetter =
+        CreateGetter(thread, ContainersTreeSet::GetLength, "length", FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(thread, globalConst->GetLengthString());
+    SetGetter(thread, setFuncPrototype, lengthKey, lengthGetter);
+
+    InitializeTreeSetIterator(thread);
+    return setFunction;
+}
+
+void ContainersPrivate::InitializeTreeSetIterator(JSThread *thread)
+{
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Iterator.dynclass
+    JSHandle<JSHClass> iteratorDynclass =
+        factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_ITERATOR, env->GetIteratorPrototype());
+
+    // TreeSetIterator.prototype
+    JSHandle<JSObject> setIteratorPrototype(factory->NewJSObject(iteratorDynclass));
+    // TreeSetIterator.prototype.next()
+    SetFrozenFunction(thread, setIteratorPrototype, "next", JSAPITreeSetIterator::Next, FuncLength::ZERO);
+    SetStringTagSymbol(thread, env, setIteratorPrototype, "TreeSet Iterator");
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    globalConst->SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, setIteratorPrototype.GetTaggedValue());
 }
 }  // namespace panda::ecmascript::containers

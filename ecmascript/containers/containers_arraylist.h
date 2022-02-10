@@ -20,6 +20,9 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 
 namespace panda::ecmascript::containers {
+/**
+ * High performance container interface in jsapi.
+ * */
 class ContainersArrayList : public base::BuiltinsBase {
 public:
     static JSTaggedValue ArrayListConstructor(EcmaRuntimeCallInfo *argv);

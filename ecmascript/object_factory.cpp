@@ -36,6 +36,10 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_tree_map.h"
+#include "ecmascript/js_api_tree_map_iterator.h"
+#include "ecmascript/js_api_tree_set.h"
+#include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
@@ -72,6 +76,7 @@
 #include "ecmascript/mem/space.h"
 #include "ecmascript/record.h"
 #include "ecmascript/symbol_table-inl.h"
+#include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
 
 namespace panda::ecmascript {
@@ -808,14 +813,23 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSDataView::Cast(*obj)->SetByteLength(0);
                 JSDataView::Cast(*obj)->SetByteOffset(0);
                 break;
+            // non ECMA standard jsapi container
             case JSType::JS_ARRAY_LIST:
                 JSArrayList::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
+                break;
+            case JSType::JS_API_TREE_MAP:
+                JSAPITreeMap::Cast(*obj)->SetTreeMap(thread_, JSTaggedValue::Undefined());
+                break;
+            case JSType::JS_API_TREE_SET:
+                JSAPITreeSet::Cast(*obj)->SetTreeSet(thread_, JSTaggedValue::Undefined());
                 break;
             case JSType::JS_FUNCTION:
             case JSType::JS_GENERATOR_FUNCTION:
             case JSType::JS_FORIN_ITERATOR:
             case JSType::JS_MAP_ITERATOR:
             case JSType::JS_SET_ITERATOR:
+            case JSType::JS_API_TREEMAP_ITERATOR:
+            case JSType::JS_API_TREESET_ITERATOR:
             case JSType::JS_ARRAY_ITERATOR:
             default:
                 UNREACHABLE();
@@ -2129,5 +2143,39 @@ JSHandle<EcmaString> ObjectFactory::ConcatFromString(const JSHandle<EcmaString> 
 {
     EcmaString *concatString = EcmaString::Concat(prefix, suffix, vm_);
     return GetStringFromStringTable(concatString);
+}
+
+JSHandle<JSAPITreeMapIterator> ObjectFactory::NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map,
+                                                                      IterationKind kind)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> proto(thread_, thread_->GlobalConstants()->GetTreeMapIteratorPrototype());
+    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSAPITreeMapIterator::SIZE, JSType::JS_API_TREEMAP_ITERATOR, proto);
+    JSHandle<JSAPITreeMapIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedMap(thread_, map);
+    iter->SetNextIndex(thread_, JSTaggedValue(0));
+    iter->SetIterationKind(thread_, JSTaggedValue(static_cast<int>(kind)));
+    JSHandle<TaggedTreeMap> tmap(thread_, map->GetTreeMap());
+    JSHandle<TaggedArray> entries = TaggedTreeMap::GetArrayFromMap(thread_, tmap);
+    iter->SetEntries(thread_, entries);
+    return iter;
+}
+
+JSHandle<JSAPITreeSetIterator> ObjectFactory::NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set,
+                                                                      IterationKind kind)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> proto(thread_, thread_->GlobalConstants()->GetTreeSetIteratorPrototype());
+    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSAPITreeSetIterator::SIZE, JSType::JS_API_TREESET_ITERATOR, proto);
+    JSHandle<JSAPITreeSetIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedSet(thread_, set);
+    iter->SetNextIndex(thread_, JSTaggedValue(0));
+    iter->SetIterationKind(thread_, JSTaggedValue(static_cast<int>(kind)));
+    JSHandle<TaggedTreeSet> tset(thread_, set->GetTreeSet());
+    JSHandle<TaggedArray> entries = TaggedTreeSet::GetArrayFromSet(thread_, tset);
+    iter->SetEntries(thread_, entries);
+    return iter;
 }
 }  // namespace panda::ecmascript

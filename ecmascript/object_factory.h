@@ -82,6 +82,10 @@ class LayoutInfo;
 class JSIntlBoundFunction;
 class FreeObject;
 class JSNativePointer;
+class JSAPITreeSet;
+class JSAPITreeMap;
+class JSAPITreeSetIterator;
+class JSAPITreeMapIterator;
 
 namespace job {
 class MicroJobQueue;
@@ -358,6 +362,10 @@ public:
 
     // used for creating jshclass in Builtins, Function, Class_Linker
     JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype);
+
+    // It is used to provide iterators for non ECMA standard jsapi containers.
+    JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
+    JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);
 
 private:
     friend class GlobalEnv;
