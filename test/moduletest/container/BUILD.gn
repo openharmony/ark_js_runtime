@@ -17,7 +17,23 @@ host_moduletest_action("container_arraylist") {
   deps = []
 }
 
+host_moduletest_action("container_treemap") {
+  deps = []
+}
+
+host_moduletest_action("container_treeset") {
+  deps = []
+}
+
 host_moduletest_action("container") {
-  extra_modules = [ "container_arraylist" ]
-  deps = [ ":gen_container_arraylist_abc" ]
+  extra_modules = [
+    "container_arraylist",
+    "container_treemap",
+    "container_treeset",
+  ]
+  deps = [
+    ":gen_container_arraylist_abc",
+    ":gen_container_treemap_abc",
+    ":gen_container_treeset_abc",
+  ]
 }
