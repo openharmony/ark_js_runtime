@@ -160,7 +160,6 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 {
     auto runtime = Runtime::GetCurrent();
     if (runtime == nullptr) {
-        // Art java + Panda js or L2 pure JS app
         if (!CreateRuntime(option)) {
             return nullptr;
         }
@@ -180,7 +179,6 @@ void JSNApi::DestoryJSVM(EcmaVM *ecmaVm)
     auto runtime = Runtime::GetCurrent();
     if (runtime != nullptr) {
         PandaVM *mainVm = runtime->GetPandaVM();
-        // Art java + Panda js
         if (mainVm == ecmaVm) {
             DestoryRuntime();
         } else {
