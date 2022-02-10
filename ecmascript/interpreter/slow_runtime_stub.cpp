@@ -199,9 +199,10 @@ JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, EcmaVM *ecma_vm, JSTagg
     JSHandle<JSTaggedValue> leftValue(thread, left);
     JSHandle<JSTaggedValue> rightValue(thread, right);
     if (leftValue->IsString() && rightValue->IsString()) {
-        EcmaString *newString =
-            EcmaString::Concat(JSHandle<EcmaString>(leftValue), JSHandle<EcmaString>(rightValue), ecma_vm);
-        return JSTaggedValue(newString);
+        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+        JSHandle<EcmaString> newString =
+            factory->ConcatFromString(JSHandle<EcmaString>(leftValue), JSHandle<EcmaString>(rightValue));
+        return newString.GetTaggedValue();
     }
     JSHandle<JSTaggedValue> primitiveA0(thread, JSTaggedValue::ToPrimitive(thread, leftValue));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -213,8 +214,9 @@ JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, EcmaVM *ecma_vm, JSTagg
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         JSHandle<EcmaString> stringA1 = JSTaggedValue::ToString(thread, primitiveA1);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        EcmaString *newString = EcmaString::Concat(stringA0, stringA1, ecma_vm);
-        return JSTaggedValue(newString);
+        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+        JSHandle<EcmaString> newString = factory->ConcatFromString(stringA0, stringA1);
+        return newString.GetTaggedValue();
     }
     JSTaggedNumber taggedValueA0 = JSTaggedValue::ToNumber(thread, primitiveA0);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
