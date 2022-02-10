@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "circuit.h"
+#include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_method.h"
 
@@ -89,6 +90,7 @@ struct BytecodeInfo {
     std::vector<VRegIDType> vregOut {}; // write register
     bool accIn {false}; // read acc
     bool accOut {false}; // write acc
+    uint64_t imm {0};
     uint8_t opcode {0};
     uint16_t offset {0};
 };
@@ -141,6 +143,11 @@ public:
         return GetEcmaOpcodeStr(static_cast<EcmaOpcode>(*pc));
     }
 
+    [[nodiscard]] uint8_t* GetJSBytecode(GateRef gate) const
+    {
+        return jsgateToBytecode_.at(gate).second;
+    }
+
 private:
     void PUBLIC_API CollectBytecodeBlockInfo(uint8_t* pc, std::vector<CfgInfo> &bytecodeBlockInfos);
 
@@ -173,6 +180,7 @@ private:
     static bool IsReturn(EcmaOpcode opcode);
     static bool IsThrow(EcmaOpcode opcode);
     static bool IsGeneral(EcmaOpcode opcode);
+    static bool IsSetConstant(EcmaOpcode opcode);
 
     kungfu::Circuit circuit_;
     std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>> jsgateToBytecode_;

@@ -92,10 +92,8 @@ Properties OpCode::GetProperties() const
         case IF_SUCCESS:
         case IF_EXCEPTION:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), NO_DEPEND, NO_VALUE, NO_ROOT};
-        case EXCEPTION_VALUE:
-            return {FLEX, NO_STATE, NO_DEPEND, VALUE(FLEX), NO_ROOT};
-        case EXCEPTION_DEPEND:
-            return {NOVALUE, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
+        case GET_EXCEPTION:
+            return {I64, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
         // Middle Level IR
         case CALL:
             return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
@@ -215,8 +213,7 @@ std::string OpCode::Str() const
         {JS_BYTECODE, "JS_BYTECODE"},
         {IF_SUCCESS, "IF_SUCCESS"},
         {IF_EXCEPTION, "IF_EXCEPTION"},
-        {EXCEPTION_VALUE, "EXCEPTION_VALUE"},
-        {EXCEPTION_DEPEND, "EXCEPTION_DEPEND"},
+        {GET_EXCEPTION, "GET_EXCEPTION"},
         {CALL, "CALL"},
         {ALLOCA, "ALLOCA"},
         {ARG, "ARG"},
