@@ -179,7 +179,11 @@ void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) c
         while (numBytes != 0) {
             size_t InstSize = LLVMDisasmInstruction(dcr, byteSp, numBytes, pc, outString, outStringSize);
             if (InstSize == 0) {
-                fprintf(stderr, "%08x: %08x maybe constant\n", pc, *reinterpret_cast<uint32_t *>(byteSp));
+                std::cerr.fill('0');
+                std::cerr.width(8); // 8:fixed hex print width
+                std::cerr << std::hex << pc << ":";
+                std::cerr.width(8); // 8:fixed hex print width
+                std::cerr << std::hex << *reinterpret_cast<uint32_t *>(byteSp) << "maybe constant"  << std::endl;
                 pc += 4; // 4 pc length
                 byteSp += 4; // 4 sp offset
                 numBytes -= 4; // 4 num bytes
@@ -188,7 +192,11 @@ void LLVMMCJITCompiler::Disassemble(std::map<uint64_t, std::string> addr2name) c
             if (addr2name.find(addr) != addr2name.end()) {
                 std::cout << addr2name[addr].c_str() << ":" << std::endl;
             }
-            fprintf(stderr, "%08x: %08x %s\n", pc, *reinterpret_cast<uint32_t *>(byteSp), outString);
+            std::cerr.fill('0');
+            std::cerr.width(8); // 8:fixed hex print width
+            std::cerr << std::hex << pc << ":";
+            std::cerr.width(8); // 8:fixed hex print width
+            std::cerr << std::hex << *reinterpret_cast<uint32_t *>(byteSp) << " " << outString << std::endl;
             pc += InstSize;
             byteSp += InstSize;
             numBytes -= InstSize;
