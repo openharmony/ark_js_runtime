@@ -31,6 +31,10 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_tree_map.h"
+#include "ecmascript/js_api_tree_map_iterator.h"
+#include "ecmascript/js_api_tree_set.h"
+#include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
@@ -73,6 +77,7 @@
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
+#include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
 #include "ecmascript/transitions_dictionary.h"
 
@@ -82,6 +87,7 @@ using PendingJob = panda::ecmascript::job::PendingJob;
 
 static constexpr uint32_t DUMP_TYPE_OFFSET = 12;
 static constexpr uint32_t DUMP_PROPERTY_OFFSET = 20;
+static constexpr uint32_t DUMP_ELEMENT_OFFSET = 2;
 
 CString JSHClass::DumpJSType(JSType type)
 {
@@ -252,6 +258,14 @@ CString JSHClass::DumpJSType(JSType type)
             return "ClassInfoExtractor";
         case JSType::JS_ARRAY_LIST:
             return "ArrayList";
+        case JSType::JS_API_TREE_MAP:
+            return "TreeMap";
+        case JSType::JS_API_TREE_SET:
+            return "TreeSet";
+        case JSType::JS_API_TREEMAP_ITERATOR:
+            return "TreeMapIterator";
+        case JSType::JS_API_TREESET_ITERATOR:
+            return "TreeSetIterator";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -591,6 +605,18 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_ARRAY_LIST:
             JSArrayList::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_API_TREE_MAP:
+            JSAPITreeMap::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_API_TREE_SET:
+            JSAPITreeSet::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_API_TREEMAP_ITERATOR:
+            JSAPITreeMapIterator::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_API_TREESET_ITERATOR:
+            JSAPITreeSetIterator::Cast(obj)->Dump(thread, os);
             break;
         default:
             UNREACHABLE();
@@ -997,6 +1023,202 @@ void JSMap::Dump(JSThread *thread, std::ostream &os) const
 
     os << " <NameDictionary[" << map->NumberOfElements() << "]>\n";
     map->Dump(thread, os);
+}
+
+void JSAPITreeMap::Dump(JSThread *thread, std::ostream &os) const
+{
+    TaggedTreeMap *map = TaggedTreeMap::Cast(GetTreeMap().GetTaggedObject());
+    os << " - elements: " << std::dec << map->NumberOfElements() << "\n";
+    os << " - deleted-elements: " << std::dec << map->NumberOfDeletedElements() << "\n";
+    os << " - capacity: " << std::dec << map->Capacity() << "\n";
+    JSObject::Dump(thread, os);
+
+    os << " <TaggedTree[" << map->NumberOfElements() << "]>\n";
+    map->Dump(thread, os);
+}
+
+void JSAPITreeMap::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                   std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedTreeMap *map = TaggedTreeMap::Cast(GetTreeMap().GetTaggedObject());
+    map->DumpForSnapshot(thread, vec);
+
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
+void JSAPITreeMapIterator::Dump(JSThread *thread, std::ostream &os) const
+{
+    TaggedTreeMap *map =
+        TaggedTreeMap::Cast(JSAPITreeMap::Cast(GetIteratedMap().GetTaggedObject())->GetTreeMap().GetTaggedObject());
+    os << " - elements: " << std::dec << map->NumberOfElements() << "\n";
+    os << " - deleted-elements: " << std::dec << map->NumberOfDeletedElements() << "\n";
+    os << " - capacity: " << std::dec << map->Capacity() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
+    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    JSObject::Dump(thread, os);
+
+    os << " <TaggedTree[" << map->NumberOfElements() << "]>\n";
+    map->Dump(thread, os);
+}
+
+void JSAPITreeMapIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                           std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedTreeMap *map =
+        TaggedTreeMap::Cast(JSAPITreeMap::Cast(GetIteratedMap().GetTaggedObject())->GetTreeMap().GetTaggedObject());
+    map->DumpForSnapshot(thread, vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
+    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
+template <typename T>
+void DumpTaggedTreeEntry(JSThread *thread, T tree, std::ostream &os, int index, bool isMap = false)
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    JSTaggedValue parent(tree->GetParent(index));
+    JSTaggedValue val(tree->GetValue(index));
+    JSTaggedValue color(static_cast<int>(tree->GetColor(index)));
+    JSTaggedValue left = tree->GetLeftChild(index);
+    JSTaggedValue right = tree->GetRightChild(index);
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[entry] " << index << ": ";
+    os << "\n";
+    if (isMap) {
+        os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "   [key]:    {";
+        JSTaggedValue key(tree->GetKey(index));
+        key.DumpTaggedValue(thread, os);
+        os << std::right << "};";
+        os << "\n";
+    }
+    os << std::left << std::setw(DUMP_TYPE_OFFSET) << "   [value]:  {";
+    val.DumpTaggedValue(thread, os);
+    os << std::right << "};";
+    os << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "   [parent]: {";
+    parent.DumpTaggedValue(thread, os);
+    os << std::right << "};";
+    os << "\n";
+    os << std::left << std::setw(DUMP_TYPE_OFFSET) << "   [color]:  {";
+    color.DumpTaggedValue(thread, os);
+    os << std::right << "};";
+    os << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "   [left]:   {";
+    left.DumpTaggedValue(thread, os);
+    os << std::right << "}; ";
+    os << std::left << std::setw(DUMP_TYPE_OFFSET) << "  [right]: {";
+    right.DumpTaggedValue(thread, os);
+    os << std::right << "};";
+    os << "\n";
+}
+void TaggedTreeMap::Dump(JSThread *thread, std::ostream &os) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[Elements]: {";
+    JSTaggedValue node = TaggedArray::Get(0);
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[Delete]:   {";
+    node = TaggedArray::Get(1);
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[Capacity]: {";
+    node = TaggedArray::Get(2); // 2 means the three element
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[RootNode]: {";
+    node = TaggedArray::Get(3); // 3 means the three element
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+
+    int capacity = NumberOfElements() + NumberOfDeletedElements();
+    for (int index = 0; index < capacity; index++) {
+        if (GetKey(index).IsHole()) {
+            os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[entry] " << index << ": ";
+            GetKey(index).DumpTaggedValue(thread, os);
+            os << "\n";
+        } else {
+            DumpTaggedTreeEntry(thread, const_cast<TaggedTreeMap *>(this), os, index, true);
+        }
+    }
+}
+
+void JSAPITreeSet::Dump(JSThread *thread, std::ostream &os) const
+{
+    TaggedTreeSet *set = TaggedTreeSet::Cast(GetTreeSet().GetTaggedObject());
+    os << " - elements: " << std::dec << set->NumberOfElements() << "\n";
+    os << " - deleted-elements: " << std::dec << set->NumberOfDeletedElements() << "\n";
+    os << " - capacity: " << std::dec << set->Capacity() << "\n";
+    JSObject::Dump(thread, os);
+
+    os << " <TaggedTree[" << set->NumberOfElements() << "]>\n";
+    set->Dump(thread, os);
+}
+
+void JSAPITreeSet::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                   std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedTreeSet *set = TaggedTreeSet::Cast(GetTreeSet().GetTaggedObject());
+    set->DumpForSnapshot(thread, vec);
+
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
+void JSAPITreeSetIterator::Dump(JSThread *thread, std::ostream &os) const
+{
+    TaggedTreeSet *set =
+        TaggedTreeSet::Cast(JSAPITreeSet::Cast(GetIteratedSet().GetTaggedObject())->GetTreeSet().GetTaggedObject());
+    os << " - elements: " << std::dec << set->NumberOfElements() << "\n";
+    os << " - deleted-elements: " << std::dec << set->NumberOfDeletedElements() << "\n";
+    os << " - capacity: " << std::dec << set->Capacity() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
+    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    JSObject::Dump(thread, os);
+
+    os << " <TaggedTree[" << set->NumberOfElements() << "]>\n";
+    set->Dump(thread, os);
+}
+
+void JSAPITreeSetIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                           std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    TaggedTreeSet *set =
+        TaggedTreeSet::Cast(JSAPITreeSet::Cast(GetIteratedSet().GetTaggedObject())->GetTreeSet().GetTaggedObject());
+    set->DumpForSnapshot(thread, vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
+    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
+void TaggedTreeSet::Dump(JSThread *thread, std::ostream &os) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[Elements]: {";
+    JSTaggedValue node = TaggedArray::Get(0);
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[Delete]:   {";
+    node = TaggedArray::Get(1);
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[Capacity]: {";
+    node = TaggedArray::Get(2); // 2 means the three element
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+    os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[RootNode]: {";
+    node = TaggedArray::Get(3); // 3 means the three element
+    node.DumpTaggedValue(thread, os);
+    os << std::right << "}" << "\n";
+
+    int capacity = NumberOfElements() + NumberOfDeletedElements();
+    for (int index = 0; index < capacity; index++) {
+        if (GetKey(index).IsHole()) {
+            os << std::left << std::setw(DUMP_ELEMENT_OFFSET) << "[entry] " << index << ": ";
+            GetKey(index).DumpTaggedValue(thread, os);
+            os << "\n";
+        } else {
+            DumpTaggedTreeEntry(thread, const_cast<TaggedTreeSet *>(this), os, index);
+        }
+    }
 }
 
 void JSForInIterator::Dump(JSThread *thread, std::ostream &os) const
@@ -2065,6 +2287,18 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::JS_ARRAY_LIST:
             JSArrayList::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
+        case JSType::JS_API_TREE_MAP:
+            JSAPITreeMap::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::JS_API_TREE_SET:
+            JSAPITreeSet::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::JS_API_TREEMAP_ITERATOR:
+            JSAPITreeMapIterator::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::JS_API_TREESET_ITERATOR:
+            JSAPITreeSetIterator::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
         default:
             break;
     }
@@ -2223,6 +2457,37 @@ void LinkedHashMap::DumpForSnapshot([[maybe_unused]] JSThread *thread,
             CString str;
             KeyToStd(str, key);
             vec.push_back(std::make_pair(str, val));
+        }
+    }
+}
+
+void TaggedTreeMap::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                    std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    int capacity = NumberOfElements() + NumberOfDeletedElements();
+    for (int index = 0; index < capacity; index++) {
+        JSTaggedValue key(GetKey(index));
+        if (!key.IsUndefined() && !key.IsHole() && !key.IsNull()) {
+            JSTaggedValue val = GetValue(index);
+            CString str;
+            KeyToStd(str, key);
+            vec.push_back(std::make_pair(str, val));
+        }
+    }
+}
+
+void TaggedTreeSet::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                    std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    int capacity = NumberOfElements() + NumberOfDeletedElements();
+    for (int index = 0; index < capacity; index++) {
+        JSTaggedValue key(GetKey(index));
+        if (!key.IsUndefined() && !key.IsHole() && !key.IsNull()) {
+            CString str;
+            KeyToStd(str, key);
+            vec.push_back(std::make_pair(str, JSTaggedValue::Hole()));
         }
     }
 }
@@ -2597,6 +2862,8 @@ void GlobalEnv::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     vec.push_back(std::make_pair(CString("AsyncFunctionString"), globalConst->GetAsyncFunctionString()));
     vec.push_back(std::make_pair(CString("ThrowerString"), globalConst->GetThrowerString()));
     vec.push_back(std::make_pair(CString("Undefined"), globalConst->GetUndefined()));
+    vec.push_back(std::make_pair(CString("TreeMapIteratorPrototype"), globalConst->GetTreeMapIteratorPrototype()));
+    vec.push_back(std::make_pair(CString("TreeSetIteratorPrototype"), globalConst->GetTreeSetIteratorPrototype()));
 }
 
 void JSDataView::DumpForSnapshot([[maybe_unused]] JSThread *thread,

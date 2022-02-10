@@ -26,6 +26,10 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_tree_map.h"
+#include "ecmascript/js_api_tree_map_iterator.h"
+#include "ecmascript/js_api_tree_set.h"
+#include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraylist.h"
@@ -298,6 +302,18 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
         case JSType::JS_QUEUE:
         case JSType::JS_ARRAY_LIST:
             JSArrayList::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_TREE_MAP:
+            JSAPITreeMap::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_TREE_SET:
+            JSAPITreeSet::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_TREEMAP_ITERATOR:
+            JSAPITreeMapIterator::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_TREESET_ITERATOR:
+            JSAPITreeSetIterator::Cast(object)->VisitRangeSlot(visitor);
             break;
         default:
             UNREACHABLE();

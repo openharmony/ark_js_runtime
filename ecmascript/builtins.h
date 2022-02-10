@@ -209,6 +209,7 @@ private:
     void SetGetter(const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> &key,
                    const JSHandle<JSTaggedValue> &getter) const;
     JSHandle<JSObject> InitializeArkTools(const JSHandle<GlobalEnv> &env) const;
+    // Using to initialize jsapi container
     JSHandle<JSObject> InitializeArkPrivate(const JSHandle<GlobalEnv> &env) const;
     void SetConstantObject(const JSHandle<JSObject> &obj, const char *key, JSHandle<JSTaggedValue> &value) const;
     void SetFrozenFunction(const JSHandle<GlobalEnv> &env, const JSHandle<JSObject> &obj, const char *key,

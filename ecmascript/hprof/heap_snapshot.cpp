@@ -325,6 +325,14 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("EcmaModule");
         case JSType::JS_ARRAY_LIST:
             return GetString("ArrayList");
+        case JSType::JS_API_TREE_MAP:
+            return GetString("TreeMap");
+        case JSType::JS_API_TREE_SET:
+            return GetString("TreeSet");
+        case JSType::JS_API_TREEMAP_ITERATOR:
+            return GetString("TreeMapIterator");
+        case JSType::JS_API_TREESET_ITERATOR:
+            return GetString("TreeSetIterator");
         default:
             break;
     }
