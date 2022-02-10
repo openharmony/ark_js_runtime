@@ -140,6 +140,10 @@ config("ark_jsruntime_common_config") {
     defines += [ "IS_STANDARD_SYSTEM" ]
   }
 
+  if (build_public_version) {
+    defines += [ "IS_PUBLIC_VERSION" ]
+  }
+
   if (is_linux) {
     defines += [
       "PANDA_TARGET_UNIX",
@@ -226,9 +230,11 @@ config("ark_jsruntime_common_config") {
   }
 
   if (!is_linux) {
-    include_dirs = [
-      "//developtools/bytrace_standard/interfaces/innerkits/native/include",
-    ]
+    if (build_public_version) {
+      include_dirs = [
+        "//developtools/bytrace_standard/interfaces/innerkits/native/include",
+      ]
+    }
     cflags_cc += [ "-Wno-gnu-zero-variadic-macro-arguments" ]
   }
 }
@@ -446,7 +452,9 @@ ohos_shared_library("libark_jsruntime") {
   ]
 
   if (!is_linux) {
-    external_deps = [ "bytrace_standard:bytrace_core" ]
+    if (build_public_version) {
+      external_deps = [ "bytrace_standard:bytrace_core" ]
+    }
   }
 
   configs = [ ":ark_jsruntime_config" ]
@@ -498,7 +506,9 @@ ohos_shared_library("libark_jsruntime_test") {
   deps = [ ":libark_jsruntime_test_static" ]
 
   if (!is_linux) {
-    external_deps = [ "bytrace_standard:bytrace_core" ]
+    if (build_public_version) {
+      external_deps = [ "bytrace_standard:bytrace_core" ]
+    }
   }
 
   if (is_standard_system) {
