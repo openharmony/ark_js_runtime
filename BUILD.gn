@@ -43,6 +43,7 @@ group("ark_js_unittest") {
   deps = []
   if (host_os != "mac") {
     deps += [
+      "//ark/js_runtime/ecmascript/base/tests:unittest",
       "//ark/js_runtime/ecmascript/builtins/tests:unittest",
       "//ark/js_runtime/ecmascript/hprof/tests:unittest",
       "//ark/js_runtime/ecmascript/ic/tests:unittest",
@@ -61,6 +62,7 @@ group("ark_js_host_unittest") {
   if (host_os != "mac") {
     # js unittest
     deps += [
+      "//ark/js_runtime/ecmascript/base/tests:host_unittest",
       "//ark/js_runtime/ecmascript/builtins/tests:host_unittest",
       "//ark/js_runtime/ecmascript/hprof/tests:host_unittest",
       "//ark/js_runtime/ecmascript/ic/tests:host_unittest",
