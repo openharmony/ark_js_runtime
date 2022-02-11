@@ -1720,7 +1720,7 @@ GateRef Stub::IntptrEuqal(GateRef x, GateRef y)
 GateRef Stub::AddrToBitOffset(GateRef memberset, GateRef addr)
 {
     //  (addr - beginAddr_) / BYTESPERCHUNK
-    auto beginAddrOffset = RememberedSet::GetBeginAddrOffset();
+    auto beginAddrOffset = RememberedSet::GetBeginAddrOffset(env_.Is32Bit());
     auto beginAddr = Load(StubMachineType::NATIVE_POINTER, memberset, GetIntPtrConstant(beginAddrOffset));
     return IntPtrDiv(IntPtrSub(addr, beginAddr), GetIntPtrConstant(RememberedSet::BYTESPERCHUNK));
 }
