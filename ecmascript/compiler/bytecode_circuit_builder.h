@@ -120,14 +120,9 @@ public:
     void PUBLIC_API BytecodeToCircuit(const std::vector<uint8_t *> &pcArray, const panda_file::File &pf,
                                       const JSMethod *method);
 
-    [[nodiscard]] kungfu::Circuit& GetCircuit()
+    [[nodiscard]] kungfu::Circuit* GetCircuit()
     {
-        return circuit_;
-    }
-
-    [[nodiscard]] const kungfu::Circuit& GetCircuit() const
-    {
-        return circuit_;
+        return &circuit_;
     }
 
     [[nodiscard]] const std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>>& GetGateToBytecode() const
