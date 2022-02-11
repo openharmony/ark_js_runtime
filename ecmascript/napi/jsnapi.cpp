@@ -55,6 +55,8 @@
 #include "libpandabase/os/library_loader.h"
 #include "utils/pandargs.h"
 
+#include "os/mutex.h"
+
 namespace panda {
 using ecmascript::CString;
 using ecmascript::ECMAObject;
@@ -109,6 +111,9 @@ namespace {
 constexpr std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 }
 
+int JSNApi::vmCount = 0;
+static os::memory::Mutex mutex;
+
 // ------------------------------------ Panda -----------------------------------------------
 bool JSNApi::CreateRuntime(const RuntimeOption &option)
 {
@@ -157,9 +162,12 @@ bool JSNApi::DestroyRuntime()
 EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 {
     auto runtime = Runtime::GetCurrent();
+    os::memory::LockHolder lock(mutex);
+    vmCount++;
     if (runtime == nullptr) {
         // Only Ark js app
         if (!CreateRuntime(option)) {
+            vmCount--;
             return nullptr;
         }
         runtime = Runtime::GetCurrent();
@@ -178,12 +186,16 @@ void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
     ecmaVm->GetNotificationManager()->VmDeathEvent();
     auto runtime = Runtime::GetCurrent();
     if (runtime != nullptr) {
+        os::memory::LockHolder lock(mutex);
+        vmCount--;
         PandaVM *mainVm = runtime->GetPandaVM();
         // Only Ark js app
-        if (mainVm == ecmaVm) {
-            DestroyRuntime();
-        } else {
+        if (mainVm != ecmaVm) {
             EcmaVM::Destroy(ecmaVm);
+        }
+
+        if (vmCount <= 0) {
+            DestroyRuntime();
         }
     }
 }

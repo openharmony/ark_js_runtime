@@ -900,6 +900,7 @@ public:
     static bool CheckSafepoint(const EcmaVM *vm);
 
 private:
+    static int vmCount;
     static bool CreateRuntime(const RuntimeOption &option);
     static bool DestroyRuntime();
 
