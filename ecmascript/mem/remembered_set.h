@@ -77,9 +77,19 @@ public:
         return (range_size >> mem::Bitmap::LOG_BITSPERWORD) / BYTESPERCHUNK * sizeof(mem::Bitmap::BitmapWordType);
     }
 
-    static constexpr uint32_t GetBeginAddrOffset()
+    static constexpr uint32_t GetBeginAddrOffset(bool is32Bit = false)
     {
-        return MEMBER_OFFSET(RememberedSet, beginAddr_);
+        return is32Bit ? BITMAP_MEMBER_SIZE_32 : BITMAP_MEMBER_SIZE_64;
+    }
+
+    static constexpr bool CheckLayout()
+    {
+    #ifdef PANDA_TARGET_32
+        static_assert(GetBeginAddrOffset(true) == MEMBER_OFFSET(RememberedSet, beginAddr_));
+    #else
+        static_assert(GetBeginAddrOffset(false) == MEMBER_OFFSET(RememberedSet, beginAddr_));
+    #endif
+        return true;
     }
 
 private:
@@ -92,9 +102,12 @@ private:
     {
         return (addr - beginAddr_) / BYTESPERCHUNK;
     }
-
+    // BitMap class consist members: bitmap_ and bitsize_
+    static constexpr size_t BITMAP_MEMBER_SIZE_64 = sizeof(uint64_t) + sizeof(uint64_t) + sizeof(uint64_t);
+    static constexpr size_t BITMAP_MEMBER_SIZE_32 = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t);
     uintptr_t beginAddr_;
 };
+static_assert(RememberedSet::CheckLayout());
 }  // namespace panda::ecmascript
 
 #endif  // ECMASCRIPT_MEM_REMEMBERED_SET_H
