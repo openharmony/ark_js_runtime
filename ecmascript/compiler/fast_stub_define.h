@@ -45,7 +45,8 @@ namespace panda::ecmascript::kungfu {
     V(NoticeThroughChainAndRefreshUser, 3)  \
     V(DebugPrint, 1)                        \
     V(InsertOldToNewRememberedSet, 3)       \
-    V(MarkingBarrier, 5)
+    V(MarkingBarrier, 5)                    \
+    V(SlowRuntimeAdd2Dyn, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

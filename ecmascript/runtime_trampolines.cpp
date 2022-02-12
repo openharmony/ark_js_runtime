@@ -385,4 +385,11 @@ void RuntimeTrampolines::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintp
     }
     ::panda::ecmascript::MarkingBarrier(slotAddr, objectRegion, value, valueRegion);
 }
+
+JSTaggedValue RuntimeTrampolines::SlowRuntimeAdd2Dyn(uintptr_t argGlue, JSTaggedValue left, JSTaggedValue right)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    return SlowRuntimeStub::Add2Dyn(thread, ecmaVm, left, right);
+}
 }  // namespace panda::ecmascript

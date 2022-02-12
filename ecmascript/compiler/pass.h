@@ -16,9 +16,11 @@
 #ifndef ECMASCRIPT_COMPILER_PASS_H
 #define ECMASCRIPT_COMPILER_PASS_H
 
+#include "bytecode_circuit_builder.h"
 #include "verifier.h"
 #include "scheduler.h"
 #include "fast_stub.h"
+#include "generic_lowering.h"
 #include "llvm_codegen.h"
 
 namespace panda::ecmascript::kungfu {
@@ -64,8 +66,10 @@ private:
 
 class GenericLoweringPass {
 public:
-    bool Run(PassData* data)
+    bool Run(PassData* data, BytecodeCircuitBuilder *builder)
     {
+        GenericLowering lowering(builder, data->GetCircuit());
+        lowering.CallRuntimeLowering();
         return true;
     }
 };
