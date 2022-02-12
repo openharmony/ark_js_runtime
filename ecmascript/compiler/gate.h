@@ -93,8 +93,7 @@ public:
         JS_BYTECODE,
         IF_SUCCESS,
         IF_EXCEPTION,
-        EXCEPTION_VALUE,
-        EXCEPTION_DEPEND,
+        GET_EXCEPTION,
         // Middle Level IR
         CALL,
         ALLOCA,
