@@ -197,6 +197,13 @@ inline uintptr_t EcmaGlobalStorage::SetWeak(uintptr_t nodeAddr)
     return NewGlobalHandleImplement(&lastWeakGlobalNodes_, &weakFreeListNodes_, true, value);
 }
 
+inline uintptr_t EcmaGlobalStorage::ClearWeak(uintptr_t nodeAddr)
+{
+    auto value = reinterpret_cast<Node *>(nodeAddr)->GetObject();
+    DisposeGlobalHandle(nodeAddr);
+    return NewGlobalHandleImplement(&lastGlobalNodes_, &freeListNodes_, false, value);
+}
+
 inline bool EcmaGlobalStorage::IsWeak(uintptr_t addr) const
 {
     Node *node = reinterpret_cast<Node *>(addr);
