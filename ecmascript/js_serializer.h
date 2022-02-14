@@ -37,7 +37,6 @@ enum class SerializationUID : uint8_t {
     HOLE,
     // Number types
     INT32,
-    UINT32,
     DOUBLE,
     // Not support yet, BigInt type has not been implemented in ark engine
     BIGINT,
@@ -95,7 +94,6 @@ private:
     bool WriteTaggedObject(const JSHandle<JSTaggedValue> &value);
     bool WritePrimitiveValue(const JSHandle<JSTaggedValue> &value);
     bool WriteInt(int32_t value);
-    bool WriteInt(uint32_t value);
     bool WriteDouble(double value);
     bool WriteRawData(const void *data, size_t length);
     bool WriteType(SerializationUID uId);
@@ -112,7 +110,6 @@ private:
     bool WriteEcmaString(const JSHandle<JSTaggedValue> &value);
     bool WriteJSTypedArray(const JSHandle<JSTaggedValue> &value, SerializationUID uId);
     bool WritePlainObject(const JSHandle<JSTaggedValue> &value);
-    bool WriteLength(uint32_t length);
     bool WriteNativeFunctionPointer(const JSHandle<JSTaggedValue> &value);
     bool WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value);
     bool WriteDesc(const PropertyDescriptor &desc);
@@ -145,7 +142,6 @@ public:
 
 private:
     bool ReadInt(int32_t *value);
-    bool ReadInt(uint32_t *value);
     bool ReadObjectId(uint64_t *objectId);
     bool ReadDouble(double *value);
     SerializationUID ReadType();
