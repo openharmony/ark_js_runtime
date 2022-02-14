@@ -193,7 +193,6 @@ bool EcmaVM::Initialize()
     InitializeFinish();
     notificationManager_->VmStartEvent();
     notificationManager_->VmInitializationEvent(thread_->GetThreadId());
-    Platform::GetCurrentPlatform()->PostTask(std::make_unique<TrimNewSpaceLimitTask>(heap_));
     return true;
 }
 
