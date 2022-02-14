@@ -47,11 +47,6 @@ public:
         LOG(FATAL, ECMASCRIPT) << "can not call this method";
     }
 
-    inline void HandleObjectVisitor(uint32_t threadId, Region *objectRegion, bool needBarrier,
-                                    [[maybe_unused]] TaggedObject *root, ObjectSlot start, ObjectSlot end);
-    inline void HandleMoveObjectVisitor(uint32_t threadId, bool promoted, TaggedObject *root, ObjectSlot start,
-                                        ObjectSlot end);
-
 protected:
     virtual inline void MarkObject(uint32_t threadId, TaggedObject *object)  // non move
     {
