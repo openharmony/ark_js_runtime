@@ -12,3 +12,43 @@
 # limitations under the License.
 
 container test start
+1
+TypeError: Cannot set property on Container
+### test TreeMap start ###
+test get, out: true
+test hasKey and hasValue, out: true
+test getFirstKey and getLastKey, out: true
+test getLowerKey and getHigherKey, out: true
+test keys, out: true
+test values, out: true
+test entries, out: c,cc
+undefined
+test forof, out:
+a,aa
+b,bb
+c,cc
+test forin, out:
+test forEach, out:
+test setAll, out: 3
+test remove, out: true
+test replace, out: true
+test clear, out: 0
+TypeError: Cannot set property on Container
+### test TreeSet start ###
+test has, out: true
+test getFirstKey and getLastKey, out: true
+test getLowerValue and getHigherValue out: true
+test values, out: true
+test entries, out: cc,cc
+undefined
+test forof, out:
+aa
+bb
+cc
+test forin, out:
+test forEach, out:
+test isEmpty, out: false
+test popFirst and popLast, out: true
+test remove, out: true
+test clear, out: true
+TypeError: Cannot set property on Container
