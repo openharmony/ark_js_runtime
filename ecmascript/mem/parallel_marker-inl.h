@@ -29,48 +29,6 @@
 namespace panda::ecmascript {
 constexpr int HEAD_SIZE = TaggedObject::TaggedObjectSize();
 
-inline void Marker::HandleObjectVisitor(uint32_t threadId, Region *objectRegion, bool needBarrier, TaggedObject *root,
-                                        ObjectSlot start, ObjectSlot end)
-{
-    for (ObjectSlot slot = start; slot < end; slot++) {
-        JSTaggedValue value(slot.GetTaggedType());
-        if (value.IsHeapObject()) {
-            TaggedObject *obj = nullptr;
-            if (!value.IsWeak()) {
-                obj = value.GetTaggedObject();
-                MarkObject(threadId, obj);
-            } else {
-                obj = value.GetWeakReferentUnChecked();
-            }
-            if (needBarrier) {
-                Region *valueRegion = Region::ObjectAddressToRange(obj);
-                if (valueRegion->InCollectSet()) {
-                    objectRegion->AtomicInsertCrossRegionRememberedSet(slot.SlotAddress());
-                }
-            }
-        }
-    }
-}
-
-inline void Marker::HandleMoveObjectVisitor(uint32_t threadId, bool promoted, TaggedObject *root, ObjectSlot start,
-                                            ObjectSlot end)
-{
-    for (ObjectSlot slot = start; slot < end; slot++) {
-        JSTaggedValue value(slot.GetTaggedType());
-        if (value.IsHeapObject()) {
-            if (value.IsWeak()) {
-                RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
-                continue;
-            }
-            auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
-            if (promoted && slotStatus == SlotStatus::KEEP_SLOT) {
-                SlotNeedUpdate waitUpdate(reinterpret_cast<TaggedObject *>(root), slot);
-                heap_->GetWorkList()->PushWaitUpdateSlot(threadId, waitUpdate);
-            }
-        }
-    }
-}
-
 inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object)
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
