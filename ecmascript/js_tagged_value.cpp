@@ -26,6 +26,7 @@
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
+#include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/tagged_array.h"
 #include "js_object-inl.h"
 #include "object_factory.h"
@@ -425,6 +426,9 @@ OperationResult JSTaggedValue::GetProperty(JSThread *thread, const JSHandle<JSTa
     if (obj->IsTypedArray()) {
         return JSTypedArray::GetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key));
     }
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::GetProperty(thread, obj, key);
+    }
 
     return JSObject::GetProperty(thread, obj, key);
 }
@@ -483,6 +487,8 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
         success = JSProxy::SetProperty(thread, JSHandle<JSProxy>(obj), key, value, mayThrow);
     } else if (obj->IsTypedArray()) {
         success = JSTypedArray::SetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), value, mayThrow);
+    } else if (obj->IsModuleNamespace()) {
+        success = ModuleNamespace::SetProperty(thread, mayThrow);
     } else {
         success = JSObject::SetProperty(thread, obj, key, value, mayThrow);
     }
@@ -509,6 +515,8 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
         JSHandle<JSTaggedValue> keyHandle(thread, JSTaggedValue(key));
         success = JSTypedArray::SetProperty(
             thread, obj, JSHandle<JSTaggedValue>(JSTaggedValue::ToString(thread, keyHandle)), value, mayThrow);
+    } else if (obj->IsModuleNamespace()) {
+        success = ModuleNamespace::SetProperty(thread, mayThrow);
     } else {
         success = JSObject::SetProperty(thread, obj, key, value, mayThrow);
     }
@@ -536,6 +544,8 @@ bool JSTaggedValue::SetProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
     } else if (obj->IsTypedArray()) {
         success =
             JSTypedArray::SetProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), value, receiver, mayThrow);
+    } else if (obj->IsModuleNamespace()) {
+        success = ModuleNamespace::SetProperty(thread, mayThrow);
     } else {
         success = JSObject::SetProperty(thread, obj, key, value, receiver, mayThrow);
     }
@@ -551,6 +561,10 @@ bool JSTaggedValue::DeleteProperty(JSThread *thread, const JSHandle<JSTaggedValu
 {
     if (obj->IsJSProxy()) {
         return JSProxy::DeleteProperty(thread, JSHandle<JSProxy>(obj), key);
+    }
+
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::DeleteProperty(thread, obj, key);
     }
 
     if (obj->IsSpecialContainer()) {
@@ -614,6 +628,10 @@ bool JSTaggedValue::DefineOwnProperty(JSThread *thread, const JSHandle<JSTaggedV
         return JSTypedArray::DefineOwnProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), desc);
     }
 
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::DefineOwnProperty(thread, obj, key, desc);
+    }
+
     if (obj->IsSpecialContainer()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not defineProperty on Container Object", false);
     }
@@ -630,6 +648,9 @@ bool JSTaggedValue::GetOwnProperty(JSThread *thread, const JSHandle<JSTaggedValu
     if (obj->IsTypedArray()) {
         return JSTypedArray::GetOwnProperty(thread, obj, JSTypedArray::ToPropKey(thread, key), desc);
     }
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::GetOwnProperty(thread, obj, key, desc);
+    }
     if (obj->IsSpecialContainer()) {
         return GetContainerProperty(thread, obj, key, desc);
     }
@@ -642,6 +663,9 @@ bool JSTaggedValue::SetPrototype(JSThread *thread, const JSHandle<JSTaggedValue>
     if (obj->IsJSProxy()) {
         return JSProxy::SetPrototype(thread, JSHandle<JSProxy>(obj), proto);
     }
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::SetPrototype(thread, obj, proto);
+    }
     if (obj->IsSpecialContainer()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Can not set Prototype on Container Object", false);
     }
@@ -653,6 +677,9 @@ bool JSTaggedValue::PreventExtensions(JSThread *thread, const JSHandle<JSTaggedV
 {
     if (obj->IsJSProxy()) {
         return JSProxy::PreventExtensions(thread, JSHandle<JSProxy>(obj));
+    }
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::PreventExtensions();
     }
     return JSObject::PreventExtensions(thread, JSHandle<JSObject>(obj));
 }
@@ -668,6 +695,9 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnPropertyKeys(JSThread *thread, const 
     if (obj->IsSpecialContainer()) {
         return GetOwnContainerPropertyKeys(thread, obj);
     }
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::OwnPropertyKeys(thread, obj);
+    }
     return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
 }
 
@@ -680,6 +710,9 @@ bool JSTaggedValue::HasProperty(JSThread *thread, const JSHandle<JSTaggedValue> 
     }
     if (obj->IsTypedArray()) {
         return JSTypedArray::HasProperty(thread, obj, JSTypedArray::ToPropKey(thread, key));
+    }
+    if (obj->IsModuleNamespace()) {
+        return ModuleNamespace::HasProperty(thread, obj, key);
     }
     if (obj->IsSpecialContainer()) {
         return HasContainerProperty(thread, obj, key);

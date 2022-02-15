@@ -26,7 +26,6 @@
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/ecma_global_storage-inl.h"
 #include "ecmascript/ecma_language_context.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
@@ -48,6 +47,8 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/mem/region.h"
+#include "ecmascript/module/js_module_manager.h"
+#include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "generated/base_options.h"
@@ -454,29 +455,24 @@ void* PromiseRejectInfo::GetData() const
 
 bool JSNApi::ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file)
 {
-    auto moduleManager = vm->GetModuleManager();
-    moduleManager->SetCurrentExportModuleName(file);
-    // Update Current Module
     std::vector<std::string> argv;
-    if (!vm->ExecuteFromBuffer(data, size, ENTRY_POINTER, argv)) {
+    if (!vm->ExecuteModuleBuffer(data, size, ENTRY_POINTER, argv, file)) {
         std::cerr << "Cannot execute panda file from memory" << std::endl;
-        moduleManager->RestoreCurrentExportModuleName();
         return false;
     }
-
-    // Restore Current Module
-    moduleManager->RestoreCurrentExportModuleName();
     return true;
 }
 
-Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, const std::string &itemName)
+Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, const std::string &key)
 {
-    auto moduleManager = vm->GetModuleManager();
+    ecmascript::EcmaModuleManager *moduleManager = vm->GetEcmaModuleManager();
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<ecmascript::SourceTextModule> ecmaModule = moduleManager->HostResolveImportedModule(thread, file);
+
     ObjectFactory *factory = vm->GetFactory();
-    JSHandle<JSTaggedValue> moduleName(factory->NewFromStdStringUnCheck(file, true));
-    JSHandle<JSTaggedValue> moduleObj = moduleManager->GetModule(vm->GetJSThread(), moduleName);
-    JSHandle<JSTaggedValue> itemString(factory->NewFromStdString(itemName));
-    JSHandle<JSTaggedValue> exportObj = moduleManager->GetModuleItem(vm->GetJSThread(), moduleObj, itemString);
+    JSHandle<EcmaString> keyHandle = factory->NewFromStdStringUnCheck(key, true);
+
+    JSHandle<JSTaggedValue> exportObj(thread, ecmaModule->GetModuleValue(thread, keyHandle.GetTaggedValue(), false));
     return JSNApiHelper::ToLocal<ObjectRef>(exportObj);
 }
 

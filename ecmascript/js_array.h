@@ -87,6 +87,11 @@ public:
     static bool FastSetPropertyByValue(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                        const JSHandle<JSTaggedValue> &key, const JSHandle<JSTaggedValue> &value);
 
+    static void Sort(JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> fn);
+    static bool IncludeInSortedValue(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                     const JSHandle<JSTaggedValue> value);
+    static JSHandle<TaggedArray> ToTaggedArray(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
+
 private:
     static void SetCapacity(JSThread *thread, const JSHandle<JSObject> &array, uint32_t oldLen, uint32_t newLen);
 };

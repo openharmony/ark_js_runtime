@@ -14,9 +14,6 @@
  */
 
 #include "ecmascript/accessor_data.h"
-#include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object-inl.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
@@ -30,6 +27,8 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -75,6 +74,7 @@
 #include "ecmascript/mem/assert_scope-inl.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/machine_code.h"
+#include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
@@ -227,7 +227,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_FUNCTION: {
-                CHECK_DUMP_FILEDS(JSFunctionBase::SIZE, JSFunction::SIZE, 7)
+                CHECK_DUMP_FILEDS(JSFunctionBase::SIZE, JSFunction::SIZE, 8)
                 JSHandle<JSTaggedValue> jsFunc = globalEnv->GetFunctionFunction();
                 DUMP_FOR_HANDLE(jsFunc)
                 break;
@@ -521,7 +521,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_GENERATOR_CONTEXT: {
-                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), GeneratorContext::SIZE, 6)
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), GeneratorContext::SIZE, 7)
                 JSHandle<GeneratorContext> genContext = factory->NewGeneratorContext();
                 DUMP_FOR_HANDLE(genContext)
                 break;
@@ -629,12 +629,6 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(machineCode)
                 break;
             }
-            case JSType::ECMA_MODULE: {
-                CHECK_DUMP_FILEDS(ECMAObject::SIZE, EcmaModule::SIZE, 1)
-                JSHandle<EcmaModule> ecmaModule = factory->NewEmptyEcmaModule();
-                DUMP_FOR_HANDLE(ecmaModule)
-                break;
-            }
             case JSType::CLASS_INFO_EXTRACTOR: {
 #ifdef PANDA_TARGET_64
                 CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), ClassInfoExtractor::SIZE, 10)
@@ -711,6 +705,40 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSAPITreeSetIterator> jsTreeSetIter =
                     factory->NewJSAPITreeSetIterator(NewJSAPITreeSet(thread, factory), IterationKind::KEY);
                 DUMP_FOR_HANDLE(jsTreeSetIter)
+                break;
+            }
+            case JSType::MODULE_RECORD: {
+                CHECK_DUMP_FILEDS(Record::SIZE, ModuleRecord::SIZE, 0);
+                break;
+            }
+            case JSType::SOURCE_TEXT_MODULE_RECORD: {
+                CHECK_DUMP_FILEDS(ModuleRecord::SIZE, SourceTextModule::SIZE, 11);
+                JSHandle<SourceTextModule> moduleSourceRecord = factory->NewSourceTextModule();
+                DUMP_FOR_HANDLE(moduleSourceRecord);
+                break;
+            }
+            case JSType::IMPORTENTRY_RECORD: {
+                CHECK_DUMP_FILEDS(Record::SIZE, ImportEntry::SIZE, 3);
+                JSHandle<ImportEntry> importEntry = factory->NewImportEntry();
+                DUMP_FOR_HANDLE(importEntry);
+                break;
+            }
+            case JSType::EXPORTENTRY_RECORD: {
+                CHECK_DUMP_FILEDS(Record::SIZE, ExportEntry::SIZE, 4);
+                JSHandle<ExportEntry> exportEntry = factory->NewExportEntry();
+                DUMP_FOR_HANDLE(exportEntry);
+                break;
+            }
+            case JSType::RESOLVEDBINDING_RECORD: {
+                CHECK_DUMP_FILEDS(Record::SIZE, ResolvedBinding::SIZE, 2);
+                JSHandle<ResolvedBinding> resolvedBinding = factory->NewResolvedBindingRecord();
+                DUMP_FOR_HANDLE(resolvedBinding);
+                break;
+            }
+            case JSType::JS_MODULE_NAMESPACE: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, ModuleNamespace::SIZE, 2);
+                JSHandle<ModuleNamespace> moduleNamespace = factory->NewModuleNamespace();
+                DUMP_FOR_HANDLE(moduleNamespace);
                 break;
             }
             default:

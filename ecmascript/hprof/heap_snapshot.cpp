@@ -321,8 +321,16 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("PendingJob");
         case JSType::COMPLETION_RECORD:
             return GetString("CompletionRecord");
-        case JSType::ECMA_MODULE:
-            return GetString("EcmaModule");
+        case JSType::SOURCE_TEXT_MODULE_RECORD:
+            return GetString("SourceTextModule");
+        case JSType::IMPORTENTRY_RECORD:
+            return GetString("ImportEntry");
+        case JSType::EXPORTENTRY_RECORD:
+            return GetString("ExportEntry");
+        case JSType::RESOLVEDBINDING_RECORD:
+            return GetString("ResolvedBinding");
+        case JSType::JS_MODULE_NAMESPACE:
+            return GetString("ModuleNamespace");
         case JSType::JS_ARRAY_LIST:
             return GetString("ArrayList");
         case JSType::JS_API_TREE_MAP:

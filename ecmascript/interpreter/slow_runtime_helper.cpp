@@ -95,6 +95,7 @@ void SlowRuntimeHelper::SaveFrameToContext(JSThread *thread, JSHandle<GeneratorC
 
     context->SetAcc(thread, frameHandler.GetAcc());
     context->SetLexicalEnv(thread, thread->GetCurrentLexenv());
+    context->SetEcmaModule(thread, thread->GetEcmaVM()->GetEcmaModuleManager()->GetCurrentSourceModule());
     context->SetNRegs(nregs);
     context->SetBCOffset(frameHandler.GetBytecodeOffset());
 }

@@ -325,10 +325,10 @@
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define THROW_RANGE_ERROR(thread, message)                                               \
+#define THROW_ERROR(thread, type, message)                                               \
     do {                                                                                 \
         ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                    \
-        JSHandle<JSObject> error = factory->GetJSError(ErrorType::RANGE_ERROR, message); \
+        JSHandle<JSObject> error = factory->GetJSError(type, message); \
         THROW_NEW_ERROR_AND_RETURN(thread, error.GetTaggedValue());                      \
     } while (false)
 
@@ -340,11 +340,20 @@
         THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);         \
     } while (false)
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define THROW_SYNTAX_ERROR_AND_RETURN(thread, message, exception)                         \
     do {                                                                                  \
         ObjectFactory *factory = (thread)->GetEcmaVM()->GetFactory();                     \
         JSHandle<JSObject> error = factory->GetJSError(ErrorType::SYNTAX_ERROR, message); \
         THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), exception);      \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define THROW_REFERENCE_ERROR_AND_RETURN(thread, message, value)                              \
+    do {                                                                                     \
+        ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();                          \
+        JSHandle<JSObject> error = factory->GetJSError(ErrorType::REFERENCE_ERROR, message); \
+        THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), value);             \
     } while (false)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
