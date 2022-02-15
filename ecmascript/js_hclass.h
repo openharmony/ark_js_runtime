@@ -164,7 +164,13 @@ class ProtoChangeDetails;
         MACHINE_CODE_OBJECT,                                                                                           \
         ECMA_MODULE, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         CLASS_INFO_EXTRACTOR, /* //////////////////////////////////////////////////////////////////////////-PADDING */ \
-        JS_TYPE_LAST = CLASS_INFO_EXTRACTOR, /* ///////////////////////////////////////////////////////////-PADDING */ \
+        TS_UNION_TYPE,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        TS_OBJECT_TYPE,  /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        TS_IMPORT_TYPE,  /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        TS_CLASS_TYPE,    /* //////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        TS_CLASS_INSTANCE_TYPE,  /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
+        TS_INTERFACE_TYPE,    /* //////////////////////////////////////////////////////////////////////////-PADDING */ \
+        TYPE_LAST = TS_INTERFACE_TYPE, /* /////////////////////////////////////////////////////////////////-PADDING */ \
                                                                                                                        \
         JS_FUNCTION_BEGIN = JS_FUNCTION, /* ///////////////////////////////////////////////////////////////-PADDING */ \
         JS_FUNCTION_END = JS_ASYNC_AWAIT_STATUS_FUNCTION, /* //////////////////////////////////////////////-PADDING */ \
@@ -865,6 +871,36 @@ public:
     inline bool IsMachineCodeObject() const
     {
         return GetObjectType() == JSType::MACHINE_CODE_OBJECT;
+    }
+
+    inline bool IsTSObjectType() const
+    {
+        return GetObjectType() == JSType::TS_OBJECT_TYPE;
+    }
+
+    inline bool IsTSClassType() const
+    {
+        return GetObjectType() == JSType::TS_CLASS_TYPE;
+    }
+
+    inline bool IsTSInterfaceType() const
+    {
+        return GetObjectType() == JSType::TS_INTERFACE_TYPE;
+    }
+
+    inline bool IsTSUnionType() const
+    {
+        return GetObjectType() == JSType::TS_UNION_TYPE;
+    }
+
+    inline bool IsTSClassInstanceType() const
+    {
+        return GetObjectType() == JSType::TS_CLASS_INSTANCE_TYPE;
+    }
+
+    inline bool IsTSImportType() const
+    {
+        return GetObjectType() == JSType::TS_IMPORT_TYPE;
     }
 
     inline void SetElementRepresentation(Representation representation)

@@ -27,6 +27,7 @@
 #include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/region_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "ecmascript/tagged_dictionary.h"
 
 namespace panda::ecmascript {
 class JSObject;
@@ -82,6 +83,15 @@ class LayoutInfo;
 class JSIntlBoundFunction;
 class FreeObject;
 class JSNativePointer;
+class TSObjectType;
+class TSClassType;
+class TSUnionType;
+class TSInterfaceType;
+class TSTypeTable;
+class TSClassInstanceType;
+class TSImportType;
+class TSObjLayoutInfo;
+class TSModuleTable;
 class JSAPITreeSet;
 class JSAPITreeMap;
 class JSAPITreeSetIterator;
@@ -333,6 +343,17 @@ public:
     JSHandle<MachineCode> NewMachineCodeObject(size_t length, const uint8_t *data);
     JSHandle<ClassInfoExtractor> NewClassInfoExtractor(JSMethod *ctorMethod);
 
+    // ----------------------------------- new TSType ----------------------------------------
+    JSHandle<TSObjLayoutInfo> CreateTSObjLayoutInfo(int propNum, JSTaggedValue initVal = JSTaggedValue::Hole());
+    JSHandle<TSObjectType> NewTSObjectType(uint32_t numOfKeys);
+    JSHandle<TSClassType> NewTSClassType();
+    JSHandle<TSUnionType> NewTSUnionType(uint32_t length);
+    JSHandle<TSInterfaceType> NewTSInterfaceType();
+    JSHandle<TSImportType> NewTSImportType();
+    JSHandle<TSClassInstanceType> NewTSClassInstanceType();
+    JSHandle<TSTypeTable> NewTSTypeTable(uint32_t length);
+    JSHandle<TSModuleTable> NewTSModuleTable(uint32_t length);
+
     ~ObjectFactory() = default;
 
     // ----------------------------------- new string ----------------------------------------
@@ -415,6 +436,12 @@ private:
     JSHClass *machineCodeClass_ {nullptr};
     JSHClass *ecmaModuleClass_ {nullptr};
     JSHClass *classInfoExtractorHClass_ {nullptr};
+    JSHClass *tsObjectTypeClass_ {nullptr};
+    JSHClass *tsClassTypeClass_ {nullptr};
+    JSHClass *tsInterfaceTypeClass_ {nullptr};
+    JSHClass *tsUnionTypeClass_ {nullptr};
+    JSHClass *tsClassInstanceTypeClass_ {nullptr};
+    JSHClass *tsImportTypeClass_ {nullptr};
 
     EcmaVM *vm_ {nullptr};
     Heap *heap_ {nullptr};
@@ -471,6 +498,11 @@ private:
     friend class LiteralDataExtractor;
     friend class RuntimeTrampolines;
     friend class ClassInfoExtractor;
+    friend class TSObjectType;
+    friend class TSClassType;
+    friend class TSUnionType;
+    friend class TSClassInstanceType;
+    friend class TSImportType;
 };
 
 class ClassLinkerFactory {

@@ -64,6 +64,8 @@
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/mem.h"
+#include "ecmascript/ts_types/ts_type.h"
+#include "ecmascript/ts_types/ts_type_table.h"
 
 namespace panda::ecmascript {
 void ObjectXRay::VisitVMRoots(const RootVisitor &visitor, const RootRangeVisitor &rangeVisitor) const
@@ -303,6 +305,23 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
         case JSType::JS_ARRAY_LIST:
             JSArrayList::Cast(object)->VisitRangeSlot(visitor);
             break;
+        case JSType::TS_OBJECT_TYPE:
+            TSObjectType::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::TS_CLASS_TYPE:
+            TSClassType::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::TS_UNION_TYPE:
+            TSUnionType::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::TS_INTERFACE_TYPE:
+            TSInterfaceType::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::TS_IMPORT_TYPE:
+            TSImportType::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::TS_CLASS_INSTANCE_TYPE:
+            TSClassInstanceType::Cast(object)->VisitRangeSlot(visitor);
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(object)->VisitRangeSlot(visitor);
             break;
