@@ -326,6 +326,12 @@ public:
     bool IsProtoChangeDetails() const;
     bool IsMachineCodeObject() const;
     bool IsClassInfoExtractor() const;
+    bool IsTSObjectType() const;
+    bool IsTSClassType() const;
+    bool IsTSUnionType() const;
+    bool IsTSInterfaceType() const;
+    bool IsTSClassInstanceType() const;
+    bool IsTSImportType() const;
     static bool IsSameTypeOrHClass(JSTaggedValue x, JSTaggedValue y);
 
     static ComparisonResult Compare(JSThread *thread, const JSHandle<JSTaggedValue> &x,
