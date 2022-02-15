@@ -284,7 +284,10 @@ bool CpuProfiler::CheckFileName(const std::string &fileName, std::string &absolu
     }
 
     CVector<char> resolvedPath(PATH_MAX);
-    realpath(fileName.c_str(), resolvedPath.data());
+    auto result = realpath(fileName.c_str(), resolvedPath.data());
+    if (result == nullptr) {
+        LOG(INFO, RUNTIME) << "The file path does not exist";
+    }
     std::ofstream file(resolvedPath.data());
     if (!file.good()) {
         return false;
