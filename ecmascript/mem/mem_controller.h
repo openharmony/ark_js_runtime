@@ -34,7 +34,7 @@ inline BytesAndDuration MakeBytesAndDuration(uint64_t bytes, double duration)
 
 class MemController {
 public:
-    explicit MemController(Heap* heap, bool isDelayGCMode = false);
+    explicit MemController(Heap* heap);
     MemController() = default;
     ~MemController() = default;
     NO_COPY_SEMANTIC(MemController);
@@ -52,20 +52,10 @@ public:
 
     double CalculateGrowingFactor(double gcSpeed, double mutatorSpeed);
 
-    inline bool IsDelayGCMode() const
-    {
-        return isDelayGCMode_;
-    }
-
-    void ResetDelayGCMode()
-    {
-        isDelayGCMode_ = false;
-    }
-
     void StartCalculationBeforeGC();
     void StopCalculationAfterGC(TriggerGCType gcType);
 
-    void RecordAfterConcurrentMark(const bool isSemi, const ConcurrentMarker *marker);
+    void RecordAfterConcurrentMark(const bool isFull, const ConcurrentMarker *marker);
 
     double CalculateMarkCompactSpeedPerMS();
     double GetCurrentOldSpaceAllocationThroughtputPerMS(double timeMs = THROUGHPUT_TIME_FRAME_MS) const;
@@ -160,7 +150,6 @@ private:
 
     base::GCRingBuffer<BytesAndDuration, LENGTH> recordedConcurrentMarks_;
     base::GCRingBuffer<BytesAndDuration, LENGTH> recordedSemiConcurrentMarks_;
-    bool isDelayGCMode_ {false};
 
     static constexpr double THROUGHPUT_TIME_FRAME_MS = 5000;
     static constexpr int MILLISECOND_PER_SECOND = 1000;

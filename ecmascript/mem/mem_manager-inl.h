@@ -24,7 +24,7 @@
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/js_hclass.h"
-#include "ecmascript/js_hclass.h"
+#include "ecmascript/mem/space.h"
 
 namespace panda::ecmascript {
 TaggedObject *MemManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass)
@@ -35,6 +35,7 @@ TaggedObject *MemManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass)
 
 TaggedObject *MemManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass, size_t size)
 {
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return AllocateHugeObject(hclass, size);
     }
@@ -75,6 +76,7 @@ TaggedObject *MemManager::AllocateYoungGenerationOrHugeObject(JSHClass *hclass, 
 
 TaggedObject *MemManager::TryAllocateYoungGeneration(size_t size)
 {
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return nullptr;
     }
@@ -83,17 +85,20 @@ TaggedObject *MemManager::TryAllocateYoungGeneration(size_t size)
 
 TaggedObject *MemManager::AllocateDynClassClass(JSHClass *hclass, size_t size)
 {
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     auto object = reinterpret_cast<TaggedObject *>(GetNonMovableSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {
         LOG_ECMA_MEM(FATAL) << "MemManager::AllocateDynClassClass can not allocate any space";
     }
     *reinterpret_cast<MarkWordType *>(ToUintPtr(object)) = reinterpret_cast<MarkWordType>(hclass);
+    const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace())->IncrementLiveObjectSize(size);
     heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
     return object;
 }
 
 TaggedObject *MemManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size)
 {
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return AllocateHugeObject(hclass, size);
     }
@@ -116,12 +121,14 @@ TaggedObject *MemManager::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_
         }
     }
     SetClass(object, hclass);
+    const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace())->IncrementLiveObjectSize(size);
     heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
     return object;
 }
 
 uintptr_t MemManager::AllocateSnapShotSpace(size_t size)
 {
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     uintptr_t object = snapshotSpaceAllocator_.Allocate(size);
     if (UNLIKELY(object == 0)) {
         if (!heap_->FillSnapShotSpace(&snapshotSpaceAllocator_)) {
@@ -150,7 +157,7 @@ TaggedObject *MemManager::AllocateNonMovableOrHugeObject(JSHClass *hclass)
 
 TaggedObject *MemManager::AllocateOldGenerationOrHugeObject(JSHClass *hclass, size_t size)
 {
-    ASSERT(size > 0);
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
         return AllocateHugeObject(hclass, size);
     }
@@ -173,9 +180,8 @@ TaggedObject *MemManager::AllocateOldGenerationOrHugeObject(JSHClass *hclass, si
         }
     }
     SetClass(object, hclass);
+    const_cast<OldSpace *>(heap_->GetOldSpace())->IncrementLiveObjectSize(size);
     heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
-    Region *objectRegion = Region::ObjectAddressToRange(object);
-    objectRegion->IncrementAliveObject(size);
     return object;
 }
 
@@ -202,6 +208,7 @@ TaggedObject *MemManager::AllocateHugeObject(JSHClass *hclass, size_t size)
 
 TaggedObject *MemManager::AllocateMachineCodeSpaceObject(JSHClass *hclass, size_t size)
 {
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     auto object = reinterpret_cast<TaggedObject *>(GetMachineCodeSpaceAllocator().Allocate(size));
     if (UNLIKELY(object == nullptr)) {
         if (heap_->CheckAndTriggerMachineCodeGC()) {
@@ -219,9 +226,49 @@ TaggedObject *MemManager::AllocateMachineCodeSpaceObject(JSHClass *hclass, size_
         }
     }
     SetClass(object, hclass);
+    const_cast<MachineCodeSpace *>(heap_->GetMachineCodeSpace())->IncrementLiveObjectSize(size);
     heap_->OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
     return object;
 }
-}  // namespace panda::ecmascript
 
+bool MemManager::MoveYoungRegionSync(Region *region)
+{
+    os::memory::LockHolder lock(youngSpaceLock_);
+    return heap_->FillNewSpaceWithRegion(region);
+}
+
+uintptr_t MemManager::AllocateYoungSync(size_t size)
+{
+    os::memory::LockHolder lock(youngSpaceLock_);
+    uintptr_t result = newSpaceAllocator_.Allocate(size);
+    if (UNLIKELY(result == 0)) {
+        if (!heap_->FillNewSpaceAndTryGC(&newSpaceAllocator_, false)) {
+            return 0;
+        }
+        result = newSpaceAllocator_.Allocate(size);
+    }
+    return result;
+}
+
+void MemManager::MergeToOldSpaceSync(Space *localSpace, FreeListAllocator *localAllocator)
+{
+    os::memory::LockHolder lock(oldSpaceLock_);
+    OldSpace *oldSpace = const_cast<OldSpace *>(heap_->GetOldSpace());
+    oldSpace->Merge(localSpace, localAllocator);
+}
+
+Region *MemManager::TryToGetExclusiveRegion(size_t size)
+{
+    os::memory::LockHolder lock(oldSpaceLock_);
+    uintptr_t result = GetOldSpaceAllocator().LookupSuitableFreeObject(size);
+    if (result != 0) {
+        // Remove region from global old space
+        Region *region = Region::ObjectAddressToRange(result);
+        const_cast<OldSpace *>(heap_->GetOldSpace())->RemoveRegion(region);
+        GetOldSpaceAllocator().DetachFreeObjectSet(region);
+        return region;
+    }
+    return nullptr;
+}
+}  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_HEAP_MANAGER_INL_H

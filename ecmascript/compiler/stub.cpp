@@ -1230,17 +1230,10 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
         }
         Bind(&notValidIndex);
         {
-            Label markLable(env);
-            GateRef offset = GetIntPtrConstant(Region::GetMarkingOffset(env_.Is32Bit()));
-            GateRef mark = Load(StubMachineType::BOOL, valueRegion, offset);
-            Branch(mark, &exit, &markLable);
-            Bind(&markLable);
-            {
-                StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
-                    CallRuntime(markingBarrier, glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
-                            glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion
-                    });
-            }
+            StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
+            CallRuntime(markingBarrier, glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
+                    glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion
+            });
             Jump(&exit);
         }
     }

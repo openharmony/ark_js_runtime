@@ -17,6 +17,7 @@
 #define ECMASCRIPT_RUNTIME_CALL_ID_H
 
 #include "ecmascript/base/config.h"
+#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -134,9 +135,6 @@ namespace panda::ecmascript {
     V(TryStoreICByValue)            \
     V(StoreICByValue)               \
     V(NotifyInlineCache)            \
-    V(CompressCollector_RunPhases)  \
-    V(MixSpaceCollector_RunPhases)  \
-    V(SemiSpaceCollector_RunPhases) \
     V(LoadGlobalICByName)           \
     V(StoreGlobalICByName)          \
     V(StoreICWithHandler)           \
@@ -559,28 +557,54 @@ namespace panda::ecmascript {
 #define ABSTRACT_OPERATION_LIST(V) \
     V(JSTaggedValue, ToString)     \
 
+#define MEM_ALLOCATE_AND_GC_LIST(V)  \
+    V(CompressCollector_RunPhases)   \
+    V(MixSpaceCollector_RunPhases)   \
+    V(SemiSpaceCollector_RunPhases)  \
+    V(ConcurrentMarking)             \
+    V(ConcurrentMarkingInitialize)   \
+    V(WaitConcurrentMarkingFinished) \
+    V(ReMarking)                     \
+    V(ConcurrentSweepingInitialize)  \
+    V(ConcurrentSweepingWait)        \
+    V(ParallelEvacuationInitialize)  \
+    V(ParallelEvacuation)            \
+    V(ParallelUpdateReference)       \
+    V(WaitUpdateFinished)            \
+    V(UpdateRoot)                    \
+    V(UpdateWeakReference)           \
+    V(ParallelEvacuationFinalize)    \
+    V(HugeSpaceExpand)               \
+    V(NonMovableSpaceExpand)         \
+    V(HeapPrepare)                   \
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INTERPRETER_CALLER_ID(name) INTERPRETER_ID_##name,
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUILTINS_API_ID(class, name) BUILTINS_ID_##class##_##name,
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define GC_RUNPHASE_ID(name) name##_GC_TRACE_RUNPHASE,
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ABSTRACT_OPERATION_ID(class, name) ABSTRACT_ID_##class##_##name,
+
+#define MEM_ALLOCATE_AND_GC_ID(name) MEM_ID##name,
 
 enum EcmaRuntimeCallerId {
     INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_ID) BUITINS_API_LIST(BUILTINS_API_ID)
     ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_ID)
+    MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_ID)
     RUNTIME_CALLER_NUMBER,
 };
 
-#if ECMASCRIPT_ENABLE_RUNTIME_STAT
+#if ECMASCRIPT_ENABLE_INTERPRETER_TRUNTIME_STAT
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INTERPRETER_TRACE(thread, name)                                                        \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
     RuntimeTimerScope interpret_##name##_scope_(thread, INTERPRETER_CALLER_ID(name) _run_stat_)
+#else
+#define INTERPRETER_TRACE(thread, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
+#endif // ECMASCRIPT_ENABLE_INTERPRETER_TRUNTIME_STAT
 
+#if ECMASCRIPT_ENABLE_BUILTINS_RUNTIME_STAT
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUILTINS_API_TRACE(thread, class, name)                                                \
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
@@ -592,11 +616,18 @@ enum EcmaRuntimeCallerId {
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
     RuntimeTimerScope abstract_##class##name##_scope_(thread, ABSTRACT_OPERATION_ID(class, name) _run_stat_)
-
 #else
-#define INTERPRETER_TRACE(thread, name) static_cast<void>(0)  // NOLINT(cppcoreguidelines-macro-usage)
-#define BUILTINS_API_TRACE(thread, class, name) static_cast<void>(0)  // NOLINT(cppcoreguidelines-macro-usage)
-#define ABSTRACT_OPERATION_TRACE(thread, class, name) static_cast<void>(0)  // NOLINT(cppcoreguidelines-macro-usage)
-#endif  // ECMASCRIPT_ENABLE_RUNTIME_STAT
+#define BUILTINS_API_TRACE(thread, class, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
+#define ABSTRACT_OPERATION_TRACE(thread, class, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
+#endif // ECMASCRIPT_ENABLE_BUILTINS_RUNTIME_STAT
+
+#if ECMASCRIPT_ENABLE_ALLOCATE_AND_GC_RUNTIME_STAT
+#define MEM_ALLOCATE_AND_GC_TRACE(vm, name)             \
+    CHECK_JS_THREAD(vm);                                \
+    EcmaRuntimeStat *_run_stat_ = vm->GetRuntimeStat(); \
+    RuntimeTimerScope mem_##name##_scope_(vm, MEM_ALLOCATE_AND_GC_ID(name) _run_stat_)
+#else
+#define MEM_ALLOCATE_AND_GC_TRACE(vm, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
+#endif // ECMASCRIPT_ENABLE_ALLOCATE_AND_GC_RUNTIME_STAT
 }  // namespace panda::ecmascript
 #endif

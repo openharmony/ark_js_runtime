@@ -28,28 +28,25 @@
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/runtime_call_id.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 MixSpaceCollector::MixSpaceCollector(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
 
 void MixSpaceCollector::RunPhases()
 {
-    [[maybe_unused]] ecmascript::JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
-    INTERPRETER_TRACE(thread, MixSpaceCollector_RunPhases);
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::RunPhases");
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), MixSpaceCollector_RunPhases);
     ClockScope clockScope;
 
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::RunPhases");
-    concurrentMark_ = heap_->CheckConcurrentMark(thread);
+    concurrentMark_ = heap_->CheckConcurrentMark();
+
     ECMA_GC_LOG() << "concurrentMark_" << concurrentMark_;
     InitializePhase();
     MarkingPhase();
-    EvacuaPhases();
     SweepPhases();
-    heap_->GetEvacuation()->Finalize();
+    EvacuaPhases();
     FinishPhase();
-    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticOldCollector(
-        clockScope.GetPauseTime(), freeSize_, oldSpaceCommitSize_, nonMoveSpaceCommitSize_);
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticMixCollector(concurrentMark_, clockScope.GetPauseTime(), freeSize_);
     ECMA_GC_LOG() << "MixSpaceCollector::RunPhases " << clockScope.TotalSpentTime();
 }
 
@@ -57,27 +54,14 @@ void MixSpaceCollector::InitializePhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::InitializePhase");
     if (!concurrentMark_) {
+        LOG(INFO, RUNTIME) << "Concurrent mark failure";
         heap_->Prepare();
-        if (!heap_->IsSemiMarkNeeded() && heap_->GetSweeper()->CanSelectCset()) {
-            const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
-        }
-        heap_->EnumerateRegions([](Region *current) {
-            // ensure mark bitmap
-            auto bitmap = current->GetMarkBitmap();
-            ASSERT(bitmap != nullptr);
-            bitmap->ClearAllBits();
-            auto rememberset = current->GetCrossRegionRememberedSet();
-            if (rememberset != nullptr) {
-                rememberset->ClearAllBits();
+        if (heap_->IsFullMark()) {
+            if (heap_->GetSweeper()->IsOldSpaceSweeped()) {
+                const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
             }
-            current->SetMarking(false);
-        });
-        if (heap_->IsSemiMarkNeeded()) {
-            heap_->EnumerateNewSpaceRegions([this](Region *current) {
-                current->ResetAliveObject();
-            });
-        } else {
-            heap_->EnumerateRegions([this](Region *current) {
+            heap_->GetSweeper()->SetOldSpaceSweeped(false);
+            heap_->EnumerateNonNewSpaceRegions([this](Region *current) {
                 current->ResetAliveObject();
             });
         }
@@ -99,9 +83,6 @@ void MixSpaceCollector::FinishPhase()
     } else {
         size_t aliveSize = 0;
         workList_->Finish(aliveSize);
-        heap_->EnumerateRegions([this](Region *current) {
-            current->ClearFlag(RegionFlags::IS_IN_PROMOTE_SET);
-        });
     }
 }
 
@@ -109,15 +90,14 @@ void MixSpaceCollector::MarkingPhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::MarkingPhase");
     if (concurrentMark_) {
-        [[maybe_unused]] ClockScope scope;
         heap_->GetConcurrentMarker()->ReMarking();
         return;
     }
     heap_->GetNonMovableMarker()->MarkRoots(0);
-    if (heap_->IsSemiMarkNeeded()) {
-        heap_->GetNonMovableMarker()->ProcessOldToNew(0);
-    } else {
+    if (heap_->IsFullMark()) {
         heap_->GetNonMovableMarker()->ProcessMarkStack(0);
+    } else {
+        heap_->GetNonMovableMarker()->ProcessOldToNew(0);
     }
     heap_->WaitRunningTaskFinished();
 }
@@ -125,7 +105,7 @@ void MixSpaceCollector::MarkingPhase()
 void MixSpaceCollector::SweepPhases()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::SweepPhases");
-    if (!heap_->IsSemiMarkNeeded()) {
+    if (heap_->IsFullMark()) {
         heap_->GetSweeper()->SweepPhases();
     }
 }

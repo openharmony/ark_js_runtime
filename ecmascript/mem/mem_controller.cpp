@@ -21,7 +21,7 @@
 #include "ecmascript/mem/parallel_evacuation.h"
 
 namespace panda::ecmascript {
-MemController::MemController(Heap *heap, bool isDelayGCMode) : heap_(heap), isDelayGCMode_(isDelayGCMode) {}
+MemController::MemController(Heap *heap) : heap_(heap), allocTimeMs_(GetSystemTimeInMs()) {}
 
 double MemController::CalculateAllocLimit(size_t currentSize, size_t minSize, size_t maxSize, size_t newSpaceCapacity,
                                           double factor) const
@@ -39,7 +39,7 @@ double MemController::CalculateAllocLimit(size_t currentSize, size_t minSize, si
 double MemController::CalculateGrowingFactor(double gcSpeed, double mutatorSpeed)
 {
     static constexpr double minGrowingFactor = 1.3;
-    static constexpr double maxGrowingFactor = 2.0;
+    static constexpr double maxGrowingFactor = 4.0;
     static constexpr double targetMutatorUtilization = 0.97;
     if (gcSpeed == 0 || mutatorSpeed == 0) {
         return maxGrowingFactor;
@@ -67,17 +67,9 @@ void MemController::StartCalculationBeforeGC()
     // It's unnecessary to calculate newSpaceAllocAccumulatorSize. newSpaceAllocBytesSinceGC can be calculated directly.
     size_t newSpaceAllocBytesSinceGC = heap_->GetNewSpace()->GetAllocatedSizeSinceGC();
     size_t hugeObjectAllocSizeSinceGC = heap_->GetHugeObjectSpace()->GetHeapObjectSize() - hugeObjectAllocSizeSinceGC_;
-    size_t oldSpaceAllocAccumulatorSize = heapManager->GetOldSpaceAllocator().GetAllocatedSize()
-                                          + heap_->GetEvacuation()->GetPromotedAccumulatorSize();
+    size_t oldSpaceAllocAccumulatorSize = heapManager->GetOldSpaceAllocator().GetAllocatedSize();
     size_t nonMovableSpaceAllocAccumulatorSize = heapManager->GetNonMovableSpaceAllocator().GetAllocatedSize();
     size_t codeSpaceAllocAccumulatorSize = heapManager->GetMachineCodeSpaceAllocator().GetAllocatedSize();
-    if (allocTimeMs_ == 0) {
-        allocTimeMs_ = GetSystemTimeInMs();
-        oldSpaceAllocAccumulatorSize_ = oldSpaceAllocAccumulatorSize;
-        nonMovableSpaceAllocAccumulatorSize_ = nonMovableSpaceAllocAccumulatorSize;
-        codeSpaceAllocAccumulatorSize_ = codeSpaceAllocAccumulatorSize;
-        return;
-    }
     double currentTimeInMs = GetSystemTimeInMs();
     gcStartTime_ = currentTimeInMs;
     size_t oldSpaceAllocSize = oldSpaceAllocAccumulatorSize - oldSpaceAllocAccumulatorSize_;
@@ -89,6 +81,7 @@ void MemController::StartCalculationBeforeGC()
     oldSpaceAllocAccumulatorSize_ = oldSpaceAllocAccumulatorSize;
     nonMovableSpaceAllocAccumulatorSize_ = nonMovableSpaceAllocAccumulatorSize;
     codeSpaceAllocAccumulatorSize_ = codeSpaceAllocAccumulatorSize;
+
     allocDurationSinceGc_ += duration;
     newSpaceAllocSizeSinceGC_ += newSpaceAllocBytesSinceGC;
     oldSpaceAllocSizeSinceGC_ += oldSpaceAllocSize;
@@ -122,13 +115,7 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
     hugeObjectAllocSizeSinceGC_ = heap_->GetHugeObjectSpace()->GetHeapObjectSize();
 
     double duration = gcEndTime_ - gcStartTime_;
-
     switch (gcType) {
-        case TriggerGCType::SEMI_GC:
-        case TriggerGCType::NON_MOVE_GC:
-        case TriggerGCType::HUGE_GC:
-        case TriggerGCType::MACHINE_CODE_GC:
-             break;
         case TriggerGCType::OLD_GC:
         case TriggerGCType::COMPRESS_FULL_GC: {
             size_t heapObjectSize = heap_->GetHeapObjectSize();
@@ -136,18 +123,17 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
             break;
         }
         default:
-            UNREACHABLE();
             break;
     }
 }
 
-void MemController::RecordAfterConcurrentMark(const bool isSemi, const ConcurrentMarker *marker)
+void MemController::RecordAfterConcurrentMark(const bool isFull, const ConcurrentMarker *marker)
 {
     double duration = marker->GetDuration();
-    if (isSemi) {
-        recordedSemiConcurrentMarks_.Push(MakeBytesAndDuration(marker->GetHeapObjectSize(), duration));
-    } else {
+    if (isFull) {
         recordedConcurrentMarks_.Push(MakeBytesAndDuration(marker->GetHeapObjectSize(), duration));
+    } else {
+        recordedSemiConcurrentMarks_.Push(MakeBytesAndDuration(marker->GetHeapObjectSize(), duration));
     }
 }
 
@@ -222,16 +208,5 @@ double MemController::GetOldSpaceAllocationThroughtPerMS() const
 double MemController::GetFullSpaceConcurrentMarkSpeedPerMS() const
 {
     return CalculateAverageSpeed(recordedConcurrentMarks_);
-}
-
-MemController *CreateMemController(Heap *heap, std::string_view gcTriggerType)
-{
-    MemController *ret{nullptr};
-    if (gcTriggerType == "no-gc-for-start-up") {
-        ret = new MemController(heap, true);
-    } else if (gcTriggerType == "heap-trigger") {
-        ret = new MemController(heap, false);
-    }
-    return ret;
 }
 }  // namespace panda::ecmascript

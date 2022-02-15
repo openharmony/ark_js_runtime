@@ -2138,11 +2138,23 @@ JSHandle<EcmaString> ObjectFactory::NewFromString(EcmaString *str)
     return GetStringFromStringTable(str);
 }
 
-JSHandle<EcmaString> ObjectFactory::ConcatFromString(const JSHandle<EcmaString> &prefix,
-                                                     const JSHandle<EcmaString> &suffix)
+JSHandle<EcmaString> ObjectFactory::ConcatFromString(const JSHandle<EcmaString> &firstString,
+                                                     const JSHandle<EcmaString> &secondString)
 {
-    EcmaString *concatString = EcmaString::Concat(prefix, suffix, vm_);
-    return GetStringFromStringTable(concatString);
+    if (firstString->GetLength() == 0) {
+        return secondString;
+    }
+    if (secondString->GetLength() == 0) {
+        return firstString;
+    }
+    return GetStringFromStringTable(firstString, secondString);
+}
+
+JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const JSHandle<EcmaString> &firstString,
+                                                             const JSHandle<EcmaString> &secondString)
+{
+    auto stringTable = vm_->GetEcmaStringTable();
+    return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(firstString, secondString));
 }
 
 JSHandle<JSAPITreeMapIterator> ObjectFactory::NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map,

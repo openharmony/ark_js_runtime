@@ -22,19 +22,23 @@
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
+#include "ecmascript/mem/utils.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 void ParallelEvacuation::Initialize()
 {
-    evacuationAllocator_->Initialize(TriggerGCType::OLD_GC);
-    allocator_ = new TlabAllocator(heap_, TriggerGCType::COMPRESS_FULL_GC);
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationInitialize);
+    heap_->ResetNewSpace();
+    allocator_ = new TlabAllocator(heap_);
     ageMark_ = heap_->GetFromSpace()->GetAgeMark();
 }
 
 void ParallelEvacuation::Finalize()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationFinalize);
     delete allocator_;
-    evacuationAllocator_->Finalize(TriggerGCType::OLD_GC);
+    heap_->Resume(OLD_GC);
 }
 
 void ParallelEvacuation::Evacuate()
@@ -43,14 +47,17 @@ void ParallelEvacuation::Evacuate()
     Initialize();
     EvacuateSpace();
     UpdateReference();
+    Finalize();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticConcurrentEvacuate(clockScope.GetPauseTime());
 }
 
 void ParallelEvacuation::EvacuateSpace()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuation);
     heap_->GetFromSpace()->EnumerateRegions([this] (Region *current) {
         AddFragment(std::make_unique<EvacuationFragment>(this, current));
     });
-    if (!heap_->IsSemiMarkNeeded()) {
+    if (!heap_->GetOldSpace()->IsCSetEmpty()) {
         heap_->GetOldSpace()->EnumerateCollectRegionSet([this](Region *current) {
             AddFragment(std::make_unique<EvacuationFragment>(this, current));
         });
@@ -86,58 +93,44 @@ bool ParallelEvacuation::EvacuateSpace(TlabAllocator *allocator, bool isMain)
 
 void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region)
 {
-    bool isPromoted = region->BelowAgeMark() || region->InOldGeneration();
-    if (IsPromoteComplete(region)) {
-        bool ret = false;
-        if (isPromoted) {
-            if (region->InYoungGeneration()) {
-                promotedAccumulatorSize_.fetch_add(region->AliveObject());
-            }
-            ret = evacuationAllocator_->AddRegionToOld(region);
-        } else {
-            ret = evacuationAllocator_->AddRegionToYoung(region);
-            if (!ret) {
-                if (region->InYoungGeneration()) {
-                    promotedAccumulatorSize_.fetch_add(region->AliveObject());
-                }
-                ret = evacuationAllocator_->AddRegionToOld(region);
-            }
+    bool isPromoted = region->InOldGeneration() || region->BelowAgeMark();
+    if (!isPromoted && IsWholeRegionEvacuate(region)) {
+        if (heap_->GetHeapManager()->MoveYoungRegionSync(region)) {
+            return;
         }
-        if (!ret) {
-            LOG(FATAL, RUNTIME) << "Add Region failed:";
-        }
-    } else {
-        auto markBitmap = region->GetMarkBitmap();
-        ASSERT(markBitmap != nullptr);
-        markBitmap->IterateOverMarkedChunks([this, &region, &isPromoted, &allocator](void *mem) {
-            ASSERT(region->InRange(ToUintPtr(mem)));
-            auto header = reinterpret_cast<TaggedObject *>(mem);
-            auto klass = header->GetClass();
-            auto size = klass->SizeFromJSHClass(header);
-
-            uintptr_t address = 0;
-            if (isPromoted || (region->HasAgeMark() && ToUintPtr(mem) < ageMark_)) {
-                address = allocator->Allocate(size, SpaceAlloc::OLD_SPACE);
-                promotedAccumulatorSize_.fetch_add(size);
-            } else {
-                address = allocator->Allocate(size, SpaceAlloc::YOUNG_SPACE);
-                if (address == 0) {
-                    address = allocator->Allocate(size, SpaceAlloc::OLD_SPACE);
-                    promotedAccumulatorSize_.fetch_add(size);
-                }
-            }
-            LOG_IF(address == 0, FATAL, RUNTIME) << "Evacuate object failed:" << size;
-
-            if (memcpy_sp(ToVoidPtr(address), size, ToVoidPtr(ToUintPtr(mem)), size) != EOK) {
-                LOG_ECMA(FATAL) << "memcpy_s failed";
-            }
-
-            Barriers::SetDynPrimitive(header, 0, MarkWord::FromForwardingAddress(address));
-#if ECMASCRIPT_ENABLE_HEAP_VERIFY
-            VerifyHeapObject(reinterpret_cast<TaggedObject *>(address));
-#endif
-        });
     }
+    auto markBitmap = region->GetMarkBitmap();
+    ASSERT(markBitmap != nullptr);
+    markBitmap->IterateOverMarkedChunks([this, &region, &isPromoted, &allocator](void *mem) {
+        ASSERT(region->InRange(ToUintPtr(mem)));
+        auto header = reinterpret_cast<TaggedObject *>(mem);
+        auto klass = header->GetClass();
+        auto size = klass->SizeFromJSHClass(header);
+
+        uintptr_t address = 0;
+        bool actualPromoted = false;
+        if (isPromoted || (region->HasAgeMark() && ToUintPtr(mem) < ageMark_)) {
+            address = allocator->Allocate(size, OLD_SPACE);
+            actualPromoted = true;
+        } else {
+            address = allocator->Allocate(size, SEMI_SPACE);
+            if (address == 0) {
+                address = allocator->Allocate(size, OLD_SPACE);
+                actualPromoted = true;
+            }
+        }
+        LOG_IF(address == 0, FATAL, RUNTIME) << "Evacuate object failed:" << size;
+
+        Utils::Copy(ToVoidPtr(address), size, ToVoidPtr(ToUintPtr(mem)), size);
+
+        Barriers::SetDynPrimitive(header, 0, MarkWord::FromForwardingAddress(address));
+#if ECMASCRIPT_ENABLE_HEAP_VERIFY
+        VerifyHeapObject(reinterpret_cast<TaggedObject *>(address));
+#endif
+        if (actualPromoted && klass->HasReferenceField()) {
+            SetObjectFieldRSet(reinterpret_cast<TaggedObject *>(address), klass);
+        }
+    });
 }
 
 void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
@@ -148,15 +141,15 @@ void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
             for (ObjectSlot slot = start; slot < end; slot++) {
                 JSTaggedValue value(slot.GetTaggedType());
                 if (value.IsHeapObject()) {
-                    if (value.IsWeak()) {
+                    if (value.IsWeakForHeapObject()) {
                         continue;
                     }
                     Region *object_region = Region::ObjectAddressToRange(value.GetTaggedObject());
-                    if (heap_->IsSemiMarkNeeded() && !object_region->InYoungGeneration()) {
+                    if (!heap_->IsFullMark() && !object_region->InYoungGeneration()) {
                         continue;
                     }
-                    auto reset = object_region->GetMarkBitmap();
-                    if (!reset->Test(value.GetTaggedObject())) {
+                    auto rset = object_region->GetMarkBitmap();
+                    if (!rset->Test(value.GetTaggedObject())) {
                         LOG(FATAL, RUNTIME) << "Miss mark value: " << value.GetTaggedObject()
                                             << ", body address:" << slot.SlotAddress()
                                             << ", header address:" << object;
@@ -168,13 +161,13 @@ void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
 
 void ParallelEvacuation::UpdateReference()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelUpdateReference);
     // Update reference pointers
     uint32_t youngeRegionMoveCount = 0;
-    uint32_t oldRegionMoveCount = 0;
     uint32_t youngeRegionCopyCount = 0;
-    uint32_t oldRegionCopyCount = 0;
+    uint32_t oldRegionCount = 0;
     heap_->GetNewSpace()->EnumerateRegions([&] (Region *current) {
-        if (current->InPromoteSet()) {
+        if (current->InNewToNewSet()) {
             AddFragment(std::make_unique<UpdateAndSweepNewRegionFragment>(this, current));
             youngeRegionMoveCount++;
         } else {
@@ -182,28 +175,18 @@ void ParallelEvacuation::UpdateReference()
             youngeRegionCopyCount++;
         }
     });
-    heap_->GetCompressSpace()->EnumerateRegions([&] (Region *current) {
-        if (current->InPromoteSet()) {
-            AddFragment(std::make_unique<UpdateAndSweepCompressRegionFragment>(this, current));
-            oldRegionMoveCount++;
-        } else {
-            AddFragment(std::make_unique<UpdateCompressRegionFragment>(this, current));
-            oldRegionCopyCount++;
-        }
-    });
-    heap_->EnumerateOldSpaceRegions([this] (Region *current) {
+    heap_->EnumerateOldSpaceRegions([this, &oldRegionCount] (Region *current) {
         if (current->InCollectSet()) {
             return;
         }
         AddFragment(std::make_unique<UpdateRSetFragment>(this, current));
+        oldRegionCount++;
     });
-    LOG(INFO, RUNTIME) << "UpdatePointers statistic: younge space region compact moving count:" << youngeRegionMoveCount
-                       << "younge space region compact coping count:" << youngeRegionCopyCount
-                       << "old space region compact moving count:" << oldRegionMoveCount
-                       << "old space region compact coping count:" << oldRegionCopyCount;
+    LOG(DEBUG, RUNTIME) << "UpdatePointers statistic: younge space region compact moving count:"
+                        << youngeRegionMoveCount
+                        << "younge space region compact coping count:" << youngeRegionCopyCount
+                        << "old space region count:" << oldRegionCount;
 
-    // Optimization weak reference for native pointer
-    UpdateWeakReference();
     if (heap_->IsParallelGCEnabled()) {
         os::memory::LockHolder holder(mutex_);
         parallel_ = CalculateUpdateThreadNum();
@@ -213,13 +196,14 @@ void ParallelEvacuation::UpdateReference()
     }
 
     UpdateRoot();
+    UpdateWeakReference();
     ProcessFragments(true);
     WaitFinished();
-    FillSweptRegion();
 }
 
 void ParallelEvacuation::UpdateRoot()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), UpdateRoot);
     RootVisitor gcUpdateYoung = [this]([[maybe_unused]] Root type, ObjectSlot slot) {
         UpdateObjectSlot(slot);
     };
@@ -234,27 +218,34 @@ void ParallelEvacuation::UpdateRoot()
 
 void ParallelEvacuation::UpdateWeakReference()
 {
-    bool isOnlySemi = heap_->IsSemiMarkNeeded();
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), UpdateWeakReference);
     auto stringTable = heap_->GetEcmaVM()->GetEcmaStringTable();
-    WeakRootVisitor gcUpdateWeak = [&](TaggedObject *header) {
+    bool isFullMark = heap_->IsFullMark();
+    WeakRootVisitor gcUpdateWeak = [isFullMark](TaggedObject *header) {
         Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(header));
-        if (objectRegion->InYoungAndCSetGeneration() && !objectRegion->InPromoteSet()) {
-            MarkWord markWord(header);
-            if (markWord.IsForwardingAddress()) {
-                return markWord.ToForwardingAddress();
-            }
-            return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
-        } else {
-            if (!isOnlySemi || objectRegion->InPromoteSet()) {
+        if (objectRegion->InYoungOrCSetGeneration()) {
+            if (objectRegion->InNewToNewSet()) {
                 auto markBitmap = objectRegion->GetMarkBitmap();
-                ASSERT(markBitmap != nullptr);
-                if (!markBitmap->Test(header)) {
-                    return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
+                if (markBitmap->Test(header)) {
+                    return header;
+                }
+            } else {
+                MarkWord markWord(header);
+                if (markWord.IsForwardingAddress()) {
+                    return markWord.ToForwardingAddress();
                 }
             }
-            return header;
+            return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
         }
+        if (isFullMark) {
+            auto markBitmap = objectRegion->GetMarkBitmap();
+            if (!markBitmap->Test(header)) {
+                return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
+            }
+        }
+        return header;
     };
+
     stringTable->SweepWeakReference(gcUpdateWeak);
     heap_->GetEcmaVM()->GetJSThread()->IterateWeakEcmaGlobalStorage(gcUpdateWeak);
     heap_->GetEcmaVM()->ProcessReferences(gcUpdateWeak);
@@ -275,7 +266,7 @@ void ParallelEvacuation::UpdateRSet(Region *region)
             return true;
         });
     }
-    if (!heap_->IsSemiMarkNeeded()) {
+    if (!heap_->GetOldSpace()->IsCSetEmpty()) {
         rememberedSet = region->GetCrossRegionRememberedSet();
         if (LIKELY(rememberedSet != nullptr)) {
             rememberedSet->IterateOverMarkedChunks([this](void *mem) -> bool {
@@ -288,41 +279,13 @@ void ParallelEvacuation::UpdateRSet(Region *region)
     }
 }
 
-void ParallelEvacuation::UpdateCompressRegionReference(Region *region)
-{
-    auto curPtr = region->GetBegin();
-    auto endPtr = region->GetEnd();
-    auto rset = region->GetOldToNewRememberedSet();
-    if (rset != nullptr) {
-        rset->ClearAllBits();
-    }
-
-    size_t objSize = 0;
-    while (curPtr < endPtr) {
-        auto freeObject = FreeObject::Cast(curPtr);
-        if (!freeObject->IsFreeObject()) {
-            auto obj = reinterpret_cast<TaggedObject *>(curPtr);
-            auto klass = obj->GetClass();
-            if (klass->HasReferenceField()) {
-                UpdateCompressObjectField(region, obj, klass);
-            }
-            objSize = klass->SizeFromJSHClass(obj);
-        } else {
-            objSize = freeObject->Available();
-        }
-        curPtr += objSize;
-        CHECK_OBJECT_SIZE(objSize);
-    }
-    CHECK_REGION_END(curPtr, endPtr);
-}
-
 void ParallelEvacuation::UpdateNewRegionReference(Region *region)
 {
     Region *current = heap_->GetNewSpace()->GetCurrentRegion();
     auto curPtr = region->GetBegin();
     uintptr_t endPtr;
     if (region == current) {
-        auto top = evacuationAllocator_->GetNewSpaceTop();
+        auto top = heap_->GetHeapManager()->GetNewSpaceAllocator().GetTop();
         endPtr = curPtr + region->GetAllocatedBytes(top);
     } else {
         endPtr = curPtr + region->GetAllocatedBytes();
@@ -375,43 +338,6 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
     }
 }
 
-void ParallelEvacuation::UpdateAndSweepCompressRegionReference(Region *region, bool isMain)
-{
-    auto markBitmap = region->GetMarkBitmap();
-    auto rset = region->GetOldToNewRememberedSet();
-    if (rset != nullptr) {
-        rset->ClearAllBits();
-    }
-    uintptr_t freeStart = region->GetBegin();
-    if (markBitmap != nullptr) {
-        markBitmap->IterateOverMarkedChunks([this, &region, &freeStart, &isMain](void *mem) {
-            ASSERT(region->InRange(ToUintPtr(mem)));
-            ASSERT(!FreeObject::Cast(ToUintPtr(mem))->IsFreeObject());
-            auto header = reinterpret_cast<TaggedObject *>(mem);
-            auto klass = header->GetClass();
-            ObjectSlot slot(ToUintPtr(&klass));
-            UpdateObjectSlot(slot);
-            if (klass->HasReferenceField()) {
-                UpdateCompressObjectField(region, header, klass);
-            }
-
-            uintptr_t freeEnd = ToUintPtr(mem);
-            if (freeStart != freeEnd) {
-                evacuationAllocator_->Free(freeStart, freeEnd, isMain);
-            }
-            freeStart = freeEnd + klass->SizeFromJSHClass(header);
-        });
-    }
-    uintptr_t freeEnd = region->GetEnd();
-    CHECK_REGION_END(freeStart, freeEnd);
-    if (freeStart < freeEnd) {
-        evacuationAllocator_->Free(freeStart, freeEnd, isMain);
-    }
-    if (!isMain) {
-        AddSweptRegionSafe(region);
-    }
-}
-
 void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cls)
 {
     objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls,
@@ -422,23 +348,9 @@ void ParallelEvacuation::UpdateNewObjectField(TaggedObject *object, JSHClass *cl
         });
 }
 
-void ParallelEvacuation::UpdateCompressObjectField(Region *region, TaggedObject *object, JSHClass *cls)
-{
-    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls,
-        [this, region](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
-            for (ObjectSlot slot = start; slot < end; slot++) {
-                if (UpdateObjectSlot(slot)) {
-                    Region *valueRegion = Region::ObjectAddressToRange(slot.GetTaggedObjectHeader());
-                    if (valueRegion->InYoungGeneration()) {
-                        region->InsertOldToNewRememberedSet(slot.SlotAddress());
-                    }
-                }
-            }
-        });
-}
-
 void ParallelEvacuation::WaitFinished()
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), WaitUpdateFinished);
     if (parallel_ > 0) {
         os::memory::LockHolder holder(mutex_);
         while (parallel_ > 0) {
@@ -466,12 +378,11 @@ bool ParallelEvacuation::ProcessFragments(bool isMain)
 ParallelEvacuation::EvacuationTask::EvacuationTask(ParallelEvacuation *evacuation)
     : evacuation_(evacuation)
 {
-    allocator_ = new TlabAllocator(evacuation->heap_, TriggerGCType::COMPRESS_FULL_GC);
+    allocator_ = new TlabAllocator(evacuation->heap_);
 }
 
 ParallelEvacuation::EvacuationTask::~EvacuationTask()
 {
-    allocator_->Finalize();
     delete allocator_;
 }
 
@@ -503,21 +414,9 @@ bool ParallelEvacuation::UpdateNewRegionFragment::Process(bool isMain)
     return true;
 }
 
-bool ParallelEvacuation::UpdateCompressRegionFragment::Process(bool isMain)
-{
-    GetEvacuation()->UpdateCompressRegionReference(GetRegion());
-    return true;
-}
-
 bool ParallelEvacuation::UpdateAndSweepNewRegionFragment::Process(bool isMain)
 {
     GetEvacuation()->UpdateAndSweepNewRegionReference(GetRegion());
-    return true;
-}
-
-bool ParallelEvacuation::UpdateAndSweepCompressRegionFragment::Process(bool isMain)
-{
-    GetEvacuation()->UpdateAndSweepCompressRegionReference(GetRegion(), isMain);
     return true;
 }
 }  // namespace panda::ecmascript

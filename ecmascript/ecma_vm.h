@@ -415,21 +415,6 @@ protected:
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 
 private:
-    static constexpr uint32_t THREAD_SLEEP_TIME = 16 * 1000;
-    static constexpr uint32_t THREAD_SLEEP_COUNT = 100;
-    class TrimNewSpaceLimitTask : public Task {
-    public:
-        explicit TrimNewSpaceLimitTask(Heap *heap) : heap_(heap) {};
-        ~TrimNewSpaceLimitTask() override = default;
-        bool Run(uint32_t threadIndex) override;
-
-        NO_COPY_SEMANTIC(TrimNewSpaceLimitTask);
-        NO_MOVE_SEMANTIC(TrimNewSpaceLimitTask);
-
-    private:
-        Heap *heap_;
-    };
-
     void AddPandaFile(const panda_file::File *pf, bool isModule);
     void SetProgram(Program *program, const panda_file::File *pf);
     bool IsFrameworkPandaFile(std::string_view filename) const;
