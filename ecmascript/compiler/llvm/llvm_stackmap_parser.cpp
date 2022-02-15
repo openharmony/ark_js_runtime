@@ -79,7 +79,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFr
                             << std::hex << "rfp :" << fp;
         } else {
             LOG_ECMA(DEBUG) << "REG_NUM :  info.first:" << info.first;
-            abort();
+            UNREACHABLE();
         }
 
         if (IsDeriveredPointer(i)) {
@@ -124,7 +124,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(OptLeaveFrame *frame,
             uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
         } else {
-            abort();
+            UNREACHABLE();
         }
         if (IsDeriveredPointer(i)) {
             derived = reinterpret_cast<uintptr_t>(address);
@@ -163,7 +163,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, uintptr_t 
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             address = callsiteFp + info.second;
         } else {
-            abort();
+            UNREACHABLE();
         }
 
         if (IsDeriveredPointer(i)) {
@@ -211,7 +211,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             address = callsiteFp + info.second;
         } else {
-            abort();
+            UNREACHABLE();
         }
 
         if (IsDeriveredPointer(i)) {
