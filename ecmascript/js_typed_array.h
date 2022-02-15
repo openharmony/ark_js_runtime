@@ -26,7 +26,7 @@ public:
     {
     #if ECMASCRIPT_ENABLE_CAST_CHECK
         if (!(JSTaggedValue(object).IsTypedArray() || JSTaggedValue(object).IsJSTypedArray())) {
-            std::abort();
+            UNREACHABLE();
         }
     #else
         ASSERT(JSTaggedValue(object).IsTypedArray() || JSTaggedValue(object).IsJSTypedArray());
