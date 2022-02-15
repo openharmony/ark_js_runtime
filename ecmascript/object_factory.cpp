@@ -78,6 +78,11 @@
 #include "ecmascript/symbol_table-inl.h"
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
+#include "ecmascript/template_map.h"
+#include "ecmascript/ts_types/ts_obj_layout_info-inl.h"
+#include "ecmascript/ts_types/ts_type.h"
+#include "ecmascript/ts_types/ts_type_table.h"
+
 
 namespace panda::ecmascript {
 using Error = builtins::BuiltinsError;
@@ -159,6 +164,12 @@ void ObjectFactory::ObtainRootClass([[maybe_unused]] const JSHandle<GlobalEnv> &
     jsRealmClass_ = JSHClass::Cast(globalConst->GetJSRealmClass().GetTaggedObject());
     machineCodeClass_ = JSHClass::Cast(globalConst->GetMachineCodeClass().GetTaggedObject());
     classInfoExtractorHClass_ = JSHClass::Cast(globalConst->GetClassInfoExtractorHClass().GetTaggedObject());
+    tsObjectTypeClass_ = JSHClass::Cast(globalConst->GetTSObjectTypeInitClass().GetTaggedObject());
+    tsClassTypeClass_ = JSHClass::Cast(globalConst->GetTSClassTypeInitClass().GetTaggedObject());
+    tsInterfaceTypeClass_ = JSHClass::Cast(globalConst->GetTSInterfaceTypeInitClass().GetTaggedObject());
+    tsUnionTypeClass_ = JSHClass::Cast(globalConst->GetTSUnionTypeInitClass().GetTaggedObject());
+    tsImportTypeClass_ = JSHClass::Cast(globalConst->GetTSImportTypeInitClass().GetTaggedObject());
+    tsClassInstanceTypeClass_ = JSHClass::Cast(globalConst->GetTSClassInstanceTypeInitClass().GetTaggedObject());
 }
 
 void ObjectFactory::InitObjectFields(const TaggedObject *object)
@@ -2054,6 +2065,132 @@ JSHandle<ClassInfoExtractor> ObjectFactory::NewClassInfoExtractor(JSMethod *ctor
     return obj;
 }
 
+// ----------------------------------- new TSType ----------------------------------------
+JSHandle<TSObjLayoutInfo> ObjectFactory::CreateTSObjLayoutInfo(int propNum, JSTaggedValue initVal)
+{
+    int arrayLength = TSObjLayoutInfo::ComputeArrayLength(propNum);
+    JSHandle<TSObjLayoutInfo> tsPropInfoHandle = JSHandle<TSObjLayoutInfo>::Cast(NewTaggedArray(arrayLength, initVal));
+    tsPropInfoHandle->SetNumberOfElements(thread_, 0);
+    return tsPropInfoHandle;
+}
+
+JSHandle<TSObjectType> ObjectFactory::NewTSObjectType(uint32_t numOfKeys)
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(tsObjectTypeClass_);
+    JSHandle<TSObjectType> objectType(thread_, header);
+
+    objectType->SetGTRef(GlobalTSTypeRef::Default());
+
+    JSHandle<TSObjLayoutInfo> tsPropInfo = CreateTSObjLayoutInfo(numOfKeys);
+    objectType->SetObjLayoutInfo(thread_, tsPropInfo);
+
+    objectType->SetHClass(thread_, JSTaggedValue::Hole());
+
+    return objectType;
+}
+
+JSHandle<TSClassType> ObjectFactory::NewTSClassType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(tsClassTypeClass_);
+    JSHandle<TSClassType> classType(thread_, header);
+
+    classType->SetGTRef(GlobalTSTypeRef::Default());
+    classType->SetInstanceType(thread_, JSTaggedValue::Undefined());
+    classType->SetConstructorType(thread_, JSTaggedValue::Undefined());
+    classType->SetPrototypeType(thread_, JSTaggedValue::Undefined());
+    classType->SetExtensionType(thread_, JSTaggedValue::Undefined());
+
+    return classType;
+}
+
+JSHandle<TSInterfaceType> ObjectFactory::NewTSInterfaceType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(tsInterfaceTypeClass_);
+    JSHandle<TSInterfaceType> interfaceType(thread_, header);
+
+    JSHandle<TaggedArray> extends = NewTaggedArray(0, JSTaggedValue::Undefined());
+    interfaceType->SetGTRef(GlobalTSTypeRef::Default());
+    interfaceType->SetExtends(thread_, extends);
+    interfaceType->SetFields(thread_, JSTaggedValue::Undefined());
+
+    return interfaceType;
+}
+
+
+JSHandle<TSUnionType> ObjectFactory::NewTSUnionType(uint32_t length)
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(tsUnionTypeClass_);
+    JSHandle<TSUnionType> unionType(thread_, header);
+
+    unionType->SetGTRef(GlobalTSTypeRef::Default());
+    JSHandle<TaggedArray> componentTypes = NewTaggedArray(length, JSTaggedValue::Undefined());
+    unionType->SetComponentTypes(thread_, componentTypes);
+
+    return unionType;
+}
+
+JSHandle<TSClassInstanceType> ObjectFactory::NewTSClassInstanceType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(tsClassInstanceTypeClass_);
+    JSHandle<TSClassInstanceType> classInstanceType(thread_, header);
+
+    classInstanceType->SetGTRef(GlobalTSTypeRef::Default());
+    classInstanceType->SetCreateClassType(JSTaggedValue::Undefined());
+
+    return classInstanceType;
+}
+
+JSHandle<TSImportType> ObjectFactory::NewTSImportType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(tsImportTypeClass_);
+    JSHandle<TSImportType> importType(thread_, header);
+
+    importType->SetGTRef(GlobalTSTypeRef::Default());
+    importType->SetTargetType(thread_, JSTaggedValue::Undefined());
+    importType->SetImportPath(thread_, JSTaggedValue::Undefined());
+
+    return importType;
+}
+
+JSHandle<TSTypeTable> ObjectFactory::NewTSTypeTable(uint32_t length)
+{
+    NewObjectHook();
+    ASSERT(length > 0);
+
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
+    auto header = heapHelper_.AllocateOldGenerationOrHugeObject(arrayClass_, size);
+
+    JSHandle<TSTypeTable> table(thread_, header);
+    table->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
+
+    return table;
+}
+
+JSHandle<TSModuleTable> ObjectFactory::NewTSModuleTable(uint32_t length)
+{
+    NewObjectHook();
+    ASSERT(length > 0);
+
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass_, size);
+    JSHandle<TSModuleTable> array(thread_, header);
+    array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
+    array->Set(thread_, 0, JSTaggedValue(0));
+
+    return array;
+}
 // ----------------------------------- new string ----------------------------------------
 JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
 {

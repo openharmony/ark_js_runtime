@@ -51,6 +51,7 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/ts_types/ts_type.h"
 
 namespace panda::ecmascript {
 void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHClass *dynClassClass)
@@ -59,79 +60,60 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
     SetConstant(ConstantIndex::HCLASS_CLASS_INDEX, JSTaggedValue(dynClassClass));
-    SetConstant(ConstantIndex::STRING_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, 0, JSType::STRING).GetTaggedValue());
-    SetConstant(ConstantIndex::ARRAY_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY).GetTaggedValue());
+    SetConstant(ConstantIndex::STRING_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::STRING));
+    SetConstant(ConstantIndex::ARRAY_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
     SetConstant(ConstantIndex::DICTIONARY_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_DICTIONARY).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::JS_NATIVE_POINTER_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, JSNativePointer::SIZE, JSType::JS_NATIVE_POINTER).GetTaggedValue());
-    SetConstant(ConstantIndex::ENV_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_DICTIONARY));
+    SetConstant(ConstantIndex::JS_NATIVE_POINTER_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSNativePointer::SIZE, JSType::JS_NATIVE_POINTER));
+    SetConstant(ConstantIndex::ENV_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
     SetConstant(ConstantIndex::FREE_OBJECT_WITH_NONE_FIELD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, FreeObject::NEXT_OFFSET, JSType::FREE_OBJECT_WITH_NONE_FIELD)
-                    .GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, FreeObject::NEXT_OFFSET, JSType::FREE_OBJECT_WITH_NONE_FIELD));
     SetConstant(ConstantIndex::FREE_OBJECT_WITH_ONE_FIELD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, FreeObject::SIZE_OFFSET, JSType::FREE_OBJECT_WITH_ONE_FIELD)
-                    .GetTaggedValue());
-    SetConstant(
-        ConstantIndex::FREE_OBJECT_WITH_TWO_FIELD_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, FreeObject::SIZE, JSType::FREE_OBJECT_WITH_TWO_FIELD).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, FreeObject::SIZE_OFFSET, JSType::FREE_OBJECT_WITH_ONE_FIELD));
+    SetConstant(ConstantIndex::FREE_OBJECT_WITH_TWO_FIELD_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, FreeObject::SIZE, JSType::FREE_OBJECT_WITH_TWO_FIELD));
     SetConstant(ConstantIndex::SYMBOL_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, JSSymbol::SIZE, JSType::SYMBOL).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, JSSymbol::SIZE, JSType::SYMBOL));
     SetConstant(ConstantIndex::ACCESSOE_DATA_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::ACCESSOR_DATA).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::INTERNAL_ACCESSOR_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::INTERNAL_ACCESSOR).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::ACCESSOR_DATA));
+    SetConstant(ConstantIndex::INTERNAL_ACCESSOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::INTERNAL_ACCESSOR));
     SetConstant(ConstantIndex::JS_PROXY_ORDINARY_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, JSProxy::SIZE, JSType::JS_PROXY).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::COMPLETION_RECORD_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, CompletionRecord::SIZE, JSType::COMPLETION_RECORD).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::GENERATOR_CONTEST_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, GeneratorContext::SIZE, JSType::JS_GENERATOR_CONTEXT).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::CAPABILITY_RECORD_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, PromiseCapability::SIZE, JSType::PROMISE_CAPABILITY).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::REACTIONS_RECORD_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, PromiseReaction::SIZE, JSType::PROMISE_REACTIONS).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, JSProxy::SIZE, JSType::JS_PROXY));
+    SetConstant(ConstantIndex::COMPLETION_RECORD_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, CompletionRecord::SIZE, JSType::COMPLETION_RECORD));
+    SetConstant(ConstantIndex::GENERATOR_CONTEST_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, GeneratorContext::SIZE, JSType::JS_GENERATOR_CONTEXT));
+    SetConstant(ConstantIndex::CAPABILITY_RECORD_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, PromiseCapability::SIZE, JSType::PROMISE_CAPABILITY));
+    SetConstant(ConstantIndex::REACTIONS_RECORD_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, PromiseReaction::SIZE, JSType::PROMISE_REACTIONS));
     SetConstant(ConstantIndex::PROMISE_ITERATOR_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PromiseIteratorRecord::SIZE, JSType::PROMISE_ITERATOR_RECORD)
-                    .GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, PromiseIteratorRecord::SIZE, JSType::PROMISE_ITERATOR_RECORD));
     SetConstant(ConstantIndex::PROMISE_RECORD_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PromiseRecord::SIZE, JSType::PROMISE_RECORD).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::PROMISE_RESOLVING_FUNCTIONS_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, ResolvingFunctionsRecord::SIZE, JSType::RESOLVING_FUNCTIONS_RECORD)
-            .GetTaggedValue());
-    SetConstant(
-        ConstantIndex::MICRO_JOB_QUEUE_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, job::MicroJobQueue::SIZE, JSType::MICRO_JOB_QUEUE).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, PromiseRecord::SIZE, JSType::PROMISE_RECORD));
+    SetConstant(ConstantIndex::PROMISE_RESOLVING_FUNCTIONS_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, ResolvingFunctionsRecord::SIZE,
+                                         JSType::RESOLVING_FUNCTIONS_RECORD));
+    SetConstant(ConstantIndex::MICRO_JOB_QUEUE_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, job::MicroJobQueue::SIZE, JSType::MICRO_JOB_QUEUE));
     SetConstant(ConstantIndex::PENDING_JOB_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, job::PendingJob::SIZE, JSType::PENDING_JOB).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::PROTO_CHANGE_MARKER_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, ProtoChangeMarker::SIZE, JSType::PROTO_CHANGE_MARKER).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::PROTO_CHANGE_DETAILS_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, ProtoChangeDetails::SIZE, JSType::PROTOTYPE_INFO).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::PROTOTYPE_HANDLER_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, PrototypeHandler::SIZE, JSType::PROTOTYPE_HANDLER).GetTaggedValue());
-    SetConstant(
-        ConstantIndex::TRANSITION_HANDLER_CLASS_INDEX,
-        factory->NewEcmaDynClass(dynClassClass, TransitionHandler::SIZE, JSType::TRANSITION_HANDLER).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, job::PendingJob::SIZE, JSType::PENDING_JOB));
+    SetConstant(ConstantIndex::PROTO_CHANGE_MARKER_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, ProtoChangeMarker::SIZE, JSType::PROTO_CHANGE_MARKER));
+    SetConstant(ConstantIndex::PROTO_CHANGE_DETAILS_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, ProtoChangeDetails::SIZE, JSType::PROTOTYPE_INFO));
+    SetConstant(ConstantIndex::PROTOTYPE_HANDLER_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, PrototypeHandler::SIZE, JSType::PROTOTYPE_HANDLER));
+    SetConstant(ConstantIndex::TRANSITION_HANDLER_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TransitionHandler::SIZE, JSType::TRANSITION_HANDLER));
     SetConstant(ConstantIndex::PROPERTY_BOX_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, PropertyBox::SIZE, JSType::PROPERTY_BOX).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, PropertyBox::SIZE, JSType::PROPERTY_BOX));
     SetConstant(ConstantIndex::PROGRAM_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, Program::SIZE, JSType::PROGRAM).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, Program::SIZE, JSType::PROGRAM));
     SetConstant(ConstantIndex::ECMA_MODULE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, EcmaModule::SIZE, JSType::ECMA_MODULE).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, EcmaModule::SIZE, JSType::ECMA_MODULE));
 
     JSHClass *jsProxyCallableClass = *factory->NewEcmaDynClass(dynClassClass, JSProxy::SIZE, JSType::JS_PROXY);
 
@@ -145,12 +127,23 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(ConstantIndex::JS_PROXY_CONSTRUCT_CLASS_INDEX, JSTaggedValue(jsProxyConstructClass));
 
     SetConstant(ConstantIndex::JS_REALM_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, JSRealm::SIZE, JSType::JS_REALM).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, JSRealm::SIZE, JSType::JS_REALM));
     SetConstant(ConstantIndex::MACHINE_CODE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, 0, JSType::MACHINE_CODE_OBJECT).GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, 0, JSType::MACHINE_CODE_OBJECT));
     SetConstant(ConstantIndex::CLASS_INFO_EXTRACTOR_HCLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, ClassInfoExtractor::SIZE, JSType::CLASS_INFO_EXTRACTOR)
-                .GetTaggedValue());
+                factory->NewEcmaDynClass(dynClassClass, ClassInfoExtractor::SIZE, JSType::CLASS_INFO_EXTRACTOR));
+    SetConstant(ConstantIndex::TS_OBJECT_TYPE_INIT_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSObjectType::SIZE, JSType::TS_OBJECT_TYPE));
+    SetConstant(ConstantIndex::TS_CLASS_TYPE_INIT_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSClassType::SIZE, JSType::TS_CLASS_TYPE));
+    SetConstant(ConstantIndex::TS_UNION_TYPE_INIT_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSClassType::SIZE, JSType::TS_UNION_TYPE));
+    SetConstant(ConstantIndex::TS_INTERFACE_TYPE_INIT_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSInterfaceType::SIZE, JSType::TS_INTERFACE_TYPE));
+    SetConstant(ConstantIndex::TS_CLASS_INSTANCE_TYPE_INIT_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSClassInstanceType::SIZE, JSType::TS_CLASS_INSTANCE_TYPE));
+    SetConstant(ConstantIndex::TS_IMPORT_TYPE_INIT_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSImportType::SIZE, JSType::TS_IMPORT_TYPE));
 }
 
 // NOLINTNEXTLINE(readability-function-size)
@@ -163,308 +156,240 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     auto vm = thread->GetEcmaVM();
     SetConstant(ConstantIndex::EMPTY_STRING_OBJECT_INDEX, JSTaggedValue(EcmaString::CreateEmptyString(vm)));
     [[maybe_unused]] auto test = EcmaString::Cast(GetHandledEmptyString().GetObject<EcmaString>());
-    SetConstant(ConstantIndex::CONSTRUCTOR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("constructor").GetTaggedValue());
-    SetConstant(ConstantIndex::PROTOTYPE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("prototype").GetTaggedValue());
-    SetConstant(ConstantIndex::LENGTH_STRING_INDEX, factory->NewFromCanBeCompressString("length").GetTaggedValue());
-    SetConstant(ConstantIndex::VALUE_STRING_INDEX, factory->NewFromCanBeCompressString("value").GetTaggedValue());
-    SetConstant(ConstantIndex::SET_STRING_INDEX, factory->NewFromCanBeCompressString("set").GetTaggedValue());
-    SetConstant(ConstantIndex::GET_STRING_INDEX, factory->NewFromCanBeCompressString("get").GetTaggedValue());
-    SetConstant(ConstantIndex::WRITABLE_STRING_INDEX, factory->NewFromCanBeCompressString("writable").GetTaggedValue());
-    SetConstant(ConstantIndex::ENUMERABLE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("enumerable").GetTaggedValue());
-    SetConstant(ConstantIndex::CONFIGURABLE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("configurable").GetTaggedValue());
+    SetConstant(ConstantIndex::CONSTRUCTOR_STRING_INDEX, factory->NewFromCanBeCompressString("constructor"));
+    SetConstant(ConstantIndex::PROTOTYPE_STRING_INDEX, factory->NewFromCanBeCompressString("prototype"));
+    SetConstant(ConstantIndex::LENGTH_STRING_INDEX, factory->NewFromCanBeCompressString("length"));
+    SetConstant(ConstantIndex::VALUE_STRING_INDEX, factory->NewFromCanBeCompressString("value"));
+    SetConstant(ConstantIndex::SET_STRING_INDEX, factory->NewFromCanBeCompressString("set"));
+    SetConstant(ConstantIndex::GET_STRING_INDEX, factory->NewFromCanBeCompressString("get"));
+    SetConstant(ConstantIndex::WRITABLE_STRING_INDEX, factory->NewFromCanBeCompressString("writable"));
+    SetConstant(ConstantIndex::ENUMERABLE_STRING_INDEX, factory->NewFromCanBeCompressString("enumerable"));
+    SetConstant(ConstantIndex::CONFIGURABLE_STRING_INDEX, factory->NewFromCanBeCompressString("configurable"));
     /* SymbolTable *RegisterSymbols */
-    SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromCanBeCompressString("name").GetTaggedValue());
-    SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX,
-                factory->NewFromCanBeCompressString("getPrototypeOf").GetTaggedValue());
-    SetConstant(ConstantIndex::SETPROTOTYPEOF_STRING_INDEX,
-                factory->NewFromCanBeCompressString("setPrototypeOf").GetTaggedValue());
-    SetConstant(ConstantIndex::ISEXTENSIBLE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("isExtensible").GetTaggedValue());
+    SetConstant(ConstantIndex::NAME_STRING_INDEX, factory->NewFromCanBeCompressString("name"));
+    SetConstant(ConstantIndex::GETPROTOTYPEOF_STRING_INDEX, factory->NewFromCanBeCompressString("getPrototypeOf"));
+    SetConstant(ConstantIndex::SETPROTOTYPEOF_STRING_INDEX, factory->NewFromCanBeCompressString("setPrototypeOf"));
+    SetConstant(ConstantIndex::ISEXTENSIBLE_STRING_INDEX, factory->NewFromCanBeCompressString("isExtensible"));
     SetConstant(ConstantIndex::PREVENTEXTENSIONS_STRING_INDEX,
-                factory->NewFromCanBeCompressString("preventExtensions").GetTaggedValue());
+                factory->NewFromCanBeCompressString("preventExtensions"));
     SetConstant(ConstantIndex::GETOWNPROPERTYDESCRIPTOR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("getOwnPropertyDescriptor").GetTaggedValue());
-    SetConstant(ConstantIndex::DEFINEPROPERTY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("defineProperty").GetTaggedValue());
-    SetConstant(ConstantIndex::HAS_STRING_INDEX, factory->NewFromCanBeCompressString("has").GetTaggedValue());
-    SetConstant(ConstantIndex::DELETEPROPERTY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("deleteProperty").GetTaggedValue());
-    SetConstant(ConstantIndex::ENUMERATE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("enumerate").GetTaggedValue());
-    SetConstant(ConstantIndex::OWNKEYS_STRING_INDEX, factory->NewFromCanBeCompressString("ownKeys").GetTaggedValue());
-    SetConstant(ConstantIndex::APPLY_STRING_INDEX, factory->NewFromCanBeCompressString("apply").GetTaggedValue());
-    SetConstant(ConstantIndex::NEGATIVE_ZERO_STRING_INDEX, factory->NewFromCanBeCompressString("-0").GetTaggedValue());
-    SetConstant(ConstantIndex::DONE_STRING_INDEX, factory->NewFromCanBeCompressString("done").GetTaggedValue());
-    SetConstant(ConstantIndex::PROXY_STRING_INDEX, factory->NewFromCanBeCompressString("proxy").GetTaggedValue());
-    SetConstant(ConstantIndex::REVOKE_STRING_INDEX, factory->NewFromCanBeCompressString("revoke").GetTaggedValue());
-    SetConstant(ConstantIndex::NEXT_STRING_INDEX, factory->NewFromCanBeCompressString("next").GetTaggedValue());
-    SetConstant(ConstantIndex::TO_STRING_STRING_INDEX,
-                factory->NewFromCanBeCompressString("toString").GetTaggedValue());
-    SetConstant(ConstantIndex::TO_LOCALE_STRING_STRING_INDEX,
-                factory->NewFromCanBeCompressString("toLocaleString").GetTaggedValue());
-    SetConstant(ConstantIndex::VALUE_OF_STRING_INDEX, factory->NewFromCanBeCompressString("valueOf").GetTaggedValue());
-    SetConstant(ConstantIndex::UNDEFINED_STRING_INDEX,
-                factory->NewFromCanBeCompressString("undefined").GetTaggedValue());
-    SetConstant(ConstantIndex::NULL_STRING_INDEX, factory->NewFromCanBeCompressString("null").GetTaggedValue());
-    SetConstant(ConstantIndex::BOOLEAN_STRING_INDEX, factory->NewFromCanBeCompressString("boolean").GetTaggedValue());
-    SetConstant(ConstantIndex::NUMBER_STRING_INDEX, factory->NewFromCanBeCompressString("number").GetTaggedValue());
-    SetConstant(ConstantIndex::FUNCTION_STRING_INDEX, factory->NewFromCanBeCompressString("function").GetTaggedValue());
-    SetConstant(ConstantIndex::STRING_STRING_INDEX, factory->NewFromCanBeCompressString("string").GetTaggedValue());
-    SetConstant(ConstantIndex::SYMBOL_STRING_INDEX, factory->NewFromCanBeCompressString("symbol").GetTaggedValue());
-    SetConstant(ConstantIndex::OBJECT_STRING_INDEX, factory->NewFromCanBeCompressString("object").GetTaggedValue());
-    SetConstant(ConstantIndex::TRUE_STRING_INDEX, factory->NewFromCanBeCompressString("true").GetTaggedValue());
-    SetConstant(ConstantIndex::FALSE_STRING_INDEX, factory->NewFromCanBeCompressString("false").GetTaggedValue());
-    SetConstant(ConstantIndex::RETURN_STRING_INDEX, factory->NewFromCanBeCompressString("return").GetTaggedValue());
-    SetConstant(ConstantIndex::PROXY_CONSTRUCT_STRING_INDEX,
-                factory->NewFromCanBeCompressString("construct").GetTaggedValue());
-    SetConstant(ConstantIndex::PROXY_CALL_STRING_INDEX, factory->NewFromCanBeCompressString("call").GetTaggedValue());
-    SetConstant(ConstantIndex::PROMISE_THEN_STRING_INDEX, factory->NewFromCanBeCompressString("then").GetTaggedValue());
-    SetConstant(ConstantIndex::PROMISE_CATCH_STRING_INDEX,
-                factory->NewFromCanBeCompressString("catch").GetTaggedValue());
-    SetConstant(ConstantIndex::SCRIPT_JOB_STRING_INDEX,
-                factory->NewFromCanBeCompressString("ScriptJobs").GetTaggedValue());
-    SetConstant(ConstantIndex::PROMISE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("PrimiseJobs").GetTaggedValue());
-    SetConstant(ConstantIndex::THROWER_STRING_INDEX, factory->NewFromCanBeCompressString("Thrower").GetTaggedValue());
-    SetConstant(ConstantIndex::IDENTITY_STRING_INDEX, factory->NewFromCanBeCompressString("Identity").GetTaggedValue());
-    SetConstant(ConstantIndex::CALLER_STRING_INDEX, factory->NewFromCanBeCompressString("caller").GetTaggedValue());
-    SetConstant(ConstantIndex::CALLEE_STRING_INDEX, factory->NewFromCanBeCompressString("callee").GetTaggedValue());
-    SetConstant(ConstantIndex::INT8_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Int8Array").GetTaggedValue());
-    SetConstant(ConstantIndex::UINT8_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Uint8Array").GetTaggedValue());
+                factory->NewFromCanBeCompressString("getOwnPropertyDescriptor"));
+    SetConstant(ConstantIndex::DEFINEPROPERTY_STRING_INDEX, factory->NewFromCanBeCompressString("defineProperty"));
+    SetConstant(ConstantIndex::HAS_STRING_INDEX, factory->NewFromCanBeCompressString("has"));
+    SetConstant(ConstantIndex::DELETEPROPERTY_STRING_INDEX, factory->NewFromCanBeCompressString("deleteProperty"));
+    SetConstant(ConstantIndex::ENUMERATE_STRING_INDEX, factory->NewFromCanBeCompressString("enumerate"));
+    SetConstant(ConstantIndex::OWNKEYS_STRING_INDEX, factory->NewFromCanBeCompressString("ownKeys"));
+    SetConstant(ConstantIndex::APPLY_STRING_INDEX, factory->NewFromCanBeCompressString("apply"));
+    SetConstant(ConstantIndex::NEGATIVE_ZERO_STRING_INDEX, factory->NewFromCanBeCompressString("-0"));
+    SetConstant(ConstantIndex::DONE_STRING_INDEX, factory->NewFromCanBeCompressString("done"));
+    SetConstant(ConstantIndex::PROXY_STRING_INDEX, factory->NewFromCanBeCompressString("proxy"));
+    SetConstant(ConstantIndex::REVOKE_STRING_INDEX, factory->NewFromCanBeCompressString("revoke"));
+    SetConstant(ConstantIndex::NEXT_STRING_INDEX, factory->NewFromCanBeCompressString("next"));
+    SetConstant(ConstantIndex::TO_STRING_STRING_INDEX, factory->NewFromCanBeCompressString("toString"));
+    SetConstant(ConstantIndex::TO_LOCALE_STRING_STRING_INDEX, factory->NewFromCanBeCompressString("toLocaleString"));
+    SetConstant(ConstantIndex::VALUE_OF_STRING_INDEX, factory->NewFromCanBeCompressString("valueOf"));
+    SetConstant(ConstantIndex::UNDEFINED_STRING_INDEX, factory->NewFromCanBeCompressString("undefined"));
+    SetConstant(ConstantIndex::NULL_STRING_INDEX, factory->NewFromCanBeCompressString("null"));
+    SetConstant(ConstantIndex::BOOLEAN_STRING_INDEX, factory->NewFromCanBeCompressString("boolean"));
+    SetConstant(ConstantIndex::NUMBER_STRING_INDEX, factory->NewFromCanBeCompressString("number"));
+    SetConstant(ConstantIndex::FUNCTION_STRING_INDEX, factory->NewFromCanBeCompressString("function"));
+    SetConstant(ConstantIndex::STRING_STRING_INDEX, factory->NewFromCanBeCompressString("string"));
+    SetConstant(ConstantIndex::SYMBOL_STRING_INDEX, factory->NewFromCanBeCompressString("symbol"));
+    SetConstant(ConstantIndex::OBJECT_STRING_INDEX, factory->NewFromCanBeCompressString("object"));
+    SetConstant(ConstantIndex::TRUE_STRING_INDEX, factory->NewFromCanBeCompressString("true"));
+    SetConstant(ConstantIndex::FALSE_STRING_INDEX, factory->NewFromCanBeCompressString("false"));
+    SetConstant(ConstantIndex::RETURN_STRING_INDEX, factory->NewFromCanBeCompressString("return"));
+    SetConstant(ConstantIndex::PROXY_CONSTRUCT_STRING_INDEX, factory->NewFromCanBeCompressString("construct"));
+    SetConstant(ConstantIndex::PROXY_CALL_STRING_INDEX, factory->NewFromCanBeCompressString("call"));
+    SetConstant(ConstantIndex::PROMISE_THEN_STRING_INDEX, factory->NewFromCanBeCompressString("then"));
+    SetConstant(ConstantIndex::PROMISE_CATCH_STRING_INDEX, factory->NewFromCanBeCompressString("catch"));
+    SetConstant(ConstantIndex::SCRIPT_JOB_STRING_INDEX, factory->NewFromCanBeCompressString("ScriptJobs"));
+    SetConstant(ConstantIndex::PROMISE_STRING_INDEX, factory->NewFromCanBeCompressString("PrimiseJobs"));
+    SetConstant(ConstantIndex::THROWER_STRING_INDEX, factory->NewFromCanBeCompressString("Thrower"));
+    SetConstant(ConstantIndex::IDENTITY_STRING_INDEX, factory->NewFromCanBeCompressString("Identity"));
+    SetConstant(ConstantIndex::CALLER_STRING_INDEX, factory->NewFromCanBeCompressString("caller"));
+    SetConstant(ConstantIndex::CALLEE_STRING_INDEX, factory->NewFromCanBeCompressString("callee"));
+    SetConstant(ConstantIndex::INT8_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Int8Array"));
+    SetConstant(ConstantIndex::UINT8_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Uint8Array"));
     SetConstant(ConstantIndex::UINT8_CLAMPED_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Uint8ClampedArray").GetTaggedValue());
-    SetConstant(ConstantIndex::INT16_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Int16Array").GetTaggedValue());
-    SetConstant(ConstantIndex::UINT16_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Uint16Array").GetTaggedValue());
-    SetConstant(ConstantIndex::INT32_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Int32Array").GetTaggedValue());
-    SetConstant(ConstantIndex::UINT32_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Uint32Array").GetTaggedValue());
-    SetConstant(ConstantIndex::FLOAT32_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Float32Array").GetTaggedValue());
-    SetConstant(ConstantIndex::FLOAT64_ARRAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("Float64Array").GetTaggedValue());
-    SetConstant(ConstantIndex::ASYNC_FUNCTION_STRING_INDEX,
-                factory->NewFromCanBeCompressString("AsyncFunction").GetTaggedValue());
-    SetConstant(ConstantIndex::PROMISE_RESOLVE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("resolve").GetTaggedValue());
-    SetConstant(ConstantIndex::ID_STRING_INDEX, factory->NewFromCanBeCompressString("id").GetTaggedValue());
-    SetConstant(ConstantIndex::METHOD_STRING_INDEX, factory->NewFromCanBeCompressString("method").GetTaggedValue());
-    SetConstant(ConstantIndex::PARAMS_STRING_INDEX, factory->NewFromCanBeCompressString("params").GetTaggedValue());
-    SetConstant(ConstantIndex::RESULT_STRING_INDEX, factory->NewFromCanBeCompressString("result").GetTaggedValue());
-    SetConstant(ConstantIndex::TO_JSON_STRING_INDEX, factory->NewFromCanBeCompressString("toJSON").GetTaggedValue());
-    SetConstant(ConstantIndex::GLOBAL_STRING_INDEX, factory->NewFromCanBeCompressString("global").GetTaggedValue());
-    SetConstant(ConstantIndex::MESSAGE_STRING_INDEX, factory->NewFromCanBeCompressString("message").GetTaggedValue());
-    SetConstant(ConstantIndex::ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("Error").GetTaggedValue());
-    SetConstant(ConstantIndex::RANGE_ERROR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("RangeError").GetTaggedValue());
-    SetConstant(ConstantIndex::REFERENCE_ERROR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("ReferenceError").GetTaggedValue());
-    SetConstant(ConstantIndex::TYPE_ERROR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("TypeError").GetTaggedValue());
-    SetConstant(ConstantIndex::URI_ERROR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("URIError").GetTaggedValue());
-    SetConstant(ConstantIndex::SYNTAX_ERROR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("SyntaxError").GetTaggedValue());
-    SetConstant(ConstantIndex::EVAL_ERROR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("EvalError").GetTaggedValue());
-    SetConstant(ConstantIndex::STACK_STRING_INDEX, factory->NewFromCanBeCompressString("stack").GetTaggedValue());
-    SetConstant(ConstantIndex::STACK_EMPTY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("stackisempty").GetTaggedValue());
+                factory->NewFromCanBeCompressString("Uint8ClampedArray"));
+    SetConstant(ConstantIndex::INT16_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Int16Array"));
+    SetConstant(ConstantIndex::UINT16_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Uint16Array"));
+    SetConstant(ConstantIndex::INT32_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Int32Array"));
+    SetConstant(ConstantIndex::UINT32_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Uint32Array"));
+    SetConstant(ConstantIndex::FLOAT32_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Float32Array"));
+    SetConstant(ConstantIndex::FLOAT64_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Float64Array"));
+    SetConstant(ConstantIndex::ASYNC_FUNCTION_STRING_INDEX, factory->NewFromCanBeCompressString("AsyncFunction"));
+    SetConstant(ConstantIndex::PROMISE_RESOLVE_STRING_INDEX, factory->NewFromCanBeCompressString("resolve"));
+    SetConstant(ConstantIndex::ID_STRING_INDEX, factory->NewFromCanBeCompressString("id"));
+    SetConstant(ConstantIndex::METHOD_STRING_INDEX, factory->NewFromCanBeCompressString("method"));
+    SetConstant(ConstantIndex::PARAMS_STRING_INDEX, factory->NewFromCanBeCompressString("params"));
+    SetConstant(ConstantIndex::RESULT_STRING_INDEX, factory->NewFromCanBeCompressString("result"));
+    SetConstant(ConstantIndex::TO_JSON_STRING_INDEX, factory->NewFromCanBeCompressString("toJSON"));
+    SetConstant(ConstantIndex::GLOBAL_STRING_INDEX, factory->NewFromCanBeCompressString("global"));
+    SetConstant(ConstantIndex::MESSAGE_STRING_INDEX, factory->NewFromCanBeCompressString("message"));
+    SetConstant(ConstantIndex::ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("Error"));
+    SetConstant(ConstantIndex::RANGE_ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("RangeError"));
+    SetConstant(ConstantIndex::REFERENCE_ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("ReferenceError"));
+    SetConstant(ConstantIndex::TYPE_ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("TypeError"));
+    SetConstant(ConstantIndex::URI_ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("URIError"));
+    SetConstant(ConstantIndex::SYNTAX_ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("SyntaxError"));
+    SetConstant(ConstantIndex::EVAL_ERROR_STRING_INDEX, factory->NewFromCanBeCompressString("EvalError"));
+    SetConstant(ConstantIndex::STACK_STRING_INDEX, factory->NewFromCanBeCompressString("stack"));
+    SetConstant(ConstantIndex::STACK_EMPTY_STRING_INDEX, factory->NewFromCanBeCompressString("stackisempty"));
     SetConstant(ConstantIndex::OBJ_NOT_COERCIBLE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("objectnotcoercible").GetTaggedValue());
+                factory->NewFromCanBeCompressString("objectnotcoercible"));
     /* for Intl. */
-    SetConstant(ConstantIndex::LANGUAGE_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("language").GetTaggedValue());
-    SetConstant(ConstantIndex::SCRIPT_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("script").GetTaggedValue());
-    SetConstant(ConstantIndex::REGION_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("region").GetTaggedValue());
-    SetConstant(ConstantIndex::BASE_NAME_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("baseName").GetTaggedValue());
-    SetConstant(ConstantIndex::CALENDAR_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("calendar").GetTaggedValue());
-    SetConstant(ConstantIndex::COLLATION_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("collation").GetTaggedValue());
-    SetConstant(ConstantIndex::HOUR_CYCLE_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("hourCycle").GetTaggedValue());
-    SetConstant(ConstantIndex::CASE_FIRST_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("caseFirst").GetTaggedValue());
-    SetConstant(ConstantIndex::NUMERIC_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("numeric").GetTaggedValue());
+    SetConstant(ConstantIndex::LANGUAGE_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("language"));
+    SetConstant(ConstantIndex::SCRIPT_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("script"));
+    SetConstant(ConstantIndex::REGION_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("region"));
+    SetConstant(ConstantIndex::BASE_NAME_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("baseName"));
+    SetConstant(ConstantIndex::CALENDAR_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("calendar"));
+    SetConstant(ConstantIndex::COLLATION_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("collation"));
+    SetConstant(ConstantIndex::HOUR_CYCLE_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("hourCycle"));
+    SetConstant(ConstantIndex::CASE_FIRST_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("caseFirst"));
+    SetConstant(ConstantIndex::NUMERIC_STRING_CLASS_INDEX, factory->NewFromCanBeCompressString("numeric"));
     SetConstant(ConstantIndex::NUMBERING_SYSTEM_STRING_CLASS_INDEX,
-                factory->NewFromCanBeCompressString("numberingSystem").GetTaggedValue());
-    SetConstant(ConstantIndex::TYPE_STRING_INDEX, factory->NewFromCanBeCompressString("type").GetTaggedValue());
-    SetConstant(ConstantIndex::LOCALE_MATCHER_STRING_INDEX,
-                factory->NewFromCanBeCompressString("localeMatcher").GetTaggedValue());
-    SetConstant(ConstantIndex::FORMAT_MATCHER_STRING_INDEX,
-                factory->NewFromCanBeCompressString("formatMatcher").GetTaggedValue());
-    SetConstant(ConstantIndex::HOUR12_STRING_INDEX, factory->NewFromCanBeCompressString("hour12").GetTaggedValue());
-    SetConstant(ConstantIndex::H11_STRING_INDEX, factory->NewFromCanBeCompressString("h11").GetTaggedValue());
-    SetConstant(ConstantIndex::H12_STRING_INDEX, factory->NewFromCanBeCompressString("h12").GetTaggedValue());
-    SetConstant(ConstantIndex::H23_STRING_INDEX, factory->NewFromCanBeCompressString("h23").GetTaggedValue());
-    SetConstant(ConstantIndex::H24_STRING_INDEX, factory->NewFromCanBeCompressString("h24").GetTaggedValue());
-    SetConstant(ConstantIndex::WEEK_DAY_STRING_INDEX, factory->NewFromCanBeCompressString("weekday").GetTaggedValue());
-    SetConstant(ConstantIndex::ERA_STRING_INDEX, factory->NewFromCanBeCompressString("era").GetTaggedValue());
-    SetConstant(ConstantIndex::YEAR_STRING_INDEX, factory->NewFromCanBeCompressString("year").GetTaggedValue());
-    SetConstant(ConstantIndex::QUARTER_STRING_INDEX, factory->NewFromCanBeCompressString("quarter").GetTaggedValue());
-    SetConstant(ConstantIndex::MONTH_STRING_INDEX, factory->NewFromCanBeCompressString("month").GetTaggedValue());
-    SetConstant(ConstantIndex::DAY_STRING_INDEX, factory->NewFromCanBeCompressString("day").GetTaggedValue());
-    SetConstant(ConstantIndex::HOUR_STRING_INDEX, factory->NewFromCanBeCompressString("hour").GetTaggedValue());
-    SetConstant(ConstantIndex::MINUTE_STRING_INDEX, factory->NewFromCanBeCompressString("minute").GetTaggedValue());
-    SetConstant(ConstantIndex::SECOND_STRING_INDEX, factory->NewFromCanBeCompressString("second").GetTaggedValue());
-    SetConstant(ConstantIndex::YEARS_STRING_INDEX, factory->NewFromCanBeCompressString("years").GetTaggedValue());
-    SetConstant(ConstantIndex::QUARTERS_STRING_INDEX, factory->NewFromCanBeCompressString("quarters").GetTaggedValue());
-    SetConstant(ConstantIndex::MONTHS_STRING_INDEX, factory->NewFromCanBeCompressString("months").GetTaggedValue());
-    SetConstant(ConstantIndex::DAYS_STRING_INDEX, factory->NewFromCanBeCompressString("days").GetTaggedValue());
-    SetConstant(ConstantIndex::HOURS_STRING_INDEX, factory->NewFromCanBeCompressString("hours").GetTaggedValue());
-    SetConstant(ConstantIndex::MINUTES_STRING_INDEX, factory->NewFromCanBeCompressString("minutes").GetTaggedValue());
-    SetConstant(ConstantIndex::SECONDS_STRING_INDEX, factory->NewFromCanBeCompressString("seconds").GetTaggedValue());
-    SetConstant(ConstantIndex::TIME_ZONE_NAME_STRING_INDEX,
-                factory->NewFromCanBeCompressString("timeZoneName").GetTaggedValue());
-    SetConstant(ConstantIndex::LOCALE_STRING_INDEX, factory->NewFromCanBeCompressString("locale").GetTaggedValue());
-    SetConstant(ConstantIndex::TIME_ZONE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("timeZone").GetTaggedValue());
-    SetConstant(ConstantIndex::LITERAL_STRING_INDEX, factory->NewFromCanBeCompressString("literal").GetTaggedValue());
-    SetConstant(ConstantIndex::YEAR_NAME_STRING_INDEX,
-                factory->NewFromCanBeCompressString("yearName").GetTaggedValue());
-    SetConstant(ConstantIndex::DAY_PERIOD_STRING_INDEX,
-                factory->NewFromCanBeCompressString("dayPeriod").GetTaggedValue());
+                factory->NewFromCanBeCompressString("numberingSystem"));
+    SetConstant(ConstantIndex::TYPE_STRING_INDEX, factory->NewFromCanBeCompressString("type"));
+    SetConstant(ConstantIndex::LOCALE_MATCHER_STRING_INDEX, factory->NewFromCanBeCompressString("localeMatcher"));
+    SetConstant(ConstantIndex::FORMAT_MATCHER_STRING_INDEX, factory->NewFromCanBeCompressString("formatMatcher"));
+    SetConstant(ConstantIndex::HOUR12_STRING_INDEX, factory->NewFromCanBeCompressString("hour12"));
+    SetConstant(ConstantIndex::H11_STRING_INDEX, factory->NewFromCanBeCompressString("h11"));
+    SetConstant(ConstantIndex::H12_STRING_INDEX, factory->NewFromCanBeCompressString("h12"));
+    SetConstant(ConstantIndex::H23_STRING_INDEX, factory->NewFromCanBeCompressString("h23"));
+    SetConstant(ConstantIndex::H24_STRING_INDEX, factory->NewFromCanBeCompressString("h24"));
+    SetConstant(ConstantIndex::WEEK_DAY_STRING_INDEX, factory->NewFromCanBeCompressString("weekday"));
+    SetConstant(ConstantIndex::ERA_STRING_INDEX, factory->NewFromCanBeCompressString("era"));
+    SetConstant(ConstantIndex::YEAR_STRING_INDEX, factory->NewFromCanBeCompressString("year"));
+    SetConstant(ConstantIndex::QUARTER_STRING_INDEX, factory->NewFromCanBeCompressString("quarter"));
+    SetConstant(ConstantIndex::MONTH_STRING_INDEX, factory->NewFromCanBeCompressString("month"));
+    SetConstant(ConstantIndex::DAY_STRING_INDEX, factory->NewFromCanBeCompressString("day"));
+    SetConstant(ConstantIndex::HOUR_STRING_INDEX, factory->NewFromCanBeCompressString("hour"));
+    SetConstant(ConstantIndex::MINUTE_STRING_INDEX, factory->NewFromCanBeCompressString("minute"));
+    SetConstant(ConstantIndex::SECOND_STRING_INDEX, factory->NewFromCanBeCompressString("second"));
+    SetConstant(ConstantIndex::YEARS_STRING_INDEX, factory->NewFromCanBeCompressString("years"));
+    SetConstant(ConstantIndex::QUARTERS_STRING_INDEX, factory->NewFromCanBeCompressString("quarters"));
+    SetConstant(ConstantIndex::MONTHS_STRING_INDEX, factory->NewFromCanBeCompressString("months"));
+    SetConstant(ConstantIndex::DAYS_STRING_INDEX, factory->NewFromCanBeCompressString("days"));
+    SetConstant(ConstantIndex::HOURS_STRING_INDEX, factory->NewFromCanBeCompressString("hours"));
+    SetConstant(ConstantIndex::MINUTES_STRING_INDEX, factory->NewFromCanBeCompressString("minutes"));
+    SetConstant(ConstantIndex::SECONDS_STRING_INDEX, factory->NewFromCanBeCompressString("seconds"));
+    SetConstant(ConstantIndex::TIME_ZONE_NAME_STRING_INDEX, factory->NewFromCanBeCompressString("timeZoneName"));
+    SetConstant(ConstantIndex::LOCALE_STRING_INDEX, factory->NewFromCanBeCompressString("locale"));
+    SetConstant(ConstantIndex::TIME_ZONE_STRING_INDEX, factory->NewFromCanBeCompressString("timeZone"));
+    SetConstant(ConstantIndex::LITERAL_STRING_INDEX, factory->NewFromCanBeCompressString("literal"));
+    SetConstant(ConstantIndex::YEAR_NAME_STRING_INDEX, factory->NewFromCanBeCompressString("yearName"));
+    SetConstant(ConstantIndex::DAY_PERIOD_STRING_INDEX, factory->NewFromCanBeCompressString("dayPeriod"));
     SetConstant(ConstantIndex::FRACTIONAL_SECOND_DIGITS_STRING_INDEX,
-                factory->NewFromCanBeCompressString("fractionalSecondDigits").GetTaggedValue());
-    SetConstant(ConstantIndex::FRACTIONAL_SECOND_STRING_INDEX,
-                factory->NewFromCanBeCompressString("fractionalSecond").GetTaggedValue());
-    SetConstant(ConstantIndex::RELATED_YEAR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("relatedYear").GetTaggedValue());
-    SetConstant(ConstantIndex::LOOK_UP_STRING_INDEX, factory->NewFromCanBeCompressString("lookup").GetTaggedValue());
-    SetConstant(ConstantIndex::BEST_FIT_STRING_INDEX, factory->NewFromCanBeCompressString("bestfit").GetTaggedValue());
-    SetConstant(ConstantIndex::DATE_STYLE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("dateStyle").GetTaggedValue());
-    SetConstant(ConstantIndex::TIME_STYLE_STRING_INDEX,
-                factory->NewFromCanBeCompressString("timeStyle").GetTaggedValue());
-    SetConstant(ConstantIndex::UTC_STRING_INDEX, factory->NewFromCanBeCompressString("UTC").GetTaggedValue());
-    SetConstant(ConstantIndex::INITIALIZED_RELATIVE_INDEX,
-                factory->NewFromCanBeCompressString("true").GetTaggedValue());
-    SetConstant(ConstantIndex::WEEK_STRING_INDEX, factory->NewFromCanBeCompressString("week").GetTaggedValue());
-    SetConstant(ConstantIndex::WEEKS_STRING_INDEX, factory->NewFromCanBeCompressString("weeks").GetTaggedValue());
-    SetConstant(ConstantIndex::SOURCE_STRING_INDEX, factory->NewFromCanBeCompressString("source").GetTaggedValue());
-    SetConstant(ConstantIndex::FORMAT_STRING_INDEX, factory->NewFromCanBeCompressString("format").GetTaggedValue());
-    SetConstant(ConstantIndex::EN_US_STRING_INDEX, factory->NewFromCanBeCompressString("en-US").GetTaggedValue());
-    SetConstant(ConstantIndex::UND_STRING_INDEX, factory->NewFromCanBeCompressString("und").GetTaggedValue());
-    SetConstant(ConstantIndex::LATN_STRING_INDEX, factory->NewFromCanBeCompressString("latn").GetTaggedValue());
-    SetConstant(ConstantIndex::STYLE_STRING_INDEX, factory->NewFromCanBeCompressString("style").GetTaggedValue());
-    SetConstant(ConstantIndex::UNIT_STRING_INDEX, factory->NewFromCanBeCompressString("unit").GetTaggedValue());
-    SetConstant(ConstantIndex::INTEGER_STRING_INDEX, factory->NewFromCanBeCompressString("integer").GetTaggedValue());
-    SetConstant(ConstantIndex::NAN_STRING_INDEX, factory->NewFromCanBeCompressString("nan").GetTaggedValue());
-    SetConstant(ConstantIndex::INFINITY_STRING_INDEX, factory->NewFromCanBeCompressString("infinity").GetTaggedValue());
-    SetConstant(ConstantIndex::FRACTION_STRING_INDEX, factory->NewFromCanBeCompressString("fraction").GetTaggedValue());
-    SetConstant(ConstantIndex::DECIMAL_STRING_INDEX, factory->NewFromCanBeCompressString("decimal").GetTaggedValue());
-    SetConstant(ConstantIndex::GROUP_STRING_INDEX, factory->NewFromCanBeCompressString("group").GetTaggedValue());
-    SetConstant(ConstantIndex::CURRENCY_STRING_INDEX, factory->NewFromCanBeCompressString("currency").GetTaggedValue());
-    SetConstant(ConstantIndex::CURRENCY_SIGN_STRING_INDEX,
-                factory->NewFromCanBeCompressString("currencySign").GetTaggedValue());
-    SetConstant(ConstantIndex::CURRENCY_DISPLAY_STRING_INDEX,
-                factory->NewFromCanBeCompressString("currencyDisplay").GetTaggedValue());
-    SetConstant(ConstantIndex::PERCENT_SIGN_STRING_INDEX,
-                factory->NewFromCanBeCompressString("percentSign").GetTaggedValue());
-    SetConstant(ConstantIndex::PERCENT_STRING_INDEX, factory->NewFromCanBeCompressString("percent").GetTaggedValue());
-    SetConstant(ConstantIndex::MINUS_SIGN_STRING_INDEX,
-                factory->NewFromCanBeCompressString("minusSign").GetTaggedValue());
-    SetConstant(ConstantIndex::PLUS_SIGN_STRING_INDEX,
-                factory->NewFromCanBeCompressString("plusSign").GetTaggedValue());
+                factory->NewFromCanBeCompressString("fractionalSecondDigits"));
+    SetConstant(ConstantIndex::FRACTIONAL_SECOND_STRING_INDEX, factory->NewFromCanBeCompressString("fractionalSecond"));
+    SetConstant(ConstantIndex::RELATED_YEAR_STRING_INDEX, factory->NewFromCanBeCompressString("relatedYear"));
+    SetConstant(ConstantIndex::LOOK_UP_STRING_INDEX, factory->NewFromCanBeCompressString("lookup"));
+    SetConstant(ConstantIndex::BEST_FIT_STRING_INDEX, factory->NewFromCanBeCompressString("bestfit"));
+    SetConstant(ConstantIndex::DATE_STYLE_STRING_INDEX, factory->NewFromCanBeCompressString("dateStyle"));
+    SetConstant(ConstantIndex::TIME_STYLE_STRING_INDEX, factory->NewFromCanBeCompressString("timeStyle"));
+    SetConstant(ConstantIndex::UTC_STRING_INDEX, factory->NewFromCanBeCompressString("UTC"));
+    SetConstant(ConstantIndex::INITIALIZED_RELATIVE_INDEX, factory->NewFromCanBeCompressString("true"));
+    SetConstant(ConstantIndex::WEEK_STRING_INDEX, factory->NewFromCanBeCompressString("week"));
+    SetConstant(ConstantIndex::WEEKS_STRING_INDEX, factory->NewFromCanBeCompressString("weeks"));
+    SetConstant(ConstantIndex::SOURCE_STRING_INDEX, factory->NewFromCanBeCompressString("source"));
+    SetConstant(ConstantIndex::FORMAT_STRING_INDEX, factory->NewFromCanBeCompressString("format"));
+    SetConstant(ConstantIndex::EN_US_STRING_INDEX, factory->NewFromCanBeCompressString("en-US"));
+    SetConstant(ConstantIndex::UND_STRING_INDEX, factory->NewFromCanBeCompressString("und"));
+    SetConstant(ConstantIndex::LATN_STRING_INDEX, factory->NewFromCanBeCompressString("latn"));
+    SetConstant(ConstantIndex::STYLE_STRING_INDEX, factory->NewFromCanBeCompressString("style"));
+    SetConstant(ConstantIndex::UNIT_STRING_INDEX, factory->NewFromCanBeCompressString("unit"));
+    SetConstant(ConstantIndex::INTEGER_STRING_INDEX, factory->NewFromCanBeCompressString("integer"));
+    SetConstant(ConstantIndex::NAN_STRING_INDEX, factory->NewFromCanBeCompressString("nan"));
+    SetConstant(ConstantIndex::INFINITY_STRING_INDEX, factory->NewFromCanBeCompressString("infinity"));
+    SetConstant(ConstantIndex::FRACTION_STRING_INDEX, factory->NewFromCanBeCompressString("fraction"));
+    SetConstant(ConstantIndex::DECIMAL_STRING_INDEX, factory->NewFromCanBeCompressString("decimal"));
+    SetConstant(ConstantIndex::GROUP_STRING_INDEX, factory->NewFromCanBeCompressString("group"));
+    SetConstant(ConstantIndex::CURRENCY_STRING_INDEX, factory->NewFromCanBeCompressString("currency"));
+    SetConstant(ConstantIndex::CURRENCY_SIGN_STRING_INDEX, factory->NewFromCanBeCompressString("currencySign"));
+    SetConstant(ConstantIndex::CURRENCY_DISPLAY_STRING_INDEX, factory->NewFromCanBeCompressString("currencyDisplay"));
+    SetConstant(ConstantIndex::PERCENT_SIGN_STRING_INDEX, factory->NewFromCanBeCompressString("percentSign"));
+    SetConstant(ConstantIndex::PERCENT_STRING_INDEX, factory->NewFromCanBeCompressString("percent"));
+    SetConstant(ConstantIndex::MINUS_SIGN_STRING_INDEX, factory->NewFromCanBeCompressString("minusSign"));
+    SetConstant(ConstantIndex::PLUS_SIGN_STRING_INDEX, factory->NewFromCanBeCompressString("plusSign"));
     SetConstant(ConstantIndex::EXPONENT_SEPARATOR_STRING_INDEX,
-                factory->NewFromCanBeCompressString("exponentSeparator").GetTaggedValue());
-    SetConstant(ConstantIndex::EXPONENT_MINUS_SIGN_INDEX,
-                factory->NewFromCanBeCompressString("exponentMinusSign").GetTaggedValue());
-    SetConstant(ConstantIndex::EXPONENT_INTEGER_STRING_INDEX,
-                factory->NewFromCanBeCompressString("exponentInteger").GetTaggedValue());
-    SetConstant(ConstantIndex::LONG_STRING_INDEX, factory->NewFromCanBeCompressString("long").GetTaggedValue());
-    SetConstant(ConstantIndex::SHORT_STRING_INDEX, factory->NewFromCanBeCompressString("short").GetTaggedValue());
-    SetConstant(ConstantIndex::FULL_STRING_INDEX, factory->NewFromCanBeCompressString("full").GetTaggedValue());
-    SetConstant(ConstantIndex::MEDIUM_STRING_INDEX, factory->NewFromCanBeCompressString("medium").GetTaggedValue());
-    SetConstant(ConstantIndex::NARROW_STRING_INDEX, factory->NewFromCanBeCompressString("narrow").GetTaggedValue());
-    SetConstant(ConstantIndex::ALWAYS_STRING_INDEX, factory->NewFromCanBeCompressString("always").GetTaggedValue());
-    SetConstant(ConstantIndex::AUTO_STRING_INDEX, factory->NewFromCanBeCompressString("auto").GetTaggedValue());
-    SetConstant(ConstantIndex::UNIT_DISPLAY_INDEX, factory->NewFromCanBeCompressString("unitDisplay").GetTaggedValue());
-    SetConstant(ConstantIndex::NOTATION_INDEX, factory->NewFromCanBeCompressString("notation").GetTaggedValue());
-    SetConstant(ConstantIndex::COMPACT_DISPALY_INDEX,
-                factory->NewFromCanBeCompressString("compactDisplay").GetTaggedValue());
-    SetConstant(ConstantIndex::USER_GROUPING_INDEX,
-                factory->NewFromCanBeCompressString("useGrouping").GetTaggedValue());
-    SetConstant(ConstantIndex::SIGN_DISPLAY_INDEX, factory->NewFromCanBeCompressString("signDisplay").GetTaggedValue());
-    SetConstant(ConstantIndex::CODE_INDEX, factory->NewFromCanBeCompressString("code").GetTaggedValue());
-    SetConstant(ConstantIndex::NARROW_SYMBOL_INDEX,
-                factory->NewFromCanBeCompressString("narrowSymbol").GetTaggedValue());
-    SetConstant(ConstantIndex::STANDARD_INDEX, factory->NewFromCanBeCompressString("standard").GetTaggedValue());
-    SetConstant(ConstantIndex::ACCOUNTING_INDEX, factory->NewFromCanBeCompressString("accounting").GetTaggedValue());
-    SetConstant(ConstantIndex::SCIENTIFIC_INDEX, factory->NewFromCanBeCompressString("scientific").GetTaggedValue());
-    SetConstant(ConstantIndex::ENGINEERING_INDEX, factory->NewFromCanBeCompressString("engineering").GetTaggedValue());
-    SetConstant(ConstantIndex::COMPACT_STRING_INDEX, factory->NewFromCanBeCompressString("compact").GetTaggedValue());
-    SetConstant(ConstantIndex::NEVER_INDEX, factory->NewFromCanBeCompressString("never").GetTaggedValue());
-    SetConstant(ConstantIndex::EXPECT_ZERO_INDEX, factory->NewFromCanBeCompressString("exceptZero").GetTaggedValue());
+                factory->NewFromCanBeCompressString("exponentSeparator"));
+    SetConstant(ConstantIndex::EXPONENT_MINUS_SIGN_INDEX, factory->NewFromCanBeCompressString("exponentMinusSign"));
+    SetConstant(ConstantIndex::EXPONENT_INTEGER_STRING_INDEX, factory->NewFromCanBeCompressString("exponentInteger"));
+    SetConstant(ConstantIndex::LONG_STRING_INDEX, factory->NewFromCanBeCompressString("long"));
+    SetConstant(ConstantIndex::SHORT_STRING_INDEX, factory->NewFromCanBeCompressString("short"));
+    SetConstant(ConstantIndex::FULL_STRING_INDEX, factory->NewFromCanBeCompressString("full"));
+    SetConstant(ConstantIndex::MEDIUM_STRING_INDEX, factory->NewFromCanBeCompressString("medium"));
+    SetConstant(ConstantIndex::NARROW_STRING_INDEX, factory->NewFromCanBeCompressString("narrow"));
+    SetConstant(ConstantIndex::ALWAYS_STRING_INDEX, factory->NewFromCanBeCompressString("always"));
+    SetConstant(ConstantIndex::AUTO_STRING_INDEX, factory->NewFromCanBeCompressString("auto"));
+    SetConstant(ConstantIndex::UNIT_DISPLAY_INDEX, factory->NewFromCanBeCompressString("unitDisplay"));
+    SetConstant(ConstantIndex::NOTATION_INDEX, factory->NewFromCanBeCompressString("notation"));
+    SetConstant(ConstantIndex::COMPACT_DISPALY_INDEX, factory->NewFromCanBeCompressString("compactDisplay"));
+    SetConstant(ConstantIndex::USER_GROUPING_INDEX, factory->NewFromCanBeCompressString("useGrouping"));
+    SetConstant(ConstantIndex::SIGN_DISPLAY_INDEX, factory->NewFromCanBeCompressString("signDisplay"));
+    SetConstant(ConstantIndex::CODE_INDEX, factory->NewFromCanBeCompressString("code"));
+    SetConstant(ConstantIndex::NARROW_SYMBOL_INDEX, factory->NewFromCanBeCompressString("narrowSymbol"));
+    SetConstant(ConstantIndex::STANDARD_INDEX, factory->NewFromCanBeCompressString("standard"));
+    SetConstant(ConstantIndex::ACCOUNTING_INDEX, factory->NewFromCanBeCompressString("accounting"));
+    SetConstant(ConstantIndex::SCIENTIFIC_INDEX, factory->NewFromCanBeCompressString("scientific"));
+    SetConstant(ConstantIndex::ENGINEERING_INDEX, factory->NewFromCanBeCompressString("engineering"));
+    SetConstant(ConstantIndex::COMPACT_STRING_INDEX, factory->NewFromCanBeCompressString("compact"));
+    SetConstant(ConstantIndex::NEVER_INDEX, factory->NewFromCanBeCompressString("never"));
+    SetConstant(ConstantIndex::EXPECT_ZERO_INDEX, factory->NewFromCanBeCompressString("exceptZero"));
     SetConstant(ConstantIndex::MINIMUM_INTEGER_DIGITS_INDEX,
-                factory->NewFromCanBeCompressString("minimumIntegerDigits").GetTaggedValue());
+                factory->NewFromCanBeCompressString("minimumIntegerDigits"));
     SetConstant(ConstantIndex::MINIMUM_FRACTIONDIGITS_INDEX,
-                factory->NewFromCanBeCompressString("minimumFractionDigits").GetTaggedValue());
+                factory->NewFromCanBeCompressString("minimumFractionDigits"));
     SetConstant(ConstantIndex::MAXIMUM_FRACTIONDIGITS_INDEX,
-                factory->NewFromCanBeCompressString("maximumFractionDigits").GetTaggedValue());
+                factory->NewFromCanBeCompressString("maximumFractionDigits"));
     SetConstant(ConstantIndex::MINIMUM_SIGNIFICANTDIGITS_INDEX,
-                factory->NewFromCanBeCompressString("minimumSignificantDigits").GetTaggedValue());
+                factory->NewFromCanBeCompressString("minimumSignificantDigits"));
     SetConstant(ConstantIndex::MAXIMUM_SIGNIFICANTDIGITS_INDEX,
-                factory->NewFromCanBeCompressString("maximumSignificantDigits").GetTaggedValue());
-    SetConstant(ConstantIndex::INVALID_DATE_INDEX,
-                factory->NewFromCanBeCompressString("Invalid Date").GetTaggedValue());
-    SetConstant(ConstantIndex::USAGE_INDEX, factory->NewFromCanBeCompressString("usage").GetTaggedValue());
-    SetConstant(ConstantIndex::COMPARE_INDEX, factory->NewFromCanBeCompressString("compare").GetTaggedValue());
-    SetConstant(ConstantIndex::SENSITIVITY_INDEX, factory->NewFromCanBeCompressString("sensitivity").GetTaggedValue());
-    SetConstant(ConstantIndex::IGNORE_PUNCTUATION_INDEX,
-                factory->NewFromCanBeCompressString("ignorePunctuation").GetTaggedValue());
-    SetConstant(ConstantIndex::CARDINAL_INDEX, factory->NewFromCanBeCompressString("cardinal").GetTaggedValue());
-    SetConstant(ConstantIndex::ORDINAL_INDEX, factory->NewFromCanBeCompressString("ordinal").GetTaggedValue());
-    SetConstant(ConstantIndex::EXEC_INDEX, factory->NewFromCanBeCompressString("exec").GetTaggedValue());
-    SetConstant(ConstantIndex::LAST_INDEX_INDEX, factory->NewFromCanBeCompressString("lastIndex").GetTaggedValue());
-    SetConstant(ConstantIndex::PLURAL_CATEGORIES_INDEX,
-                factory->NewFromCanBeCompressString("pluralCategories").GetTaggedValue());
-    SetConstant(ConstantIndex::SORT_INDEX, factory->NewFromCanBeCompressString("sort").GetTaggedValue());
-    SetConstant(ConstantIndex::SEARCH_INDEX, factory->NewFromCanBeCompressString("search").GetTaggedValue());
-    SetConstant(ConstantIndex::BASE_INDEX, factory->NewFromCanBeCompressString("base").GetTaggedValue());
-    SetConstant(ConstantIndex::ACCENT_INDEX, factory->NewFromCanBeCompressString("accent").GetTaggedValue());
-    SetConstant(ConstantIndex::CASE_INDEX, factory->NewFromCanBeCompressString("case").GetTaggedValue());
-    SetConstant(ConstantIndex::VARIANT_INDEX, factory->NewFromCanBeCompressString("variant").GetTaggedValue());
-    SetConstant(ConstantIndex::EN_US_POSIX_STRING_INDEX,
-                factory->NewFromCanBeCompressString("en-US-POSIX").GetTaggedValue());
-    SetConstant(ConstantIndex::UPPER_INDEX, factory->NewFromCanBeCompressString("upper").GetTaggedValue());
-    SetConstant(ConstantIndex::LOWER_INDEX, factory->NewFromCanBeCompressString("lower").GetTaggedValue());
-    SetConstant(ConstantIndex::DEFAULT_INDEX, factory->NewFromCanBeCompressString("default").GetTaggedValue());
-    SetConstant(ConstantIndex::SHARED_INDEX, factory->NewFromCanBeCompressString("shared").GetTaggedValue());
-    SetConstant(ConstantIndex::START_RANGE_INDEX, factory->NewFromCanBeCompressString("startRange").GetTaggedValue());
-    SetConstant(ConstantIndex::END_RANGE_INDEX, factory->NewFromCanBeCompressString("endRange").GetTaggedValue());
-    SetConstant(ConstantIndex::ISO8601_INDEX, factory->NewFromCanBeCompressString("iso8601").GetTaggedValue());
-    SetConstant(ConstantIndex::GREGORY_INDEX, factory->NewFromCanBeCompressString("gregory").GetTaggedValue());
-    SetConstant(ConstantIndex::ETHIOAA_INDEX, factory->NewFromCanBeCompressString("ethioaa").GetTaggedValue());
-    SetConstant(ConstantIndex::STICKY_INDEX, factory->NewFromCanBeCompressString("sticky").GetTaggedValue());
-    SetConstant(ConstantIndex::U_INDEX, factory->NewFromCanBeCompressString("u").GetTaggedValue());
-    SetConstant(ConstantIndex::INDEX_INDEX, factory->NewFromCanBeCompressString("index").GetTaggedValue());
-    SetConstant(ConstantIndex::INPUT_INDEX, factory->NewFromCanBeCompressString("input").GetTaggedValue());
-    SetConstant(ConstantIndex::UNICODE_INDEX, factory->NewFromCanBeCompressString("unicode").GetTaggedValue());
-    SetConstant(ConstantIndex::ZERO_INDEX, factory->NewFromCanBeCompressString("0").GetTaggedValue());
-    SetConstant(ConstantIndex::VALUES_INDEX, factory->NewFromCanBeCompressString("values").GetTaggedValue());
+                factory->NewFromCanBeCompressString("maximumSignificantDigits"));
+    SetConstant(ConstantIndex::INVALID_DATE_INDEX, factory->NewFromCanBeCompressString("Invalid Date"));
+    SetConstant(ConstantIndex::USAGE_INDEX, factory->NewFromCanBeCompressString("usage"));
+    SetConstant(ConstantIndex::COMPARE_INDEX, factory->NewFromCanBeCompressString("compare"));
+    SetConstant(ConstantIndex::SENSITIVITY_INDEX, factory->NewFromCanBeCompressString("sensitivity"));
+    SetConstant(ConstantIndex::IGNORE_PUNCTUATION_INDEX, factory->NewFromCanBeCompressString("ignorePunctuation"));
+    SetConstant(ConstantIndex::CARDINAL_INDEX, factory->NewFromCanBeCompressString("cardinal"));
+    SetConstant(ConstantIndex::ORDINAL_INDEX, factory->NewFromCanBeCompressString("ordinal"));
+    SetConstant(ConstantIndex::EXEC_INDEX, factory->NewFromCanBeCompressString("exec"));
+    SetConstant(ConstantIndex::LAST_INDEX_INDEX, factory->NewFromCanBeCompressString("lastIndex"));
+    SetConstant(ConstantIndex::PLURAL_CATEGORIES_INDEX, factory->NewFromCanBeCompressString("pluralCategories"));
+    SetConstant(ConstantIndex::SORT_INDEX, factory->NewFromCanBeCompressString("sort"));
+    SetConstant(ConstantIndex::SEARCH_INDEX, factory->NewFromCanBeCompressString("search"));
+    SetConstant(ConstantIndex::BASE_INDEX, factory->NewFromCanBeCompressString("base"));
+    SetConstant(ConstantIndex::ACCENT_INDEX, factory->NewFromCanBeCompressString("accent"));
+    SetConstant(ConstantIndex::CASE_INDEX, factory->NewFromCanBeCompressString("case"));
+    SetConstant(ConstantIndex::VARIANT_INDEX, factory->NewFromCanBeCompressString("variant"));
+    SetConstant(ConstantIndex::EN_US_POSIX_STRING_INDEX, factory->NewFromCanBeCompressString("en-US-POSIX"));
+    SetConstant(ConstantIndex::UPPER_INDEX, factory->NewFromCanBeCompressString("upper"));
+    SetConstant(ConstantIndex::LOWER_INDEX, factory->NewFromCanBeCompressString("lower"));
+    SetConstant(ConstantIndex::DEFAULT_INDEX, factory->NewFromCanBeCompressString("default"));
+    SetConstant(ConstantIndex::SHARED_INDEX, factory->NewFromCanBeCompressString("shared"));
+    SetConstant(ConstantIndex::START_RANGE_INDEX, factory->NewFromCanBeCompressString("startRange"));
+    SetConstant(ConstantIndex::END_RANGE_INDEX, factory->NewFromCanBeCompressString("endRange"));
+    SetConstant(ConstantIndex::ISO8601_INDEX, factory->NewFromCanBeCompressString("iso8601"));
+    SetConstant(ConstantIndex::GREGORY_INDEX, factory->NewFromCanBeCompressString("gregory"));
+    SetConstant(ConstantIndex::ETHIOAA_INDEX, factory->NewFromCanBeCompressString("ethioaa"));
+    SetConstant(ConstantIndex::STICKY_INDEX, factory->NewFromCanBeCompressString("sticky"));
+    SetConstant(ConstantIndex::U_INDEX, factory->NewFromCanBeCompressString("u"));
+    SetConstant(ConstantIndex::INDEX_INDEX, factory->NewFromCanBeCompressString("index"));
+    SetConstant(ConstantIndex::INPUT_INDEX, factory->NewFromCanBeCompressString("input"));
+    SetConstant(ConstantIndex::UNICODE_INDEX, factory->NewFromCanBeCompressString("unicode"));
+    SetConstant(ConstantIndex::ZERO_INDEX, factory->NewFromCanBeCompressString("0"));
+    SetConstant(ConstantIndex::VALUES_INDEX, factory->NewFromCanBeCompressString("values"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));
-    SetConstant(ConstantIndex::FUNCTION_PROTOTYPE_ACCESSOR, accessor.GetTaggedValue());
+    SetConstant(ConstantIndex::FUNCTION_PROTOTYPE_ACCESSOR, accessor);
     accessor = factory->NewInternalAccessor(nullptr, reinterpret_cast<void *>(JSFunction::NameGetter));
-    SetConstant(ConstantIndex::FUNCTION_NAME_ACCESSOR, accessor.GetTaggedValue());
+    SetConstant(ConstantIndex::FUNCTION_NAME_ACCESSOR, accessor);
     accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSArray::LengthSetter),
                                             reinterpret_cast<void *>(JSArray::LengthGetter));
-    SetConstant(ConstantIndex::ARRAY_LENGTH_ACCESSOR, accessor.GetTaggedValue());
+    SetConstant(ConstantIndex::ARRAY_LENGTH_ACCESSOR, accessor);
 }
 
 void GlobalEnvConstants::InitGlobalUndefined()

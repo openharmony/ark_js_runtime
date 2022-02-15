@@ -140,7 +140,7 @@ JSHandle<JSTaggedValue> ModuleManager::GetModule(const JSThread *thread,
     return thread->GlobalConstants()->GetHandledUndefined();
 }
 
-CString ModuleManager::GenerateModuleFullPath(const std::string &currentPathFile, const CString &relativeFile)
+CString ModuleManager::GenerateAmiPath(const std::string &currentPathFile, const CString &relativeFile)
 {
     if (relativeFile.find("./") != 0 && relativeFile.find("../") != 0) {  // not start with "./" or "../"
         return relativeFile;                                              // not relative
