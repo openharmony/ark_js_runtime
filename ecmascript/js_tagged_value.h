@@ -87,6 +87,11 @@ public:
         return reinterpret_cast<TaggedObject *>(GetRawData() & (~TAG_WEAK_MASK));
     }
 
+    inline bool IsWeakForHeapObject() const
+    {
+        return (GetRawData() & TAG_WEAK_MASK) == 1U;
+    }
+
     static inline constexpr JSTaggedValue False()
     {
         return JSTaggedValue(VALUE_FALSE);

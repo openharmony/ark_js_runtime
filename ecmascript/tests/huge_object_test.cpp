@@ -41,7 +41,7 @@ public:
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
         thread->GetEcmaVM()->SetEnableForceGC(false);
-        const_cast<Heap *>(thread->GetEcmaVM()->GetHeap())->SetOnlyMarkSemi(false);
+        const_cast<Heap *>(thread->GetEcmaVM()->GetHeap())->SetMarkType(MarkType::FULL_MARK);
     }
 
     void TearDown() override
@@ -66,7 +66,6 @@ static JSObject *JSObjectTestCreate(JSThread *thread)
     return *newObj;
 }
 #endif
-
 #if !defined(NDEBUG)
 static TaggedArray *LargeArrayTestCreate(JSThread *thread)
 {
@@ -115,6 +114,7 @@ HWTEST_F_L0(HugeObjectTest, MultipleArrays)
     EXPECT_EQ(firstPage->GetNext(), secondPage);
     EXPECT_EQ(secondPage->GetNext(), thirdPage);
 
+    const_cast<Heap *>(thread->GetEcmaVM()->GetHeap())->SetMarkType(MarkType::FULL_MARK);
     ecmaVm->CollectGarbage(TriggerGCType::HUGE_GC);  // Trigger GC.
 
     EXPECT_EQ(firstPage->GetNext(), thirdPage);

@@ -52,7 +52,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 {
     WorkerHelper *worklist = heap_->GetWorkList();
     TaggedObject *obj = nullptr;
-    bool isOnlySemi = heap_->IsSemiMarkNeeded();
+    bool isFullMark = heap_->IsFullMark();
     while (true) {
         obj = nullptr;
         if (!worklist->Pop(threadId, &obj)) {
@@ -63,7 +63,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
         MarkObject(threadId, jsHclass);
 
         Region *objectRegion = Region::ObjectAddressToRange(obj);
-        bool needBarrier = !isOnlySemi && !objectRegion->InYoungAndCSetGeneration();
+        bool needBarrier = isFullMark && !objectRegion->InYoungOrCSetGeneration();
         objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass,
                                                     std::bind(&Marker::HandleObjectVisitor, this, threadId,
                                                               objectRegion, needBarrier, std::placeholders::_1,

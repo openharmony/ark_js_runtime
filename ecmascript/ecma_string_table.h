@@ -32,6 +32,7 @@ public:
     }
 
     void InternEmptyString(EcmaString *emptyStr);
+    EcmaString *GetOrInternString(const JSHandle<EcmaString> &firstString, const JSHandle<EcmaString> &secondString);
     EcmaString *GetOrInternString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress);
     EcmaString *GetOrInternString(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
     EcmaString *GetOrInternString(EcmaString *string);
@@ -42,6 +43,7 @@ private:
     NO_COPY_SEMANTIC(EcmaStringTable);
     NO_MOVE_SEMANTIC(EcmaStringTable);
 
+    EcmaString *GetString(const JSHandle<EcmaString> &firstString, const JSHandle<EcmaString> &secondString) const;
     EcmaString *GetString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress) const;
     EcmaString *GetString(const uint16_t *utf16Data, uint32_t utf16Len) const;
     EcmaString *GetString(EcmaString *string) const;

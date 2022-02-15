@@ -50,7 +50,6 @@
 #include "ecmascript/tagged_queue-inl.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/template_map.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
 
@@ -196,38 +195,24 @@ bool EcmaVM::Initialize()
     return true;
 }
 
-bool EcmaVM::TrimNewSpaceLimitTask::Run(uint32_t threadIndex)
-{
-    for (uint32_t i = 0; i < THREAD_SLEEP_COUNT; i++) {
-        if (IsTerminate()) {
-            return false;
-        }
-        usleep(THREAD_SLEEP_TIME);
-    }
-
-    if (!IsTerminate() && heap_->GetMemController()->IsDelayGCMode()) {
-        heap_->SetFromSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
-        heap_->SetNewSpaceMaximumCapacity(SEMI_SPACE_SIZE_CAPACITY);
-        heap_->ResetDelayGCMode();
-    }
-    return true;
-}
-
 void EcmaVM::InitializeEcmaScriptRunStat()
 {
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
     static const char *runtimeCallerNames[] = {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define INTERPRETER_CALLER_NAME(name) "InterPreter::" #name,
-        INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_NAME)  // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
+#define INTERPRETER_CALLER_NAME(name) "Interpreter::" #name,
+    INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_NAME)  // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
 #undef INTERPRETER_CALLER_NAME
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUILTINS_API_NAME(class, name) "BuiltinsApi::" #class "_" #name,
-        BUITINS_API_LIST(BUILTINS_API_NAME)
+    BUITINS_API_LIST(BUILTINS_API_NAME)
 #undef BUILTINS_API_NAME
 #define ABSTRACT_OPERATION_NAME(class, name) "AbstractOperation::" #class "_" #name,
-            ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_NAME)
+    ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_NAME)
 #undef ABSTRACT_OPERATION_NAME
+#define MEM_ALLOCATE_AND_GC_NAME(name) "Memory::" #name,
+    MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_NAME)
+#undef MEM_ALLOCATE_AND_GC_NAME
     };
     static_assert(sizeof(runtimeCallerNames) == sizeof(const char *) * ecmascript::RUNTIME_CALLER_NUMBER,
                   "Invalid runtime caller number");

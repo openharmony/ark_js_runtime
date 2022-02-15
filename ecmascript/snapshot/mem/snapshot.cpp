@@ -158,8 +158,6 @@ std::unique_ptr<const panda_file::File> SnapShot::DeserializeGlobalEnvAndProgram
             UNREACHABLE();
         }
 
-        // space
-        region->space_ = space;
         // allocate_base_
         region->allocateBase_ = base;
         // begin_

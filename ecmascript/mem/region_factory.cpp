@@ -22,6 +22,7 @@
 
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/region.h"
+#include "ecmascript/mem/heap.h"
 #include "libpandabase/mem/pool_manager.h"
 #include "os/mem.h"
 

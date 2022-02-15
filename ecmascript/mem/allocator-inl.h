@@ -18,11 +18,12 @@
 
 #include <cstdlib>
 
+#include "ecmascript/free_object.h"
 #include "ecmascript/mem/allocator.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/space.h"
-#include "ecmascript/free_object.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 BumpPointerAllocator::BumpPointerAllocator(const Space *space)
@@ -53,11 +54,7 @@ void BumpPointerAllocator::Reset(const Space *space)
 
 uintptr_t BumpPointerAllocator::Allocate(size_t size)
 {
-    if (UNLIKELY(size == 0)) {
-        LOG_ECMA_MEM(FATAL) << "size must have a size bigger than 0";
-        UNREACHABLE();
-    }
-    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    ASSERT(size != 0);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (UNLIKELY(top_ + size > end_)) {
         return 0;
@@ -77,98 +74,112 @@ FreeListAllocator::FreeListAllocator(const Space *space) : heap_(space->GetHeap(
     FreeObject::Cast(bpAllocator_.GetTop())->SetNext(nullptr);
 }
 
-void FreeListAllocator::Reset(const Space *space)
-{
-    heap_ = space->GetHeap();
-    type_ = space->GetSpaceType();
-    sweeping_ = false;
-    freeList_ = std::make_unique<FreeObjectList>();
-    bpAllocator_.Reset(space);
-    FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
-}
-
 void FreeListAllocator::Reset(Heap *heap)
 {
     heap_ = heap;
     freeList_ = std::make_unique<FreeObjectList>();
     sweeping_ = false;
-    bpAllocator_.Reset();
+    FreeBumpPoint();
 }
 
 void FreeListAllocator::AddFree(Region *region)
 {
     auto begin = region->GetBegin();
     auto end = region->GetEnd();
-    Free(begin, end);
+    FreeBumpPoint();
+    bpAllocator_.Reset(begin, end);
+    FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
 }
 
+template<bool isLocal>
 uintptr_t FreeListAllocator::Allocate(size_t size)
 {
-    if (UNLIKELY(size < static_cast<size_t>(TaggedObject::TaggedObjectSize()))) {
-        return 0;
-    }
     auto ret = bpAllocator_.Allocate(size);
     if (LIKELY(ret != 0)) {
         FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
         allocationSizeAccumulator_ += size;
+        Region::ObjectAddressToRange(ret)->IncrementAliveObject(size);
         return ret;
     }
-    FreeObject *object = freeList_->Allocator(size);
-    if (LIKELY(object != nullptr && !object->IsEmpty())) {
+    FreeObject *object = freeList_->Allocate(size);
+    if (object != nullptr) {
         return Allocate(object, size);
     }
 
+    if (isLocal) {
+        return ret;
+    }
+
     if (sweeping_) {
-        // Concurrent sweep maybe sweep same region
-        heap_->GetSweeper()->FillSweptRegion(type_);
-        object = freeList_->Allocator(size);
-        if (LIKELY(object != nullptr && !object->IsEmpty())) {
-            return Allocate(object, size);
+        MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingWait);
+        if (heap_->GetSweeper()->FillSweptRegion(type_, this)) {
+            object = freeList_->Allocate(size);
+            if (object != nullptr) {
+                return Allocate(object, size);
+            }
         }
 
         // Parallel
-        heap_->GetSweeper()->WaitingTaskFinish(type_);
-        object = freeList_->Allocator(size);
-        if (LIKELY(object != nullptr && !object->IsEmpty())) {
+        heap_->GetSweeper()->EnsureTaskFinished(type_);
+        object = freeList_->Allocate(size);
+        if (object != nullptr) {
             return Allocate(object, size);
         }
     }
 
-    return 0;
+    return ret;
 }
 
 uintptr_t FreeListAllocator::Allocate(FreeObject *object, size_t size)
 {
-    FreeBumpPoint();
-    bpAllocator_.Reset(object->GetBegin(), object->GetEnd());
-    auto ret = bpAllocator_.Allocate(size);
-    if (ret != 0 && bpAllocator_.Available() > 0) {
-        FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
-        allocationSizeAccumulator_ += size;
+    uintptr_t begin = object->GetBegin();
+    uintptr_t end = object->GetEnd();
+    uintptr_t remainSize = end - begin - size;
+    ASSERT(remainSize >= 0);
+    // Keep a longest freeObject between bump-pointer and free object that just allocated
+    allocationSizeAccumulator_ += size;
+    if (remainSize <= bpAllocator_.Available()) {
+        Free(begin + size, end);
+        Region::ObjectAddressToRange(begin)->IncrementAliveObject(size);
+        return begin;
+    } else {
+        FreeBumpPoint();
+        bpAllocator_.Reset(begin, end);
+        auto ret = bpAllocator_.Allocate(size);
+        if (ret != 0) {
+            Region::ObjectAddressToRange(ret)->IncrementAliveObject(size);
+            FreeObject::FillFreeObject(heap_->GetEcmaVM(), bpAllocator_.GetTop(), bpAllocator_.Available());
+        }
+        return ret;
     }
-    return ret;
 }
 
 void FreeListAllocator::FreeBumpPoint()
 {
     auto begin = bpAllocator_.GetTop();
     auto end = bpAllocator_.GetEnd();
-    Free(begin, end);
     bpAllocator_.Reset();
+    Free(begin, end);
 }
 
 void FreeListAllocator::Free(uintptr_t begin, uintptr_t end, bool isAdd)
 {
-    ASSERT(heap_ != nullptr);
     size_t size = end - begin;
+    ASSERT(heap_ != nullptr);
+    ASSERT(size >= 0);
     if (size != 0) {
         FreeObject::FillFreeObject(heap_->GetEcmaVM(), begin, size);
+        freeList_->Free(begin, size, isAdd);
     }
-    if (UNLIKELY(size < FreeObject::SIZE_OFFSET)) {
-        return;
-    }
+}
 
-    freeList_->Free(begin, size, isAdd);
+uintptr_t FreeListAllocator::LookupSuitableFreeObject(size_t size)
+{
+    auto freeObject = freeList_->LookupSuitableFreeObject(size);
+    if (freeObject != nullptr) {
+        return freeObject->GetBegin();
+    }
+    return 0;
 }
 
 void FreeListAllocator::RebuildFreeList()
@@ -177,24 +188,48 @@ void FreeListAllocator::RebuildFreeList()
     freeList_->Rebuild();
 }
 
-void FreeListAllocator::Merge(FreeListAllocator *other)
+inline void FreeListAllocator::CollectFreeObjectSet(Region *region)
 {
-    ASSERT(type_ == other->type_);
-    other->FreeBumpPoint();
-    freeList_->Merge(other->freeList_.get());
+    region->EnumerateSets([&](FreeObjectSet *set) {
+        if (set == nullptr || set->Empty()) {
+            return;
+        }
+        freeList_->AddSet(set);
+    });
+#ifndef NDEBUG
+    freeList_->IncrementWastedSize(region->GetWastedSize());
+#endif
 }
 
-void FreeListAllocator::FillFreeList(FreeObjectKind *kind)
+inline void FreeListAllocator::DetachFreeObjectSet(Region *region)
 {
-    freeList_->AddKind(kind);
+    region->EnumerateSets([&](FreeObjectSet *set) {
+        if (set == nullptr || set->Empty()) {
+            return;
+        }
+        freeList_->RemoveSet(set);
+    });
+#ifndef NDEBUG
+    freeList_->DecrementWastedSize(region->GetWastedSize());
+#endif
 }
 
+#ifndef NDEBUG
 size_t FreeListAllocator::GetAvailableSize() const
 {
     if (sweeping_) {
-        heap_->GetSweeper()->WaitingTaskFinish(type_);
+        heap_->GetSweeper()->EnsureTaskFinished(type_);
     }
-    return freeList_->GetFreeObjectSize();
+    return freeList_->GetFreeObjectSize() + bpAllocator_.Available();
 }
+
+size_t FreeListAllocator::GetWastedSize() const
+{
+    if (sweeping_) {
+        heap_->GetSweeper()->EnsureTaskFinished(type_);
+    }
+    return freeList_->GetWastedSize();
+}
+#endif
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_ALLOCATOR_INL_H

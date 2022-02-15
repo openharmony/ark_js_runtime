@@ -18,15 +18,16 @@
 
 #include "ecmascript/mem/parallel_evacuation.h"
 
-#include "ecmascript/mem/evacuation_allocator-inl.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/mark_word.h"
+#include "ecmascript/mem/mem_manager-inl.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/platform/platform.h"
-#include "mark_word.h"
 
 namespace panda::ecmascript {
-bool ParallelEvacuation::IsPromoteComplete(Region *region)
+// Move regions with a survival rate of more than 75% to new space
+bool ParallelEvacuation::IsWholeRegionEvacuate(Region *region)
 {
     return (static_cast<double>(region->AliveObject()) / DEFAULT_REGION_SIZE) > MIN_OBJECT_SURVIVAL_RATE &&
         !region->HasAgeMark();
@@ -36,7 +37,7 @@ bool ParallelEvacuation::UpdateObjectSlot(ObjectSlot &slot)
 {
     JSTaggedValue value(slot.GetTaggedType());
     if (value.IsHeapObject()) {
-        if (value.IsWeak()) {
+        if (value.IsWeakForHeapObject()) {
             return UpdateWeakObjectSlot(value.GetTaggedWeakRef(), slot);
         }
         TaggedObject *object = value.GetTaggedObject();
@@ -44,8 +45,8 @@ bool ParallelEvacuation::UpdateObjectSlot(ObjectSlot &slot)
         if (markWord.IsForwardingAddress()) {
             TaggedObject *dst = markWord.ToForwardingAddress();
             slot.Update(dst);
+            return true;
         }
-        return true;
     }
     return false;
 }
@@ -53,28 +54,53 @@ bool ParallelEvacuation::UpdateObjectSlot(ObjectSlot &slot)
 bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &slot)
 {
     Region *objectRegion = Region::ObjectAddressToRange(value);
-    if (objectRegion->InYoungAndCSetGeneration() && !objectRegion->InPromoteSet()) {
-        MarkWord markWord(value);
-        if (markWord.IsForwardingAddress()) {
-            TaggedObject *dst = markWord.ToForwardingAddress();
-            auto weakRef = JSTaggedValue(JSTaggedValue(dst).CreateAndGetWeakRef()).GetRawTaggedObject();
-            slot.Update(weakRef);
-            return true;
-        }
-        slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
-        return false;
-    } else {
-        if (!heap_->IsSemiMarkNeeded() || objectRegion->InPromoteSet()) {
+    if (objectRegion->InYoungOrCSetGeneration()) {
+        if (objectRegion->InNewToNewSet()) {
             auto markBitmap = objectRegion->GetMarkBitmap();
-            ASSERT(markBitmap != nullptr);
             if (!markBitmap->Test(value)) {
                 slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
-                return false;
+            }
+        } else {
+            MarkWord markWord(value);
+            if (markWord.IsForwardingAddress()) {
+                TaggedObject *dst = markWord.ToForwardingAddress();
+                auto weakRef = JSTaggedValue(JSTaggedValue(dst).CreateAndGetWeakRef()).GetRawTaggedObject();
+                slot.Update(weakRef);
+                return true;
+            }
+            slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
+        }
+        return false;
+    }
+
+    if (heap_->IsFullMark()) {
+        auto markBitmap = objectRegion->GetMarkBitmap();
+        if (!markBitmap->Test(value)) {
+            slot.Update(static_cast<JSTaggedType>(JSTaggedValue::Undefined().GetRawData()));
+        }
+    }
+    return false;
+}
+
+void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
+{
+    Region *region = Region::ObjectAddressToRange(object);
+    auto callbackWithCSet = [this, region](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+        for (ObjectSlot slot = start; slot < end; slot++) {
+            JSTaggedType value = slot.GetTaggedType();
+            if (JSTaggedValue(value).IsHeapObject()) {
+                Region *valueRegion = Region::ObjectAddressToRange(value);
+                if (valueRegion->InYoungGeneration()) {
+                    region->InsertOldToNewRememberedSet(slot.SlotAddress());
+                } else if (valueRegion->InCollectSet()) {
+                    region->InsertCrossRegionRememberedSet(slot.SlotAddress());
+                }
             }
         }
-        return true;
-    }
+    };
+    objXRay_.VisitObjectBody<GCType::OLD_GC>(object, cls, callbackWithCSet);
 }
+
 
 std::unique_ptr<ParallelEvacuation::Fragment> ParallelEvacuation::GetFragmentSafe()
 {
@@ -92,32 +118,12 @@ void ParallelEvacuation::AddFragment(std::unique_ptr<Fragment> region)
     fragments_.emplace_back(std::move(region));
 }
 
-void ParallelEvacuation::AddSweptRegionSafe(Region *region)
-{
-    os::memory::LockHolder holder(mutex_);
-    sweptList_.emplace_back(region);
-}
-
-void ParallelEvacuation::FillSweptRegion()
-{
-    while (!sweptList_.empty()) {
-        Region *region = sweptList_.back();
-        sweptList_.pop_back();
-        region->EnumerateKinds([this](FreeObjectKind *kind) {
-            if (kind == nullptr || kind->Empty()) {
-                return;
-            }
-            evacuationAllocator_->FillFreeList(kind);
-        });
-    }
-}
-
 int ParallelEvacuation::CalculateEvacuationThreadNum()
 {
     int length = fragments_.size();
     int regionPerThread = 8;
-    return std::min(
-        std::max(1, length / regionPerThread), static_cast<int>(Platform::GetCurrentPlatform()->GetTotalThreadNum()));
+    int maxThreadNum = Platform::GetCurrentPlatform()->GetTotalThreadNum();
+    return std::min(std::max(1, length / regionPerThread), maxThreadNum);
 }
 
 int ParallelEvacuation::CalculateUpdateThreadNum()
@@ -125,7 +131,8 @@ int ParallelEvacuation::CalculateUpdateThreadNum()
     int length = fragments_.size();
     double regionPerThread = 1.0 / 4;
     length = static_cast<int>(std::pow(length, regionPerThread));
-    return std::min(std::max(1, length), static_cast<int>(Platform::GetCurrentPlatform()->GetTotalThreadNum()));
+    int maxThreadNum = Platform::GetCurrentPlatform()->GetTotalThreadNum();
+    return std::min(std::max(1, length), maxThreadNum);
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATION_INL_H

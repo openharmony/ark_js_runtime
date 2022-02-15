@@ -24,13 +24,31 @@
 namespace panda::ecmascript {
 EcmaStringTable::EcmaStringTable(const EcmaVM *vm) : vm_(vm) {}
 
+EcmaString *EcmaStringTable::GetString(const JSHandle<EcmaString> &firstString,
+                                       const JSHandle<EcmaString> &secondString) const
+{
+    uint32_t hashCode = firstString->GetHashcode();
+    hashCode = secondString->ComputeHashcode(hashCode);
+    auto range = table_.equal_range(hashCode);
+    auto item = range.first;
+    for (; item != range.second; ++item) {
+        auto foundString = item->second;
+        if (foundString->EqualToSplicedString(*firstString, *secondString)) {
+            return foundString;
+        }
+    }
+    return nullptr;
+}
+
 EcmaString *EcmaStringTable::GetString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress) const
 {
     uint32_t hashCode = EcmaString::ComputeHashcodeUtf8(utf8Data, utf8Len, canBeCompress);
-    for (auto it = table_.find(hashCode); it != table_.end(); it++) {
-        auto foundedString = it->second;
-        if (EcmaString::StringsAreEqualUtf8(foundedString, utf8Data, utf8Len, canBeCompress)) {
-            return foundedString;
+    auto range = table_.equal_range(hashCode);
+    auto item = range.first;
+    for (; item != range.second; ++item) {
+        auto foundString = item->second;
+        if (EcmaString::StringsAreEqualUtf8(foundString, utf8Data, utf8Len, canBeCompress)) {
+            return foundString;
         }
     }
     return nullptr;
@@ -39,10 +57,12 @@ EcmaString *EcmaStringTable::GetString(const uint8_t *utf8Data, uint32_t utf8Len
 EcmaString *EcmaStringTable::GetString(const uint16_t *utf16Data, uint32_t utf16Len) const
 {
     uint32_t hashCode = EcmaString::ComputeHashcodeUtf16(const_cast<uint16_t *>(utf16Data), utf16Len);
-    for (auto it = table_.find(hashCode); it != table_.end(); it++) {
-        auto foundedString = it->second;
-        if (EcmaString::StringsAreEqualUtf16(foundedString, utf16Data, utf16Len)) {
-            return foundedString;
+    auto range = table_.equal_range(hashCode);
+    auto item = range.first;
+    for (; item != range.second; ++item) {
+        auto foundString = item->second;
+        if (EcmaString::StringsAreEqualUtf16(foundString, utf16Data, utf16Len)) {
+            return foundString;
         }
     }
     return nullptr;
@@ -50,11 +70,12 @@ EcmaString *EcmaStringTable::GetString(const uint16_t *utf16Data, uint32_t utf16
 
 EcmaString *EcmaStringTable::GetString(EcmaString *string) const
 {
-    auto hash = string->GetHashcode();
-    for (auto it = table_.find(hash); it != table_.end(); it++) {
-        auto foundedString = it->second;
-        if (EcmaString::StringsAreEqual(foundedString, string)) {
-            return foundedString;
+    auto range = table_.equal_range(string->GetHashcode());
+    auto item = range.first;
+    for (; item != range.second; ++item) {
+        auto foundString = item->second;
+        if (EcmaString::StringsAreEqual(foundString, string)) {
+            return foundString;
         }
     }
     return nullptr;
@@ -72,6 +93,21 @@ void EcmaStringTable::InternString(EcmaString *string)
 void EcmaStringTable::InternEmptyString(EcmaString *emptyStr)
 {
     InternString(emptyStr);
+}
+
+EcmaString *EcmaStringTable::GetOrInternString(const JSHandle<EcmaString> &firstString,
+                                               const JSHandle<EcmaString> &secondString)
+{
+    if (firstString->IsInternString() && secondString->IsInternString()) {
+        EcmaString *concatString = GetString(firstString, secondString);
+        if (concatString != nullptr) {
+            return concatString;
+        }
+    }
+    EcmaString *concatString = EcmaString::Concat(firstString, secondString, vm_);
+
+    InternString(concatString);
+    return concatString;
 }
 
 EcmaString *EcmaStringTable::GetOrInternString(const uint8_t *utf8Data, uint32_t utf8Len, bool canBeCompress)

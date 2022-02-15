@@ -26,7 +26,6 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/tagged_array.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 class JSArray;

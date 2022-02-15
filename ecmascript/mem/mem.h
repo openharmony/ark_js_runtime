@@ -35,23 +35,16 @@ enum class MemAlignment : uint8_t {
 static constexpr size_t DEFAULT_SEMI_SPACE_SIZE = 1024 * 1024;
 static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 2 * 1024 * 1024;
 
-#if defined(IS_STANDARD_SYSTEM)
-static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 3 * 1024 * 1024;
-static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 3 * 1024 * 1024;
-static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 2.5 * 1024 * 1024;
+static constexpr size_t SEMI_SPACE_CAPACITY = 2 * 1024 * 1024;
+static constexpr size_t MAX_SEMI_SPACE_CAPACITY = 16 * 1024 * 1024;
+static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
-#else
-static constexpr size_t SEMI_SPACE_SIZE_CAPACITY = 4 * 1024 * 1024;
-static constexpr size_t MAX_SEMI_SPACE_SIZE_STARTUP = 16 * 1024 * 1024;
-static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 3.5 * 1024 * 1024;
-static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
-#endif
 
-static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 10 * 1024 * 1024;
+static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 20 * 1024 * 1024;
 static constexpr size_t GLOBAL_SPACE_LIMIT_BEGIN = 20 * 1024 * 1024;
 
 static constexpr size_t DEFAULT_OLD_SPACE_SIZE = 2 * 1024 * 1024;
-static constexpr size_t MAX_OLD_SPACE_SIZE = 256 * 1024 * 1024;
+static constexpr size_t MAX_OLD_SPACE_SIZE = 512 * 1024 * 1024;
 
 static constexpr size_t DEFAULT_NON_MOVABLE_SPACE_SIZE = 2 * 1024 * 1024;
 static constexpr size_t MAX_NON_MOVABLE_SPACE_SIZE = 256 * 1024 * 1024;
@@ -74,6 +67,8 @@ static constexpr size_t DEFAULT_REGION_MASK = DEFAULT_REGION_SIZE - 1;
 
 static constexpr size_t DEFAULT_MARK_STACK_SIZE = 4 * 1024;
 
+static constexpr double MIN_OBJECT_SURVIVAL_RATE = 0.75;
+
 // Objects which are larger than half of the region size are huge objects.
 // Regular objects will be allocated on regular regions and migrated on spaces.
 // They will never be moved to huge object space. So we take half of a regular
@@ -84,9 +79,6 @@ static constexpr size_t MAX_HUGE_OBJECT_SIZE = 256 * 1024 * 1024;
 static constexpr size_t MAX_HUGE_OBJECT_SPACE_SIZE = 256 * 1024 * 1024;
 static constexpr size_t LARGE_BITMAP_MIN_SIZE = static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)
                                                 << mem::Bitmap::LOG_BITSPERWORD;
-
-static constexpr size_t SMALL_OBJECT_SIZE = 8 * 1024;
-
 // internal allocator
 static constexpr size_t CHUNK_ALIGN_SIZE = 4 * 1024;
 static constexpr size_t MIN_CHUNK_AREA_SIZE = 4 * 1024;
@@ -94,7 +86,6 @@ static constexpr size_t MAX_CACHED_CHUNK_AREA_SIZE = 16 * 1024;
 static constexpr size_t MAX_CHUNK_AREA_SIZE = 1 * 1024 * 1024;
 
 static constexpr uintptr_t PANDA_32BITS_HEAP_START_ADDRESS_256 = 256_KB;
-static constexpr double SEMI_SPACE_RETENTION_RATIO = 0.75;
 
 template<typename T>
 constexpr inline bool IsAligned(T value, size_t alignment)

@@ -110,7 +110,6 @@ protected:
                                               uintptr_t toAddress, size_t size, const MarkWord &markWord,
                                               ObjectSlot slot);
     inline bool UpdateForwardAddressIfFailed(TaggedObject *object, uintptr_t toAddress, size_t size, ObjectSlot slot);
-    inline void CopyObjectWithoutHeader(TaggedObject *object, uintptr_t toAddress, size_t size);
 };
 
 class SemiGcMarker : public MovableMarker {

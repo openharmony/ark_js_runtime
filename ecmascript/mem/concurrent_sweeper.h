@@ -36,20 +36,27 @@ public:
 
     void SweepPhases(bool compressGC = false);
 
+    void WaitAllTaskFinished();
+    // Help to finish sweeping task. It can be called through js thread
     void EnsureAllTaskFinished();
     // Ensure task finish
-    void WaitingTaskFinish(MemSpaceType type);
+    void EnsureTaskFinished(MemSpaceType type);
 
-    void FillSweptRegion(MemSpaceType type);
+    bool FillSweptRegion(MemSpaceType type, FreeListAllocator *allocator);
 
-    bool IsConcurrentSweepEnabled()
+    bool IsSweeping()
     {
-        return concurrentSweep_;
+        return isSweeping_;
     }
 
-    bool CanSelectCset() const
+    bool IsOldSpaceSweeped() const
     {
-        return canSelectCset_;
+        return isOldSpaceSweeped_;
+    }
+
+    void SetOldSpaceSweeped(bool isSweeped)
+    {
+        isOldSpaceSweeped_ = isSweeped;
     }
 
 private:
@@ -67,7 +74,9 @@ private:
         MemSpaceType type_;
     };
 
-    void SweepSpace(MemSpaceType type, bool isMain = true);
+    void PrepareSpace(bool compressGC);
+
+    void SweepSpace(MemSpaceType type, FreeListAllocator *allocator = nullptr, bool isMain = true);
     void SweepSpace(MemSpaceType type, Space *space, FreeListAllocator &allocator);
     void SweepHugeSpace();
     void FinishSweeping(MemSpaceType type);
@@ -76,11 +85,14 @@ private:
     void FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart, uintptr_t freeEnd,
         bool isMain);
 
-    void AddRegion(MemSpaceType type, Region *region);
+    void AddRegion(MemSpaceType type, Space *space, Region *region);
+    void SortRegion(MemSpaceType type);
     Region *GetRegionSafe(MemSpaceType type);
 
     void AddSweptRegionSafe(MemSpaceType type, Region *region);
     Region *GetSweptRegionSafe(MemSpaceType type);
+
+    void WaitingTaskFinish(MemSpaceType type);
 
     std::array<os::memory::Mutex, FREE_LIST_NUM> mutexs_;
     std::array<os::memory::ConditionVariable, FREE_LIST_NUM> cvs_;
@@ -92,7 +104,7 @@ private:
     Heap *heap_;
     bool concurrentSweep_ {false};
     bool isSweeping_ {false};
-    bool canSelectCset_ {false};
+    bool isOldSpaceSweeped_ {false};
     MemSpaceType startSpaceType_ = MemSpaceType::OLD_SPACE;
 };
 }  // namespace panda::ecmascript

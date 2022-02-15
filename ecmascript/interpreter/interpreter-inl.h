@@ -33,7 +33,6 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
