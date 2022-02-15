@@ -82,6 +82,7 @@
 #include "ecmascript/template_map.h"
 #include "ecmascript/tests/test_helper.h"
 #include "ecmascript/transitions_dictionary.h"
+#include "ecmascript/ts_types/ts_type.h"
 
 using namespace panda::ecmascript;
 using namespace panda::ecmascript::base;
@@ -200,7 +201,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
         object##ClassName.GetTaggedValue().D();                                        \
         object##ClassName.GetTaggedValue().DumpForSnapshot(thread, snapshotVector);
 
-    for (JSType type = JSType::JS_OBJECT; type <= JSType::JS_TYPE_LAST; type = JSType(static_cast<int>(type) + 1)) {
+    for (JSType type = JSType::JS_OBJECT; type <= JSType::TYPE_LAST; type = JSType(static_cast<int>(type) + 1)) {
         switch (type) {
             case JSType::JS_ERROR:
             case JSType::JS_EVAL_ERROR:
@@ -648,6 +649,42 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             case JSType::JS_ARRAY_LIST: {
                 CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayList::SIZE, 1)
                 // unused
+                break;
+            }
+            case JSType::TS_OBJECT_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSObjectType::SIZE, 3)
+                JSHandle<TSObjectType> objectType = factory->NewTSObjectType(0);
+                DUMP_FOR_HANDLE(objectType)
+                break;
+            }
+            case JSType::TS_CLASS_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSClassType::SIZE, 5)
+                JSHandle<TSClassType> classType = factory->NewTSClassType();
+                DUMP_FOR_HANDLE(classType)
+                break;
+            }
+            case JSType::TS_INTERFACE_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSInterfaceType::SIZE, 3)
+                JSHandle<TSInterfaceType> interfaceType = factory->NewTSInterfaceType();
+                DUMP_FOR_HANDLE(interfaceType)
+                break;
+            }
+            case JSType::TS_IMPORT_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSImportType::SIZE, 3)
+                JSHandle<TSImportType> importType = factory->NewTSImportType();
+                DUMP_FOR_HANDLE(importType)
+                break;
+            }
+            case JSType::TS_CLASS_INSTANCE_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSClassInstanceType::SIZE, 2)
+                JSHandle<TSClassInstanceType> classInstanceType = factory->NewTSClassInstanceType();
+                DUMP_FOR_HANDLE(classInstanceType)
+                break;
+            }
+            case JSType::TS_UNION_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSUnionType::SIZE, 2)
+                JSHandle<TSUnionType> unionType = factory->NewTSUnionType(0);
+                DUMP_FOR_HANDLE(unionType)
                 break;
             }
             case JSType::JS_API_TREE_MAP: {

@@ -68,6 +68,7 @@ class JSFunction;
 class Program;
 class ModuleManager;
 class EcmaModule;
+class TSLoader;
 struct BytecodeTranslationInfo;
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
@@ -351,6 +352,10 @@ public:
         return moduleManager_;
     }
 
+    TSLoader *GetTSLoader() const
+    {
+        return tsLoader_;
+    }
     void SetupRegExpResultCache();
 
     JSHandle<JSTaggedValue> GetRegExpCache() const
@@ -496,6 +501,7 @@ private:
     CString snapshotFileName_;
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
+    TSLoader *tsLoader_ {nullptr};
     bool optionalLogEnabled_ {false};
     CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
 
