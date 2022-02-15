@@ -15,6 +15,7 @@
 
 #include "ecmascript/js_array.h"
 #include "ecmascript/accessor_data.h"
+#include "ecmascript/base/array_helper.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
@@ -375,5 +376,94 @@ bool JSArray::FastSetPropertyByValue(JSThread *thread, const JSHandle<JSTaggedVa
 {
     return FastRuntimeStub::FastSetPropertyByValue(thread, obj.GetTaggedValue(), key.GetTaggedValue(),
                                                    value.GetTaggedValue());
+}
+
+void JSArray::Sort(JSThread *thread, const JSHandle<JSObject> &obj, const JSHandle<JSTaggedValue> fn)
+{
+    if (!fn->IsUndefined() && !fn->IsCallable()) {
+        THROW_TYPE_ERROR(thread, "Callable is false");
+    }
+
+    // 2. Let len be ToLength(Get(obj, "length")).
+    double len = base::ArrayHelper::GetArrayLength(thread, JSHandle<JSTaggedValue>(obj));
+    // 3. ReturnIfAbrupt(len).
+    RETURN_IF_ABRUPT_COMPLETION(thread);
+
+    JSMutableHandle<JSTaggedValue> presentValue(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> middleValue(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> previousValue(thread, JSTaggedValue::Undefined());
+    for (int i = 1; i < len; i++) {
+        int beginIndex = 0;
+        int endIndex = i;
+        presentValue.Update(FastRuntimeStub::FastGetPropertyByIndex<true>(thread, obj.GetTaggedValue(), i));
+        RETURN_IF_ABRUPT_COMPLETION(thread);
+        while (beginIndex < endIndex) {
+            int middleIndex = (beginIndex + endIndex) / 2; // 2 : half
+            middleValue.Update(
+                FastRuntimeStub::FastGetPropertyByIndex<true>(thread, obj.GetTaggedValue(), middleIndex));
+            RETURN_IF_ABRUPT_COMPLETION(thread);
+            int32_t compareResult = base::ArrayHelper::SortCompare(thread, fn, middleValue, presentValue);
+            RETURN_IF_ABRUPT_COMPLETION(thread);
+            if (compareResult > 0) {
+                endIndex = middleIndex;
+            } else {
+                beginIndex = middleIndex + 1;
+            }
+        }
+
+        if (endIndex >= 0 && endIndex < i) {
+            for (int j = i; j > endIndex; j--) {
+                previousValue.Update(
+                    FastRuntimeStub::FastGetPropertyByIndex<true>(thread, obj.GetTaggedValue(), j - 1));
+                RETURN_IF_ABRUPT_COMPLETION(thread);
+                FastRuntimeStub::FastSetPropertyByIndex(thread, obj.GetTaggedValue(), j,
+                                                        previousValue.GetTaggedValue());
+                RETURN_IF_ABRUPT_COMPLETION(thread);
+            }
+            FastRuntimeStub::FastSetPropertyByIndex(thread, obj.GetTaggedValue(), endIndex,
+                                                    presentValue.GetTaggedValue());
+            RETURN_IF_ABRUPT_COMPLETION(thread);
+        }
+    }
+}
+
+bool JSArray::IncludeInSortedValue(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
+                                   const JSHandle<JSTaggedValue> value)
+{
+    ASSERT(obj->IsJSArray());
+    JSHandle<JSArray> arrayObj = JSHandle<JSArray>::Cast(obj);
+    int32_t length = arrayObj->GetArrayLength();
+    if (length == 0) {
+        return false;
+    }
+    int32_t left = 0;
+    int32_t right = length - 1;
+    while (left <= right) {
+        int32_t middle = (left + right) / 2;
+        JSHandle<JSTaggedValue> vv = JSArray::FastGetPropertyByValue(thread, obj, middle);
+        ComparisonResult res = JSTaggedValue::Compare(thread, vv, value);
+        if (res == ComparisonResult::EQUAL) {
+            return true;
+        } else if (res == ComparisonResult::LESS) {
+            left = middle + 1;
+        } else {
+            right = middle - 1;
+        }
+    }
+    return false;
+}
+
+JSHandle<TaggedArray> JSArray::ToTaggedArray(JSThread *thread, const JSHandle<JSTaggedValue> &obj)
+{
+    ASSERT(obj->IsJSArray());
+    JSHandle<JSArray> arrayObj = JSHandle<JSArray>::Cast(obj);
+    int32_t length = arrayObj->GetArrayLength();
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<TaggedArray> taggedArray = factory->NewTaggedArray(length);
+    for (int32_t idx = 0; idx < length; idx++) {
+        JSHandle<JSTaggedValue> vv = JSArray::FastGetPropertyByValue(thread, obj, idx);
+        taggedArray->Set(thread, idx, vv);
+    }
+    return taggedArray;
 }
 }  // namespace panda::ecmascript

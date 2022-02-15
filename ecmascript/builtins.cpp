@@ -85,6 +85,7 @@
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/mem/mem.h"
+#include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/object_factory.h"
 #include "ohos/init_data.h"
 
@@ -287,6 +288,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializeRelativeTimeFormat(env);
     InitializeCollator(env);
     InitializePluralRules(env);
+    InitializeModuleNamespace(env, objFuncDynclass);
 
     JSHandle<JSHClass> generatorFuncClass =
         factory_->CreateFunctionClass(FunctionKind::GENERATOR_FUNCTION, JSFunction::SIZE, JSType::JS_GENERATOR_FUNCTION,
@@ -2789,5 +2791,20 @@ JSHandle<JSObject> Builtins::InitializeArkPrivate(const JSHandle<GlobalEnv> &env
                 JSTaggedValue(static_cast<int>(containers::ContainerTag::LightWeightSet)));
     SetConstant(arkPrivate, "PlainArray", JSTaggedValue(static_cast<int>(containers::ContainerTag::PlainArray)));
     return arkPrivate;
+}
+
+void Builtins::InitializeModuleNamespace(const JSHandle<GlobalEnv> &env,
+                                         const JSHandle<JSHClass> &objFuncDynclass) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // ModuleNamespace.prototype
+    JSHandle<JSObject> moduleNamespacePrototype = factory_->NewJSObject(objFuncDynclass);
+    JSHandle<JSTaggedValue> moduleNamespacePrototypeValue(moduleNamespacePrototype);
+
+    //  ModuleNamespace.prototype_or_dynclass
+    JSHandle<JSHClass> moduleNamespaceDynclass =
+        factory_->NewEcmaDynClass(ModuleNamespace::SIZE, JSType::JS_MODULE_NAMESPACE, moduleNamespacePrototypeValue);
+    moduleNamespaceDynclass->SetPrototype(thread_, JSTaggedValue::Null());
+    env->SetModuleNamespaceClass(thread_, moduleNamespaceDynclass.GetTaggedValue());
 }
 }  // namespace panda::ecmascript

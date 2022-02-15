@@ -15,7 +15,7 @@
 
 #include "ecmascript/tooling/interface/js_debugger.h"
 
-#include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_thread.h"
 #include "runtime/tooling/pt_method_private.h"
 

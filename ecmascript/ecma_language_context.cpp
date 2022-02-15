@@ -15,9 +15,9 @@
 
 #include "ecmascript/ecma_language_context.h"
 
-#include "ecmascript/ecma_class_linker_extension.h"
 #include "ecmascript/ecma_exceptions.h"
 #include "ecmascript/interpreter/frame_handler.h"
+#include "ecmascript/jspandafile/ecma_class_linker_extension.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
