@@ -35,6 +35,7 @@ public:
     enum class CallStubKind {
         CODE_STUB,
         RUNTIME_STUB,
+        BYTECODE_HANDLER,
         RUNTIME_STUB_NO_GC,
         TEST_FUNC,
     };
