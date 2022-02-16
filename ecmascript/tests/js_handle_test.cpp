@@ -62,7 +62,7 @@ HWTEST_F_L0(JSHandleTest, NewGlobalHandle)
         globalString = global->NewGlobalHandle(string1.GetTaggedType());
     }
     // trigger GC
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
 
     // check result
     EXPECT_TRUE(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)) == 0);
@@ -83,7 +83,7 @@ HWTEST_F_L0(JSHandleTest, NewGlobalHandle1)
         }
     }
     // trigger GC
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     for (int i = 300; i > 200; i--) {
         global->DisposeGlobalHandle(globalString[i]);
     }
@@ -94,7 +94,7 @@ HWTEST_F_L0(JSHandleTest, NewGlobalHandle1)
             factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])) == 0);
     }
     // trigger GC
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     for (int i = 301; i < 600; i++) {
         std::string test = "test" + std::to_string(i);
         EXPECT_TRUE(
@@ -146,7 +146,7 @@ HWTEST_F_L0(JSHandleTest, DisposeAndNewGlobalHandle)
         global->DisposeGlobalHandle(globalString[i]);
     }
     // trigger GC
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     {
         [[maybe_unused]] EcmaHandleScope scope(thread);
         for (int i = 200; i < 400; i++) {
@@ -176,14 +176,14 @@ HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle)
         globalString = global->SetWeak(globalString);
 
         // trigger GC
-        thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+        thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
 
         // check result
         EXPECT_TRUE(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)) == 0);
         EXPECT_TRUE(global->IsWeak(globalString));
     }
     // trigger GC
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
 
     // check weak reference
     JSTaggedType result = *reinterpret_cast<JSTaggedType *>(globalString);
@@ -209,7 +209,7 @@ HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle1)
             global->DisposeGlobalHandle(globalString[i]);
         }
         // trigger GC
-        thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+        thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
         // check result
         for (int i = 0; i <= 200; i++) {
             std::string test = "test" + std::to_string(i);
@@ -218,7 +218,7 @@ HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle1)
         }
     }
     // trigger GC
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     for (int i = 601; i < 800; i++) {
         EXPECT_TRUE(*reinterpret_cast<TaggedType *>(globalString[i]) == JSTaggedValue::Undefined().GetRawData());
     }

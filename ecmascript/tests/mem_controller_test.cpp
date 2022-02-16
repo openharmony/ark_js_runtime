@@ -64,7 +64,7 @@ HWTEST_F_L0(MemControllerTest, AllocationVerify)
     auto objectFactory = ecmaVm->GetFactory();
     auto memController = heap->GetMemController();
 
-    heap->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    heap->CollectGarbage(TriggerGCType::FULL_GC);
 
     for (int i = 0; i < 1024; i++) {
         // old space object
@@ -72,7 +72,7 @@ HWTEST_F_L0(MemControllerTest, AllocationVerify)
                                                                        MemSpaceType::OLD_SPACE);
     }
     sleep(5);
-    heap->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    heap->CollectGarbage(TriggerGCType::FULL_GC);
     double mutatorSpeed1 = memController->GetCurrentOldSpaceAllocationThroughtputPerMS(0);
     for (int i = 0; i < 1024; i++) {
         // old space object
@@ -81,7 +81,7 @@ HWTEST_F_L0(MemControllerTest, AllocationVerify)
     }
     sleep(10);
 
-    heap->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    heap->CollectGarbage(TriggerGCType::FULL_GC);
     double mutatorSpeed2 = memController->GetCurrentOldSpaceAllocationThroughtputPerMS(0);
     ASSERT_TRUE(mutatorSpeed2 < mutatorSpeed1);
 #endif

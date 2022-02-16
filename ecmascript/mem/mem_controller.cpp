@@ -117,7 +117,7 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
     double duration = gcEndTime_ - gcStartTime_;
     switch (gcType) {
         case TriggerGCType::OLD_GC:
-        case TriggerGCType::COMPRESS_FULL_GC: {
+        case TriggerGCType::FULL_GC: {
             size_t heapObjectSize = heap_->GetHeapObjectSize();
             recordedMarkCompacts_.Push(MakeBytesAndDuration(heapObjectSize, duration));
             break;

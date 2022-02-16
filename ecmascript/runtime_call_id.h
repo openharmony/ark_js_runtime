@@ -558,9 +558,9 @@ namespace panda::ecmascript {
     V(JSTaggedValue, ToString)     \
 
 #define MEM_ALLOCATE_AND_GC_LIST(V)  \
-    V(CompressCollector_RunPhases)   \
-    V(MixSpaceCollector_RunPhases)   \
-    V(SemiSpaceCollector_RunPhases)  \
+    V(FullGC_RunPhases)              \
+    V(MixGC_RunPhases)               \
+    V(STWYoungGC_RunPhases)          \
     V(ConcurrentMarking)             \
     V(ConcurrentMarkingInitialize)   \
     V(WaitConcurrentMarkingFinished) \
