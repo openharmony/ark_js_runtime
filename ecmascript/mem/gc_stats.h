@@ -30,14 +30,22 @@ public:
     ~GCStats() = default;
 
     void PrintStatisticResult(bool isForce = false);
+    void PrintHeapStatisticResult(bool isForce = true);
 
     void StatisticSemiCollector(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize);
-    void StatisticOldCollector(Duration time, size_t freeSize, size_t oldSpaceCommitSize,
-                               size_t nonMoveSpaceCommitSize);
+    void StatisticMixCollector(bool concurrentMark, Duration time, size_t freeSize);
     void StatisticCompressCollector(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
                                     size_t oldCommitSize, size_t nonMoveSpaceFreeSize, size_t nonMoveSpaceCommitSize);
+    void StatisticConcurrentMark(Duration time);
+    void StatisticConcurrentMarkWait(Duration time);
+    void StatisticConcurrentRemark(Duration time);
+    void StatisticConcurrentEvacuate(Duration time);
 
 private:
+    void PrintSemiStatisticResult(bool isForce);
+    void PrintMixStatisticResult(bool isForce);
+    void PrintCompressStatisticResult(bool isForce);
+
     size_t TimeToMicroseconds(Duration time)
     {
         return std::chrono::duration_cast<std::chrono::microseconds>(time).count();
@@ -63,13 +71,23 @@ private:
     size_t semiTotalPromoteSize_ = 0;
 
     size_t lastOldGCCount_ = 0;
-    size_t oldGCCount_ = 0;
-    size_t oldGCMinPause_ = 0;
-    size_t oldGCMAXPause_ = 0;
-    size_t oldGCTotalPause_ = 0;
-    size_t oldTotalFreeSize_ = 0;
-    size_t oldSpaceTotalCommitSize_ = 0;
-    size_t oldNonMoveTotalCommitSize_ = 0;
+    size_t mixGCCount_ = 0;
+    size_t mixGCMinPause_ = 0;
+    size_t mixGCMAXPause_ = 0;
+    size_t mixGCTotalPause_ = 0;
+    size_t mixOldSpaceFreeSize_ = 0;
+
+    size_t lastOldConcurrentMarkGCCount_ = 0;
+    size_t mixConcurrentMarkGCPauseTime_ = 0;
+    size_t mixConcurrentMarkMarkPause_ = 0;
+    size_t mixConcurrentMarkWaitPause_ = 0;
+    size_t mixConcurrentMarkRemarkPause_ = 0;
+    size_t mixConcurrentMarkEvacuatePause_ = 0;
+    size_t mixConcurrentMarkGCCount_ = 0;
+    size_t mixConcurrentMarkGCMinPause_ = 0;
+    size_t mixConcurrentMarkGCMAXPause_ = 0;
+    size_t mixConcurrentMarkGCTotalPause_ = 0;
+    size_t mixOldSpaceConcurrentMarkFreeSize_ = 0;
 
     size_t lastCompressGCCount_ = 0;
     size_t compressGCCount_ = 0;

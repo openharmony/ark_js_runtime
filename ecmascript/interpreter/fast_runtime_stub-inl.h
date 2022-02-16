@@ -30,7 +30,6 @@
 #include "ecmascript/object_factory-inl.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/tagged_dictionary.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 JSTaggedValue FastRuntimeStub::FastAdd(JSTaggedValue left, JSTaggedValue right)

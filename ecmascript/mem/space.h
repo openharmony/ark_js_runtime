@@ -28,6 +28,7 @@ namespace panda::ecmascript {
 class EcmaVM;
 class Heap;
 class Program;
+class FreeListAllocator;
 
 enum MemSpaceType {
     OLD_SPACE = 0,
@@ -153,14 +154,28 @@ public:
         return regionList_;
     }
 
-    size_t GetHeapObjectSize() const;
+    size_t GetLiveObjectSize() const
+    {
+        return liveObjectSize_;
+    }
+    void IncrementLiveObjectSize(size_t size)
+    {
+        liveObjectSize_ += size;
+    }
+    void DecrementLiveObjectSize(size_t size)
+    {
+        liveObjectSize_ -= size;
+    }
+    void ResetLiveObjectSize()
+    {
+        liveObjectSize_ = 0;
+    }
 
     template <class Callback>
-    void EnumerateRegions(const Callback &cb, Region *region = nullptr) const;
+    inline void EnumerateRegions(const Callback &cb, Region *region = nullptr) const;
 
-    void AddRegion(Region *region);
-    void AddRegionToFirst(Region *region);
-    void RemoveRegion(Region *region);
+    inline void AddRegion(Region *region);
+    inline void RemoveRegion(Region *region);
 
     void Initialize();
     void Destroy();
@@ -179,15 +194,20 @@ protected:
     size_t initialCapacity_ {0};
     size_t maximumCapacity_ {0};
     size_t committedSize_ {0};
+    size_t liveObjectSize_ {0};
 };
 
 class SemiSpace : public Space {
 public:
     explicit SemiSpace(Heap *heap, size_t initialCapacity = DEFAULT_SEMI_SPACE_SIZE,
-                       size_t maximumCapacity = SEMI_SPACE_SIZE_CAPACITY);
+                       size_t maximumCapacity = SEMI_SPACE_CAPACITY);
     ~SemiSpace() override = default;
     NO_COPY_SEMANTIC(SemiSpace);
     NO_MOVE_SEMANTIC(SemiSpace);
+
+    void SetOverShootSize(size_t size);
+    void Reset();
+    bool AdjustCapacity(size_t allocatedSizeSinceGC);
 
     void SetAgeMark(uintptr_t mark);
 
@@ -195,20 +215,21 @@ public:
     {
         return ageMark_;
     }
+    size_t GetHeapObjectSize() const;
+    size_t GetAllocatedSizeSinceGC() const;
 
-    bool Expand(uintptr_t top);
-    bool AddRegionToList(Region *region);
-
-    void Swap(SemiSpace *other);
+    bool Expand(uintptr_t top, bool isAllow);
+    bool SwapRegion(Region *region, SemiSpace *fromSpace);
 
     bool ContainObject(TaggedObject *object) const;
     bool IsLive(TaggedObject *object) const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 
-    size_t GetAllocatedSizeSinceGC() const;
-
 private:
     uintptr_t ageMark_;
+    size_t overShootSize_ {0};
+    size_t allocateAfterLastGC_ {0};
+    size_t survivalObjectSize_ {0};
 };
 
 class OldSpace : public Space {
@@ -220,21 +241,24 @@ public:
     NO_MOVE_SEMANTIC(OldSpace);
     bool Expand();
     bool AddRegionToList(Region *region);
+
     bool ContainObject(TaggedObject *object) const;
     bool IsLive(TaggedObject *object) const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
     size_t GetHeapObjectSize() const;
-    void Merge(Space *fromSpace);
-    void AddRegionToCSet(Region *region);
-    void RemoveRegionFromCSetAndList(Region *region);
-    void ClearRegionFromCSet();
-    void RemoveCSetFromList();
-    void ReclaimRegionCSet();
+    void Merge(Space *localSpace, FreeListAllocator *localAllocator);
     template <class Callback>
     void EnumerateCollectRegionSet(const Callback &cb) const;
     template <class Callback>
     void EnumerateNonCollectRegionSet(const Callback &cb) const;
+    // CSet
     void SelectCSet();
+    void RevertCSet();
+    void ReclaimCSet();
+    bool IsCSetEmpty() const
+    {
+        return isCSetEmpty_;
+    }
     unsigned long GetSelectedRegionNumber() const
     {
         return std::max(committedSize_ / PARTIAL_GC_MAX_COLLECT_REGION_RATE, PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE);
@@ -244,6 +268,7 @@ private:
     static constexpr unsigned long PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE = 16;
     static constexpr size_t PARTIAL_GC_MIN_COLLECT_REGION_SIZE = 5;
     CVector<Region *> collectRegionSet_;
+    bool isCSetEmpty_ {true};
 };
 
 class NonMovableSpace : public Space {

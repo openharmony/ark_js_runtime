@@ -88,14 +88,17 @@ public:
 
     inline explicit FreeListAllocator(const Space *space);
 
-    inline void Reset(const Space *space);
     inline void Reset(Heap *heap);
 
+    template<bool isLocal = false>
     inline uintptr_t Allocate(size_t size);
     inline void AddFree(Region *region);
+    inline uintptr_t LookupSuitableFreeObject(size_t size);
 
     inline void RebuildFreeList();
-    inline void FillFreeList(FreeObjectKind *kind);
+
+    inline void CollectFreeObjectSet(Region *region);
+    inline void DetachFreeObjectSet(Region *region);
 
     inline void Swap(FreeListAllocator &other)
     {
@@ -106,14 +109,14 @@ public:
         sweeping_ = other.sweeping_;
     }
 
-    inline void Merge(FreeListAllocator *other);
-
     inline void FreeBumpPoint();
 
     inline void Free(uintptr_t begin, uintptr_t end, bool isAdd = true);
-    inline void SplitFreeObject(FreeObject *current, size_t allocateSize);
 
+#ifndef NDEBUG
     inline size_t GetAvailableSize() const;
+    inline size_t GetWastedSize() const;
+#endif
 
     void SetSweeping(bool sweeping)
     {
@@ -122,7 +125,12 @@ public:
 
     size_t GetAllocatedSize() const
     {
-        return allocationSizeAccumulator_;
+        return allocationSizeAccumulator_ + promotedSizeAccumulator_;
+    }
+
+    void IncrementPromotedSize(size_t size)
+    {
+        promotedSizeAccumulator_ += size;
     }
 
 private:
@@ -133,7 +141,8 @@ private:
     Heap *heap_{nullptr};
     MemSpaceType type_ = OLD_SPACE;
     bool sweeping_ = false;
-    size_t allocationSizeAccumulator_ = 0;
+    size_t allocationSizeAccumulator_ {0};
+    size_t promotedSizeAccumulator_ {0};
 };
 }  // namespace panda::ecmascript
 

@@ -38,13 +38,14 @@ namespace panda::ecmascript::kungfu {
     V(NewTaggedArray, 2)                    \
     V(CopyArray, 3)                         \
     V(NameDictPutIfAbsent, 7)               \
-    V(SetValueWithBarrier, 4)               \
     V(PropertiesSetValue, 6)                \
     V(TaggedArraySetValue, 6)               \
     V(NewEcmaDynClass, 4)                   \
     V(UpdateLayOutAndAddTransition, 5)      \
     V(NoticeThroughChainAndRefreshUser, 3)  \
-    V(DebugPrint, 1)
+    V(DebugPrint, 1)                        \
+    V(InsertOldToNewRememberedSet, 3)       \
+    V(MarkingBarrier, 5)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \

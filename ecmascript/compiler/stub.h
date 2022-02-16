@@ -53,7 +53,7 @@ public:
     }
     ~CompilationConfig() = default;
 
-    inline bool IsArm32() const
+    inline bool Is32Bit() const
     {
         return triple_ == Triple::TRIPLE_ARM32;
     }
@@ -66,6 +66,11 @@ public:
     inline bool IsAmd64() const
     {
         return triple_ == Triple::TRIPLE_AMD64;
+    }
+
+    inline bool Is64Bit() const
+    {
+        return IsAArch64() || IsAmd64();
     }
 
     Triple GetTriple() const
@@ -276,9 +281,9 @@ public:
         {
             compCfg_ = cfg;
         }
-        inline bool IsArm32() const
+        inline bool Is32Bit() const
         {
-            return compCfg_->IsArm32();
+            return compCfg_->Is32Bit();
         }
 
         inline bool IsAArch64() const
@@ -298,7 +303,7 @@ public:
 
         inline bool IsArch32Bit() const
         {
-            return compCfg_->IsArm32();
+            return compCfg_->Is32Bit();
         }
 
         uint32_t GetGlueOffset(JSThread::GlueID id) const
@@ -424,8 +429,9 @@ public:
     }
     // constant
     inline GateRef GetInt32Constant(int32_t value);
-    inline GateRef GetWord64Constant(uint64_t value);
-    inline GateRef GetArchRelateConstant(uint64_t value);
+    inline GateRef GetInt64Constant(int64_t value);
+    inline GateRef GetIntPtrConstant(int64_t value);
+    inline uint64_t GetIntPtrSize() const;
     inline GateRef TrueConstant();
     inline GateRef FalseConstant();
     inline GateRef GetBooleanConstant(bool value);
@@ -434,7 +440,7 @@ public:
     inline GateRef GetHoleConstant(StubMachineType type = StubMachineType::TAGGED);
     inline GateRef GetNullConstant(StubMachineType type = StubMachineType::TAGGED);
     inline GateRef GetExceptionConstant(StubMachineType type = StubMachineType::TAGGED);
-    inline GateRef ArchRelatePtrMul(GateRef x, GateRef y);
+    inline GateRef IntPtrMul(GateRef x, GateRef y);
     // parameter
     inline GateRef Argument(size_t index);
     inline GateRef Int1Argument(size_t index);
@@ -473,13 +479,12 @@ public:
     inline GateRef Load(StubMachineType type, GateRef base);
     GateRef Store(StubMachineType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
     // arithmetic
+    inline GateRef TaggedCastToIntPtr(GateRef x);
     inline GateRef Int32Add(GateRef x, GateRef y);
     inline GateRef Int64Add(GateRef x, GateRef y);
     inline GateRef DoubleAdd(GateRef x, GateRef y);
-    inline GateRef PtrAdd(GateRef x, GateRef y);
-    inline GateRef PtrSub(GateRef x, GateRef y);
-    inline GateRef ArchRelateAdd(GateRef x, GateRef y);
-    inline GateRef ArchRelateSub(GateRef x, GateRef y);
+    inline GateRef IntPtrAdd(GateRef x, GateRef y);
+    inline GateRef IntPtrSub(GateRef x, GateRef y);
     inline GateRef Int32Sub(GateRef x, GateRef y);
     inline GateRef Int64Sub(GateRef x, GateRef y);
     inline GateRef DoubleSub(GateRef x, GateRef y);
@@ -488,23 +493,32 @@ public:
     inline GateRef DoubleMul(GateRef x, GateRef y);
     inline GateRef DoubleDiv(GateRef x, GateRef y);
     inline GateRef Int32Div(GateRef x, GateRef y);
-    inline GateRef Word32Div(GateRef x, GateRef y);
+    inline GateRef UInt32Div(GateRef x, GateRef y);
+    inline GateRef UInt64Div(GateRef x, GateRef y);
     inline GateRef Int32Mod(GateRef x, GateRef y);
     inline GateRef DoubleMod(GateRef x, GateRef y);
-    GateRef Int64Div(GateRef x, GateRef y);
+    inline GateRef Int64Div(GateRef x, GateRef y);
+    inline GateRef IntPtrDiv(GateRef x, GateRef y);
     // bit operation
-    inline GateRef Word32Or(GateRef x, GateRef y);
-    inline GateRef Word32And(GateRef x, GateRef y);
-    inline GateRef Word32Not(GateRef x);
-    GateRef Word32Xor(GateRef x, GateRef y);
-    inline GateRef Word64Or(GateRef x, GateRef y);
-    inline GateRef Word64And(GateRef x, GateRef y);
-    inline GateRef Word64Xor(GateRef x, GateRef y);
-    inline GateRef Word64Not(GateRef x);
-    inline GateRef Word32LSL(GateRef x, GateRef y);
-    inline GateRef Word64LSL(GateRef x, GateRef y);
-    inline GateRef Word32LSR(GateRef x, GateRef y);
-    inline GateRef Word64LSR(GateRef x, GateRef y);
+    inline GateRef Int32Or(GateRef x, GateRef y);
+    inline GateRef Int32And(GateRef x, GateRef y);
+    inline GateRef IntPtrAnd(GateRef x, GateRef y);
+    inline GateRef BoolAnd(GateRef x, GateRef y);
+    inline GateRef Int32Not(GateRef x);
+    inline GateRef BoolNot(GateRef x);
+    inline GateRef Int32Xor(GateRef x, GateRef y);
+    inline GateRef FixLoadType(GateRef x);
+    inline GateRef Int64Or(GateRef x, GateRef y);
+    inline GateRef IntPtrOr(GateRef x, GateRef y);
+    inline GateRef Int64And(GateRef x, GateRef y);
+    inline GateRef Int64Xor(GateRef x, GateRef y);
+    inline GateRef Int64Not(GateRef x);
+    inline GateRef Int32LSL(GateRef x, GateRef y);
+    inline GateRef UInt64LSL(GateRef x, GateRef y);
+    inline GateRef IntPtrLSL(GateRef x, GateRef y);
+    inline GateRef UInt32LSR(GateRef x, GateRef y);
+    inline GateRef UInt64LSR(GateRef x, GateRef y);
+    inline GateRef IntPtrLSR(GateRef x, GateRef y);
     inline GateRef TaggedIsInt(GateRef x);
     inline GateRef TaggedIsDouble(GateRef x);
     inline GateRef TaggedIsObject(GateRef x);
@@ -514,6 +528,8 @@ public:
     inline GateRef TaggedIsUndefined(GateRef x);
     inline GateRef TaggedIsSpecial(GateRef x);
     inline GateRef TaggedIsHeapObject(GateRef x);
+    inline GateRef ObjectAddressToRange(GateRef x);
+    inline GateRef InYoungGeneration(GateRef glue, GateRef x);
     inline GateRef TaggedIsPropertyBox(GateRef x);
     inline GateRef TaggedIsWeak(GateRef x);
     inline GateRef TaggedIsPrototypeHandler(GateRef x);
@@ -535,31 +551,31 @@ public:
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();
     // compare operation
-    inline GateRef Word32Equal(GateRef x, GateRef y);
-    inline GateRef Word32NotEqual(GateRef x, GateRef y);
-    inline GateRef Word64Equal(GateRef x, GateRef y);
+    inline GateRef Int32Equal(GateRef x, GateRef y);
+    inline GateRef Int32NotEqual(GateRef x, GateRef y);
+    inline GateRef Int64Equal(GateRef x, GateRef y);
     inline GateRef DoubleEqual(GateRef x, GateRef y);
-    inline GateRef Word64NotEqual(GateRef x, GateRef y);
+    inline GateRef Int64NotEqual(GateRef x, GateRef y);
     inline GateRef Int32GreaterThan(GateRef x, GateRef y);
     inline GateRef Int32LessThan(GateRef x, GateRef y);
     inline GateRef Int32GreaterThanOrEqual(GateRef x, GateRef y);
     inline GateRef Int32LessThanOrEqual(GateRef x, GateRef y);
-    inline GateRef Word32GreaterThan(GateRef x, GateRef y);
-    inline GateRef Word32LessThan(GateRef x, GateRef y);
-    inline GateRef Word32LessThanOrEqual(GateRef x, GateRef y);
-    inline GateRef Word32GreaterThanOrEqual(GateRef x, GateRef y);
+    inline GateRef UInt32GreaterThan(GateRef x, GateRef y);
+    inline GateRef UInt32LessThan(GateRef x, GateRef y);
+    inline GateRef UInt32LessThanOrEqual(GateRef x, GateRef y);
+    inline GateRef UInt32GreaterThanOrEqual(GateRef x, GateRef y);
     inline GateRef Int64GreaterThan(GateRef x, GateRef y);
     inline GateRef Int64LessThan(GateRef x, GateRef y);
     inline GateRef Int64LessThanOrEqual(GateRef x, GateRef y);
     inline GateRef Int64GreaterThanOrEqual(GateRef x, GateRef y);
-    inline GateRef Word64GreaterThan(GateRef x, GateRef y);
-    inline GateRef Word64LessThan(GateRef x, GateRef y);
-    inline GateRef Word64LessThanOrEqual(GateRef x, GateRef y);
-    inline GateRef Word64GreaterThanOrEqual(GateRef x, GateRef y);
+    inline GateRef UInt6464GreaterThan(GateRef x, GateRef y);
+    inline GateRef UInt64LessThan(GateRef x, GateRef y);
+    inline GateRef UInt64LessThanOrEqual(GateRef x, GateRef y);
+    inline GateRef UInt6464GreaterThanOrEqual(GateRef x, GateRef y);
     // cast operation
     inline GateRef ChangeInt64ToInt32(GateRef val);
-    inline GateRef ChangeInt64ToUintPtr(GateRef val);
-    inline GateRef ChangeInt32ToUintPtr(GateRef val);
+    inline GateRef ChangeInt64ToIntPtr(GateRef val);
+    inline GateRef ChangeInt32ToIntPtr(GateRef val);
     // math operation
     GateRef Sqrt(GateRef x);
     inline GateRef GetSetterFromAccessor(GateRef accessor);
@@ -715,6 +731,9 @@ public:
     inline GateRef SetIsInlinePropsFieldInPropAttr(GateRef attr, GateRef value);
     inline void SetHasConstructorToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline void UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, GateRef value);
+    inline GateRef GetBitMask(GateRef bitoffset);
+    inline GateRef AddrToBitOffset(GateRef memberset, GateRef addr);
+    inline GateRef IntptrEuqal(GateRef x, GateRef y);
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);
     GateRef GetPropertyByName(GateRef glue, GateRef receiver, GateRef key);

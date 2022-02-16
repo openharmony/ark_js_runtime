@@ -18,8 +18,10 @@
 #include "ecmascript/compiler/stub-inl.h"
 #include "ecmascript/js_arraylist.h"
 #include "ecmascript/js_object.h"
+#include "ecmascript/message_string.h"
 #include "ecmascript/tagged_hash_table-inl.h"
 #include "libpandabase/macros.h"
+
 
 namespace panda::ecmascript::kungfu {
 Stub::Label::Label(Environment *env)
@@ -389,18 +391,18 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
             {
                 Label propsNumIsZero(env);
                 Label propsNumNotZero(env);
-                Branch(Word32Equal(propsNum, GetInt32Constant(0)), &propsNumIsZero, &propsNumNotZero);
+                Branch(Int32Equal(propsNum, GetInt32Constant(0)), &propsNumIsZero, &propsNumNotZero);
                 Bind(&propsNumIsZero);
                 Jump(&afterLoop);
                 Bind(&propsNumNotZero);
                 GateRef elementAddr = GetPropertiesAddrFromLayoutInfo(layoutInfo);
                 GateRef keyInProperty = Load(StubMachineType::UINT64, elementAddr,
-                    ArchRelatePtrMul(ChangeInt32ToUintPtr(*i),
-                        GetArchRelateConstant(sizeof(panda::ecmascript::Properties))));
+                    IntPtrMul(ChangeInt32ToIntPtr(*i),
+                        GetIntPtrConstant(sizeof(panda::ecmascript::Properties))));
                 Label equal(env);
                 Label notEqual(env);
                 Label afterEqualCon(env);
-                Branch(Word64Equal(keyInProperty, key), &equal, &notEqual);
+                Branch(Int64Equal(keyInProperty, key), &equal, &notEqual);
                 Bind(&equal);
                 result = *i;
                 Jump(&exit);
@@ -408,7 +410,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
                 Jump(&afterEqualCon);
                 Bind(&afterEqualCon);
                 i = Int32Add(*i, GetInt32Constant(1));
-                Branch(Int32LessThan(*i, propsNum), &loopEnd, &afterLoop);
+                Branch(UInt32LessThan(*i, propsNum), &loopEnd, &afterLoop);
                 Bind(&loopEnd);
                 LoopEnd(&loopHead);
             }
@@ -420,7 +422,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
     }
     Bind(&afterExceedCon);
     StubDescriptor *findElemWithCache = GET_STUBDESCRIPTOR(FindElementWithCache);
-    result = CallRuntime(findElemWithCache, glue, GetWord64Constant(FAST_STUB_ID(FindElementWithCache)), {
+    result = CallRuntime(findElemWithCache, glue, GetInt64Constant(FAST_STUB_ID(FindElementWithCache)), {
             glue, hClass, key, propsNum
         });
     Jump(&exit);
@@ -438,21 +440,21 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
     Label exit(env);
     GateRef capcityoffset =
-        ArchRelatePtrMul(GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()),
-            GetArchRelateConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
-    GateRef dataoffset = GetArchRelateConstant(TaggedArray::DATA_OFFSET);
+        IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
+            GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
+    GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
     GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
-                                              ArchRelateAdd(dataoffset, capcityoffset)));
+                                              IntPtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
 
     GateRef pKey = Alloca(static_cast<int>(MachineRep::K_WORD32));
 
-    GateRef keyStore = Store(StubMachineType::INT32, glue, pKey, GetArchRelateConstant(0), TaggedCastToInt32(key));
+    GateRef keyStore = Store(StubMachineType::INT32, glue, pKey, GetIntPtrConstant(0), TaggedCastToInt32(key));
     StubDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
     GateRef len = GetInt32Constant(sizeof(int) / sizeof(uint8_t));
     GateRef hash =
-        CallRuntime(getHash32Descriptor, glue, GetWord64Constant(FAST_STUB_ID(GetHash32)), keyStore, { pKey, len });
-    DEFVARIABLE(entry, StubMachineType::INT32, Word32And(hash, Int32Sub(capacity, GetInt32Constant(1))));
+        CallRuntime(getHash32Descriptor, glue, GetInt64Constant(FAST_STUB_ID(GetHash32)), keyStore, { pKey, len });
+    DEFVARIABLE(entry, StubMachineType::INT32, Int32And(hash, Int32Sub(capacity, GetInt32Constant(1))));
     Label loopHead(env);
     Label loopEnd(env);
     Label afterLoop(env);
@@ -517,7 +519,7 @@ GateRef Stub::IsMatchInNumberDictionary(GateRef key, GateRef other)
     Bind(&keyIsInt);
     Branch(TaggedIsInt(other), &otherIsInt, &otherNotInt);
     Bind(&otherIsInt);
-    result = Word32Equal(TaggedCastToInt32(key), TaggedCastToInt32(other));
+    result = Int32Equal(TaggedCastToInt32(key), TaggedCastToInt32(other));
     Jump(&exit);
     Bind(&otherNotInt);
     Jump(&exit);
@@ -538,10 +540,10 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     Label exit(env);
     DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
     GateRef capcityoffset =
-        ArchRelatePtrMul(GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()),
-            GetArchRelateConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
-    GateRef dataoffset = GetArchRelateConstant(TaggedArray::DATA_OFFSET);
-    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements, PtrAdd(dataoffset, capcityoffset)));
+        IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
+            GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
+    GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
+    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements, IntPtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
     DEFVARIABLE(hash, StubMachineType::INT32, GetInt32Constant(0));
     // NameDictionary::hash
@@ -555,7 +557,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     Bind(&isSymbol);
     {
         hash = TaggedCastToInt32(Load(StubMachineType::UINT64, key,
-            GetArchRelateConstant(JSSymbol::HASHFIELD_OFFSET)));
+            GetIntPtrConstant(JSSymbol::HASHFIELD_OFFSET)));
         Jump(&beforeDefineHash);
     }
     Bind(&notSymbol);
@@ -566,7 +568,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
         Bind(&isString);
         {
             StubDescriptor *stringGetHashCode = GET_STUBDESCRIPTOR(StringGetHashCode);
-            hash = CallRuntime(stringGetHashCode, glue, GetWord64Constant(FAST_STUB_ID(StringGetHashCode)), { key });
+            hash = CallRuntime(stringGetHashCode, glue, GetInt64Constant(FAST_STUB_ID(StringGetHashCode)), { key });
             Jump(&beforeDefineHash);
         }
         Bind(&notString);
@@ -576,7 +578,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     }
     Bind(&beforeDefineHash);
     // GetFirstPosition(hash, size)
-    DEFVARIABLE(entry, StubMachineType::INT32, Word32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
+    DEFVARIABLE(entry, StubMachineType::INT32, Int32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
@@ -604,7 +606,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
                     {
                         Label isMatch(env);
                         Label notMatch(env);
-                        Branch(Word64Equal(key, element), &isMatch, &notMatch);
+                        Branch(Int64Equal(key, element), &isMatch, &notMatch);
                         {
                             Bind(&isMatch);
                             {
@@ -635,8 +637,8 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
 
 GateRef Stub::IsMatchInTransitionDictionary(GateRef element, GateRef key, GateRef metaData, GateRef attr)
 {
-    return TruncInt32ToInt1(Word32And(ZExtInt1ToInt32(Word64Equal(element, key)),
-        ZExtInt1ToInt32(Word32Equal(metaData, attr))));
+    return TruncInt32ToInt1(Int32And(ZExtInt1ToInt32(Int64Equal(element, key)),
+        ZExtInt1ToInt32(Int32Equal(metaData, attr))));
 }
 
 // metaData is int32 type
@@ -648,10 +650,10 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     Label exit(env);
     DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
     GateRef capcityoffset =
-        ArchRelatePtrMul(GetArchRelateConstant(JSTaggedValue::TaggedTypeSize()),
-            GetArchRelateConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
-    GateRef dataoffset = GetArchRelateConstant(TaggedArray::DATA_OFFSET);
-    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements, PtrAdd(dataoffset, capcityoffset)));
+        IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
+            GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
+    GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
+    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements, IntPtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
     DEFVARIABLE(hash, StubMachineType::INT32, GetInt32Constant(0));
     // TransitionDictionary::hash
@@ -665,7 +667,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     Bind(&isSymbol);
     {
         hash = TaggedCastToInt32(Load(StubMachineType::UINT64, key,
-            GetArchRelateConstant(panda::ecmascript::JSSymbol::HASHFIELD_OFFSET)));
+            GetIntPtrConstant(panda::ecmascript::JSSymbol::HASHFIELD_OFFSET)));
         Jump(&beforeDefineHash);
     }
     Bind(&notSymbol);
@@ -676,7 +678,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
         Bind(&isString);
         {
             StubDescriptor *stringGetHashCode = GET_STUBDESCRIPTOR(StringGetHashCode);
-            hash = CallRuntime(stringGetHashCode, glue, GetWord64Constant(FAST_STUB_ID(StringGetHashCode)), { key });
+            hash = CallRuntime(stringGetHashCode, glue, GetInt64Constant(FAST_STUB_ID(StringGetHashCode)), { key });
             Jump(&beforeDefineHash);
         }
         Bind(&notString);
@@ -687,7 +689,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     Bind(&beforeDefineHash);
     hash = Int32Add(*hash, metaData);
     // GetFirstPosition(hash, size)
-    DEFVARIABLE(entry, StubMachineType::INT32, Word32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
+    DEFVARIABLE(entry, StubMachineType::INT32, Int32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
@@ -773,7 +775,7 @@ GateRef Stub::JSObjectGetProperty(StubMachineType returnType, GateRef obj, GateR
         {
             // compute outOfLineProp offset, get it and return
             GateRef array =
-                Load(StubMachineType::UINT64, obj, GetArchRelateConstant(JSObject::PROPERTIES_OFFSET));
+                Load(StubMachineType::UINT64, obj, GetIntPtrConstant(JSObject::PROPERTIES_OFFSET));
             result = GetValueFromTaggedArray(returnType, array, Int32Sub(attrOffset,
                 GetInlinedPropertiesFromHClass(hClass)));
             Jump(&exit);
@@ -805,7 +807,7 @@ void Stub::JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRe
         {
             // compute outOfLineProp offset, get it and return
             GateRef array = Load(StubMachineType::TAGGED_POINTER, obj,
-                                 GetArchRelateConstant(JSObject::PROPERTIES_OFFSET));
+                                 GetIntPtrConstant(JSObject::PROPERTIES_OFFSET));
             SetValueToTaggedArray(StubMachineType::TAGGED, glue, array, Int32Sub(attrOffset,
                 GetInlinedPropertiesFromHClass(hClass)), value);
             Jump(&exit);
@@ -849,12 +851,12 @@ GateRef Stub::CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor, Gat
     env->PushCurrentLabel(&subEntry);
     Label exit(env);
     DEFVARIABLE(result, StubMachineType::UINT64, GetUndefinedConstant(StubMachineType::UINT64));
-    GateRef callRes = CallRuntime(GET_STUBDESCRIPTOR(CallSetter), glue, GetWord64Constant(FAST_STUB_ID(CallSetter)), {
+    GateRef callRes = CallRuntime(GET_STUBDESCRIPTOR(CallSetter), glue, GetInt64Constant(FAST_STUB_ID(CallSetter)), {
             glue, accessor, holder, value, TrueConstant()
         });
     Label callSuccess(env);
     Label callFail(env);
-    Branch(Word32Equal(ZExtInt1ToInt32(callRes), GetInt32Constant(1)), &callSuccess, &callFail);
+    Branch(Int32Equal(ZExtInt1ToInt32(callRes), GetInt32Constant(1)), &callSuccess, &callFail);
     {
         Bind(&callSuccess);
         result = GetUndefinedConstant(StubMachineType::UINT64);
@@ -883,7 +885,7 @@ GateRef Stub::ShouldCallSetter(GateRef receiver, GateRef holder, GateRef accesso
     {
         Label receiverEqualsHolder(env);
         Label receiverNotEqualsHolder(env);
-        Branch(Word64Equal(receiver, holder), &receiverEqualsHolder, &receiverNotEqualsHolder);
+        Branch(Int64Equal(receiver, holder), &receiverEqualsHolder, &receiverNotEqualsHolder);
         Bind(&receiverEqualsHolder);
         {
             result = IsWritable(attr);
@@ -917,7 +919,7 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
     GateRef newDyn = FindTransitions(glue, receiver, hclass, key, metaData);
     Label findHClass(env);
     Label notFindHClass(env);
-    Branch(Word64Equal(newDyn, GetWord64Constant(JSTaggedValue::VALUE_NULL)), &notFindHClass, &findHClass);
+    Branch(Int64Equal(newDyn, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &notFindHClass, &findHClass);
     Bind(&findHClass);
     {
         Jump(&exit);
@@ -929,12 +931,12 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
                                 GetInt32Constant(JSTaggedValue::TaggedTypeSize()));
         GateRef inlineProps = GetInlinedPropertiesFromHClass(hclass);
         StubDescriptor *newEcmaDynClass = GET_STUBDESCRIPTOR(NewEcmaDynClass);
-        GateRef newJshclass = CallRuntime(newEcmaDynClass, glue, GetWord64Constant(FAST_STUB_ID(NewEcmaDynClass)), {
+        GateRef newJshclass = CallRuntime(newEcmaDynClass, glue, GetInt64Constant(FAST_STUB_ID(NewEcmaDynClass)), {
                 glue, size, type, inlineProps
             });
         CopyAllHClass(glue, newJshclass, hclass);
         StubDescriptor *updateLayout = GET_STUBDESCRIPTOR(UpdateLayOutAndAddTransition);
-        CallRuntime(updateLayout, glue, GetWord64Constant(FAST_STUB_ID(UpdateLayOutAndAddTransition)), {
+        CallRuntime(updateLayout, glue, GetInt64Constant(FAST_STUB_ID(UpdateLayOutAndAddTransition)), {
                     glue, hclass, newJshclass, key, attr
                     });
 #if ECMASCRIPT_ENABLE_IC
@@ -952,14 +954,14 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
 //      keyHandle.GetTaggedValue() == thread->GlobalConstants()->GetConstructorString()
 GateRef Stub::SetHasConstructorCondition(GateRef glue, GateRef receiver, GateRef key)
 {
-    GateRef gConstOffset = PtrAdd(glue, GetArchRelateConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
+    GateRef gConstOffset = IntPtrAdd(glue, GetIntPtrConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
     GateRef gCtorStr = Load(StubMachineType::TAGGED,
         gConstOffset,
-        Int64Mul(GetWord64Constant(sizeof(JSTaggedValue)),
-            GetWord64Constant(static_cast<uint64_t>(ConstantIndex::CONSTRUCTOR_STRING_INDEX))));
-    GateRef isCtorStr = Word64Equal(key, gCtorStr);
-    return Word32NotEqual(
-        Word32And(SExtInt1ToInt32(IsJsArray(receiver)), SExtInt1ToInt32(isCtorStr)), GetInt32Constant(0));
+        Int64Mul(GetInt64Constant(sizeof(JSTaggedValue)),
+            GetInt64Constant(static_cast<uint64_t>(ConstantIndex::CONSTRUCTOR_STRING_INDEX))));
+    GateRef isCtorStr = Int64Equal(key, gCtorStr);
+    return Int32NotEqual(
+        Int32And(SExtInt1ToInt32(IsJsArray(receiver)), SExtInt1ToInt32(isCtorStr)), GetInt32Constant(0));
 }
 
 // Note: set return exit node
@@ -991,7 +993,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     Label hasUnusedInProps(env);
     Label noUnusedInProps(env);
     Label afterInPropsCon(env);
-    Branch(Word32LessThan(numberOfProps, inlinedProperties), &hasUnusedInProps, &noUnusedInProps);
+    Branch(UInt32LessThan(numberOfProps, inlinedProperties), &hasUnusedInProps, &noUnusedInProps);
     {
         Bind(&noUnusedInProps);
         Jump(&afterInPropsCon);
@@ -1011,13 +1013,13 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     Label lenIsZero(env);
     Label lenNotZero(env);
     Label afterLenCon(env);
-    Branch(Word32Equal(*length, GetInt32Constant(0)), &lenIsZero, &lenNotZero);
+    Branch(Int32Equal(*length, GetInt32Constant(0)), &lenIsZero, &lenNotZero);
     {
         Bind(&lenIsZero);
         {
             length = GetInt32Constant(JSObject::MIN_PROPERTIES_LENGTH);
             array = CallRuntime(GET_STUBDESCRIPTOR(NewTaggedArray), glue,
-                GetWord64Constant(FAST_STUB_ID(NewTaggedArray)), { glue, *length });
+                GetInt64Constant(FAST_STUB_ID(NewTaggedArray)), { glue, *length });
             SetPropertiesArray(glue, receiver, *array);
             Jump(&afterLenCon);
         }
@@ -1032,7 +1034,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
         Bind(&isDictMode);
         {
             GateRef res = CallRuntime(GET_STUBDESCRIPTOR(NameDictPutIfAbsent), glue,
-                GetWord64Constant(FAST_STUB_ID(NameDictPutIfAbsent)), {
+                GetInt64Constant(FAST_STUB_ID(NameDictPutIfAbsent)), {
                     glue, receiver, *array, key, value, *attr, FalseConstant()
                 });
             SetPropertiesArray(glue, receiver, res);
@@ -1045,14 +1047,14 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             Label isArrayFull(env);
             Label arrayNotFull(env);
             Label afterArrLenCon(env);
-            Branch(Word32Equal(*length, outProps), &isArrayFull, &arrayNotFull);
+            Branch(Int32Equal(*length, outProps), &isArrayFull, &arrayNotFull);
             {
                 Bind(&isArrayFull);
                 {
                     Label ChangeToDict(env);
                     Label notChangeToDict(env);
                     Label afterDictChangeCon(env);
-                    Branch(Word32Equal(*length, GetInt32Constant(JSHClass::MAX_CAPACITY_OF_OUT_OBJECTS)),
+                    Branch(Int32Equal(*length, GetInt32Constant(JSHClass::MAX_CAPACITY_OF_OUT_OBJECTS)),
                         &ChangeToDict, &notChangeToDict);
                     {
                         Bind(&ChangeToDict);
@@ -1060,7 +1062,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             attr = SetDictionaryOrderFieldInPropAttr(*attr,
                                 GetInt32Constant(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES));
                             GateRef res = CallRuntime(GET_STUBDESCRIPTOR(NameDictPutIfAbsent), glue,
-                                GetWord64Constant(FAST_STUB_ID(NameDictPutIfAbsent)), {
+                                GetInt64Constant(FAST_STUB_ID(NameDictPutIfAbsent)), {
                                     glue, receiver, *array, key, value, *attr, TrueConstant()
                                 });
                             SetPropertiesArray(glue, receiver, res);
@@ -1073,7 +1075,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                     Bind(&afterDictChangeCon);
                     GateRef capacity = ComputePropertyCapacityInJSObj(*length);
                     array = CallRuntime(GET_STUBDESCRIPTOR(CopyArray), glue,
-                        GetWord64Constant(FAST_STUB_ID(CopyArray)), { glue, *array, *length, capacity });
+                        GetInt64Constant(FAST_STUB_ID(CopyArray)), { glue, *array, *length, capacity });
                     SetPropertiesArray(glue, receiver, *array);
                     Jump(&afterArrLenCon);
                 }
@@ -1099,7 +1101,7 @@ void Stub::ThrowTypeAndReturn(GateRef glue, int messageId, GateRef val)
 {
     StubDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
     GateRef msgIntId = GetInt32Constant(messageId);
-    CallRuntime(throwTypeError, glue, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, msgIntId });
+    CallRuntime(throwTypeError, glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, msgIntId });
     Return(val);
 }
 
@@ -1110,14 +1112,14 @@ GateRef Stub::TaggedToRepresentation(GateRef value)
     env->PushCurrentLabel(&entry);
     Label exit(env);
     DEFVARIABLE(resultRep, StubMachineType::INT64,
-                GetWord64Constant(static_cast<int32_t>(Representation::OBJECT)));
+                GetInt64Constant(static_cast<int32_t>(Representation::OBJECT)));
     Label isInt(env);
     Label notInt(env);
 
     Branch(TaggedIsInt(value), &isInt, &notInt);
     Bind(&isInt);
     {
-        resultRep = GetWord64Constant(static_cast<int32_t>(Representation::INT));
+        resultRep = GetInt64Constant(static_cast<int32_t>(Representation::INT));
         Jump(&exit);
     }
     Bind(&notInt);
@@ -1127,12 +1129,12 @@ GateRef Stub::TaggedToRepresentation(GateRef value)
         Branch(TaggedIsDouble(value), &isDouble, &notDouble);
         Bind(&isDouble);
         {
-            resultRep = GetWord64Constant(static_cast<int32_t>(Representation::DOUBLE));
+            resultRep = GetInt64Constant(static_cast<int32_t>(Representation::DOUBLE));
             Jump(&exit);
         }
         Bind(&notDouble);
         {
-            resultRep = GetWord64Constant(static_cast<int32_t>(Representation::OBJECT));
+            resultRep = GetInt64Constant(static_cast<int32_t>(Representation::OBJECT));
             Jump(&exit);
         }
     }
@@ -1163,11 +1165,9 @@ GateRef Stub::Store(StubMachineType type, GateRef glue, GateRef base, GateRef of
     } else {
         UNREACHABLE();
     }
-    // write barrier will implemented in IR later
     if (type == StubMachineType::TAGGED_POINTER || type == StubMachineType::TAGGED) {
         SetValueWithBarrier(glue, base, offset, value);
     }
-
     return result;
 }
 
@@ -1177,16 +1177,65 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-
     Label isHeapObject(env);
+    Label isVailedIndex(env);
+    Label notValidIndex(env);
+    Label marking(env);
+
     Branch(TaggedIsHeapObject(value), &isHeapObject, &exit);
     Bind(&isHeapObject);
     {
-        StubDescriptor *setValueWithBarrier = GET_STUBDESCRIPTOR(SetValueWithBarrier);
-        CallRuntime(setValueWithBarrier, glue, GetWord64Constant(FAST_STUB_ID(SetValueWithBarrier)), {
-                glue, obj, offset, value
+        GateRef objectRegion = ObjectAddressToRange(obj);
+        GateRef valueRegion = ObjectAddressToRange(value);
+        GateRef slotAddr = IntPtrAdd(TaggedCastToIntPtr(obj), offset);
+        GateRef objectNotInYoung = BoolNot(InYoungGeneration(glue, objectRegion));
+        GateRef valueRegionInYoung = InYoungGeneration(glue, valueRegion);
+        Branch(BoolAnd(objectNotInYoung, valueRegionInYoung), &isVailedIndex, &notValidIndex);
+        Bind(&isVailedIndex);
+        {
+            GateRef offset = GetIntPtrConstant(Region::GetOldToNewSetOffset(env_.Is32Bit()));
+            auto oldToNewSet = Load(StubMachineType::NATIVE_POINTER, objectRegion, offset);
+            Label isNullPtr(env);
+            Label notNullPtr(env);
+            Branch(IntptrEuqal(oldToNewSet, GetIntPtrConstant(0)), &isNullPtr, &notNullPtr);
+            Bind(&notNullPtr);
+            {
+                // 1. bit_offset set AddrToBitOffset(address)
+                GateRef bitOffset = AddrToBitOffset(oldToNewSet, slotAddr);
+                // bit_offset >> LOG_BITSPERWORD
+                // 2. bitmap_[GetWordIdx(bit_offset)] |= GetBitMask(bit_offset)
+                // 2.0: wordIdx GetWordIdx(bit_offset)
+                uint64_t logBitsPerWord = BitmapHelper::LogBitsPerWord(env_.Is32Bit());
+                GateRef wordIdx = IntPtrLSR(bitOffset, GetIntPtrConstant(logBitsPerWord));
+                // 2.1 bitmap_[wordIdx]
+                GateRef bitmapoffset = GetIntPtrConstant(0);
+                GateRef bitmap = IntPtrAdd(oldToNewSet, bitmapoffset);
+                GateRef bitmapdata = Load(StubMachineType::NATIVE_POINTER, bitmap, GetIntPtrConstant(0));
+                GateRef bitmapAddr = IntPtrAdd(bitmapdata,
+                    IntPtrMul(wordIdx, GetIntPtrConstant(GetIntPtrSize())));
+                // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset);
+                GateRef oldmapValue = Load(StubMachineType::NATIVE_POINTER, bitmapAddr, GetIntPtrConstant(0));
+                Store(StubMachineType::NATIVE_POINTER, glue, bitmapAddr, GetIntPtrConstant(0),
+                    IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
+                Jump(&notValidIndex);
+            }
+            Bind(&isNullPtr);
+            {
+                StubDescriptor *insertOldToNewRememberedSet = GET_STUBDESCRIPTOR(InsertOldToNewRememberedSet);
+                CallRuntime(insertOldToNewRememberedSet, glue,
+                            GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
+                            {glue, objectRegion, slotAddr});
+                Jump(&notValidIndex);
+            }
+        }
+        Bind(&notValidIndex);
+        {
+            StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
+            CallRuntime(markingBarrier, glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
+                    glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion
             });
-        Jump(&exit);
+            Jump(&exit);
+        }
     }
     Bind(&exit);
     env->PopCurrentLabel();
@@ -1204,8 +1253,8 @@ GateRef Stub::TaggedIsString(GateRef obj)
     Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     Bind(&isHeapObject);
     {
-        result = Word32Equal(GetObjectType(LoadHClass(obj)),
-                             GetInt32Constant(static_cast<int32_t>(JSType::STRING)));
+        result = Int32Equal(GetObjectType(LoadHClass(obj)),
+                            GetInt32Constant(static_cast<int32_t>(JSType::STRING)));
         Jump(&exit);
     }
     Bind(&exit);
@@ -1226,13 +1275,13 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
     Bind(&isHeapObject);
     {
         GateRef objType = GetObjectType(LoadHClass(obj));
-        result = Word32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::STRING)));
+        result = Int32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::STRING)));
         Label isString(env);
         Label notString(env);
         Branch(*result, &exit, &notString);
         Bind(&notString);
         {
-            result = Word32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::SYMBOL)));
+            result = Int32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::SYMBOL)));
             Jump(&exit);
         }
     }
@@ -1245,35 +1294,35 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
 GateRef Stub::IsUtf16String(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(StubMachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
-    return Word32Equal(
-        Word32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
+    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    return Int32Equal(
+        Int32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
         GetInt32Constant(EcmaString::STRING_UNCOMPRESSED));
 }
 
 GateRef Stub::IsUtf8String(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(StubMachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
-    return Word32Equal(
-        Word32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
+    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    return Int32Equal(
+        Int32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
         GetInt32Constant(EcmaString::STRING_COMPRESSED));
 }
 
 GateRef Stub::IsInternalString(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(StubMachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
-    return Word32NotEqual(
-        Word32And(len, GetInt32Constant(EcmaString::STRING_INTERN_BIT)),
+    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    return Int32NotEqual(
+        Int32And(len, GetInt32Constant(EcmaString::STRING_INTERN_BIT)),
         GetInt32Constant(0));
 }
 
 GateRef Stub::IsDigit(GateRef ch)
 {
     return TruncInt32ToInt1(
-        Word32And(SExtInt1ToInt32(Int32LessThanOrEqual(ch, GetInt32Constant('9'))),
-                  SExtInt1ToInt32(Int32GreaterThanOrEqual(ch, GetInt32Constant('0')))));
+        Int32And(SExtInt1ToInt32(Int32LessThanOrEqual(ch, GetInt32Constant('9'))),
+                 SExtInt1ToInt32(Int32GreaterThanOrEqual(ch, GetInt32Constant('0')))));
 }
 
 GateRef Stub::StringToElementIndex(GateRef string)
@@ -1285,14 +1334,14 @@ GateRef Stub::StringToElementIndex(GateRef string)
     DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
     Label greatThanZero(env);
     Label inRange(env);
-    GateRef len = Load(StubMachineType::UINT32, string, GetArchRelateConstant(EcmaString::MIX_LENGTH_OFFSET));
-    len = Word32LSR(len, GetInt32Constant(2));  // 2 : 2 means len must be right shift 2 bits
-    Branch(Word32Equal(len, GetInt32Constant(0)), &exit, &greatThanZero);
+    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    len = UInt32LSR(len, GetInt32Constant(2));  // 2 : 2 means len must be right shift 2 bits
+    Branch(Int32Equal(len, GetInt32Constant(0)), &exit, &greatThanZero);
     Bind(&greatThanZero);
     Branch(Int32GreaterThan(len, GetInt32Constant(MAX_INDEX_LEN)), &exit, &inRange);
     Bind(&inRange);
     {
-        GateRef dataUtf16 = PtrAdd(string, GetArchRelateConstant(EcmaString::DATA_OFFSET));
+        GateRef dataUtf16 = IntPtrAdd(string, GetIntPtrConstant(EcmaString::DATA_OFFSET));
         DEFVARIABLE(c, StubMachineType::UINT32, GetInt32Constant(0));
         Label isUtf16(env);
         Label isUtf8(env);
@@ -1313,11 +1362,11 @@ GateRef Stub::StringToElementIndex(GateRef string)
         {
             Label isDigitZero(env);
             Label notDigitZero(env);
-            Branch(Word32Equal(*c, GetInt32Constant('0')), &isDigitZero, &notDigitZero);
+            Branch(Int32Equal(*c, GetInt32Constant('0')), &isDigitZero, &notDigitZero);
             Bind(&isDigitZero);
             {
                 Label lengthIsOne(env);
-                Branch(Word32Equal(len, GetInt32Constant(1)), &lengthIsOne, &exit);
+                Branch(Int32Equal(len, GetInt32Constant(1)), &lengthIsOne, &exit);
                 Bind(&lengthIsOne);
                 {
                     result = GetInt32Constant(0);
@@ -1334,7 +1383,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
                 Label loopEnd(env);
                 Label afterLoop(env);
                 Bind(&isDigit);
-                Branch(Int32LessThan(*i, len), &loopHead, &afterLoop);
+                Branch(UInt32LessThan(*i, len), &loopHead, &afterLoop);
                 LoopBegin(&loopHead);
                 {
                     Label isUtf16(env);
@@ -1344,13 +1393,13 @@ GateRef Stub::StringToElementIndex(GateRef string)
                     Bind(&isUtf16);
                     {
                         // 2 : 2 means utf16 char width is two bytes
-                        auto charOffset = ArchRelatePtrMul(ChangeInt32ToUintPtr(*i),  GetArchRelateConstant(2));
+                        auto charOffset = IntPtrMul(ChangeInt32ToIntPtr(*i),  GetIntPtrConstant(2));
                         c = ZExtInt16ToInt32(Load(StubMachineType::INT16, dataUtf16, charOffset));
                         Jump(&getChar2);
                     }
                     Bind(&notUtf16);
                     {
-                        c = ZExtInt8ToInt32(Load(StubMachineType::INT8, dataUtf16, ChangeInt32ToUintPtr(*i)));
+                        c = ZExtInt8ToInt32(Load(StubMachineType::INT8, dataUtf16, ChangeInt32ToIntPtr(*i)));
                         Jump(&getChar2);
                     }
                     Bind(&getChar2);
@@ -1364,7 +1413,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
                             n = Int32Add(Int32Mul(*n, GetInt32Constant(10)),
                                          Int32Sub(*c, GetInt32Constant('0')));
                             i = Int32Add(*i, GetInt32Constant(1));
-                            Branch(Int32LessThan(*i, len), &loopEnd, &afterLoop);
+                            Branch(UInt32LessThan(*i, len), &loopEnd, &afterLoop);
                         }
                         Bind(&notDigit2);
                         Jump(&exit);
@@ -1375,7 +1424,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
                 Bind(&afterLoop);
                 {
                     Label lessThanMaxIndex(env);
-                    Branch(Word32LessThan(*n, GetInt32Constant(JSObject::MAX_ELEMENT_INDEX)),
+                    Branch(UInt32LessThan(*n, GetInt32Constant(JSObject::MAX_ELEMENT_INDEX)),
                            &lessThanMaxIndex, &exit);
                     Bind(&lessThanMaxIndex);
                     {
@@ -1455,8 +1504,8 @@ GateRef Stub::LoadFromField(GateRef receiver, GateRef handlerInfo)
     Branch(HandlerBaseIsInlinedProperty(handlerInfo), &handlerInfoIsInlinedProps, &handlerInfoNotInlinedProps);
     Bind(&handlerInfoIsInlinedProps);
     {
-        result = Load(StubMachineType::TAGGED, receiver, ArchRelatePtrMul(ChangeInt32ToUintPtr(index),
-            GetArchRelateConstant(JSTaggedValue::TaggedTypeSize())));
+        result = Load(StubMachineType::TAGGED, receiver, IntPtrMul(ChangeInt32ToIntPtr(index),
+            GetIntPtrConstant(JSTaggedValue::TaggedTypeSize())));
         Jump(&exit);
     }
     Bind(&handlerInfoNotInlinedProps);
@@ -1515,11 +1564,11 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
         Jump(&loopHead);
         LoopBegin(&loopHead);
         {
-            Branch(Int32LessThan(*i, length), &iLessLength, &exit);
+            Branch(UInt32LessThan(*i, length), &iLessLength, &exit);
             Bind(&iLessLength);
             {
                 GateRef element = GetValueFromTaggedArray(StubMachineType::TAGGED, cachedValue, *i);
-                Branch(Word64Equal(element, hclass), &hasHclass, &loopEnd);
+                Branch(Int64Equal(element, hclass), &hasHclass, &loopEnd);
                 Bind(&hasHclass);
                 result = GetValueFromTaggedArray(StubMachineType::TAGGED, cachedValue,
                                                  Int32Add(*i, GetInt32Constant(1)));
@@ -1578,7 +1627,7 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
                 Bind(&handlerInfoNotNonExist);
                 GateRef accessor = LoadFromField(*holder, handlerInfo);
                 StubDescriptor *callGetter2 = GET_STUBDESCRIPTOR(CallGetter2);
-                result = CallRuntime(callGetter2, glue, GetWord64Constant(FAST_STUB_ID(CallGetter2)), {
+                result = CallRuntime(callGetter2, glue, GetInt64Constant(FAST_STUB_ID(CallGetter2)), {
                         glue, receiver, *holder, accessor
                     });
                 Jump(&exit);
@@ -1623,7 +1672,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
     Label lengthNotLessIndex(env);
     DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
     GateRef index = TryToElementsIndex(key);
-    Branch(Int32LessThan(index, GetInt32Constant(0)), &indexLessZero, &indexNotLessZero);
+    Branch(UInt32LessThan(index, GetInt32Constant(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
     {
         Jump(&exit);
@@ -1658,7 +1707,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     Label indexGreaterCapacity(env);
     DEFVARIABLE(result, StubMachineType::UINT64, GetHoleConstant(StubMachineType::UINT64));
     GateRef index = TryToElementsIndex(key);
-    Branch(Int32LessThan(index, GetInt32Constant(0)), &indexLessZero, &indexNotLessZero);
+    Branch(UInt32LessThan(index, GetInt32Constant(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
     {
         Jump(&exit);
@@ -1672,7 +1721,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
             Branch(Int32GreaterThanOrEqual(index, oldLength), &indexGreaterLength, &handerInfoNotJSArray);
             Bind(&indexGreaterLength);
             Store(StubMachineType::UINT64, glue, receiver,
-                  GetArchRelateConstant(panda::ecmascript::JSArray::LENGTH_OFFSET),
+                  GetIntPtrConstant(panda::ecmascript::JSArray::LENGTH_OFFSET),
                   IntBuildTaggedWithNoGC(Int32Add(index, GetInt32Constant(1))));
             Jump(&handerInfoNotJSArray);
         }
@@ -1681,7 +1730,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
             GateRef elements = GetElementsArray(receiver);
             GateRef capacity = GetLengthofTaggedArray(elements);
             StubDescriptor *taggedArraySetValue = GET_STUBDESCRIPTOR(TaggedArraySetValue);
-            result = CallRuntime(taggedArraySetValue, glue, GetWord64Constant(FAST_STUB_ID(TaggedArraySetValue)), {
+            result = CallRuntime(taggedArraySetValue, glue, GetInt64Constant(FAST_STUB_ID(TaggedArraySetValue)), {
                     glue, receiver, value, elements, index, capacity
                 });
             Jump(&exit);
@@ -1702,7 +1751,7 @@ GateRef Stub::GetArrayLength(GateRef object)
     Label lengthIsInt(env);
     Label lengthNotInt(env);
     DEFVARIABLE(result, StubMachineType::UINT32, GetInt32Constant(0));
-    GateRef lengthOffset = GetArchRelateConstant(panda::ecmascript::JSArray::LENGTH_OFFSET);
+    GateRef lengthOffset = GetIntPtrConstant(panda::ecmascript::JSArray::LENGTH_OFFSET);
     GateRef length = Load(StubMachineType::UINT64, object, lengthOffset);
     Branch(TaggedIsInt(length), &lengthIsInt, &lengthNotInt);
     Bind(&lengthIsInt);
@@ -1761,7 +1810,7 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
             {
                 GateRef accessor = LoadFromField(*holder, handlerInfo);
                 StubDescriptor *callsetter2 = GET_STUBDESCRIPTOR(CallSetter2);
-                result = CallRuntime(callsetter2, glue, GetWord64Constant(FAST_STUB_ID(CallSetter2)), {
+                result = CallRuntime(callsetter2, glue, GetInt64Constant(FAST_STUB_ID(CallSetter2)), {
                         glue, receiver, value, accessor
                     });
                 Jump(&exit);
@@ -1825,7 +1874,7 @@ void Stub::StoreField(GateRef glue, GateRef receiver, GateRef value, GateRef han
     Bind(&handlerIsInlinedProperty);
     {
         Store(StubMachineType::TAGGED, glue, receiver,
-            ArchRelatePtrMul(ChangeInt32ToUintPtr(index), GetArchRelateConstant(JSTaggedValue::TaggedTypeSize())),
+            IntPtrMul(ChangeInt32ToIntPtr(index), GetIntPtrConstant(JSTaggedValue::TaggedTypeSize())),
             value);
         Jump(&exit);
     }
@@ -1863,15 +1912,15 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         Bind(&indexMoreCapacity);
         {
             StubDescriptor *propertiesSetValue = GET_STUBDESCRIPTOR(PropertiesSetValue);
-            CallRuntime(propertiesSetValue, glue, GetWord64Constant(FAST_STUB_ID(PropertiesSetValue)), {
+            CallRuntime(propertiesSetValue, glue, GetInt64Constant(FAST_STUB_ID(PropertiesSetValue)), {
                     glue, receiver, value, array, capacity, index
                 });
             Jump(&exit);
         }
         Bind(&indexLessCapacity);
         {
-            Store(StubMachineType::UINT64, glue, ArchRelateAdd(array, GetArchRelateConstant(TaggedArray::DATA_OFFSET)),
-                ArchRelatePtrMul(ChangeInt32ToUintPtr(index), GetArchRelateConstant(JSTaggedValue::TaggedTypeSize())),
+            Store(StubMachineType::UINT64, glue, IntPtrAdd(array, GetIntPtrConstant(TaggedArray::DATA_OFFSET)),
+                IntPtrMul(ChangeInt32ToIntPtr(index), GetIntPtrConstant(JSTaggedValue::TaggedTypeSize())),
                 value);
             Jump(&exit);
         }
@@ -1901,7 +1950,7 @@ GateRef Stub::StoreGlobal(GateRef glue, GateRef value, GateRef cell)
     }
     Bind(&cellNotInvalid);
     {
-        Store(StubMachineType::TAGGED, glue, cell, GetArchRelateConstant(PropertyBox::VALUE_OFFSET), value);
+        Store(StubMachineType::TAGGED, glue, cell, GetIntPtrConstant(PropertyBox::VALUE_OFFSET), value);
         result = GetUndefinedConstant(StubMachineType::UINT64);
         Jump(&exit);
     }
@@ -1958,7 +2007,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
             {
                 Label lessThanLength(env);
                 Label notLessThanLength(env);
-                Branch(Word32LessThan(index, GetLengthofTaggedArray(elements)), &lessThanLength, &notLessThanLength);
+                Branch(UInt32LessThan(index, GetLengthofTaggedArray(elements)), &lessThanLength, &notLessThanLength);
                 Bind(&lessThanLength);
                 {
                     Label notHole(env);
@@ -1986,7 +2035,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
                 GateRef entry = FindElementFromNumberDictionary(glue, elements, IntBuildTaggedWithNoGC(index));
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
-                Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
                     GateRef attr = GetAttributesFromDictionary<NumberDictionary>(elements, entry);
@@ -2003,14 +2052,14 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
                         {
                             StubDescriptor *callInternalGetter = GET_STUBDESCRIPTOR(CallInternalGetter);
                             result = CallRuntime(callInternalGetter, glue,
-                                GetWord64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
+                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
                             Jump(&exit);
                         }
                         Bind(&notInternal);
                         {
                             StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
                             result = CallRuntime(callGetter, glue,
-                                GetWord64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
+                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
                             Jump(&exit);
                         }
                     }
@@ -2089,7 +2138,7 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                 Label hasEntry(env);
                 Label noEntry(env);
                 // if branch condition : entry != -1
-                Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
+                Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
                 Bind(&hasEntry);
                 {
                     // PropertyAttributes attr(layoutInfo->GetAttr(entry))
@@ -2109,14 +2158,14 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                         {
                             StubDescriptor *callInternalGetter = GET_STUBDESCRIPTOR(CallInternalGetter);
                             result = CallRuntime(callInternalGetter, glue,
-                                GetWord64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
+                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
                             Jump(&exit);
                         }
                         Bind(&notInternal);
                         {
                             StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
                             result = CallRuntime(callGetter, glue,
-                                GetWord64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
+                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
                             Jump(&exit);
                         }
                     }
@@ -2139,7 +2188,7 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
                 // if branch condition : entry != -1
-                Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
                     // auto value = dict->GetValue(entry)
@@ -2159,14 +2208,14 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                         {
                             StubDescriptor *callAccessorGetter1 = GET_STUBDESCRIPTOR(CallInternalGetter);
                             result = CallRuntime(callAccessorGetter1, glue,
-                                GetWord64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
+                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
                             Jump(&exit);
                         }
                         Bind(&notInternal1);
                         {
                             StubDescriptor *callGetter1 = GET_STUBDESCRIPTOR(CallGetter);
                             result = CallRuntime(callGetter1, glue,
-                                GetWord64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
+                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
                             Jump(&exit);
                         }
                     }
@@ -2220,11 +2269,11 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     SetPrototypeToHClass(StubMachineType::TAGGED_POINTER, glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
     SetNumberOfPropsToHClass(glue, dstHClass, GetNumberOfPropsFromHClass(srcHClass));
-    SetParentToHClass(StubMachineType::INT64, glue, dstHClass, GetWord64Constant(JSTaggedValue::VALUE_NULL));
-    SetTransitionsToHClass(StubMachineType::INT64, glue, dstHClass, GetWord64Constant(JSTaggedValue::VALUE_NULL));
+    SetParentToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
+    SetTransitionsToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
     SetProtoChangeDetailsToHClass(StubMachineType::INT64, glue, dstHClass,
-                                  GetWord64Constant(JSTaggedValue::VALUE_NULL));
-    SetEnumCacheToHClass(StubMachineType::INT64, glue, dstHClass, GetWord64Constant(JSTaggedValue::VALUE_NULL));
+                                  GetInt64Constant(JSTaggedValue::VALUE_NULL));
+    SetEnumCacheToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
     SetLayoutToHClass(glue, dstHClass, GetLayoutFromHClass(srcHClass));
     env->PopCurrentLabel();
     return;
@@ -2236,12 +2285,12 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    GateRef transitionOffset = GetArchRelateConstant(JSHClass::TRANSTIONS_OFFSET);
+    GateRef transitionOffset = GetIntPtrConstant(JSHClass::TRANSTIONS_OFFSET);
     GateRef transition = Load(StubMachineType::TAGGED_POINTER, hclass, transitionOffset);
     DEFVARIABLE(result, StubMachineType::TAGGED, transition);
 
     Label notNull(env);
-    Branch(Word64Equal(transition, GetWord64Constant(JSTaggedValue::VALUE_NULL)), &exit, &notNull);
+    Branch(Int64Equal(transition, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &exit, &notNull);
     Bind(&notNull);
     {
         Label isJSHClass(env);
@@ -2258,10 +2307,10 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
             Label keyMatch(env);
             Label isMatch(env);
             Label notMatch(env);
-            Branch(Word64Equal(cachedKey, key), &keyMatch, &notMatch);
+            Branch(Int64Equal(cachedKey, key), &keyMatch, &notMatch);
             Bind(&keyMatch);
             {
-                Branch(Word32Equal(metaData, cachedMetaData), &isMatch, &notMatch);
+                Branch(Int32Equal(metaData, cachedMetaData), &isMatch, &notMatch);
                 Bind(&isMatch);
                 {
 #if ECMASCRIPT_ENABLE_IC
@@ -2283,7 +2332,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
             GateRef entry = FindEntryFromTransitionDictionary(glue, transition, key, metaData);
             Label isFound(env);
             Label notFound(env);
-            Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &isFound, &notFound);
+            Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &isFound, &notFound);
             Bind(&isFound);
             auto newHClass = GetValueFromDictionary<TransitionsDictionary>(
                 StubMachineType::TAGGED_POINTER, transition, entry);
@@ -2351,17 +2400,17 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
             {
                 Label isReceiver(env);
                 Label notReceiver(env);
-                Branch(Word64Equal(*holder, receiver), &isReceiver, &notReceiver);
+                Branch(Int64Equal(*holder, receiver), &isReceiver, &notReceiver);
                 Bind(&isReceiver);
                 {
                     GateRef length = GetLengthofTaggedArray(elements);
                     Label inRange(env);
-                    Branch(Word64LessThan(index, length), &inRange, &loopExit);
+                    Branch(Int64LessThan(index, length), &inRange, &loopExit);
                     Bind(&inRange);
                     {
                         GateRef value1 = GetValueFromTaggedArray(StubMachineType::TAGGED, elements, index);
                         Label notHole(env);
-                        Branch(Word64NotEqual(value1, GetHoleConstant()), &notHole, &loopExit);
+                        Branch(Int64NotEqual(value1, GetHoleConstant()), &notHole, &loopExit);
                         Bind(&notHole);
                         {
                             SetValueToTaggedArray(StubMachineType::TAGGED, glue, elements, index, value);
@@ -2394,7 +2443,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
         {
             StubDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
             GateRef result =
-                CallRuntime(addElementInternal, glue, GetWord64Constant(FAST_STUB_ID(AddElementInternal)), {
+                CallRuntime(addElementInternal, glue, GetInt64Constant(FAST_STUB_ID(AddElementInternal)), {
                         glue, receiver, index, value, GetInt32Constant(PropertyAttributes::GetDefaultAttributes())
                     });
             Label success(env);
@@ -2411,7 +2460,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
         {
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
             CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
             returnValue = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
         }
@@ -2455,7 +2504,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             Bind(&isSpecialContainer);
             {
                 GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(CanNotSetPropertyOnContainer));
-                CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)),
+                CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                             {glue, taggedId});
                 result = GetExceptionConstant(StubMachineType::UINT64);
                 Jump(&exit);
@@ -2483,7 +2532,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                 Label hasEntry(env);
                 Label noEntry(env);
                 // if branch condition : entry != -1
-                Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
+                Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
                 Bind(&hasEntry);
                 {
                     // PropertyAttributes attr(layoutInfo->GetAttr(entry))
@@ -2523,7 +2572,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             Bind(&notWritable);
                             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                             CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                                GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                                GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
                             result = GetExceptionConstant(StubMachineType::UINT64);
                             Jump(&exit);
                         }
@@ -2532,7 +2581,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             Label holdEqualsRecv(env);
                             Label holdNotEqualsRecv(env);
                             Label afterComp(env);
-                            Branch(Word64Equal(*holder, receiver), &holdEqualsRecv, &holdNotEqualsRecv);
+                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv, &holdNotEqualsRecv);
                             {
                                 Bind(&holdEqualsRecv);
                                 Jump(&afterComp);
@@ -2561,7 +2610,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
                 // if branch condition : entry != -1
-                Branch(Word32NotEqual(entry1, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Branch(Int32NotEqual(entry1, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
                     // auto attr = dict->GetAttributes(entry)
@@ -2600,7 +2649,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             Bind(&notWritable1);
                             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                             CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                                GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                                GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
                             result = GetExceptionConstant(StubMachineType::UINT64);
                             Jump(&exit);
                         }
@@ -2609,7 +2658,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             Label holdEqualsRecv1(env);
                             Label holdNotEqualsRecv1(env);
                             Label afterComp1(env);
-                            Branch(Word64Equal(*holder, receiver), &holdEqualsRecv1, &holdNotEqualsRecv1);
+                            Branch(Int64Equal(*holder, receiver), &holdEqualsRecv1, &holdNotEqualsRecv1);
                             {
                                 Bind(&holdEqualsRecv1);
                                 Jump(&afterComp1);
@@ -2650,7 +2699,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             Jump(&afterExtenCon);
             Bind(&inextensible);
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)),
+            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                 {glue, taggedId});
             result = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
@@ -2692,7 +2741,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
         Bind(&isSpecialContainer);
         {
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(CanNotSetPropertyOnContainer));
-            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)),
+            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                         {glue, taggedId});
             result = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
@@ -2720,7 +2769,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             Label hasEntry(env);
             Label noEntry(env);
             // if branch condition : entry != -1
-            Branch(Word32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
+            Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
             Bind(&hasEntry);
             {
                 // PropertyAttributes attr(layoutInfo->GetAttr(entry))
@@ -2760,7 +2809,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         Bind(&notWritable);
                         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                         CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                            GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                            GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
                         result = GetExceptionConstant(StubMachineType::UINT64);
                         Jump(&exit);
                     }
@@ -2769,7 +2818,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         Label holdEqualsRecv(env);
                         Label holdNotEqualsRecv(env);
                         Label afterComp(env);
-                        Branch(Word64Equal(*holder, receiver), &holdEqualsRecv, &holdNotEqualsRecv);
+                        Branch(Int64Equal(*holder, receiver), &holdEqualsRecv, &holdNotEqualsRecv);
                         {
                             Bind(&holdEqualsRecv);
                             Jump(&afterComp);
@@ -2799,7 +2848,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             Label notNegtiveOne(env);
             Label negtiveOne(env);
             // if branch condition : entry != -1
-            Branch(Word32NotEqual(entry1, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
+            Branch(Int32NotEqual(entry1, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
             Bind(&notNegtiveOne);
             {
                 // auto attr = dict->GetAttributes(entry)
@@ -2838,7 +2887,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         Bind(&notWritable1);
                         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                         CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                            GetWord64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                            GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
                         result = GetExceptionConstant(StubMachineType::UINT64);
                         Jump(&exit);
                     }
@@ -2847,7 +2896,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         Label holdEqualsRecv1(env);
                         Label holdNotEqualsRecv1(env);
                         Label afterComp1(env);
-                        Branch(Word64Equal(*holder, receiver), &holdEqualsRecv1, &holdNotEqualsRecv1);
+                        Branch(Int64Equal(*holder, receiver), &holdEqualsRecv1, &holdNotEqualsRecv1);
                         {
                             Bind(&holdEqualsRecv1);
                             Jump(&afterComp1);
@@ -2878,7 +2927,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             Jump(&afterExtenCon);
             Bind(&inextensible);
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)),
+            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                 {glue, taggedId});
             result = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
@@ -2905,12 +2954,12 @@ void Stub::NotifyHClassChanged(GateRef glue, GateRef oldHClass, GateRef newHClas
     Bind(&isProtoType);
     {
         Label notEqualHClass(env);
-        Branch(Word64Equal(oldHClass, newHClass), &exit, &notEqualHClass);
+        Branch(Int64Equal(oldHClass, newHClass), &exit, &notEqualHClass);
         Bind(&notEqualHClass);
         {
             SetIsProtoTypeToHClass(glue, newHClass, TrueConstant());
             auto stubDescriptor = GET_STUBDESCRIPTOR(NoticeThroughChainAndRefreshUser);
-            CallRuntime(stubDescriptor, glue, GetWord64Constant(FAST_STUB_ID(NoticeThroughChainAndRefreshUser)), {
+            CallRuntime(stubDescriptor, glue, GetInt64Constant(FAST_STUB_ID(NoticeThroughChainAndRefreshUser)), {
                     glue, oldHClass, newHClass
                 });
             Jump(&exit);
@@ -2970,12 +3019,12 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Label exit(env);
     DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
 
-    GateRef lengthOffset = GetArchRelateConstant(panda::ecmascript::JSArrayList::LENGTH_OFFSET);
+    GateRef lengthOffset = GetIntPtrConstant(panda::ecmascript::JSArrayList::LENGTH_OFFSET);
     GateRef length = TaggedCastToInt32(Load(StubMachineType::UINT64, receiver, lengthOffset));
     Label isVailedIndex(env);
     Label notValidIndex(env);
-    Branch(TruncInt32ToInt1(Word32And(ZExtInt1ToInt32(Int32GreaterThanOrEqual(index, GetInt32Constant(0))),
-                            ZExtInt1ToInt32(Int32LessThan(index, length)))), &isVailedIndex, &notValidIndex);
+    Branch(TruncInt32ToInt1(Int32And(ZExtInt1ToInt32(Int32GreaterThanOrEqual(index, GetInt32Constant(0))),
+                            ZExtInt1ToInt32(UInt32LessThan(index, length)))), &isVailedIndex, &notValidIndex);
     Bind(&isVailedIndex);
     {
         GateRef elements = GetElementsArray(receiver);
@@ -2985,7 +3034,7 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Bind(&notValidIndex);
     {
         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(GetPropertyOutOfBounds));
-        CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetWord64Constant(FAST_STUB_ID(ThrowTypeError)),
+        CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                     {glue, taggedId});
         result = GetExceptionConstant();
         Jump(&exit);
@@ -3020,7 +3069,7 @@ GateRef Stub::SetContainerProperty(GateRef glue, GateRef receiver, GateRef index
     Bind(&arrayListLabel);
     {
         StubDescriptor *jsarraylistSetByIndex = GET_STUBDESCRIPTOR(JSArrayListSetByIndex);
-        CallRuntime(jsarraylistSetByIndex, glue, GetWord64Constant(FAST_STUB_ID(JSArrayListSetByIndex)),
+        CallRuntime(jsarraylistSetByIndex, glue, GetInt64Constant(FAST_STUB_ID(JSArrayListSetByIndex)),
                     { glue, receiver, index, value });
         Jump(&exit);
     }

@@ -57,8 +57,6 @@ public:
     static JSTaggedType GetTaggedArrayPtrTest(uintptr_t argGlue);
     static JSTaggedType Execute(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType thisArg, uint32_t argc,
                                 uintptr_t argArgv);
-    static void SetValueWithBarrier(uintptr_t argGlue, JSTaggedType argAddr, size_t argOffset,
-                                   JSTaggedType argValue);
     static double FloatMod(double left, double right);
     static JSTaggedType NewInternalString(uintptr_t argGlue, JSTaggedType argKey);
     static JSTaggedType NewEcmaDynClass(uintptr_t argGlue, uint32_t size, uint32_t type, uint32_t inlinedProps);
@@ -76,6 +74,9 @@ public:
     static void DebugPrint(int fmtMessageId, ...);
     static void NoticeThroughChainAndRefreshUser(uintptr_t argGlue, uint64_t argoldHClass, uint64_t argnewHClass);
     static void JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value);
+    static void InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);
+    static void MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
+        Region *objectRegion, TaggedObject *value, Region *valueRegion);
 };
 }  // namespace panda::ecmascript
 #endif

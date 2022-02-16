@@ -54,7 +54,7 @@ public:
     inline uint32_t Available() const
     {
         auto hclass = GetClass();
-        if (hclass != nullptr && (hclass->IsFreeObjectWithOneField() || hclass->IsFreeObjectWithNoneField())) {
+        if (hclass != nullptr && (hclass->IsFreeObjectWithShortField())) {
             return hclass->GetObjectSize();
         }
         return GetSize();
@@ -63,8 +63,7 @@ public:
     inline bool IsFreeObject() const
     {
         auto hclass = GetClass();
-        return (hclass == nullptr) || (hclass->IsFreeObjectWithOneField() || hclass->IsFreeObjectWithTwoField() ||
-                                       hclass->IsFreeObjectWithNoneField());
+        return (hclass == nullptr) || (hclass->IsFreeObject());
     }
 
     static constexpr size_t NEXT_OFFSET = TaggedObjectSize();

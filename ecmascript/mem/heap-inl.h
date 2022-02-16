@@ -19,11 +19,12 @@
 #include "ecmascript/mem/heap.h"
 
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/hprof/heap_tracker.h"
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/space-inl.h"
-#include "ecmascript/hprof/heap_tracker.h"
+#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/remembered_set.h"
+#include "ecmascript/mem/space-inl.h"
 
 namespace panda::ecmascript {
 template<class Callback>
@@ -45,6 +46,16 @@ template<class Callback>
 void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
 {
     toSpace_->EnumerateRegions(cb);
+}
+
+template<class Callback>
+void Heap::EnumerateNonNewSpaceRegions(const Callback &cb) const
+{
+    oldSpace_->EnumerateRegions(cb);
+    snapshotSpace_->EnumerateRegions(cb);
+    nonMovableSpace_->EnumerateRegions(cb);
+    hugeObjectSpace_->EnumerateRegions(cb);
+    machineCodeSpace_->EnumerateRegions(cb);
 }
 
 template<class Callback>
@@ -78,15 +89,16 @@ void Heap::IteratorOverObjects(const Callback &cb) const
 
 bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allowGc)
 {
-    if (toSpace_->Expand(spaceAllocator->GetTop())) {
+    if (toSpace_->Expand(spaceAllocator->GetTop(), allowGc)) {
         spaceAllocator->Reset(toSpace_);
-        TryTriggerConcurrentMarking(allowGc);
+        if (allowGc) {
+            TryTriggerConcurrentMarking();
+        }
         return true;
-    } else if (toSpace_->GetCommittedSize() == SEMI_SPACE_SIZE_CAPACITY
-               && !GetEcmaVM()->GetAssociatedJSThread()->IsReadyToMark()) {
-        toSpace_->SetMaximumCapacity(std::min(SEMI_SPACE_SIZE_CAPACITY + SEMI_SPACE_OVERSHOOT_SIZE,
-                                              MAX_SEMI_SPACE_SIZE_STARTUP));
-        if (toSpace_->Expand(spaceAllocator->GetTop())) {
+    } else if (GetEcmaVM()->GetAssociatedJSThread()->IsMarking()) {
+        // Temporary adjust semi space capacity
+        toSpace_->SetOverShootSize(SEMI_SPACE_OVERSHOOT_SIZE);
+        if (toSpace_->Expand(spaceAllocator->GetTop(), allowGc)) {
             spaceAllocator->Reset(toSpace_);
             return true;
         }
@@ -101,10 +113,6 @@ bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allow
 bool Heap::FillOldSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
 {
     if (oldSpace_->Expand()) {
-        if (!allowGc) {
-            auto currentRegion = GetCompressSpace()->GetCurrentRegion();
-            currentRegion->SetAliveObject(currentRegion->GetSize());
-        }
         spaceAllocator->AddFree(oldSpace_->GetCurrentRegion());
         return true;
     }
@@ -150,22 +158,9 @@ bool Heap::FillMachineCodeSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool 
     return false;
 }
 
-Region *Heap::ExpandCompressSpace()
+bool Heap::FillNewSpaceWithRegion(Region *region)
 {
-    if (compressSpace_->Expand()) {
-        return compressSpace_->GetCurrentRegion();
-    }
-    return nullptr;
-}
-
-bool Heap::AddRegionToCompressSpace(Region *region)
-{
-    return compressSpace_->AddRegionToList(region);
-}
-
-bool Heap::AddRegionToToSpace(Region *region)
-{
-    return toSpace_->AddRegionToList(region);
+    return toSpace_->SwapRegion(region, fromSpace_);
 }
 
 void Heap::OnAllocateEvent(uintptr_t address)
@@ -182,60 +177,43 @@ void Heap::OnMoveEvent(uintptr_t address, uintptr_t forwardAddress)
     }
 }
 
-void Heap::SetNewSpaceAgeMark(uintptr_t mark)
+void Heap::ResetNewSpace()
 {
-    ASSERT(toSpace_ != nullptr);
-    toSpace_->SetAgeMark(mark);
+    toSpace_->GetCurrentRegion()->SetHighWaterMark(heapManager_->GetNewSpaceAllocator().GetTop());
+    FlipNewSpace();
+
+    ASSERT(toSpace_->GetCommittedSize() == 0);
+    toSpace_->Reset();
+    toSpace_->Initialize();
+    heapManager_->GetNewSpaceAllocator().Reset(toSpace_);
 }
 
-void Heap::SetNewSpaceMaximumCapacity(size_t maximumCapacity)
+void Heap::ReclaimRegions(TriggerGCType gcType)
 {
-    ASSERT(toSpace_ != nullptr);
-    SetMaximumCapacity(toSpace_, maximumCapacity);
-}
-
-void Heap::InitializeFromSpace()
-{
-    if (fromSpace_->GetCommittedSize() == 0) {
-        fromSpace_->Initialize();
+    EnumerateNewSpaceRegions([] (Region *region) {
+        region->ClearMarkBitmap();
+        region->ClearCrossRegionRememberedSet();
+        region->ResetAliveObject();
+        region->ClearFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
+    });
+    if (gcType == TriggerGCType::COMPRESS_FULL_GC) {
+        compressSpace_->ReclaimRegions();
+    } else if (gcType == TriggerGCType::OLD_GC) {
+        oldSpace_->ReclaimCSet();
     }
-}
-
-void Heap::InitializeCompressSpace()
-{
-    if (compressSpace_->GetCommittedSize() == 0) {
-        compressSpace_->Initialize();
-    }
-}
-
-void Heap::SwapSpace()
-{
-    ASSERT(toSpace_ != nullptr);
-    ASSERT(fromSpace_ != nullptr);
-    toSpace_->Swap(fromSpace_);
-}
-
-void Heap::ReclaimFromSpaceRegions()
-{
-    ASSERT(fromSpace_ != nullptr);
     fromSpace_->ReclaimRegions();
-}
+    fromSpace_->Reset();
 
-void Heap::SetFromSpaceMaximumCapacity(size_t maximumCapacity)
-{
-    ASSERT(fromSpace_ != nullptr);
-    SetMaximumCapacity(fromSpace_, maximumCapacity);
-}
-
-void Heap::ResetDelayGCMode()
-{
-    ASSERT(memController_ != nullptr);
-    memController_->ResetDelayGCMode();
-}
-
-void Heap::SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity)
-{
-    space->SetMaximumCapacity(maximumCapacity);
+    sweeper_->WaitAllTaskFinished();
+    EnumerateNonNewSpaceRegions([] (Region *region) {
+        region->ClearMarkBitmap();
+        region->ClearCrossRegionRememberedSet();
+    });
+    if (!isClearTaskFinished_) {
+        os::memory::LockHolder holder(waitClearTaskFinishedMutex_);
+        isClearTaskFinished_ = true;
+        waitClearTaskFinishedCV_.SignalAll();
+    }
 }
 
 void Heap::ClearSlotsRange(Region *current, uintptr_t freeStart, uintptr_t freeEnd)

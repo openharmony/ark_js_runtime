@@ -50,15 +50,15 @@ void Marker::ProcessSnapshotRSet(uint32_t threadId)
 
 void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 {
-    bool isOnlySemi = heap_->IsSemiMarkNeeded();
-    auto visitor = [this, threadId, isOnlySemi](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    bool isFullMark = heap_->IsFullMark();
+    auto visitor = [this, threadId, isFullMark](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
         Region *rootRegion = Region::ObjectAddressToRange(root);
-        bool needBarrier = !isOnlySemi && !rootRegion->InYoungAndCSetGeneration();
+        bool needBarrier = isFullMark && !rootRegion->InYoungOrCSetGeneration();
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
                 TaggedObject *obj = nullptr;
-                if (!value.IsWeak()) {
+                if (!value.IsWeakForHeapObject()) {
                     obj = value.GetTaggedObject();
                     MarkObject(threadId, obj);
                 } else {
@@ -98,7 +98,7 @@ void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
-                if (value.IsWeak()) {
+                if (value.IsWeakForHeapObject()) {
                     RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
                     continue;
                 }
@@ -130,7 +130,7 @@ void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
-                if (value.IsWeak()) {
+                if (value.IsWeakForHeapObject()) {
                     RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
                     continue;
                 }

@@ -150,7 +150,13 @@ inline void JSHClass::UpdatePropertyMetaData(const JSThread *thread, [[maybe_unu
 inline bool JSHClass::HasReferenceField()
 {
     auto type = GetObjectType();
-    return type != JSType::STRING && type != JSType::JS_NATIVE_POINTER;
+    switch (type) {
+        case JSType::STRING:
+        case JSType::JS_NATIVE_POINTER:
+            return false;
+        default:
+            return true;
+    }
 }
 
 inline size_t JSHClass::SizeFromJSHClass(TaggedObject *header)

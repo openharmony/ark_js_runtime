@@ -355,7 +355,8 @@ public:
     JSHandle<EcmaString> NewFromUtf16LiteralUnCheck(const uint16_t *utf16Data, uint32_t utf16Len, bool canBeCompress);
 
     JSHandle<EcmaString> NewFromString(EcmaString *str);
-    JSHandle<EcmaString> ConcatFromString(const JSHandle<EcmaString> &prefix, const JSHandle<EcmaString> &suffix);
+    JSHandle<EcmaString> ConcatFromString(const JSHandle<EcmaString> &firstString,
+                                          const JSHandle<EcmaString> &secondString);
 
     // used for creating Function
     JSHandle<JSObject> NewJSObject(const JSHandle<JSHClass> &jshclass);
@@ -453,6 +454,9 @@ private:
                                                   bool canBeCompress) const;
 
     JSHandle<EcmaString> GetStringFromStringTable(EcmaString *string) const;
+
+    JSHandle<EcmaString> GetStringFromStringTable(const JSHandle<EcmaString> &firstString,
+                                                  const JSHandle<EcmaString> &secondString);
 
     inline EcmaString *AllocStringObject(size_t size);
     inline EcmaString *AllocNonMovableStringObject(size_t size);

@@ -22,7 +22,7 @@ using TaggedValue = panda::coretypes::TaggedValue;
 GateRef CircuitBuilder::NewArguments(size_t index)
 {
     auto argListOfCircuit = Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST));
-    return circuit_->NewGate(OpCode(OpCode::ARG), MachineType::INT64, index, {argListOfCircuit}, GateType::C_VALUE);
+    return circuit_->NewGate(OpCode(OpCode::ARG), MachineType::I64, index, {argListOfCircuit}, GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewMerge(GateRef *inList, size_t controlCount)
@@ -80,33 +80,33 @@ GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, MachineType machineType, 
 GateRef CircuitBuilder::NewIntegerConstant(int32_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT32, val, {constantList}, GateType::C_VALUE);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, val, {constantList}, GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewInteger64Constant(int64_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, val, {constantList}, GateType::C_VALUE);
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, val, {constantList}, GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewBooleanConstant(bool val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT32, val ? 1 : 0, {constantList},
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, val ? 1 : 0, {constantList},
                              GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::NewDoubleConstant(double val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::FLOAT64, bit_cast<int64_t>(val), {constantList},
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::F64, bit_cast<int64_t>(val), {constantList},
                              GateType::C_VALUE);
 }
 
 GateRef CircuitBuilder::UndefineConstant(GateType type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_UNDEFINED,
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, TaggedValue::VALUE_UNDEFINED,
                              { constantList }, type);
 }
 
@@ -114,7 +114,7 @@ GateRef CircuitBuilder::HoleConstant(GateType type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_HOLE, { constantList },
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, TaggedValue::VALUE_HOLE, { constantList },
                              type);
 }
 
@@ -122,7 +122,7 @@ GateRef CircuitBuilder::NullConstant(GateType type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_NULL, { constantList },
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, TaggedValue::VALUE_NULL, { constantList },
                              type);
 }
 
@@ -130,7 +130,7 @@ GateRef CircuitBuilder::ExceptionConstant(GateType type)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
     // NOTE: add bitfield value here
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64, TaggedValue::VALUE_EXCEPTION,
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, TaggedValue::VALUE_EXCEPTION,
                              { constantList }, type);
 }
 
@@ -196,29 +196,29 @@ MachineType CircuitBuilder::GetStoreMachineTypeFromStubMachineType(StubMachineTy
 {
     switch (type) {
         case StubMachineType::INT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::INT16:
-            return MachineType::INT16;
+            return MachineType::I16;
         case StubMachineType::INT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::INT64:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::BOOL:
-            return MachineType::INT1;
+            return MachineType::I1;
         case StubMachineType::UINT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::UINT16:
-            return MachineType::INT16;
+            return MachineType::I16;
         case StubMachineType::UINT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::UINT64:
         case StubMachineType::TAGGED:
         case StubMachineType::TAGGED_POINTER:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::FLOAT32:
-            return MachineType::FLOAT32;
+            return MachineType::F32;
         case StubMachineType::FLOAT64:
-            return MachineType::FLOAT64;
+            return MachineType::F64;
         default:
             UNREACHABLE();
     }
@@ -228,29 +228,29 @@ MachineType CircuitBuilder::GetLoadMachineTypeFromStubMachineType(StubMachineTyp
 {
     switch (type) {
         case StubMachineType::INT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::INT16:
-            return MachineType::INT16;
+            return MachineType::I16;
         case StubMachineType::INT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::INT64:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::BOOL:
-            return MachineType::INT1;
+            return MachineType::I1;
         case StubMachineType::UINT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::UINT16:
-            return MachineType::INT16;
+            return MachineType::I16;
         case StubMachineType::UINT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::UINT64:
         case StubMachineType::TAGGED:
         case StubMachineType::TAGGED_POINTER:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::FLOAT32:
-            return MachineType::FLOAT32;
+            return MachineType::F32;
         case StubMachineType::FLOAT64:
-            return MachineType::FLOAT64;
+            return MachineType::F64;
         default:
             UNREACHABLE();
     }
@@ -262,31 +262,31 @@ MachineType CircuitBuilder::GetMachineTypeFromStubMachineType(StubMachineType st
         case StubMachineType::NONE:
             return MachineType::NOVALUE;
         case StubMachineType::INT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::INT16:
-            return MachineType::INT16;
+            return MachineType::I16;
         case StubMachineType::INT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::INT64:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::BOOL:
-            return MachineType::INT1;
+            return MachineType::I1;
         case StubMachineType::UINT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::UINT16:
-            return MachineType::INT16;
+            return MachineType::I16;
         case StubMachineType::UINT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::NATIVE_POINTER:
             return MachineType::ANYVALUE;
         case StubMachineType::UINT64:
         case StubMachineType::TAGGED:
         case StubMachineType::TAGGED_POINTER:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::FLOAT32:
-            return MachineType::FLOAT32;
+            return MachineType::F32;
         case StubMachineType::FLOAT64:
-            return MachineType::FLOAT64;
+            return MachineType::F64;
         default:
             UNREACHABLE();
     }
@@ -358,31 +358,31 @@ MachineType CircuitBuilder::GetCallMachineTypeFromStubMachineType(StubMachineTyp
         case StubMachineType::NONE:
             return MachineType::NOVALUE;
         case StubMachineType::INT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::INT16:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::INT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::INT64:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::BOOL:
-            return MachineType::INT1;
+            return MachineType::I1;
         case StubMachineType::UINT8:
-            return MachineType::INT8;
+            return MachineType::I8;
         case StubMachineType::UINT16:
-            return MachineType::INT16;
+            return MachineType::I16;
         case StubMachineType::UINT32:
-            return MachineType::INT32;
+            return MachineType::I32;
         case StubMachineType::NATIVE_POINTER:
             return MachineType::ANYVALUE;
         case StubMachineType::UINT64:
         case StubMachineType::TAGGED:
         case StubMachineType::TAGGED_POINTER:
-            return MachineType::INT64;
+            return MachineType::I64;
         case StubMachineType::FLOAT32:
-            return MachineType::FLOAT32;
+            return MachineType::F32;
         case StubMachineType::FLOAT64:
-            return MachineType::FLOAT64;
+            return MachineType::F64;
         default:
             UNREACHABLE();
     }

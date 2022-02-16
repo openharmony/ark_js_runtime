@@ -96,19 +96,6 @@ bool JSSerializer::WriteInt(int32_t value)
     return true;
 }
 
-bool JSSerializer::WriteInt(uint32_t value)
-{
-    size_t oldSize = bufferSize_;
-    if (!WriteType(SerializationUID::UINT32)) {
-        return false;
-    }
-    if (!WriteRawData(&value, sizeof(value))) {
-        bufferSize_ = oldSize;
-        return false;
-    }
-    return true;
-}
-
 bool JSSerializer::WriteDouble(double value)
 {
     size_t oldSize = bufferSize_;
@@ -128,12 +115,6 @@ bool JSSerializer::WriteBoolean(bool value)
         return WriteType(SerializationUID::C_TRUE);
     }
     return WriteType(SerializationUID::C_FALSE);
-}
-
-// Write length for marking how many bytes should be read
-bool JSSerializer::WriteLength(uint32_t length)
-{
-    return WriteRawData(&length, sizeof(length));
 }
 
 bool JSSerializer::WriteRawData(const void *data, size_t length)
@@ -411,7 +392,7 @@ bool JSSerializer::WriteEcmaString(const JSHandle<JSTaggedValue> &value)
         return false;
     }
     size_t length = string->GetLength();
-    if (!WriteLength(static_cast<uint32_t>(length))) {
+    if (!WriteInt(static_cast<int32_t>(length))) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -440,7 +421,7 @@ bool JSSerializer::WriteJSMap(const JSHandle<JSTaggedValue> &value)
         return false;
     }
     int size = map->GetSize();
-    if (!WriteLength(static_cast<uint32_t>(size))) {
+    if (!WriteInt(size)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -471,7 +452,7 @@ bool JSSerializer::WriteJSSet(const JSHandle<JSTaggedValue> &value)
         return false;
     }
     int size = set->GetSize();
-    if (!WriteLength(static_cast<uint32_t>(size))) {
+    if (!WriteInt(size)) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -497,7 +478,7 @@ bool JSSerializer::WriteJSRegExp(const JSHandle<JSTaggedValue> &value)
         return false;
     }
     uint32_t bufferSize = regExp->GetLength();
-    if (!WriteLength(bufferSize)) {
+    if (!WriteInt(static_cast<int32_t>(bufferSize))) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -645,7 +626,7 @@ bool JSSerializer::WritePlainObject(const JSHandle<JSTaggedValue> &objValue)
     }
     // Get the number of elements stored in obj
     uint32_t elementsLength = obj->GetNumberOfElements();
-    if (!WriteLength(elementsLength)) {
+    if (!WriteInt(static_cast<int32_t>(elementsLength))) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -677,7 +658,7 @@ bool JSSerializer::WritePlainObject(const JSHandle<JSTaggedValue> &objValue)
     // Get the number of k-v form properties stored in obj
     keyVector.clear();
     uint32_t propertiesLength = obj->GetNumberOfKeys();
-    if (!WriteLength(propertiesLength)) {
+    if (!WriteInt(static_cast<int32_t>(propertiesLength))) {
         bufferSize_ = oldSize;
         return false;
     }
@@ -775,19 +756,6 @@ bool JSDeserializer::ReadInt(int32_t *value)
     return true;
 }
 
-bool JSDeserializer::ReadInt(uint32_t *value)
-{
-    size_t len = sizeof(uint32_t);
-    if (len > static_cast<size_t>(end_ - position_)) {
-        return false;
-    }
-    if (memcpy_s(value, len, position_, len) != EOK) {
-        UNREACHABLE();
-    }
-    position_ += len;
-    return true;
-}
-
 bool JSDeserializer::ReadObjectId(uint64_t *objectId)
 {
     size_t len = sizeof(uint64_t);
@@ -839,13 +807,6 @@ JSHandle<JSTaggedValue> JSDeserializer::DeserializeJSTaggedValue()
             return JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Hole());
         case SerializationUID::INT32: {
             int32_t value;
-            if (!ReadInt(&value)) {
-                return JSHandle<JSTaggedValue>();
-            }
-            return JSHandle<JSTaggedValue>(thread_, JSTaggedValue(value));
-        }
-        case SerializationUID::UINT32: {
-            uint32_t value;
             if (!ReadInt(&value)) {
                 return JSHandle<JSTaggedValue>();
             }
@@ -978,8 +939,8 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArray()
     if (!JudgeType(SerializationUID::JS_PLAIN_OBJECT) || !DefinePropertiesAndElements(arrayTag)) {
         return JSHandle<JSTaggedValue>();
     }
-    uint32_t arrLength;
-    if (!JudgeType(SerializationUID::UINT32) || !ReadInt(&arrLength)) {
+    int32_t arrLength;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&arrLength)) {
         return JSHandle<JSTaggedValue>();
     }
     jsArray->SetLength(thread_, JSTaggedValue(arrLength));
@@ -988,8 +949,8 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArray()
 
 JSHandle<JSTaggedValue> JSDeserializer::ReadEcmaString()
 {
-    uint32_t stringLength;
-    if (!ReadInt(&stringLength)) {
+    int32_t stringLength;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&stringLength)) {
         return JSHandle<JSTaggedValue>();
     }
     ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
@@ -1035,8 +996,8 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSMap()
     if (!JudgeType(SerializationUID::JS_PLAIN_OBJECT) || !DefinePropertiesAndElements(mapTag)) {
         return JSHandle<JSTaggedValue>();
     }
-    uint32_t size;
-    if (!ReadInt(&size)) {
+    int32_t size;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&size)) {
         return JSHandle<JSTaggedValue>();
     }
     JSHandle<LinkedHashMap> linkedMap = LinkedHashMap::Create(thread_);
@@ -1067,8 +1028,8 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSSet()
     if (!JudgeType(SerializationUID::JS_PLAIN_OBJECT) || !DefinePropertiesAndElements(setTag)) {
         return JSHandle<JSTaggedValue>();
     }
-    uint32_t size;
-    if (!ReadInt(&size)) {
+    int32_t size;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&size)) {
         return JSHandle<JSTaggedValue>();
     }
     JSHandle<LinkedHashSet> linkedSet = LinkedHashSet::Create(thread_);
@@ -1095,8 +1056,8 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSRegExp()
     if (!JudgeType(SerializationUID::JS_PLAIN_OBJECT) || !DefinePropertiesAndElements(regexpTag)) {
         return JSHandle<JSTaggedValue>();
     }
-    uint32_t bufferSize;
-    if (!ReadInt(&bufferSize)) {
+    int32_t bufferSize;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&bufferSize)) {
         return JSHandle<JSTaggedValue>();
     }
     void *buffer = GetBuffer(bufferSize);
@@ -1212,8 +1173,8 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArrayBuffer()
 {
     ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
     // read access length
-    uint32_t arrayLength;
-    if (!ReadInt(&arrayLength)) {
+    int32_t arrayLength;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&arrayLength)) {
         return JSHandle<JSTaggedValue>();
     }
     // read access shared
@@ -1299,11 +1260,11 @@ bool JSDeserializer::JudgeType(SerializationUID targetUid)
 
 bool JSDeserializer::DefinePropertiesAndElements(const JSHandle<JSTaggedValue> &obj)
 {
-    uint32_t elementLength;
-    if (!ReadInt(&elementLength)) {
+    int32_t elementLength;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&elementLength)) {
         return false;
     }
-    for (uint32_t i = 0; i < elementLength; i++) {
+    for (int32_t i = 0; i < elementLength; i++) {
         JSHandle<JSTaggedValue> key = DeserializeJSTaggedValue();
         if (key.IsEmpty()) {
             return false;
@@ -1322,11 +1283,11 @@ bool JSDeserializer::DefinePropertiesAndElements(const JSHandle<JSTaggedValue> &
         }
     }
 
-    uint32_t propertyLength;
-    if (!ReadInt(&propertyLength)) {
+    int32_t propertyLength;
+    if (!JudgeType(SerializationUID::INT32) || !ReadInt(&propertyLength)) {
         return false;
     }
-    for (uint32_t i = 0; i < propertyLength; i++) {
+    for (int32_t i = 0; i < propertyLength; i++) {
         JSHandle<JSTaggedValue> key = DeserializeJSTaggedValue();
         if (key.IsEmpty()) {
             return false;

@@ -32,7 +32,7 @@ class PropertiesCache;
 enum class MarkStatus : uint8_t {
     READY_TO_MARK,
     MARKING,
-    MARK_FINISHED
+    MARK_FINISHED,
 };
 
 class JSThread : public ManagedThread {
@@ -234,8 +234,7 @@ public:
 
     void SetMarkStatus(MarkStatus status)
     {
-        uint64_t newVal = MarkStatusBits::Update(threadStateBitField_, status);
-        threadStateBitField_ = newVal;
+        MarkStatusBits::Set(status, &threadStateBitField_);
     }
 
     bool IsReadyToMark() const
