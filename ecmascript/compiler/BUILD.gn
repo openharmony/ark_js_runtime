@@ -220,8 +220,8 @@ ohos_executable("ark_stub_opt") {
 ohos_executable("ark_ts_aot") {
   sources = [
     "aot_compiler.cpp",
-    "generic_lowering.cpp",
     "pass_manager.cpp",
+    "slowpath_lowering.cpp",
   ]
 
   configs = [
