@@ -263,7 +263,6 @@ void LLVMAssembler::Run()
     char *info = LLVMPrintModuleToString(module_);
     COMPILER_LOG(INFO) << "Current Module: " << info;
     LLVMDisposeMessage(info);
-    LLVMDumpModule(module_);
 #endif
     LLVMPrintModuleToFile(module_, "stub.ll", &error);
     LLVMVerifyModule(module_, LLVMAbortProcessAction, &error);
@@ -309,6 +308,8 @@ void LLVMAssembler::Initialize()
     options_.OptLevel = 3; // opt level 2
     // Just ensure that this field still exists.
     options_.NoFramePointerElim = true;
+    options_.RelMode = LLVMRelocPIC;
+    options_.CodeModel = LLVMCodeModelSmall;
 }
 
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
