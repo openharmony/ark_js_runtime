@@ -47,6 +47,7 @@ source_set("libark_jsoptimizer_static") {
     "circuit_builder_helper.cpp",
     "fast_stub.cpp",
     "gate.cpp",
+    "gate_accessor.cpp",
     "llvm_codegen.cpp",
     "llvm_ir_builder.cpp",
     "scheduler.cpp",
@@ -219,6 +220,7 @@ ohos_executable("ark_stub_opt") {
 ohos_executable("ark_ts_aot") {
   sources = [
     "aot_compiler.cpp",
+    "generic_lowering.cpp",
     "pass_manager.cpp",
   ]
 

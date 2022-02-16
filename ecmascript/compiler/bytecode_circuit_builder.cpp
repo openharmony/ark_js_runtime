@@ -1820,8 +1820,18 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
     // create arg gates array
     const size_t numArgs = byteCodeGraph.method->GetNumArgs();
     const size_t offsetArgs = byteCodeGraph.method->GetNumVregs();
-    std::vector<GateRef> argGates(numArgs);
-    for (size_t argIdx = 0; argIdx < numArgs; argIdx++) {
+    const size_t actualNumArgs = GetActualNumArgs(numArgs);
+    std::vector<GateRef> argGates(actualNumArgs);
+
+    for (size_t argIdx = 0; argIdx < CommonArgIdx::NUM_OF_ARGS; argIdx++) {
+        auto argGate = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
+                                        {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
+                                        GateType::TAGGED_VALUE);
+        argGates.at(argIdx) = argGate;
+        commonArgs_.at(argIdx) = argGate;
+    }
+
+    for (size_t argIdx = CommonArgIdx::NUM_OF_ARGS; argIdx < actualNumArgs; argIdx++) {
         argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
                                                {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
                                                GateType::JS_ANY);
@@ -2179,7 +2189,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     if (ans == Circuit::NullGate() && bbId == 0) { // entry block
                         // find def-site in function args
                         ASSERT(!acc && reg >= offsetArgs && reg < offsetArgs + argGates.size());
-                        return argGates.at(reg - offsetArgs);
+                        return argGates.at(reg - offsetArgs + CommonArgIdx::NUM_OF_ARGS);
                     }
                     if (ans == Circuit::NullGate()) {
                         // recursively find def-site in dominator block
