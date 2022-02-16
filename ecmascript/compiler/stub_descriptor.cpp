@@ -756,6 +756,21 @@ CALL_STUB_INIT_DESCRIPTOR(MarkingBarrier)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(SlowRuntimeAdd2Dyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor add2dyn("SlowRuntimeAdd2Dyn", 0, 3, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED_POINTER);
+    *descriptor = add2dyn;
+    // 3 : 3 input parameters
+    std::array<StubMachineType, 3> params = {
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::TAGGED,
+        StubMachineType::TAGGED,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 void FastStubDescriptors::InitializeStubDescriptors()
 {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

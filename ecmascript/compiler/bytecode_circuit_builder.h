@@ -113,6 +113,14 @@ enum BytecodeOffset {
     TEN
 };
 
+enum CommonArgIdx : uint8_t {
+    GLUE = 0,
+    FUNC,
+    NEW_TARGET,
+    THIS,
+    NUM_OF_ARGS,
+};
+
 class BytecodeCircuitBuilder {
 public:
     explicit BytecodeCircuitBuilder() = default;
@@ -148,6 +156,11 @@ public:
         return jsgateToBytecode_.at(gate).second;
     }
 
+    [[nodiscard]] GateRef GetCommonArgByIndex(CommonArgIdx idx)
+    {
+        return commonArgs_[idx];
+    }
+
 private:
     void PUBLIC_API CollectBytecodeBlockInfo(uint8_t* pc, std::vector<CfgInfo> &bytecodeBlockInfos);
 
@@ -181,11 +194,16 @@ private:
     static bool IsThrow(EcmaOpcode opcode);
     static bool IsGeneral(EcmaOpcode opcode);
     static bool IsSetConstant(EcmaOpcode opcode);
+    size_t GetActualNumArgs(size_t numArgs)
+    {
+        return numArgs + CommonArgIdx::NUM_OF_ARGS;
+    }
 
     kungfu::Circuit circuit_;
     std::map<kungfu::GateRef, std::pair<size_t, uint8_t *>> jsgateToBytecode_;
     std::map<uint8_t *, kungfu::GateRef> byteCodeToJSGate_;
     std::map<int32_t, BytecodeRegion *> bbIdToBasicBlock_;
+    std::array<GateRef, CommonArgIdx::NUM_OF_ARGS> commonArgs_ {};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_CLASS_LINKER_BYTECODE_CIRCUIT_IR_BUILDER_H
