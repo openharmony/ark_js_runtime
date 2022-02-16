@@ -32,7 +32,7 @@ bool PassManager::Compile(std::string fileName)
         builder.BytecodeToCircuit(info.pcArray, *info.file, info.method);
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data);
-        pipeline.RunPass<GenericLoweringPass>(&builder);
+        pipeline.RunPass<SlowPathLoweringPass>(&builder);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();
         pipeline.RunPass<LLVMIRGenPass>();

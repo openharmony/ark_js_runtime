@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "generic_lowering.h"
+#include "slowpath_lowering.h"
 
 namespace panda::ecmascript::kungfu {
-void GenericLowering::CallRuntimeLowering()
+void SlowPathLowering::CallRuntimeLowering()
 {
     const auto &gateList = circuit_->GetAllGates();
     for (const auto &gate : gateList) {
@@ -32,7 +32,7 @@ void GenericLowering::CallRuntimeLowering()
 #endif
 }
 
-void GenericLowering::Lower(GateRef gate, EcmaOpcode bytecode)
+void SlowPathLowering::Lower(GateRef gate, EcmaOpcode bytecode)
 {
     switch (bytecode) {
         case ADD2DYN_PREF_V8:
@@ -43,24 +43,26 @@ void GenericLowering::Lower(GateRef gate, EcmaOpcode bytecode)
     }
 }
 
-void GenericLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
+void SlowPathLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
 {
     StubDescriptor* getAdd2DynPtr = GET_STUBDESCRIPTOR(SlowRuntimeAdd2Dyn);
     GateRef id = GetLoweringInt64Constant(FAST_STUB_ID(SlowRuntimeAdd2Dyn));
     CircuitBuilder circuitBuilder(circuit_);
     GateAccessor acc(circuit_);
+    ASSERT(acc.GetNumValueIn(gate) == 2); // 2: number of value inputs
     GateRef newGate = circuitBuilder.NewCallGate(getAdd2DynPtr, glue, id, {glue,
                                                                            acc.GetValueIn(gate, 0),
                                                                            acc.GetValueIn(gate, 1)});
     LowerHIR(circuitBuilder, gate, newGate);
 }
 
-void GenericLowering::LowerHIR(CircuitBuilder &builder, GateRef oldGate, GateRef newGate)
+void SlowPathLowering::LowerHIR(CircuitBuilder &builder, GateRef oldGate, GateRef newGate)
 {
     GateAccessor acc(circuit_);
-    // set depend wire for dst gate
-    GateRef dependInGate = acc.GetIn(oldGate, 1);
-    acc.ModifyIn(newGate, 0, dependInGate);
+    GateRef stateInGate = acc.GetState(oldGate);
+    // copy depend-wire of oldGate to newGate
+    GateRef dependInGate = acc.GetDep(oldGate);
+    acc.SetDep(newGate, dependInGate);
 
     // exception value
     GateRef exceptionVal = builder.ExceptionConstant(GateType::TAGGED_NO_POINTER);
@@ -69,28 +71,23 @@ void GenericLowering::LowerHIR(CircuitBuilder &builder, GateRef oldGate, GateRef
     GateRef equal = builder.NewLogicGate(OpCode(OpCode::EQ), newGate, exceptionVal);
 
     // if branch
-    GateRef ifBranch = builder.Branch(acc.GetIn(oldGate, 0), equal);
+    GateRef ifBranch = builder.Branch(stateInGate, equal);
 
-    while (acc.hasUseList(oldGate)) {
-        GateRef outGate = acc.GetUseList(oldGate);
-        size_t numIns = acc.GetNumIns(outGate);
-        for (size_t i = 0; i < numIns; i++) {
-            GateRef in = acc.GetIn(outGate, i);
-            if (acc.GetId(in) == acc.GetId(oldGate)) {
-                if (acc.GetOpCode(outGate) == OpCode::IF_SUCCESS) {
-                    acc.SetOpCode(outGate, OpCode::IF_FALSE);
-                    acc.ModifyIn(outGate, i, ifBranch);
-                } else if (acc.GetOpCode(outGate) == OpCode::IF_EXCEPTION) {
-                    acc.SetOpCode(outGate, OpCode::IF_TRUE);
-                    acc.ModifyIn(outGate, i, ifBranch);
-                } else {
-                    acc.ModifyIn(outGate, i, newGate);
-                }
-            }
+    while (acc.HasUse(oldGate)) {
+        UseIterator it(circuit_, oldGate);
+        GateRef use = it.GetUse();
+        if (acc.GetOpCode(use) == OpCode::IF_SUCCESS) {
+            acc.SetOpCode(use, OpCode::IF_FALSE);
+            acc.ReplaceIn(it, ifBranch);
+        } else if (acc.GetOpCode(use) == OpCode::IF_EXCEPTION) {
+            acc.SetOpCode(use, OpCode::IF_TRUE);
+            acc.ReplaceIn(it, ifBranch);
+        } else {
+            acc.ReplaceIn(it, newGate);
         }
     }
 
-    // delete src gate
+    // delete old gate
     circuit_->DeleteGate(oldGate);
 }
 }  // namespace panda::ecmascript

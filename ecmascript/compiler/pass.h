@@ -17,11 +17,11 @@
 #define ECMASCRIPT_COMPILER_PASS_H
 
 #include "bytecode_circuit_builder.h"
-#include "verifier.h"
-#include "scheduler.h"
 #include "fast_stub.h"
-#include "generic_lowering.h"
 #include "llvm_codegen.h"
+#include "scheduler.h"
+#include "slowpath_lowering.h"
+#include "verifier.h"
 
 namespace panda::ecmascript::kungfu {
 class PassData {
@@ -64,11 +64,11 @@ private:
     T1* data_;
 };
 
-class GenericLoweringPass {
+class SlowPathLoweringPass {
 public:
     bool Run(PassData* data, BytecodeCircuitBuilder *builder)
     {
-        GenericLowering lowering(builder, data->GetCircuit());
+        SlowPathLowering lowering(builder, data->GetCircuit());
         lowering.CallRuntimeLowering();
         return true;
     }
