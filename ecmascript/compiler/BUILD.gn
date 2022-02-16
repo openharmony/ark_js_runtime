@@ -217,7 +217,10 @@ ohos_executable("ark_stub_opt") {
 }
 
 ohos_executable("ark_ts_aot") {
-  sources = [ "ts_aot_compiler.cpp" ]
+  sources = [
+    "aot_compiler.cpp",
+    "pass_manager.cpp",
+  ]
 
   configs = [
     ":include_llvm",

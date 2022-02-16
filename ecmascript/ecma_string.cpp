@@ -285,6 +285,37 @@ void EcmaString::CopyUtf16AsUtf8(const uint16_t *utf16From, uint8_t *utf8To, uin
     }
 }
 
+bool EcmaString::EqualToSplicedString(const EcmaString *str1, const EcmaString *str2)
+{
+    if (GetLength() != str1->GetLength() + str2->GetLength()) {
+        return false;
+    }
+    if (IsUtf16()) {
+        if (str1->IsUtf8() || str2->IsUtf8()) {
+            return false;
+        }
+        Span<const uint16_t> concatData(GetDataUtf16(), str1->GetLength());
+        Span<const uint16_t> data1(str1->GetDataUtf16(), str1->GetLength());
+        if (EcmaString::StringsAreEquals(concatData, data1)) {
+            concatData = Span<const uint16_t>(GetDataUtf16() + str1->GetLength(), str2->GetLength());
+            Span<const uint16_t> data2(str2->GetDataUtf16(), str2->GetLength());
+            return EcmaString::StringsAreEquals(concatData, data2);
+        }
+    } else {
+        if (str1->IsUtf16() || str2->IsUtf16()) {
+            return false;
+        }
+        Span<const uint8_t> concatData(GetDataUtf8(), str1->GetLength());
+        Span<const uint8_t> data1(str1->GetDataUtf8(), str1->GetLength());
+        if (EcmaString::StringsAreEquals(concatData, data1)) {
+            concatData = Span<const uint8_t>(GetDataUtf8() + str1->GetLength(), str2->GetLength());
+            Span<const uint8_t> data2(str2->GetDataUtf8(), str2->GetLength());
+            return EcmaString::StringsAreEquals(concatData, data2);
+        }
+    }
+    return false;
+}
+
 /* static */
 bool EcmaString::StringsAreEqual(EcmaString *str1, EcmaString *str2)
 {
@@ -376,9 +407,9 @@ bool EcmaString::StringCopy(Span<T> &dst, size_t dstMax, Span<const T> &src, siz
 }
 
 template<class T>
-static int32_t ComputeHashForData(const T *data, size_t size)
+static int32_t ComputeHashForData(const T *data, size_t size, uint32_t hashSeed)
 {
-    uint32_t hash = 0;
+    uint32_t hash = hashSeed;
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"
@@ -405,18 +436,18 @@ static int32_t ComputeHashForUtf8(const uint8_t *utf8Data)
     return static_cast<int32_t>(hash);
 }
 
-uint32_t EcmaString::ComputeHashcode() const
+uint32_t EcmaString::ComputeHashcode(uint32_t hashSeed) const
 {
     uint32_t hash;
     if (compressedStringsEnabled) {
         if (!IsUtf16()) {
-            hash = ComputeHashForData(GetDataUtf8(), GetLength());
+            hash = ComputeHashForData(GetDataUtf8(), GetLength(), hashSeed);
         } else {
-            hash = ComputeHashForData(GetDataUtf16(), GetLength());
+            hash = ComputeHashForData(GetDataUtf16(), GetLength(), hashSeed);
         }
     } else {
         ASSERT(static_cast<size_t>(GetLength())<(std::numeric_limits<size_t>::max()>>1U));
-        hash = ComputeHashForData(GetDataUtf16(), GetLength());
+        hash = ComputeHashForData(GetDataUtf16(), GetLength(), hashSeed);
     }
     return hash;
 }
@@ -433,7 +464,7 @@ uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len
         [[maybe_unused]] auto len = base::utf_helper::ConvertRegionUtf8ToUtf16(utf8Data, tmpBuffer.data(), utf8Len,
                                                                                utf16Len, 0);
         ASSERT(len == utf16Len);
-        hash = ComputeHashForData(tmpBuffer.data(), utf16Len);
+        hash = ComputeHashForData(tmpBuffer.data(), utf16Len, 0);
     }
     return hash;
 }
@@ -441,7 +472,7 @@ uint32_t EcmaString::ComputeHashcodeUtf8(const uint8_t *utf8Data, size_t utf8Len
 /* static */
 uint32_t EcmaString::ComputeHashcodeUtf16(const uint16_t *utf16Data, uint32_t length)
 {
-    return ComputeHashForData(utf16Data, length);
+    return ComputeHashForData(utf16Data, length, 0);
 }
 
 /* static */

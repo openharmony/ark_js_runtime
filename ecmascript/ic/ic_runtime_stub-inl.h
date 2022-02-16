@@ -33,7 +33,6 @@
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/ic/proto_change_details.h"
 
-#include "ecmascript/vmstat/runtime_stat.h"
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {

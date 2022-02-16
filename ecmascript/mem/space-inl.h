@@ -19,6 +19,22 @@
 #include "ecmascript/mem/space.h"
 
 namespace panda::ecmascript {
+void Space::AddRegion(Region *region)
+{
+    LOG_ECMA_MEM(DEBUG) << "Add region:" << region << " to " << ToSpaceTypeName(spaceType_);
+    regionList_.AddNode(region);
+    IncrementCommitted(region->GetCapacity());
+    IncrementLiveObjectSize(region->AliveObject());
+}
+
+void Space::RemoveRegion(Region *region)
+{
+    LOG_ECMA_MEM(DEBUG) << "Remove region:" << region << " to " << ToSpaceTypeName(spaceType_);
+    regionList_.RemoveNode(region);
+    DecrementCommitted(region->GetCapacity());
+    DecrementLiveObjectSize(region->AliveObject());
+}
+
 template<class Callback>
 void Space::EnumerateRegions(const Callback &cb, Region *end) const
 {
@@ -42,7 +58,6 @@ void OldSpace::EnumerateCollectRegionSet(const Callback &cb) const
 {
     for (Region *current : collectRegionSet_) {
         if (current != nullptr) {
-            ASSERT(current->InCollectSet());
             cb(current);
         }
     }

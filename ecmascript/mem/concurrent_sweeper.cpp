@@ -31,23 +31,17 @@ ConcurrentSweeper::ConcurrentSweeper(Heap *heap, bool concurrentSweep)
 
 void ConcurrentSweeper::SweepPhases(bool compressGC)
 {
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingInitialize);
     if (concurrentSweep_) {
         // Add all region to region list. Ensure all task finish
-        if (!compressGC) {
-            heap_->GetOldSpace()->EnumerateNonCollectRegionSet([this](Region *current) {
-                AddRegion(OLD_SPACE, current);
-            });
-        }
-        heap_->GetNonMovableSpace()->EnumerateRegions([this](Region *current) { AddRegion(NON_MOVABLE, current); });
-        heap_->GetMachineCodeSpace()->EnumerateRegions([this](Region *current) {
-            AddRegion(MACHINE_CODE_SPACE, current);
-        });
+        PrepareSpace(compressGC);
 
         // Prepare
         isSweeping_ = true;
         startSpaceType_ = compressGC ? NON_MOVABLE : OLD_SPACE;
         for (int type = startSpaceType_; type < FREE_LIST_NUM; type++) {
             auto spaceType = static_cast<MemSpaceType>(type);
+            SortRegion(spaceType);
             FreeListAllocator &allocator = heap_->GetHeapManager()->GetFreeListAllocator(spaceType);
             remainderTaskNum_[type] = FREE_LIST_NUM - startSpaceType_;
             allocator.SetSweeping(true);
@@ -56,9 +50,6 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
 
         if (!compressGC) {
             Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
-            canSelectCset_ = true;
-        } else {
-            canSelectCset_ = false;
         }
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
@@ -66,9 +57,7 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
         if (!compressGC) {
             SweepSpace(OLD_SPACE,
                 const_cast<OldSpace *>(heap_->GetOldSpace()), heap_->GetHeapManager()->GetOldSpaceAllocator());
-            canSelectCset_ = true;
-        } else {
-            canSelectCset_ = false;
+            isOldSpaceSweeped_ = true;
         }
         SweepSpace(NON_MOVABLE, const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace()),
                    heap_->GetHeapManager()->GetNonMovableSpaceAllocator());
@@ -78,12 +67,40 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
     SweepHugeSpace();
 }
 
-void ConcurrentSweeper::SweepSpace(MemSpaceType type, bool isMain)
+void ConcurrentSweeper::PrepareSpace(bool compressGC)
 {
-    FreeListAllocator &allocator = heap_->GetHeapManager()->GetFreeListAllocator(type);
+    if (!compressGC) {
+        OldSpace *oldSpace = const_cast<OldSpace *>(heap_->GetOldSpace());
+        oldSpace->ResetLiveObjectSize();
+        oldSpace->EnumerateNonCollectRegionSet([this, oldSpace](Region *current) {
+            current->ResetWasted();
+            AddRegion(OLD_SPACE, oldSpace, current);
+        });
+    }
+
+    NonMovableSpace *nonMovableSpace = const_cast<NonMovableSpace *>(heap_->GetNonMovableSpace());
+    nonMovableSpace->ResetLiveObjectSize();
+    nonMovableSpace->EnumerateRegions([this, nonMovableSpace](Region *current) {
+        current->ResetWasted();
+        AddRegion(NON_MOVABLE, nonMovableSpace, current);
+    });
+
+    MachineCodeSpace *machineCodeSpace = const_cast<MachineCodeSpace *>(heap_->GetMachineCodeSpace());
+    machineCodeSpace->ResetLiveObjectSize();
+    machineCodeSpace->EnumerateRegions([this, machineCodeSpace](Region *current) {
+        current->ResetWasted();
+        AddRegion(MACHINE_CODE_SPACE, machineCodeSpace, current);
+    });
+}
+
+void ConcurrentSweeper::SweepSpace(MemSpaceType type, FreeListAllocator *allocator, bool isMain)
+{
+    if (allocator == nullptr) {
+        allocator = &(heap_->GetHeapManager()->GetFreeListAllocator(type));
+    }
     Region *current = GetRegionSafe(type);
     while (current != nullptr) {
-        FreeRegion(current, allocator, isMain);
+        FreeRegion(current, *allocator, isMain);
         // Main thread sweeping region is added;
         if (!isMain) {
             AddSweptRegionSafe(type, current);
@@ -91,11 +108,9 @@ void ConcurrentSweeper::SweepSpace(MemSpaceType type, bool isMain)
         current = GetRegionSafe(type);
     }
 
-    if (!isMain) {
-        os::memory::LockHolder holder(mutexs_[type]);
-        if (--remainderTaskNum_[type] == 0) {
-            cvs_[type].SignalAll();
-        }
+    os::memory::LockHolder holder(mutexs_[type]);
+    if (--remainderTaskNum_[type] == 0) {
+        cvs_[type].SignalAll();
     }
 }
 
@@ -105,10 +120,12 @@ void ConcurrentSweeper::SweepSpace(MemSpaceType type, Space *space, FreeListAllo
     if (type == OLD_SPACE) {
         OldSpace *oldSpace = static_cast<OldSpace *>(space);
         oldSpace->EnumerateNonCollectRegionSet([this, &allocator](Region *current) {
+            current->ResetWasted();
             FreeRegion(current, allocator);
         });
     } else {
         space->EnumerateRegions([this, &allocator](Region *current) {
+            current->ResetWasted();
             FreeRegion(current, allocator);
         });
     }
@@ -121,7 +138,8 @@ void ConcurrentSweeper::SweepHugeSpace()
 
     while (currentRegion != nullptr) {
         Region *next = currentRegion->GetNext();
-        auto markBitmap = currentRegion->GetOrCreateMarkBitmap();
+        auto markBitmap = currentRegion->GetMarkBitmap();
+        ASSERT(markBitmap != nullptr);
         bool isMarked = false;
         markBitmap->IterateOverMarkedChunks([&isMarked]([[maybe_unused]] void *mem) { isMarked = true; });
         if (!isMarked) {
@@ -133,7 +151,7 @@ void ConcurrentSweeper::SweepHugeSpace()
 
 void ConcurrentSweeper::FreeRegion(Region *current, FreeListAllocator &allocator, bool isMain)
 {
-    auto markBitmap = current->GetOrCreateMarkBitmap();
+    auto markBitmap = current->GetMarkBitmap();
     ASSERT(markBitmap != nullptr);
     uintptr_t freeStart = current->GetBegin();
     markBitmap->IterateOverMarkedChunks([this, &current, &freeStart, &allocator, isMain](void *mem) {
@@ -154,21 +172,16 @@ void ConcurrentSweeper::FreeRegion(Region *current, FreeListAllocator &allocator
     }
 }
 
-void ConcurrentSweeper::FillSweptRegion(MemSpaceType type)
+bool ConcurrentSweeper::FillSweptRegion(MemSpaceType type, FreeListAllocator *allocator)
 {
     if (sweptList_[type].empty()) {
-        return;
+        return false;
     }
-    FreeListAllocator &allocator = heap_->GetHeapManager()->GetFreeListAllocator(type);
     Region *region = nullptr;
     while ((region = GetSweptRegionSafe(type)) != nullptr) {
-        region->EnumerateKinds([&allocator](FreeObjectKind *kind) {
-            if (kind == nullptr || kind->Empty()) {
-                return;
-            }
-            allocator.FillFreeList(kind);
-        });
+        allocator->CollectFreeObjectSet(region);
     }
+    return true;
 }
 
 void ConcurrentSweeper::FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart,
@@ -178,9 +191,18 @@ void ConcurrentSweeper::FreeLiveRange(FreeListAllocator &allocator, Region *curr
     allocator.Free(freeStart, freeEnd, isMain);
 }
 
-void ConcurrentSweeper::AddRegion(MemSpaceType type, Region *region)
+void ConcurrentSweeper::AddRegion(MemSpaceType type, Space *space, Region *region)
 {
+    space->IncrementLiveObjectSize(region->AliveObject());
     sweepingList_[type].emplace_back(region);
+}
+
+void ConcurrentSweeper::SortRegion(MemSpaceType type)
+{
+    // Sweep low alive object size at first
+    std::sort(sweepingList_[type].begin(), sweepingList_[type].end(), [](Region *first, Region *second) {
+        return first->AliveObject() < second->AliveObject();
+    });
 }
 
 Region *ConcurrentSweeper::GetRegionSafe(MemSpaceType type)
@@ -211,8 +233,24 @@ Region *ConcurrentSweeper::GetSweptRegionSafe(MemSpaceType type)
     return region;
 }
 
+void ConcurrentSweeper::WaitAllTaskFinished()
+{
+    if (!isSweeping_) {
+        return;
+    }
+    for (int i = startSpaceType_; i < FREE_LIST_NUM; i++) {
+        if (remainderTaskNum_[i] > 0) {
+            os::memory::LockHolder holder(mutexs_[i]);
+            while (remainderTaskNum_[i] > 0) {
+                cvs_[i].Wait(&mutexs_[i]);
+            }
+        }
+    }
+}
+
 void ConcurrentSweeper::EnsureAllTaskFinished()
 {
+    CHECK_JS_THREAD(heap_->GetEcmaVM());
     if (!isSweeping_) {
         return;
     }
@@ -222,15 +260,26 @@ void ConcurrentSweeper::EnsureAllTaskFinished()
     isSweeping_ = false;
 }
 
+void ConcurrentSweeper::EnsureTaskFinished(MemSpaceType type)
+{
+    CHECK_JS_THREAD(heap_->GetEcmaVM());
+    if (!isSweeping_) {
+        return;
+    }
+    WaitingTaskFinish(type);
+}
+
 void ConcurrentSweeper::WaitingTaskFinish(MemSpaceType type)
 {
     if (remainderTaskNum_[type] > 0) {
-        SweepSpace(type);
         {
             os::memory::LockHolder holder(mutexs_[type]);
-            while (remainderTaskNum_[type] > 0) {
-                cvs_[type].Wait(&mutexs_[type]);
-            }
+            remainderTaskNum_[type]++;
+        }
+        SweepSpace(type);
+        os::memory::LockHolder holder(mutexs_[type]);
+        while (remainderTaskNum_[type] > 0) {
+            cvs_[type].Wait(&mutexs_[type]);
         }
     }
     FinishSweeping(type);
@@ -238,11 +287,11 @@ void ConcurrentSweeper::WaitingTaskFinish(MemSpaceType type)
 
 void ConcurrentSweeper::FinishSweeping(MemSpaceType type)
 {
-    FillSweptRegion(type);
     FreeListAllocator &allocator = heap_->GetHeapManager()->GetFreeListAllocator(type);
     allocator.SetSweeping(false);
+    FillSweptRegion(type, &allocator);
     if (type == OLD_SPACE) {
-        heap_->RecomputeLimits();
+        isOldSpaceSweeped_ = true;
     }
 }
 
@@ -251,7 +300,7 @@ bool ConcurrentSweeper::SweeperTask::Run(uint32_t threadIndex)
     int sweepTypeNum = FREE_LIST_NUM - sweeper_->startSpaceType_;
     for (size_t i = sweeper_->startSpaceType_; i < FREE_LIST_NUM; i++) {
         auto type = static_cast<MemSpaceType>(((i + type_) % sweepTypeNum) + sweeper_->startSpaceType_);
-        sweeper_->SweepSpace(type, false);
+        sweeper_->SweepSpace(type, nullptr, false);
     }
     return true;
 }

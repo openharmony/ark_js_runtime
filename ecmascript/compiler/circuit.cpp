@@ -132,8 +132,9 @@ void Circuit::PrintAllGates(BytecodeCircuitBuilder &builder) const
 {
     const auto &gateList = GetAllGates();
     for (const auto &gate : gateList) {
-        if (LoadGatePtrConst(gate)->GetOpCode() == OpCode::JS_BYTECODE) {
-            auto bytecodeStr = builder.GetBytecodeStr(gate);
+        auto item = builder.GetGateToBytecode().find(gate);
+        if (item != builder.GetGateToBytecode().end()) {
+            std::string bytecodeStr = builder.GetBytecodeStr(gate);
             LoadGatePtrConst(gate)->PrintByteCode(bytecodeStr);
         } else {
             LoadGatePtrConst(gate)->Print();

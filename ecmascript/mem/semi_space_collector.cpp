@@ -27,7 +27,6 @@
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 #include "ecmascript/runtime_call_id.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 SemiSpaceCollector::SemiSpaceCollector(Heap *heap, bool paralledGc)
@@ -37,12 +36,11 @@ SemiSpaceCollector::SemiSpaceCollector(Heap *heap, bool paralledGc)
 
 void SemiSpaceCollector::RunPhases()
 {
-    [[maybe_unused]] ecmascript::JSThread *thread = heap_->GetEcmaVM()->GetJSThread();
-    INTERPRETER_TRACE(thread, SemiSpaceCollector_RunPhases);
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), SemiSpaceCollector_RunPhases);
     [[maybe_unused]] ClockScope clockScope;
 
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::RunPhases");
-    bool concurrentMark = heap_->CheckConcurrentMark(thread);
+    bool concurrentMark = heap_->CheckConcurrentMark();
     if (concurrentMark) {
         ECMA_GC_LOG() << "SemiSpaceCollector after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
@@ -60,9 +58,9 @@ void SemiSpaceCollector::InitializePhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::InitializePhase");
     heap_->Prepare();
+    heap_->ResetNewSpace();
     workList_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetSemiGcMarker()->Initialized();
-    heap_->GetEvacuationAllocator()->Initialize(TriggerGCType::SEMI_GC);
     promotedSize_ = 0;
     semiCopiedSize_ = 0;
     commitSize_ = heap_->GetFromSpace()->GetCommittedSize();
@@ -143,6 +141,6 @@ void SemiSpaceCollector::FinishPhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::FinishPhase");
     workList_->Finish(semiCopiedSize_, promotedSize_);
-    heap_->GetEvacuationAllocator()->Finalize(TriggerGCType::SEMI_GC);
+    heap_->Resume(SEMI_GC);
 }
 }  // namespace panda::ecmascript

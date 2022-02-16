@@ -216,11 +216,13 @@ public:
     {
         uint32_t hashcode = GetRawHashcode();
         if (hashcode == 0) {
-            hashcode = ComputeHashcode();
+            hashcode = ComputeHashcode(0);
             SetRawHashcode(hashcode);
         }
         return hashcode;
     }
+
+    uint32_t ComputeHashcode(uint32_t hashSeed) const;
 
     int32_t IndexOf(const EcmaString *rhs, int pos = 0) const;
 
@@ -229,6 +231,10 @@ public:
         return STRING_COMPRESSED_BIT;
     }
 
+    /**
+     * Compares string1 + string2 by bytes, It doesn't check canonical unicode equivalence.
+     */
+    bool EqualToSplicedString(const EcmaString *str1, const EcmaString *str2);
     /**
      * Compares strings by bytes, It doesn't check canonical unicode equivalence.
      */
@@ -288,7 +294,6 @@ private:
         return reinterpret_cast<uint8_t *>(GetData());
     }
 
-    uint32_t ComputeHashcode() const;
     static void CopyUtf16AsUtf8(const uint16_t *utf16From, uint8_t *utf8To, uint32_t utf16Len);
 
     static bool compressedStringsEnabled;

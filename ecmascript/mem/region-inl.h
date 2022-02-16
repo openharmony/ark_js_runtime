@@ -27,31 +27,6 @@ namespace panda::ecmascript {
 inline void Region::SetSpace(Space *space)
 {
     space_ = space;
-    heap_ = space_->GetHeap();
-}
-
-inline RangeBitmap *Region::GetOrCreateMarkBitmap()
-{
-    if (UNLIKELY(markBitmap_ == nullptr)) {
-        os::memory::LockHolder lock(lock_);
-        if (markBitmap_ == nullptr) {
-            markBitmap_ = CreateMarkBitmap();
-        }
-    }
-    return markBitmap_;
-}
-
-RangeBitmap *Region::CreateMarkBitmap()
-{
-    size_t heapSize = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ? LARGE_BITMAP_MIN_SIZE : GetCapacity();
-    // Only one huge object is stored in a region. The BitmapSize of a huge region will always be 8 Bytes.
-    size_t bitmapSize = RangeBitmap::GetBitMapSizeInByte(heapSize);
-
-    auto bitmapData = const_cast<RegionFactory *>(heap_->GetRegionFactory())->Allocate(bitmapSize);
-    auto *ret = new RangeBitmap(this, heapSize, bitmapData);
-
-    ret->ClearAllBits();
-    return ret;
 }
 
 RememberedSet *Region::CreateRememberedSet()
@@ -104,18 +79,18 @@ void Region::InsertOldToNewRememberedSet(uintptr_t addr)
     set->Insert(addr);
 }
 
-WorkerHelper *Region::GetWorkList() const
-{
-    return heap_->GetWorkList();
-}
-
 void Region::AtomicInsertOldToNewRememberedSet(uintptr_t addr)
 {
     auto set = GetOrCreateOldToNewRememberedSet();
     set->AtomicInsert(addr);
 }
 
-void Region::ClearMarkBitmap()
+WorkerHelper *Region::GetWorkList() const
+{
+    return heap_->GetWorkList();
+}
+
+void Region::DeleteMarkBitmap()
 {
     if (markBitmap_ != nullptr) {
         auto size = RangeBitmap::GetBitMapSizeInByte(GetCapacity());
@@ -125,7 +100,7 @@ void Region::ClearMarkBitmap()
     }
 }
 
-void Region::ClearCrossRegionRememberedSet()
+void Region::DeleteCrossRegionRememberedSet()
 {
     if (crossRegionSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
@@ -136,7 +111,7 @@ void Region::ClearCrossRegionRememberedSet()
     }
 }
 
-void Region::ClearOldToNewRememberedSet()
+void Region::DeleteOldToNewRememberedSet()
 {
     if (oldToNewSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
@@ -145,6 +120,25 @@ void Region::ClearOldToNewRememberedSet()
         delete oldToNewSet_;
         oldToNewSet_ = nullptr;
     }
+}
+
+void Region::ClearMarkBitmap()
+{
+    if (markBitmap_ != nullptr) {
+        markBitmap_->ClearAllBits();
+    }
+}
+
+void Region::ClearCrossRegionRememberedSet()
+{
+    if (crossRegionSet_ != nullptr) {
+        crossRegionSet_->ClearAllBits();
+    }
+}
+
+bool Region::IsMarking() const
+{
+    return !heap_->GetJSThread()->IsReadyToMark();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_REGION_INL_H

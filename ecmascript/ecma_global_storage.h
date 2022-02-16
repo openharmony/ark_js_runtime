@@ -219,6 +219,7 @@ public:
     inline uintptr_t NewGlobalHandle(JSTaggedType value);
     inline void DisposeGlobalHandle(uintptr_t addr);
     inline uintptr_t SetWeak(uintptr_t addr);
+    inline uintptr_t ClearWeak(uintptr_t addr);
     inline bool IsWeak(uintptr_t addr) const;
 
     template<class Callback>

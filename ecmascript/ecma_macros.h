@@ -512,4 +512,5 @@
         LOG(FATAL, ECMASCRIPT) << __func__ << " Line: " << __LINE__ << " begin: " << (begin) << " end: " << (end); \
     }
 
+#define CHECK_JS_THREAD(vm) ASSERT(vm->GetJSThread()->GetThreadId() == JSThread::GetCurrentThreadId())
 #endif  // ECMASCRIPT_ECMA_MACROS_H

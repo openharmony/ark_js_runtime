@@ -23,7 +23,6 @@
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/platform/task.h"
-
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
@@ -40,7 +39,7 @@ public:
 
     void HandleMarkFinished();  // call in vm thread.
     void WaitConcurrentMarkingFinished();  // call in main thread
-    void Reset(bool isClearCSet = true);
+    void Reset(bool isRevertCSet = true);
 
     double GetDuration() const
     {
@@ -75,7 +74,7 @@ private:
     }
 
     void InitializeMarking();
-    void MarkingFinished();
+    void MarkingFinished(float spendTime);
 
     Heap *heap_ {nullptr};
     EcmaVM *vm_ {nullptr};

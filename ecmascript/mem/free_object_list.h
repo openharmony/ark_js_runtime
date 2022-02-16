@@ -18,7 +18,7 @@
 
 #include <cstddef>
 
-#include "ecmascript/mem/free_object_kind.h"
+#include "ecmascript/mem/free_object_set.h"
 #include "utils/span.h"
 
 namespace panda::ecmascript {
@@ -27,61 +27,83 @@ public:
     FreeObjectList();
     ~FreeObjectList();
 
-    FreeObject *Allocator(size_t size);
+    FreeObject *Allocate(size_t size);
+
+    FreeObject *LookupSuitableFreeObject(size_t size);
 
     void Free(uintptr_t start, size_t size, bool isAdd = true);
 
     void Rebuild();
 
-    bool AddKind(FreeObjectKind *kind);
+    bool AddSet(FreeObjectSet *set);
 
-    void RemoveKind(FreeObjectKind *kind);
+    void RemoveSet(FreeObjectSet *set);
 
     void Merge(FreeObjectList *list);
 
     template<class Callback>
-    void EnumerateKinds(const Callback &cb) const;
+    void EnumerateSets(const Callback &cb) const;
 
     template<class Callback>
-    void EnumerateKinds(KindType type, const Callback &cb) const;
+    void EnumerateSets(SetType type, const Callback &cb) const;
 
     template<class Callback>
-    void EnumerateTopAndLastKinds(const Callback &cb) const;
+    void EnumerateTopAndLastSets(const Callback &cb) const;
 
     NO_COPY_SEMANTIC(FreeObjectList);
     NO_MOVE_SEMANTIC(FreeObjectList);
 
-    size_t GetFreeObjectSize() const;
-
-    static int NumberOfKinds()
+#ifndef NDEBUG
+    size_t GetFreeObjectSize() const
     {
-        return NUMBER_OF_KINDS;
+        return available_;
+    }
+    size_t GetWastedSize() const
+    {
+        return wasted_;
+    }
+    void DecrementWastedSize(size_t size)
+    {
+        wasted_ -= size;
+    }
+    void IncrementWastedSize(size_t size)
+    {
+        wasted_ += size;
+    }
+#endif
+
+    static int NumberOfSets()
+    {
+        return NUMBER_OF_SETS;
     }
 
 private:
-    static constexpr int NUMBER_OF_KINDS = 39;
+    static constexpr int NUMBER_OF_SETS = 39;
     static constexpr size_t MIN_SIZE = 16;
-    static constexpr size_t SMALL_KIND_MAX_SIZE = 256;
-    static constexpr size_t LARGE_KIND_MAX_SIZE = 65536;
-    static constexpr size_t HUGE_KIND_MAX_SIZE = 255 * 1024;
-    static constexpr int SMALL_KIND_MAX_INDEX = 29;
-    static constexpr int NUMBER_OF_LAST_LARGE = NUMBER_OF_KINDS - 2;
-    static constexpr int NUMBER_OF_LAST_HUGE = NUMBER_OF_KINDS - 1;
+    static constexpr size_t SMALL_SET_MAX_SIZE = 256;
+    static constexpr size_t LARGE_SET_MAX_SIZE = 65536;
+    static constexpr size_t HUGE_SET_MAX_SIZE = 255 * 1024;
+    static constexpr int SMALL_SET_MAX_INDEX = 29;
+    static constexpr int NUMBER_OF_LAST_LARGE = NUMBER_OF_SETS - 2;
+    static constexpr int NUMBER_OF_LAST_HUGE = NUMBER_OF_SETS - 1;
     static constexpr size_t INTERVAL_OFFSET = 3;
     static constexpr size_t LOG2_OFFSET = 21;
     static constexpr size_t MAX_BIT_OF_SIZET = sizeof(size_t) << INTERVAL_OFFSET;
-    const int smallKindOffsetIndex = 2;
+    const int smallSetOffsetIndex = 2;
 
-    inline KindType SelectKindType(size_t size) const;
+    inline SetType SelectSetType(size_t size) const;
 
-    inline void SetNoneEmptyBit(KindType type);
-    inline void ClearNoneEmptyBit(KindType type);
-    inline size_t CalcNextNoneEmptyIndex(KindType start);
+    inline void SetNoneEmptyBit(SetType type);
+    inline void ClearNoneEmptyBit(SetType type);
+    inline size_t CalcNextNoneEmptyIndex(SetType start);
 
+#ifndef NDEBUG
     size_t available_ = 0;
-    uint64_t noneEmptyKindBitMap_;
-    Span<FreeObjectKind *> kinds_ {};
-    Span<FreeObjectKind *> lastKinds_ {};
+    size_t wasted_ = 0;
+#endif
+    uint64_t noneEmptySetBitMap_;
+    Span<FreeObjectSet *> sets_ {};
+    Span<FreeObjectSet *> lastSets_ {};
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_FREE_OBJECT_LIST_H

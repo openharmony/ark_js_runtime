@@ -676,11 +676,13 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             break;
         }
         case EcmaOpcode::LDAI_DYN_IMM32: {
+            info.imm = READ_INST_32_0();
             info.accOut = true;
             info.offset = BytecodeOffset::FIVE;
             break;
         }
         case EcmaOpcode::FLDAI_DYN_IMM64: {
+            info.imm = READ_INST_64_0();
             info.accOut = true;
             info.offset = BytecodeOffset::NINE;
             break;
@@ -769,11 +771,13 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::LDNAN_PREF: {
             info.accOut = true;
             info.offset = BytecodeOffset::TWO;
+            info.imm = static_cast<uint64_t>(panda::ecmascript::base::NAN_VALUE);
             break;
         }
         case EcmaOpcode::LDINFINITY_PREF: {
             info.accOut = true;
             info.offset = BytecodeOffset::TWO;
+            info.imm = static_cast<uint64_t>(panda::ecmascript::base::POSITIVE_INFINITY);
             break;
         }
         case EcmaOpcode::LDGLOBALTHIS_PREF: {
@@ -784,11 +788,13 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::LDUNDEFINED_PREF: {
             info.accOut = true;
             info.offset = BytecodeOffset::TWO;
+            info.imm = JSTaggedValue::VALUE_UNDEFINED;
             break;
         }
         case EcmaOpcode::LDNULL_PREF: {
             info.accOut = true;
             info.offset = BytecodeOffset::TWO;
+            info.imm = JSTaggedValue::VALUE_NULL;
             break;
         }
         case EcmaOpcode::LDSYMBOL_PREF: {
@@ -804,11 +810,13 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::LDTRUE_PREF: {
             info.accOut = true;
             info.offset = BytecodeOffset::TWO;
+            info.imm = JSTaggedValue::VALUE_TRUE;
             break;
         }
         case EcmaOpcode::LDFALSE_PREF: {
             info.accOut = true;
             info.offset = BytecodeOffset::TWO;
+            info.imm = JSTaggedValue::VALUE_FALSE;
             break;
         }
         case EcmaOpcode::LDLEXENVDYN_PREF: {
@@ -1170,20 +1178,19 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             break;
         }
         case EcmaOpcode::STLEXVARDYN_PREF_IMM8_IMM8_V8: {
-            uint16_t v0 = READ_INST_8_5();
+            uint16_t v0 = READ_INST_8_3();
             info.vregIn.emplace_back(v0);
             info.offset = BytecodeOffset::FIVE;
             break;
         }
         case EcmaOpcode::STLEXVARDYN_PREF_IMM4_IMM4_V8: {
-            uint16_t v0 = READ_INST_8_5();
+            uint16_t v0 = READ_INST_8_2();
             info.vregIn.emplace_back(v0);
             info.offset = BytecodeOffset::FOUR;
             break;
         }
         case EcmaOpcode::NEWLEXENVDYN_PREF_IMM16: {
-            uint16_t v0 = READ_INST_8_5();
-            info.vregIn.emplace_back(v0);
+            info.accOut = true;
             info.offset = BytecodeOffset::FOUR;
             break;
         }
@@ -1380,6 +1387,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::LDHOLE_PREF: {
             info.accOut = true;
             info.offset = BytecodeOffset::TWO;
+            info.imm = JSTaggedValue::VALUE_HOLE;
             break;
         }
         case EcmaOpcode::COPYRESTARGS_PREF_IMM16: {
@@ -1781,7 +1789,25 @@ bool BytecodeCircuitBuilder::IsThrow(EcmaOpcode opcode)
 
 bool BytecodeCircuitBuilder::IsGeneral(EcmaOpcode opcode)
 {
-    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode);
+    return !IsMov(opcode) && !IsJump(opcode) && !IsReturn(opcode) && !IsSetConstant(opcode);
+}
+
+bool BytecodeCircuitBuilder::IsSetConstant(EcmaOpcode opcode)
+{
+    switch (opcode) {
+        case EcmaOpcode::LDNAN_PREF:
+        case EcmaOpcode::LDINFINITY_PREF:
+        case EcmaOpcode::LDUNDEFINED_PREF:
+        case EcmaOpcode::LDNULL_PREF:
+        case EcmaOpcode::LDTRUE_PREF:
+        case EcmaOpcode::LDFALSE_PREF:
+        case EcmaOpcode::LDHOLE_PREF:
+        case EcmaOpcode::LDAI_DYN_IMM32:
+        case EcmaOpcode::FLDAI_DYN_IMM64:
+            return true;
+        default:
+            return false;
+    }
 }
 
 void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
@@ -1796,7 +1822,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
     const size_t offsetArgs = byteCodeGraph.method->GetNumVregs();
     std::vector<GateRef> argGates(numArgs);
     for (size_t argIdx = 0; argIdx < numArgs; argIdx++) {
-        argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::INT64, argIdx,
+        argGates.at(argIdx) = circuit_.NewGate(OpCode(OpCode::ARG), MachineType::I64, argIdx,
                                                {Circuit::GetCircuitRoot(OpCode(OpCode::ARG_LIST))},
                                                GateType::JS_ANY);
     }
@@ -1859,17 +1885,35 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
         auto dependCur = bb.dependStart;
         ASSERT(stateCur != Circuit::NullGate());
         ASSERT(dependCur != Circuit::NullGate());
+        if (!bb.trys.empty()) {
+            dependCur = circuit_.NewGate(OpCode(OpCode::GET_EXCEPTION), 0, {dependCur}, GateType::EMPTY);
+        }
         auto pc = bb.start;
         while (pc <= bb.end) {
             auto pcPrev = pc;
             auto bytecodeInfo = GetBytecodeInfo(pc);
             pc = pc + bytecodeInfo.offset; // next inst start pc
             size_t numValueInputs = (bytecodeInfo.accIn ? 1 : 0) + bytecodeInfo.vregIn.size();
-            if (IsGeneral(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+            if (IsSetConstant(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
+                // handle bytecode command to get constants
+                auto ecmaOpcode = static_cast<EcmaOpcode>(bytecodeInfo.opcode);
+                GateRef gate = 0;
+                if (ecmaOpcode == EcmaOpcode::LDNULL_PREF || ecmaOpcode == EcmaOpcode::LDINFINITY_PREF ||
+                    ecmaOpcode == EcmaOpcode::FLDAI_DYN_IMM64) {
+                    gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::F64, bytecodeInfo.imm,
+                                            {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
+                                            GateType::JS_ANY);
+                } else {
+                    gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, bytecodeInfo.imm,
+                                            {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
+                                            GateType::JS_ANY);
+                }
+                jsgateToBytecode_[gate] = {bb.id, pcPrev};
+            } else if (IsGeneral(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                 // handle general ecma.* bytecodes
                 GateRef gate = 0;
                 if (!bytecodeInfo.vregOut.empty() || bytecodeInfo.accOut) {
-                    gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::INT64, numValueInputs,
+                    gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::I64, numValueInputs,
                                             std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
                                                                  Circuit::NullGate()),
                                             GateType::JS_ANY);
@@ -1891,9 +1935,14 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     bbNext->expandedPreds.push_back( {bb.id, pcPrev, true} );
                     ASSERT(bbNext->statePredIndex <= bbNext->numOfStatePreds);
                 } else {
-                    circuit_.NewGate(OpCode(OpCode::THROW), 0,
-                                     {ifException, gate, gate,
-                                      Circuit::GetCircuitRoot(OpCode(OpCode::THROW_LIST))},
+                    auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
+                                                     JSTaggedValue::VALUE_EXCEPTION,
+                                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
+                                                     GateType::JS_ANY);
+                    circuit_.NewGate(OpCode(OpCode::RETURN),
+                                     0,
+                                     {ifException, gate, constant,
+                                      Circuit::GetCircuitRoot(OpCode(OpCode::RETURN_LIST))},
                                      GateType::JS_ANY);
                 }
                 jsgateToBytecode_[gate] = {bb.id, pcPrev};
@@ -1919,7 +1968,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                 if (IsCondJump(static_cast<EcmaOpcode>(bytecodeInfo.opcode))) {
                     GateRef gate = 0;
                     if (!bytecodeInfo.vregOut.empty() || bytecodeInfo.accOut) {
-                        gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::INT64, numValueInputs,
+                        gate = circuit_.NewGate(OpCode(OpCode::JS_BYTECODE), MachineType::I64, numValueInputs,
                                                 std::vector<GateRef>(2 + numValueInputs, // 2: state and depend input
                                                                      Circuit::NullGate()),
                                                 GateType::JS_ANY);
@@ -1977,7 +2026,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
             } else if (static_cast<EcmaOpcode>(bytecodeInfo.opcode) == EcmaOpcode::RETURNUNDEFINED_PREF) {
                 // handle returnundefined bytecode
                 ASSERT(bb.succs.empty());
-                auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::INT64,
+                auto constant = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                                  TaggedValue::VALUE_UNDEFINED,
                                                  {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                                  GateType::JS_ANY);
@@ -2051,7 +2100,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         }
                     }
                     std::reverse(instList.begin(), instList.end());
-                    for (auto pcIter: instList) {
+                    for (auto pcIter: instList) { // upper bound
                         auto curInfo = GetBytecodeInfo(pcIter);
                         if (acc) {
                             if (curInfo.accOut) {
@@ -2083,10 +2132,20 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                             }
                         }
                     }
+                    // find GET_EXCEPTION gate if this is a catch block
+                    if (ans == Circuit::NullGate() && acc) {
+                        if (!bb.trys.empty()) {
+                            const auto &outList = circuit_.GetOutVector(bb.dependStart);
+                            ASSERT(outList.size() == 1);
+                            const auto &getExceptionGate = outList.at(0);
+                            ASSERT(circuit_.GetOpCode(getExceptionGate) == OpCode::GET_EXCEPTION);
+                            ans = getExceptionGate;
+                        }
+                    }
                     // find def-site in value selectors of vregs
                     if (ans == Circuit::NullGate() && !acc && bb.phi.count(reg)) {
                         if (!bb.vregToValSelectorGate.count(reg)) {
-                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::INT64,
+                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64,
                                                          bb.numOfStatePreds,
                                                          std::vector<GateRef>(
                                                                  1 + bb.numOfStatePreds, Circuit::NullGate()),
@@ -2103,34 +2162,17 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     // find def-site in value selectors of acc
                     if (ans == Circuit::NullGate() && acc && bb.phiAcc) {
                         if (bb.valueSelectorAccGate == Circuit::NullGate()) {
-                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::INT64,
+                            auto gate = circuit_.NewGate(OpCode(OpCode::VALUE_SELECTOR), MachineType::I64,
                                                          bb.numOfStatePreds,
                                                          std::vector<GateRef>(
                                                              1 + bb.numOfStatePreds, Circuit::NullGate()),
                                                          GateType::JS_ANY);
                             bb.valueSelectorAccGate = gate;
                             circuit_.NewIn(gate, 0, bb.stateStart);
-                            bool hasException = false;
-                            bool hasNonException = false;
                             for (int32_t i = 0; i < bb.numOfStatePreds; ++i) {
                                 auto &[predId, predPc, isException] = bb.expandedPreds.at(i);
-                                if (isException) {
-                                    hasException = true;
-                                } else {
-                                    hasNonException = true;
-                                }
-                                if (isException) {
-                                    // exception handler will set acc
-                                    auto ifExceptionGate = circuit_.GetIn(bb.stateStart, i);
-                                    ASSERT(circuit_.GetOpCode(ifExceptionGate) == OpCode::IF_EXCEPTION);
-                                    circuit_.NewIn(gate, i + 1, circuit_.GetIn(ifExceptionGate, 0));
-                                } else {
-                                    circuit_.NewIn(gate, i + 1, defSiteOfReg(predId, predPc, reg, acc));
-                                }
+                                circuit_.NewIn(gate, i + 1, defSiteOfReg(predId, predPc, reg, acc));
                             }
-                            // catch block should have only exception entries
-                            // normal block should have only normal entries
-                            ASSERT(!hasException || !hasNonException);
                         }
                         ans = bb.valueSelectorAccGate;
                     }

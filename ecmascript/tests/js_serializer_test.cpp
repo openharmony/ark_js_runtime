@@ -396,7 +396,7 @@ public:
         EXPECT_TRUE(res->IsJSRegExp()) << "[NotJSRegexp] Deserialize JSRegExp fail";
         JSHandle<JSRegExp> resJSRegexp(res);
 
-        uint32_t resBufferSize = static_cast<uint32_t>(resJSRegexp->GetLength().GetInt());
+        uint32_t resBufferSize = resJSRegexp->GetLength();
         EXPECT_TRUE(resBufferSize == bufferSize) << "Not Same Length";
         JSHandle<JSTaggedValue> originalSource(thread, resJSRegexp->GetOriginalSource());
         EXPECT_TRUE(originalSource->IsString());
@@ -451,7 +451,7 @@ public:
         JSHandle<JSTaggedValue> resBufferData(thread, resJSArrayBuffer->GetArrayBufferData());
         JSHandle<JSNativePointer> resNp = JSHandle<JSNativePointer>::Cast(resBufferData);
         void *resBuffer = resNp->GetExternalPointer();
-        for (int32_t i = 0; i < resTaggedLength.GetInt(); i++) {
+        for (uint32_t i = 0; i < resTaggedLength; i++) {
             EXPECT_TRUE(static_cast<char *>(resBuffer)[i] == static_cast<char *>(buffer)[i]) << "Not same viewedBuffer";
         }
         Destroy();

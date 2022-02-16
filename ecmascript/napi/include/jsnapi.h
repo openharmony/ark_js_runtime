@@ -190,6 +190,8 @@ public:
 
     void SetWeak();
 
+    void ClearWeak();
+
     bool IsWeak() const;
 
 private:
@@ -900,12 +902,14 @@ public:
     static bool CheckSafepoint(const EcmaVM *vm);
 
 private:
+    static int vmCount;
     static bool CreateRuntime(const RuntimeOption &option);
     static bool DestroyRuntime();
 
     static uintptr_t GetHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
     static uintptr_t GetGlobalHandleAddr(const EcmaVM *vm, uintptr_t localAddress);
     static uintptr_t SetWeak(const EcmaVM *vm, uintptr_t localAddress);
+    static uintptr_t ClearWeak(const EcmaVM *vm, uintptr_t localAddress);
     static bool IsWeak(const EcmaVM *vm, uintptr_t localAddress);
     static void DisposeGlobalHandleAddr(const EcmaVM *vm, uintptr_t addr);
     template<typename T>
@@ -958,6 +962,12 @@ template<typename T>
 void Global<T>::SetWeak()
 {
     address_ = JSNApi::SetWeak(vm_, address_);
+}
+
+template<typename T>
+void Global<T>::ClearWeak()
+{
+    address_ = JSNApi::ClearWeak(vm_, address_);
 }
 
 template<typename T>

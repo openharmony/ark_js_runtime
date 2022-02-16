@@ -50,9 +50,12 @@
 #include "ecmascript/mem/region.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "generated/base_options.h"
 #include "include/runtime_notification.h"
 #include "libpandabase/os/library_loader.h"
 #include "utils/pandargs.h"
+
+#include "os/mutex.h"
 
 namespace panda {
 using ecmascript::CString;
@@ -108,6 +111,9 @@ namespace {
 constexpr std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 }
 
+int JSNApi::vmCount = 0;
+static os::memory::Mutex mutex;
+
 // ------------------------------------ Panda -----------------------------------------------
 bool JSNApi::CreateRuntime(const RuntimeOption &option)
 {
@@ -128,12 +134,14 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     runtimeOptions.SetBootClassSpaces({"ecmascript"});
 
     // Dfx
-    runtimeOptions.SetLogLevel(option.GetLogLevel());
+    base_options::Options baseOptions("");
+    baseOptions.SetLogLevel(option.GetLogLevel());
     arg_list_t logComponents;
     logComponents.emplace_back("all");
-    runtimeOptions.SetLogComponents(logComponents);
+    baseOptions.SetLogComponents(logComponents);
+    Logger::Initialize(baseOptions);
     if (option.GetLogBufPrint() != nullptr) {
-        runtimeOptions.SetMobileLog(reinterpret_cast<void *>(option.GetLogBufPrint()));
+        Logger::SetMobileLogPrintEntryPointByPtr(reinterpret_cast<void *>(option.GetLogBufPrint()));
     }
 
     runtimeOptions.SetEnableArkTools(option.GetEnableArkTools());
@@ -154,9 +162,12 @@ bool JSNApi::DestroyRuntime()
 EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
 {
     auto runtime = Runtime::GetCurrent();
+    os::memory::LockHolder lock(mutex);
+    vmCount++;
     if (runtime == nullptr) {
         // Only Ark js app
         if (!CreateRuntime(option)) {
+            vmCount--;
             return nullptr;
         }
         runtime = Runtime::GetCurrent();
@@ -175,12 +186,16 @@ void JSNApi::DestroyJSVM(EcmaVM *ecmaVm)
     ecmaVm->GetNotificationManager()->VmDeathEvent();
     auto runtime = Runtime::GetCurrent();
     if (runtime != nullptr) {
+        os::memory::LockHolder lock(mutex);
+        vmCount--;
         PandaVM *mainVm = runtime->GetPandaVM();
         // Only Ark js app
-        if (mainVm == ecmaVm) {
-            DestroyRuntime();
-        } else {
+        if (mainVm != ecmaVm) {
             EcmaVM::Destroy(ecmaVm);
+        }
+
+        if (vmCount <= 0) {
+            DestroyRuntime();
         }
     }
 }
@@ -329,6 +344,14 @@ uintptr_t JSNApi::SetWeak(const EcmaVM *vm, uintptr_t localAddress)
         return 0;
     }
     return vm->GetJSThread()->GetEcmaGlobalStorage()->SetWeak(localAddress);
+}
+
+uintptr_t JSNApi::ClearWeak(const EcmaVM *vm, uintptr_t localAddress)
+{
+    if (localAddress == 0) {
+        return 0;
+    }
+    return vm->GetJSThread()->GetEcmaGlobalStorage()->ClearWeak(localAddress);
 }
 
 bool JSNApi::IsWeak(const EcmaVM *vm, uintptr_t localAddress)
@@ -1394,7 +1417,7 @@ JSTaggedValue Callback::RegisterCallback(ecmascript::EcmaRuntimeCallInfo *info)
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = thread->GetEcmaVM();
     // data
     void *data = extraInfo->GetData();
     // callBack
@@ -1437,7 +1460,7 @@ JSTaggedValue Callback::RegisterCallbackWithProperty(ecmascript::EcmaRuntimeCall
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = thread->GetEcmaVM();
     // data
     void *data = extraInfo->GetData();
     // callBack
@@ -1480,7 +1503,7 @@ JSTaggedValue Callback::RegisterCallbackWithNewTarget(ecmascript::EcmaRuntimeCal
     if (region == nullptr) {
         return JSTaggedValue::False();
     }
-    EcmaVM *vm = region->GetHeap()->GetEcmaVM();
+    EcmaVM *vm = thread->GetEcmaVM();
     // data
     void *data = extraInfo->GetData();
     // callBack

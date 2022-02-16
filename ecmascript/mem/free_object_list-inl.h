@@ -21,37 +21,37 @@
 #include <cmath>
 
 namespace panda::ecmascript {
-KindType FreeObjectList::SelectKindType(size_t size) const
+SetType FreeObjectList::SelectSetType(size_t size) const
 {
-    if (size < SMALL_KIND_MAX_SIZE) {
+    if (size < SMALL_SET_MAX_SIZE) {
         if (UNLIKELY(size < MIN_SIZE)) {
-            return FreeObjectKind::INVALID_KIND_TYPE;
+            return FreeObjectSet::INVALID_SET_TYPE;
         }
-        return (size >> INTERVAL_OFFSET) - smallKindOffsetIndex;
+        return (size >> INTERVAL_OFFSET) - smallSetOffsetIndex;
     }
-    if (size < LARGE_KIND_MAX_SIZE) {
+    if (size < LARGE_SET_MAX_SIZE) {
         return MAX_BIT_OF_SIZET - __builtin_clzl(size) + LOG2_OFFSET;
     }
-    if (size >= HUGE_KIND_MAX_SIZE) {
+    if (size >= HUGE_SET_MAX_SIZE) {
         return NUMBER_OF_LAST_HUGE;
     }
 
     return NUMBER_OF_LAST_LARGE;
 }
 
-void FreeObjectList::SetNoneEmptyBit(KindType type)
+void FreeObjectList::SetNoneEmptyBit(SetType type)
 {
-    noneEmptyKindBitMap_ |= 1ULL << static_cast<uint32_t>(type);
+    noneEmptySetBitMap_ |= 1ULL << static_cast<uint32_t>(type);
 }
 
-void FreeObjectList::ClearNoneEmptyBit(KindType type)
+void FreeObjectList::ClearNoneEmptyBit(SetType type)
 {
-    noneEmptyKindBitMap_ &= ~(1ULL << static_cast<uint32_t>(type));
+    noneEmptySetBitMap_ &= ~(1ULL << static_cast<uint32_t>(type));
 }
 
-inline size_t FreeObjectList::CalcNextNoneEmptyIndex(KindType start)
+inline size_t FreeObjectList::CalcNextNoneEmptyIndex(SetType start)
 {
-    return __builtin_ffsll(noneEmptyKindBitMap_ >> static_cast<uint32_t>(start)) + start - 1;
+    return __builtin_ffsll(noneEmptySetBitMap_ >> static_cast<uint32_t>(start)) + start - 1;
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_FREE_OBJECT_LIST_INL_H

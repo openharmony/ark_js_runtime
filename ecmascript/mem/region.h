@@ -19,6 +19,7 @@
 #include "ecmascript/mem/free_object_list.h"
 #include "ecmascript/mem/mem.h"
 #include "mem/gc/bitmap.h"
+#include "region_factory.h"
 
 namespace panda {
 using RangeBitmap = mem::MemBitmap<static_cast<size_t>(ecmascript::MemAlignment::MEM_ALIGN_OBJECT)>;
@@ -40,23 +41,30 @@ enum RegionFlags {
     IS_IN_NON_MOVABLE_GENERATION = 1 << 7,
     IS_IN_YOUNG_OR_OLD_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_OLD_GENERATION,
     IS_IN_COLLECT_SET = 1 << 8,
-    IS_IN_PROMOTE_SET = 1 << 9,
+    IS_IN_NEW_TO_NEW_SET = 1 << 9,
     IS_IN_YOUNG_OR_CSET_GENERATION = IS_IN_YOUNG_GENERATION | IS_IN_COLLECT_SET,
     IS_INVALID = 1 << 10,
 };
 
+#define REGION_OFFSET_LIST(V)                                                             \
+    V(BITMAP, BitMap, markBitmap_, FLAG, sizeof(uint32_t), sizeof(uint64_t))              \
+    V(OLDTONEWSET, OldToNewSet, oldToNewSet_, BITMAP, sizeof(uint32_t), sizeof(uint64_t))
+
 class Region {
 public:
-    Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin, uintptr_t end)
-        : space_(space), heap_(heap),
-          flags_(0),
-          allocateBase_(allocateBase),
-          // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-          begin_(begin),
-          end_(end),
-          highWaterMark_(end),
-          aliveObject_(0)
+    Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin,
+        uintptr_t end, RegionFactory* regionFactory)
+        : flags_(0), space_(space), heap_(heap),
+        allocateBase_(allocateBase),
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        begin_(begin),
+        end_(end),
+        highWaterMark_(end),
+        aliveObject_(0),
+        wasted_(0),
+        regionFactory_(regionFactory)
     {
+        markBitmap_ = CreateMarkBitmap();
     }
     ~Region() = default;
     NO_COPY_SEMANTIC(Region);
@@ -177,14 +185,14 @@ public:
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_OLD_GENERATION);
     }
 
-    bool InYoungAndCSetGeneration() const
+    bool InYoungOrCSetGeneration() const
     {
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_CSET_GENERATION);
     }
 
-    bool InPromoteSet() const
+    bool InNewToNewSet() const
     {
-        return IsFlagSet(RegionFlags::IS_IN_PROMOTE_SET);
+        return IsFlagSet(RegionFlags::IS_IN_NEW_TO_NEW_SET);
     }
 
     bool InCollectSet() const
@@ -207,18 +215,29 @@ public:
         return address >= begin_ && address <= end_;
     }
 
-    inline RangeBitmap *GetOrCreateMarkBitmap();
-    inline RangeBitmap *CreateMarkBitmap();
-    inline void ClearMarkBitmap();
+    inline RangeBitmap *CreateMarkBitmap()
+    {
+        size_t heapSize = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ? LARGE_BITMAP_MIN_SIZE : GetCapacity();
+        // Only one huge object is stored in a region. The BitmapSize of a huge region will always be 8 Bytes.
+        size_t bitmapSize = RangeBitmap::GetBitMapSizeInByte(heapSize);
+        ASSERT(regionFactory_ != nullptr);
+        auto bitmapData = const_cast<RegionFactory *>(regionFactory_)->Allocate(bitmapSize);
+        auto *ret = new RangeBitmap(this, heapSize, bitmapData);
+        ret->ClearAllBits();
+        return ret;
+    }
     inline RememberedSet *CreateRememberedSet();
     inline RememberedSet *GetOrCreateCrossRegionRememberedSet();
     inline RememberedSet *GetOrCreateOldToNewRememberedSet();
+    inline void DeleteMarkBitmap();
+    inline void DeleteCrossRegionRememberedSet();
+    inline void DeleteOldToNewRememberedSet();
+    inline void ClearMarkBitmap();
+    inline void ClearCrossRegionRememberedSet();
     inline void InsertCrossRegionRememberedSet(uintptr_t addr);
     inline void AtomicInsertCrossRegionRememberedSet(uintptr_t addr);
     inline void InsertOldToNewRememberedSet(uintptr_t addr);
     inline void AtomicInsertOldToNewRememberedSet(uintptr_t addr);
-    inline void ClearCrossRegionRememberedSet();
-    inline void ClearOldToNewRememberedSet();
 
     uintptr_t GetAllocateBase() const
     {
@@ -244,71 +263,60 @@ public:
         return res;
     }
 
-    void InitializeKind()
+    void InitializeSet()
     {
-        kinds_ = Span<FreeObjectKind *>(new FreeObjectKind *[FreeObjectList::NumberOfKinds()](),
-                                        FreeObjectList::NumberOfKinds());
+        sets_ = Span<FreeObjectSet *>(new FreeObjectSet *[FreeObjectList::NumberOfSets()](),
+            FreeObjectList::NumberOfSets());
     }
 
-    void RebuildKind()
+    void RebuildSet()
     {
-        EnumerateKinds([](FreeObjectKind *kind) {
-            if (kind != nullptr) {
-                kind->Rebuild();
+        EnumerateSets([](FreeObjectSet *set) {
+            if (set != nullptr) {
+                set->Rebuild();
             }
         });
     }
 
-    void DestroyKind()
+    void DestroySet()
     {
-        for (auto kind : kinds_) {
-            delete kind;
+        for (auto set : sets_) {
+            delete set;
         }
-        delete[] kinds_.data();
+        delete[] sets_.data();
     }
 
-    FreeObjectKind *GetFreeObjectKind(KindType type)
+    FreeObjectSet *GetFreeObjectSet(SetType type)
     {
         // Thread safe
-        if (kinds_[type] == nullptr) {
-            kinds_[type] = new FreeObjectKind(type);
+        if (sets_[type] == nullptr) {
+            sets_[type] = new FreeObjectSet(type);
         }
-        return kinds_[type];
+        return sets_[type];
     }
 
     template<class Callback>
-    void EnumerateKinds(Callback cb)
+    void EnumerateSets(Callback cb)
     {
-        for (auto kind : kinds_) {
-            cb(kind);
+        for (auto set : sets_) {
+            cb(set);
         }
     }
 
-    bool IsMarking() const
-    {
-        return marking_;
-    }
-
-    void SetMarking(bool isMarking)
-    {
-        marking_ = isMarking;
-    }
+    inline bool IsMarking() const;
 
     inline WorkerHelper *GetWorkList() const;
 
-    void IncrementAliveObject(size_t size)
+    void IncrementAliveObjectSafe(size_t size)
     {
+        ASSERT(aliveObject_ + size <= GetSize());
         aliveObject_ += size;
     }
 
-    void DecreaseAliveObject(size_t size)
+    void IncrementAliveObject(size_t size)
     {
-        aliveObject_ -= size;
-    }
-
-    void SetAliveObject(size_t size)
-    {
-        aliveObject_ = size;
+        ASSERT(aliveObject_ + size <= GetSize());
+        aliveObject_.fetch_add(size, std::memory_order_relaxed);
     }
 
     void ResetAliveObject()
@@ -326,26 +334,110 @@ public:
         return aliveObject_ > MOST_OBJECT_ALIVE_THRESHOLD_PERCENT * GetSize();
     }
 
+    void ResetWasted()
+    {
+        wasted_ = 0;
+    }
+    void IncrementWasted(size_t size)
+    {
+        wasted_ += size;
+    }
+    size_t GetWastedSize()
+    {
+        return wasted_;
+    }
+
+    static constexpr uint32_t GetOldToNewSetOffset(bool is32Bit = false)
+    {
+        return is32Bit ? REGION_OLDTONEWSET_OFFSET_32 : REGION_OLDTONEWSET_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetBitMapOffset(bool is32Bit = false)
+    {
+        return is32Bit ? REGION_BITMAP_OFFSET_32 : REGION_BITMAP_OFFSET_64;
+    }
+
+    static constexpr uint32_t GetFlagOffset(bool is32Bit = false)
+    {
+        return is32Bit ? REGION_FLAG_OFFSET_32 : REGION_FLAG_OFFSET_64;
+    }
+
+    #define REGION_OFFSET_MACRO(name, camelName, memberName, lastName, lastSize32, lastSize64)                                                                 \
+        static constexpr uint32_t REGION_##name##_OFFSET_32 = REGION_##lastName##_OFFSET_32 + (lastSize32); \
+        static constexpr uint32_t REGION_##name##_OFFSET_64 = REGION_##lastName##_OFFSET_64 + (lastSize64);
+    static constexpr uint32_t REGION_FLAG_OFFSET_32 = 0U;
+    static constexpr uint32_t REGION_FLAG_OFFSET_64 = 0U;
+    REGION_OFFSET_LIST(REGION_OFFSET_MACRO)
+    #undef REGION_OFFSET_MACRO
+
+    static constexpr bool CheckLayout()
+    {
+#ifdef PANDA_TARGET_32
+        #define REGION_OFFSET_ASSET(name, camelName, memberName, lastName, lastSize32, lastSize64)         \
+        static_assert(MEMBER_OFFSET(Region, memberName) == (Get##camelName##Offset(true)));
+        REGION_OFFSET_LIST(REGION_OFFSET_ASSET)
+        static_assert(GetFlagOffset(true) == MEMBER_OFFSET(Region, flags_));
+        #undef REGION_OFFSET_ASSET
+#endif
+#ifdef PANDA_TARGET_64
+        #define REGION_OFFSET_ASSET(name, camelName, memberName, lastName, lastSize32, lastSize64)         \
+        static_assert(MEMBER_OFFSET(Region, memberName) == (Get##camelName##Offset(false)));
+        REGION_OFFSET_LIST(REGION_OFFSET_ASSET)
+        static_assert(GetFlagOffset(false) == MEMBER_OFFSET(Region, flags_));
+        #undef REGION_OFFSET_ASSET
+#endif
+        return true;
+    }
 private:
     static constexpr double MOST_OBJECT_ALIVE_THRESHOLD_PERCENT = 0.8;
+    uintptr_t flags_;  // Memory alignment, only low 32bits are used now
+    RangeBitmap *markBitmap_ {nullptr};
+    RememberedSet *oldToNewSet_ {nullptr};
     Space *space_;
     Heap *heap_;
-    uintptr_t flags_;  // Memory alignment, only low 32bits are used now
+
     uintptr_t allocateBase_;
     uintptr_t begin_;
     uintptr_t end_;
     uintptr_t highWaterMark_;
-    bool marking_ {false};
     std::atomic_size_t aliveObject_ {0};
     Region *next_ {nullptr};
     Region *prev_ {nullptr};
-    RangeBitmap *markBitmap_ {nullptr};
+
     RememberedSet *crossRegionSet_ {nullptr};
-    RememberedSet *oldToNewSet_ {nullptr};
-    Span<FreeObjectKind *> kinds_;
+    Span<FreeObjectSet *> sets_;
+    size_t wasted_;
     os::memory::Mutex lock_;
+    RegionFactory* regionFactory_ {nullptr};
     friend class SnapShot;
 };
+
+class BitmapHelper : public mem::Bitmap {
+public:
+    static const size_t BITSPERWORD_64 = BITSPERBYTE * sizeof(uint64_t);
+    static const size_t BITSPERWORD_32 = BITSPERBYTE * sizeof(uint32_t);
+    static constexpr size_t LOG_BITSPERWORD_64 = panda::helpers::math::GetIntLog2(
+        static_cast<uint64_t>(BITSPERWORD_64));
+    static constexpr size_t LOG_BITSPERWORD_32 = panda::helpers::math::GetIntLog2(
+        static_cast<uint64_t>(BITSPERWORD_32));
+    NO_COPY_SEMANTIC(BitmapHelper);
+    NO_MOVE_SEMANTIC(BitmapHelper);
+    static constexpr uint32_t LogBitsPerWord(bool is32Bit = false)
+    {
+        return is32Bit ? LOG_BITSPERWORD_32 : LOG_BITSPERWORD_64;
+    }
+    static constexpr bool CheckLayout()
+    {
+    #ifdef PANDA_TARGET_32
+        static_assert(LogBitsPerWord(true) == mem::Bitmap::LOG_BITSPERWORD);
+    #else
+        static_assert(LogBitsPerWord(false) == mem::Bitmap::LOG_BITSPERWORD);
+    #endif
+        return true;
+    }
+};
+static_assert(Region::CheckLayout());
+static_assert(BitmapHelper::CheckLayout());
 }  // namespace ecmascript
 }  // namespace panda
 

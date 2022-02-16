@@ -128,7 +128,9 @@ std::string HeapProfiler::GenDumpFileName(DumpFormat dumpFormat)
 CString HeapProfiler::GetTimeStamp()
 {
     std::time_t timeSource = std::time(nullptr);
-    tm *timeData = localtime(&timeSource);
+    struct tm tm {
+    };
+    struct tm *timeData = localtime_r(&timeSource, &tm);
     CString stamp;
     const int TIME_START = 1900;
     stamp.append(ToCString(timeData->tm_year + TIME_START))
@@ -160,7 +162,7 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
 {
     LOG(ERROR, RUNTIME) << "HeapProfiler::MakeHeapSnapShot";
     DISALLOW_GARBAGE_COLLECTION;
-    heap_->GetSweeper()->EnsureAllTaskFinished();
+    const_cast<Heap *>(heap_)->Prepare();
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
             auto *snapShot =

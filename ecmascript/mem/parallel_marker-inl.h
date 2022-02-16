@@ -23,6 +23,7 @@
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
+#include "ecmascript/mem/utils.h"
 
 #include "mem/gc/bitmap.h"
 
@@ -33,11 +34,12 @@ inline void NonMovableMarker::MarkObject(uint32_t threadId, TaggedObject *object
 {
     Region *objectRegion = Region::ObjectAddressToRange(object);
 
-    if (heap_->IsSemiMarkNeeded() && !objectRegion->InYoungGeneration()) {
+    if (!heap_->IsFullMark() && !objectRegion->InYoungGeneration()) {
         return;
     }
 
-    auto markBitmap = objectRegion->GetOrCreateMarkBitmap();
+    auto markBitmap = objectRegion->GetMarkBitmap();
+    ASSERT(markBitmap != nullptr);
     if (!markBitmap->AtomicTestAndSet(object)) {
         heap_->GetWorkList()->Push(threadId, object, objectRegion);
     }
@@ -69,7 +71,7 @@ inline void NonMovableMarker::HandleOldToNewRSet(uint32_t threadId, Region *regi
         oldRSet->IterateOverMarkedChunks([this, threadId](void *mem) -> bool {
             ObjectSlot slot(ToUintPtr(mem));
             JSTaggedValue value(slot.GetTaggedType());
-            if (value.IsHeapObject() && !value.IsWeak()) {
+            if (value.IsHeapObject() && !value.IsWeakForHeapObject()) {
                 MarkObject(threadId, value.GetTaggedObject());
             }
             return true;
@@ -112,7 +114,7 @@ inline void MovableMarker::HandleOldToNewRSet(uint32_t threadId, Region *region)
             ObjectSlot slot(ToUintPtr(mem));
             JSTaggedValue value(slot.GetTaggedType());
             if (value.IsHeapObject()) {
-                if (value.IsWeak()) {
+                if (value.IsWeakForHeapObject()) {
                     RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(mem));
                     return true;
                 }
@@ -130,16 +132,16 @@ inline uintptr_t MovableMarker::AllocateDstSpace(uint32_t threadId, size_t size,
 {
     uintptr_t forwardAddress = 0;
     if (shouldPromote) {
-        forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, SpaceAlloc::OLD_SPACE);
+        forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, COMPRESS_SPACE);
         if (UNLIKELY(forwardAddress == 0)) {
             LOG_ECMA_MEM(FATAL) << "EvacuateObject alloc failed: "
                                 << " size: " << size;
             UNREACHABLE();
         }
     } else {
-        forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, SpaceAlloc::YOUNG_SPACE);
+        forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, SEMI_SPACE);
         if (UNLIKELY(forwardAddress == 0)) {
-            forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, SpaceAlloc::OLD_SPACE);
+            forwardAddress = heap_->GetWorkList()->GetTlabAllocator(threadId)->Allocate(size, COMPRESS_SPACE);
             if (UNLIKELY(forwardAddress == 0)) {
                 LOG_ECMA_MEM(FATAL) << "EvacuateObject alloc failed: "
                                     << " size: " << size;
@@ -154,7 +156,8 @@ inline uintptr_t MovableMarker::AllocateDstSpace(uint32_t threadId, size_t size,
 inline void MovableMarker::UpdateForwardAddressIfSuccess(uint32_t threadId, TaggedObject *object, JSHClass *klass,
     uintptr_t toAddress, size_t size, const MarkWord &markWord, ObjectSlot slot)
 {
-    CopyObjectWithoutHeader(object, toAddress, size);
+    Utils::Copy(ToVoidPtr(toAddress + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
+        size - HEAD_SIZE);
     heap_->GetWorkList()->AddAliveSize(threadId, size);
     *reinterpret_cast<MarkWordType *>(toAddress) = markWord.GetValue();
     heap_->OnMoveEvent(reinterpret_cast<intptr_t>(object), toAddress);
@@ -171,16 +174,6 @@ inline bool MovableMarker::UpdateForwardAddressIfFailed(TaggedObject *object, ui
     TaggedObject *dst = MarkWord(object).ToForwardingAddress();
     slot.Update(dst);
     return Region::ObjectAddressToRange(dst)->InYoungGeneration();
-}
-
-inline void MovableMarker::CopyObjectWithoutHeader(TaggedObject *object, uintptr_t toAddress, size_t size)
-{
-    if (memcpy_s(ToVoidPtr(toAddress + HEAD_SIZE), size - HEAD_SIZE, ToVoidPtr(ToUintPtr(object) + HEAD_SIZE),
-        size - HEAD_SIZE) != EOK) {
-        LOG_ECMA_MEM(FATAL) << "CopyObjectWithoutHeader memcpy_s failed: "
-                            << " dst: " << toAddress << " src: " << ToUintPtr(object) << " size: " << size;
-        UNREACHABLE();
-    }
 }
 
 inline SlotStatus SemiGcMarker::MarkObject(uint32_t threadId, TaggedObject *object, ObjectSlot slot)

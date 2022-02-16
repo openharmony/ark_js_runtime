@@ -36,7 +36,7 @@ void PhiGateTestStub::GenerateCircuit(const CompilationConfig *cfg)
     Label ifFalse(env);
     Label next(env);
 
-    Branch(Word32Equal(*x, GetInt32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
+    Branch(Int32Equal(*x, GetInt32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
     Bind(&ifTrue);
     z = Int32Add(*x, GetInt32Constant(10));  // 10 : size of entry
     Jump(&next);
@@ -61,7 +61,7 @@ void LoopTestStub::GenerateCircuit(const CompilationConfig *cfg)
     Label ifTrue(env);
     Label ifFalse(env);
     Label next(env);
-    Branch(Word32Equal(Int32Argument(0), GetInt32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
+    Branch(Int32Equal(Int32Argument(0), GetInt32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
     Bind(&ifTrue);
     z = Int32Add(*y, GetInt32Constant(10));  // 10 : size of entry
     y = Int32Add(*z, GetInt32Constant(1));
@@ -93,7 +93,7 @@ void LoopTest1Stub::GenerateCircuit(const CompilationConfig *cfg)
     x = Int32Add(*z, GetInt32Constant(3));  // 3 : size of entry
     Label ifTrue(env);
     Label next(env);
-    Branch(Word32Equal(*x, GetInt32Constant(9)), &ifTrue, &next);  // 9 : size of entry
+    Branch(Int32Equal(*x, GetInt32Constant(9)), &ifTrue, &next);  // 9 : size of entry
     Bind(&ifTrue);
     y = Int32Add(*z, *x);
     Jump(&next);
@@ -116,9 +116,9 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef x = Int64Argument(1);
     GateRef y = Int64Argument(2); // 2: 3rd argument
 
-    DEFVARIABLE(intX, StubMachineType::INT64, GetWord64Constant(0));
-    DEFVARIABLE(intY, StubMachineType::INT64, GetWord64Constant(0));
-    DEFVARIABLE(valuePtr, StubMachineType::INT64, GetWord64Constant(0));
+    DEFVARIABLE(intX, StubMachineType::INT64, GetInt64Constant(0));
+    DEFVARIABLE(intY, StubMachineType::INT64, GetInt64Constant(0));
+    DEFVARIABLE(valuePtr, StubMachineType::INT64, GetInt64Constant(0));
     DEFVARIABLE(doubleX, StubMachineType::FLOAT64, GetDoubleConstant(0));
     DEFVARIABLE(doubleY, StubMachineType::FLOAT64, GetDoubleConstant(0));
     Label xIsNumber(env);
@@ -171,10 +171,10 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
     StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtrTest);
-    GateRef ptr1 = CallRuntime(getTaggedArrayPtr, glue, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
+    GateRef ptr1 = CallRuntime(getTaggedArrayPtr, glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
         glue
     });
-    GateRef ptr2 = CallRuntime(getTaggedArrayPtr, glue, GetWord64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
+    GateRef ptr2 = CallRuntime(getTaggedArrayPtr, glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
         glue
     });
     auto value1 = Load(StubMachineType::UINT64, ptr1);
@@ -473,8 +473,8 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
             {
                 GateRef intXTmp = CastDoubleToInt64(*doubleX);
                 GateRef intYtmp = CastDoubleToInt64(*doubleY);
-                intXTmp = Word64And(Word64Xor(intXTmp, intYtmp), GetWord64Constant(base::DOUBLE_SIGN_MASK));
-                intXTmp = Word64Xor(intXTmp, CastDoubleToInt64(GetDoubleConstant(base::POSITIVE_INFINITY)));
+                intXTmp = Int64And(Int64Xor(intXTmp, intYtmp), GetInt64Constant(base::DOUBLE_SIGN_MASK));
+                intXTmp = Int64Xor(intXTmp, CastDoubleToInt64(GetDoubleConstant(base::POSITIVE_INFINITY)));
                 doubleX = CastInt64ToFloat64(intXTmp);
                 Return(DoubleBuildTaggedWithNoGC(*doubleX));
             }
@@ -631,7 +631,7 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
                 Bind(&yNotInf);
                 {
                     StubDescriptor *floatMod = GET_STUBDESCRIPTOR(FloatMod);
-                    doubleX = CallRuntime(floatMod, glue, GetWord64Constant(FAST_STUB_ID(FloatMod)), {
+                    doubleX = CallRuntime(floatMod, glue, GetInt64Constant(FAST_STUB_ID(FloatMod)), {
                             *doubleX, *doubleY
                         });
                     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -650,7 +650,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef glue = PtrArgument(0);
     GateRef obj = TaggedArgument(1);
     DEFVARIABLE(holder, StubMachineType::TAGGED, obj);
-    GateRef gConstOffset = PtrAdd(glue, GetArchRelateConstant(env->GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
+    GateRef gConstOffset = IntPtrAdd(glue, GetIntPtrConstant(env->GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
     GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
     GateRef gConstUndefindStr = Load(StubMachineType::TAGGED_POINTER, gConstOffset, booleanIndex);
     DEFVARIABLE(resultRep, StubMachineType::TAGGED_POINTER, gConstUndefindStr);
@@ -660,7 +660,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
     Label defaultLabel(env);
     GateRef gConstBooleanStr = Load(
         StubMachineType::TAGGED_POINTER, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
-    Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
+    Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
     Bind(&objIsTrue);
     {
         resultRep = gConstBooleanStr;
@@ -670,7 +670,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
     {
         Label objIsFalse(env);
         Label objNotFalse(env);
-        Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
+        Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
         Bind(&objIsFalse);
         {
             resultRep = gConstBooleanStr;
@@ -680,7 +680,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
         {
             Label objIsNull(env);
             Label objNotNull(env);
-            Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
+            Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
             Bind(&objIsNull);
             {
                 resultRep = Load(
@@ -692,7 +692,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
             {
                 Label objIsUndefined(env);
                 Label objNotUndefined(env);
-                Branch(Word64Equal(obj, GetWord64Constant(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
+                Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
                     &objNotUndefined);
                 Bind(&objIsUndefined);
                 {
@@ -783,7 +783,7 @@ void FastEqualStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef y = TaggedArgument(1);
     Label xIsEqualy(env);
     Label xIsNotEqualy(env);
-    Branch(Word64Equal(x, y), &xIsEqualy, &xIsNotEqualy);
+    Branch(Int64Equal(x, y), &xIsEqualy, &xIsNotEqualy);
     Bind(&xIsEqualy);
     {
         Label xIsDouble(env);
@@ -929,7 +929,7 @@ void FunctionCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&funcIsBuiltinsConstructorOrFuncNotClassConstructor);
     StubDescriptor *execute = GET_STUBDESCRIPTOR(Execute);
-    Return(CallRuntime(execute, glue, GetWord64Constant(FAST_STUB_ID(Execute)), {
+    Return(CallRuntime(execute, glue, GetInt64Constant(FAST_STUB_ID(Execute)), {
             glue, func, thisArg, argc, argv
         }));
 }
@@ -988,7 +988,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     {
                         StubDescriptor *newInternalString = GET_STUBDESCRIPTOR(NewInternalString);
                         key = CallRuntime(newInternalString, glue,
-                            GetWord64Constant(FAST_STUB_ID(NewInternalString)), { glue, *key });
+                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { glue, *key });
                         Jump(&getByName);
                     }
                 }
@@ -1062,7 +1062,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     {
                         StubDescriptor *newInternalString = GET_STUBDESCRIPTOR(NewInternalString);
                         key = CallRuntime(newInternalString, glue,
-                            GetWord64Constant(FAST_STUB_ID(NewInternalString)), { glue, *key });
+                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { glue, *key });
                         Jump(&getByName);
                     }
                 }
@@ -1099,7 +1099,7 @@ void TryLoadICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&receiverIsHeapObject);
     {
         GateRef hclass = LoadHClass(receiver);
-        Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+        Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
                &hclassEqualFirstValue, &hclassNotEqualFirstValue);
         Bind(&hclassEqualFirstValue);
         {
@@ -1141,13 +1141,13 @@ void TryLoadICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&receiverIsHeapObject);
     {
         GateRef hclass = LoadHClass(receiver);
-        Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+        Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
             &hclassEqualFirstValue, &hclassNotEqualFirstValue);
         Bind(&hclassEqualFirstValue);
         Return(LoadElement(receiver, key));
         Bind(&hclassNotEqualFirstValue);
         {
-            Branch(Word64Equal(firstValue, key), &firstValueEqualKey, &receiverNotHeapObject);
+            Branch(Int64Equal(firstValue, key), &firstValueEqualKey, &receiverNotHeapObject);
             Bind(&firstValueEqualKey);
             {
                 auto cachedHandler = CheckPolyHClass(secondValue, hclass);
@@ -1179,7 +1179,7 @@ void TryStoreICByNameStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&receiverIsHeapObject);
     {
         GateRef hclass = LoadHClass(receiver);
-        Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+        Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
                &hclassEqualFirstValue, &hclassNotEqualFirstValue);
         Bind(&hclassEqualFirstValue);
         {
@@ -1219,14 +1219,14 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
     Bind(&receiverIsHeapObject);
     {
         GateRef hclass = LoadHClass(receiver);
-        Branch(Word64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
+        Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
             &hclassEqualFirstValue, &hclassNotEqualFirstValue);
         Bind(&hclassEqualFirstValue);
         GateRef handlerInfo = TaggedCastToInt32(secondValue);
         Return(ICStoreElement(glue, receiver, key, value, handlerInfo));
         Bind(&hclassNotEqualFirstValue);
         {
-            Branch(Word64Equal(firstValue, key), &firstValueEqualKey, &receiverNotHeapObject);
+            Branch(Int64Equal(firstValue, key), &firstValueEqualKey, &receiverNotHeapObject);
             Bind(&firstValueEqualKey);
             {
                 GateRef cachedHandler = CheckPolyHClass(secondValue, hclass);

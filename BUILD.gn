@@ -43,7 +43,9 @@ group("ark_js_unittest") {
   deps = []
   if (host_os != "mac") {
     deps += [
+      "//ark/js_runtime/ecmascript/base/tests:unittest",
       "//ark/js_runtime/ecmascript/builtins/tests:unittest",
+      "//ark/js_runtime/ecmascript/containers/tests:unittest",
       "//ark/js_runtime/ecmascript/hprof/tests:unittest",
       "//ark/js_runtime/ecmascript/ic/tests:unittest",
       "//ark/js_runtime/ecmascript/napi/test:unittest",
@@ -61,7 +63,9 @@ group("ark_js_host_unittest") {
   if (host_os != "mac") {
     # js unittest
     deps += [
+      "//ark/js_runtime/ecmascript/base/tests:host_unittest",
       "//ark/js_runtime/ecmascript/builtins/tests:host_unittest",
+      "//ark/js_runtime/ecmascript/containers/tests:host_unittest",
       "//ark/js_runtime/ecmascript/hprof/tests:host_unittest",
       "//ark/js_runtime/ecmascript/ic/tests:host_unittest",
       "//ark/js_runtime/ecmascript/napi/test:host_unittest",
@@ -375,9 +379,8 @@ ecma_source = [
   "ecmascript/mem/concurrent_marker.cpp",
   "ecmascript/mem/concurrent_sweeper.cpp",
   "ecmascript/mem/mem_manager.cpp",
-  "ecmascript/mem/evacuation_allocator.cpp",
-  "ecmascript/mem/free_object_kind.cpp",
   "ecmascript/mem/free_object_list.cpp",
+  "ecmascript/mem/free_object_set.cpp",
   "ecmascript/mem/gc_stats.cpp",
   "ecmascript/mem/heap.cpp",
   "ecmascript/mem/mem_controller.cpp",
