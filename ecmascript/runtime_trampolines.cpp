@@ -186,7 +186,7 @@ JSTaggedType RuntimeTrampolines::GetTaggedArrayPtrTest(uintptr_t argGlue)
     PrintHeapReginInfo(argGlue);
 #endif
     if (i != 0) {
-        thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+        thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     }
     LOG_ECMA(INFO) << " arr->GetData() " << std::hex << "  " << arr->GetData();
     i++;

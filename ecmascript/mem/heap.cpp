@@ -20,17 +20,17 @@
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/assert_scope-inl.h"
-#include "ecmascript/mem/compress_collector.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
-#include "ecmascript/mem/mem_manager.h"
+#include "ecmascript/mem/full_gc.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/mix_space_collector.h"
+#include "ecmascript/mem/mem_manager.h"
+#include "ecmascript/mem/mix_gc.h"
 #include "ecmascript/mem/parallel_evacuation.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/semi_space_collector.h"
+#include "ecmascript/mem/stw_young_gc_for_testing.h"
 #include "ecmascript/mem/verification.h"
 
 namespace panda::ecmascript {
@@ -66,11 +66,11 @@ void Heap::Initialize()
     concurrentMarkingEnabled_ = false;
 #endif
     workList_ = new WorkerHelper(this, Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1);
-    semiSpaceCollector_ = new SemiSpaceCollector(this, paralledGc_);
-    compressCollector_ = new CompressCollector(this);
+    stwYoungGC_ = new STWYoungGC(this, paralledGc_);
+    fullGC_ = new FullGC(this);
 
     derivedPointers_ = new ChunkMap<DerivedDataKey, uintptr_t>(ecmaVm_->GetChunk());
-    mixSpaceCollector_ = new MixSpaceCollector(this);
+    mixGC_ = new MixGC(this);
     sweeper_ = new ConcurrentSweeper(this, ecmaVm_->GetJSOptions().IsEnableConcurrentSweep());
     concurrentMarker_ = new ConcurrentMarker(this);
     nonMovableMarker_ = new NonMovableMarker(this);
@@ -136,30 +136,53 @@ void Heap::Destroy()
         delete hugeObjectSpace_;
         hugeObjectSpace_ = nullptr;
     }
+    if (workList_ != nullptr) {
+        delete workList_;
+        workList_ = nullptr;
+    }
+    if (stwYoungGC_ != nullptr) {
+        delete stwYoungGC_;
+        stwYoungGC_ = nullptr;
+    }
+    if (mixGC_ != nullptr) {
+        delete mixGC_;
+        mixGC_ = nullptr;
+    }
+    if (fullGC_ != nullptr) {
+        delete fullGC_;
+        fullGC_ = nullptr;
+    }
 
-    delete workList_;
-    workList_ = nullptr;
-    delete semiSpaceCollector_;
-    semiSpaceCollector_ = nullptr;
-    delete mixSpaceCollector_;
-    mixSpaceCollector_ = nullptr;
-    delete compressCollector_;
-    compressCollector_ = nullptr;
     regionFactory_ = nullptr;
-    delete memController_;
-    memController_ = nullptr;
-    delete sweeper_;
-    sweeper_ = nullptr;
-    delete derivedPointers_;
-    derivedPointers_ = nullptr;
-    delete concurrentMarker_;
-    concurrentMarker_ = nullptr;
-    delete nonMovableMarker_;
-    nonMovableMarker_ = nullptr;
-    delete semiGcMarker_;
-    semiGcMarker_ = nullptr;
-    delete compressGcMarker_;
-    compressGcMarker_ = nullptr;
+
+    if (memController_ != nullptr) {
+        delete memController_;
+        memController_ = nullptr;
+    }
+    if (sweeper_ != nullptr) {
+        delete sweeper_;
+        sweeper_ = nullptr;
+    }
+    if (derivedPointers_ != nullptr) {
+        delete derivedPointers_;
+        derivedPointers_ = nullptr;
+    }
+    if (concurrentMarker_ != nullptr) {
+        delete concurrentMarker_;
+        concurrentMarker_ = nullptr;
+    }
+    if (nonMovableMarker_ != nullptr) {
+        delete nonMovableMarker_;
+        nonMovableMarker_ = nullptr;
+    }
+    if (semiGcMarker_ != nullptr) {
+        delete semiGcMarker_;
+        semiGcMarker_ = nullptr;
+    }
+    if (compressGcMarker_ != nullptr) {
+        delete compressGcMarker_;
+        compressGcMarker_ = nullptr;
+    }
 }
 
 void Heap::Prepare()
@@ -172,7 +195,7 @@ void Heap::Prepare()
 
 void Heap::Resume(TriggerGCType gcType)
 {
-    if (gcType == TriggerGCType::COMPRESS_FULL_GC) {
+    if (gcType == TriggerGCType::FULL_GC) {
         FlipCompressSpace();
         heapManager_->GetOldSpaceAllocator().RebuildFreeList();
     }
@@ -204,16 +227,15 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     isVerifying_ = false;
     // verify need semiGC or fullGC.
     if (gcType != TriggerGCType::SEMI_GC) {
-        gcType = TriggerGCType::COMPRESS_FULL_GC;
+        gcType = TriggerGCType::FULL_GC;
     }
 #endif
 
 #if ECMASCRIPT_SWITCH_GC_MODE_TO_COMPRESS_GC
-    gcType = TriggerGCType::COMPRESS_FULL_GC;
+    gcType = TriggerGCType::FULL_GC;
 #endif
-    if (isCompressGCRequested_ && thread_->IsReadyToMark()
-        && gcType != TriggerGCType::COMPRESS_FULL_GC) {
-        gcType = TriggerGCType::COMPRESS_FULL_GC;
+    if (isFullGCRequested_ && thread_->IsReadyToMark() && gcType != TriggerGCType::FULL_GC) {
+        gcType = TriggerGCType::FULL_GC;
     }
     memController_->StartCalculationBeforeGC();
 
@@ -227,25 +249,25 @@ void Heap::CollectGarbage(TriggerGCType gcType)
                 bool isOldGCTriggered = false;
                 if (!concurrentMarkingEnabled_) {
                     isOldGCTriggered = GetCommittedSize() > HALF_MAX_HEAP_SIZE ? CheckAndTriggerOldGC()
-                                       : CheckAndTriggerCompressGC();
+                                       : CheckAndTriggerFullGC();
                 }
                 if (!isOldGCTriggered) {
-                    mixSpaceCollector_->RunPhases();
+                    mixGC_->RunPhases();
                 }
             }
             break;
         case TriggerGCType::OLD_GC:
-            mixSpaceCollector_->RunPhases();
+            mixGC_->RunPhases();
             break;
         case TriggerGCType::NON_MOVE_GC:
         case TriggerGCType::HUGE_GC:
         case TriggerGCType::MACHINE_CODE_GC:
-            mixSpaceCollector_->RunPhases();
+            mixGC_->RunPhases();
             break;
-        case TriggerGCType::COMPRESS_FULL_GC:
-            compressCollector_->RunPhases();
-            if (isCompressGCRequested_) {
-                isCompressGCRequested_ = false;
+        case TriggerGCType::FULL_GC:
+            fullGC_->RunPhases();
+            if (isFullGCRequested_) {
+                isFullGCRequested_ = false;
             }
             break;
         default:
@@ -253,7 +275,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             break;
     }
 
-    if (gcType == TriggerGCType::COMPRESS_FULL_GC || IsFullMark()) {
+    if (gcType == TriggerGCType::FULL_GC || IsFullMark()) {
         // Only when the gc type is not semiGC and after the old space sweeping has been finished,
         // the limits of old space and global space can be recomputed.
         RecomputeLimits();
@@ -392,7 +414,7 @@ void Heap::TryTriggerConcurrentMarking()
         if (toSpace_->GetCommittedSize() >= SEMI_SPACE_TRIGGER_CONCURRENT_MARK) {
             markType_ = MarkType::SEMI_MARK;
             TriggerConcurrentMarking();
-            ECMA_GC_LOG() << "Trigger the first semi mark" << isCompressGCRequested_;
+            ECMA_GC_LOG() << "Trigger the first semi mark" << isFullGCRequested_;
         }
         return;
     }
@@ -423,7 +445,7 @@ void Heap::TryTriggerConcurrentMarking()
 
 void Heap::TriggerConcurrentMarking()
 {
-    if (concurrentMarkingEnabled_ && !isCompressGCRequested_) {
+    if (concurrentMarkingEnabled_ && !isFullGCRequested_) {
         concurrentMarker_->ConcurrentMarking();
     }
 }
@@ -439,12 +461,12 @@ bool Heap::CheckAndTriggerOldGC()
     return true;
 }
 
-bool Heap::CheckAndTriggerCompressGC()
+bool Heap::CheckAndTriggerFullGC()
 {
     if (GetCommittedSize() <= globalSpaceAllocLimit_) {
         return false;
     }
-    CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    CollectGarbage(TriggerGCType::FULL_GC);
     return true;
 }
 

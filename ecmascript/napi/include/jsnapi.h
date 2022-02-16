@@ -862,7 +862,7 @@ private:
 class PUBLIC_API JSNApi {
 public:
     // JSVM
-    enum class PUBLIC_API TRIGGER_GC_TYPE : uint8_t { SEMI_GC, OLD_GC, COMPRESS_FULL_GC };
+    enum class PUBLIC_API TRIGGER_GC_TYPE : uint8_t { SEMI_GC, OLD_GC, FULL_GC };
     static EcmaVM *CreateJSVM(const RuntimeOption &option);
     static void DestroyJSVM(EcmaVM *ecmaVm);
 

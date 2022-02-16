@@ -32,7 +32,7 @@ void GCStats::PrintSemiStatisticResult(bool isForce)
 {
     if ((isForce && semiGCCount_ != 0) || (!isForce && semiGCCount_ != lastSemiGCCount_)) {
         lastSemiGCCount_ = semiGCCount_;
-        LOG(ERROR, RUNTIME) << " SemiCollector statistic: total semi gc count " << semiGCCount_;
+        LOG(ERROR, RUNTIME) << " STWYoungGC statistic: total semi gc count " << semiGCCount_;
         LOG(ERROR, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(semiGCMinPause_) << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(semiGCMAXPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(semiGCTotalPause_) << "ms"
@@ -52,7 +52,7 @@ void GCStats::PrintMixStatisticResult(bool isForce)
 {
     if ((isForce && mixGCCount_ != 0) || (!isForce && lastOldGCCount_ != mixGCCount_)) {
         lastOldGCCount_ = mixGCCount_;
-        LOG(ERROR, RUNTIME) << " MixCollector with non-concurrent mark statistic: total old gc count " << mixGCCount_;
+        LOG(ERROR, RUNTIME) << " MixGC with non-concurrent mark statistic: total old gc count " << mixGCCount_;
         LOG(ERROR, RUNTIME) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(mixGCMinPause_)
                             << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(mixGCMAXPause_) << "ms"
@@ -91,21 +91,21 @@ void GCStats::PrintMixStatisticResult(bool isForce)
 
 void GCStats::PrintCompressStatisticResult(bool isForce)
 {
-    if ((isForce && compressGCCount_ != 0) || (!isForce && compressGCCount_ != lastCompressGCCount_)) {
-        lastCompressGCCount_ = compressGCCount_;
-        LOG(ERROR, RUNTIME) << " compressCollector statistic: total compress gc count " << compressGCCount_;
+    if ((isForce && fullGCCount_ != 0) || (!isForce && fullGCCount_ != lastFullGCCount_)) {
+        lastFullGCCount_ = fullGCCount_;
+        LOG(ERROR, RUNTIME) << " FullGC statistic: total compress gc count " << fullGCCount_;
         LOG(ERROR, RUNTIME)
-            << " MIN pause time: " << PrintTimeMilliseconds(compressGCMinPause_) << "ms"
-            << " MAX pause time: " << PrintTimeMilliseconds(compressGCMaxPause_) << "ms"
-            << " total pause time: " << PrintTimeMilliseconds(compressGCTotalPause_) << "ms"
-            << " average pause time: " << PrintTimeMilliseconds(compressGCTotalPause_ / compressGCCount_) << "ms"
+            << " MIN pause time: " << PrintTimeMilliseconds(fullGCMinPause_) << "ms"
+            << " MAX pause time: " << PrintTimeMilliseconds(fullGCMaxPause_) << "ms"
+            << " total pause time: " << PrintTimeMilliseconds(fullGCTotalPause_) << "ms"
+            << " average pause time: " << PrintTimeMilliseconds(fullGCTotalPause_ / fullGCCount_) << "ms"
             << " young and old total alive size: " << sizeToMB(compressYoungAndOldAliveSize_) << "MB"
-            << " young and old average alive size: " << sizeToMB(compressYoungAndOldAliveSize_ / compressGCCount_)
+            << " young and old average alive size: " << sizeToMB(compressYoungAndOldAliveSize_ / fullGCCount_)
             << "MB"
             << " young total commit size: " << sizeToMB(compressYoungCommitSize_) << "MB"
             << " old total commit size: " << sizeToMB(compressOldCommitSize_) << "MB"
             << " young and old average commit size: "
-            << sizeToMB((compressYoungCommitSize_ + compressOldCommitSize_) / compressGCCount_) << "MB"
+            << sizeToMB((compressYoungCommitSize_ + compressOldCommitSize_) / fullGCCount_) << "MB"
             << " young and old free rate: "
             << 1 - float(compressYoungAndOldAliveSize_) / (compressYoungCommitSize_ + compressOldCommitSize_)
             << " non move total free size: " << sizeToMB(compressNonMoveTotalFreeSize_) << "MB"
@@ -140,7 +140,7 @@ void GCStats::PrintHeapStatisticResult(bool isForce)
     }
 }
 
-void GCStats::StatisticSemiCollector(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize)
+void GCStats::StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize)
 {
     auto timeToMillion = TimeToMicroseconds(time);
     if (semiGCCount_ == 0) {
@@ -157,7 +157,7 @@ void GCStats::StatisticSemiCollector(Duration time, size_t aliveSize, size_t pro
     semiGCCount_++;
 }
 
-void GCStats::StatisticMixCollector(bool concurrentMark, Duration time, size_t freeSize)
+void GCStats::StatisticMixGC(bool concurrentMark, Duration time, size_t freeSize)
 {
     auto timeToMillion = TimeToMicroseconds(time);
     if (concurrentMark) {
@@ -188,25 +188,25 @@ void GCStats::StatisticMixCollector(bool concurrentMark, Duration time, size_t f
     }
 }
 
-void GCStats::StatisticCompressCollector(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
-                                         size_t oldCommitSize, size_t nonMoveSpaceFreeSize,
-                                         size_t nonMoveSpaceCommitSize)
+void GCStats::StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
+                              size_t oldCommitSize, size_t nonMoveSpaceFreeSize,
+                              size_t nonMoveSpaceCommitSize)
 {
     auto timeToMillion = TimeToMicroseconds(time);
-    if (compressGCCount_ == 0) {
-        compressGCMinPause_ = timeToMillion;
-        compressGCMaxPause_ = timeToMillion;
+    if (fullGCCount_ == 0) {
+        fullGCMinPause_ = timeToMillion;
+        fullGCMaxPause_ = timeToMillion;
     } else {
-        compressGCMinPause_ = std::min(compressGCMinPause_, timeToMillion);
-        compressGCMaxPause_ = std::max(compressGCMaxPause_, timeToMillion);
+        fullGCMinPause_ = std::min(fullGCMinPause_, timeToMillion);
+        fullGCMaxPause_ = std::max(fullGCMaxPause_, timeToMillion);
     }
-    compressGCTotalPause_ += timeToMillion;
+    fullGCTotalPause_ += timeToMillion;
     compressYoungAndOldAliveSize_ += youngAndOldAliveSize;
     compressYoungCommitSize_ += youngCommitSize;
     compressOldCommitSize_ += oldCommitSize;
     compressNonMoveTotalFreeSize_ += nonMoveSpaceFreeSize;
     compressNonMoveTotalCommitSize_ += nonMoveSpaceCommitSize;
-    compressGCCount_++;
+    fullGCCount_++;
 }
 
 void GCStats::StatisticConcurrentMark(Duration time)

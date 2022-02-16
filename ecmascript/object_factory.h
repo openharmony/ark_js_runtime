@@ -318,8 +318,6 @@ public:
                                                  FunctionKind kind = FunctionKind::NORMAL_FUNCTION);
     EcmaString *ResolveString(uint32_t stringId);
 
-    void ObtainRootClass(const JSHandle<GlobalEnv> &globalEnv);
-
     const MemManager &GetHeapManager() const
     {
         return heapHelper_;
@@ -380,42 +378,6 @@ private:
     bool isTriggerGc_ {false};
     bool triggerSemiGC_ {false};
     MemManager heapHelper_;
-
-    JSHClass *hclassClass_ {nullptr};
-    JSHClass *stringClass_ {nullptr};
-    JSHClass *arrayClass_ {nullptr};
-    JSHClass *dictionaryClass_ {nullptr};
-    JSHClass *freeObjectWithNoneFieldClass_ {nullptr};
-    JSHClass *freeObjectWithOneFieldClass_ {nullptr};
-    JSHClass *freeObjectWithTwoFieldClass_ {nullptr};
-
-    JSHClass *completionRecordClass_ {nullptr};
-    JSHClass *generatorContextClass_ {nullptr};
-    JSHClass *envClass_ {nullptr};
-    JSHClass *symbolClass_ {nullptr};
-    JSHClass *accessorDataClass_ {nullptr};
-    JSHClass *internalAccessorClass_ {nullptr};
-    JSHClass *capabilityRecordClass_ {nullptr};
-    JSHClass *reactionsRecordClass_ {nullptr};
-    JSHClass *promiseIteratorRecordClass_ {nullptr};
-    JSHClass *microJobQueueClass_ {nullptr};
-    JSHClass *pendingJobClass_ {nullptr};
-    JSHClass *jsProxyOrdinaryClass_ {nullptr};
-    JSHClass *jsProxyCallableClass_ {nullptr};
-    JSHClass *jsProxyConstructClass_ {nullptr};
-    JSHClass *PropertyBoxClass_ {nullptr};
-    JSHClass *protoChangeDetailsClass_ {nullptr};
-    JSHClass *protoChangeMarkerClass_ {nullptr};
-    JSHClass *promiseRecordClass_ {nullptr};
-    JSHClass *promiseResolvingFunctionsRecord_ {nullptr};
-    JSHClass *jsNativePointerClass_ {nullptr};
-    JSHClass *transitionHandlerClass_ {nullptr};
-    JSHClass *prototypeHandlerClass_ {nullptr};
-    JSHClass *jsRealmClass_ {nullptr};
-    JSHClass *programClass_ {nullptr};
-    JSHClass *machineCodeClass_ {nullptr};
-    JSHClass *ecmaModuleClass_ {nullptr};
-    JSHClass *classInfoExtractorHClass_ {nullptr};
 
     EcmaVM *vm_ {nullptr};
     Heap *heap_ {nullptr};

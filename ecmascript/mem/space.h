@@ -49,7 +49,7 @@ enum TriggerGCType {
     NON_MOVE_GC,
     HUGE_GC,
     MACHINE_CODE_GC,
-    COMPRESS_FULL_GC,
+    FULL_GC,
     GC_TYPE_LAST  // Count of different types
 };
 

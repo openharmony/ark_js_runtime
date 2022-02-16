@@ -14,9 +14,9 @@
  */
 
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/mem/compress_collector.h"
-#include "ecmascript/mem/semi_space_collector.h"
+#include "ecmascript/mem/full_gc.h"
 #include "ecmascript/object_factory.h"
+#include "ecmascript/mem/stw_young_gc_for_testing.h"
 #include "ecmascript/tests/test_helper.h"
 
 using namespace panda;
@@ -63,12 +63,12 @@ public:
     JSThread *thread {nullptr};
 };
 
-HWTEST_F_L0(GCTest, CompressGCOne)
+HWTEST_F_L0(GCTest, FullGCOne)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     auto heap = thread->GetEcmaVM()->GetHeap();
-    auto compressGc = heap->GetCompressCollector();
-    compressGc->RunPhases();
+    auto fullGc = heap->GetFullGC();
+    fullGc->RunPhases();
     auto oldSizebase = heap->GetOldSpace()->GetHeapObjectSize();
     size_t oldSizeBefore = 0;
     {
@@ -79,7 +79,7 @@ HWTEST_F_L0(GCTest, CompressGCOne)
         oldSizeBefore = heap->GetOldSpace()->GetHeapObjectSize();
         EXPECT_TRUE(oldSizeBefore > oldSizebase);
     }
-    compressGc->RunPhases();
+    fullGc->RunPhases();
     auto oldSizeAfter = heap->GetOldSpace()->GetHeapObjectSize();
     EXPECT_TRUE(oldSizeBefore > oldSizeAfter);
 }

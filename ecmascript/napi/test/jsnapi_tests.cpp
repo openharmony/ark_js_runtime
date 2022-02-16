@@ -410,7 +410,7 @@ HWTEST_F_L0(JSNApiTests, ArrayBufferWithBuffer)
         ASSERT_EQ(arrayBuffer->ByteLength(vm_), length);
         ASSERT_EQ(arrayBuffer->GetBuffer(), buffer);
     }
-    JSNApi::TriggerGC(vm_, JSNApi::TRIGGER_GC_TYPE::COMPRESS_FULL_GC);
+    JSNApi::TriggerGC(vm_, JSNApi::TRIGGER_GC_TYPE::FULL_GC);
     ASSERT_TRUE(isFree);
 }
 
