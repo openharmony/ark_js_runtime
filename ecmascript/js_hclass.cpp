@@ -359,7 +359,7 @@ void JSHClass::RegisterOnProtoChain(const JSThread *thread, const JSHandle<JSHCl
 
     while (true) {
         // Find the prototype chain as far as the hclass has not been registered.
-        if (userDetails->GetRegisterIndex() != ProtoChangeDetails::UNREGISTERED) {
+        if (userDetails->GetRegisterIndex() != static_cast<uint32_t>(ProtoChangeDetails::UNREGISTERED)) {
             return;
         }
 
@@ -403,7 +403,7 @@ bool JSHClass::UnregisterOnProtoChain(const JSThread *thread, const JSHandle<JSH
     }
     JSHandle<ProtoChangeDetails> currentDetails = GetProtoChangeDetails(thread, jshclass);
     uint32_t index = currentDetails->GetRegisterIndex();
-    if (index == ProtoChangeDetails::UNREGISTERED) {
+    if (index == static_cast<uint32_t>(ProtoChangeDetails::UNREGISTERED)) {
         return false;
     }
     JSTaggedValue proto = jshclass->GetPrototype();
