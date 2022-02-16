@@ -46,6 +46,7 @@ public:
     GateRef HoleConstant(GateType type);
     GateRef NullConstant(GateType type);
     GateRef ExceptionConstant(GateType type);
+    GateRef NewRelocatableData(uint64_t val);
     GateRef Alloca(int size);
     GateRef Branch(GateRef state, GateRef condition);
     GateRef SwitchBranch(GateRef state, GateRef index, int caseCounts);

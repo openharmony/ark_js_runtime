@@ -45,12 +45,9 @@ struct CodeInfo {
     using ByteBuffer = std::vector<uint8_t>;
     using BufferList = std::list<ByteBuffer>;
     using StringList = std::list<std::string>;
-    CodeInfo() : machineCode_(nullptr), codeBufferPos_(0), stackMapsSection_(nullptr)
+    CodeInfo()
     {
-        Reset();
-        static constexpr int prot = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
-        static constexpr int flags = MAP_ANONYMOUS | MAP_SHARED;         // NOLINT(hicpp-signed-bitwise)
-        machineCode_ = static_cast<uint8_t *>(mmap(nullptr, MAX_MACHINE_CODE_SIZE, prot, flags, -1, 0));
+        machineCode_ = static_cast<uint8_t *>(mmap(nullptr, MAX_MACHINE_CODE_SIZE, protRWX, flags, -1, 0));
         if (machineCode_ == reinterpret_cast<uint8_t *>(-1)) {
             machineCode_ = nullptr;
         }
@@ -67,6 +64,7 @@ struct CodeInfo {
         }
         machineCode_ = nullptr;
     }
+
     uint8_t *AllocaCodeSection(uintptr_t size, const char *sectionName)
     {
         uint8_t *addr = nullptr;
@@ -135,14 +133,16 @@ private:
     BufferList dataSectionList_ {};
     StringList dataSectionNames_ {};
     StringList codeSectionNames_ {};
-    uint8_t *machineCode_;
+    uint8_t *machineCode_ {nullptr};
     const size_t MAX_MACHINE_CODE_SIZE = (1 << 20);  // 1M
-    int codeBufferPos_ = 0;
+    static constexpr int protRWX = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
+    static constexpr int flags = MAP_ANONYMOUS | MAP_SHARED;            // NOLINT(hicpp-signed-bitwise)
+    int codeBufferPos_ {0};
     /* <addr, size > for asssembler */
     std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo_ {};
     /* stack map */
     uint8_t *stackMapsSection_ {nullptr};
-    int stackMapsSize_ = 0;
+    int stackMapsSize_ {0};
 };
 
 class LLVMAssembler {

@@ -148,6 +148,7 @@ GateRef Stub::GetInt32Constant(int32_t value)
 {
     return env_.GetCircuitBuilder().NewIntegerConstant(value);
 };
+
 GateRef Stub::GetInt64Constant(int64_t value)
 {
     return env_.GetCircuitBuilder().NewInteger64Constant(value);
@@ -210,6 +211,11 @@ GateRef Stub::IntPtrMul(GateRef x, GateRef y)
     } else {
         return Int64Mul(x, y);
     }
+}
+
+GateRef Stub::GetRelocatableData(uint64_t value)
+{
+    return env_.GetCircuitBuilder().NewRelocatableData(value);
 }
 
 // parameter

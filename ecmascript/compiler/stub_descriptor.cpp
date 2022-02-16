@@ -313,6 +313,20 @@ CALL_STUB_INIT_DESCRIPTOR(TryStoreICByValue)
     descriptor->SetParameters(params.data());
 }
 
+CALL_STUB_INIT_DESCRIPTOR(TestAbsoluteAddressRelocation)
+{
+    // 2 : 2 input parameters
+    StubDescriptor TestAbsoluteAddressRelocation("TestAbsoluteAddressRelocation", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64); // undefined or hole
+    *descriptor = TestAbsoluteAddressRelocation;
+    // 2 : 2 input parameters
+    std::array<StubMachineType, 2> params = {
+        StubMachineType::INT64,
+        StubMachineType::INT64,
+    };
+    descriptor->SetParameters(params.data());
+}
+
 CALL_STUB_INIT_DESCRIPTOR(FloatMod)
 {
     // 2 : 2 input parameters
