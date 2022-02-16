@@ -210,8 +210,8 @@ void JSNApi::TriggerGC(const EcmaVM *vm,  TRIGGER_GC_TYPE gcType)
             case TRIGGER_GC_TYPE::OLD_GC:
                 vm->CollectGarbage(ecmascript::TriggerGCType::OLD_GC);
                 break;
-            case TRIGGER_GC_TYPE::COMPRESS_FULL_GC:
-                vm->CollectGarbage(ecmascript::TriggerGCType::COMPRESS_FULL_GC);
+            case TRIGGER_GC_TYPE::FULL_GC:
+                vm->CollectGarbage(ecmascript::TriggerGCType::FULL_GC);
                 break;
             default:
                 break;

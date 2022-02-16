@@ -32,10 +32,10 @@ public:
     void PrintStatisticResult(bool isForce = false);
     void PrintHeapStatisticResult(bool isForce = true);
 
-    void StatisticSemiCollector(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize);
-    void StatisticMixCollector(bool concurrentMark, Duration time, size_t freeSize);
-    void StatisticCompressCollector(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
-                                    size_t oldCommitSize, size_t nonMoveSpaceFreeSize, size_t nonMoveSpaceCommitSize);
+    void StatisticSTWYoungGC(Duration time, size_t aliveSize, size_t promoteSize, size_t commitSize);
+    void StatisticMixGC(bool concurrentMark, Duration time, size_t freeSize);
+    void StatisticFullGC(Duration time, size_t youngAndOldAliveSize, size_t youngCommitSize,
+                         size_t oldCommitSize, size_t nonMoveSpaceFreeSize, size_t nonMoveSpaceCommitSize);
     void StatisticConcurrentMark(Duration time);
     void StatisticConcurrentMarkWait(Duration time);
     void StatisticConcurrentRemark(Duration time);
@@ -89,11 +89,11 @@ private:
     size_t mixConcurrentMarkGCTotalPause_ = 0;
     size_t mixOldSpaceConcurrentMarkFreeSize_ = 0;
 
-    size_t lastCompressGCCount_ = 0;
-    size_t compressGCCount_ = 0;
-    size_t compressGCMinPause_ = 0;
-    size_t compressGCMaxPause_ = 0;
-    size_t compressGCTotalPause_ = 0;
+    size_t lastFullGCCount_ = 0;
+    size_t fullGCCount_ = 0;
+    size_t fullGCMinPause_ = 0;
+    size_t fullGCMaxPause_ = 0;
+    size_t fullGCTotalPause_ = 0;
     size_t compressYoungAndOldAliveSize_ = 0;
     size_t compressYoungCommitSize_ = 0;
     size_t compressOldCommitSize_ = 0;

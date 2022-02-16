@@ -104,14 +104,14 @@ public:
         enable_force_gc_.SetValue(value);
     }
 
-    bool IsForceCompressGC() const
+    bool IsForceFullGC() const
     {
-        return force_compress_gc_.GetValue();
+        return force_full_gc_.GetValue();
     }
 
-    void SetForceCompressGC(bool value)
+    void SetForceFullGC(bool value)
     {
-        force_compress_gc_.SetValue(value);
+        force_full_gc_.SetValue(value);
     }
 
     bool IsEnableCpuProfiler() const
@@ -195,9 +195,9 @@ private:
         R"(stub.m)",
         R"(Path to stub module file. Default: "stub.m")"};
     PandArg<bool> enable_force_gc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
-    PandArg<bool> force_compress_gc_ {"force-compress-gc",
+    PandArg<bool> force_full_gc_ {"force-full-gc",
         true,
-        R"(if true trigger compress gc, else trigger semi and old gc)"};
+        R"(if true trigger full gc, else trigger semi and old gc)"};
     PandArg<int> ark_properties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
     PandArg<int> enable_ts_aot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
 };

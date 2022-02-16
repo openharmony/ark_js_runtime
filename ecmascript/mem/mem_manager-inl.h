@@ -189,7 +189,7 @@ TaggedObject *MemManager::AllocateHugeObject(JSHClass *hclass, size_t size)
 {
     ASSERT(size > MAX_REGULAR_HEAP_OBJECT_SIZE);
     // large objects
-    heap_->CheckAndTriggerCompressGC();
+    heap_->CheckAndTriggerFullGC();
     auto *object =
         reinterpret_cast<TaggedObject *>(const_cast<HugeObjectSpace *>(heap_->GetHugeObjectSpace())->Allocate(size));
     if (UNLIKELY(object == nullptr)) {

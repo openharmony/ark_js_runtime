@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/compress_collector.h"
+#include "ecmascript/mem/full_gc.h"
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
@@ -27,32 +27,32 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-CompressCollector::CompressCollector(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
+FullGC::FullGC(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
 
-void CompressCollector::RunPhases()
+void FullGC::RunPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::RunPhases");
-    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), CompressCollector_RunPhases);
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::RunPhases");
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), FullGC_RunPhases);
     ClockScope clockScope;
 
     bool concurrentMark = heap_->CheckConcurrentMark();
     if (concurrentMark) {
-        ECMA_GC_LOG() << "CompressCollector after ConcurrentMarking";
+        ECMA_GC_LOG() << "FullGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }
     InitializePhase();
     MarkingPhase();
     SweepPhases();
     FinishPhase();
-    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticCompressCollector(clockScope.GetPauseTime(), youngAndOldAliveSize_,
-                                                                     youngSpaceCommitSize_, oldSpaceCommitSize_,
-                                                                     nonMoveSpaceFreeSize_, nonMoveSpaceCommitSize_);
-    ECMA_GC_LOG() << "CompressCollector::RunPhases " << clockScope.TotalSpentTime();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticFullGC(clockScope.GetPauseTime(), youngAndOldAliveSize_,
+                                                          youngSpaceCommitSize_, oldSpaceCommitSize_,
+                                                          nonMoveSpaceFreeSize_, nonMoveSpaceCommitSize_);
+    ECMA_GC_LOG() << "FullGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
-void CompressCollector::InitializePhase()
+void FullGC::InitializePhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::InitializePhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::InitializePhase");
     heap_->Prepare();
     auto callback = [](Region *current) {
         // ensure mark bitmap
@@ -63,7 +63,7 @@ void CompressCollector::InitializePhase()
     };
     heap_->EnumerateNonMovableRegions(callback);
     heap_->ResetNewSpace();
-    workList_->Initialize(TriggerGCType::COMPRESS_FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
+    workList_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetCompressGcMarker()->Initialized();
 
     youngAndOldAliveSize_ = 0;
@@ -73,17 +73,17 @@ void CompressCollector::InitializePhase()
     nonMoveSpaceCommitSize_ = heap_->GetNonMovableSpace()->GetCommittedSize();
 }
 
-void CompressCollector::MarkingPhase()
+void FullGC::MarkingPhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::MarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::MarkingPhase");
     heap_->GetCompressGcMarker()->MarkRoots(0);
     heap_->GetCompressGcMarker()->ProcessMarkStack(0);
     heap_->WaitRunningTaskFinished();
 }
 
-void CompressCollector::SweepPhases()
+void FullGC::SweepPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::SweepPhases");
     // process weak reference
     auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1; // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
@@ -142,10 +142,10 @@ void CompressCollector::SweepPhases()
     heap_->GetSweeper()->SweepPhases(true);
 }
 
-void CompressCollector::FinishPhase()
+void FullGC::FinishPhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "CompressCollector::FinishPhase");
-    heap_->Resume(COMPRESS_FULL_GC);
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::FinishPhase");
+    heap_->Resume(FULL_GC);
     workList_->Finish(youngAndOldAliveSize_);
 }
 }  // namespace panda::ecmascript

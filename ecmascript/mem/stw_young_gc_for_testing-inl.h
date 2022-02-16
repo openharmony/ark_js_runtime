@@ -13,16 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
-#define ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
+#ifndef ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_INL_H
+#define ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_INL_H
 
-#include "ecmascript/mem/semi_space_collector.h"
+#include "ecmascript/mem/stw_young_gc_for_testing.h"
 
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/parallel_work_helper.h"
 
 namespace panda::ecmascript {
-void SemiSpaceCollector::UpdatePromotedSlot(TaggedObject *object, ObjectSlot slot)
+void STWYoungGC::UpdatePromotedSlot(TaggedObject *object, ObjectSlot slot)
 {
 #ifndef NDEBUG
     JSTaggedValue value(slot.GetTaggedType());
@@ -34,4 +34,4 @@ void SemiSpaceCollector::UpdatePromotedSlot(TaggedObject *object, ObjectSlot slo
 }
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_INL_H
+#endif  // ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_INL_H

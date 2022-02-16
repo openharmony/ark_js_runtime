@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
-#define ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
+#ifndef ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
+#define ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H
 
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/mem.h"
@@ -44,12 +44,12 @@ public:
     DEFAULT_MOVE_SEMANTIC(GarbageCollector);
 };
 
-class SemiSpaceCollector : public GarbageCollector {
+class STWYoungGC : public GarbageCollector {
 public:
-    explicit SemiSpaceCollector(Heap *heap, bool paralledGc);
-    ~SemiSpaceCollector() override = default;
-    NO_COPY_SEMANTIC(SemiSpaceCollector);
-    NO_MOVE_SEMANTIC(SemiSpaceCollector);
+    explicit STWYoungGC(Heap *heap, bool paralledGc);
+    ~STWYoungGC() override = default;
+    NO_COPY_SEMANTIC(STWYoungGC);
+    NO_MOVE_SEMANTIC(STWYoungGC);
 
     void RunPhases();
 
@@ -77,4 +77,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_MEM_SEMI_SAPACE_COLLECTOR_H
+#endif  // ECMASCRIPT_MEM_STW_YOUNG_GC_FOR_TESTING_H

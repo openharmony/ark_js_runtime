@@ -27,9 +27,9 @@
 namespace panda::ecmascript {
 class EcmaVM;
 class MemManager;
-class SemiSpaceCollector;
-class MixSpaceCollector;
-class CompressCollector;
+class STWYoungGC;
+class MixGC;
+class FullGC;
 class BumpPointerAllocator;
 class FreeListAllocator;
 class RegionFactory;
@@ -97,19 +97,19 @@ public:
         return machineCodeSpace_;
     }
 
-    SemiSpaceCollector *GetSemiSpaceCollector() const
+    STWYoungGC *GetSTWYoungGC() const
     {
-        return semiSpaceCollector_;
+        return stwYoungGC_;
     }
 
-    MixSpaceCollector *GetMixSpaceCollector() const
+    MixGC *GetMixGC() const
     {
-        return mixSpaceCollector_;
+        return mixGC_;
     }
 
-    CompressCollector *GetCompressCollector() const
+    FullGC *GetFullGC() const
     {
-        return compressCollector_;
+        return fullGC_;
     }
 
     ConcurrentSweeper *GetSweeper() const
@@ -209,7 +209,7 @@ public:
 
     bool CheckAndTriggerOldGC();
 
-    bool CheckAndTriggerCompressGC();
+    bool CheckAndTriggerFullGC();
 
     bool CheckAndTriggerNonMovableGC();
 
@@ -397,9 +397,9 @@ private:
     SnapShotSpace *snapshotSpace_ {nullptr};
     NonMovableSpace *nonMovableSpace_ {nullptr};
     MachineCodeSpace *machineCodeSpace_ {nullptr};
-    SemiSpaceCollector *semiSpaceCollector_ {nullptr};
-    MixSpaceCollector *mixSpaceCollector_ {nullptr};
-    CompressCollector *compressCollector_ {nullptr};
+    STWYoungGC *stwYoungGC_ {nullptr};
+    MixGC *mixGC_ {nullptr};
+    FullGC *fullGC_ {nullptr};
     ConcurrentSweeper *sweeper_ {nullptr};
     Marker *nonMovableMarker_ {nullptr};
     Marker *semiGcMarker_ {nullptr};
@@ -428,7 +428,7 @@ private:
 
     MarkType markType_;
     bool concurrentMarkingEnabled_ {true};
-    bool isCompressGCRequested_ {false};
+    bool isFullGCRequested_ {false};
     inline void SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity);
 };
 }  // namespace panda::ecmascript

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/mix_space_collector.h"
+#include "ecmascript/mem/mix_gc.h"
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/barriers-inl.h"
@@ -30,12 +30,12 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-MixSpaceCollector::MixSpaceCollector(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
+MixGC::MixGC(Heap *heap) : heap_(heap), workList_(heap->GetWorkList()) {}
 
-void MixSpaceCollector::RunPhases()
+void MixGC::RunPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::RunPhases");
-    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), MixSpaceCollector_RunPhases);
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::RunPhases");
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), MixGC_RunPhases);
     ClockScope clockScope;
 
     concurrentMark_ = heap_->CheckConcurrentMark();
@@ -46,13 +46,13 @@ void MixSpaceCollector::RunPhases()
     SweepPhases();
     EvacuaPhases();
     FinishPhase();
-    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticMixCollector(concurrentMark_, clockScope.GetPauseTime(), freeSize_);
-    ECMA_GC_LOG() << "MixSpaceCollector::RunPhases " << clockScope.TotalSpentTime();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticMixGC(concurrentMark_, clockScope.GetPauseTime(), freeSize_);
+    ECMA_GC_LOG() << "MixGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
-void MixSpaceCollector::InitializePhase()
+void MixGC::InitializePhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::InitializePhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::InitializePhase");
     if (!concurrentMark_) {
         LOG(INFO, RUNTIME) << "Concurrent mark failure";
         heap_->Prepare();
@@ -74,9 +74,9 @@ void MixSpaceCollector::InitializePhase()
     }
 }
 
-void MixSpaceCollector::FinishPhase()
+void MixGC::FinishPhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::FinishPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::FinishPhase");
     if (concurrentMark_) {
         auto marker = heap_->GetConcurrentMarker();
         marker->Reset(false);
@@ -86,9 +86,9 @@ void MixSpaceCollector::FinishPhase()
     }
 }
 
-void MixSpaceCollector::MarkingPhase()
+void MixGC::MarkingPhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::MarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::MarkingPhase");
     if (concurrentMark_) {
         heap_->GetConcurrentMarker()->ReMarking();
         return;
@@ -102,17 +102,17 @@ void MixSpaceCollector::MarkingPhase()
     heap_->WaitRunningTaskFinished();
 }
 
-void MixSpaceCollector::SweepPhases()
+void MixGC::SweepPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::SweepPhases");
     if (heap_->IsFullMark()) {
         heap_->GetSweeper()->SweepPhases();
     }
 }
 
-void MixSpaceCollector::EvacuaPhases()
+void MixGC::EvacuaPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixSpaceCollector::EvacuaPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::EvacuaPhases");
     heap_->GetEvacuation()->Evacuate();
 }
 }  // namespace panda::ecmascript

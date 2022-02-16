@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/mem/semi_space_collector-inl.h"
+#include "ecmascript/mem/stw_young_gc_for_testing-inl.h"
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
@@ -29,34 +29,34 @@
 #include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
-SemiSpaceCollector::SemiSpaceCollector(Heap *heap, bool paralledGc)
+STWYoungGC::STWYoungGC(Heap *heap, bool paralledGc)
     : heap_(heap), paralledGc_(paralledGc), workList_(heap->GetWorkList())
 {
 }
 
-void SemiSpaceCollector::RunPhases()
+void STWYoungGC::RunPhases()
 {
-    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), SemiSpaceCollector_RunPhases);
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), STWYoungGC_RunPhases);
     [[maybe_unused]] ClockScope clockScope;
 
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::RunPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::RunPhases");
     bool concurrentMark = heap_->CheckConcurrentMark();
     if (concurrentMark) {
-        ECMA_GC_LOG() << "SemiSpaceCollector after ConcurrentMarking";
+        ECMA_GC_LOG() << "STWYoungGC after ConcurrentMarking";
         heap_->GetConcurrentMarker()->Reset();  // HPPGC use mark result to move TaggedObject.
     }
     InitializePhase();
     ParallelMarkingPhase();
     SweepPhases();
     FinishPhase();
-    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticSemiCollector(clockScope.GetPauseTime(), semiCopiedSize_,
-                                                                 promotedSize_, commitSize_);
-    ECMA_GC_LOG() << "SemiSpaceCollector::RunPhases " << clockScope.TotalSpentTime();
+    heap_->GetEcmaVM()->GetEcmaGCStats()->StatisticSTWYoungGC(clockScope.GetPauseTime(), semiCopiedSize_,
+                                                              promotedSize_, commitSize_);
+    ECMA_GC_LOG() << "STWYoungGC::RunPhases " << clockScope.TotalSpentTime();
 }
 
-void SemiSpaceCollector::InitializePhase()
+void STWYoungGC::InitializePhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::InitializePhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::InitializePhase");
     heap_->Prepare();
     heap_->ResetNewSpace();
     workList_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
@@ -66,9 +66,9 @@ void SemiSpaceCollector::InitializePhase()
     commitSize_ = heap_->GetFromSpace()->GetCommittedSize();
 }
 
-void SemiSpaceCollector::ParallelMarkingPhase()
+void STWYoungGC::ParallelMarkingPhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::ParallelMarkingPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::ParallelMarkingPhase");
     auto region = heap_->GetOldSpace()->GetCurrentRegion();
 
     if (paralledGc_) {
@@ -92,9 +92,9 @@ void SemiSpaceCollector::ParallelMarkingPhase()
     }
 }
 
-void SemiSpaceCollector::SweepPhases()
+void STWYoungGC::SweepPhases()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::SweepPhases");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::SweepPhases");
     auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1;  // gc thread and main thread
     for (uint32_t i = 0; i < totalThreadCount; i++) {
         ProcessQueue *queue = workList_->GetWeakReferenceQueue(i);
@@ -137,9 +137,9 @@ void SemiSpaceCollector::SweepPhases()
     heap_->UpdateDerivedObjectInStack();
 }
 
-void SemiSpaceCollector::FinishPhase()
+void STWYoungGC::FinishPhase()
 {
-    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "SemiSpaceCollector::FinishPhase");
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::FinishPhase");
     workList_->Finish(semiCopiedSize_, promotedSize_);
     heap_->Resume(SEMI_GC);
 }

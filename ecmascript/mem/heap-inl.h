@@ -196,7 +196,7 @@ void Heap::ReclaimRegions(TriggerGCType gcType)
         region->ResetAliveObject();
         region->ClearFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
     });
-    if (gcType == TriggerGCType::COMPRESS_FULL_GC) {
+    if (gcType == TriggerGCType::FULL_GC) {
         compressSpace_->ReclaimRegions();
     } else if (gcType == TriggerGCType::OLD_GC) {
         oldSpace_->ReclaimCSet();

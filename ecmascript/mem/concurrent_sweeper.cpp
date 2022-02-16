@@ -29,16 +29,16 @@ ConcurrentSweeper::ConcurrentSweeper(Heap *heap, bool concurrentSweep)
 {
 }
 
-void ConcurrentSweeper::SweepPhases(bool compressGC)
+void ConcurrentSweeper::SweepPhases(bool fullGC)
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingInitialize);
     if (concurrentSweep_) {
         // Add all region to region list. Ensure all task finish
-        PrepareSpace(compressGC);
+        PrepareSpace(fullGC);
 
         // Prepare
         isSweeping_ = true;
-        startSpaceType_ = compressGC ? NON_MOVABLE : OLD_SPACE;
+        startSpaceType_ = fullGC ? NON_MOVABLE : OLD_SPACE;
         for (int type = startSpaceType_; type < FREE_LIST_NUM; type++) {
             auto spaceType = static_cast<MemSpaceType>(type);
             SortRegion(spaceType);
@@ -48,13 +48,13 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
             allocator.RebuildFreeList();
         }
 
-        if (!compressGC) {
+        if (!fullGC) {
             Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
         }
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
     } else {
-        if (!compressGC) {
+        if (!fullGC) {
             SweepSpace(OLD_SPACE,
                 const_cast<OldSpace *>(heap_->GetOldSpace()), heap_->GetHeapManager()->GetOldSpaceAllocator());
             isOldSpaceSweeped_ = true;
@@ -67,9 +67,9 @@ void ConcurrentSweeper::SweepPhases(bool compressGC)
     SweepHugeSpace();
 }
 
-void ConcurrentSweeper::PrepareSpace(bool compressGC)
+void ConcurrentSweeper::PrepareSpace(bool fullGC)
 {
-    if (!compressGC) {
+    if (!fullGC) {
         OldSpace *oldSpace = const_cast<OldSpace *>(heap_->GetOldSpace());
         oldSpace->ResetLiveObjectSize();
         oldSpace->EnumerateNonCollectRegionSet([this, oldSpace](Region *current) {
