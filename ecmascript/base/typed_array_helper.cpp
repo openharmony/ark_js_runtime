@@ -311,7 +311,7 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
         //   a. Let newByteLength be newLength × elementSize.
         //   b. If offset + newByteLength > bufferByteLength, throw a RangeError exception.
         newByteLength = newLength * elementSize;
-        if (offset + newByteLength > bufferByteLength) {
+        if (static_cast<uint32_t>(offset + newByteLength) > bufferByteLength) {
             THROW_RANGE_ERROR_AND_RETURN(thread, "The newByteLength is out of range.", JSTaggedValue::Exception());
         }
     }
