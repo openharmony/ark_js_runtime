@@ -244,7 +244,7 @@ bool JSThread::CheckSafepoint()
         SuspendVM();
     }
 #ifndef NDEBUG
-    EcmaVM::Cast(GetVM())->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
+    EcmaVM::Cast(GetVM())->CollectGarbage(TriggerGCType::FULL_GC);
     return true;
 #endif
     if (IsMarkFinished()) {

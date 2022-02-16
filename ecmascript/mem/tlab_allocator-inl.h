@@ -19,7 +19,7 @@
 #include "ecmascript/mem/tlab_allocator.h"
 
 #include "ecmascript/free_object.h"
-#include "ecmascript/mem/compress_collector.h"
+#include "ecmascript/mem/full_gc.h"
 #include "ecmascript/mem/mem_manager-inl.h"
 
 namespace panda::ecmascript {

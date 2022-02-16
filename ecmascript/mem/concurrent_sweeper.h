@@ -34,7 +34,7 @@ public:
     NO_COPY_SEMANTIC(ConcurrentSweeper);
     NO_MOVE_SEMANTIC(ConcurrentSweeper);
 
-    void SweepPhases(bool compressGC = false);
+    void SweepPhases(bool fullGC = false);
 
     void WaitAllTaskFinished();
     // Help to finish sweeping task. It can be called through js thread
@@ -74,7 +74,7 @@ private:
         MemSpaceType type_;
     };
 
-    void PrepareSpace(bool compressGC);
+    void PrepareSpace(bool fullGC);
 
     void SweepSpace(MemSpaceType type, FreeListAllocator *allocator = nullptr, bool isMain = true);
     void SweepSpace(MemSpaceType type, Space *space, FreeListAllocator &allocator);

@@ -90,8 +90,8 @@ HWTEST_F_L0(ObjectFactoryTest, NewJSObjectByConstructor)
 
     // check gc handle update
     auto *prototype = cls->GetPrototype().GetTaggedObject();
-    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::COMPRESS_FULL_GC);
-    // CompressGC not the same
+    thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
+    // FullGC not the same
     EXPECT_TRUE(prototype != newObjCls->GetPrototype().GetTaggedObject());
     thread->GetEcmaVM()->SetEnableForceGC(true);
 }

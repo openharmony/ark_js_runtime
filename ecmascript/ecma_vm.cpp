@@ -155,7 +155,6 @@ bool EcmaVM::Initialize()
 
         // init global env
         globalConst->InitRootsClass(thread_, *dynClassClassHandle);
-        factory_->ObtainRootClass(GetGlobalEnv());
         globalConst->InitGlobalConstant(thread_);
         globalEnv->SetEmptyArray(thread_, factory_->NewEmptyArray());
         globalEnv->SetEmptyLayoutInfo(thread_, factory_->CreateLayoutInfo(0));
@@ -184,8 +183,6 @@ bool EcmaVM::Initialize()
         AddPandaFile(pf.release(), false);
         SetProgram(Program::Cast(frameworkProgram_.GetTaggedObject()), frameworkPandaFile_);
         globalConst->InitGlobalUndefined();
-
-        factory_->ObtainRootClass(GetGlobalEnv());
     }
 
     moduleManager_ = new ModuleManager(this);

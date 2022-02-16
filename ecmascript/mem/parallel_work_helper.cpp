@@ -17,10 +17,10 @@
 
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/mem/area.h"
-#include "ecmascript/mem/compress_collector.h"
+#include "ecmascript/mem/full_gc.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_stack.h"
-#include "ecmascript/mem/mix_space_collector.h"
+#include "ecmascript/mem/mix_gc.h"
 #include "ecmascript/mem/region.h"
 #include "ecmascript/mem/region_factory.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"

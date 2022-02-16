@@ -13,24 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
-#define ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
+#ifndef ECMASCRIPT_MEM_FULL_GC_H
+#define ECMASCRIPT_MEM_FULL_GC_H
 
 #include "ecmascript/mem/parallel_work_helper.h"
-#include "ecmascript/mem/semi_space_collector.h"
+#include "ecmascript/mem/stw_young_gc_for_testing.h"
 
 namespace panda {
 namespace ecmascript {
 class Heap;
 class JSHClass;
 
-class CompressCollector : public GarbageCollector {
+class FullGC : public GarbageCollector {
 public:
-    explicit CompressCollector(Heap *heap);
-    ~CompressCollector() override = default;
+    explicit FullGC(Heap *heap);
+    ~FullGC() override = default;
 
-    NO_COPY_SEMANTIC(CompressCollector);
-    NO_MOVE_SEMANTIC(CompressCollector);
+    NO_COPY_SEMANTIC(FullGC);
+    NO_MOVE_SEMANTIC(FullGC);
 
     void RunPhases();
 
@@ -56,4 +56,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_MEM_COMPRESS_COLLECTOR_H
+#endif  // ECMASCRIPT_MEM_FULL_GC_H

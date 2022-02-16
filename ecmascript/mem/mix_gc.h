@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
-#define ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
+#ifndef ECMASCRIPT_MEM_MIX_GC_H
+#define ECMASCRIPT_MEM_MIX_GC_H
 
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/heap.h"
@@ -25,19 +25,19 @@
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/mem/object_xray.h"
 #include "ecmascript/mem/remembered_set.h"
-#include "ecmascript/mem/semi_space_collector.h"
+#include "ecmascript/mem/stw_young_gc_for_testing.h"
 
 namespace panda {
 namespace ecmascript {
 class Heap;
 class JSHClass;
 
-class MixSpaceCollector : public GarbageCollector {
+class MixGC : public GarbageCollector {
 public:
-    explicit MixSpaceCollector(Heap *heap);
-    ~MixSpaceCollector() override = default;
-    NO_COPY_SEMANTIC(MixSpaceCollector);
-    NO_MOVE_SEMANTIC(MixSpaceCollector);
+    explicit MixGC(Heap *heap);
+    ~MixGC() override = default;
+    NO_COPY_SEMANTIC(MixGC);
+    NO_MOVE_SEMANTIC(MixGC);
     void RunPhases();
 
     Heap *GetHeap() const
@@ -67,4 +67,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_MEM_OLD_SAPACE_COLLECTOR_H
+#endif  // ECMASCRIPT_MEM_MIX_GC_H

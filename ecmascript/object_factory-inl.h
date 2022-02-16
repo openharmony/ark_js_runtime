@@ -19,19 +19,24 @@
 #include "object_factory.h"
 #include "ecmascript/mem/mem_manager-inl.h"
 #include "ecmascript/tagged_array-inl.h"
+#include "ecmascript/global_env_constants-inl.h"
+#include "ecmascript/global_env_constants.h"
 #include "ecmascript/lexical_env.h"
+#include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
 EcmaString *ObjectFactory::AllocNonMovableStringObject(size_t size)
 {
     NewObjectHook();
-    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateNonMovableOrHugeObject(stringClass_, size));
+    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateNonMovableOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetStringClass().GetTaggedObject()), size));
 }
 
 EcmaString *ObjectFactory::AllocStringObject(size_t size)
 {
     NewObjectHook();
-    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateYoungGenerationOrHugeObject(stringClass_, size));
+    return reinterpret_cast<EcmaString *>(heapHelper_.AllocateYoungGenerationOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetStringClass().GetTaggedObject()), size));
 }
 
 JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointer,
@@ -41,10 +46,11 @@ JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointe
 {
     NewObjectHook();
     TaggedObject *header;
+    auto jsNativePointerClass = JSHClass::Cast(thread_->GlobalConstants()->GetJSNativePointerClass().GetTaggedObject());
     if (nonMovable) {
-        header = heapHelper_.AllocateNonMovableOrHugeObject(jsNativePointerClass_);
+        header = heapHelper_.AllocateNonMovableOrHugeObject(jsNativePointerClass);
     } else {
-        header = heapHelper_.AllocateYoungGenerationOrHugeObject(jsNativePointerClass_);
+        header = heapHelper_.AllocateYoungGenerationOrHugeObject(jsNativePointerClass);
     }
     JSHandle<JSNativePointer> obj(thread_, header);
     obj->SetExternalPointer(externalPointer);
@@ -61,7 +67,7 @@ LexicalEnv *ObjectFactory::InlineNewLexicalEnv(int numSlots)
     if (UNLIKELY(header == nullptr)) {
         return nullptr;
     }
-    heapHelper_.SetClass(header, envClass_);
+    heapHelper_.SetClass(header, JSHClass::Cast(thread_->GlobalConstants()->GetEnvClass().GetTaggedObject()));
     LexicalEnv *array = LexicalEnv::Cast(header);
     array->InitializeWithSpecialValue(JSTaggedValue::Hole(), numSlots + LexicalEnv::RESERVED_ENV_LENGTH);
     return array;
