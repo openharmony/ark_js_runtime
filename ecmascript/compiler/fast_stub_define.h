@@ -26,7 +26,6 @@ namespace panda::ecmascript::kungfu {
     V(CallGetter2, 4)                        \
     V(CallInternalGetter, 3)                 \
     V(ThrowTypeError, 2)                     \
-    V(JSArrayListSetByIndex, 4)              \
     V(JSProxySetProperty, 6)                 \
     V(GetHash32, 2)                          \
     V(FindElementWithCache, 4)               \

@@ -747,7 +747,6 @@ public:
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
-    GateRef SetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef value, GateRef jsType);
     GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
 
 private:

@@ -21,7 +21,7 @@
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/layout_info.h"
@@ -1115,14 +1115,6 @@ JSTaggedType RuntimeTrampolines::Mod2Dyn(uintptr_t argGlue, JSTaggedType left, J
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     return SlowRuntimeStub::Mod2Dyn(thread, JSTaggedValue(left), JSTaggedValue(right)).GetRawData();
-}
-
-void RuntimeTrampolines::JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value)
-{
-    auto thread = JSThread::GlueToJSThread(argGlue);
-    [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<JSArrayList> arrayList(thread, obj);
-    arrayList->Set(thread, index, value);
 }
 
 void RuntimeTrampolines::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)

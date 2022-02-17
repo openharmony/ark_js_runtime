@@ -19,7 +19,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_array.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_primitive_ref.h"
 #include "ecmascript/js_proxy.h"
@@ -779,8 +779,8 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
     auto *hclass = obj->GetTaggedObject()->GetClass();
     JSType jsType = hclass->GetObjectType();
     switch (jsType) {
-        case JSType::JS_ARRAY_LIST: {
-            return JSHandle<JSArrayList>::Cast(obj)->Has(key.GetTaggedValue());
+        case JSType::JS_API_ARRAY_LIST: {
+            return JSHandle<JSAPIArrayList>::Cast(obj)->Has(key.GetTaggedValue());
         }
         case JSType::JS_QUEUE:
             break;
@@ -800,8 +800,8 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
     auto *hclass = obj->GetTaggedObject()->GetClass();
     JSType jsType = hclass->GetObjectType();
     switch (jsType) {
-        case JSType::JS_ARRAY_LIST: {
-            return JSArrayList::OwnKeys(thread, JSHandle<JSArrayList>::Cast(obj));
+        case JSType::JS_API_ARRAY_LIST: {
+            return JSAPIArrayList::OwnKeys(thread, JSHandle<JSAPIArrayList>::Cast(obj));
         }
         case JSType::JS_QUEUE:
             break;
@@ -822,8 +822,8 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
     auto *hclass = obj->GetTaggedObject()->GetClass();
     JSType jsType = hclass->GetObjectType();
     switch (jsType) {
-        case JSType::JS_ARRAY_LIST: {
-            return JSArrayList::GetOwnProperty(thread, JSHandle<JSArrayList>::Cast(obj), key, desc);
+        case JSType::JS_API_ARRAY_LIST: {
+            return JSAPIArrayList::GetOwnProperty(thread, JSHandle<JSAPIArrayList>::Cast(obj), key, desc);
         }
         case JSType::JS_QUEUE:
             break;

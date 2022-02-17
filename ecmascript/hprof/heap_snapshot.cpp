@@ -323,8 +323,10 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("CompletionRecord");
         case JSType::ECMA_MODULE:
             return GetString("EcmaModule");
-        case JSType::JS_ARRAY_LIST:
+        case JSType::JS_API_ARRAY_LIST:
             return GetString("ArrayList");
+        case JSType::JS_API_ARRAYLIST_ITERATOR:
+            return GetString("ArrayListIterator");
         case JSType::JS_API_TREE_MAP:
             return GetString("TreeMap");
         case JSType::JS_API_TREE_SET:

@@ -19,12 +19,14 @@
 #include "containers_treemap.h"
 #include "containers_treeset.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/global_env_constants.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_function.h"
 
 namespace panda::ecmascript::containers {
@@ -185,27 +187,76 @@ void ContainersPrivate::SetStringTagSymbol(JSThread *thread, const JSHandle<Glob
 
 JSHandle<JSTaggedValue> ContainersPrivate::InitializeArrayList(JSThread *thread)
 {
-    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     // ArrayList.prototype
-    JSHandle<JSObject> arrayListFuncPrototype = factory->NewEmptyJSObject();
-    JSHandle<JSTaggedValue> arrayListFuncPrototypeValue(arrayListFuncPrototype);
+    JSHandle<JSObject> prototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> arrayListFuncPrototypeValue(prototype);
     // ArrayList.prototype_or_dynclass
     JSHandle<JSHClass> arrayListInstanceDynclass =
-        factory->NewEcmaDynClass(JSArrayList::SIZE, JSType::JS_ARRAY_LIST, arrayListFuncPrototypeValue);
+        factory->NewEcmaDynClass(JSAPIArrayList::SIZE, JSType::JS_API_ARRAY_LIST, arrayListFuncPrototypeValue);
     // ArrayList() = new Function()
     JSHandle<JSTaggedValue> arrayListFunction(NewContainerConstructor(
-        thread, arrayListFuncPrototype, ContainersArrayList::ArrayListConstructor, "ArrayList", FuncLength::ZERO));
+        thread, prototype, ContainersArrayList::ArrayListConstructor, "ArrayList", FuncLength::ZERO));
     JSHandle<JSFunction>(arrayListFunction)->SetFunctionPrototype(thread, arrayListInstanceDynclass.GetTaggedValue());
 
     // "constructor" property on the prototype
     JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(arrayListFuncPrototype), constructorKey, arrayListFunction);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(prototype), constructorKey, arrayListFunction);
 
-    // ArrayList.prototype.add()
-    SetFrozenFunction(thread, arrayListFuncPrototype, "add", ContainersArrayList::Add, FuncLength::ONE);
+    // ArrayList.prototype
+    SetFrozenFunction(thread, prototype, "add", ContainersArrayList::Add, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "insert", ContainersArrayList::Insert, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "clear", ContainersArrayList::Clear, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "clone", ContainersArrayList::Clone, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "has", ContainersArrayList::Has, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "getCapacity", ContainersArrayList::GetCapacity, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "increaseCapacityTo",
+                      ContainersArrayList::IncreaseCapacityTo, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "trimToCurrentLength",
+                      ContainersArrayList::TrimToCurrentLength, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "getIndexOf", ContainersArrayList::GetIndexOf, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "isEmpty", ContainersArrayList::IsEmpty, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "getLastIndexOf", ContainersArrayList::GetLastIndexOf, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "removeByIndex", ContainersArrayList::RemoveByIndex, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "remove", ContainersArrayList::Remove, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "removeByRange", ContainersArrayList::RemoveByRange, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "replaceAllElements",
+                      ContainersArrayList::ReplaceAllElements, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "sort", ContainersArrayList::Sort, FuncLength::ONE);
+    SetFrozenFunction(thread, prototype, "subArrayList", ContainersArrayList::SubArrayList, FuncLength::TWO);
+    SetFrozenFunction(thread, prototype, "convertToArray", ContainersArrayList::ConvertToArray, FuncLength::ZERO);
+    SetFrozenFunction(thread, prototype, "forEach", ContainersArrayList::ForEach, FuncLength::TWO);
 
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetStringTagSymbol(thread, env, prototype, "ArrayList");
+
+    JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersArrayList::GetSize, "length",
+                                                        FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(factory->NewFromCanBeCompressString("length"));
+    SetGetter(thread, prototype, lengthKey, lengthGetter);
+
+    SetFunctionAtSymbol(thread, env, prototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersArrayList::GetIteratorObj, FuncLength::ONE);
+    ContainersPrivate::InitializeArrayListIterator(thread, env, globalConst);
+    globalConst->SetConstant(ConstantIndex::ARRAYLIST_FUNCTION_INDEX, arrayListFunction.GetTaggedValue());
     return arrayListFunction;
+}
+
+void ContainersPrivate::InitializeArrayListIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
+                                                    GlobalEnvConstants *globalConst)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Iterator.dynclass
+    JSHandle<JSHClass> iteratorFuncDynclass =
+        factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_ITERATOR, env->GetIteratorPrototype());
+    // ArrayListIterator.prototype
+    JSHandle<JSObject> arrayListIteratorPrototype(factory->NewJSObject(iteratorFuncDynclass));
+    // Iterator.prototype.next()
+    SetFrozenFunction(thread, arrayListIteratorPrototype, "next", JSAPIArrayListIterator::Next, FuncLength::ONE);
+    SetStringTagSymbol(thread, env, arrayListIteratorPrototype, "ArrayList Iterator");
+    globalConst->SetConstant(ConstantIndex::ARRAYLIST_ITERATOR_PROTOTYPE_INDEX,
+                             arrayListIteratorPrototype.GetTaggedValue());
 }
 
 JSHandle<JSTaggedValue> ContainersPrivate::InitializeTreeMap(JSThread *thread)

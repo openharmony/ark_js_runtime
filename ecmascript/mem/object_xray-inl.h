@@ -32,7 +32,8 @@
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
@@ -300,8 +301,11 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             ClassInfoExtractor::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::JS_QUEUE:
-        case JSType::JS_ARRAY_LIST:
-            JSArrayList::Cast(object)->VisitRangeSlot(visitor);
+        case JSType::JS_API_ARRAY_LIST:
+            JSAPIArrayList::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_ARRAYLIST_ITERATOR:
+            JSAPIArrayListIterator::Cast(object)->VisitRangeSlot(visitor);
             break;
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(object)->VisitRangeSlot(visitor);

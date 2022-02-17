@@ -58,7 +58,7 @@
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_collator.h"
