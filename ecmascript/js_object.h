@@ -624,6 +624,8 @@ private:
 
     static uint32_t ComputeElementCapacity(uint32_t oldCapacity);
     static uint32_t ComputePropertyCapacity(uint32_t oldCapacity);
+
+    static JSTaggedValue ShouldGetValueFromBox(ObjectOperator *op);
 };
 }  // namespace ecmascript
 }  // namespace panda
