@@ -19,7 +19,7 @@
 #include "ecmascript/mem/ecma_list.h"
 #include "ecmascript/mem/space.h"
 #include "ecmascript/mem/area.h"
-#include "ecmascript/mem/region_factory.h"
+#include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/js_tagged_value.h"
 
 namespace panda {

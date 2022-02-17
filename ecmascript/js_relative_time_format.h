@@ -83,7 +83,7 @@ public:
         auto icuFormatter = reinterpret_cast<icu::RelativeDateTimeFormatter *>(pointer);
         icuFormatter->~RelativeDateTimeFormatter();
         if (data != nullptr) {
-            reinterpret_cast<EcmaVM *>(data)->GetRegionFactory()->FreeBuffer(pointer);
+            reinterpret_cast<EcmaVM *>(data)->GetNativeAreaAllocator()->FreeBuffer(pointer);
         }
     }
 

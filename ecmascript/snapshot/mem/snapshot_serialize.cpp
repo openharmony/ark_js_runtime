@@ -66,7 +66,7 @@
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/region_factory.h"
+#include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/object_factory.h"
 
@@ -607,18 +607,18 @@ SnapShotSerialize::SnapShotSerialize(EcmaVM *vm, bool serialize) : vm_(vm), seri
 {
     objectArraySize_ = OBJECT_SIZE_EXTEND_PAGE;
     if (serialize_) {
-        addressSlot_ = ToUintPtr(vm_->GetRegionFactory()->Allocate(sizeof(uintptr_t) * OBJECT_SIZE_EXTEND_PAGE));
+        addressSlot_ = ToUintPtr(vm_->GetNativeAreaAllocator()->Allocate(sizeof(uintptr_t) * OBJECT_SIZE_EXTEND_PAGE));
     } else {
-        addressSlot_ = ToUintPtr(vm_->GetRegionFactory()->Allocate(sizeof(uintptr_t) * objectArraySize_));
+        addressSlot_ = ToUintPtr(vm_->GetNativeAreaAllocator()->Allocate(sizeof(uintptr_t) * objectArraySize_));
     }
 }
 
 SnapShotSerialize::~SnapShotSerialize()
 {
     if (serialize_) {
-        vm_->GetRegionFactory()->Free(ToVoidPtr(addressSlot_), sizeof(uintptr_t) * OBJECT_SIZE_EXTEND_PAGE);
+        vm_->GetNativeAreaAllocator()->Free(ToVoidPtr(addressSlot_), sizeof(uintptr_t) * OBJECT_SIZE_EXTEND_PAGE);
     } else {
-        vm_->GetRegionFactory()->Free(ToVoidPtr(addressSlot_), sizeof(uintptr_t) * objectArraySize_);
+        vm_->GetNativeAreaAllocator()->Free(ToVoidPtr(addressSlot_), sizeof(uintptr_t) * objectArraySize_);
     }
 }
 
@@ -705,14 +705,14 @@ void SnapShotSerialize::ExtendObjectArray()
     int countNow = objectArraySize_;
     objectArraySize_ = objectArraySize_ + OBJECT_SIZE_EXTEND_PAGE;
 
-    auto addr = vm_->GetRegionFactory()->Allocate(sizeof(uintptr_t) * objectArraySize_);
+    auto addr = vm_->GetNativeAreaAllocator()->Allocate(sizeof(uintptr_t) * objectArraySize_);
     int size = countNow * ADDRESS_SIZE;
     if (memcpy_s(addr, size, ToVoidPtr(addressSlot_), size) != EOK) {
         LOG_ECMA(FATAL) << "memcpy_s failed";
         UNREACHABLE();
     }
 
-    vm_->GetRegionFactory()->Free(ToVoidPtr(addressSlot_), sizeof(uintptr_t) * objectArraySize_);
+    vm_->GetNativeAreaAllocator()->Free(ToVoidPtr(addressSlot_), sizeof(uintptr_t) * objectArraySize_);
     addressSlot_ = ToUintPtr(addr);
 }
 

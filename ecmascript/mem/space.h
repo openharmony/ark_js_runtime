@@ -19,6 +19,7 @@
 #include "mem/gc/bitmap.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/ecma_list.h"
+#include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/region.h"
 #include "libpandabase/utils/type_helpers.h"
@@ -188,7 +189,7 @@ protected:
     Heap *heap_ {nullptr};
     EcmaVM *vm_ {nullptr};
     JSThread *thread_ {nullptr};
-    RegionFactory *regionFactory_ {nullptr};
+    HeapRegionAllocator *heapRegionAllocator_ {nullptr};
     EcmaList<Region> regionList_ {};
     MemSpaceType spaceType_ {};
     size_t initialCapacity_ {0};

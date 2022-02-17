@@ -330,9 +330,14 @@ public:
 
     void StopHeapTracking();
 
-    RegionFactory *GetRegionFactory() const
+    NativeAreaAllocator *GetNativeAreaAllocator() const
     {
-        return regionFactory_.get();
+        return nativeAreaAllocator_.get();
+    }
+
+    HeapRegionAllocator *GetHeapRegionAllocator() const
+    {
+        return heapRegionAllocator_.get();
     }
 
     Chunk *GetChunk() const
@@ -456,11 +461,12 @@ private:
 
     // VM memory management.
     EcmaStringTable *stringTable_ {nullptr};
-    std::unique_ptr<RegionFactory> regionFactory_;
+    std::unique_ptr<NativeAreaAllocator> nativeAreaAllocator_;
+    std::unique_ptr<HeapRegionAllocator> heapRegionAllocator_;
     Chunk chunk_;
     Heap *heap_ {nullptr};
     ObjectFactory *factory_ {nullptr};
-    CVector<JSNativePointer *> arrayBufferDataList_;
+    ChunkVector<JSNativePointer *> arrayBufferDataList_;
 
     // VM execution states.
     JSThread *thread_ {nullptr};
@@ -475,14 +481,14 @@ private:
     JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};
     CString frameworkAbcFileName_;
     const panda_file::File *frameworkPandaFile_ {nullptr};
-    CVector<JSMethod *> frameworkProgramMethods_;
+    ChunkVector<JSMethod *> frameworkProgramMethods_;
 
     // VM resources.
     CString snapshotFileName_;
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     bool optionalLogEnabled_ {false};
-    CVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
+    ChunkVector<std::tuple<Program *, const panda_file::File *, bool>> pandaFileWithProgram_;
 
     // Debugger
     RuntimeNotificationManager *notificationManager_ {nullptr};

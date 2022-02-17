@@ -80,10 +80,10 @@ StringKey StringHashMap::GenerateStringKey(const CString *string) const
 
 CString *StringHashMap::GetString(CString as)
 {
-    auto *tempString = const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<CString>(std::move(as));
+    auto *tempString = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->New<CString>(std::move(as));
     CString *oldString = FindOrInsertString(tempString);
     if (tempString != oldString) {
-        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(tempString);
+        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(tempString);
         return oldString;
     }
     return tempString;
@@ -93,7 +93,7 @@ void StringHashMap::Clear()
 {
     for (auto it : hashmap_) {
         if (it.second != nullptr) {
-            const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(it.second);
+            const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(it.second);
         }
     }
 }

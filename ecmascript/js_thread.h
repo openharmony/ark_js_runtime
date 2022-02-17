@@ -26,7 +26,7 @@
 
 namespace panda::ecmascript {
 class EcmaVM;
-class RegionFactory;
+class HeapRegionAllocator;
 class InternalCallParams;
 class PropertiesCache;
 enum class MarkStatus : uint8_t {
@@ -78,9 +78,14 @@ public:
 
     bool DoStackOverflowCheck(const JSTaggedType *sp);
 
-    RegionFactory *GetRegionFactory() const
+    NativeAreaAllocator *GetNativeAreaAllocator() const
     {
-        return regionFactory_;
+        return nativeAreaAllocator_;
+    }
+
+    HeapRegionAllocator *GetHeapRegionAllocator() const
+    {
+        return heapRegionAllocator_;
     }
 
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
@@ -351,7 +356,8 @@ private:
 
     // MM: handles, global-handles, and aot-stubs.
     int nestedLevel_ = 0;
-    RegionFactory *regionFactory_ {nullptr};
+    NativeAreaAllocator *nativeAreaAllocator_ {nullptr};
+    HeapRegionAllocator *heapRegionAllocator_ {nullptr};
     JSTaggedType *handleScopeStorageNext_ {nullptr};
     JSTaggedType *handleScopeStorageEnd_ {nullptr};
     std::vector<std::array<JSTaggedType, NODE_BLOCK_SIZE> *> handleStorageNodes_ {};

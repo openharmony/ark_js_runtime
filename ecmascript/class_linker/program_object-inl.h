@@ -17,7 +17,7 @@
 #define ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
 
 #include "program_object.h"
-#include "ecmascript/mem/region_factory.h"
+#include "ecmascript/mem/native_area_allocator.h"
 
 namespace panda {
 namespace ecmascript {
@@ -26,9 +26,9 @@ JSTaggedValue ConstantPool::GetObjectFromCache(uint32_t index) const
     return Get(index);
 }
 
-void Program::FreeMethodData(RegionFactory *factory)
+void Program::FreeMethodData(NativeAreaAllocator *allocator)
 {
-    factory->FreeBuffer(GetMethodsData());
+    allocator->FreeBuffer(GetMethodsData());
 }
 }  // namespace ecmascript
 }  // namespace panda

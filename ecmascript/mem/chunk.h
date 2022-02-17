@@ -20,13 +20,13 @@
 #include "ecmascript/mem/area.h"
 
 namespace panda::ecmascript {
-class RegionFactory;
+class NativeAreaAllocator;
 
 class Chunk {
 public:
     static constexpr size_t MEM_ALIGN = 8U;
 
-    explicit Chunk(RegionFactory *factory);
+    explicit Chunk(NativeAreaAllocator *allocator);
     ~Chunk()
     {
         ReleaseMemory();
@@ -92,7 +92,7 @@ private:
 
     Area *currentArea_{nullptr};
     EcmaList<Area> areaList_{};
-    RegionFactory *factory_{nullptr};
+    NativeAreaAllocator *allocator_{nullptr};
 };
 }  // namespace panda::ecmascript
 

@@ -68,7 +68,7 @@ bool DFXJSNApi::StopHeapTracking(EcmaVM *vm,  int dumpFormat, const std::string 
         result = heapProfile->StopHeapTracking(vm->GetJSThread(), ecmascript::DumpFormat::OTHER, filePath);
     }
     const ecmascript::Heap *heap = vm->GetJSThread()->GetEcmaVM()->GetHeap();
-    const_cast<ecmascript::RegionFactory *>(heap->GetRegionFactory())->Delete(heapProfile);
+    const_cast<ecmascript::NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfile);
     return result;
 }
 

@@ -17,7 +17,8 @@
 #define ECMASCRIPT_MEM_MARK_STACK_INL_H
 
 #include "ecmascript/mem/mark_stack.h"
-#include "ecmascript/mem/region_factory.h"
+
+#include "ecmascript/mem/native_area_allocator.h"
 
 namespace panda::ecmascript {
 template<class T>
@@ -26,7 +27,7 @@ void ContinuousStack<T>::BeginMarking(Heap *heap, ContinuousStack<T> *other)
     heap_ = heap;
     currentArea_ = other->currentArea_;
     if (currentArea_ == nullptr) {
-        currentArea_ = RegionFactory::AllocateSpace(DEFAULT_MARK_STACK_SIZE);
+        currentArea_ = NativeAreaAllocator::AllocateSpace(DEFAULT_MARK_STACK_SIZE);
     }
     ResetBegin(currentArea_->GetBegin(), currentArea_->GetEnd());
 }
@@ -38,14 +39,14 @@ void ContinuousStack<T>::FinishMarking(ContinuousStack<T> *other)
 
     while (!unusedList_.IsEmpty()) {
         Area *node = unusedList_.PopBack();
-        RegionFactory::FreeSpace(node);
+        NativeAreaAllocator::FreeSpace(node);
     }
 }
 
 template<class T>
 void ContinuousStack<T>::Extend()
 {
-    auto area = RegionFactory::AllocateSpace(DEFAULT_MARK_STACK_SIZE);
+    auto area = NativeAreaAllocator::AllocateSpace(DEFAULT_MARK_STACK_SIZE);
     areaList_.AddNode(currentArea_);
     currentArea_ = area;
     ResetBegin(currentArea_->GetBegin(), currentArea_->GetEnd());
@@ -55,7 +56,7 @@ template<class T>
 void ContinuousStack<T>::Destroy()
 {
     if (currentArea_ != nullptr) {
-        RegionFactory::FreeSpace(currentArea_);
+        NativeAreaAllocator::FreeSpace(currentArea_);
         currentArea_ = nullptr;
     }
 }

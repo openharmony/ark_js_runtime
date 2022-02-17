@@ -28,10 +28,11 @@ namespace panda::ecmascript {
 JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
 {
     auto jsThread = new JSThread(runtime, vm);
-    jsThread->regionFactory_ = EcmaVM::Cast(vm)->GetRegionFactory();
+    jsThread->nativeAreaAllocator_ = EcmaVM::Cast(vm)->GetNativeAreaAllocator();
+    jsThread->heapRegionAllocator_ = EcmaVM::Cast(vm)->GetHeapRegionAllocator();
     // algin with 16
     jsThread->frameBase_ = static_cast<JSTaggedType *>(
-        EcmaVM::Cast(vm)->GetRegionFactory()->Allocate(sizeof(JSTaggedType) * MAX_STACK_SIZE));
+        EcmaVM::Cast(vm)->GetNativeAreaAllocator()->Allocate(sizeof(JSTaggedType) * MAX_STACK_SIZE));
     jsThread->currentFrame_ = jsThread->frameBase_ + MAX_STACK_SIZE;
     JSThread::SetCurrent(jsThread);
     EcmaInterpreter::InitStackFrame(jsThread);
@@ -60,9 +61,10 @@ JSThread::~JSThread()
     handleScopeStorageNext_ = handleScopeStorageEnd_ = nullptr;
     EcmaVM::Cast(GetVM())->GetChunk()->Delete(globalStorage_);
 
-    GetRegionFactory()->Free(frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
+    GetNativeAreaAllocator()->Free(frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
     frameBase_ = nullptr;
-    regionFactory_ = nullptr;
+    nativeAreaAllocator_ = nullptr;
+    heapRegionAllocator_ = nullptr;
     if (internalCallParams_ != nullptr) {
         delete internalCallParams_;
         internalCallParams_ = nullptr;
