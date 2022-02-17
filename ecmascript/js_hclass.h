@@ -93,6 +93,7 @@ class ProtoChangeDetails;
         JS_FORIN_ITERATOR,       /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_MAP_ITERATOR,         /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_SET_ITERATOR,         /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_ARRAYLIST_ITERATOR, /* /////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREEMAP_ITERATOR, /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREESET_ITERATOR, /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_ARRAY_ITERATOR,       /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -114,7 +115,8 @@ class ProtoChangeDetails;
                                                                                                                        \
         /* SPECIAL indexed objects begin, DON'T CHANGE HERE ///////////////////////////////////////////////-PADDING */ \
         JS_ARRAY,       /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
-        JS_ARRAY_LIST,     /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_ARRAY_LIST, /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_VECTOR,     /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREE_MAP,   /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREE_SET,   /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_QUEUE,          /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -605,11 +607,15 @@ public:
     // non ECMA standard jsapi containers.
     inline bool IsSpecialContainer() const
     {
-        return GetObjectType() >= JSType::JS_ARRAY_LIST && GetObjectType() <= JSType::JS_QUEUE;
+        return GetObjectType() >= JSType::JS_API_ARRAY_LIST && GetObjectType() <= JSType::JS_QUEUE;
     }
-    inline bool IsJSArrayList() const
+    inline bool IsJSAPIArrayList() const
     {
-        return GetObjectType() == JSType::JS_ARRAY_LIST;
+        return GetObjectType() == JSType::JS_API_ARRAY_LIST;
+    }
+    inline bool IsJSAPIArrayListIterator() const
+    {
+        return GetObjectType() == JSType::JS_API_ARRAYLIST_ITERATOR;
     }
     inline bool IsJSQueue() const
     {
@@ -682,6 +688,7 @@ public:
     {
         return GetObjectType() == JSType::JS_ARRAY_ITERATOR;
     }
+
     inline bool IsPrototypeHandler() const
     {
         return GetObjectType() == JSType::PROTOTYPE_HANDLER;

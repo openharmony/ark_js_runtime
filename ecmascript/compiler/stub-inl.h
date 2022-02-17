@@ -1438,9 +1438,11 @@ GateRef Stub::IsSpecialIndexedObj(GateRef jsType)
 
 GateRef Stub::IsSpecialContainer(GateRef jsType)
 {
+  // arraylist and vector has fast pass now
     return TruncInt32ToInt1(Int32And(
-        ZExtInt1ToInt32(Int32GreaterThanOrEqual(jsType, GetInt32Constant(static_cast<int32_t>(JSType::JS_ARRAY_LIST)))),
-        ZExtInt1ToInt32(Int32LessThanOrEqual(jsType, GetInt32Constant(static_cast<int32_t>(JSType::JS_QUEUE))))));
+        ZExtInt1ToInt32(
+            Int32GreaterThanOrEqual(jsType, GetInt32Constant(static_cast<int32_t>(JSType::JS_API_ARRAY_LIST)))),
+        ZExtInt1ToInt32(Int32LessThanOrEqual(jsType, GetInt32Constant(static_cast<int32_t>(JSType::JS_API_VECTOR))))));
 }
 
 GateRef Stub::IsAccessorInternal(GateRef value)

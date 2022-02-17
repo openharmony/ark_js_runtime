@@ -178,7 +178,6 @@ public:
     static JSTaggedType Mul2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType Div2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
     static JSTaggedType Mod2Dyn(uintptr_t argGlue, JSTaggedType left, JSTaggedType right);
-    static void JSArrayListSetByIndex(uintptr_t argGlue, JSTaggedValue obj, int32_t index, JSTaggedValue value);
     static void InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);
     static void MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
         Region *objectRegion, TaggedObject *value, Region *valueRegion);

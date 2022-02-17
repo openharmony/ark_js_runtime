@@ -21,7 +21,7 @@
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_proxy.h"
@@ -163,7 +163,7 @@ bool FastRuntimeStub::IsSpecialReceiverObj(JSType jsType)
 
 bool FastRuntimeStub::IsSpecialContainer(JSType jsType)
 {
-    return jsType >= JSType::JS_ARRAY_LIST && jsType <= JSType::JS_QUEUE;
+    return jsType >= JSType::JS_API_ARRAY_LIST && jsType <= JSType::JS_QUEUE;
 }
 
 int32_t FastRuntimeStub::TryToElementsIndex(JSTaggedValue key)
@@ -1335,8 +1335,8 @@ JSTaggedValue FastRuntimeStub::GetContainerProperty(JSThread *thread, JSTaggedVa
 {
     JSTaggedValue res = JSTaggedValue::Undefined();
     switch (jsType) {
-        case JSType::JS_ARRAY_LIST:
-            res = JSArrayList::Cast(receiver.GetTaggedObject())->Get(thread, index);
+        case JSType::JS_API_ARRAY_LIST:
+            res = JSAPIArrayList::Cast(receiver.GetTaggedObject())->Get(thread, index);
             break;
         default:
             break;
@@ -1349,8 +1349,8 @@ JSTaggedValue FastRuntimeStub::SetContainerProperty(JSThread *thread, JSTaggedVa
 {
     JSTaggedValue res = JSTaggedValue::Undefined();
     switch (jsType) {
-        case JSType::JS_ARRAY_LIST:
-            res = JSArrayList::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
+        case JSType::JS_API_ARRAY_LIST:
+            res = JSAPIArrayList::Cast(receiver.GetTaggedObject())->Set(thread, index, value);
             break;
         default:
             break;

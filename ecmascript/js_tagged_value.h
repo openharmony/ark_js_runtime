@@ -317,7 +317,8 @@ public:
     bool IsJSPluralRules() const;
 
     // non ECMA standard jsapis
-    bool IsJSArrayList() const;
+    bool IsJSAPIArrayList() const;
+    bool IsJSAPIArrayListIterator() const;
     bool IsJSAPITreeMap() const;
     bool IsJSAPITreeSet() const;
     bool IsJSAPITreeMapIterator() const;
