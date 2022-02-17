@@ -185,7 +185,7 @@ bool JSBackend::StepComplete(const PtLocation &location)
         return true;
     };
     auto callbackFunc = [](size_t line, [[maybe_unused]] size_t column) -> bool {
-        return line == SPECIAL_LINE_MARK;
+        return line == static_cast<size_t>(SPECIAL_LINE_MARK);
     };
     if (MatchScripts(scriptFunc, location.GetPandaFile(), ScriptMatchType::FILE_NAME) && extractor != nullptr &&
         extractor->MatchWithOffset(callbackFunc, location.GetMethodId(), location.GetBytecodeOffset())) {
