@@ -2920,7 +2920,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         if (!result.IsUndefined()) {
             SET_ACC(PropertyBox::Cast(result.GetTaggedObject())->GetValue());
         } else {
-            JSTaggedValue globalResult = FastRuntimeStub::GetGlobalOwnProperty(globalObj, prop);
+            JSTaggedValue globalResult = FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, prop);
             if (!globalResult.IsHole()) {
                 SET_ACC(globalResult);
             } else {
@@ -2967,7 +2967,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             RESTORE_ACC();
         } else {
             // 2. find from global object
-            auto globalResult = FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey);
+            auto globalResult = FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, propKey);
             if (globalResult.IsHole()) {
                 auto result = SlowRuntimeStub::ThrowReferenceError(thread, propKey, " is not defined");
                 INTERPRETER_RETURN_IF_ABRUPT(result);
@@ -3120,7 +3120,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             DISPATCH(BytecodeInstruction::Format::PREF_ID32);
         }
 #endif
-        JSTaggedValue result = FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey);
+        JSTaggedValue result = FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, propKey);
         if (!result.IsHole()) {
             SET_ACC(result);
         } else {
