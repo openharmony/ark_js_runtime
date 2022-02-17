@@ -24,6 +24,7 @@
 
 #include "circuit.h"
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/compiler/type_inference/type_infer.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
@@ -208,6 +209,122 @@ struct BytecodeInfo {
     bool accOut {false}; // write acc
     uint8_t opcode {0};
     uint16_t offset {0};
+
+    bool IsOut(VRegIDType reg, uint32_t index) const
+    {
+        bool isDefined = (!vregOut.empty() && (reg == vregOut.at(index)));
+        return isDefined;
+    }
+
+    bool IsMov() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::MOV_V4_V4:
+            case EcmaOpcode::MOV_DYN_V8_V8:
+            case EcmaOpcode::MOV_DYN_V16_V16:
+            case EcmaOpcode::LDA_DYN_V8:
+            case EcmaOpcode::STA_DYN_V8:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsJump() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::JMP_IMM8:
+            case EcmaOpcode::JMP_IMM16:
+            case EcmaOpcode::JMP_IMM32:
+            case EcmaOpcode::JEQZ_IMM8:
+            case EcmaOpcode::JEQZ_IMM16:
+            case EcmaOpcode::JNEZ_IMM8:
+            case EcmaOpcode::JNEZ_IMM16:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsCondJump() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::JEQZ_IMM8:
+            case EcmaOpcode::JEQZ_IMM16:
+            case EcmaOpcode::JNEZ_IMM8:
+            case EcmaOpcode::JNEZ_IMM16:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsReturn() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::RETURN_DYN:
+            case EcmaOpcode::RETURNUNDEFINED_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsThrow() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::THROWDYN_PREF:
+            case EcmaOpcode::THROWCONSTASSIGNMENT_PREF_V8:
+            case EcmaOpcode::THROWTHROWNOTEXISTS_PREF:
+            case EcmaOpcode::THROWPATTERNNONCOERCIBLE_PREF:
+            case EcmaOpcode::THROWDELETESUPERPROPERTY_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsDiscarded() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::COPYMODULE_PREF_V8:
+            case EcmaOpcode::DEBUGGER_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsSetConstant() const
+    {
+        auto ecmaOpcode = static_cast<EcmaOpcode>(opcode);
+        switch (ecmaOpcode) {
+            case EcmaOpcode::LDNAN_PREF:
+            case EcmaOpcode::LDINFINITY_PREF:
+            case EcmaOpcode::LDUNDEFINED_PREF:
+            case EcmaOpcode::LDNULL_PREF:
+            case EcmaOpcode::LDTRUE_PREF:
+            case EcmaOpcode::LDFALSE_PREF:
+            case EcmaOpcode::LDHOLE_PREF:
+            case EcmaOpcode::LDAI_DYN_IMM32:
+            case EcmaOpcode::FLDAI_DYN_IMM64:
+            case EcmaOpcode::LDFUNCTION_PREF:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsGeneral() const
+    {
+        return !IsMov() && !IsJump() && !IsReturn() && !IsSetConstant() && !IsDiscarded();
+    }
 };
 
 enum BytecodeOffset {
@@ -240,6 +357,7 @@ public:
         pcArray_(translationInfo.methodPcInfos[index].pcArray), constantPool_(translationInfo.constantPool),
         enableLog_(enableLog)
     {
+        pf_ =  file_->GetPandaFile();
     }
     ~BytecodeCircuitBuilder() = default;
     NO_COPY_SEMANTIC(BytecodeCircuitBuilder);
@@ -289,6 +407,12 @@ public:
         return enableLog_;
     }
 
+    [[nodiscard]] EcmaOpcode GetByteCodeOpcode(kungfu::GateRef gate) const
+    {
+        auto pc = jsgateToBytecode_.at(gate).second;
+        return static_cast<EcmaOpcode>(*pc);
+    }
+
 private:
     void PUBLIC_API CollectBytecodeBlockInfo(uint8_t* pc, std::vector<CfgInfo> &bytecodeBlockInfos);
 
@@ -322,7 +446,8 @@ private:
     void NewByteCode(BytecodeRegion &bb, const uint8_t *pc, GateRef &state, GateRef &depend);
     void BuildSubCircuit();
     GateRef NewPhi(BytecodeRegion &bb, uint16_t reg, bool acc);
-    GateRef RenameVariable(size_t bbId, const uint8_t *end, uint16_t reg, bool acc);
+    GateRef RenameVariable(const size_t bbId, const uint8_t *end,
+        const uint16_t reg, const bool acc, GateType gateType = GateType::JS_ANY);
     void BuildCircuit();
 
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);
@@ -330,14 +455,7 @@ private:
     void PrintGraph();
     void PrintBytecodeInfo();
     void PrintBBInfo();
-    static bool IsJump(EcmaOpcode opcode);
-    static bool IsCondJump(EcmaOpcode opcode);
-    static bool IsMov(EcmaOpcode opcode);
-    static bool IsReturn(EcmaOpcode opcode);
-    static bool IsThrow(EcmaOpcode opcode);
-    static bool IsDiscarded(EcmaOpcode opcode);
-    static bool IsGeneral(EcmaOpcode opcode);
-    static bool IsSetConstant(EcmaOpcode opcode);
+    GateType GetRealGateType(const uint16_t reg, const GateType gateType);
     size_t GetActualNumArgs(size_t numArgs)
     {
         return numArgs + CommonArgIdx::NUM_OF_ARGS;
@@ -354,6 +472,7 @@ private:
     const JSMethod* method_ {nullptr};
     const std::vector<uint8_t *> pcArray_;
     JSHandle<JSTaggedValue> constantPool_;
+    const panda_file::File *pf_ {nullptr};
     bool enableLog_ {false};
 };
 }  // namespace panda::ecmascript::kungfu

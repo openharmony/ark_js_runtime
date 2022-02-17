@@ -55,6 +55,7 @@ bool PassManager::Compile(const std::string &fileName, const std::string &triple
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data, enableLog);
+        pipeline.RunPass<TypeInferPass>(&builder);
         pipeline.RunPass<SlowPathLoweringPass>(&builder, &cmpCfg);
         pipeline.RunPass<VerifierPass>();
         pipeline.RunPass<SchedulingPass>();
