@@ -30,9 +30,10 @@ class HeapProfiler : public HeapProfilerInterface {
 public:
     NO_MOVE_SEMANTIC(HeapProfiler);
     NO_COPY_SEMANTIC(HeapProfiler);
-    explicit HeapProfiler(const Heap *heap) : heap_(heap)
+    explicit HeapProfiler(const Heap *heap) : heap_(heap), hprofs_(heap_->GetEcmaVM()->GetChunk())
     {
-        jsonSerializer_ = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<HeapSnapShotJSONSerializer>();
+        jsonSerializer_ =
+            const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapSnapShotJSONSerializer>();
         if (UNLIKELY(jsonSerializer_ == nullptr)) {
             LOG_ECMA(FATAL) << "alloc snapshot json serializer failed";
             UNREACHABLE();
@@ -66,10 +67,10 @@ private:
     void ClearSnapShot();
 
     const size_t MAX_NUM_HPROF = 5;  // ~10MB
-    CVector<HeapSnapShot *> hprofs_;
+    const Heap *heap_;
+    ChunkVector<HeapSnapShot *> hprofs_;
     HeapSnapShotJSONSerializer *jsonSerializer_{nullptr};
     std::unique_ptr<HeapTracker> heapTracker_;
-    const Heap *heap_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_HPROF_HEAP_PROFILER_H

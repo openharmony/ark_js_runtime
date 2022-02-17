@@ -102,7 +102,7 @@ void JSDateTimeFormat::SetIcuLocale(JSThread *thread, JSHandle<JSDateTimeFormat>
 {
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
-    icu::Locale *icuPointer = ecmaVm->GetRegionFactory()->New<icu::Locale>(icuLocale);
+    icu::Locale *icuPointer = ecmaVm->GetNativeAreaAllocator()->New<icu::Locale>(icuLocale);
     ASSERT(icuPointer != nullptr);
     JSTaggedValue data = obj->GetLocaleIcu();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {
@@ -124,7 +124,7 @@ void JSDateTimeFormat::FreeIcuLocale(void *pointer, void *data)
     auto icuLocale = reinterpret_cast<icu::Locale *>(pointer);
     icuLocale->~Locale();
     if (data != nullptr) {
-        reinterpret_cast<EcmaVM *>(data)->GetRegionFactory()->FreeBuffer(pointer);
+        reinterpret_cast<EcmaVM *>(data)->GetNativeAreaAllocator()->FreeBuffer(pointer);
     }
 }
 
@@ -141,7 +141,8 @@ void JSDateTimeFormat::SetIcuSimpleDateFormat(JSThread *thread, JSHandle<JSDateT
 {
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
-    icu::SimpleDateFormat *icuPointer = ecmaVm->GetRegionFactory()->New<icu::SimpleDateFormat>(icuSimpleDateTimeFormat);
+    icu::SimpleDateFormat *icuPointer =
+        ecmaVm->GetNativeAreaAllocator()->New<icu::SimpleDateFormat>(icuSimpleDateTimeFormat);
     ASSERT(icuPointer != nullptr);
     JSTaggedValue data = obj->GetSimpleDateTimeFormatIcu();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {
@@ -163,7 +164,7 @@ void JSDateTimeFormat::FreeSimpleDateFormat(void *pointer, void *data)
     auto icuSimpleDateFormat = reinterpret_cast<icu::SimpleDateFormat *>(pointer);
     icuSimpleDateFormat->~SimpleDateFormat();
     if (data != nullptr) {
-        reinterpret_cast<EcmaVM *>(data)->GetRegionFactory()->FreeBuffer(pointer);
+        reinterpret_cast<EcmaVM *>(data)->GetNativeAreaAllocator()->FreeBuffer(pointer);
     }
 }
 

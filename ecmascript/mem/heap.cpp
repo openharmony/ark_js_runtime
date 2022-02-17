@@ -27,6 +27,7 @@
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/mix_gc.h"
+#include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/mem/parallel_evacuation.h"
 #include "ecmascript/mem/parallel_marker-inl.h"
 #include "ecmascript/mem/parallel_work_helper.h"
@@ -34,8 +35,9 @@
 #include "ecmascript/mem/verification.h"
 
 namespace panda::ecmascript {
-Heap::Heap(EcmaVM *ecmaVm)
-    : ecmaVm_(ecmaVm), thread_(ecmaVm->GetJSThread()), regionFactory_(ecmaVm->GetRegionFactory()) {}
+Heap::Heap(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm), thread_(ecmaVm->GetJSThread()),
+                             nativeAreaAllocator_(ecmaVm->GetNativeAreaAllocator()),
+                             heapRegionAllocator_(ecmaVm->GetHeapRegionAllocator()) {}
 
 void Heap::Initialize()
 {
@@ -153,7 +155,8 @@ void Heap::Destroy()
         fullGC_ = nullptr;
     }
 
-    regionFactory_ = nullptr;
+    nativeAreaAllocator_ = nullptr;
+    heapRegionAllocator_ = nullptr;
 
     if (memController_ != nullptr) {
         delete memController_;

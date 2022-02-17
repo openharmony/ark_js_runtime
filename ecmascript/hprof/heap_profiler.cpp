@@ -30,7 +30,7 @@ namespace panda::ecmascript {
 HeapProfiler::~HeapProfiler()
 {
     ClearSnapShot();
-    const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(jsonSerializer_);
+    const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(jsonSerializer_);
     jsonSerializer_ = nullptr;
 }
 
@@ -165,8 +165,8 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
     const_cast<Heap *>(heap_)->Prepare();
     switch (sampleType) {
         case SampleType::ONE_SHOT: {
-            auto *snapShot =
-                const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_, isVmMode);
+            auto *snapShot = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())
+                                ->New<HeapSnapShot>(thread, heap_, isVmMode);
             if (snapShot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
@@ -176,8 +176,8 @@ HeapSnapShot *HeapProfiler::MakeHeapSnapShot(JSThread *thread, SampleType sample
             return snapShot;
         }
         case SampleType::REAL_TIME: {
-            auto *snapShot =
-                const_cast<RegionFactory *>(heap_->GetRegionFactory())->New<HeapSnapShot>(thread, heap_, isVmMode);
+            auto *snapShot = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())
+                                ->New<HeapSnapShot>(thread, heap_, isVmMode);
             if (snapShot == nullptr) {
                 LOG_ECMA(FATAL) << "alloc snapshot failed";
                 UNREACHABLE();
@@ -203,7 +203,7 @@ void HeapProfiler::AddSnapShot(HeapSnapShot *snapshot)
 void HeapProfiler::ClearSnapShot()
 {
     for (auto *snapshot : hprofs_) {
-        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(snapshot);
+        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(snapshot);
     }
     hprofs_.clear();
 }

@@ -17,9 +17,9 @@
 
 #include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mem_controller.h"
 #include "ecmascript/mem/region-inl.h"
-#include "ecmascript/mem/region_factory.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/runtime_call_id.h"
 
@@ -28,7 +28,7 @@ Space::Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t 
     : heap_(heap),
       vm_(heap_->GetEcmaVM()),
       thread_(vm_->GetJSThread()),
-      regionFactory_(vm_->GetRegionFactory()),
+      heapRegionAllocator_(vm_->GetHeapRegionAllocator()),
       spaceType_(spaceType),
       initialCapacity_(initialCapacity),
       maximumCapacity_(maximumCapacity),
@@ -38,7 +38,7 @@ Space::Space(Heap *heap, MemSpaceType spaceType, size_t initialCapacity, size_t 
 
 void Space::Initialize()
 {
-    Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     if (spaceType_ == MemSpaceType::SEMI_SPACE) {
         region->SetFlag(RegionFlags::IS_IN_YOUNG_GENERATION);
     } else if (spaceType_ == MemSpaceType::SNAPSHOT_SPACE) {
@@ -78,7 +78,7 @@ void Space::ClearAndFreeRegion(Region *region)
         spaceType_ == MemSpaceType::MACHINE_CODE_SPACE) {
         region->DestroySet();
     }
-    regionFactory_->FreeRegion(region);
+    heapRegionAllocator_->FreeRegion(region);
 }
 
 SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
@@ -104,7 +104,7 @@ bool SemiSpace::Expand(uintptr_t top, bool isAllow)
         // For GC
         survivalObjectSize_ += currentRegion->GetAllocatedBytes(top);
     }
-    Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_YOUNG_GENERATION);
 
     AddRegion(region);
@@ -262,7 +262,7 @@ bool OldSpace::Expand()
         LOG_ECMA_MEM(FATAL) << "Expand::Committed size " << committedSize_ << " of old space is too big. ";
         return false;
     }
-    Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(RegionFlags::IS_IN_OLD_GENERATION);
     region->InitializeSet();
     AddRegion(region);
@@ -411,7 +411,7 @@ void OldSpace::ReclaimCSet()
         region->DeleteCrossRegionRememberedSet();
         region->DeleteOldToNewRememberedSet();
         region->DestroySet();
-        regionFactory_->FreeRegion(region);
+        heapRegionAllocator_->FreeRegion(region);
     });
     collectRegionSet_.clear();
     isCSetEmpty_ = true;
@@ -429,7 +429,7 @@ bool NonMovableSpace::Expand()
         return false;
     }
     MEM_ALLOCATE_AND_GC_TRACE(vm_, NonMovableSpaceExpand);
-    Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(IS_IN_NON_MOVABLE_GENERATION);
     region->InitializeSet();
     AddRegion(region);
@@ -455,7 +455,7 @@ bool SnapShotSpace::Expand(uintptr_t top)
     if (current != nullptr) {
         current->SetHighWaterMark(top);
     }
-    Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_SNAPSHOT_SPACE_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_SNAPSHOT_SPACE_SIZE);
     region->SetFlag(RegionFlags::IS_IN_SNAPSHOT_GENERATION);
     AddRegion(region);
     return true;
@@ -533,7 +533,7 @@ uintptr_t HugeObjectSpace::Allocate(size_t objectSize)
         return 0;
     }
     MEM_ALLOCATE_AND_GC_TRACE(vm_, HugeSpaceExpand);
-    Region *region = regionFactory_->AllocateAlignedRegion(this, alignedSize);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, alignedSize);
     region->SetFlag(RegionFlags::IS_HUGE_OBJECT);
     AddRegion(region);
     return region->GetBegin();
@@ -586,7 +586,7 @@ bool MachineCodeSpace::Expand()
         LOG_ECMA_MEM(FATAL) << "Committed size " << committedSize_ << " of machine Code space is too big. ";
         return false;
     }
-    Region *region = regionFactory_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
+    Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(IS_IN_NON_MOVABLE_GENERATION);
     region->InitializeSet();
     AddRegion(region);

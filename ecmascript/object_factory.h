@@ -23,9 +23,10 @@
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/mem_manager.h"
-#include "ecmascript/mem/region_factory.h"
+#include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript {

@@ -32,19 +32,19 @@ void HeapProfilerInterface::DumpHeapSnapShot(JSThread *thread, DumpFormat dumpFo
 {
     LOG(ERROR, RUNTIME) << "HeapProfilerInterface::DumpHeapSnapshot";
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
-    auto *hprof = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<HeapProfiler>(heap);
+    auto *hprof = const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapProfiler>(heap);
     if (UNLIKELY(hprof == nullptr)) {
         LOG_ECMA(FATAL) << "alloc hprof failed";
         UNREACHABLE();
     }
     hprof->DumpHeapSnapShot(thread, dumpFormat, filePath, isVmMode);
-    const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(hprof);
+    const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(hprof);
 }
 
 HeapProfilerInterface *HeapProfilerInterface::CreateHeapProfiler(JSThread *thread)
 {
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
-    auto *hprof = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<HeapProfiler>(heap);
+    auto *hprof = const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<HeapProfiler>(heap);
     ASSERT(hprof != nullptr);
     return hprof;
 }
@@ -52,6 +52,6 @@ HeapProfilerInterface *HeapProfilerInterface::CreateHeapProfiler(JSThread *threa
 void HeapProfilerInterface::Destroy(JSThread *thread, HeapProfilerInterface *heapProfiler)
 {
     const Heap *heap = thread->GetEcmaVM()->GetHeap();
-    const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(heapProfiler);
+    const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(heapProfiler);
 }
 }  // namespace panda::ecmascript
