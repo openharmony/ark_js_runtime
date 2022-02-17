@@ -587,14 +587,19 @@ JSTaggedValue FastRuntimeStub::SetPropertyByValue(JSThread *thread, JSTaggedValu
     return JSTaggedValue::Hole();
 }
 
-JSTaggedValue FastRuntimeStub::GetGlobalOwnProperty(JSTaggedValue receiver, JSTaggedValue key)
+JSTaggedValue FastRuntimeStub::GetGlobalOwnProperty(JSThread *thread, JSTaggedValue receiver, JSTaggedValue key)
 {
     JSObject *obj = JSObject::Cast(receiver);
     TaggedArray *properties = TaggedArray::Cast(obj->GetProperties().GetTaggedObject());
     GlobalDictionary *dict = GlobalDictionary::Cast(properties);
     int entry = dict->FindEntry(key);
     if (entry != -1) {
-        return dict->GetValue(entry);
+        auto value = dict->GetValue(entry);
+        if (UNLIKELY(value.IsAccessor())) {
+            return CallGetter(thread, receiver, receiver, value);
+        }
+        ASSERT(!value.IsAccessor());
+        return value;
     }
     return JSTaggedValue::Hole();
 }

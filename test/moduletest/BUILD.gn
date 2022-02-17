@@ -23,6 +23,7 @@ group("ark_js_moduletest") {
     "fortest:fortestAction",
     "generator:generatorAction",
     "getunmappedargs:getunmappedargsAction",
+    "globalaccessor:globalaccessorAction",
     "globalrecord:globalrecordAction",
     "helloworld:helloworldAction",
     "lexicalenv:lexicalenvAction",

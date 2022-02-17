@@ -523,7 +523,8 @@ bool JSObject::SetProperty(ObjectOperator *op, const JSHandle<JSTaggedValue> &va
 
     bool isInternalAccessor = false;
     if (op->IsAccessorDescriptor()) {
-        isInternalAccessor = AccessorData::Cast(op->GetValue().GetTaggedObject())->IsInternal();
+        JSTaggedValue ret = ShouldGetValueFromBox(op);
+        isInternalAccessor = AccessorData::Cast(ret.GetTaggedObject())->IsInternal();
     }
 
     // 5. If IsDataDescriptor(ownDesc) is true, then
@@ -611,7 +612,8 @@ bool JSObject::SetProperty(ObjectOperator *op, const JSHandle<JSTaggedValue> &va
     // 6. Assert: IsAccessorDescriptor(ownDesc) is true.
     ASSERT(op->IsAccessorDescriptor());
     // 8. If setter is undefined, return false.
-    AccessorData *accessor = AccessorData::Cast(op->GetValue().GetTaggedObject());
+    JSTaggedValue ret = ShouldGetValueFromBox(op);
+    AccessorData *accessor = AccessorData::Cast(ret.GetTaggedObject());
     return CallSetter(thread, *accessor, receiver, value, mayThrow);
 }
 
@@ -725,16 +727,13 @@ JSTaggedValue JSObject::GetProperty(JSThread *thread, ObjectOperator *op)
         return JSTaggedValue::Undefined();
     }
     // 5. If IsDataDescriptor(desc) is true, return desc.[[Value]]
+    JSTaggedValue ret = ShouldGetValueFromBox(op);
     if (!op->IsAccessorDescriptor()) {
-        JSTaggedValue ret = op->GetValue();
-        if (ret.IsPropertyBox()) {
-            ret = PropertyBox::Cast(ret.GetTaggedObject())->GetValue();
-        }
         return ret;
     }
-    // 6. Otherwise, IsAccessorDescriptor(desc) must be true so, let getter be desc.[[Get]].
 
-    AccessorData *accessor = AccessorData::Cast(op->GetValue().GetTaggedObject());
+    // 6. Otherwise, IsAccessorDescriptor(desc) must be true so, let getter be desc.[[Get]].
+    AccessorData *accessor = AccessorData::Cast(ret.GetTaggedObject());
     // 8. Return Call(getter, Receiver).
     if (UNLIKELY(accessor->IsInternal())) {
         return accessor->CallInternalGet(thread, JSHandle<JSObject>::Cast(holder));

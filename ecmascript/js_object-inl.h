@@ -315,5 +315,14 @@ JSHandle<JSTaggedValue> JSObject::CreateListFromArrayLike(JSThread *thread, cons
     }
     return JSHandle<JSTaggedValue>(array);
 }
+
+inline JSTaggedValue JSObject::ShouldGetValueFromBox(ObjectOperator *op)
+{
+    JSTaggedValue result = op->GetValue();
+    if (result.IsPropertyBox()) {
+        result = PropertyBox::Cast(result.GetTaggedObject())->GetValue();
+    }
+    return result;
+}
 }  //  namespace panda::ecmascript
 #endif  // ECMASCRIPT_JSOBJECT_INL_H

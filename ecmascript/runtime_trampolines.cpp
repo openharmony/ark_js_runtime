@@ -991,7 +991,7 @@ JSTaggedType RuntimeTrampolines::GetGlobalOwnProperty(uintptr_t argGlue, JSTagge
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
     JSTaggedValue globalObj = globalEnv->GetGlobalObject();
-    return FastRuntimeStub::GetGlobalOwnProperty(globalObj, JSTaggedValue(key)).GetRawData();
+    return FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, JSTaggedValue(key)).GetRawData();
 }
 
 JSTaggedType RuntimeTrampolines::TryLdGlobalByName(uintptr_t argGlue, JSTaggedType prop)
