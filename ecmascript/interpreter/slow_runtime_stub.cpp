@@ -1402,7 +1402,7 @@ JSTaggedValue SlowRuntimeStub::TryUpdateGlobalRecord(JSThread *thread, JSTaggedV
 }
 
 // return box
-JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue key, bool *found)
+JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue key)
 {
     INTERPRETER_TRACE(thread, LdGlobalRecord);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
@@ -1412,7 +1412,6 @@ JSTaggedValue SlowRuntimeStub::LdGlobalRecord(JSThread *thread, JSTaggedValue ke
     GlobalDictionary *dict = GlobalDictionary::Cast(env->GetGlobalRecord()->GetTaggedObject());
     int entry = dict->FindEntry(key);
     if (entry != -1) {
-        *found = true;
         return JSTaggedValue(dict->GetBox(entry));
     }
     return JSTaggedValue::Undefined();

@@ -18,6 +18,7 @@
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/property_attributes.h"
+#include "profile_type_info.h"
 
 namespace panda::ecmascript {
 class ICRuntimeStub {
@@ -66,6 +67,10 @@ public:
     static inline JSTaggedValue StoreElement(JSThread *thread, JSObject *receiver, JSTaggedValue key,
                                              JSTaggedValue value, uint32_t handlerInfo);
     static inline int32_t TryToElementsIndex(JSTaggedValue key);
+    static inline JSTaggedValue LoadMiss(JSThread *thread, ProfileTypeInfo *profileTypeInfo, JSTaggedValue receiver,
+                                         JSTaggedValue key, uint32_t slotId, ICKind kind);
+    static inline JSTaggedValue StoreMiss(JSThread *thread, ProfileTypeInfo *profileTypeInfo, JSTaggedValue receiver,
+                                          JSTaggedValue key, JSTaggedValue value, uint32_t slotId, ICKind kind);
 };
 }  // namespace panda::ecmascript
 

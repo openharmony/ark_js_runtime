@@ -45,8 +45,8 @@ void GenericLowering::Lower(GateRef gate, EcmaOpcode bytecode)
 
 void GenericLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
 {
-    StubDescriptor* getAdd2DynPtr = GET_STUBDESCRIPTOR(SlowRuntimeAdd2Dyn);
-    GateRef id = GetLoweringInt64Constant(FAST_STUB_ID(SlowRuntimeAdd2Dyn));
+    StubDescriptor* getAdd2DynPtr = GET_STUBDESCRIPTOR(Add2Dyn);
+    GateRef id = GetLoweringInt64Constant(FAST_STUB_ID(Add2Dyn));
     CircuitBuilder circuitBuilder(circuit_);
     GateAccessor acc(circuit_);
     GateRef newGate = circuitBuilder.NewCallGate(getAdd2DynPtr, glue, id, {glue,
