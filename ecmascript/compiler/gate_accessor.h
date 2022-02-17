@@ -17,22 +17,66 @@
 #define ECMASCRIPT_COMPILER_GATE_ACCESSOR_H
 
 #include "circuit.h"
+#include "gate.h"
 
 namespace panda::ecmascript::kungfu {
+class UseIterator {
+public:
+    explicit UseIterator(Circuit *circuit, GateRef gate);
+    ~UseIterator() = default;
+
+    GateRef GetUse() const
+    {
+        return current_;
+    }
+
+    size_t GetIdx() const
+    {
+        return currentIdx_;
+    }
+
+    bool IsEnd() const
+    {
+        Gate *curGatePtr = circuit_->LoadGatePtr(current_);
+        Out *use = curGatePtr->GetOut(currentIdx_);
+        return use->IsNextOutNull();
+    }
+
+    UseIterator &operator++()
+    {
+        ASSERT(!IsEnd());
+        Gate *curGatePtr = circuit_->LoadGatePtr(current_);
+        Out *use = curGatePtr->GetOut(currentIdx_);
+        Out *nextUse = use->GetNextOut();
+        current_ = circuit_->SaveGatePtr(nextUse->GetGate());
+        currentIdx_ = nextUse->GetIndex();
+        return *this;
+    }
+
+private:
+    Circuit *circuit_;
+    GateRef current_;
+    size_t currentIdx_;
+};
+
 class GateAccessor {
 public:
     explicit GateAccessor(Circuit *circuit) : circuit_(circuit) {}
     ~GateAccessor() = default;
 
-    [[nodiscard]] GateRef GetUseList(GateRef gate);
-    [[nodiscard]] bool hasUseList(GateRef gate);
+    [[nodiscard]] bool HasUse(GateRef gate);
     [[nodiscard]] size_t GetNumIns(GateRef gate);
     [[nodiscard]] OpCode GetOpCode(GateRef gate);
     void SetOpCode(GateRef gate, OpCode::Op opcode);
     [[nodiscard]] GateId GetId(GateRef gate);
-    void ModifyIn(GateRef gate, size_t idx, GateRef inGate);
     [[nodiscard]] GateRef GetValueIn(GateRef gate, size_t idx);
+    [[nodiscard]] size_t GetNumValueIn(GateRef gate);
     [[nodiscard]] GateRef GetIn(GateRef gate, size_t idx);
+    [[nodiscard]] GateRef GetState(GateRef gate, size_t idx = 0);
+    [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0);
+    void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
+    [[nodiscard]] size_t GetFirstUseIdx(GateRef gate);
+    void ReplaceIn(UseIterator &it, GateRef replaceGate);
 
 private:
     Circuit *circuit_;
