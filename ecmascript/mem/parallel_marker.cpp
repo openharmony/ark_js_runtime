@@ -50,9 +50,31 @@ void Marker::ProcessSnapshotRSet(uint32_t threadId)
 
 void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 {
+    bool isFullMark = heap_->IsFullMark();
+    auto visitor = [this, threadId, isFullMark](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+        Region *rootRegion = Region::ObjectAddressToRange(root);
+        bool needBarrier = isFullMark && !rootRegion->InYoungOrCSetGeneration();
+        for (ObjectSlot slot = start; slot < end; slot++) {
+            JSTaggedValue value(slot.GetTaggedType());
+            if (value.IsHeapObject()) {
+                TaggedObject *obj = nullptr;
+                if (!value.IsWeakForHeapObject()) {
+                    obj = value.GetTaggedObject();
+                    MarkObject(threadId, obj);
+                } else {
+                    obj = value.GetWeakReferentUnChecked();
+                }
+                if (needBarrier) {
+                    Region *valueRegion = Region::ObjectAddressToRange(obj);
+                    if (valueRegion->InCollectSet()) {
+                        rootRegion->AtomicInsertCrossRegionRememberedSet(slot.SlotAddress());
+                    }
+                }
+            }
+        }
+    };
     WorkerHelper *worklist = heap_->GetWorkList();
     TaggedObject *obj = nullptr;
-    bool isFullMark = heap_->IsFullMark();
     while (true) {
         obj = nullptr;
         if (!worklist->Pop(threadId, &obj)) {
@@ -61,13 +83,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 
         JSHClass *jsHclass = obj->GetClass();
         MarkObject(threadId, jsHclass);
-
-        Region *objectRegion = Region::ObjectAddressToRange(obj);
-        bool needBarrier = isFullMark && !objectRegion->InYoungOrCSetGeneration();
-        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass,
-                                                    std::bind(&Marker::HandleObjectVisitor, this, threadId,
-                                                              objectRegion, needBarrier, std::placeholders::_1,
-                                                              std::placeholders::_2, std::placeholders::_3));
+        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass, visitor);
     }
 }
 
@@ -78,6 +94,23 @@ void SemiGcMarker::Initialized()
 
 void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
 {
+    auto visitor = [this, threadId](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+        for (ObjectSlot slot = start; slot < end; slot++) {
+            JSTaggedValue value(slot.GetTaggedType());
+            if (value.IsHeapObject()) {
+                if (value.IsWeakForHeapObject()) {
+                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
+                    continue;
+                }
+                Region *rootRegion = Region::ObjectAddressToRange(root);
+                auto slotStatus = MarkObject(threadId, value.GetTaggedObject(), slot);
+                if (!rootRegion->InYoungGeneration() && slotStatus == SlotStatus::KEEP_SLOT) {
+                    SlotNeedUpdate waitUpdate(reinterpret_cast<TaggedObject *>(root), slot);
+                    heap_->GetWorkList()->PushWaitUpdateSlot(threadId, waitUpdate);
+                }
+            }
+        }
+    };
     WorkerHelper *worklist = heap_->GetWorkList();
     TaggedObject *obj = nullptr;
     while (true) {
@@ -87,17 +120,24 @@ void SemiGcMarker::ProcessMarkStack(uint32_t threadId)
         }
 
         auto jsHclass = obj->GetClass();
-        Region *objectRegion = Region::ObjectAddressToRange(obj);
-        bool promoted = !objectRegion->InYoungGeneration();
-        objXRay_.VisitObjectBody<GCType::SEMI_GC>(obj, jsHclass,
-                                                     std::bind(&Marker::HandleMoveObjectVisitor, this, threadId,
-                                                               promoted, std::placeholders::_1, std::placeholders::_2,
-                                                               std::placeholders::_3));
+        objXRay_.VisitObjectBody<GCType::SEMI_GC>(obj, jsHclass, visitor);
     }
 }
 
 void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
 {
+    auto visitor = [this, threadId](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+        for (ObjectSlot slot = start; slot < end; slot++) {
+            JSTaggedValue value(slot.GetTaggedType());
+            if (value.IsHeapObject()) {
+                if (value.IsWeakForHeapObject()) {
+                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
+                    continue;
+                }
+                MarkObject(threadId, value.GetTaggedObject(), slot);
+            }
+        }
+    };
     WorkerHelper *worklist = heap_->GetWorkList();
     TaggedObject *obj = nullptr;
     while (true) {
@@ -109,11 +149,7 @@ void CompressGcMarker::ProcessMarkStack(uint32_t threadId)
         auto jsHclass = obj->GetClass();
         ObjectSlot objectSlot(ToUintPtr(obj));
         MarkObject(threadId, jsHclass, objectSlot);
-
-        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass,
-                                                    std::bind(&Marker::HandleMoveObjectVisitor, this, threadId, false,
-                                                              std::placeholders::_1, std::placeholders::_2,
-                                                              std::placeholders::_3));
+        objXRay_.VisitObjectBody<GCType::OLD_GC>(obj, jsHclass, visitor);
     }
 }
 }  // namespace panda::ecmascript
