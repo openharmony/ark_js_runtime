@@ -351,6 +351,11 @@ uintptr_t JSNApi::ClearWeak(const EcmaVM *vm, uintptr_t localAddress)
     if (localAddress == 0) {
         return 0;
     }
+    if (JSTaggedValue(reinterpret_cast<ecmascript::EcmaGlobalStorage::Node *>(localAddress)->GetObject())
+        .IsUndefined()) {
+        LOG(ERROR, RUNTIME) << "The object of weak reference has been recycled!";
+        return 0;
+    }
     return vm->GetJSThread()->GetEcmaGlobalStorage()->ClearWeak(localAddress);
 }
 

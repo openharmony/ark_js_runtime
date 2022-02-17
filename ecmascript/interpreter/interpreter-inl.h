@@ -2915,14 +2915,13 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
 #endif
 
-        bool found = false;
         // order: 1. global record 2. global object
-        JSTaggedValue result = SlowRuntimeStub::LdGlobalRecord(thread, prop, &found);
-        if (found) {
+        JSTaggedValue result = SlowRuntimeStub::LdGlobalRecord(thread, prop);
+        if (!result.IsUndefined()) {
             SET_ACC(PropertyBox::Cast(result.GetTaggedObject())->GetValue());
         } else {
-            JSTaggedValue globalResult = FastRuntimeStub::GetGlobalOwnProperty(globalObj, prop, &found);
-            if (found) {
+            JSTaggedValue globalResult = FastRuntimeStub::GetGlobalOwnProperty(globalObj, prop);
+            if (!globalResult.IsHole()) {
                 SET_ACC(globalResult);
             } else {
                 // slow path
@@ -2957,11 +2956,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         }
 #endif
 
-        bool found = false;
-        SlowRuntimeStub::LdGlobalRecord(thread, propKey, &found);
+        auto recordResult = SlowRuntimeStub::LdGlobalRecord(thread, propKey);
         SAVE_PC();
         // 1. find from global record
-        if (found) {
+        if (!recordResult.IsUndefined()) {
             JSTaggedValue value = GET_ACC();
             SAVE_ACC();
             JSTaggedValue res = SlowRuntimeStub::TryUpdateGlobalRecord(thread, propKey, value);
@@ -2969,8 +2967,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             RESTORE_ACC();
         } else {
             // 2. find from global object
-            FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey, &found);
-            if (!found) {
+            auto globalResult = FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey);
+            if (globalResult.IsHole()) {
                 auto result = SlowRuntimeStub::ThrowReferenceError(thread, propKey, " is not defined");
                 INTERPRETER_RETURN_IF_ABRUPT(result);
             }
@@ -3122,9 +3120,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             DISPATCH(BytecodeInstruction::Format::PREF_ID32);
         }
 #endif
-        bool found = false;
-        JSTaggedValue result = FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey, &found);
-        if (found) {
+        JSTaggedValue result = FastRuntimeStub::GetGlobalOwnProperty(globalObj, propKey);
+        if (!result.IsHole()) {
             SET_ACC(result);
         } else {
             // slow path
