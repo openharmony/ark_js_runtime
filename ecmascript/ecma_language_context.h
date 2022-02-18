@@ -197,6 +197,11 @@ public:
         return utf::CStringAsMutf8("Lpanda/IllegalArgumentException;");
     }
 
+    const uint8_t *GetIllegalAccessExceptionClassDescriptor() const override
+    {
+        return utf::CStringAsMutf8("Lpanda/IllegalAccessException;");
+    }
+
     const uint8_t *GetOutOfMemoryErrorClassDescriptor() const override
     {
         return utf::CStringAsMutf8("Lpanda/OutOfMemoryError;");
