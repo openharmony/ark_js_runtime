@@ -1043,6 +1043,22 @@ CALL_STUB_INIT_DESCRIPTOR(IterNext)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(CallRuntimeTrampoline)
+{
+    /* 4 : 4 input parameters */
+    StubDescriptor callRuntimeTrampoline("CallRuntimeTrampoline", 0, 4, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64);
+    *descriptor = callRuntimeTrampoline;
+    std::array<StubMachineType, 4> params = { /* 4 : 4 input parameters */
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::UINT64,
+        StubMachineType::UINT64,
+        StubMachineType::UINT32,
+    };
+    descriptor->SetVariableArgs(true);
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(CloseIterator)
 {
     // 2 : 2 input parameters

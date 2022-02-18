@@ -353,6 +353,21 @@ void Stub::DebugPrint(GateRef glue, std::initializer_list<GateRef> args)
     CallRuntime(debugPrint, glue, GetInt64Constant(FAST_STUB_ID(DebugPrint)), args);
 }
 
+GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args)
+{
+    auto depend = env_.GetCurrentLabel()->GetDepend();
+    GateRef result = env_.GetCircuitBuilder().NewRuntimeCallGate(glue, target, depend, args);
+    env_.GetCurrentLabel()->SetDepend(result);
+    return result;
+}
+
+GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args)
+{
+    GateRef result = env_.GetCircuitBuilder().NewRuntimeCallGate(glue, target, depend, args);
+    env_.GetCurrentLabel()->SetDepend(result);
+    return result;
+}
+
 // memory
 GateRef Stub::Load(StubMachineType type, GateRef base, GateRef offset)
 {
