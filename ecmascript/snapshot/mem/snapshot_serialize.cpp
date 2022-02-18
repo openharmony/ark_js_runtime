@@ -60,6 +60,7 @@
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_array_iterator.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_map_iterator.h"
@@ -556,7 +557,28 @@ static uintptr_t g_nativeTable[] = {
     // non ECMA standard jsapi containers.
     reinterpret_cast<uintptr_t>(ArrayList::ArrayListConstructor),
     reinterpret_cast<uintptr_t>(ArrayList::Add),
-    reinterpret_cast<uintptr_t>(ArrayList::Iterator),
+    reinterpret_cast<uintptr_t>(ArrayList::Insert),
+    reinterpret_cast<uintptr_t>(ArrayList::Clear),
+    reinterpret_cast<uintptr_t>(ArrayList::Clone),
+    reinterpret_cast<uintptr_t>(ArrayList::Has),
+    reinterpret_cast<uintptr_t>(ArrayList::GetCapacity),
+    reinterpret_cast<uintptr_t>(ArrayList::IncreaseCapacityTo),
+    reinterpret_cast<uintptr_t>(ArrayList::TrimToCurrentLength),
+    reinterpret_cast<uintptr_t>(ArrayList::GetIndexOf),
+    reinterpret_cast<uintptr_t>(ArrayList::IsEmpty),
+    reinterpret_cast<uintptr_t>(ArrayList::GetLastIndexOf),
+    reinterpret_cast<uintptr_t>(ArrayList::RemoveByIndex),
+    reinterpret_cast<uintptr_t>(ArrayList::Remove),
+    reinterpret_cast<uintptr_t>(ArrayList::RemoveByRange),
+    reinterpret_cast<uintptr_t>(ArrayList::ReplaceAllElements),
+    reinterpret_cast<uintptr_t>(ArrayList::SubArrayList),
+    reinterpret_cast<uintptr_t>(ArrayList::ConvertToArray),
+    reinterpret_cast<uintptr_t>(ArrayList::ForEach),
+    reinterpret_cast<uintptr_t>(ArrayList::GetIteratorObj),
+    reinterpret_cast<uintptr_t>(ArrayList::Get),
+    reinterpret_cast<uintptr_t>(ArrayList::Set),
+    reinterpret_cast<uintptr_t>(ArrayList::GetSize),
+    reinterpret_cast<uintptr_t>(JSAPIArrayListIterator::Next),
     reinterpret_cast<uintptr_t>(TreeMap::TreeMapConstructor),
     reinterpret_cast<uintptr_t>(TreeMap::Set),
     reinterpret_cast<uintptr_t>(TreeMap::Get),

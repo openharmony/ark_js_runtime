@@ -38,7 +38,8 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
@@ -256,8 +257,10 @@ CString JSHClass::DumpJSType(JSType type)
             return "EcmaModule";
         case JSType::CLASS_INFO_EXTRACTOR:
             return "ClassInfoExtractor";
-        case JSType::JS_ARRAY_LIST:
+        case JSType::JS_API_ARRAY_LIST:
             return "ArrayList";
+        case JSType::JS_API_ARRAYLIST_ITERATOR:
+            return "JSArraylistIterator";
         case JSType::JS_API_TREE_MAP:
             return "TreeMap";
         case JSType::JS_API_TREE_SET:
@@ -603,8 +606,11 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
         case JSType::CLASS_INFO_EXTRACTOR:
             ClassInfoExtractor::Cast(obj)->Dump(thread, os);
             break;
-        case JSType::JS_ARRAY_LIST:
-            JSArrayList::Cast(obj)->Dump(thread, os);
+        case JSType::JS_API_ARRAY_LIST:
+            JSAPIArrayList::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_API_ARRAYLIST_ITERATOR:
+            JSAPIArrayListIterator::Cast(obj)->Dump(thread, os);
             break;
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(obj)->Dump(thread, os);
@@ -1309,9 +1315,17 @@ void JSArray::Dump(JSThread *thread, std::ostream &os) const
     JSObject::Dump(thread, os);
 }
 
-void JSArrayList::Dump(JSThread *thread, std::ostream &os) const
+void JSAPIArrayList::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - length: " << std::dec << GetLength().GetArrayLength() << "\n";
+    JSObject::Dump(thread, os);
+}
+
+void JSAPIArrayListIterator::Dump(JSThread *thread, std::ostream &os) const
+{
+    JSAPIArrayList *arrayList = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
+    os << " - length: " << std::dec << arrayList->GetLength().GetArrayLength() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
     JSObject::Dump(thread, os);
 }
 
@@ -2284,8 +2298,11 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::ECMA_MODULE:
             EcmaModule::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
-        case JSType::JS_ARRAY_LIST:
-            JSArrayList::Cast(obj)->DumpForSnapshot(thread, vec);
+        case JSType::JS_API_ARRAY_LIST:
+            JSAPIArrayList::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::JS_API_ARRAYLIST_ITERATOR:
+            JSAPIArrayListIterator::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(obj)->DumpForSnapshot(thread, vec);
@@ -2677,9 +2694,18 @@ void JSArray::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     JSObject::DumpForSnapshot(thread, vec);
 }
 
-void JSArrayList::DumpForSnapshot([[maybe_unused]] JSThread *thread,
-                                  std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+void JSAPIArrayList::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                     std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
+void JSAPIArrayListIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                             std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPIArrayList *arraylist = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
+    arraylist->DumpForSnapshot(thread, vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -2862,6 +2888,8 @@ void GlobalEnv::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     vec.push_back(std::make_pair(CString("AsyncFunctionString"), globalConst->GetAsyncFunctionString()));
     vec.push_back(std::make_pair(CString("ThrowerString"), globalConst->GetThrowerString()));
     vec.push_back(std::make_pair(CString("Undefined"), globalConst->GetUndefined()));
+    vec.push_back(std::make_pair(CString("ArrayListFunction"), globalConst->GetArrayListFunction()));
+    vec.push_back(std::make_pair(CString("ArrayListIteratorPrototype"), globalConst->GetArrayListIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeMapIteratorPrototype"), globalConst->GetTreeMapIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeSetIteratorPrototype"), globalConst->GetTreeSetIteratorPrototype()));
 }

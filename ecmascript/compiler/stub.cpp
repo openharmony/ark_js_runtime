@@ -16,7 +16,7 @@
 #include "ecmascript/compiler/stub.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/stub-inl.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/tagged_hash_table-inl.h"
@@ -2375,20 +2375,8 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
         Branch(IsSpecialIndexedObj(jsType), &isSpecialIndex, &notSpecialIndex);
         Bind(&isSpecialIndex);
         {
-            Label isSpecialContainer(env);
-            Label notSpecialContainer(env);
-            // Add SpecialContainer
-            Branch(IsSpecialContainer(jsType), &isSpecialContainer, &notSpecialContainer);
-            Bind(&isSpecialContainer);
-            {
-                returnValue = SetContainerProperty(glue, *holder, index, value, jsType);
-                Jump(&exit);
-            }
-            Bind(&notSpecialContainer);
-            {
-                returnValue = GetHoleConstant(StubMachineType::UINT64);
-                Jump(&exit);
-            }
+            returnValue = GetHoleConstant(StubMachineType::UINT64);
+            Jump(&exit);
         }
         Bind(&notSpecialIndex);
         {
@@ -2986,7 +2974,7 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
         queueLabel,
     };
     std::array<int64_t, 2> keyValues = { // 2 : 2 means that there are 2 args in total.
-        static_cast<int64_t>(JSType::JS_ARRAY_LIST),
+        static_cast<int64_t>(JSType::JS_API_ARRAY_LIST),
         static_cast<int64_t>(JSType::JS_QUEUE),
     };
     // 2 : 2 means that there are 2 cases.
@@ -3019,7 +3007,7 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Label exit(env);
     DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
 
-    GateRef lengthOffset = GetIntPtrConstant(panda::ecmascript::JSArrayList::LENGTH_OFFSET);
+    GateRef lengthOffset = GetIntPtrConstant(panda::ecmascript::JSAPIArrayList::LENGTH_OFFSET);
     GateRef length = TaggedCastToInt32(Load(StubMachineType::UINT64, receiver, lengthOffset));
     Label isVailedIndex(env);
     Label notValidIndex(env);
@@ -3037,48 +3025,6 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
         CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                     {glue, taggedId});
         result = GetExceptionConstant();
-        Jump(&exit);
-    }
-
-    Bind(&exit);
-    auto ret = *result;
-    env->PopCurrentLabel();
-    return ret;
-}
-
-GateRef Stub::SetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef value, GateRef jsType)
-{
-    auto env = GetEnvironment();
-    Label entry(env);
-    env->PushCurrentLabel(&entry);
-    Label exit(env);
-    DEFVARIABLE(result, StubMachineType::UINT64, GetUndefinedConstant(StubMachineType::UINT64));
-    Label arrayListLabel(env);
-    Label queueLabel(env);
-    Label defaultLabel(env);
-    std::array<Label, 2> repCaseLabels = { // 2 : 2 means that there are 2 args in total.
-        arrayListLabel,
-        queueLabel,
-    };
-    std::array<int64_t, 2> keyValues = { // 2 : 2 means that there are 2 args in total.
-        static_cast<int64_t>(JSType::JS_ARRAY_LIST),
-        static_cast<int64_t>(JSType::JS_QUEUE),
-    };
-    // 2 : 2 means that there are 2 cases.
-    Switch(ZExtInt32ToInt64(jsType), &defaultLabel, keyValues.data(), repCaseLabels.data(), 2);
-    Bind(&arrayListLabel);
-    {
-        StubDescriptor *jsarraylistSetByIndex = GET_STUBDESCRIPTOR(JSArrayListSetByIndex);
-        CallRuntime(jsarraylistSetByIndex, glue, GetInt64Constant(FAST_STUB_ID(JSArrayListSetByIndex)),
-                    { glue, receiver, index, value });
-        Jump(&exit);
-    }
-    Bind(&queueLabel);
-    {
-        Jump(&exit);
-    }
-    Bind(&defaultLabel);
-    {
         Jump(&exit);
     }
 

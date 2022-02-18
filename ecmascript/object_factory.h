@@ -82,6 +82,8 @@ class LayoutInfo;
 class JSIntlBoundFunction;
 class FreeObject;
 class JSNativePointer;
+class JSAPIArrayList;
+class JSAPIArrayListIterator;
 class JSAPITreeSet;
 class JSAPITreeMap;
 class JSAPITreeSetIterator;
@@ -363,6 +365,8 @@ public:
     JSHandle<JSHClass> NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype);
 
     // It is used to provide iterators for non ECMA standard jsapi containers.
+    JSHandle<JSAPIArrayList> NewJSAPIArrayList(uint32_t capacity);
+    JSHandle<JSAPIArrayListIterator> NewJSAPIArrayListIterator(const JSHandle<JSAPIArrayList> &arrayList);
     JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
     JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);
 

@@ -979,23 +979,6 @@ CALL_STUB_INIT_DESCRIPTOR(ThrowIfNotObject)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(JSArrayListSetByIndex)
-{
-    // 4 : 4 input parameters
-    StubDescriptor arraylistSetByIndex("JSArrayListSetByIndex", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
-                                       StubMachineType::NONE);
-    *descriptor = arraylistSetByIndex;
-    // 4 : 4 input parameters
-    std::array<StubMachineType, 4> params = {
-        StubMachineType::NATIVE_POINTER,
-        StubMachineType::TAGGED_POINTER,
-        StubMachineType::INT32,
-        StubMachineType::TAGGED,
-    };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
-}
-
 CALL_STUB_INIT_DESCRIPTOR(InsertOldToNewRememberedSet)
 {
     // 3 : 3 input parameters
