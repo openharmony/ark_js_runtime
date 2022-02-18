@@ -86,6 +86,8 @@ class JSThread;
     V(JSTaggedValue, EnumerableString, ENUMERABLE_STRING_INDEX, enumerable)                                           \
     V(JSTaggedValue, ConfigurableString, CONFIGURABLE_STRING_INDEX, configurable)                                     \
     /* non ECMA standard jsapi containers iterators */                                                                \
+    V(JSTaggedValue, ArrayListFunction, ARRAYLIST_FUNCTION_INDEX, ArrayListFunction)                                  \
+    V(JSTaggedValue, ArrayListIteratorPrototype, ARRAYLIST_ITERATOR_PROTOTYPE_INDEX, ArrayListIterator)               \
     V(JSTaggedValue, TreeMapIteratorPrototype, TREEMAP_ITERATOR_PROTOTYPE_INDEX, TreeMapIterator)                     \
     V(JSTaggedValue, TreeSetIteratorPrototype, TREESET_ITERATOR_PROTOTYPE_INDEX, TreeSetIterator)                     \
     /* SymbolTable*RegisterSymbols */                                                                                 \

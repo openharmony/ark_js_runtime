@@ -36,7 +36,8 @@
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
@@ -178,6 +179,16 @@ static JSHandle<JSObject> NewJSObject(JSThread *thread, ObjectFactory *factory, 
     JSHandle<JSTaggedValue> jsFunc1(thread, jsFunc);
     JSHandle<JSObject> jsObj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(jsFunc1), jsFunc1);
     return jsObj;
+}
+
+static JSHandle<JSAPIArrayList> NewJSAPIArrayList(JSThread *thread, ObjectFactory *factory,
+                                                  JSHandle<JSTaggedValue> proto)
+{
+    JSHandle<JSHClass> arrayListClass =
+        factory->NewEcmaDynClass(JSAPIArrayList::SIZE, JSType::JS_API_ARRAY_LIST, proto);
+    JSHandle<JSAPIArrayList> jsArrayList = JSHandle<JSAPIArrayList>::Cast(factory->NewJSObject(arrayListClass));
+    jsArrayList->SetLength(thread, JSTaggedValue(0));
+    return jsArrayList;
 }
 
 HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
@@ -645,9 +656,18 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::JS_QUEUE:
-            case JSType::JS_ARRAY_LIST: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSArrayList::SIZE, 1)
-                // unused
+            case JSType::JS_API_VECTOR:
+            case JSType::JS_API_ARRAY_LIST: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIArrayList::SIZE, 1)
+                JSHandle<JSAPIArrayList> jsArrayList = NewJSAPIArrayList(thread, factory, proto);
+                DUMP_FOR_HANDLE(jsArrayList)
+                break;
+            }
+            case JSType::JS_API_ARRAYLIST_ITERATOR: {
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIArrayListIterator::SIZE, 2)
+                JSHandle<JSAPIArrayListIterator> jsArrayListIter =
+                    factory->NewJSAPIArrayListIterator(NewJSAPIArrayList(thread, factory, proto));
+                DUMP_FOR_HANDLE(jsArrayListIter)
                 break;
             }
             case JSType::JS_API_TREE_MAP: {

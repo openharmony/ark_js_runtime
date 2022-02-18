@@ -68,6 +68,8 @@ private:
     static JSTaggedValue InitializeContainer(JSThread *thread, const JSHandle<JSObject> &obj, InitializeFunction func,
                                              const char *name);
     static JSHandle<JSTaggedValue> InitializeArrayList(JSThread *thread);
+    static void InitializeArrayListIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
+                                            GlobalEnvConstants *globalConst);
     static JSHandle<JSTaggedValue> InitializeTreeMap(JSThread *thread);
     static void InitializeTreeMapIterator(JSThread *thread);
     static JSHandle<JSTaggedValue> InitializeTreeSet(JSThread *thread);

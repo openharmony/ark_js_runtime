@@ -44,7 +44,8 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
-#include "ecmascript/js_arraylist.h"
+#include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_async_function.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
@@ -774,8 +775,8 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
                 JSDataView::Cast(*obj)->SetByteOffset(0);
                 break;
             // non ECMA standard jsapi container
-            case JSType::JS_ARRAY_LIST:
-                JSArrayList::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
+            case JSType::JS_API_ARRAY_LIST:
+                JSAPIArrayList::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
                 break;
             case JSType::JS_API_TREE_MAP:
                 JSAPITreeMap::Cast(*obj)->SetTreeMap(thread_, JSTaggedValue::Undefined());
@@ -788,6 +789,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_FORIN_ITERATOR:
             case JSType::JS_MAP_ITERATOR:
             case JSType::JS_SET_ITERATOR:
+            case JSType::JS_API_ARRAYLIST_ITERATOR:
             case JSType::JS_API_TREEMAP_ITERATOR:
             case JSType::JS_API_TREESET_ITERATOR:
             case JSType::JS_ARRAY_ITERATOR:
@@ -2161,6 +2163,31 @@ JSHandle<EcmaString> ObjectFactory::GetStringFromStringTable(const JSHandle<Ecma
 {
     auto stringTable = vm_->GetEcmaStringTable();
     return JSHandle<EcmaString>(thread_, stringTable->GetOrInternString(firstString, secondString));
+}
+
+JSHandle<JSAPIArrayList> ObjectFactory::NewJSAPIArrayList(uint32_t capacity)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> builtinObj(thread_, thread_->GlobalConstants()->GetArrayListFunction());
+    JSHandle<JSAPIArrayList> obj =
+        JSHandle<JSAPIArrayList>(NewJSObjectByConstructor(JSHandle<JSFunction>(builtinObj), builtinObj));
+    ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
+    obj->SetElements(thread_, factory->NewTaggedArray(capacity));
+
+    return obj;
+}
+
+JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const JSHandle<JSAPIArrayList> &arrayList)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetArrayListIteratorPrototype());
+    JSHandle<JSHClass> dynHandle =
+        NewEcmaDynClass(JSAPIArrayListIterator::SIZE, JSType::JS_API_ARRAYLIST_ITERATOR, protoValue);
+    JSHandle<JSAPIArrayListIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedArrayList(thread_, arrayList);
+    iter->SetNextIndex(thread_, JSTaggedValue(0));
+    return iter;
 }
 
 JSHandle<JSAPITreeMapIterator> ObjectFactory::NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map,

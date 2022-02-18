@@ -497,9 +497,9 @@ inline bool JSTaggedValue::IsJSPluralRules() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSPluralRules();
 }
 
-inline bool JSTaggedValue::IsJSArrayList() const
+inline bool JSTaggedValue::IsJSAPIArrayList() const
 {
-    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSArrayList();
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIArrayList();
 }
 
 inline bool JSTaggedValue::IsJSAPITreeMap() const
@@ -793,6 +793,11 @@ inline bool JSTaggedValue::IsJSAPITreeSetIterator() const
 inline bool JSTaggedValue::IsJSArrayIterator() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSArrayIterator();
+}
+
+inline bool JSTaggedValue::IsJSAPIArrayListIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIArrayListIterator();
 }
 
 inline bool JSTaggedValue::IsIterator() const

@@ -176,6 +176,11 @@ inline bool JSObject::IsJSArrayIterator() const
     return GetJSHClass()->IsJSArrayIterator();
 }
 
+inline bool JSObject::IsJSAPIArrayListIterator() const
+{
+    return GetJSHClass()->IsJSAPIArrayListIterator();
+}
+
 inline bool JSObject::IsJSPrimitiveRef() const
 {
     return GetJSHClass()->IsJsPrimitiveRef();
