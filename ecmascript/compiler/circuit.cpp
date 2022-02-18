@@ -448,4 +448,16 @@ void Circuit::SetFrameType(panda::ecmascript::FrameType type)
 {
     frameType_ = type;
 }
+
+GateRef Circuit::GetConstantGate(MachineType bitValue, BitField bitfield,
+                                 GateType type)
+{
+    if (constantCache_.count({bitValue, bitfield, type})) {
+        return constantCache_.at({bitValue, bitfield, type});
+    }
+    auto gate = NewGate(OpCode(OpCode::CONSTANT), bitValue, bitfield,
+                        {GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))}, type);
+    constantCache_[{bitValue, bitfield, type}] = gate;
+    return gate;
+}
 }  // namespace panda::ecmascript::kungfu
