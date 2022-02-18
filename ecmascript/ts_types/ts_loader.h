@@ -182,7 +182,7 @@ public:
 
     void SetTSModuleTable(JSHandle<TSModuleTable> table)
     {
-        globalModuleTable_ = *table;
+        globalModuleTable_ = table.GetTaggedValue();
     }
 
     int GetNextModuleId()
@@ -221,7 +221,7 @@ private:
     JSHandle<TaggedArray> GetGlobalUTable();
 
     EcmaVM *vm_ {nullptr};
-    TSModuleTable *globalModuleTable_ {nullptr};
+    JSTaggedValue globalModuleTable_ {JSTaggedValue::Hole()};
     friend class EcmaVM;
 };
 }  // namespace panda::ecmascript
