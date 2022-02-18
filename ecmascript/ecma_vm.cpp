@@ -190,7 +190,10 @@ bool EcmaVM::Initialize()
         factory_->ObtainRootClass(GetGlobalEnv());
     }
 
-    tsLoader_ = new TSLoader(this);
+    if (GetJSOptions().IsEnableTsAot()) {
+        tsLoader_ = new TSLoader(this);
+    }
+
     ecmaModuleManager_ = new EcmaModuleManager(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
