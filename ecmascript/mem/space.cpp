@@ -143,7 +143,12 @@ void SemiSpace::SetAgeMark(uintptr_t mark)
 
 size_t SemiSpace::GetHeapObjectSize() const
 {
-    return survivalObjectSize_ + allocateAfterLastGC_;
+    size_t result = survivalObjectSize_ + allocateAfterLastGC_;
+    if (!ageMark_) {
+        Region *last = GetCurrentRegion();
+        result +=  last->GetAllocatedBytes();
+    }
+    return result;
 }
 
 void SemiSpace::SetOverShootSize(size_t size)
@@ -356,7 +361,6 @@ void OldSpace::Merge(Space *localSpace, FreeListAllocator *localAllocator)
 
     localSpace->ResetLiveObjectSize();
     localSpace->GetRegionList().Clear();
-    allocator.IncrementPromotedSize(localAllocator->GetAllocatedSize());
 }
 
 void OldSpace::SelectCSet()

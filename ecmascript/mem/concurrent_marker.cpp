@@ -44,7 +44,6 @@ void ConcurrentMarker::ConcurrentMarking()
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "ConcurrentMarker::ConcurrentMarking");
     MEM_ALLOCATE_AND_GC_TRACE(vm_, ConcurrentMarking);
     ClockScope scope;
-
     InitializeMarking();
     Platform::GetCurrentPlatform()->PostTask(std::make_unique<MarkerTask>(heap_));
     if (!heap_->IsFullMark() && heap_->IsParallelGCEnabled()) {
@@ -97,7 +96,6 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
     FinishPhase();
     thread_->SetMarkStatus(MarkStatus::READY_TO_MARK);
     notifyMarkingFinished_ = false;
-    duration_ = 0.0;
     if (isRevertCSet) {
         // Mix space gc clear cset when evacuation allocator finalize
         const_cast<OldSpace *>(heap_->GetOldSpace())->RevertCSet();

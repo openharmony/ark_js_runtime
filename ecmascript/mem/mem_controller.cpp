@@ -53,6 +53,8 @@ double MemController::CalculateGrowingFactor(double gcSpeed, double mutatorSpeed
     double factor = (a < b * maxGrowingFactor) ? a / b : maxGrowingFactor;
     factor = std::min(maxGrowingFactor, factor);
     factor = std::max(factor, minGrowingFactor);
+    OPTIONAL_LOG(heap_->GetEcmaVM(), ERROR, ECMASCRIPT) << "CalculateGrowingFactor gcSpeed"
+        << gcSpeed << " mutatorSpeed" << mutatorSpeed << " factor" << factor;
     return factor;
 }
 
@@ -100,6 +102,7 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
     gcEndTime_ = GetSystemTimeInMs();
     allocTimeMs_ = gcEndTime_;
     if (allocDurationSinceGc_ > 0) {
+        oldSpaceAllocSizeSinceGC_ += heap_->GetEvacuation()->GetPromotedSize();
         recordedNewSpaceAllocations_.Push(MakeBytesAndDuration(newSpaceAllocSizeSinceGC_, allocDurationSinceGc_));
         recordedOldSpaceAllocations_.Push(MakeBytesAndDuration(oldSpaceAllocSizeSinceGC_, allocDurationSinceGc_));
         recordedNonmovableSpaceAllocations_.Push(
@@ -116,10 +119,21 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
 
     double duration = gcEndTime_ - gcStartTime_;
     switch (gcType) {
+        case TriggerGCType::SEMI_GC:
         case TriggerGCType::OLD_GC:
+        case TriggerGCType::NON_MOVE_GC:
+        case TriggerGCType::HUGE_GC:
+        case TriggerGCType::MACHINE_CODE_GC: {
+            if (heap_->IsFullMark()) {
+                if (heap_->ConcurrentMarkingEnable()) {
+                    duration += heap_->GetConcurrentMarker()->GetDuration();
+                }
+                recordedMarkCompacts_.Push(MakeBytesAndDuration(heap_->GetHeapObjectSize(), duration));
+            }
+            break;
+        }
         case TriggerGCType::FULL_GC: {
-            size_t heapObjectSize = heap_->GetHeapObjectSize();
-            recordedMarkCompacts_.Push(MakeBytesAndDuration(heapObjectSize, duration));
+            recordedMarkCompacts_.Push(MakeBytesAndDuration(heap_->GetHeapObjectSize(), duration));
             break;
         }
         default:
@@ -139,9 +153,6 @@ void MemController::RecordAfterConcurrentMark(const bool isFull, const Concurren
 
 double MemController::CalculateMarkCompactSpeedPerMS()
 {
-    if (markCompactSpeedCache_ > 0) {
-        return markCompactSpeedCache_;
-    }
     markCompactSpeedCache_ = CalculateAverageSpeed(recordedMarkCompacts_);
     if (markCompactSpeedCache_ > 0) {
         return markCompactSpeedCache_;
