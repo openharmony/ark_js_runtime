@@ -738,7 +738,11 @@ void EcmaVM::Iterate(const RootVisitor &v)
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&globalEnv_)));
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&microJobQueue_)));
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&regexpCache_)));
-    tsLoader_->Iterate(v);
+
+    if (GetJSOptions().IsEnableTsAot()) {
+        tsLoader_->Iterate(v);
+    }
+
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&ecmaModuleManager_->ecmaResolvedModules_)));
 }
 
