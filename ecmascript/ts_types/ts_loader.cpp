@@ -35,7 +35,8 @@ void TSLoader::DecodeTSTypes(const panda_file::File &pf)
 
 TSLoader::TSLoader(EcmaVM *vm) : vm_(vm)
 {
-    SetTSModuleTable(vm_->GetFactory()->NewTSModuleTable(DEAULT_TABLE_CAPACITY));
+    JSHandle<TSModuleTable> table = vm_->GetFactory()->NewTSModuleTable(DEAULT_TABLE_CAPACITY);
+    SetTSModuleTable(table);
 }
 
 void TSLoader::AddTypeTable(JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath)
