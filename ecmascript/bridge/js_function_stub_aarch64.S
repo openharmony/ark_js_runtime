@@ -61,8 +61,8 @@ InvokeJSFunctionEntry:
 // %x0 - glue
 // argv push stack
 .InvokeCompiledJSFunction:
-    mov     x1, x5
-    blr     x1
+    mov     x2, x5
+    blr     x2
 
     add     w19, w19, #2 // 2: prevFp and frameType
     lsl     w8, w19, #3
@@ -70,46 +70,59 @@ InvokeJSFunctionEntry:
 
     ldr     x19, [sp, #16]
     ldp     x29, x30, [sp], #32
+    ldr     x1, [x19, #2056]    // restore thread->leaveFp
     ret
 
 // uint64_t CallRuntimeTrampoline(uintptr_t glue, uint32_t runtime_id, uint32_t patch_id, uint32_t argc, ...);
 // webkit_jscc calling convention
+// Input:
 // %x0 - glue
-// x29 - offset1 - offset2: callee save
-// x29 - offset1 : leave frame
-// X29     - prev frame x29
-// x29 + 8 - return address
-// x29 + 16 - runtime_id
-// x29 + 24 - patch_id
-// x29 + 32 - argc
-// x29 + 40 - arg0
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 32: argv1
+// sp + 24: argv0
+// sp + 16: argc
+// sp + 8:  patch_id
+// sp:      runtime_id
+
+
+// Output:
+//  sp - 8 : x30
+//  sp - 16: x29 <---------current x29 & current sp
+//  current sp - 8:  type             ^
+//  current sp - 16: patchId          |
+//  current sp - 24: callsiteSp      leave frame
+//                                    V
+//  current sp - 32: callee save x19
+
 .global CallRuntimeTrampoline
 .type CallRuntimeTrampoline, %function
 CallRuntimeTrampoline:
-    stp     x29, x30, [sp, #-32]!  // save register for fp, rip
-    mov     x29, sp                 // set frame pointer
-    str     x19, [sp, #-40]         // callee save register
+    stp     x29, x30, [sp, #-16]!  // save register for fp, rip
+    mov     x29, sp                // set frame pointer = callsiteFp
+    str     x29, [x0, #2056]       // save to thread->currentFrame_
+    str     x19, [sp, #-32]        // callee save register
 
     // construct leave frame
     mov     x19, #0x3     //type
     str     x19, [sp, #-8]
-    str     x29, [sp, #-16] //callsiteFp
+    ldr     x19, [fp, #40]
+    str     x19, [sp, #-16] // patchId
     str     x29, [sp, #-24] //callsiteSp ignored
-    ldr     x19, [fp, #24]
-    str     x19, [sp, #-32] // patchId
-    add     sp, sp, #-40
+    add     sp, sp, #-32
 
     // load runtime trampoline address
     ldr     x19, [x29, #16]  // runtime_id
     add     x19, x0, x19, lsl #3
-    add     x19, x19, #2072
+    ldr     x19, [x19, #2072]
     ldr     x1, [x29, #32]  // argc
     add     x2, x29,  #40  // argv[]
     blr     x19
 
     // descontruct leave frame and callee save register
     ldr     x19, [sp]
-    add   sp, sp, #40
+    add   sp, sp, #32
     // restore register
-    ldp     x29, x30, [sp], #32
+    ldp     x29, x30, [sp], #16
     ret

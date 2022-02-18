@@ -216,6 +216,9 @@ JSTaggedType RuntimeTrampolines::FloatMod(uintptr_t argGlue, uint32_t argC, JSTa
     }
     double left = JSTaggedValue(argV[0]).GetDouble();
     double right = JSTaggedValue(argV[1]).GetDouble();
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    const int64_t *sp = reinterpret_cast<const int64_t *>(thread->GetCurrentSPFrame());
+    std::cout << "sp :" << sp << std::endl;
 
     return JSTaggedValue(std::fmod(left, right)).GetRawData();
 }
