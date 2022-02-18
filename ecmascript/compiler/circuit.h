@@ -95,6 +95,8 @@ public:
     void SetSpaceDataSize(size_t sz);
     panda::ecmascript::FrameType GetFrameType() const;
     void SetFrameType(panda::ecmascript::FrameType type);
+    GateRef GetConstantGate(MachineType bitValue, BitField bitfield,
+                            GateType type);
 
 private:
     uint8_t *AllocateSpace(size_t gateSize);
@@ -106,6 +108,7 @@ private:
     size_t gateCount_;
     TimeStamp time_;
     std::vector<uint8_t> dataSection_ {};
+    std::map<std::tuple<MachineType, BitField, GateType>, GateRef> constantCache_ {};
     panda::ecmascript::FrameType frameType_ {panda::ecmascript::FrameType::OPTIMIZED_FRAME};
 };
 }  // namespace panda::ecmascript::kungfu
