@@ -40,8 +40,9 @@ static constexpr size_t MAX_SEMI_SPACE_CAPACITY = 16 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
 
-static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 20 * 1024 * 1024;
-static constexpr size_t GLOBAL_SPACE_LIMIT_BEGIN = 20 * 1024 * 1024;
+static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 256 * 1024 * 1024;
+static constexpr size_t GLOBAL_SPACE_LIMIT_BEGIN = 512 * 1024 * 1024;
+static constexpr size_t MIN_GROWING_STEP = 16 * 1024 * 1024;
 
 static constexpr size_t DEFAULT_OLD_SPACE_SIZE = 2 * 1024 * 1024;
 static constexpr size_t MAX_OLD_SPACE_SIZE = 512 * 1024 * 1024;
@@ -58,7 +59,7 @@ static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_SIZE = 256 * 1024;
 static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_LIMIT = 1024 * 1024;
 static constexpr size_t MAX_MACHINE_CODE_SPACE_SIZE = 8 * 1024 * 1024;
 
-static constexpr size_t MAX_HEAP_SIZE = 256 * 1024 * 1024;
+static constexpr size_t MAX_HEAP_SIZE = 512 * 1024 * 1024;
 static constexpr size_t HALF_MAX_HEAP_SIZE = MAX_HEAP_SIZE / 2;
 static constexpr size_t DEFAULT_HEAP_SIZE = 5 * 1024 * 1024;
 
