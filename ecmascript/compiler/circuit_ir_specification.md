@@ -1,12 +1,12 @@
-# Circuit IR specification
+# Circuit IR Specification
 
-## General design
+## General Design
 
-Circuit IR is like a circuit diagram, which is good at representing the intrinsic logic of a computation process. The circuit diagram is a directed graph: [logic gates](https://en.wikipedia.org/wiki/Logic_gate) are nodes, wires are directed edges. Circuit IR describes semantic of programs in a language-neutral and target-neutral way, targeting multi-language and multi-target support. The design of Circuit IR has a great emphasis on compilation speed (for JIT), code optimization (on both high and low levels), and canonicalization (unique representation for same intrinsic logic).
+Circuit IR is like a circuit diagram, which is good at representing the intrinsic logic of a computation process. The circuit diagram is a directed graph: [logic gates](https://en.wikipedia.org/wiki/Logic_gate) are nodes, wires are directed edges. For every gate, inputs are ordered, outputs are unordered. Circuit IR describes semantic of programs in a language-neutral and target-neutral way, targeting multi-language and multi-target support. The design of Circuit IR has a great emphasis on compilation speed (for JIT), code optimization (on both high and low levels), and canonicalization (unique representation for same intrinsic logic).
 
 Circuit IR splits a program into two major parts: [sequential logic](https://en.wikipedia.org/wiki/Sequential_logic) part and [combinational logic](https://en.wikipedia.org/wiki/Combinational_logic) part:
 
-* The **sequential logic** part is a subgraph of Circuit IR which is similar to the underlying control flow graph (CFG) of the program, and gates in this part are named **state gates** (since they acted like a [finite state machine](https://en.wikipedia.org/wiki/Finite-state_machine) (FSM)). Wires that connect two state gates represent possible state transitions of the FSM, and they are named **state wires**. Note that every gates connected with state wires are state gates.
+* The **sequential logic** part is a subgraph of Circuit IR which is similar to the underlying control flow graph (CFG) of the program, and gates in this part are named **state gates** (since they acted like a [finite state machine](https://en.wikipedia.org/wiki/Finite-state_machine) (FSM)). Wires that connect two state gates represent possible state transitions of the FSM, and they are named **state wires**. Note that every gates that have output state wires are state gates.
 
 * The **combinational logic** part is the other subgraph of Circuit IR which represents all computations in a program using a directed acyclic graph (DAG), and gates in this part are named **computation gates**. A computation gate can do simple things such as adding two integer values, or complex things such as calling a function (and thus make a change to the global memory). Most of **computation gates** will take some values as input and output a value. These values can be transferred by **data wires**. Some computation gates will load from or store to the global memory, so they should be executed non-simultaneously and in some order that will not violate memory dependencies (such as RAW, WAR and WAW). Addressing this issue, **dependency wires** are introduced to constrain the possible execution order of such computations. When a computation gate has multiple dependencies, an auxiliary gate `DEPEND_AND` is used to merge dependencies. Note that dependency wires are treated like data wires during the scheduling phase, since dependency wires can be viewed as special data wires that transfer huge values representing the whole memory.
 
@@ -28,7 +28,7 @@ There are several nodes named **root nodes** in Circuit IR. They are not called 
 
 * `DEPEND_ENTRY`: The origin of dependency flows of the entire circuit.
 
-* `RETURN_LIST` `THROW_LIST`: Registering all terminal states of the function. (for traversing reversely from ending to beginning)
+* `RETURN_LIST`: Registering all terminal states of the function. (for traversing reversely from ending to beginning)
   
 * `CONSTANT_LIST` `ARG_LIST`: Registering all value origins such as constants and arguments. (they are special computation gates that do not depend on other values)
 
@@ -40,7 +40,7 @@ The offsets of root nodes are fixed, so they can be accessed instantly via `Gate
 
 There are two levels of types of values in Circuit IR:
 
-* Primary types: This level of types are **low level** (closer to target architectures) and **fundamental** for Circuit IR, and are determined by the opcode of gates. They describe the bit width of values, and which type of registers (integer or float) should such values be put into. Circuit IR can be translated to correct machine code with only primary types. All primary types are `NOVALUE` `INT1` `INT8` `INT16` `INT32` `INT64` `FLOAT32` `FLOAT64`. Note that pointer type is not included in primary types, since pointers are not different from integers in common ISAs. The concept of pointers should be expressed in secondary types.
+* Primary types: This level of types are **low level** (closer to target architectures) and **fundamental** for Circuit IR, and are determined by the opcode of gates. They describe the bit width of values, and which type of registers (integer or float) should such values be put into. Circuit IR can be translated to correct machine code with only primary types. All primary types are `NOVALUE` `I1` `I8` `I16` `INT32` `INT64` `F32` `F64`. Note that pointer type is not included in primary types, since pointers are not different from integers in common ISAs. The concept of pointers should be expressed in secondary types.
 
 * Secondary types: This level of types are **high level** (closer to languages) and **optional**. They can provide information for program analysis, code optimization and garbage collection (generating stack maps). Secondary types can represent categories of possible bit vectors the value can be (e.g. `JS_ANY` `JS_BOOLEAN` `JS_NULL` `JS_UNDEFINED` `JS_NUMBER` `JS_SMI` etc. builtin categories and user defined bit vectors categories), and possible classes of objects the value points to as a pointer (e.g. `JS_HEAP_OBJECT` `JS_STRING` `JS_OBJECT` `JS_ARRAY` `JS_TYPED_ARRAY` `JS_UINT8_ARRAY` etc. builtin classes and user defined classes).
 
@@ -66,7 +66,7 @@ Primary types are all set during construction of Circuit IR, so no furthermore t
 
 ## Instructions
 
-There are three levels of instructions in Circuit IR: high-level instructions (HIR), middle-level instructions (MIR), and low-level instructions (LIR). They have the same underlying basic structure, so they can co-occur in the same Circuit IR graphs, and the semantics are still consistent. Instructions are not necessarily computational gates. Some instructions may throw an exception and lead to state transition, so they are state gates doing computations. There are also some "pure" state gates that do not do computations, they are compatible with all levels of instructions.
+There are three levels of instructions in Circuit IR: high-level instructions (HIR), middle-level instructions (MIR) and low-level instructions (LIR). They have the same underlying basic structure, so they can co-occur in the same Circuit IR graphs, and the semantics are still consistent. Instructions are not necessarily computational gates. Some instructions may throw an exception and lead to state transition, so they are state gates doing computations. There are also some "pure" state gates that do not do computation, they are compatible with all levels of instructions.
 
 * HIR instructions represent language-related computational process, which usually correspond to the bytecodes of specific languages.
 * MIR instructions are language-independent and target-independent, which are similar to LLVM IR, but having a completely different type system. The type system is very lightweight, designed to better support fast compilation and garbage collection.
@@ -76,9 +76,9 @@ There are three levels of instructions in Circuit IR: high-level instructions (H
 
 * `ANY_STATE` means any state gates.
 * `GENERAL_STATE` means any one of `IF_TRUE`, `IF_FALSE`, `IF_SUCCESS`, `IF_EXCEPTION`,`SWITCH_CASE`, `DEFAULT_CASE`, `MERGE`, `LOOP_BEGIN`, `STATE_ENTRY`, `ORDINARY_BLOCK` gates.
-* `ANYVALUE` means any one of `INT1` `INT8` `INT16` `INT32` `INT64` `FLOAT32` `FLOAT64` `ARCH`.
-* `ANYINT` means any one of `INT1` `INT8` `INT16` `INT32` `INT64` `ARCH`.
-* `ANYFLOAT` means any one of `FLOAT32` `FLOAT64`.
+* `ANYVALUE` means any one of `I1` `I8` `I16` `I32` `INT64` `F32` `F64` `ARCH`.
+* `ANYINT` means any one of `I1` `I8` `I16` `I32` `I64` `ARCH`.
+* `ANYFLOAT` means any one of `F32` `F64`.
 * `ARCH` means architecture-related integer type (`INTx` on `x` bits architecture).
 * `FLEX` means flexible primary type of output value (could be `ARCH`).
 * <<...>> means occurring any times (maybe zero)
@@ -126,11 +126,11 @@ An ordinary state. Usually used as a placeholder. It will be eliminated by IR op
 
 #### IF_BRANCH
 
-This state has two possible transitions based on its input value.
+This state has two possible transitions (branches) based on its input value.
 
 |        | state wires             | #dependency wires | data wires |
 |--------|-------------------------|-------------------|------------|
-| input  | [`GENERAL_STATE`]       | 0                 | [`INT1`]   |
+| input  | [`GENERAL_STATE`]       | 0                 | [`I1`]   |
 | output | {`IF_TRUE`, `IF_FALSE`} | 0                 | {}         |
 
 | Root      | Bitfield |
@@ -139,7 +139,7 @@ This state has two possible transitions based on its input value.
 
 #### SWITCH_BRANCH
 
-This state has multiple possible transitions based on its input value.
+This state has multiple possible transitions (branches) based on its input value.
 
 |        | state wires                         | #dependency wires | data wires   |
 |--------|-------------------------------------|-------------------|--------------|
@@ -152,7 +152,7 @@ This state has multiple possible transitions based on its input value.
 
 #### IF_TRUE | IF_FALSE
 
-Successor state of `IF_BRANCH`.
+Successor states of `IF_BRANCH`.
 
 |        | state wires                       | #dependency wires | data wires |
 |--------|-----------------------------------|-------------------|------------|
@@ -165,7 +165,7 @@ Successor state of `IF_BRANCH`.
 
 #### IF_SUCCESS | IF_EXCEPTION
 
-Successor state of instructions that may throw an exception.
+Successor states of instructions (usually HIR) that may throw an exception.
 
 |        | state wires                       | #dependency wires | data wires |
 |--------|-----------------------------------|-------------------|------------|
@@ -292,8 +292,8 @@ Represents JavaScript bytecode.
 
 |        | state wires                    | #dependency wires | data wires       |
 |--------|--------------------------------|-------------------|------------------|
-| input  | [`GENERAL_STATE`]              | 1                 | [<<`INT64`>>(N)] |
-| output | {`IF_SUCCESS`, `IF_EXCEPTION`} | any               | {<<`INT64`>>}    |
+| input  | [`GENERAL_STATE`]              | 1                 | [<<`I64`>>(N)] |
+| output | {`IF_SUCCESS`, `IF_EXCEPTION`} | any               | {<<`I64`>>}    |
 
 | Root     | Bitfield                   |
 |----------|----------------------------|
@@ -307,15 +307,14 @@ Represents JavaScript bytecode.
 
 Represents a simple function call (would not get an exception).
 
-|        | state wires | #dependency wires | data wires          |
-|--------|-------------|-------------------|---------------------|
-| input  | []          | 1                 | [<<`ANYVALUE`>>(N)] |
-| output | {}          | any               | {<<`FLEX`>>}        |
+|        | state wires | #dependency wires | data wires                  |
+|--------|-------------|-------------------|-----------------------------|
+| input  | []          | 1                 | [`ARCH`, <<`ANYVALUE`>>(N)] |
+| output | {}          | any               | {<<`FLEX`>>}                |
 
-| Root      | Bitfield                   |
-|-----------|----------------------------|
-| not used  | number of value inputs (N) |
-
+| Root      | Bitfield                    |
+|-----------|-----------------------------|
+| not used  | number of function args (N) |
 
 #### Floating point unary arithmetic operations
 
@@ -376,51 +375,58 @@ Represents a simple function call (would not get an exception).
 
 #### Integer binary compare operations
 
-* **EQ**: yields true if the operands are equal, false otherwise. No sign interpretation is necessary or performed.
-* **NE**: yields true if the operands are unequal, false otherwise. No sign interpretation is necessary or performed.
-* **UGT**: interprets the operands as unsigned values and yields true if op1 is greater than op2.
-* **UGE**: interprets the operands as unsigned values and yields true if op1 is greater than or equal to op2.
-* **ULT**: interprets the operands as unsigned values and yields true if op1 is less than op2.
-* **ULE**: interprets the operands as unsigned values and yields true if op1 is less than or equal to op2.
-* **SGT**: interprets the operands as signed values and yields true if op1 is greater than op2.
-* **SGE**: interprets the operands as signed values and yields true if op1 is greater than or equal to op2.
-* **SLT**: interprets the operands as signed values and yields true if op1 is less than op2.
-* **SLE**: interprets the operands as signed values and yields true if op1 is less than or equal to op2.
+* **ICMP**: returns a boolean (`I1`) value based on comparison of its two integer operands. Condition code indicating the kind of comparison to perform is stored in the bitfield. The possible condition codes are:
+  * `0001` `EQ`: yields true if the operands are equal, false otherwise. No sign interpretation is necessary or performed.
+  * `0010` `UGT`: interprets the operands as unsigned values and yields true if op1 is greater than op2.
+  * `0011` `UGE`: interprets the operands as unsigned values and yields true if op1 is greater than or equal to op2.
+  * `0100` `ULT`: interprets the operands as unsigned values and yields true if op1 is less than op2.
+  * `0101` `ULE`: interprets the operands as unsigned values and yields true if op1 is less than or equal to op2.
+  * `0110` `NE`: yields true if the operands are unequal, false otherwise. No sign interpretation is necessary or performed.
+  * `1010` `SGT`: interprets the operands as signed values and yields true if op1 is greater than op2.
+  * `1011` `SGE`: interprets the operands as signed values and yields true if op1 is greater than or equal to op2.
+  * `1100` `SLT`: interprets the operands as signed values and yields true if op1 is less than op2.
+  * `1101` `SLE`: interprets the operands as signed values and yields true if op1 is less than or equal to op2.
 
 |        | state wires | #dependency wires | data wires               |
 |--------|-------------|-------------------|--------------------------|
 | input  | []          | 0                 | [`ANYVALUE`, `ANYVALUE`] |
-| output | {}          | 0                 | {<<`INT1`>>}             |
+| output | {}          | 0                 | {<<`I1`>>}             |
 
-| Root      | Bitfield |
-|-----------|----------|
-| not used  | not used |
+| Root      | Bitfield       |
+|-----------|----------------|
+| not used  | condition code |
 
 #### Floating-point binary compare operations
 
-* **OEQ**: ordered and equal
-* **OGT**: ordered and greater than
-* **OGE**: ordered and greater than or equal
-* **OLT**: ordered and less than
-* **OLE**: ordered and less than or equal
-* **ONE**: ordered and not equal
-* **ORD**: ordered (no nans)
-* **UEQ**: unordered or equal
-* **UGT**: unordered or greater than
-* **UGE**: unordered or greater than or equal
-* **ULT**: unordered or less than
-* **ULE**: unordered or less than or equal
-* **UNE**: unordered or not equal
-* **UNO**: unordered (either nans)
+Note: **ordered** means there is no NaN in the operands.
+
+* **FCMP**: returns a boolean (`I1`) value based on comparison of its two floating-point operands. Condition code indicating the kind of comparison to perform is stored in the bitfield. The possible condition codes are:
+  * `0000` `FALSE`: always returns false (no comparison)
+  * `0001` `OEQ`: ordered and equal
+  * `0010` `OGT`: ordered and greater than
+  * `0011` `OGE`: ordered and greater than or equal
+  * `0100` `OLT`: ordered and less than
+  * `0101` `OLE`: ordered and less than or equal
+  * `0110` `ONE`: ordered and not equal
+  * `0111` `ORD`: ordered (no nans)
+  * `1000` `UNO`: unordered (either nans)
+  * `1001` `UEQ`: unordered or equal
+  * `1010` `UGT`: unordered or greater than
+  * `1011` `UGE`: unordered or greater than or equal
+  * `1100` `ULT`: unordered or less than
+  * `1101` `ULE`: unordered or less than or equal
+  * `1110` `UNE`: unordered or not equal
+  * `1111` `TRUE`: always returns true (no comparison)
+
 
 |        | state wires | #dependency wires | data wires               |
 |--------|-------------|-------------------|--------------------------|
 | input  | []          | 0                 | [`ANYVALUE`, `ANYVALUE`] |
-| output | {}          | 0                 | {<<`INT1`>>}             |
+| output | {}          | 0                 | {<<`I1`>>}             |
 
-| Root      | Bitfield |
-|-----------|----------|
-| not used  | not used |
+| Root      | Bitfield       |
+|-----------|----------------|
+| not used  | condition code |
 
 #### Conversion operations
 
@@ -431,7 +437,7 @@ Represents a simple function call (would not get an exception).
 * **UITOFP**: regards value as an unsigned integer and converts that value to floating-point type.
 * **FPTOSI**: converts a floating-point value to its signed integer equivalent.
 * **FPTOUI**: converts a floating-point value to its unsigned integer equivalent.
-* **BITCAST**: converts value to type ty2 without changing any bits.
+* **BITCAST**: converts value to another type without changing any bits.
 
 |        | state wires | #dependency wires | data wires   |
 |--------|-------------|-------------------|--------------|
@@ -514,4 +520,3 @@ This instruction directly returns a specified constant.
 ### LIR instructions
 
 Currently, LIR instructions are not implemented. They will be added later for JIT compilation.
-
