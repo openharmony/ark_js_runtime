@@ -95,6 +95,7 @@ public:
         IF_EXCEPTION,
         GET_EXCEPTION,
         // Middle Level IR
+        RUNTIME_CALL,
         CALL,
         ALLOCA,
         ARG,

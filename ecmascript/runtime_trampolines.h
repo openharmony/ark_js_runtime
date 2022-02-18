@@ -21,6 +21,8 @@
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
+extern "C" JSTaggedType CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint32_t argc, ...);
+
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {
@@ -57,7 +59,7 @@ public:
     static JSTaggedType GetTaggedArrayPtrTest(uintptr_t argGlue);
     static JSTaggedType Execute(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType thisArg, uint32_t argc,
                                 uintptr_t argArgv);
-    static double FloatMod(double left, double right);
+    static JSTaggedType FloatMod(uintptr_t argGlue, uint32_t argC, JSTaggedType argV[]);
     static JSTaggedType NewInternalString(uintptr_t argGlue, JSTaggedType argKey);
     static JSTaggedType NewEcmaDynClass(uintptr_t argGlue, uint32_t size, uint32_t type, uint32_t inlinedProps);
     static void UpdateLayOutAndAddTransition(uintptr_t argGlue, JSTaggedType oldHClass, JSTaggedType newHClass,

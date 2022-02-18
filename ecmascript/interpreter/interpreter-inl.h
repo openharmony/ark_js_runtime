@@ -1493,8 +1493,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         // typedef JSTaggedType (*PFFastMod)(uintptr_t, JSTaggedType, JSTaggedType);
         // auto fastModPtr = reinterpret_cast<PFFastMod>(stubAddr);
         JSTaggedType argV[2] = {0x0a, 0x0a};
-        argV[0] = right.GetRawData();
-        argV[1] = left.GetRawData();
+        argV[0] = left.GetRawData();
+        argV[1] = right.GetRawData();
         JSTaggedValue res(InvokeJSFunctionEntry(thread->GetGlueAddr(),
             reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argV, stubAddr));
 #else

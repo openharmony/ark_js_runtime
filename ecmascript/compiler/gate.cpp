@@ -95,6 +95,7 @@ Properties OpCode::GetProperties() const
         case GET_EXCEPTION:
             return {I64, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
         // Middle Level IR
+        case RUNTIME_CALL:
         case CALL:
             return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case ALLOCA:

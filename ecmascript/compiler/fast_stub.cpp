@@ -630,11 +630,9 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
                 Jump(&xIsZeroOryIsInf);
                 Bind(&yNotInf);
                 {
-                    StubDescriptor *floatMod = GET_STUBDESCRIPTOR(FloatMod);
-                    doubleX = CallRuntime(floatMod, glue, GetInt64Constant(FAST_STUB_ID(FloatMod)), {
-                            *doubleX, *doubleY
-                        });
-                    Return(DoubleBuildTaggedWithNoGC(*doubleX));
+                    Return(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(FloatMod)), {
+                            DoubleBuildTaggedWithNoGC(*doubleX), DoubleBuildTaggedWithNoGC(*doubleY)
+                        }));
                 }
                 Bind(&xIsZeroOryIsInf);
                 Return(DoubleBuildTaggedWithNoGC(*doubleX));

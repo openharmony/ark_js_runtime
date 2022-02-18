@@ -132,7 +132,8 @@ namespace panda::ecmascript::kungfu {
     V(Sub2Dyn, 3)                            \
     V(Mul2Dyn, 3)                            \
     V(Div2Dyn, 3)                            \
-    V(Mod2Dyn, 3)
+    V(Mod2Dyn, 3)                            \
+    V(CallRuntimeTrampoline, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
