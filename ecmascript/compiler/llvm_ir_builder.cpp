@@ -71,6 +71,7 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
         LLVMAddTargetDependentFunctionAttr(function_, "target-features", "+armv8-a");
     }
     optLeaveFramePrevOffset_ = compCfg_->GetGlueOffset(JSThread::GlueID::OPT_LEAVE_FRAME_PREV_OFFSET);
+    LLVMSetFunctionCallConv(function_, LLVMWebKitJSCallConv);
 }
 
 LLVMIRBuilder::~LLVMIRBuilder()

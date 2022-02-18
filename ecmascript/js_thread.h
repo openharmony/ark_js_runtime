@@ -76,6 +76,16 @@ public:
         currentFrame_ = sp;
     }
 
+    const JSTaggedType *GetLastLeaveFrame() const
+    {
+        return leaveFrame_;
+    }
+
+    void SetLastLeaveFrame(JSTaggedType *sp)
+    {
+        leaveFrame_ = sp;
+    }
+
     bool DoStackOverflowCheck(const JSTaggedType *sp);
 
     RegionFactory *GetRegionFactory() const
@@ -222,6 +232,11 @@ public:
         return MEMBER_OFFSET(JSThread, currentFrame_);
     }
 
+    static constexpr uint32_t GetLeaveFrameOffset()
+    {
+        return MEMBER_OFFSET(JSThread, leaveFrame_);
+    }
+
     static constexpr uint32_t GetRuntimeFunctionsOffset()
     {
         return MEMBER_OFFSET(JSThread, runtimeFunctions_);
@@ -329,6 +344,7 @@ public:
         PROPERTIES_CACHE,
         GLOBAL_STORAGE,
         CURRENT_FRAME,
+        LEAVE_FRAME,
         RUNTIME_FUNCTIONS,
         FAST_STUB_ENTRIES,
         FRAME_STATE_SIZE,
@@ -377,6 +393,7 @@ private:
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};
     JSTaggedType *currentFrame_ {nullptr};
+    JSTaggedType *leaveFrame_ {0};
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
     Address fastStubEntries_[kungfu::FAST_STUB_MAXCOUNT];
 
@@ -392,7 +409,8 @@ private:
         static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize()) \
     V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
     V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
-    V(RUNTIME_FUNCTIONS, RuntimeFunctions, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))    \
+    V(LEAVE_FRAME, LeaveFrame, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))                \
+    V(RUNTIME_FUNCTIONS, RuntimeFunctions, LEAVE_FRAME, sizeof(uint32_t), sizeof(uint64_t))      \
     V(FASTSTUB_ENTRIES, FastStubEntries, RUNTIME_FUNCTIONS,                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint32_t),                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint64_t))                                      \
