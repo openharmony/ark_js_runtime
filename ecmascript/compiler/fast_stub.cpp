@@ -150,7 +150,7 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(StubMachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -226,7 +226,7 @@ void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(StubMachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -317,7 +317,7 @@ void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(StubMachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::TAGGED));
     Bind(&xNotIntOryNotInt);
     doubleX = DoubleSub(*doubleX, *doubleY);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -364,7 +364,7 @@ void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(StubMachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -426,7 +426,7 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
         }
     }
     Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(StubMachineType::UINT64));
+    Return(GetHoleConstant(StubMachineType::TAGGED));
     Label yIsInt(env);
     Label yNotInt(env);
     Bind(&xIsNumberAndyIsNumber);
@@ -560,7 +560,7 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
             }
         }
         Bind(&xNotNumberOryNotNumber);
-        Return(GetHoleConstant(StubMachineType::UINT64));
+        Return(GetHoleConstant(StubMachineType::TAGGED));
         Label yIfInt(env);
         Label yIfNotInt(env);
         Bind(&xIsNumberAndyIsNumber);
@@ -1222,8 +1222,7 @@ void TryStoreICByValueStub::GenerateCircuit(const CompilationConfig *cfg)
         Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
             &hclassEqualFirstValue, &hclassNotEqualFirstValue);
         Bind(&hclassEqualFirstValue);
-        GateRef handlerInfo = TaggedCastToInt32(secondValue);
-        Return(ICStoreElement(glue, receiver, key, value, handlerInfo));
+        Return(ICStoreElement(glue, receiver, key, value, secondValue));
         Bind(&hclassNotEqualFirstValue);
         {
             Branch(Int64Equal(firstValue, key), &firstValueEqualKey, &receiverNotHeapObject);

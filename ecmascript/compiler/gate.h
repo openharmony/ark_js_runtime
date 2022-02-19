@@ -97,6 +97,7 @@ public:
         // Middle Level IR
         RUNTIME_CALL,
         CALL,
+        BYTECODE_CALL,
         ALLOCA,
         ARG,
         MUTABLE_DATA,
@@ -105,6 +106,7 @@ public:
         CONSTANT,
         ZEXT_TO_INT64,
         ZEXT_TO_INT32,
+        ZEXT_TO_INT16,
         SEXT_TO_INT64,
         SEXT_TO_INT32,
         TRUNC_TO_INT32,
@@ -143,6 +145,7 @@ public:
         LOAD,
         STORE,
         TAGGED_TO_INT64,
+        INT64_TO_TAGGED,
         SIGNED_INT_TO_FLOAT,
         UNSIGNED_INT_TO_FLOAT,
         FLOAT_TO_SIGNED_INT,

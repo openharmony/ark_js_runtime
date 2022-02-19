@@ -144,6 +144,16 @@ GateRef Stub::Environment::GetArgument(size_t index) const
 }
 
 // constant
+GateRef Stub::GetInt8Constant(int8_t value)
+{
+    return env_.GetCircuitBuilder().NewInt8Constant(value);
+}
+
+GateRef Stub::GetInt16Constant(int16_t value)
+{
+    return env_.GetCircuitBuilder().NewInt16Constant(value);
+}
+
 GateRef Stub::GetInt32Constant(int32_t value)
 {
     return env_.GetCircuitBuilder().NewIntegerConstant(value);
@@ -152,12 +162,17 @@ GateRef Stub::GetInt32Constant(int32_t value)
 GateRef Stub::GetInt64Constant(int64_t value)
 {
     return env_.GetCircuitBuilder().NewInteger64Constant(value);
-};
+}
 
 GateRef Stub::GetIntPtrConstant(int64_t value)
 {
     return env_.Is32Bit() ? GetInt32Constant(value) : GetInt64Constant(value);
 };
+
+GateRef Stub::GetIntPtrSize()
+{
+    return env_.Is32Bit() ? GetInt32Constant(sizeof(uint32_t)) : GetInt64Constant(sizeof(uint64_t));
+}
 
 uint64_t Stub::GetIntPtrSize() const
 {
@@ -253,6 +268,15 @@ GateRef Stub::TaggedArgument(size_t index)
     GateRef argument = Argument(index);
     env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::ARG));
     env_.GetCircuit()->SetGateType(argument, GateType::TAGGED_VALUE);
+    env_.GetCircuit()->SetMachineType(argument, MachineType::I64);
+    return argument;
+}
+
+GateRef Stub::TaggedPointerArgument(size_t index, GateType type)
+{
+    GateRef argument = Argument(index);
+    env_.GetCircuit()->SetOpCode(argument, OpCode(OpCode::ARG));
+    env_.GetCircuit()->SetGateType(argument, type);
     env_.GetCircuit()->SetMachineType(argument, MachineType::I64);
     return argument;
 }
@@ -409,6 +433,11 @@ GateRef Stub::Load(StubMachineType type, GateRef base)
 }
 
 // arithmetic
+GateRef Stub::Int16Add(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), MachineType::I16, x, y);
+}
+
 GateRef Stub::Int32Add(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), MachineType::I32, x, y);
@@ -435,6 +464,14 @@ GateRef Stub::IntPtrAdd(GateRef x, GateRef y)
 GateRef Stub::IntPtrAnd(GateRef x, GateRef y)
 {
     return env_.Is32Bit() ? Int32And(x, y) : Int64And(x, y);
+}
+
+GateRef Stub::IntPtrEqual(GateRef x, GateRef y)
+{
+    if (env_.Is32Bit()) {
+        return Int32Equal(x, y);
+    }
+    return Int64Equal(x, y);
 }
 
 GateRef Stub::IntPtrSub(GateRef x, GateRef y)
@@ -521,6 +558,11 @@ GateRef Stub::Int32Or(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), MachineType::I32, x, y);
 }
 
+GateRef Stub::Int8And(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I8, x, y);
+}
+
 GateRef Stub::Int32And(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I32, x, y);
@@ -557,6 +599,11 @@ GateRef Stub::Int64And(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I64, x, y);
 }
 
+GateRef Stub::Int16LSL(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::I16, x, y);
+}
+
 GateRef Stub::Int64Xor(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::XOR), MachineType::I64, x, y);
@@ -567,6 +614,11 @@ GateRef Stub::Int32Xor(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::XOR), MachineType::I32, x, y);
 }
 
+GateRef Stub::Int8LSR(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), MachineType::I8, x, y);
+}
+
 GateRef Stub::Int64Not(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::REV), MachineType::I64, x);
@@ -575,6 +627,11 @@ GateRef Stub::Int64Not(GateRef x)
 GateRef Stub::Int32LSL(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::I32, x, y);
+}
+
+GateRef Stub::Int64LSL(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::I64, x, y);
 }
 
 GateRef Stub::UInt64LSL(GateRef x, GateRef y)
@@ -643,6 +700,11 @@ GateRef Stub::TaggedIsUndefined(GateRef x)
     return Int64Equal(x, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));
 }
 
+GateRef Stub::TaggedIsException(GateRef x)
+{
+    return Int64Equal(x, GetInt64Constant(JSTaggedValue::VALUE_EXCEPTION));
+}
+
 GateRef Stub::TaggedIsSpecial(GateRef x)
 {
     return TruncInt32ToInt1(Int32And(
@@ -658,6 +720,16 @@ GateRef Stub::TaggedIsHeapObject(GateRef x)
     return TruncInt32ToInt1(
         Int32And(SExtInt1ToInt32(TaggedIsObject(x)),
                  SExtInt1ToInt32(Int32Equal(SExtInt1ToInt32(TaggedIsSpecial(x)), GetInt32Constant(0)))));
+}
+
+GateRef Stub::TaggedIsGeneratorObject(GateRef x)
+{
+    GateRef isHeapObj = SExtInt1ToInt32(TaggedIsHeapObject(x));
+    GateRef objType = GetObjectType(LoadHClass(x));
+    GateRef isGeneratorObj = Int32Or(
+        SExtInt1ToInt32(Int32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::JS_GENERATOR_OBJECT)))),
+        SExtInt1ToInt32(Int32Equal(objType, GetInt32Constant(static_cast<int32_t>(JSType::JS_ASYNC_FUNC_OBJECT)))));
+    return TruncInt32ToInt1(Int32And(isHeapObj, isGeneratorObj));
 }
 
 GateRef Stub::TaggedIsPropertyBox(GateRef x)
@@ -677,9 +749,7 @@ GateRef Stub::TaggedIsWeak(GateRef x)
 
 GateRef Stub::TaggedIsPrototypeHandler(GateRef x)
 {
-    return TruncInt32ToInt1(
-        Int32And(SExtInt1ToInt32(TaggedIsHeapObject(x)),
-                 SExtInt1ToInt32(HclassIsPrototypeHandler(LoadHClass(x)))));
+    return HclassIsPrototypeHandler(LoadHClass(x));
 }
 
 GateRef Stub::TaggedIsTransitionHandler(GateRef x)
@@ -737,21 +807,27 @@ GateRef Stub::TaggedIsBoolean(GateRef x)
     return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedIsTrue(x)), SExtInt1ToInt32(TaggedIsFalse(x))));
 }
 
+GateRef Stub::TaggedGetInt(GateRef x)
+{
+    return TruncInt64ToInt32(Int64And(x, GetInt64Constant(~JSTaggedValue::TAG_MASK)));
+}
+
+GateRef Stub::Int16BuildTaggedWithNoGC(GateRef x)
+{
+    GateRef val = ZExtInt16ToInt64(x);
+    return ChangeInt64ToTagged(Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT)));
+}
+
 GateRef Stub::IntBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
-    return Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT));
-}
-
-GateRef Stub::Int64BuildTaggedWithNoGC(GateRef x)
-{
-    return Int64Or(x, GetInt64Constant(JSTaggedValue::TAG_INT));
+    return ChangeInt64ToTagged(Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT)));
 }
 
 GateRef Stub::DoubleBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
-    return Int64Add(val, GetInt64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
+    return ChangeInt64ToTagged(Int64Add(val, GetInt64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET)));
 }
 
 GateRef Stub::CastDoubleToInt64(GateRef x)
@@ -770,6 +846,11 @@ GateRef Stub::TaggedFalse()
 }
 
 // compare operation
+GateRef Stub::Int8Equal(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
+}
+
 GateRef Stub::Int32Equal(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
@@ -788,6 +869,26 @@ GateRef Stub::Int64Equal(GateRef x, GateRef y)
 GateRef Stub::DoubleEqual(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
+}
+
+GateRef Stub::DoubleLessThan(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLT), x, y);
+}
+
+GateRef Stub::DoubleLessThanOrEqual(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE), x, y);
+}
+
+GateRef Stub::DoubleGreaterThan(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT), x, y);
+}
+
+GateRef Stub::DoubleGreaterThanOrEqual(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGE), x, y);
 }
 
 GateRef Stub::Int64NotEqual(GateRef x, GateRef y)
@@ -928,7 +1029,7 @@ void Stub::SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray)
     Store(StubMachineType::TAGGED_POINTER, glue, object, propertiesOffset, propsArray);
 }
 
-GateRef Stub::GetLengthofTaggedArray(GateRef array)
+GateRef Stub::GetLengthOfTaggedArray(GateRef array)
 {
     return Load(StubMachineType::UINT32, array, GetIntPtrConstant(TaggedArray::LENGTH_OFFSET));
 }
@@ -950,16 +1051,16 @@ void Stub::StoreHClass(GateRef glue, GateRef object, GateRef hclass)
 
 GateRef Stub::GetObjectType(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
-    if (env_.Is32Bit()) {
-        GateRef bitfield1 = Load(StubMachineType::NATIVE_POINTER, hClass, ZExtInt32ToInt64(bitfieldOffset));
-        return Int32And(bitfield1,
-            ChangeInt64ToInt32(GetInt64Constant((1LLU << JSHClass::ObjectTypeBits::SIZE) - 1)));
-    } else {
-        GateRef bitfield2 = Load(StubMachineType::NATIVE_POINTER, hClass, bitfieldOffset);
-        return ChangeInt64ToInt32(
-            Int64And(bitfield2, GetInt64Constant((1LLU << JSHClass::ObjectTypeBits::SIZE) - 1)));
-    }
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(StubMachineType::UINT32, hClass, bitfieldOffset);
+    return Int32And(bitfield, GetInt32Constant((1LU << JSHClass::ObjectTypeBits::SIZE) - 1));
+}
+
+GateRef Stub::GetGeneratorObjectResumeMode(GateRef obj)
+{
+    GateRef bitfieldOffset = GetInt32Constant(JSGeneratorObject::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(StubMachineType::UINT32, obj, bitfieldOffset);
+    return Int32And(bitfield, GetInt32Constant((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
 }
 
 GateRef Stub::IsDictionaryMode(GateRef object)
@@ -971,18 +1072,18 @@ GateRef Stub::IsDictionaryMode(GateRef object)
 
 GateRef Stub::IsDictionaryModeByHClass(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(StubMachineType::UINT32, hClass, bitfieldOffset);
     return Int32NotEqual(
         Int32And(
             UInt32LSR(bitfield, GetInt32Constant(JSHClass::IsDictionaryBit::START_BIT)),
-            GetInt32Constant((1LLU << JSHClass::IsDictionaryBit::SIZE) - 1)),
+            GetInt32Constant((1LU << JSHClass::IsDictionaryBit::SIZE) - 1)),
         GetInt32Constant(0));
 }
 
 GateRef Stub::IsDictionaryElement(GateRef hClass)
 {
-    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(StubMachineType::UINT32, hClass, bitfieldOffset);
     // decode
     return Int32NotEqual(
@@ -995,7 +1096,7 @@ GateRef Stub::IsDictionaryElement(GateRef hClass)
 GateRef Stub::NotBuiltinsConstructor(GateRef object)
 {
     GateRef hclass = LoadHClass(object);
-    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(StubMachineType::UINT32, hclass, bitfieldOffset);
     // decode
@@ -1009,7 +1110,7 @@ GateRef Stub::NotBuiltinsConstructor(GateRef object)
 GateRef Stub::IsClassConstructor(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(StubMachineType::UINT32, hClass, bitfieldOffset);
     // decode
@@ -1019,10 +1120,23 @@ GateRef Stub::IsClassConstructor(GateRef object)
         GetInt32Constant(0));
 }
 
+GateRef Stub::IsClassPrototype(GateRef object)
+{
+    GateRef hClass = LoadHClass(object);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+
+    GateRef bitfield = Load(StubMachineType::UINT32, hClass, bitfieldOffset);
+    // decode
+    return Int32NotEqual(
+        Int32And(UInt32LSR(bitfield, GetInt32Constant(JSHClass::ClassPrototypeBit::START_BIT)),
+            GetInt32Constant((1LU << JSHClass::ClassPrototypeBit::SIZE) - 1)),
+        GetInt32Constant(0));
+}
+
 GateRef Stub::IsExtensible(GateRef object)
 {
     GateRef hClass = LoadHClass(object);
-    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
 
     GateRef bitfield = Load(StubMachineType::UINT32, hClass, bitfieldOffset);
     // decode
@@ -1050,6 +1164,60 @@ GateRef Stub::IsEcmaObject(GateRef obj)
             ZExtInt1ToInt32(
                 Int32GreaterThanOrEqual(objectType,
                     GetInt32Constant(static_cast<int32_t>(JSType::ECMA_OBJECT_BEGIN)))));
+        result = TruncInt32ToInt1(ret1);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::IsJSObject(GateRef obj)
+{
+    auto env = GetEnvironment();
+    Label subentry(env);
+    env->PushCurrentLabel(&subentry);
+    Label exit(env);
+    Label isHeapObject(env);
+    DEFVARIABLE(result, StubMachineType::BOOL, FalseConstant());
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        GateRef objectType = GetObjectType(LoadHClass(obj));
+        auto ret1 = Int32And(
+            ZExtInt1ToInt32(
+                Int32LessThanOrEqual(objectType, GetInt32Constant(static_cast<int32_t>(JSType::JS_OBJECT_END)))),
+            ZExtInt1ToInt32(
+                Int32GreaterThanOrEqual(objectType,
+                    GetInt32Constant(static_cast<int32_t>(JSType::JS_OBJECT_BEGIN)))));
+        result = TruncInt32ToInt1(ret1);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::IsJSFunctionBase(GateRef obj)
+{
+    auto env = GetEnvironment();
+    Label subentry(env);
+    env->PushCurrentLabel(&subentry);
+    Label exit(env);
+    Label isHeapObject(env);
+    DEFVARIABLE(result, StubMachineType::BOOL, FalseConstant());
+    Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    Bind(&isHeapObject);
+    {
+        GateRef objectType = GetObjectType(LoadHClass(obj));
+        auto ret1 = Int32And(
+            ZExtInt1ToInt32(
+                Int32LessThanOrEqual(objectType, GetInt32Constant(static_cast<int32_t>(JSType::JS_BOUND_FUNCTION)))),
+            ZExtInt1ToInt32(
+                Int32GreaterThanOrEqual(objectType,
+                    GetInt32Constant(static_cast<int32_t>(JSType::JS_FUNCTION_BASE)))));
         result = TruncInt32ToInt1(ret1);
         Jump(&exit);
     }
@@ -1130,10 +1298,10 @@ GateRef Stub::GetPrototypeHandlerHandlerInfo(GateRef object)
 
 GateRef Stub::GetHasChanged(GateRef object)
 {
-    GateRef bitfieldOffset = GetIntPtrConstant(ProtoChangeMarker::BIT_FIELD_OFFSET);
+    GateRef bitfieldOffset = GetInt32Constant(ProtoChangeMarker::BIT_FIELD_OFFSET);
     GateRef bitfield = Load(StubMachineType::UINT32, object, bitfieldOffset);
     GateRef mask = GetInt32Constant(1LLU << (ProtoChangeMarker::HAS_CHANGED_BITS - 1));
-    return Int32NotEqual(Int32Or(bitfield, mask), GetInt32Constant(0));
+    return Int32NotEqual(Int32And(bitfield, mask), GetInt32Constant(0));
 }
 
 GateRef Stub::HclassIsPrototypeHandler(GateRef hclass)
@@ -1278,14 +1446,14 @@ GateRef Stub::GetLayoutFromHClass(GateRef hClass)
 
 GateRef Stub::GetBitFieldFromHClass(GateRef hClass)
 {
-    GateRef offset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
-    return Load(StubMachineType::UINT64, hClass, offset);
+    GateRef offset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    return Load(StubMachineType::UINT32, hClass, offset);
 }
 
 GateRef Stub::SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
-    return Store(StubMachineType::UINT64, glue, hClass, offset, bitfield);
+    return Store(StubMachineType::UINT32, glue, hClass, offset, bitfield);
 }
 
 GateRef Stub::SetPrototypeToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef proto)
@@ -1326,22 +1494,22 @@ GateRef Stub::SetTransitionsToHClass(StubMachineType type, GateRef glue, GateRef
 
 void Stub::SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value)
 {
-    GateRef oldValue = ZExtInt1ToInt64(value);
+    GateRef oldValue = ZExtInt1ToInt32(value);
     GateRef bitfield = GetBitFieldFromHClass(hClass);
-    GateRef mask = UInt64LSL(
-        GetInt64Constant((1LLU << JSHClass::IsPrototypeBit::SIZE) - 1),
-        GetInt64Constant(JSHClass::IsPrototypeBit::START_BIT));
-    GateRef newVal = Int64Or(Int64And(bitfield, Int64Not(mask)),
-        UInt64LSL(oldValue, GetInt64Constant(JSHClass::IsPrototypeBit::START_BIT)));
+    GateRef mask = Int32LSL(
+        GetInt32Constant((1LU << JSHClass::IsPrototypeBit::SIZE) - 1),
+        GetInt32Constant(JSHClass::IsPrototypeBit::START_BIT));
+    GateRef newVal = Int32Or(Int32And(bitfield, Int32Not(mask)),
+        Int32LSL(oldValue, GetInt32Constant(JSHClass::IsPrototypeBit::START_BIT)));
     SetBitFieldToHClass(glue, hClass, newVal);
 }
 
 GateRef Stub::IsProtoTypeHClass(GateRef hClass)
 {
     GateRef bitfield = GetBitFieldFromHClass(hClass);
-    return TruncInt64ToInt1(Int64And(UInt64LSR(bitfield,
-        GetInt64Constant(JSHClass::IsPrototypeBit::START_BIT)),
-        GetInt64Constant((1LLU << JSHClass::IsPrototypeBit::SIZE) - 1)));
+    return TruncInt32ToInt1(Int32And(UInt32LSR(bitfield,
+        GetInt32Constant(JSHClass::IsPrototypeBit::START_BIT)),
+        GetInt32Constant((1LU << JSHClass::IsPrototypeBit::SIZE) - 1)));
 }
 
 void Stub::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
@@ -1592,6 +1760,11 @@ GateRef Stub::ChangeTaggedPointerToInt64(GateRef x)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TAGGED_TO_INT64), x);
 }
 
+GateRef Stub::ChangeInt64ToTagged(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewNumberGate(OpCode(OpCode::INT64_TO_TAGGED), x);
+}
+
 GateRef Stub::CastInt64ToFloat64(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::BITCAST), MachineType::F64, x);
@@ -1610,6 +1783,11 @@ GateRef Stub::SExtInt1ToInt64(GateRef x)
 GateRef Stub::SExtInt1ToInt32(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
+}
+
+GateRef Stub::ZExtInt8ToInt16(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT16), x);
 }
 
 GateRef Stub::ZExtInt32ToInt64(GateRef x)
@@ -1632,14 +1810,56 @@ GateRef Stub::ZExtInt8ToInt32(GateRef x)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
+GateRef Stub::ZExtInt8ToInt64(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+}
+
+GateRef Stub::ZExtInt8ToPtr(GateRef x)
+{
+    if (env_.IsArch32Bit()) {
+        return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
+    }
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+}
+
+GateRef Stub::ZExtInt16ToPtr(GateRef x)
+{
+    if (env_.IsArch32Bit()) {
+        return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
+    }
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+}
+
+GateRef Stub::SExtInt32ToPtr(GateRef x)
+{
+    if (env_.IsArch32Bit()) {
+        return x;
+    }
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64), x);
+}
+
 GateRef Stub::ZExtInt16ToInt32(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
+GateRef Stub::ZExtInt16ToInt64(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+}
+
 GateRef Stub::TruncInt64ToInt32(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32), x);
+}
+
+GateRef Stub::TruncPtrToInt32(GateRef x)
+{
+    if (env_.Is32Bit()) {
+        return x;
+    }
+    return TruncInt64ToInt32(x);
 }
 
 GateRef Stub::TruncInt64ToInt1(GateRef x)
@@ -1669,22 +1889,12 @@ GateRef Stub::GetGlobalConstantString(ConstantIndex index)
 GateRef Stub::IsCallable(GateRef obj)
 {
     GateRef hclass = LoadHClass(obj);
-    GateRef bitfieldOffset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
-
-    // decode
-    if (env_.Is32Bit()) {
-        GateRef bitfield = Load(StubMachineType::NATIVE_POINTER, hclass, ZExtInt32ToInt64(bitfieldOffset));
-        return Int32NotEqual(
-            Int32And(UInt32LSR(bitfield, GetInt32Constant(JSHClass::CallableBit::START_BIT)),
-                     GetInt32Constant((1LLU << JSHClass::CallableBit::SIZE) - 1)),
-            GetInt32Constant(0));
-    } else {
-        GateRef bitfield = Load(StubMachineType::NATIVE_POINTER, hclass, bitfieldOffset);
-        return Int64NotEqual(
-            Int64And(UInt64LSR(bitfield, GetInt64Constant(JSHClass::CallableBit::START_BIT)),
-                     GetInt64Constant((1LLU << JSHClass::CallableBit::SIZE) - 1)),
-            GetInt64Constant(0));
-    }
+    GateRef bitfieldOffset = GetInt32Constant(JSHClass::BIT_FIELD_OFFSET);
+    GateRef bitfield = Load(StubMachineType::UINT32, hclass, bitfieldOffset);
+    return Int32NotEqual(
+        Int32And(UInt32LSR(bitfield, GetInt32Constant(JSHClass::CallableBit::START_BIT)),
+            GetInt32Constant((1LU << JSHClass::CallableBit::SIZE) - 1)),
+        GetInt32Constant(0));
 }
 
 // GetOffset func in property_attribute.h
@@ -1781,6 +1991,73 @@ GateRef Stub::InYoungGeneration(GateRef glue, GateRef region)
         return Int64NotEqual(Int64And(x,
             GetInt64Constant(RegionFlags::IS_IN_YOUNG_GENERATION)), GetIntPtrConstant(0));
     }
+}
+
+GateRef Stub::GetParentEnv(GateRef object)
+{
+    GateRef index = GetInt32Constant(LexicalEnv::PARENT_ENV_INDEX);
+    return GetValueFromTaggedArray(StubMachineType::TAGGED, object, index);
+}
+
+GateRef Stub::GetPropertiesFromLexicalEnv(GateRef object, GateRef index)
+{
+    GateRef valueIndex = Int32Add(index, GetInt32Constant(LexicalEnv::RESERVED_ENV_LENGTH));
+    return GetValueFromTaggedArray(StubMachineType::TAGGED, object, valueIndex);
+}
+
+void Stub::SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value)
+{
+    GateRef valueIndex = Int32Add(index, GetInt32Constant(LexicalEnv::RESERVED_ENV_LENGTH));
+    SetValueToTaggedArray(StubMachineType::TAGGED, glue, object, valueIndex, value);
+}
+
+GateRef Stub::GetFunctionBitFieldFromJSFunction(GateRef object)
+{
+    GateRef offset = GetIntPtrConstant(JSFunction::BIT_FIELD_OFFSET);
+    return Load(StubMachineType::TAGGED, object, offset);
+}
+
+GateRef Stub::GetHomeObjectFromJSFunction(GateRef object)
+{
+    GateRef offset = GetIntPtrConstant(JSFunction::HOME_OBJECT_OFFSET);
+    return Load(StubMachineType::TAGGED, object, offset);
+}
+
+void Stub::SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv)
+{
+    GateRef offset = GetIntPtrConstant(JSFunction::LEXICAL_ENV_OFFSET);
+    Store(StubMachineType::TAGGED, glue, object, offset, lexicalEnv);
+}
+
+GateRef Stub::GetGlobalObject(GateRef glue)
+{
+    GateRef offset = GetIntPtrConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_OBJECT));
+    return Load(StubMachineType::TAGGED, glue, offset);
+}
+
+GateRef Stub::GetEntryIndexOfGlobalDictionary(GateRef entry)
+{
+    return Int32Add(GetInt32Constant(OrderTaggedHashTable<GlobalDictionary>::TABLE_HEADER_SIZE),
+        Int32Mul(entry, GetInt32Constant(GlobalDictionary::ENTRY_SIZE)));
+}
+
+GateRef Stub::GetBoxFromGlobalDictionary(GateRef object, GateRef entry)
+{
+    GateRef index =
+        Int32Add(GetEntryIndexOfGlobalDictionary(entry), GetInt32Constant(GlobalDictionary::ENTRY_VALUE_INDEX));
+    return Load(StubMachineType::TAGGED_POINTER, object, index);
+}
+
+GateRef Stub::GetValueFromGlobalDictionary(GateRef object, GateRef entry)
+{
+    GateRef box = GetBoxFromGlobalDictionary(object, entry);
+    return Load(StubMachineType::TAGGED, box, GetIntPtrConstant(PropertyBox::VALUE_OFFSET));
+}
+
+GateRef Stub::GetPropertiesFromJSObject(GateRef object)
+{
+    GateRef offset = GetIntPtrConstant(JSObject::PROPERTIES_OFFSET);
+    return Load(StubMachineType::TAGGED, object, offset);
 }
 } //  namespace panda::ecmascript::kungfu
 #endif // ECMASCRIPT_COMPILER_STUB_INL_H
