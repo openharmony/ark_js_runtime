@@ -38,6 +38,8 @@ public:
                             StubMachineType type = StubMachineType::NONE);
     GateRef NewSelectorGate(OpCode opcode, MachineType machineType, GateRef control, std::vector<GateRef> &values,
                             int valueCounts, StubMachineType type = StubMachineType::NONE);
+    GateRef NewInt8Constant(int8_t val);
+    GateRef NewInt16Constant(int16_t val);
     GateRef NewIntegerConstant(int32_t value);
     GateRef NewInteger64Constant(int64_t value);
     GateRef NewBooleanConstant(bool value);
@@ -63,6 +65,7 @@ public:
     GateRef NewStoreGate(StubMachineType type, GateRef ptr, GateRef val, GateRef depend);
     GateRef NewDependRelay(GateRef state, GateRef depend);
     GateRef NewDependAnd(std::initializer_list<GateRef> args);
+    GateRef NewNumberGate(OpCode opcode, GateRef value);
     GateRef NewArithmeticGate(OpCode opcode, MachineType machineType, GateRef left, GateRef right);
     GateRef NewArithmeticGate(OpCode opcode, MachineType machineType, GateRef value);
     GateRef NewArithmeticGate(OpCode opcode, GateRef value);
@@ -74,6 +77,8 @@ public:
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
     GateRef NewRuntimeCallGate(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
+    GateRef NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+                                GateRef depend, std::initializer_list<GateRef> args);
     static MachineType GetLoadMachineTypeFromStubMachineType(StubMachineType type);
     static MachineType GetStoreMachineTypeFromStubMachineType(StubMachineType type);
     static MachineType GetMachineTypeFromStubMachineType(StubMachineType type);

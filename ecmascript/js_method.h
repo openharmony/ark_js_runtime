@@ -29,11 +29,34 @@ static constexpr uint32_t HAVE_THIS_BIT = 1;  // 1: the last bit means this
 static constexpr uint32_t HAVE_NEWTARGET_BIT = 2;  // 2: the 2nd to last bit means newTarget
 static constexpr uint32_t HAVE_EXTRA_BIT = 4;  // 4: the 3rd to last bit means extra
 static constexpr uint32_t HAVE_FUNC_BIT = 8;  // 8: the 4th to last bit means func (for old version, UINT32_MAX)
+static constexpr size_t STORAGE_32_NUM = 4;
+static constexpr size_t STORAGE_PTR_NUM = 3;
+
+#define JS_METHOD_OFFSET_LIST(V)                                                                    \
+    V(STORPTR, STOR32, STORAGE_32_NUM * sizeof(uint32_t), STORAGE_32_NUM * sizeof(uint32_t))        \
+    V(PANDAFILE, STORPTR, STORAGE_PTR_NUM * sizeof(uint32_t), STORAGE_PTR_NUM * sizeof(uint64_t))   \
+    V(FILEID, PANDAFILE, sizeof(uint32_t), sizeof(uint64_t))                                        \
+    V(CODEID, FILEID, sizeof(uint32_t), sizeof(uint32_t))                                           \
+    V(SHORTY, CODEID, sizeof(uint32_t), sizeof(uint32_t))                                           \
+    V(PROFILINGDATA, SHORTY, sizeof(uint32_t), sizeof(uint64_t))                                    \
+    V(BYTECODEARRAY, PROFILINGDATA, sizeof(uint32_t), sizeof(uint64_t))                             \
+    V(BYTECODEARRAYSIZE, BYTECODEARRAY, sizeof(uint32_t), sizeof(uint64_t))                         \
+    V(SLOTSIZE, BYTECODEARRAYSIZE, sizeof(uint32_t), sizeof(uint32_t))                              \
+    V(CALLTYPE, SLOTSIZE, sizeof(uint8_t), sizeof(uint8_t))                                         \
+
+static constexpr uint32_t JS_METHOD_STOR32_OFFSET_32 = 0U;
+static constexpr uint32_t JS_METHOD_STOR32_OFFSET_64 = 0U;
+#define JS_METHOD_OFFSET_MACRO(name, lastName, lastSize32, lastSize64)                                          \
+    static constexpr uint32_t JS_METHOD_##name##_OFFSET_32 = JS_METHOD_##lastName##_OFFSET_32 + (lastSize32);   \
+    static constexpr uint32_t JS_METHOD_##name##_OFFSET_64 = JS_METHOD_##lastName##_OFFSET_64 + (lastSize64);
+JS_METHOD_OFFSET_LIST(JS_METHOD_OFFSET_MACRO)
+#undef JS_METHOD_OFFSET_MACRO
 
 namespace panda::ecmascript {
 class JSMethod : public Method {
 public:
     static constexpr uint8_t MAX_SLOT_SIZE = 0xFF;
+    static constexpr uint32_t HOTNESS_COUNTER_OFFSET = 3 * sizeof(uint32_t);  // 3: the 3th field of method
 
     static JSMethod *Cast(Method *method)
     {
@@ -58,6 +81,14 @@ public:
     static constexpr uint32_t GetBytecodeArrayOffset()
     {
         return MEMBER_OFFSET(JSMethod, bytecodeArray_);
+    }
+
+    static constexpr uint32_t GetBytecodeArrayOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return JS_METHOD_BYTECODEARRAY_OFFSET_32;
+        }
+        return JS_METHOD_BYTECODEARRAY_OFFSET_64;
     }
 
     const uint8_t *GetBytecodeArray() const

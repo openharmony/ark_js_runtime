@@ -58,6 +58,8 @@ Properties OpCode::GetProperties() const
             return {NOVALUE, NO_STATE, NO_DEPEND, NO_VALUE, OpCode(CIRCUIT_ROOT)};
         case RETURN:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(ANYVALUE), OpCode(RETURN_LIST)};
+        case RETURN_VOID:
+            return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, NO_VALUE, OpCode(RETURN_LIST)};
         case THROW:
             return {NOVALUE, STATE(OpCode(GENERAL_STATE)), ONE_DEPEND, VALUE(JSMachineType()), OpCode(THROW_LIST)};
         case ORDINARY_BLOCK:
@@ -96,6 +98,7 @@ Properties OpCode::GetProperties() const
             return {I64, NO_STATE, ONE_DEPEND, NO_VALUE, NO_ROOT};
         // Middle Level IR
         case RUNTIME_CALL:
+        case BYTECODE_CALL:
         case CALL:
             return {FLEX, NO_STATE, ONE_DEPEND, MANY_VALUE(ANYVALUE, ANYVALUE), NO_ROOT};
         case ALLOCA:
@@ -113,6 +116,8 @@ Properties OpCode::GetProperties() const
             return {I64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case ZEXT_TO_INT32:
             return {I32, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
+        case ZEXT_TO_INT16:
+            return {I16, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case SEXT_TO_INT64:
             return {I64, NO_STATE, NO_DEPEND, VALUE(ANYVALUE), NO_ROOT};
         case SEXT_TO_INT32:
@@ -160,6 +165,8 @@ Properties OpCode::GetProperties() const
         case STORE:
             return {NOVALUE, NO_STATE, ONE_DEPEND, VALUE(ANYVALUE, ARCH), NO_ROOT};
         case TAGGED_TO_INT64:
+            return {I64, NO_STATE, NO_DEPEND, VALUE(I64), NO_ROOT};
+        case INT64_TO_TAGGED:
             return {I64, NO_STATE, NO_DEPEND, VALUE(I64), NO_ROOT};
         case SIGNED_INT_TO_FLOAT:
         case UNSIGNED_INT_TO_FLOAT:
@@ -218,6 +225,7 @@ std::string OpCode::Str() const
         {IF_EXCEPTION, "IF_EXCEPTION"},
         {GET_EXCEPTION, "GET_EXCEPTION"},
         {CALL, "CALL"},
+        {BYTECODE_CALL, "BYTECODE_CALL"},
         {ALLOCA, "ALLOCA"},
         {ARG, "ARG"},
         {MUTABLE_DATA, "MUTABLE_DATA"},
@@ -226,6 +234,7 @@ std::string OpCode::Str() const
         {CONSTANT, "CONSTANT"},
         {ZEXT_TO_INT64, "ZEXT_TO_INT64"},
         {ZEXT_TO_INT32, "ZEXT_TO_INT32"},
+        {ZEXT_TO_INT16, "ZEXT_TO_INT16"},
         {SEXT_TO_INT64, "SEXT_TO_INT64"},
         {SEXT_TO_INT32, "SEXT_TO_INT32"},
         {TRUNC_TO_INT32, "TRUNC_TO_INT32"},
@@ -264,6 +273,7 @@ std::string OpCode::Str() const
         {LOAD, "LOAD"},
         {STORE, "STORE"},
         {TAGGED_TO_INT64, "TAGGED_TO_INT64"},
+        {INT64_TO_TAGGED, "INT64_TO_TAGGED"},
         {SIGNED_INT_TO_FLOAT, "SIGNED_INT_TO_FLOAT"},
         {UNSIGNED_INT_TO_FLOAT, "UNSIGNED_INT_TO_FLOAT"},
         {FLOAT_TO_SIGNED_INT, "FLOAT_TO_SIGNED_INT"},

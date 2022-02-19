@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
 #define ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
 
+#include "interpreter_stub_define.h"
 namespace panda::ecmascript::kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define EXTERNAL_RUNTIMESTUB_LIST(V)         \
@@ -135,25 +136,27 @@ namespace panda::ecmascript::kungfu {
     V(CallRuntimeTrampoline, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FAST_RUNTIME_STUB_LIST(V)   \
-    V(FastAdd, 2)                   \
-    V(FastSub, 2)                   \
-    V(FastMul, 2)                   \
-    V(FastDiv, 2)                   \
-    V(FastMod, 3)                   \
-    V(FastEqual, 2)                 \
-    V(FastTypeOf, 2)                \
-    V(GetPropertyByName, 3)         \
-    V(SetPropertyByName, 4)         \
-    V(SetPropertyByNameWithOwn, 4)  \
-    V(GetPropertyByIndex, 3)        \
-    V(SetPropertyByIndex, 4)        \
-    V(GetPropertyByValue, 3)        \
-    V(TryLoadICByName, 4)           \
-    V(TryLoadICByValue, 5)          \
-    V(TryStoreICByName, 5)          \
-    V(TryStoreICByValue, 6)         \
-    V(TestAbsoluteAddressRelocation, 2)
+#define FAST_RUNTIME_STUB_LIST(V)       \
+    V(FastAdd, 2)                       \
+    V(FastSub, 2)                       \
+    V(FastMul, 2)                       \
+    V(FastDiv, 2)                       \
+    V(FastMod, 3)                       \
+    V(FastEqual, 2)                     \
+    V(FastTypeOf, 2)                    \
+    V(GetPropertyByName, 3)             \
+    V(SetPropertyByName, 4)             \
+    V(SetPropertyByNameWithOwn, 4)      \
+    V(GetPropertyByIndex, 3)            \
+    V(SetPropertyByIndex, 4)            \
+    V(GetPropertyByValue, 3)            \
+    V(SetPropertyByValue, 4)            \
+    V(TryLoadICByName, 4)               \
+    V(TryLoadICByValue, 5)              \
+    V(TryStoreICByName, 5)              \
+    V(TryStoreICByValue, 6)             \
+    V(TestAbsoluteAddressRelocation, 2) \
+    INTERPRETER_STUB_HELPER_LIST(V)
 
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -166,21 +169,54 @@ namespace panda::ecmascript::kungfu {
 #define CALL_STUB_LIST(V)        \
     FAST_RUNTIME_STUB_LIST(V)    \
     EXTERNAL_RUNTIMESTUB_LIST(V) \
-    TEST_FUNC_LIST(V)
+    V(BytecodeHandler, 7)
+
+enum FastStubId {
+#define DEF_STUB(name, counter) name##Id,
+    FAST_RUNTIME_STUB_LIST(DEF_STUB) FAST_STUB_MAXCOUNT,
+#undef DEF_STUB
+};
+
+enum ExternalRuntimeStubId {
+#define DEF_STUB(name, counter) name##Id,
+    EXTERNAL_RUNTIMESTUB_LIST(DEF_STUB) EXTERNAL_RUNTIME_STUB_MAXCOUNT,
+#undef DEF_STUB
+};
+
+#ifndef NDEBUG
+enum TestFuncStubId {
+#define DEF_STUB(name, counter) name##Id,
+    TEST_FUNC_LIST(DEF_STUB) TEST_FUNC_MAXCOUNT,
+#undef DEF_STUB
+};
+#endif
 
 enum CallStubId {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEF_FAST_STUB(name, counter) NAME_##name,
-    FAST_RUNTIME_STUB_LIST(DEF_FAST_STUB) FAST_STUB_MAXCOUNT,
-    EXTERNAL_RUNTIME_STUB_BEGIN = FAST_STUB_MAXCOUNT - 1,
-    EXTERNAL_RUNTIMESTUB_LIST(DEF_FAST_STUB) EXTERN_RUNTIME_STUB_MAXCOUNT,
-    TEST_FUNC_BEGIN = EXTERN_RUNTIME_STUB_MAXCOUNT - 1,
-    TEST_FUNC_LIST(DEF_FAST_STUB) TEST_FUNC_MAXCOUNT,
-#undef DEF_FAST_STUB
-    CALL_STUB_MAXCOUNT = TEST_FUNC_MAXCOUNT,
+#define DEF_STUB(name, counter) NAME_##name,
+    CALL_STUB_LIST(DEF_STUB)
+#undef DEF_STUB
+#ifndef NDEBUG
+    TEST_FUNC_OFFSET,
+    TEST_FUNC_BEGIN = TEST_FUNC_OFFSET - 1,
+#define DEF_STUB(name, counter) NAME_##name,
+    TEST_FUNC_LIST(DEF_STUB)
+#undef DEF_STUB
+#endif
+    CALL_STUB_MAXCOUNT,
+};
+
+enum StubId {
+#define DEF_STUB(name, counter) STUB_##name,
+    FAST_RUNTIME_STUB_LIST(DEF_STUB)
+    INTERPRETER_STUB_LIST(DEF_STUB)
+#undef DEF_STUB
+    ALL_STUB_MAXCOUNT
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TEST_STUB_ID(name) panda::ecmascript::kungfu::TestFuncStubId::name##Id
 #define FAST_STUB_ID(name) panda::ecmascript::kungfu::CallStubId::NAME_##name
+#define STUB_ID(name) panda::ecmascript::kungfu::StubId::STUB_##name
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H

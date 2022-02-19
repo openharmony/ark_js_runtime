@@ -77,6 +77,18 @@ GateRef CircuitBuilder::NewSelectorGate(OpCode opcode, MachineType machineType, 
     return circuit_->NewGate(opcode, machineType, valueCounts, inList, StubMachineType2GateType(type));
 }
 
+GateRef CircuitBuilder::NewInt8Constant(int8_t val)
+{
+    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I8, val, {constantList}, GateType::C_VALUE);
+}
+
+GateRef CircuitBuilder::NewInt16Constant(int16_t val)
+{
+    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I16, val, {constantList}, GateType::C_VALUE);
+}
+
 GateRef CircuitBuilder::NewIntegerConstant(int32_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
@@ -284,7 +296,7 @@ MachineType CircuitBuilder::GetMachineTypeFromStubMachineType(StubMachineType st
         case StubMachineType::UINT32:
             return MachineType::I32;
         case StubMachineType::NATIVE_POINTER:
-            return MachineType::ANYVALUE;
+            return MachineType::ARCH;
         case StubMachineType::UINT64:
         case StubMachineType::TAGGED:
         case StubMachineType::TAGGED_POINTER:
@@ -329,6 +341,11 @@ GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, MachineType machineType
 {
     GateType type = circuit_->LoadGatePtr(left)->GetGateType();
     return circuit_->NewGate(opcode, machineType, 0, { left, right }, type);
+}
+
+GateRef CircuitBuilder::NewNumberGate(OpCode opcode, GateRef value)
+{
+    return circuit_->NewGate(opcode, 0, { value }, GateType::TAGGED_VALUE);
 }
 
 GateRef CircuitBuilder::NewArithmeticGate(OpCode opcode, MachineType machineType, GateRef value)
@@ -380,7 +397,7 @@ MachineType CircuitBuilder::GetCallMachineTypeFromStubMachineType(StubMachineTyp
         case StubMachineType::UINT32:
             return MachineType::I32;
         case StubMachineType::NATIVE_POINTER:
-            return MachineType::ANYVALUE;
+            return MachineType::ARCH;
         case StubMachineType::UINT64:
         case StubMachineType::TAGGED:
         case StubMachineType::TAGGED_POINTER:
@@ -444,6 +461,22 @@ GateRef CircuitBuilder::NewRuntimeCallGate(GateRef glue, GateRef target,
     GateType type = StubMachineType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)
     return circuit_->NewGate(opcode, machineType, args.size() + 2, inputs, type);
+}
+
+GateRef CircuitBuilder::NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+                                            GateRef depend, std::initializer_list<GateRef> args)
+{
+    std::vector<GateRef> inputs;
+    inputs.push_back(depend);
+    inputs.push_back(target);
+    inputs.push_back(glue);
+    for (auto arg : args) {
+        inputs.push_back(arg);
+    }
+    OpCode opcode(OpCode::BYTECODE_CALL);
+    GateType type = StubMachineType2GateType(descriptor->GetReturnType());
+    // 2 : 2 means extra two input gates (target glue)
+    return circuit_->NewGate(opcode, args.size() + 2, inputs, type);
 }
 
 GateRef CircuitBuilder::Alloca(int size)

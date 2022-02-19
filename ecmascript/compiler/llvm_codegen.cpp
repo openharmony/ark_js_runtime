@@ -57,7 +57,7 @@ namespace panda::ecmascript::kungfu {
 void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
                                                 const CompilationConfig *cfg)
 {
-    auto function = module_->GetStubFunction(index);
+    LLVMValueRef function = module_->GetStubFunction(index);
     LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
     builder.Build();
 }
@@ -72,7 +72,7 @@ void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
     auto codeBuff = reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
     std::map<uint64_t, std::string> addr2name;
-    for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+    for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
         auto stubfunction = stubmodule_->GetStubFunction(i);
 #ifndef NDEBUG
         COMPILER_LOG(DEBUG) << "  AssembleStubModule :" << i << " th " << std::endl;
@@ -80,7 +80,12 @@ void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
         if (stubfunction != nullptr) {
             uintptr_t stubEntry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, stubfunction));
             module->SetStubEntry(i, stubEntry - codeBuff);
-            addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(i)->GetName();
+            if (i >= FAST_STUB_MAXCOUNT) {
+                addr2name[stubEntry] = FastStubDescriptors::GetInstance()
+                    .GetStubDescriptor(CallStubId::NAME_BytecodeHandler)->GetName();
+            } else {
+                addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(i)->GetName();
+            }
 #ifndef NDEBUG
             COMPILER_LOG(DEBUG) << "name : " << addr2name[codeBuff] << std::endl;
 #endif
@@ -312,7 +317,12 @@ void LLVMAssembler::Initialize()
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
     options_.OptLevel = 3; // opt level 2
     // Just ensure that this field still exists.
+#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
+    // tmp for interpreter stub
+    options_.NoFramePointerElim = false;
+#else
     options_.NoFramePointerElim = true;
+#endif
     options_.CodeModel = LLVMCodeModelSmall;
 }
 

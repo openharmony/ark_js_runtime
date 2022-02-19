@@ -171,7 +171,7 @@ bool EcmaVM::Initialize()
         globalEnv->SetRegisterSymbols(GetJSThread(), SymbolTable::Create(GetJSThread()));
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
         std::string moduleFile = options_.GetStubModuleFile();
-        thread_->LoadFastStubModule(moduleFile.c_str());
+        thread_->LoadStubModule(moduleFile.c_str());
 #endif
         SetupRegExpResultCache();
         microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
@@ -189,6 +189,7 @@ bool EcmaVM::Initialize()
         globalConst->InitGlobalUndefined();
     }
 
+    thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
