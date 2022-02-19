@@ -209,18 +209,9 @@ JSTaggedType RuntimeTrampolines::Execute(uintptr_t argGlue, JSTaggedType argFunc
     return EcmaInterpreter::Execute(thread, params).GetRawData();
 }
 
-JSTaggedType RuntimeTrampolines::FloatMod(uintptr_t argGlue, uint32_t argC, JSTaggedType argV[])
+double RuntimeTrampolines::FloatMod(double left, double right)
 {
-    if (argC != 2) {
-        return JSTaggedValue::VALUE_UNDEFINED;;
-    }
-    double left = JSTaggedValue(argV[0]).GetDouble();
-    double right = JSTaggedValue(argV[1]).GetDouble();
-    auto thread = JSThread::GlueToJSThread(argGlue);
-    const int64_t *sp = reinterpret_cast<const int64_t *>(thread->GetCurrentSPFrame());
-    std::cout << "sp :" << sp << std::endl;
-
-    return JSTaggedValue(std::fmod(left, right)).GetRawData();
+    return std::fmod(left, right);
 }
 
 JSTaggedType RuntimeTrampolines::NewInternalString(uintptr_t argGlue, JSTaggedType argKey)

@@ -477,7 +477,7 @@ ohos_shared_library("libark_jsruntime") {
 
   if (!is_linux) {
     if (build_public_version) {
-      #external_deps = [ "bytrace_standard:bytrace_core" ]
+      external_deps = [ "bytrace_standard:bytrace_core" ]
     }
   }
 
@@ -531,7 +531,7 @@ ohos_shared_library("libark_jsruntime_test") {
 
   if (!is_linux) {
     if (build_public_version) {
-      #external_deps = [ "bytrace_standard:bytrace_core" ]
+      external_deps = [ "bytrace_standard:bytrace_core" ]
     }
   }
 

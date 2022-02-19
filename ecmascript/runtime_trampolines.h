@@ -59,7 +59,7 @@ public:
     static JSTaggedType GetTaggedArrayPtrTest(uintptr_t argGlue);
     static JSTaggedType Execute(uintptr_t argGlue, JSTaggedType argFunc, JSTaggedType thisArg, uint32_t argc,
                                 uintptr_t argArgv);
-    static JSTaggedType FloatMod(uintptr_t argGlue, uint32_t argC, JSTaggedType argV[]);
+    static double FloatMod(double left, double right);
     static JSTaggedType NewInternalString(uintptr_t argGlue, JSTaggedType argKey);
     static JSTaggedType NewEcmaDynClass(uintptr_t argGlue, uint32_t size, uint32_t type, uint32_t inlinedProps);
     static void UpdateLayOutAndAddTransition(uintptr_t argGlue, JSTaggedType oldHClass, JSTaggedType newHClass,
