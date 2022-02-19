@@ -154,11 +154,11 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByValue, 5)          \
     V(TryStoreICByName, 5)          \
     V(TryStoreICByValue, 6)         \
-    V(TestAbsoluteAddressRelocation, 2)
+    V(TestAbsoluteAddressRelocation, 2) \
+    V(FastMulGCTest, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
-    V(FastMulGCTest, 3)             \
     V(PhiGateTest, 1)               \
     V(LoopTest, 1)                  \
     V(LoopTest1, 1)

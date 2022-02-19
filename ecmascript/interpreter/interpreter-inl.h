@@ -1443,11 +1443,18 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                    << " v" << v0;
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
-#ifdef ECMASCRIPT_ENABLE_STUB_AOT1
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMul));
-        typedef JSTaggedType (*PFFastMul)(JSTaggedType, JSTaggedType);
-        auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
-        JSTaggedValue value = JSTaggedValue(fastMulPtr(left.GetRawData(), right.GetRawData()));
+#ifdef ECMASCRIPT_ENABLE_STUB_AOT
+        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMulGCTest));
+        // typedef JSTaggedType (*PFFastMul)(JSTaggedType, JSTaggedType);
+        // auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
+        // JSTaggedValue value = JSTaggedValue(fastMulPtr(left.GetRawData(), right.GetRawData()));
+        JSTaggedType argV[2] = {0x0a, 0x0a};
+        argV[0] = left.GetRawData();
+        argV[1] = right.GetRawData();
+        JSTaggedValue res1(InvokeJSFunctionEntry(thread->GetGlueAddr(),
+            reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argV, stubAddr));
+        (void)res1;
+        JSTaggedValue value = FastRuntimeStub::FastMul(left, right);
 #else
         JSTaggedValue value = FastRuntimeStub::FastMul(left, right);
 #endif

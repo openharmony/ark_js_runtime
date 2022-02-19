@@ -170,11 +170,11 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
-    StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtrTest);
-    GateRef ptr1 = CallRuntime(getTaggedArrayPtr, glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
+    // StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtrTest);
+    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
         glue
     });
-    GateRef ptr2 = CallRuntime(getTaggedArrayPtr, glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
+    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
         glue
     });
     auto value1 = Load(StubMachineType::UINT64, ptr1);

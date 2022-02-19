@@ -74,7 +74,7 @@ InvokeJSFunctionEntry:
     popq    %rbp           // skip frame type
     popq    %rbp
 
-    // movq    %rsi, 2064(%rdi)   // restore thread->leaveFp
+    // movq    %rsi, 2056(%rdi)   // restore thread->leaveFp
     ret
 
 // uint64_t CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint32_t argc, ...);
@@ -84,12 +84,17 @@ InvokeJSFunctionEntry:
 // rbp + 8  - patch_id
 // rbp + 16 - argc
 // rbp + 24 - arg0
+
+//  current sp - 8:  type             ^
+//  current sp - 16: patchId          |
+//  current sp - 24: callsiteSp      leave frame
+//                                    V
 .global CallRuntimeTrampoline
 .type CallRuntimeTrampoline, %function
 CallRuntimeTrampoline:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
-    // movq    %rbp, 2064(%rax)   // save to thread->leaveFp
+    // movq    %rbp, 2056(%rax)   // save to thread->leaveFp
     pushq    $3             // leave frame type
     subq    $24, %rsp       // increase the leave frame size
     
@@ -107,8 +112,6 @@ CallRuntimeTrampoline:
     movq    8(%rdx), %r11   // get patch pointer id
     movq    %r11, (%r10)    // save patch pointer id
     movq    %rdx, 8(%r10)   // save callsite sp
-    movq    (%rbp), %r11
-    movq    %r11, 16(%r10)  // save callsite fp 
 
     // load runtime trampoline address
     movq    (%rdx), %r10       // runtime id
