@@ -71,7 +71,6 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
         LLVMAddTargetDependentFunctionAttr(function_, "target-features", "+armv8-a");
     }
     optLeaveFramePrevOffset_ = compCfg_->GetGlueOffset(JSThread::GlueID::OPT_LEAVE_FRAME_PREV_OFFSET);
-    LLVMSetFunctionCallConv(function_, LLVMWebKitJSCallConv);
 }
 
 LLVMIRBuilder::~LLVMIRBuilder()
@@ -663,16 +662,9 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     }
     if (compCfg_->Is32Bit() || compCfg_->Is64Bit()) {
         SaveCurrentSP();
-    //     // callerid | idx
-    //     if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
-    //         ConstructFrame();
-    //     }
     }
 
     gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
-    // if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
-    //     DestoryFrame();
-    // }
     return;
 }
 

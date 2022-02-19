@@ -468,7 +468,7 @@ public:
                                  std::initializer_list<GateRef> args);
     inline GateRef CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target, GateRef depend,
                                  std::initializer_list<GateRef> args);
-	inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target,
+    inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target,
                                std::initializer_list<GateRef> args);
     inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend,
                                std::initializer_list<GateRef> args);

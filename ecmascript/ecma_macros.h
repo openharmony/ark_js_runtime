@@ -25,7 +25,7 @@
 #include "utils/logger.h"
 
 #if (!defined PANDA_TARGET_LINUX) && (defined IS_PUBLIC_VERSION)
-    //#include "bytrace.h"
+    #include "bytrace.h"
 #endif
 
 #if defined(__cplusplus)
@@ -39,9 +39,9 @@
     LOG_IF(ecmaVM->IsOptionalLogEnabled(), level, component)
 
 #if (!defined PANDA_TARGET_LINUX) && (defined IS_PUBLIC_VERSION)
-    #define ECMA_BYTRACE_NAME(tag, name)                            
-        // BYTRACE_NAME(tag, name);                                    
-        // trace::ScopedTrace scopedTrace(name)
+    #define ECMA_BYTRACE_NAME(tag, name)                            \
+        BYTRACE_NAME(tag, name);                                    \
+        trace::ScopedTrace scopedTrace(name)
 #else
     #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)
 #endif
