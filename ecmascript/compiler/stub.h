@@ -94,9 +94,6 @@ public:
                         GLUE_EXCEPTION_OFFSET_64, GLUE_GLOBAL_CONSTANTS_OFFSET_64, GLUE_PROPERTIES_CACHE_OFFSET_64,
                         GLUE_GLOBAL_STORAGE_OFFSET_64, GLUE_CURRENT_FRAME_OFFSET_64, GLUE_LEAVE_FRAME_OFFSET_64,
                         GLUE_RUNTIME_FUNCTIONS_OFFSET_64, GLUE_FASTSTUB_ENTRIES_OFFSET_64,
-                        InterpretedFrame::kSizeOn64Platform,
-                        OptLeaveFrame::kSizeOn64Platform,
-                        OptLeaveFrame::kPrevFpOffset
                     };
                     break;
                 case Triple::TRIPLE_ARM32:
@@ -104,9 +101,6 @@ public:
                         GLUE_EXCEPTION_OFFSET_32, GLUE_GLOBAL_CONSTANTS_OFFSET_32, GLUE_PROPERTIES_CACHE_OFFSET_32,
                         GLUE_GLOBAL_STORAGE_OFFSET_32, GLUE_CURRENT_FRAME_OFFSET_32, GLUE_LEAVE_FRAME_OFFSET_32,
                         GLUE_RUNTIME_FUNCTIONS_OFFSET_32, GLUE_FASTSTUB_ENTRIES_OFFSET_32,
-                        InterpretedFrame::kSizeOn64Platform,
-                        OptLeaveFrame::kSizeOn64Platform,
-                        OptLeaveFrame::kPrevFpOffset
                     };
                     break;
                 default:
