@@ -173,7 +173,12 @@ void LLVMAssembler::RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, ui
             attrName, sizeof(attrName) - 1, patchId.c_str(), patchId.size());
         LLVMAddCallSiteAttribute(instruction, LLVMAttributeFunctionIndex, attr);
         callInsNum++;
-        RewritePatchPointIdStoredOnThread(instruction, id);
+        if (LLVMWebKitJSCallConv == LLVMGetInstructionCallConv(instruction)) {
+            // 2 : 2 means patch id arguments order
+            LLVMSetOperand(instruction, 2, LLVMConstInt(LLVMInt64Type(), id, 0));
+        } else {
+            RewritePatchPointIdStoredOnThread(instruction, id);
+        }
     }
 }
 

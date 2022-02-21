@@ -477,7 +477,7 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     int index = circuit_->GetBitField(inList[1]);
     params[1] = LLVMConstInt(LLVMInt64Type(), index - FAST_STUB_MAXCOUNT, 0);
     params[2] = LLVMConstInt(LLVMInt64Type(), 2882400000, 0); // 2882400000: default statepoint ID
-    params[3] = LLVMConstInt(LLVMInt32Type(), inList.size() - paraStartIndex, 0);
+    params[3] = LLVMConstInt(LLVMInt32Type(), inList.size() - paraStartIndex - 1, 0);
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];
         params[paraIdx + 1] = gateToLLVMMaps_[gateTmp];

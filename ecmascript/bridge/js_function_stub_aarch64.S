@@ -30,6 +30,7 @@ InvokeJSFunctionEntry:
     // construct the frame
     mov     w19, #0x1              // optimized entry frame type
     stp     x19, x1, [sp, #-16]!
+    str     x1, [sp, #-8]!            // callsiteSp
 
     mov     x29, sp
     mov     w19, w2
@@ -67,6 +68,7 @@ InvokeJSFunctionEntry:
     add     w19, w19, #2 // 2: prevFp and frameType
     lsl     w8, w19, #3
     add     sp, sp, x8
+    add     sp, sp, #8  // callsiteSp
 
     ldr     x19, [sp, #16]
     ldp     x29, x30, [sp], #32
@@ -85,7 +87,6 @@ InvokeJSFunctionEntry:
 // sp + 16: argc
 // sp + 8:  patch_id
 // sp:      runtime_id
-
 
 // Output:
 //  sp - 8 : x30
