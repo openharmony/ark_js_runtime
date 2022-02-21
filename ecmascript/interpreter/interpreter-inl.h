@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 
+#include "ecmascript/bridge/compile_bridge.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/class_linker/program_object-inl.h"

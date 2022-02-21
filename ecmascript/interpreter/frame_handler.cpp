@@ -68,8 +68,8 @@ void InterpretedFrameHandler::PrevFrame()
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    sp_ = state->base.prev;
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    sp_ = frame->base.prev;
 }
 
 void InterpretedFrameHandler::PrevInterpretedFrame()
@@ -82,8 +82,8 @@ InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return InterpretedFrameHandler(state->base.prev);
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return InterpretedFrameHandler(frame->base.prev);
 }
 
 JSTaggedValue InterpretedFrameHandler::GetVRegValue(size_t index) const
@@ -104,16 +104,16 @@ JSTaggedValue InterpretedFrameHandler::GetAcc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return state->acc;
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return frame->acc;
 }
 
 uint32_t InterpretedFrameHandler::GetSize() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    JSTaggedType *prevSp = state->base.prev;
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    JSTaggedType *prevSp = frame->base.prev;
     ASSERT(prevSp != nullptr);
     auto size = (prevSp - sp_) - FRAME_STATE_SIZE;
     return static_cast<uint32_t>(size);
@@ -123,9 +123,9 @@ uint32_t InterpretedFrameHandler::GetBytecodeOffset() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    auto offset = state->pc - method->GetBytecodeArray();
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    JSMethod *method = ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();
+    auto offset = frame->pc - method->GetBytecodeArray();
     return static_cast<uint32_t>(offset);
 }
 
@@ -133,48 +133,48 @@ JSMethod *InterpretedFrameHandler::GetMethod() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return ECMAObject::Cast(frame->function.GetTaggedObject())->GetCallTarget();
 }
 
 JSTaggedValue InterpretedFrameHandler::GetFunction() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return state->function;
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return frame->function;
 }
 
 const uint8_t *InterpretedFrameHandler::GetPc() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return state->pc;
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return frame->pc;
 }
 
 JSTaggedType *InterpretedFrameHandler::GetSp() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return state->sp;
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return frame->sp;
 }
 
 ConstantPool *InterpretedFrameHandler::GetConstpool() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return ConstantPool::Cast(state->constpool.GetTaggedObject());
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return ConstantPool::Cast(frame->constpool.GetTaggedObject());
 }
 
 JSTaggedValue InterpretedFrameHandler::GetEnv() const
 {
     ASSERT(HasFrame());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(sp_);
-    return state->env;
+    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
+    return frame->env;
 }
 
 void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
@@ -182,21 +182,21 @@ void InterpretedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisi
     JSTaggedType *current = sp_;
     if (current != nullptr) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(current) - 1;
+        InterpretedFrame *frame = reinterpret_cast<InterpretedFrame *>(current) - 1;
 
-        if (state->sp != nullptr) {
+        if (frame->sp != nullptr) {
             uintptr_t start = ToUintPtr(current);
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            InterpretedFrame *prev_state = reinterpret_cast<InterpretedFrame *>(state->base.prev) - 1;
-            uintptr_t end = ToUintPtr(prev_state);
+            InterpretedFrame *prev_frame = reinterpret_cast<InterpretedFrame *>(frame->base.prev) - 1;
+            uintptr_t end = ToUintPtr(prev_frame);
             v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
-            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&state->function)));
-            if (state->pc != nullptr) {
+            v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->function)));
+            if (frame->pc != nullptr) {
                 // interpreter frame
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&state->acc)));
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&state->constpool)));
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&state->env)));
-                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&state->profileTypeInfo)));
+                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->acc)));
+                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->constpool)));
+                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->env)));
+                v0(Root::ROOT_FRAME, ObjectSlot(ToUintPtr(&frame->profileTypeInfo)));
             }
         }
     }
@@ -225,8 +225,8 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 
 void OptimizedFrameHandler::PrevFrame()
 {
-    OptimizedFrameBase *state = OptimizedFrameBase::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(state->prevFp);
+    OptimizedFrameBase *frame = OptimizedFrameBase::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(frame->prevFp);
 }
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
@@ -273,26 +273,31 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 
 void OptimizedEntryFrameHandler::PrevFrame()
 {
-    OptimizedEntryFrame *state = OptimizedEntryFrame::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(state->prevInterpretedFrameFp);
+    OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(frame->prevInterpretedFrameFp);
 }
 
 void OptimizedLeaveFrameHandler::PrevFrame()
 {
-    OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(state->prevFp);
+    OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
 }
 
 void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
-    OptLeaveFrame *state = OptLeaveFrame::GetFrameFromSp(sp_);
+    OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(sp_);
+    if (frame->argc > 0) {
+        uintptr_t start = ToUintPtr(&frame->argc + 1);
+        uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
+        v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    }
     std::set<uintptr_t> slotAddrs;
     bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
-        state, slotAddrs, derivedPointers, isVerifying);
+        frame, slotAddrs, derivedPointers, isVerifying);
     if (ret == false) {
 #ifndef NDEBUG
-        LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << state->patchId;
+        LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << frame->patchId;
 #endif
         return;
     }
@@ -314,9 +319,9 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
         if (type == FrameType::INTERPRETER_FRAME) {
-            InterpretedFrame *state = InterpretedFrame::GetFrameFromSp(current);
+            InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
             InterpretedFrameHandler(current).Iterate(v0, v1);
-            current = state->base.prev;
+            current = frame->base.prev;
         } else if (type == FrameType::OPTIMIZED_FRAME) {
             OptimizedFrameBase *frame = OptimizedFrameBase::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
@@ -335,10 +340,10 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             //  arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
             // Leave Frame.
 #ifdef PANDA_TARGET_ARM32
-            current = frame->prevFp;
+            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
 #else
-            current = reinterpret_cast<uintptr_t *>(frame->callsiteFp);
+            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
             FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME);
 #endif

@@ -73,6 +73,7 @@ public:
                                  std::initializer_list<GateRef> args);
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
+    GateRef NewRuntimeCallGate(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
     static MachineType GetLoadMachineTypeFromStubMachineType(StubMachineType type);
     static MachineType GetStoreMachineTypeFromStubMachineType(StubMachineType type);
     static MachineType GetMachineTypeFromStubMachineType(StubMachineType type);

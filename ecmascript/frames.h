@@ -323,15 +323,18 @@ struct InterpretedFrame {
 static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);
 
 struct OptLeaveFrame {
-    FrameType type;
-    JSTaggedType *prevFp; // set interpret frame cursp here
     uintptr_t callsiteSp;
-    uintptr_t callsiteFp;
     uint64_t patchId;
+    FrameType type;
+    uintptr_t callsiteFp;  // thread sp set here
+    uintptr_t returnAddr;
+    uint64_t argRuntimeId;
+    uint64_t argPatchId;
+    uint64_t argc;
     static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptLeaveFrame, prevFp));
+            MEMBER_OFFSET(OptLeaveFrame, callsiteFp));
     }
     static constexpr uint32_t kSizeOn64Platform = sizeof(FrameType) + 4 * sizeof(uint64_t);
     static constexpr uint32_t kSizeOn32Platform = sizeof(FrameType) + 3 * sizeof(int32_t) + sizeof(uint64_t);
