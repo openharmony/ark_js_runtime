@@ -19,10 +19,10 @@
 #include "ecmascript/mem/area.h"
 #include "ecmascript/mem/full_gc.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mix_gc.h"
 #include "ecmascript/mem/region.h"
-#include "ecmascript/mem/region_factory.h"
 #include "ecmascript/mem/tlab_allocator-inl.h"
 
 namespace panda::ecmascript {
@@ -32,7 +32,8 @@ WorkerHelper::WorkerHelper(Heap *heap, uint32_t threadNum)
     for (uint32_t i = 0; i < threadNum_; i++) {
         continuousQueue_[i] = new ProcessQueue(heap);
     }
-    markSpace_ = ToUintPtr(const_cast<RegionFactory *>(heap_->GetRegionFactory())->AllocateBuffer(SPACE_SIZE));
+    markSpace_ =
+        ToUintPtr(const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->AllocateBuffer(SPACE_SIZE));
 }
 
 WorkerHelper::~WorkerHelper()
@@ -42,7 +43,8 @@ WorkerHelper::~WorkerHelper()
         delete continuousQueue_[i];
         continuousQueue_[i] = nullptr;
     }
-    const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeBuffer(reinterpret_cast<void *>(markSpace_));
+    const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->FreeBuffer(
+        reinterpret_cast<void *>(markSpace_));
 }
 
 bool WorkerHelper::Push(uint32_t threadId, TaggedObject *object)
@@ -117,7 +119,7 @@ void WorkerHelper::Finish(size_t &aliveSize)
     }
 
     while (!unuseSpace_.empty()) {
-        const_cast<RegionFactory *>(heap_->GetRegionFactory())->FreeBuffer(reinterpret_cast<void *>(
+        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->FreeBuffer(reinterpret_cast<void *>(
             unuseSpace_.back()));
         unuseSpace_.pop_back();
     }
@@ -165,8 +167,8 @@ WorkNode *WorkerHelper::AllocalWorkNode()
             begin = atomicField->load(std::memory_order_acquire);
             if (begin + totalSize >= markSpaceEnd_) {
                 unuseSpace_.emplace_back(markSpace_);
-                markSpace_ =
-                    ToUintPtr(const_cast<RegionFactory *>(heap_->GetRegionFactory())->AllocateBuffer(SPACE_SIZE));
+                markSpace_ = ToUintPtr(const_cast<NativeAreaAllocator *>(
+                    heap_->GetNativeAreaAllocator())->AllocateBuffer(SPACE_SIZE));
                 spaceTop_ = markSpace_;
                 markSpaceEnd_ = markSpace_ + SPACE_SIZE;
                 begin = spaceTop_;

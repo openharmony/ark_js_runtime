@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_MEM_REGION_FACTORY_H
-#define ECMASCRIPT_MEM_REGION_FACTORY_H
+#ifndef ECMASCRIPT_MEM_NATIVE_AREA_ALLOCATOR_H
+#define ECMASCRIPT_MEM_NATIVE_AREA_ALLOCATOR_H
 
 #include <atomic>
 
@@ -23,14 +23,10 @@
 #include "libpandabase/utils/logger.h"
 
 namespace panda::ecmascript {
-class Region;
-class Space;
-class Area;
-
-class RegionFactory {
+class NativeAreaAllocator {
 public:
-    RegionFactory() = default;
-    virtual ~RegionFactory()
+    NativeAreaAllocator() = default;
+    virtual ~NativeAreaAllocator()
     {
         if (cachedArea_ != nullptr) {
             FreeArea(cachedArea_);
@@ -38,8 +34,6 @@ public:
         }
     }
 
-    Region *AllocateAlignedRegion(Space *space, size_t capacity);
-    void FreeRegion(Region *region);
     Area *AllocateArea(size_t capacity);
     void FreeArea(Area *area);
     void Free(void *mem, size_t size);
@@ -71,29 +65,6 @@ public:
             ptr->~T();
         }
         FreeBuffer(ptr);
-    }
-
-    void IncreaseAnnoMemoryUsage(size_t bytes)
-    {
-        size_t current = annoMemoryUsage_.fetch_add(bytes, std::memory_order_relaxed) + bytes;
-        size_t max = maxAnnoMemoryUsage_.load(std::memory_order_relaxed);
-        while (current > max && !maxAnnoMemoryUsage_.compare_exchange_weak(max, current, std::memory_order_relaxed)) {
-        }
-    }
-
-    void DecreaseAnnoMemoryUsage(size_t bytes)
-    {
-        annoMemoryUsage_.fetch_sub(bytes, std::memory_order_relaxed);
-    }
-
-    size_t GetAnnoMemoryUsage() const
-    {
-        return annoMemoryUsage_.load(std::memory_order_relaxed);
-    }
-
-    size_t GetMaxAnnoMemoryUsage() const
-    {
-        return maxAnnoMemoryUsage_.load(std::memory_order_relaxed);
     }
 
     void IncreaseNativeMemoryUsage(size_t bytes)
@@ -164,18 +135,16 @@ public:
     }
 
 private:
-    NO_COPY_SEMANTIC(RegionFactory);
-    NO_MOVE_SEMANTIC(RegionFactory);
+    NO_COPY_SEMANTIC(NativeAreaAllocator);
+    NO_MOVE_SEMANTIC(NativeAreaAllocator);
 
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     static constexpr int INVALID_VALUE = 0x7;
 #endif
     Area *cachedArea_ {nullptr};
-    std::atomic<size_t> annoMemoryUsage_ {0};
-    std::atomic<size_t> maxAnnoMemoryUsage_ {0};
     std::atomic<size_t> nativeMemoryUsage_ {0};
     std::atomic<size_t> maxNativeMemoryUsage_ {0};
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_MEM_REGION_FACTORY_H
+#endif  // ECMASCRIPT_MEM_NATIVE_AREA_ALLOCATOR_H

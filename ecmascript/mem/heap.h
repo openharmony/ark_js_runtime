@@ -32,7 +32,8 @@ class MixGC;
 class FullGC;
 class BumpPointerAllocator;
 class FreeListAllocator;
-class RegionFactory;
+class NativeAreaAllocator;
+class HeapRegionAllocator;
 class HeapTracker;
 class MemController;
 class ConcurrentSweeper;
@@ -215,9 +216,14 @@ public:
 
     bool CheckAndTriggerMachineCodeGC();
 
-    const RegionFactory *GetRegionFactory() const
+    NativeAreaAllocator *GetNativeAreaAllocator() const
     {
-        return regionFactory_;
+        return nativeAreaAllocator_;
+    }
+
+    const HeapRegionAllocator *GetHeapRegionAllocator() const
+    {
+        return heapRegionAllocator_;
     }
 
     SnapShotSpace *GetSnapShotSpace() const
@@ -406,7 +412,8 @@ private:
     Marker *compressGcMarker_ {nullptr};
     ParallelEvacuation *evacuation_ {nullptr};
     MemManager *heapManager_ {nullptr};
-    RegionFactory *regionFactory_ {nullptr};
+    NativeAreaAllocator *nativeAreaAllocator_ {nullptr};
+    HeapRegionAllocator *heapRegionAllocator_ {nullptr};
     HeapTracker *tracker_ {nullptr};
     MemController *memController_ {nullptr};
     size_t oldSpaceAllocLimit_ {OLD_SPACE_LIMIT_BEGIN};

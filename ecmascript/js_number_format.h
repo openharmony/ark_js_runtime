@@ -105,7 +105,7 @@ public:
         auto icuNumberformat = reinterpret_cast<icu::number::LocalizedNumberFormatter *>(pointer);
         icuNumberformat->~LocalizedNumberFormatter();
         if (data != nullptr) {
-            reinterpret_cast<EcmaVM *>(data)->GetRegionFactory()->FreeBuffer(pointer);
+            reinterpret_cast<EcmaVM *>(data)->GetNativeAreaAllocator()->FreeBuffer(pointer);
         }
     }
 

@@ -101,9 +101,13 @@ EcmaVM::EcmaVM() : EcmaVM(EcmaVM::GetJSOptions())
 
 EcmaVM::EcmaVM(JSRuntimeOptions options)
     : stringTable_(new EcmaStringTable(this)),
-      regionFactory_(std::make_unique<RegionFactory>()),
-      chunk_(regionFactory_.get()),
-      nativeMethods_(&chunk_)
+      nativeAreaAllocator_(std::make_unique<NativeAreaAllocator>()),
+      heapRegionAllocator_(std::make_unique<HeapRegionAllocator>()),
+      chunk_(nativeAreaAllocator_.get()),
+      arrayBufferDataList_(&chunk_),
+      frameworkProgramMethods_(&chunk_),
+      nativeMethods_(&chunk_),
+      pandaFileWithProgram_(&chunk_)
 {
     options_ = std::move(options);
     icEnable_ = options_.IsIcEnable();
@@ -595,7 +599,7 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
         if (object != nullptr) {
             auto fwd = v0(object);
             if (fwd == nullptr) {
-                object->FreeMethodData(regionFactory_.get());
+                object->FreeMethodData(nativeAreaAllocator_.get());
                 auto pf = std::get<1>(*iter);
                 extractorCache_.erase(pf);
                 delete pf;
@@ -666,7 +670,7 @@ void EcmaVM::ClearBufferData()
     arrayBufferDataList_.clear();
 
     for (auto iter = pandaFileWithProgram_.begin(); iter != pandaFileWithProgram_.end();) {
-        std::get<0>(*iter)->FreeMethodData(regionFactory_.get());
+        std::get<0>(*iter)->FreeMethodData(nativeAreaAllocator_.get());
         auto pf = std::get<1>(*iter);
         // 2 : 2 means the third element.
         if (pf == frameworkPandaFile_ || !isTestMode_ || std::get<2>(*iter)) {

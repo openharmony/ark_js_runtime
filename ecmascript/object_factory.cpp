@@ -144,7 +144,7 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
     JSTaggedValue data = array->GetArrayBufferData();
     if (data != JSTaggedValue::Undefined()) {
         auto *pointer = JSNativePointer::Cast(data.GetTaggedObject());
-        auto newData = vm_->GetRegionFactory()->AllocateBuffer(length * sizeof(uint8_t));
+        auto newData = vm_->GetNativeAreaAllocator()->AllocateBuffer(length * sizeof(uint8_t));
         if (memset_s(newData, length, 0, length) != EOK) {
             LOG_ECMA(FATAL) << "memset_s failed";
             UNREACHABLE();
@@ -153,13 +153,13 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
         return;
     }
 
-    auto newData = vm_->GetRegionFactory()->AllocateBuffer(length * sizeof(uint8_t));
+    auto newData = vm_->GetNativeAreaAllocator()->AllocateBuffer(length * sizeof(uint8_t));
     if (memset_s(newData, length, 0, length) != EOK) {
         LOG_ECMA(FATAL) << "memset_s failed";
         UNREACHABLE();
     }
-    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, RegionFactory::FreeBufferFunc,
-                                                           vm_->GetRegionFactory());
+    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, NativeAreaAllocator::FreeBufferFunc,
+                                                           vm_->GetNativeAreaAllocator());
     array->SetArrayBufferData(thread_, pointer.GetTaggedValue());
     vm_->PushToArrayDataList(*pointer);
 }
@@ -173,13 +173,13 @@ JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(int32_t length)
     JSHandle<JSArrayBuffer> arrayBuffer(NewJSObjectByConstructor(constructor, newTarget));
     arrayBuffer->SetArrayBufferByteLength(length);
     if (length > 0) {
-        auto newData = vm_->GetRegionFactory()->AllocateBuffer(length);
+        auto newData = vm_->GetNativeAreaAllocator()->AllocateBuffer(length);
         if (memset_s(newData, length, 0, length) != EOK) {
             LOG_ECMA(FATAL) << "memset_s failed";
             UNREACHABLE();
         }
-        JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, RegionFactory::FreeBufferFunc,
-                                                               vm_->GetRegionFactory());
+        JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, NativeAreaAllocator::FreeBufferFunc,
+                                                               vm_->GetNativeAreaAllocator());
         arrayBuffer->SetArrayBufferData(thread_, pointer.GetTaggedValue());
         arrayBuffer->ClearBitField();
         vm_->PushToArrayDataList(*pointer);
@@ -231,7 +231,7 @@ void ObjectFactory::NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, vo
         return;
     }
 
-    auto newBuffer = vm_->GetRegionFactory()->AllocateBuffer(size);
+    auto newBuffer = vm_->GetNativeAreaAllocator()->AllocateBuffer(size);
     if (memcpy_s(newBuffer, size, buffer, size) != EOK) {
         LOG_ECMA(FATAL) << "memcpy_s failed";
         UNREACHABLE();
@@ -242,8 +242,8 @@ void ObjectFactory::NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, vo
         native->ResetExternalPointer(newBuffer);
         return;
     }
-    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newBuffer, RegionFactory::FreeBufferFunc,
-                                                           vm_->GetRegionFactory());
+    JSHandle<JSNativePointer> pointer = NewJSNativePointer(newBuffer, NativeAreaAllocator::FreeBufferFunc,
+                                                           vm_->GetNativeAreaAllocator());
     regexp->SetByteCodeBuffer(thread_, pointer.GetTaggedValue());
     regexp->SetLength(static_cast<uint32_t>(size));
 
