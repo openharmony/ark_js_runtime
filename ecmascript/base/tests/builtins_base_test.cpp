@@ -163,7 +163,7 @@ HWTEST_F_L0(BuiltinsBaseTest, GetTaggedDouble)
 
 /**
  * @tc.name: GetTaggedBoolean
- * @tc.desc: Check whether the result returned through "GetTaggedDouble" function is within expectations.
+ * @tc.desc: Check whether the result returned through "GetTaggedBoolean" function is within expectations.
  * @tc.type: FUNC
  * @tc.requre:
  */
