@@ -131,7 +131,8 @@ namespace panda::ecmascript::kungfu {
     V(Sub2Dyn, 3)                            \
     V(Mul2Dyn, 3)                            \
     V(Div2Dyn, 3)                            \
-    V(Mod2Dyn, 3)
+    V(Mod2Dyn, 3)                            \
+    V(CallRuntimeTrampoline, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)   \
@@ -153,6 +154,7 @@ namespace panda::ecmascript::kungfu {
     V(TryStoreICByName, 5)          \
     V(TryStoreICByValue, 6)         \
     V(TestAbsoluteAddressRelocation, 2)
+
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \

@@ -428,6 +428,24 @@ GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, Ga
     return circuit_->NewGate(OpCode(OpCode::CALL), machineType, args.size() + 2, inputs, type);
 }
 
+GateRef CircuitBuilder::NewRuntimeCallGate(GateRef glue, GateRef target,
+                                           GateRef depend, std::initializer_list<GateRef> args)
+{
+    std::vector<GateRef> inputs;
+    inputs.push_back(depend);
+    inputs.push_back(target);
+    inputs.push_back(glue);
+    for (auto arg : args) {
+        inputs.push_back(arg);
+    }
+    OpCode opcode(OpCode::RUNTIME_CALL);
+    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(CallRuntimeTrampoline);
+    MachineType machineType = GetCallMachineTypeFromStubMachineType(descriptor->GetReturnType());
+    GateType type = StubMachineType2GateType(descriptor->GetReturnType());
+    // 2 : 2 means extra two input gates (target glue)
+    return circuit_->NewGate(opcode, machineType, args.size() + 2, inputs, type);
+}
+
 GateRef CircuitBuilder::Alloca(int size)
 {
     auto allocaList = Circuit::GetCircuitRoot(OpCode(OpCode::ALLOCA_LIST));

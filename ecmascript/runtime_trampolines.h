@@ -21,6 +21,9 @@
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
+extern "C" JSTaggedType CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id,
+                                              uint32_t argc, ...);
+
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {

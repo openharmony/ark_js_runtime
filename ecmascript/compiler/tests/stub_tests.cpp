@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "gtest/gtest.h"
+#include "ecmascript/bridge/compile_bridge.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/compiler/compiler_macros.h"
 #include "ecmascript/compiler/fast_stub.h"

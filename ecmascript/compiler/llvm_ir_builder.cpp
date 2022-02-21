@@ -110,6 +110,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::LOOP_BEGIN, &LLVMIRBuilder::HandleGoto},
         {OpCode::LOOP_BACK, &LLVMIRBuilder::HandleGoto},
         {OpCode::VALUE_SELECTOR, &LLVMIRBuilder::HandlePhi},
+        {OpCode::RUNTIME_CALL, &LLVMIRBuilder::HandleRuntimeCall},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
         {OpCode::ARG, &LLVMIRBuilder::HandleParameter},
@@ -448,6 +449,48 @@ void LLVMIRBuilder::HandleCall(GateRef gate)
     VisitCall(gate, ins);
 }
 
+void LLVMIRBuilder::HandleRuntimeCall(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitRuntimeCall(gate, ins);
+}
+
+void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &inList)
+{
+    int paraStartIndex = 3;
+    ASSERT(stubModule_ != nullptr);
+    LLVMValueRef callee;
+    LLVMValueRef rtoffset;
+    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(FAST_STUB_ID(CallRuntimeTrampoline));
+    LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
+    LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
+    LLVMTypeRef glue_type = LLVMTypeOf(glue);
+    rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
+                                (FAST_STUB_ID(CallRuntimeTrampoline) - FAST_STUB_MAXCOUNT) * slotSize_, 0);
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
+    LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
+    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
+    // 16 : params limit
+    LLVMValueRef params[16];
+    params[0] = glue;
+    int index = circuit_->GetBitField(inList[1]);
+    params[1] = LLVMConstInt(LLVMInt64Type(), index - FAST_STUB_MAXCOUNT, 0);
+    params[2] = LLVMConstInt(LLVMInt64Type(), 2882400000, 0); // 2882400000: default statepoint ID
+    params[3] = LLVMConstInt(LLVMInt32Type(), inList.size() - paraStartIndex - 1, 0); // 3 : 3 means fourth parameter
+    for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
+        GateRef gateTmp = inList[paraIdx];
+        params[paraIdx + 1] = gateToLLVMMaps_[gateTmp];
+    }
+    if (callee == nullptr) {
+        COMPILER_LOG(ERROR) << "callee nullptr";
+        return;
+    }
+    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size() + 1, "");
+    LLVMSetInstructionCallConv(runtimeCall, LLVMWebKitJSCallConv);
+    gateToLLVMMaps_[gate] = runtimeCall;
+}
+
 LLVMValueRef LLVMIRBuilder::GetCurrentSP()
 {
     LLVMMetadataRef meta;
@@ -619,16 +662,9 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     }
     if (compCfg_->Is32Bit() || compCfg_->Is64Bit()) {
         SaveCurrentSP();
-        // callerid | idx
-        if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
-            ConstructFrame();
-        }
     }
 
     gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
-    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB) {
-        DestoryFrame();
-    }
     return;
 }
 

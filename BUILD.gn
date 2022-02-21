@@ -428,6 +428,14 @@ ecma_source += [
   "ecmascript/tooling/interface/js_debugger.cpp",
 ]
 
+if (current_cpu == "arm") {
+  ecma_source += [ "ecmascript/bridge/js_function_stub_arm32.S" ]
+} else if (current_cpu == "arm64") {
+  ecma_source += [ "ecmascript/bridge/js_function_stub_aarch64.S" ]
+} else if (current_cpu == "amd64" || current_cpu == "x64" ||
+           current_cpu == "x86_64") {
+  ecma_source += [ "ecmascript/bridge/js_function_stub_amd64.S" ]
+}
 source_set("libark_jsruntime_static") {
   sources = ecma_source
 

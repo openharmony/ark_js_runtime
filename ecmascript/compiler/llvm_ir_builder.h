@@ -165,6 +165,7 @@ private:
 
 #define OPCODES(V) \
     V(Call, (GateRef gate, const std::vector<GateRef> &inList))                       \
+    V(RuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                \
     V(Alloca, (GateRef gate))                                                         \
     V(Block, (int id, const OperandsVector &predecessors))                            \
     V(Goto, (int block, int bbout))                                                   \
