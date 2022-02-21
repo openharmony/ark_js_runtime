@@ -178,7 +178,7 @@ public:
         auto icuLocale = reinterpret_cast<icu::Locale *>(pointer);
         icuLocale->~Locale();
         if (data != nullptr) {
-            reinterpret_cast<EcmaVM *>(data)->GetRegionFactory()->FreeBuffer(pointer);
+            reinterpret_cast<EcmaVM *>(data)->GetNativeAreaAllocator()->FreeBuffer(pointer);
         }
     }
 

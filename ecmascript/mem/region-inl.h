@@ -19,7 +19,7 @@
 #include "ecmascript/mem/region.h"
 
 #include "ecmascript/mem/heap.h"
-#include "ecmascript/mem/region_factory.h"
+#include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/mem/space.h"
 
@@ -32,7 +32,7 @@ inline void Region::SetSpace(Space *space)
 RememberedSet *Region::CreateRememberedSet()
 {
     auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
-    auto setAddr = const_cast<RegionFactory *>(heap_->GetRegionFactory())->Allocate(setSize);
+    auto setAddr = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Allocate(setSize);
     uintptr_t setData = ToUintPtr(setAddr);
     auto ret = new RememberedSet(ToUintPtr(this), GetCapacity(), setData);
     ret->ClearAllBits();
@@ -94,7 +94,8 @@ void Region::DeleteMarkBitmap()
 {
     if (markBitmap_ != nullptr) {
         auto size = RangeBitmap::GetBitMapSizeInByte(GetCapacity());
-        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(markBitmap_->GetBitMap().Data(), size);
+        const_cast<NativeAreaAllocator *>(
+            heap_->GetNativeAreaAllocator())->Free(markBitmap_->GetBitMap().Data(), size);
         delete markBitmap_;
         markBitmap_ = nullptr;
     }
@@ -104,7 +105,7 @@ void Region::DeleteCrossRegionRememberedSet()
 {
     if (crossRegionSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
-        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(
+        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Free(
             crossRegionSet_->GetBitMap().Data(), size);
         delete crossRegionSet_;
         crossRegionSet_ = nullptr;
@@ -115,7 +116,7 @@ void Region::DeleteOldToNewRememberedSet()
 {
     if (oldToNewSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
-        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Free(
+        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Free(
             oldToNewSet_->GetBitMap().Data(), size);
         delete oldToNewSet_;
         oldToNewSet_ = nullptr;

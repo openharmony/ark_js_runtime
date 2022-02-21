@@ -43,8 +43,8 @@ CString *HeapSnapShot::GetString(const CString &as)
 Node *Node::NewNode(const Heap *heap, size_t id, size_t index, CString *name, NodeType type, size_t size,
                     TaggedObject *entry, bool isLive)
 {
-    auto node = const_cast<RegionFactory *>(
-        heap->GetRegionFactory())->New<Node>(id, index, name, type, size, 0, NewAddress<TaggedObject>(entry), isLive);
+    auto node = const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())
+                    ->New<Node>(id, index, name, type, size, 0, NewAddress<TaggedObject>(entry), isLive);
     if (UNLIKELY(node == nullptr)) {
         LOG_ECMA(FATAL) << "internal allocator failed";
         UNREACHABLE();
@@ -54,7 +54,7 @@ Node *Node::NewNode(const Heap *heap, size_t id, size_t index, CString *name, No
 
 Edge *Edge::NewEdge(const Heap *heap, uint64_t id, EdgeType type, Node *from, Node *to, CString *name)
 {
-    auto edge = const_cast<RegionFactory *>(heap->GetRegionFactory())->New<Edge>(id, type, from, to, name);
+    auto edge = const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->New<Edge>(id, type, from, to, name);
     if (UNLIKELY(edge == nullptr)) {
         LOG_ECMA(FATAL) << "internal allocator failed";
         UNREACHABLE();
@@ -66,10 +66,10 @@ HeapSnapShot::~HeapSnapShot()
 {
     const Heap *heap = thread_->GetEcmaVM()->GetHeap();
     for (Node *node : nodes_) {
-        const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(node);
+        const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(node);
     }
     for (Edge *edge : edges_) {
-        const_cast<RegionFactory *>(heap->GetRegionFactory())->Delete(edge);
+        const_cast<NativeAreaAllocator *>(heap->GetNativeAreaAllocator())->Delete(edge);
     }
     nodes_.clear();
     edges_.clear();
@@ -422,7 +422,7 @@ Node *HeapSnapShot::GenerateNode(JSThread *thread, JSTaggedValue entry, int sequ
             } else {
                 existNode->SetLive(true);
                 ASSERT(entryMap_.FindEntry(node->GetAddress())->GetAddress() == node->GetAddress());
-                const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(node);
+                const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(node);
                 return nullptr;
             }
         }
@@ -481,7 +481,7 @@ Node *HeapSnapShot::GenerateStringNode(JSTaggedValue entry, int sequenceId)
     }
     ASSERT(entryMap_.FindEntry(node->GetAddress())->GetAddress() == node->GetAddress());
     if (existNode != node) {
-        const_cast<RegionFactory *>(heap_->GetRegionFactory())->Delete(node);
+        const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Delete(node);
         return nullptr;
     }
     return node;

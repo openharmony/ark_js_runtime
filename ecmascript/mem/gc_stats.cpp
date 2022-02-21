@@ -21,7 +21,7 @@
 namespace panda::ecmascript {
 void GCStats::PrintStatisticResult(bool isForce)
 {
-    LOG(ERROR, RUNTIME) << "/******************* GCStats statistic: *******************/";
+    LOG(INFO, RUNTIME) << "/******************* GCStats statistic: *******************/";
     PrintSemiStatisticResult(isForce);
     PrintMixStatisticResult(isForce);
     PrintCompressStatisticResult(isForce);
@@ -32,8 +32,8 @@ void GCStats::PrintSemiStatisticResult(bool isForce)
 {
     if ((isForce && semiGCCount_ != 0) || (!isForce && semiGCCount_ != lastSemiGCCount_)) {
         lastSemiGCCount_ = semiGCCount_;
-        LOG(ERROR, RUNTIME) << " STWYoungGC statistic: total semi gc count " << semiGCCount_;
-        LOG(ERROR, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(semiGCMinPause_) << "ms"
+        LOG(INFO, RUNTIME) << " STWYoungGC statistic: total semi gc count " << semiGCCount_;
+        LOG(INFO, RUNTIME) << " MIN pause time: " << PrintTimeMilliseconds(semiGCMinPause_) << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(semiGCMAXPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(semiGCTotalPause_) << "ms"
                             << " average pause time: " << PrintTimeMilliseconds(semiGCTotalPause_ / semiGCCount_)
@@ -52,8 +52,8 @@ void GCStats::PrintMixStatisticResult(bool isForce)
 {
     if ((isForce && mixGCCount_ != 0) || (!isForce && lastOldGCCount_ != mixGCCount_)) {
         lastOldGCCount_ = mixGCCount_;
-        LOG(ERROR, RUNTIME) << " MixGC with non-concurrent mark statistic: total old gc count " << mixGCCount_;
-        LOG(ERROR, RUNTIME) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(mixGCMinPause_)
+        LOG(INFO, RUNTIME) << " MixGC with non-concurrent mark statistic: total old gc count " << mixGCCount_;
+        LOG(INFO, RUNTIME) << " Pause time statistic:: MIN pause time: " << PrintTimeMilliseconds(mixGCMinPause_)
                             << "ms"
                             << " MAX pause time: " << PrintTimeMilliseconds(mixGCMAXPause_) << "ms"
                             << " total pause time: " << PrintTimeMilliseconds(mixGCTotalPause_) << "ms"
@@ -66,9 +66,9 @@ void GCStats::PrintMixStatisticResult(bool isForce)
     if ((isForce && mixConcurrentMarkGCCount_ != 0) ||
             (!isForce && lastOldConcurrentMarkGCCount_ != mixConcurrentMarkGCCount_)) {
         lastOldConcurrentMarkGCCount_ = mixConcurrentMarkGCCount_;
-        LOG(ERROR, RUNTIME) << " MixCollector with concurrent mark statistic: total old gc count "
+        LOG(INFO, RUNTIME) << " MixCollector with concurrent mark statistic: total old gc count "
                             << mixConcurrentMarkGCCount_;
-        LOG(ERROR, RUNTIME) << " Pause time statistic:: Current GC pause time: "
+        LOG(INFO, RUNTIME) << " Pause time statistic:: Current GC pause time: "
                             << PrintTimeMilliseconds(mixConcurrentMarkGCPauseTime_) << "ms"
                             << " Concurrent mark pause time: " << PrintTimeMilliseconds(mixConcurrentMarkMarkPause_)
                             << "ms"
@@ -93,8 +93,8 @@ void GCStats::PrintCompressStatisticResult(bool isForce)
 {
     if ((isForce && fullGCCount_ != 0) || (!isForce && fullGCCount_ != lastFullGCCount_)) {
         lastFullGCCount_ = fullGCCount_;
-        LOG(ERROR, RUNTIME) << " FullGC statistic: total compress gc count " << fullGCCount_;
-        LOG(ERROR, RUNTIME)
+        LOG(INFO, RUNTIME) << " FullGC statistic: total compress gc count " << fullGCCount_;
+        LOG(INFO, RUNTIME)
             << " MIN pause time: " << PrintTimeMilliseconds(fullGCMinPause_) << "ms"
             << " MAX pause time: " << PrintTimeMilliseconds(fullGCMaxPause_) << "ms"
             << " total pause time: " << PrintTimeMilliseconds(fullGCTotalPause_) << "ms"
@@ -117,16 +117,18 @@ void GCStats::PrintCompressStatisticResult(bool isForce)
 void GCStats::PrintHeapStatisticResult(bool isForce)
 {
     if (isForce && heap_ != nullptr) {
-        RegionFactory *regionFactory = const_cast<RegionFactory *>(heap_->GetRegionFactory());
-        LOG(ERROR, RUNTIME) << "/******************* Memory statistic: *******************/";
-        LOG(ERROR, RUNTIME) << " Anno memory usage size:" << sizeToMB(regionFactory->GetAnnoMemoryUsage()) << "MB"
-                            << " anno memory max usage size:" << sizeToMB(regionFactory->GetMaxAnnoMemoryUsage())
+        NativeAreaAllocator *nativeAreaAllocator = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator());
+        HeapRegionAllocator *heapRegionAllocator = const_cast<HeapRegionAllocator *>(heap_->GetHeapRegionAllocator());
+        LOG(INFO, RUNTIME) << "/******************* Memory statistic: *******************/";
+        LOG(INFO, RUNTIME) << " Anno memory usage size:" << sizeToMB(heapRegionAllocator->GetAnnoMemoryUsage())
                             << "MB"
-                            << " native memory usage size:" << sizeToMB(regionFactory->GetNativeMemoryUsage())
+                            << " anno memory max usage size:" << sizeToMB(heapRegionAllocator->GetMaxAnnoMemoryUsage())
                             << "MB"
-                            << " native memory max usage size:" << sizeToMB(regionFactory->GetMaxNativeMemoryUsage())
-                            << "MB";
-        LOG(ERROR, RUNTIME) << " Semi space commit size" << sizeToMB(heap_->GetNewSpace()->GetCommittedSize()) << "MB"
+                            << " native memory usage size:" << sizeToMB(nativeAreaAllocator->GetNativeMemoryUsage())
+                            << "MB"
+                            << " native memory max usage size:"
+                            << sizeToMB(nativeAreaAllocator->GetMaxNativeMemoryUsage()) << "MB";
+        LOG(INFO, RUNTIME) << " Semi space commit size" << sizeToMB(heap_->GetNewSpace()->GetCommittedSize()) << "MB"
                             << " semi space heap object size: " << sizeToMB(heap_->GetNewSpace()->GetHeapObjectSize())
                             << "MB"
                             << " old space commit size: "

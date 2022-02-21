@@ -79,7 +79,7 @@ const JSMethod *PandaFileTranslator::FindMethods(uint32_t offset) const
 void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CString &methodName,
                                            std::vector<BytecodeTranslationInfo> &infoList)
 {
-    RegionFactory *factory = ecmaVm_->GetRegionFactory();
+    NativeAreaAllocator *allocator = ecmaVm_->GetNativeAreaAllocator();
     Span<const uint32_t> classIndexes = pf.GetClasses();
     uint32_t numMethods = 0;
 
@@ -92,7 +92,7 @@ void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CSt
         numMethods += cda.GetMethodsNumber();
     }
 
-    auto methodsData = factory->AllocateBuffer(sizeof(JSMethod) * numMethods);
+    auto methodsData = allocator->AllocateBuffer(sizeof(JSMethod) * numMethods);
     Span<JSMethod> methods {static_cast<JSMethod *>(methodsData), numMethods};
     size_t methodIdx = 0;
 

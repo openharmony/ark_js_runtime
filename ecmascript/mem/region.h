@@ -19,7 +19,7 @@
 #include "ecmascript/mem/free_object_list.h"
 #include "ecmascript/mem/mem.h"
 #include "mem/gc/bitmap.h"
-#include "region_factory.h"
+#include "native_area_allocator.h"
 
 namespace panda {
 using RangeBitmap = mem::MemBitmap<static_cast<size_t>(ecmascript::MemAlignment::MEM_ALIGN_OBJECT)>;
@@ -53,7 +53,7 @@ enum RegionFlags {
 class Region {
 public:
     Region(Space *space, Heap *heap, uintptr_t allocateBase, uintptr_t begin,
-        uintptr_t end, RegionFactory* regionFactory)
+        uintptr_t end, NativeAreaAllocator* nativeAreaAllocator)
         : flags_(0), space_(space), heap_(heap),
         allocateBase_(allocateBase),
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -62,7 +62,7 @@ public:
         highWaterMark_(end),
         aliveObject_(0),
         wasted_(0),
-        regionFactory_(regionFactory)
+        nativeAreaAllocator_(nativeAreaAllocator)
     {
         markBitmap_ = CreateMarkBitmap();
     }
@@ -220,8 +220,8 @@ public:
         size_t heapSize = IsFlagSet(RegionFlags::IS_HUGE_OBJECT) ? LARGE_BITMAP_MIN_SIZE : GetCapacity();
         // Only one huge object is stored in a region. The BitmapSize of a huge region will always be 8 Bytes.
         size_t bitmapSize = RangeBitmap::GetBitMapSizeInByte(heapSize);
-        ASSERT(regionFactory_ != nullptr);
-        auto bitmapData = const_cast<RegionFactory *>(regionFactory_)->Allocate(bitmapSize);
+        ASSERT(nativeAreaAllocator_ != nullptr);
+        auto bitmapData = const_cast<NativeAreaAllocator *>(nativeAreaAllocator_)->Allocate(bitmapSize);
         auto *ret = new RangeBitmap(this, heapSize, bitmapData);
         ret->ClearAllBits();
         return ret;
@@ -408,7 +408,7 @@ private:
     Span<FreeObjectSet *> sets_;
     size_t wasted_;
     os::memory::Mutex lock_;
-    RegionFactory* regionFactory_ {nullptr};
+    NativeAreaAllocator* nativeAreaAllocator_ {nullptr};
     friend class SnapShot;
 };
 

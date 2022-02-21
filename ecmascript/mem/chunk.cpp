@@ -18,11 +18,11 @@
 #include "ecmascript/mem/heap.h"
 
 namespace panda::ecmascript {
-Chunk::Chunk(RegionFactory *factory) : factory_(factory) {}
+Chunk::Chunk(NativeAreaAllocator *allocator) : allocator_(allocator) {}
 
 Area *Chunk::NewArea(size_t size)
 {
-    auto area = factory_->AllocateArea(size);
+    auto area = allocator_->AllocateArea(size);
     if (area == nullptr) {
         LOG_ECMA_MEM(FATAL) << "OOM Chunk::NewArea area is nullptr";
         UNREACHABLE();
@@ -72,7 +72,7 @@ void Chunk::ReleaseMemory()
 {
     while (!areaList_.IsEmpty()) {
         Area *node = areaList_.PopBack();
-        factory_->FreeArea(node);
+        allocator_->FreeArea(node);
     }
     ptr_ = 0;
     end_ = 0;

@@ -145,7 +145,7 @@ std::unique_ptr<const panda_file::File> SnapShot::DeserializeGlobalEnvAndProgram
 
     uintptr_t snapshot_begin = readFile + sizeof(Header);
     for (size_t i = 0; i < hdr.snapshot_size / DEFAULT_SNAPSHOT_SPACE_SIZE; i++) {
-        Region *region = const_cast<RegionFactory *>(vm_->GetHeap()->GetRegionFactory())
+        Region *region = const_cast<HeapRegionAllocator *>(vm_->GetHeap()->GetHeapRegionAllocator())
                             ->AllocateAlignedRegion(space, DEFAULT_SNAPSHOT_SPACE_SIZE);
         auto fileRegion = ToNativePtr<Region>(snapshot_begin + i * DEFAULT_SNAPSHOT_SPACE_SIZE);
 

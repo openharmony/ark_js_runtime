@@ -1147,7 +1147,7 @@ RegExpExecutor::MatchResult BuiltinsRegExp::Matcher(JSThread *thread, const JSHa
     void *dynBuf = JSNativePointer::Cast(bufferData.GetTaggedObject())->GetExternalPointer();
     auto bytecodeBuffer = reinterpret_cast<uint8_t *>(dynBuf);
     // execute
-    Chunk chunk(thread->GetRegionFactory());
+    Chunk chunk(thread->GetNativeAreaAllocator());
     RegExpExecutor executor(&chunk);
     if (lastIndex < 0) {
         lastIndex = 0;
@@ -1520,7 +1520,7 @@ JSTaggedValue BuiltinsRegExp::RegExpInitialize(JSThread *thread, const JSHandle<
     // String -> CString
     CString patternStdStr = ConvertToString(*patternStrHandle, StringConvertedUsage::LOGICOPERATION);
     // 9. 10.
-    Chunk chunk(thread->GetRegionFactory());
+    Chunk chunk(thread->GetNativeAreaAllocator());
     RegExpParser parser = RegExpParser(&chunk);
     RegExpParserCache *regExpParserCache = thread->GetEcmaVM()->GetRegExpParserCache();
     auto getCache = regExpParserCache->GetCache(*patternStrHandle, flagsBits);

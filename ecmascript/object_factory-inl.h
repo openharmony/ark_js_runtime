@@ -76,7 +76,7 @@ LexicalEnv *ObjectFactory::InlineNewLexicalEnv(int numSlots)
 template<typename T, typename S>
 void ObjectFactory::NewJSIntlIcuData(const JSHandle<T> &obj, const S &icu, const DeleteEntryPoint &callback)
 {
-    S *icuPoint = vm_->GetRegionFactory()->New<S>(icu);
+    S *icuPoint = vm_->GetNativeAreaAllocator()->New<S>(icu);
     ASSERT(icuPoint != nullptr);
     JSTaggedValue data = obj->GetIcuField();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {

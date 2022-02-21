@@ -46,7 +46,7 @@ void JSPluralRules::SetIcuNumberFormatter(JSThread *thread, const JSHandle<JSPlu
     ObjectFactory *factory = ecmaVm->GetFactory();
 
     icu::number::LocalizedNumberFormatter *icuPointer =
-        ecmaVm->GetRegionFactory()->New<icu::number::LocalizedNumberFormatter>(icuNF);
+        ecmaVm->GetNativeAreaAllocator()->New<icu::number::LocalizedNumberFormatter>(icuNF);
     ASSERT(icuPointer != nullptr);
     JSTaggedValue data = pluralRules->GetIcuNF();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {
@@ -83,7 +83,7 @@ void JSPluralRules::SetIcuPluralRules(JSThread *thread, const JSHandle<JSPluralR
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
 
-    icu::PluralRules *icuPointer = ecmaVm->GetRegionFactory()->New<icu::PluralRules>(icuPR);
+    icu::PluralRules *icuPointer = ecmaVm->GetNativeAreaAllocator()->New<icu::PluralRules>(icuPR);
     ASSERT(icuPointer != nullptr);
     JSTaggedValue data = pluralRules->GetIcuPR();
     if (data.IsHeapObject() && data.IsJSNativePointer()) {
