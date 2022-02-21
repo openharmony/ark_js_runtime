@@ -326,8 +326,8 @@ struct OptLeaveFrame {
     uintptr_t callsiteSp;
     uint64_t patchId;
     FrameType type;
-    uintptr_t callsiteFp; //thread sp set here
-    uintptr_t  returnAddr;
+    uintptr_t callsiteFp;  // thread sp set here
+    uintptr_t returnAddr;
     uint64_t argRuntimeId;
     uint64_t argPatchId;
     uint64_t argc;

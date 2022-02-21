@@ -288,7 +288,7 @@ void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 {
     OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(sp_);
     if (frame->argc > 0) {
-        uintptr_t start = ToUintPtr(&frame->argc + 1);// argv
+        uintptr_t start = ToUintPtr(&frame->argc + 1);
         uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
         v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     }
@@ -340,10 +340,10 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             //  arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
             // Leave Frame.
 #ifdef PANDA_TARGET_ARM32
-            current = frame->prevFp;
+            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
 #else
-            current = reinterpret_cast<uintptr_t *>(frame->callsiteFp);
+            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
             FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME);
 #endif
