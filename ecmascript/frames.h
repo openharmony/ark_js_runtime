@@ -327,6 +327,10 @@ struct OptLeaveFrame {
     uint64_t patchId;
     FrameType type;
     uintptr_t callsiteFp; //thread sp set here
+    uintptr_t  returnAddr;
+    uint64_t argRuntimeId;
+    uint64_t argPatchId;
+    uint64_t argc;
     static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
