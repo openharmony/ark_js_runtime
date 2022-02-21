@@ -1002,7 +1002,7 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSMap()
     }
     JSHandle<LinkedHashMap> linkedMap = LinkedHashMap::Create(thread_);
     jsMap->SetLinkedMap(thread_, linkedMap);
-    for (uint32_t i = 0; i < size; i++) {
+    for (int32_t i = 0; i < size; i++) {
         JSHandle<JSTaggedValue> key = DeserializeJSTaggedValue();
         if (key.IsEmpty()) {
             return JSHandle<JSTaggedValue>();
@@ -1034,7 +1034,7 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSSet()
     }
     JSHandle<LinkedHashSet> linkedSet = LinkedHashSet::Create(thread_);
     jsSet->SetLinkedSet(thread_, linkedSet);
-    for (uint32_t i = 0; i < size; i++) {
+    for (int32_t i = 0; i < size; i++) {
         JSHandle<JSTaggedValue> key = DeserializeJSTaggedValue();
         if (key.IsEmpty()) {
             return JSHandle<JSTaggedValue>();
