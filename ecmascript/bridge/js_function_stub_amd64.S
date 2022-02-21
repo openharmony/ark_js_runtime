@@ -29,9 +29,11 @@ InvokeJSFunctionEntry:
     pushq   %rbp
     movq    %rsp, %rbp // set frame pointer
     pushq   $1         // optimized entry frame type
+    pushq   $1         // callsite sp
     pushq   %rsi       // prev managed fp
 
     // callee save
+    pushq   %rax
     pushq   %rbx
     pushq   %rdi
 
@@ -69,62 +71,62 @@ InvokeJSFunctionEntry:
     
     popq    %rdi           // callee restore
     popq    %rbx
+    addq    $8, %rsp
 
     popq    %rsi           // pop rsi
-    popq    %rbp           // skip frame type
+    addq    $16, %rsp
     popq    %rbp
 
-    // movq    %rsi, 2056(%rdi)   // restore thread->leaveFp
+    movq    %rsi, 2056(%rdi)   // restore thread->leaveFp
     ret
 
 // uint64_t CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint32_t argc, ...);
 // webkit_jscc calling convention
 // %rax - glue
-// rbp      - runtime_id
-// rbp + 8  - patch_id
-// rbp + 16 - argc
-// rbp + 24 - arg0
-
-//  current sp - 8:  type             ^
-//  current sp - 16: patchId          |
-//  current sp - 24: callsiteSp      leave frame
-//                                    V
+// rsp + 24 - arg0
+// rsp + 16 - argc
+// rsp + 8  - patch_id
+// rsp      - runtime_id
+// return address 
+// rbp
+// rbp - 8:  type             ^
+// rbp - 16: patchId          |
+// rbp - 24: callsiteSp      leave frame
+//                            V
 .global CallRuntimeTrampoline
 .type CallRuntimeTrampoline, %function
 CallRuntimeTrampoline:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
-    // movq    %rbp, 2056(%rax)   // save to thread->leaveFp
+    movq    %rbp, 2056(%rax)   // save to thread->leaveFp
     pushq    $3             // leave frame type
-    subq    $24, %rsp       // increase the leave frame size
+    subq    $16, %rsp       // increase the leave frame size
     
     // callee save
     pushq    %r10
-    pushq    %r11
     pushq    %rdx
+    pushq    %rax
 
     // construct leave frame
-    movq    %rsp, %r10
-    addq    $24, %r10        // 24 : callee register size
     movq    %rbp, %rdx
     addq    $16, %rdx        // 16 : for rbp & return address
 
-    movq    8(%rdx), %r11   // get patch pointer id
-    movq    %r11, (%r10)    // save patch pointer id
-    movq    %rdx, 8(%r10)   // save callsite sp
+    movq    8(%rdx), %r10   // get patch pointer id
+    movq    %r10, 32(%rsp)    // save patch pointer id
+    movq    %rdx, 24(%rsp)   // save callsite sp
 
     // load runtime trampoline address
     movq    (%rdx), %r10       // runtime id
-    movq    2072(%rax, %r10, 8), %r11
+    movq    2072(%rax, %r10, 8), %r10
     movq    %rax, %rdi       // glue
     movl    16(%rdx), %esi   // argc
     addq    $24, %rdx         // argV
-    call    *%r11
+    call    *%r10
 
+    addq    $8, %rsp
     popq    %rdx
-    popq    %r11
     popq    %r10
 
-    addq    $32, %rsp
+    addq    $24, %rsp
     popq    %rbp
     ret

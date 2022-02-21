@@ -287,6 +287,11 @@ void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
     OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(sp_);
+    if (frame->argc > 0) {
+        uintptr_t start = ToUintPtr(&frame->argc + 1);// argv
+        uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
+        v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
+    }
     std::set<uintptr_t> slotAddrs;
     bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
         frame, slotAddrs, derivedPointers, isVerifying);
