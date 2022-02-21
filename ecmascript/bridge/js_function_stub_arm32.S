@@ -93,3 +93,18 @@ InvokeCompiledJSFunction:
     add     sp, sp, #8
     pop     {r11, lr}
     bx      lr
+
+
+// uint64_t CallRuntimeTrampoline(uintptr_t glue, uint32_t runtime_id, uint32_t patch_id, uint32_t argc, ...);
+// webkit_jscc calling convention
+
+.global CallRuntimeTrampoline
+.type CallRuntimeTrampoline, %function
+CallRuntimeTrampoline:   // todo : need to rewrite
+    push    {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+    add     r11, sp, #28
+    sub     sp, sp, #4
+    bx lr
+    add     sp, sp, #8
+    pop     {r11, lr}
+    bx      lr
