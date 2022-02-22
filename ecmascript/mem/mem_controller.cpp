@@ -16,7 +16,6 @@
 #include "ecmascript/mem/mem_controller.h"
 
 #include "ecmascript/mem/concurrent_marker.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/parallel_evacuation.h"
 
@@ -65,13 +64,12 @@ void MemController::StartCalculationBeforeGC()
         return;
     }
 
-    auto heapManager = heap_->GetHeapManager();
     // It's unnecessary to calculate newSpaceAllocAccumulatorSize. newSpaceAllocBytesSinceGC can be calculated directly.
     size_t newSpaceAllocBytesSinceGC = heap_->GetNewSpace()->GetAllocatedSizeSinceGC();
     size_t hugeObjectAllocSizeSinceGC = heap_->GetHugeObjectSpace()->GetHeapObjectSize() - hugeObjectAllocSizeSinceGC_;
-    size_t oldSpaceAllocAccumulatorSize = heapManager->GetOldSpaceAllocator().GetAllocatedSize();
-    size_t nonMovableSpaceAllocAccumulatorSize = heapManager->GetNonMovableSpaceAllocator().GetAllocatedSize();
-    size_t codeSpaceAllocAccumulatorSize = heapManager->GetMachineCodeSpaceAllocator().GetAllocatedSize();
+    size_t oldSpaceAllocAccumulatorSize = heap_->GetOldSpace()->GetTotalAllocatedSize();
+    size_t nonMovableSpaceAllocAccumulatorSize = heap_->GetNonMovableSpace()->GetTotalAllocatedSize();
+    size_t codeSpaceAllocAccumulatorSize = heap_->GetMachineCodeSpace()->GetTotalAllocatedSize();
     double currentTimeInMs = GetSystemTimeInMs();
     gcStartTime_ = currentTimeInMs;
     size_t oldSpaceAllocSize = oldSpaceAllocAccumulatorSize - oldSpaceAllocAccumulatorSize_;
@@ -120,10 +118,7 @@ void MemController::StopCalculationAfterGC(TriggerGCType gcType)
     double duration = gcEndTime_ - gcStartTime_;
     switch (gcType) {
         case TriggerGCType::SEMI_GC:
-        case TriggerGCType::OLD_GC:
-        case TriggerGCType::NON_MOVE_GC:
-        case TriggerGCType::HUGE_GC:
-        case TriggerGCType::MACHINE_CODE_GC: {
+        case TriggerGCType::OLD_GC: {
             if (heap_->IsFullMark()) {
                 if (heap_->ConcurrentMarkingEnable()) {
                     duration += heap_->GetConcurrentMarker()->GetDuration();

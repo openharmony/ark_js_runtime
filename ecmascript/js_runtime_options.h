@@ -33,7 +33,7 @@ enum ArkProperties {
 
 class JSRuntimeOptions : public RuntimeOptions {
 public:
-    explicit JSRuntimeOptions(const std::string &exe_path = "") : RuntimeOptions(exe_path) {}
+    explicit JSRuntimeOptions(const std::string &exePath = "") : RuntimeOptions(exePath) {}
     ~JSRuntimeOptions() = default;
     DEFAULT_COPY_SEMANTIC(JSRuntimeOptions);
     DEFAULT_MOVE_SEMANTIC(JSRuntimeOptions);
@@ -41,108 +41,108 @@ public:
     void AddOptions(PandArgParser *parser)
     {
         RuntimeOptions::AddOptions(parser);
-        parser->Add(&enable_ark_tools_);
-        parser->Add(&enable_stub_aot_);
-        parser->Add(&stub_module_file_);
-        parser->Add(&enable_cpuprofiler_);
-        parser->Add(&ark_properties_);
-        parser->Add(&enable_ts_aot_);
+        parser->Add(&enableArkTools_);
+        parser->Add(&enableStubAot_);
+        parser->Add(&stubModuleFile_);
+        parser->Add(&enableCpuprofiler_);
+        parser->Add(&arkProperties_);
+        parser->Add(&enableTsAot_);
     }
 
     bool IsEnableArkTools() const
     {
-        return enable_ark_tools_.GetValue();
+        return enableArkTools_.GetValue();
     }
 
     void SetEnableArkTools(bool value)
     {
-        enable_ark_tools_.SetValue(value);
+        enableArkTools_.SetValue(value);
     }
 
     bool WasSetEnableArkTools() const
     {
-        return enable_ark_tools_.WasSet();
+        return enableArkTools_.WasSet();
     }
 
     bool IsEnableStubAot() const
     {
-        return enable_stub_aot_.GetValue();
+        return enableStubAot_.GetValue();
     }
 
     void SetEnableStubAot(bool value)
     {
-        enable_stub_aot_.SetValue(value);
+        enableStubAot_.SetValue(value);
     }
 
     bool WasSetEnableStubAot() const
     {
-        return enable_stub_aot_.WasSet();
+        return enableStubAot_.WasSet();
     }
 
     std::string GetStubModuleFile() const
     {
-        return stub_module_file_.GetValue();
+        return stubModuleFile_.GetValue();
     }
 
     void SetStubModuleFile(std::string value)
     {
-        stub_module_file_.SetValue(std::move(value));
+        stubModuleFile_.SetValue(std::move(value));
     }
 
     bool WasSetStubModuleFile() const
     {
-        return stub_module_file_.WasSet();
+        return stubModuleFile_.WasSet();
     }
 
     bool IsEnableForceGC() const
     {
-        return enable_force_gc_.GetValue();
+        return enableForceGc_.GetValue();
     }
 
     void SetEnableForceGC(bool value)
     {
-        enable_force_gc_.SetValue(value);
+        enableForceGc_.SetValue(value);
     }
 
     bool IsForceFullGC() const
     {
-        return force_full_gc_.GetValue();
+        return forceFullGc_.GetValue();
     }
 
     void SetForceFullGC(bool value)
     {
-        force_full_gc_.SetValue(value);
+        forceFullGc_.SetValue(value);
     }
 
     bool IsEnableCpuProfiler() const
     {
-        return enable_cpuprofiler_.GetValue();
+        return enableCpuprofiler_.GetValue();
     }
 
     void SetEnableCpuprofiler(bool value)
     {
-        enable_cpuprofiler_.SetValue(value);
+        enableCpuprofiler_.SetValue(value);
     }
 
     bool IsEnableTsAot() const
     {
-        return enable_ts_aot_.GetValue();
+        return enableTsAot_.GetValue();
     }
 
     void SetEnableTsAot(bool value)
     {
-        enable_ts_aot_.SetValue(value);
+        enableTsAot_.SetValue(value);
     }
 
     bool WasSetEnableTsAot() const
     {
-        return enable_ts_aot_.WasSet();
+        return enableTsAot_.WasSet();
     }
 
     void SetArkProperties(int prop)
     {
         if (prop != ArkProperties::DEFAULT) {
-            ark_properties_.SetValue(prop);
+            arkProperties_.SetValue(prop);
         }
     }
 
@@ -153,53 +153,109 @@ public:
 
     int GetArkProperties()
     {
-        return ark_properties_.GetValue();
+        return arkProperties_.GetValue();
     }
 
     bool IsEnableOptionalLog() const
     {
-        return (ark_properties_.GetValue() & ArkProperties::OPTIONAL_LOG) != 0;
+        return (arkProperties_.GetValue() & ArkProperties::OPTIONAL_LOG) != 0;
     }
 
     bool IsEnableGCStatsPrint() const
     {
-        return (ark_properties_.GetValue() & ArkProperties::GC_STATS_PRINT) != 0;
+        return (arkProperties_.GetValue() & ArkProperties::GC_STATS_PRINT) != 0;
     }
 
     bool IsEnableParallelGC() const
     {
-        return (ark_properties_.GetValue() & ArkProperties::PARALLEL_GC) != 0;
+        return (arkProperties_.GetValue() & ArkProperties::PARALLEL_GC) != 0;
     }
 
     bool IsEnableConcurrentMark() const
     {
-        return (ark_properties_.GetValue() & ArkProperties::CONCURRENT_MARK) != 0;
+        return (arkProperties_.GetValue() & ArkProperties::CONCURRENT_MARK) != 0;
     }
 
     bool IsEnableConcurrentSweep() const
     {
-        return (ark_properties_.GetValue() & ArkProperties::CONCURRENT_SWEEP) != 0;
+        return (arkProperties_.GetValue() & ArkProperties::CONCURRENT_SWEEP) != 0;
     }
 
     bool IsEnableThreadCheck() const
     {
-        return (ark_properties_.GetValue() & ArkProperties::THREAD_CHECK) != 0;
+        return (arkProperties_.GetValue() & ArkProperties::THREAD_CHECK) != 0;
+    }
+
+    size_t MaxSemiSpaceCapacity() const
+    {
+        return maxSemiSpaceCapacity_.GetValue();
+    }
+
+    size_t MaxOldSpaceCapacity() const
+    {
+        return maxOldSpaceCapacity_.GetValue();
+    }
+
+    size_t MaxNonmovableSpaceCapacity() const
+    {
+        return maxNonmovableSpaceCapacity_.GetValue();
+    }
+
+    size_t MaxMachineCodeSpaceCapacity() const
+    {
+        return maxMachineCodeSpaceCapacity_.GetValue();
+    }
+
+    size_t MaxSnapshotSpaceCapacity() const
+    {
+        return maxSnapshotSpaceCapacity_.GetValue();
+    }
+
+    size_t DefaultSemiSpaceCapacity() const
+    {
+        return defaultSemiSpaceCapacity_.GetValue();
+    }
+
+    size_t DefaultSnapshotSpaceCapacity() const
+    {
+        return defaultSnapshotSpaceCapacity_.GetValue();
     }
 
 private:
-    PandArg<bool> enable_ark_tools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
-    PandArg<bool> enable_cpuprofiler_ {"enable-cpuprofiler", false,
+    PandArg<bool> enableArkTools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
+    PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
         R"(Enable cpuprofiler to sample call stack and output to json file. Default: false)"};
-    PandArg<bool> enable_stub_aot_ {"enable-stub-aot", false, R"(enable aot of fast stub. Default: false)"};
-    PandArg<std::string> stub_module_file_ {"stub-module-file",
+    PandArg<bool> enableStubAot_ {"enable-stub-aot", false, R"(enable aot of fast stub. Default: false)"};
+    PandArg<std::string> stubModuleFile_ {"stub-module-file",
         R"(stub.m)",
         R"(Path to stub module file. Default: "stub.m")"};
-    PandArg<bool> enable_force_gc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
-    PandArg<bool> force_full_gc_ {"force-full-gc",
+    PandArg<bool> enableForceGc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
+    PandArg<bool> forceFullGc_ {"force-full-gc",
         true,
         R"(if true trigger full gc, else trigger semi and old gc)"};
-    PandArg<int> ark_properties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
-    PandArg<int> enable_ts_aot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
+    PandArg<int> arkProperties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
+    PandArg<int> enableTsAot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
+    PandArg<size_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
+        16 * 1024 * 1024,
+        R"(set max semi space capacity)"};
+    PandArg<size_t> maxOldSpaceCapacity_ {"maxOldSpaceCapacity",
+        512 * 1024 * 1024,
+        R"(set max old space capacity)"};
+    PandArg<size_t> maxNonmovableSpaceCapacity_ {"maxNonmovableSpaceCapacity",
+        4 * 1024 * 1024,
+        R"(set max nonmovable space capacity)"};
+    PandArg<size_t> maxMachineCodeSpaceCapacity_ {"maxMachineCodeSpaceCapacity",
+        8 * 1024 * 1024,
+        R"(set max machine code space capacity)"};
+    PandArg<size_t> maxSnapshotSpaceCapacity_ {"maxSnapshotSpaceCapacity",
+        8 * 1024 * 1024,
+        R"(set max snapshot space capacity)"};
+    PandArg<size_t> defaultSemiSpaceCapacity_ {"defaultSemiSpaceCapacity",
+        2 * 1024 * 1024,
+        R"(set default semi space capacity)"};
+    PandArg<size_t> defaultSnapshotSpaceCapacity_ {"defaultSnapshotSpaceCapacity",
+        256 * 1024,
+        R"(set default snapshot space capacity)"};
 };
 }  // namespace panda::ecmascript
 

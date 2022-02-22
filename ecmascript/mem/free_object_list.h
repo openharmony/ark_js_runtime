@@ -53,7 +53,6 @@ public:
     NO_COPY_SEMANTIC(FreeObjectList);
     NO_MOVE_SEMANTIC(FreeObjectList);
 
-#ifndef NDEBUG
     size_t GetFreeObjectSize() const
     {
         return available_;
@@ -70,7 +69,6 @@ public:
     {
         wasted_ += size;
     }
-#endif
 
     static int NumberOfSets()
     {
@@ -97,10 +95,8 @@ private:
     inline void ClearNoneEmptyBit(SetType type);
     inline size_t CalcNextNoneEmptyIndex(SetType start);
 
-#ifndef NDEBUG
     size_t available_ = 0;
     size_t wasted_ = 0;
-#endif
     uint64_t noneEmptySetBitMap_;
     Span<FreeObjectSet *> sets_ {};
     Span<FreeObjectSet *> lastSets_ {};

@@ -185,6 +185,11 @@ public:
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_OLD_GENERATION);
     }
 
+    bool InHugeObjectGeneration() const
+    {
+        return IsFlagSet(RegionFlags::IS_HUGE_OBJECT);
+    }
+
     bool InYoungOrCSetGeneration() const
     {
         return IsFlagSet(RegionFlags::IS_IN_YOUNG_OR_CSET_GENERATION);

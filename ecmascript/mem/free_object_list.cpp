@@ -72,9 +72,7 @@ FreeObject *FreeObjectList::Allocate(size_t size)
                 current->Rebuild();
             }
             if (object != nullptr) {
-#ifndef NDEBUG
                 available_ -= object->Available();
-#endif
                 return object;
             }
             current = next;
@@ -123,13 +121,11 @@ void FreeObjectList::Free(uintptr_t start, size_t size, bool isAdd)
         return;
     }
     if (UNLIKELY(size < MIN_SIZE)) {
-#ifndef NDEBUG
         Region *region = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(start));
         region->IncrementWasted(size);
         if (isAdd) {
             wasted_ += size;
         }
-#endif
         return;
     }
     SetType type = SelectSetType(size);
@@ -145,8 +141,12 @@ void FreeObjectList::Free(uintptr_t start, size_t size, bool isAdd)
     }
     set->Free(start, size);
 
-    if (isAdd && !set->isAdded_) {
-        AddSet(set);
+    if (isAdd) {
+        if (!set->isAdded_) {
+            AddSet(set);
+        } else {
+            available_ += size;
+        }
     }
 }
 
@@ -157,10 +157,8 @@ void FreeObjectList::Rebuild()
         sets_[i] = nullptr;
         lastSets_[i] = nullptr;
     }
-#ifndef NDEBUG
     available_ = 0;
     wasted_ = 0;
-#endif
     noneEmptySetBitMap_ = 0;
 }
 
@@ -187,9 +185,7 @@ bool FreeObjectList::AddSet(FreeObjectSet *set)
         SetNoneEmptyBit(type);
     }
     sets_[type] = set;
-#ifndef NDEBUG
     available_ += set->Available();
-#endif
     return true;
 }
 
@@ -219,9 +215,7 @@ void FreeObjectList::RemoveSet(FreeObjectSet *set)
     if (sets_[type] == nullptr) {
         ClearNoneEmptyBit(type);
     }
-#ifndef NDEBUG
     available_ -= set->Available();
-#endif
 }
 
 void FreeObjectList::Merge(FreeObjectList *list)
@@ -241,9 +235,7 @@ void FreeObjectList::Merge(FreeObjectList *list)
         lastSets_[type] = end;
         SetNoneEmptyBit(type);
     });
-#ifndef NDEBUG
     available_ += list->available_;
-#endif
     list->Rebuild();
 }
 

@@ -24,7 +24,7 @@ void Space::AddRegion(Region *region)
     LOG_ECMA_MEM(DEBUG) << "Add region:" << region << " to " << ToSpaceTypeName(spaceType_);
     regionList_.AddNode(region);
     IncrementCommitted(region->GetCapacity());
-    IncrementLiveObjectSize(region->AliveObject());
+    IncrementObjectSize(region->GetSize());
 }
 
 void Space::RemoveRegion(Region *region)
@@ -32,7 +32,7 @@ void Space::RemoveRegion(Region *region)
     LOG_ECMA_MEM(DEBUG) << "Remove region:" << region << " to " << ToSpaceTypeName(spaceType_);
     regionList_.RemoveNode(region);
     DecrementCommitted(region->GetCapacity());
-    DecrementLiveObjectSize(region->AliveObject());
+    DecrementObjectSize(region->GetSize());
 }
 
 template<class Callback>
@@ -53,25 +53,29 @@ void Space::EnumerateRegions(const Callback &cb, Region *end) const
     }
 }
 
-template<class Callback>
-void OldSpace::EnumerateCollectRegionSet(const Callback &cb) const
+RegionFlags Space::GetRegionFlag() const
 {
-    for (Region *current : collectRegionSet_) {
-        if (current != nullptr) {
-            cb(current);
-        }
+    RegionFlags flags = RegionFlags::IS_INVALID;
+    switch (spaceType_) {
+        case MemSpaceType::OLD_SPACE:
+        case MemSpaceType::LOCAL_SPACE:
+            flags = RegionFlags::IS_IN_OLD_GENERATION;
+            break;
+        case MemSpaceType::NON_MOVABLE:
+        case MemSpaceType::MACHINE_CODE_SPACE:
+            flags = RegionFlags::IS_IN_NON_MOVABLE_GENERATION;
+            break;
+        case MemSpaceType::SEMI_SPACE:
+            flags = RegionFlags::IS_IN_YOUNG_GENERATION;
+            break;
+        case MemSpaceType::SNAPSHOT_SPACE:
+            flags = RegionFlags::IS_IN_SNAPSHOT_GENERATION;
+            break;
+        default:
+            UNREACHABLE();
+            break;
     }
-}
-
-template<class Callback>
-void OldSpace::EnumerateNonCollectRegionSet(const Callback &cb) const
-{
-    EnumerateRegions([this, &cb](Region *region) {
-        if (!region->InCollectSet()) {
-            cb(region);
-        }
-    });
+    return flags;
 }
 }  // namespace panda::ecmascript
-
 #endif  // ECMASCRIPT_MEM_SPACE_INL_H

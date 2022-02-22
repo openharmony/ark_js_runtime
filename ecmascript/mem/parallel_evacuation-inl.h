@@ -20,7 +20,6 @@
 
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mark_word.h"
-#include "ecmascript/mem/mem_manager-inl.h"
 #include "ecmascript/mem/region-inl.h"
 #include "ecmascript/mem/remembered_set.h"
 #include "ecmascript/platform/platform.h"
