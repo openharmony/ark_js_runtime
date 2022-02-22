@@ -66,7 +66,7 @@ public:
 
     JSHandle<JSTaggedValue> GetModule(const JSThread *thread, JSHandle<JSTaggedValue> moduleName);
 
-    CString GenerateModuleFullPath(const std::string &currentPathFile, const CString &relativeFile);
+    CString GenerateAmiPath(const std::string &currentPathFile, const CString &relativeFile);
 
     const CString &GetCurrentExportModuleName();
 
@@ -84,6 +84,11 @@ public:
     void CopyModule(const JSThread *thread, JSHandle<JSTaggedValue> src);
 
     void DebugPrint(const JSThread *thread, const CString &caller);
+
+    void Iterate(const RootVisitor &v)
+    {
+        v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&ecmaModules_)));
+    }
 
 private:
     static constexpr uint32_t DEAULT_DICTIONART_CAPACITY = 4;
