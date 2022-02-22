@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ecmascript/free_object.h"
 #include "ecmascript/mem/heap-inl.h"
 
 #include <sys/sysinfo.h>
@@ -25,7 +26,6 @@
 #include "ecmascript/mem/full_gc.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/mix_gc.h"
 #include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/mem/parallel_evacuation.h"
@@ -33,6 +33,7 @@
 #include "ecmascript/mem/parallel_work_helper.h"
 #include "ecmascript/mem/stw_young_gc_for_testing.h"
 #include "ecmascript/mem/verification.h"
+#include "ecmascript/runtime_call_id.h"
 
 namespace panda::ecmascript {
 Heap::Heap(EcmaVM *ecmaVm) : ecmaVm_(ecmaVm), thread_(ecmaVm->GetJSThread()),
@@ -43,18 +44,24 @@ void Heap::Initialize()
 {
     memController_ = new MemController(this);
 
-    toSpace_ = new SemiSpace(this);
-    toSpace_->Initialize();
-    fromSpace_ = new SemiSpace(this);
+    size_t defaultSemiSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSemiSpaceCapacity();
+    toSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
+    toSpace_->Restart();
+    fromSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
 
     // not set up from space
-    oldSpace_ = new OldSpace(this);
-    compressSpace_ = new OldSpace(this);
+    size_t maxOldSpaceCapacity = ecmaVm_->GetJSOptions().MaxOldSpaceCapacity();
+    oldSpace_ = new OldSpace(this, OLD_SPACE_LIMIT_BEGIN, maxOldSpaceCapacity);
+    compressSpace_ = new OldSpace(this, OLD_SPACE_LIMIT_BEGIN, maxOldSpaceCapacity);
     oldSpace_->Initialize();
-    nonMovableSpace_ = new NonMovableSpace(this);
+    size_t maxNonmovableSpaceCapacity = ecmaVm_->GetJSOptions().MaxNonmovableSpaceCapacity();
+    nonMovableSpace_ = new NonMovableSpace(this, maxNonmovableSpaceCapacity, maxNonmovableSpaceCapacity);
     nonMovableSpace_->Initialize();
-    snapshotSpace_ = new SnapShotSpace(this);
-    machineCodeSpace_ = new MachineCodeSpace(this);
+    size_t defaultSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
+    size_t maxSnapshotSpaceCapacity = ecmaVm_->GetJSOptions().MaxSnapshotSpaceCapacity();
+    snapshotSpace_ = new SnapShotSpace(this, defaultSnapshotSpaceCapacity, maxSnapshotSpaceCapacity);
+    size_t maxMachineCodeSpaceCapacity = ecmaVm_->GetJSOptions().MaxMachineCodeSpaceCapacity();
+    machineCodeSpace_ = new MachineCodeSpace(this, maxMachineCodeSpaceCapacity, maxMachineCodeSpaceCapacity);
     machineCodeSpace_->Initialize();
     hugeObjectSpace_ = new HugeObjectSpace(this);
     paralledGc_ = ecmaVm_->GetJSOptions().IsEnableParallelGC();
@@ -79,20 +86,6 @@ void Heap::Initialize()
     semiGcMarker_ = new SemiGcMarker(this);
     compressGcMarker_ = new CompressGcMarker(this);
     evacuation_ = new ParallelEvacuation(this);
-}
-
-void Heap::FlipNewSpace()
-{
-    SemiSpace *newSpace = fromSpace_;
-    fromSpace_ = toSpace_;
-    toSpace_ = newSpace;
-}
-
-void Heap::FlipCompressSpace()
-{
-    OldSpace *oldSpace = compressSpace_;
-    compressSpace_ = oldSpace_;
-    oldSpace_ = oldSpace;
 }
 
 void Heap::Destroy()
@@ -199,19 +192,34 @@ void Heap::Prepare()
 void Heap::Resume(TriggerGCType gcType)
 {
     if (gcType == TriggerGCType::FULL_GC) {
-        FlipCompressSpace();
-        heapManager_->GetOldSpaceAllocator().RebuildFreeList();
+        compressSpace_->SetInitialCapacity(oldSpace_->GetInitialCapacity());
+        auto *oldSpace = compressSpace_;
+        compressSpace_ = oldSpace_;
+        oldSpace_ = oldSpace;
     }
     if (toSpace_->AdjustCapacity(fromSpace_->GetAllocatedSizeSinceGC())) {
         fromSpace_->SetMaximumCapacity(toSpace_->GetMaximumCapacity());
     }
 
-    toSpace_->SetAgeMark(heapManager_->GetNewSpaceAllocator().GetTop());
+    toSpace_->SetWaterLine();
     if (paralledGc_) {
         isClearTaskFinished_ = false;
         Platform::GetCurrentPlatform()->PostTask(std::make_unique<AsyncClearTask>(this, gcType));
     } else {
         ReclaimRegions(gcType);
+    }
+}
+
+TriggerGCType Heap::SelectGCType() const
+{
+    // If concurrent mark is enable, The TryTriggerConcurrentMarking decide which GC to choose.
+    if (concurrentMarkingEnabled_) {
+        return SEMI_GC;
+    }
+    if (oldSpace_->CanExpand(toSpace_->GetSurvivalObjectSize()) && GetCommittedSize() <= globalSpaceAllocLimit_) {
+        return SEMI_GC;
+    } else {
+        return OLD_GC;
     }
 }
 
@@ -244,27 +252,18 @@ void Heap::CollectGarbage(TriggerGCType gcType)
     memController_->StartCalculationBeforeGC();
     OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Heap::CollectGarbage, gcType = " << gcType
                                              << " global CommittedSize" << GetCommittedSize()
-                                             << " global limit" << globalSpaceAllocLimit_
-                                             << " old space limit" << oldSpaceAllocLimit_;
+                                             << " global limit" << globalSpaceAllocLimit_;
     switch (gcType) {
         case TriggerGCType::SEMI_GC:
-            {
-                bool isOldGCTriggered = false;
-                if (!concurrentMarkingEnabled_) {
-                    isOldGCTriggered = GetCommittedSize() > HALF_MAX_HEAP_SIZE ? CheckAndTriggerOldGC()
-                                       : CheckAndTriggerFullGC();
-                }
-                if (!isOldGCTriggered) {
-                    mixGC_->RunPhases();
-                }
+            if (!concurrentMarkingEnabled_) {
+                SetMarkType(MarkType::SEMI_MARK);
             }
-            break;
-        case TriggerGCType::OLD_GC:
             mixGC_->RunPhases();
             break;
-        case TriggerGCType::NON_MOVE_GC:
-        case TriggerGCType::HUGE_GC:
-        case TriggerGCType::MACHINE_CODE_GC:
+        case TriggerGCType::OLD_GC:
+            if (!concurrentMarkingEnabled_) {
+                SetMarkType(MarkType::FULL_MARK);
+            }
             mixGC_->RunPhases();
             break;
         case TriggerGCType::FULL_GC:
@@ -284,7 +283,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
         promotedSize_ = GetEvacuation()->GetPromotedSize();
         double promotedRate = promotedSize_ * 1.0 / startNewSpaceSize_;
         if (previousSemiSpaceCopiedSize_ > 0) {
-            promotedRate = promotedSize_ / previousSemiSpaceCopiedSize_;
+            promotedRate = static_cast<double>(promotedSize_) / previousSemiSpaceCopiedSize_;
         }
         memController_->AddSurvivalRate(copiedRate + promotedRate);
         AdjustOldSpaceLimit();
@@ -299,8 +298,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
         RecomputeLimits();
         OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << " GC after: is full mark" << IsFullMark()
                                                  << " global CommittedSize" << GetCommittedSize()
-                                                 << " global limit" << globalSpaceAllocLimit_
-                                                 << " old space limit" << oldSpaceAllocLimit_;
+                                                 << " global limit" << globalSpaceAllocLimit_;
         markType_ = MarkType::SEMI_MARK;
     }
 
@@ -356,10 +354,11 @@ void Heap::AdjustOldSpaceLimit()
     if (oldSpaceLimitAdjusted_) {
         return;
     }
+    size_t oldSpaceAllocLimit = GetOldSpace()->GetInitialCapacity();
     size_t newOldSpaceAllocLimit = std::max(oldSpace_->GetCommittedSize() + MIN_GROWING_STEP,
-        static_cast<size_t>(oldSpaceAllocLimit_ * memController_->GetAverageSurvivalRate()));
-    if (newOldSpaceAllocLimit < oldSpaceAllocLimit_) {
-        oldSpaceAllocLimit_ = newOldSpaceAllocLimit;
+        static_cast<size_t>(oldSpaceAllocLimit * memController_->GetAverageSurvivalRate()));
+    if (newOldSpaceAllocLimit < oldSpaceAllocLimit) {
+        GetOldSpace()->SetInitialCapacity(newOldSpaceAllocLimit);
     } else {
         oldSpaceLimitAdjusted_ = true;
     }
@@ -369,7 +368,7 @@ void Heap::AdjustOldSpaceLimit()
     if (newGlobalSpaceAllocLimit < globalSpaceAllocLimit_) {
         globalSpaceAllocLimit_ = newGlobalSpaceAllocLimit;
     }
-    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "AdjustOldSpaceLimit oldSpaceAllocLimit_" << oldSpaceAllocLimit_
+    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "AdjustOldSpaceLimit oldSpaceAllocLimit_" << oldSpaceAllocLimit
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
 }
 
@@ -381,20 +380,22 @@ void Heap::RecomputeLimits()
     size_t newSpaceCapacity = toSpace_->GetCommittedSize();
 
     double growingFactor = memController_->CalculateGrowingFactor(gcSpeed, mutatorSpeed);
-    auto newOldSpaceLimit = memController_->CalculateAllocLimit(oldSpaceSize, DEFAULT_OLD_SPACE_SIZE,
-                                                                MAX_OLD_SPACE_SIZE - MAX_SEMI_SPACE_CAPACITY,
+    size_t maxSemiSpaceCapacity = GetEcmaVM()->GetJSOptions().MaxSemiSpaceCapacity();
+    size_t maxOldSpaceCapacity = GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();
+    auto newOldSpaceLimit = memController_->CalculateAllocLimit(oldSpaceSize, MIN_OLD_SPACE_LIMIT,
+                                                                maxOldSpaceCapacity - maxSemiSpaceCapacity,
                                                                 newSpaceCapacity, growingFactor);
     auto newGlobalSpaceLimit = memController_->CalculateAllocLimit(GetCommittedSize(), DEFAULT_HEAP_SIZE,
                                                                    MAX_HEAP_SIZE, newSpaceCapacity, growingFactor);
     globalSpaceAllocLimit_ = newGlobalSpaceLimit;
-    oldSpaceAllocLimit_ = newOldSpaceLimit;
-    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "RecomputeLimits oldSpaceAllocLimit_" << oldSpaceAllocLimit_
+    oldSpace_->SetInitialCapacity(newOldSpaceLimit);
+    OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "RecomputeLimits oldSpaceAllocLimit_" << newOldSpaceLimit
         << " globalSpaceAllocLimit_" << globalSpaceAllocLimit_;
 }
 
 bool Heap::CheckConcurrentMark()
 {
-    if (ConcurrentMarkingEnable() && !thread_->IsReadyToMark()) {
+    if (concurrentMarkingEnabled_ && !thread_->IsReadyToMark()) {
         if (thread_->IsMarking()) {
             [[maybe_unused]] ClockScope clockScope;
             ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "Heap::CheckConcurrentMark");
@@ -429,17 +430,18 @@ void Heap::TryTriggerConcurrentMarking()
     double oldSpaceConcurrentMarkSpeed = memController_->GetFullSpaceConcurrentMarkSpeedPerMS();
     size_t oldSpaceHeapObjectSize = oldSpace_->GetHeapObjectSize() + hugeObjectSpace_->GetHeapObjectSize();
     size_t globalSpaceCommittedSize = GetCommittedSize();
+    size_t oldSpaceAllocLimit = oldSpace_->GetInitialCapacity();
     if (oldSpaceConcurrentMarkSpeed == 0 || oldSpaceAllocSpeed == 0) {
-        if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit_ ||  globalSpaceCommittedSize >= globalSpaceAllocLimit_) {
+        if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit ||  globalSpaceCommittedSize >= globalSpaceAllocLimit_) {
             markType_ = MarkType::FULL_MARK;
             OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger the first full mark";
             TriggerConcurrentMarking();
         }
     } else {
-        if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit_ || globalSpaceCommittedSize >= globalSpaceAllocLimit_) {
+        if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit || globalSpaceCommittedSize >= globalSpaceAllocLimit_) {
             isFullMarkNeeded = true;
         }
-        oldSpaceAllocToLimitDuration = (oldSpaceAllocLimit_- oldSpaceHeapObjectSize) / oldSpaceAllocSpeed;
+        oldSpaceAllocToLimitDuration = (oldSpaceAllocLimit - oldSpaceHeapObjectSize) / oldSpaceAllocSpeed;
         oldSpaceMarkDuration = GetHeapObjectSize() / oldSpaceConcurrentMarkSpeed;
         // oldSpaceRemainSize means the predicted size which can be allocated after the full concurrent mark.
         double oldSpaceRemainSize = (oldSpaceAllocToLimitDuration - oldSpaceMarkDuration) * oldSpaceAllocSpeed;
@@ -472,7 +474,7 @@ void Heap::TryTriggerConcurrentMarking()
             TriggerConcurrentMarking();
             OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger full mark by speed";
         } else {
-            if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit_ || globalSpaceCommittedSize >= globalSpaceAllocLimit_) {
+            if (oldSpaceHeapObjectSize >= oldSpaceAllocLimit || globalSpaceCommittedSize >= globalSpaceAllocLimit_) {
                 markType_ = MarkType::FULL_MARK;
                 TriggerConcurrentMarking();
                 OPTIONAL_LOG(ecmaVm_, ERROR, ECMASCRIPT) << "Trigger full mark by limit";
@@ -490,44 +492,6 @@ void Heap::TriggerConcurrentMarking()
     if (concurrentMarkingEnabled_ && !isFullGCRequested_) {
         concurrentMarker_->ConcurrentMarking();
     }
-}
-
-bool Heap::CheckAndTriggerOldGC()
-{
-    if ((oldSpace_->GetCommittedSize() + hugeObjectSpace_->GetCommittedSize() +
-        nonMovableSpace_->GetCommittedSize() + machineCodeSpace_->GetCommittedSize()) <= oldSpaceAllocLimit_) {
-        return false;
-    }
-    SetMarkType(MarkType::FULL_MARK);
-    CollectGarbage(TriggerGCType::OLD_GC);
-    return true;
-}
-
-bool Heap::CheckAndTriggerFullGC()
-{
-    if (GetCommittedSize() <= globalSpaceAllocLimit_) {
-        return false;
-    }
-    CollectGarbage(TriggerGCType::FULL_GC);
-    return true;
-}
-
-bool Heap::CheckAndTriggerNonMovableGC()
-{
-    if (nonMovableSpace_->GetCommittedSize() <= DEFAULT_NON_MOVABLE_SPACE_LIMIT) {
-        return false;
-    }
-    CollectGarbage(TriggerGCType::NON_MOVE_GC);
-    return true;
-}
-
-bool Heap::CheckAndTriggerMachineCodeGC()
-{
-    if (machineCodeSpace_->GetCommittedSize() <= DEFAULT_MACHINE_CODE_SPACE_LIMIT) {
-        return false;
-    }
-    CollectGarbage(TriggerGCType::MACHINE_CODE_GC);
-    return true;
 }
 
 void Heap::UpdateDerivedObjectInStack()
@@ -576,16 +540,6 @@ void Heap::WaitClearTaskFinished()
 void Heap::WaitConcurrentMarkingFinished()
 {
     concurrentMarker_->WaitConcurrentMarkingFinished();
-}
-
-void Heap::SetConcurrentMarkingEnable(bool flag)
-{
-    concurrentMarkingEnabled_ = flag;
-}
-
-bool Heap::ConcurrentMarkingEnable() const
-{
-    return concurrentMarkingEnabled_;
 }
 
 void Heap::PostParallelGCTask(ParallelGCTaskPhase gcTask)
@@ -661,5 +615,39 @@ size_t Heap::GetArrayBufferSize() const
         result += jsClass->IsArrayBuffer() ? jsClass->GetObjectSize() : 0;
     });
     return result;
+}
+
+bool Heap::IsLive(TaggedObject *object) const
+{
+    if (!ContainObject(object)) {
+        return false;
+    }
+
+    Region *region = Region::ObjectAddressToRange(object);
+    if (region->InHugeObjectGeneration()) {
+        return true;
+    }
+    return !FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
+}
+
+bool Heap::ContainObject(TaggedObject *object) const
+{
+    // semi space
+    if (toSpace_->ContainObject(object)) {
+        return true;
+    }
+    // old space
+    if (oldSpace_->ContainObject(object)) {
+        return true;
+    }
+    // non movable space
+    if (nonMovableSpace_->ContainObject(object)) {
+        return true;
+    }
+    // huge object space
+    if (hugeObjectSpace_->ContainObject(object)) {
+        return true;
+    }
+    return false;
 }
 }  // namespace panda::ecmascript

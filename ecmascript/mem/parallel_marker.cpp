@@ -89,7 +89,7 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
 
 void SemiGcMarker::Initialized()
 {
-    ageMark_ = heap_->GetNewSpace()->GetAgeMark();
+    waterLine_ = heap_->GetNewSpace()->GetWaterLine();
 }
 
 void SemiGcMarker::ProcessMarkStack(uint32_t threadId)

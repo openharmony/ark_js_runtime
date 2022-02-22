@@ -49,7 +49,6 @@ class GlobalEnv;
 class ObjectFactory;
 class RegExpParserCache;
 class EcmaRuntimeStat;
-class MemManager;
 class Heap;
 class HeapTracker;
 class JSNativePointer;

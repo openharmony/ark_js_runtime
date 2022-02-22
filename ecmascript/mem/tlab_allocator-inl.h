@@ -20,17 +20,17 @@
 
 #include "ecmascript/free_object.h"
 #include "ecmascript/mem/full_gc.h"
-#include "ecmascript/mem/mem_manager-inl.h"
 
 namespace panda::ecmascript {
 static constexpr size_t MIN_BUFFER_SIZE = 31 * 1024;
 static constexpr size_t SMALL_OBJECT_SIZE = 8 * 1024;
 
 TlabAllocator::TlabAllocator(Heap *heap)
-    : heap_(heap), memManager_(heap_->GetHeapManager()), enableExpandYoung_(true), localSpace_(heap_)
+    : heap_(heap), enableExpandYoung_(true)
 {
+    size_t maxOldSpaceCapacity = heap->GetEcmaVM()->GetJSOptions().MaxOldSpaceCapacity();
+    localSpace_ = new LocalSpace(heap, maxOldSpaceCapacity, maxOldSpaceCapacity);
     youngerAllocator_.Reset();
-    localAllocator_.Reset(heap_);
 }
 
 inline void TlabAllocator::Finalize()
@@ -40,8 +40,7 @@ inline void TlabAllocator::Finalize()
         youngerAllocator_.Reset();
     }
 
-    localAllocator_.FreeBumpPoint();
-    memManager_->MergeToOldSpaceSync(&localSpace_, &localAllocator_);
+    heap_->MergeToOldSpaceSync(localSpace_);
 }
 
 uintptr_t TlabAllocator::Allocate(size_t size, MemSpaceType spaceAlloc)
@@ -67,7 +66,7 @@ uintptr_t TlabAllocator::TlabAllocatorYoungSpace(size_t size)
 {
     ASSERT(AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT)) == size);
     if (UNLIKELY(size > SMALL_OBJECT_SIZE)) {
-        uintptr_t address = memManager_->AllocateYoungSync(size);
+        uintptr_t address = heap_->AllocateYoungSync(size);
         return address;
     }
     uintptr_t result = youngerAllocator_.Allocate(size);
@@ -85,12 +84,7 @@ uintptr_t TlabAllocator::TlabAllocatorCompressSpace(size_t size)
 {
     ASSERT(AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT)) == size);
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
-    uintptr_t result = localAllocator_.Allocate<true>(size);
-    if (result == 0) {
-        if (ExpandCompress()) {
-            result = localAllocator_.Allocate<true>(size);
-        }
-    }
+    uintptr_t result = localSpace_->Allocate(size, true);
     ASSERT(result != 0);
     return result;
 }
@@ -100,18 +94,11 @@ uintptr_t TlabAllocator::TlabAllocatorOldSpace(size_t size)
     ASSERT(AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT)) == size);
     size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
     // 1. Allocate from freelist in compress allocator
-    uintptr_t result = localAllocator_.Allocate<true>(size);
+    uintptr_t result = localSpace_->Allocate(size, false);
     if (result == 0) {
         // 2. Expand region from old space
-        if (ExpandCompressFromOld(size)) {
-            result = localAllocator_.Allocate<true>(size);
-            if (result != 0) {
-                return result;
-            }
-        }
-        if (ExpandCompress()) {
-            result = localAllocator_.Allocate<true>(size);
-        }
+        ExpandCompressFromOld(size);
+        result = localSpace_->Allocate(size, true);
     }
     ASSERT(result != 0);
     return result;
@@ -119,7 +106,7 @@ uintptr_t TlabAllocator::TlabAllocatorOldSpace(size_t size)
 
 bool TlabAllocator::ExpandYoung()
 {
-    uintptr_t buffer = memManager_->AllocateYoungSync(MIN_BUFFER_SIZE);
+    uintptr_t buffer = heap_->AllocateYoungSync(MIN_BUFFER_SIZE);
     if (buffer == 0) {
         if (youngerAllocator_.Available() != 0) {
             FreeObject::FillFreeObject(heap_->GetEcmaVM(), youngerAllocator_.GetTop(), youngerAllocator_.Available());
@@ -139,22 +126,11 @@ bool TlabAllocator::ExpandYoung()
     return true;
 }
 
-bool TlabAllocator::ExpandCompress()
-{
-    if (localSpace_.Expand()) {
-        auto region = localSpace_.GetCurrentRegion();
-        localAllocator_.AddFree(region);
-        return true;
-    }
-    return false;
-}
-
 bool TlabAllocator::ExpandCompressFromOld(size_t size)
 {
-    auto region = memManager_->TryToGetExclusiveRegion(size);
+    auto region = heap_->GetOldSpace()->TryToGetExclusiveRegion(size);
     if (region != nullptr) {
-        localSpace_.AddRegionToList(region);
-        localAllocator_.CollectFreeObjectSet(region);
+        localSpace_->AddRegionToList(region);
         return true;
     }
     return false;

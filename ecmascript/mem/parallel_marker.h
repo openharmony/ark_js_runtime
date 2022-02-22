@@ -123,7 +123,7 @@ protected:
 private:
     inline bool ShouldBePromoted(TaggedObject *object);
 
-    uintptr_t ageMark_ {0};
+    uintptr_t waterLine_ {0};
 };
 
 class CompressGcMarker : public MovableMarker {
