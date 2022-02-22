@@ -117,24 +117,23 @@ public:
     {
         return module_;
     }
-
     LLVMTypeRef GetStubFunctionType(uint32_t index) const
     {
-        ASSERT(index < MAX_STUB_FUNCTION_COUNT);
+        ASSERT(index < CALL_STUB_MAXCOUNT);
         return stubFunctionType_[index];
     }
 
     LLVMValueRef GetStubFunction(uint32_t index)
     {
-        ASSERT(index < FAST_STUB_MAXCOUNT);
+        ASSERT(index < ALL_STUB_MAXCOUNT);
         return stubFunctions_[index];
     }
 
     LLVMValueRef GetTestFunction(uint32_t index)
     {
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-            ASSERT(index - TEST_FUNCTION_OFFSET < MAX_TEST_FUNCTION_COUNT);
-            return testFunctions_[index - TEST_FUNCTION_OFFSET];
+#ifndef NDEBUG
+            ASSERT(index < TEST_FUNC_MAXCOUNT);
+            return testFunctions_[index];
 #else
             return nullptr;
 #endif
@@ -149,14 +148,10 @@ private:
     LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef ConvertLLVMTypeFromStubMachineType(StubMachineType type);
-    static constexpr uint32_t MAX_STUB_FUNCTION_COUNT = panda::ecmascript::kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT;
-    static constexpr uint32_t MAX_TEST_FUNCTION_COUNT =
-        panda::ecmascript::kungfu::TEST_FUNC_MAXCOUNT - panda::ecmascript::kungfu::TEST_FUNC_BEGIN - 1;
-    static constexpr uint32_t TEST_FUNCTION_OFFSET = panda::ecmascript::kungfu::TEST_FUNC_BEGIN + 1;
-    std::array<LLVMValueRef, FAST_STUB_MAXCOUNT> stubFunctions_ {nullptr};
-    std::array<LLVMTypeRef, MAX_STUB_FUNCTION_COUNT> stubFunctionType_ {nullptr};
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-    std::array<LLVMValueRef, MAX_TEST_FUNCTION_COUNT> testFunctions_ {nullptr};
+    std::array<LLVMValueRef, ALL_STUB_MAXCOUNT> stubFunctions_ {nullptr};
+    std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> stubFunctionType_ {nullptr};
+#ifndef NDEBUG
+    std::array<LLVMValueRef, TEST_FUNC_MAXCOUNT> testFunctions_ {nullptr};
 #endif
     LLVMModuleRef module_;
     CompilationConfig compCfg_;
@@ -166,6 +161,7 @@ private:
 #define OPCODES(V) \
     V(Call, (GateRef gate, const std::vector<GateRef> &inList))                       \
     V(RuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                \
+    V(BytecodeCall, (GateRef gate, const std::vector<GateRef> &inList))               \
     V(Alloca, (GateRef gate))                                                         \
     V(Block, (int id, const OperandsVector &predecessors))                            \
     V(Goto, (int block, int bbout))                                                   \
@@ -188,8 +184,7 @@ private:
     V(IntXor, (GateRef gate, GateRef e1, GateRef e2))                                 \
     V(IntLsr, (GateRef gate, GateRef e1, GateRef e2))                                 \
     V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2))                   \
-    V(IntOrUintCmp, (GateRef gate, GateRef e1, GateRef e2, LLVMIntPredicate opcode))  \
-    V(EqCmp, (GateRef gate, GateRef e1, GateRef e2))                                  \
+    V(Cmp, (GateRef gate, GateRef e1, GateRef e2))                                    \
     V(Branch, (GateRef gate, GateRef cmp, GateRef btrue, GateRef bfalse))             \
     V(Switch, (GateRef gate, GateRef input, const std::vector<GateRef> &outList))     \
     V(SwitchCase, (GateRef gate, GateRef switchBranch, GateRef out))                  \
@@ -202,7 +197,8 @@ private:
     V(BitCast, (GateRef gate, GateRef e1))                                            \
     V(IntLsl, (GateRef gate, GateRef e1, GateRef e2))                                 \
     V(Mod, (GateRef gate, GateRef e1, GateRef e2))                                    \
-    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))
+    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))                         \
+    V(ChangeInt64ToTagged, (GateRef gate, GateRef e1))
 
 class LLVMIRBuilder {
 public:

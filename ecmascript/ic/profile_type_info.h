@@ -20,7 +20,7 @@
 #include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript {
-enum class ICKind {
+enum class ICKind : uint32_t {
     NamedLoadIC,
     NamedStoreIC,
     LoadIC,

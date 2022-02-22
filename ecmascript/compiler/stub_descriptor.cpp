@@ -31,7 +31,7 @@ namespace panda::ecmascript::kungfu {
 CALL_STUB_INIT_DESCRIPTOR(FastAdd)
 {
     // 2 : 2 input parameters
-    StubDescriptor fastAdd("FastAdd", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64); // number or hole
+    StubDescriptor fastAdd("FastAdd", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED); // number or hole
     *descriptor = fastAdd;
     // 2 : 2 input parameters
     std::array<StubMachineType, 2> params = {
@@ -44,7 +44,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastAdd)
 CALL_STUB_INIT_DESCRIPTOR(FastSub)
 {
     // 2 : 2 input parameters
-    StubDescriptor fastSub("FastSub", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64); // number or hole
+    StubDescriptor fastSub("FastSub", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED); // number or hole
     *descriptor = fastSub;
     // 2 : 2 input parameters
     std::array<StubMachineType, 2> params = {
@@ -57,7 +57,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastSub)
 CALL_STUB_INIT_DESCRIPTOR(FastMul)
 {
     // 2 : 2 input parameters
-    StubDescriptor fastMul("FastMul", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64); // number or hole
+    StubDescriptor fastMul("FastMul", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED); // number or hole
     *descriptor = fastMul;
     // 2 : 2 input parameters
     std::array<StubMachineType, 2> params = {
@@ -71,7 +71,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastMul)
 CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64);
+    StubDescriptor fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED);
     *descriptor = fastMulGC;
     // 3 : 3 input parameters
     std::array<StubMachineType, 3> params = {
@@ -88,7 +88,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest) {}
 CALL_STUB_INIT_DESCRIPTOR(FastDiv)
 {
     // 2 : 2 input parameters
-    StubDescriptor fastDiv("FastDiv", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64); // float or hole
+    StubDescriptor fastDiv("FastDiv", 0, 2, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED); // float or hole
     *descriptor = fastDiv;
     // 2 : 2 input parameters
     std::array<StubMachineType, 2> params = {
@@ -101,7 +101,8 @@ CALL_STUB_INIT_DESCRIPTOR(FastDiv)
 CALL_STUB_INIT_DESCRIPTOR(FastMod)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastMod("FastMod", 0, 3, ArgumentsOrder::DEFAULT_ORDER, StubMachineType::UINT64);
+    StubDescriptor fastMod("FastMod", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED); // int,float or hole
     *descriptor = fastMod;
     // 3 : 3 input parameters
     std::array<StubMachineType, 3> params = {
@@ -729,9 +730,9 @@ CALL_STUB_INIT_DESCRIPTOR(BytecodeHandler)
 CALL_STUB_INIT_DESCRIPTOR(SingleStepDebugging)
 {
     // 7 : 7 input parameters
-    StubDescriptor bytecodeHandler("singleStepDebugging", 0, 7,
+    StubDescriptor singleStepDebugging("singleStepDebugging", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, StubMachineType::NONE);
-    *descriptor = bytecodeHandler;
+    *descriptor = singleStepDebugging;
     std::array<StubMachineType, 7> params = { // 7 : 7 input parameters
         StubMachineType::NATIVE_POINTER,
         StubMachineType::NATIVE_POINTER,
@@ -766,9 +767,9 @@ CALL_STUB_INIT_DESCRIPTOR(AsmInterpreterEntry)
 CALL_STUB_INIT_DESCRIPTOR(JumpToCInterpreter)
 {
     // 7 : 7 input parameters
-    StubDescriptor bytecodeHandler("jumpToCInterpreter", 0, 7,
+    StubDescriptor jumpToCInterpreter("jumpToCInterpreter", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, StubMachineType::NATIVE_POINTER);
-    *descriptor = bytecodeHandler;
+    *descriptor = jumpToCInterpreter;
     std::array<StubMachineType, 7> params = { // 7 : 7 input parameters
         StubMachineType::NATIVE_POINTER,
         StubMachineType::NATIVE_POINTER,

@@ -39,8 +39,11 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
 {
     builder_ = LLVMCreateBuilder();
     context_ = LLVMGetGlobalContext();
-    LLVMSetGC(function_, "statepoint-example");
     bbIdMapBb_.clear();
+    if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME) {
+        LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
+    }
+    LLVMSetGC(function_, "statepoint-example");
     if (compCfg_->Is32Bit()) {
         LLVMTypeRef elementTypes[] = {
             LLVMInt64Type(), // frameType
@@ -112,10 +115,12 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::VALUE_SELECTOR, &LLVMIRBuilder::HandlePhi},
         {OpCode::RUNTIME_CALL, &LLVMIRBuilder::HandleRuntimeCall},
         {OpCode::CALL, &LLVMIRBuilder::HandleCall},
+        {OpCode::BYTECODE_CALL, &LLVMIRBuilder::HandleCall},
         {OpCode::ALLOCA, &LLVMIRBuilder::HandleAlloca},
         {OpCode::ARG, &LLVMIRBuilder::HandleParameter},
         {OpCode::CONSTANT, &LLVMIRBuilder::HandleConstant},
         {OpCode::RELOCATABLE_DATA, &LLVMIRBuilder::HandleRelocatableData},
+        {OpCode::ZEXT_TO_INT16, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::SEXT_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
@@ -133,18 +138,19 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::OR, &LLVMIRBuilder::HandleIntOr},
         {OpCode::XOR, &LLVMIRBuilder::HandleIntXor},
         {OpCode::LSR, &LLVMIRBuilder::HandleIntLsr},
-        {OpCode::SLT, &LLVMIRBuilder::HandleIntOrUintCmp},
-        {OpCode::ULT, &LLVMIRBuilder::HandleIntOrUintCmp},
-        {OpCode::SLE, &LLVMIRBuilder::HandleIntOrUintCmp},
-        {OpCode::SGT, &LLVMIRBuilder::HandleIntOrUintCmp},
-        {OpCode::SGE, &LLVMIRBuilder::HandleIntOrUintCmp},
-        {OpCode::NE, &LLVMIRBuilder::HandleIntOrUintCmp},
-        {OpCode::EQ, &LLVMIRBuilder::HandleEqCmp},
+        {OpCode::SLT, &LLVMIRBuilder::HandleCmp},
+        {OpCode::ULT, &LLVMIRBuilder::HandleCmp},
+        {OpCode::SLE, &LLVMIRBuilder::HandleCmp},
+        {OpCode::SGT, &LLVMIRBuilder::HandleCmp},
+        {OpCode::SGE, &LLVMIRBuilder::HandleCmp},
+        {OpCode::NE, &LLVMIRBuilder::HandleCmp},
+        {OpCode::EQ, &LLVMIRBuilder::HandleCmp},
         {OpCode::LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::STORE, &LLVMIRBuilder::HandleStore},
         {OpCode::SIGNED_INT_TO_FLOAT, &LLVMIRBuilder::HandleChangeInt32ToDouble},
         {OpCode::FLOAT_TO_SIGNED_INT, &LLVMIRBuilder::HandleChangeDoubleToInt32},
         {OpCode::TAGGED_TO_INT64, &LLVMIRBuilder::HandleChangeTaggedPointerToInt64},
+        {OpCode::INT64_TO_TAGGED, &LLVMIRBuilder::HandleChangeInt64ToTagged},
         {OpCode::BITCAST, &LLVMIRBuilder::HandleBitCast},
         {OpCode::LSL, &LLVMIRBuilder::HandleIntLsl},
         {OpCode::SMOD, &LLVMIRBuilder::HandleMod},
@@ -315,6 +321,9 @@ void LLVMIRBuilder::GenPrologue(LLVMModuleRef &module, LLVMBuilderRef &builder)
         return;
     }
     auto frameType = circuit_->GetFrameType();
+    if (frameType != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     LLVMAddTargetDependentFunctionAttr(function_, "frame-pointer", "all");
     LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
 
@@ -446,7 +455,11 @@ LLVMTypeRef LLVMIRBuilder::GetMachineRepType(MachineRep rep) const
 void LLVMIRBuilder::HandleCall(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
-    VisitCall(gate, ins);
+    if (circuit_->GetOpCode(gate) == OpCode::CALL) {
+        VisitCall(gate, ins);
+    } else {
+        VisitBytecodeCall(gate, ins);
+    }
 }
 
 void LLVMIRBuilder::HandleRuntimeCall(GateRef gate)
@@ -506,6 +519,9 @@ LLVMValueRef LLVMIRBuilder::GetCurrentSP()
 
 void LLVMIRBuilder::SaveCurrentSP()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     if (compCfg_->Is64Bit()) {
         LLVMValueRef llvmFpAddr = CallingFp(module_, builder_, false);
         LLVMValueRef frameAddr = LLVMBuildPtrToInt(builder_, llvmFpAddr, slotType_, "cast_int_t");
@@ -597,6 +613,9 @@ void LLVMIRBuilder::PushFrameContext(LLVMValueRef newSp, LLVMValueRef oldSp)
 
 void LLVMIRBuilder::ConstructFrame()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     LLVMValueRef currentSp = GetCurrentSPFrame();
     LLVMValueRef newSp = currentSp;
     // set newsp:currentSp sub interpretedFrame and optFrame
@@ -612,6 +631,9 @@ void LLVMIRBuilder::ConstructFrame()
 
 void LLVMIRBuilder::DestoryFrame()
 {
+    if (circuit_->GetFrameType() != FrameType::OPTIMIZED_FRAME) {
+        return;
+    }
     LLVMValueRef currentSp = GetCurrentSPFrame();
     LLVMValueRef frameType = GetCurrentFrameType(currentSp);
     (void)frameType;
@@ -626,19 +648,19 @@ void LLVMIRBuilder::DestoryFrame()
 
 void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
 {
-    int paraStartIndex = 2;
+    int paraStartIndex = 3;
     int index = circuit_->GetBitField(inList[1]);
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
     LLVMValueRef rtoffset;
-    StubDescriptor *callee_descriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
+    StubDescriptor *calleeDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
     LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(index);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
     // runtime case
-    if (callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB ||
-        callee_descriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC) {
+    if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB ||
+        calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC) {
         rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
                                 (index - FAST_STUB_MAXCOUNT) * slotSize_, 0);
     } else {
@@ -649,7 +671,6 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
     callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-    paraStartIndex += 1;
     // 16 : params limit
     LLVMValueRef params[16];
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
@@ -668,6 +689,40 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     return;
 }
 
+void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &inList)
+{
+    int paraStartIndex = 3;
+    LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
+    ASSERT(stubModule_ != nullptr);
+    LLVMValueRef callee;
+    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(CallStubId::NAME_BytecodeHandler);
+    LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
+    LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
+    LLVMTypeRef glue_type = LLVMTypeOf(glue);
+    LLVMValueRef bytecodeoffset = LLVMConstInt(
+        glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::BYTECODE_HANDLERS), 0);
+    LLVMValueRef rtbaseoffset = LLVMBuildAdd(
+        builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
+    LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
+    LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
+    callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
+    // 16 : params limit
+    LLVMValueRef params[16];
+    for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
+        GateRef gateTmp = inList[paraIdx];
+        params[paraIdx - paraStartIndex] = gateToLLVMMaps_[gateTmp];
+    }
+    LLVMValueRef call = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex, "");
+    LLVMSetTailCall(call, true);
+    const char *attrName = "gc-leaf-function";
+    const char *attrValue = "true";
+    LLVMAttributeRef llvmAttr = LLVMCreateStringAttribute(context_, attrName, strlen(attrName), attrValue,
+                                                          strlen(attrValue));
+    LLVMAddCallSiteAttribute(call, LLVMAttributeFunctionIndex, llvmAttr);
+    LLVMSetInstructionCallConv(call, LLVMGHCCallConv);
+    gateToLLVMMaps_[gate] = call;
+}
+
 void LLVMIRBuilder::HandleAlloca(GateRef gate)
 {
     return VisitAlloca(gate);
@@ -681,7 +736,6 @@ void LLVMIRBuilder::VisitAlloca(GateRef gate)
     COMPILER_LOG(DEBUG) << LLVMPrintTypeToString(ConvertLLVMTypeFromGate(gate));
     gateToLLVMMaps_[gate] = LLVMBuildPtrToInt(builder_, LLVMBuildAlloca(builder_, dataType, ""),
                                               ConvertLLVMTypeFromGate(gate), "");
-    return;
 }
 
 void LLVMIRBuilder::HandlePhi(GateRef gate)
@@ -867,6 +921,10 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
     } else if (machineType == MachineType::F64) {
         auto doubleValue = bit_cast<double>(value.to_ullong()); // actual double value
         llvmValue = LLVMConstReal(LLVMDoubleType(), doubleValue);
+    } else if (machineType == MachineType::I8) {
+        llvmValue = LLVMConstInt(LLVMInt8Type(), value.to_ulong(), 0);
+    } else if (machineType == MachineType::I16) {
+        llvmValue = LLVMConstInt(LLVMInt16Type(), value.to_ulong(), 0);
     } else {
         abort();
     }
@@ -1045,20 +1103,6 @@ void LLVMIRBuilder::VisitStore(GateRef gate, GateRef base, GateRef dataToStore)
     COMPILER_LOG(DEBUG) << "store value:" << value << " " << "value type" << LLVMTypeOf(value);
 }
 
-void LLVMIRBuilder::VisitIntOrUintCmp(GateRef gate, GateRef e1, GateRef e2, LLVMIntPredicate opcode)
-{
-    COMPILER_LOG(DEBUG) << "cmp gate:" << gate;
-    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
-    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
-    LLVMValueRef e2Value = gateToLLVMMaps_[e2];
-    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
-    e1Value = CanonicalizeToInt(e1Value);
-    e2Value = CanonicalizeToInt(e2Value);
-    LLVMValueRef result = LLVMBuildICmp(builder_, opcode, e1Value, e2Value, "");
-    gateToLLVMMaps_[gate] = result;
-    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
-}
-
 LLVMValueRef LLVMIRBuilder::CanonicalizeToInt(LLVMValueRef value)
 {
     if (LLVMGetTypeKind(LLVMTypeOf(value)) == LLVMVectorTypeKind) {
@@ -1231,7 +1275,8 @@ void LLVMIRBuilder::VisitAdd(GateRef gate, GateRef e1, GateRef e2)
     LLVMTypeRef returnType = ConvertLLVMTypeFromGate(gate);
 
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
-    if (machineType == MachineType::I32 || machineType == MachineType::I64) {
+    if (machineType == MachineType::I32 || machineType == MachineType::I64 ||
+        machineType == MachineType::I8 || machineType == MachineType::I16) {
         auto e1Type = LLVMGetTypeKind(ConvertLLVMTypeFromGate(e1));
         if (e1Type == LLVMVectorTypeKind) {
             result = VectorAdd(e1Value, e2Value, returnType);
@@ -1350,50 +1395,14 @@ void LLVMIRBuilder::HandleIntLsr(GateRef gate)
     VisitIntLsr(gate, g0, g1);
 }
 
-
-void LLVMIRBuilder::HandleIntOrUintCmp(GateRef gate)
+void LLVMIRBuilder::HandleCmp(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
     std::vector<GateRef> outs = circuit_->GetOutVector(gate);
-    switch (circuit_->GetOpCode(gate)) {
-        case OpCode::SLT: {
-            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLT);
-            break;
-        }
-        case OpCode::ULT: {
-            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntULT);
-            break;
-        }
-        case OpCode::SLE: {
-            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSLE);
-            break;
-        }
-        case OpCode::SGT: {
-            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSGT);
-            break;
-        }
-        case OpCode::SGE: {
-            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntSGE);
-            break;
-        }
-        case OpCode::NE: {
-            VisitIntOrUintCmp(gate, ins[0], ins[1], LLVMIntNE);
-            break;
-        }
-        default: {
-            break;
-        }
-    }
+    VisitCmp(gate, ins[0], ins[1]);
 }
 
-void LLVMIRBuilder::HandleEqCmp(GateRef gate)
-{
-    auto g0 = circuit_->GetIn(gate, 0);
-    auto g1 = circuit_->GetIn(gate, 1);
-    VisitEqCmp(gate, g0, g1);
-}
-
-void LLVMIRBuilder::VisitEqCmp(GateRef gate, GateRef e1, GateRef e2)
+void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
 {
     COMPILER_LOG(DEBUG) << "cmp gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
@@ -1404,12 +1413,55 @@ void LLVMIRBuilder::VisitEqCmp(GateRef gate, GateRef e1, GateRef e2)
     auto e1ValCode = circuit_->LoadGatePtrConst(e1)->GetMachineType();
     [[maybe_unused]]auto e2ValCode = circuit_->LoadGatePtrConst(e2)->GetMachineType();
     ASSERT(e1ValCode == e2ValCode);
-    if (e1ValCode == MachineType::I32 || e1ValCode == MachineType::I64) {
+    LLVMIntPredicate intOpcode = LLVMIntEQ;
+    LLVMRealPredicate realOpcode = LLVMRealPredicateFalse;
+    switch (circuit_->GetOpCode(gate)) {
+        case OpCode::SLT: {
+            intOpcode = LLVMIntSLT;
+            realOpcode = LLVMRealOLT;
+            break;
+        }
+        case OpCode::ULT: {
+            intOpcode = LLVMIntULT;
+            realOpcode = LLVMRealOLT;
+            break;
+        }
+        case OpCode::SLE: {
+            intOpcode = LLVMIntSLE;
+            realOpcode = LLVMRealOLE;
+            break;
+        }
+        case OpCode::SGT: {
+            intOpcode = LLVMIntSGT;
+            realOpcode = LLVMRealOGT;
+            break;
+        }
+        case OpCode::SGE: {
+            intOpcode = LLVMIntSGE;
+            realOpcode = LLVMRealOGE;
+            break;
+        }
+        case OpCode::NE: {
+            intOpcode = LLVMIntNE;
+            realOpcode = LLVMRealONE;
+            break;
+        }
+        case OpCode::EQ: {
+            intOpcode = LLVMIntEQ;
+            realOpcode = LLVMRealOEQ;
+            break;
+        }
+        default: {
+            abort();
+            break;
+        }
+    }
+    if (e1ValCode == MachineType::I32 || e1ValCode == MachineType::I64 || e1ValCode == MachineType::ARCH) {
         e1Value = CanonicalizeToInt(e1Value);
         e2Value = CanonicalizeToInt(e2Value);
-        result = LLVMBuildICmp(builder_, LLVMIntEQ, e1Value, e2Value, "");
+        result = LLVMBuildICmp(builder_, intOpcode, e1Value, e2Value, "");
     } else if (e1ValCode == MachineType::F64) {
-        result = LLVMBuildFCmp(builder_, LLVMRealOEQ, e1Value, e2Value, "");
+        result = LLVMBuildFCmp(builder_, realOpcode, e1Value, e2Value, "");
     } else {
         abort();
     }
@@ -1448,6 +1500,12 @@ void LLVMIRBuilder::HandleChangeTaggedPointerToInt64(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
     VisitChangeTaggedPointerToInt64(gate, ins[0]);
+}
+
+void LLVMIRBuilder::HandleChangeInt64ToTagged(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitChangeInt64ToTagged(gate, ins[0]);
 }
 
 void LLVMIRBuilder::VisitIntDiv(GateRef gate, GateRef e1, GateRef e2)
@@ -1624,10 +1682,34 @@ void LLVMIRBuilder::VisitChangeDoubleToInt32(GateRef gate, GateRef e1)
 
 void LLVMIRBuilder::VisitChangeTaggedPointerToInt64(GateRef gate, GateRef e1)
 {
-    COMPILER_LOG(DEBUG) << "double cast2 int32 gate:" << gate;
+    COMPILER_LOG(DEBUG) << "tagged pointer cast2 int64 gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = CanonicalizeToInt(e1Value);
+    gateToLLVMMaps_[gate] = result;
+    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
+}
+
+void LLVMIRBuilder::VisitChangeInt64ToTagged(GateRef gate, GateRef e1)
+{
+    COMPILER_LOG(DEBUG) << "int64 cast2 tagged gate:" << gate;
+    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
+    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    ASSERT(LLVMGetTypeKind(LLVMTypeOf(e1Value)) == LLVMIntegerTypeKind);
+    LLVMValueRef result;
+    if (compCfg_->Is32Bit()) {
+        LLVMValueRef tmp1Value =
+            LLVMBuildLShr(builder_, e1Value, LLVMConstInt(LLVMInt32Type(), 32, 0), ""); // 32: offset
+        LLVMValueRef tmp2Value = LLVMBuildIntCast(builder_, e1Value, LLVMInt32Type(), ""); // low
+        LLVMTypeRef vectorType = LLVMVectorType(LLVMPointerType(LLVMInt8Type(), 1), 2);  // 2: packed vector type
+        LLVMValueRef emptyValue = LLVMGetUndef(vectorType);
+        tmp1Value = LLVMBuildIntToPtr(builder_, tmp1Value, LLVMPointerType(LLVMInt8Type(), 1), "");
+        tmp2Value = LLVMBuildIntToPtr(builder_, tmp2Value, LLVMPointerType(LLVMInt8Type(), 1), "");
+        result = LLVMBuildInsertElement(builder_, emptyValue, tmp2Value, LLVMConstInt(LLVMInt32Type(), 0, 0), "");
+        result = LLVMBuildInsertElement(builder_, result, tmp1Value, LLVMConstInt(LLVMInt32Type(), 1, 0), "");
+    } else {
+        result = LLVMBuildIntToPtr(builder_, e1Value, LLVMPointerType(LLVMInt64Type(), 1), "");
+    }
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
@@ -1669,22 +1751,31 @@ LLVMStubModule::~LLVMStubModule()
 
 void LLVMStubModule::Initialize(const std::vector<int> &stubIndices)
 {
-    for (auto index : stubIndices) {
-        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
-        if (!stubDescriptor->GetName().empty()) {
-            stubFunctions_[index] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
-        }
-    }
     uint32_t i;
-    for (i = 0; i < MAX_STUB_FUNCTION_COUNT; i++) {
+    for (i = 0; i < CALL_STUB_MAXCOUNT; i++) {
         auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i);
         if (!stubDescriptor->GetName().empty()) {
             stubFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
         }
     }
-#ifndef ECMASCRIPT_ENABLE_SPECIFIC_STUBS
-    for (i = 0; i < MAX_TEST_FUNCTION_COUNT; i++) {
-        auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNCTION_OFFSET);
+    for (i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+        uint32_t index = stubIndices[i];
+        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
+        if (!stubDescriptor->GetName().empty()) {
+            stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
+        }
+    }
+#define DEF_STUB_FUNCTION(name, argc)                                                       \
+    {                                                                                       \
+        auto funcType = stubFunctionType_[CallStubId::NAME_BytecodeHandler];                \
+        stubFunctions_[StubId::STUB_##name] = LLVMAddFunction(module_, #name, funcType);    \
+    }
+    INTERPRETER_STUB_LIST(DEF_STUB_FUNCTION)
+#undef DEF_STUB_FUNCTION
+
+#ifndef NDEBUG
+    for (i = 0; i < TEST_FUNC_MAXCOUNT; i++) {
+        auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNC_OFFSET);
         if (!testFuncDescriptor->GetName().empty()) {
             testFunctions_[i] = GetLLVMFunctionByStubDescriptor(testFuncDescriptor);
         }

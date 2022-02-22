@@ -182,7 +182,7 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define RETURN_IF_ABRUPT_COMPLETION(thread)  \
     do {                                     \
-        if (thread->HasPendingException()) { \
+        if ((thread)->HasPendingException()) { \
             return;                          \
         }                                    \
     } while (false)

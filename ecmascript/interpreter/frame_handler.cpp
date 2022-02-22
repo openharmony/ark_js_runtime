@@ -156,9 +156,7 @@ const uint8_t *InterpretedFrameHandler::GetPc() const
 JSTaggedType *InterpretedFrameHandler::GetSp() const
 {
     ASSERT(HasFrame());
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(sp_);
-    return frame->sp;
+    return sp_;
 }
 
 ConstantPool *InterpretedFrameHandler::GetConstpool() const

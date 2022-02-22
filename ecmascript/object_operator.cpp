@@ -535,7 +535,10 @@ bool ObjectOperator::AddProperty(const JSHandle<JSObject> &receiver, const JSHan
                                  PropertyAttributes attr)
 {
     if (IsElement()) {
-        return JSObject::AddElementInternal(thread_, receiver, elementIndex_, value, attr);
+        bool ret = JSObject::AddElementInternal(thread_, receiver, elementIndex_, value, attr);
+        bool isDict = receiver->GetJSHClass()->IsDictionaryElement();
+        SetFound(elementIndex_, value.GetTaggedValue(), attr.GetValue(), !isDict);
+        return ret;
     }
 
     ResetState();

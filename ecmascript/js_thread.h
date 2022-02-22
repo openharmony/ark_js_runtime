@@ -157,6 +157,11 @@ public:
         return globalStorage_;
     }
 
+    void SetGlobalObject(JSTaggedValue globalObject)
+    {
+        globalObject_ = globalObject;
+    }
+
     const GlobalEnvConstants *GlobalConstants() const
     {
         return &globalConst_;
@@ -175,7 +180,7 @@ public:
 
     void SetRuntimeFunction(uint32_t id, Address functionAddress)
     {
-        ASSERT(id < MAX_RUNTIME_FUNCTIONS);
+        ASSERT(id < kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT);
         runtimeFunctions_[id] = functionAddress;
     }
 
@@ -191,9 +196,14 @@ public:
         fastStubEntries_[id] = entry;
     }
 
+    Address *GetBytecodeHandler()
+    {
+        return &bytecodeHandlers_[0];
+    }
+
     void InitializeFastRuntimeStubs();
 
-    void LoadFastStubModule(const char *moduleFile);
+    void LoadStubModule(const char *moduleFile);
 
     InternalCallParams *GetInternalCallParams() const
     {
@@ -220,6 +230,11 @@ public:
     static constexpr uint32_t GetPropertiesCacheOffset()
     {
         return MEMBER_OFFSET(JSThread, propertiesCache_);
+    }
+
+    static constexpr uint32_t GetGlobalObjectOffset()
+    {
+        return MEMBER_OFFSET(JSThread, globalObject_);
     }
 
     static constexpr uint32_t GetGlobalConstantsOffset()
@@ -250,6 +265,11 @@ public:
     static constexpr uint32_t GetFastStubEntriesOffset()
     {
         return MEMBER_OFFSET(JSThread, fastStubEntries_);
+    }
+
+    static constexpr uint32_t GetBytecodeHandlersOffset()
+    {
+        return MEMBER_OFFSET(JSThread, bytecodeHandlers_);
     }
 
     void SetMarkStatus(MarkStatus status)
@@ -340,21 +360,26 @@ public:
         return reinterpret_cast<JSThread *>(glue - GetExceptionOffset());
     }
 
-    static constexpr uint32_t MAX_RUNTIME_FUNCTIONS =
-        kungfu::EXTERN_RUNTIME_STUB_MAXCOUNT - kungfu::EXTERNAL_RUNTIME_STUB_BEGIN - 1;
+    static constexpr uint32_t MAX_RUNTIME_FUNCTIONS = kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT;
+    static constexpr uint32_t MAX_BYTECODE_HANDLERS = 0x100;
     // The sequence must be the same as that of the GLUE members.
     enum class GlueID : uint8_t {
         EXCEPTION = 0U,
+        GLOBAL_OBJECT,
         GLOBAL_CONST,
         PROPERTIES_CACHE,
         GLOBAL_STORAGE,
         CURRENT_FRAME,
         LEAVE_FRAME,
+        BYTECODE_HANDLERS,
         RUNTIME_FUNCTIONS,
         FAST_STUB_ENTRIES,
         FRAME_STATE_SIZE,
         OPT_LEAVE_FRAME_SIZE,
         OPT_LEAVE_FRAME_PREV_OFFSET,
+        GLUE_FRAME_CONSTPOOL,
+        GLUE_FRAME_PROFILE,
+        GLUE_FRAME_ACC,
         NUMBER_OF_GLUE,
     };
 
@@ -395,11 +420,13 @@ private:
 
     // GLUE members start, very careful to modify here
     JSTaggedValue exception_ {JSTaggedValue::Hole()};
+    JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
     GlobalEnvConstants globalConst_;  // Place-Holder
     PropertiesCache *propertiesCache_ {nullptr};
     EcmaGlobalStorage *globalStorage_ {nullptr};
     JSTaggedType *currentFrame_ {nullptr};
     JSTaggedType *leaveFrame_ {0};
+    Address bytecodeHandlers_[MAX_BYTECODE_HANDLERS];
     Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
     Address fastStubEntries_[kungfu::FAST_STUB_MAXCOUNT];
 
@@ -408,7 +435,9 @@ private:
 };
 
 #define GLUE_OFFSET_LIST(V)                                                                      \
-    V(GLOBAL_CONSTANTS, GlobalConstants, EXCEPTION,                                              \
+    V(GLOBAL_OBJECT, GlobalObject, EXCEPTION,                                                    \
+        JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                        \
+    V(GLOBAL_CONSTANTS, GlobalConstants, GLOBAL_OBJECT,                                          \
         JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                        \
     V(PROPERTIES_CACHE, PropertiesCache, GLOBAL_CONSTANTS,                                       \
         static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize(), \
@@ -416,7 +445,10 @@ private:
     V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
     V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
     V(LEAVE_FRAME, LeaveFrame, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))                \
-    V(RUNTIME_FUNCTIONS, RuntimeFunctions, LEAVE_FRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(BYTECODE_HANDLERS, BytecodeHandlers, LEAVE_FRAME, sizeof(uint32_t), sizeof(uint64_t))      \
+    V(RUNTIME_FUNCTIONS, RuntimeFunctions, BYTECODE_HANDLERS,                                    \
+        JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint32_t),                                      \
+        JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint64_t))                                      \
     V(FASTSTUB_ENTRIES, FastStubEntries, RUNTIME_FUNCTIONS,                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint32_t),                                      \
         JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint64_t))                                      \

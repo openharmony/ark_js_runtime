@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "fast_stub.h"
+#include "interpreter_stub-inl.h"
 #include "generated/stub_aot_options_gen.h"
 #include "libpandabase/utils/pandargs.h"
 #include "libpandabase/utils/span.h"
@@ -96,7 +97,7 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
     LLVMStubModule stubModule("fast_stubs", triple);
     std::vector<int> stubSet = GetStubIndices();
     stubModule.Initialize(stubSet);
-    for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+    for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
         auto stub = stubs_[i];
         if (stub != nullptr) {
             StubPassData data(stub, &stubModule);
@@ -157,9 +158,10 @@ int main(const int argc, const char **argv)
     panda::ecmascript::kungfu::Circuit name##Circuit;                                                \
     panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit);                               \
     if (compiledStubList.compare("All") == 0 || compiledStubList.find(#name) != std::string::npos) { \
-        moduleBuilder.SetStub(FAST_STUB_ID(name), &name##Stub);                                      \
+        moduleBuilder.SetStub(STUB_ID(name), &name##Stub);                                           \
     }
     FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
+    INTERPRETER_STUB_LIST(SET_STUB_TO_MODULE)
     panda::ecmascript::StubModule stubModule;
     moduleBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
     std::cout << "BuildStubModuleAndSave success" << std::endl;
