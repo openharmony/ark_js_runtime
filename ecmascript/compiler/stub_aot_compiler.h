@@ -25,13 +25,13 @@ class StubAotCompiler {
 public:
     StubAotCompiler()
     {
-        for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+        for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
             stubs_[i] = nullptr;
         }
     }
     ~StubAotCompiler()
     {
-        for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+        for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
             stubs_[i] = nullptr;
         }
     }
@@ -45,16 +45,23 @@ public:
     std::vector<int> GetStubIndices()
     {
         std::vector<int> result;
-        for (int i = 0; i < FAST_STUB_MAXCOUNT; i++) {
+        uint32_t i;
+        for (i = 0; i < FAST_STUB_MAXCOUNT; i++) {
             if (stubs_[i] != nullptr) {
                 result.push_back(i);
+            }
+        }
+        // for interpreter stub
+        for (; i < ALL_STUB_MAXCOUNT; i++) {
+            if (stubs_[i] != nullptr) {
+                result.push_back(CallStubId::NAME_BytecodeHandler);
             }
         }
         return result;
     }
 
 private:
-    std::array<Stub *, FAST_STUB_MAXCOUNT> stubs_;
+    std::array<Stub *, ALL_STUB_MAXCOUNT> stubs_;
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_STUB_AOT_COMPILER_H

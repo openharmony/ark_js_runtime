@@ -79,7 +79,8 @@ public:
                                const std::pair<JSTaggedValue, uint32_t> &b);
 
     DECL_DUMP()
-private:
+
+public:
     static constexpr int ENTRY_KEY_INDEX = 0;
     static constexpr int ENTRY_VALUE_INDEX = 1;
     static constexpr int ENTRY_DETAILS_INDEX = 2;

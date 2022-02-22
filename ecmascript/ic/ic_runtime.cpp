@@ -82,22 +82,19 @@ void ICRuntime::UpdateStoreHandler(const ObjectOperator &op, JSHandle<JSTaggedVa
         key = JSHandle<JSTaggedValue>();
     }
     JSHandle<JSTaggedValue> handlerValue;
-    if (op.IsElement()) {
-        handlerValue = StoreHandler::StoreElement(thread_, receiver);
-    } else {
-        ASSERT(op.IsFound());
-        if (op.IsOnPrototype()) {
-            // do not support global prototype ic
-            if (IsGlobalStoreIC(GetICKind())) {
-                return;
-            }
-            JSHandle<JSHClass> hclass(thread_, JSHandle<JSObject>::Cast(receiver)->GetClass());
-            handlerValue = PrototypeHandler::StorePrototype(thread_, op, hclass);
-        } else if (op.IsTransition()) {
-            handlerValue = TransitionHandler::StoreTransition(thread_, op);
-        } else {
-            handlerValue = StoreHandler::StoreProperty(thread_, op);
+    ASSERT(op.IsFound());
+    if (op.IsOnPrototype()) {
+        // do not support global prototype ic
+        if (IsGlobalStoreIC(GetICKind())) {
+            return;
         }
+        JSHandle<JSHClass> hclass(thread_, JSHandle<JSObject>::Cast(receiver)->GetClass());
+        handlerValue = PrototypeHandler::StorePrototype(thread_, op, hclass);
+    } else if (op.IsTransition()) {
+        ASSERT(!op.IsElement());
+        handlerValue = TransitionHandler::StoreTransition(thread_, op);
+    } else {
+        handlerValue = StoreHandler::StoreProperty(thread_, op);
     }
 
     if (key.IsEmpty()) {
@@ -121,11 +118,11 @@ void ICRuntime::TraceIC([[maybe_unused]] JSHandle<JSTaggedValue> receiver,
     auto state = ProfileTypeAccessor::ICStateToString(icAccessor_.GetICState());
     if (key->IsString()) {
         LOG(ERROR, RUNTIME) << kind << " miss key is: " << JSHandle<EcmaString>::Cast(key)->GetCString().get()
-                            << ", receiver is " << receiver->GetHeapObject()->GetClass()->IsDictionaryMode()
+                            << ", receiver is " << receiver->GetTaggedObject()->GetClass()->IsDictionaryMode()
                             << ", state is " << state;
     } else {
         LOG(ERROR, RUNTIME) << kind << " miss " << ", state is "
-                            << ", receiver is " << receiver->GetHeapObject()->GetClass()->IsDictionaryMode()
+                            << ", receiver is " << receiver->GetTaggedObject()->GetClass()->IsDictionaryMode()
                             << state;
     }
 #endif
@@ -158,9 +155,7 @@ JSTaggedValue LoadICRuntime::LoadMiss(JSHandle<JSTaggedValue> receiver, JSHandle
         icAccessor_.SetAsMega();
         return result.GetTaggedValue();
     }
-#ifndef NDEBUG
     TraceIC(receiver, key);
-#endif
     // do not cache element
     if (!op.IsFastMode() && op.IsFound()) {
         icAccessor_.SetAsMega();
@@ -202,9 +197,7 @@ JSTaggedValue StoreICRuntime::StoreMiss(JSHandle<JSTaggedValue> receiver, JSHand
         icAccessor_.SetAsMega();
         return success ? JSTaggedValue::Undefined() : JSTaggedValue::Exception();
     }
-#ifndef NDEBUG
     TraceIC(receiver, key);
-#endif
     // do not cache element
     if (!op.IsFastMode()) {
         icAccessor_.SetAsMega();

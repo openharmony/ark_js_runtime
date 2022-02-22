@@ -136,9 +136,6 @@ config("ark_jsruntime_common_config") {
   if (enable_stub_aot) {
     defines += [ "ECMASCRIPT_ENABLE_STUB_AOT" ]
   }
-  if (enable_specific_stubs) {
-    defines += [ "ECMASCRIPT_ENABLE_SPECIFIC_STUBS" ]
-  }
 
   if (is_standard_system) {
     defines += [ "IS_STANDARD_SYSTEM" ]
@@ -333,6 +330,7 @@ ecma_source = [
   "ecmascript/ic/proto_change_details.cpp",
   "ecmascript/internal_call_params.cpp",
   "ecmascript/interpreter/frame_handler.cpp",
+  "ecmascript/interpreter/interpreter_assembly.cpp",
   "ecmascript/interpreter/slow_runtime_helper.cpp",
   "ecmascript/interpreter/slow_runtime_stub.cpp",
   "ecmascript/jobs/micro_job_queue.cpp",

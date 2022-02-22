@@ -26,6 +26,7 @@
 #include "ecmascript/ic/ic_runtime_stub-inl.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
 #include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/interpreter/interpreter_assembly.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/interpreter/slow_runtime_stub.h"
 #include "ecmascript/js_generator_object.h"
@@ -167,7 +168,7 @@ namespace panda::ecmascript {
 #define READ_INST_8_6() READ_INST_8(7)              // NOLINT(hicpp-signed-bitwise, cppcoreguidelines-macro-usage)
 #define READ_INST_8_7() READ_INST_8(8)              // NOLINT(hicpp-signed-bitwise, cppcoreguidelines-macro-usage)
 #define READ_INST_8_8() READ_INST_8(9)              // NOLINT(hicpp-signed-bitwise, cppcoreguidelines-macro-usage)
-#define READ_INST_8(offset) (*(pc + offset))
+#define READ_INST_8(offset) (*(pc + (offset)))
 #define MOVE_AND_READ_INST_8(currentInst, offset) \
     currentInst <<= 8;                            \
     currentInst += READ_INST_8(offset);           \
@@ -386,8 +387,13 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
     thread->CheckSafepoint();
     LOG(DEBUG, INTERPRETER) << "break Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(newSp) << " "
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
+
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
+#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
+    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+#else
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+#endif
     thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
@@ -453,8 +459,13 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     state->env = env;
     // execute interpreter
     thread->SetCurrentSPFrame(newSp);
+
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
+#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
+    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+#else
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+#endif
     thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     JSTaggedValue res = state->acc;
@@ -555,7 +566,6 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     ObjectFactory *factory = ecmaVm->GetFactory();
 
     constexpr size_t numOps = 0x100;
-
     static std::array<const void *, numOps> instDispatchTable{
 #include "templates/instruction_dispatch.inl"
     };

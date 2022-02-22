@@ -23,10 +23,12 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/machine_type.h"
 #include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/global_dictionary.h"
 #include "ecmascript/ic/ic_handler.h"
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/js_generator_object.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/layout_info.h"
@@ -91,16 +93,20 @@ public:
                 case Triple::TRIPLE_AMD64:
                 case Triple::TRIPLE_AARCH64:
                     offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_64, GLUE_GLOBAL_CONSTANTS_OFFSET_64, GLUE_PROPERTIES_CACHE_OFFSET_64,
-                        GLUE_GLOBAL_STORAGE_OFFSET_64, GLUE_CURRENT_FRAME_OFFSET_64, GLUE_LEAVE_FRAME_OFFSET_64,
-                        GLUE_RUNTIME_FUNCTIONS_OFFSET_64, GLUE_FASTSTUB_ENTRIES_OFFSET_64,
+                        GLUE_EXCEPTION_OFFSET_64,
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
+                        GLUE_##name##_OFFSET_64,
+                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
                     };
                     break;
                 case Triple::TRIPLE_ARM32:
                     offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_32, GLUE_GLOBAL_CONSTANTS_OFFSET_32, GLUE_PROPERTIES_CACHE_OFFSET_32,
-                        GLUE_GLOBAL_STORAGE_OFFSET_32, GLUE_CURRENT_FRAME_OFFSET_32, GLUE_LEAVE_FRAME_OFFSET_32,
-                        GLUE_RUNTIME_FUNCTIONS_OFFSET_32, GLUE_FASTSTUB_ENTRIES_OFFSET_32,
+                        GLUE_EXCEPTION_OFFSET_32,
+#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
+                        GLUE_##name##_OFFSET_32,
+                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
+#undef GLUE_OFFSET_MACRO
                     };
                     break;
                 default:
@@ -275,6 +281,12 @@ public:
         {
             compCfg_ = cfg;
         }
+
+        const CompilationConfig *GetCompilationConfig() const
+        {
+            return compCfg_;
+        }
+
         inline bool Is32Bit() const
         {
             return compCfg_->Is32Bit();
@@ -422,9 +434,12 @@ public:
         return methodName_;
     }
     // constant
+    inline GateRef GetInt8Constant(int8_t value);
+    inline GateRef GetInt16Constant(int16_t value);
     inline GateRef GetInt32Constant(int32_t value);
     inline GateRef GetInt64Constant(int64_t value);
     inline GateRef GetIntPtrConstant(int64_t value);
+    inline GateRef GetIntPtrSize();
     inline uint64_t GetIntPtrSize() const;
     inline GateRef GetRelocatableData(uint64_t value);
     inline GateRef TrueConstant();
@@ -442,6 +457,7 @@ public:
     inline GateRef Int32Argument(size_t index);
     inline GateRef Int64Argument(size_t index);
     inline GateRef TaggedArgument(size_t index);
+    inline GateRef TaggedPointerArgument(size_t index, GateType type = GateType::TAGGED_POINTER);
     inline GateRef PtrArgument(size_t index, GateType type = GateType::C_VALUE);
     inline GateRef Float32Argument(size_t index);
     inline GateRef Float64Argument(size_t index);
@@ -479,11 +495,13 @@ public:
     GateRef Store(StubMachineType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
     // arithmetic
     inline GateRef TaggedCastToIntPtr(GateRef x);
+    inline GateRef Int16Add(GateRef x, GateRef y);
     inline GateRef Int32Add(GateRef x, GateRef y);
     inline GateRef Int64Add(GateRef x, GateRef y);
     inline GateRef DoubleAdd(GateRef x, GateRef y);
     inline GateRef IntPtrAdd(GateRef x, GateRef y);
     inline GateRef IntPtrSub(GateRef x, GateRef y);
+    inline GateRef IntPtrEqual(GateRef x, GateRef y);
     inline GateRef Int32Sub(GateRef x, GateRef y);
     inline GateRef Int64Sub(GateRef x, GateRef y);
     inline GateRef DoubleSub(GateRef x, GateRef y);
@@ -500,6 +518,7 @@ public:
     inline GateRef IntPtrDiv(GateRef x, GateRef y);
     // bit operation
     inline GateRef Int32Or(GateRef x, GateRef y);
+    inline GateRef Int8And(GateRef x, GateRef y);
     inline GateRef Int32And(GateRef x, GateRef y);
     inline GateRef IntPtrAnd(GateRef x, GateRef y);
     inline GateRef BoolAnd(GateRef x, GateRef y);
@@ -512,9 +531,12 @@ public:
     inline GateRef Int64And(GateRef x, GateRef y);
     inline GateRef Int64Xor(GateRef x, GateRef y);
     inline GateRef Int64Not(GateRef x);
+    inline GateRef Int16LSL(GateRef x, GateRef y);
     inline GateRef Int32LSL(GateRef x, GateRef y);
+    inline GateRef Int64LSL(GateRef x, GateRef y);
     inline GateRef UInt64LSL(GateRef x, GateRef y);
     inline GateRef IntPtrLSL(GateRef x, GateRef y);
+    inline GateRef Int8LSR(GateRef x, GateRef y);
     inline GateRef UInt32LSR(GateRef x, GateRef y);
     inline GateRef UInt64LSR(GateRef x, GateRef y);
     inline GateRef IntPtrLSR(GateRef x, GateRef y);
@@ -525,10 +547,12 @@ public:
     inline GateRef TaggedIsHole(GateRef x);
     inline GateRef TaggedIsNotHole(GateRef x);
     inline GateRef TaggedIsUndefined(GateRef x);
+    inline GateRef TaggedIsException(GateRef x);
     inline GateRef TaggedIsSpecial(GateRef x);
     inline GateRef TaggedIsHeapObject(GateRef x);
     inline GateRef ObjectAddressToRange(GateRef x);
     inline GateRef InYoungGeneration(GateRef glue, GateRef x);
+    inline GateRef TaggedIsGeneratorObject(GateRef x);
     inline GateRef TaggedIsPropertyBox(GateRef x);
     inline GateRef TaggedIsWeak(GateRef x);
     inline GateRef TaggedIsPrototypeHandler(GateRef x);
@@ -543,18 +567,24 @@ public:
     inline GateRef TaggedIsTrue(GateRef x);
     inline GateRef TaggedIsFalse(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
+    inline GateRef TaggedGetInt(GateRef x);
+    inline GateRef Int16BuildTaggedWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
-    inline GateRef Int64BuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();
     // compare operation
+    inline GateRef Int8Equal(GateRef x, GateRef y);
     inline GateRef Int32Equal(GateRef x, GateRef y);
     inline GateRef Int32NotEqual(GateRef x, GateRef y);
     inline GateRef Int64Equal(GateRef x, GateRef y);
     inline GateRef DoubleEqual(GateRef x, GateRef y);
     inline GateRef Int64NotEqual(GateRef x, GateRef y);
+    inline GateRef DoubleLessThan(GateRef x, GateRef y);
+    inline GateRef DoubleLessThanOrEqual(GateRef x, GateRef y);
+    inline GateRef DoubleGreaterThan(GateRef x, GateRef y);
+    inline GateRef DoubleGreaterThanOrEqual(GateRef x, GateRef y);
     inline GateRef Int32GreaterThan(GateRef x, GateRef y);
     inline GateRef Int32LessThan(GateRef x, GateRef y);
     inline GateRef Int32GreaterThanOrEqual(GateRef x, GateRef y);
@@ -583,24 +613,28 @@ public:
     inline GateRef GetPropertiesArray(GateRef object);
     // SetProperties in js_object.h
     inline void SetPropertiesArray(GateRef glue, GateRef object, GateRef propsArray);
-    inline GateRef GetLengthofTaggedArray(GateRef array);
+    inline GateRef GetLengthOfTaggedArray(GateRef array);
     // object operation
     inline GateRef IsJSHClass(GateRef obj);
     inline GateRef LoadHClass(GateRef object);
     inline void StoreHClass(GateRef glue, GateRef object, GateRef hclass);
     void CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef scrHClass);
     inline GateRef GetObjectType(GateRef hClass);
+    inline GateRef GetGeneratorObjectResumeMode(GateRef obj);
     inline GateRef IsDictionaryMode(GateRef object);
     inline GateRef IsDictionaryModeByHClass(GateRef hClass);
     inline GateRef IsDictionaryElement(GateRef hClass);
     inline GateRef NotBuiltinsConstructor(GateRef object);
     inline GateRef IsClassConstructor(GateRef object);
+    inline GateRef IsClassPrototype(GateRef object);
     inline GateRef IsExtensible(GateRef object);
     inline GateRef IsEcmaObject(GateRef obj);
     inline GateRef IsSymbol(GateRef obj);
     inline GateRef IsString(GateRef obj);
     inline GateRef IsJsProxy(GateRef obj);
+    inline GateRef IsJSFunctionBase(GateRef obj);
     inline GateRef IsJsArray(GateRef obj);
+    inline GateRef IsJSObject(GateRef obj);
     inline GateRef IsWritable(GateRef attr);
     inline GateRef IsAccessor(GateRef attr);
     inline GateRef IsInlinedProperty(GateRef attr);
@@ -665,10 +699,9 @@ public:
     inline GateRef GetPropertiesAddrFromLayoutInfo(GateRef layout);
     inline GateRef GetPropertyMetaDataFromAttr(GateRef attr);
     inline GateRef GetKeyFromLayoutInfo(GateRef layout, GateRef entry);
-    GateRef IsMatchInNumberDictionary(GateRef key, GateRef other);
     GateRef FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hClass,
         GateRef key, GateRef propsNum);
-    GateRef FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef key);
+    GateRef FindElementFromNumberDictionary(GateRef glue, GateRef elements, GateRef index);
     GateRef FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key);
     GateRef IsMatchInTransitionDictionary(GateRef element, GateRef key, GateRef metaData, GateRef attr);
     GateRef FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, GateRef key, GateRef metaData);
@@ -710,16 +743,24 @@ public:
     inline GateRef ChangeInt32ToFloat64(GateRef x);
     inline GateRef ChangeFloat64ToInt32(GateRef x);
     inline GateRef ChangeTaggedPointerToInt64(GateRef x);
+    inline GateRef ChangeInt64ToTagged(GateRef x);
     inline GateRef CastInt64ToFloat64(GateRef x);
     inline GateRef SExtInt32ToInt64(GateRef x);
     inline GateRef SExtInt1ToInt64(GateRef x);
     inline GateRef SExtInt1ToInt32(GateRef x);
+    inline GateRef ZExtInt8ToInt16(GateRef x);
     inline GateRef ZExtInt32ToInt64(GateRef x);
     inline GateRef ZExtInt1ToInt64(GateRef x);
     inline GateRef ZExtInt1ToInt32(GateRef x);
     inline GateRef ZExtInt8ToInt32(GateRef x);
+    inline GateRef ZExtInt8ToInt64(GateRef x);
+    inline GateRef ZExtInt8ToPtr(GateRef x);
+    inline GateRef ZExtInt16ToPtr(GateRef x);
+    inline GateRef SExtInt32ToPtr(GateRef x);
     inline GateRef ZExtInt16ToInt32(GateRef x);
+    inline GateRef ZExtInt16ToInt64(GateRef x);
     inline GateRef TruncInt64ToInt32(GateRef x);
+    inline GateRef TruncPtrToInt32(GateRef x);
     inline GateRef TruncInt64ToInt1(GateRef x);
     inline GateRef TruncInt32ToInt1(GateRef x);
     inline GateRef GetGlobalConstantAddr(GateRef index);
@@ -742,6 +783,24 @@ public:
 
     GateRef SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef key,
                                GateRef value); // Do not crawl the prototype chain
+    inline GateRef GetParentEnv(GateRef object);
+    inline GateRef GetPropertiesFromLexicalEnv(GateRef object, GateRef index);
+    inline void SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index, GateRef value);
+    inline GateRef GetFunctionBitFieldFromJSFunction(GateRef object);
+    inline GateRef GetHomeObjectFromJSFunction(GateRef object);
+    inline void SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexicalEnv);
+    inline GateRef GetGlobalObject(GateRef glue);
+    inline GateRef GetEntryIndexOfGlobalDictionary(GateRef entry);
+    inline GateRef GetBoxFromGlobalDictionary(GateRef object, GateRef entry);
+    inline GateRef GetValueFromGlobalDictionary(GateRef object, GateRef entry);
+    inline GateRef GetPropertiesFromJSObject(GateRef object);
+    GateRef GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key);
+
+    // fast path
+    GateRef FastEqual(GateRef left, GateRef right);
+    GateRef FastMul(GateRef left, GateRef right);
+    GateRef FastDiv(GateRef left, GateRef right);
+    GateRef FastMod(GateRef glue, GateRef left, GateRef right);
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
