@@ -81,6 +81,7 @@
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
 #include "ecmascript/transitions_dictionary.h"
+#include "ecmascript/ts_types/ts_type.h"
 
 namespace panda::ecmascript {
 using MicroJobQueue = panda::ecmascript::job::MicroJobQueue;
@@ -259,6 +260,18 @@ CString JSHClass::DumpJSType(JSType type)
             return "ClassInfoExtractor";
         case JSType::JS_API_ARRAY_LIST:
             return "ArrayList";
+        case JSType::TS_OBJECT_TYPE:
+            return "TSObjectType";
+        case JSType::TS_CLASS_TYPE:
+            return "TSClassType";
+        case JSType::TS_INTERFACE_TYPE:
+            return "TSInterfaceType";
+        case JSType::TS_IMPORT_TYPE:
+            return "TSImportType";
+        case JSType::TS_CLASS_INSTANCE_TYPE:
+            return "TSClassInstanceType";
+        case JSType::TS_UNION_TYPE:
+            return "TSUnionType";
         case JSType::JS_API_ARRAYLIST_ITERATOR:
             return "JSArraylistIterator";
         case JSType::JS_API_TREE_MAP:
@@ -611,6 +624,24 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_API_ARRAYLIST_ITERATOR:
             JSAPIArrayListIterator::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_OBJECT_TYPE:
+            TSObjectType::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_CLASS_TYPE:
+            TSClassType::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_INTERFACE_TYPE:
+            TSInterfaceType::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_IMPORT_TYPE:
+            TSImportType::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_CLASS_INSTANCE_TYPE:
+            TSClassInstanceType::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_UNION_TYPE:
+            TSUnionType::Cast(obj)->Dump(thread, os);
             break;
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(obj)->Dump(thread, os);
@@ -2086,6 +2117,221 @@ void ClassInfoExtractor::Dump(JSThread *thread, std::ostream &os) const
     os << "\n";
 }
 
+void TSObjectType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - TSObjectType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSObjectType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSObjectType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSObjectType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+    os << "  - ObjLayoutInfo: ";
+    DumpArrayClass(thread, TaggedArray::Cast(GetObjLayoutInfo().GetTaggedObject()), os);
+    os << "  - HClass: ";
+    GetHClass().D();
+}
+
+void TSClassType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Dump Class Type - " << "\n";
+    os << " - TSClassType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSClassType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSClassType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSClassType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+    os << " - ExtensionTypeGT: ";
+    JSTaggedValue extensionType = GetExtensionType();
+    if (extensionType.IsUndefined()) {
+        os << " (base class type) ";
+    } else {
+        uint64_t extensionTypeGT = TSType::Cast(extensionType.GetTaggedObject())->GetGTRef().GetGlobalTSTypeRef();
+        os << extensionTypeGT;
+    }
+    os << "\n";
+
+    os << " - InstanceType: " << "\n";
+    if (GetInstanceType().IsTSObjectType()) {
+        TSObjectType *instanceType = TSObjectType::Cast(GetInstanceType().GetTaggedObject());
+        instanceType->Dump(thread, os);
+        os << "\n";
+    }
+
+    os << " - ConstructorType: " << "\n";
+    if (GetConstructorType().IsTSObjectType()) {
+        TSObjectType *constructorType = TSObjectType::Cast(GetConstructorType().GetTaggedObject());
+        constructorType->Dump(thread, os);
+        os << "\n";
+    }
+
+    os << " - PrototypeType: " << "\n";
+    if (GetPrototypeType().IsTSObjectType()) {
+        TSObjectType *prototypeType = TSObjectType::Cast(GetPrototypeType().GetTaggedObject());
+        prototypeType->Dump(thread, os);
+        os << "\n";
+    }
+}
+
+void TSInterfaceType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Dump Interface Type - " << "\n";
+    os << " - TSInterfaceType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSClassType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSClassType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSClassType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+    os << " - Extends TypeId: " << "\n";
+    JSHandle<TaggedArray> extendsId(thread, GetExtends());
+    if (extendsId->GetLength() == 0) {
+            os << " (base interface type) "<< "\n";
+    }
+    DumpArrayClass(thread, TaggedArray::Cast(GetExtends().GetTaggedObject()), os);
+
+    os << " - Fields: " << "\n";
+    if (GetFields().IsTSObjectType()) {
+        TSObjectType *fieldsType = TSObjectType::Cast(GetFields().GetTaggedObject());
+        fieldsType->Dump(thread, os);
+        os << "\n";
+    }
+}
+
+void TSImportType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Dump Import Type - " << "\n";
+    os << " - TSImportType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSClassType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSClassType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSClassType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+    os << " - Target Type: ";
+    if (GetTargetType().IsTSInterfaceType()) {
+        TSInterfaceType *targetType = TSInterfaceType::Cast(GetTargetType().GetTaggedObject());
+        targetType->Dump(thread, os);
+        os << "\n";
+    } else if (GetTargetType().IsTSClassType()) {
+        TSClassType *targetType = TSClassType::Cast(GetTargetType().GetTaggedObject());
+        targetType->Dump(thread, os);
+        os << "\n";
+    } else if (GetTargetType().IsTSClassInstanceType()) {
+        TSClassInstanceType *targetType = TSClassInstanceType::Cast(GetTargetType().GetTaggedObject());
+        targetType->Dump(thread, os);
+        os << "\n";
+    } else if (GetTargetType().IsTSUnionType()) {
+        TSUnionType *targetType = TSUnionType::Cast(GetTargetType().GetTaggedObject());
+        targetType->Dump(thread, os);
+        os << "\n";
+    } else {
+        os << " - no link Target Type: ";
+        os << "\n";
+    }
+    os << " - Taget Type Path: ";
+    JSTaggedValue importPath = GetImportPath();
+    importPath.DumpTaggedValue(thread, os);
+    os << "\n";
+}
+
+void TSClassInstanceType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Dump ClassInstance Type - " << "\n";
+    os << " - TSClassInstanceType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSClassType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSClassType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSClassType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+
+    JSTaggedValue createClassType = GetCreateClassType();
+    if (!createClassType.IsUndefined()) {
+        os << " - CreateClassType GT: ";
+        uint64_t createClassTypeGT = TSClassType::Cast(createClassType
+                                                       .GetTaggedObject())->GetGTRef().GetGlobalTSTypeRef();
+        os << createClassTypeGT;
+        os << "\n";
+    }
+}
+
+void TSUnionType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Dump UnionType Type - " << "\n";
+    os << " - TSUnionType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSClassType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSClassType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSClassType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+    os << " - TSUnionType TypeId: " << "\n";
+    JSHandle<TaggedArray> componentTypes(thread, GetComponentTypes());
+
+    DumpArrayClass(thread, TaggedArray::Cast(GetComponentTypes().GetTaggedObject()), os);
+}
 // ########################################################################################
 // Dump for Snapshot
 // ########################################################################################
@@ -2350,6 +2596,24 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
                 return;
             case JSType::CLASS_INFO_EXTRACTOR:
                 ClassInfoExtractor::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_OBJECT_TYPE:
+                TSObjectType::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_CLASS_TYPE:
+                TSClassType::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_INTERFACE_TYPE:
+                TSInterfaceType::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_IMPORT_TYPE:
+                TSImportType::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_CLASS_INSTANCE_TYPE:
+                TSClassInstanceType::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_UNION_TYPE:
+                TSUnionType::Cast(obj)->DumpForSnapshot(thread, vec);
                 return;
             default:
                 UNREACHABLE();
@@ -3218,5 +3482,41 @@ void ClassInfoExtractor::DumpForSnapshot(JSThread *thread, std::vector<std::pair
     vec.push_back(std::make_pair(CString("StaticKeys"), GetStaticKeys()));
     vec.push_back(std::make_pair(CString("StaticProperties"), GetStaticProperties()));
     vec.push_back(std::make_pair(CString("StaticElements"), GetStaticElements()));
+}
+
+void TSObjectType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("ObjLayoutInfo"), GetObjLayoutInfo()));
+    vec.push_back(std::make_pair(CString("HClass"), GetHClass()));
+}
+
+void TSClassType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("InstanceType"), GetInstanceType()));
+    vec.push_back(std::make_pair(CString("ConstructorType"), GetConstructorType()));
+    vec.push_back(std::make_pair(CString("PrototypeType"), GetPrototypeType()));
+    vec.push_back(std::make_pair(CString("ExtensionType"), GetExtensionType()));
+}
+
+void TSInterfaceType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Fields"), GetFields()));
+    vec.push_back(std::make_pair(CString("Extends"), GetExtends()));
+}
+
+void TSClassInstanceType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("classTypeIndex"), GetCreateClassType()));
+}
+
+void TSImportType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("TargetType"), GetTargetType()));
+    vec.push_back(std::make_pair(CString("ImportTypePath"), GetImportPath()));
+}
+
+void TSUnionType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("ComponentTypes"), GetComponentTypes()));
 }
 }  // namespace panda::ecmascript
