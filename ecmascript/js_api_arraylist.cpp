@@ -312,7 +312,7 @@ JSTaggedValue JSAPIArrayList::ForEach(JSThread *thread, const JSHandle<JSTaggedV
         JSTaggedValue funcResult =
             JSFunction::Call(thread, callbackFn, thisArg, 3, arguments->GetArgv()); // 3: three args
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, funcResult);
-        if (length != arrayList->GetSize()) {
+        if (static_cast<int>(length) != arrayList->GetSize()) {
             length = arrayList->GetSize();
         }
     }
