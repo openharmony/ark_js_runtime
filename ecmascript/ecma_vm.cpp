@@ -412,6 +412,7 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     auto method = chunk_.New<JSMethod>(nullptr, nullptr, panda_file::File::EntityId(0), panda_file::File::EntityId(0),
                                        accessFlags, numArgs, nullptr);
     method->SetNativePointer(const_cast<void *>(func));
+    method->SetNativeBit(true);
 
     nativeMethods_.push_back(method);
     return nativeMethods_.back();
