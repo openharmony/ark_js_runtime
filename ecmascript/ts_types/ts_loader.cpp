@@ -111,7 +111,7 @@ void TSLoader::RecursivelyResolveTargetType(JSMutableHandle<TSImportType>& impor
     if (bindType.GetTaggedValue().IsTSImportType()) {
         JSMutableHandle<TSImportType> redirectImportType(bindType);
         RecursivelyResolveTargetType(redirectImportType);
-        typeTable->Set(thread, userDefId , redirectImportType);
+        typeTable->Set(thread, userDefId, redirectImportType);
         importType->SetTargetType(thread, redirectImportType->GetTargetType());
     } else {
         importType->SetTargetType(thread, bindType);
@@ -448,7 +448,7 @@ JSHandle<TSModuleTable> TSModuleTable::AddTypeTable(JSThread *thread, JSHandle<T
     int numberOfTSTypeTable = table->GetNumberOfTSTypeTable();
     if (GetTSTypeTableOffset(numberOfTSTypeTable) > table->GetLength()) {
         table = JSHandle<TSModuleTable>(TaggedArray::SetCapacity(thread, JSHandle<TaggedArray>(table),
-                                        table->GetLength()*INCREASE_CAPACITY_RATE));
+                                        table->GetLength() * INCREASE_CAPACITY_RATE));
     }
 
     // increase 1 tstypeTable
