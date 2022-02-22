@@ -24,11 +24,7 @@ namespace panda {
 class Class;
 }
 
-static constexpr uint32_t NORMAL_CALL_TYPE = 0;  // 0: normal (without this, newTarget, extra, func)
-static constexpr uint32_t HAVE_THIS_BIT = 1;  // 1: the last bit means this
-static constexpr uint32_t HAVE_NEWTARGET_BIT = 2;  // 2: the 2nd to last bit means newTarget
-static constexpr uint32_t HAVE_EXTRA_BIT = 4;  // 4: the 3rd to last bit means extra
-static constexpr uint32_t HAVE_FUNC_BIT = 8;  // 8: the 4th to last bit means func (for old version, UINT32_MAX)
+static constexpr uint32_t CALL_TYPE_MASK = 0xF;  // 0xF: the last 4 bits are used as callType
 static constexpr size_t STORAGE_32_NUM = 4;
 static constexpr size_t STORAGE_PTR_NUM = 3;
 
@@ -42,7 +38,7 @@ static constexpr size_t STORAGE_PTR_NUM = 3;
     V(BYTECODEARRAY, PROFILINGDATA, sizeof(uint32_t), sizeof(uint64_t))                             \
     V(BYTECODEARRAYSIZE, BYTECODEARRAY, sizeof(uint32_t), sizeof(uint64_t))                         \
     V(SLOTSIZE, BYTECODEARRAYSIZE, sizeof(uint32_t), sizeof(uint32_t))                              \
-    V(CALLTYPE, SLOTSIZE, sizeof(uint8_t), sizeof(uint8_t))                                         \
+    V(CALLFIELD, SLOTSIZE, sizeof(uint8_t), sizeof(uint8_t))                                        \
 
 static constexpr uint32_t JS_METHOD_STOR32_OFFSET_32 = 0U;
 static constexpr uint32_t JS_METHOD_STOR32_OFFSET_64 = 0U;
@@ -121,19 +117,33 @@ public:
         slotSize_ = static_cast<uint8_t>(end);
     }
 
-    uint32_t GetCallType() const
+    static constexpr size_t VREGS_ARGS_NUM_BITS = 28; // 28: maximum 268,435,455
+    using HaveThisBit = BitField<bool, 0, 1>;  // offset 0
+    using HaveNewTargetBit = HaveThisBit::NextFlag;  // offset 1
+    using HaveExtraBit = HaveNewTargetBit::NextFlag;  // offset 2
+    using HaveFuncBit = HaveExtraBit::NextFlag;  // offset 3
+    using NumVregsBits = HaveFuncBit::NextField<uint32_t, VREGS_ARGS_NUM_BITS>;  // offset 4-31
+    using NumArgsBits = NumVregsBits::NextField<uint32_t, VREGS_ARGS_NUM_BITS>;  // offset 32-59
+    using IsNativeBit = NumArgsBits::NextFlag;  // offset 60
+
+    uint64_t GetCallField() const
     {
-        return callType_;
+        return callField_;
+    }
+
+    void SetNativeBit(bool isNative)
+    {
+        callField_ = IsNativeBit::Update(callField_, isNative);
     }
 
     CString ParseFunctionName() const;
-    void SetCallTypeFromAnnotation();
+    void InitializeCallField();
 
 private:
     const uint8_t *bytecodeArray_ {nullptr};
     uint32_t bytecodeArraySize_ {0};
     uint8_t slotSize_ {0};
-    uint32_t callType_ {UINT32_MAX};  // UINT32_MAX means not found
+    uint64_t callField_ {0};
 };
 }  // namespace panda::ecmascript
 

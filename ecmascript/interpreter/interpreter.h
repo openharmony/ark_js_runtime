@@ -62,8 +62,6 @@ public:
 
     static inline JSTaggedValue GetRuntimeProfileTypeInfo(JSTaggedType *sp);
     static inline bool UpdateHotnessCounter(JSThread* thread, JSTaggedType *sp, JSTaggedValue acc, int32_t offset);
-    static inline void InterpreterFrameCopyArgs(JSTaggedType *newSp, uint32_t numVregs, uint32_t numActualArgs,
-                                                uint32_t numDeclaredArgs, bool haveExtraArgs = true);
     static inline void NotifyBytecodePcChanged(JSThread *thread);
     static inline JSTaggedValue GetThisFunction(JSTaggedType *sp);
     static inline JSTaggedValue GetNewTarget(JSTaggedType *sp);
