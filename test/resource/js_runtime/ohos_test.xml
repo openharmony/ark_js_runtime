@@ -26,6 +26,11 @@
             <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
+    <target name="DebuggerScriptTest">
+        <preparer>
+            <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
     <target name="DebuggerEventsTest">
         <preparer>
             <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
