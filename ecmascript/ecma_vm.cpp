@@ -50,6 +50,8 @@
 #include "ecmascript/tagged_queue-inl.h"
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/template_map.h"
+#include "ecmascript/ts_types/ts_loader.h"
+#include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
 
@@ -190,6 +192,7 @@ bool EcmaVM::Initialize()
     }
 
     moduleManager_ = new ModuleManager(this);
+    tsLoader_ = new TSLoader(this);
     InitializeFinish();
     notificationManager_->VmStartEvent();
     notificationManager_->VmInitializationEvent(thread_->GetThreadId());
@@ -298,6 +301,11 @@ EcmaVM::~EcmaVM()
     if (moduleManager_ != nullptr) {
         delete moduleManager_;
         moduleManager_ = nullptr;
+    }
+
+    if (tsLoader_ != nullptr) {
+        delete tsLoader_;
+        tsLoader_ = nullptr;
     }
 
     if (thread_ != nullptr) {
@@ -711,8 +719,9 @@ void EcmaVM::Iterate(const RootVisitor &v)
 {
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&globalEnv_)));
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&microJobQueue_)));
-    v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&moduleManager_->ecmaModules_)));
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&regexpCache_)));
+    moduleManager_->Iterate(v);
+    tsLoader_->Iterate(v);
 }
 
 void EcmaVM::SetGlobalEnv(GlobalEnv *global)
@@ -735,7 +744,7 @@ JSHandle<JSTaggedValue> EcmaVM::GetModuleByName(JSHandle<JSTaggedValue> moduleNa
     CString relativeFile = ConvertToString(EcmaString::Cast(moduleName->GetTaggedObject()));
 
     // generate full path
-    CString abcPath = moduleManager_->GenerateModuleFullPath(currentPathFile, relativeFile);
+    CString abcPath = moduleManager_->GenerateAmiPath(currentPathFile, relativeFile);
 
     // Uniform module name
     JSHandle<EcmaString> abcModuleName = factory_->NewFromString(abcPath);

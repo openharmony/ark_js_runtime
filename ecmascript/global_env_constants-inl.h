@@ -37,6 +37,14 @@ inline void GlobalEnvConstants::SetConstant(ConstantIndex index, JSTaggedValue v
     constants_[static_cast<int>(index)] = value;
 }
 
+template<typename T>
+inline void GlobalEnvConstants::SetConstant(ConstantIndex index, JSHandle<T> value)
+{
+    DASSERT_PRINT(index >= ConstantIndex::CONSTATNT_BEGIN && index < ConstantIndex::CONSTATNT_END,
+                  "Root Index out of bound");
+    constants_[static_cast<int>(index)] = value.GetTaggedValue();
+}
+
 inline uintptr_t GlobalEnvConstants::GetGlobalConstantAddr(ConstantIndex index) const
 {
     return ToUintPtr(this) + sizeof(JSTaggedValue) * static_cast<int>(index);

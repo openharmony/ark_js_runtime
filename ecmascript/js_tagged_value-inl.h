@@ -870,6 +870,36 @@ inline bool JSTaggedValue::IsClassInfoExtractor() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsClassInfoExtractor();
 }
 
+inline bool JSTaggedValue::IsTSObjectType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSObjectType();
+}
+
+inline bool JSTaggedValue::IsTSClassType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSClassType();
+}
+
+inline bool JSTaggedValue::IsTSInterfaceType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSInterfaceType();
+}
+
+inline bool JSTaggedValue::IsTSUnionType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSUnionType();
+}
+
+inline bool JSTaggedValue::IsTSImportType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSImportType();
+}
+
+inline bool JSTaggedValue::IsTSClassInstanceType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSClassInstanceType();
+}
+
 inline double JSTaggedValue::ExtractNumber() const
 {
     ASSERT(IsNumber());
