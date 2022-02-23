@@ -2254,18 +2254,8 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    Label exit(env);
-    Label isEcmaObject(env);
-    Label notEcmaObject(env);
     auto proto = GetPrototypeFromHClass(srcHClass);
-    Branch(IsEcmaObject(proto), &isEcmaObject, &exit);
-    Bind(&isEcmaObject);
-    {
-        SetIsProtoTypeToHClass(glue, LoadHClass(proto), TrueConstant());
-        Jump(&exit);
-    }
-    Bind(&exit);
-    SetPrototypeToHClass(StubMachineType::TAGGED_POINTER, glue, dstHClass, proto);
+    SetPrototypeToHClass(StubMachineType::INT64, glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
     SetNumberOfPropsToHClass(glue, dstHClass, GetNumberOfPropsFromHClass(srcHClass));
     SetParentToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
@@ -2273,7 +2263,7 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     SetProtoChangeDetailsToHClass(StubMachineType::INT64, glue, dstHClass,
                                   GetInt64Constant(JSTaggedValue::VALUE_NULL));
     SetEnumCacheToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
-    SetLayoutToHClass(glue, dstHClass, GetLayoutFromHClass(srcHClass));
+    SetLayoutToHClass(StubMachineType::INT64, glue, dstHClass, GetLayoutFromHClass(srcHClass));
     env->PopCurrentLabel();
     return;
 }
