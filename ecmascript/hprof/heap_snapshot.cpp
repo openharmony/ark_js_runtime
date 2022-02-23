@@ -358,6 +358,20 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
                 return GetString("Program");
             case JSType::MACHINE_CODE_OBJECT:
                 return GetString("MachineCode");
+            case JSType::CLASS_INFO_EXTRACTOR:
+                return GetString("ClassInfoExtractor");
+            case JSType::TS_OBJECT_TYPE:
+                return GetString("TSObjectType");
+            case JSType::TS_INTERFACE_TYPE:
+                return GetString("TSInterfaceType");
+            case JSType::TS_CLASS_TYPE:
+                return GetString("TSClassType");
+            case JSType::TS_UNION_TYPE:
+                return GetString("TSUnionType");
+            case JSType::TS_IMPORT_TYPE:
+                return GetString("TSImportType");
+            case JSType::TS_CLASS_INSTANCE_TYPE:
+                return GetString("TSClassInstanceType");
             default:
                 break;
         }

@@ -66,8 +66,13 @@ class JSThread;
     V(JSTaggedValue, JSRealmClass, JS_REALM_CLASS_INDEX, ecma_roots_class)                                            \
     V(JSTaggedValue, JSRegExpClass, JS_REGEXP_CLASS_INDEX, ecma_roots_class)                                          \
     V(JSTaggedValue, MachineCodeClass, MACHINE_CODE_CLASS_INDEX, ecma_roots_class)                                    \
-    V(JSTaggedValue, ClassInfoExtractorHClass, CLASS_INFO_EXTRACTOR_HCLASS_INDEX, ecma_roots_class)
-
+    V(JSTaggedValue, ClassInfoExtractorHClass, CLASS_INFO_EXTRACTOR_HCLASS_INDEX, ecma_roots_class)                   \
+    V(JSTaggedValue, TSObjectTypeClass, TS_OBJECT_TYPE_CLASS_INDEX, ecma_roots_class)                                 \
+    V(JSTaggedValue, TSClassTypeClass, TS_CLASS_TYPE_CLASS_INDEX, ecma_roots_class)                                   \
+    V(JSTaggedValue, TSUnionTypeClass, TS_UNION_TYPE_CLASS_INDEX, ecma_roots_class)                                   \
+    V(JSTaggedValue, TSInterfaceTypeClass, TS_INTERFACE_TYPE_CLASS_INDEX, ecma_roots_class)                           \
+    V(JSTaggedValue, TSClassInstanceTypeClass, TS_CLASS_INSTANCE_TYPE_CLASS_INDEX, ecma_roots_class)                  \
+    V(JSTaggedValue, TSImportTypeClass, TS_IMPORT_TYPE_CLASS_INDEX, ecma_roots_class)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_SPECIAL(V)                               \
     V(JSTaggedValue, Undefined, UNDEFINED_INDEX, ecma_roots_special) \
@@ -342,6 +347,9 @@ public:
     void InitGlobalUndefined();
 
     void SetConstant(ConstantIndex index, JSTaggedValue value);
+
+    template<typename T>
+    void SetConstant(ConstantIndex index, JSHandle<T> value);
 
     uintptr_t GetGlobalConstantAddr(ConstantIndex index) const;
 

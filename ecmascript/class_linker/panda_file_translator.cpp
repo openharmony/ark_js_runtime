@@ -29,6 +29,8 @@
 #include "ecmascript/literal_data_extractor.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
+#include "ecmascript/ts_types/ts_type_table.h"
+#include "ecmascript/ts_types/ts_loader.h"
 #include "libpandabase/mem/mem.h"
 #include "libpandabase/utils/logger.h"
 #include "libpandabase/utils/utf.h"
@@ -55,6 +57,10 @@ void PandaFileTranslator::TranslateAndCollectPandaFile(EcmaVM *vm, const panda_f
                                                        const CString &methodName,
                                                        std::vector<BytecodeTranslationInfo> &infoList)
 {
+    if (vm->GetJSOptions().IsEnableTsAot()) {
+        TSLoader *tsLoader = vm->GetTSLoader();
+        tsLoader->DecodeTSTypes(pf);
+    }
     PandaFileTranslator translator(vm);
     translator.TranslateClasses(pf, methodName, infoList);
 }
