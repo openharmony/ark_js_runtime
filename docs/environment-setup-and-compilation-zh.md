@@ -33,9 +33,9 @@ Ubuntu版本要求18.04或20.04，详细环境搭建参考：
 方舟相关的二进制文件在如下路径：
 
 ```
-out/ohos-arm-release/ark/ark/
-out/ohos-arm-release/ark/ark_js_runtime/
-out/ohos-arm-release/clang_x64/ark/ark/
-out/ohos-arm-release/clang_x64/ark/ark_js_runtime
+out/hi3516dv300/ark/ark/
+out/hi3516dv300/ark/ark_js_runtime/
+out/hi3516dv300/clang_x64/ark/ark/
+out/hi3516dv300/clang_x64/ark/ark_js_runtime
 ```
 

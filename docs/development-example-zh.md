@@ -288,7 +288,7 @@ node
         test262/harness/bin/run.js
         --hostType=panda
         --hostPath=python3
-        --hostArgs='-B test262/run_sunspider.py --ark-tool=/your code path/out/ohos-arm-release/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=/your code path/out/ohos-arm-release/clang_x64/ark/ark/build/src/index.js --libs-dir=/your code path/out/ohos-arm-release/clang_x64/ark/ark:/your code path/out/ohos-arm-release/clang_x64/global/i18n:/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib/ --ark-frontend=ts2panda'
+        --hostArgs='-B test262/run_sunspider.py --ark-tool=/your code path/out/hi3516dv300/clang_x64/ark/ark_js_runtime/ark_js_vm --ark-frontend-tool=/your code path/out/hi3516dv300/clang_x64/ark/ark/build/src/index.js --libs-dir=/your code path/out/hi3516dv300/clang_x64/ark/ark:/your code path/out/hi3516dv300/clang_x64/global/i18n:/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib/ --ark-frontend=ts2panda'
         --threads=15
         --mode=only strict mode
         --timeout=60000
