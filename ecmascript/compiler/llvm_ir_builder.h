@@ -25,8 +25,8 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/stub.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/js_method.h"
 #include "llvm-c/Core.h"
-#include "llvm-c/Types.h"
 
 namespace panda::ecmascript::kungfu {
 using OperandsVector = std::set<int>;
@@ -106,20 +106,18 @@ struct LLVMTFBuilderBasicBlockImpl {
     std::vector<NotMergedPhiDesc> not_merged_phis;
 };
 
-class LLVMStubModule {
+class LLVMModule {
 public:
-    LLVMStubModule(const std::string &name, const std::string &triple);
-    ~LLVMStubModule();
-    void Initialize();
+    LLVMModule(const std::string &name, const std::string &triple);
+    ~LLVMModule();
+    void SetUpForCommonStubs();
+    void SetUpForBytecodeHandlerStubs();
+    LLVMValueRef AddFunc(const panda::ecmascript::JSMethod *method);
     LLVMModuleRef GetModule() const
     {
         return module_;
     }
-    LLVMTypeRef GetFunctionType(size_t index) const
-    {
-        return functionTypes_[index];
-    }
-
+    LLVMTypeRef GetFuncType(const CallSignature *stubDescriptor);
     LLVMValueRef GetFunction(size_t index)
     {
         return functions_[index];
@@ -132,7 +130,7 @@ public:
 
     const CompilationConfig *GetCompilationConfig() const
     {
-        return &compCfg_;
+        return &cfg_;
     }
 
     const std::vector<CallSignature*> &GetCSigns() const
@@ -145,65 +143,66 @@ public:
         return functions_.size();
     }
 private:
-    LLVMValueRef GetLLVMFunctionByCallSignature(CallSignature *stubDescriptor);
-    LLVMTypeRef GetLLVMFunctionTypeCallSignature(CallSignature *stubDescriptor);
+    void InitialLLVMFuncTypeAndFuncByModuleCSigns();
+    LLVMValueRef AddAndGetFunc(CallSignature *stubDescriptor);
     LLVMTypeRef ConvertLLVMTypeFromVariableType(VariableType type);
+
     std::vector<LLVMValueRef> functions_;
-    std::vector<LLVMTypeRef> functionTypes_;
-    std::vector<CallSignature*> callSigns_;
+    std::vector<CallSignature *> callSigns_;
     LLVMModuleRef module_;
-    CompilationConfig compCfg_;
+    CompilationConfig cfg_;
 };
 
 
 #define OPCODES(V) \
-    V(Call, (GateRef gate, const std::vector<GateRef> &inList))                       \
-    V(RuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                \
-    V(BytecodeCall, (GateRef gate, const std::vector<GateRef> &inList))               \
-    V(Alloca, (GateRef gate))                                                         \
-    V(Block, (int id, const OperandsVector &predecessors))                            \
-    V(Goto, (int block, int bbout))                                                   \
-    V(Parameter, (GateRef gate))                                                      \
-    V(Constant, (GateRef gate, std::bitset<64> value))                                \
-    V(RelocatableData, (GateRef gate, uint64_t value))                                \
-    V(ZExtInt, (GateRef gate, GateRef e1))                                            \
-    V(SExtInt, (GateRef gate, GateRef e1))                                            \
-    V(Load, (GateRef gate, GateRef base))                                             \
-    V(Store, (GateRef gate, GateRef base, GateRef value))                             \
-    V(IntRev, (GateRef gate, GateRef e1))                                             \
-    V(Add, (GateRef gate, GateRef e1, GateRef e2))                                    \
-    V(Sub, (GateRef gate, GateRef e1, GateRef e2))                                    \
-    V(Mul, (GateRef gate, GateRef e1, GateRef e2))                                    \
-    V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2))                               \
-    V(IntDiv, (GateRef gate, GateRef e1, GateRef e2))                                 \
-    V(UDiv, (GateRef gate, GateRef e1, GateRef e2))                                   \
-    V(IntOr, (GateRef gate, GateRef e1, GateRef e2))                                  \
-    V(IntAnd, (GateRef gate, GateRef e1, GateRef e2))                                 \
-    V(IntXor, (GateRef gate, GateRef e1, GateRef e2))                                 \
-    V(IntLsr, (GateRef gate, GateRef e1, GateRef e2))                                 \
-    V(IntAsr, (GateRef gate, GateRef e1, GateRef e2))                                 \
-    V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2))                   \
-    V(Cmp, (GateRef gate, GateRef e1, GateRef e2))                                    \
-    V(Branch, (GateRef gate, GateRef cmp, GateRef btrue, GateRef bfalse))             \
-    V(Switch, (GateRef gate, GateRef input, const std::vector<GateRef> &outList))     \
-    V(SwitchCase, (GateRef gate, GateRef switchBranch, GateRef out))                  \
-    V(Phi, (GateRef gate, const std::vector<GateRef> &srcGates))                      \
-    V(Return, (GateRef gate, GateRef popCount, const std::vector<GateRef> &operands)) \
-    V(ReturnVoid, (GateRef gate))                                                     \
-    V(CastIntXToIntY, (GateRef gate, GateRef e1))                                     \
-    V(ChangeInt32ToDouble, (GateRef gate, GateRef e1))                                \
-    V(ChangeUInt32ToDouble, (GateRef gate, GateRef e1))                               \
-    V(ChangeDoubleToInt32, (GateRef gate, GateRef e1))                                \
-    V(BitCast, (GateRef gate, GateRef e1))                                            \
-    V(IntLsl, (GateRef gate, GateRef e1, GateRef e2))                                 \
-    V(Mod, (GateRef gate, GateRef e1, GateRef e2))                                    \
-    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))                         \
+    V(Call, (GateRef gate, const std::vector<GateRef> &inList, OpCode op))                \
+    V(RuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                    \
+    V(NoGcRuntimeCall, (GateRef gate, const std::vector<GateRef> &inList))                \
+    V(BytecodeCall, (GateRef gate, const std::vector<GateRef> &inList))                   \
+    V(Alloca, (GateRef gate))                                                             \
+    V(Block, (int id, const OperandsVector &predecessors))                                \
+    V(Goto, (int block, int bbout))                                                       \
+    V(Parameter, (GateRef gate))                                                          \
+    V(Constant, (GateRef gate, std::bitset<64> value))                                    \
+    V(RelocatableData, (GateRef gate, uint64_t value))                                    \
+    V(ZExtInt, (GateRef gate, GateRef e1))                                                \
+    V(SExtInt, (GateRef gate, GateRef e1))                                                \
+    V(Load, (GateRef gate, GateRef base))                                                 \
+    V(Store, (GateRef gate, GateRef base, GateRef value))                                 \
+    V(IntRev, (GateRef gate, GateRef e1))                                                 \
+    V(Add, (GateRef gate, GateRef e1, GateRef e2))                                        \
+    V(Sub, (GateRef gate, GateRef e1, GateRef e2))                                        \
+    V(Mul, (GateRef gate, GateRef e1, GateRef e2))                                        \
+    V(FloatDiv, (GateRef gate, GateRef e1, GateRef e2))                                   \
+    V(IntDiv, (GateRef gate, GateRef e1, GateRef e2))                                     \
+    V(UDiv, (GateRef gate, GateRef e1, GateRef e2))                                       \
+    V(IntOr, (GateRef gate, GateRef e1, GateRef e2))                                      \
+    V(IntAnd, (GateRef gate, GateRef e1, GateRef e2))                                     \
+    V(IntXor, (GateRef gate, GateRef e1, GateRef e2))                                     \
+    V(IntLsr, (GateRef gate, GateRef e1, GateRef e2))                                     \
+    V(IntAsr, (GateRef gate, GateRef e1, GateRef e2))                                     \
+    V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2))                       \
+    V(Cmp, (GateRef gate, GateRef e1, GateRef e2))                                        \
+    V(Branch, (GateRef gate, GateRef cmp, GateRef btrue, GateRef bfalse))                 \
+    V(Switch, (GateRef gate, GateRef input, const std::vector<GateRef> &outList))         \
+    V(SwitchCase, (GateRef gate, GateRef switchBranch, GateRef out))                      \
+    V(Phi, (GateRef gate, const std::vector<GateRef> &srcGates))                          \
+    V(Return, (GateRef gate, GateRef popCount, const std::vector<GateRef> &operands))     \
+    V(ReturnVoid, (GateRef gate))                                                         \
+    V(CastIntXToIntY, (GateRef gate, GateRef e1))                                         \
+    V(ChangeInt32ToDouble, (GateRef gate, GateRef e1))                                    \
+    V(ChangeUInt32ToDouble, (GateRef gate, GateRef e1))                                   \
+    V(ChangeDoubleToInt32, (GateRef gate, GateRef e1))                                    \
+    V(BitCast, (GateRef gate, GateRef e1))                                                \
+    V(IntLsl, (GateRef gate, GateRef e1, GateRef e2))                                     \
+    V(Mod, (GateRef gate, GateRef e1, GateRef e2))                                        \
+    V(ChangeTaggedPointerToInt64, (GateRef gate, GateRef e1))                             \
     V(ChangeInt64ToTagged, (GateRef gate, GateRef e1))
 
 class LLVMIRBuilder {
 public:
     explicit LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, const Circuit *circuit,
-                           LLVMStubModule *module, LLVMValueRef function, const CompilationConfig *cfg);
+                           LLVMModule *module, LLVMValueRef function, const CompilationConfig *cfg);
     ~LLVMIRBuilder();
     void Build();
 
@@ -269,7 +268,7 @@ private:
     BasicBlockMap bbIdMapBb_;
 
     std::vector<BasicBlock *> phiRebuildWorklist_;
-    LLVMStubModule *stubModule_ {nullptr};
+    LLVMModule *llvmModule_ {nullptr};
     std::unordered_map<GateRef, LLVMValueRef> gateToLLVMMaps_;
     std::unordered_map<OpCode::Op, HandleType> opCodeHandleMap_;
     std::set<OpCode::Op> opCodeHandleIgnore;

@@ -186,9 +186,11 @@ public:
     GateRef Call(const CallSignature *signature, GateRef glue, GateRef target, const std::vector<GateRef> &args,
         GateRef depend = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)));
     GateRef RuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
+    GateRef NoGcRuntimeCall(const CallSignature *signature, GateRef glue, GateRef target,
+                            GateRef depend, std::initializer_list<GateRef> args);
     GateRef VariadicRuntimeCall(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
     GateRef BytecodeCall(const CallSignature *signature, GateRef glue, GateRef target,
-                                GateRef depend, const std::vector<GateRef> &args);
+                         GateRef depend, const std::vector<GateRef> &args);
     static MachineType GetMachineTypeFromVariableType(VariableType type);
     Circuit *GetCircuit()
     {
@@ -200,8 +202,7 @@ public:
     // call operation
     inline GateRef CallRuntime(const CallSignature *signature, GateRef glue, GateRef target,
                                const std::vector<GateRef> & args);
-    inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target,
-                               const std::vector<GateRef> &args);
+    inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, const std::vector<GateRef> &args);
     // memory
     inline GateRef Load(VariableType type, GateRef base, GateRef offset);
 

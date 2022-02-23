@@ -40,6 +40,7 @@
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
 #include "libpandafile/method_data_accessor.h"
+#include "ecmascript/trampoline/trampoline.h"
 
 namespace panda::ecmascript {
 using CommonStubCSigns = kungfu::CommonStubCSigns;

@@ -23,9 +23,9 @@
 #include <vector>
 
 #include "code_generator.h"
-#include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/stub_module.h"
+#include "ecmascript/js_thread.h"
+#include "llvm_ir_builder.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
@@ -109,23 +109,25 @@ struct CodeInfo {
     {
         return stackMapsSection_;
     }
-    int GetStackMapsSize() const
+
+    size_t GetStackMapsSize() const
     {
         return stackMapsSize_;
     }
+
     std::vector<std::pair<uint8_t *, uintptr_t>> GetCodeInfo() const
     {
         return codeInfo_;
     }
 
-    int GetCodeSize() const
-    {
-        return codeBufferPos_;
-    }
-
     uint8_t *GetCodeBuff() const
     {
         return machineCode_;
+    }
+
+    size_t GetCodeSize() const
+    {
+        return codeBufferPos_;
     }
 
 private:
@@ -136,17 +138,17 @@ private:
     const size_t MAX_MACHINE_CODE_SIZE = (1 << 20);  // 1M
     static constexpr int protRWX = PROT_READ | PROT_WRITE | PROT_EXEC;  // NOLINT(hicpp-signed-bitwise)
     static constexpr int flags = MAP_ANONYMOUS | MAP_SHARED;            // NOLINT(hicpp-signed-bitwise)
-    int codeBufferPos_ {0};
+    size_t codeBufferPos_ {0};
     /* <addr, size > for asssembler */
     std::vector<std::pair<uint8_t *, uintptr_t>> codeInfo_ {};
     /* stack map */
     uint8_t *stackMapsSection_ {nullptr};
-    int stackMapsSize_ {0};
+    size_t stackMapsSize_ {0};
 };
 
 class LLVMAssembler {
 public:
-    explicit LLVMAssembler(LLVMModuleRef module);
+    LLVMAssembler(LLVMModuleRef module, bool isFpElim = false);
     virtual ~LLVMAssembler();
     void Run();
     const LLVMExecutionEngineRef &GetEngine()
@@ -158,18 +160,20 @@ public:
     {
         return codeInfo_.GetStackMapsSection();
     }
-    int GetStackMapsSize() const
+
+    size_t GetStackMapsSize() const
     {
         return codeInfo_.GetStackMapsSize();
     }
 
-    int GetCodeSize() const
-    {
-        return codeInfo_.GetCodeSize();
-    }
     uint8_t *GetCodeBuffer() const
     {
         return codeInfo_.GetCodeBuff();
+    }
+
+    size_t GetCodeSize() const
+    {
+        return codeInfo_.GetCodeSize();
     }
 
     void *GetFuncPtrFromCompiledModule(LLVMValueRef function)
@@ -181,7 +185,7 @@ private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
     void BuildAndRunPasses();
-    void Initialize();
+    void Initialize(bool isFpElim);
 
     LLVMMCJITCompilerOptions options_ {};
     LLVMModuleRef module_;
@@ -192,36 +196,15 @@ private:
 
 class LLVMIRGeneratorImpl : public CodeGeneratorImpl {
 public:
-    explicit LLVMIRGeneratorImpl(LLVMStubModule *module) : module_(module) {}
+    explicit LLVMIRGeneratorImpl(LLVMModule *module) : module_(module) {}
     ~LLVMIRGeneratorImpl() = default;
     void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, size_t index,
                              const CompilationConfig *cfg) override;
+    void GenerateCode(Circuit *circuit, const ControlFlowGraph &graph, const CompilationConfig *cfg,
+        const JSMethod *method) override;
 
 private:
-    LLVMStubModule *module_;
-};
-
-class LLVMModuleAssembler {
-public:
-    explicit LLVMModuleAssembler(LLVMStubModule *module)
-        : stubmodule_(module), assembler_(module->GetModule()) {}
-    void AssembleModule();
-    void AssembleStubModule(panda::ecmascript::StubModule *module);
-    int GetCodeSize() const
-    {
-        return assembler_.GetCodeSize();
-    }
-    int GetStackMapsSize() const
-    {
-        return assembler_.GetStackMapsSize();
-    }
-    void CopyAssemblerToCode(panda::ecmascript::MachineCode *code)
-    {
-        code->SetData(reinterpret_cast<uint8_t *>(assembler_.GetCodeBuffer()), assembler_.GetCodeSize());
-    }
-private:
-    LLVMStubModule *stubmodule_;
-    LLVMAssembler assembler_;
+    LLVMModule *module_;
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_LLVM_CODEGEN_H

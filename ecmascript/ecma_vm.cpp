@@ -45,6 +45,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/mem/machine_code.h"
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/taskpool/taskpool.h"
@@ -189,8 +190,10 @@ bool EcmaVM::Initialize()
         globalEnv->SetTemplateMap(thread_, TemplateMap::Create(thread_));
         globalEnv->SetRegisterSymbols(GetJSThread(), SymbolTable::Create(GetJSThread()));
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        std::string moduleFile = options_.GetStubModuleFile();
-        thread_->LoadStubModule(moduleFile.c_str());
+        std::string comStubFile = options_.GetComStubFile();
+        thread_->LoadStubsFromFile(comStubFile);
+        std::string bcStubFile = options_.GetBcStubFile();
+        thread_->LoadStubsFromFile(bcStubFile);
 #endif
         SetupRegExpResultCache();
         microJobQueue_ = factory_->NewMicroJobQueue().GetTaggedValue();
@@ -211,6 +214,9 @@ bool EcmaVM::Initialize()
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     tsLoader_ = new TSLoader(this);
+    aotInfo_ = new AotCodeInfo();
+    std::string file = options_.GetAOTOutputFile();
+    LoadAOTFile(file);
     InitializeFinish();
     notificationManager_->VmStartEvent();
     notificationManager_->VmInitializationEvent(thread_->GetThreadId());
@@ -327,6 +333,11 @@ EcmaVM::~EcmaVM()
     if (tsLoader_ != nullptr) {
         delete tsLoader_;
         tsLoader_ = nullptr;
+    }
+
+    if (aotInfo_ != nullptr) {
+        delete aotInfo_;
+        aotInfo_  = nullptr;
     }
 
     if (thread_ != nullptr) {
@@ -665,5 +676,12 @@ void EcmaVM::ClearNativeMethodsData()
 void EcmaVM::SetupRegExpResultCache()
 {
     regexpCache_ = builtins::RegExpExecResultCache::CreateCacheTable(thread_);
+}
+
+void EcmaVM::LoadAOTFile(std::string fileName)
+{
+    if (!aotInfo_->Deserialize(this, fileName)) {
+        return;
+    }
 }
 }  // namespace panda::ecmascript

@@ -51,12 +51,15 @@ public:
         RuntimeOptions::AddOptions(parser);
         parser->Add(&enableArkTools_);
         parser->Add(&enableStubAot_);
-        parser->Add(&stubModuleFile_);
+        parser->Add(&comStubFile_);
+        parser->Add(&bcStubFile_);
         parser->Add(&enableCpuprofiler_);
         parser->Add(&arkProperties_);
         parser->Add(&enableTsAot_);
         parser->Add(&maxNonmovableSpaceCapacity_);
         parser->Add(&asmInter_);
+        parser->Add(&aotOutputFile_);
+        parser->Add(&aotTargetTriple_);
     }
 
     bool IsEnableArkTools() const
@@ -89,19 +92,54 @@ public:
         return enableStubAot_.WasSet();
     }
 
-    std::string GetStubModuleFile() const
+    std::string GetComStubFile() const
     {
-        return stubModuleFile_.GetValue();
+        return comStubFile_.GetValue();
     }
 
-    void SetStubModuleFile(std::string value)
+    void SetComStubFile(std::string value)
     {
-        stubModuleFile_.SetValue(std::move(value));
+        comStubFile_.SetValue(std::move(value));
     }
 
-    bool WasSetStubModuleFile() const
+    bool WasSetComStubFile() const
     {
-        return stubModuleFile_.WasSet();
+        return comStubFile_.WasSet();
+    }
+
+    std::string GetBcStubFile() const
+    {
+        return bcStubFile_.GetValue();
+    }
+
+    void SetBcStubFile(std::string value)
+    {
+        bcStubFile_.SetValue(std::move(value));
+    }
+
+    bool WasBcComStubFile() const
+    {
+        return bcStubFile_.WasSet();
+    }
+
+    std::string GetAOTOutputFile() const
+    {
+        return aotOutputFile_.GetValue();
+    }
+
+    void SetAOTOutputFile(std::string value)
+    {
+        aotOutputFile_.SetValue(std::move(value));
+    }
+
+    std::string GetAotTargetTriple() const
+    {
+        return aotTargetTriple_.GetValue();
+    }
+
+    void SetAotTargetTriple(std::string value)
+    {
+        aotTargetTriple_.SetValue(std::move(value));
     }
 
     bool IsEnableForceGC() const
@@ -291,15 +329,25 @@ private:
     PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
         R"(Enable cpuprofiler to sample call stack and output to json file. Default: false)"};
     PandArg<bool> enableStubAot_ {"enable-stub-aot", false, R"(enable aot of fast stub. Default: false)"};
-    PandArg<std::string> stubModuleFile_ {"stub-module-file",
-        R"(stub.m)",
-        R"(Path to stub module file. Default: "stub.m")"};
+    PandArg<std::string> comStubFile_ {"com-stub-file",
+        R"(com_stub.m)",
+        R"(Path of file includes common stubs module compiled by stub compiler. Default: "com_stub.m")"};
+    PandArg<std::string> bcStubFile_ {"bc-stub-file",
+        R"(bc_stub.m)",
+        R"(Path of file includes bytecode handler stubs module compiled by stub compiler. Default: "bc_stub.m")"};
     PandArg<bool> enableForceGc_ {"enable-force-gc", true, R"(enable force gc when allocating object)"};
     PandArg<bool> forceFullGc_ {"force-full-gc",
         true,
         R"(if true trigger full gc, else trigger semi and old gc)"};
     PandArg<int> arkProperties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
-    PandArg<int> enableTsAot_ {"enable-ts-aot", true, R"(enable aot of fast stub. Default: false)"};
+    PandArg<int> enableTsAot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
+    PandArg<std::string> aotOutputFile_ {"aot-output-file",
+        R"(aot_output_file.m)",
+        R"(Path to AOT output file. Default: "aot_output_file.m")"};
+    PandArg<std::string> aotTargetTriple_ {"aot-target-triple", R"(x86_64-unknown-linux-gnu)",
+        R"(stub aot compiler target triple.
+        Possible values: ["x86_64-unknown-linux-gnu", "arm-unknown-linux-gnu", "aarch64-unknown-linux-gnu"].
+        Default: "x86_64-unknown-linux-gnu")"};
     PandArg<size_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
         16 * 1024 * 1024,
         R"(set max semi space capacity)"};

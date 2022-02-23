@@ -1181,9 +1181,9 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             {
                 const CallSignature *insertOldToNewRememberedSet =
                     RuntimeStubCSigns::Get(RTSTUB_ID(InsertOldToNewRememberedSet));
-                CallRuntime(insertOldToNewRememberedSet, glue,
-                            GetIntPtrConstant(RTSTUB_ID(InsertOldToNewRememberedSet) + NOGC_RTSTUB_CSIGNS_BEGIN),
-                            { glue, objectRegion, slotAddr });
+                CallNoGCRuntime(insertOldToNewRememberedSet, glue,
+                    GetIntPtrConstant(RTSTUB_ID(InsertOldToNewRememberedSet)),
+                    { glue, objectRegion, slotAddr });
                 Jump(&notValidIndex);
             }
         }
@@ -1198,8 +1198,8 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
 
             Bind(&marking);
             const CallSignature *markingBarrier = RuntimeStubCSigns::Get(RTSTUB_ID(MarkingBarrier));
-            CallRuntime(markingBarrier, glue,
-                GetIntPtrConstant(RTSTUB_ID(MarkingBarrier) + NOGC_RTSTUB_CSIGNS_BEGIN), {
+            CallNoGCRuntime(markingBarrier, glue,
+                GetIntPtrConstant(RTSTUB_ID(MarkingBarrier)), {
                 glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion });
             Jump(&exit);
         }
@@ -3771,8 +3771,7 @@ GateRef Stub::DoubleToInt(GateRef glue, GateRef x)
     Bind(&overflow);
     {
         const CallSignature *doubleToInt = RuntimeStubCSigns::Get(RTSTUB_ID(DoubleToInt));
-        result = CallRuntime(doubleToInt, glue,
-            GetIntPtrConstant(RTSTUB_ID(DoubleToInt) + NOGC_RTSTUB_CSIGNS_BEGIN), { x });
+        result = CallNoGCRuntime(doubleToInt, glue, GetIntPtrConstant(RTSTUB_ID(DoubleToInt)), { x });
         Jump(&exit);
     }
     Bind(&exit);

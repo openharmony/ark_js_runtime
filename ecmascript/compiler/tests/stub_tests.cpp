@@ -51,7 +51,7 @@ public:
         BytecodeStubCSigns::Initialize();
         CommonStubCSigns::Initialize();
         RuntimeStubCSigns::Initialize();
-        stubModule.Initialize();
+        stubModule.SetUpForCommonStubs();
     }
 
     void TearDown() override
@@ -75,7 +75,7 @@ public:
     PandaVM *instance {nullptr};
     EcmaHandleScope *scope {nullptr};
     JSThread *thread {nullptr};
-    LLVMStubModule stubModule {"fast_stub", "x86_64-unknown-linux-gnu"};
+    LLVMModule stubModule {"stub_tests", "x86_64-unknown-linux-gnu"};
 };
 
 HWTEST_F_L0(StubTest, FastAddTest)
