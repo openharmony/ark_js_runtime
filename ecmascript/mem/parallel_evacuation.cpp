@@ -252,7 +252,7 @@ void ParallelEvacuation::UpdateWeakReference()
         }
         if (isFullMark) {
             auto markBitmap = objectRegion->GetMarkBitmap();
-            if (!markBitmap->Test(header)) {
+            if (markBitmap == nullptr || !markBitmap->Test(header)) {
                 return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
             }
         }

@@ -111,7 +111,7 @@ namespace {
 constexpr std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 }
 
-int JSNApi::vmCount = 0;
+int JSNApi::vmCount = 1;
 static os::memory::Mutex mutex;
 
 // ------------------------------------ Panda -----------------------------------------------
@@ -167,9 +167,10 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
     if (runtime == nullptr) {
         // Only Ark js app
         if (!CreateRuntime(option)) {
-            vmCount--;
+            vmCount = 0;
             return nullptr;
         }
+        vmCount--;
         runtime = Runtime::GetCurrent();
         return EcmaVM::Cast(runtime->GetPandaVM());
     }
