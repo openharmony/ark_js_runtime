@@ -667,7 +667,7 @@ public:
     inline GateRef SetPrototypeToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef proto);
     inline GateRef SetProtoChangeDetailsToHClass(StubMachineType type, GateRef glue, GateRef hClass,
 	                                               GateRef protoChange);
-    inline GateRef SetLayoutToHClass(GateRef glue, GateRef hClass, GateRef attr);
+    inline GateRef SetLayoutToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef attr);
     inline GateRef SetParentToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef parent);
     inline GateRef SetEnumCacheToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef key);
     inline GateRef SetTransitionsToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef transition);
