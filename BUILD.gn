@@ -336,6 +336,8 @@ ecma_source = [
   "ecmascript/interpreter/slow_runtime_helper.cpp",
   "ecmascript/interpreter/slow_runtime_stub.cpp",
   "ecmascript/jobs/micro_job_queue.cpp",
+  "ecmascript/jspandafile/js_pandafile_allocator.cpp",
+  "ecmascript/jspandafile/js_pandafile_manager.cpp",
   "ecmascript/js_api_tree_map.cpp",
   "ecmascript/js_api_tree_map_iterator.cpp",
   "ecmascript/js_api_tree_set.cpp",

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
-#define ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
+#ifndef ECMASCRIPT_JS_PANDAFILE_ALLOCATOR_H
+#define ECMASCRIPT_JS_PANDAFILE_ALLOCATOR_H
 
-#include "program_object.h"
-#include "ecmascript/mem/native_area_allocator.h"
+#include "ecmascript/class_linker/panda_file_translator.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 
-namespace panda {
-namespace ecmascript {
-JSTaggedValue ConstantPool::GetObjectFromCache(uint32_t index) const
-{
-    return Get(index);
-}
-}  // namespace ecmascript
-}  // namespace panda
-#endif  // ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
+namespace panda::ecmascript {
+/**
+ * allocate C buffer cross vm instance
+ */
+class JsPandaFileAllocator {
+public:
+    static void *AllocateBuffer(size_t size);
+    static void FreeBuffer(void *mem);
+};
+}  // namespace panda::ecmascript
+#endif // ECMASCRIPT_JS_PANDAFILE_ALLOCATOR_H

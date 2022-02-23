@@ -32,6 +32,8 @@ struct BytecodeTranslationInfo {
 
 class JSThread;
 class Program;
+class JSPandaFileManager;
+class JsPandaFileInfo;
 
 class PandaFileTranslator {
 public:
@@ -41,12 +43,13 @@ public:
     ~PandaFileTranslator() = default;
     NO_COPY_SEMANTIC(PandaFileTranslator);
     NO_MOVE_SEMANTIC(PandaFileTranslator);
-    static JSHandle<Program> TranslatePandaFile(EcmaVM *vm, const panda_file::File &pf,
-                                                const CString &methodName);
     static void TranslateAndCollectPandaFile(EcmaVM *vm, const panda_file::File &pf, const CString &methodName,
                                              std::vector<BytecodeTranslationInfo> &infoList);
     JSHandle<JSFunction> DefineMethodInLiteral(JSThread *thread, uint32_t methodId, FunctionKind kind,
                                                uint16_t length) const;
+    Program *GenerateProgram(JsPandaFileInfo *jsPandaFileInfo);
+    JsPandaFileInfo *TranslateClasses(const panda_file::File &pf, const CString &methodName,
+                                      std::vector<BytecodeTranslationInfo> &infoList);
 
 private:
     enum class ConstPoolType : uint8_t {
@@ -99,9 +102,6 @@ private:
     };
     uint32_t GetOrInsertConstantPool(ConstPoolType type, uint32_t offset);
     const JSMethod *FindMethods(uint32_t offset) const;
-    Program *GenerateProgram(const panda_file::File &pf);
-    void TranslateClasses(const panda_file::File &pf, const CString &methodName,
-                          std::vector<BytecodeTranslationInfo> &infoList);
     void TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf, const JSMethod *method,
                            std::vector<BytecodeTranslationInfo> &infoList);
     void FixInstructionId32(const BytecodeInstruction &inst, uint32_t index, uint32_t fixOrder = 0) const;
@@ -127,9 +127,7 @@ private:
     uint32_t numMethods_{0};
     uint32_t mainMethodIndex_{0};
     JSMethod *methods_ {nullptr};
-
     std::unordered_map<uint32_t, uint64_t> constpoolMap_;
-    std::set<const uint8_t *> translated_code_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
