@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "ecmascript/js_thread.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/global_env_constants-inl.h"
@@ -20,7 +19,6 @@
 #include "ecmascript/internal_call_params.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/mem/machine_code.h"
-#include "ecmascript/stub_module.h"
 #include "include/panda_vm.h"
 
 namespace panda::ecmascript {
@@ -242,13 +240,13 @@ void JSThread::ResetGuardians()
     stableArrayElementsGuardians_ = true;
 }
 
-void JSThread::LoadStubModule(const char *moduleFile)
+void JSThread::LoadStubsFromFile(std::string &fileName)
 {
-    StubModule stubModule;
-    std::string fileName(moduleFile);
-    stubModule.Load(this, fileName);
-
-    auto stubs = stubModule.GetStubs();
+    AotCodeInfo aotInfo;
+    if (!aotInfo.DeserializeForStub(this, fileName)) {
+        return;
+    }
+    auto stubs = aotInfo.GetStubs();
     for (size_t i = 0; i < stubs.size(); i++) {
         auto des = stubs[i];
         if (des.IsCommonStub()) {
@@ -290,7 +288,7 @@ void JSThread::LoadStubModule(const char *moduleFile)
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif
-    stubCode_ = stubModule.GetCode();
+    stubCode_ = aotInfo.GetCode();
 }
 
 bool JSThread::CheckSafepoint() const

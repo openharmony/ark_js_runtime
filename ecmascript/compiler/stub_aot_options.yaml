@@ -16,10 +16,15 @@ module:
   namespace: panda
 
 options:
-- name: stub-output-file
+- name: com-stub-out
   type: std::string
-  default: stub.m
-  description: stub aot compiler output file name
+  default: com_stub.m
+  description: name of stub compiler output file, which includes common stubs
+
+- name: bc-stub-out
+  type: std::string
+  default: bc_stub.m
+  description: name of stub compiler output file, which includes bytecode handler stubs
 
 - name: target-triple
   type: std::string

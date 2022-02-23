@@ -94,11 +94,17 @@ public:
 
 class LLVMIRGenPass {
 public:
-    bool Run(PassData* data)
+    void CreateCodeGen(LLVMModule *module)
     {
+        llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module);
+    }
+    bool Run(PassData *data, LLVMModule *module, const JSMethod *method)
+    {
+        CreateCodeGen(module);
+        CodeGenerator codegen(llvmImpl_);
+        codegen.Run(data->GetCircuit(), data->GetScheduleResult(), module->GetCompilationConfig(), method);
         return true;
     }
-
 private:
     std::unique_ptr<CodeGeneratorImpl> llvmImpl_ {nullptr};
 };
