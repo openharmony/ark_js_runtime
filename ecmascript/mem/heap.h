@@ -361,6 +361,17 @@ public:
 
     inline size_t GetHeapObjectSize() const;
 
+    void AdjustOldSpaceLimit();
+
+    size_t GetPromotedSize() const
+    {
+        return promotedSize_;
+    }
+
+    size_t GetSemiSpaceCopiedSize() const
+    {
+        return semiSpaceCopiedSize_;
+    }
 private:
     void IncreaseTaskCount();
 
@@ -436,6 +447,11 @@ private:
     MarkType markType_;
     bool concurrentMarkingEnabled_ {true};
     bool isFullGCRequested_ {false};
+    bool oldSpaceLimitAdjusted_ {false};
+    size_t startNewSpaceSize_ {0};
+    size_t promotedSize_ {0};
+    size_t semiSpaceCopiedSize_ {0};
+    size_t previousSemiSpaceCopiedSize_ {0};
     inline void SetMaximumCapacity(SemiSpace *space, size_t maximumCapacity);
 };
 }  // namespace panda::ecmascript

@@ -32,6 +32,7 @@ void ParallelEvacuation::Initialize()
     heap_->ResetNewSpace();
     allocator_ = new TlabAllocator(heap_);
     ageMark_ = heap_->GetFromSpace()->GetAgeMark();
+    promotedSize_ = 0;
 }
 
 void ParallelEvacuation::Finalize()
@@ -93,15 +94,18 @@ bool ParallelEvacuation::EvacuateSpace(TlabAllocator *allocator, bool isMain)
 
 void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region)
 {
-    bool isPromoted = region->InOldGeneration() || region->BelowAgeMark();
-    if (!isPromoted && IsWholeRegionEvacuate(region)) {
+    bool isInOldGen = region->InOldGeneration();
+    bool isBelowAgeMark = region->BelowAgeMark();
+    size_t promotedSize = 0;
+    if (!isBelowAgeMark && !isInOldGen && IsWholeRegionEvacuate(region)) {
         if (heap_->GetHeapManager()->MoveYoungRegionSync(region)) {
             return;
         }
     }
     auto markBitmap = region->GetMarkBitmap();
     ASSERT(markBitmap != nullptr);
-    markBitmap->IterateOverMarkedChunks([this, &region, &isPromoted, &allocator](void *mem) {
+    markBitmap->IterateOverMarkedChunks([this, &region, &isInOldGen, &isBelowAgeMark,
+                                         &promotedSize, &allocator](void *mem) {
         ASSERT(region->InRange(ToUintPtr(mem)));
         auto header = reinterpret_cast<TaggedObject *>(mem);
         auto klass = header->GetClass();
@@ -109,7 +113,12 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
 
         uintptr_t address = 0;
         bool actualPromoted = false;
-        if (isPromoted || (region->HasAgeMark() && ToUintPtr(mem) < ageMark_)) {
+        bool hasAgeMark = isBelowAgeMark || (region->HasAgeMark() && ToUintPtr(mem) < ageMark_);
+        if (hasAgeMark) {
+            address = allocator->Allocate(size, OLD_SPACE);
+            actualPromoted = true;
+            promotedSize += size;
+        } else if (isInOldGen) {
             address = allocator->Allocate(size, OLD_SPACE);
             actualPromoted = true;
         } else {
@@ -117,6 +126,9 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
             if (address == 0) {
                 address = allocator->Allocate(size, OLD_SPACE);
                 actualPromoted = true;
+                if (hasAgeMark) {
+                    promotedSize += size;
+                }
             }
         }
         LOG_IF(address == 0, FATAL, RUNTIME) << "Evacuate object failed:" << size;
@@ -131,6 +143,7 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
             SetObjectFieldRSet(reinterpret_cast<TaggedObject *>(address), klass);
         }
     });
+    promotedSize_.fetch_add(promotedSize);
 }
 
 void ParallelEvacuation::VerifyHeapObject(TaggedObject *object)
@@ -326,7 +339,10 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
 
             uintptr_t freeEnd = ToUintPtr(mem);
             if (freeStart != freeEnd) {
-                FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeEnd - freeStart);
+                size_t freeSize = freeEnd - freeStart;
+                FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeSize);
+                SemiSpace *toSpace = const_cast<SemiSpace *>(heap_->GetNewSpace());
+                toSpace->DecrementLiveObjectSize(freeSize);
             }
 
             freeStart = freeEnd + klass->SizeFromJSHClass(header);

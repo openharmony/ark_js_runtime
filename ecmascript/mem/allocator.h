@@ -125,12 +125,12 @@ public:
 
     size_t GetAllocatedSize() const
     {
-        return allocationSizeAccumulator_ + promotedSizeAccumulator_;
+        return allocationSizeAccumulator_;
     }
 
-    void IncrementPromotedSize(size_t size)
+    void IncrementAllocatedSize(size_t allocatedSize)
     {
-        promotedSizeAccumulator_ += size;
+        allocationSizeAccumulator_ += allocatedSize;
     }
 
 private:
@@ -142,7 +142,6 @@ private:
     MemSpaceType type_ = OLD_SPACE;
     bool sweeping_ = false;
     size_t allocationSizeAccumulator_ {0};
-    size_t promotedSizeAccumulator_ {0};
 };
 }  // namespace panda::ecmascript
 

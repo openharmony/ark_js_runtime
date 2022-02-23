@@ -114,6 +114,20 @@ public:
         return hugeObjectAllocSizeSinceGC_;
     }
 
+    void AddSurvivalRate(double rate)
+    {
+        recordedSurvivalRates_.Push(rate);
+    }
+
+    double GetAverageSurvivalRate() const
+    {
+        int count = recordedSurvivalRates_.Count();
+        if (count == 0) {
+            return 0;
+        }
+        double result = recordedSurvivalRates_.Sum([](double x, double y) { return x + y;}, 0.0);
+        return result / count;
+    }
 private:
     static constexpr int LENGTH = 10;
     static double CalculateAverageSpeed(const base::GCRingBuffer<BytesAndDuration, LENGTH> &buffer);
@@ -150,6 +164,7 @@ private:
 
     base::GCRingBuffer<BytesAndDuration, LENGTH> recordedConcurrentMarks_;
     base::GCRingBuffer<BytesAndDuration, LENGTH> recordedSemiConcurrentMarks_;
+    base::GCRingBuffer<double, LENGTH> recordedSurvivalRates_;
 
     static constexpr double THROUGHPUT_TIME_FRAME_MS = 5000;
     static constexpr int MILLISECOND_PER_SECOND = 1000;

@@ -39,6 +39,11 @@ public:
     void Finalize();
     void Evacuate();
 
+    size_t GetPromotedSize() const
+    {
+        return promotedSize_;
+    }
+
 private:
     class EvacuationTask : public Task {
     public:
@@ -149,6 +154,7 @@ private:
     std::atomic_int parallel_ = 0;
     os::memory::Mutex mutex_;
     os::memory::ConditionVariable condition_;
+    std::atomic<size_t> promotedSize_ = 0;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_MEM_PARALLEL_EVACUATION_H
