@@ -155,7 +155,6 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByValue, 5)              \
     V(TryStoreICByName, 5)              \
     V(TryStoreICByValue, 6)             \
-    V(TestAbsoluteAddressRelocation, 2) \
     INTERPRETER_STUB_HELPER_LIST(V)
 
 
@@ -164,7 +163,8 @@ namespace panda::ecmascript::kungfu {
     V(FastMulGCTest, 3)             \
     V(PhiGateTest, 1)               \
     V(LoopTest, 1)                  \
-    V(LoopTest1, 1)
+    V(LoopTest1, 1)                 \
+    V(TestAbsoluteAddressRelocation, 2)
 
 #define CALL_STUB_LIST(V)        \
     FAST_RUNTIME_STUB_LIST(V)    \

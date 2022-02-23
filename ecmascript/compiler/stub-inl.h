@@ -1468,10 +1468,10 @@ GateRef Stub::SetProtoChangeDetailsToHClass(StubMachineType type, GateRef glue, 
     return Store(type, glue, hClass, offset, protoChange);
 }
 
-GateRef Stub::SetLayoutToHClass(GateRef glue, GateRef hClass, GateRef attr)
+GateRef Stub::SetLayoutToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef attr)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::LAYOUT_OFFSET);
-    return Store(StubMachineType::TAGGED_POINTER, glue, hClass, offset, attr);
+    return Store(type, glue, hClass, offset, attr);
 }
 
 GateRef Stub::SetParentToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef parent)
