@@ -121,7 +121,7 @@ public:
         return Get(NUMBER_ELEMENTS_OFFSET).GetInt();;
     }
 
-    static int GetTSTypeTableOffset(int entry)
+    static uint32_t GetTSTypeTableOffset(int entry)
     {
         return entry * ELEMENT_OFFSET + TYPE_TABLE_OFFSET;
     }
