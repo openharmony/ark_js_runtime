@@ -1049,7 +1049,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     Label shouldReturn(env);
     Label shouldContinue(env);
 
-    Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &shouldReturn, &shouldContinue);
+    Branch(IntPtrEqual(ChangeTaggedPointerToInt64(*varPc), GetInt64Constant(0)), &shouldReturn, &shouldContinue);
     Bind(&shouldReturn);
     {
         Return();
@@ -3948,7 +3948,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     GateRef exception = Load(StubMachineType::TAGGED, glue, GetIntPtrConstant(0));
     StubDescriptor *upFrame = GET_STUBDESCRIPTOR(UpFrame);
     varPc = CallRuntime(upFrame, glue, GetInt64Constant(FAST_STUB_ID(UpFrame)), { glue, sp });
-    Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcIsInvalid, &pcNotInvalid);
+    Branch(IntPtrEqual(ChangeTaggedPointerToInt64(*varPc), GetInt64Constant(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
         Return();
