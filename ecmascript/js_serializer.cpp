@@ -956,6 +956,7 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadEcmaString()
     ObjectFactory *factory = thread_->GetEcmaVM()->GetFactory();
     if (stringLength == 0) {
         JSHandle<JSTaggedValue> emptyString = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
+        referenceMap_.insert(std::pair(objectId_++, emptyString));
         return emptyString;
     }
 
