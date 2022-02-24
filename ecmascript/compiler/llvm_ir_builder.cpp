@@ -1412,7 +1412,11 @@ void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
     LLVMValueRef result = nullptr;
     auto e1ValCode = circuit_->LoadGatePtrConst(e1)->GetMachineType();
     [[maybe_unused]]auto e2ValCode = circuit_->LoadGatePtrConst(e2)->GetMachineType();
-    ASSERT(e1ValCode == e2ValCode);
+    ASSERT((e1ValCode == e2ValCode) ||
+        (compCfg_->Is32Bit() && (e1ValCode == MachineType::ARCH) && (e2ValCode == MachineType::I32)) ||
+        (compCfg_->Is64Bit() && (e1ValCode == MachineType::ARCH) && (e2ValCode == MachineType::I64)) ||
+        (compCfg_->Is32Bit() && (e2ValCode == MachineType::ARCH) && (e1ValCode == MachineType::I32)) ||
+        (compCfg_->Is64Bit() && (e2ValCode == MachineType::ARCH) && (e1ValCode == MachineType::I64)));
     LLVMIntPredicate intOpcode = LLVMIntEQ;
     LLVMRealPredicate realOpcode = LLVMRealPredicateFalse;
     switch (circuit_->GetOpCode(gate)) {
