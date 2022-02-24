@@ -540,6 +540,14 @@ JSTaggedType RuntimeTrampolines::AsyncFunctionAwaitUncaught(uintptr_t argGlue,
         JSTaggedValue(asyncFuncObj), JSTaggedValue(value)).GetRawData();
 }
 
+JSTaggedType RuntimeTrampolines::AsyncFunctionResolveOrReject(uintptr_t argGlue, JSTaggedType asyncFuncObj,
+                                                              JSTaggedType value, bool is_resolve)
+{
+    auto thread = JSThread::GlueToJSThread(argGlue);
+    return SlowRuntimeStub::AsyncFunctionResolveOrReject(thread,
+        JSTaggedValue(asyncFuncObj), JSTaggedValue(value), is_resolve).GetRawData();
+}
+
 void RuntimeTrampolines::ThrowUndefinedIfHole(uintptr_t argGlue, JSTaggedType obj)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);

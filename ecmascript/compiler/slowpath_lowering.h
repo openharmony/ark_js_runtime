@@ -114,15 +114,14 @@ public:
     void CallRuntimeLowering();
 
 private:
+    void LowerHIR(CircuitBuilder &cirBuilder, GateRef oldGate, GateRef newGate);
     void Lower(GateRef gate, EcmaOpcode bytecode);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
-    void LowerHIR(CircuitBuilder &builder, GateRef oldGate, GateRef newGate);
-
-    inline GateRef GetLoweringInt64Constant(int64_t value)
-    {
-        auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-        return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, value, {constantList}, GateType::C_VALUE);
-    }
+    void LowerCreateIterResultObj(GateRef gate, GateRef glue);
+    void LowerSuspendGenerator(GateRef gate, GateRef glue);
+    void LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue);
+    void LowerAsyncFunctionResolve(GateRef gate, GateRef glue);
+    void LowerAsyncFunctionReject(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
