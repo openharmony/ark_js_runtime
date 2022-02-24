@@ -72,9 +72,13 @@ JSTaggedValue SlowRuntimeStub::NegDyn(JSThread *thread, JSTaggedValue value)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
     JSHandle<JSTaggedValue> input(thread, value);
-    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, input);
+    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, input));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-
+    if (inputVal->IsBigInt()) {
+        JSHandle<BigInt> bigValue(inputVal);
+        return BigInt::UnaryMinus(thread, bigValue).GetTaggedValue();
+    }
+    JSTaggedNumber number(inputVal.GetTaggedValue());
     if (number.IsInt()) {
         int32_t intValue = number.GetInt();
         if (intValue == 0) {
@@ -85,7 +89,6 @@ JSTaggedValue SlowRuntimeStub::NegDyn(JSThread *thread, JSTaggedValue value)
     if (number.IsDouble()) {
         return JSTaggedValue(-number.GetDouble());
     }
-
     UNREACHABLE();
 }
 
@@ -124,17 +127,22 @@ JSTaggedValue SlowRuntimeStub::ToNumber(JSThread *thread, JSTaggedValue value)
 
     JSHandle<JSTaggedValue> number(thread, value);
     // may return exception
-    return JSTaggedValue::ToNumber(thread, number);
+    return JSTaggedValue::ToNumeric(thread, number);
 }
 
 JSTaggedValue SlowRuntimeStub::NotDyn(JSThread *thread, JSTaggedValue value)
 {
     INTERPRETER_TRACE(thread, NotDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-    JSHandle<JSTaggedValue> valueHandle(thread, value);
-    int32_t number = JSTaggedValue::ToInt32(thread, valueHandle);
+    JSHandle<JSTaggedValue> input(thread, value);
+    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, input));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    return JSTaggedValue(~number);  // NOLINT(hicpp-signed-bitwise)
+    if (inputVal->IsBigInt()) {
+        JSHandle<BigInt> bigValue(inputVal);
+        return BigInt::BitwiseNOT(thread, bigValue).GetTaggedValue();
+    }
+    int32_t number = JSTaggedValue::ToInt32(thread, inputVal);
+    return JSTaggedValue(~number); // NOLINT(hicpp-signed-bitwise)
 }
 
 JSTaggedValue SlowRuntimeStub::IncDyn(JSThread *thread, JSTaggedValue value)
@@ -142,10 +150,15 @@ JSTaggedValue SlowRuntimeStub::IncDyn(JSThread *thread, JSTaggedValue value)
     INTERPRETER_TRACE(thread, IncDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valueHandle(thread, value);
-    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, valueHandle);
+    JSHandle<JSTaggedValue> input(thread, value);
+    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, input));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    return (++number);
+    if (inputVal->IsBigInt()) {
+        JSHandle<BigInt> bigValue(inputVal);
+        return BigInt::BigintAddOne(thread, bigValue).GetTaggedValue();
+    }
+    JSTaggedNumber number(inputVal.GetTaggedValue());
+    return JSTaggedValue(++number);
 }
 
 JSTaggedValue SlowRuntimeStub::DecDyn(JSThread *thread, JSTaggedValue value)
@@ -153,10 +166,15 @@ JSTaggedValue SlowRuntimeStub::DecDyn(JSThread *thread, JSTaggedValue value)
     INTERPRETER_TRACE(thread, DecDyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> valueHandle(thread, value);
-    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, valueHandle);
+    JSHandle<JSTaggedValue> input(thread, value);
+    JSHandle<JSTaggedValue> inputVal(thread, JSTaggedValue::ToNumeric(thread, input));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    return (--number);
+    if (inputVal->IsBigInt()) {
+        JSHandle<BigInt> bigValue(inputVal);
+        return BigInt::BigintSubOne(thread, bigValue).GetTaggedValue();
+    }
+    JSTaggedNumber number(inputVal.GetTaggedValue());
+    return JSTaggedValue(--number);
 }
 
 void SlowRuntimeStub::ThrowDyn(JSThread *thread, JSTaggedValue value)
@@ -217,12 +235,20 @@ JSTaggedValue SlowRuntimeStub::Add2Dyn(JSThread *thread, EcmaVM *ecma_vm, JSTagg
         JSHandle<EcmaString> newString = factory->ConcatFromString(stringA0, stringA1);
         return newString.GetTaggedValue();
     }
-    JSTaggedNumber taggedValueA0 = JSTaggedValue::ToNumber(thread, primitiveA0);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, primitiveA0));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSTaggedNumber taggedValueA1 = JSTaggedValue::ToNumber(thread, primitiveA1);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, primitiveA1));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double a0Double = taggedValueA0.GetNumber();
-    double a1Double = taggedValueA1.GetNumber();
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> bigLeft(valLeft);
+        JSHandle<BigInt> bigRight(valRight);
+        return BigInt::Add(thread, bigLeft, bigRight).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    double a0Double = valLeft->GetNumber();
+    double a1Double = valRight->GetNumber();
     return JSTaggedValue(a0Double + a1Double);
 }
 
@@ -233,11 +259,20 @@ JSTaggedValue SlowRuntimeStub::Sub2Dyn(JSThread *thread, JSTaggedValue left, JST
 
     JSHandle<JSTaggedValue> leftHandle(thread, left);
     JSHandle<JSTaggedValue> rightHandle(thread, right);
-
-    JSTaggedNumber number0 = JSTaggedValue::ToNumber(thread, leftHandle);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    JSTaggedNumber number1 = JSTaggedValue::ToNumber(thread, rightHandle);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> bigLeft(valLeft);
+        JSHandle<BigInt> bigRight(valRight);
+        return BigInt::Subtract(thread, bigLeft, bigRight).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    JSTaggedNumber number0(valLeft.GetTaggedValue());
+    JSTaggedNumber number1(valRight.GetTaggedValue());
     return number0 - number1;
 }
 
@@ -246,20 +281,25 @@ JSTaggedValue SlowRuntimeStub::Mul2Dyn(JSThread *thread, JSTaggedValue left, JST
     INTERPRETER_TRACE(thread, Mul2Dyn);
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 
-    JSHandle<JSTaggedValue> leftValue(thread, left);
-    JSHandle<JSTaggedValue> rightValue(thread, right);
-
-    // 6. Let lnum be ToNumber(leftValue).
-    JSTaggedNumber primitiveA = JSTaggedValue::ToNumber(thread, leftValue);
-    // 7. ReturnIfAbrupt(lnum).
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    // 8. Let rnum be ToNumber(rightValue).
-    JSTaggedNumber primitiveB = JSTaggedValue::ToNumber(thread, rightValue);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 9. ReturnIfAbrupt(rnum).
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> bigLeft(valLeft);
+        JSHandle<BigInt> bigRight(valRight);
+        return BigInt::Multiply(thread, bigLeft, bigRight).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
     // 12.6.3.1 Applying the * Operator
-    return primitiveA * primitiveB;
+    JSTaggedNumber number0(valLeft.GetTaggedValue());
+    JSTaggedNumber number1(valRight.GetTaggedValue());
+    return number0 * number1;
 }
 
 JSTaggedValue SlowRuntimeStub::Div2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
@@ -269,13 +309,20 @@ JSTaggedValue SlowRuntimeStub::Div2Dyn(JSThread *thread, JSTaggedValue left, JST
 
     JSHandle<JSTaggedValue> leftHandle(thread, left);
     JSHandle<JSTaggedValue> rightHandle(thread, right);
-
-    JSTaggedNumber leftNumber = JSTaggedValue::ToNumber(thread, leftHandle);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double dLeft = leftNumber.GetNumber();
-    JSTaggedNumber rightNumber = JSTaggedValue::ToNumber(thread, rightHandle);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double dRight = rightNumber.GetNumber();
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> bigLeft(valLeft);
+        JSHandle<BigInt> bigRight(valRight);
+        return BigInt::Divide(thread, bigLeft, bigRight).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    double dLeft = valLeft->GetNumber();
+    double dRight = valRight->GetNumber();
     if (dRight == 0) {
         if (dLeft == 0 || std::isnan(dLeft)) {
             return JSTaggedValue(base::NAN_VALUE);
@@ -294,13 +341,22 @@ JSTaggedValue SlowRuntimeStub::Mod2Dyn(JSThread *thread, JSTaggedValue left, JST
 
     JSHandle<JSTaggedValue> leftHandle(thread, left);
     JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
-    JSTaggedNumber leftNumber = JSTaggedValue::ToNumber(thread, leftHandle);
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double dLeft = leftNumber.GetNumber();
-    JSTaggedNumber rightNumber = JSTaggedValue::ToNumber(thread, rightHandle);
-    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    double dRight = rightNumber.GetNumber();
+    // 12.6.3.3 Applying the % Operator
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> leftBigint(valLeft);
+        JSHandle<BigInt> rightBigint(valRight);
+        return BigInt::Remainder(thread, leftBigint, rightBigint).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    double dLeft = valLeft->GetNumber();
+    double dRight = valRight->GetNumber();
     // 12.6.3.3 Applying the % Operator
     if ((dRight == 0.0) || std::isnan(dRight) || std::isnan(dLeft) || std::isinf(dLeft)) {
         return JSTaggedValue(base::NAN_VALUE);
@@ -308,7 +364,6 @@ JSTaggedValue SlowRuntimeStub::Mod2Dyn(JSThread *thread, JSTaggedValue left, JST
     if ((dLeft == 0.0) || std::isinf(dRight)) {
         return JSTaggedValue(dLeft);
     }
-
     return JSTaggedValue(std::fmod(dLeft, dRight));
 }
 
@@ -383,6 +438,190 @@ JSTaggedValue SlowRuntimeStub::GreaterEqDyn(JSThread *thread, JSTaggedValue left
     bool ret = (comparison == ComparisonResult::GREAT) || (comparison == ComparisonResult::EQUAL);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return (ret ? JSTaggedValue::True() : JSTaggedValue::False());
+}
+
+JSTaggedValue SlowRuntimeStub::Shl2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
+{
+    INTERPRETER_TRACE(thread, Shl2Dyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> leftValue(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> rightValue(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (leftValue->IsBigInt() && rightValue->IsBigInt()) {
+        JSHandle<BigInt> leftBigint(leftValue);
+        JSHandle<BigInt> rightBigint(rightValue);
+        return BigInt::LeftShift(thread, leftBigint, rightBigint).GetTaggedValue();
+    }
+    if (leftValue->IsBigInt() || rightValue->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, leftValue.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, rightValue.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    int32_t opNumber0 = taggedNumber0.GetInt();
+    int32_t opNumber1 = taggedNumber1.GetInt();
+    uint32_t shift =
+        static_cast<uint32_t>(opNumber1) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+    using unsigned_type = std::make_unsigned_t<int32_t>;
+    auto ret =
+        static_cast<int32_t>(static_cast<unsigned_type>(opNumber0) << shift);  // NOLINT(hicpp-signed-bitwise)
+    return JSTaggedValue(ret);
+}
+
+JSTaggedValue SlowRuntimeStub::Shr2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
+{
+    INTERPRETER_TRACE(thread, Shr2Dyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> bigLeft(valLeft);
+        JSHandle<BigInt> bigRight(valRight);
+        return BigInt::SignedRightShift(thread, bigLeft, bigRight).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valRight.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    int32_t opNumber0 = taggedNumber0.GetInt();
+    int32_t opNumber1 = taggedNumber1.GetInt();
+    uint32_t shift =
+            static_cast<uint32_t>(opNumber1) & 0x1f;          // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+    auto ret = static_cast<int32_t>(opNumber0 >> shift);  // NOLINT(hicpp-signed-bitwise)
+    return JSTaggedValue(ret);
+}
+
+JSTaggedValue SlowRuntimeStub::Ashr2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
+{
+    INTERPRETER_TRACE(thread, Ashr2Dyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        return BigInt::UnsignedRightShift(thread);
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valLeft.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithUint32(thread, valRight.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    int32_t opNumber0 = taggedNumber0.GetInt();
+    int32_t opNumber1 = taggedNumber1.GetInt();
+    uint32_t shift =
+        static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+    using unsigned_type = std::make_unsigned_t<uint32_t>;
+    auto ret =
+        static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
+    return JSTaggedValue(ret);
+}
+
+JSTaggedValue SlowRuntimeStub::And2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
+{
+    INTERPRETER_TRACE(thread, And2Dyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> leftBigint(valLeft);
+        JSHandle<BigInt> rightBigint(valRight);
+        return BigInt::BitwiseAND(thread, leftBigint, rightBigint).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valRight.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    int32_t opNumber0 = taggedNumber0.GetInt();
+    int32_t opNumber1 = taggedNumber1.GetInt();
+    // NOLINT(hicpp-signed-bitwise)
+    auto ret = static_cast<uint32_t>(opNumber0) & static_cast<uint32_t>(opNumber1);
+    return JSTaggedValue(static_cast<uint32_t>(ret));
+}
+
+JSTaggedValue SlowRuntimeStub::Or2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
+{
+    INTERPRETER_TRACE(thread, Or2Dyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> leftBigint(valLeft);
+        JSHandle<BigInt> rightBigint(valRight);
+        return BigInt::BitwiseOR(thread, leftBigint, rightBigint).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valRight.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    int32_t opNumber0 = taggedNumber0.GetInt();
+    int32_t opNumber1 = taggedNumber1.GetInt();
+    // NOLINT(hicpp-signed-bitwise)
+    auto ret = static_cast<uint32_t>(opNumber0) | static_cast<uint32_t>(opNumber1);
+    return JSTaggedValue(static_cast<uint32_t>(ret));
+}
+
+JSTaggedValue SlowRuntimeStub::Xor2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
+{
+    INTERPRETER_TRACE(thread, Xor2Dyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> leftHandle(thread, left);
+    JSHandle<JSTaggedValue> rightHandle(thread, right);
+    JSHandle<JSTaggedValue> valLeft(thread, JSTaggedValue::ToNumeric(thread, leftHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> valRight(thread, JSTaggedValue::ToNumeric(thread, rightHandle));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (valLeft->IsBigInt() && valRight->IsBigInt()) {
+        JSHandle<BigInt> leftBigint(valLeft);
+        JSHandle<BigInt> rightBigint(valRight);
+        return BigInt::BitwiseXOR(thread, leftBigint, rightBigint).GetTaggedValue();
+    }
+    if (valLeft->IsBigInt() || valRight->IsBigInt()) {
+        return ThrowTypeError(thread, "Cannot mix BigInt and other types, use explicit conversions");
+    }
+    JSTaggedValue taggedNumber0 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valLeft.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSTaggedValue taggedNumber1 = SlowRuntimeStub::ToJSTaggedValueWithInt32(thread, valRight.GetTaggedValue());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    int32_t opNumber0 = taggedNumber0.GetInt();
+    int32_t opNumber1 = taggedNumber1.GetInt();
+    // NOLINT(hicpp-signed-bitwise)
+    auto ret = static_cast<uint32_t>(opNumber0) ^ static_cast<uint32_t>(opNumber1);
+    return JSTaggedValue(static_cast<uint32_t>(ret));
 }
 
 JSTaggedValue SlowRuntimeStub::ToJSTaggedValueWithInt32(JSThread *thread, JSTaggedValue value)
@@ -1920,5 +2159,12 @@ JSTaggedValue SlowRuntimeStub::SetClassConstructorLength(JSThread *thread, JSTag
         cls->UpdatePropertyInDictionary(thread, globalConst->GetLengthString(), length);
     }
     return JSTaggedValue::Undefined();
+}
+
+JSTaggedValue SlowRuntimeStub::LdBigInt(JSThread *thread, JSTaggedValue numberBigInt)
+{
+    INTERPRETER_TRACE(thread, LdBigInt);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    return JSTaggedValue::ToBigInt(thread, JSHandle<JSTaggedValue>(thread, numberBigInt));
 }
 }  // namespace panda::ecmascript

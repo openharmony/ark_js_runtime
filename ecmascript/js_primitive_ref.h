@@ -27,6 +27,7 @@ enum class PrimitiveType : uint8_t {
     PRIMITIVE_NUMBER,
     PRIMITIVE_STRING,
     PRIMITIVE_SYMBOL,
+    PRIMITIVE_BIGINT,
 };
 
 class JSPrimitiveRef : public JSObject {
@@ -38,6 +39,11 @@ public:
     bool IsNumber() const
     {
         return GetValue().IsNumber();
+    }
+
+    bool IsBigInt() const
+    {
+        return GetValue().IsBigInt();
     }
 
     bool IsInt() const

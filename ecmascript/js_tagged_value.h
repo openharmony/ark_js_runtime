@@ -150,7 +150,11 @@ public:
                                      PreferredPrimitiveType type = NO_PREFERENCE);
     bool ToBoolean() const;
     static JSTaggedNumber ToNumber(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
+    static JSTaggedValue ToBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
+    static JSTaggedValue ToBigInt64(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
+    static JSTaggedValue ToBigUint64(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static JSTaggedNumber ToInteger(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
+    static JSTaggedValue ToNumeric(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static int32_t ToInt32(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static uint32_t ToUint32(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
     static int16_t ToInt16(JSThread *thread, const JSHandle<JSTaggedValue> &tagged);
@@ -233,6 +237,7 @@ public:
     bool IsJSWeakSet() const;
     bool IsJSRegExp() const;
     bool IsNumber() const;
+    bool IsBigInt() const;
     bool IsString() const;
     bool IsStringOrSymbol() const;
     bool IsTaggedArray() const;
