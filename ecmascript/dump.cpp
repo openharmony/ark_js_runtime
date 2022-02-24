@@ -41,6 +41,7 @@
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_async_function.h"
+#include "ecmascript/js_bigint.h"
 #include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
@@ -156,6 +157,8 @@ CString JSHClass::DumpJSType(JSType type)
             return "Int32 Array";
         case JSType::JS_UINT32_ARRAY:
             return "Uint32 Array";
+        case JSType::BIGINT:
+            return "BigInt";
         case JSType::JS_FLOAT32_ARRAY:
             return "Float32 Array";
         case JSType::JS_FLOAT64_ARRAY:
@@ -475,6 +478,9 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
         case JSType::JS_FLOAT32_ARRAY:
         case JSType::JS_FLOAT64_ARRAY:
             JSTypedArray::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::BIGINT:
+            BigInt::Cast(obj)->Dump(thread, os);
             break;
         case JSType::JS_PROXY:
             JSProxy::Cast(obj)->Dump(thread, os);
@@ -1043,6 +1049,17 @@ void JSPrimitiveRef::Dump(JSThread *thread, std::ostream &os) const
     JSObject::Dump(thread, os);
 }
 
+void BigInt::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Data : ";
+    GetData().DumpTaggedValue(thread, os);
+    os << "\n";
+
+    os << " - Sign : ";
+    os << GetSign();
+    os << "\n";
+}
+
 void JSDate::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - time: " << GetTime().GetDouble() << "\n";
@@ -1443,6 +1460,8 @@ void GlobalEnv::Dump(JSThread *thread, std::ostream &os) const
     GetFunctionFunction().GetTaggedValue().Dump(thread, os);
     os << " - NumberFunction: ";
     GetNumberFunction().GetTaggedValue().Dump(thread, os);
+    os << " - BigIntFunction: ";
+    GetBigIntFunction().GetTaggedValue().Dump(thread, os);
     os << " - DateFunction: ";
     GetDateFunction().GetTaggedValue().Dump(thread, os);
     os << " - BooleanFunction: ";
@@ -2432,6 +2451,9 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::JS_FLOAT64_ARRAY:
             JSTypedArray::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
+        case JSType::BIGINT:
+            BigInt::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
         case JSType::JS_PROXY:
             JSProxy::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
@@ -2878,6 +2900,13 @@ void JSPrimitiveRef::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     JSObject::DumpForSnapshot(thread, vec);
 }
 
+void BigInt::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                             std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Data"), GetData()));
+    vec.push_back(std::make_pair(CString("Sign"), JSTaggedValue(GetSign())));
+}
+
 void JSDate::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                              std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
@@ -3045,6 +3074,7 @@ void GlobalEnv::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     vec.push_back(std::make_pair(CString("ObjectFunction"), GetObjectFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("FunctionFunction"), GetFunctionFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("NumberFunction"), GetNumberFunction().GetTaggedValue()));
+    vec.push_back(std::make_pair(CString("BigIntFunction"), GetBigIntFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("DateFunction"), GetDateFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("BooleanFunction"), GetBooleanFunction().GetTaggedValue()));
     vec.push_back(std::make_pair(CString("ErrorFunction"), GetErrorFunction().GetTaggedValue()));

@@ -21,6 +21,7 @@
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
+#include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
 #include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
@@ -90,6 +91,7 @@
 
 namespace panda::ecmascript {
 using Number = builtins::BuiltinsNumber;
+using BuiltinsBigInt = builtins::BuiltinsBigInt;
 using Object = builtins::BuiltinsObject;
 using Date = builtins::BuiltinsDate;
 using Symbol = builtins::BuiltinsSymbol;
@@ -242,6 +244,7 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     }
 
     InitializeNumber(env, globalObject, primRefObjDynclass);
+    InitializeBigInt(env, objFuncDynclass);
     InitializeDate(env, objFuncDynclass);
     InitializeObject(env, objFuncPrototype, objectFunction);
     InitializeBoolean(env, primRefObjDynclass);
@@ -696,6 +699,37 @@ void Builtins::InitializeNumber(const JSHandle<GlobalEnv> &env, const JSHandle<J
 
     env->SetNumberFunction(thread_, numFunction);
 }
+
+void Builtins::InitializeBigInt(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
+{
+    [[maybe_unused]] EcmaHandleScope scope(thread_);
+    // BigInt.prototype
+    JSHandle<JSObject> bigIntFuncPrototype = factory_->NewJSObject(objFuncDynclass);
+    JSHandle<JSTaggedValue> bigIntFuncPrototypeValue(bigIntFuncPrototype);
+
+    // BigInt.prototype_or_dynclass
+    JSHandle<JSHClass> bigIntFuncInstanceDynclass =
+        factory_->NewEcmaDynClass(JSPrimitiveRef::SIZE, JSType::JS_PRIMITIVE_REF, bigIntFuncPrototypeValue);
+    // BigInt = new Function()
+    JSHandle<JSObject> bigIntFunction(
+        NewBuiltinConstructor(env, bigIntFuncPrototype,
+                              BuiltinsBigInt::BigIntConstructor, "BigInt", FunctionLength::ONE));
+    JSHandle<JSFunction>(bigIntFunction)->SetFunctionPrototype(thread_, bigIntFuncInstanceDynclass.GetTaggedValue());
+
+    // BigInt.prototype method
+    SetFunction(env, bigIntFuncPrototype, "toLocaleString", BuiltinsBigInt::ToLocaleString, FunctionLength::ZERO);
+    SetFunction(env, bigIntFuncPrototype, "toString", BuiltinsBigInt::ToString, FunctionLength::ZERO);
+    SetFunction(env, bigIntFuncPrototype, "valueOf", BuiltinsBigInt::ValueOf, FunctionLength::ZERO);
+
+    // BigInt method
+    SetFunction(env, bigIntFunction, "asUintN", BuiltinsBigInt::AsUintN, FunctionLength::TWO);
+    SetFunction(env, bigIntFunction, "asIntN", BuiltinsBigInt::AsIntN, FunctionLength::TWO);
+
+    // @@ToStringTag
+    SetStringTagSymbol(env, bigIntFuncPrototype, "BigInt");
+    env->SetBigIntFunction(thread_, bigIntFunction);
+}
+
 
 void Builtins::InitializeDate(const JSHandle<GlobalEnv> &env, const JSHandle<JSHClass> &objFuncDynclass) const
 {

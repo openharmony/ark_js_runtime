@@ -41,6 +41,7 @@
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
+#include "ecmascript/js_bigint.h"
 #include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
@@ -493,6 +494,10 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
             }
             case JSType::STRING: {
                 DUMP_FOR_HANDLE(globalEnv->GetObjectFunction())
+                break;
+            }
+            case JSType::BIGINT: {
+                DUMP_FOR_HANDLE(globalEnv->GetBigIntFunction())
                 break;
             }
             case JSType::TAGGED_ARRAY: {
