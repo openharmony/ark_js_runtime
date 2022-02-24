@@ -33,9 +33,9 @@ Use Ubuntu 18.04 or 20.04. For details about how to set up the environment, see:
 The binary files related to ARK are available in the following paths:
 
 ```
-out/ohos-arm-release/ark/ark/
-out/ohos-arm-release/ark/ark_js_runtime/
-out/ohos-arm-release/clang_x64/ark/ark/
-out/ohos-arm-release/clang_x64/ark/ark_js_runtime
+out/hi3516dv300/ark/ark/
+out/hi3516dv300/ark/ark_js_runtime/
+out/hi3516dv300/clang_x64/ark/ark/
+out/hi3516dv300/clang_x64/ark/ark_js_runtime
 ```
 
