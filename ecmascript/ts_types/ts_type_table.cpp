@@ -259,7 +259,7 @@ JSHandle<TSImportType> TSTypeTable::ParseImportType(JSThread *thread, const JSHa
     int32_t entry = tsLoader->GetTSModuleTable()->GetGlobalModuleID(thread, fullPathHandle);
     if (entry == -1) {
         bool flag = false;
-        for (auto it : recordImportMdoules) {
+        for (const auto it : recordImportMdoules) {
             if (ConvertToString(it.GetTaggedValue()) == fullPath) {
                 flag = true;
                 break;

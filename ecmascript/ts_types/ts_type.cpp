@@ -115,7 +115,7 @@ GlobalTSTypeRef TSClassType::SearchProperty(JSThread *thread, JSHandle<TSTypeTab
             if (localId < GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT) {
                 return GlobalTSTypeRef(localId);
             }
-            int localIdNonOffset = TSLoader::GetUserdefinedTypeId(localId);
+            int localIdNonOffset = TSTypeTable::GetUserdefinedTypeId(localId);
             TSType *propertyType = TSType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
             if (JSTaggedValue(propertyType).IsTSImportType()) {
                 TSImportType *importType = TSImportType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
@@ -149,7 +149,7 @@ GlobalTSTypeRef TSClassInstanceType::SearchProperty(JSThread *thread, JSHandle<T
             if (localId < GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT) {
                 return GlobalTSTypeRef(localId);
             }
-            int localIdNonOffset = TSLoader::GetUserdefinedTypeId(localId);
+            int localIdNonOffset = TSTypeTable::GetUserdefinedTypeId(localId);
             TSType *propertyType = TSType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
             if (propertyType->GetGTRef().GetUserDefineTypeKind() ==
                 static_cast<int>(TSTypeKind::TS_IMPORT)) {
@@ -165,7 +165,7 @@ GlobalTSTypeRef TSClassInstanceType::SearchProperty(JSThread *thread, JSHandle<T
         if (ConvertToString(prototypePropKey) == propertyName) {
             localId = prototypeTypeInfo->GetTypeId(index).GetNumber();
             ASSERT(localId > GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
-            int localIdNonOffset = TSLoader::GetUserdefinedTypeId(localId);
+            int localIdNonOffset = TSTypeTable::GetUserdefinedTypeId(localId);
             TSType *propertyType = TSType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
             return propertyType->GetGTRef();
         }

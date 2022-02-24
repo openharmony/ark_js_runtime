@@ -155,7 +155,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     redirectImportType->SetGTRef(gt);
     redirectImportTable->Set(thread, 0, JSTaggedValue(1));
     redirectImportTable->Set(thread, 1, JSHandle<JSTaggedValue>(redirectImportType));
-    redirectImportTable->Set(thread, 2, redirectExportTableHandle);
+    redirectImportTable->Set(thread, redirectImportTable->GetLength() - 1, redirectExportTableHandle);
 
     GlobalTSTypeRef redirectImportGT = redirectImportType->GetGTRef();
     ASSERT_EQ(redirectImportType->GetTargetType(), JSTaggedValue::Undefined());
@@ -188,7 +188,7 @@ HWTEST_F_L0(TSTypeTest, ImportType)
     unionType->SetGTRef(gt);
     exportTable->Set(thread, 0, JSTaggedValue(1));
     exportTable->Set(thread, 1, JSHandle<JSTaggedValue>(unionType));
-    exportTable->Set(thread, 2, exportValueTableHandle);
+    exportTable->Set(thread, exportTable->GetLength() - 1, exportValueTableHandle);
     GlobalTSTypeRef unionTypeGT = unionType->GetGTRef();
 
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(exportTable), factory->NewFromString(fileName));
