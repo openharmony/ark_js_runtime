@@ -474,9 +474,10 @@ GateRef CircuitBuilder::NewBytecodeCallGate(StubDescriptor *descriptor, GateRef 
         inputs.push_back(arg);
     }
     OpCode opcode(OpCode::BYTECODE_CALL);
+    MachineType machineType = GetCallMachineTypeFromStubMachineType(descriptor->GetReturnType());
     GateType type = StubMachineType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)
-    return circuit_->NewGate(opcode, args.size() + 2, inputs, type);
+    return circuit_->NewGate(opcode, machineType, args.size() + 2, inputs, type);
 }
 
 GateRef CircuitBuilder::Alloca(int size)
