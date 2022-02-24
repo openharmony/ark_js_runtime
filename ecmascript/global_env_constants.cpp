@@ -64,6 +64,8 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(ConstantIndex::ARRAY_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
     SetConstant(ConstantIndex::DICTIONARY_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_DICTIONARY));
+    SetConstant(ConstantIndex::BIGINT_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, BigInt::SIZE, JSType::BIGINT));
     SetConstant(ConstantIndex::JS_NATIVE_POINTER_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSNativePointer::SIZE, JSType::JS_NATIVE_POINTER));
     SetConstant(ConstantIndex::ENV_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
@@ -192,6 +194,7 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::NULL_STRING_INDEX, factory->NewFromCanBeCompressString("null"));
     SetConstant(ConstantIndex::BOOLEAN_STRING_INDEX, factory->NewFromCanBeCompressString("boolean"));
     SetConstant(ConstantIndex::NUMBER_STRING_INDEX, factory->NewFromCanBeCompressString("number"));
+    SetConstant(ConstantIndex::BIGINT_STRING_INDEX, factory->NewFromCanBeCompressString("bigint"));
     SetConstant(ConstantIndex::FUNCTION_STRING_INDEX, factory->NewFromCanBeCompressString("function"));
     SetConstant(ConstantIndex::STRING_STRING_INDEX, factory->NewFromCanBeCompressString("string"));
     SetConstant(ConstantIndex::SYMBOL_STRING_INDEX, factory->NewFromCanBeCompressString("symbol"));
