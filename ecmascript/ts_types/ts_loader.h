@@ -152,36 +152,34 @@ public:
 
     void AddTypeTable(JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath);
 
-    GlobalTSTypeRef GetGTFromPandFile(const panda_file::File &pf, int localId) const;
+    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, int localId) const;
 
     void Link();
 
     void Dump();
 
-    inline static TSTypeKind GetTypeKind(GlobalTSTypeRef gt)
+    inline static TSTypeKind PUBLIC_API GetTypeKind(GlobalTSTypeRef gt)
     {
         return static_cast<TSTypeKind>(gt.GetUserDefineTypeKind());
     }
 
-    GlobalTSTypeRef GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
+    GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
 
-    int GetUnionTypeLength(GlobalTSTypeRef gt) const;
-
-    static int GetUserdefinedTypeId(int LocalId);
+    int PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
 
     bool IsPrimtiveBuiltinTypes(int localId) const;
 
     int GetUTableIndex(GlobalTSTypeRef gt, int index) const;
 
-    GlobalTSTypeRef GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
+    GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
 
-    GlobalTSTypeRef GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeRef, int size);
+    GlobalTSTypeRef PUBLIC_API GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeRef, int size);
 
     void Iterate(const RootVisitor &v);
 
-    GlobalTSTypeRef GetPrmitiveGT(TSTypeKind kind) const;
+    GlobalTSTypeRef PUBLIC_API GetPrmitiveGT(TSTypeKind kind) const;
 
-    GlobalTSTypeRef GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
+    GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
 
     JSHandle<TSModuleTable> GetTSModuleTable() const
     {
