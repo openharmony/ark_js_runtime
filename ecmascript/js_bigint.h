@@ -22,7 +22,6 @@
 #include "js_object.h"
 
 namespace panda::ecmascript {
-
 enum class Operate : uint32_t { AND = 0, OR, XOR };
 enum class Comparestr : uint32_t { EQUAL = 0, GREATER, LESS };
 
