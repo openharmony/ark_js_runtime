@@ -63,20 +63,12 @@ void TSLoader::LinkTSTypeTable(JSHandle<TSTypeTable> table)
     int length = table->GetLength();
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();
-    JSMutableHandle<TSImportType> importType = JSMutableHandle<TSImportType>(thread, factory->NewTSImportType()
-                                                                             .GetTaggedValue());
-    int i = 1;
-    while (i < length && table->Get(i).IsTSImportType()) {
+    JSMutableHandle<TSImportType> importType(factory->NewTSImportType());
+    for (int i = 1; i < length && table->Get(i).IsTSImportType(); i++) {
         importType.Update(table->Get(i));
         RecursivelyResolveTargetType(importType);
         table->Set(thread, i, importType);
-        i++;
     }
-}
-
-int TSLoader::GetUserdefinedTypeId(int localId)
-{
-    return localId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT;
 }
 
 bool TSLoader::IsPrimtiveBuiltinTypes(int localId) const
@@ -105,7 +97,7 @@ void TSLoader::RecursivelyResolveTargetType(JSMutableHandle<TSImportType>& impor
         importType->SetTargetType(JSTaggedValue(localId));
         return;
     }
-    int userDefId = GetUserdefinedTypeId(localId);
+    int userDefId = TSTypeTable::GetUserdefinedTypeId(localId);
 
     JSHandle<TSType> bindType = JSHandle<TSType>(thread, typeTable->Get(userDefId));
     if (bindType.GetTaggedValue().IsTSImportType()) {
@@ -140,7 +132,7 @@ GlobalTSTypeRef TSLoader::GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> p
 
     int moduleId = gt.GetModuleId();
     int localTSTypeTableId = gt.GetLocalId();
-    int userDefId = GetUserdefinedTypeId(localTSTypeTableId);
+    int userDefId = TSTypeTable::GetUserdefinedTypeId(localTSTypeTableId);
     TSTypeKind typeKind = GetTypeKind(gt);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
@@ -156,7 +148,7 @@ int TSLoader::GetUnionTypeLength(GlobalTSTypeRef gt) const
 
     int moduleId = gt.GetModuleId();
     int localTSTypetableId = gt.GetLocalId();
-    int userDefId = GetUserdefinedTypeId(localTSTypetableId);
+    int userDefId = TSTypeTable::GetUserdefinedTypeId(localTSTypetableId);
     [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
     ASSERT(typeKind == TSTypeKind::TS_UNION);
 
@@ -171,7 +163,7 @@ int TSLoader::GetUTableIndex(GlobalTSTypeRef gt, int index) const
 {
     JSThread *thread = vm_->GetJSThread();
     int localTSTypetableId = gt.GetLocalId();
-    int userDefId = GetUserdefinedTypeId(localTSTypetableId);
+    int userDefId = TSTypeTable::GetUserdefinedTypeId(localTSTypetableId);
 
     JSHandle<TaggedArray> typeTable = GetGlobalUTable();
     JSHandle<TSUnionType> unionType(thread, typeTable->Get(userDefId));
@@ -192,7 +184,7 @@ GlobalTSTypeRef TSLoader::GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) con
     if (IsPrimtiveBuiltinTypes(localUnionId)) {
         return GlobalTSTypeRef(localUnionId);
     }
-    int unionTableIndex = GetUserdefinedTypeId(localUnionId);
+    int unionTableIndex = TSTypeTable::GetUserdefinedTypeId(localUnionId);
     JSHandle<TSType> resulteType(thread, typeTable->Get(unionTableIndex));
     if (resulteType.GetTaggedValue().IsTSImportType()) {
             JSHandle<TSImportType> ImportType(thread, typeTable->Get(unionTableIndex));
@@ -213,7 +205,7 @@ GlobalTSTypeRef TSLoader::GetGTFromPandFile(const panda_file::File &pf, int loca
 
     CString moduleName = CString(pf.GetFilename());
     int moduleId = table->GetGlobalModuleID(thread, factory->NewFromString(moduleName));
-    int userDefId = GetUserdefinedTypeId(localId);
+    int userDefId = TSTypeTable::GetUserdefinedTypeId(localId);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
     JSHandle<TSType> bindType = JSHandle<TSType>(thread, typeTable->Get(userDefId));
@@ -390,12 +382,12 @@ GlobalTSTypeRef TSLoader::GetImportTypeTargetGT(GlobalTSTypeRef gt) const
 
     int moduleId = gt.GetModuleId();
     int localTSTypetableId = gt.GetLocalId();
-    int LocalTableIndex = GetUserdefinedTypeId(localTSTypetableId);
+    int localTableIndex = TSTypeTable::GetUserdefinedTypeId(localTSTypetableId);
     [[maybe_unused]] TSTypeKind typeKind = GetTypeKind(gt);
     ASSERT(typeKind == TSTypeKind::TS_IMPORT);
 
     JSHandle<TSTypeTable> typeTable = table->GetTSTypeTable(thread, moduleId);
-    JSHandle<TSImportType> importType(thread, typeTable->Get(LocalTableIndex));
+    JSHandle<TSImportType> importType(thread, typeTable->Get(localTableIndex));
 
     if (importType->GetTargetType().IsInt()) {
         return GlobalTSTypeRef(importType->GetTargetType().GetInt());

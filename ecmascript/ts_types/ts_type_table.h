@@ -64,6 +64,11 @@ public:
         TaggedArray::Set(thread, LENGTH_OFFSET, JSTaggedValue(length));
     }
 
+    static int GetUserdefinedTypeId(int localId)
+    {
+        return localId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT;
+    }
+
 private:
 
     static JSHandle<TSTypeTable> GenerateTypeTable(JSThread *thread, const panda_file::File &pf,

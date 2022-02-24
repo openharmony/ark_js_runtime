@@ -36,16 +36,16 @@ public:
         return static_cast<TSType *>(const_cast<TaggedObject *>(object));
     }
 
-    ACCESSORS_PRIMITIVE_FIELD(Uint64, uint64_t, BIT_FIELD_OFFSET, SIZE);
+    ACCESSORS_PRIMITIVE_FIELD(GT, uint64_t, BIT_FIELD_OFFSET, SIZE);
 
     GlobalTSTypeRef GetGTRef() const
     {
-        return GlobalTSTypeRef(GetUint64());
+        return GlobalTSTypeRef(GetGT());
     }
 
     void SetGTRef(GlobalTSTypeRef r)
     {
-        SetUint64(r.GetGlobalTSTypeRef());
+        SetGT(r.GetGlobalTSTypeRef());
     }
 };
 
@@ -122,10 +122,10 @@ public:
 
     bool IsEqual(JSThread *thread, JSHandle<TSUnionType> unionB);
 
-    static constexpr size_t KEYS_OFFSET = TSType::SIZE;
-    ACCESSORS(ComponentTypes, KEYS_OFFSET, SIZE);
+    static constexpr size_t COMPONENT_OFFSET = TSType::SIZE;
+    ACCESSORS(ComponentTypes, COMPONENT_OFFSET, SIZE);
 
-    DECL_VISIT_OBJECT(KEYS_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(COMPONENT_OFFSET, SIZE)
     DECL_DUMP()
 };
 

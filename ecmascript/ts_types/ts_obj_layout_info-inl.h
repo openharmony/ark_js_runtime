@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_TS_TYPES_TS_OBJ_LAYOUT_INFO_INL_H_
-#define ECMASCRIPT_TS_TYPES_TS_OBJ_LAYOUT_INFO_INL_H_
+#ifndef ECMASCRIPT_TS_TYPES_TS_OBJ_LAYOUT_INFO_INL_H
+#define ECMASCRIPT_TS_TYPES_TS_OBJ_LAYOUT_INFO_INL_H
 
 #include "ts_obj_layout_info.h"
 #include "ecmascript/tagged_array-inl.h"
@@ -65,4 +65,4 @@ inline JSTaggedValue TSObjLayoutInfo::GetTypeId(int index) const
     return TaggedArray::Get(idxInArray);
 }
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_TS_TYPES_TS_OBJ_LAYOUT_INFO_INL_H_
+#endif  // ECMASCRIPT_TS_TYPES_TS_OBJ_LAYOUT_INFO_INL_H
