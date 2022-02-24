@@ -38,6 +38,7 @@ namespace panda::ecmascript::base {
 constexpr unsigned char CODE_SPACE = 0x20;
 constexpr int GAP_MAX_LEN = 10;
 constexpr int FOUR_HEX = 4;
+constexpr char ZERO_FIRST = static_cast<char>(0xc0); // \u0000 => c0 80
 
 bool JsonStringifier::IsFastValueToQuotedString(const char *value)
 {
@@ -45,7 +46,7 @@ bool JsonStringifier::IsFastValueToQuotedString(const char *value)
         return false;
     }
     while (*value != '\0') {
-        if (*value > 0 && *value < CODE_SPACE) {
+        if ((*value > 0 && *value < CODE_SPACE) || *value == ZERO_FIRST) {
             return false;
         }
         value++;
@@ -107,6 +108,10 @@ CString JsonStringifier::ValueToQuotedString(CString str)
                 break;
             case '\t':
                 product += "\\t";
+                break;
+            case ZERO_FIRST:
+                product += "\\u0000";
+                ++c;
                 break;
             default:
                 // c. Else if C has a code unit value less than 0x0020 (SPACE), then
@@ -265,7 +270,7 @@ bool JsonStringifier::CalculateNumberGap(JSTaggedValue gap)
 
 bool JsonStringifier::CalculateStringGap(const JSHandle<EcmaString> &primString)
 {
-    CString gapString = ConvertToString(*primString);
+    CString gapString = ConvertToString(*primString, StringConvertedUsage::LOGICOPERATION);
     int gapLen = gapString.length();
     if (gapLen > 0) {
         int gapLength = std::min(gapLen, GAP_MAX_LEN);
@@ -357,7 +362,7 @@ JSTaggedValue JsonStringifier::SerializeJSONProperty(const JSHandle<JSTaggedValu
             }
             // If Type(value) is String, return QuoteJSONString(value).
             case JSType::STRING: {
-                CString str = ConvertToString(*JSHandle<EcmaString>(valHandle));
+                CString str = ConvertToString(*JSHandle<EcmaString>(valHandle), StringConvertedUsage::LOGICOPERATION);
                 str = ValueToQuotedString(str);
                 result_ += str;
                 return tagValue;
@@ -399,11 +404,11 @@ void JsonStringifier::SerializeObjectKey(const JSHandle<JSTaggedValue> &key, boo
     }
     CString str;
     if (key->IsString()) {
-        str = ConvertToString(EcmaString::Cast(key->GetTaggedObject()));
+        str = ConvertToString(EcmaString::Cast(key->GetTaggedObject()), StringConvertedUsage::LOGICOPERATION);
     } else if (key->IsInt()) {
         str = NumberHelper::IntToString(static_cast<int32_t>(key->GetInt()));
     } else {
-        str = ConvertToString(*JSTaggedValue::ToString(thread_, key));
+        str = ConvertToString(*JSTaggedValue::ToString(thread_, key), StringConvertedUsage::LOGICOPERATION);
     }
     result_ += stepBegin;
     str = ValueToQuotedString(str);
@@ -599,7 +604,7 @@ void JsonStringifier::SerilaizePrimitiveRef(const JSHandle<JSTaggedValue> &primi
     if (primitive.IsString()) {
         auto priStr = JSTaggedValue::ToString(thread_, primitiveRef);
         RETURN_IF_ABRUPT_COMPLETION(thread_);
-        CString str = ConvertToString(*priStr);
+        CString str = ConvertToString(*priStr, StringConvertedUsage::LOGICOPERATION);
         str = ValueToQuotedString(str);
         result_ += str;
     } else if (primitive.IsNumber()) {
