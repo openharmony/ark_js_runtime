@@ -123,6 +123,29 @@ public:
         Destroy();
     }
 
+    void JSPlainObjectTest01(std::pair<uint8_t *, size_t> data)
+    {
+        Init();
+        ObjectFactory *factory = ecmaVm->GetFactory();
+        JSDeserializer deserializer(thread, data.first, data.second);
+        JSHandle<JSTaggedValue> objValue1 = deserializer.DeserializeJSTaggedValue();
+
+        JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("detectResultItems"));
+        JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("adviceId"));
+        OperationResult result = JSObject::GetProperty(thread, objValue1, key1);
+        JSHandle<JSTaggedValue> value1 = result.GetRawValue();
+        EXPECT_TRUE(value1->IsJSArray());
+        JSHandle<JSTaggedValue> value2 = JSArray::FastGetPropertyByValue(thread, value1, 0);
+        JSHandle<JSObject> obj = JSHandle<JSObject>::Cast(value2);
+        bool res = JSObject::HasProperty(thread, obj, key2);
+        EXPECT_TRUE(res);
+        OperationResult result1 = JSObject::GetProperty(thread, value2, key2);
+        JSHandle<JSTaggedValue> value3 = result1.GetRawValue();
+        JSHandle<JSTaggedValue> value4 = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
+        EXPECT_EQ(value3, value4);
+        Destroy();
+    }
+
     void DescriptionTest(std::pair<uint8_t *, size_t> data)
     {
         Init();
@@ -553,6 +576,54 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSPlainObject)
     std::pair<uint8_t *, size_t> data = serializer->ReleaseBuffer();
     JSDeserializerTest jsDeserializerTest;
     std::thread t1(&JSDeserializerTest::JSPlainObjectTest, jsDeserializerTest, data);
+    t1.join();
+    delete serializer;
+};
+
+HWTEST_F_L0(JSSerializerTest, SerializeJSPlainObject01)
+{
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<JSObject> obj1 = factory->NewEmptyJSObject();
+    JSHandle<JSObject> obj2 = factory->NewEmptyJSObject();
+
+    JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("diagnosisItem"));
+    JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("detectStatus"));
+    JSHandle<JSTaggedValue> key3(factory->NewFromCanBeCompressString("detectResultItems"));
+    JSHandle<JSTaggedValue> key4(factory->NewFromCanBeCompressString("faultId"));
+    JSHandle<JSTaggedValue> key5(factory->NewFromCanBeCompressString("faultContent"));
+    JSHandle<JSTaggedValue> key6(factory->NewFromCanBeCompressString("faultContentParams"));
+    JSHandle<JSTaggedValue> key7(factory->NewFromCanBeCompressString("adviceId"));
+    JSHandle<JSTaggedValue> key8(factory->NewFromCanBeCompressString("adviceContent"));
+    JSHandle<JSTaggedValue> key9(factory->NewFromCanBeCompressString("adviceContentParams"));
+    JSHandle<JSTaggedValue> value1 = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("VoiceDetect1"));
+    JSHandle<JSTaggedValue> value2(thread, JSTaggedValue(1));
+    JSHandle<JSTaggedValue> value3 = JSHandle<JSTaggedValue>::Cast(factory->NewJSArray());
+    JSHandle<JSTaggedValue> value4 = JSHandle<JSTaggedValue>::Cast(factory->NewFromCanBeCompressString("80000001"));
+    JSHandle<JSTaggedValue> value5 = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
+    JSHandle<JSTaggedValue> value6 = JSHandle<JSTaggedValue>::Cast(factory->NewJSArray());
+    JSHandle<JSTaggedValue> value7 = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
+    JSHandle<JSTaggedValue> value8 = JSHandle<JSTaggedValue>::Cast(factory->GetEmptyString());
+    JSHandle<JSTaggedValue> value9 = JSHandle<JSTaggedValue>::Cast(factory->NewJSArray());
+
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key4, value4);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key5, value5);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key6, value6);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key7, value7);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key8, value8);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key9, value9);
+    JSArray::FastSetPropertyByValue(thread, value3, 0, JSHandle<JSTaggedValue>(obj2));
+
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key1, value1);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key2, value2);
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key3, value3);
+
+    JSSerializer *serializer = new JSSerializer(thread);
+    bool success1 = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(obj1));
+
+    EXPECT_TRUE(success1);
+    std::pair<uint8_t *, size_t> data = serializer->ReleaseBuffer();
+    JSDeserializerTest jsDeserializerTest;
+    std::thread t1(&JSDeserializerTest::JSPlainObjectTest01, jsDeserializerTest, data);
     t1.join();
     delete serializer;
 };
