@@ -174,9 +174,9 @@ private:
     {
         current_++;
         if (isAsciiString_) {
-            return IsFastParseString(isFastString, isAscii);
+            return IsFastParseAsciiString(isFastString);
         }
-        return IsFastParseAsciiString(isFastString);
+        return IsFastParseString(isFastString, isAscii);
     }
 
     bool ParseBackslash(CString &res)
@@ -236,6 +236,9 @@ private:
                 if (!isLegalChar) {
                     THROW_SYNTAX_ERROR_AND_RETURN(thread_, "Unexpected string in JSON", JSTaggedValue::Exception());
                 }
+            } else if (UNLIKELY(*current_ > ASCII_END)) {
+                std::u16string str(current_, current_ + 1);
+                res += ConvertToString(StringHelper::U16stringToString(str));
             } else {
                 res += *current_;
             }
@@ -679,9 +682,6 @@ private:
             } else {
                 return false;
             }
-        }
-        if (res < CODE_SPACE) {
-            return false;
         }
 
         vec.emplace_back(res);
