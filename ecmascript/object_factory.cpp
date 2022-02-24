@@ -2183,7 +2183,7 @@ JSHandle<TSTypeTable> ObjectFactory::NewTSTypeTable(uint32_t length)
     auto header = heapHelper_.AllocateOldGenerationOrHugeObject(arrayClass, size);
 
     JSHandle<TSTypeTable> table(thread_, header);
-    table->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
+    table->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length + TSTypeTable::RESERVE_TABLE_LENGTH);
 
     return table;
 }

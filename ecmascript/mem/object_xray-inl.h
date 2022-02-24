@@ -326,6 +326,7 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::TS_CLASS_INSTANCE_TYPE:
             TSClassInstanceType::Cast(object)->VisitRangeSlot(visitor);
+            break;
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(object)->VisitRangeSlot(visitor);
             break;
