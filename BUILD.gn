@@ -53,6 +53,7 @@ group("ark_js_unittest") {
       "//ark/js_runtime/ecmascript/snapshot/tests:unittest",
       "//ark/js_runtime/ecmascript/tests:unittest",
       "//ark/js_runtime/ecmascript/tooling/test:unittest",
+      "//ark/js_runtime/ecmascript/ts_types/tests:unittest",
     ]
   }
 }
@@ -73,6 +74,7 @@ group("ark_js_host_unittest") {
       "//ark/js_runtime/ecmascript/snapshot/tests:host_unittest",
       "//ark/js_runtime/ecmascript/tests:host_unittest",
       "//ark/js_runtime/ecmascript/tooling/test:host_unittest",
+      "//ark/js_runtime/ecmascript/ts_types/tests:host_unittest",
     ]
     if (is_standard_system) {
       deps += [ "//ark/js_runtime/ecmascript/compiler/tests:host_unittest" ]
@@ -423,6 +425,10 @@ ecma_source = [
   "ecmascript/weak_vector.cpp",
   "ecmascript/compiler/llvm/llvm_stackmap_parser.cpp",
   "ecmascript/class_info_extractor.cpp",
+  "ecmascript/ts_types/ts_type.cpp",
+  "ecmascript/ts_types/ts_type_table.cpp",
+  "ecmascript/ts_types/ts_loader.cpp",
+  "ecmascript/ts_types/ts_obj_layout_info.cpp",
 ]
 
 ecma_source += [

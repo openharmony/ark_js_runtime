@@ -79,6 +79,11 @@
 #include "ecmascript/symbol_table-inl.h"
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
+#include "ecmascript/template_map.h"
+#include "ecmascript/ts_types/ts_obj_layout_info-inl.h"
+#include "ecmascript/ts_types/ts_type.h"
+#include "ecmascript/ts_types/ts_type_table.h"
+
 
 namespace panda::ecmascript {
 using Error = builtins::BuiltinsError;
@@ -2062,6 +2067,141 @@ JSHandle<ClassInfoExtractor> ObjectFactory::NewClassInfoExtractor(JSMethod *ctor
     return obj;
 }
 
+// ----------------------------------- new TSType ----------------------------------------
+JSHandle<TSObjLayoutInfo> ObjectFactory::CreateTSObjLayoutInfo(int propNum, JSTaggedValue initVal)
+{
+    int arrayLength = TSObjLayoutInfo::ComputeArrayLength(propNum);
+    JSHandle<TSObjLayoutInfo> tsPropInfoHandle = JSHandle<TSObjLayoutInfo>::Cast(NewTaggedArray(arrayLength, initVal));
+    tsPropInfoHandle->SetNumberOfElements(thread_, 0);
+    return tsPropInfoHandle;
+}
+
+JSHandle<TSObjectType> ObjectFactory::NewTSObjectType(uint32_t numOfKeys)
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSObjectTypeClass().GetTaggedObject()));
+    JSHandle<TSObjectType> objectType(thread_, header);
+
+    objectType->SetGTRef(GlobalTSTypeRef::Default());
+
+    JSHandle<TSObjLayoutInfo> tsPropInfo = CreateTSObjLayoutInfo(numOfKeys);
+    objectType->SetObjLayoutInfo(thread_, tsPropInfo);
+
+    objectType->SetHClass(thread_, JSTaggedValue::Undefined());
+
+    return objectType;
+}
+
+JSHandle<TSClassType> ObjectFactory::NewTSClassType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSClassTypeClass().GetTaggedObject()));
+    JSHandle<TSClassType> classType(thread_, header);
+
+    classType->SetGTRef(GlobalTSTypeRef::Default());
+    classType->SetInstanceType(thread_, JSTaggedValue::Undefined());
+    classType->SetConstructorType(thread_, JSTaggedValue::Undefined());
+    classType->SetPrototypeType(thread_, JSTaggedValue::Undefined());
+    classType->SetExtensionType(thread_, JSTaggedValue::Undefined());
+
+    return classType;
+}
+
+JSHandle<TSInterfaceType> ObjectFactory::NewTSInterfaceType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSInterfaceTypeClass().GetTaggedObject()));
+    JSHandle<TSInterfaceType> interfaceType(thread_, header);
+
+    JSHandle<TaggedArray> extends = EmptyArray();
+    interfaceType->SetGTRef(GlobalTSTypeRef::Default());
+    interfaceType->SetExtends(thread_, extends);
+    interfaceType->SetFields(thread_, JSTaggedValue::Undefined());
+
+    return interfaceType;
+}
+
+
+JSHandle<TSUnionType> ObjectFactory::NewTSUnionType(uint32_t length)
+{
+    NewObjectHook();
+    ASSERT(length > 0);
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSUnionTypeClass().GetTaggedObject()));
+    JSHandle<TSUnionType> unionType(thread_, header);
+
+    unionType->SetGTRef(GlobalTSTypeRef::Default());
+    JSHandle<TaggedArray> componentTypes = NewTaggedArray(length, JSTaggedValue::Undefined());
+    unionType->SetComponentTypes(thread_, componentTypes);
+
+    return unionType;
+}
+
+JSHandle<TSClassInstanceType> ObjectFactory::NewTSClassInstanceType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSClassInstanceTypeClass().GetTaggedObject()));
+    JSHandle<TSClassInstanceType> classInstanceType(thread_, header);
+
+    classInstanceType->SetGTRef(GlobalTSTypeRef::Default());
+    classInstanceType->SetCreateClassType(JSTaggedValue::Undefined());
+
+    return classInstanceType;
+}
+
+JSHandle<TSImportType> ObjectFactory::NewTSImportType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSImportTypeClass().GetTaggedObject()));
+    JSHandle<TSImportType> importType(thread_, header);
+
+    importType->SetGTRef(GlobalTSTypeRef::Default());
+    importType->SetTargetType(thread_, JSTaggedValue::Undefined());
+    importType->SetImportPath(thread_, JSTaggedValue::Undefined());
+
+    return importType;
+}
+
+JSHandle<TSTypeTable> ObjectFactory::NewTSTypeTable(uint32_t length)
+{
+    NewObjectHook();
+    ASSERT(length > 0);
+
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length + TSTypeTable::RESERVE_TABLE_LENGTH);
+    JSHClass *arrayClass = JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject());
+    auto header = heapHelper_.AllocateOldGenerationOrHugeObject(arrayClass, size);
+
+    JSHandle<TSTypeTable> table(thread_, header);
+    table->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
+
+    return table;
+}
+
+JSHandle<TSModuleTable> ObjectFactory::NewTSModuleTable(uint32_t length)
+{
+    NewObjectHook();
+    ASSERT(length > 0);
+
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length);
+    JSHClass *arrayClass = JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject());
+    auto header = heapHelper_.AllocateYoungGenerationOrHugeObject(arrayClass, size);
+    JSHandle<TSModuleTable> array(thread_, header);
+    array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
+    array->InitializeNumberOfTSTypeTable(thread_);
+
+    return array;
+}
 // ----------------------------------- new string ----------------------------------------
 JSHandle<EcmaString> ObjectFactory::NewFromString(const CString &data)
 {
