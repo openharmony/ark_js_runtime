@@ -37,6 +37,7 @@ class JSThread;
     V(JSTaggedValue, ArrayClass, ARRAY_CLASS_INDEX, ecma_roots_class)                                                 \
     V(JSTaggedValue, DictionaryClass, DICTIONARY_CLASS_INDEX, ecma_roots_class)                                       \
     V(JSTaggedValue, JSNativePointerClass, JS_NATIVE_POINTER_CLASS_INDEX, ecma_roots_class)                           \
+    V(JSTaggedValue, BigIntClass, BIGINT_CLASS_INDEX, ecma_roots_class)                                               \
     V(JSTaggedValue, EnvClass, ENV_CLASS_INDEX, ecma_roots_class)                                                     \
     V(JSTaggedValue, FreeObjectWithNoneFieldClass, FREE_OBJECT_WITH_NONE_FIELD_CLASS_INDEX, ecma_roots_class)         \
     V(JSTaggedValue, FreeObjectWithOneFieldClass, FREE_OBJECT_WITH_ONE_FIELD_CLASS_INDEX, ecma_roots_class)           \
@@ -120,6 +121,7 @@ class JSThread;
     V(JSTaggedValue, NullString, NULL_STRING_INDEX, null)                                                             \
     V(JSTaggedValue, BooleanString, BOOLEAN_STRING_INDEX, boolean)                                                    \
     V(JSTaggedValue, NumberString, NUMBER_STRING_INDEX, number)                                                       \
+    V(JSTaggedValue, BigIntString, BIGINT_STRING_INDEX, bigint)                                                       \
     V(JSTaggedValue, FunctionString, FUNCTION_STRING_INDEX, function)                                                 \
     V(JSTaggedValue, StringString, STRING_STRING_INDEX, string)                                                       \
     V(JSTaggedValue, SymbolString, SYMBOL_STRING_INDEX, symbol)                                                       \

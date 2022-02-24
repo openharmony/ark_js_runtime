@@ -25,6 +25,7 @@
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string-inl.h"
+#include "ecmascript/js_bigint.h"
 #include "ecmascript/js_hclass-inl.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
@@ -49,7 +50,10 @@ inline bool JSTaggedValue::ToBoolean() const
         double d = GetDouble();
         return !std::isnan(d) && d != 0;
     }
-
+    if (IsBigInt()) {
+        BigInt *bigint = BigInt::Cast(GetTaggedObject());
+        return !bigint->IsZero();
+    }
     switch (GetRawData()) {
         case JSTaggedValue::VALUE_UNDEFINED:
             [[fallthrough]];
@@ -132,8 +136,91 @@ inline JSTaggedNumber JSTaggedValue::ToNumber(JSThread *thread, const JSHandle<J
     if (tagged->IsSymbol()) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a Symbol value to a number", JSTaggedNumber::Exception());
     }
+    if (tagged->IsBigInt()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a BigInt value to a number", JSTaggedNumber::Exception());
+    }
 
     THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a Unknown value to a number", JSTaggedNumber::Exception());
+}
+
+inline JSTaggedValue JSTaggedValue::ToBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
+{
+    JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, tagged));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    switch (primValue->GetRawData()) {
+        case JSTaggedValue::VALUE_UNDEFINED:
+        case JSTaggedValue::VALUE_NULL: {
+            THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a undefine or null value to a BigInt",
+                                        JSTaggedValue::Exception());
+        }
+        case JSTaggedValue::VALUE_TRUE: {
+            return BigInt::Int32ToBigInt(thread, 1).GetTaggedValue();
+        }
+        case JSTaggedValue::VALUE_FALSE: {
+            return BigInt::Int32ToBigInt(thread, 0).GetTaggedValue();
+        }
+        default: {
+            break;
+        }
+    }
+    if (primValue->IsBigInt()) {
+        return primValue.GetTaggedValue();
+    }
+
+    if (primValue->IsNumber()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a Number value to a BigInt", JSTaggedNumber::Exception());
+    }
+
+    if (primValue->IsString()) {
+        auto strObj = static_cast<EcmaString *>(primValue->GetTaggedObject());
+        size_t strLen = strObj->GetLength();
+        if (strLen == 0) {
+            return BigInt::Int32ToBigInt(thread, 0).GetTaggedValue();
+        }
+        std::string numStr = strObj->GetCString().get();
+        JSTaggedValue value = BigInt::StringToBigInt(thread, numStr);
+        if (value.IsBigInt()) {
+            return value;
+        }
+        std::string err = "Cannot convert " + numStr + " to a BigInt";
+        THROW_SYNTAX_ERROR_AND_RETURN(thread, err.c_str(), JSTaggedValue::Exception());
+    }
+    if (primValue->IsSymbol()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a Symbol value to a BigInt", JSTaggedNumber::Exception());
+    }
+    THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot convert a Unknown value to a BigInt", JSTaggedNumber::Exception());
+}
+
+inline JSTaggedValue JSTaggedValue::ToBigInt64(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
+{
+    JSTaggedValue taggedValue = ToBigInt(thread, tagged);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<BigInt> value(thread, taggedValue);
+    JSHandle<BigInt> exponent = BigInt::Int32ToBigInt(thread, 64); // 64 : bits
+    JSHandle<BigInt> exponentone = BigInt::Int32ToBigInt(thread, 63); // 63 : bits
+    JSHandle<BigInt> base = BigInt::Int32ToBigInt(thread, 2); // 2 : base value
+    JSHandle<BigInt> tVal  = BigInt::Exponentiate(thread, base, exponent);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<BigInt> int64bitVal = BigInt::FloorMod(thread, value, tVal);
+    JSHandle<BigInt> resValue = BigInt::Exponentiate(thread, base, exponentone);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (!BigInt::LessThan(thread, resValue, int64bitVal)) {
+        return BigInt::Subtract(thread, int64bitVal, tVal).GetTaggedValue();
+    } else {
+        return int64bitVal.GetTaggedValue();
+    }
+}
+
+inline JSTaggedValue JSTaggedValue::ToBigUint64(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
+{
+    JSTaggedValue taggedValue = ToBigInt(thread, tagged);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<BigInt> value(thread, taggedValue);
+    JSHandle<BigInt> exponent = BigInt::Int32ToBigInt(thread, 64); // 64 : exponet value
+    JSHandle<BigInt> base = BigInt::Int32ToBigInt(thread, 2); // 2 : base value
+    JSHandle<BigInt> tVal = BigInt::Exponentiate(thread, base, exponent);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return BigInt::FloorMod(thread, value, tVal).GetTaggedValue();
 }
 
 inline JSTaggedNumber JSTaggedValue::ToInteger(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
@@ -267,6 +354,10 @@ inline bool JSTaggedValue::SameValue(const JSTaggedValue &x, const JSTaggedValue
         return SameValueNumberic(x, y);
     }
 
+    if (x.IsBigInt() && y.IsBigInt()) {
+        return BigInt::SameValue(x, y);
+    }
+
     if (x.IsString() && y.IsString()) {
         return EcmaString::StringsAreEqual(static_cast<EcmaString *>(x.GetTaggedObject()),
                                            static_cast<EcmaString *>(y.GetTaggedObject()));
@@ -295,6 +386,9 @@ inline bool JSTaggedValue::SameValueZero(const JSTaggedValue &x, const JSTaggedV
     if (x.IsString() && y.IsString()) {
         return EcmaString::StringsAreEqual(static_cast<EcmaString *>(x.GetTaggedObject()),
                                            static_cast<EcmaString *>(y.GetTaggedObject()));
+    }
+    if (x.IsBigInt() && y.IsBigInt()) {
+        return BigInt::SameValueZero(x, y);
     }
     return false;
 }
@@ -336,7 +430,9 @@ inline bool JSTaggedValue::StrictEqual([[maybe_unused]] const JSThread *thread, 
     if (x.GetTaggedValue() == y.GetTaggedValue()) {
         return true;
     }
-
+    if (x->IsBigInt() && y->IsBigInt()) {
+        return BigInt::Equal(x.GetTaggedValue(), y.GetTaggedValue());
+    }
     if (x->IsString() && y->IsString()) {
         return EcmaString::StringsAreEqual(x.GetObject<EcmaString>(), y.GetObject<EcmaString>());
     }
@@ -365,6 +461,11 @@ inline bool JSTaggedValue::IsNumber() const
 inline bool JSTaggedValue::IsString() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsString();
+}
+
+inline bool JSTaggedValue::IsBigInt() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsBigInt();
 }
 
 inline bool JSTaggedValue::IsStringOrSymbol() const

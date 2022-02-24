@@ -237,6 +237,8 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("Float64 Array");
         case JSType::JS_ARGUMENTS:
             return GetString("Arguments");
+        case JSType::BIGINT:
+            return GetString("BigInt");
         case JSType::JS_PROXY:
             return GetString("Proxy");
         case JSType::JS_PRIMITIVE_REF:
