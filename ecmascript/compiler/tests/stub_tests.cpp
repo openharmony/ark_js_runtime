@@ -339,11 +339,13 @@ HWTEST_F_L0(StubTest, FastModTest)
     LOG_ECMA(INFO) << "expectRes2 for FastMod(7, 'helloworld') = " << expectRes2.GetRawData();
 
     // // test modular operation under normal conditions
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     double x3 = 33.0;
     double y3 = 44.0;
     auto result3 = fn(thread->GetGlueAddr(), JSTaggedValue(x3).GetRawData(), JSTaggedValue(y3).GetRawData());
     auto expectRes3 = FastRuntimeStub::FastMod(JSTaggedValue(x3), JSTaggedValue(y3));
     EXPECT_EQ(result3, expectRes3);
+    thread->SetCurrentSPFrame(sp);
 
     // test x == 0.0 || std::isinf(y) return x
     double x4 = base::NAN_VALUE;
@@ -1098,7 +1100,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
     int y = 10;
-
+    auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
 
@@ -1127,7 +1129,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     resVal = getPropertyByValuePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
                                    strDigit.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
-
+    thread->SetCurrentSPFrame(sp);
     JSHandle<JSTaggedValue> strHello(factory->NewFromCanBeCompressString("hello world"));
     double key = 4.29497e+09;
     resVal = getPropertyByValuePtr(thread->GetGlueAddr(), strHello.GetTaggedValue().GetRawData(),
