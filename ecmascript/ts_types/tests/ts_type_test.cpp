@@ -209,7 +209,7 @@ HWTEST_F_L0(TSTypeTest, InterfaceType)
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(2);
 
     const int literalLength = 12;
-    const int propsNum = 2;
+    const uint32_t propsNum = 2;
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
     JSHandle<EcmaString> propsNameA = factory->NewFromCanBeCompressString("propsA");
     JSHandle<EcmaString> propsNameB = factory->NewFromCanBeCompressString("propsB");
@@ -248,7 +248,7 @@ HWTEST_F_L0(TSTypeTest, ClassType)
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(2);
 
     const int literalLength = 18;
-    const int propsNum = 2;
+    const uint32_t propsNum = 2;
     JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
     JSHandle<EcmaString> propsNameA = factory->NewFromCanBeCompressString("propsA");
     JSHandle<EcmaString> propsNameB = factory->NewFromCanBeCompressString("propsB");

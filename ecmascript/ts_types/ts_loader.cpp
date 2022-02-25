@@ -159,7 +159,7 @@ int TSLoader::GetUnionTypeLength(GlobalTSTypeRef gt) const
     return unionTypeArray->GetLength();
 }
 
-int TSLoader::GetUTableIndex(GlobalTSTypeRef gt, int index) const
+int TSLoader::GetUTableIndex(GlobalTSTypeRef gt, uint32_t index) const
 {
     JSThread *thread = vm_->GetJSThread();
     int localTSTypetableId = gt.GetLocalId();
@@ -316,9 +316,9 @@ GlobalTSTypeRef TSLoader::FindInGlobalUTable(JSHandle<TSUnionType> unionType) co
     ASSERT(finalModuleName == "UnionTypeTable");
 
     JSHandle<TaggedArray> unionTypeTable = GetGlobalUTable();
-    int tableLength = unionTypeTable->GetLength();
+    uint32_t tableLength = unionTypeTable->GetLength();
     GlobalTSTypeRef foundUnionRef = GlobalTSTypeRef::Default();
-    for (int unionIndex = 0; unionIndex < tableLength; unionIndex++) {
+    for (uint32_t unionIndex = 0; unionIndex < tableLength; unionIndex++) {
         JSHandle<TSUnionType> unionTemp = JSHandle<TSUnionType>(thread, unionTypeTable->Get(unionIndex));
         ASSERT(unionTemp.GetTaggedValue().IsTSUnionType() && unionType.GetTaggedValue().IsTSUnionType());
         bool foundTag = unionTemp->IsEqual(thread, unionType);

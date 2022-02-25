@@ -49,7 +49,7 @@ JSHClass *TSObjectType::CreateHClassByProps(JSThread *thread, JSHandle<TSObjLayo
 
     JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
     JSHandle<LayoutInfo> layout = factory->CreateLayoutInfo(length);
-    for (int index = 0; index < length; ++index) {
+    for (uint32_t index = 0; index < length; ++index) {
         JSTaggedValue tsPropKey = propType->GetKey(index);
         key.Update(tsPropKey);
         ASSERT_PRINT(JSTaggedValue::IsPropertyKey(key), "Key is not a property key");
@@ -108,7 +108,7 @@ GlobalTSTypeRef TSClassType::SearchProperty(JSThread *thread, JSHandle<TSTypeTab
     TSObjLayoutInfo *propTypeInfo = TSObjLayoutInfo::Cast(constructorType->GetObjLayoutInfo().GetTaggedObject());
 
     // search static propType in constructorType
-    for (int index = 0; index < propTypeInfo->NumberOfElements(); ++index) {
+    for (uint32_t index = 0; index < propTypeInfo->NumberOfElements(); ++index) {
         JSTaggedValue tsPropKey = propTypeInfo->GetKey(index);
         if (ConvertToString(tsPropKey) == propertyName) {
             int localId = propTypeInfo->GetTypeId(index).GetNumber();
@@ -142,7 +142,7 @@ GlobalTSTypeRef TSClassInstanceType::SearchProperty(JSThread *thread, JSHandle<T
     TSObjLayoutInfo *prototypeTypeInfo = TSObjLayoutInfo::Cast(prototype->GetObjLayoutInfo().GetTaggedObject());
 
     // search non-static propType in instanceType
-    for (int index = 0; index < instanceTypeInfo->NumberOfElements(); ++index) {
+    for (uint32_t index = 0; index < instanceTypeInfo->NumberOfElements(); ++index) {
         JSTaggedValue instancePropKey = instanceTypeInfo->GetKey(index);
         if (ConvertToString(instancePropKey) == propertyName) {
             localId = instanceTypeInfo->GetTypeId(index).GetNumber();
@@ -160,7 +160,7 @@ GlobalTSTypeRef TSClassInstanceType::SearchProperty(JSThread *thread, JSHandle<T
         }
     }
     // search functionType in prototype
-    for (int index = 0; index < prototypeTypeInfo->NumberOfElements(); ++index) {
+    for (uint32_t index = 0; index < prototypeTypeInfo->NumberOfElements(); ++index) {
         JSTaggedValue prototypePropKey = prototypeTypeInfo->GetKey(index);
         if (ConvertToString(prototypePropKey) == propertyName) {
             localId = prototypeTypeInfo->GetTypeId(index).GetNumber();
