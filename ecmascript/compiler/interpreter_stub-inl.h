@@ -230,6 +230,28 @@ void InterpreterStub::SetFunctionToFrame(GateRef glue, GateRef frame, GateRef va
           GetIntPtrConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
+void InterpreterStub::SetConstantPoolToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    Store(VariableType::INT64(), glue, function,
+          GetIntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET), value);
+}
+
+void InterpreterStub::SetResolvedToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef bitfield = GetFunctionBitFieldFromJSFunction(function);
+    GateRef mask = GetInt32Constant(
+        ~(((1<<JSFunction::ResolvedBits::SIZE) - 1) << JSFunction::ResolvedBits::START_BIT));
+    GateRef result = Int32Or(Int32And(bitfield, mask),
+        Int32LSL(value, GetInt32Constant(JSFunction::ResolvedBits::START_BIT)));
+    Store(VariableType::INT32(), glue, function, GetIntPtrConstant(JSFunction::BIT_FIELD_OFFSET), result);
+}
+
+void InterpreterStub::SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value)
+{
+    GateRef offset = GetIntPtrConstant(JSFunction::HOME_OBJECT_OFFSET);
+    Store(VariableType::INT64(), glue, function, offset, value);
+}
+
 GateRef InterpreterStub::GetCurrentSpFrame(GateRef glue)
 {
     GateRef spOffset = GetIntPtrConstant(
@@ -331,7 +353,7 @@ GateRef InterpreterStub::GetObjectFromConstPool(GateRef constpool, GateRef index
 
 GateRef InterpreterStub::FunctionIsResolved(GateRef object)
 {
-    GateRef bitfield = TaggedGetInt(GetFunctionBitFieldFromJSFunction(object));
+    GateRef bitfield = GetFunctionBitFieldFromJSFunction(object);
     // decode
     return Int32NotEqual(
         Int32And(

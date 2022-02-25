@@ -72,6 +72,9 @@ public:
     inline void SetFunctionToFrame(GateRef glue, GateRef frame, GateRef value);
     inline void SetAccToFrame(GateRef glue, GateRef frame, GateRef value);
     inline void SetEnvToFrame(GateRef glue, GateRef frame, GateRef value);
+    inline void SetConstantPoolToFunction(GateRef glue, GateRef function, GateRef value);
+    inline void SetResolvedToFunction(GateRef glue, GateRef function, GateRef value);
+    inline void SetHomeObjectToFunction(GateRef glue, GateRef function, GateRef value);
 
     inline void Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                          GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter, GateRef format);
