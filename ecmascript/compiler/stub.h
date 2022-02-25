@@ -476,9 +476,9 @@ public:
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
     // call operation
-    inline GateRef CallStub(StubDescriptor *descriptor,  GateRef glue, GateRef target,
+    inline GateRef CallStub(StubDescriptor *descriptor, GateRef glue, GateRef target,
                               std::initializer_list<GateRef> args);
-    inline GateRef CallStub(StubDescriptor *descriptor,  GateRef glue, GateRef target, GateRef depend,
+    inline GateRef CallStub(StubDescriptor *descriptor, GateRef glue, GateRef target, GateRef depend,
                               std::initializer_list<GateRef> args);
     inline GateRef CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  std::initializer_list<GateRef> args);
@@ -569,8 +569,12 @@ public:
     inline GateRef TaggedIsBoolean(GateRef x);
     inline GateRef TaggedGetInt(GateRef x);
     inline GateRef Int16BuildTaggedWithNoGC(GateRef x);
+    inline GateRef Int16BuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
+    inline GateRef IntBuildTaggedTypeWithNoGC(GateRef x);
+    inline GateRef PtrBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
+    inline GateRef DoubleBuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
     inline GateRef TaggedTrue();
     inline GateRef TaggedFalse();

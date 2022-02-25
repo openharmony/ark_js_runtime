@@ -224,6 +224,7 @@ std::string OpCode::Str() const
         {IF_SUCCESS, "IF_SUCCESS"},
         {IF_EXCEPTION, "IF_EXCEPTION"},
         {GET_EXCEPTION, "GET_EXCEPTION"},
+        {RUNTIME_CALL, "RUNTIME_CALL"},
         {CALL, "CALL"},
         {BYTECODE_CALL, "BYTECODE_CALL"},
         {ALLOCA, "ALLOCA"},

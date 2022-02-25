@@ -56,18 +56,17 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
 #define DISPATCH_LAST()                                                                   \
     DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter)           \
 
-#define UPDATE_HOTNESS(_sp)                                                               \
-    varHotnessCounter = Int32Add(offset, *varHotnessCounter);                             \
-    Branch(Int32LessThan(*varHotnessCounter, GetInt32Constant(0)), &slowPath, &dispatch); \
-    Bind(&slowPath);                                                                      \
-    {                                                                                     \
-        StubDescriptor *subDescriptor = GET_STUBDESCRIPTOR(UpdateHotnessCounter);         \
-        varProfileTypeInfo = CallRuntime(subDescriptor, glue,                             \
-            GetInt64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { glue, (_sp) });       \
-        varHotnessCounter = GetInt32Constant(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);  \
-        Jump(&dispatch);                                                                  \
-    }                                                                                     \
-    Bind(&dispatch);                                                                      \
+#define UPDATE_HOTNESS(_sp)                                                                         \
+    varHotnessCounter = Int32Add(offset, *varHotnessCounter);                                       \
+    Branch(Int32LessThan(*varHotnessCounter, GetInt32Constant(0)), &slowPath, &dispatch);           \
+    Bind(&slowPath);                                                                                \
+    {                                                                                               \
+        varProfileTypeInfo = CallRuntimeTrampoline(glue,                                            \
+            GetInt64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { PtrBuildTaggedWithNoGC(_sp) }); \
+        varHotnessCounter = GetInt32Constant(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);            \
+        Jump(&dispatch);                                                                            \
+    }                                                                                               \
+    Bind(&dispatch);                                                                                \
 
 DECLARE_ASM_HANDLER(HandleLdNanPref)
 {
@@ -113,9 +112,7 @@ DECLARE_ASM_HANDLER(HandleLdFalsePref)
 
 DECLARE_ASM_HANDLER(HandleThrowDynPref)
 {
-    StubDescriptor *throwDyn = GET_STUBDESCRIPTOR(ThrowDyn);
-    CallRuntime(throwDyn, glue, GetInt64Constant(FAST_STUB_ID(ThrowDyn)),
-                {glue, acc});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowDyn)), { acc });
     DISPATCH_LAST();
 }
 
@@ -272,9 +269,7 @@ DECLARE_ASM_HANDLER(HandleGetPropIteratorPref)
     DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
     auto env = GetEnvironment();
     
-    StubDescriptor *getPropIterator = GET_STUBDESCRIPTOR(GetPropIterator);
-    GateRef res = CallRuntime(getPropIterator, glue, GetInt64Constant(FAST_STUB_ID(GetPropIterator)),
-                              {glue, *varAcc});
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetPropIterator)), { *varAcc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -291,9 +286,7 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionEnterPref)
 {
     DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
     auto env = GetEnvironment();
-    StubDescriptor *asyncFunctionEnter = GET_STUBDESCRIPTOR(AsyncFunctionEnter);
-    GateRef res = CallRuntime(asyncFunctionEnter, glue, GetInt64Constant(FAST_STUB_ID(AsyncFunctionEnter)),
-                              {glue});
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(AsyncFunctionEnter)), {});
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -328,9 +321,7 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
     }
     Bind(&notGeneratorObj);
     {
-        StubDescriptor *getIterator = GET_STUBDESCRIPTOR(GetIterator);
-        GateRef res = CallRuntime(getIterator, glue, GetInt64Constant(FAST_STUB_ID(GetIterator)),
-                                  {glue, *varAcc});
+        GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetIterator)), { *varAcc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(res), &isException, &notException);
@@ -348,17 +339,13 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
 
 DECLARE_ASM_HANDLER(HandleThrowThrowNotExistsPref)
 {
-    StubDescriptor *throwThrowNotExists = GET_STUBDESCRIPTOR(ThrowThrowNotExists);
-    CallRuntime(throwThrowNotExists, glue, GetInt64Constant(FAST_STUB_ID(ThrowThrowNotExists)),
-                {glue});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowThrowNotExists)), {});
     DISPATCH_LAST();
 }
 
 DECLARE_ASM_HANDLER(HandleThrowPatternNonCoerciblePref)
 {
-    StubDescriptor *throwPatternNonCoercible = GET_STUBDESCRIPTOR(ThrowPatternNonCoercible);
-    CallRuntime(throwPatternNonCoercible, glue, GetInt64Constant(FAST_STUB_ID(ThrowPatternNonCoercible)),
-                {glue});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowPatternNonCoercible)), {});
     DISPATCH_LAST();
 }
 
@@ -372,9 +359,7 @@ DECLARE_ASM_HANDLER(HandleLdHomeObjectPref)
 
 DECLARE_ASM_HANDLER(HandleThrowDeleteSuperPropertyPref)
 {
-    StubDescriptor *throwDeleteSuperProperty = GET_STUBDESCRIPTOR(ThrowDeleteSuperProperty);
-    CallRuntime(throwDeleteSuperProperty, glue, GetInt64Constant(FAST_STUB_ID(ThrowDeleteSuperProperty)),
-                {glue});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowDeleteSuperProperty)), {});
     DISPATCH_LAST();
 }
 
@@ -398,9 +383,7 @@ DECLARE_ASM_HANDLER(HandleMul2DynPrefV8)
     Bind(&isHole);
     {
         // slow path
-        StubDescriptor *mul2Dyn = GET_STUBDESCRIPTOR(Mul2Dyn);
-        result = CallRuntime(mul2Dyn, glue, GetInt64Constant(FAST_STUB_ID(Mul2Dyn)),
-                             {glue, left, acc});
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Mul2Dyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -438,9 +421,8 @@ DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
     Bind(&isHole);
     {
         // slow path
-        StubDescriptor *div2Dyn = GET_STUBDESCRIPTOR(Div2Dyn);
-        result = CallRuntime(div2Dyn, glue, GetInt64Constant(FAST_STUB_ID(Div2Dyn)),
-                             {glue, left, acc});
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Div2Dyn)),
+                             { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -478,9 +460,7 @@ DECLARE_ASM_HANDLER(HandleMod2DynPrefV8)
     Bind(&isHole);
     {
         // slow path
-        StubDescriptor *mod2Dyn = GET_STUBDESCRIPTOR(Mod2Dyn);
-        result = CallRuntime(mod2Dyn, glue, GetInt64Constant(FAST_STUB_ID(Mod2Dyn)),
-                             {glue, left, acc});
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Mod2Dyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -518,9 +498,7 @@ DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
     Bind(&isHole);
     {
         // slow path
-        StubDescriptor *eqDyn = GET_STUBDESCRIPTOR(EqDyn);
-        result = CallRuntime(eqDyn, glue, GetInt64Constant(FAST_STUB_ID(EqDyn)),
-                             {glue, left, acc});
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(EqDyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -558,9 +536,7 @@ DECLARE_ASM_HANDLER(HandleNotEqDynPrefV8)
     Bind(&isHole);
     {
         // slow path
-        StubDescriptor *notEqDyn = GET_STUBDESCRIPTOR(NotEqDyn);
-        result = CallRuntime(notEqDyn, glue, GetInt64Constant(FAST_STUB_ID(NotEqDyn)),
-                             {glue, left, acc});
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NotEqDyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -682,9 +658,7 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
     Bind(&slowPath);
     {
         // slow path
-        StubDescriptor *lessDyn = GET_STUBDESCRIPTOR(LessDyn);
-        GateRef result = CallRuntime(lessDyn, glue, GetInt64Constant(FAST_STUB_ID(LessDyn)),
-                                     {glue, left, acc});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LessDyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -790,9 +764,7 @@ DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
     Bind(&slowPath);
     {
         // slow path
-        StubDescriptor *lessEqDyn = GET_STUBDESCRIPTOR(LessEqDyn);
-        GateRef result = CallRuntime(lessEqDyn, glue, GetInt64Constant(FAST_STUB_ID(LessEqDyn)),
-                                     {glue, left, acc});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LessEqDyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -898,9 +870,7 @@ DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
     Bind(&slowPath);
     {
         // slow path
-        StubDescriptor *greaterDyn = GET_STUBDESCRIPTOR(GreaterDyn);
-        GateRef result = CallRuntime(greaterDyn, glue, GetInt64Constant(FAST_STUB_ID(GreaterDyn)),
-                                     {glue, left, acc});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GreaterDyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1007,9 +977,7 @@ DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
     Bind(&slowPath);
     {
         // slow path
-        StubDescriptor *greaterEqDyn = GET_STUBDESCRIPTOR(GreaterEqDyn);
-        GateRef result = CallRuntime(greaterEqDyn, glue, GetInt64Constant(FAST_STUB_ID(GreaterEqDyn)),
-                                     {glue, left, acc});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GreaterEqDyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1042,10 +1010,10 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
     DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
 
-    auto stubDescriptor = GET_STUBDESCRIPTOR(JumpToCInterpreter);
-    varPc = CallRuntime(stubDescriptor, glue, GetInt64Constant(FAST_STUB_ID(JumpToCInterpreter)), {
-        glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter
-    });
+    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(JumpToCInterpreter)), {
+        PtrBuildTaggedWithNoGC(pc), PtrBuildTaggedWithNoGC(sp), constpool, profileTypeInfo,
+            acc, IntBuildTaggedTypeWithNoGC(hotnessCounter)
+    }));
     Label shouldReturn(env);
     Label shouldContinue(env);
 
@@ -1335,9 +1303,7 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
     Bind(&valueNotDouble);
     {
         // slow path
-        StubDescriptor *incDyn = GET_STUBDESCRIPTOR(IncDyn);
-        GateRef result = CallRuntime(incDyn, glue, GetInt64Constant(FAST_STUB_ID(IncDyn)),
-                                     {glue, value});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(IncDyn)), { value });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1396,9 +1362,7 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
     Bind(&valueNotDouble);
     {
         // slow path
-        StubDescriptor *decDyn = GET_STUBDESCRIPTOR(DecDyn);
-        GateRef result = CallRuntime(decDyn, glue, GetInt64Constant(FAST_STUB_ID(DecDyn)),
-                                     {glue, value});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(DecDyn)), { value });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
@@ -1422,9 +1386,8 @@ DECLARE_ASM_HANDLER(HandleExpDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef base = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *expDyn = GET_STUBDESCRIPTOR(ExpDyn);
-    GateRef result = CallRuntime(expDyn, glue, GetInt64Constant(FAST_STUB_ID(ExpDyn)),
-                                 {glue, base, acc}); // acc is exponent
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ExpDyn)),
+                                 { base, acc }); // acc is exponent
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1444,9 +1407,8 @@ DECLARE_ASM_HANDLER(HandleIsInDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *isInDyn = GET_STUBDESCRIPTOR(IsInDyn);
-    GateRef result = CallRuntime(isInDyn, glue, GetInt64Constant(FAST_STUB_ID(IsInDyn)),
-                                 {glue, prop, acc}); // acc is obj
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(IsInDyn)),
+        { prop, acc }); // acc is obj
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1466,9 +1428,8 @@ DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *instanceOfDyn = GET_STUBDESCRIPTOR(InstanceOfDyn);
-    GateRef result = CallRuntime(instanceOfDyn, glue, GetInt64Constant(FAST_STUB_ID(InstanceOfDyn)),
-                                 {glue, obj, acc}); // acc is target
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(InstanceOfDyn)),
+        { obj, acc }); // acc is target
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1487,9 +1448,8 @@ DECLARE_ASM_HANDLER(HandleStrictNotEqDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *fastStrictNotEqual = GET_STUBDESCRIPTOR(FastStrictNotEqual);
-    GateRef result = CallRuntime(fastStrictNotEqual, glue, GetInt64Constant(FAST_STUB_ID(FastStrictNotEqual)),
-                                 {left, acc}); // acc is right
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(FastStrictNotEqual)),
+        { left, acc }); // acc is right
     varAcc = result;
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -1500,9 +1460,8 @@ DECLARE_ASM_HANDLER(HandleStrictEqDynPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *fastStrictEqual = GET_STUBDESCRIPTOR(FastStrictEqual);
-    GateRef result = CallRuntime(fastStrictEqual, glue, GetInt64Constant(FAST_STUB_ID(FastStrictEqual)),
-                                 {left, acc}); // acc is right
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(FastStrictEqual)),
+        { left, acc }); // acc is right
     varAcc = result;
     DISPATCH_WITH_ACC(PREF_V8);
 }
@@ -1535,9 +1494,8 @@ DECLARE_ASM_HANDLER(HandleCreateGeneratorObjPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef genFunc = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *createGeneratorObj = GET_STUBDESCRIPTOR(CreateGeneratorObj);
-    GateRef result = CallRuntime(createGeneratorObj, glue, GetInt64Constant(FAST_STUB_ID(CreateGeneratorObj)),
-                                 {glue, genFunc});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CreateGeneratorObj)),
+        { genFunc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1554,9 +1512,7 @@ DECLARE_ASM_HANDLER(HandleThrowConstAssignmentPrefV8)
 {
     GateRef v0 = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *throwConstAssignment = GET_STUBDESCRIPTOR(ThrowConstAssignment);
-    CallRuntime(throwConstAssignment, glue, GetInt64Constant(FAST_STUB_ID(ThrowConstAssignment)),
-                {glue, value});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowConstAssignment)), { value });
     DISPATCH_LAST();
 }
 
@@ -1567,9 +1523,7 @@ DECLARE_ASM_HANDLER(HandleGetTemplateObjectPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef literal = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *getTemplateObject = GET_STUBDESCRIPTOR(GetTemplateObject);
-    GateRef result = CallRuntime(getTemplateObject, glue, GetInt64Constant(FAST_STUB_ID(GetTemplateObject)),
-                                 {glue, literal});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTemplateObject)), { literal });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1589,9 +1543,7 @@ DECLARE_ASM_HANDLER(HandleGetNextPropNamePrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *getNextPropName = GET_STUBDESCRIPTOR(GetNextPropName);
-    GateRef result = CallRuntime(getNextPropName, glue, GetInt64Constant(FAST_STUB_ID(GetNextPropName)),
-                                 {glue, iter});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetNextPropName)), { iter });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1618,9 +1570,7 @@ DECLARE_ASM_HANDLER(HandleThrowIfNotObjectPrefV8)
         DISPATCH(PREF_V8);
     }
     Bind(&notEcmaObject);
-    StubDescriptor *throwIfNotObject = GET_STUBDESCRIPTOR(ThrowIfNotObject);
-    CallRuntime(throwIfNotObject, glue, GetInt64Constant(FAST_STUB_ID(ThrowIfNotObject)),
-                {glue});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowIfNotObject)), {});
     DISPATCH_LAST();
 }
 
@@ -1631,9 +1581,7 @@ DECLARE_ASM_HANDLER(HandleIterNextPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *iterNext = GET_STUBDESCRIPTOR(IterNext);
-    GateRef result = CallRuntime(iterNext, glue, GetInt64Constant(FAST_STUB_ID(IterNext)),
-                                 {glue, iter});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(IterNext)), { iter });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1653,9 +1601,7 @@ DECLARE_ASM_HANDLER(HandleCloseIteratorPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *closeIterator = GET_STUBDESCRIPTOR(CloseIterator);
-    GateRef result = CallRuntime(closeIterator, glue, GetInt64Constant(FAST_STUB_ID(CloseIterator)),
-                                 {glue, iter});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CloseIterator)), { iter });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1672,9 +1618,7 @@ DECLARE_ASM_HANDLER(HandleCopyModulePrefV8)
 {
     GateRef v0 = ReadInst8_1(pc);
     GateRef srcModule = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *copyModule = GET_STUBDESCRIPTOR(CopyModule);
-    CallRuntime(copyModule, glue, GetInt64Constant(FAST_STUB_ID(CopyModule)),
-                {glue, srcModule});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CopyModule)), { srcModule });
     DISPATCH(PREF_V8);
 }
 
@@ -1685,9 +1629,8 @@ DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    StubDescriptor *superCallSpread = GET_STUBDESCRIPTOR(SuperCallSpread);
-    GateRef result = CallRuntime(superCallSpread, glue, GetInt64Constant(FAST_STUB_ID(SuperCallSpread)),
-                                 {glue, acc, sp, array}); // acc is thisFunc, sp for newTarget
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SuperCallSpread)),
+        { acc, PtrBuildTaggedWithNoGC(sp), array }); // acc is thisFunc, sp for newTarget
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1709,9 +1652,8 @@ DECLARE_ASM_HANDLER(HandleDelObjPropPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *delObjProp = GET_STUBDESCRIPTOR(DelObjProp);
-    GateRef result = CallRuntime(delObjProp, glue, GetInt64Constant(FAST_STUB_ID(DelObjProp)),
-                                 {glue, obj, prop});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(DelObjProp)),
+        { obj, prop });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1733,9 +1675,8 @@ DECLARE_ASM_HANDLER(HandleNewObjSpreadDynPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef func = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef newTarget = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *newObjSpreadDyn = GET_STUBDESCRIPTOR(NewObjSpreadDyn);
-    GateRef result = CallRuntime(newObjSpreadDyn, glue, GetInt64Constant(FAST_STUB_ID(NewObjSpreadDyn)),
-                                 {glue, func, newTarget, acc}); // acc is array
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NewObjSpreadDyn)),
+        { func, newTarget, acc }); // acc is array
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1757,9 +1698,8 @@ DECLARE_ASM_HANDLER(HandleCreateIterResultObjPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef flag = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *createIterResultObj = GET_STUBDESCRIPTOR(CreateIterResultObj);
-    GateRef result = CallRuntime(createIterResultObj, glue, GetInt64Constant(FAST_STUB_ID(CreateIterResultObj)),
-                                 {glue, value, flag});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CreateIterResultObj)),
+        { value, flag });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1781,10 +1721,8 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionAwaitUncaughtPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *asyncFunctionAwaitUncaught = GET_STUBDESCRIPTOR(AsyncFunctionAwaitUncaught);
-    GateRef result = CallRuntime(asyncFunctionAwaitUncaught, glue,
-                                 GetInt64Constant(FAST_STUB_ID(AsyncFunctionAwaitUncaught)),
-                                 {glue, asyncFuncObj, value});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(AsyncFunctionAwaitUncaught)),
+        { asyncFuncObj, value });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1814,9 +1752,7 @@ DECLARE_ASM_HANDLER(HandleThrowUndefinedIfHolePrefV8V8)
     Bind(&isHole);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
     // assert obj.IsString()
-    StubDescriptor *throwUndefinedIfHole = GET_STUBDESCRIPTOR(ThrowUndefinedIfHole);
-    CallRuntime(throwUndefinedIfHole, glue, GetInt64Constant(FAST_STUB_ID(ThrowUndefinedIfHole)),
-                {glue, obj});
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowUndefinedIfHole)), { obj });
     DISPATCH_LAST();
 }
 
@@ -1829,9 +1765,8 @@ DECLARE_ASM_HANDLER(HandleCopyDataPropertiesPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef dst = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef src = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *copyDataProperties = GET_STUBDESCRIPTOR(CopyDataProperties);
-    GateRef result = CallRuntime(copyDataProperties, glue, GetInt64Constant(FAST_STUB_ID(CopyDataProperties)),
-                                 {glue, dst, src});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CopyDataProperties)),
+        { dst, src });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1853,9 +1788,8 @@ DECLARE_ASM_HANDLER(HandleStArraySpreadPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef dst = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef index = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *stArraySpread = GET_STUBDESCRIPTOR(StArraySpread);
-    GateRef result = CallRuntime(stArraySpread, glue, GetInt64Constant(FAST_STUB_ID(StArraySpread)),
-                                 {glue, dst, index, acc}); // acc is res
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StArraySpread)),
+        { dst, index, acc }); // acc is res
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1877,9 +1811,8 @@ DECLARE_ASM_HANDLER(HandleGetIteratorNextPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef method = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *getIteratorNext = GET_STUBDESCRIPTOR(GetIteratorNext);
-    GateRef result = CallRuntime(getIteratorNext, glue, GetInt64Constant(FAST_STUB_ID(GetIteratorNext)),
-                                 {glue, obj, method});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetIteratorNext)),
+        { obj, method });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1901,9 +1834,8 @@ DECLARE_ASM_HANDLER(HandleSetObjectWithProtoPrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef proto = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *setObjectWithProto = GET_STUBDESCRIPTOR(SetObjectWithProto);
-    GateRef result = CallRuntime(setObjectWithProto, glue, GetInt64Constant(FAST_STUB_ID(SetObjectWithProto)),
-                                 {glue, proto, obj});
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SetObjectWithProto)),
+        { proto, obj });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -1988,7 +1920,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
         {
             StubDescriptor *getPropertyByValue = GET_STUBDESCRIPTOR(GetPropertyByValue);
             GateRef result = CallRuntime(getPropertyByValue, glue, GetInt64Constant(FAST_STUB_ID(GetPropertyByValue)),
-                                         {glue, receiver, propKey});
+                                         { glue, receiver, propKey });
             Label notHole(env);
             Branch(TaggedIsHole(result), &slowPath, &notHole);
             Bind(&notHole);
@@ -2001,9 +1933,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *loadICByValue = GET_STUBDESCRIPTOR(LoadICByValue);
-        GateRef result = CallRuntime(loadICByValue, glue, GetInt64Constant(FAST_STUB_ID(LoadICByValue)),
-                                     {glue, profileTypeInfo, receiver, propKey, slotId});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LoadICByValue)),
+            { profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId) });
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&notException);
@@ -2083,7 +2014,7 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
         {
             StubDescriptor *setPropertyByValue = GET_STUBDESCRIPTOR(SetPropertyByValue);
             GateRef result = CallRuntime(setPropertyByValue, glue, GetInt64Constant(FAST_STUB_ID(SetPropertyByValue)),
-                                         {glue, receiver, propKey, acc}); // acc is value
+                                         { glue, receiver, propKey, acc }); // acc is value
             Label notHole(env);
             Branch(TaggedIsHole(result), &slowPath, &notHole);
             Bind(&notHole);
@@ -2092,9 +2023,8 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *storeICByValue = GET_STUBDESCRIPTOR(StoreICByValue);
-        GateRef result = CallRuntime(storeICByValue, glue, GetInt64Constant(FAST_STUB_ID(StoreICByValue)),
-                                     {glue, profileTypeInfo, receiver, propKey, acc, slotId}); // acc is value
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StoreICByValue)),
+            { profileTypeInfo, receiver, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId) }); // acc is value
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2129,7 +2059,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
         // fast path
         StubDescriptor *setPropertyByValue = GET_STUBDESCRIPTOR(SetPropertyByValue);
         GateRef result = CallRuntime(setPropertyByValue, glue, GetInt64Constant(FAST_STUB_ID(SetPropertyByValue)),
-                                     {glue, receiver, propKey, acc}); // acc is value
+                                     { glue, receiver, propKey, acc }); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2137,9 +2067,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *stOwnByValue = GET_STUBDESCRIPTOR(StOwnByValue);
-        GateRef result = CallRuntime(stOwnByValue, glue, GetInt64Constant(FAST_STUB_ID(StOwnByValue)),
-                                     {glue, receiver, propKey, acc}); // acc is value
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StOwnByValue)),
+            { receiver, propKey, acc }); // acc is value
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2159,9 +2088,8 @@ DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *ldSuperByValue = GET_STUBDESCRIPTOR(LdSuperByValue);
-    GateRef result = CallRuntime(ldSuperByValue, glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
-                                 {glue, receiver, propKey, sp}); // sp for thisFunc
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
+                                 {  receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2182,9 +2110,9 @@ DECLARE_ASM_HANDLER(HandleStSuperByValuePrefV8V8)
     GateRef v1 = ReadInst8_2(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
-    StubDescriptor *stSuperByValue = GET_STUBDESCRIPTOR(StSuperByValue);
-    GateRef result = CallRuntime(stSuperByValue, glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
-                                 {glue, receiver, propKey, acc, sp}); // acc is value, sp for thisFunc
+     // acc is value, sp for thisFunc
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
+        { receiver, propKey, acc, PtrBuildTaggedWithNoGC(sp) });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2209,9 +2137,8 @@ DECLARE_ASM_HANDLER(HandleLdSuperByNamePrefId32V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
 
-    StubDescriptor *ldSuperByValue = GET_STUBDESCRIPTOR(LdSuperByValue);
-    GateRef result = CallRuntime(ldSuperByValue, glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
-                                 {glue, receiver, propKey, sp}); // sp for thisFunc
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
+        { receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -2234,9 +2161,8 @@ DECLARE_ASM_HANDLER(HandleStSuperByNamePrefId32V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
 
-    StubDescriptor *stSuperByValue = GET_STUBDESCRIPTOR(StSuperByValue);
-    GateRef result = CallRuntime(stSuperByValue, glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
-                                 {glue, receiver, propKey, acc, sp}); // sp for thisFunc
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
+        { receiver, propKey, acc, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -2263,7 +2189,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByIndexPrefV8Imm32)
     {
         StubDescriptor *getPropertyByIndex = GET_STUBDESCRIPTOR(GetPropertyByIndex);
         GateRef result = CallRuntime(getPropertyByIndex, glue, GetInt64Constant(FAST_STUB_ID(GetPropertyByIndex)),
-                                     {glue, receiver, index});
+                                     { glue, receiver, index });
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2275,9 +2201,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByIndexPrefV8Imm32)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *ldObjByIndex = GET_STUBDESCRIPTOR(LdObjByIndex);
-        GateRef result = CallRuntime(ldObjByIndex, glue, GetInt64Constant(FAST_STUB_ID(LdObjByIndex)),
-                                     {glue, receiver, index, FalseConstant(), GetUndefinedConstant()});
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdObjByIndex)),
+            { receiver, IntBuildTaggedTypeWithNoGC(index), TaggedFalse(), GetUndefinedConstant() });
         Label notException(env);
         Branch(TaggedIsException(result), &isException, &notException);
         Bind(&notException);
@@ -2308,7 +2233,7 @@ DECLARE_ASM_HANDLER(HandleStObjByIndexPrefV8Imm32)
     {
         StubDescriptor *setPropertyByIndex = GET_STUBDESCRIPTOR(SetPropertyByIndex);
         GateRef result = CallRuntime(setPropertyByIndex, glue, GetInt64Constant(FAST_STUB_ID(SetPropertyByIndex)),
-                                     {glue, receiver, index, acc}); // acc is value
+                                     { glue, receiver, index, acc }); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2316,9 +2241,8 @@ DECLARE_ASM_HANDLER(HandleStObjByIndexPrefV8Imm32)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *stObjByIndex = GET_STUBDESCRIPTOR(StObjByIndex);
-        GateRef result = CallRuntime(stObjByIndex, glue, GetInt64Constant(FAST_STUB_ID(StObjByIndex)),
-                                     {glue, receiver, index, acc}); // acc is value
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StObjByIndex)),
+            { receiver, IntBuildTaggedTypeWithNoGC(index), acc }); // acc is value
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2352,7 +2276,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByIndexPrefV8Imm32)
         // fast path
         StubDescriptor *setPropertyByIndex = GET_STUBDESCRIPTOR(SetPropertyByIndex);
         GateRef result = CallRuntime(setPropertyByIndex, glue, GetInt64Constant(FAST_STUB_ID(SetPropertyByIndex)),
-                                     {glue, receiver, index, acc}); // acc is value
+                                     { glue, receiver, index, acc }); // acc is value
         Label notHole(env);
         Branch(TaggedIsHole(result), &slowPath, &notHole);
         Bind(&notHole);
@@ -2360,9 +2284,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByIndexPrefV8Imm32)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *stOwnByIndex = GET_STUBDESCRIPTOR(StOwnByIndex);
-        GateRef result = CallRuntime(stOwnByIndex, glue, GetInt64Constant(FAST_STUB_ID(StOwnByIndex)),
-                                     {glue, receiver, index, acc}); // acc is value
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StOwnByIndex)),
+            { receiver, IntBuildTaggedTypeWithNoGC(index), acc }); // acc is value
         Branch(TaggedIsException(result), &isException, &notException);
     }
     Bind(&isException);
@@ -2382,9 +2305,8 @@ DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
-    StubDescriptor *stGlobalRecord = GET_STUBDESCRIPTOR(StGlobalRecord);
-    GateRef result = CallRuntime(stGlobalRecord, glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
-                                 { glue, propKey, *varAcc, TrueConstant() });
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
+        { propKey, *varAcc, TaggedTrue() });
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
@@ -2403,9 +2325,8 @@ DECLARE_ASM_HANDLER(HandleStLetToGlobalRecordPrefId32)
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
-    StubDescriptor *stGlobalRecord = GET_STUBDESCRIPTOR(StGlobalRecord);
-    GateRef result = CallRuntime(stGlobalRecord, glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
-                                 { glue, propKey, *varAcc, FalseConstant() });
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
+        { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
@@ -2424,9 +2345,8 @@ DECLARE_ASM_HANDLER(HandleStClassToGlobalRecordPrefId32)
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
-    StubDescriptor *stGlobalRecord = GET_STUBDESCRIPTOR(StGlobalRecord);
-    GateRef result = CallRuntime(stGlobalRecord, glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
-                                 { glue, propKey, *varAcc, FalseConstant() });
+    GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
+        { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
@@ -2482,9 +2402,7 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
         Bind(&valueNotDouble);
         {
             // slow path
-            StubDescriptor *NegDyn = GET_STUBDESCRIPTOR(NegDyn);
-            GateRef result = CallRuntime(NegDyn, glue, GetInt64Constant(FAST_STUB_ID(NegDyn)),
-                                         {glue, value});
+            GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NegDyn)), { value });
             Branch(TaggedIsException(result), &isException, &notException);
             Bind(&isException);
             {
@@ -2533,9 +2451,7 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
         Bind(&numberNotDouble);
         {
             // slow path
-            StubDescriptor *NotDyn = GET_STUBDESCRIPTOR(NotDyn);
-            GateRef result = CallRuntime(NotDyn, glue, GetInt64Constant(FAST_STUB_ID(NotDyn)),
-                                        {glue, value});
+            GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NotDyn)), { value });
             Label isException(env);
             Label notException(env);
             Branch(TaggedIsException(result), &isException, &notException);
@@ -2622,10 +2538,8 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *ChangeTwoInt32AndToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoInt32AndToJSTaggedValue);
-        GateRef taggedNumber = CallRuntime(ChangeTwoInt32AndToJSTaggedValue, glue,
-            GetInt64Constant(FAST_STUB_ID(ChangeTwoInt32AndToJSTaggedValue)), {glue, left, right});
-
+        GateRef taggedNumber = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(ChangeTwoInt32AndToJSTaggedValue)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -2716,10 +2630,8 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *ChangeTwoInt32OrToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoInt32OrToJSTaggedValue);
-        GateRef taggedNumber = CallRuntime(ChangeTwoInt32OrToJSTaggedValue, glue,
-            GetInt64Constant(FAST_STUB_ID(ChangeTwoInt32OrToJSTaggedValue)), {glue, left, right});
-
+        GateRef taggedNumber = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(ChangeTwoInt32OrToJSTaggedValue)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -2810,10 +2722,8 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *ChangeTwoInt32XorToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoInt32XorToJSTaggedValue);
-        GateRef taggedNumber = CallRuntime(ChangeTwoInt32XorToJSTaggedValue, glue,
-            GetInt64Constant(FAST_STUB_ID(ChangeTwoInt32XorToJSTaggedValue)), {glue, left, right});
-
+        GateRef taggedNumber = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(ChangeTwoInt32XorToJSTaggedValue)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -2904,10 +2814,8 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *ChangeTwoUint32AndToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeTwoUint32AndToJSTaggedValue);
-        GateRef taggedNumber = CallRuntime(ChangeTwoUint32AndToJSTaggedValue, glue,
-            GetInt64Constant(FAST_STUB_ID(ChangeTwoUint32AndToJSTaggedValue)), {glue, left, right});
-
+        GateRef taggedNumber = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(ChangeTwoUint32AndToJSTaggedValue)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -2999,9 +2907,8 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *ChangeUintAndIntShrToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeUintAndIntShrToJSTaggedValue);
-        GateRef taggedNumber = CallRuntime(ChangeUintAndIntShrToJSTaggedValue, glue,
-            GetInt64Constant(FAST_STUB_ID(ChangeUintAndIntShrToJSTaggedValue)), {glue, left, right});
+        GateRef taggedNumber = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(ChangeUintAndIntShrToJSTaggedValue)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3092,9 +2999,8 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *ChangeUintAndIntShlToJSTaggedValue = GET_STUBDESCRIPTOR(ChangeUintAndIntShlToJSTaggedValue);
-        GateRef taggedNumber = CallRuntime(ChangeUintAndIntShlToJSTaggedValue, glue,
-            GetInt64Constant(FAST_STUB_ID(ChangeUintAndIntShlToJSTaggedValue)), {glue, left, right});
+        GateRef taggedNumber = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(ChangeUintAndIntShlToJSTaggedValue)), { left, right });
         Label IsException(env);
         Label NotException(env);
         Branch(TaggedIsException(taggedNumber), &IsException, &NotException);
@@ -3141,16 +3047,14 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     Branch(FunctionIsResolved(classTemplate), &isResolved, &isNotResolved);
     Bind(&isResolved);
     {
-        StubDescriptor *cloneClassFromTemplate = GET_STUBDESCRIPTOR(CloneClassFromTemplate);
-        res = CallRuntime(cloneClassFromTemplate, glue, GetInt64Constant(FAST_STUB_ID(CloneClassFromTemplate)),
-                          { glue, classTemplate, proto, lexicalEnv, constpool });
+        res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CloneClassFromTemplate)),
+                                    { classTemplate, proto, lexicalEnv, constpool });
         Jump(&afterCheckResolved);
     }
     Bind(&isNotResolved);
     {
-        StubDescriptor *resolveClass = GET_STUBDESCRIPTOR(ResolveClass);
-        res = CallRuntime(resolveClass, glue, GetInt64Constant(FAST_STUB_ID(ResolveClass)),
-                          { glue, classTemplate, literalBuffer, proto, lexicalEnv, constpool });
+        res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ResolveClass)),
+                                    { classTemplate, literalBuffer, proto, lexicalEnv, constpool });
         Jump(&afterCheckResolved);
     }
     Bind(&afterCheckResolved);
@@ -3164,9 +3068,8 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     Bind(&isNotException);
     GateRef newLexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));  // slow runtime may gc
     SetLexicalEnvToFunction(glue, *res, newLexicalEnv);
-    StubDescriptor *setClassConstructorLength = GET_STUBDESCRIPTOR(SetClassConstructorLength);
-    CallRuntime(setClassConstructorLength, glue, GetInt64Constant(FAST_STUB_ID(SetClassConstructorLength)),
-                { glue, *res, length });
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SetClassConstructorLength)),
+        { *res, Int16BuildTaggedTypeWithNoGC(length) });
     varAcc = *res;
     DISPATCH_WITH_ACC(PREF_ID16_IMM16_IMM16_V8_V8);
 }
@@ -3226,8 +3129,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
             Label notHole(env);
             GateRef stringId = ReadInst32_1(pc);
             GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
-            auto stubDescriptor = GET_STUBDESCRIPTOR(GetPropertyByName);
-            GateRef result = CallRuntime(stubDescriptor, glue, GetInt64Constant(FAST_STUB_ID(GetPropertyByName)), {
+            StubDescriptor *getPropertyByName = GET_STUBDESCRIPTOR(GetPropertyByName);
+            GateRef result = CallRuntime(getPropertyByName, glue, GetInt64Constant(FAST_STUB_ID(GetPropertyByName)), {
                 glue, receiver, propKey
             });
             Branch(TaggedIsHole(result), &slowPath, &notHole);
@@ -3243,9 +3146,8 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         Label noException(env);
         GateRef stringId = ReadInst32_1(pc);
         GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
-        auto stubDescriptor = GET_STUBDESCRIPTOR(LoadICByName);
-        GateRef result = CallRuntime(stubDescriptor, glue, GetInt64Constant(FAST_STUB_ID(LoadICByName)), {
-            glue, profileTypeInfo, receiver, propKey, slotId
+        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LoadICByName)), {
+            profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId)
         });
         Branch(TaggedIsException(result), &isException, &noException);
         Bind(&isException);
@@ -3310,8 +3212,8 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
         {
             GateRef stringId = ReadInst32_1(pc);
             GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
-            auto stubDescriptor = GET_STUBDESCRIPTOR(SetPropertyByName);
-            result = CallRuntime(stubDescriptor, glue, GetInt64Constant(FAST_STUB_ID(SetPropertyByName)), {
+            StubDescriptor *setPropertyByName = GET_STUBDESCRIPTOR(SetPropertyByName);
+            result = CallRuntime(setPropertyByName, glue, GetInt64Constant(FAST_STUB_ID(SetPropertyByName)), {
                 glue, receiver, propKey, acc
             });
             Branch(TaggedIsHole(*result), &slowPath, &checkResult);
@@ -3321,10 +3223,8 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
     {
         GateRef stringId = ReadInst32_1(pc);
         GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
-        auto stubDescriptor = GET_STUBDESCRIPTOR(StoreICByName);
-        result = CallRuntime(stubDescriptor, glue, GetInt64Constant(FAST_STUB_ID(StoreICByName)), {
-            glue, profileTypeInfo, receiver, propKey, acc, slotId
-        });
+        result = ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StoreICByName)),
+            { profileTypeInfo, receiver, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId) }));
         Jump(&checkResult);
     }
     Bind(&checkResult);
@@ -3377,9 +3277,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
                         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
                     }
                     Bind(&notException);
-                    StubDescriptor *setFunctionNameNoPrefix = GET_STUBDESCRIPTOR(SetFunctionNameNoPrefix);
-                    CallRuntime(setFunctionNameNoPrefix, glue, GetInt64Constant(FAST_STUB_ID(SetFunctionNameNoPrefix)),
-                                { glue, acc, propKey });
+                    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SetFunctionNameNoPrefix)),
+                                          { acc, propKey });
                     DISPATCH(PREF_V8_V8);
                 }
             }
@@ -3387,9 +3286,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByValueWithNameSetPrefV8V8)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *stOwnByValueWithNameSet = GET_STUBDESCRIPTOR(StOwnByValueWithNameSet);
-        GateRef res = CallRuntime(stOwnByValueWithNameSet, glue,
-            GetInt64Constant(FAST_STUB_ID(StOwnByValueWithNameSet)), { glue, receiver, propKey, acc });
+        GateRef res = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(StOwnByValueWithNameSet)), { receiver, propKey, acc });
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
@@ -3431,9 +3329,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByNamePrefId32V8)
     }
     Bind(&slowPath);
     {
-        StubDescriptor *StOwnByName = GET_STUBDESCRIPTOR(StOwnByName);
-        result = CallRuntime(StOwnByName, glue, GetInt64Constant(FAST_STUB_ID(StOwnByName)),
-                             { glue, receiver, propKey, acc });
+        result = ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StOwnByName)),
+            { receiver, propKey, acc }));
         Jump(&checkResult);
     }
     Bind(&checkResult);
@@ -3483,9 +3380,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
                         DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
                     }
                     Bind(&notException);
-                    StubDescriptor *setFunctionNameNoPrefix = GET_STUBDESCRIPTOR(SetFunctionNameNoPrefix);
-                    CallRuntime(setFunctionNameNoPrefix, glue, GetInt64Constant(FAST_STUB_ID(SetFunctionNameNoPrefix)),
-                                { glue, acc, propKey });
+                    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SetFunctionNameNoPrefix)),
+                                          { acc, propKey });
                     DISPATCH(PREF_ID32_V8);
                 }
             }
@@ -3493,9 +3389,8 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
     }
     Bind(&notJSObject);
     {
-        StubDescriptor *stOwnByNameWithNameSet = GET_STUBDESCRIPTOR(StOwnByNameWithNameSet);
-        GateRef res = CallRuntime(stOwnByNameWithNameSet, glue, GetInt64Constant(FAST_STUB_ID(StOwnByNameWithNameSet)),
-                                  { glue, receiver, propKey, acc });
+        GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StOwnByNameWithNameSet)),
+            { receiver, propKey, acc });
         Branch(TaggedIsException(res), &isException1, &notException1);
         Bind(&isException1);
         {
@@ -3879,10 +3774,8 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
     GateRef frame = GetFrame(*varSp);
     SetPcToFrame(glue, frame, pc);
-    StubDescriptor *suspendGenerator = GET_STUBDESCRIPTOR(SuspendGenerator);
-    GateRef res = CallRuntime(suspendGenerator, glue, GetInt64Constant(FAST_STUB_ID(SuspendGenerator)),
-        { glue, genObj, value });
-    
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SuspendGenerator)),
+        { genObj, value });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(res), &isException, &notException);
@@ -3946,8 +3839,8 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Label pcIsInvalid(env);
     Label pcNotInvalid(env);
     GateRef exception = Load(StubMachineType::TAGGED, glue, GetIntPtrConstant(0));
-    StubDescriptor *upFrame = GET_STUBDESCRIPTOR(UpFrame);
-    varPc = CallRuntime(upFrame, glue, GetInt64Constant(FAST_STUB_ID(UpFrame)), { glue, sp });
+    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(UpFrame)),
+        { PtrBuildTaggedWithNoGC(sp) }));
     Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
@@ -3977,8 +3870,7 @@ DECLARE_ASM_HANDLER(HandleImportModulePrefId32)
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef prop = GetObjectFromConstPool(constpool, stringId);
-    StubDescriptor *importModule = GET_STUBDESCRIPTOR(ImportModule);
-    GateRef moduleRef = CallRuntime(importModule, glue, GetInt64Constant(FAST_STUB_ID(ImportModule)), { glue, prop });
+    GateRef moduleRef = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ImportModule)), { prop });
     varAcc = moduleRef;
     DISPATCH_WITH_ACC(PREF_ID32);
 }
@@ -3989,8 +3881,7 @@ DECLARE_ASM_HANDLER(HandleStModuleVarPrefId32)
     GateRef prop = GetObjectFromConstPool(constpool, stringId);
     GateRef value = acc;
 
-    StubDescriptor *stModuleVar = GET_STUBDESCRIPTOR(StModuleVar);
-    CallRuntime(stModuleVar, glue, GetInt64Constant(FAST_STUB_ID(StModuleVar)), { glue, prop, value });
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StModuleVar)), { prop, value });
     DISPATCH(PREF_ID32);
 }
 
@@ -4002,10 +3893,8 @@ DECLARE_ASM_HANDLER(HandleLdModVarByNamePrefId32V8)
     GateRef v0 = ReadInst8_5(pc);
     GateRef itemName = GetObjectFromConstPool(constpool, stringId);
     GateRef moduleObj = GetVregValue(sp, ZExtInt8ToPtr(v0));
-
-    StubDescriptor *ldModvarByName = GET_STUBDESCRIPTOR(LdModvarByName);
-    GateRef moduleVar = CallRuntime(ldModvarByName, glue, GetInt64Constant(FAST_STUB_ID(LdModvarByName)),
-                                    { glue, moduleObj, itemName });
+    GateRef moduleVar = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdModvarByName)),
+                                              { moduleObj, itemName });
     varAcc = moduleVar;
     DISPATCH_WITH_ACC(PREF_ID32_V8);
 }
@@ -4039,10 +3928,9 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
         Bind(&ldMiss);
         {
             GateRef globalObject = GetGlobalObject(glue);
-            StubDescriptor *loadMiss = GET_STUBDESCRIPTOR(LoadMiss);
-            icResult = CallRuntime(loadMiss, glue, GetInt64Constant(FAST_STUB_ID(LoadMiss)), {
-                glue, profileTypeInfo, globalObject, prop, slotId,
-                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC))
+            icResult = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LoadMiss)), {
+                profileTypeInfo, globalObject, prop, IntBuildTaggedTypeWithNoGC(slotId),
+                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC)))
             });
             Jump(&icResultCheck);
         }
@@ -4064,25 +3952,22 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
     {
         // order: 1. global record 2. global object
         // if we find a way to get global record, we can inline LdGlobalRecord directly
-        StubDescriptor *ldGlobalRecord = GET_STUBDESCRIPTOR(LdGlobalRecord);
-        GateRef recordResult = CallRuntime(ldGlobalRecord, glue, GetInt64Constant(FAST_STUB_ID(LdGlobalRecord)),
-                                           { glue, prop });
+        GateRef recordResult = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdGlobalRecord)),
+                                                     { prop });
         Label isFound(env);
         Label isNotFound(env);
         Branch(TaggedIsUndefined(recordResult), &isNotFound, &isFound);
         Bind(&isNotFound);
         {
-            StubDescriptor *getGlobalOwnProperty = GET_STUBDESCRIPTOR(GetGlobalOwnProperty);
-            GateRef globalResult = CallRuntime(getGlobalOwnProperty, glue,
-                GetInt64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { glue, prop });
+            GateRef globalResult = CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { prop });
             Label isFoundInGlobal(env);
             Label slowPath(env);
             Branch(TaggedIsHole(globalResult), &slowPath, &isFoundInGlobal);
             Bind(&slowPath);
             {
-                StubDescriptor *tryLdGlobalByName = GET_STUBDESCRIPTOR(TryLdGlobalByName);
-                GateRef slowResult = CallRuntime(tryLdGlobalByName, glue,
-                    GetInt64Constant(FAST_STUB_ID(TryLdGlobalByName)), { glue, prop });
+                GateRef slowResult = CallRuntimeTrampoline(glue,
+                    GetInt64Constant(FAST_STUB_ID(TryLdGlobalByName)), { prop });
                 Label isException(env);
                 Label isNotException(env);
                 Branch(TaggedIsException(slowResult), &isException, &isNotException);
@@ -4138,10 +4023,9 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
         Bind(&stMiss);
         {
             GateRef globalObject = GetGlobalObject(glue);
-            StubDescriptor *storeMiss = GET_STUBDESCRIPTOR(StoreMiss);
-            result = CallRuntime(storeMiss, glue, GetInt64Constant(FAST_STUB_ID(StoreMiss)), {
-                glue, profileTypeInfo, globalObject, propKey, acc, slotId,
-                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC))
+            result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StoreMiss)), {
+                profileTypeInfo, globalObject, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId),
+                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC)))
             });
             Jump(&checkResult);
         }
@@ -4149,39 +4033,34 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
     Bind(&icNotAvailable);
     // order: 1. global record 2. global object
     // if we find a way to get global record, we can inline LdGlobalRecord directly
-    StubDescriptor *ldGlobalRecord = GET_STUBDESCRIPTOR(LdGlobalRecord);
-    GateRef recordInfo = CallRuntime(ldGlobalRecord, glue, GetInt64Constant(FAST_STUB_ID(LdGlobalRecord)),
-                                     { glue, propKey });
+    GateRef recordInfo = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdGlobalRecord)),
+                                               { propKey });
     Label isFound(env);
     Label isNotFound(env);
     Branch(TaggedIsUndefined(recordInfo), &isNotFound, &isFound);
     Bind(&isFound);
     {
-        StubDescriptor *tryUpdateGlobalRecord = GET_STUBDESCRIPTOR(TryUpdateGlobalRecord);
-        result = CallRuntime(tryUpdateGlobalRecord, glue, GetInt64Constant(FAST_STUB_ID(TryUpdateGlobalRecord)),
-                             { glue, propKey, acc });
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(TryUpdateGlobalRecord)),
+                                       { propKey, acc });
         Jump(&checkResult);
     }
     Bind(&isNotFound);
     {
         Label foundInGlobal(env);
         Label notFoundInGlobal(env);
-        StubDescriptor *getGlobalOwnProperty = GET_STUBDESCRIPTOR(GetGlobalOwnProperty);
-        GateRef globalResult = CallRuntime(getGlobalOwnProperty, glue,
-            GetInt64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { glue, propKey });
+        GateRef globalResult = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { propKey });
         Branch(TaggedIsHole(globalResult), &notFoundInGlobal, &foundInGlobal);
         Bind(&notFoundInGlobal);
         {
-            StubDescriptor *throwReferenceError = GET_STUBDESCRIPTOR(ThrowReferenceError);
-            result = CallRuntime(throwReferenceError, glue,
-                GetInt64Constant(FAST_STUB_ID(ThrowReferenceError)), { glue, propKey });
+            result = CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(ThrowReferenceError)), { propKey });
             DISPATCH_LAST();
         }
         Bind(&foundInGlobal);
         {
-            StubDescriptor *stGlobalVar = GET_STUBDESCRIPTOR(StGlobalVar);
-            result = CallRuntime(stGlobalVar, glue,
-                GetInt64Constant(FAST_STUB_ID(StGlobalVar)), { glue, propKey, acc });
+            result = CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(StGlobalVar)), { propKey, acc });
             Jump(&checkResult);
         }
     }
@@ -4229,25 +4108,22 @@ DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
         }
         Bind(&ldMiss);
         {
-            StubDescriptor *loadMiss = GET_STUBDESCRIPTOR(LoadMiss);
-            result = CallRuntime(loadMiss, glue, GetInt64Constant(FAST_STUB_ID(LoadMiss)), {
-                glue, profileTypeInfo, globalObject, propKey, slotId,
-                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC))
+            result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LoadMiss)), {
+                profileTypeInfo, globalObject, propKey, IntBuildTaggedTypeWithNoGC(slotId),
+                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalLoadIC)))
             });
             Jump(&checkResult);
         }
     }
     Bind(&icNotAvailable);
     {
-        StubDescriptor *getGlobalOwnProperty = GET_STUBDESCRIPTOR(GetGlobalOwnProperty);
-        result = CallRuntime(getGlobalOwnProperty, glue,
-            GetInt64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { glue, propKey });
+        result = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(GetGlobalOwnProperty)), { propKey });
         Branch(TaggedIsHole(*result), &slowPath, &dispatch);
         Bind(&slowPath);
         {
-            StubDescriptor *ldGlobalVar = GET_STUBDESCRIPTOR(LdGlobalVar);
-            result = CallRuntime(ldGlobalVar, glue,
-                GetInt64Constant(FAST_STUB_ID(LdGlobalVar)), { glue, globalObject, propKey });
+            result = CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(LdGlobalVar)), { globalObject, propKey });
             Jump(&checkResult);
         }
     }
@@ -4294,19 +4170,17 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
         Bind(&stMiss);
         {
             GateRef globalObject = GetGlobalObject(glue);
-            StubDescriptor *storeMiss = GET_STUBDESCRIPTOR(StoreMiss);
-            result = CallRuntime(storeMiss, glue, GetInt64Constant(FAST_STUB_ID(StoreMiss)), {
-                glue, profileTypeInfo, globalObject, propKey, acc, slotId,
-                GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC))
+            result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StoreMiss)), {
+                profileTypeInfo, globalObject, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId),
+                IntBuildTaggedTypeWithNoGC(GetInt32Constant(static_cast<int>(ICKind::NamedGlobalStoreIC)))
             });
             Jump(&checkResult);
         }
     }
     Bind(&icNotAvailable);
     {
-        StubDescriptor *stGlobalVar = GET_STUBDESCRIPTOR(StGlobalVar);
-        result = CallRuntime(stGlobalVar, glue,
-            GetInt64Constant(FAST_STUB_ID(StGlobalVar)), { glue, propKey, acc });
+        result = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(StGlobalVar)), { propKey, acc });
         Jump(&checkResult);
     }
     Bind(&checkResult);
@@ -4340,10 +4214,9 @@ DECLARE_ASM_HANDLER(HandleIsTruePref)
     }
 
     Bind(&slowPath);
-    StubDescriptor *toBoolean = GET_STUBDESCRIPTOR(ToBoolean);
-    GateRef result = CallRuntime(toBoolean, glue,
+    GateRef result = CallRuntimeTrampoline(glue,
         GetInt64Constant(FAST_STUB_ID(ToBoolean)), { *varAcc });
-    Branch(result, &isTrue, &isFalse);
+    Branch(TaggedIsTrue(result), &isTrue, &isFalse);
     Bind(&isTrue);
     {
         varAcc = ChangeInt64ToTagged(TaggedTrue());
@@ -4377,10 +4250,9 @@ DECLARE_ASM_HANDLER(HandleIsFalsePref)
     }
 
     Bind(&slowPath);
-    StubDescriptor *toBoolean = GET_STUBDESCRIPTOR(ToBoolean);
-    GateRef result = CallRuntime(toBoolean, glue,
+    GateRef result = CallRuntimeTrampoline(glue,
         GetInt64Constant(FAST_STUB_ID(ToBoolean)), { *varAcc });
-    Branch(result, &isTrue, &isFalse);
+    Branch(TaggedIsTrue(result), &isTrue, &isFalse);
     Bind(&isTrue);
     {
         varAcc = ChangeInt64ToTagged(TaggedFalse());
@@ -4411,8 +4283,7 @@ DECLARE_ASM_HANDLER(HandleToNumberPrefV8)
     }
     Bind(&valueNotNumber);
     {
-        StubDescriptor *toNumber = GET_STUBDESCRIPTOR(ToNumber);
-        GateRef res = CallRuntime(toNumber, glue, GetInt64Constant(FAST_STUB_ID(ToNumber)), {glue, value});
+        GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ToNumber)), { value });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(res), &isException, &notException);
@@ -4486,7 +4357,8 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
                         {
                             Label leftIsPositive(env);
                             Label leftIsNegative(env);
-                            Branch(Int32GreaterThan(*opNumber0, GetInt32Constant(0)), &leftIsPositive, &leftIsNegative);
+                            Branch(Int32GreaterThan(*opNumber0, GetInt32Constant(0)), &leftIsPositive,
+                                &leftIsNegative);
                             Bind(&leftIsPositive);
                             {
                                 Label positiveOverflow(env);
@@ -4570,9 +4442,8 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *add2Dyn = GET_STUBDESCRIPTOR(Add2Dyn);
-        GateRef taggedNumber = CallRuntime(add2Dyn, glue, GetInt64Constant(FAST_STUB_ID(Add2Dyn)),
-                                           {glue, left, right});
+        GateRef taggedNumber = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Add2Dyn)),
+                                                     { left, right });
 
         Label isException(env);
         Label notException(env);
@@ -4733,9 +4604,8 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     // slow path
     Bind(&leftNotNumberOrRightNotNumber);
     {
-        StubDescriptor *sub2Dyn = GET_STUBDESCRIPTOR(Sub2Dyn);
-        GateRef taggedNumber = CallRuntime(sub2Dyn, glue, GetInt64Constant(FAST_STUB_ID(Sub2Dyn)),
-                                           {glue, left, right});
+        GateRef taggedNumber = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Sub2Dyn)),
+                                                     { left, right });
 
         Label isException(env);
         Label notException(env);
