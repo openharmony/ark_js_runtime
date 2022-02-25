@@ -77,11 +77,6 @@ public:
         return nullptr;
     }
 
-    void SetExceptionToVReg([[maybe_unused]] Frame::VRegister &vreg, [[maybe_unused]] ObjectHeader *obj) const override
-    {
-        UNREACHABLE();
-    }
-
     bool IsCallableObject([[maybe_unused]] ObjectHeader *obj) const override
     {
         UNREACHABLE();
