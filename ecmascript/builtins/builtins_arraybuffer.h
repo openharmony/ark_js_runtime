@@ -27,6 +27,14 @@ static constexpr uint32_t BITS_TWENTY_FOUR = 24;
 static constexpr uint32_t BITS_FORTY = 40;
 static constexpr uint32_t BITS_FIFTY_SIX = 56;
 using DataViewType = ecmascript::DataViewType;
+union UnionType32 {
+    uint32_t uValue;
+    float value;
+};
+union UnionType64 {
+    uint64_t uValue;
+    double value;
+};
 class BuiltinsArrayBuffer : public base::BuiltinsBase {
 public:
     enum NumberSize : uint8_t { UINT16 = 2, INT16 = 2, UINT32 = 4, INT32 = 4, FLOAT32 = 4, FLOAT64 = 8 };
@@ -68,7 +76,7 @@ private:
     template<typename T, NumberSize size>
     static JSTaggedValue GetValueFromBufferForInteger(uint8_t *block, uint32_t byteIndex, bool littleEndian);
 
-    template<typename T, NumberSize size>
+    template<typename T, typename UnionType, NumberSize size>
     static JSTaggedValue GetValueFromBufferForFloat(uint8_t *block, uint32_t byteIndex, bool littleEndian);
 
     template<typename T>
