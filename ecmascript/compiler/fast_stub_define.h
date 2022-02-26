@@ -82,6 +82,7 @@ namespace panda::ecmascript::kungfu {
     V(NewObjSpreadDyn, 4)                    \
     V(CreateIterResultObj, 3)                \
     V(AsyncFunctionAwaitUncaught, 3)         \
+    V(AsyncFunctionResolveOrReject, 4)       \
     V(ThrowUndefinedIfHole, 2)               \
     V(CopyDataProperties, 3)                 \
     V(StArraySpread, 4)                      \

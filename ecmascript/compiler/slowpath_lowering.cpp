@@ -32,11 +32,63 @@ void SlowPathLowering::CallRuntimeLowering()
 #endif
 }
 
+void SlowPathLowering::LowerHIR(CircuitBuilder &cirBuilder, GateRef oldGate, GateRef newGate)
+{
+    GateAccessor gateAcc(circuit_);
+    GateRef stateInGate = gateAcc.GetState(oldGate);
+    // copy depend-wire of oldGate to newGate
+    GateRef dependInGate = gateAcc.GetDep(oldGate);
+    gateAcc.SetDep(newGate, dependInGate);
+
+    // exception value
+    GateRef exceptionVal = cirBuilder.ExceptionConstant(GateType::TAGGED_NO_POINTER);
+
+    // compare with trampolines result
+    GateRef equal = cirBuilder.NewLogicGate(OpCode(OpCode::EQ), newGate, exceptionVal);
+
+    // if branch
+    GateRef ifBranch = cirBuilder.Branch(stateInGate, equal);
+
+    while (gateAcc.HasUse(oldGate)) {
+        UseIterator it(circuit_, oldGate);
+        GateRef use = it.GetUse();
+        if (gateAcc.GetOpCode(use) == OpCode::IF_SUCCESS) {
+            gateAcc.SetOpCode(use, OpCode::IF_FALSE);
+            gateAcc.ReplaceIn(it, ifBranch);
+        } else if (gateAcc.GetOpCode(use) == OpCode::IF_EXCEPTION) {
+            gateAcc.SetOpCode(use, OpCode::IF_TRUE);
+            gateAcc.ReplaceIn(it, ifBranch);
+        } else {
+            gateAcc.ReplaceIn(it, newGate);
+        }
+    }
+
+    // delete old gate
+    circuit_->DeleteGate(oldGate);
+}
+
 void SlowPathLowering::Lower(GateRef gate, EcmaOpcode bytecode)
 {
+    GateRef glue = builder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
+
     switch (bytecode) {
         case ADD2DYN_PREF_V8:
-            LowerAdd2Dyn(gate, builder_->GetCommonArgByIndex(CommonArgIdx::GLUE));
+            LowerAdd2Dyn(gate, glue);
+            break;
+        case CREATEITERRESULTOBJ_PREF_V8_V8:
+            LowerCreateIterResultObj(gate, glue);
+            break;
+        case SUSPENDGENERATOR_PREF_V8_V8:
+            LowerSuspendGenerator(gate, glue);
+            break;
+        case ASYNCFUNCTIONAWAITUNCAUGHT_PREF_V8_V8:
+            LowerAsyncFunctionAwaitUncaught(gate, glue);
+            break;
+        case ASYNCFUNCTIONRESOLVE_PREF_V8_V8_V8:
+            LowerAsyncFunctionResolve(gate, glue);
+            break;
+        case ASYNCFUNCTIONREJECT_PREF_V8_V8_V8:
+            LowerAsyncFunctionReject(gate, glue);
             break;
         default:
             break;
@@ -45,49 +97,95 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode bytecode)
 
 void SlowPathLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
 {
-    StubDescriptor* getAdd2DynPtr = GET_STUBDESCRIPTOR(Add2Dyn);
-    GateRef id = GetLoweringInt64Constant(FAST_STUB_ID(Add2Dyn));
-    CircuitBuilder circuitBuilder(circuit_);
-    GateAccessor acc(circuit_);
-    ASSERT(acc.GetNumValueIn(gate) == 2); // 2: number of value inputs
-    GateRef newGate = circuitBuilder.NewCallGate(getAdd2DynPtr, glue, id, {glue,
-                                                                           acc.GetValueIn(gate, 0),
-                                                                           acc.GetValueIn(gate, 1)});
-    LowerHIR(circuitBuilder, gate, newGate);
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    StubDescriptor* descriptorPtr = GET_STUBDESCRIPTOR(Add2Dyn);
+    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(Add2Dyn));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef newGate = cirBuilder.NewCallGate(descriptorPtr, glue, id,
+                                             {glue,
+                                              gateAcc.GetValueIn(gate, 0),
+                                              gateAcc.GetValueIn(gate, 1)});
+    LowerHIR(cirBuilder, gate, newGate);
 }
 
-void SlowPathLowering::LowerHIR(CircuitBuilder &builder, GateRef oldGate, GateRef newGate)
+void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
 {
-    GateAccessor acc(circuit_);
-    GateRef stateInGate = acc.GetState(oldGate);
-    // copy depend-wire of oldGate to newGate
-    GateRef dependInGate = acc.GetDep(oldGate);
-    acc.SetDep(newGate, dependInGate);
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    StubDescriptor* descriptorPtr = GET_STUBDESCRIPTOR(CreateIterResultObj);
+    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(CreateIterResultObj));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef newGate = cirBuilder.NewCallGate(descriptorPtr, glue, id,
+                                             {glue,
+                                              gateAcc.GetValueIn(gate, 0),
+                                              gateAcc.GetValueIn(gate, 1)});
+    LowerHIR(cirBuilder, gate, newGate);
+}
 
-    // exception value
-    GateRef exceptionVal = builder.ExceptionConstant(GateType::TAGGED_NO_POINTER);
+void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    StubDescriptor* descriptorPtr = GET_STUBDESCRIPTOR(SuspendGenerator);
+    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(SuspendGenerator));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef newGate = cirBuilder.NewCallGate(descriptorPtr, glue, id,
+                                             {glue,
+                                              gateAcc.GetValueIn(gate, 0),
+                                              gateAcc.GetValueIn(gate, 1)});
+    LowerHIR(cirBuilder, gate, newGate);
+}
 
-    // compare with trampolines result
-    GateRef equal = builder.NewLogicGate(OpCode(OpCode::EQ), newGate, exceptionVal);
+void SlowPathLowering::LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    StubDescriptor* descriptorPtr = GET_STUBDESCRIPTOR(AsyncFunctionAwaitUncaught);
+    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(AsyncFunctionAwaitUncaught));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef newGate = cirBuilder.NewCallGate(descriptorPtr, glue, id,
+                                             {glue,
+                                              gateAcc.GetValueIn(gate, 0),
+                                              gateAcc.GetValueIn(gate, 1)});
+    LowerHIR(cirBuilder, gate, newGate);
+}
 
-    // if branch
-    GateRef ifBranch = builder.Branch(stateInGate, equal);
+void SlowPathLowering::LowerAsyncFunctionResolve(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    StubDescriptor* descriptorPtr = GET_STUBDESCRIPTOR(AsyncFunctionResolveOrReject);
+    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(AsyncFunctionResolveOrReject));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef tureConst = cirBuilder.NewBooleanConstant(true);
+    GateRef newGate = cirBuilder.NewCallGate(descriptorPtr, glue, id,
+                                             {glue,
+                                              gateAcc.GetValueIn(gate, 0),
+                                              gateAcc.GetValueIn(gate, 1),
+                                              tureConst});
+    LowerHIR(cirBuilder, gate, newGate);
+}
 
-    while (acc.HasUse(oldGate)) {
-        UseIterator it(circuit_, oldGate);
-        GateRef use = it.GetUse();
-        if (acc.GetOpCode(use) == OpCode::IF_SUCCESS) {
-            acc.SetOpCode(use, OpCode::IF_FALSE);
-            acc.ReplaceIn(it, ifBranch);
-        } else if (acc.GetOpCode(use) == OpCode::IF_EXCEPTION) {
-            acc.SetOpCode(use, OpCode::IF_TRUE);
-            acc.ReplaceIn(it, ifBranch);
-        } else {
-            acc.ReplaceIn(it, newGate);
-        }
-    }
-
-    // delete old gate
-    circuit_->DeleteGate(oldGate);
+void SlowPathLowering::LowerAsyncFunctionReject(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    StubDescriptor* descriptorPtr = GET_STUBDESCRIPTOR(AsyncFunctionResolveOrReject);
+    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(AsyncFunctionResolveOrReject));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef falseConst = cirBuilder.NewBooleanConstant(false);
+    GateRef newGate = cirBuilder.NewCallGate(descriptorPtr, glue, id,
+                                             {glue,
+                                              gateAcc.GetValueIn(gate, 0),
+                                              gateAcc.GetValueIn(gate, 1),
+                                              falseConst});
+    LowerHIR(cirBuilder, gate, newGate);
 }
 }  // namespace panda::ecmascript

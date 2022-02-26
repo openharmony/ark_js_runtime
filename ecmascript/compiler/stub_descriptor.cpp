@@ -1156,6 +1156,24 @@ CALL_STUB_INIT_DESCRIPTOR(AsyncFunctionAwaitUncaught)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(AsyncFunctionResolveOrReject)
+{
+    // 4: 4 input parameters
+    StubDescriptor asyncFunctionResolveOrReject("AsyncFunctionResolveOrReject", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED);
+    *descriptor = asyncFunctionResolveOrReject;
+    // 4: 4 input parameters
+    std::array<StubMachineType, 4> params = {
+        StubMachineType::NATIVE_POINTER,
+        StubMachineType::TAGGED,
+        StubMachineType::TAGGED,
+        StubMachineType::BOOL,
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+
 CALL_STUB_INIT_DESCRIPTOR(ThrowUndefinedIfHole)
 {
     // 2 : 2 input parameters

@@ -100,6 +100,8 @@ public:
                                         JSTaggedType func, JSTaggedType newTarget, JSTaggedType array);
     static JSTaggedType CreateIterResultObj(uintptr_t argGlue, JSTaggedType value, JSTaggedType flag);
     static JSTaggedType AsyncFunctionAwaitUncaught(uintptr_t argGlue, JSTaggedType asyncFuncObj, JSTaggedType value);
+    static JSTaggedType AsyncFunctionResolveOrReject(uintptr_t argGlue, JSTaggedType asyncFuncObj,
+                                                     JSTaggedType value, bool is_resolve);
     static void ThrowUndefinedIfHole(uintptr_t argGlue, JSTaggedType obj);
     static JSTaggedType CopyDataProperties(uintptr_t argGlue, JSTaggedType dst, JSTaggedType src);
     static JSTaggedType StArraySpread(uintptr_t argGlue, JSTaggedType dst, JSTaggedType index, JSTaggedType src);
