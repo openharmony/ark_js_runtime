@@ -16,9 +16,13 @@
 #include "ecmascript/free_object.h"
 #include "ecmascript/mem/heap-inl.h"
 
+#ifndef PANDA_TARGET_WINDOWS
 #include <sys/sysinfo.h>
+#endif
 
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
+#endif
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/assert_scope-inl.h"
 #include "ecmascript/mem/concurrent_marker.h"
@@ -226,7 +230,9 @@ TriggerGCType Heap::SelectGCType() const
 
 void Heap::CollectGarbage(TriggerGCType gcType)
 {
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     [[maybe_unused]] GcStateScope scope(thread_);
+#endif
     CHECK_NO_GC
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     isVerifying_ = true;

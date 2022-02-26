@@ -23,7 +23,9 @@
 #include "ecmascript/base/json_stringifier.h"
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/base/typed_array_helper-inl.h"
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
+#endif
 #include "ecmascript/ecma_global_storage-inl.h"
 #include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_module.h"
@@ -52,7 +54,11 @@
 #include "ecmascript/tagged_array.h"
 #include "generated/base_options.h"
 #include "include/runtime_notification.h"
+
+#ifndef PANDA_TARGET_WINDOWS
 #include "libpandabase/os/library_loader.h"
+#endif
+
 #include "utils/pandargs.h"
 
 #include "os/mutex.h"
@@ -102,7 +108,9 @@ using ecmascript::base::TypedArrayHelper;
 using ecmascript::job::MicroJobQueue;
 using ecmascript::job::QueueType;
 using ecmascript::JSRuntimeOptions;
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 using ecmascript::CpuProfiler;
+#endif
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -226,6 +234,7 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
     thread->SetException(JSNApiHelper::ToJSTaggedValue(*error));
 }
 
+#if defined(ECMASCRIPT_SUPPORT_DEBUGGER)
 bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMode)
 {
     auto handle = panda::os::library_loader::Load(std::string(library_path));
@@ -270,6 +279,7 @@ bool JSNApi::StopDebugger(const char *library_path)
     runtime->SetDebugMode(false);
     return true;
 }
+#endif
 
 bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry)
 {
@@ -1952,6 +1962,7 @@ bool JSValueRef::IsGeneratorFunction()
     bool rst  = obj->IsGeneratorFunction();
     return rst;
 }
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 void JSNApi::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
 {
     panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
@@ -1967,6 +1978,7 @@ void JSNApi::StopCpuProfiler()
         singleton = nullptr;
     }
 }
+#endif
 
 bool JSNApi::SuspendVM(const EcmaVM *vm)
 {

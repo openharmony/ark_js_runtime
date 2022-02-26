@@ -15,7 +15,11 @@
 
 #include "ecmascript/platform/platform.h"
 
+#ifndef PANDA_TARGET_WINDOWS
 #include "sys/sysinfo.h"
+#else
+#include <sysinfoapi.h>
+#endif
 
 namespace panda::ecmascript {
 void Platform::Initialize(int threadNum)
@@ -45,7 +49,13 @@ uint32_t Platform::TheMostSuitableThreadNum(uint32_t threadNum) const
     if (threadNum > 0) {
         return std::min<uint32_t>(threadNum, MAX_PLATFORM_THREAD_NUM);
     }
+#ifndef PANDA_TARGET_WINDOWS
     uint32_t numOfCpuCore = get_nprocs() - 1;
+#else
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    uint32_t numOfCpuCore = info.dwNumberOfProcessors;
+#endif
     return std::min<uint32_t>(numOfCpuCore, MAX_PLATFORM_THREAD_NUM);
 }
 }  // namespace panda::ecmascript
