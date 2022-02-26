@@ -126,7 +126,7 @@ void PandaFileTranslator::TranslateClasses(const panda_file::File &pf, const CSt
             InitializeMemory(method, nullptr, &pf, mda.GetMethodId(), codeDataAccessor.GetCodeId(),
                              mda.GetAccessFlags(), codeDataAccessor.GetNumArgs(), nullptr);
             method->SetHotnessCounter(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);
-            method->SetCallTypeFromAnnotation();
+            method->InitializeCallField();
             const uint8_t *insns = codeDataAccessor.GetInstructions();
             if (this->translated_code_.find(insns) == this->translated_code_.end()) {
                 this->translated_code_.insert(insns);
