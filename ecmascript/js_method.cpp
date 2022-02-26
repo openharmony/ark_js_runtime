@@ -28,8 +28,9 @@ CString JSMethod::ParseFunctionName() const
     return CString(methodName.substr(index + 1));
 }
 
-void JSMethod::SetCallTypeFromAnnotation()
+void JSMethod::InitializeCallField()
 {
+    uint32_t callType = UINT32_MAX;  // UINT32_MAX means not found
     const panda_file::File *pandaFile = GetPandaFile();
     panda_file::File::EntityId fieldId = GetFileId();
     panda_file::MethodDataAccessor mda(*pandaFile, fieldId);
@@ -42,10 +43,17 @@ void JSMethod::SetCallTypeFromAnnotation()
                 panda_file::AnnotationDataAccessor::Elem adae = ada.GetElement(i);
                 auto *elem_name = reinterpret_cast<const char *>(pandaFile->GetStringData(adae.GetNameId()).data);
                 if (::strcmp("callType", elem_name) == 0) {
-                    callType_ = adae.GetScalarValue().GetValue();
+                    callType = adae.GetScalarValue().GetValue();
                 }
             }
         }
     });
+    // Needed info for call can be got by loading callField only once
+    callField_ = (callType & CALL_TYPE_MASK) |
+                 NumVregsBits::Encode(GetNumVregs()) |
+                 NumArgsBits::Encode(GetNumArgs() - HaveFuncBit::Decode(callType)  // exclude func
+                                                  - HaveNewTargetBit::Decode(callType)  // exclude new target
+                                                  - HaveThisBit::Decode(callType)) |  // exclude this
+                 IsNativeBit::Encode(IsNative());
 }
 }
