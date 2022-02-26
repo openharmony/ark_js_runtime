@@ -153,8 +153,9 @@ panda_file::File::EntityId TSTypeTable::GetFileId(const panda_file::File &pf)
 {
     Span<const uint32_t> classIndexes = pf.GetClasses();
     panda_file::File::EntityId fileId {0};
-    panda_file::File::StringData sd = {static_cast<uint32_t>(ENTRY_FUNC_NAME.size()),
-                                       reinterpret_cast<const uint8_t *>(CString(ENTRY_FUNC_NAME).c_str())};
+    CString mainMethodName = CString(ENTRY_FUNC_NAME);
+    panda_file::File::StringData sd = {static_cast<uint32_t>(mainMethodName.size()),
+                                       reinterpret_cast<const uint8_t *>(mainMethodName.c_str())};
 
     for (const uint32_t index : classIndexes) {
         panda_file::File::EntityId classId(index);
