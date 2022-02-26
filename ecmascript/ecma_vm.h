@@ -36,7 +36,9 @@
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "include/panda_vm.h"
 #include "libpandabase/macros.h"
+#ifndef PANDA_TARGET_WINDOWS
 #include "libpandabase/os/library_loader.h"
+#endif
 
 namespace panda {
 class RuntimeNotificationManager;

@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "ecmascript/base/config.h"
 #include "ecmascript/common.h"
 #include "libpandabase/macros.h"
 
@@ -749,9 +750,11 @@ public:
         enableArkTools_ = value;
     }
 
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     void SetEnableCpuprofiler(bool value) {
         enableCpuprofiler_ = value;
     }
+#endif
 
     void SetArkProperties(int prop) {
         arkProperties_ = prop;
@@ -820,10 +823,12 @@ private:
         return enableArkTools_;
     }
 
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     bool GetEnableCpuprofiler() const
     {
         return enableCpuprofiler_;
     }
+#endif
 
     int GetArkProperties() const
     {
@@ -836,7 +841,9 @@ private:
     LOG_PRINT logBufPrint_ {nullptr};
     std::string debuggerLibraryPath_ {};
     bool enableArkTools_ {false};
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     bool enableCpuprofiler_ {false};
+#endif
     int arkProperties_ {-1};
     friend JSNApi;
 };
@@ -894,8 +901,10 @@ public:
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
     // profile generator
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
     static void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
     static void StopCpuProfiler();
+#endif
     static void ResumeVM(const EcmaVM *vm);
     static bool SuspendVM(const EcmaVM *vm);
     static bool IsSuspended(const EcmaVM *vm);

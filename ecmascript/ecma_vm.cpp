@@ -20,7 +20,9 @@
 #include "ecmascript/builtins/builtins_regexp.h"
 #include "ecmascript/class_linker/panda_file_translator.h"
 #include "ecmascript/class_linker/program_object-inl.h"
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
+#endif
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/global_dictionary.h"
@@ -40,7 +42,9 @@
 #include "ecmascript/platform/platform.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
+#ifndef PANDA_TARGET_WINDOWS
 #include "ecmascript/runtime_trampolines.h"
+#endif
 #include "ecmascript/snapshot/mem/slot_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
@@ -54,6 +58,15 @@
 #include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
+#ifdef PANDA_TARGET_WINDOWS
+#include <shlwapi.h>
+#ifdef ERROR
+#undef ERROR
+#endif
+#ifdef GetObject
+#undef GetObject
+#endif
+#endif
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
@@ -131,7 +144,9 @@ bool EcmaVM::Initialize()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
     Platform::GetCurrentPlatform()->Initialize();
+#ifndef PANDA_TARGET_WINDOWS
     RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
+#endif
 
     auto globalConst = const_cast<GlobalEnvConstants *>(thread_->GlobalConstants());
     regExpParserCache_ = new RegExpParserCache();
@@ -182,6 +197,7 @@ bool EcmaVM::Initialize()
             builtins.Initialize(globalEnvHandle, thread_);
         }
     } else {
+#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run snapshot";
         SnapShot snapShot(this);
         std::unique_ptr<const panda_file::File> pf = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_);
@@ -189,6 +205,7 @@ bool EcmaVM::Initialize()
         AddPandaFile(pf.release(), false);
         SetProgram(Program::Cast(frameworkProgram_.GetTaggedObject()), frameworkPandaFile_);
         globalConst->InitGlobalUndefined();
+#endif
     }
 
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
@@ -452,9 +469,11 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
 
         auto index = ConvertToString(string).find(frameworkAbcFileName_);
         if (index != CString::npos) {
+#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
             LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << ConvertToString(string);
             SnapShot snapShot(this);
             snapShot.MakeSnapShotProgramObject(*program, &pf, snapshotFileName_);
+#endif
         }
     } else {
         if (&pf != frameworkPandaFile_) {
@@ -474,7 +493,6 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     }
 
     JSHandle<JSFunction> func = JSHandle<JSFunction>(thread_, program->GetMainFunction());
-    JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
     JSHandle<JSTaggedValue> newTarget(thread_, JSTaggedValue::Undefined());
     JSHandle<TaggedArray> jsargs = factory_->NewTaggedArray(args.size());
     uint32_t i = 0;
@@ -486,11 +504,14 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const panda_file::Fil
     InternalCallParams *params = thread_->GetInternalCallParams();
     params->MakeArgList(*jsargs);
     JSRuntimeOptions options = this->GetJSOptions();
+    JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
     if (options.IsEnableCpuProfiler()) {
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
         CpuProfiler *profiler = CpuProfiler::GetInstance();
         profiler->CpuProfiler::StartCpuProfiler(this, "");
         panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
         profiler->CpuProfiler::StopCpuProfiler();
+#endif
     } else {
         panda::ecmascript::InvokeJsFunction(thread_, func, global, newTarget, params);
     }
@@ -653,8 +674,10 @@ void EcmaVM::RemoveArrayDataList(JSNativePointer *array)
     }
 }
 
+// Do not support snapshot on windows
 bool EcmaVM::VerifyFilePath(const CString &filePath) const
 {
+#ifndef PANDA_TARGET_WINDOWS
     if (filePath.size() > PATH_MAX) {
         return false;
     }
@@ -670,6 +693,9 @@ bool EcmaVM::VerifyFilePath(const CString &filePath) const
     }
     file.close();
     return true;
+#else
+    return false;
+#endif
 }
 
 void EcmaVM::ClearBufferData()

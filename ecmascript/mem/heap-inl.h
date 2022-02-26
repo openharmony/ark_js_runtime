@@ -248,16 +248,20 @@ uintptr_t Heap::AllocateSnapShotSpace(size_t size)
 
 void Heap::OnAllocateEvent(uintptr_t address)
 {
+#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
     if (tracker_ != nullptr) {
         tracker_->AllocationEvent(address);
     }
+#endif
 }
 
 void Heap::OnMoveEvent(uintptr_t address, uintptr_t forwardAddress)
 {
+#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
     if (tracker_ != nullptr) {
         tracker_->MoveEvent(address, forwardAddress);
     }
+#endif
 }
 
 void Heap::SwapNewSpace()
