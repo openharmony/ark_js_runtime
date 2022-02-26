@@ -19,10 +19,20 @@
 #include "ecmascript/js_object.h"
 
 namespace panda::ecmascript {
+struct ScopeInfo {
+    uint32_t slot;
+    CString name;
+};
+
+struct ScopeDebugInfo {
+    std::vector<ScopeInfo> scopeInfo;
+};
+
 class LexicalEnv : public TaggedArray {
 public:
     static constexpr uint32_t PARENT_ENV_INDEX = 0;
-    static constexpr uint32_t RESERVED_ENV_LENGTH = 1;
+    static constexpr uint32_t SCOPE_INFO_INDEX = 1;
+    static constexpr uint32_t RESERVED_ENV_LENGTH = 2;
 
     static LexicalEnv *Cast(ObjectHeader *object)
     {
@@ -53,6 +63,16 @@ public:
     void SetProperties(JSThread *thread, uint32_t index, JSTaggedValue value)
     {
         Set(thread, index + RESERVED_ENV_LENGTH, value);
+    }
+
+    JSTaggedValue GetScopeInfo() const
+    {
+        return Get(SCOPE_INFO_INDEX);
+    }
+
+    void SetScopeInfo(JSThread *thread, JSTaggedValue value)
+    {
+        Set(thread, SCOPE_INFO_INDEX, value);
     }
 
     DECL_DUMP()
