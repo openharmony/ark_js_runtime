@@ -421,10 +421,9 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
         Jump(&afterExceedCon);
     }
     Bind(&afterExceedCon);
-    StubDescriptor *findElemWithCache = GET_STUBDESCRIPTOR(FindElementWithCache);
-    result = CallRuntime(findElemWithCache, glue, GetInt64Constant(FAST_STUB_ID(FindElementWithCache)), {
-            glue, hClass, key, propsNum
-        });
+    result = TaggedCastToInt32(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(FindElementWithCache)), {
+            hClass, key, IntBuildTaggedTypeWithNoGC(propsNum)
+        }));
     Jump(&exit);
     Bind(&exit);
     auto ret = *result;
@@ -446,15 +445,11 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
                                               IntPtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
-
-    GateRef pKey = Alloca(static_cast<int>(MachineRep::K_WORD32));
-
-    GateRef keyStore = Store(StubMachineType::INT32, glue, pKey, GetIntPtrConstant(0), index);
-    StubDescriptor *getHash32Descriptor = GET_STUBDESCRIPTOR(GetHash32);
     GateRef len = GetInt32Constant(sizeof(int) / sizeof(uint8_t));
-    GateRef hash =
-        CallRuntime(getHash32Descriptor, glue, GetInt64Constant(FAST_STUB_ID(GetHash32)), keyStore, { pKey, len });
-    DEFVARIABLE(entry, StubMachineType::INT32, Int32And(hash, Int32Sub(capacity, GetInt32Constant(1))));
+    GateRef hash = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetHash32)),
+        { IntBuildTaggedTypeWithNoGC(index), IntBuildTaggedTypeWithNoGC(len) });
+    DEFVARIABLE(entry, StubMachineType::INT32,
+        Int32And(TruncInt64ToInt32(ChangeTaggedPointerToInt64(hash)), Int32Sub(capacity, GetInt32Constant(1))));
     Label loopHead(env);
     Label loopEnd(env);
     Label afterLoop(env);
@@ -504,7 +499,8 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
         IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
             GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
-    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements, IntPtrAdd(dataoffset, capcityoffset)));
+    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
+                                              IntPtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
     DEFVARIABLE(hash, StubMachineType::INT32, GetInt32Constant(0));
     // NameDictionary::hash
@@ -528,8 +524,8 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
         Branch(IsString(key), &isString, &notString);
         Bind(&isString);
         {
-            StubDescriptor *stringGetHashCode = GET_STUBDESCRIPTOR(StringGetHashCode);
-            hash = CallRuntime(stringGetHashCode, glue, GetInt64Constant(FAST_STUB_ID(StringGetHashCode)), { key });
+            hash = TruncInt64ToInt32(ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(StringGetHashCode)), { key })));
             Jump(&beforeDefineHash);
         }
         Bind(&notString);
@@ -614,7 +610,8 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
         IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
             GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
-    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements, IntPtrAdd(dataoffset, capcityoffset)));
+    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
+                                              IntPtrAdd(dataoffset, capcityoffset)));
     DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
     DEFVARIABLE(hash, StubMachineType::INT32, GetInt32Constant(0));
     // TransitionDictionary::hash
@@ -638,8 +635,8 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
         Branch(IsString(key), &isString, &notString);
         Bind(&isString);
         {
-            StubDescriptor *stringGetHashCode = GET_STUBDESCRIPTOR(StringGetHashCode);
-            hash = CallRuntime(stringGetHashCode, glue, GetInt64Constant(FAST_STUB_ID(StringGetHashCode)), { key });
+            hash = TruncInt64ToInt32(ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(StringGetHashCode)), { key })));
             Jump(&beforeDefineHash);
         }
         Bind(&notString);
@@ -812,12 +809,12 @@ GateRef Stub::CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor, Gat
     env->PushCurrentLabel(&subEntry);
     Label exit(env);
     DEFVARIABLE(result, StubMachineType::UINT64, GetUndefinedConstant(StubMachineType::UINT64));
-    GateRef callRes = CallRuntime(GET_STUBDESCRIPTOR(CallSetter), glue, GetInt64Constant(FAST_STUB_ID(CallSetter)), {
-            glue, accessor, holder, value, TrueConstant()
+    GateRef callRes = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CallSetter)), {
+            accessor, holder, value, TaggedTrue()
         });
     Label callSuccess(env);
     Label callFail(env);
-    Branch(Int32Equal(ZExtInt1ToInt32(callRes), GetInt32Constant(1)), &callSuccess, &callFail);
+    Branch(TaggedIsTrue(callRes), &callSuccess, &callFail);
     {
         Bind(&callSuccess);
         result = GetUndefinedConstant(StubMachineType::UINT64);
@@ -891,15 +888,13 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
         GateRef size = Int32Mul(GetInlinedPropsStartFromHClass(hclass),
                                 GetInt32Constant(JSTaggedValue::TaggedTypeSize()));
         GateRef inlineProps = GetInlinedPropertiesFromHClass(hclass);
-        StubDescriptor *newEcmaDynClass = GET_STUBDESCRIPTOR(NewEcmaDynClass);
-        GateRef newJshclass = CallRuntime(newEcmaDynClass, glue, GetInt64Constant(FAST_STUB_ID(NewEcmaDynClass)), {
-                glue, size, type, inlineProps
+        GateRef newJshclass = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NewEcmaDynClass)), {
+                IntBuildTaggedTypeWithNoGC(size), IntBuildTaggedTypeWithNoGC(type),
+                IntBuildTaggedTypeWithNoGC(inlineProps)
             });
         CopyAllHClass(glue, newJshclass, hclass);
-        StubDescriptor *updateLayout = GET_STUBDESCRIPTOR(UpdateLayOutAndAddTransition);
-        CallRuntime(updateLayout, glue, GetInt64Constant(FAST_STUB_ID(UpdateLayOutAndAddTransition)), {
-                    glue, hclass, newJshclass, key, attr
-                    });
+        CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(UpdateLayOutAndAddTransition)), {
+                              hclass, newJshclass, key, IntBuildTaggedTypeWithNoGC(attr) });
 #if ECMASCRIPT_ENABLE_IC
         NotifyHClassChanged(glue, hclass, newJshclass);
 #endif
@@ -979,8 +974,8 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
         Bind(&lenIsZero);
         {
             length = GetInt32Constant(JSObject::MIN_PROPERTIES_LENGTH);
-            array = CallRuntime(GET_STUBDESCRIPTOR(NewTaggedArray), glue,
-                GetInt64Constant(FAST_STUB_ID(NewTaggedArray)), { glue, *length });
+            array = CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(NewTaggedArray)), { IntBuildTaggedTypeWithNoGC(*length) });
             SetPropertiesArray(glue, receiver, *array);
             Jump(&afterLenCon);
         }
@@ -994,9 +989,9 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     {
         Bind(&isDictMode);
         {
-            GateRef res = CallRuntime(GET_STUBDESCRIPTOR(NameDictPutIfAbsent), glue,
+            GateRef res = CallRuntimeTrampoline(glue,
                 GetInt64Constant(FAST_STUB_ID(NameDictPutIfAbsent)), {
-                    glue, receiver, *array, key, value, *attr, FalseConstant()
+                    receiver, *array, key, value, IntBuildTaggedTypeWithNoGC(*attr), TaggedFalse()
                 });
             SetPropertiesArray(glue, receiver, res);
             Jump(&exit);
@@ -1022,9 +1017,9 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                         {
                             attr = SetDictionaryOrderFieldInPropAttr(*attr,
                                 GetInt32Constant(PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES));
-                            GateRef res = CallRuntime(GET_STUBDESCRIPTOR(NameDictPutIfAbsent), glue,
+                            GateRef res = CallRuntimeTrampoline(glue,
                                 GetInt64Constant(FAST_STUB_ID(NameDictPutIfAbsent)), {
-                                    glue, receiver, *array, key, value, *attr, TrueConstant()
+                                    receiver, *array, key, value, IntBuildTaggedTypeWithNoGC(*attr), TaggedTrue()
                                 });
                             SetPropertiesArray(glue, receiver, res);
                             result = GetUndefinedConstant(StubMachineType::UINT64);
@@ -1035,8 +1030,8 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                     }
                     Bind(&afterDictChangeCon);
                     GateRef capacity = ComputePropertyCapacityInJSObj(*length);
-                    array = CallRuntime(GET_STUBDESCRIPTOR(CopyArray), glue,
-                        GetInt64Constant(FAST_STUB_ID(CopyArray)), { glue, *array, *length, capacity });
+                    array = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CopyArray)),
+                        { *array, IntBuildTaggedTypeWithNoGC(*length), IntBuildTaggedTypeWithNoGC(capacity) });
                     SetPropertiesArray(glue, receiver, *array);
                     Jump(&afterArrLenCon);
                 }
@@ -1060,9 +1055,9 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
 
 void Stub::ThrowTypeAndReturn(GateRef glue, int messageId, GateRef val)
 {
-    StubDescriptor *throwTypeError = GET_STUBDESCRIPTOR(ThrowTypeError);
     GateRef msgIntId = GetInt32Constant(messageId);
-    CallRuntime(throwTypeError, glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, msgIntId });
+    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+        { IntBuildTaggedTypeWithNoGC(msgIntId) });
     Return(val);
 }
 
@@ -1182,18 +1177,16 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             }
             Bind(&isNullPtr);
             {
-                StubDescriptor *insertOldToNewRememberedSet = GET_STUBDESCRIPTOR(InsertOldToNewRememberedSet);
-                CallRuntime(insertOldToNewRememberedSet, glue,
-                            GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
-                            {glue, objectRegion, slotAddr});
+                CallRuntimeTrampoline(glue, GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
+                    { PtrBuildTaggedWithNoGC(objectRegion), PtrBuildTaggedWithNoGC(slotAddr) });
                 Jump(&notValidIndex);
             }
         }
         Bind(&notValidIndex);
         {
-            StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
-            CallRuntime(markingBarrier, glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
-                    glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion
+            CallRuntimeTrampoline(glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
+                PtrBuildTaggedWithNoGC(slotAddr), PtrBuildTaggedWithNoGC(objectRegion),
+                PtrBuildTaggedWithNoGC(value), PtrBuildTaggedWithNoGC(valueRegion)
             });
             Jump(&exit);
         }
@@ -1587,10 +1580,8 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
                 Jump(&exit);
                 Bind(&handlerInfoNotNonExist);
                 GateRef accessor = LoadFromField(*holder, handlerInfo);
-                StubDescriptor *callGetter2 = GET_STUBDESCRIPTOR(CallGetter2);
-                result = CallRuntime(callGetter2, glue, GetInt64Constant(FAST_STUB_ID(CallGetter2)), {
-                        glue, receiver, *holder, accessor
-                    });
+                result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CallGetter2)),
+                    { receiver, *holder, accessor });
                 Jump(&exit);
             }
         }
@@ -1708,9 +1699,11 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
                 Branch(Int32GreaterThanOrEqual(index, capacity), &callRuntime, &storeElement);
                 Bind(&callRuntime);
                 {
-                    StubDescriptor *taggedArraySetValue = GET_STUBDESCRIPTOR(TaggedArraySetValue);
-                    result = CallRuntime(taggedArraySetValue, glue, GetInt64Constant(FAST_STUB_ID(TaggedArraySetValue)),
-                                         { glue, receiver, value, elements, index, capacity });
+                    result = ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue,
+                        GetInt64Constant(FAST_STUB_ID(TaggedArraySetValue)), {
+                            receiver, value, elements, IntBuildTaggedTypeWithNoGC(index),
+                            IntBuildTaggedTypeWithNoGC(capacity)
+                        }));
                     Jump(&exit);
                 }
                 Bind(&storeElement);
@@ -1808,10 +1801,10 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
             Bind(&handlerInfoNotField);
             {
                 GateRef accessor = LoadFromField(*holder, handlerInfo);
-                StubDescriptor *callsetter2 = GET_STUBDESCRIPTOR(CallSetter2);
-                result = CallRuntime(callsetter2, glue, GetInt64Constant(FAST_STUB_ID(CallSetter2)), {
-                        glue, receiver, value, accessor
-                    });
+                result = ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue,
+                    GetInt64Constant(FAST_STUB_ID(CallSetter2)), {
+                        receiver, value, accessor
+                    }));
                 Jump(&exit);
             }
         }
@@ -1910,10 +1903,9 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         Branch(Int32GreaterThanOrEqual(index, capacity), &indexMoreCapacity, &indexLessCapacity);
         Bind(&indexMoreCapacity);
         {
-            StubDescriptor *propertiesSetValue = GET_STUBDESCRIPTOR(PropertiesSetValue);
-            CallRuntime(propertiesSetValue, glue, GetInt64Constant(FAST_STUB_ID(PropertiesSetValue)), {
-                    glue, receiver, value, array, capacity, index
-                });
+            CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(PropertiesSetValue)), {
+                receiver, value, array, IntBuildTaggedTypeWithNoGC(capacity), IntBuildTaggedTypeWithNoGC(index)
+            });
             Jump(&exit);
         }
         Bind(&indexLessCapacity);
@@ -2049,16 +2041,14 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
                         Branch(IsAccessorInternal(value), &isInternal, &notInternal);
                         Bind(&isInternal);
                         {
-                            StubDescriptor *callInternalGetter = GET_STUBDESCRIPTOR(CallInternalGetter);
-                            result = CallRuntime(callInternalGetter, glue,
-                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
+                            result = CallRuntimeTrampoline(glue,
+                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { value, *holder });
                             Jump(&exit);
                         }
                         Bind(&notInternal);
                         {
-                            StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
-                            result = CallRuntime(callGetter, glue,
-                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
+                            result = CallRuntimeTrampoline(glue,
+                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { value, receiver });
                             Jump(&exit);
                         }
                     }
@@ -2155,16 +2145,14 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                         Branch(IsAccessorInternal(value), &isInternal, &notInternal);
                         Bind(&isInternal);
                         {
-                            StubDescriptor *callInternalGetter = GET_STUBDESCRIPTOR(CallInternalGetter);
-                            result = CallRuntime(callInternalGetter, glue,
-                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
+                            result = CallRuntimeTrampoline(glue,
+                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { value, *holder });
                             Jump(&exit);
                         }
                         Bind(&notInternal);
                         {
-                            StubDescriptor *callGetter = GET_STUBDESCRIPTOR(CallGetter);
-                            result = CallRuntime(callGetter, glue,
-                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
+                            result = CallRuntimeTrampoline(glue,
+                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { value, receiver });
                             Jump(&exit);
                         }
                     }
@@ -2205,16 +2193,14 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                         Branch(IsAccessorInternal(value), &isInternal1, &notInternal1);
                         Bind(&isInternal1);
                         {
-                            StubDescriptor *callAccessorGetter1 = GET_STUBDESCRIPTOR(CallInternalGetter);
-                            result = CallRuntime(callAccessorGetter1, glue,
-                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { glue, value, *holder });
+                            result = CallRuntimeTrampoline(glue,
+                                GetInt64Constant(FAST_STUB_ID(CallInternalGetter)), { value, *holder });
                             Jump(&exit);
                         }
                         Bind(&notInternal1);
                         {
-                            StubDescriptor *callGetter1 = GET_STUBDESCRIPTOR(CallGetter);
-                            result = CallRuntime(callGetter1, glue,
-                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { glue, value, receiver });
+                            result = CallRuntimeTrampoline(glue,
+                                GetInt64Constant(FAST_STUB_ID(CallGetter)), { value, receiver });
                             Jump(&exit);
                         }
                     }
@@ -2418,14 +2404,14 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
         Branch(IsExtensible(receiver), &isExtensible, &notExtensible);
         Bind(&isExtensible);
         {
-            StubDescriptor *addElementInternal = GET_STUBDESCRIPTOR(AddElementInternal);
             GateRef result =
-                CallRuntime(addElementInternal, glue, GetInt64Constant(FAST_STUB_ID(AddElementInternal)), {
-                        glue, receiver, index, value, GetInt32Constant(PropertyAttributes::GetDefaultAttributes())
+                CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(AddElementInternal)), {
+                        receiver, IntBuildTaggedTypeWithNoGC(index), value,
+                        IntBuildTaggedTypeWithNoGC(GetInt32Constant(PropertyAttributes::GetDefaultAttributes()))
                     });
             Label success(env);
             Label failed(env);
-            Branch(result, &success, &failed);
+            Branch(TaggedIsTrue(result), &success, &failed);
             Bind(&success);
             returnValue = GetUndefinedConstant(StubMachineType::UINT64);
             Jump(&exit);
@@ -2436,8 +2422,8 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
         Bind(&notExtensible);
         {
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+            CallRuntimeTrampoline(glue,
+                GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { IntBuildTaggedTypeWithNoGC(taggedId) });
             returnValue = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
         }
@@ -2481,8 +2467,8 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             Bind(&isSpecialContainer);
             {
                 GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(CanNotSetPropertyOnContainer));
-                CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
-                            {glue, taggedId});
+                CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+                                      { IntBuildTaggedTypeWithNoGC(taggedId) });
                 result = GetExceptionConstant(StubMachineType::UINT64);
                 Jump(&exit);
             }
@@ -2548,8 +2534,8 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             Jump(&afterIsWritable);
                             Bind(&notWritable);
                             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-                            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                                GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                            CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+                                { IntBuildTaggedTypeWithNoGC(taggedId) });
                             result = GetExceptionConstant(StubMachineType::UINT64);
                             Jump(&exit);
                         }
@@ -2625,8 +2611,8 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             Jump(&afterIsWritable1);
                             Bind(&notWritable1);
                             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-                            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                                GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                            CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+                                { IntBuildTaggedTypeWithNoGC(taggedId) });
                             result = GetExceptionConstant(StubMachineType::UINT64);
                             Jump(&exit);
                         }
@@ -2676,8 +2662,8 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             Jump(&afterExtenCon);
             Bind(&inextensible);
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
-                {glue, taggedId});
+            CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+                { IntBuildTaggedTypeWithNoGC(taggedId) });
             result = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
         }
@@ -2718,8 +2704,8 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
         Bind(&isSpecialContainer);
         {
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(CanNotSetPropertyOnContainer));
-            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
-                        {glue, taggedId});
+            CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+                { IntBuildTaggedTypeWithNoGC(taggedId) });
             result = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
         }
@@ -2785,8 +2771,8 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         Jump(&afterIsWritable);
                         Bind(&notWritable);
                         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-                        CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                            GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                        CallRuntimeTrampoline(glue,
+                            GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { IntBuildTaggedTypeWithNoGC(taggedId) });
                         result = GetExceptionConstant(StubMachineType::UINT64);
                         Jump(&exit);
                     }
@@ -2863,8 +2849,8 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         Jump(&afterIsWritable1);
                         Bind(&notWritable1);
                         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-                        CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue,
-                            GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { glue, taggedId });
+                        CallRuntimeTrampoline(glue,
+                            GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { IntBuildTaggedTypeWithNoGC(taggedId) });
                         result = GetExceptionConstant(StubMachineType::UINT64);
                         Jump(&exit);
                     }
@@ -2904,8 +2890,8 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             Jump(&afterExtenCon);
             Bind(&inextensible);
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
-            CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
-                {glue, taggedId});
+            CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+                { IntBuildTaggedTypeWithNoGC(taggedId) });
             result = GetExceptionConstant(StubMachineType::UINT64);
             Jump(&exit);
         }
@@ -2935,9 +2921,8 @@ void Stub::NotifyHClassChanged(GateRef glue, GateRef oldHClass, GateRef newHClas
         Bind(&notEqualHClass);
         {
             SetIsProtoTypeToHClass(glue, newHClass, TrueConstant());
-            auto stubDescriptor = GET_STUBDESCRIPTOR(NoticeThroughChainAndRefreshUser);
-            CallRuntime(stubDescriptor, glue, GetInt64Constant(FAST_STUB_ID(NoticeThroughChainAndRefreshUser)), {
-                    glue, oldHClass, newHClass
+            CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NoticeThroughChainAndRefreshUser)), {
+                    oldHClass, newHClass
                 });
             Jump(&exit);
         }
@@ -3388,9 +3373,10 @@ GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
                     Branch(DoubleIsINF(*doubleRight), &leftIsZeroOrRightIsInf, &rightNotInf);
                     Bind(&rightNotInf);
                     {
-                        StubDescriptor *floatMod = GET_STUBDESCRIPTOR(FloatMod);
-                        doubleLeft = CallRuntime(floatMod, glue, GetInt64Constant(FAST_STUB_ID(FloatMod)),
-                                                 {*doubleLeft, *doubleRight});
+                        doubleLeft = TaggedCastToDouble(CallRuntimeTrampoline(glue,
+                            GetInt64Constant(FAST_STUB_ID(FloatMod)), { DoubleBuildTaggedTypeWithNoGC(*doubleLeft),
+                                DoubleBuildTaggedTypeWithNoGC(*doubleRight)
+                        }));
                         result = DoubleBuildTaggedWithNoGC(*doubleLeft);
                         Jump(&exit);
                     }
@@ -3454,8 +3440,8 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Bind(&notValidIndex);
     {
         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(GetPropertyOutOfBounds));
-        CallRuntime(GET_STUBDESCRIPTOR(ThrowTypeError), glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
-                    {glue, taggedId});
+        CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
+            { IntBuildTaggedTypeWithNoGC(taggedId) });
         result = GetExceptionConstant();
         Jump(&exit);
     }

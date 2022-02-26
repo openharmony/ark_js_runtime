@@ -19,7 +19,7 @@
 #include "interpreter_stub_define.h"
 namespace panda::ecmascript::kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define EXTERNAL_RUNTIMESTUB_LIST(V)         \
+#define EXTERNAL_RUNTIMESTUB_LIST(V, I)      \
     V(AddElementInternal, 5)                 \
     V(CallSetter, 5)                         \
     V(CallSetter2, 4)                        \
@@ -30,7 +30,6 @@ namespace panda::ecmascript::kungfu {
     V(JSProxySetProperty, 6)                 \
     V(GetHash32, 2)                          \
     V(FindElementWithCache, 4)               \
-    V(Execute, 5)                            \
     V(StringGetHashCode, 1)                  \
     V(FloatMod, 2)                           \
     V(GetTaggedArrayPtrTest, 1)              \
@@ -43,7 +42,7 @@ namespace panda::ecmascript::kungfu {
     V(NewEcmaDynClass, 4)                    \
     V(UpdateLayOutAndAddTransition, 5)       \
     V(NoticeThroughChainAndRefreshUser, 3)   \
-    V(DebugPrint, 1)                         \
+    I(DebugPrint, 1)                         \
     V(InsertOldToNewRememberedSet, 3)        \
     V(MarkingBarrier, 5)                     \
     V(JumpToCInterpreter, 7)                 \
@@ -134,7 +133,8 @@ namespace panda::ecmascript::kungfu {
     V(Mul2Dyn, 3)                            \
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
-    V(CallRuntimeTrampoline, 4)
+    I(CallRuntimeTrampoline, 4)
+    
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define FAST_RUNTIME_STUB_LIST(V)       \
@@ -167,9 +167,9 @@ namespace panda::ecmascript::kungfu {
     V(LoopTest1, 1)                 \
     V(TestAbsoluteAddressRelocation, 2)
 
-#define CALL_STUB_LIST(V)        \
-    FAST_RUNTIME_STUB_LIST(V)    \
-    EXTERNAL_RUNTIMESTUB_LIST(V) \
+#define CALL_STUB_LIST(V)           \
+    FAST_RUNTIME_STUB_LIST(V)       \
+    EXTERNAL_RUNTIMESTUB_LIST(V, V) \
     V(BytecodeHandler, 7)
 
 enum FastStubId {
@@ -180,7 +180,7 @@ enum FastStubId {
 
 enum ExternalRuntimeStubId {
 #define DEF_STUB(name, counter) name##Id,
-    EXTERNAL_RUNTIMESTUB_LIST(DEF_STUB) EXTERNAL_RUNTIME_STUB_MAXCOUNT,
+    EXTERNAL_RUNTIMESTUB_LIST(DEF_STUB, DEF_STUB) EXTERNAL_RUNTIME_STUB_MAXCOUNT,
 #undef DEF_STUB
 };
 
