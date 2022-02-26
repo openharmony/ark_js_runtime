@@ -169,7 +169,7 @@ public:
 
     bool IsPrimtiveBuiltinTypes(int localId) const;
 
-    int GetUTableIndex(GlobalTSTypeRef gt, int index) const;
+    int GetUTableIndex(GlobalTSTypeRef gt, uint32_t index) const;
 
     GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
 

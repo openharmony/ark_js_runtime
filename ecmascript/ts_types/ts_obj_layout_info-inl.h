@@ -20,9 +20,9 @@
 #include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript {
-inline int TSObjLayoutInfo::GetPropertiesCapacity() const
+inline uint32_t TSObjLayoutInfo::GetPropertiesCapacity() const
 {
-    return static_cast<int>((GetLength() - ELEMENTS_START_INDEX) / ENTRY_SIZE);
+    return static_cast<uint32_t>((GetLength() - ELEMENTS_START_INDEX) / ENTRY_SIZE);
 }
 
 inline void TSObjLayoutInfo::SetNumberOfElements(const JSThread *thread, int propertiesNum)
@@ -30,7 +30,7 @@ inline void TSObjLayoutInfo::SetNumberOfElements(const JSThread *thread, int pro
     return TaggedArray::Set(thread, ELEMENTS_COUNT_INDEX, JSTaggedValue(propertiesNum));
 }
 
-inline int TSObjLayoutInfo::NumberOfElements() const
+inline uint32_t TSObjLayoutInfo::NumberOfElements() const
 {
     return TaggedArray::Get(ELEMENTS_COUNT_INDEX).GetInt();
 }

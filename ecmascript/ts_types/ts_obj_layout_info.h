@@ -38,9 +38,9 @@ public:
         return reinterpret_cast<TSObjLayoutInfo*>(obj);
     }
 
-    int GetPropertiesCapacity() const;
+    uint32_t GetPropertiesCapacity() const;
     void SetNumberOfElements(const JSThread *thread, int propertiesNum);
-    int NumberOfElements() const;
+    uint32_t NumberOfElements() const;
     void SetPropertyInit(const JSThread *thread, int index, const JSTaggedValue &key, const JSTaggedValue &tsTypeId);
     JSTaggedValue GetKey(int index) const;
     JSTaggedValue GetTypeId(int index) const;
