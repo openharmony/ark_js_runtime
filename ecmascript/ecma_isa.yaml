@@ -590,3 +590,7 @@ groups:
         acc: out:top
         prefix: ecma
         format: [pref_op_none]
+      - sig: ecma.newlexenvwithnamedyn imm1, imm2
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_16_imm2_16]
