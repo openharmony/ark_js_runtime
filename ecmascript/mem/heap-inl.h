@@ -56,6 +56,12 @@ void Heap::EnumerateNonNewSpaceRegions(const Callback &cb) const
 }
 
 template<class Callback>
+void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
+{
+    toSpace_->EnumerateRegions(cb);
+}
+
+template<class Callback>
 void Heap::EnumerateNonMovableRegions(const Callback &cb) const
 {
     snapshotSpace_->EnumerateRegions(cb);

@@ -50,48 +50,34 @@ void SparseSpace::Reset()
     ReclaimRegions();
 }
 
-uintptr_t SparseSpace::Allocate(size_t size)
+uintptr_t SparseSpace::Allocate(size_t size, bool isAllowGC)
 {
     auto object = allocator_->Allocate(size);
-    if (object == 0) {
-        if (sweepState_ == SweepState::SWEEPING) {
-            MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingWait);
-            if (FillSweptRegion()) {
-                object = allocator_->Allocate(size);
-                if (object != 0) {
-                    liveObjectSize_ += size;
-                    return object;
-                }
-            }
-            // Parallel
-            heap_->GetSweeper()->EnsureTaskFinished(spaceType_);
-            object = allocator_->Allocate(size);
-            if (object != 0) {
-                liveObjectSize_ += size;
-                return object;
-            }
-        }
+    CHECK_OBJECT_AND_INC_OBJ_SIZE(size);
 
-        if (Expand()) {
-            object = allocator_->Allocate(size);
-        } else {
-            heap_->CollectGarbage(TriggerGCType::OLD_GC);
-            if (Expand()) {
-                object = allocator_->Allocate(size);
-            }
-        }
-    }
-    if (object != 0) {
-        liveObjectSize_ += size;
+    if (sweepState_ == SweepState::SWEEPING) {
+        object = AllocateAfterSweepingCompleted(size);
+        CHECK_OBJECT_AND_INC_OBJ_SIZE(size);
     }
 
+    if (Expand()) {
+        object = allocator_->Allocate(size);
+        CHECK_OBJECT_AND_INC_OBJ_SIZE(size);
+        return object;
+    }
+
+    if (isAllowGC) {
+        heap_->CollectGarbage(TriggerGCType::OLD_GC);
+        object = Allocate(size, false);
+        // Size is already increment
+    }
     return object;
 }
 
 bool SparseSpace::Expand()
 {
     if (committedSize_ >= initialCapacity_) {
-        LOG_ECMA_MEM(FATAL) << "Expand::Committed size " << committedSize_ << " of old space is too big. ";
+        LOG_ECMA_MEM(INFO) << "Expand::Committed size " << committedSize_ << " of old space is too big. ";
         return false;
     }
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
@@ -104,6 +90,22 @@ bool SparseSpace::Expand()
     AddRegion(region);
     allocator_->AddFree(region);
     return true;
+}
+
+uintptr_t SparseSpace::AllocateAfterSweepingCompleted(size_t size)
+{
+    ASSERT(sweepState_ == SweepState::SWEEPING);
+    MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingWait);
+    if (FillSweptRegion()) {
+        auto object = allocator_->Allocate(size);
+        if (object != 0) {
+            liveObjectSize_ += size;
+            return object;
+        }
+    }
+    // Parallel
+    heap_->GetSweeper()->EnsureTaskFinished(spaceType_);
+    return allocator_->Allocate(size);
 }
 
 void SparseSpace::PrepareSweeping()
@@ -358,7 +360,7 @@ void OldSpace::CheckRegionSize()
     size_t available = allocator_->GetAvailableSize();
     size_t wasted = allocator_->GetWastedSize();
     if (GetHeapObjectSize() + wasted + available != objectSize_) {
-        LOG(ERROR, RUNTIME) << "Actual live object size:" << GetHeapObjectSize()
+        LOG(DEBUG, RUNTIME) << "Actual live object size:" << GetHeapObjectSize()
                             << ", free object size:" << available
                             << ", wasted size:" << wasted
                             << ", but exception totoal size:" << objectSize_;
@@ -382,6 +384,7 @@ void OldSpace::RevertCSet()
 void OldSpace::ReclaimCSet()
 {
     EnumerateCollectRegionSet([this](Region *region) {
+        region->SetSpace(nullptr);
         region->DeleteMarkBitmap();
         region->DeleteCrossRegionRememberedSet();
         region->DeleteOldToNewRememberedSet();
@@ -398,7 +401,7 @@ LocalSpace::LocalSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacit
 bool LocalSpace::AddRegionToList(Region *region)
 {
     if (committedSize_ >= maximumCapacity_) {
-        LOG_ECMA_MEM(FATAL) << "Expand::Committed size " << committedSize_ << " of old space is too big. ";
+        LOG_ECMA_MEM(FATAL) << "AddRegionTotList::Committed size " << committedSize_ << " of local space is too big.";
         return false;
     }
     region->SetSpace(this);

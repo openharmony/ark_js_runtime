@@ -78,7 +78,7 @@ void ConcurrentMarker::HandleMarkFinished()  // js-thread wait for sweep
 {
     os::memory::LockHolder lock(waitMarkingFinishedMutex_);
     if (notifyMarkingFinished_) {
-        heap_->CollectGarbage(TriggerGCType::OLD_GC);
+        heap_->CollectGarbage(TriggerGCType::SEMI_GC);
     }
 }
 
@@ -99,6 +99,15 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
     if (isRevertCSet) {
         // Mix space gc clear cset when evacuation allocator finalize
         heap_->GetOldSpace()->RevertCSet();
+        auto callback = [](Region *region) {
+            region->ClearMarkBitmap();
+            region->ClearCrossRegionRememberedSet();
+        };
+        if (heap_->IsFullMark()) {
+            heap_->EnumerateRegions(callback);
+        } else {
+            heap_->EnumerateNewSpaceRegions(callback);
+        }
     }
 }
 
