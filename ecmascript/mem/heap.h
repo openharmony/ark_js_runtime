@@ -186,6 +186,9 @@ public:
     void EnumerateNonNewSpaceRegions(const Callback &cb) const;
 
     template<class Callback>
+    void EnumerateNewSpaceRegions(const Callback &cb) const;
+
+    template<class Callback>
     void EnumerateSnapShotSpaceRegions(const Callback &cb) const;
 
     template<class Callback>
