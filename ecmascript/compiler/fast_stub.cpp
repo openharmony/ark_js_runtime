@@ -170,13 +170,8 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
-    StubDescriptor *getTaggedArrayPtr = GET_STUBDESCRIPTOR(GetTaggedArrayPtrTest);
-    GateRef ptr1 = CallRuntime(getTaggedArrayPtr, glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
-        glue
-    });
-    GateRef ptr2 = CallRuntime(getTaggedArrayPtr, glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {
-        glue
-    });
+    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {});
+    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {});
     auto value1 = Load(StubMachineType::UINT64, ptr1);
     GateRef tmp = CastInt64ToFloat64(value1);
     doubleX = DoubleMul(*doubleX, tmp);
@@ -630,10 +625,9 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
                 Jump(&xIsZeroOryIsInf);
                 Bind(&yNotInf);
                 {
-                    StubDescriptor *floatMod = GET_STUBDESCRIPTOR(FloatMod);
-                    doubleX = CallRuntime(floatMod, glue, GetInt64Constant(FAST_STUB_ID(FloatMod)), {
-                            *doubleX, *doubleY
-                        });
+                    doubleX = TaggedCastToDouble(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(FloatMod)), {
+                            DoubleBuildTaggedTypeWithNoGC(*doubleX), DoubleBuildTaggedTypeWithNoGC(*doubleY)
+                        }));
                     Return(DoubleBuildTaggedWithNoGC(*doubleX));
                 }
                 Bind(&xIsZeroOryIsInf);
@@ -906,34 +900,6 @@ void SetPropertyByNameWithOwnStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(SetPropertyByNameWithOwn(glue, receiver, key, value));
 }
 
-void FunctionCallInternalStub::GenerateCircuit(const CompilationConfig *cfg)
-{
-    Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
-    GateRef glue = PtrArgument(0);
-    GateRef func = PtrArgument(1, GateType::TAGGED_POINTER);
-    GateRef thisArg = TaggedArgument(2); /* 2 : 3rd parameter is value */
-    GateRef argc = Int32Argument(3); /* 3 : 4th parameter is value */
-    GateRef argv = PtrArgument(4); /* 4 : 5th parameter is ptr */
-    Label funcNotBuiltinsConstructor(env);
-    Label funcIsBuiltinsConstructorOrFuncNotClassConstructor(env);
-    Label funcIsClassConstructor(env);
-    Branch(NotBuiltinsConstructor(func), &funcNotBuiltinsConstructor,
-           &funcIsBuiltinsConstructorOrFuncNotClassConstructor);
-    Bind(&funcNotBuiltinsConstructor);
-    {
-        Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcIsBuiltinsConstructorOrFuncNotClassConstructor);
-        Bind(&funcIsClassConstructor);
-        ThrowTypeAndReturn(glue, GET_MESSAGE_STRING_ID(FunctionCallNotConstructor),
-                           GetExceptionConstant(StubMachineType::UINT64));
-    }
-    Bind(&funcIsBuiltinsConstructorOrFuncNotClassConstructor);
-    StubDescriptor *execute = GET_STUBDESCRIPTOR(Execute);
-    Return(CallRuntime(execute, glue, GetInt64Constant(FAST_STUB_ID(Execute)), {
-            glue, func, thisArg, argc, argv
-        }));
-}
-
 void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
@@ -986,9 +952,8 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Jump(&getByName);
                     Bind(&notIntenalString);
                     {
-                        StubDescriptor *newInternalString = GET_STUBDESCRIPTOR(NewInternalString);
-                        key = CallRuntime(newInternalString, glue,
-                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { glue, *key });
+                        key = CallRuntimeTrampoline(glue,
+                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { *key });
                         Jump(&getByName);
                     }
                 }
@@ -1060,9 +1025,8 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Jump(&getByName);
                     Bind(&notIntenalString);
                     {
-                        StubDescriptor *newInternalString = GET_STUBDESCRIPTOR(NewInternalString);
-                        key = CallRuntime(newInternalString, glue,
-                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { glue, *key });
+                        key = CallRuntimeTrampoline(glue,
+                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { *key });
                         Jump(&getByName);
                     }
                 }

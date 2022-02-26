@@ -818,16 +818,42 @@ GateRef Stub::Int16BuildTaggedWithNoGC(GateRef x)
     return ChangeInt64ToTagged(Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT)));
 }
 
+GateRef Stub::Int16BuildTaggedTypeWithNoGC(GateRef x)
+{
+    GateRef val = ZExtInt16ToInt64(x);
+    return Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT));
+}
+
 GateRef Stub::IntBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = ZExtInt32ToInt64(x);
     return ChangeInt64ToTagged(Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT)));
 }
 
+GateRef Stub::IntBuildTaggedTypeWithNoGC(GateRef x)
+{
+    GateRef val = ZExtInt32ToInt64(x);
+    return Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT));
+}
+
+GateRef Stub::PtrBuildTaggedWithNoGC(GateRef x)
+{
+    if (env_.IsArch32Bit()) {
+        return ZExtInt32ToInt64(x);
+    }
+    return x;
+}
+
 GateRef Stub::DoubleBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
     return ChangeInt64ToTagged(Int64Add(val, GetInt64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET)));
+}
+
+GateRef Stub::DoubleBuildTaggedTypeWithNoGC(GateRef x)
+{
+    GateRef val = CastDoubleToInt64(x);
+    return Int64Add(val, GetInt64Constant(JSTaggedValue::DOUBLE_ENCODE_OFFSET));
 }
 
 GateRef Stub::CastDoubleToInt64(GateRef x)
