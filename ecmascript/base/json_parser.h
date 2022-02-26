@@ -507,6 +507,10 @@ private:
                     return false;
                 }
             }
+            if (*current == ']' || *current == '}') {
+                end_ = end - 1;
+                return true;
+            }
             return false;
         }
         end_ = range_ - 1;
