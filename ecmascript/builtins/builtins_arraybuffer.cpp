@@ -343,9 +343,9 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSTaggedValue arrBuf, uint
         case DataViewType::INT32:
             return GetValueFromBufferForInteger<int32_t, NumberSize::INT32>(block, byteIndex, littleEndian);
         case DataViewType::FLOAT32:
-            return GetValueFromBufferForFloat<float, NumberSize::FLOAT32>(block, byteIndex, littleEndian);
+            return GetValueFromBufferForFloat<float, UnionType32, NumberSize::FLOAT32>(block, byteIndex, littleEndian);
         case DataViewType::FLOAT64:
-            return GetValueFromBufferForFloat<double, NumberSize::FLOAT64>(block, byteIndex, littleEndian);
+            return GetValueFromBufferForFloat<double, UnionType64, NumberSize::FLOAT64>(block, byteIndex, littleEndian);
         default:
             break;
     }
@@ -465,34 +465,35 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForInteger(uint8_t *block, 
     return GetTaggedInt(res);
 }
 
-template<typename T, BuiltinsArrayBuffer::NumberSize size>
+template<typename T, typename UnionType, BuiltinsArrayBuffer::NumberSize size>
 JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForFloat(uint8_t *block, uint32_t byteIndex, bool littleEndian)
 {
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "T must be float type");
+    static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "T must be correct type");
     static_assert(sizeof(T) == size, "Invalid number size");
-    T tmp = *reinterpret_cast<T *>(block + byteIndex);
 
+    UnionType unionValue = {0};
     // NOLINTNEXTLINE(readability-braces-around-statements)
     if constexpr (std::is_same_v<T, float>) {
-        if (std::isnan(tmp)) {
-            return GetTaggedDouble(tmp);
+        unionValue.uValue = *reinterpret_cast<uint32_t *>(block + byteIndex);
+        if (std::isnan(unionValue.value)) {
+            return GetTaggedDouble(unionValue.value);
         }
         if (!littleEndian) {
-            uint32_t res = bit_cast<uint32_t>(tmp);
-            res = LittleEndianToBigEndian(res);
+            uint32_t res = LittleEndianToBigEndian(unionValue.uValue);
             return GetTaggedDouble(bit_cast<T>(res));
         }
     } else if constexpr (std::is_same_v<T, double>) {  // NOLINTNEXTLINE(readability-braces-around-statements)
-        if (std::isnan(tmp) && !JSTaggedValue::IsImpureNaN(tmp)) {
-            return GetTaggedDouble(tmp);
+        unionValue.uValue = *reinterpret_cast<uint64_t *>(block + byteIndex);
+        if (std::isnan(unionValue.value) && !JSTaggedValue::IsImpureNaN(unionValue.value)) {
+            return GetTaggedDouble(unionValue.value);
         }
         if (!littleEndian) {
-            uint64_t res = bit_cast<uint64_t>(tmp);
-            res = LittleEndianToBigEndianUint64(res);
+            uint64_t res = LittleEndianToBigEndianUint64(unionValue.uValue);
             return GetTaggedDouble(bit_cast<T>(res));
         }
     }
-    return GetTaggedDouble(tmp);
+
+    return GetTaggedDouble(unionValue.value);
 }
 
 template<typename T>
