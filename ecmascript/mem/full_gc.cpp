@@ -55,12 +55,10 @@ void FullGC::InitializePhase()
     heap_->Prepare();
     auto callback = [](Region *current) {
         // ensure mark bitmap
-        current->ClearMarkBitmap();
         auto rememberset = current->GetOldToNewRememberedSet();
         if (rememberset != nullptr) {
             rememberset->ClearAllBits();
         }
-        current->ClearCrossRegionRememberedSet();
     };
     heap_->EnumerateNonMovableRegions(callback);
     heap_->SwapNewSpace();

@@ -50,6 +50,7 @@ void Space::ReclaimRegions()
 void Space::ClearAndFreeRegion(Region *region)
 {
     LOG_ECMA_MEM(DEBUG) << "Clear region from:" << region << " to " << ToSpaceTypeName(spaceType_);
+    region->SetSpace(nullptr);
     region->DeleteMarkBitmap();
     region->DeleteCrossRegionRememberedSet();
     region->DeleteOldToNewRememberedSet();
@@ -64,15 +65,8 @@ void Space::ClearAndFreeRegion(Region *region)
 
 bool Space::ContainObject(TaggedObject *object) const
 {
-    auto region = GetRegionList().GetFirst();
-    while (region != nullptr) {
-        if (region->InRange(ToUintPtr(object))) {
-            return true;
-        }
-        region = region->GetNext();
-    }
-
-    return false;
+    Region *region = Region::ObjectAddressToRange(object);
+    return region->GetSpace() == this;
 }
 
 HugeObjectSpace::HugeObjectSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)

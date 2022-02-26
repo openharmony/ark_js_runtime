@@ -236,10 +236,6 @@ void Heap::CollectGarbage(TriggerGCType gcType)
         LOG(FATAL, GC) << "Before gc heap corrupted and " << failCount << " corruptions";
     }
     isVerifying_ = false;
-    // verify need semiGC or fullGC.
-    if (gcType != TriggerGCType::SEMI_GC) {
-        gcType = TriggerGCType::FULL_GC;
-    }
 #endif
 
 #if ECMASCRIPT_SWITCH_GC_MODE_TO_FULL_GC
@@ -261,9 +257,13 @@ void Heap::CollectGarbage(TriggerGCType gcType)
             mixGC_->RunPhases();
             break;
         case TriggerGCType::OLD_GC:
-            if (!concurrentMarkingEnabled_) {
-                SetMarkType(MarkType::FULL_MARK);
+            if (concurrentMarkingEnabled_ && markType_ == MarkType::SEMI_MARK) {
+                bool concurrentMark = CheckConcurrentMark();
+                if (concurrentMark) {
+                    GetConcurrentMarker()->Reset();
+                }
             }
+            SetMarkType(MarkType::FULL_MARK);
             mixGC_->RunPhases();
             break;
         case TriggerGCType::FULL_GC:
@@ -620,6 +620,7 @@ size_t Heap::GetArrayBufferSize() const
 bool Heap::IsLive(TaggedObject *object) const
 {
     if (!ContainObject(object)) {
+        LOG(ERROR, RUNTIME) << "The region is already free";
         return false;
     }
 
@@ -627,7 +628,13 @@ bool Heap::IsLive(TaggedObject *object) const
     if (region->InHugeObjectGeneration()) {
         return true;
     }
-    return !FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
+    bool isFree = FreeObject::Cast(ToUintPtr(object))->IsFreeObject();
+    if (isFree) {
+        LOG(ERROR, RUNTIME) << "The object " << object << " in "
+                            << ToSpaceTypeName(region->GetSpace()->GetSpaceType())
+                            << " already free";
+    }
+    return !isFree;
 }
 
 bool Heap::ContainObject(TaggedObject *object) const

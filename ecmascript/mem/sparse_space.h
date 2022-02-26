@@ -18,6 +18,12 @@
 
 #include "ecmascript/mem/space-inl.h"
 
+#define CHECK_OBJECT_AND_INC_OBJ_SIZE(size) \
+    if (object != 0) {                      \
+        IncrementLiveObjectSize(size);      \
+        return object;                      \
+    }
+
 enum class SweepState : uint8_t {
     NO_SWEEP,
     SWEEPING,
@@ -37,8 +43,7 @@ public:
     void Initialize() override;
     void Reset();
 
-    uintptr_t Allocate(size_t size);
-
+    uintptr_t Allocate(size_t size, bool isAllowGC = true);
     bool Expand();
 
     // For sweeping
@@ -80,6 +85,8 @@ protected:
 
 private:
     // For sweeping
+    uintptr_t AllocateAfterSweepingCompleted(size_t size);
+
     os::memory::Mutex lock_;
     std::vector<Region *> sweepingList_;
     std::vector<Region *> sweptList_;

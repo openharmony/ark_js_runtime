@@ -124,6 +124,11 @@ public:
         return heap_;
     }
 
+    Space *GetSpace() const
+    {
+        return space_;
+    }
+
     void ResetFlag()
     {
         flags_ = 0;
