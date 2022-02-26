@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,20 +16,17 @@
 #ifndef ECMASCRIPT_MEM_SPACE_H
 #define ECMASCRIPT_MEM_SPACE_H
 
-#include "mem/gc/bitmap.h"
+#include "ecmascript/mem/allocator.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/ecma_list.h"
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/mem.h"
 #include "ecmascript/mem/region.h"
 #include "libpandabase/utils/type_helpers.h"
-#include "libpandafile/file.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
 class Heap;
-class Program;
-class FreeListAllocator;
 
 enum MemSpaceType {
     OLD_SPACE = 0,
@@ -39,6 +36,7 @@ enum MemSpaceType {
     SEMI_SPACE,
     SNAPSHOT_SPACE,
     COMPRESS_SPACE,
+    LOCAL_SPACE,
     SPACE_TYPE_LAST,  // Count of different types
 
     FREE_LIST_NUM = MACHINE_CODE_SPACE - OLD_SPACE + 1,
@@ -47,9 +45,6 @@ enum MemSpaceType {
 enum TriggerGCType {
     SEMI_GC,
     OLD_GC,
-    NON_MOVE_GC,
-    HUGE_GC,
-    MACHINE_CODE_GC,
     FULL_GC,
     GC_TYPE_LAST  // Count of different types
 };
@@ -75,8 +70,6 @@ static inline std::string ToSpaceTypeName(MemSpaceType type)
             return "unknow space";
     }
 }
-
-static constexpr size_t SPACE_TYPE_SIZE = helpers::ToUnderlying(MemSpaceType::SPACE_TYPE_LAST);
 
 class Space {
 public:
@@ -105,6 +98,11 @@ public:
         return initialCapacity_;
     }
 
+    void SetInitialCapacity(size_t initialCapacity)
+    {
+        initialCapacity_ = initialCapacity;
+    }
+
     size_t GetCommittedSize() const
     {
         return committedSize_;
@@ -120,10 +118,22 @@ public:
         committedSize_ -= bytes;
     }
 
+    void IncrementObjectSize(size_t bytes)
+    {
+        objectSize_ += bytes;
+    }
+
+    void DecrementObjectSize(size_t bytes)
+    {
+        objectSize_ -= bytes;
+    }
+
     MemSpaceType GetSpaceType() const
     {
         return spaceType_;
     }
+
+    inline RegionFlags GetRegionFlag() const;
 
     uintptr_t GetAllocateAreaBegin() const
     {
@@ -155,37 +165,22 @@ public:
         return regionList_;
     }
 
-    size_t GetLiveObjectSize() const
-    {
-        return liveObjectSize_;
-    }
-    void IncrementLiveObjectSize(size_t size)
-    {
-        liveObjectSize_ += size;
-    }
-    void DecrementLiveObjectSize(size_t size)
-    {
-        liveObjectSize_ -= size;
-    }
-    void ResetLiveObjectSize()
-    {
-        liveObjectSize_ = 0;
-    }
-
     template <class Callback>
     inline void EnumerateRegions(const Callback &cb, Region *region = nullptr) const;
 
     inline void AddRegion(Region *region);
     inline void RemoveRegion(Region *region);
 
-    void Initialize();
+    virtual void Initialize() {};
     void Destroy();
 
     void ReclaimRegions();
 
-    void ClearAndFreeRegion(Region *region);
+    bool ContainObject(TaggedObject *object) const;
 
 protected:
+    void ClearAndFreeRegion(Region *region);
+
     Heap *heap_ {nullptr};
     EcmaVM *vm_ {nullptr};
     JSThread *thread_ {nullptr};
@@ -195,132 +190,20 @@ protected:
     size_t initialCapacity_ {0};
     size_t maximumCapacity_ {0};
     size_t committedSize_ {0};
-    size_t liveObjectSize_ {0};
-};
-
-class SemiSpace : public Space {
-public:
-    explicit SemiSpace(Heap *heap, size_t initialCapacity = DEFAULT_SEMI_SPACE_SIZE,
-                       size_t maximumCapacity = SEMI_SPACE_CAPACITY);
-    ~SemiSpace() override = default;
-    NO_COPY_SEMANTIC(SemiSpace);
-    NO_MOVE_SEMANTIC(SemiSpace);
-
-    void SetOverShootSize(size_t size);
-    void Reset();
-    bool AdjustCapacity(size_t allocatedSizeSinceGC);
-
-    void SetAgeMark(uintptr_t mark);
-
-    uintptr_t GetAgeMark() const
-    {
-        return ageMark_;
-    }
-    size_t GetHeapObjectSize() const;
-    size_t GetAllocatedSizeSinceGC() const;
-
-    bool Expand(uintptr_t top, bool isAllow);
-    bool SwapRegion(Region *region, SemiSpace *fromSpace);
-
-    bool ContainObject(TaggedObject *object) const;
-    bool IsLive(TaggedObject *object) const;
-    void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
-
-private:
-    uintptr_t ageMark_;
-    size_t overShootSize_ {0};
-    size_t allocateAfterLastGC_ {0};
-    size_t survivalObjectSize_ {0};
-};
-
-class OldSpace : public Space {
-public:
-    explicit OldSpace(Heap *heap, size_t initialCapacity = DEFAULT_OLD_SPACE_SIZE,
-                      size_t maximumCapacity = MAX_OLD_SPACE_SIZE);
-    ~OldSpace() override = default;
-    NO_COPY_SEMANTIC(OldSpace);
-    NO_MOVE_SEMANTIC(OldSpace);
-    bool Expand();
-    bool AddRegionToList(Region *region);
-
-    bool ContainObject(TaggedObject *object) const;
-    bool IsLive(TaggedObject *object) const;
-    void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
-    size_t GetHeapObjectSize() const;
-    void Merge(Space *localSpace, FreeListAllocator *localAllocator);
-    template <class Callback>
-    void EnumerateCollectRegionSet(const Callback &cb) const;
-    template <class Callback>
-    void EnumerateNonCollectRegionSet(const Callback &cb) const;
-    // CSet
-    void SelectCSet();
-    void RevertCSet();
-    void ReclaimCSet();
-    bool IsCSetEmpty() const
-    {
-        return isCSetEmpty_;
-    }
-    unsigned long GetSelectedRegionNumber() const
-    {
-        return std::max(committedSize_ / PARTIAL_GC_MAX_COLLECT_REGION_RATE, PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE);
-    }
-private:
-    static constexpr unsigned long PARTIAL_GC_MAX_COLLECT_REGION_RATE =  1024 * 1024 * 2;
-    static constexpr unsigned long PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE = 16;
-    static constexpr size_t PARTIAL_GC_MIN_COLLECT_REGION_SIZE = 5;
-    CVector<Region *> collectRegionSet_;
-    bool isCSetEmpty_ {true};
-};
-
-class NonMovableSpace : public Space {
-public:
-    explicit NonMovableSpace(Heap *heap, size_t initialCapacity = DEFAULT_NON_MOVABLE_SPACE_SIZE,
-                             size_t maximumCapacity = MAX_NON_MOVABLE_SPACE_SIZE);
-    ~NonMovableSpace() override = default;
-    NO_COPY_SEMANTIC(NonMovableSpace);
-    NO_MOVE_SEMANTIC(NonMovableSpace);
-    bool Expand();
-    bool ContainObject(TaggedObject *object) const;
-    bool IsLive(TaggedObject *object) const;
-    void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
-    size_t GetHeapObjectSize() const;
-};
-
-class SnapShotSpace : public Space {
-public:
-    explicit SnapShotSpace(Heap *heap, size_t initialCapacity = DEFAULT_SNAPSHOT_SPACE_SIZE,
-                           size_t maximumCapacity = MAX_SNAPSHOT_SPACE_SIZE);
-    ~SnapShotSpace() override = default;
-    NO_COPY_SEMANTIC(SnapShotSpace);
-    NO_MOVE_SEMANTIC(SnapShotSpace);
-    bool Expand(uintptr_t top);
+    size_t objectSize_ {0};
 };
 
 class HugeObjectSpace : public Space {
 public:
-    explicit HugeObjectSpace(Heap *heap, size_t initialCapacity = DEFAULT_OLD_SPACE_SIZE,
+    explicit HugeObjectSpace(Heap *heap, size_t initialCapacity = MAX_HUGE_OBJECT_SPACE_SIZE,
                              size_t maximumCapacity = MAX_HUGE_OBJECT_SPACE_SIZE);
     ~HugeObjectSpace() override = default;
     NO_COPY_SEMANTIC(HugeObjectSpace);
     NO_MOVE_SEMANTIC(HugeObjectSpace);
     uintptr_t Allocate(size_t objectSize);
-    void Free(Region *region);
+    void Sweeping();
     size_t GetHeapObjectSize() const;
-    bool ContainObject(TaggedObject *object) const;
-    bool IsLive(TaggedObject *object) const;
     void IterateOverObjects(const std::function<void(TaggedObject *object)> &objectVisitor) const;
 };
-
-class MachineCodeSpace : public Space {
-public:
-    explicit MachineCodeSpace(Heap *heap, size_t initialCapacity = DEFAULT_MACHINE_CODE_SPACE_SIZE,
-                              size_t maximumCapacity = MAX_MACHINE_CODE_SPACE_SIZE);
-    ~MachineCodeSpace() override = default;
-    NO_COPY_SEMANTIC(MachineCodeSpace);
-    NO_MOVE_SEMANTIC(MachineCodeSpace);  // Note: Expand(), ContainObject(), IsLive() left for define
-    bool Expand();
-    size_t GetHeapObjectSize() const;
-};
 }  // namespace panda::ecmascript
-
 #endif  // ECMASCRIPT_MEM_SPACE_H

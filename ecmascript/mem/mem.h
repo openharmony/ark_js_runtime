@@ -32,32 +32,16 @@ enum class MemAlignment : uint8_t {
     MEM_ALIGN_REGION = 16,
 };
 
-static constexpr size_t DEFAULT_SEMI_SPACE_SIZE = 1024 * 1024;
-static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 2 * 1024 * 1024;
-
-static constexpr size_t SEMI_SPACE_CAPACITY = 2 * 1024 * 1024;
-static constexpr size_t MAX_SEMI_SPACE_CAPACITY = 16 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
 
+static constexpr size_t MIN_OLD_SPACE_LIMIT = 2 * 1024 * 1024;
 static constexpr size_t OLD_SPACE_LIMIT_BEGIN = 256 * 1024 * 1024;
 static constexpr size_t GLOBAL_SPACE_LIMIT_BEGIN = 512 * 1024 * 1024;
 static constexpr size_t MIN_GROWING_STEP = 16 * 1024 * 1024;
-
-static constexpr size_t DEFAULT_OLD_SPACE_SIZE = 2 * 1024 * 1024;
-static constexpr size_t MAX_OLD_SPACE_SIZE = 512 * 1024 * 1024;
-
-static constexpr size_t DEFAULT_NON_MOVABLE_SPACE_SIZE = 2 * 1024 * 1024;
-static constexpr size_t MAX_NON_MOVABLE_SPACE_SIZE = 256 * 1024 * 1024;
-static constexpr size_t DEFAULT_NON_MOVABLE_SPACE_LIMIT = 4 * 1024 * 1024;
+static constexpr size_t MIN_AllOC_LIMIT_GROWING_STEP = 2 * 1024 * 1024;
 
 static constexpr size_t REGION_SIZE_LOG2 = 18U;
-static constexpr size_t DEFAULT_SNAPSHOT_SPACE_SIZE = 1U << REGION_SIZE_LOG2;
-static constexpr size_t MAX_SNAPSHOT_SPACE_SIZE = 8 * 1024 * 1024;
-
-static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_SIZE = 256 * 1024;
-static constexpr size_t DEFAULT_MACHINE_CODE_SPACE_LIMIT = 1024 * 1024;
-static constexpr size_t MAX_MACHINE_CODE_SPACE_SIZE = 8 * 1024 * 1024;
 
 static constexpr size_t MAX_HEAP_SIZE = 512 * 1024 * 1024;
 static constexpr size_t HALF_MAX_HEAP_SIZE = MAX_HEAP_SIZE / 2;

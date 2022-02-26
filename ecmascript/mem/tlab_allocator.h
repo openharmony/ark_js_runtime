@@ -25,7 +25,10 @@ class TlabAllocator {
 public:
     TlabAllocator() = delete;
     inline explicit TlabAllocator(Heap *heap);
-    ~TlabAllocator() = default;
+    ~TlabAllocator()
+    {
+        delete localSpace_;
+    }
 
     NO_COPY_SEMANTIC(TlabAllocator);
     NO_MOVE_SEMANTIC(TlabAllocator);
@@ -40,17 +43,14 @@ private:
     inline uintptr_t TlabAllocatorCompressSpace(size_t size);
 
     inline bool ExpandYoung();
-    inline bool ExpandCompress();
     inline bool ExpandCompressFromOld(size_t size);
 
     Heap *heap_;
-    MemManager *memManager_;
 
     bool enableExpandYoung_;
     BumpPointerAllocator youngerAllocator_;
 
-    OldSpace localSpace_;
-    FreeListAllocator localAllocator_;
+    LocalSpace *localSpace_;
 };
 }  // namespace panda::ecmascript
 

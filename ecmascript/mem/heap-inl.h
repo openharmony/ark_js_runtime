@@ -21,10 +21,12 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/hprof/heap_tracker.h"
 #include "ecmascript/mem/allocator-inl.h"
+#include "ecmascript/mem/concurrent_sweeper.h"
+#include "ecmascript/mem/linear_space.h"
 #include "ecmascript/mem/mem_controller.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/remembered_set.h"
-#include "ecmascript/mem/space-inl.h"
+#include "ecmascript/mem/sparse_space.h"
+#include "ecmascript/mem/tagged_object.h"
 
 namespace panda::ecmascript {
 template<class Callback>
@@ -43,15 +45,10 @@ void Heap::EnumerateSnapShotSpaceRegions(const Callback &cb) const
 }
 
 template<class Callback>
-void Heap::EnumerateNewSpaceRegions(const Callback &cb) const
-{
-    toSpace_->EnumerateRegions(cb);
-}
-
-template<class Callback>
 void Heap::EnumerateNonNewSpaceRegions(const Callback &cb) const
 {
     oldSpace_->EnumerateRegions(cb);
+    oldSpace_->EnumerateCollectRegionSet(cb);
     snapshotSpace_->EnumerateRegions(cb);
     nonMovableSpace_->EnumerateRegions(cb);
     hugeObjectSpace_->EnumerateRegions(cb);
@@ -72,6 +69,7 @@ void Heap::EnumerateRegions(const Callback &cb) const
 {
     toSpace_->EnumerateRegions(cb);
     oldSpace_->EnumerateRegions(cb);
+    oldSpace_->EnumerateCollectRegionSet(cb);
     snapshotSpace_->EnumerateRegions(cb);
     nonMovableSpace_->EnumerateRegions(cb);
     hugeObjectSpace_->EnumerateRegions(cb);
@@ -87,80 +85,159 @@ void Heap::IteratorOverObjects(const Callback &cb) const
     hugeObjectSpace_->IterateOverObjects(cb);
 }
 
-bool Heap::FillNewSpaceAndTryGC(BumpPointerAllocator *spaceAllocator, bool allowGc)
+TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass)
 {
-    if (toSpace_->Expand(spaceAllocator->GetTop(), allowGc)) {
-        spaceAllocator->Reset(toSpace_);
-        if (allowGc) {
-            TryTriggerConcurrentMarking();
+    size_t size = hclass->GetObjectSize();
+    return AllocateYoungOrHugeObject(hclass, size);
+}
+
+TaggedObject *Heap::AllocateYoungOrHugeObject(JSHClass *hclass, size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
+        return AllocateHugeObject(hclass, size);
+    }
+
+    auto object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+    if (object == nullptr) {
+        CollectGarbage(SelectGCType());
+        object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+        if (object == nullptr) {
+            CollectGarbage(SelectGCType());
+            object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+            if  (UNLIKELY(object == nullptr)) {
+                ThrowOutOfMemoryError(size, "AllocateYoungObject");
+                UNREACHABLE();
+            }
         }
-        return true;
-    } else if (GetEcmaVM()->GetAssociatedJSThread()->IsMarking()) {
-        // Temporary adjust semi space capacity
-        toSpace_->SetOverShootSize(SEMI_SPACE_OVERSHOOT_SIZE);
-        if (toSpace_->Expand(spaceAllocator->GetTop(), allowGc)) {
-            spaceAllocator->Reset(toSpace_);
-            return true;
-        }
     }
-    if (allowGc) {
-        CollectGarbage(TriggerGCType::SEMI_GC);
-        return true;
-    }
-    return false;
+
+    object->SetClass(hclass);
+    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
 }
 
-bool Heap::FillOldSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
+uintptr_t Heap::AllocateYoungSync(size_t size)
 {
-    if (oldSpace_->Expand()) {
-        spaceAllocator->AddFree(oldSpace_->GetCurrentRegion());
-        return true;
-    }
-    if (allowGc) {
-        CollectGarbage(TriggerGCType::OLD_GC);
-        return true;
-    }
-    return false;
+    return toSpace_->AllocateSync(size);
 }
 
-bool Heap::FillNonMovableSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
-{
-    if (nonMovableSpace_->Expand()) {
-        spaceAllocator->AddFree(nonMovableSpace_->GetCurrentRegion());
-        return true;
-    }
-    if (allowGc) {
-        CollectGarbage(TriggerGCType::NON_MOVE_GC);
-        return true;
-    }
-    return false;
-}
-
-bool Heap::FillSnapShotSpace(BumpPointerAllocator *spaceAllocator)
-{
-    bool result = snapshotSpace_->Expand(spaceAllocator->GetTop());
-    if (result) {
-        spaceAllocator->Reset(snapshotSpace_);
-    }
-    return result;
-}
-
-bool Heap::FillMachineCodeSpaceAndTryGC(FreeListAllocator *spaceAllocator, bool allowGc)
-{
-    if (machineCodeSpace_->Expand()) {
-        spaceAllocator->AddFree(machineCodeSpace_->GetCurrentRegion());
-        return true;
-    }
-    if (allowGc) {
-        CollectGarbage(TriggerGCType::MACHINE_CODE_GC);
-        return true;
-    }
-    return false;
-}
-
-bool Heap::FillNewSpaceWithRegion(Region *region)
+bool Heap::MoveYoungRegionSync(Region *region)
 {
     return toSpace_->SwapRegion(region, fromSpace_);
+}
+
+void Heap::MergeToOldSpaceSync(LocalSpace *localSpace)
+{
+    oldSpace_->Merge(localSpace);
+}
+
+TaggedObject *Heap::TryAllocateYoungGeneration(JSHClass *hclass, size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
+        return nullptr;
+    }
+    auto object = reinterpret_cast<TaggedObject *>(toSpace_->Allocate(size));
+    if (object != nullptr) {
+        object->SetClass(hclass);
+    }
+    return object;
+}
+
+TaggedObject *Heap::AllocateOldOrHugeObject(JSHClass *hclass)
+{
+    size_t size = hclass->GetObjectSize();
+    return AllocateOldOrHugeObject(hclass, size);
+}
+
+TaggedObject *Heap::AllocateOldOrHugeObject(JSHClass *hclass, size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
+        return AllocateHugeObject(hclass, size);
+    }
+    auto object = reinterpret_cast<TaggedObject *>(oldSpace_->Allocate(size));
+    if (UNLIKELY(object == 0)) {
+        ThrowOutOfMemoryError(size, "AllocateOldGenerationOrHugeObject");
+        UNREACHABLE();
+    }
+    object->SetClass(hclass);
+    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
+}
+
+TaggedObject *Heap::AllocateNonMovableOrHugeObject(JSHClass *hclass)
+{
+    size_t size = hclass->GetObjectSize();
+    return AllocateNonMovableOrHugeObject(hclass, size);
+}
+
+TaggedObject *Heap::AllocateNonMovableOrHugeObject(JSHClass *hclass, size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    if (size > MAX_REGULAR_HEAP_OBJECT_SIZE) {
+        return AllocateHugeObject(hclass, size);
+    }
+    auto object = reinterpret_cast<TaggedObject *>(nonMovableSpace_->Allocate(size));
+    if (UNLIKELY(object == nullptr)) {
+        ThrowOutOfMemoryError(size, "AllocateNonMovableOrHugeObject");
+        UNREACHABLE();
+    }
+    object->SetClass(hclass);
+    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
+}
+
+TaggedObject *Heap::AllocateDynClassClass(JSHClass *hclass, size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    auto object = reinterpret_cast<TaggedObject *>(nonMovableSpace_->Allocate(size));
+    if (UNLIKELY(object == nullptr)) {
+        LOG_ECMA_MEM(FATAL) << "Heap::AllocateDynClassClass can not allocate any space";
+    }
+    *reinterpret_cast<MarkWordType *>(ToUintPtr(object)) = reinterpret_cast<MarkWordType>(hclass);
+    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
+}
+
+TaggedObject *Heap::AllocateHugeObject(JSHClass *hclass, size_t size)
+{
+    auto *object = reinterpret_cast<TaggedObject *>(hugeObjectSpace_->Allocate(size));
+    if (UNLIKELY(object == nullptr)) {
+        CollectGarbage(TriggerGCType::OLD_GC);
+        object = reinterpret_cast<TaggedObject *>(hugeObjectSpace_->Allocate(size));
+        if (UNLIKELY(object == nullptr)) {
+            ThrowOutOfMemoryError(size, "Heap::AllocateHugeObject");
+        }
+    }
+    object->SetClass(hclass);
+    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
+}
+
+TaggedObject *Heap::AllocateMachineCodeObject(JSHClass *hclass, size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    auto object = reinterpret_cast<TaggedObject *>(machineCodeSpace_->Allocate(size));
+    if (UNLIKELY(object == nullptr)) {
+        ThrowOutOfMemoryError(size, "Heap::AllocateMachineCodeObject");
+        return nullptr;
+    }
+    object->SetClass(hclass);
+    OnAllocateEvent(reinterpret_cast<uintptr_t>(object));
+    return object;
+}
+
+uintptr_t Heap::AllocateSnapShotSpace(size_t size)
+{
+    size = AlignUp(size, static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT));
+    uintptr_t object = snapshotSpace_->Allocate(size);
+    if (UNLIKELY(object == 0)) {
+        LOG_ECMA_MEM(FATAL) << "alloc failed";
+        UNREACHABLE();
+    }
+    return object;
 }
 
 void Heap::OnAllocateEvent(uintptr_t address)
@@ -177,32 +254,30 @@ void Heap::OnMoveEvent(uintptr_t address, uintptr_t forwardAddress)
     }
 }
 
-void Heap::ResetNewSpace()
+void Heap::SwapNewSpace()
 {
-    toSpace_->GetCurrentRegion()->SetHighWaterMark(heapManager_->GetNewSpaceAllocator().GetTop());
-    FlipNewSpace();
+    toSpace_->Stop();
+    fromSpace_->Restart();
 
-    ASSERT(toSpace_->GetCommittedSize() == 0);
-    toSpace_->Reset();
-    toSpace_->Initialize();
-    heapManager_->GetNewSpaceAllocator().Reset(toSpace_);
+    SemiSpace *newSpace = fromSpace_;
+    fromSpace_ = toSpace_;
+    toSpace_ = newSpace;
 }
 
 void Heap::ReclaimRegions(TriggerGCType gcType)
 {
-    EnumerateNewSpaceRegions([] (Region *region) {
+    toSpace_->EnumerateRegions([] (Region *region) {
         region->ClearMarkBitmap();
         region->ClearCrossRegionRememberedSet();
         region->ResetAliveObject();
         region->ClearFlag(RegionFlags::IS_IN_NEW_TO_NEW_SET);
     });
     if (gcType == TriggerGCType::FULL_GC) {
-        compressSpace_->ReclaimRegions();
+        compressSpace_->Reset();
     } else if (gcType == TriggerGCType::OLD_GC) {
         oldSpace_->ReclaimCSet();
     }
     fromSpace_->ReclaimRegions();
-    fromSpace_->Reset();
 
     sweeper_->WaitAllTaskFinished();
     EnumerateNonNewSpaceRegions([] (Region *region) {

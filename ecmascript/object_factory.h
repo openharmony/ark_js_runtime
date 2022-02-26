@@ -25,7 +25,6 @@
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/machine_code.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/native_area_allocator.h"
 #include "ecmascript/tagged_array.h"
 
@@ -330,11 +329,6 @@ public:
                                                  FunctionKind kind = FunctionKind::NORMAL_FUNCTION);
     EcmaString *ResolveString(uint32_t stringId);
 
-    const MemManager &GetHeapManager() const
-    {
-        return heapHelper_;
-    }
-
     // used for creating jsobject by constructor
     JSHandle<JSObject> NewJSObjectByConstructor(const JSHandle<JSFunction> &constructor,
                                                 const JSHandle<JSTaggedValue> &newTarget);
@@ -402,7 +396,6 @@ private:
     JSThread *thread_ {nullptr};
     bool isTriggerGc_ {false};
     bool triggerSemiGC_ {false};
-    MemManager heapHelper_;
 
     EcmaVM *vm_ {nullptr};
     Heap *heap_ {nullptr};

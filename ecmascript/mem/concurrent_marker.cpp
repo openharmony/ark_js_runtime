@@ -98,7 +98,7 @@ void ConcurrentMarker::Reset(bool isRevertCSet)
     notifyMarkingFinished_ = false;
     if (isRevertCSet) {
         // Mix space gc clear cset when evacuation allocator finalize
-        const_cast<OldSpace *>(heap_->GetOldSpace())->RevertCSet();
+        heap_->GetOldSpace()->RevertCSet();
     }
 }
 
@@ -111,11 +111,8 @@ void ConcurrentMarker::InitializeMarking()
 
     if (heap_->IsFullMark()) {
         heapObjectSize_ = heap_->GetHeapObjectSize();
-        if (heap_->GetSweeper()->IsOldSpaceSweeped()) {
-            const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
-        }
+        heap_->GetOldSpace()->SelectCSet();
         // The alive object size of Region in OldSpace will be recompute
-        heap_->GetSweeper()->SetOldSpaceSweeped(false);
         heap_->EnumerateNonNewSpaceRegions([this](Region *current) {
             current->ResetAliveObject();
         });
