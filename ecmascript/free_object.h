@@ -47,7 +47,7 @@ public:
     inline void SetAvailable(uint32_t size)
     {
         if (size >= SIZE) {
-            SetSize(size);
+            SetSize(JSTaggedValue(size));
         }
     }
 
@@ -57,7 +57,8 @@ public:
         if (hclass->IsFreeObjectWithShortField()) {
             return hclass->GetObjectSize();
         }
-        return GetSize();
+        ASSERT(GetSize().IsInt());
+        return GetSize().GetInt();
     }
 
     inline bool IsFreeObject() const
@@ -67,7 +68,8 @@ public:
 
     static constexpr size_t NEXT_OFFSET = TaggedObjectSize();
     ACCESSORS_FIXED_SIZE_FIELD(Next, FreeObject *, JSTaggedType, NEXT_OFFSET, SIZE_OFFSET)
-    ACCESSORS_FIXED_SIZE_FIELD(Size, uint32_t, JSTaggedType, SIZE_OFFSET, SIZE)
+    // TaggedArray visitor may be error while concurrent marking
+    ACCESSORS(Size, SIZE_OFFSET, SIZE)
 };
 
 static_assert((FreeObject::SIZE % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT)) == 0);

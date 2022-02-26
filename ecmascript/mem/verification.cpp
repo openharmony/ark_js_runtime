@@ -30,14 +30,14 @@ void VerifyObjectVisitor::VisitAllObjects(TaggedObject *obj)
                 JSTaggedValue value(slot.GetTaggedType());
                 if (value.IsWeak()) {
                     if (!heap_->IsLive(value.GetTaggedWeakRef())) {
-                        LOG(ERROR, RUNTIME) << "Heap verify detected a dead object at " << value.GetTaggedObject()
-                                            << "at object:" << slot.SlotAddress();
+                        LOG(ERROR, RUNTIME) << "Heap verify detected a dead weak object " << value.GetTaggedObject()
+                                            << " at object:" << slot.SlotAddress();
                         ++(*failCount_);
                     }
                 } else if (value.IsHeapObject()) {
                     if (!heap_->IsLive(value.GetTaggedObject())) {
                         LOG(ERROR, RUNTIME) << "Heap verify detected a dead object at " << value.GetTaggedObject()
-                                            << "at object:" << slot.SlotAddress();
+                                            << " at object:" << slot.SlotAddress();
                         ++(*failCount_);
                     }
                 }
