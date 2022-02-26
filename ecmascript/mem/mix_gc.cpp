@@ -19,7 +19,6 @@
 #include "ecmascript/mem/barriers-inl.h"
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/mark_stack.h"
@@ -57,10 +56,7 @@ void MixGC::InitializePhase()
         LOG(INFO, RUNTIME) << "Concurrent mark failure";
         heap_->Prepare();
         if (heap_->IsFullMark()) {
-            if (heap_->GetSweeper()->IsOldSpaceSweeped()) {
-                const_cast<OldSpace *>(heap_->GetOldSpace())->SelectCSet();
-            }
-            heap_->GetSweeper()->SetOldSpaceSweeped(false);
+            heap_->GetOldSpace()->SelectCSet();
             heap_->EnumerateNonNewSpaceRegions([this](Region *current) {
                 current->ResetAliveObject();
             });

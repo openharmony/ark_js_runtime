@@ -27,7 +27,6 @@
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
@@ -95,18 +94,18 @@ void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::Fil
 
     serialize.SerializePandaFileMethod();
 
-    auto region = vm_->GetHeap()->GetSnapShotSpace()->GetCurrentRegion();
-    region->SetHighWaterMark(vm_->GetFactory()->GetHeapManager().GetSnapShotSpaceAllocator().GetTop());
+    vm_->GetHeap()->GetSnapShotSpace()->Stop();
 
     // write to file
     SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
-    uint32_t snapshot_size = space->GetRegionCount() * DEFAULT_SNAPSHOT_SPACE_SIZE;
+    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
+    uint32_t snapshot_size = space->GetRegionCount() * defaultSnapshotSpaceCapacity;
     uint32_t panda_file_begin = RoundUp(snapshot_size + sizeof(Header), PANDA_FILE_ALIGNMENT);
     Header hdr {snapshot_size, panda_file_begin};
     write.write(reinterpret_cast<char *>(&hdr), sizeof(hdr));
 
-    space->EnumerateRegions([&write](Region *current) {
-        write.write(reinterpret_cast<char *>(current), DEFAULT_SNAPSHOT_SPACE_SIZE);
+    space->EnumerateRegions([&write, &defaultSnapshotSpaceCapacity](Region *current) {
+        write.write(reinterpret_cast<char *>(current), defaultSnapshotSpaceCapacity);
         write.flush();
     });
     space->ReclaimRegions();
@@ -137,23 +136,24 @@ std::unique_ptr<const panda_file::File> SnapShot::DeserializeGlobalEnvAndProgram
     size_t file_size = lseek(fd, 0, SEEK_END);
     auto readFile = ToUintPtr(mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0));
     auto hdr = *ToNativePtr<const Header>(readFile);
-    if (hdr.snapshot_size % DEFAULT_SNAPSHOT_SPACE_SIZE != 0) {
+    size_t defaultSnapshotSpaceCapacity = vm_->GetJSOptions().DefaultSnapshotSpaceCapacity();
+    if (hdr.snapshot_size % defaultSnapshotSpaceCapacity != 0) {
         LOG_ECMA(FATAL) << "Invalid snapshot file";
         UNREACHABLE();
     }
     SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
 
     uintptr_t snapshot_begin = readFile + sizeof(Header);
-    for (size_t i = 0; i < hdr.snapshot_size / DEFAULT_SNAPSHOT_SPACE_SIZE; i++) {
+    for (size_t i = 0; i < hdr.snapshot_size / defaultSnapshotSpaceCapacity; i++) {
         Region *region = const_cast<HeapRegionAllocator *>(vm_->GetHeap()->GetHeapRegionAllocator())
-                            ->AllocateAlignedRegion(space, DEFAULT_SNAPSHOT_SPACE_SIZE);
-        auto fileRegion = ToNativePtr<Region>(snapshot_begin + i * DEFAULT_SNAPSHOT_SPACE_SIZE);
+                            ->AllocateAlignedRegion(space, defaultSnapshotSpaceCapacity);
+        auto fileRegion = ToNativePtr<Region>(snapshot_begin + i * defaultSnapshotSpaceCapacity);
 
         uint64_t base = region->allocateBase_;
-        uint64_t begin = (fileRegion->begin_) % DEFAULT_SNAPSHOT_SPACE_SIZE;
-        uint64_t waterMark = (fileRegion->highWaterMark_) % DEFAULT_SNAPSHOT_SPACE_SIZE;
+        uint64_t begin = (fileRegion->begin_) % defaultSnapshotSpaceCapacity;
+        uint64_t waterMark = (fileRegion->highWaterMark_) % defaultSnapshotSpaceCapacity;
 
-        if (memcpy_s(region, DEFAULT_SNAPSHOT_SPACE_SIZE, fileRegion, DEFAULT_SNAPSHOT_SPACE_SIZE) != EOK) {
+        if (memcpy_s(region, defaultSnapshotSpaceCapacity, fileRegion, defaultSnapshotSpaceCapacity) != EOK) {
             LOG_ECMA(FATAL) << "memcpy_s failed";
             UNREACHABLE();
         }
@@ -163,7 +163,7 @@ std::unique_ptr<const panda_file::File> SnapShot::DeserializeGlobalEnvAndProgram
         // begin_
         region->begin_ = ToUintPtr(region) + begin;
         // end_
-        region->end_ = ToUintPtr(region) + DEFAULT_SNAPSHOT_SPACE_SIZE;
+        region->end_ = ToUintPtr(region) + defaultSnapshotSpaceCapacity;
         // high_water_mark_
         region->highWaterMark_ = ToUintPtr(region) + waterMark;
         // prev_

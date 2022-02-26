@@ -19,11 +19,9 @@
 #include <memory>
 
 #include "ecmascript/mem/free_object_list.h"
-#include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/mem.h"
 
 namespace panda::ecmascript {
-class Space;
 class Region;
 class Heap;
 
@@ -42,11 +40,9 @@ public:
     NO_COPY_SEMANTIC(BumpPointerAllocator);
     NO_MOVE_SEMANTIC(BumpPointerAllocator);
 
-    inline explicit BumpPointerAllocator(const Space *space);
     inline BumpPointerAllocator(uintptr_t begin, uintptr_t end);
 
     inline void Reset();
-    inline void Reset(const Space *space);
     inline void Reset(uintptr_t begin, uintptr_t end);
     inline uintptr_t Allocate(size_t size);
 
@@ -58,13 +54,6 @@ public:
     uintptr_t GetEnd() const
     {
         return end_;
-    }
-
-    void Swap(const BumpPointerAllocator &other)
-    {
-        begin_ = other.begin_;
-        top_ = other.top_;
-        end_ = other.end_;
     }
 
     size_t Available() const
@@ -80,17 +69,17 @@ private:
 
 class FreeListAllocator : public Allocator {
 public:
-    FreeListAllocator() = default;
+    FreeListAllocator() = delete;
     ~FreeListAllocator() override = default;
 
     NO_COPY_SEMANTIC(FreeListAllocator);
     NO_MOVE_SEMANTIC(FreeListAllocator);
 
-    inline explicit FreeListAllocator(const Space *space);
+    inline explicit FreeListAllocator(Heap *heap);
+    inline void Initialize(Region *region);
 
     inline void Reset(Heap *heap);
 
-    template<bool isLocal = false>
     inline uintptr_t Allocate(size_t size);
     inline void AddFree(Region *region);
     inline uintptr_t LookupSuitableFreeObject(size_t size);
@@ -100,28 +89,14 @@ public:
     inline void CollectFreeObjectSet(Region *region);
     inline void DetachFreeObjectSet(Region *region);
 
-    inline void Swap(FreeListAllocator &other)
-    {
-        heap_ = other.heap_;
-        bpAllocator_.Swap(other.bpAllocator_);
-        freeList_.swap(other.freeList_);
-        type_ = other.type_;
-        sweeping_ = other.sweeping_;
-    }
-
     inline void FreeBumpPoint();
+    // Only fill free object
+    inline void FillBumpPoint();
 
-    inline void Free(uintptr_t begin, uintptr_t end, bool isAdd = true);
+    inline void Free(uintptr_t begin, size_t size, bool isAdd = true);
 
-#ifndef NDEBUG
     inline size_t GetAvailableSize() const;
     inline size_t GetWastedSize() const;
-#endif
-
-    void SetSweeping(bool sweeping)
-    {
-        sweeping_ = sweeping;
-    }
 
     size_t GetAllocatedSize() const
     {
@@ -139,8 +114,6 @@ private:
     BumpPointerAllocator bpAllocator_;
     std::unique_ptr<FreeObjectList> freeList_;
     Heap *heap_{nullptr};
-    MemSpaceType type_ = OLD_SPACE;
-    bool sweeping_ = false;
     size_t allocationSizeAccumulator_ {0};
 };
 }  // namespace panda::ecmascript

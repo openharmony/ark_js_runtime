@@ -24,8 +24,6 @@
 #include "os/mutex.h"
 
 namespace panda::ecmascript {
-class FreeListAllocator;
-
 class ConcurrentSweeper {
 public:
     ConcurrentSweeper(Heap *heap, bool concurrentSweep);
@@ -42,23 +40,6 @@ public:
     // Ensure task finish
     void EnsureTaskFinished(MemSpaceType type);
 
-    bool FillSweptRegion(MemSpaceType type, FreeListAllocator *allocator);
-
-    bool IsSweeping()
-    {
-        return isSweeping_;
-    }
-
-    bool IsOldSpaceSweeped() const
-    {
-        return isOldSpaceSweeped_;
-    }
-
-    void SetOldSpaceSweeped(bool isSweeped)
-    {
-        isOldSpaceSweeped_ = isSweeped;
-    }
-
 private:
     class SweeperTask : public Task {
     public:
@@ -74,23 +55,8 @@ private:
         MemSpaceType type_;
     };
 
-    void PrepareSpace(bool fullGC);
-
-    void SweepSpace(MemSpaceType type, FreeListAllocator *allocator = nullptr, bool isMain = true);
-    void SweepSpace(MemSpaceType type, Space *space, FreeListAllocator &allocator);
-    void SweepHugeSpace();
+    void AsyncSweepSpace(MemSpaceType type, bool isMain);
     void FinishSweeping(MemSpaceType type);
-
-    void FreeRegion(Region *current, FreeListAllocator &allocator, bool isMain = true);
-    void FreeLiveRange(FreeListAllocator &allocator, Region *current, uintptr_t freeStart, uintptr_t freeEnd,
-        bool isMain);
-
-    void AddRegion(MemSpaceType type, Space *space, Region *region);
-    void SortRegion(MemSpaceType type);
-    Region *GetRegionSafe(MemSpaceType type);
-
-    void AddSweptRegionSafe(MemSpaceType type, Region *region);
-    Region *GetSweptRegionSafe(MemSpaceType type);
 
     void WaitingTaskFinish(MemSpaceType type);
 
@@ -98,13 +64,9 @@ private:
     std::array<os::memory::ConditionVariable, FREE_LIST_NUM> cvs_;
     std::array<std::atomic_int, FREE_LIST_NUM> remainderTaskNum_ = {0, 0, 0};
 
-    std::array<std::vector<Region *>, FREE_LIST_NUM> sweepingList_;
-    std::array<std::vector<Region *>, FREE_LIST_NUM> sweptList_;
-
     Heap *heap_;
     bool concurrentSweep_ {false};
     bool isSweeping_ {false};
-    bool isOldSpaceSweeped_ {false};
     MemSpaceType startSpaceType_ = MemSpaceType::OLD_SPACE;
 };
 }  // namespace panda::ecmascript

@@ -29,9 +29,9 @@ namespace panda::ecmascript {
 void ParallelEvacuation::Initialize()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ParallelEvacuationInitialize);
-    heap_->ResetNewSpace();
+    heap_->SwapNewSpace();
     allocator_ = new TlabAllocator(heap_);
-    ageMark_ = heap_->GetFromSpace()->GetAgeMark();
+    waterLine_ = heap_->GetFromSpace()->GetWaterLine();
     promotedSize_ = 0;
 }
 
@@ -98,7 +98,7 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
     bool isBelowAgeMark = region->BelowAgeMark();
     size_t promotedSize = 0;
     if (!isBelowAgeMark && !isInOldGen && IsWholeRegionEvacuate(region)) {
-        if (heap_->GetHeapManager()->MoveYoungRegionSync(region)) {
+        if (heap_->MoveYoungRegionSync(region)) {
             return;
         }
     }
@@ -113,7 +113,7 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
 
         uintptr_t address = 0;
         bool actualPromoted = false;
-        bool hasAgeMark = isBelowAgeMark || (region->HasAgeMark() && ToUintPtr(mem) < ageMark_);
+        bool hasAgeMark = isBelowAgeMark || (region->HasAgeMark() && ToUintPtr(mem) < waterLine_);
         if (hasAgeMark) {
             address = allocator->Allocate(size, OLD_SPACE);
             actualPromoted = true;
@@ -298,7 +298,7 @@ void ParallelEvacuation::UpdateNewRegionReference(Region *region)
     auto curPtr = region->GetBegin();
     uintptr_t endPtr;
     if (region == current) {
-        auto top = heap_->GetHeapManager()->GetNewSpaceAllocator().GetTop();
+        auto top = heap_->GetNewSpace()->GetTop();
         endPtr = curPtr + region->GetAllocatedBytes(top);
     } else {
         endPtr = curPtr + region->GetAllocatedBytes();
@@ -341,8 +341,6 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
             if (freeStart != freeEnd) {
                 size_t freeSize = freeEnd - freeStart;
                 FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeSize);
-                SemiSpace *toSpace = const_cast<SemiSpace *>(heap_->GetNewSpace());
-                toSpace->DecrementLiveObjectSize(freeSize);
             }
 
             freeStart = freeEnd + klass->SizeFromJSHClass(header);

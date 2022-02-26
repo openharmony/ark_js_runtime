@@ -18,7 +18,6 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/mark_stack.h"
 #include "ecmascript/mem/mem.h"
@@ -64,14 +63,14 @@ void FullGC::InitializePhase()
         current->ClearCrossRegionRememberedSet();
     };
     heap_->EnumerateNonMovableRegions(callback);
-    heap_->ResetNewSpace();
+    heap_->SwapNewSpace();
     workList_->Initialize(TriggerGCType::FULL_GC, ParallelGCTaskPhase::COMPRESS_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetCompressGcMarker()->Initialized();
 
     youngAndOldAliveSize_ = 0;
     nonMoveSpaceFreeSize_ = 0;
+    oldSpaceCommitSize_ = heap_->GetOldSpace()->GetCommittedSize();
     youngSpaceCommitSize_ = heap_->GetFromSpace()->GetCommittedSize();
-    oldSpaceCommitSize_ = heap_->GetCompressSpace()->GetCommittedSize();
     nonMoveSpaceCommitSize_ = heap_->GetNonMovableSpace()->GetCommittedSize();
 }
 

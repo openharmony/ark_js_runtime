@@ -149,7 +149,7 @@ private:
     TlabAllocator *allocator_;
     ObjectXRay objXRay_;
 
-    uintptr_t ageMark_;
+    uintptr_t waterLine_;
     std::vector<std::unique_ptr<Fragment>> fragments_;
     std::atomic_int parallel_ = 0;
     os::memory::Mutex mutex_;

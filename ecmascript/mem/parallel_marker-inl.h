@@ -214,7 +214,7 @@ inline SlotStatus SemiGcMarker::EvacuateObject(uint32_t threadId, TaggedObject *
 inline bool SemiGcMarker::ShouldBePromoted(TaggedObject *object)
 {
     Region *region = Region::ObjectAddressToRange(object);
-    return (region->BelowAgeMark() || (region->HasAgeMark() && ToUintPtr(object) < ageMark_));
+    return (region->BelowAgeMark() || (region->HasAgeMark() && ToUintPtr(object) < waterLine_));
 }
 
 inline void SemiGcMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)

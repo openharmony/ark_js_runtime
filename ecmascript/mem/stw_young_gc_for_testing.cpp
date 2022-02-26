@@ -18,7 +18,6 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/clock_scope.h"
 #include "ecmascript/mem/concurrent_marker.h"
-#include "ecmascript/mem/mem_manager.h"
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/object_xray-inl.h"
 #include "ecmascript/mem/mark_stack.h"
@@ -58,7 +57,7 @@ void STWYoungGC::InitializePhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "STWYoungGC::InitializePhase");
     heap_->Prepare();
-    heap_->ResetNewSpace();
+    heap_->SwapNewSpace();
     workList_->Initialize(TriggerGCType::SEMI_GC, ParallelGCTaskPhase::SEMI_HANDLE_GLOBAL_POOL_TASK);
     heap_->GetSemiGcMarker()->Initialized();
     promotedSize_ = 0;
