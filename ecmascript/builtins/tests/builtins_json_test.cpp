@@ -232,6 +232,43 @@ HWTEST_F_L0(BuiltinsJsonTest, Parse2)
     ASSERT_EQ(length, 2);
 }
 
+HWTEST_F_L0(BuiltinsJsonTest, Parse3)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<EcmaString> str = factory->NewFromStdString("\"\\u0000\"");
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, str.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsJson::Parse(ecmaRuntimeCallInfo.get());
+    uint32_t length = EcmaString::Cast(result.GetTaggedObject())->GetLength();
+    ASSERT_EQ(length, 1);
+}
+
+HWTEST_F_L0(BuiltinsJsonTest, Parse4)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<EcmaString> str = factory->NewFromStdString("{\n\t\"on\":\t0\n}");
+    JSHandle<EcmaString> key = factory->NewFromStdString("on");
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, str.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsJson::Parse(ecmaRuntimeCallInfo.get());
+    JSHandle<JSTaggedValue> value =
+        JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>(thread, result), JSHandle<JSTaggedValue>(key))
+            .GetValue();
+    int32_t number = JSTaggedValue::ToInt32(thread, value);
+    ASSERT_EQ(number, 0);
+}
+
+
 HWTEST_F_L0(BuiltinsJsonTest, Stringify11)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -404,5 +441,25 @@ HWTEST_F_L0(BuiltinsJsonTest, Stringify2)
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
     JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
     ASSERT_TRUE(result.IsString());
+}
+
+HWTEST_F_L0(BuiltinsJsonTest, Stringify3)
+{
+    auto ecmaVM = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVM->GetFactory();
+
+    uint16_t data[1];
+    data[0] = 0;
+    JSHandle<EcmaString> str = factory->NewFromUtf16(data, 1);
+    JSHandle<EcmaString> test = factory->NewFromStdString("\"\\u0000\"");
+
+    auto ecmaRuntimeCallInfo = TestHelper::CreateEcmaRuntimeCallInfo(thread, JSTaggedValue::Undefined(), 6);
+    ecmaRuntimeCallInfo->SetFunction(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetThis(JSTaggedValue::Undefined());
+    ecmaRuntimeCallInfo->SetCallArg(0, str.GetTaggedValue());
+
+    [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, ecmaRuntimeCallInfo.get());
+    JSTaggedValue result = BuiltinsJson::Stringify(ecmaRuntimeCallInfo.get());
+    ASSERT_TRUE(EcmaString::StringsAreEqual(*test, EcmaString::Cast(result.GetTaggedObject())));
 }
 }  // namespace panda::test
