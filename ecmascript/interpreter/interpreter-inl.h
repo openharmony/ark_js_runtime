@@ -498,7 +498,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
             *(--newSp) = reinterpret_cast<JSTaggedType>(params.callTarget);  // push func
         }
     }
-    uint32_t numVregs = JSMethod::NumVregsBits::Decode(callField);
+    int32_t numVregs = static_cast<int32_t>(JSMethod::NumVregsBits::Decode(callField));
     // push vregs
     CALL_PUSH_UNDEFINED(numVregs);
     if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {
@@ -924,7 +924,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             funcReg = READ_INST_8_3();
             LOG_INST() << "calli.rangedyn " << actualNumArgs << ", v" << funcReg;
             CALL_INITIALIZE();
-            callThis = true;
+            callThis = false;
             CALL_PUSH_ARGS(I);
         }
         setVregsAndFrameNative: {
@@ -983,7 +983,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                     *(--newSp) = static_cast<JSTaggedType>(ToUintPtr(funcObject));  // push func
                 }
             }
-            uint32_t numVregs = JSMethod::NumVregsBits::Decode(callField);
+            int32_t numVregs = static_cast<int32_t>(JSMethod::NumVregsBits::Decode(callField));
             // push vregs
             CALL_PUSH_UNDEFINED(numVregs);
             SAVE_PC();

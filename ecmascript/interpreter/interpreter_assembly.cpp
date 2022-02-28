@@ -171,227 +171,245 @@ namespace panda::ecmascript {
 #define SET_VREG(idx, val) (sp[idx] = (val));  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define HANDLERCALL()                                                                                                \
-    do {                                                                                                             \
-        JSTaggedValue func = GET_VREG_VALUE(funcReg);                                                                \
-        if (!func.IsCallable()) {                                                                                    \
-            {                                                                                                        \
-                [[maybe_unused]] EcmaHandleScope handleScope(thread);                                                \
-                EcmaVM *ecmaVm = thread->GetEcmaVM();                                                                \
-                ObjectFactory *factory = ecmaVm->GetFactory();                                                       \
-                JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, "is not callable");            \
-                thread->SetException(error.GetTaggedValue());                                                        \
-            }                                                                                                        \
-            INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                                    \
-        }                                                                                                            \
-        ECMAObject *thisFunc = ECMAObject::Cast(func.GetTaggedObject());                                             \
-        JSMethod *methodToCall = thisFunc->GetCallTarget();                                                          \
-        if (methodToCall->IsNative()) {                                                                              \
-            ASSERT(methodToCall->GetNumVregs() == 0);                                                                \
-            size_t frameSize = FRAME_STATE_SIZE + actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS;                         \
-            JSTaggedType *newSp = sp - frameSize;                                                                    \
-            if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {                              \
-                INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                                \
-            }                                                                                                        \
-            EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS,               \
-                                                    reinterpret_cast<JSTaggedValue *>(newSp));                       \
-            uint32_t startIdx = 0;                                                                                   \
-            newSp[startIdx++] = static_cast<JSTaggedType>(ToUintPtr(thisFunc));                                      \
-            newSp[startIdx++] = JSTaggedValue::VALUE_UNDEFINED;                                                      \
-                                                                                                                     \
-            if (callRange) {                                                                                         \
-                size_t copyArgs = actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS - 2;                                     \
-                if (!callThis) {                                                                                     \
-                    newSp[startIdx++] = JSTaggedValue::VALUE_UNDEFINED;                                              \
-                    copyArgs--;                                                                                      \
-                }                                                                                                    \
-                for (size_t i = 1; i <= copyArgs; i++) {                                                             \
-                    JSTaggedValue arg = GET_VREG_VALUE(funcReg + i);                                                 \
-                    newSp[startIdx++] = arg.GetRawData();                                                            \
-                }                                                                                                    \
-            } else {                                                                                                 \
-                newSp[startIdx] = JSTaggedValue::VALUE_UNDEFINED;                                                    \
-                switch (actualNumArgs) {                                                                             \
-                    case ActualNumArgsOfCall::CALLARGS3: {                                                           \
-                        uint32_t reg = READ_INST_8_4();                                                              \
-                        JSTaggedValue arg = GET_VREG_VALUE(reg);                                                     \
-                        newSp[ActualNumArgsOfCall::CALLARGS3 + NUM_MANDATORY_JSFUNC_ARGS - 1] = arg.GetRawData();    \
-                        [[fallthrough]];                                                                             \
-                    }                                                                                                \
-                    case ActualNumArgsOfCall::CALLARGS2: {                                                           \
-                        uint32_t reg = READ_INST_8_3();                                                              \
-                        JSTaggedValue arg = GET_VREG_VALUE(reg);                                                     \
-                        newSp[ActualNumArgsOfCall::CALLARGS2 + NUM_MANDATORY_JSFUNC_ARGS - 1] = arg.GetRawData();    \
-                        [[fallthrough]];                                                                             \
-                    }                                                                                                \
-                    case ActualNumArgsOfCall::CALLARG1: {                                                            \
-                        uint32_t reg = READ_INST_8_2();                                                              \
-                        JSTaggedValue arg = GET_VREG_VALUE(reg);                                                     \
-                        newSp[ActualNumArgsOfCall::CALLARG1 + NUM_MANDATORY_JSFUNC_ARGS - 1] = arg.GetRawData();     \
-                        break;                                                                                       \
-                    }                                                                                                \
-                    case ActualNumArgsOfCall::CALLARG0: {                                                            \
-                        break;                                                                                       \
-                    }                                                                                                \
-                    default:                                                                                         \
-                        UNREACHABLE();                                                                               \
-                }                                                                                                    \
-            }                                                                                                        \
-                                                                                                                     \
-            InterpretedFrame *state = GET_FRAME(newSp);                                                              \
-            state->base.prev = sp;                                                                                   \
-            state->base.type = FrameType::INTERPRETER_FRAME;                                                         \
-            state->pc = nullptr;                                                                                     \
-            state->sp = newSp;                                                                                       \
-            state->function = func;                                                                                  \
-            thread->SetCurrentSPFrame(newSp);                                                                        \
-            LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";                                                       \
-            JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(                                               \
-                const_cast<void *>(methodToCall->GetNativePointer()))(&ecmaRuntimeCallInfo);                         \
-            if (UNLIKELY(thread->HasPendingException())) {                                                           \
-                INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                                \
-            }                                                                                                        \
-            LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";                                                        \
-            thread->SetCurrentSPFrame(sp);                                                                           \
-            SET_ACC(retValue);                                                                                       \
-            size_t jumpSize = GetJumpSizeAfterCall(pc);                                                              \
-            DISPATCH_OFFSET(jumpSize);                                                                               \
-        } else {                                                                                                     \
-            if (JSFunction::Cast(thisFunc)->IsClassConstructor()) {                                                  \
-                {                                                                                                    \
-                    [[maybe_unused]] EcmaHandleScope handleScope(thread);                                            \
-                    EcmaVM *ecmaVm = thread->GetEcmaVM();                                                            \
-                    ObjectFactory *factory = ecmaVm->GetFactory();                                                   \
-                    JSHandle<JSObject> error =                                                                       \
-                        factory->GetJSError(ErrorType::TYPE_ERROR, "class constructor cannot called without 'new'"); \
-                    thread->SetException(error.GetTaggedValue());                                                    \
-                }                                                                                                    \
-                INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                                \
-            }                                                                                                        \
-            GET_FRAME(sp)->pc = pc + GetJumpSizeAfterCall(pc);                                                       \
-            JSTaggedType *newSp = nullptr;                                                                           \
-            uint32_t callType = methodToCall->GetCallType();                                                         \
-            if (callType == NORMAL_CALL_TYPE) {                                                                      \
-                uint32_t numVregs = methodToCall->GetNumVregs();                                                     \
-                uint32_t numDeclaredArgs = methodToCall->GetNumArgs();                                               \
-                uint32_t copyArgs = std::min(numDeclaredArgs, actualNumArgs);                                        \
-                size_t frameSize = FRAME_STATE_SIZE + numVregs + numDeclaredArgs;                                    \
-                newSp = sp - frameSize;                                                                              \
-                if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {                          \
-                    INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                            \
-                }                                                                                                    \
-                                                                                                                     \
-                uint32_t startIdx = numVregs;                                                                        \
-                if (callRange) {                                                                                     \
-                    for (size_t i = 1; i <= copyArgs; i++) {                                                         \
-                        newSp[startIdx++] = sp[funcReg + i + callThis];                                              \
-                    }                                                                                                \
-                } else {                                                                                             \
-                    switch (copyArgs) {                                                                              \
-                        case ActualNumArgsOfCall::CALLARGS3: {                                                       \
-                            newSp[startIdx + ActualNumArgsOfCall::CALLARGS3 - 1] = sp[READ_INST_8_4()];              \
-                            [[fallthrough]];                                                                         \
-                        }                                                                                            \
-                        case ActualNumArgsOfCall::CALLARGS2: {                                                       \
-                            newSp[startIdx + ActualNumArgsOfCall::CALLARGS2 - 1] = sp[READ_INST_8_3()];              \
-                            [[fallthrough]];                                                                         \
-                        }                                                                                            \
-                        case ActualNumArgsOfCall::CALLARG1: {                                                        \
-                            newSp[startIdx + ActualNumArgsOfCall::CALLARG1 - 1] = sp[READ_INST_8_2()];               \
-                            break;                                                                                   \
-                        }                                                                                            \
-                        case ActualNumArgsOfCall::CALLARG0: {                                                        \
-                            break;                                                                                   \
-                        }                                                                                            \
-                        default:                                                                                     \
-                            UNREACHABLE();                                                                           \
-                    }                                                                                                \
-                }                                                                                                    \
-                InterpreterFrameCopyArgs(newSp, numVregs, copyArgs, numDeclaredArgs, false);                         \
-            } else {                                                                                                 \
-                bool haveThis = callType & HAVE_THIS_BIT;                                                            \
-                bool haveNewTarget = callType & HAVE_NEWTARGET_BIT;                                                  \
-                bool haveExtra = callType & HAVE_EXTRA_BIT;                                                          \
-                bool haveFunc = callType & HAVE_FUNC_BIT;                                                            \
-                uint32_t numVregs = methodToCall->GetNumVregs();                                                     \
-                uint32_t numDeclaredArgs = methodToCall->GetNumArgs();                                               \
-                uint32_t copyArgs = haveFunc + haveNewTarget + haveThis;                                             \
-                size_t frameSize = FRAME_STATE_SIZE + numVregs;                                                      \
-                if (haveExtra) {                                                                                     \
-                    copyArgs += actualNumArgs;                                                                       \
-                    frameSize += std::max(numDeclaredArgs, copyArgs) + 1;                                            \
-                } else {                                                                                             \
-                    actualNumArgs = std::min(numDeclaredArgs - copyArgs, actualNumArgs);                             \
-                    copyArgs += actualNumArgs;                                                                       \
-                    frameSize += numDeclaredArgs;                                                                    \
-                }                                                                                                    \
-                newSp = sp - frameSize;                                                                              \
-                if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {                          \
-                    INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                            \
-                }                                                                                                    \
-                                                                                                                     \
-                uint32_t startIdx = numVregs;                                                                        \
-                if (haveFunc) {                                                                                      \
-                    newSp[startIdx++] = static_cast<JSTaggedType>(ToUintPtr(thisFunc));                              \
-                }                                                                                                    \
-                if (haveNewTarget) {                                                                                 \
-                    newSp[startIdx++] = JSTaggedValue::VALUE_UNDEFINED;                                              \
-                }                                                                                                    \
-                if (callRange) {                                                                                     \
-                    if (haveThis) {                                                                                  \
-                        newSp[startIdx++] = callThis ? sp[funcReg + callThis] : JSTaggedValue::VALUE_UNDEFINED;      \
-                    }                                                                                                \
-                    for (size_t i = 1; i <= actualNumArgs; i++) {                                                    \
-                        newSp[startIdx++] = sp[funcReg + i + callThis];                                              \
-                    }                                                                                                \
-                } else {                                                                                             \
-                    if (haveThis) {                                                                                  \
-                        newSp[startIdx++] = JSTaggedValue::VALUE_UNDEFINED;                                          \
-                    }                                                                                                \
-                    switch (actualNumArgs) {                                                                         \
-                        case ActualNumArgsOfCall::CALLARGS3: {                                                       \
-                            newSp[startIdx + ActualNumArgsOfCall::CALLARGS3 - 1] = sp[READ_INST_8_4()];              \
-                            [[fallthrough]];                                                                         \
-                        }                                                                                            \
-                        case ActualNumArgsOfCall::CALLARGS2: {                                                       \
-                            newSp[startIdx + ActualNumArgsOfCall::CALLARGS2 - 1] = sp[READ_INST_8_3()];              \
-                            [[fallthrough]];                                                                         \
-                        }                                                                                            \
-                        case ActualNumArgsOfCall::CALLARG1: {                                                        \
-                            newSp[startIdx + ActualNumArgsOfCall::CALLARG1 - 1] = sp[READ_INST_8_2()];               \
-                            break;                                                                                   \
-                        }                                                                                            \
-                        case ActualNumArgsOfCall::CALLARG0: {                                                        \
-                            break;                                                                                   \
-                        }                                                                                            \
-                        default:                                                                                     \
-                            UNREACHABLE();                                                                           \
-                    }                                                                                                \
-                }                                                                                                    \
-                InterpreterFrameCopyArgs(newSp, numVregs, copyArgs, numDeclaredArgs, haveExtra);                     \
-            }                                                                                                        \
-                                                                                                                     \
-            InterpretedFrame *state = GET_FRAME(newSp);                                                              \
-            state->base.prev = sp;                                                                                   \
-            state->base.type = FrameType::INTERPRETER_FRAME;                                                         \
-            state->pc = pc = JSMethod::Cast(methodToCall)->GetBytecodeArray();                                       \
-            state->sp = sp = newSp;                                                                                  \
-            state->function = func;                                                                                  \
-            state->acc = JSTaggedValue::Hole();                                                                      \
-            state->constpool = JSFunction::Cast(thisFunc)->GetConstantPool();                                        \
-            constpool = state->constpool;                                                                            \
-            state->profileTypeInfo = JSFunction::Cast(thisFunc)->GetProfileTypeInfo();                               \
-            profileTypeInfo = state->profileTypeInfo;                                                                \
-            JSTaggedValue env = JSFunction::Cast(thisFunc)->GetLexicalEnv();                                         \
-            state->env = env;                                                                                        \
-            hotnessCounter = static_cast<int32_t>(methodToCall->GetHotnessCounter());                                \
-                                                                                                                     \
-            thread->SetCurrentSPFrame(newSp);                                                                        \
-            LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call " << std::hex << reinterpret_cast<uintptr_t>(sp) << " "  \
-                                    << std::hex << reinterpret_cast<uintptr_t>(pc);                                  \
-            DISPATCH_OFFSET(0);                                                                                      \
-        }                                                                                                            \
+#define CALL_INITIALIZE()                                             \
+    do {                                                              \
+        funcValue = GET_VREG_VALUE(funcReg);                          \
+        if (!funcValue.IsCallable()) {                                \
+            {                                                         \
+                [[maybe_unused]] EcmaHandleScope handleScope(thread); \
+                EcmaVM *ecmaVm = thread->GetEcmaVM();                 \
+                ObjectFactory *factory = ecmaVm->GetFactory();        \
+                JSHandle<JSObject> error = factory->GetJSError(       \
+                    ErrorType::TYPE_ERROR, "is not callable");        \
+                thread->SetException(error.GetTaggedValue());         \
+            }                                                         \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                     \
+        }                                                             \
+        funcObject = ECMAObject::Cast(funcValue.GetTaggedObject());   \
+        method = funcObject->GetCallTarget();                         \
+        callField = method->GetCallField();                           \
+        newSp = sp - FRAME_STATE_SIZE;                                \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_UNDEFINED(n)                           \
+    do {                                                 \
+        for (int i = 0; i < (n); i++) {                  \
+            *(--newSp) = JSTaggedValue::VALUE_UNDEFINED; \
+        }                                                \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_0()          \
+    do {                            \
+        /* do nothing when 0 arg */ \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_1()   \
+    do {                     \
+        *(--newSp) = sp[a0]; \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_2()   \
+    do {                     \
+        *(--newSp) = sp[a1]; \
+        CALL_PUSH_ARGS_1();  \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_3()   \
+    do {                     \
+        *(--newSp) = sp[a2]; \
+        CALL_PUSH_ARGS_2();  \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_I()                        \
+    do {                                          \
+        for (int i = actualNumArgs; i > 0; i--) { \
+            *(--newSp) = sp[funcReg + i];         \
+        }                                         \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_I_THIS()                       \
+    do {                                              \
+        /* 1: skip this */                            \
+        for (int i = actualNumArgs + 1; i > 1; i--) { \
+            *(--newSp) = sp[funcReg + i];             \
+        }                                             \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_0_NO_EXTRA() \
+    do {                            \
+        /* do nothing when 0 arg */ \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_1_NO_EXTRA()                             \
+    do {                                                        \
+        if (declaredNumArgs >= ActualNumArgsOfCall::CALLARG1) { \
+            *(--newSp) = sp[a0];                                \
+        }                                                       \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_2_NO_EXTRA()                              \
+    do {                                                         \
+        if (declaredNumArgs >= ActualNumArgsOfCall::CALLARGS2) { \
+            *(--newSp) = sp[a1];                                 \
+        }                                                        \
+        CALL_PUSH_ARGS_1_NO_EXTRA();                             \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_3_NO_EXTRA()                              \
+    do {                                                         \
+        if (declaredNumArgs >= ActualNumArgsOfCall::CALLARGS3) { \
+            *(--newSp) = sp[a2];                                 \
+        }                                                        \
+        CALL_PUSH_ARGS_2_NO_EXTRA();                             \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_I_NO_EXTRA()                                          \
+    do {                                                                     \
+        for (int i = std::min(actualNumArgs, declaredNumArgs); i > 0; i--) { \
+            *(--newSp) = sp[funcReg + i];                                    \
+        }                                                                    \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS_I_THIS_NO_EXTRA()                                         \
+    do {                                                                         \
+        /* 1: skip this */                                                       \
+        for (int i = std::min(actualNumArgs, declaredNumArgs) + 1; i > 1; i--) { \
+            *(--newSp) = sp[funcReg + i];                                        \
+        }                                                                        \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CALL_PUSH_ARGS(ARG_TYPE)                                                   \
+    do {                                                                           \
+        if (JSMethod::IsNativeBit::Decode(callField)) {                            \
+            /* native, just push all args directly */                              \
+            CALL_PUSH_ARGS_##ARG_TYPE();                                           \
+            SET_VREGS_AND_FRAME_NATIVE();                                          \
+        }                                                                          \
+        int32_t declaredNumArgs = static_cast<int32_t>(                            \
+            JSMethod::NumArgsBits::Decode(callField));                             \
+        if (actualNumArgs == declaredNumArgs) {                                    \
+            /* fast path, just push all args directly */                           \
+            CALL_PUSH_ARGS_##ARG_TYPE();                                           \
+            SET_VREGS_AND_FRAME_NOT_NATIVE();                                      \
+        }                                                                          \
+        /* slow path */                                                            \
+        if (!JSMethod::HaveExtraBit::Decode(callField)) {                          \
+            /* push length = declaredNumArgs, may push undefined */                \
+            CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);                  \
+            CALL_PUSH_ARGS_##ARG_TYPE##_NO_EXTRA();                                \
+        } else {                                                                   \
+            /* push actualNumArgs in the end, then all args, may push undefined */ \
+            *(--newSp) = JSTaggedValue(actualNumArgs).GetRawData();                \
+            CALL_PUSH_UNDEFINED(declaredNumArgs - actualNumArgs);                  \
+            CALL_PUSH_ARGS_##ARG_TYPE();                                           \
+        }                                                                          \
+        SET_VREGS_AND_FRAME_NOT_NATIVE();                                          \
+    } while (false)
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define SET_VREGS_AND_FRAME_NATIVE()                                                               \
+    do {                                                                                           \
+        /* push this, new target, func */                                                          \
+        *(--newSp) = (callThis ? sp[funcReg + callThis] : JSTaggedValue::VALUE_UNDEFINED);         \
+        *(--newSp) = JSTaggedValue::VALUE_UNDEFINED;                                               \
+        *(--newSp) = static_cast<JSTaggedType>(ToUintPtr(funcObject));                             \
+        ASSERT(JSMethod::NumVregsBits::Decode(callField) == 0);  /* no need to push vregs */       \
+        if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {                                       \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
+        }                                                                                          \
+        EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS, \
+                                                reinterpret_cast<JSTaggedValue *>(newSp));         \
+        InterpretedFrame *state = GET_FRAME(newSp);                                                \
+        state->base.prev = sp;                                                                     \
+        state->base.type = FrameType::INTERPRETER_FRAME;                                           \
+        state->pc = nullptr;                                                                       \
+        state->sp = newSp;                                                                         \
+        state->function = funcValue;                                                               \
+        thread->SetCurrentSPFrame(newSp);                                                          \
+        LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call.";                                         \
+        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
+        JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(                                 \
+            const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);                 \
+        if (UNLIKELY(thread->HasPendingException())) {                                             \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
+        }                                                                                          \
+        LOG(DEBUG, INTERPRETER) << "Exit: Runtime Call.";                                          \
+        thread->SetCurrentSPFrame(sp);                                                             \
+        SET_ACC(retValue);                                                                         \
+        size_t jumpSize = GetJumpSizeAfterCall(pc);                                                \
+        DISPATCH_OFFSET(jumpSize);                                                                 \
+    } while (false)
+
+#define SET_VREGS_AND_FRAME_NOT_NATIVE()                                                           \
+    do {                                                                                           \
+        if (JSFunction::Cast(funcObject)->IsClassConstructor()) {                                  \
+            {                                                                                      \
+                [[maybe_unused]] EcmaHandleScope handleScope(thread);                              \
+                EcmaVM *ecmaVm = thread->GetEcmaVM();                                              \
+                ObjectFactory *factory = ecmaVm->GetFactory();                                     \
+                JSHandle<JSObject> error =                                                         \
+                    factory->GetJSError(ErrorType::TYPE_ERROR,                                     \
+                        "class constructor cannot called without 'new'");                          \
+                thread->SetException(error.GetTaggedValue());                                      \
+            }                                                                                      \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
+        }                                                                                          \
+        if ((callField & CALL_TYPE_MASK) != 0) {                                                   \
+            /* not normal call type, setting func/newTarget/this cannot be skipped */              \
+            if (JSMethod::HaveThisBit::Decode(callField)) {                                        \
+                *(--newSp) = (callThis ? sp[funcReg + callThis] : JSTaggedValue::VALUE_UNDEFINED); \
+            }                                                                                      \
+            if (JSMethod::HaveNewTargetBit::Decode(callField)) {                                   \
+                *(--newSp) = JSTaggedValue::VALUE_UNDEFINED;                                       \
+            }                                                                                      \
+            if (JSMethod::HaveFuncBit::Decode(callField)) {                                        \
+                *(--newSp) = static_cast<JSTaggedType>(ToUintPtr(funcObject));                     \
+            }                                                                                      \
+        }                                                                                          \
+        int32_t numVregs = static_cast<int32_t>(JSMethod::NumVregsBits::Decode(callField));        \
+        /* push vregs */                                                                           \
+        CALL_PUSH_UNDEFINED(numVregs);                                                             \
+        SAVE_PC();                                                                                 \
+        if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {                                       \
+            INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
+        }                                                                                          \
+        GET_FRAME(sp)->pc = pc + GetJumpSizeAfterCall(pc);                                         \
+        InterpretedFrame *state = GET_FRAME(newSp);                                                \
+        state->base.prev = sp;                                                                     \
+        state->base.type = FrameType::INTERPRETER_FRAME;                                           \
+        state->pc = pc = JSMethod::Cast(method)->GetBytecodeArray();                               \
+        state->sp = sp = newSp;                                                                    \
+        state->function = funcValue;                                                               \
+        state->acc = JSTaggedValue::Hole();                                                        \
+        state->constpool = JSFunction::Cast(funcObject)->GetConstantPool();                        \
+        constpool = state->constpool;                                                              \
+        state->profileTypeInfo = JSFunction::Cast(funcObject)->GetProfileTypeInfo();               \
+        profileTypeInfo = state->profileTypeInfo;                                                  \
+        JSTaggedValue env = JSFunction::Cast(funcObject)->GetLexicalEnv();                         \
+        state->env = env;                                                                          \
+        hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());                        \
+        thread->SetCurrentSPFrame(newSp);                                                          \
+        LOG(DEBUG, INTERPRETER) << "Entry: Runtime Call "                                          \
+                                << std::hex << reinterpret_cast<uintptr_t>(sp) << " "              \
+                                << std::hex << reinterpret_cast<uintptr_t>(pc);                    \
+        thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);           \
+        DISPATCH_OFFSET(0);                                                                        \
     } while (false)
 
 // NOLINTNEXTLINE(readability-function-size)
@@ -593,75 +611,95 @@ void InterpreterAssembly::HandleCallArg0DynPrefV8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
+    int32_t actualNumArgs = ActualNumArgsOfCall::CALLARG0;
     uint32_t funcReg = READ_INST_8_1();
-    uint32_t actualNumArgs = ActualNumArgsOfCall::CALLARG0;
-
     LOG_INST() << "callarg0.dyn "
                << "v" << funcReg;
-    bool callRange = false;
+    JSTaggedValue funcValue;
+    ECMAObject *funcObject;
+    JSMethod *method;
+    uint64_t callField;
+    JSTaggedType *newSp;
+    CALL_INITIALIZE();
     bool callThis = false;
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-    HANDLERCALL();
+    CALL_PUSH_ARGS(0);
 }
 
 void InterpreterAssembly::HandleCallArg1DynPrefV8V8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
+    int32_t actualNumArgs = ActualNumArgsOfCall::CALLARG1;
     uint32_t funcReg = READ_INST_8_1();
-    uint32_t actualNumArgs = ActualNumArgsOfCall::CALLARG1;
-
+    uint8_t a0 = READ_INST_8_2();
     LOG_INST() << "callarg1.dyn "
-               << "v" << funcReg << ", v" << READ_INST_8_2();
-    bool callRange = false;
+               << "v" << funcReg << ", v" << a0;
+    JSTaggedValue funcValue;
+    ECMAObject *funcObject;
+    JSMethod *method;
+    uint64_t callField;
+    JSTaggedType *newSp;
+    CALL_INITIALIZE();
     bool callThis = false;
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-    HANDLERCALL();
+    CALL_PUSH_ARGS(1);
 }
 
 void InterpreterAssembly::HandleCallArgs2DynPrefV8V8V8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
+    int32_t actualNumArgs = ActualNumArgsOfCall::CALLARGS2;
     uint32_t funcReg = READ_INST_8_1();
-    uint32_t actualNumArgs = ActualNumArgsOfCall::CALLARGS2;
-
+    uint8_t a0 = READ_INST_8_2();
+    uint8_t a1 = READ_INST_8_3();
     LOG_INST() << "callargs2.dyn "
-               << "v" << funcReg << ", v" << READ_INST_8_2() << ", v" << READ_INST_8_3();
-    bool callRange = false;
+               << "v" << funcReg << ", v" << a0 << ", v" << a1;
+    JSTaggedValue funcValue;
+    ECMAObject *funcObject;
+    JSMethod *method;
+    uint64_t callField;
+    JSTaggedType *newSp;
+    CALL_INITIALIZE();
     bool callThis = false;
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-    HANDLERCALL();
+    CALL_PUSH_ARGS(2);
 }
 
 void InterpreterAssembly::HandleCallArgs3DynPrefV8V8V8V8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
+    int32_t actualNumArgs = ActualNumArgsOfCall::CALLARGS3;
     uint32_t funcReg = READ_INST_8_1();
-    uint32_t actualNumArgs = ActualNumArgsOfCall::CALLARGS3;
-
+    uint8_t a0 = READ_INST_8_2();
+    uint8_t a1 = READ_INST_8_3();
+    uint8_t a2 = READ_INST_8_4();
     LOG_INST() << "callargs3.dyn "
-               << "v" << funcReg << ", v" << READ_INST_8_2() << ", v" << READ_INST_8_3()
-               << ", v" << READ_INST_8_4();
-    bool callRange = false;
+                << "v" << funcReg << ", v" << a0 << ", v" << a1 << ", v" << a2;
+    JSTaggedValue funcValue;
+    ECMAObject *funcObject;
+    JSMethod *method;
+    uint64_t callField;
+    JSTaggedType *newSp;
+    CALL_INITIALIZE();
     bool callThis = false;
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-    HANDLERCALL();
+    CALL_PUSH_ARGS(3);
 }
 
 void InterpreterAssembly::HandleCallIThisRangeDynPrefImm16V8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    uint32_t actualNumArgs = READ_INST_16_1() - 1;  // 1: exclude this
+    int32_t actualNumArgs = READ_INST_16_1() - 1;  // 1: exclude this
     uint32_t funcReg = READ_INST_8_3();
-
     LOG_INST() << "calli.dyn.this.range " << actualNumArgs << ", v" << funcReg;
-    bool callRange = true;
+    JSTaggedValue funcValue;
+    ECMAObject *funcObject;
+    JSMethod *method;
+    uint64_t callField;
+    JSTaggedType *newSp;
+    CALL_INITIALIZE();
     bool callThis = true;
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto, hicpp-avoid-goto)
-    HANDLERCALL();
+    CALL_PUSH_ARGS(I_THIS);
 }
 
 void InterpreterAssembly::HandleCallSpreadDynPrefV8V8V8(
@@ -688,12 +726,17 @@ void InterpreterAssembly::HandleCallIRangeDynPrefImm16V8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
-    uint32_t actualNumArgs = READ_INST_16_1();
+    int32_t actualNumArgs = READ_INST_16_1();
     uint32_t funcReg = READ_INST_8_3();
-    bool callRange = true;
-    bool callThis = false;
     LOG_INST() << "calli.rangedyn " << actualNumArgs << ", v" << funcReg;
-    HANDLERCALL();
+    JSTaggedValue funcValue;
+    ECMAObject *funcObject;
+    JSMethod *method;
+    uint64_t callField;
+    JSTaggedType *newSp;
+    CALL_INITIALIZE();
+    bool callThis = false;
+    CALL_PUSH_ARGS(I);
 }
 
 void InterpreterAssembly::HandleReturnDyn(
@@ -3653,11 +3696,11 @@ inline JSTaggedValue InterpreterAssembly::GetNewTarget(JSTaggedType *sp)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
-    JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    uint32_t callType = method->GetCallType();
-    ASSERT(callType & HAVE_NEWTARGET_BIT);
-    uint32_t numVregs = method->GetNumVregs();
-    bool haveFunc = callType & HAVE_FUNC_BIT;
+    JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
+    uint64_t callField = method->GetCallField();
+    ASSERT(JSMethod::HaveNewTargetBit::Decode(callField));
+    uint32_t numVregs = JSMethod::NumVregsBits::Decode(callField);
+    bool haveFunc = JSMethod::HaveFuncBit::Decode(callField);
     return JSTaggedValue(sp[numVregs + haveFunc]);
 }
 
@@ -3665,24 +3708,25 @@ inline uint32_t InterpreterAssembly::GetNumArgs(JSTaggedType *sp, uint32_t restI
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     InterpretedFrame *state = reinterpret_cast<InterpretedFrame *>(sp) - 1;
-    JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
-    uint32_t callType = method->GetCallType();
-    ASSERT(callType & HAVE_EXTRA_BIT);
-    bool haveThis = callType & HAVE_THIS_BIT;
-    bool haveNewTarget = callType & HAVE_NEWTARGET_BIT;
-    bool haveFunc = callType & HAVE_FUNC_BIT;
-    uint32_t numVregs = method->GetNumVregs();
+    JSMethod *method = JSFunction::Cast(state->function.GetTaggedObject())->GetMethod();
+    uint64_t callField = method->GetCallField();
+    ASSERT(JSMethod::HaveExtraBit::Decode(callField));
+    uint32_t numVregs = JSMethod::NumVregsBits::Decode(callField);
+    bool haveFunc = JSMethod::HaveFuncBit::Decode(callField);
+    bool haveNewTarget = JSMethod::HaveNewTargetBit::Decode(callField);
+    bool haveThis = JSMethod::HaveThisBit::Decode(callField);
     uint32_t copyArgs = haveFunc + haveNewTarget + haveThis;
+    uint32_t numArgs = JSMethod::NumArgsBits::Decode(callField);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    JSTaggedType *lastFrame = state->base.prev - FRAME_STATE_SIZE - 1;
-    JSTaggedValue numArgs(*lastFrame);
-    // actualNumArgs is stored at the end
-    ASSERT(numArgs.IsInt());
-    int32_t actualNumArgs = numArgs.GetInt() - copyArgs;
-    int32_t tmp = actualNumArgs - restIdx;
-    uint32_t restNumArgs = (tmp > 0) ? tmp : 0;
+    JSTaggedType *lastFrame = state->base.prev - FRAME_STATE_SIZE;
+    if (lastFrame - sp > numVregs + copyArgs + numArgs) {
+        // In this case, actualNumArgs is in the end
+        // If not, then actualNumArgs == declaredNumArgs, therefore do nothing
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        numArgs = JSTaggedValue(*(lastFrame - 1)).GetInt();
+    }
     startIdx = numVregs + copyArgs + restIdx;
-    return restNumArgs;
+    return ((numArgs > restIdx) ? (numArgs - restIdx) : 0);
 }
 
 inline size_t InterpreterAssembly::GetJumpSizeAfterCall(const uint8_t *prevPc)
