@@ -159,14 +159,11 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
         std::cerr << "Error: cannot create runtime" << std::endl;
         return false;
     }
-    // create jspandafile manager for process
-    EcmaVM::CreateJSPandaFileManager();
     return true;
 }
 
 bool JSNApi::DestroyRuntime()
 {
-    EcmaVM::DestroyJSPandaFileManager();
     return Runtime::Destroy();
 }
 

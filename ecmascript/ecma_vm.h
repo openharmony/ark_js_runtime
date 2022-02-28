@@ -93,10 +93,6 @@ public:
 
     static bool Destroy(PandaVM *vm);
 
-    static void PUBLIC_API DestroyJSPandaFileManager();
-    static void PUBLIC_API CreateJSPandaFileManager();
-    void RemoveJSPandaFileRecord(const JSPandaFile *jsPandaFile);
-
     explicit EcmaVM(JSRuntimeOptions options);
 
     static Expected<EcmaVM *, CString> Create([[maybe_unused]] Runtime *runtime);
@@ -111,8 +107,9 @@ public:
     bool ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                            const std::vector<std::string> &args, const std::string &filename = "");
 
-    bool PUBLIC_API CollectInfoOfPandaFile(std::string_view filename, std::string_view entryPoint,
-                                std::vector<BytecodeTranslationInfo> &infoList, const panda_file::File *&pf);
+    bool PUBLIC_API CollectInfoOfPandaFile(const std::string &filename, std::string_view entryPoint,
+                                           std::vector<BytecodeTranslationInfo> *infoList,
+                                           const panda_file::File *&pf);
 
     PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
@@ -287,16 +284,6 @@ public:
     JSHandle<ecmascript::JSTaggedValue> GetEcmaUncaughtException() const;
     void EnableUserUncaughtErrorHandler();
 
-    template<typename Callback>
-    void EnumerateJSPandaFiles(Callback cb) const
-    {
-        for (const auto iter : jsPandaFiles_) {
-            if (!cb(iter)) {
-                return;
-            }
-        }
-    }
-
     EcmaRuntimeStat *GetRuntimeStat() const
     {
         return runtimeStat_;
@@ -408,10 +395,7 @@ public:
         }
     }
 
-    JSPandaFileManager *GetJSPandaFileManager()
-    {
-        return jsPandaFileManager_;
-    }
+    static JSPandaFileManager *GetJSPandaFileManager();
 
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
@@ -427,7 +411,6 @@ protected:
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 
 private:
-    void AddJSPandaFile(const JSPandaFile *jsPandaFile);
     bool IsFrameworkPandaFile(std::string_view filename) const;
 
     void SetGlobalEnv(GlobalEnv *global);
@@ -495,7 +478,6 @@ private:
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
     bool optionalLogEnabled_ {false};
-    ChunkVector<const JSPandaFile *> jsPandaFiles_;
 
     // Debugger
     RuntimeNotificationManager *notificationManager_ {nullptr};
@@ -504,9 +486,6 @@ private:
     PromiseRejectCallback promiseRejectCallback_ {nullptr};
     HostPromiseRejectionTracker hostPromiseRejectionTracker_ {nullptr};
     void* data_ {nullptr};
-
-    // shared reference cross EcmaVM
-    static JSPandaFileManager *jsPandaFileManager_;
 
     friend class SnapShotSerialize;
     friend class ObjectFactory;

@@ -100,8 +100,6 @@ public:
         static EcmaLanguageContext lcEcma;
         [[maybe_unused]] bool success = Runtime::Create(options, {&lcEcma});
         ASSERT_TRUE(success) << "Cannot create Runtime";
-        // create jspandafile manager for process
-        EcmaVM::CreateJSPandaFileManager();
         instance = Runtime::GetCurrent()->GetPandaVM();
         EcmaVM::Cast(instance)->SetEnableForceGC(true);
         ASSERT_TRUE(instance != nullptr) << "Cannot create EcmaVM";

@@ -22,70 +22,70 @@ static const size_t MALLOC_SIZE_LIMIT = 2147483648; // Max internal memory used 
 JSPandaFileManager::~JSPandaFileManager()
 {
     os::memory::LockHolder lock(jsPandaFileLock_);
-    auto iter = loadedJSPandaFilesLock_.begin();
-    while (iter != loadedJSPandaFilesLock_.end()) {
+    auto iter = loadedJSPandaFiles_.begin();
+    while (iter != loadedJSPandaFiles_.end()) {
         const JSPandaFile *jsPandaFile = iter->first;
         ReleaseJSPandaFile(jsPandaFile);
-        iter = loadedJSPandaFilesLock_.erase(iter);
+        iter = loadedJSPandaFiles_.erase(iter);
     }
 }
 
-void JSPandaFileManager::IncreaseRefJSPandaFile(const JSPandaFile *jsPandaFile)
+const JSPandaFile *JSPandaFileManager::LoadPfAbc(const std::string &filename)
 {
-    os::memory::LockHolder lock(jsPandaFileLock_);
-    for (auto &iter : loadedJSPandaFilesLock_) {
-        const JSPandaFile *pf = iter.first;
-        if ((pf == jsPandaFile) ||
-            (!(jsPandaFile->GetJSPandaFileDesc().empty()) &&
-            (jsPandaFile->GetJSPandaFileDesc() == pf->GetJSPandaFileDesc()))) {
-            iter.second += 1;
-            return;
-        }
+    CString desc = ConvertToString(filename);
+    const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);
+    if (jsPandaFile != nullptr) {
+        return jsPandaFile;
     }
-    loadedJSPandaFilesLock_[jsPandaFile] = 1;
+
+    auto pf = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
+    if (pf == nullptr) {
+        LOG_ECMA(ERROR) << "open file " << filename << " error";
+        return nullptr;
+    }
+
+    jsPandaFile = CreateJSPandaFile(pf.release(), desc);
+    return jsPandaFile;
 }
 
-void JSPandaFileManager::TranslateJSPandafile(EcmaVM *vm, const JSPandaFile *jsPandaFile, const CString &methodName)
+const JSPandaFile *JSPandaFileManager::LoadBufferAbc(const std::string &filename, const void *buffer, size_t size)
 {
+    if (buffer == nullptr || size == 0) {
+        return nullptr;
+    }
+
+    CString desc = ConvertToString(filename);
+    const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);
+    if (jsPandaFile != nullptr) {
+        return jsPandaFile;
+    }
+
+    auto pf = panda_file::OpenPandaFileFromMemory(buffer, size);
+    if (pf == nullptr) {
+        return nullptr;
+    }
+    jsPandaFile = CreateJSPandaFile(pf.release(), desc);
+    return jsPandaFile;
+}
+
+JSHandle<Program> JSPandaFileManager::GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile)
+{
+    LOG_ECMA(INFO) << "GenerateProgram " << jsPandaFile->GetPandaFile()->GetFilename();
+    ASSERT(GetJSPandaFile(jsPandaFile->GetPandaFile()) != nullptr);
+
     PandaFileTranslator translator(vm, jsPandaFile);
-    std::vector<BytecodeTranslationInfo> infoList {};
-    translator.TranslateClasses(methodName, infoList);
-}
-
-JSHandle<Program> JSPandaFileManager::GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile,
-                                                      const CString &methodName)
-{
-    const JSPandaFile *findPf = FindJSPandaFile(jsPandaFile->GetJSPandaFileDesc());
-    if (findPf == nullptr) {
-        TranslateJSPandafile(vm, jsPandaFile, methodName);
-        {
-            os::memory::LockHolder lock(jsPandaFileLock_);
-            findPf = FindJSPandaFile(jsPandaFile->GetJSPandaFileDesc());
-            if (findPf != nullptr) { // already translated in other vm
-                ReleaseJSPandaFile(jsPandaFile);
-            } else {
-                findPf = jsPandaFile;
-            }
-            IncreaseRefJSPandaFile(findPf);
-        }
-    } else { // already translated in other vm
-        ReleaseJSPandaFile(jsPandaFile);
-        IncreaseRefJSPandaFile(findPf);
-    }
-
-    PandaFileTranslator translator(vm, findPf);
     auto result = translator.GenerateProgram();
     JSThread *thread = vm->GetJSThread();
     return JSHandle<Program>(thread, result);
 }
 
-const JSPandaFile *JSPandaFileManager::FindJSPandaFile(const std::string &filename)
+const JSPandaFile *JSPandaFileManager::FindJSPandaFile(const CString &filename)
 {
     if (filename.empty()) {
         return nullptr;
     }
     os::memory::LockHolder lock(jsPandaFileLock_);
-    for (auto iter : loadedJSPandaFilesLock_) {
+    for (const auto &iter : loadedJSPandaFiles_) {
         const JSPandaFile *pf = iter.first;
         if (pf->GetJSPandaFileDesc() == filename) {
             return pf;
@@ -94,42 +94,50 @@ const JSPandaFile *JSPandaFileManager::FindJSPandaFile(const std::string &filena
     return nullptr;
 }
 
-const JSPandaFile *JSPandaFileManager::LoadPfAbc(const std::string &filename)
-{
-    const JSPandaFile *pf = FindJSPandaFile(filename);
-    if (pf != nullptr) {
-        return pf;
-    }
-    pf = JSPandaFile::CreateJSPandaFileFromPf(filename);
-    return pf;
-}
-
-const JSPandaFile *JSPandaFileManager::LoadBufferAbc(const std::string &filename, const void *buffer, size_t size)
-{
-    if (buffer == nullptr || size == 0) {
-        return nullptr;
-    }
-    if (filename.empty()) { // empty filename
-        return JSPandaFile::CreateJSPandaFileFromBuffer(buffer, size);
-    }
-    const JSPandaFile *pf = FindJSPandaFile(filename);
-    if (pf != nullptr) {
-        return pf;
-    }
-    pf = JSPandaFile::CreateJSPandaFileFromBuffer(buffer, size, filename);
-    return pf;
-}
-
-void JSPandaFileManager::DecRefJSPandaFile(const JSPandaFile *jsPandaFile)
+const JSPandaFile *JSPandaFileManager::GetJSPandaFile(const panda_file::File *pf)
 {
     os::memory::LockHolder lock(jsPandaFileLock_);
-    auto iter = loadedJSPandaFilesLock_.find(jsPandaFile);
-    ASSERT(iter != loadedJSPandaFilesLock_.end());
-    iter->second -= 1;
-    if (iter->second <= 0) {
-        ReleaseJSPandaFile(jsPandaFile);
-        loadedJSPandaFilesLock_.erase(iter);
+    for (const auto &iter : loadedJSPandaFiles_) {
+        const JSPandaFile *jsPandafile = iter.first;
+        if (jsPandafile->GetPandaFile() == pf) {
+            return jsPandafile;
+        }
     }
+    return nullptr;
+}
+
+void JSPandaFileManager::InsertJSPandaFile(const JSPandaFile *jsPandaFile)
+{
+    LOG_ECMA(INFO) << "InsertJSPandaFile " << jsPandaFile->GetPandaFile()->GetFilename();
+
+    os::memory::LockHolder lock(jsPandaFileLock_);
+    ASSERT(loadedJSPandaFiles_.find(jsPandaFile) == loadedJSPandaFiles_.end());
+    loadedJSPandaFiles_[jsPandaFile] = 1;
+}
+
+void JSPandaFileManager::IncreaseRefJSPandaFile(const JSPandaFile *jsPandaFile)
+{
+    LOG_ECMA(INFO) << "IncreaseRefJSPandaFile " << jsPandaFile->GetPandaFile()->GetFilename();
+
+    os::memory::LockHolder lock(jsPandaFileLock_);
+    ASSERT(loadedJSPandaFiles_.find(jsPandaFile) != loadedJSPandaFiles_.end());
+    loadedJSPandaFiles_[jsPandaFile]++;
+}
+
+void JSPandaFileManager::DecreaseRefJSPandaFile(const JSPandaFile *jsPandaFile)
+{
+    LOG_ECMA(INFO) << "DecreaseRefJSPandaFile " << jsPandaFile->GetPandaFile()->GetFilename();
+
+    os::memory::LockHolder lock(jsPandaFileLock_);
+    auto iter = loadedJSPandaFiles_.find(jsPandaFile);
+    if (iter != loadedJSPandaFiles_.end()) {
+        if (iter->second > 1) {
+            iter->second--;
+            return;
+        }
+        loadedJSPandaFiles_.erase(iter);
+    }
+    ReleaseJSPandaFile(jsPandaFile);
 }
 
 void JSPandaFileManager::ReleaseJSPandaFile(const JSPandaFile *jsPandaFile)
@@ -137,6 +145,7 @@ void JSPandaFileManager::ReleaseJSPandaFile(const JSPandaFile *jsPandaFile)
     if (jsPandaFile == nullptr) {
         return;
     }
+    LOG_ECMA(INFO) << "ReleaseJSPandaFile " << jsPandaFile->GetPandaFile()->GetFilename();
     delete jsPandaFile;
 }
 
@@ -151,41 +160,25 @@ tooling::ecmascript::PtJSExtractor *JSPandaFileManager::GetOrCreatePtJSExtractor
     return const_cast<JSPandaFile *>(existJSPandaFile)->GetOrCreatePtJSExtractor();
 }
 
-const JSPandaFile *JSPandaFileManager::GetOrCreateJSPandaFile(const panda_file::File *pf)
+const JSPandaFile *JSPandaFileManager::CreateJSPandaFile(const panda_file::File *pf, const CString &desc)
 {
-    const JSPandaFile *jsPandaFile = GetJSPandaFile(pf);
-    if (jsPandaFile != nullptr) {
-        return jsPandaFile;
-    }
-    jsPandaFile = new JSPandaFile(pf);
-    return jsPandaFile;
-}
+    ASSERT(GetJSPandaFile(pf) == nullptr);
 
-const JSPandaFile *JSPandaFileManager::GetJSPandaFile(const panda_file::File *pf)
-{
-    os::memory::LockHolder lock(jsPandaFileLock_);
-    auto iter = loadedJSPandaFilesLock_.begin();
-    while (iter != loadedJSPandaFilesLock_.end()) {
-        const JSPandaFile *jsPandafile = iter->first;
-        if (jsPandafile->GetPandaFile() == pf) {
-            return jsPandafile;
+    JSPandaFile *newJsPandaFile = new JSPandaFile(pf, desc);
+    PandaFileTranslator::TranslateClasses(newJsPandaFile, ENTRY_FUNCTION_NAME);
+
+    {
+        os::memory::LockHolder lock(jsPandaFileLock_);
+        const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);
+        if (jsPandaFile != nullptr) {
+            IncreaseRefJSPandaFile(jsPandaFile);
+            ReleaseJSPandaFile(newJsPandaFile);
+            return jsPandaFile;
         }
+        InsertJSPandaFile(newJsPandaFile);
     }
-    return nullptr;
-}
 
-void JSPandaFileManager::FreeBuffer(void *mem)
-{
-    JSPandaFileAllocator::FreeBuffer(mem);
-}
-
-void JSPandaFileManager::JSPandaFileAllocator::FreeBuffer(void *mem)
-{
-    if (mem == nullptr) {
-        return;
-    }
-    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
-    free(mem);
+    return newJsPandaFile;
 }
 
 void *JSPandaFileManager::AllocateBuffer(size_t size)
@@ -218,18 +211,29 @@ void *JSPandaFileManager::JSPandaFileAllocator::AllocateBuffer(size_t size)
     return ptr;
 }
 
+void JSPandaFileManager::FreeBuffer(void *mem)
+{
+    JSPandaFileAllocator::FreeBuffer(mem);
+}
+
+void JSPandaFileManager::JSPandaFileAllocator::FreeBuffer(void *mem)
+{
+    if (mem == nullptr) {
+        return;
+    }
+    // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
+    free(mem);
+}
+
 void JSPandaFileManager::RemoveJSPandaFile(void *pointer, void *data)
 {
     if (pointer == nullptr || data == nullptr) {
         return;
     }
     auto jsPandaFile = reinterpret_cast<JSPandaFile *>(pointer);
-    // dec ref in filemanager and remove jsPandaFile
-    EcmaVM *vm = static_cast<EcmaVM *>(data);
-    vm->RemoveJSPandaFileRecord(jsPandaFile);
-
-    JSPandaFileManager *jsPandaFileManager = vm->GetJSPandaFileManager();
-    ASSERT(jsPandaFileManager != nullptr);
-    jsPandaFileManager->DecRefJSPandaFile(jsPandaFile);
+    LOG_ECMA(INFO) << "RemoveJSPandaFile " << jsPandaFile->GetPandaFile()->GetFilename();
+    // dec ref in filemanager
+    JSPandaFileManager *jsPandaFileManager = static_cast<JSPandaFileManager *>(data);
+    jsPandaFileManager->DecreaseRefJSPandaFile(jsPandaFile);
 }
 }  // namespace panda::ecmascript
