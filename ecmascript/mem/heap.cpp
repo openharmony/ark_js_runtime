@@ -47,6 +47,7 @@ void Heap::Initialize()
     size_t defaultSemiSpaceCapacity = ecmaVm_->GetJSOptions().DefaultSemiSpaceCapacity();
     toSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
     toSpace_->Restart();
+    toSpace_->SetWaterLine();
     fromSpace_ = new SemiSpace(this, defaultSemiSpaceCapacity, defaultSemiSpaceCapacity);
 
     // not set up from space
@@ -320,6 +321,7 @@ void Heap::CollectGarbage(TriggerGCType gcType)
 
 void Heap::ThrowOutOfMemoryError(size_t size, std::string functionName)
 {
+    GetEcmaVM()->GetEcmaGCStats()->PrintHeapStatisticResult(true);
     LOG_ECMA_MEM(FATAL) << "OOM when trying to allocate " << size << " bytes"
         << " function name: " << functionName.c_str();
 }

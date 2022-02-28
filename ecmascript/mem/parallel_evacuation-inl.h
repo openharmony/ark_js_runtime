@@ -28,7 +28,7 @@ namespace panda::ecmascript {
 // Move regions with a survival rate of more than 75% to new space
 bool ParallelEvacuation::IsWholeRegionEvacuate(Region *region)
 {
-    return (static_cast<double>(region->AliveObject()) / DEFAULT_REGION_SIZE) > MIN_OBJECT_SURVIVAL_RATE &&
+    return (static_cast<double>(region->AliveObject()) / region->GetSize()) > MIN_OBJECT_SURVIVAL_RATE &&
         !region->HasAgeMark();
 }
 

@@ -126,9 +126,7 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
             if (address == 0) {
                 address = allocator->Allocate(size, OLD_SPACE);
                 actualPromoted = true;
-                if (hasAgeMark) {
-                    promotedSize += size;
-                }
+                promotedSize += size;
             }
         }
         LOG_IF(address == 0, FATAL, RUNTIME) << "Evacuate object failed:" << size;
@@ -139,7 +137,7 @@ void ParallelEvacuation::EvacuateRegion(TlabAllocator *allocator, Region *region
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
         VerifyHeapObject(reinterpret_cast<TaggedObject *>(address));
 #endif
-        if (actualPromoted && klass->HasReferenceField()) {
+        if (actualPromoted) {
             SetObjectFieldRSet(reinterpret_cast<TaggedObject *>(address), klass);
         }
     });
@@ -310,9 +308,7 @@ void ParallelEvacuation::UpdateNewRegionReference(Region *region)
         if (!freeObject->IsFreeObject()) {
             auto obj = reinterpret_cast<TaggedObject *>(curPtr);
             auto klass = obj->GetClass();
-            if (klass->HasReferenceField()) {
-                UpdateNewObjectField(obj, klass);
-            }
+            UpdateNewObjectField(obj, klass);
             objSize = klass->SizeFromJSHClass(obj);
         } else {
             objSize = freeObject->Available();
@@ -333,9 +329,7 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
             ASSERT(region->InRange(ToUintPtr(mem)));
             auto header = reinterpret_cast<TaggedObject *>(mem);
             JSHClass *klass = header->GetClass();
-            if (klass->HasReferenceField()) {
-                UpdateNewObjectField(header, klass);
-            }
+            UpdateNewObjectField(header, klass);
 
             uintptr_t freeEnd = ToUintPtr(mem);
             if (freeStart != freeEnd) {
