@@ -16,7 +16,6 @@
 #ifndef ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 
-#include "ecmascript/bridge/compile_bridge.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/class_linker/program_object-inl.h"
@@ -366,25 +365,10 @@ namespace panda::ecmascript {
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
-JSTaggedType* EcmaInterpreter::FixSpOnEntry(JSThread *thread)
-{
-    JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    FrameHandler handler(current);
-    if (handler.IsInterpretedFrame()) {
-        return current;
-    } else if (handler.IsOptimizedLeaveFrame()) {
-        return reinterpret_cast<JSTaggedType *>(handler.GetOptLeaveFrame());
-    } else {
-        abort();
-    }
-    return nullptr;
-}
-
 JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, ExecuteNative);
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *fixedSp = FixSpOnEntry(thread);
 
     JSMethod *method = params.callTarget->GetCallTarget();
     ASSERT(method->GetNumVregs() == 0);
@@ -392,7 +376,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     // Tags and values of thread, new_tgt and argv_length are put into frames too for native frames
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
     size_t frameSize = FRAME_STATE_SIZE + numActualArgs;
-    JSTaggedType *newSp = fixedSp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
@@ -428,6 +412,11 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     return tagged;
 }
 
+JSTaggedType* EcmaInterpreter::GetCurrentFrameState(JSTaggedType *sp)
+{
+    return sp - FRAME_STATE_SIZE;
+}
+
 JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, Execute);
@@ -437,8 +426,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
         return EcmaInterpreter::ExecuteNative(thread, params);
     }
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *fixedSp = FixSpOnEntry(thread);
-    JSTaggedType *newSp = fixedSp - FRAME_STATE_SIZE;
+    JSTaggedType *newSp = GetCurrentFrameState(sp);
     // push break state
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
@@ -3136,16 +3124,16 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryLoadICByName(thread, receiver, firstValue, secondValue);
             }
-            // IC miss and not enter the megamorphic state, store as polymorphic
-            if (res.IsHole() && !firstValue.IsHole()) {
+            if (LIKELY(!res.IsHole())) {
+                INTERPRETER_RETURN_IF_ABRUPT(res);
+                SET_ACC(res);
+                DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
+            } else if (!firstValue.IsHole()) { // IC miss and not enter the megamorphic state, store as polymorphic
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::LoadICByName(thread,
                                                   profileTypeArray,
                                                   receiver, propKey, slotId);
-            }
-
-            if (LIKELY(!res.IsHole())) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 SET_ACC(res);
                 DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
@@ -3211,16 +3199,16 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
 #endif
             }
-            // IC miss and not enter the megamorphic state, store as polymorphic
-            if (res.IsHole() && !firstValue.IsHole()) {
+            if (LIKELY(!res.IsHole())) {
+                INTERPRETER_RETURN_IF_ABRUPT(res);
+                RESTORE_ACC();
+                DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
+            } else if (!firstValue.IsHole()) { // IC miss and not enter the megamorphic state, store as polymorphic
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::StoreICByName(thread,
                                                    profileTypeArray,
                                                    receiver, propKey, value, slotId);
-            }
-
-            if (LIKELY(!res.IsHole())) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 RESTORE_ACC();
                 DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
