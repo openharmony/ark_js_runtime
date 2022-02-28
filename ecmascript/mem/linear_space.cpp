@@ -56,18 +56,20 @@ bool LinearSpace::Expand(bool isPromoted)
 
     uintptr_t top = allocator_->GetTop();
     auto currentRegion = GetCurrentRegion();
-    if (!isPromoted) {
-        if (currentRegion->HasAgeMark()) {
-            allocateAfterLastGC_ +=
-                currentRegion->GetAllocatedBytes(top) - currentRegion->GetAllocatedBytes(waterLine_);
+    if (currentRegion != nullptr) {
+        if (!isPromoted) {
+            if (currentRegion->HasAgeMark()) {
+                allocateAfterLastGC_ +=
+                    currentRegion->GetAllocatedBytes(top) - currentRegion->GetAllocatedBytes(waterLine_);
+            } else {
+                allocateAfterLastGC_ += currentRegion->GetAllocatedBytes(top);
+            }
         } else {
-            allocateAfterLastGC_ += currentRegion->GetAllocatedBytes(top);
+            // For GC
+            survivalObjectSize_ += currentRegion->GetAllocatedBytes(top);
         }
-    } else {
-        // For GC
-        survivalObjectSize_ += currentRegion->GetAllocatedBytes(top);
+        currentRegion->SetHighWaterMark(top);
     }
-    currentRegion->SetHighWaterMark(top);
     Region *region = heapRegionAllocator_->AllocateAlignedRegion(this, DEFAULT_REGION_SIZE);
     region->SetFlag(GetRegionFlag());
     allocator_->Reset(region->GetBegin(), region->GetEnd());
@@ -78,7 +80,9 @@ bool LinearSpace::Expand(bool isPromoted)
 
 void LinearSpace::Stop()
 {
-    GetCurrentRegion()->SetHighWaterMark(allocator_->GetTop());
+    if (GetCurrentRegion() != nullptr) {
+        GetCurrentRegion()->SetHighWaterMark(allocator_->GetTop());
+    }
 }
 
 SemiSpace::SemiSpace(Heap *heap, size_t initialCapacity, size_t maximumCapacity)
@@ -130,16 +134,18 @@ bool SemiSpace::SwapRegion(Region *region, SemiSpace *fromSpace)
 void SemiSpace::SetWaterLine()
 {
     waterLine_ = allocator_->GetTop();
-    Region *last = GetCurrentRegion();
-    last->SetFlag(RegionFlags::HAS_AGE_MARK);
-
-    EnumerateRegions([&last](Region *current) {
-        if (current != last) {
-            current->SetFlag(RegionFlags::BELOW_AGE_MARK);
-        }
-    });
     allocateAfterLastGC_ = 0;
-    survivalObjectSize_ += last->GetAllocatedBytes(waterLine_);
+    Region *last = GetCurrentRegion();
+    if (last != nullptr) {
+        last->SetFlag(RegionFlags::HAS_AGE_MARK);
+
+        EnumerateRegions([&last](Region *current) {
+            if (current != last) {
+                current->SetFlag(RegionFlags::BELOW_AGE_MARK);
+            }
+        });
+        survivalObjectSize_ += last->GetAllocatedBytes(waterLine_);
+    }
 }
 
 size_t SemiSpace::GetHeapObjectSize() const
@@ -217,10 +223,13 @@ void SemiSpace::IterateOverObjects(const std::function<void(TaggedObject *object
 
 size_t SemiSpace::GetAllocatedSizeSinceGC() const
 {
+    size_t currentRegionSize = 0;
     auto currentRegion = GetCurrentRegion();
-    size_t currentRegionSize = currentRegion->GetAllocatedBytes();
-    if (currentRegion->HasAgeMark()) {
-        currentRegionSize -= currentRegion->GetAllocatedBytes(waterLine_);
+    if (currentRegion != nullptr) {
+        currentRegionSize = currentRegion->GetAllocatedBytes();
+        if (currentRegion->HasAgeMark()) {
+            currentRegionSize -= currentRegion->GetAllocatedBytes(waterLine_);
+        }
     }
     return allocateAfterLastGC_ + currentRegionSize;
 }

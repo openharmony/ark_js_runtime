@@ -64,7 +64,6 @@ public:
         return result;
     }
 
-    bool IsHeapAddress(void *addr) const;
     size_t VerifyRoot() const;
     size_t VerifyHeap() const;
 private:
