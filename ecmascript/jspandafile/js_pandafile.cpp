@@ -18,12 +18,9 @@
 #include "ecmascript/class_linker/program_object-inl.h"
 
 namespace panda::ecmascript {
-JSPandaFile::JSPandaFile(const panda_file::File *pf) : pf_(pf)
+JSPandaFile::JSPandaFile(const panda_file::File *pf, const CString &descriptor) : pf_(pf), desc_(descriptor)
 {
-}
-
-JSPandaFile::JSPandaFile(const panda_file::File *pf, bool isFrameWork) : pf_(pf), isFrameWorker_(isFrameWork)
-{
+    InitMethods();
 }
 
 JSPandaFile::~JSPandaFile()
@@ -38,36 +35,6 @@ JSPandaFile::~JSPandaFile()
     }
 }
 
-JSPandaFile *JSPandaFile::CreateJSPandaFileFromPf(const std::string &filename)
-{
-    auto pf = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
-    if (pf == nullptr) {
-        LOG_ECMA(ERROR) << "open file " << filename << " error";
-        return nullptr;
-    }
-
-    JSPandaFile *jsPandaFile = new JSPandaFile(pf.release());
-    jsPandaFile->desc_ = filename;
-    return jsPandaFile;
-}
-
-JSPandaFile *JSPandaFile::CreateJSPandaFileFromBuffer(const void *buffer, size_t size)
-{
-    auto pf = panda_file::OpenPandaFileFromMemory(buffer, size);
-    if (pf == nullptr) {
-        return nullptr;
-    }
-    JSPandaFile *jsPandaFile = new JSPandaFile(pf.release());
-    return jsPandaFile;
-}
-
-JSPandaFile *JSPandaFile::CreateJSPandaFileFromBuffer(const void *buffer, size_t size, const std::string &filename)
-{
-    JSPandaFile *jsPandaFile = CreateJSPandaFileFromBuffer(buffer, size);
-    jsPandaFile->desc_ = filename;
-    return jsPandaFile;
-}
-
 tooling::ecmascript::PtJSExtractor *JSPandaFile::GetOrCreatePtJSExtractor()
 {
     if (ptJSExtractor_) {
@@ -77,17 +44,21 @@ tooling::ecmascript::PtJSExtractor *JSPandaFile::GetOrCreatePtJSExtractor()
     return ptJSExtractor_.get();
 }
 
-void JSPandaFile::SaveTranslatedInfo(uint32_t constpoolIndex, uint32_t numMethods, uint32_t mainMethodIndex,
-                                     JSMethod *methods, std::unordered_map<uint32_t, uint64_t> &constpoolMap)
+uint32_t JSPandaFile::GetOrInsertConstantPool(ConstPoolType type, uint32_t offset)
 {
-    constpoolIndex_ = constpoolIndex;
-    numMethods_ = numMethods;
-    mainMethodIndex_ = mainMethodIndex;
-    methods_ = methods;
-    constpoolMap_ = constpoolMap;
+    auto it = constpoolMap_.find(offset);
+    if (it != constpoolMap_.cend()) {
+        ConstPoolValue value(it->second);
+        return value.GetConstpoolIndex();
+    }
+    ASSERT(constpoolIndex_ != UINT32_MAX);
+    uint32_t index = constpoolIndex_++;
+    ConstPoolValue value(type, index);
+    constpoolMap_.insert({offset, value.GetValue()});
+    return index;
 }
 
-void JSPandaFile::ParseMethods()
+void JSPandaFile::InitMethods()
 {
     Span<const uint32_t> classIndexes = pf_->GetClasses();
     for (const uint32_t index : classIndexes) {
@@ -103,12 +74,13 @@ void JSPandaFile::ParseMethods()
 
 const JSMethod *JSPandaFile::FindMethods(uint32_t offset) const
 {
-    Span<JSMethod> methods = GetMethodSpan();
-    auto pred = [offset](const JSMethod &method) { return method.GetFileId().GetOffset() == offset; };
-    auto it = std::find_if(methods.begin(), methods.end(), pred);
-    if (it != methods.end()) {
-        return &*it;
+    for (uint32_t i = 0; i < numMethods_; i++) {
+        const JSMethod *method = methods_ + i;
+        if (method->GetFileId().GetOffset() == offset) {
+            return method;
+        }
     }
+
     return nullptr;
 }
 }  // namespace panda::ecmascript

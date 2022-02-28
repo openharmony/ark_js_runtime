@@ -573,11 +573,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::PROGRAM: {
-#ifdef PANDA_TARGET_64
-                CHECK_DUMP_FILEDS(ECMAObject::SIZE, Program::SIZE, 5)
-#else
-                CHECK_DUMP_FILEDS(ECMAObject::SIZE, Program::SIZE, 4)
-#endif
+                CHECK_DUMP_FILEDS(ECMAObject::SIZE, Program::SIZE, 1)
                 JSHandle<Program> program = factory->NewProgram();
                 DUMP_FOR_HANDLE(program)
                 break;

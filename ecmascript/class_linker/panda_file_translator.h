@@ -18,6 +18,7 @@
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_function.h"
+#include "ecmascript/jspandafile/constpool_value.h"
 #include "libpandafile/bytecode_instruction.h"
 #include "libpandafile/code_data_accessor-inl.h"
 #include "libpandafile/file-inl.h"
@@ -39,74 +40,24 @@ class PandaFileTranslator {
 public:
     enum FixInstructionIndex : uint8_t { FIX_ONE = 1, FIX_TWO = 2, FIX_FOUR = 4 };
 
+    explicit PandaFileTranslator(const JSPandaFile *jsPandaFile);
     PandaFileTranslator(EcmaVM *vm, const JSPandaFile *jsPandaFile);
     ~PandaFileTranslator() = default;
     NO_COPY_SEMANTIC(PandaFileTranslator);
     NO_MOVE_SEMANTIC(PandaFileTranslator);
-    static void TranslateAndCollectPandaFile(EcmaVM *vm, const panda_file::File &pf, const CString &methodName,
-                                             std::vector<BytecodeTranslationInfo> &infoList);
+    void TranslateAndCollectPandaFile(const CString &methodName, std::vector<BytecodeTranslationInfo> *infoList);
     JSHandle<JSFunction> DefineMethodInLiteral(JSThread *thread, uint32_t methodId, FunctionKind kind,
                                                uint16_t length) const;
     Program *GenerateProgram();
-    void TranslateClasses(const CString &methodName, std::vector<BytecodeTranslationInfo> &infoList);
+    static void TranslateClasses(JSPandaFile *jsPandaFile, const CString &methodName,
+                                 std::vector<BytecodeTranslationInfo> *infoList = nullptr);
 
 private:
-    enum class ConstPoolType : uint8_t {
-        STRING,
-        BASE_FUNCTION,
-        NC_FUNCTION,
-        GENERATOR_FUNCTION,
-        ASYNC_FUNCTION,
-        CLASS_FUNCTION,
-        METHOD,
-        ARRAY_LITERAL,
-        OBJECT_LITERAL,
-        CLASS_LITERAL,
-    };
-
-    class ConstPoolValue {
-    public:
-        ConstPoolValue(ConstPoolType type, uint32_t index)
-            : value_(ConstPoolIndexField::Encode(index) | ConstPoolTypeField::Encode(type))
-        {
-        }
-
-        explicit ConstPoolValue(uint64_t v) : value_(v) {}
-        ~ConstPoolValue() = default;
-        NO_COPY_SEMANTIC(ConstPoolValue);
-        NO_MOVE_SEMANTIC(ConstPoolValue);
-
-        inline uint64_t GetValue() const
-        {
-            return value_;
-        }
-
-        inline uint32_t GetConstpoolIndex() const
-        {
-            return ConstPoolIndexField::Get(value_);
-        }
-
-        inline ConstPoolType GetConstpoolType() const
-        {
-            return ConstPoolTypeField::Get(value_);
-        }
-
-    private:
-        // NOLINTNEXTLINE(readability-magic-numbers)
-        using ConstPoolIndexField = BitField<uint32_t, 0, 32>;  // 32: 32 bit
-        // NOLINTNEXTLINE(readability-magic-numbers)
-        using ConstPoolTypeField = BitField<ConstPoolType, 32, 4>;  // 32: offset, 4: 4bit
-
-        uint64_t value_{0};
-    };
-    uint32_t GetOrInsertConstantPool(ConstPoolType type, uint32_t offset,
-                                     uint32_t &constpoolIndex_, std::unordered_map<uint32_t, uint64_t> &constpoolMap_);
-    void TranslateBytecode(uint32_t insSz, const uint8_t *insArr, const panda_file::File &pf, const JSMethod *method,
-                           std::vector<BytecodeTranslationInfo> &infoList, uint32_t &constpoolIndex,
-                           std::unordered_map<uint32_t, uint64_t> &constpoolMap);
-    void FixInstructionId32(const BytecodeInstruction &inst, uint32_t index, uint32_t fixOrder = 0) const;
-    void FixOpcode(uint8_t *pc) const;
-    void UpdateICOffset(JSMethod *method, uint8_t *pc) const;
+    static void TranslateBytecode(JSPandaFile *jsPandaFile, uint32_t insSz, const uint8_t *insArr,
+                                  const JSMethod *method, std::vector<BytecodeTranslationInfo> *infoList);
+    static void FixInstructionId32(const BytecodeInstruction &inst, uint32_t index, uint32_t fixOrder = 0);
+    static void FixOpcode(uint8_t *pc);
+    static void UpdateICOffset(JSMethod *method, uint8_t *pc);
     void DefineClassInConstPool(const JSHandle<ConstantPool> &constpool) const;
 
     EcmaVM *ecmaVm_;

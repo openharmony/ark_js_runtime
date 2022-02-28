@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_JS_PANDAFILE_H
-#define ECMASCRIPT_JS_PANDAFILE_H
+#ifndef ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
+#define ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/class_linker/panda_file_translator.h"
+#include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
@@ -28,19 +29,16 @@ class File;
 }  // namespace panda_file
 
 namespace ecmascript {
+#define ENTRY_FUNCTION_NAME "func_main_0"
+
 class JSPandaFile {
 public:
-    JSPandaFile(const panda_file::File *pf);
-    JSPandaFile(const panda_file::File *pf, bool isFrameWork);
+    JSPandaFile(const panda_file::File *pf, const CString &descriptor);
     ~JSPandaFile();
-
-    static JSPandaFile *CreateJSPandaFileFromPf(const std::string &filename);
-    static JSPandaFile *CreateJSPandaFileFromBuffer(const void *buffer, size_t size);
-    static JSPandaFile *CreateJSPandaFileFromBuffer(const void *buffer, size_t size, const std::string &filename);
 
     tooling::ecmascript::PtJSExtractor *GetOrCreatePtJSExtractor();
 
-    std::string GetJSPandaFileDesc() const
+    CString GetJSPandaFileDesc() const
     {
         return desc_;
     }
@@ -70,25 +68,12 @@ public:
         return mainMethodIndex_;
     }
 
-    std::unordered_map<uint32_t, uint64_t> GetConstpoolMap() const
+    const std::unordered_map<uint32_t, uint64_t> &GetConstpoolMap() const
     {
         return constpoolMap_;
     }
 
-    void SaveTranslatedInfo(uint32_t constpoolIndex, uint32_t numMethods, uint32_t mainMethodIndex, JSMethod *methods,
-                            std::unordered_map<uint32_t, uint64_t> &constpoolMap);
-    void ParseMethods();
-
-    Span<JSMethod> GetMethodSpan() const
-    {
-        return {methods_, numMethods_};
-    }
-
-    void UpdateConstpoolInfo(uint32_t constpoolIndex, std::unordered_map<uint32_t, uint64_t> &constpoolMap)
-    {
-        constpoolIndex_ = constpoolIndex;
-        constpoolMap_ = constpoolMap;
-    }
+    uint32_t GetOrInsertConstantPool(ConstPoolType type, uint32_t offset);
 
     void UpdateMainMethodIndex(uint32_t mainMethodIndex)
     {
@@ -102,22 +87,18 @@ public:
         return pf_->GetClasses();
     }
 
-    bool IsFrameWorkerPandaFile() const
-    {
-        return isFrameWorker_;
-    }
-
 private:
+    void InitMethods();
+
     uint32_t constpoolIndex_ {0};
+    std::unordered_map<uint32_t, uint64_t> constpoolMap_;
     uint32_t numMethods_ {0};
     uint32_t mainMethodIndex_ {0};
     JSMethod *methods_ {nullptr};
-    std::unordered_map<uint32_t, uint64_t> constpoolMap_;
     const panda_file::File *pf_ {nullptr};
-    bool isFrameWorker_ {false};
     std::unique_ptr<tooling::ecmascript::PtJSExtractor> ptJSExtractor_;
-    std::string desc_;
+    CString desc_;
 };
 }  // namespace ecmascript
 }  // namespace panda
-#endif // ECMASCRIPT_JS_PANDAFILE_H
+#endif // ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
