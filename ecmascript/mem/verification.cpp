@@ -82,9 +82,4 @@ size_t Verification::VerifyHeap() const
     }
     return failCount;
 }
-
-bool Verification::IsHeapAddress(void *addr) const
-{
-    return heap_->ContainObject(reinterpret_cast<TaggedObject *>(addr));
-}
 }  // namespace panda::ecmascript
