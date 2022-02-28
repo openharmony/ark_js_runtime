@@ -57,19 +57,14 @@ public:
     JSThread *thread {nullptr};
 };
 
-HWTEST_F_L0(JSVerificationTest, IsHeapAddress)
+HWTEST_F_L0(JSVerificationTest, ContainObject)
 {
     auto ecmaVm = thread->GetEcmaVM();
     auto heap = const_cast<Heap *>(ecmaVm->GetHeap());
     auto objectFactory = ecmaVm->GetFactory();
     auto verifier = Verification(heap);
-    EXPECT_FALSE(verifier.IsHeapAddress(reinterpret_cast<void *>(1)));
-    EXPECT_FALSE(verifier.IsHeapAddress(reinterpret_cast<void *>(2)));
-    EXPECT_FALSE(verifier.IsHeapAddress(nullptr));
-    EXPECT_FALSE(verifier.IsHeapAddress(&verifier));
 
     auto funcVerify = [](TaggedObject *object, Verification &v, const Heap *heap) {
-        EXPECT_TRUE(v.IsHeapAddress(reinterpret_cast<void *>(object)));
         EXPECT_TRUE(heap->ContainObject(object));
         EXPECT_TRUE(heap->IsLive(object));
     };
