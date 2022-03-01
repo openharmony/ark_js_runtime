@@ -13,7 +13,26 @@
  * limitations under the License.
  */
 
-// uint64_t InvokeJSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
+ #include "ecma_asm_defines.h"
+
+ /* JSFunctionEntry Callee Register Save Macro */
+ .macro PUSH_GENERAL_REGS
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
+    pushq %rbx
+.endm
+
+.macro POP_GENERAL_REGS
+    popq %rbx
+    popq %r15
+    popq %r14
+    popq %r13
+    popq %r12
+.endm
+
+// uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
 //                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 // Input:
 // %rdi - glue
@@ -22,20 +41,15 @@
 // %ecx - actualNumArgs
 // %r8  - argV
 // %r9  - codeAddr
-.global InvokeJSFunctionEntry
-.type InvokeJSFunctionEntry, %function
-InvokeJSFunctionEntry: 
+.global JSFunctionEntry
+.type JSFunctionEntry, %function
+JSFunctionEntry: 
+    PUSH_GENERAL_REGS
     // construct the frame
     pushq   %rbp
-    movq    %rsp, %rbp // set frame pointer
-    pushq   $1         // optimized entry frame type
-    pushq   $1         // callsite sp
-    pushq   %rsi       // prev managed fp
-
-    // callee save
-    pushq   %rax
-    pushq   %rbx
-    pushq   %rdi
+    movq    %rsp, %rbp              // set frame pointer
+    pushq   $JS_ENTRY_FRAME_TYPE    // optimized entry frame type
+    pushq   %rsi                    // prev managed fp
 
     // expectedNumArgs > actualNumArgs
     movl     %edx, %ebx        // save expectedNumArgs
@@ -69,38 +83,58 @@ InvokeJSFunctionEntry:
     shll    $3, %ebx        // todo:: fixed for 3 extra arguments
     addq    %rbx, %rsp
     
-    popq    %rdi           // callee restore
-    popq    %rbx
-    addq    $8, %rsp
-
-    popq    %rsi           // pop rsi
-    addq    $16, %rsp
+    popq    %rsi           // pop prev-managed frame
+    addq    $8, %rsp       
     popq    %rbp
 
-    movq    %rsi, 2128(%rdi)   // restore thread->leaveFp
+    POP_GENERAL_REGS
+    movq    %rsi, ASM_GLUE_CURRENT_FRAME_OFFSET(%rdi)   // restore thread->currentFrame_
     ret
 
-// uint64_t CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint32_t argc, ...);
-// webkit_jscc calling convention
-// %rax - glue
-// rsp + 24 - arg0
-// rsp + 16 - argc
-// rsp + 8  - patch_id
-// rsp      - runtime_id
-// return address 
-// rbp
-// rbp - 8:  type             ^
-// rbp - 16: patchId          |
-// rbp - 24: callsiteSp      leave frame
-//                            V
+
+
+// uint64_t CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
+// webkit_jscc calling convention call runtime_id's runtion function(c-abi)
+// JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
+// Input:
+// %x0 - glue
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 32: argv1
+// sp + 24: argv0
+// sp + 16: argc
+// sp + 8:  patch_id
+// sp:      runtime_id
+// construct Leave Frame:
+//   +--------------------------+
+//   |      argv[]              |
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|   |
+//   |       patchID            | Fixed
+//   |--------------------------| OptimizedLeaveFrame
+//   |       RuntimeId          |   |
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |     frameType            |   v
+//   +--------------------------+ ---
+
+// Output:
+//  sp - 8 : pc
+//  sp - 16: rbp <---------current rbp & current sp
+//  current sp - 8:  type
+
 .global CallRuntimeTrampoline
 .type CallRuntimeTrampoline, %function
 CallRuntimeTrampoline:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
-    movq    %rbp, 2128(%rax)   // save to thread->leaveFp
-    pushq    $3             // leave frame type
-    subq    $16, %rsp       // increase the leave frame size
+    movq    %rbp, ASM_GLUE_CURRENT_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
+    pushq   $LEAVE_FRAME_TYPE
     
     // callee save
     pushq    %r10
@@ -111,22 +145,18 @@ CallRuntimeTrampoline:
     movq    %rbp, %rdx
     addq    $16, %rdx        // 16 : for rbp & return address
 
-    movq    8(%rdx), %r10   // get patch pointer id
-    movq    %r10, 32(%rsp)    // save patch pointer id
-    movq    %rdx, 24(%rsp)   // save callsite sp
-
     // load runtime trampoline address
     movq    (%rdx), %r10       // runtime id
-    movq    4192(%rax, %r10, 8), %r10
+    movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rax, %r10, 8), %r10
     movq    %rax, %rdi       // glue
     movl    16(%rdx), %esi   // argc
-    addq    $24, %rdx         // argV
+    addq    $24, %rdx        // argV
     call    *%r10
 
     addq    $8, %rsp
     popq    %rdx
     popq    %r10
 
-    addq    $24, %rsp
+    addq    $8, %rsp
     popq    %rbp
     ret

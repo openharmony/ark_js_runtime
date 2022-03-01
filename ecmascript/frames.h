@@ -63,45 +63,49 @@
 //   |    pc(bytecode addr)             |        v          v
 //   +----------------------------------+--------+----------+
 
-//   Optimized Leave Frame(alias OptLeaveFrame) layout
+//   Optimized Leave Frame(alias OptimizedLeaveFrame) layout
 //   +--------------------------+
-//   |     patchID          |   ^
-//   |- - - - - - - - -     |   |
-//   |       callsiteFp     | Fixed
-//   |- - - - - - - - -     | OptLeaveFrame
-//   |       callsiteSp     |   |
-//   |- - - - - - - - -     |   |
-//   |       prevFp         |   |
-//   |- - - - - - - - -     |   |
-//   |       frameType      |   v
+//   |      argv[]              |
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |--------------------------|   |
+//   |       patchID            | Fixed
+//   |--------------------------| OptimizedLeaveFrame
+//   |       RuntimeId          |   |
+//   |--------------------------|   |
+//   |       returnAddr         |   |
+//   |--------------------------|   |
+//   |       callsiteFp         |   |
+//   |--------------------------|   |
+//   |     frameType            |   v
+//   +--------------------------+ ---
+//   |  callee save registers   |
 //   +--------------------------+
 
 //   Optimized Frame(alias OptimizedFrame) layout
 //   +--------------------------+
 //   | calleesave registers |   ^
-//   |- - - - - - - - -     |   |
+//   |----------------------|   |
 //   |   returnaddress      | Fixed
-//   |- - - - - - - - -     | OptimizedFrame
+//   |----------------------| OptimizedFrame
 //   |       prevFp         |   |
-//   |- - - - - - - - -     |   |
+//   |----------------------|   |
 //   |     frameType        |   |
-//   |- - - - - - - - -     |   |
+//   |----------------------|   |
 //   |       callsiteSp     |   v
 //   +--------------------------+
 
 //   Optimized Entry Frame(alias OptimizedEntryFrame) layout
 //   +--------------------------+
-//   | calleesave registers |   ^
-//   |- - - - - - - - -     |   |
-//   |   returnaddress      | Fixed
-//   |- - - - - - - - -     | OptimizedEntryFrame
-//   |       prevFp         |   |
-//   |- - - - - - - - -     |   |
-//   |     frameType        |   |
-//   |- - - - - - - - -     |   |
-//   |  callsiteSp          |   v
-//   |- - - - - - - - -     |   |
-//   | prevManagedFrameFp   |   |
+//   |   returnaddress      |   ^
+//   |----------------------|   |
+//   |calleesave registers  | Fixed
+//   |----------------------| OptimizedEntryFrame
+//   |      prevFp          |   |
+//   |----------------------|   |
+//   |      frameType       |   |
+//   |----------------------|   |
+//   |  prevLeaveFrameFp    |   v
 //   +--------------------------+
 
 // ```
@@ -115,7 +119,7 @@
 // ```
 //                     call                   call
 //     foo    -----------------> bar   ----------------------->baz ---------------------> rtfunc
-// (interpret frame)       (OptimizedEntryFrame)      (OptimizedFrame)     (OptLeaveFrame + Runtime Frame)
+// (interpret frame)       (OptimizedEntryFrame)      (OptimizedFrame)     (OptimizedLeaveFrame + Runtime Frame)
 // ```
 
 // Frame Layout as follow:
@@ -153,43 +157,47 @@
 //   +----------------------------------+--------+----------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
-//   +--------------------------+---------------------------+
-//   | calleesave registers |   ^                           ^
-//   |- - - - - - - - -     |   |                           |
-//   |   returnaddress      |   Fixed                       |
-//   |- - - - - - - - -     | OptimizedEntryFrame           |
-//   |       prevFp         |   |                           |
-//   |- - - - - - - - -     |   |                           |
-//   |     frameType        |   |                        bar's frame
-//   |- - - - - - - - -     |   |                           |
-//   |   callsiteSp         |   v                           |
-//   |- - - - - - - - -     |   |                           |
-//   |prevManagedFrameFp    |   |                           V
+//   |   returnaddress      |   ^                           ^
+//   |----------------------|   |                           |
+//   |calleesave registers  | Fixed                         |
+//   |----------------------| OptimizedEntryFrame       bar's frame
+//   |      prevFp          |   |                           |
+//   |----------------------|   |                           |
+//   |      frameType       |   |                           |
+//   |----------------------|   |                           |
+//   |  prevLeaveFrameFp    |   v                           |
+//   +--------------------------+                           V
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
 //   +--------------------------+---------------------------+
 //   | calleesave registers |   ^                           ^
-//   |- - - - - - - - -     |   |                           |
+//   |----------------------|   |                           |
 //   |   returnaddress      | Fixed                         |
-//   |- - - - - - - - -     | OptimizedFrame                |
+//   |----------------------| OptimizedFrame                |
 //   |       prevFp         |   |                           |
-//   |- - - - - - - - -     |   |                       baz's frame Header
+//   |----------------------|   |                       baz's frame Header
 //   |     frameType        |   |                           |
-//   |- - - - - - - - -     |   |                           |
+//   |----------------------|   |                           |
 //   |   callsitesp         |   v                           V
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
-//   |     patchID          |   ^                           ^
-//   |- - - - - - - - -     |   |                           |
-//   |     callsiteFp       | Fixed                         |
-//   |- - - - - - - - -     | OptLeaveFrame                 |
-//   |     callsitesp       |   |                         OptLeaveFrame
-//   |- - - - - - - - -     |   |                           |
-//   |       prevFp         |   |                           |
-//   |- - - - - - - - -     |   |                           |
-//   |       frameType      |   v                           |
+//   |      argv[]              |                           ^
+//   +--------------------------+ ---                       |
+//   |       argc               |   ^                       |
+//   |--------------------------|   |                       |
+//   |       patchID            | Fixed                     |
+//   |--------------------------| OptimizedLeaveFrame             |
+//   |       RuntimeId          |   |                       |
+//   |--------------------------|   |                      OptimizedLeaveFrame
+//   |       returnAddr         |   |                       |
+//   |--------------------------|   |                       |
+//   |       callsiteFp         |   |                       |
+//   |--------------------------|   |                       |
+//   |     frameType            |   v                       |
+//   +--------------------------+ ----                      |
+//   |  callee save registers   |                           V
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
@@ -199,8 +207,8 @@
 //   +------------------------------------------------------+
 // ```
 // Iterator:
-// rtfunc get OptLeaveFrame by calling GetCurrentSPFrame.
-// get baz's Frame by OptLeaveFrame.prev field.
+// rtfunc get OptimizedLeaveFrame by calling GetCurrentSPFrame.
+// get baz's Frame by OptimizedLeaveFrame.prev field.
 // get bar's Frame by baz's frame fp field
 // get foo's Frame by bar's Frame prev field
 
@@ -208,6 +216,7 @@
 #define ECMASCRIPT_FRAMES_H
 
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/trampoline/ecma_asm_defines.h"
 
 namespace panda::ecmascript {
 class JSThread;
@@ -224,13 +233,13 @@ public:
     static constexpr int SP_DWARF_REG_NUM = 7;
     static constexpr int FP_DWARF_REG_NUM = 6;
     static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
-    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -3;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -2;
 #else
 #ifdef PANDA_TARGET_ARM64
     static constexpr int SP_DWARF_REG_NUM = 31;  /* x31 */
     static constexpr int FP_DWARF_REG_NUM = 29;  /* x29 */
     static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
-    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -3;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -2;
 #else
 #ifdef PANDA_TARGET_ARM32
     static constexpr int SP_DWARF_REG_NUM = 13;
@@ -254,17 +263,29 @@ class OptimizedFrameBase {
 public:
     OptimizedFrameBase() = default;
     ~OptimizedFrameBase() = default;
-    static constexpr int64_t GetCallsiteSpToFpDelta()
-    {
-        return MEMBER_OFFSET(OptimizedFrameBase, callsiteSp) - MEMBER_OFFSET(OptimizedFrameBase, prevFp);
-    }
-    uintptr_t callsiteSp;
     FrameType type;
     JSTaggedType *prevFp; // fp register
-    static OptimizedFrameBase* GetFrameFromSp(JSTaggedType *sp)
+};
+
+class OptimizedFrame {
+public:
+    uintptr_t callsiteSp;
+    OptimizedFrameBase base;
+public:
+    OptimizedFrame() = default;
+    ~OptimizedFrame() = default;
+    static constexpr int64_t GetCallsiteSpToFpDelta()
     {
-        return reinterpret_cast<OptimizedFrameBase *>(reinterpret_cast<uintptr_t>(sp)
-            - MEMBER_OFFSET(OptimizedFrameBase, prevFp));
+        return MEMBER_OFFSET(OptimizedFrame, callsiteSp) - MEMBER_OFFSET(OptimizedFrame, base.prevFp);
+    }
+    static OptimizedFrame* GetFrameFromSp(JSTaggedType *sp)
+    {
+        return reinterpret_cast<OptimizedFrame *>(reinterpret_cast<uintptr_t>(sp)
+            - MEMBER_OFFSET(OptimizedFrame, base.prevFp));
+    }
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return base.prevFp;
     }
 };
 
@@ -272,18 +293,20 @@ class OptimizedEntryFrame {
 public:
     OptimizedEntryFrame() = default;
     ~OptimizedEntryFrame() = default;
-    JSTaggedType *prevInterpretedFrameFp;
+    JSTaggedType *preLeaveFrameFp;
     OptimizedFrameBase base;
-    static constexpr int64_t GetCallsiteSpToFpDelta()
+
+    inline JSTaggedType* GetPrevFrameFp()
     {
-        return MEMBER_OFFSET(OptimizedEntryFrame, base.callsiteSp) - MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
+        return preLeaveFrameFp;
     }
-    // INTERPER_FRAME_FP_TO_FP_DELTA
+
     static constexpr int64_t GetInterpreterFrameFpToFpDelta()
     {
-        return MEMBER_OFFSET(OptimizedEntryFrame, prevInterpretedFrameFp) -
+        return MEMBER_OFFSET(OptimizedEntryFrame, preLeaveFrameFp) -
             MEMBER_OFFSET(OptimizedEntryFrame, base.prevFp);
     }
+
     static OptimizedEntryFrame* GetFrameFromSp(JSTaggedType *sp)
     {
         return reinterpret_cast<OptimizedEntryFrame *>(reinterpret_cast<uintptr_t>(sp) -
@@ -334,6 +357,10 @@ struct InterpretedFrame {
     JSTaggedValue acc;
     JSTaggedValue env;
     InterpretedFrameBase base;
+    inline JSTaggedType* GetPrevFrameFp()
+    {
+        return base.prev;
+    }
 
     static InterpretedFrame* GetFrameFromSp(JSTaggedType *sp)
     {
@@ -411,30 +438,31 @@ struct InterpretedFrame {
 };
 static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);
 
-struct OptLeaveFrame {
-    uintptr_t callsiteSp;
-    uint64_t patchId;
+struct OptimizedLeaveFrame {
     FrameType type;
-    uintptr_t callsiteFp;  // thread sp set here
+    uintptr_t callsiteFp; // thread sp set here
     uintptr_t returnAddr;
     uint64_t argRuntimeId;
     uint64_t argPatchId;
     uint64_t argc;
-    static OptLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
+    // argv[] is dynamic
+    static OptimizedLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
     {
-        return reinterpret_cast<OptLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
-            MEMBER_OFFSET(OptLeaveFrame, callsiteFp));
+        return reinterpret_cast<OptimizedLeaveFrame *>(reinterpret_cast<uintptr_t>(sp) -
+            MEMBER_OFFSET(OptimizedLeaveFrame, callsiteFp));
     }
-    static constexpr uint32_t kSizeOn64Platform = sizeof(FrameType) + 4 * sizeof(uint64_t);
-    static constexpr uint32_t kSizeOn32Platform = sizeof(FrameType) + 3 * sizeof(int32_t) + sizeof(uint64_t);
-    static constexpr uint32_t kPrevFpOffset = sizeof(FrameType);
+    uintptr_t GetCallSiteSp()
+    {
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argRuntimeId);
+    }
 };
 
+static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_FRAME) == OPTIMIZE_FRAME_TYPE);
+static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_ENTRY_FRAME) == JS_ENTRY_FRAME_TYPE);
+static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_LEAVE_FRAME) == LEAVE_FRAME_TYPE);
 #ifdef PANDA_TARGET_64
     static_assert(InterpretedFrame::kSizeOn64Platform == sizeof(InterpretedFrame));
-    static_assert(OptimizedFrameBase::GetCallsiteSpToFpDelta() ==
-        FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
-    static_assert(OptimizedEntryFrame::GetCallsiteSpToFpDelta() ==
+    static_assert(OptimizedFrame::GetCallsiteSpToFpDelta() ==
         FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
     static_assert(OptimizedEntryFrame::GetInterpreterFrameFpToFpDelta() ==
         FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * sizeof(uintptr_t));

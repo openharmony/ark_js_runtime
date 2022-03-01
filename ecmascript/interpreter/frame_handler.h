@@ -68,10 +68,10 @@ public:
         return GetFrameType() == FrameType::OPTIMIZED_LEAVE_FRAME;
     }
 
-    OptLeaveFrame* GetOptLeaveFrame() const
+    OptimizedLeaveFrame* GetOptimizedLeaveFrame() const
     {
         assert(IsOptimizedLeaveFrame());
-        return OptLeaveFrame::GetFrameFromSp(sp_);
+        return OptimizedLeaveFrame::GetFrameFromSp(sp_);
     }
 
 protected:

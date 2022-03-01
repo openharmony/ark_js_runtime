@@ -100,7 +100,7 @@ index a9954635705..a0a533a7153 100644
  
  #endif
 diff --git a/llvm/lib/CodeGen/PrologEpilogInserter.cpp b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
-index 3909b571728..63e5048f4b3 100644
+index 3909b571728..d275d9890cf 100644
 --- a/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 +++ b/llvm/lib/CodeGen/PrologEpilogInserter.cpp
 @@ -79,6 +79,9 @@ using MBBVector = SmallVector<MachineBasicBlock *, 4>;
@@ -121,9 +121,9 @@ index 3909b571728..63e5048f4b3 100644
 +  unsigned CalleeSavedFrameSize = 0;
 +  Triple::ArchType archType = TFI.GetArkSupportTarget();
 +  if (archType != Triple::UnknownArch) {
-+    int slotSize = 4;
++    int slotSize = sizeof(uint32_t);
 +    if (archType == Triple::aarch64) {
-+      slotSize = 8;
++      slotSize = sizeof(uint64_t);
 +    }
 +    if (MF.getFunction().hasFnAttribute("js-stub-call")) {
 +        int64_t marker = 0x0;
@@ -261,6 +261,23 @@ index 6da089d1859..271b4e157d9 100644
    case TargetOpcode::PATCHABLE_FUNCTION_ENTER:
      LowerPATCHABLE_FUNCTION_ENTER(*MI);
      return;
+diff --git a/llvm/lib/Target/AArch64/AArch64CallingConvention.td b/llvm/lib/Target/AArch64/AArch64CallingConvention.td
+index a0b2d7712b6..59092f1e196 100644
+--- a/llvm/lib/Target/AArch64/AArch64CallingConvention.td
++++ b/llvm/lib/Target/AArch64/AArch64CallingConvention.td
+@@ -373,9 +373,10 @@ def CC_AArch64_GHC : CallingConv<[
+ // vreg on entry, use it in RET & tail call generation; make that vreg def if we
+ // end up saving LR as part of a call frame). Watch this space...
+ def CSR_AArch64_AAPCS : CalleeSavedRegs<(add X19, X20, X21, X22, X23, X24,
+-                                           X25, X26, X27, X28, LR, FP,
++                                           X25, X26, X27, X28,
+                                            D8,  D9,  D10, D11,
+-                                           D12, D13, D14, D15)>;
++                                           D12, D13, D14, D15,
++                                           LR, FP)>;
+ 
+ // Darwin puts the frame-record at the top of the callee-save area.
+ def CSR_Darwin_AArch64_AAPCS : CalleeSavedRegs<(add LR, FP, X19, X20, X21, X22,
 diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
 index 651ad9ad4c8..5e179bd3db8 100644
 --- a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
@@ -722,7 +739,7 @@ index 9f504b1eaa4..30a1baf5c85 100644
    case ARM::tLDR_postidx: {
      MachineOperand Def(MI.getOperand(1));
 diff --git a/llvm/lib/Target/X86/X86FrameLowering.cpp b/llvm/lib/Target/X86/X86FrameLowering.cpp
-index 1da20371caf..3b1a4c44654 100644
+index 1da20371caf..42b557f97a0 100644
 --- a/llvm/lib/Target/X86/X86FrameLowering.cpp
 +++ b/llvm/lib/Target/X86/X86FrameLowering.cpp
 @@ -1168,6 +1168,30 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
@@ -788,7 +805,7 @@ index 1da20371caf..3b1a4c44654 100644
      // Pop EBP.
      BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
              MachineFramePtr)
-@@ -1993,8 +2042,36 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
+@@ -1993,8 +2042,31 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
  
    if (hasFP(MF)) {
      // emitPrologue always spills frame register the first thing.
@@ -801,17 +818,12 @@ index 1da20371caf..3b1a4c44654 100644
 +        .getAsInteger(10, marker);//marker 1 break frame
 +
 +        if (marker == JS_ENTRY_FRAME_MARK) {
-+            SpillSlotOffset -=  4 * SlotSize; // add type and thread.fp
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // prev
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // type
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // currentsp
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // threadfp
++            SpillSlotOffset -=  4 * SlotSize; // add type and thread.fp and currentsp and threadfp
++            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
 +            CalleeSavedFrameSize += (3 * SlotSize);
 +        } else {
-+            SpillSlotOffset -=  3 * SlotSize; // add type
++            SpillSlotOffset -=  3 * SlotSize; // add type and pre and currentsp
 +            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // prev
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // type
-+            MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset); // currentsp
 +            CalleeSavedFrameSize += 2 * SlotSize;
 +        }
 +    } else {

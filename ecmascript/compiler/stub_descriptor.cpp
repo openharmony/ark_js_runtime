@@ -1030,14 +1030,14 @@ CALL_STUB_INIT_DESCRIPTOR(IterNext)
 CALL_STUB_INIT_DESCRIPTOR(CallRuntimeTrampoline)
 {
     /* 4 : 4 input parameters */
-    StubDescriptor callRuntimeTrampoline("CallRuntimeTrampoline", 0, 4,
+    StubDescriptor CallRuntimeTrampoline("CallRuntimeTrampoline", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED);
-    *descriptor = callRuntimeTrampoline;
+    *descriptor = CallRuntimeTrampoline;
     std::array<StubMachineType, 4> params = { /* 4 : 4 input parameters */
         StubMachineType::NATIVE_POINTER,
         StubMachineType::UINT64,
         StubMachineType::UINT64,
-        StubMachineType::UINT32,
+        StubMachineType::UINT64,
     };
     descriptor->SetVariableArgs(true);
     descriptor->SetParameters(params.data());

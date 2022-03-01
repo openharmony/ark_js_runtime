@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-// uint64_t InvokeJSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
+// uint64_t JSFunctionCallTrampoline(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
 //                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 // Input:
 // %r0 - glue
@@ -22,9 +22,9 @@
 // %r3 - actualNumArgs
 // %r5  - argV
 // %r12  - codeAddr
-.global InvokeJSFunctionEntry
-.type InvokeJSFunctionEntry, %function
-InvokeJSFunctionEntry:
+.global JSFunctionCallTrampoline
+.type JSFunctionCallTrampoline, %function
+JSFunctionCallTrampoline:
     push    {r4, r5, r6, r7, r8, r9, r10, r11, lr}
     add     r11, sp, #28
     sub     sp, sp, #4
@@ -95,9 +95,8 @@ InvokeCompiledJSFunction:
     bx      lr
 
 
-// uint64_t CallRuntimeTrampoline(uintptr_t glue, uint32_t runtime_id, uint32_t patch_id, uint32_t argc, ...);
+// uint64_t CallRuntimeTrampoline(uintptr_t glue, uint32_t runtime_id, uint32_t patch_id, uint64_t argc, ...);
 // webkit_jscc calling convention
-
 .global CallRuntimeTrampoline
 .type CallRuntimeTrampoline, %function
 CallRuntimeTrampoline:   // todo : need to rewrite
