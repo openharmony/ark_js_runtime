@@ -372,7 +372,7 @@ public:
         return is32Bit ? REGION_FLAG_OFFSET_32 : REGION_FLAG_OFFSET_64;
     }
 
-    #define REGION_OFFSET_MACRO(name, camelName, memberName, lastName, lastSize32, lastSize64)                                                                 \
+    #define REGION_OFFSET_MACRO(name, camelName, memberName, lastName, lastSize32, lastSize64)             \
         static constexpr uint32_t REGION_##name##_OFFSET_32 = REGION_##lastName##_OFFSET_32 + (lastSize32); \
         static constexpr uint32_t REGION_##name##_OFFSET_64 = REGION_##lastName##_OFFSET_64 + (lastSize64);
     static constexpr uint32_t REGION_FLAG_OFFSET_32 = 0U;
