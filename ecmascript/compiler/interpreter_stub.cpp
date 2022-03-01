@@ -421,8 +421,7 @@ DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
     Bind(&isHole);
     {
         // slow path
-        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Div2Dyn)),
-                             { left, acc });
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Div2Dyn)), { left, acc });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(*result), &isException, &notException);
@@ -1387,7 +1386,7 @@ DECLARE_ASM_HANDLER(HandleExpDynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef base = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ExpDyn)),
-                                 { base, acc }); // acc is exponent
+        { base, acc }); // acc is exponent
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2089,7 +2088,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
-                                 {  receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
+        {  receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);

@@ -3430,7 +3430,7 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Label isVailedIndex(env);
     Label notValidIndex(env);
     Branch(TruncInt32ToInt1(Int32And(ZExtInt1ToInt32(Int32GreaterThanOrEqual(index, GetInt32Constant(0))),
-                            ZExtInt1ToInt32(UInt32LessThan(index, length)))), &isVailedIndex, &notValidIndex);
+        ZExtInt1ToInt32(UInt32LessThan(index, length)))), &isVailedIndex, &notValidIndex);
     Bind(&isVailedIndex);
     {
         GateRef elements = GetElementsArray(receiver);
