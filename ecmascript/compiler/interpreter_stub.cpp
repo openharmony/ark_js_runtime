@@ -17,7 +17,7 @@
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
-#include "ecmascript/compiler/machine_type.h"
+#include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_generator_object.h"
@@ -71,42 +71,42 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
 #if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 DECLARE_ASM_HANDLER(HandleLdNanPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdInfinityPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::POSITIVE_INFINITY));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdUndefinedPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = GetUndefinedConstant();
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdNullPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = GetNullConstant();
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdTruePref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = ChangeInt64ToTagged(GetInt64Constant(JSTaggedValue::VALUE_TRUE));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleLdFalsePref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = ChangeInt64ToTagged(GetInt64Constant(JSTaggedValue::VALUE_FALSE));
     DISPATCH_WITH_ACC(PREF_NONE);
 }
@@ -119,19 +119,19 @@ DECLARE_ASM_HANDLER(HandleThrowDynPref)
 
 DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     
     GateRef gConstOffset = IntPtrAdd(glue, GetIntPtrConstant(env->GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
     GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
-    GateRef gConstUndefindStr = Load(StubMachineType::TAGGED_POINTER, gConstOffset, booleanIndex);
-    DEFVARIABLE(resultRep, StubMachineType::TAGGED_POINTER, gConstUndefindStr);
+    GateRef gConstUndefindStr = Load(VariableType::JS_POINTER(), gConstOffset, booleanIndex);
+    DEFVARIABLE(resultRep, VariableType::JS_POINTER(), gConstUndefindStr);
     Label objIsTrue(env);
     Label objNotTrue(env);
     Label dispatch(env);
     Label defaultLabel(env);
     GateRef gConstBooleanStr = Load(
-        StubMachineType::TAGGED_POINTER, gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+        VariableType::JS_POINTER(), gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
     Branch(Int64Equal(*varAcc, GetInt64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
     Bind(&objIsTrue);
     {
@@ -156,7 +156,7 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
             Bind(&objIsNull);
             {
                 resultRep = Load(
-                    StubMachineType::TAGGED_POINTER, gConstOffset,
+                    VariableType::JS_POINTER(), gConstOffset,
                     GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                 Jump(&dispatch);
             }
@@ -168,7 +168,7 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
                     &objNotUndefined);
                 Bind(&objIsUndefined);
                 {
-                    resultRep = Load(StubMachineType::TAGGED_POINTER, gConstOffset,
+                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
                         GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
                     Jump(&dispatch);
                 }
@@ -190,7 +190,7 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
             Bind(&objIsString);
             {
                 resultRep = Load(
-                    StubMachineType::TAGGED_POINTER, gConstOffset,
+                    VariableType::JS_POINTER(), gConstOffset,
                     GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
                 Jump(&dispatch);
             }
@@ -201,7 +201,7 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
                 Branch(IsSymbol(*varAcc), &objIsSymbol, &objNotSymbol);
                 Bind(&objIsSymbol);
                 {
-                    resultRep = Load(StubMachineType::TAGGED_POINTER, gConstOffset,
+                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
                         GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
                     Jump(&dispatch);
                 }
@@ -213,14 +213,14 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
                     Bind(&objIsCallable);
                     {
                         resultRep = Load(
-                            StubMachineType::TAGGED_POINTER, gConstOffset,
+                            VariableType::JS_POINTER(), gConstOffset,
                             GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
                         Jump(&dispatch);
                     }
                     Bind(&objNotCallable);
                     {
                         resultRep = Load(
-                            StubMachineType::TAGGED_POINTER, gConstOffset,
+                            VariableType::JS_POINTER(), gConstOffset,
                             GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
                         Jump(&dispatch);
                     }
@@ -235,7 +235,7 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
             Bind(&objIsNum);
             {
                 resultRep = Load(
-                    StubMachineType::TAGGED_POINTER, gConstOffset,
+                    VariableType::JS_POINTER(), gConstOffset,
                     GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
                 Jump(&dispatch);
             }
@@ -250,7 +250,7 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
 
 DECLARE_ASM_HANDLER(HandleLdLexEnvDynPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef state = GetFrame(sp);
     varAcc = GetEnvFromFrame(state);
     DISPATCH_WITH_ACC(PREF_NONE);
@@ -267,7 +267,7 @@ DECLARE_ASM_HANDLER(HandlePopLexEnvDynPref)
 
 DECLARE_ASM_HANDLER(HandleGetPropIteratorPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     
     GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetPropIterator)), { *varAcc });
@@ -285,7 +285,7 @@ DECLARE_ASM_HANDLER(HandleGetPropIteratorPref)
 
 DECLARE_ASM_HANDLER(HandleAsyncFunctionEnterPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(AsyncFunctionEnter)), {});
     Label isException(env);
@@ -302,14 +302,14 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionEnterPref)
 
 DECLARE_ASM_HANDLER(HandleLdHolePref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = GetHoleConstant();
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
 DECLARE_ASM_HANDLER(HandleGetIteratorPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     
     Label isGeneratorObj(env);
@@ -352,7 +352,7 @@ DECLARE_ASM_HANDLER(HandleThrowPatternNonCoerciblePref)
 
 DECLARE_ASM_HANDLER(HandleLdHomeObjectPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef thisFunc = GetFunctionFromFrame(GetFrame(sp));
     varAcc = GetHomeObjectFromJSFunction(thisFunc);
     DISPATCH_WITH_ACC(PREF_NONE);
@@ -372,9 +372,9 @@ DECLARE_ASM_HANDLER(HandleDebuggerPref)
 DECLARE_ASM_HANDLER(HandleMul2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     // fast path
     result = FastMul(left, acc);
     Label isHole(env);
@@ -410,9 +410,9 @@ DECLARE_ASM_HANDLER(HandleMul2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     // fast path
     result = FastDiv(left, acc);
     Label isHole(env);
@@ -448,9 +448,9 @@ DECLARE_ASM_HANDLER(HandleDiv2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleMod2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     // fast path
     result = FastMod(glue, left, acc);
     Label isHole(env);
@@ -486,10 +486,10 @@ DECLARE_ASM_HANDLER(HandleMod2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     // fast path
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     result = FastEqual(left, acc);
     Label isHole(env);
     Label notHole(env);
@@ -524,10 +524,10 @@ DECLARE_ASM_HANDLER(HandleEqDynPrefV8)
 DECLARE_ASM_HANDLER(HandleNotEqDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     // fast path
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     result = FastEqual(left, acc);
     Label isHole(env);
     Label notHole(env);
@@ -573,7 +573,7 @@ DECLARE_ASM_HANDLER(HandleNotEqDynPrefV8)
 DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef right = acc;
     Label leftIsInt(env);
@@ -605,8 +605,8 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, StubMachineType::FLOAT64, GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, StubMachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -679,7 +679,7 @@ DECLARE_ASM_HANDLER(HandleLessDynPrefV8)
 DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef right = acc;
     Label leftIsInt(env);
@@ -711,8 +711,8 @@ DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, StubMachineType::FLOAT64, GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, StubMachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -785,7 +785,7 @@ DECLARE_ASM_HANDLER(HandleLessEqDynPrefV8)
 DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef right = acc;
     Label leftIsInt(env);
@@ -817,8 +817,8 @@ DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, StubMachineType::FLOAT64, GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, StubMachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -891,7 +891,7 @@ DECLARE_ASM_HANDLER(HandleGreaterDynPrefV8)
 DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
     GateRef right = acc;
     Label leftIsInt(env);
@@ -923,8 +923,8 @@ DECLARE_ASM_HANDLER(HandleGreaterEqDynPrefV8)
             Bind(&rightIsNumber);
             {
                 // fast path
-                DEFVARIABLE(doubleLeft, StubMachineType::FLOAT64, GetDoubleConstant(0));
-                DEFVARIABLE(doubleRight, StubMachineType::FLOAT64, GetDoubleConstant(0));
+                DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+                DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
                 Label leftIsInt1(env);
                 Label leftNotInt1(env);
                 Label exit1(env);
@@ -1003,12 +1003,12 @@ DECLARE_ASM_HANDLER(AsmInterpreterEntry)
 DECLARE_ASM_HANDLER(SingleStepDebugging)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, StubMachineType::NATIVE_POINTER, pc);
-    DEFVARIABLE(varSp, StubMachineType::NATIVE_POINTER, sp);
-    DEFVARIABLE(varConstpool, StubMachineType::TAGGED_POINTER, constpool);
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(JumpToCInterpreter)), {
         PtrBuildTaggedWithNoGC(pc), PtrBuildTaggedWithNoGC(sp), constpool, profileTypeInfo,
@@ -1031,9 +1031,9 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
         GateRef function = GetFunctionFromFrame(frame);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
         varConstpool = GetConstpoolFromFunction(function);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(StubMachineType::INT32, method,
+        varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
     }
     Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
@@ -1042,7 +1042,7 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
 
 DECLARE_ASM_HANDLER(HandleLdaDynV8)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef vsrc = ReadInst8_0(pc);
     varAcc = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
     DISPATCH_WITH_ACC(V8);
@@ -1058,8 +1058,8 @@ DECLARE_ASM_HANDLER(HandleStaDynV8)
 DECLARE_ASM_HANDLER(HandleJmpImm8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     GateRef offset = ReadInstSigned8_0(pc);
     Label dispatch(env);
@@ -1072,8 +1072,8 @@ DECLARE_ASM_HANDLER(HandleJmpImm8)
 DECLARE_ASM_HANDLER(HandleJmpImm16)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     GateRef offset = ReadInstSigned16_0(pc);
     Label dispatch(env);
@@ -1086,8 +1086,8 @@ DECLARE_ASM_HANDLER(HandleJmpImm16)
 DECLARE_ASM_HANDLER(HandleJmpImm32)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     GateRef offset = ReadInstSigned32_0(pc);
     Label dispatch(env);
@@ -1099,13 +1099,13 @@ DECLARE_ASM_HANDLER(HandleJmpImm32)
 DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm4Imm4)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef level = ZExtInt8ToInt32(ReadInst4_2(pc));
     GateRef slot = ZExtInt8ToInt32(ReadInst4_3(pc));
     GateRef state = GetFrame(sp);
-    DEFVARIABLE(currentEnv, StubMachineType::TAGGED, GetEnvFromFrame(state));
-    DEFVARIABLE(i, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1127,14 +1127,14 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm4Imm4)
 DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm8Imm8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef level = ZExtInt8ToInt32(ReadInst8_1(pc));
     GateRef slot = ZExtInt8ToInt32(ReadInst8_2(pc));
 
     GateRef state = GetFrame(sp);
-    DEFVARIABLE(currentEnv, StubMachineType::TAGGED, GetEnvFromFrame(state));
-    DEFVARIABLE(i, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1155,14 +1155,14 @@ DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm8Imm8)
 DECLARE_ASM_HANDLER(HandleLdLexVarDynPrefImm16Imm16)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef level = ZExtInt16ToInt32(ReadInst16_1(pc));
     GateRef slot = ZExtInt16ToInt32(ReadInst16_3(pc));
 
     GateRef state = GetFrame(sp);
-    DEFVARIABLE(currentEnv, StubMachineType::TAGGED, GetEnvFromFrame(state));
-    DEFVARIABLE(i, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1189,8 +1189,8 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm4Imm4V8)
 
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef state = GetFrame(sp);
-    DEFVARIABLE(currentEnv, StubMachineType::TAGGED, GetEnvFromFrame(state));
-    DEFVARIABLE(i, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1216,8 +1216,8 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm8Imm8V8)
 
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef state = GetFrame(sp);
-    DEFVARIABLE(currentEnv, StubMachineType::TAGGED, GetEnvFromFrame(state));
-    DEFVARIABLE(i, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1243,8 +1243,8 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm16Imm16V8)
 
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef state = GetFrame(sp);
-    DEFVARIABLE(currentEnv, StubMachineType::TAGGED, GetEnvFromFrame(state));
-    DEFVARIABLE(i, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(currentEnv, VariableType::JS_ANY(), GetEnvFromFrame(state));
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
 
     Label loopHead(env);
     Label loopEnd(env);
@@ -1264,7 +1264,7 @@ DECLARE_ASM_HANDLER(HandleStLexVarDynPrefImm16Imm16V8)
 DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1323,7 +1323,7 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
 DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1382,7 +1382,7 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
 DECLARE_ASM_HANDLER(HandleExpDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef base = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1403,7 +1403,7 @@ DECLARE_ASM_HANDLER(HandleExpDynPrefV8)
 DECLARE_ASM_HANDLER(HandleIsInDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1424,7 +1424,7 @@ DECLARE_ASM_HANDLER(HandleIsInDynPrefV8)
 DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1444,7 +1444,7 @@ DECLARE_ASM_HANDLER(HandleInstanceOfDynPrefV8)
 
 DECLARE_ASM_HANDLER(HandleStrictNotEqDynPrefV8)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1456,7 +1456,7 @@ DECLARE_ASM_HANDLER(HandleStrictNotEqDynPrefV8)
 
 DECLARE_ASM_HANDLER(HandleStrictEqDynPrefV8)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1468,18 +1468,18 @@ DECLARE_ASM_HANDLER(HandleStrictEqDynPrefV8)
 
 DECLARE_ASM_HANDLER(HandleResumeGeneratorPrefV8)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef vs = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(vs));
     GateRef resumeResultOffset = GetIntPtrConstant(JSGeneratorObject::GENERATOR_RESUME_RESULT_OFFSET);
-    varAcc = Load(StubMachineType::TAGGED, obj, resumeResultOffset);
+    varAcc = Load(VariableType::JS_ANY(), obj, resumeResultOffset);
     DISPATCH_WITH_ACC(PREF_V8);
 }
 
 DECLARE_ASM_HANDLER(HandleGetResumeModePrefV8)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef vs = ReadInst8_1(pc);
     GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(vs));
@@ -1490,7 +1490,7 @@ DECLARE_ASM_HANDLER(HandleGetResumeModePrefV8)
 DECLARE_ASM_HANDLER(HandleCreateGeneratorObjPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef genFunc = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1519,7 +1519,7 @@ DECLARE_ASM_HANDLER(HandleThrowConstAssignmentPrefV8)
 DECLARE_ASM_HANDLER(HandleGetTemplateObjectPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef literal = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1539,7 +1539,7 @@ DECLARE_ASM_HANDLER(HandleGetTemplateObjectPrefV8)
 DECLARE_ASM_HANDLER(HandleGetNextPropNamePrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1577,7 +1577,7 @@ DECLARE_ASM_HANDLER(HandleThrowIfNotObjectPrefV8)
 DECLARE_ASM_HANDLER(HandleIterNextPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1597,7 +1597,7 @@ DECLARE_ASM_HANDLER(HandleIterNextPrefV8)
 DECLARE_ASM_HANDLER(HandleCloseIteratorPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef iter = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1625,7 +1625,7 @@ DECLARE_ASM_HANDLER(HandleCopyModulePrefV8)
 DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -1646,7 +1646,7 @@ DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
 DECLARE_ASM_HANDLER(HandleDelObjPropPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1669,7 +1669,7 @@ DECLARE_ASM_HANDLER(HandleDelObjPropPrefV8V8)
 DECLARE_ASM_HANDLER(HandleNewObjSpreadDynPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1692,7 +1692,7 @@ DECLARE_ASM_HANDLER(HandleNewObjSpreadDynPrefV8V8)
 DECLARE_ASM_HANDLER(HandleCreateIterResultObjPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1715,7 +1715,7 @@ DECLARE_ASM_HANDLER(HandleCreateIterResultObjPrefV8V8)
 DECLARE_ASM_HANDLER(HandleAsyncFunctionAwaitUncaughtPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1759,7 +1759,7 @@ DECLARE_ASM_HANDLER(HandleThrowUndefinedIfHolePrefV8V8)
 DECLARE_ASM_HANDLER(HandleCopyDataPropertiesPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1782,7 +1782,7 @@ DECLARE_ASM_HANDLER(HandleCopyDataPropertiesPrefV8V8)
 DECLARE_ASM_HANDLER(HandleStArraySpreadPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1805,7 +1805,7 @@ DECLARE_ASM_HANDLER(HandleStArraySpreadPrefV8V8)
 DECLARE_ASM_HANDLER(HandleGetIteratorNextPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1828,7 +1828,7 @@ DECLARE_ASM_HANDLER(HandleGetIteratorNextPrefV8V8)
 DECLARE_ASM_HANDLER(HandleSetObjectWithProtoPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1851,7 +1851,7 @@ DECLARE_ASM_HANDLER(HandleSetObjectWithProtoPrefV8V8)
 DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -1871,15 +1871,15 @@ DECLARE_ASM_HANDLER(HandleLdObjByValuePrefV8V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
-            GateRef firstValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+            GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
             Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
             Bind(&isHeapObject);
             {
                 Label loadElement(env);
                 Label tryPoly(env);
-                GateRef secondValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo,
+                GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
                     Int32Add(slotId, GetInt32Constant(1)));
-                DEFVARIABLE(cachedHandler, StubMachineType::TAGGED, secondValue);
+                DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
                        &loadElement, &tryPoly);
@@ -1972,15 +1972,15 @@ DECLARE_ASM_HANDLER(HandleStObjByValuePrefV8V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
-            GateRef firstValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+            GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
             Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
             Bind(&isHeapObject);
             {
                 Label storeElement(env);
                 Label tryPoly(env);
-                GateRef secondValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo,
+                GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
                     Int32Add(slotId, GetInt32Constant(1)));
-                DEFVARIABLE(cachedHandler, StubMachineType::TAGGED, secondValue);
+                DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
                        &storeElement, &tryPoly);
@@ -2082,7 +2082,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByValuePrefV8V8)
 DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef v1 = ReadInst8_2(pc);
@@ -2127,7 +2127,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByValuePrefV8V8)
 DECLARE_ASM_HANDLER(HandleLdSuperByNamePrefId32V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     Label isException(env);
     Label dispatch(env);
@@ -2175,7 +2175,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByNamePrefId32V8)
 DECLARE_ASM_HANDLER(HandleLdObjByIndexPrefV8Imm32)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
@@ -2299,12 +2299,12 @@ DECLARE_ASM_HANDLER(HandleStOwnByIndexPrefV8Imm32)
 DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     Label isException(env);
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
-    GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+    GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
         { propKey, *varAcc, TaggedTrue() });
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2319,12 +2319,12 @@ DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
 DECLARE_ASM_HANDLER(HandleStLetToGlobalRecordPrefId32)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     Label isException(env);
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
-    GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+    GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
         { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2339,12 +2339,12 @@ DECLARE_ASM_HANDLER(HandleStLetToGlobalRecordPrefId32)
 DECLARE_ASM_HANDLER(HandleStClassToGlobalRecordPrefId32)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     Label isException(env);
     Label notException(env);
     GateRef stringId = ReadInst32_1(pc);
-    GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+    GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StGlobalRecord)),
         { propKey, *varAcc, TaggedFalse() });
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2359,7 +2359,7 @@ DECLARE_ASM_HANDLER(HandleStClassToGlobalRecordPrefId32)
 DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef vsrc = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
@@ -2421,11 +2421,11 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
 DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef vsrc = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(vsrc));
-    DEFVARIABLE(number, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(number, VariableType::INT32(), GetInt32Constant(0));
     Label numberIsInt(env);
     Label numberNotInt(env);
     Label accDispatch(env);
@@ -2472,13 +2472,13 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
 DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -2564,13 +2564,13 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -2656,13 +2656,13 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -2748,13 +2748,13 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -2841,13 +2841,13 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -2933,13 +2933,13 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -3026,7 +3026,7 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef methodId = ReadInst16_1(pc);
     GateRef literalId = ReadInst16_3(pc);
@@ -3039,7 +3039,7 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     GateRef lexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef proto = GetVregValue(sp, ZExtInt8ToPtr(v1));
 
-    DEFVARIABLE(res, StubMachineType::TAGGED, GetUndefinedConstant());
+    DEFVARIABLE(res, VariableType::JS_ANY(), GetUndefinedConstant());
 
     Label isResolved(env);
     Label isNotResolved(env);
@@ -3077,7 +3077,7 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
 DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
@@ -3093,15 +3093,15 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
-            GateRef firstValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+            GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
             Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
             Bind(&isHeapObject);
             {
                 Label tryPoly(env);
                 Label loadWithHandler(env);
-                GateRef secondValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo,
+                GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
                     Int32Add(slotId, GetInt32Constant(1)));
-                DEFVARIABLE(cachedHandler, StubMachineType::TAGGED, secondValue);
+                DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
                        &loadWithHandler, &tryPoly);
@@ -3128,7 +3128,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         {
             Label notHole(env);
             GateRef stringId = ReadInst32_1(pc);
-            GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+            GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
             StubDescriptor *getPropertyByName = GET_STUBDESCRIPTOR(GetPropertyByName);
             GateRef result = CallRuntime(getPropertyByName, glue, GetInt64Constant(FAST_STUB_ID(GetPropertyByName)), {
                 glue, receiver, propKey
@@ -3145,7 +3145,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         Label isException(env);
         Label noException(env);
         GateRef stringId = ReadInst32_1(pc);
-        GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+        GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
         GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LoadICByName)), {
             profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId)
         });
@@ -3168,7 +3168,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
 
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
     GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
-    DEFVARIABLE(result, StubMachineType::UINT64, GetHoleConstant(StubMachineType::UINT64));
+    DEFVARIABLE(result, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
 
     Label checkResult(env);
     Label dispatch(env);
@@ -3184,15 +3184,15 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
         Bind(&tryIC);
         {
             Label isHeapObject(env);
-            GateRef firstValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+            GateRef firstValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
             Branch(TaggedIsHeapObject(firstValue), &isHeapObject, &slowPath);
             Bind(&isHeapObject);
             {
                 Label tryPoly(env);
                 Label storeWithHandler(env);
-                GateRef secondValue = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo,
+                GateRef secondValue = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo,
                     Int32Add(slotId, GetInt32Constant(1)));
-                DEFVARIABLE(cachedHandler, StubMachineType::TAGGED, secondValue);
+                DEFVARIABLE(cachedHandler, VariableType::JS_ANY(), secondValue);
                 GateRef hclass = LoadHClass(receiver);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(firstValue), hclass),
                     &storeWithHandler, &tryPoly);
@@ -3211,7 +3211,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
         Bind(&tryFastPath);
         {
             GateRef stringId = ReadInst32_1(pc);
-            GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+            GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
             StubDescriptor *setPropertyByName = GET_STUBDESCRIPTOR(SetPropertyByName);
             result = CallRuntime(setPropertyByName, glue, GetInt64Constant(FAST_STUB_ID(SetPropertyByName)), {
                 glue, receiver, propKey, acc
@@ -3222,7 +3222,7 @@ DECLARE_ASM_HANDLER(HandleStObjByNamePrefId32V8)
     Bind(&slowPath);
     {
         GateRef stringId = ReadInst32_1(pc);
-        GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+        GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
         result = ChangeTaggedPointerToInt64(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StoreICByName)),
             { profileTypeInfo, receiver, propKey, acc, IntBuildTaggedTypeWithNoGC(slotId) }));
         Jump(&checkResult);
@@ -3302,9 +3302,9 @@ DECLARE_ASM_HANDLER(HandleStOwnByNamePrefId32V8)
 {
     auto env = GetEnvironment();
     GateRef stringId = ReadInst32_1(pc);
-    GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+    GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
-    DEFVARIABLE(result, StubMachineType::UINT64, GetHoleConstant(StubMachineType::UINT64));
+    DEFVARIABLE(result, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
 
     Label checkResult(env);
     Label dispatch(env);
@@ -3351,7 +3351,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
     auto env = GetEnvironment();
     GateRef stringId = ReadInst32_1(pc);
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
-    GateRef propKey = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+    GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     Label isJSObject(env);
     Label notJSObject(env);
     Label notClassConstructor(env);
@@ -3403,7 +3403,7 @@ DECLARE_ASM_HANDLER(HandleStOwnByNameWithNameSetPrefId32V8)
 
 DECLARE_ASM_HANDLER(HandleLdFunctionPref)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     varAcc = GetFunctionFromFrame(GetFrame(sp));
     DISPATCH_WITH_ACC(PREF_NONE);
@@ -3438,16 +3438,16 @@ DECLARE_ASM_HANDLER(HandleMovDynV16V16)
 
 DECLARE_ASM_HANDLER(HandleLdaStrId32)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef stringId = ReadInst32_0(pc);
-    varAcc = GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, stringId);
+    varAcc = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
     DISPATCH_WITH_ACC(ID32);
 }
 
 DECLARE_ASM_HANDLER(HandleLdaiDynImm32)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef imm = ReadInst32_0(pc);
     varAcc = IntBuildTaggedWithNoGC(imm);
@@ -3456,7 +3456,7 @@ DECLARE_ASM_HANDLER(HandleLdaiDynImm32)
 
 DECLARE_ASM_HANDLER(HandleFldaiDynImm64)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef imm = CastInt64ToFloat64(ReadInst64_0(pc));
     varAcc = DoubleBuildTaggedWithNoGC(imm);
@@ -3466,8 +3466,8 @@ DECLARE_ASM_HANDLER(HandleFldaiDynImm64)
 DECLARE_ASM_HANDLER(HandleJeqzImm8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_ANY(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     GateRef offset = ReadInstSigned8_0(pc);
     Label accEqualFalse(env);
@@ -3509,8 +3509,8 @@ DECLARE_ASM_HANDLER(HandleJeqzImm8)
 DECLARE_ASM_HANDLER(HandleJeqzImm16)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_ANY(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     GateRef offset = ReadInstSigned16_0(pc);
     Label accEqualFalse(env);
@@ -3552,8 +3552,8 @@ DECLARE_ASM_HANDLER(HandleJeqzImm16)
 DECLARE_ASM_HANDLER(HandleJnezImm8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_ANY(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     GateRef offset = ReadInstSigned8_0(pc);
     Label accEqualTrue(env);
@@ -3595,8 +3595,8 @@ DECLARE_ASM_HANDLER(HandleJnezImm8)
 DECLARE_ASM_HANDLER(HandleJnezImm16)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_ANY(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     GateRef offset = ReadInstSigned16_0(pc);
     Label accEqualTrue(env);
@@ -3638,11 +3638,11 @@ DECLARE_ASM_HANDLER(HandleJnezImm16)
 DECLARE_ASM_HANDLER(HandleReturnDyn)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, StubMachineType::NATIVE_POINTER, pc);
-    DEFVARIABLE(varSp, StubMachineType::NATIVE_POINTER, sp);
-    DEFVARIABLE(varConstpool, StubMachineType::TAGGED_POINTER, constpool);
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     Label pcEqualNullptr(env);
     Label pcNotEqualNullptr(env);
@@ -3656,19 +3656,19 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
     Bind(&updateHotness);
     {
         GateRef function = GetFunctionFromFrame(frame);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        GateRef fistPC = Load(StubMachineType::NATIVE_POINTER, method,
+        GateRef fistPC = Load(VariableType::POINTER(), method,
             GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
-        Store(StubMachineType::INT32, glue, method,
+        Store(VariableType::INT32(), glue, method,
               GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
         Jump(&tryContinue);
     }
 
     Bind(&tryContinue);
-    varSp = Load(StubMachineType::NATIVE_POINTER, frame,
+    varSp = Load(VariableType::POINTER(), frame,
         GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
@@ -3684,9 +3684,9 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(StubMachineType::INT32, method,
+        varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
                  *varHotnessCounter, GetIntPtrConstant(0));
@@ -3696,12 +3696,12 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
 DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, StubMachineType::NATIVE_POINTER, pc);
-    DEFVARIABLE(varSp, StubMachineType::NATIVE_POINTER, sp);
-    DEFVARIABLE(varConstpool, StubMachineType::TAGGED_POINTER, constpool);
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     Label pcEqualNullptr(env);
     Label pcNotEqualNullptr(env);
@@ -3715,19 +3715,19 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
     Bind(&updateHotness);
     {
         GateRef function = GetFunctionFromFrame(frame);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        GateRef fistPC = Load(StubMachineType::NATIVE_POINTER, method,
+        GateRef fistPC = Load(VariableType::POINTER(), method,
             GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
-        Store(StubMachineType::INT32, glue, method,
+        Store(VariableType::INT32(), glue, method,
               GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
         Jump(&tryContinue);
     }
 
     Bind(&tryContinue);
-    varSp = Load(StubMachineType::NATIVE_POINTER, frame,
+    varSp = Load(VariableType::POINTER(), frame,
         GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
@@ -3744,9 +3744,9 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(StubMachineType::INT32, method,
+        varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, GetIntPtrConstant(0));
@@ -3756,12 +3756,12 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
 DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, StubMachineType::NATIVE_POINTER, pc);
-    DEFVARIABLE(varSp, StubMachineType::NATIVE_POINTER, sp);
-    DEFVARIABLE(varConstpool, StubMachineType::TAGGED_POINTER, constpool);
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     Label pcEqualNullptr(env);
     Label pcNotEqualNullptr(env);
@@ -3789,19 +3789,19 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
     Bind(&updateHotness);
     {
         GateRef function = GetFunctionFromFrame(frame);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        GateRef fistPC = Load(StubMachineType::NATIVE_POINTER, method,
+        GateRef fistPC = Load(VariableType::POINTER(), method,
             GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit())));
         GateRef offset = Int32Not(TruncPtrToInt32(IntPtrSub(*varPc, fistPC)));
         UPDATE_HOTNESS(*varSp);
-        Store(StubMachineType::INT32, glue, method,
+        Store(VariableType::INT32(), glue, method,
               GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET), *varHotnessCounter);
         Jump(&tryContinue);
     }
 
     Bind(&tryContinue);
-    varSp = Load(StubMachineType::NATIVE_POINTER, frame,
+    varSp = Load(VariableType::POINTER(), frame,
         GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
@@ -3817,9 +3817,9 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
         GateRef function = GetFunctionFromFrame(prevState);
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(StubMachineType::INT32, method,
+        varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
                  *varHotnessCounter, GetIntPtrConstant(0));
@@ -3829,16 +3829,16 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
 DECLARE_ASM_HANDLER(ExceptionHandler)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varPc, StubMachineType::NATIVE_POINTER, pc);
-    DEFVARIABLE(varSp, StubMachineType::NATIVE_POINTER, sp);
-    DEFVARIABLE(varConstpool, StubMachineType::TAGGED_POINTER, constpool);
-    DEFVARIABLE(varProfileTypeInfo, StubMachineType::TAGGED_POINTER, profileTypeInfo);
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
-    DEFVARIABLE(varHotnessCounter, StubMachineType::INT32, hotnessCounter);
+    DEFVARIABLE(varPc, VariableType::POINTER(), pc);
+    DEFVARIABLE(varSp, VariableType::POINTER(), sp);
+    DEFVARIABLE(varConstpool, VariableType::JS_POINTER(), constpool);
+    DEFVARIABLE(varProfileTypeInfo, VariableType::JS_POINTER(), profileTypeInfo);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
     Label pcIsInvalid(env);
     Label pcNotInvalid(env);
-    GateRef exception = Load(StubMachineType::TAGGED, glue, GetIntPtrConstant(0));
+    GateRef exception = Load(VariableType::JS_ANY(), glue, GetIntPtrConstant(0));
     varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(UpFrame)),
         { PtrBuildTaggedWithNoGC(sp) }));
     Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcIsInvalid, &pcNotInvalid);
@@ -3851,13 +3851,13 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
         varSp = GetCurrentSpFrame(glue);
         varAcc = exception;
         // clear exception
-        Store(StubMachineType::UINT64, glue, glue, GetIntPtrConstant(0), GetHoleConstant());
+        Store(VariableType::INT64(), glue, glue, GetIntPtrConstant(0), GetHoleConstant());
         GateRef function = GetFunctionFromFrame(GetFrame(*varSp));
         varConstpool = GetConstpoolFromFunction(function);
         varProfileTypeInfo = GetProfileTypeInfoFromFunction(function);
-        GateRef method = Load(StubMachineType::NATIVE_POINTER, function,
+        GateRef method = Load(VariableType::POINTER(), function,
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
-        varHotnessCounter = Load(StubMachineType::INT32, method,
+        varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
                  *varHotnessCounter, GetIntPtrConstant(0));
@@ -3866,7 +3866,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
 
 DECLARE_ASM_HANDLER(HandleImportModulePrefId32)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef prop = GetObjectFromConstPool(constpool, stringId);
@@ -3887,7 +3887,7 @@ DECLARE_ASM_HANDLER(HandleStModuleVarPrefId32)
 
 DECLARE_ASM_HANDLER(HandleLdModVarByNamePrefId32V8)
 {
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef v0 = ReadInst8_5(pc);
@@ -3902,7 +3902,7 @@ DECLARE_ASM_HANDLER(HandleLdModVarByNamePrefId32V8)
 DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef prop = GetObjectFromConstPool(constpool, stringId);
@@ -3913,9 +3913,9 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
     Branch(TaggedIsUndefined(profileTypeInfo), &icNotAvailable, &icAvailable);
     Bind(&icAvailable);
     {
-        DEFVARIABLE(icResult, StubMachineType::TAGGED, GetUndefinedConstant());
+        DEFVARIABLE(icResult, VariableType::JS_ANY(), GetUndefinedConstant());
         GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
-        GateRef handler = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+        GateRef handler = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
         Label isHeapObject(env);
         Label ldMiss(env);
         Label icResultCheck(env);
@@ -3987,7 +3987,7 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
         }
         Bind(&isFound);
         {
-            varAcc = Load(StubMachineType::TAGGED, recordResult, GetIntPtrConstant(PropertyBox::VALUE_OFFSET));
+            varAcc = Load(VariableType::JS_ANY(), recordResult, GetIntPtrConstant(PropertyBox::VALUE_OFFSET));
             Jump(&dispatch);
         }
     }
@@ -4000,7 +4000,7 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
     auto env = GetEnvironment();
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
 
     Label checkResult(env);
     Label dispatch(env);
@@ -4011,7 +4011,7 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
     Bind(&icAvailable);
     {
         GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
-        GateRef handler = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+        GateRef handler = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
         Label isHeapObject(env);
         Label stMiss(env);
         Branch(TaggedIsHeapObject(handler), &isHeapObject, &stMiss);
@@ -4080,11 +4080,11 @@ DECLARE_ASM_HANDLER(HandleTryStGlobalByNamePrefId32)
 DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
 
     Label checkResult(env);
     Label dispatch(env);
@@ -4097,7 +4097,7 @@ DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
     Bind(&icAvailable);
     {
         GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
-        GateRef handler = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+        GateRef handler = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
         Label isHeapObject(env);
         Label ldMiss(env);
         Branch(TaggedIsHeapObject(handler), &isHeapObject, &ldMiss);
@@ -4147,7 +4147,7 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
 
     Label checkResult(env);
     Label dispatch(env);
@@ -4158,7 +4158,7 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
     Bind(&icAvailable);
     {
         GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
-        GateRef handler = GetValueFromTaggedArray(StubMachineType::TAGGED, profileTypeInfo, slotId);
+        GateRef handler = GetValueFromTaggedArray(VariableType::JS_ANY(), profileTypeInfo, slotId);
         Label isHeapObject(env);
         Label stMiss(env);
         Branch(TaggedIsHeapObject(handler), &isHeapObject, &stMiss);
@@ -4199,7 +4199,7 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
 DECLARE_ASM_HANDLER(HandleIsTruePref)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     Label objNotTrue(env);
     Label dispatch(env);
@@ -4235,7 +4235,7 @@ DECLARE_ASM_HANDLER(HandleIsTruePref)
 DECLARE_ASM_HANDLER(HandleIsFalsePref)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     Label objNotTrue(env);
     Label dispatch(env);
@@ -4270,7 +4270,7 @@ DECLARE_ASM_HANDLER(HandleIsFalsePref)
 DECLARE_ASM_HANDLER(HandleToNumberPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     GateRef v0 = ReadInst8_1(pc);
     GateRef value = GetVregValue(sp, ZExtInt8ToPtr(v0));
     Label valueIsNumber(env);
@@ -4302,13 +4302,13 @@ DECLARE_ASM_HANDLER(HandleToNumberPrefV8)
 DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);
@@ -4466,13 +4466,13 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
 DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
 {
     auto env = GetEnvironment();
-    DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
     Label leftIsNumber(env);

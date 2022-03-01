@@ -18,7 +18,7 @@
 
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate.h"
-#include "ecmascript/compiler/machine_type.h"
+#include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/compiler/stub_descriptor.h"
 
 namespace panda::ecmascript::kungfu {
@@ -31,13 +31,13 @@ public:
     GateRef NewArguments(size_t index);
     GateRef NewMerge(GateRef *in, size_t controlCount);
     GateRef NewSelectorGate(OpCode opcode, GateRef control, int valueCounts,
-                            StubMachineType type = StubMachineType::NONE);
+                            VariableType type = VariableType::VOID());
     GateRef NewSelectorGate(OpCode opcode, GateRef control, std::vector<GateRef> &values, int valueCounts,
-                            StubMachineType type = StubMachineType::NONE);
+                            VariableType type = VariableType::VOID());
     GateRef NewSelectorGate(OpCode opcode, MachineType machineType, GateRef control, int valueCounts,
-                            StubMachineType type = StubMachineType::NONE);
+                            VariableType type = VariableType::VOID());
     GateRef NewSelectorGate(OpCode opcode, MachineType machineType, GateRef control, std::vector<GateRef> &values,
-                            int valueCounts, StubMachineType type = StubMachineType::NONE);
+                            int valueCounts, VariableType type = VariableType::VOID());
     GateRef NewInt8Constant(int8_t val);
     GateRef NewInt16Constant(int16_t val);
     GateRef NewIntegerConstant(int32_t value);
@@ -61,8 +61,8 @@ public:
     GateRef NewIfFalse(GateRef ifBranch);
     GateRef NewSwitchCase(GateRef switchBranch, int64_t value);
     GateRef NewDefaultCase(GateRef switchBranch);
-    GateRef NewLoadGate(StubMachineType type, GateRef val, GateRef depend);
-    GateRef NewStoreGate(StubMachineType type, GateRef ptr, GateRef val, GateRef depend);
+    GateRef NewLoadGate(VariableType type, GateRef val, GateRef depend);
+    GateRef NewStoreGate(VariableType type, GateRef ptr, GateRef val, GateRef depend);
     GateRef NewDependRelay(GateRef state, GateRef depend);
     GateRef NewDependAnd(std::initializer_list<GateRef> args);
     GateRef NewNumberGate(OpCode opcode, GateRef value);
@@ -79,21 +79,14 @@ public:
     GateRef NewRuntimeCallGate(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
     GateRef NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                 GateRef depend, std::initializer_list<GateRef> args);
-    static MachineType GetLoadMachineTypeFromStubMachineType(StubMachineType type);
-    static MachineType GetStoreMachineTypeFromStubMachineType(StubMachineType type);
-    static MachineType GetMachineTypeFromStubMachineType(StubMachineType type);
-    static MachineType GetCallMachineTypeFromStubMachineType(StubMachineType type);
+    static MachineType GetLoadMachineTypeFromVariableType(VariableType type);
+    static MachineType GetStoreMachineTypeFromVariableType(VariableType type);
+    static MachineType GetMachineTypeFromVariableType(VariableType type);
+    static MachineType GetCallMachineTypeFromVariableType(VariableType type);
 
-    static GateType StubMachineType2GateType(StubMachineType type)
+    static GateType VariableType2GateType(VariableType type)
     {
-        switch (type) {
-            case StubMachineType::TAGGED_POINTER:
-                return GateType::TAGGED_POINTER;
-            case StubMachineType::TAGGED:
-                return GateType::TAGGED_VALUE;
-            default:
-                return GateType::C_VALUE;
-        }
+        return type.GetGateType();
     }
 
 private:
