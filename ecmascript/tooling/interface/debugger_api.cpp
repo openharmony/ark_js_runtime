@@ -27,6 +27,9 @@
 namespace panda::tooling::ecmascript {
 using panda::ecmascript::JSHandle;
 using panda::ecmascript::JSTaggedValue;
+using panda::ecmascript::JSNativePointer;
+using panda::ecmascript::LexicalEnv;
+using panda::ecmascript::ScopeDebugInfo;
 using panda::ecmascript::Program;
 using panda::ecmascript::base::ALLOW_BINARY;
 using panda::ecmascript::base::ALLOW_HEX;
@@ -191,5 +194,76 @@ std::optional<Error> DebuggerApi::RemoveBreakpoint(JSDebugger *debugger, const P
 CString DebuggerApi::ParseFunctionName(const JSMethod *method)
 {
     return method->ParseFunctionName();
+}
+
+// ScopeInfo
+Local<JSValueRef> DebuggerApi::GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot)
+{
+    JSTaggedValue env = ecmaVm->GetJSThread()->GetCurrentLexenv();
+    for (int i = 0; i < level; i++) {
+        JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
+        ASSERT(!taggedParentEnv.IsUndefined());
+        env= taggedParentEnv;
+    }
+    JSTaggedValue value = LexicalEnv::Cast(env.GetTaggedObject())->GetProperties(slot);
+    JSHandle<JSTaggedValue> handledValue(ecmaVm->GetJSThread(), value);
+    return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
+}
+
+void DebuggerApi::SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value)
+{
+    JSTaggedValue target = JSNApiHelper::ToJSHandle(value).GetTaggedValue();
+    JSTaggedValue env = ecmaVm->GetJSThread()->GetCurrentLexenv();
+    for (int i = 0; i < level; i++) {
+        JSTaggedValue taggedParentEnv = LexicalEnv::Cast(env.GetTaggedObject())->GetParentEnv();
+        ASSERT(!taggedParentEnv.IsUndefined());
+        env= taggedParentEnv;
+    }
+    LexicalEnv::Cast(env.GetTaggedObject())->SetProperties(ecmaVm->GetJSThread(), slot, target);
+}
+
+bool DebuggerApi::EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot)
+{
+    JSTaggedValue curEnv = ecmaVm->GetJSThread()->GetCurrentLexenv();
+    for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv()) {
+        level++;
+        LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
+        if (lexicalEnv->GetScopeInfo().IsHole()) {
+            continue;
+        }
+        auto result = JSNativePointer::Cast(lexicalEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
+        ScopeDebugInfo *scopeDebugInfo = reinterpret_cast<ScopeDebugInfo *>(result);
+        for (const auto &info : scopeDebugInfo->scopeInfo) {
+            if (info.name == name) {
+                slot = info.slot;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+Local<JSValueRef> DebuggerApi::GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name)
+{
+    JSThread *thread = ecmaVm->GetJSThread();
+    JSTaggedValue curEnv = thread->GetCurrentLexenv();
+    for (; curEnv.IsTaggedArray(); curEnv = LexicalEnv::Cast(curEnv.GetTaggedObject())->GetParentEnv()) {
+        LexicalEnv *lexicalEnv = LexicalEnv::Cast(curEnv.GetTaggedObject());
+        if (lexicalEnv->GetScopeInfo().IsHole()) {
+            continue;
+        }
+        void *pointer = JSNativePointer::Cast(lexicalEnv->GetScopeInfo().GetTaggedObject())->GetExternalPointer();
+        ScopeDebugInfo *scopeDebugInfo = static_cast<ScopeDebugInfo *>(pointer);
+        for (const auto &info : scopeDebugInfo->scopeInfo) {
+            if (info.name == name) {
+                uint16_t slot = info.slot;
+                JSTaggedValue value = lexicalEnv->GetProperties(slot);
+                JSHandle<JSTaggedValue> handledValue(thread, value);
+                return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
+            }
+        }
+    }
+    JSHandle<JSTaggedValue> handledValue(thread, JSTaggedValue::Hole());
+    return JSNApiHelper::ToLocal<JSValueRef>(handledValue);
 }
 }  // namespace panda::tooling::ecmascript
