@@ -3124,16 +3124,16 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
                 res = ICRuntimeStub::TryLoadICByName(thread, receiver, firstValue, secondValue);
             }
-            // IC miss and not enter the megamorphic state, store as polymorphic
-            if (res.IsHole() && !firstValue.IsHole()) {
+            if (LIKELY(!res.IsHole())) {
+                INTERPRETER_RETURN_IF_ABRUPT(res);
+                SET_ACC(res);
+                DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
+            } else if (!firstValue.IsHole()) { // IC miss and not enter the megamorphic state, store as polymorphic
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::LoadICByName(thread,
                                                   profileTypeArray,
                                                   receiver, propKey, slotId);
-            }
-
-            if (LIKELY(!res.IsHole())) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 SET_ACC(res);
                 DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
@@ -3199,16 +3199,16 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 res = ICRuntimeStub::TryStoreICByName(thread, receiver, firstValue, secondValue, value);
 #endif
             }
-            // IC miss and not enter the megamorphic state, store as polymorphic
-            if (res.IsHole() && !firstValue.IsHole()) {
+            if (LIKELY(!res.IsHole())) {
+                INTERPRETER_RETURN_IF_ABRUPT(res);
+                RESTORE_ACC();
+                DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
+            } else if (!firstValue.IsHole()) { // IC miss and not enter the megamorphic state, store as polymorphic
                 uint32_t stringId = READ_INST_32_1();
                 JSTaggedValue propKey = constpool->GetObjectFromCache(stringId);
                 res = ICRuntimeStub::StoreICByName(thread,
                                                    profileTypeArray,
                                                    receiver, propKey, value, slotId);
-            }
-
-            if (LIKELY(!res.IsHole())) {
                 INTERPRETER_RETURN_IF_ABRUPT(res);
                 RESTORE_ACC();
                 DISPATCH(BytecodeInstruction::Format::PREF_ID32_V8);
