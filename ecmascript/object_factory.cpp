@@ -1800,8 +1800,8 @@ JSHandle<ProfileTypeInfo> ObjectFactory::NewProfileTypeInfo(uint32_t length)
 JSHandle<BigInt> ObjectFactory::NewBigInt()
 {
     NewObjectHook();
-    JSHClass *bigintClass = JSHClass::Cast(thread_->GlobalConstants()->GetBigIntClass().GetTaggedObject());
-    TaggedObject *header = heap_.AllocateYoungGenerationOrHugeObject(bigintClass);
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetBigIntClass().GetTaggedObject()));
     JSHandle<BigInt> obj(thread_, BigInt::Cast(header));
     obj->SetData(thread_, JSTaggedValue::Undefined());
     obj->SetSign(false);
