@@ -1801,7 +1801,7 @@ JSHandle<BigInt> ObjectFactory::NewBigInt()
 {
     NewObjectHook();
     JSHClass *bigintClass = JSHClass::Cast(thread_->GlobalConstants()->GetBigIntClass().GetTaggedObject());
-    TaggedObject *header = heapHelper_.AllocateYoungGenerationOrHugeObject(bigintClass);
+    TaggedObject *header = heap_.AllocateYoungGenerationOrHugeObject(bigintClass);
     JSHandle<BigInt> obj(thread_, BigInt::Cast(header));
     obj->SetData(thread_, JSTaggedValue::Undefined());
     obj->SetSign(false);
