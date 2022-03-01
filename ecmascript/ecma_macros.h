@@ -39,8 +39,8 @@
     LOG_IF(ecmaVM->IsOptionalLogEnabled(), level, component)
 
 #if (!defined PANDA_TARGET_LINUX) && (defined IS_PUBLIC_VERSION)
-    #define ECMA_BYTRACE_NAME(tag, name)                            \
-        BYTRACE_NAME(tag, name);                                    \
+#define ECMA_BYTRACE_NAME(tag, name)                                 \
+        BYTRACE_NAME(tag, name);                                     \
         trace::ScopedTrace scopedTrace(name)
 #else
     #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)

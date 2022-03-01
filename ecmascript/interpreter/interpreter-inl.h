@@ -16,7 +16,6 @@
 #ifndef ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 
-#include "ecmascript/bridge/compile_bridge.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/class_linker/program_object-inl.h"
@@ -366,25 +365,10 @@ namespace panda::ecmascript {
 #define GET_ACC() (acc)                        // NOLINT(cppcoreguidelines-macro-usage)
 #define SET_ACC(val) (acc = val);              // NOLINT(cppcoreguidelines-macro-usage)
 
-JSTaggedType* EcmaInterpreter::FixSpOnEntry(JSThread *thread)
-{
-    JSTaggedType *current = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    FrameHandler handler(current);
-    if (handler.IsInterpretedFrame()) {
-        return current;
-    } else if (handler.IsOptimizedLeaveFrame()) {
-        return reinterpret_cast<JSTaggedType *>(handler.GetOptLeaveFrame());
-    } else {
-        abort();
-    }
-    return nullptr;
-}
-
 JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, ExecuteNative);
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *fixedSp = FixSpOnEntry(thread);
 
     JSMethod *method = params.callTarget->GetCallTarget();
     ASSERT(method->GetNumVregs() == 0);
@@ -392,7 +376,7 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     // Tags and values of thread, new_tgt and argv_length are put into frames too for native frames
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
     size_t frameSize = FRAME_STATE_SIZE + numActualArgs;
-    JSTaggedType *newSp = fixedSp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    JSTaggedType *newSp = sp - frameSize;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {
         return JSTaggedValue::Undefined();
     }
@@ -428,6 +412,11 @@ JSTaggedValue EcmaInterpreter::ExecuteNative(JSThread *thread, const CallParams&
     return tagged;
 }
 
+JSTaggedType* EcmaInterpreter::GetCurrentFrameState(JSTaggedType *sp)
+{
+    return sp - FRAME_STATE_SIZE;
+}
+
 JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, Execute);
@@ -437,8 +426,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
         return EcmaInterpreter::ExecuteNative(thread, params);
     }
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedType *fixedSp = FixSpOnEntry(thread);
-    JSTaggedType *newSp = fixedSp - FRAME_STATE_SIZE;
+    JSTaggedType *newSp = GetCurrentFrameState(sp);
     // push break state
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (thread->DoStackOverflowCheck(newSp) || thread->HasPendingException()) {

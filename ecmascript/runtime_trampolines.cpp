@@ -204,8 +204,8 @@ DEF_RUNTIME_TRAMPOLINES(GetTaggedArrayPtrTest)
     static int i = 0;
     static JSHandle<TaggedArray> arr = factory->NewTaggedArray(2);
     if (i == 0) {
-        arr->Set(thread, 0, JSTaggedValue(3)); // 3: first element
-        arr->Set(thread, 1, JSTaggedValue(4)); // 4: second element
+        arr->Set(thread, 0, JSTaggedValue(3.5)); // 3.5: first element
+        arr->Set(thread, 1, JSTaggedValue(4.5)); // 4.5: second element
     }
 #ifndef NDEBUG
     PrintHeapReginInfo(argGlue);

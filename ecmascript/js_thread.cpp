@@ -234,15 +234,16 @@ void JSThread::LoadStubModule(const char *moduleFile)
     for (uint32_t i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
         fastStubEntries_[i] = stubModule.GetStubEntry(i);
     }
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     for (uint32_t i = 0; i < MAX_BYTECODE_HANDLERS; i++) {
         bytecodeHandlers_[i] = stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging);
     }
-
 #define DEF_STUB(name, counter)                                   \
         bytecodeHandlers_[kungfu::InterpreterStubId::name##Id] =  \
             stubModule.GetStubEntry(kungfu::StubId::STUB_##name);
     INTERPRETER_STUB_LIST(DEF_STUB)
 #undef DEF_STUB
+#endif
 
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();

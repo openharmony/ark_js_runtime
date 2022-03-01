@@ -68,6 +68,7 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
     }                                                                                               \
     Bind(&dispatch);                                                                                \
 
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 DECLARE_ASM_HANDLER(HandleLdNanPref)
 {
     DEFVARIABLE(varAcc, StubMachineType::TAGGED, acc);
@@ -4624,6 +4625,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&accDispatch);
     DISPATCH_WITH_ACC(PREF_V8);
 }
+#endif
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH
 #undef DISPATCH_WITH_ACC
