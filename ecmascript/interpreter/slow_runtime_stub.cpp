@@ -2160,4 +2160,12 @@ JSTaggedValue SlowRuntimeStub::SetClassConstructorLength(JSThread *thread, JSTag
     }
     return JSTaggedValue::Undefined();
 }
+
+JSTaggedValue SlowRuntimeStub::LdBigInt(JSThread *thread, JSTaggedValue numberBigInt)
+{
+    INTERPRETER_TRACE(thread, LdBigInt);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    JSHandle<JSTaggedValue> bigint(thread, numberBigInt);
+    return JSTaggedValue::ToBigInt(thread, bigint);
+}
 }  // namespace panda::ecmascript
