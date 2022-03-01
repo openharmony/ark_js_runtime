@@ -89,6 +89,7 @@ public:
     static JSTaggedValue DoubleToPrecision(JSThread *thread, double number, int digit);
     static JSTaggedValue StringToDoubleWithRadix(const uint8_t *start, const uint8_t *end, int radix);
     static CString IntToString(int number);
+    static JSTaggedValue StringToBigInt(JSThread *thread, JSHandle<JSTaggedValue> strVal);
 
 private:
     static char Carry(char current, int radix);

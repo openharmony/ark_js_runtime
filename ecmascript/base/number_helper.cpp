@@ -682,4 +682,92 @@ int32_t NumberHelper::DoubleInRangeInt32(double d)
     }
     return base::NumberHelper::DoubleToInt(d, base::INT32_BITS);
 }
+
+JSTaggedValue NumberHelper::StringToBigInt(JSThread *thread, JSHandle<JSTaggedValue> strVal)
+{
+    Span<const uint8_t> str;
+    auto strObj = static_cast<EcmaString *>(strVal->GetTaggedObject());
+    size_t strLen = strObj->GetLength();
+    if (strLen == 0) {
+        return BigInt::Int32ToBigInt(thread, 0).GetTaggedValue();
+    }
+    [[maybe_unused]] CVector<uint8_t> buf;  // Span will use buf.data(), shouldn't define inside 'if'
+    if (UNLIKELY(strObj->IsUtf16())) {
+        size_t len = base::utf_helper::Utf16ToUtf8Size(strObj->GetDataUtf16(), strLen) - 1;
+        buf.reserve(len);
+        len = base::utf_helper::ConvertRegionUtf16ToUtf8(strObj->GetDataUtf16(), buf.data(), strLen, len, 0);
+        str = Span<const uint8_t>(buf.data(), len);
+    } else {
+        str = Span<const uint8_t>(strObj->GetDataUtf8(), strLen);
+    }
+    auto p = const_cast<uint8_t *>(str.begin());
+    auto end = str.end();
+    // 1. skip space and line terminal
+    if (!NumberHelper::GotoNonspace(&p, end)) {
+        return BigInt::Int32ToBigInt(thread, 0).GetTaggedValue();
+    }
+    // 2. get bigint sign
+    Sign sign = Sign::NONE;
+    if (*p == '+') {
+        RETURN_IF_CONVERSION_END(++p, end, JSTaggedValue(NAN_VALUE));
+        sign = Sign::POS;
+    } else if (*p == '-') {
+        RETURN_IF_CONVERSION_END(++p, end, JSTaggedValue(NAN_VALUE));
+        sign = Sign::NEG;
+    }
+    // 3. bigint not allow Infinity, decimal points, or exponents.
+    if (isalpha(*p)) {
+        return JSTaggedValue(NAN_VALUE);
+    }
+    // 4. get bigint radix
+    uint8_t radix = DECIMAL;
+    if (*p == '0') {
+        if (++p == end) {
+            return BigInt::Int32ToBigInt(thread, 0).GetTaggedValue();
+        }
+        if (*p == 'x' || *p == 'X') {
+            RETURN_IF_CONVERSION_END(++p, end, JSTaggedValue(NAN_VALUE));
+            if (sign != Sign::NONE) {
+                return JSTaggedValue(NAN_VALUE);
+            }
+            radix = HEXADECIMAL;
+        } else if (*p == 'o' || *p == 'O') {
+            RETURN_IF_CONVERSION_END(++p, end, JSTaggedValue(NAN_VALUE));
+            if (sign != Sign::NONE) {
+                return JSTaggedValue(NAN_VALUE);
+            }
+            radix = OCTAL;
+        } else if (*p == 'b' || *p == 'B') {
+            RETURN_IF_CONVERSION_END(++p, end, JSTaggedValue(NAN_VALUE));
+            if (sign != Sign::NONE) {
+                return JSTaggedValue(NAN_VALUE);
+            }
+            radix = BINARY;
+        }
+    }
+
+    auto pStart = p;
+    // 5. skip leading '0'
+    while (*p == '0') {
+        if (++p == end) {
+            return BigInt::Int32ToBigInt(thread, 0).GetTaggedValue();
+        }
+    }
+    // 6. parse to bigint
+    std::string buffer;
+    if (sign == Sign::NEG) {
+        buffer += "-";
+    }
+    do {
+        uint8_t c = ToDigit(*p);
+        if (c >= radix) {
+            if (pStart != p && !NumberHelper::GotoNonspace(&p, end)) {
+                break;
+            }
+            return JSTaggedValue(NAN_VALUE);
+        }
+        buffer += *p;
+    } while (++p != end);
+    return BigIntHelper::SetBigInt(thread, buffer, radix).GetTaggedValue();
+}
 }  // namespace panda::ecmascript::base
