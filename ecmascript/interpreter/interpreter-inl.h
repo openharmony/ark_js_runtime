@@ -2281,6 +2281,20 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
         DISPATCH(BytecodeInstruction::Format::PREF_IMM16_IMM16_V8);
     }
+    HANDLE_OPCODE(HANDLE_NEWLEXENVWITHNAMEDYN_PREF_IMM16_IMM16) {
+        uint16_t numVars = READ_INST_16_1();
+        uint16_t scopeId = READ_INST_16_3();
+        LOG_INST() << "intrinsics::newlexenvwithnamedyn"
+                   << " numVars " << numVars << " scopeId " << scopeId;
+
+        SAVE_PC();
+        JSTaggedValue res = SlowRuntimeStub::NewLexicalEnvWithNameDyn(thread, numVars, scopeId);
+        INTERPRETER_RETURN_IF_ABRUPT(res);
+
+        SET_ACC(res);
+        GET_FRAME(sp)->env = res;
+        DISPATCH(BytecodeInstruction::Format::PREF_IMM16_IMM16);
+    }
     HANDLE_OPCODE(HANDLE_STLEXVARDYN_PREF_IMM8_IMM8_V8) {
         uint16_t level = READ_INST_8_1();
         uint16_t slot = READ_INST_8_2();
@@ -3983,6 +3997,7 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
         {STLEXVARDYN_PREF_IMM4_IMM4_V8, "STLEXVARDYN"},
         {STLEXVARDYN_PREF_IMM8_IMM8_V8, "STLEXVARDYN"},
         {STLEXVARDYN_PREF_IMM16_IMM16_V8, "STLEXVARDYN"},
+        {NEWLEXENVWITHNAMEDYN_PREF_IMM16_IMM16, "NEWLEXENVWITHNAMEDYN"},
         {DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8, "DEFINECLASSWITHBUFFER"},
         {IMPORTMODULE_PREF_ID32, "IMPORTMODULE"},
         {STMODULEVAR_PREF_ID32, "STMODULEVAR"},
