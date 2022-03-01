@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "ecmascript/compiler/fast_stub_define.h"
-#include "ecmascript/compiler/machine_type.h"
+#include "ecmascript/compiler/variable_type.h"
 #include "libpandabase/macros.h"
 #include "libpandabase/utils/bit_field.h"
 #include "llvm-c/Types.h"
@@ -40,7 +40,7 @@ public:
         TEST_FUNC,
     };
     explicit StubDescriptor(std::string name, int flags, int paramCounter, ArgumentsOrder order,
-                                     StubMachineType returnType)
+                                     VariableType returnType)
         : name_(name), flags_(flags), paramCounter_(paramCounter), order_(order), returnType_(returnType)
     {
     }
@@ -55,7 +55,7 @@ public:
         kind_ = other.kind_;
         returnType_ = other.returnType_;
         if (paramCounter_ > 0 && other.paramsType_ != nullptr) {
-            paramsType_ = std::make_unique<std::vector<StubMachineType>>(paramCounter_);
+            paramsType_ = std::make_unique<std::vector<VariableType>>(paramCounter_);
             for (int i = 0; i < paramCounter_; i++) {
                 (*paramsType_)[i] = other.GetParametersType()[i];
             }
@@ -71,7 +71,7 @@ public:
         kind_ = other.kind_;
         returnType_ = other.returnType_;
         if (paramCounter_ > 0 && other.paramsType_ != nullptr) {
-            paramsType_ = std::make_unique<std::vector<StubMachineType>>(paramCounter_);
+            paramsType_ = std::make_unique<std::vector<VariableType>>(paramCounter_);
             for (int i = 0; i < paramCounter_; i++) {
                 (*paramsType_)[i] = other.GetParametersType()[i];
             }
@@ -79,17 +79,17 @@ public:
         return *this;
     }
 
-    void SetParameters(StubMachineType *paramsType)
+    void SetParameters(VariableType *paramsType)
     {
         if (paramCounter_ > 0 && paramsType_ == nullptr) {
-            paramsType_ = std::make_unique<std::vector<StubMachineType>>(paramCounter_);
+            paramsType_ = std::make_unique<std::vector<VariableType>>(paramCounter_);
             for (int i = 0; i < paramCounter_; i++) {
                 (*paramsType_)[i] = paramsType[i];
             }
         }
     }
 
-    StubMachineType *GetParametersType() const
+    VariableType *GetParametersType() const
     {
         if (paramsType_ != nullptr) {
             return paramsType_->data();
@@ -103,7 +103,7 @@ public:
         return paramCounter_;
     }
 
-    StubMachineType GetReturnType() const
+    VariableType GetReturnType() const
     {
         return returnType_;
     }
@@ -156,8 +156,8 @@ private:
     int paramCounter_ {0};
     ArgumentsOrder order_ {ArgumentsOrder::DEFAULT_ORDER};
 
-    StubMachineType returnType_ {StubMachineType::NONE};
-    std::unique_ptr<std::vector<StubMachineType>> paramsType_ {nullptr};
+    VariableType returnType_ {VariableType::VOID()};
+    std::unique_ptr<std::vector<VariableType>> paramsType_ {nullptr};
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

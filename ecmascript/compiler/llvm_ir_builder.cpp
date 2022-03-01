@@ -1708,41 +1708,41 @@ LLVMValueRef LLVMStubModule::GetLLVMFunctionByStubDescriptor(StubDescriptor *stu
 
 LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor)
 {
-    LLVMTypeRef returnType = ConvertLLVMTypeFromStubMachineType(stubDescriptor->GetReturnType());
+    LLVMTypeRef returnType = ConvertLLVMTypeFromVariableType(stubDescriptor->GetReturnType());
     std::vector<LLVMTypeRef> paramTys;
     auto paramCount = stubDescriptor->GetParametersCount();
     for (int i = 0; i < paramCount; i++) {
         auto paramsType = stubDescriptor->GetParametersType();
-        paramTys.push_back(ConvertLLVMTypeFromStubMachineType(paramsType[i]));
+        paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType[i]));
     }
     auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount, stubDescriptor->GetVariableArgs());
     return functype;
 }
 
-LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromStubMachineType(StubMachineType type)
+LLVMTypeRef LLVMStubModule::ConvertLLVMTypeFromVariableType(VariableType type)
 {
-    static std::map<StubMachineType, LLVMTypeRef> machineTypeMap = {
-        {StubMachineType::NONE,           LLVMVoidType()},
-        {StubMachineType::BOOL,           LLVMInt1Type()},
-        {StubMachineType::INT8,           LLVMInt8Type()},
-        {StubMachineType::INT16,          LLVMInt16Type()},
-        {StubMachineType::INT32,          LLVMInt32Type()},
-        {StubMachineType::INT64,          LLVMInt64Type()},
-        {StubMachineType::UINT8,          LLVMInt8Type()},
-        {StubMachineType::UINT16,         LLVMInt16Type()},
-        {StubMachineType::UINT32,         LLVMInt32Type()},
-        {StubMachineType::UINT64,         LLVMInt64Type()},
-        {StubMachineType::FLOAT32,        LLVMFloatType()},
-        {StubMachineType::FLOAT64,        LLVMDoubleType()},
-        {StubMachineType::NATIVE_POINTER, LLVMInt64Type()},
-        {StubMachineType::TAGGED_POINTER, LLVMPointerType(LLVMInt64Type(), 1)},
-        {StubMachineType::TAGGED,         LLVMPointerType(LLVMInt64Type(), 1)},
+    static std::map<VariableType, LLVMTypeRef> machineTypeMap = {
+        {VariableType::VOID(), LLVMVoidType()},
+        {VariableType::BOOL(), LLVMInt1Type()},
+        {VariableType::INT8(), LLVMInt8Type()},
+        {VariableType::INT16(), LLVMInt16Type()},
+        {VariableType::INT32(), LLVMInt32Type()},
+        {VariableType::INT64(), LLVMInt64Type()},
+        {VariableType::INT8(), LLVMInt8Type()},
+        {VariableType::INT16(), LLVMInt16Type()},
+        {VariableType::INT32(), LLVMInt32Type()},
+        {VariableType::INT64(), LLVMInt64Type()},
+        {VariableType::FLOAT32(), LLVMFloatType()},
+        {VariableType::FLOAT64(), LLVMDoubleType()},
+        {VariableType::POINTER(), LLVMInt64Type()},
+        {VariableType::JS_POINTER(), LLVMPointerType(LLVMInt64Type(), 1)},
+        {VariableType::JS_ANY(), LLVMPointerType(LLVMInt64Type(), 1)},
     };
     if (compCfg_.Is32Bit()) {
-        machineTypeMap[StubMachineType::NATIVE_POINTER] = LLVMInt32Type();
+        machineTypeMap[VariableType::POINTER()] = LLVMInt32Type();
         LLVMTypeRef vectorType = LLVMVectorType(LLVMPointerType(LLVMInt8Type(), 1), 2);  // 2: packed vector type
-        machineTypeMap[StubMachineType::TAGGED_POINTER] = vectorType;
-        machineTypeMap[StubMachineType::TAGGED] = vectorType;
+        machineTypeMap[VariableType::JS_POINTER()] = vectorType;
+        machineTypeMap[VariableType::JS_ANY()] = vectorType;
     }
     return machineTypeMap[type];
 }

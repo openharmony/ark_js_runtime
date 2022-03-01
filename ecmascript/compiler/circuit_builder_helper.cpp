@@ -76,7 +76,7 @@ GateRef LabelImpl::ReadVariable(Variable *var)
 GateRef LabelImpl::ReadVariableRecursive(Variable *var)
 {
     GateRef val;
-    MachineType MachineType = CircuitBuilder::GetMachineTypeFromStubMachineType(var->Type());
+    MachineType MachineType = CircuitBuilder::GetMachineTypeFromVariableType(var->Type());
     if (!IsSealed()) {
         // only loopheader gate will be not sealed
         int valueCounts = static_cast<int>(this->predecessors_.size()) + 1;

@@ -21,91 +21,91 @@
 namespace panda::ecmascript::kungfu {
 void InterpreterStub::SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val)
 {
-    Store(StubMachineType::UINT64, glue, sp, IntPtrMul(GetIntPtrConstant(sizeof(JSTaggedType)), idx), val);
+    Store(VariableType::INT64(), glue, sp, IntPtrMul(GetIntPtrConstant(sizeof(JSTaggedType)), idx), val);
 }
 
 GateRef InterpreterStub::GetVregValue(GateRef sp, GateRef idx)
 {
-    return Load(StubMachineType::TAGGED, sp, IntPtrMul(GetIntPtrConstant(sizeof(JSTaggedType)), idx));
+    return Load(VariableType::JS_ANY(), sp, IntPtrMul(GetIntPtrConstant(sizeof(JSTaggedType)), idx));
 }
 
 GateRef InterpreterStub::ReadInst8_0(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(1));
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(1));
 }
 
 GateRef InterpreterStub::ReadInst8_1(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(2));  // 2 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(2));  // 2 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst8_2(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(3));  // 3 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(3));  // 3 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst8_3(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(4));  // 4 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(4));  // 4 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst8_4(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(5));  // 5 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(5));  // 5 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst8_5(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(6));  // 6 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(6));  // 6 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst8_6(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(7));  // 7 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(7));  // 7 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst8_7(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(8));  // 8 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(8));  // 8 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst8_8(GateRef pc)
 {
-    return Load(StubMachineType::UINT8, pc, GetIntPtrConstant(9));  // 9 : skip 1 byte of bytecode
+    return Load(VariableType::INT8(), pc, GetIntPtrConstant(9));  // 9 : skip 1 byte of bytecode
 }
 
 GateRef InterpreterStub::ReadInst4_0(GateRef pc)
 {
-    return Int8And(Load(StubMachineType::UINT8, pc, GetIntPtrConstant(1)), GetInt8Constant(0xf));
+    return Int8And(Load(VariableType::INT8(), pc, GetIntPtrConstant(1)), GetInt8Constant(0xf));
 }
 
 GateRef InterpreterStub::ReadInst4_1(GateRef pc)
 {
     return Int8And(
-        Int8LSR(Load(StubMachineType::UINT8, pc, GetIntPtrConstant(1)), GetInt8Constant(4)), GetInt8Constant(0xf));
+        Int8LSR(Load(VariableType::INT8(), pc, GetIntPtrConstant(1)), GetInt8Constant(4)), GetInt8Constant(0xf));
 }
 
 GateRef InterpreterStub::ReadInst4_2(GateRef pc)
 {
-    return Int8And(Load(StubMachineType::UINT8, pc, GetIntPtrConstant(2)), GetInt8Constant(0xf));
+    return Int8And(Load(VariableType::INT8(), pc, GetIntPtrConstant(2)), GetInt8Constant(0xf));
 }
 
 GateRef InterpreterStub::ReadInst4_3(GateRef pc)
 {
     return Int8And(
-        Int8LSR(Load(StubMachineType::UINT8, pc, GetIntPtrConstant(2)), GetInt8Constant(4)), GetInt8Constant(0xf));
+        Int8LSR(Load(VariableType::INT8(), pc, GetIntPtrConstant(2)), GetInt8Constant(4)), GetInt8Constant(0xf));
 }
 
 GateRef InterpreterStub::ReadInstSigned8_0(GateRef pc)
 {
-    GateRef x = Load(StubMachineType::INT8, pc, GetIntPtrConstant(1));
+    GateRef x = Load(VariableType::INT8(), pc, GetIntPtrConstant(1));
     return GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 GateRef InterpreterStub::ReadInstSigned16_0(GateRef pc)
 {
     /* 2 : skip 8 bits of opcode and 8 bits of low bits */
-    GateRef currentInst = Load(StubMachineType::INT8, pc, GetIntPtrConstant(2));
+    GateRef currentInst = Load(VariableType::INT8(), pc, GetIntPtrConstant(2));
     GateRef currentInst1 = GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(
         OpCode(OpCode::SEXT_TO_INT32), currentInst);
     GateRef currentInst2 = Int32LSL(currentInst1, GetInt32Constant(8));  // 8 : set as high 8 bits
@@ -115,7 +115,7 @@ GateRef InterpreterStub::ReadInstSigned16_0(GateRef pc)
 GateRef InterpreterStub::ReadInstSigned32_0(GateRef pc)
 {
     /* 4 : skip 8 bits of opcode and 24 bits of low bits */
-    GateRef x = Load(StubMachineType::INT8, pc, GetIntPtrConstant(4));
+    GateRef x = Load(VariableType::INT8(), pc, GetIntPtrConstant(4));
     GateRef currentInst = GetEnvironment()->GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
     GateRef currentInst1 = Int32LSL(currentInst, GetInt32Constant(8));
     GateRef currentInst2 = Int32Add(currentInst1, ZExtInt8ToInt32(ReadInst8_2(pc)));
@@ -176,57 +176,57 @@ GateRef InterpreterStub::GetFrame(GateRef CurrentSp)
 
 GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
 {
-    return Load(StubMachineType::NATIVE_POINTER, frame, GetIntPtrConstant(0));
+    return Load(VariableType::POINTER(), frame, GetIntPtrConstant(0));
 }
 
 GateRef InterpreterStub::GetFunctionFromFrame(GateRef frame)
 {
-    return Load(StubMachineType::TAGGED_POINTER, frame,
+    return Load(VariableType::JS_POINTER(), frame,
         GetIntPtrConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetAccFromFrame(GateRef frame)
 {
-    return Load(StubMachineType::TAGGED, frame,
+    return Load(VariableType::JS_ANY(), frame,
         GetIntPtrConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetEnvFromFrame(GateRef frame)
 {
-    return Load(StubMachineType::TAGGED_POINTER, frame,
+    return Load(VariableType::JS_POINTER(), frame,
         GetIntPtrConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetProfileTypeInfoFromFunction(GateRef function)
 {
-    return Load(StubMachineType::TAGGED_POINTER, function, GetIntPtrConstant(JSFunction::PROFILE_TYPE_INFO_OFFSET));
+    return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::PROFILE_TYPE_INFO_OFFSET));
 }
 
 GateRef InterpreterStub::GetConstpoolFromFunction(GateRef function)
 {
-    return Load(StubMachineType::TAGGED_POINTER, function, GetIntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET));
+    return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::CONSTANT_POOL_OFFSET));
 }
 
 void InterpreterStub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(StubMachineType::UINT64, glue, frame,
+    Store(VariableType::INT64(), glue, frame,
         GetIntPtrConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
 void InterpreterStub::SetPcToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(StubMachineType::UINT64, glue, frame, GetIntPtrConstant(0), value);
+    Store(VariableType::INT64(), glue, frame, GetIntPtrConstant(0), value);
 }
 
 void InterpreterStub::SetAccToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(StubMachineType::UINT64, glue, frame,
+    Store(VariableType::INT64(), glue, frame,
           GetIntPtrConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
 void InterpreterStub::SetFunctionToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(StubMachineType::UINT64, glue, frame,
+    Store(VariableType::INT64(), glue, frame,
           GetIntPtrConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
@@ -234,14 +234,14 @@ GateRef InterpreterStub::GetCurrentSpFrame(GateRef glue)
 {
     GateRef spOffset = GetIntPtrConstant(
         GetEnvironment()->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME));
-    return Load(StubMachineType::NATIVE_POINTER, glue, spOffset);
+    return Load(VariableType::POINTER(), glue, spOffset);
 }
 
 void InterpreterStub::SetCurrentSpFrame(GateRef glue, GateRef value)
 {
     GateRef spOffset = GetIntPtrConstant(
         GetEnvironment()->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME));
-    Store(StubMachineType::NATIVE_POINTER, glue, glue, spOffset, value);
+    Store(VariableType::POINTER(), glue, glue, spOffset, value);
 }
 
 GateRef InterpreterStub::ReadInst32_0(GateRef pc)
@@ -300,7 +300,7 @@ void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef con
                                GateRef acc, GateRef hotnessCounter, GateRef format)
 {
     GateRef newPc = IntPtrAdd(pc, format);
-    GateRef opcode = Load(StubMachineType::UINT8, newPc);
+    GateRef opcode = Load(VariableType::INT8(), newPc);
     GateRef opcodeOffset = IntPtrMul(
         ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), GetIntPtrSize());
     StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
@@ -326,7 +326,7 @@ void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef
 
 GateRef InterpreterStub::GetObjectFromConstPool(GateRef constpool, GateRef index)
 {
-    return GetValueFromTaggedArray(StubMachineType::TAGGED, constpool, index);
+    return GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, index);
 }
 
 GateRef InterpreterStub::FunctionIsResolved(GateRef object)
