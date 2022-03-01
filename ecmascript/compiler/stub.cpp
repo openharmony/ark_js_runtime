@@ -141,7 +141,7 @@ GateRef LabelImpl::ReadVariable(Variable *var)
 GateRef LabelImpl::ReadVariableRecursive(Variable *var)
 {
     GateRef val;
-    MachineType machineType = CircuitBuilder::GetMachineTypeFromStubMachineType(var->Type());
+    MachineType machineType = CircuitBuilder::GetMachineTypeFromVariableType(var->Type());
     if (!IsSealed()) {
         // only loopheader gate will be not sealed
         int valueCounts = static_cast<int>(predecessors_.size()) + 1;
@@ -373,8 +373,8 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
     auto env = GetEnvironment();
     Label subEntry(env);
     env->PushCurrentLabel(&subEntry);
-    DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
-    DEFVARIABLE(i, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(result, VariableType::INT32(), GetInt32Constant(-1));
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
     Label exit(env);
     Label notExceedUpper(env);
     Label exceedUpper(env);
@@ -396,7 +396,7 @@ GateRef Stub::FindElementWithCache(GateRef glue, GateRef layoutInfo, GateRef hCl
                 Jump(&afterLoop);
                 Bind(&propsNumNotZero);
                 GateRef elementAddr = GetPropertiesAddrFromLayoutInfo(layoutInfo);
-                GateRef keyInProperty = Load(StubMachineType::UINT64, elementAddr,
+                GateRef keyInProperty = Load(VariableType::INT64(), elementAddr,
                     IntPtrMul(ChangeInt32ToIntPtr(*i),
                         GetIntPtrConstant(sizeof(panda::ecmascript::Properties))));
                 Label equal(env);
@@ -436,26 +436,26 @@ GateRef Stub::FindElementFromNumberDictionary(GateRef glue, GateRef elements, Ga
     auto env = GetEnvironment();
     Label subentry(env);
     env->PushCurrentLabel(&subentry);
-    DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
+    DEFVARIABLE(result, VariableType::INT32(), GetInt32Constant(-1));
     Label exit(env);
     GateRef capcityoffset =
         IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
             GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
-    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
+    GateRef capacity = TaggedCastToInt32(Load(VariableType::INT64(), elements,
                                               IntPtrAdd(dataoffset, capcityoffset)));
-    DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
+    DEFVARIABLE(count, VariableType::INT32(), GetInt32Constant(1));
     GateRef len = GetInt32Constant(sizeof(int) / sizeof(uint8_t));
     GateRef hash = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetHash32)),
         { IntBuildTaggedTypeWithNoGC(index), IntBuildTaggedTypeWithNoGC(len) });
-    DEFVARIABLE(entry, StubMachineType::INT32,
+    DEFVARIABLE(entry, VariableType::INT32(),
         Int32And(TruncInt64ToInt32(ChangeTaggedPointerToInt64(hash)), Int32Sub(capacity, GetInt32Constant(1))));
     Label loopHead(env);
     Label loopEnd(env);
     Label afterLoop(env);
     Jump(&loopHead);
     LoopBegin(&loopHead);
-    GateRef element = GetKeyFromDictionary<NumberDictionary>(StubMachineType::TAGGED, elements, *entry);
+    GateRef element = GetKeyFromDictionary<NumberDictionary>(VariableType::JS_ANY(), elements, *entry);
     Label isHole(env);
     Label notHole(env);
     Branch(TaggedIsHole(element), &isHole, &notHole);
@@ -494,15 +494,15 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     Label funcEntry(env);
     env->PushCurrentLabel(&funcEntry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
+    DEFVARIABLE(result, VariableType::INT32(), GetInt32Constant(-1));
     GateRef capcityoffset =
         IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
             GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
-    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
+    GateRef capacity = TaggedCastToInt32(Load(VariableType::INT64(), elements,
                                               IntPtrAdd(dataoffset, capcityoffset)));
-    DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
-    DEFVARIABLE(hash, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(count, VariableType::INT32(), GetInt32Constant(1));
+    DEFVARIABLE(hash, VariableType::INT32(), GetInt32Constant(0));
     // NameDictionary::hash
     Label isSymbol(env);
     Label notSymbol(env);
@@ -513,7 +513,7 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     Branch(IsSymbol(key), &isSymbol, &notSymbol);
     Bind(&isSymbol);
     {
-        hash = TaggedCastToInt32(Load(StubMachineType::UINT64, key,
+        hash = TaggedCastToInt32(Load(VariableType::INT64(), key,
             GetIntPtrConstant(JSSymbol::HASHFIELD_OFFSET)));
         Jump(&beforeDefineHash);
     }
@@ -535,11 +535,11 @@ GateRef Stub::FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRe
     }
     Bind(&beforeDefineHash);
     // GetFirstPosition(hash, size)
-    DEFVARIABLE(entry, StubMachineType::INT32, Int32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
+    DEFVARIABLE(entry, VariableType::INT32(), Int32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
-        GateRef element = GetKeyFromDictionary(StubMachineType::TAGGED, elements, *entry);
+        GateRef element = GetKeyFromDictionary(VariableType::JS_ANY(), elements, *entry);
         Label isHole(env);
         Label notHole(env);
         Branch(TaggedIsHole(element), &isHole, &notHole);
@@ -605,15 +605,15 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     Label funcEntry(env);
     env->PushCurrentLabel(&funcEntry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
+    DEFVARIABLE(result, VariableType::INT32(), GetInt32Constant(-1));
     GateRef capcityoffset =
         IntPtrMul(GetIntPtrConstant(JSTaggedValue::TaggedTypeSize()),
             GetIntPtrConstant(TaggedHashTable<NumberDictionary>::SIZE_INDEX));
     GateRef dataoffset = GetIntPtrConstant(TaggedArray::DATA_OFFSET);
-    GateRef capacity = TaggedCastToInt32(Load(StubMachineType::UINT64, elements,
+    GateRef capacity = TaggedCastToInt32(Load(VariableType::INT64(), elements,
                                               IntPtrAdd(dataoffset, capcityoffset)));
-    DEFVARIABLE(count, StubMachineType::INT32, GetInt32Constant(1));
-    DEFVARIABLE(hash, StubMachineType::INT32, GetInt32Constant(0));
+    DEFVARIABLE(count, VariableType::INT32(), GetInt32Constant(1));
+    DEFVARIABLE(hash, VariableType::INT32(), GetInt32Constant(0));
     // TransitionDictionary::hash
     Label isSymbol(env);
     Label notSymbol(env);
@@ -624,7 +624,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     Branch(IsSymbol(key), &isSymbol, &notSymbol);
     Bind(&isSymbol);
     {
-        hash = TaggedCastToInt32(Load(StubMachineType::UINT64, key,
+        hash = TaggedCastToInt32(Load(VariableType::INT64(), key,
             GetIntPtrConstant(panda::ecmascript::JSSymbol::HASHFIELD_OFFSET)));
         Jump(&beforeDefineHash);
     }
@@ -647,11 +647,11 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     Bind(&beforeDefineHash);
     hash = Int32Add(*hash, metaData);
     // GetFirstPosition(hash, size)
-    DEFVARIABLE(entry, StubMachineType::INT32, Int32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
+    DEFVARIABLE(entry, VariableType::INT32(), Int32And(*hash, Int32Sub(capacity, GetInt32Constant(1))));
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
-        GateRef element = GetKeyFromDictionary<TransitionsDictionary>(StubMachineType::TAGGED, elements, *entry);
+        GateRef element = GetKeyFromDictionary<TransitionsDictionary>(VariableType::JS_ANY(), elements, *entry);
         Label isHole(env);
         Label notHole(env);
         Branch(TaggedIsHole(element), &isHole, &notHole);
@@ -707,7 +707,7 @@ GateRef Stub::FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, 
     return ret;
 }
 
-GateRef Stub::JSObjectGetProperty(StubMachineType returnType, GateRef obj, GateRef hClass, GateRef attr)
+GateRef Stub::JSObjectGetProperty(VariableType returnType, GateRef obj, GateRef hClass, GateRef attr)
 {
     auto env = GetEnvironment();
     Label entry(env);
@@ -733,7 +733,7 @@ GateRef Stub::JSObjectGetProperty(StubMachineType returnType, GateRef obj, GateR
         {
             // compute outOfLineProp offset, get it and return
             GateRef array =
-                Load(StubMachineType::UINT64, obj, GetIntPtrConstant(JSObject::PROPERTIES_OFFSET));
+                Load(VariableType::INT64(), obj, GetIntPtrConstant(JSObject::PROPERTIES_OFFSET));
             result = GetValueFromTaggedArray(returnType, array, Int32Sub(attrOffset,
                 GetInlinedPropertiesFromHClass(hClass)));
             Jump(&exit);
@@ -764,9 +764,9 @@ void Stub::JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRe
         Bind(&notInlinedProp);
         {
             // compute outOfLineProp offset, get it and return
-            GateRef array = Load(StubMachineType::TAGGED_POINTER, obj,
+            GateRef array = Load(VariableType::JS_POINTER(), obj,
                                  GetIntPtrConstant(JSObject::PROPERTIES_OFFSET));
-            SetValueToTaggedArray(StubMachineType::TAGGED, glue, array, Int32Sub(attrOffset,
+            SetValueToTaggedArray(VariableType::JS_ANY(), glue, array, Int32Sub(attrOffset,
                 GetInlinedPropertiesFromHClass(hClass)), value);
             Jump(&exit);
         }
@@ -782,7 +782,7 @@ GateRef Stub::ComputePropertyCapacityInJSObj(GateRef oldLength)
     Label subEntry(env);
     env->PushCurrentLabel(&subEntry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::UINT32, GetInt32Constant(0));
+    DEFVARIABLE(result, VariableType::INT32(), GetInt32Constant(0));
     GateRef newL = Int32Add(oldLength, GetInt32Constant(JSObject::PROPERTIES_GROW_SIZE));
     Label reachMax(env);
     Label notReachMax(env);
@@ -808,7 +808,7 @@ GateRef Stub::CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor, Gat
     Label subEntry(env);
     env->PushCurrentLabel(&subEntry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::UINT64, GetUndefinedConstant(StubMachineType::UINT64));
+    DEFVARIABLE(result, VariableType::INT64(), GetUndefinedConstant(VariableType::INT64()));
     GateRef callRes = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CallSetter)), {
             accessor, holder, value, TaggedTrue()
         });
@@ -817,10 +817,10 @@ GateRef Stub::CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor, Gat
     Branch(TaggedIsTrue(callRes), &callSuccess, &callFail);
     {
         Bind(&callSuccess);
-        result = GetUndefinedConstant(StubMachineType::UINT64);
+        result = GetUndefinedConstant(VariableType::INT64());
         Jump(&exit);
         Bind(&callFail);
-        result = GetExceptionConstant(StubMachineType::UINT64);
+        result = GetExceptionConstant(VariableType::INT64());
         Jump(&exit);
     }
     Bind(&exit);
@@ -835,7 +835,7 @@ GateRef Stub::ShouldCallSetter(GateRef receiver, GateRef holder, GateRef accesso
     Label subEntry(env);
     env->PushCurrentLabel(&subEntry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::BOOL, TrueConstant());
+    DEFVARIABLE(result, VariableType::BOOL(), TrueConstant());
     Label isInternal(env);
     Label notInternal(env);
     Branch(IsAccessorInternal(accessor), &isInternal, &notInternal);
@@ -911,7 +911,7 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
 GateRef Stub::SetHasConstructorCondition(GateRef glue, GateRef receiver, GateRef key)
 {
     GateRef gConstOffset = IntPtrAdd(glue, GetIntPtrConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
-    GateRef gCtorStr = Load(StubMachineType::TAGGED,
+    GateRef gCtorStr = Load(VariableType::JS_ANY(),
         gConstOffset,
         Int64Mul(GetInt64Constant(sizeof(JSTaggedValue)),
             GetInt64Constant(static_cast<uint64_t>(ConstantIndex::CONSTRUCTOR_STRING_INDEX))));
@@ -928,7 +928,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     Label subentry(env);
     env->PushCurrentLabel(&subentry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::UINT64, GetUndefinedConstant(StubMachineType::UINT64));
+    DEFVARIABLE(result, VariableType::INT64(), GetUndefinedConstant(VariableType::INT64()));
     Label setHasCtor(env);
     Label notSetHasCtor(env);
     Label afterCtorCon(env);
@@ -943,7 +943,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     }
     Bind(&afterCtorCon);
     // 0x111 : default attribute for property: writable, enumerable, configurable
-    DEFVARIABLE(attr, StubMachineType::UINT32, propertyAttributes);
+    DEFVARIABLE(attr, VariableType::INT32(), propertyAttributes);
     GateRef numberOfProps = GetNumberOfPropsFromHClass(hClass);
     GateRef inlinedProperties = GetInlinedPropertiesFromHClass(hClass);
     Label hasUnusedInProps(env);
@@ -959,13 +959,13 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             attr = SetOffsetFieldInPropAttr(*attr, numberOfProps);
             attr = SetIsInlinePropsFieldInPropAttr(*attr, GetInt32Constant(1)); // 1: set inInlineProps true
             JSHClassAddProperty(glue, receiver, key, *attr);
-            result = GetUndefinedConstant(StubMachineType::UINT64);
+            result = GetUndefinedConstant(VariableType::INT64());
             Jump(&exit);
         }
     }
     Bind(&afterInPropsCon);
-    DEFVARIABLE(array, StubMachineType::TAGGED_POINTER, GetPropertiesArray(receiver));
-    DEFVARIABLE(length, StubMachineType::UINT32, GetLengthOfTaggedArray(*array));
+    DEFVARIABLE(array, VariableType::JS_POINTER(), GetPropertiesArray(receiver));
+    DEFVARIABLE(length, VariableType::INT32(), GetLengthOfTaggedArray(*array));
     Label lenIsZero(env);
     Label lenNotZero(env);
     Label afterLenCon(env);
@@ -1022,7 +1022,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                                     receiver, *array, key, value, IntBuildTaggedTypeWithNoGC(*attr), TaggedTrue()
                                 });
                             SetPropertiesArray(glue, receiver, res);
-                            result = GetUndefinedConstant(StubMachineType::UINT64);
+                            result = GetUndefinedConstant(VariableType::INT64());
                             Jump(&exit);
                         }
                         Bind(&notChangeToDict);
@@ -1042,7 +1042,7 @@ GateRef Stub::AddPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             {
                 attr = SetOffsetFieldInPropAttr(*attr, numberOfProps);
                 JSHClassAddProperty(glue, receiver, key, *attr);
-                SetValueToTaggedArray(StubMachineType::TAGGED, glue, *array, outProps, value);
+                SetValueToTaggedArray(VariableType::JS_ANY(), glue, *array, outProps, value);
                 Jump(&exit);
             }
         }
@@ -1067,7 +1067,7 @@ GateRef Stub::TaggedToRepresentation(GateRef value)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(resultRep, StubMachineType::INT64,
+    DEFVARIABLE(resultRep, VariableType::INT64(),
                 GetInt64Constant(static_cast<int32_t>(Representation::OBJECT)));
     Label isInt(env);
     Label notInt(env);
@@ -1100,20 +1100,20 @@ GateRef Stub::TaggedToRepresentation(GateRef value)
     return ret;
 }
 
-GateRef Stub::Store(StubMachineType type, GateRef glue, GateRef base, GateRef offset, GateRef value)
+GateRef Stub::Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result;
     if (env_.IsArch64Bit()) {
         GateRef ptr = Int64Add(base, offset);
-        if (type == StubMachineType::NATIVE_POINTER) {
-            type = StubMachineType::INT64;
+        if (type == VariableType::POINTER()) {
+            type = VariableType::INT64();
         }
         result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
         env_.GetCurrentLabel()->SetDepend(result);
     } else if (env_.IsArch32Bit()) {
-        if (type == StubMachineType::NATIVE_POINTER) {
-            type = StubMachineType::INT32;
+        if (type == VariableType::POINTER()) {
+            type = VariableType::INT32();
         }
         GateRef ptr = Int32Add(base, offset);
         result = env_.GetCircuitBuilder().NewStoreGate(type, ptr, value, depend);
@@ -1121,7 +1121,7 @@ GateRef Stub::Store(StubMachineType type, GateRef glue, GateRef base, GateRef of
     } else {
         UNREACHABLE();
     }
-    if (type == StubMachineType::TAGGED_POINTER || type == StubMachineType::TAGGED) {
+    if (type == VariableType::JS_POINTER() || type == VariableType::JS_ANY()) {
         SetValueWithBarrier(glue, base, offset, value);
     }
     return result;
@@ -1150,7 +1150,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
         Bind(&isVailedIndex);
         {
             GateRef offset = GetIntPtrConstant(Region::GetOldToNewSetOffset(env_.Is32Bit()));
-            auto oldToNewSet = Load(StubMachineType::NATIVE_POINTER, objectRegion, offset);
+            auto oldToNewSet = Load(VariableType::POINTER(), objectRegion, offset);
             Label isNullPtr(env);
             Label notNullPtr(env);
             Branch(IntptrEuqal(oldToNewSet, GetIntPtrConstant(0)), &isNullPtr, &notNullPtr);
@@ -1166,12 +1166,12 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
                 // 2.1 bitmap_[wordIdx]
                 GateRef bitmapoffset = GetIntPtrConstant(0);
                 GateRef bitmap = IntPtrAdd(oldToNewSet, bitmapoffset);
-                GateRef bitmapdata = Load(StubMachineType::NATIVE_POINTER, bitmap, GetIntPtrConstant(0));
+                GateRef bitmapdata = Load(VariableType::POINTER(), bitmap, GetIntPtrConstant(0));
                 GateRef bitmapAddr = IntPtrAdd(bitmapdata,
                     IntPtrMul(wordIdx, GetIntPtrConstant(GetIntPtrSize())));
                 // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset);
-                GateRef oldmapValue = Load(StubMachineType::NATIVE_POINTER, bitmapAddr, GetIntPtrConstant(0));
-                Store(StubMachineType::NATIVE_POINTER, glue, bitmapAddr, GetIntPtrConstant(0),
+                GateRef oldmapValue = Load(VariableType::POINTER(), bitmapAddr, GetIntPtrConstant(0));
+                Store(VariableType::POINTER(), glue, bitmapAddr, GetIntPtrConstant(0),
                     IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
                 Jump(&notValidIndex);
             }
@@ -1202,7 +1202,7 @@ GateRef Stub::TaggedIsString(GateRef obj)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::BOOL, FalseConstant());
+    DEFVARIABLE(result, VariableType::BOOL(), FalseConstant());
     Label isHeapObject(env);
     Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     Bind(&isHeapObject);
@@ -1223,7 +1223,7 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::BOOL, FalseConstant());
+    DEFVARIABLE(result, VariableType::BOOL(), FalseConstant());
     Label isHeapObject(env);
     Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
     Bind(&isHeapObject);
@@ -1248,7 +1248,7 @@ GateRef Stub::TaggedIsStringOrSymbol(GateRef obj)
 GateRef Stub::IsUtf16String(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    GateRef len = Load(VariableType::INT32(), string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
     return Int32Equal(
         Int32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
         GetInt32Constant(EcmaString::STRING_UNCOMPRESSED));
@@ -1257,7 +1257,7 @@ GateRef Stub::IsUtf16String(GateRef string)
 GateRef Stub::IsUtf8String(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    GateRef len = Load(VariableType::INT32(), string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
     return Int32Equal(
         Int32And(len, GetInt32Constant(EcmaString::STRING_COMPRESSED_BIT)),
         GetInt32Constant(EcmaString::STRING_COMPRESSED));
@@ -1266,7 +1266,7 @@ GateRef Stub::IsUtf8String(GateRef string)
 GateRef Stub::IsInternalString(GateRef string)
 {
     // compressedStringsEnabled fixed to true constant
-    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    GateRef len = Load(VariableType::INT32(), string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
     return Int32NotEqual(
         Int32And(len, GetInt32Constant(EcmaString::STRING_INTERN_BIT)),
         GetInt32Constant(0));
@@ -1285,10 +1285,10 @@ GateRef Stub::StringToElementIndex(GateRef string)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::INT32, GetInt32Constant(-1));
+    DEFVARIABLE(result, VariableType::INT32(), GetInt32Constant(-1));
     Label greatThanZero(env);
     Label inRange(env);
-    GateRef len = Load(StubMachineType::UINT32, string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
+    GateRef len = Load(VariableType::INT32(), string, GetIntPtrConstant(EcmaString::MIX_LENGTH_OFFSET));
     len = UInt32LSR(len, GetInt32Constant(2));  // 2 : 2 means len must be right shift 2 bits
     Branch(Int32Equal(len, GetInt32Constant(0)), &exit, &greatThanZero);
     Bind(&greatThanZero);
@@ -1296,7 +1296,7 @@ GateRef Stub::StringToElementIndex(GateRef string)
     Bind(&inRange);
     {
         GateRef dataUtf16 = IntPtrAdd(string, GetIntPtrConstant(EcmaString::DATA_OFFSET));
-        DEFVARIABLE(c, StubMachineType::UINT32, GetInt32Constant(0));
+        DEFVARIABLE(c, VariableType::INT32(), GetInt32Constant(0));
         Label isUtf16(env);
         Label isUtf8(env);
         Label getChar1(env);
@@ -1304,12 +1304,12 @@ GateRef Stub::StringToElementIndex(GateRef string)
         Branch(isUtf16String, &isUtf16, &isUtf8);
         Bind(&isUtf16);
         {
-            c = ZExtInt16ToInt32(Load(StubMachineType::INT16, dataUtf16));
+            c = ZExtInt16ToInt32(Load(VariableType::INT16(), dataUtf16));
             Jump(&getChar1);
         }
         Bind(&isUtf8);
         {
-            c = ZExtInt8ToInt32(Load(StubMachineType::INT8, dataUtf16));
+            c = ZExtInt8ToInt32(Load(VariableType::INT8(), dataUtf16));
             Jump(&getChar1);
         }
         Bind(&getChar1);
@@ -1330,8 +1330,8 @@ GateRef Stub::StringToElementIndex(GateRef string)
             Bind(&notDigitZero);
             {
                 Label isDigit(env);
-                DEFVARIABLE(i, StubMachineType::UINT32, GetInt32Constant(1));
-                DEFVARIABLE(n, StubMachineType::UINT32, Int32Sub(*c, GetInt32Constant('0')));
+                DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(1));
+                DEFVARIABLE(n, VariableType::INT32(), Int32Sub(*c, GetInt32Constant('0')));
                 Branch(IsDigit(*c), &isDigit, &exit);
                 Label loopHead(env);
                 Label loopEnd(env);
@@ -1348,12 +1348,12 @@ GateRef Stub::StringToElementIndex(GateRef string)
                     {
                         // 2 : 2 means utf16 char width is two bytes
                         auto charOffset = IntPtrMul(ChangeInt32ToIntPtr(*i),  GetIntPtrConstant(2));
-                        c = ZExtInt16ToInt32(Load(StubMachineType::INT16, dataUtf16, charOffset));
+                        c = ZExtInt16ToInt32(Load(VariableType::INT16(), dataUtf16, charOffset));
                         Jump(&getChar2);
                     }
                     Bind(&notUtf16);
                     {
-                        c = ZExtInt8ToInt32(Load(StubMachineType::INT8, dataUtf16, ChangeInt32ToIntPtr(*i)));
+                        c = ZExtInt8ToInt32(Load(VariableType::INT8(), dataUtf16, ChangeInt32ToIntPtr(*i)));
                         Jump(&getChar2);
                     }
                     Bind(&getChar2);
@@ -1404,7 +1404,7 @@ GateRef Stub::TryToElementsIndex(GateRef key)
     Label isKeyInt(env);
     Label notKeyInt(env);
 
-    DEFVARIABLE(resultKey, StubMachineType::INT32, GetInt32Constant(-1));
+    DEFVARIABLE(resultKey, VariableType::INT32(), GetInt32Constant(-1));
     Branch(TaggedIsInt(key), &isKeyInt, &notKeyInt);
     Bind(&isKeyInt);
     {
@@ -1453,18 +1453,18 @@ GateRef Stub::LoadFromField(GateRef receiver, GateRef handlerInfo)
     Label exit(env);
     Label handlerInfoIsInlinedProps(env);
     Label handlerInfoNotInlinedProps(env);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
     GateRef index = HandlerBaseGetOffset(handlerInfo);
     Branch(HandlerBaseIsInlinedProperty(handlerInfo), &handlerInfoIsInlinedProps, &handlerInfoNotInlinedProps);
     Bind(&handlerInfoIsInlinedProps);
     {
-        result = Load(StubMachineType::TAGGED, receiver, IntPtrMul(ChangeInt32ToIntPtr(index),
+        result = Load(VariableType::JS_ANY(), receiver, IntPtrMul(ChangeInt32ToIntPtr(index),
             GetIntPtrConstant(JSTaggedValue::TaggedTypeSize())));
         Jump(&exit);
     }
     Bind(&handlerInfoNotInlinedProps);
     {
-        result = GetValueFromTaggedArray(StubMachineType::TAGGED, GetPropertiesArray(receiver), index);
+        result = GetValueFromTaggedArray(VariableType::JS_ANY(), GetPropertiesArray(receiver), index);
         Jump(&exit);
     }
     Bind(&exit);
@@ -1481,7 +1481,7 @@ GateRef Stub::LoadGlobal(GateRef cell)
     Label exit(env);
     Label cellIsInvalid(env);
     Label cellNotInvalid(env);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     Branch(IsInvalidPropertyBox(cell), &cellIsInvalid, &cellNotInvalid);
     Bind(&cellIsInvalid);
     {
@@ -1509,8 +1509,8 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
     Label iLessLength(env);
     Label hasHclass(env);
     Label cachedValueNotWeak(env);
-    DEFVARIABLE(i, StubMachineType::UINT32, GetInt32Constant(0));
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     Branch(TaggedIsWeak(cachedValue), &exit, &cachedValueNotWeak);
     Bind(&cachedValueNotWeak);
     {
@@ -1521,10 +1521,10 @@ GateRef Stub::CheckPolyHClass(GateRef cachedValue, GateRef hclass)
             Branch(UInt32LessThan(*i, length), &iLessLength, &exit);
             Bind(&iLessLength);
             {
-                GateRef element = GetValueFromTaggedArray(StubMachineType::TAGGED, cachedValue, *i);
+                GateRef element = GetValueFromTaggedArray(VariableType::JS_ANY(), cachedValue, *i);
                 Branch(Int64Equal(TaggedCastToWeakReferentUnChecked(element), hclass), &hasHclass, &loopEnd);
                 Bind(&hasHclass);
-                result = GetValueFromTaggedArray(StubMachineType::TAGGED, cachedValue,
+                result = GetValueFromTaggedArray(VariableType::JS_ANY(), cachedValue,
                                                  Int32Add(*i, GetInt32Constant(1)));
                 Jump(&exit);
             }
@@ -1556,9 +1556,9 @@ GateRef Stub::LoadICWithHandler(GateRef glue, GateRef receiver, GateRef argHolde
     Label cellHasChanged(env);
     Label loopHead(env);
     Label loopEnd(env);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
-    DEFVARIABLE(holder, StubMachineType::TAGGED, argHolder);
-    DEFVARIABLE(handler, StubMachineType::TAGGED, argHandler);
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
+    DEFVARIABLE(holder, VariableType::JS_ANY(), argHolder);
+    DEFVARIABLE(handler, VariableType::JS_ANY(), argHandler);
 
     Jump(&loopHead);
     LoopBegin(&loopHead);
@@ -1622,7 +1622,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
     Label indexNotLessZero(env);
     Label lengthLessIndex(env);
     Label lengthNotLessIndex(env);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     GateRef index = TryToElementsIndex(key);
     Branch(UInt32LessThan(index, GetInt32Constant(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
@@ -1636,7 +1636,7 @@ GateRef Stub::LoadElement(GateRef receiver, GateRef key)
         Bind(&lengthLessIndex);
         Jump(&exit);
         Bind(&lengthNotLessIndex);
-        result = GetValueFromTaggedArray(StubMachineType::TAGGED, elements, index);
+        result = GetValueFromTaggedArray(VariableType::JS_ANY(), elements, index);
         Jump(&exit);
     }
     Bind(&exit);
@@ -1665,8 +1665,8 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
     Label cellHasNotChanged(env);
     Label loopHead(env);
     Label loopEnd(env);
-    DEFVARIABLE(result, StubMachineType::UINT64, GetHoleConstant(StubMachineType::UINT64));
-    DEFVARIABLE(varHandler, StubMachineType::TAGGED, handler);
+    DEFVARIABLE(result, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
+    DEFVARIABLE(varHandler, VariableType::JS_ANY(), handler);
     GateRef index = TryToElementsIndex(key);
     Branch(UInt32LessThan(index, GetInt32Constant(0)), &indexLessZero, &indexNotLessZero);
     Bind(&indexLessZero);
@@ -1687,7 +1687,7 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
                 GateRef oldLength = GetArrayLength(receiver);
                 Branch(Int32GreaterThanOrEqual(index, oldLength), &indexGreaterLength, &handerInfoNotJSArray);
                 Bind(&indexGreaterLength);
-                Store(StubMachineType::UINT64, glue, receiver,
+                Store(VariableType::INT64(), glue, receiver,
                     GetIntPtrConstant(panda::ecmascript::JSArray::LENGTH_OFFSET),
                     IntBuildTaggedWithNoGC(Int32Add(index, GetInt32Constant(1))));
                 Jump(&handerInfoNotJSArray);
@@ -1708,8 +1708,8 @@ GateRef Stub::ICStoreElement(GateRef glue, GateRef receiver, GateRef key, GateRe
                 }
                 Bind(&storeElement);
                 {
-                    SetValueToTaggedArray(StubMachineType::TAGGED, glue, elements, index, value);
-                    result = GetUndefinedConstant(StubMachineType::UINT64);
+                    SetValueToTaggedArray(VariableType::JS_ANY(), glue, elements, index, value);
+                    result = GetUndefinedConstant(VariableType::INT64());
                     Jump(&exit);
                 }
             }
@@ -1743,9 +1743,9 @@ GateRef Stub::GetArrayLength(GateRef object)
     Label exit(env);
     Label lengthIsInt(env);
     Label lengthNotInt(env);
-    DEFVARIABLE(result, StubMachineType::UINT32, GetInt32Constant(0));
+    DEFVARIABLE(result, VariableType::INT32(), GetInt32Constant(0));
     GateRef lengthOffset = GetIntPtrConstant(panda::ecmascript::JSArray::LENGTH_OFFSET);
-    GateRef length = Load(StubMachineType::UINT64, object, lengthOffset);
+    GateRef length = Load(VariableType::INT64(), object, lengthOffset);
     Branch(TaggedIsInt(length), &lengthIsInt, &lengthNotInt);
     Bind(&lengthIsInt);
     {
@@ -1782,9 +1782,9 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
     Label cellHasChanged(env);
     Label loopHead(env);
     Label loopEnd(env);
-    DEFVARIABLE(result, StubMachineType::UINT64, GetUndefinedConstant(StubMachineType::UINT64));
-    DEFVARIABLE(holder, StubMachineType::TAGGED, argHolder);
-    DEFVARIABLE(handler, StubMachineType::TAGGED, argHandler);
+    DEFVARIABLE(result, VariableType::INT64(), GetUndefinedConstant(VariableType::INT64()));
+    DEFVARIABLE(holder, VariableType::JS_ANY(), argHolder);
+    DEFVARIABLE(handler, VariableType::JS_ANY(), argHandler);
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
@@ -1836,7 +1836,7 @@ GateRef Stub::StoreICWithHandler(GateRef glue, GateRef receiver, GateRef argHold
             Branch(GetHasChanged(cellValue), &cellHasChanged, &loopEnd);
             Bind(&cellHasChanged);
             {
-                result = GetHoleConstant(StubMachineType::UINT64);
+                result = GetHoleConstant(VariableType::INT64());
                 Jump(&exit);
             }
             Bind(&loopEnd);
@@ -1865,7 +1865,7 @@ void Stub::StoreField(GateRef glue, GateRef receiver, GateRef value, GateRef han
     Branch(HandlerBaseIsInlinedProperty(handler), &handlerIsInlinedProperty, &handlerNotInlinedProperty);
     Bind(&handlerIsInlinedProperty);
     {
-        Store(StubMachineType::TAGGED, glue, receiver,
+        Store(VariableType::JS_ANY(), glue, receiver,
             IntPtrMul(ChangeInt32ToIntPtr(index), GetIntPtrConstant(JSTaggedValue::TaggedTypeSize())),
             value);
         Jump(&exit);
@@ -1873,7 +1873,7 @@ void Stub::StoreField(GateRef glue, GateRef receiver, GateRef value, GateRef han
     Bind(&handlerNotInlinedProperty);
     {
         GateRef array = GetPropertiesArray(receiver);
-        SetValueToTaggedArray(StubMachineType::TAGGED, glue, array, index, value);
+        SetValueToTaggedArray(VariableType::JS_ANY(), glue, array, index, value);
         Jump(&exit);
     }
     Bind(&exit);
@@ -1910,7 +1910,7 @@ void Stub::StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, Ga
         }
         Bind(&indexLessCapacity);
         {
-            Store(StubMachineType::UINT64, glue, IntPtrAdd(array, GetIntPtrConstant(TaggedArray::DATA_OFFSET)),
+            Store(VariableType::INT64(), glue, IntPtrAdd(array, GetIntPtrConstant(TaggedArray::DATA_OFFSET)),
                 IntPtrMul(ChangeInt32ToIntPtr(index), GetIntPtrConstant(JSTaggedValue::TaggedTypeSize())),
                 value);
             Jump(&exit);
@@ -1933,7 +1933,7 @@ GateRef Stub::StoreGlobal(GateRef glue, GateRef value, GateRef cell)
     Label exit(env);
     Label cellIsInvalid(env);
     Label cellNotInvalid(env);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     Branch(IsInvalidPropertyBox(cell), &cellIsInvalid, &cellNotInvalid);
     Bind(&cellIsInvalid);
     {
@@ -1941,7 +1941,7 @@ GateRef Stub::StoreGlobal(GateRef glue, GateRef value, GateRef cell)
     }
     Bind(&cellNotInvalid);
     {
-        Store(StubMachineType::TAGGED, glue, cell, GetIntPtrConstant(PropertyBox::VALUE_OFFSET), value);
+        Store(VariableType::JS_ANY(), glue, cell, GetIntPtrConstant(PropertyBox::VALUE_OFFSET), value);
         result = GetUndefinedConstant();
         Jump(&exit);
     }
@@ -1956,8 +1956,8 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
-    DEFVARIABLE(holder, StubMachineType::TAGGED, receiver);
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(holder, VariableType::JS_ANY(), receiver);
     Label exit(env);
     Label loopHead(env);
     Label loopEnd(env);
@@ -2003,7 +2003,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
                 {
                     Label notHole(env);
                     Label isHole(env);
-                    GateRef value = GetValueFromTaggedArray(StubMachineType::TAGGED, elements, index);
+                    GateRef value = GetValueFromTaggedArray(VariableType::JS_ANY(), elements, index);
                     Branch(TaggedIsNotHole(value), &notHole, &isHole);
                     Bind(&notHole);
                     {
@@ -2030,7 +2030,7 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
                 Bind(&notNegtiveOne);
                 {
                     GateRef attr = GetAttributesFromDictionary<NumberDictionary>(elements, entry);
-                    GateRef value = GetValueFromDictionary<NumberDictionary>(StubMachineType::TAGGED, elements, entry);
+                    GateRef value = GetValueFromDictionary<NumberDictionary>(VariableType::JS_ANY(), elements, entry);
                     Label isAccessor(env);
                     Label notAccessor(env);
                     Branch(IsAccessor(attr), &isAccessor, &notAccessor);
@@ -2086,8 +2086,8 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
-    DEFVARIABLE(holder, StubMachineType::TAGGED, receiver);
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(holder, VariableType::JS_ANY(), receiver);
     Label exit(env);
     Label loopHead(env);
     Label loopEnd(env);
@@ -2134,7 +2134,7 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                     GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entry);
                     GateRef attr = TaggedCastToInt32(propAttr);
                     // auto value = JSObject::Cast(holder)->GetProperty(hclass, attr)
-                    GateRef value = JSObjectGetProperty(StubMachineType::TAGGED, *holder, hClass, attr);
+                    GateRef value = JSObjectGetProperty(VariableType::JS_ANY(), *holder, hClass, attr);
                     Label isAccessor(env);
                     Label notAccessor(env);
                     Branch(IsAccessor(attr), &isAccessor, &notAccessor);
@@ -2181,7 +2181,7 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
                     // auto value = dict->GetValue(entry)
                     GateRef attr = GetAttributesFromDictionary(array, entry);
                     // auto attr = dict->GetAttributes(entry)
-                    GateRef value = GetValueFromDictionary(StubMachineType::TAGGED, array, entry);
+                    GateRef value = GetValueFromDictionary(VariableType::JS_ANY(), array, entry);
                     Label isAccessor1(env);
                     Label notAccessor1(env);
                     // if branch condition : UNLIKELY(attr.IsAccessor())
@@ -2241,15 +2241,15 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     auto proto = GetPrototypeFromHClass(srcHClass);
-    SetPrototypeToHClass(StubMachineType::INT64, glue, dstHClass, proto);
+    SetPrototypeToHClass(VariableType::INT64(), glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
     SetNumberOfPropsToHClass(glue, dstHClass, GetNumberOfPropsFromHClass(srcHClass));
-    SetParentToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
-    SetTransitionsToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
-    SetProtoChangeDetailsToHClass(StubMachineType::INT64, glue, dstHClass,
+    SetParentToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
+    SetTransitionsToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
+    SetProtoChangeDetailsToHClass(VariableType::INT64(), glue, dstHClass,
                                   GetInt64Constant(JSTaggedValue::VALUE_NULL));
-    SetEnumCacheToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
-    SetLayoutToHClass(StubMachineType::INT64, glue, dstHClass, GetLayoutFromHClass(srcHClass));
+    SetEnumCacheToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
+    SetLayoutToHClass(VariableType::INT64(), glue, dstHClass, GetLayoutFromHClass(srcHClass));
     env->PopCurrentLabel();
     return;
 }
@@ -2261,8 +2261,8 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
     env->PushCurrentLabel(&entry);
     Label exit(env);
     GateRef transitionOffset = GetIntPtrConstant(JSHClass::TRANSTIONS_OFFSET);
-    GateRef transition = Load(StubMachineType::TAGGED_POINTER, hclass, transitionOffset);
-    DEFVARIABLE(result, StubMachineType::TAGGED, transition);
+    GateRef transition = Load(VariableType::JS_POINTER(), hclass, transitionOffset);
+    DEFVARIABLE(result, VariableType::JS_ANY(), transition);
 
     Label notNull(env);
     Branch(Int64Equal(transition, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &exit, &notNull);
@@ -2310,7 +2310,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
             Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &isFound, &notFound);
             Bind(&isFound);
             auto newHClass = GetValueFromDictionary<TransitionsDictionary>(
-                StubMachineType::TAGGED_POINTER, transition, entry);
+                VariableType::JS_POINTER(), transition, entry);
             result = newHClass;
 #if ECMASCRIPT_ENABLE_IC
             NotifyHClassChanged(glue, hclass, newHClass);
@@ -2333,8 +2333,8 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(returnValue, StubMachineType::UINT64, GetHoleConstant(StubMachineType::UINT64));
-    DEFVARIABLE(holder, StubMachineType::TAGGED, receiver);
+    DEFVARIABLE(returnValue, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
+    DEFVARIABLE(holder, VariableType::JS_ANY(), receiver);
     Label exit(env);
     Label loopHead(env);
     Label loopEnd(env);
@@ -2350,7 +2350,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
         Branch(IsSpecialIndexedObj(jsType), &isSpecialIndex, &notSpecialIndex);
         Bind(&isSpecialIndex);
         {
-            returnValue = GetHoleConstant(StubMachineType::UINT64);
+            returnValue = GetHoleConstant(VariableType::INT64());
             Jump(&exit);
         }
         Bind(&notSpecialIndex);
@@ -2371,13 +2371,13 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
                     Branch(Int64LessThan(index, length), &inRange, &loopExit);
                     Bind(&inRange);
                     {
-                        GateRef value1 = GetValueFromTaggedArray(StubMachineType::TAGGED, elements, index);
+                        GateRef value1 = GetValueFromTaggedArray(VariableType::JS_ANY(), elements, index);
                         Label notHole(env);
                         Branch(Int64NotEqual(value1, GetHoleConstant()), &notHole, &loopExit);
                         Bind(&notHole);
                         {
-                            SetValueToTaggedArray(StubMachineType::TAGGED, glue, elements, index, value);
-                            returnValue = GetUndefinedConstant(StubMachineType::UINT64);
+                            SetValueToTaggedArray(VariableType::JS_ANY(), glue, elements, index, value);
+                            returnValue = GetUndefinedConstant(VariableType::INT64());
                             Jump(&exit);
                         }
                     }
@@ -2386,7 +2386,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
                 Jump(&afterLoop);
             }
             Bind(&isDictionaryElement);
-            returnValue = GetHoleConstant(StubMachineType::UINT64);
+            returnValue = GetHoleConstant(VariableType::INT64());
             Jump(&exit);
         }
         Bind(&loopExit);
@@ -2413,10 +2413,10 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
             Label failed(env);
             Branch(TaggedIsTrue(result), &success, &failed);
             Bind(&success);
-            returnValue = GetUndefinedConstant(StubMachineType::UINT64);
+            returnValue = GetUndefinedConstant(VariableType::INT64());
             Jump(&exit);
             Bind(&failed);
-            returnValue = GetExceptionConstant(StubMachineType::UINT64);
+            returnValue = GetExceptionConstant(VariableType::INT64());
             Jump(&exit);
         }
         Bind(&notExtensible);
@@ -2424,7 +2424,7 @@ GateRef Stub::SetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index, 
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
             CallRuntimeTrampoline(glue,
                 GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { IntBuildTaggedTypeWithNoGC(taggedId) });
-            returnValue = GetExceptionConstant(StubMachineType::UINT64);
+            returnValue = GetExceptionConstant(VariableType::INT64());
             Jump(&exit);
         }
     }
@@ -2439,8 +2439,8 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
     auto env = GetEnvironment();
     Label entryPass(env);
     env->PushCurrentLabel(&entryPass);
-    DEFVARIABLE(result, StubMachineType::UINT64, GetHoleConstant(StubMachineType::UINT64));
-    DEFVARIABLE(holder, StubMachineType::TAGGED_POINTER, receiver);
+    DEFVARIABLE(result, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
+    DEFVARIABLE(holder, VariableType::JS_POINTER(), receiver);
     Label exit(env);
     Label loopHead(env);
     Label loopEnd(env);
@@ -2469,12 +2469,12 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                 GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(CanNotSetPropertyOnContainer));
                 CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                                       { IntBuildTaggedTypeWithNoGC(taggedId) });
-                result = GetExceptionConstant(StubMachineType::UINT64);
+                result = GetExceptionConstant(VariableType::INT64());
                 Jump(&exit);
             }
             Bind(&notSpecialContainer);
             {
-                result = GetHoleConstant(StubMachineType::UINT64);
+                result = GetHoleConstant(VariableType::INT64());
                 Jump(&exit);
             }
         }
@@ -2508,7 +2508,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                     Bind(&isAccessor);
                     {
                         // auto accessor = JSObject::Cast(holder)->GetProperty(hclass, attr)
-                        GateRef accessor = JSObjectGetProperty(StubMachineType::TAGGED, *holder, hClass, attr);
+                        GateRef accessor = JSObjectGetProperty(VariableType::JS_ANY(), *holder, hClass, attr);
                         Label shouldCall(env);
                         Label shouldNotCall(env);
                         // ShouldCallSetter(receiver, *holder, accessor, attr)
@@ -2536,7 +2536,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                             CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                                 { IntBuildTaggedTypeWithNoGC(taggedId) });
-                            result = GetExceptionConstant(StubMachineType::UINT64);
+                            result = GetExceptionConstant(VariableType::INT64());
                             Jump(&exit);
                         }
                         Bind(&afterIsWritable);
@@ -2555,7 +2555,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             // JSObject::Cast(holder)->SetProperty(thread, hclass, attr, value)
                             // return JSTaggedValue::Undefined()
                             JSObjectSetProperty(glue, *holder, hClass, attr, value);
-                            result = GetUndefinedConstant(StubMachineType::UINT64);
+                            result = GetUndefinedConstant(VariableType::INT64());
                             Jump(&exit);
                         }
                     }
@@ -2588,7 +2588,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                         Label isInternal1(env);
                         Label notInternal1(env);
                         // auto accessor = dict->GetValue(entry)
-                        GateRef accessor1 = GetValueFromDictionary(StubMachineType::TAGGED, array, entry1);
+                        GateRef accessor1 = GetValueFromDictionary(VariableType::JS_ANY(), array, entry1);
                         Label shouldCall1(env);
                         Label shouldNotCall1(env);
                         Branch(ShouldCallSetter(receiver, *holder, accessor1, attr1), &shouldCall1, &shouldNotCall1);
@@ -2613,7 +2613,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                             CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                                 { IntBuildTaggedTypeWithNoGC(taggedId) });
-                            result = GetExceptionConstant(StubMachineType::UINT64);
+                            result = GetExceptionConstant(VariableType::INT64());
                             Jump(&exit);
                         }
                         Bind(&afterIsWritable1);
@@ -2632,7 +2632,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
                             // dict->UpdateValue(thread, entry, value)
                             // return JSTaggedValue::Undefined()
                             UpdateValueInDict(glue, array, entry1, value);
-                            result = GetUndefinedConstant(StubMachineType::UINT64);
+                            result = GetUndefinedConstant(VariableType::INT64());
                             Jump(&exit);
                         }
                     }
@@ -2664,7 +2664,7 @@ GateRef Stub::SetPropertyByName(GateRef glue, GateRef receiver, GateRef key, Gat
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
             CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                 { IntBuildTaggedTypeWithNoGC(taggedId) });
-            result = GetExceptionConstant(StubMachineType::UINT64);
+            result = GetExceptionConstant(VariableType::INT64());
             Jump(&exit);
         }
         Bind(&afterExtenCon);
@@ -2683,8 +2683,8 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, StubMachineType::UINT64, GetHoleConstant(StubMachineType::UINT64));
-    DEFVARIABLE(holder, StubMachineType::TAGGED_POINTER, receiver);
+    DEFVARIABLE(result, VariableType::INT64(), GetHoleConstant(VariableType::INT64()));
+    DEFVARIABLE(holder, VariableType::JS_POINTER(), receiver);
     Label exit(env);
     Label ifEnd(env);
     // auto *hclass = holder.GetTaggedObject()->GetClass()
@@ -2706,12 +2706,12 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(CanNotSetPropertyOnContainer));
             CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                 { IntBuildTaggedTypeWithNoGC(taggedId) });
-            result = GetExceptionConstant(StubMachineType::UINT64);
+            result = GetExceptionConstant(VariableType::INT64());
             Jump(&exit);
         }
         Bind(&notSpecialContainer);
         {
-            result = GetHoleConstant(StubMachineType::UINT64);
+            result = GetHoleConstant(VariableType::INT64());
             Jump(&exit);
         }
     }
@@ -2745,7 +2745,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                 Bind(&isAccessor);
                 {
                     // auto accessor = JSObject::Cast(holder)->GetProperty(hclass, attr)
-                    GateRef accessor = JSObjectGetProperty(StubMachineType::TAGGED, *holder, hClass, attr);
+                    GateRef accessor = JSObjectGetProperty(VariableType::JS_ANY(), *holder, hClass, attr);
                     Label shouldCall(env);
                     Label shouldNotCall(env);
                     // ShouldCallSetter(receiver, *holder, accessor, attr)
@@ -2773,7 +2773,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                         CallRuntimeTrampoline(glue,
                             GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { IntBuildTaggedTypeWithNoGC(taggedId) });
-                        result = GetExceptionConstant(StubMachineType::UINT64);
+                        result = GetExceptionConstant(VariableType::INT64());
                         Jump(&exit);
                     }
                     Bind(&afterIsWritable);
@@ -2792,7 +2792,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         // JSObject::Cast(holder)->SetProperty(thread, hclass, attr, value)
                         // return JSTaggedValue::Undefined()
                         JSObjectSetProperty(glue, *holder, hClass, attr, value);
-                        result = GetUndefinedConstant(StubMachineType::UINT64);
+                        result = GetUndefinedConstant(VariableType::INT64());
                         Jump(&exit);
                     }
                 }
@@ -2826,7 +2826,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                     Label isInternal1(env);
                     Label notInternal1(env);
                     // auto accessor = dict->GetValue(entry)
-                    GateRef accessor1 = GetValueFromDictionary(StubMachineType::TAGGED, array, entry1);
+                    GateRef accessor1 = GetValueFromDictionary(VariableType::JS_ANY(), array, entry1);
                     Label shouldCall1(env);
                     Label shouldNotCall1(env);
                     Branch(ShouldCallSetter(receiver, *holder, accessor1, attr1), &shouldCall1, &shouldNotCall1);
@@ -2851,7 +2851,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
                         CallRuntimeTrampoline(glue,
                             GetInt64Constant(FAST_STUB_ID(ThrowTypeError)), { IntBuildTaggedTypeWithNoGC(taggedId) });
-                        result = GetExceptionConstant(StubMachineType::UINT64);
+                        result = GetExceptionConstant(VariableType::INT64());
                         Jump(&exit);
                     }
                     Bind(&afterIsWritable1);
@@ -2870,7 +2870,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
                         // dict->UpdateValue(thread, entry, value)
                         // return JSTaggedValue::Undefined()
                         UpdateValueInDict(glue, array, entry1, value);
-                        result = GetUndefinedConstant(StubMachineType::UINT64);
+                        result = GetUndefinedConstant(VariableType::INT64());
                         Jump(&exit);
                     }
                 }
@@ -2892,7 +2892,7 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             GateRef taggedId = GetInt32Constant(GET_MESSAGE_STRING_ID(SetPropertyWhenNotExtensible));
             CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowTypeError)),
                 { IntBuildTaggedTypeWithNoGC(taggedId) });
-            result = GetExceptionConstant(StubMachineType::UINT64);
+            result = GetExceptionConstant(VariableType::INT64());
             Jump(&exit);
         }
         Bind(&afterExtenCon);
@@ -2938,7 +2938,7 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
 
     Label arrayListLabel(env);
     Label queueLabel(env);
@@ -2978,7 +2978,7 @@ GateRef Stub::FastEqual(GateRef left, GateRef right)
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     Label leftEqualRight(env);
     Label leftNotEqualRight(env);
     Label exit(env);
@@ -3084,9 +3084,9 @@ GateRef Stub::FastMul(GateRef left, GateRef right)
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
-    DEFVARIABLE(doubleLeft, StubMachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleRight, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
     Label leftIsNumber(env);
     Label leftNotNumberOrRightNotNumber(env);
     Label leftIsNumberAndRightIsNumber(env);
@@ -3150,9 +3150,9 @@ GateRef Stub::FastDiv(GateRef left, GateRef right)
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
-    DEFVARIABLE(doubleLeft, StubMachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleRight, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
     Label leftIsNumber(env);
     Label leftNotNumberOrRightNotNumber(env);
     Label leftIsNumberAndRightIsNumber(env);
@@ -3257,11 +3257,11 @@ GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
     auto env = GetEnvironment();
     Label entry(env);
     env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
-    DEFVARIABLE(intLeft, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(intRight, StubMachineType::INT32, GetInt32Constant(0));
-    DEFVARIABLE(doubleLeft, StubMachineType::FLOAT64, GetDoubleConstant(0));
-    DEFVARIABLE(doubleRight, StubMachineType::FLOAT64, GetDoubleConstant(0));
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(intLeft, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(intRight, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
     Label leftIsInt(env);
     Label leftNotIntOrRightNotInt(env);
     Label exit(env);
@@ -3400,7 +3400,7 @@ GateRef Stub::GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key)
     auto env = GetEnvironment();
     Label entryLabel(env);
     env->PushCurrentLabel(&entryLabel);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetHoleConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
     GateRef properties = GetPropertiesFromJSObject(receiver);
     GateRef entry = FindEntryFromNameDictionary(glue, properties, key);
     Label notNegtiveOne(env);
@@ -3423,10 +3423,10 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     Label exit(env);
-    DEFVARIABLE(result, StubMachineType::TAGGED, GetUndefinedConstant());
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetUndefinedConstant());
 
     GateRef lengthOffset = GetIntPtrConstant(panda::ecmascript::JSAPIArrayList::LENGTH_OFFSET);
-    GateRef length = TaggedCastToInt32(Load(StubMachineType::UINT64, receiver, lengthOffset));
+    GateRef length = TaggedCastToInt32(Load(VariableType::INT64(), receiver, lengthOffset));
     Label isVailedIndex(env);
     Label notValidIndex(env);
     Branch(TruncInt32ToInt1(Int32And(ZExtInt1ToInt32(Int32GreaterThanOrEqual(index, GetInt32Constant(0))),
@@ -3434,7 +3434,7 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     Bind(&isVailedIndex);
     {
         GateRef elements = GetElementsArray(receiver);
-        result = GetValueFromTaggedArray(StubMachineType::TAGGED, elements, index);
+        result = GetValueFromTaggedArray(VariableType::JS_ANY(), elements, index);
         Jump(&exit);
     }
     Bind(&notValidIndex);

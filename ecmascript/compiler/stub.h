@@ -21,7 +21,7 @@
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/gate.h"
-#include "ecmascript/compiler/machine_type.h"
+#include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/compiler/stub_descriptor.h"
 #include "ecmascript/global_dictionary.h"
 #include "ecmascript/ic/ic_handler.h"
@@ -339,7 +339,7 @@ public:
 
     class Variable {
     public:
-        Variable(Environment *env, StubMachineType type, uint32_t id, GateRef value) : id_(id), type_(type), env_(env)
+        Variable(Environment *env, VariableType type, uint32_t id, GateRef value) : id_(id), type_(type), env_(env)
         {
             Bind(value);
             env_->GetCurrentLabel()->WriteVariable(this, value);
@@ -355,7 +355,7 @@ public:
         {
             return currentValue_;
         }
-        StubMachineType Type() const
+        VariableType Type() const
         {
             return type_;
         }
@@ -391,7 +391,7 @@ public:
         }
     private:
         uint32_t id_;
-        StubMachineType type_;
+        VariableType type_;
         GateRef currentValue_ {0};
         Environment *env_;
     };
@@ -446,10 +446,10 @@ public:
     inline GateRef FalseConstant();
     inline GateRef GetBooleanConstant(bool value);
     inline GateRef GetDoubleConstant(double value);
-    inline GateRef GetUndefinedConstant(StubMachineType type = StubMachineType::TAGGED);
-    inline GateRef GetHoleConstant(StubMachineType type = StubMachineType::TAGGED);
-    inline GateRef GetNullConstant(StubMachineType type = StubMachineType::TAGGED);
-    inline GateRef GetExceptionConstant(StubMachineType type = StubMachineType::TAGGED);
+    inline GateRef GetUndefinedConstant(VariableType type = VariableType::JS_ANY());
+    inline GateRef GetHoleConstant(VariableType type = VariableType::JS_ANY());
+    inline GateRef GetNullConstant(VariableType type = VariableType::JS_ANY());
+    inline GateRef GetExceptionConstant(VariableType type = VariableType::JS_ANY());
     inline GateRef IntPtrMul(GateRef x, GateRef y);
     // parameter
     inline GateRef Argument(size_t index);
@@ -490,9 +490,9 @@ public:
                                std::initializer_list<GateRef> args);
     inline void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
     // memory
-    inline GateRef Load(StubMachineType type, GateRef base, GateRef offset);
-    inline GateRef Load(StubMachineType type, GateRef base);
-    GateRef Store(StubMachineType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
+    inline GateRef Load(VariableType type, GateRef base, GateRef offset);
+    inline GateRef Load(VariableType type, GateRef base);
+    GateRef Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
     // arithmetic
     inline GateRef TaggedCastToIntPtr(GateRef x);
     inline GateRef Int16Add(GateRef x, GateRef y);
@@ -668,13 +668,13 @@ public:
     inline GateRef GetLayoutFromHClass(GateRef hClass);
     inline GateRef GetBitFieldFromHClass(GateRef hClass);
     inline GateRef SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield);
-    inline GateRef SetPrototypeToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef proto);
-    inline GateRef SetProtoChangeDetailsToHClass(StubMachineType type, GateRef glue, GateRef hClass,
+    inline GateRef SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef proto);
+    inline GateRef SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass,
 	                                               GateRef protoChange);
-    inline GateRef SetLayoutToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef attr);
-    inline GateRef SetParentToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef parent);
-    inline GateRef SetEnumCacheToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef key);
-    inline GateRef SetTransitionsToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef transition);
+    inline GateRef SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef attr);
+    inline GateRef SetParentToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef parent);
+    inline GateRef SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key);
+    inline GateRef SetTransitionsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef transition);
     inline void SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline GateRef IsProtoTypeHClass(GateRef hClass);
     inline void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
@@ -687,8 +687,8 @@ public:
     inline GateRef GetInlinedPropsStartFromHClass(GateRef hClass);
     inline GateRef GetInlinedPropertiesFromHClass(GateRef hClass);
     void ThrowTypeAndReturn(GateRef glue, int messageId, GateRef val);
-    inline GateRef GetValueFromTaggedArray(StubMachineType returnType, GateRef elements, GateRef index);
-    inline void SetValueToTaggedArray(StubMachineType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
+    inline GateRef GetValueFromTaggedArray(VariableType returnType, GateRef elements, GateRef index);
+    inline void SetValueToTaggedArray(VariableType valType, GateRef glue, GateRef array, GateRef index, GateRef val);
     inline void UpdateValueAndAttributes(GateRef glue, GateRef elements, GateRef index, GateRef value, GateRef attr);
     inline GateRef IsSpecialIndexedObj(GateRef jsType);
     inline GateRef IsSpecialContainer(GateRef jsType);
@@ -696,9 +696,9 @@ public:
     template<typename DictionaryT = NameDictionary>
     GateRef GetAttributesFromDictionary(GateRef elements, GateRef entry);
     template<typename DictionaryT = NameDictionary>
-    GateRef GetValueFromDictionary(StubMachineType returnType, GateRef elements, GateRef entry);
+    GateRef GetValueFromDictionary(VariableType returnType, GateRef elements, GateRef entry);
     template<typename DictionaryT = NameDictionary>
-    GateRef GetKeyFromDictionary(StubMachineType returnType, GateRef elements, GateRef entry);
+    GateRef GetKeyFromDictionary(VariableType returnType, GateRef elements, GateRef entry);
     inline GateRef GetPropAttrFromLayoutInfo(GateRef layout, GateRef entry);
     inline GateRef GetPropertiesAddrFromLayoutInfo(GateRef layout);
     inline GateRef GetPropertyMetaDataFromAttr(GateRef attr);
@@ -709,7 +709,7 @@ public:
     GateRef FindEntryFromNameDictionary(GateRef glue, GateRef elements, GateRef key);
     GateRef IsMatchInTransitionDictionary(GateRef element, GateRef key, GateRef metaData, GateRef attr);
     GateRef FindEntryFromTransitionDictionary(GateRef glue, GateRef elements, GateRef key, GateRef metaData);
-    GateRef JSObjectGetProperty(StubMachineType returnType, GateRef obj, GateRef hClass, GateRef propAttr);
+    GateRef JSObjectGetProperty(VariableType returnType, GateRef obj, GateRef hClass, GateRef propAttr);
     void JSObjectSetProperty(GateRef glue, GateRef obj, GateRef hClass, GateRef attr, GateRef value);
     GateRef ShouldCallSetter(GateRef receiver, GateRef holder, GateRef accessor, GateRef attr);
     GateRef CallSetterUtil(GateRef glue, GateRef holder, GateRef accessor,  GateRef value);

@@ -147,7 +147,7 @@ public:
 private:
     LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
     LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
-    LLVMTypeRef ConvertLLVMTypeFromStubMachineType(StubMachineType type);
+    LLVMTypeRef ConvertLLVMTypeFromVariableType(VariableType type);
     std::array<LLVMValueRef, ALL_STUB_MAXCOUNT> stubFunctions_ {nullptr};
     std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> stubFunctionType_ {nullptr};
 #ifndef NDEBUG
