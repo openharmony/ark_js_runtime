@@ -19,7 +19,7 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/circuit_builder.h"
-#include "ecmascript/compiler/machine_type.h"
+#include "ecmascript/compiler/variable_type.h"
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
@@ -181,7 +181,7 @@ private:
 
 class Variable {
 public:
-    Variable(LabelManager *lm, StubMachineType type, uint32_t id, GateRef value) : id_(id), type_(type), lm_(lm)
+    Variable(LabelManager *lm, VariableType type, uint32_t id, GateRef value) : id_(id), type_(type), lm_(lm)
     {
         Bind(value);
         lm_->GetCurrentLabel()->WriteVariable(this, value);
@@ -197,7 +197,7 @@ public:
     {
         return currentValue_;
     }
-    StubMachineType Type() const
+    VariableType Type() const
     {
         return type_;
     }
@@ -233,7 +233,7 @@ public:
     }
 private:
     uint32_t id_;
-    StubMachineType type_;
+    VariableType type_;
     GateRef currentValue_ {0};
     LabelManager *lm_;
 };
