@@ -60,7 +60,8 @@ public:
 
     bool IsInterpretedFrame() const
     {
-        return GetFrameType() == FrameType::INTERPRETER_FRAME;
+        FrameType type = GetFrameType();
+        return (type == FrameType::INTERPRETER_FRAME) || (type == FrameType::INTERPRETER_FAST_NEW_FRAME);
     }
 
     bool IsOptimizedLeaveFrame() const

@@ -139,6 +139,46 @@ public:
     CString ParseFunctionName() const;
     void InitializeCallField();
 
+    bool HaveThisWithCallField() const
+    {
+        return HaveThisBit::Decode(callField_);
+    }
+
+    bool HaveNewTargetWithCallField() const
+    {
+        return HaveNewTargetBit::Decode(callField_);
+    }
+
+    bool HaveExtraWithCallField() const
+    {
+        return HaveExtraBit::Decode(callField_);
+    }
+
+    bool HaveFuncWithCallField() const
+    {
+        return HaveFuncBit::Decode(callField_);
+    }
+
+    bool IsNativeWithCallField() const
+    {
+        return IsNativeBit::Decode(callField_);
+    }
+
+    bool OnlyHaveThisWithCallField() const
+    {
+        return (callField_ & CALL_TYPE_MASK) == 1;  // 1: the first bit of callFiled is HaveThisBit
+    }
+
+    uint32_t GetNumVregsWithCallField() const
+    {
+        return NumVregsBits::Decode(callField_);
+    }
+
+    uint32_t GetNumArgsWithCallField() const
+    {
+        return NumArgsBits::Decode(callField_);
+    }
+
 private:
     const uint8_t *bytecodeArray_ {nullptr};
     uint32_t bytecodeArraySize_ {0};
