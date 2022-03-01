@@ -42,7 +42,8 @@ void FrameHandler::PrevFrame()
             framehandle->PrevFrame();
             break;
         }
-        case FrameType::INTERPRETER_FRAME: {
+        case FrameType::INTERPRETER_FRAME:
+        case FrameType::INTERPRETER_FAST_NEW_FRAME: {
             auto framehandle =
                 reinterpret_cast<InterpretedFrameHandler *>(this);
             framehandle->PrevFrame();
@@ -75,7 +76,7 @@ void InterpretedFrameHandler::PrevFrame()
 void InterpretedFrameHandler::PrevInterpretedFrame()
 {
     FrameHandler::PrevFrame();
-    for (; HasFrame() && GetFrameType() != FrameType::INTERPRETER_FRAME; FrameHandler::PrevFrame());
+    for (; HasFrame() && !IsInterpretedFrame(); FrameHandler::PrevFrame());
 }
 
 InterpretedFrameHandler InterpretedFrameHandler::GetPrevFrame() const
@@ -316,7 +317,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
-        if (type == FrameType::INTERPRETER_FRAME) {
+        if (type == FrameType::INTERPRETER_FRAME || type == FrameType::INTERPRETER_FAST_NEW_FRAME) {
             InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
             InterpretedFrameHandler(current).Iterate(v0, v1);
             current = frame->GetPrevFrameFp();
@@ -327,7 +328,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
             OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(current);
             current = frame->GetPrevFrameFp();
-            ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
+            ASSERT(FrameHandler(current).IsInterpretedFrame());
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
@@ -339,7 +340,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             // Leave Frame.
 #ifdef PANDA_TARGET_ARM32
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
-            ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
+            ASSERT(FrameHandler(current).IsInterpretedFrame());
 #else
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
