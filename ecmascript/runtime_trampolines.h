@@ -22,8 +22,7 @@
 
 namespace panda::ecmascript {
 extern "C" JSTaggedType CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id,
-                                              uint32_t argc, ...);
-using JSTaggedType = panda::ecmascript::JSTaggedType;
+                                              uint64_t argc, ...);
 class RuntimeTrampolines {
 public:
     enum RuntimeTrampolineId {

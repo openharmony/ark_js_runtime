@@ -60,7 +60,7 @@ const CallSiteInfo* LLVMStackMapParser::GetCallSiteInfoByPatchID(uint64_t patchP
     return nullptr;
 }
 
-void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFrame *frame) const
+void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedLeaveFrame *frame) const
 {
     int i = 0;
     uintptr_t address = 0;
@@ -68,7 +68,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFr
     uintptr_t derived = 0;
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = frame->callsiteSp;
+            uintptr_t rsp = frame->GetCallSiteSp();
             address = rsp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rsp :" << rsp;
@@ -99,11 +99,11 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptLeaveFr
     i = 0;
 }
 
-bool LLVMStackMapParser::CollectStackMapSlots(OptLeaveFrame *frame,
+bool LLVMStackMapParser::CollectStackMapSlots(OptimizedLeaveFrame *frame,
     std::set<uintptr_t> &baseSet, ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const
 {
     ASSERT(frame);
-    uint64_t patchpointId = frame->patchId;
+    uint64_t patchpointId = frame->argPatchId;
     const CallSiteInfo *infos = GetCallSiteInfoByPatchID(patchpointId);
     if (infos == nullptr) {
         return false;
@@ -118,7 +118,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(OptLeaveFrame *frame,
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
-            uintptr_t rsp = frame->callsiteSp;
+            uintptr_t rsp = frame->GetCallSiteSp();
             address = rsp + info.second;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
             uintptr_t fp = frame->callsiteFp;

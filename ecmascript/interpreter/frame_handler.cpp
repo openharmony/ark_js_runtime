@@ -223,8 +223,8 @@ void InterpretedFrameHandler::DumpPC(std::ostream &os, const uint8_t *pc) const
 
 void OptimizedFrameHandler::PrevFrame()
 {
-    OptimizedFrameBase *frame = OptimizedFrameBase::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(frame->prevFp);
+    OptimizedFrame *frame = OptimizedFrame::GetFrameFromSp(sp_);
+    sp_ = reinterpret_cast<JSTaggedType *>(frame->base.prevFp);
 }
 
 void OptimizedFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
@@ -272,21 +272,21 @@ void OptimizedEntryFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
 void OptimizedEntryFrameHandler::PrevFrame()
 {
     OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(sp_);
-    sp_ = reinterpret_cast<JSTaggedType *>(frame->prevInterpretedFrameFp);
+    sp_ = reinterpret_cast<JSTaggedType *>(frame->preLeaveFrameFp);
 }
 
 void OptimizedLeaveFrameHandler::PrevFrame()
 {
-    OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(sp_);
+    OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
     sp_ = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
 }
 
 void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1,
     ChunkMap<DerivedDataKey, uintptr_t> *derivedPointers, bool isVerifying) const
 {
-    OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(sp_);
+    OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(sp_);
     if (frame->argc > 0) {
-        uintptr_t start = ToUintPtr(&frame->argc + 1);
+        uintptr_t start = ToUintPtr(&frame->argc + 1); // argv
         uintptr_t end = ToUintPtr(&frame->argc + 1 + frame->argc);
         v1(Root::ROOT_FRAME, ObjectSlot(start), ObjectSlot(end));
     }
@@ -295,7 +295,7 @@ void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
         frame, slotAddrs, derivedPointers, isVerifying);
     if (ret == false) {
 #ifndef NDEBUG
-        LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << frame->patchId;
+        LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << frame->argPatchId;
 #endif
         return;
     }
@@ -319,18 +319,18 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         if (type == FrameType::INTERPRETER_FRAME) {
             InterpretedFrame *frame = InterpretedFrame::GetFrameFromSp(current);
             InterpretedFrameHandler(current).Iterate(v0, v1);
-            current = frame->base.prev;
+            current = frame->GetPrevFrameFp();
         } else if (type == FrameType::OPTIMIZED_FRAME) {
-            OptimizedFrameBase *frame = OptimizedFrameBase::GetFrameFromSp(current);
+            OptimizedFrame *frame = OptimizedFrame::GetFrameFromSp(current);
             OptimizedFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0, v1, derivedPointers, isVerifying);
-            current = frame->prevFp;
+            current = frame->GetPrevFrameFp();
         } else if (type == FrameType::OPTIMIZED_ENTRY_FRAME) {
             OptimizedEntryFrame *frame = OptimizedEntryFrame::GetFrameFromSp(current);
-            current = frame->prevInterpretedFrameFp;
+            current = frame->GetPrevFrameFp();
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME);
-            OptLeaveFrame *frame = OptLeaveFrame::GetFrameFromSp(current);
+            OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
             OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
             //  arm32 only support stub, optimized entry frame don't exist, when interpret call stub

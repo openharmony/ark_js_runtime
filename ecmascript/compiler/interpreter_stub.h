@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_COMPILER_INTERPRETER_STUB_H
 #define ECMASCRIPT_COMPILER_INTERPRETER_STUB_H
 
+#include "ecmascript/base/config.h"
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/compiler/stub-inl.h"
 
@@ -81,6 +82,7 @@ public:
     inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
 };
 
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 class AsmInterpreterEntryStub : public InterpreterStub {
 public:
     // 7 : 7 means argument counts
@@ -97,6 +99,7 @@ private:
     void GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                              GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
 };
+#endif
 
 #define DECLARE_HANDLE_STUB_CLASS(name, argc)                                                   \
     class name##Stub : public InterpreterStub {                                                 \
@@ -114,7 +117,9 @@ private:
         void GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,       \
                                  GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter); \
     };
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     INTERPRETER_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
+#endif
     DECLARE_HANDLE_STUB_CLASS(SingleStepDebugging, 7)
 #undef DECLARE_HANDLE_STUB_CLASS
 }  // namespace panda::ecmascript::kungfu

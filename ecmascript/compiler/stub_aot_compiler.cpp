@@ -20,6 +20,7 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "ecmascript/base/config.h"
 #include "fast_stub.h"
 #include "interpreter_stub-inl.h"
 #include "generated/stub_aot_options_gen.h"
@@ -161,7 +162,9 @@ int main(const int argc, const char **argv)
         moduleBuilder.SetStub(STUB_ID(name), &name##Stub);                                           \
     }
     FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     INTERPRETER_STUB_LIST(SET_STUB_TO_MODULE)
+#endif
     panda::ecmascript::StubModule stubModule;
     moduleBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
     std::cout << "BuildStubModuleAndSave success" << std::endl;
