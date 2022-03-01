@@ -19,6 +19,17 @@
 #include "ecmascript/mem/region.h"
 #include "libpandabase/mem/pool_manager.h"
 
+#ifdef PANDA_TARGET_UNIX
+#include <sys/prctl.h>
+#ifndef PR_SET_VMA
+#define PR_SET_VMA 0x53564d41
+#endif
+
+#ifndef PR_SET_VMA_ANON_NAME
+#define PR_SET_VMA_ANON_NAME 0
+#endif
+#endif // PANDA_TARGET_UNIX
+
 namespace panda::ecmascript {
 Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity)
 {
@@ -33,6 +44,9 @@ Region *HeapRegionAllocator::AllocateAlignedRegion(Space *space, size_t capacity
         LOG_ECMA_MEM(FATAL) << "pool is empty " << annoMemoryUsage_.load(std::memory_order_relaxed);
         UNREACHABLE();
     }
+#ifdef PANDA_TARGET_UNIX
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, mapMem, pool.GetSize(), "Arkjs Heap");
+#endif // PANDA_TARGET_UNIX
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     if (memset_s(mapMem, capacity, 0, capacity) != EOK) {
         LOG_ECMA(FATAL) << "memset_s failed";
@@ -64,5 +78,8 @@ void HeapRegionAllocator::FreeRegion(Region *region)
     }
 #endif
     PoolManager::GetMmapMemPool()->FreePool(ToVoidPtr(region->GetAllocateBase()), size);
+#ifdef PANDA_TARGET_UNIX
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, region->GetAllocateBase(), size, nullptr);
+#endif // PANDA_TARGET_UNIX
 }
 }  // namespace panda::ecmascript
