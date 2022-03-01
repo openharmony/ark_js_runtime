@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef ECMASCRIPT_COMPILER_BRIDGE_H
-#define ECMASCRIPT_COMPILER_BRIDGE_H
+#ifndef ECMASCRIPT_TRAMPOLINE_H
+#define ECMASCRIPT_TRAMPOLINE_H
 
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_tagged_value.h"
@@ -21,7 +21,7 @@
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
-extern "C" uint64_t InvokeJSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-                                          uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
+extern "C" uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
+    uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 }  // panda::ecmascript
-#endif
+#endif  // ECMASCRIPT_BRIDGE_H

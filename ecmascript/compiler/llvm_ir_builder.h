@@ -252,9 +252,6 @@ private:
     LLVMValueRef GetCurrentSPFrameAddr();
     void SetCurrentSPFrame(LLVMValueRef sp);
     LLVMValueRef GetCurrentFrameType(LLVMValueRef currentSpFrameAddr);
-    void ConstructFrame();
-    void PushFrameContext(LLVMValueRef newSp, LLVMValueRef oldSp);
-    void DestoryFrame();
     bool IsGCRelated(GateType typeCode) const;
 
 private:
@@ -276,12 +273,8 @@ private:
     std::unordered_map<GateRef, LLVMValueRef> gateToLLVMMaps_;
     std::unordered_map<OpCode::Op, HandleType> opCodeHandleMap_;
     std::set<OpCode::Op> opCodeHandleIgnore;
-    LLVMTypeRef optFrameType_;
-    int optFrameSize_;
     int slotSize_;
-    int interpretedFrameSize_;
     LLVMTypeRef slotType_;
-    int optLeaveFramePrevOffset_;
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

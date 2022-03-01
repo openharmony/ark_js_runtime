@@ -111,7 +111,6 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    env->GetCircuit()->SetFrameType(FrameType::OPTIMIZED_ENTRY_FRAME);
     GateRef glue = PtrArgument(0);
     GateRef x = Int64Argument(1);
     GateRef y = Int64Argument(2); // 2: 3rd argument
@@ -172,10 +171,10 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     doubleX = DoubleMul(*doubleX, *doubleY);
     GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {});
     GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {});
-    auto value1 = Load(StubMachineType::UINT64, ptr1);
+    auto value1 = GetValueFromTaggedArray(StubMachineType::UINT64, ptr1, GetInt64Constant(0));
     GateRef tmp = CastInt64ToFloat64(value1);
     doubleX = DoubleMul(*doubleX, tmp);
-    auto value2 = Load(StubMachineType::UINT64, ptr2);
+    auto value2 = GetValueFromTaggedArray(StubMachineType::UINT64, ptr2, GetInt64Constant(1));
     tmp = CastInt64ToFloat64(value2);
     doubleX = DoubleMul(*doubleX, tmp);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));

@@ -16,7 +16,9 @@
 #ifndef ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
 #define ECMASCRIPT_COMPILER_FASTSTUB_DEFINE_H
 
+#include "ecmascript/base/config.h"
 #include "interpreter_stub_define.h"
+
 namespace panda::ecmascript::kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define EXTERNAL_RUNTIMESTUB_LIST(V, I)      \
@@ -134,10 +136,10 @@ namespace panda::ecmascript::kungfu {
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
     I(CallRuntimeTrampoline, 4)
-    
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FAST_RUNTIME_STUB_LIST(V)       \
+
+#define FAST_STUB_LIST(V)        \
     V(FastAdd, 2)                       \
     V(FastSub, 2)                       \
     V(FastMul, 2)                       \
@@ -155,14 +157,21 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByName, 4)               \
     V(TryLoadICByValue, 5)              \
     V(TryStoreICByName, 5)              \
-    V(TryStoreICByValue, 6)             \
-    INTERPRETER_STUB_HELPER_LIST(V)
+    V(TryStoreICByValue, 6)
 
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
+#define FAST_RUNTIME_STUB_LIST(V)       \
+    FAST_STUB_LIST(V)                   \
+    INTERPRETER_STUB_HELPER_LIST(V)
+#else
+#define FAST_RUNTIME_STUB_LIST(V)       \
+    FAST_STUB_LIST(V)
+#endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
-    V(FastMulGCTest, 3)             \
     V(PhiGateTest, 1)               \
+    V(FastMulGCTest, 3)             \
     V(LoopTest, 1)                  \
     V(LoopTest1, 1)                 \
     V(TestAbsoluteAddressRelocation, 2)
@@ -210,7 +219,9 @@ enum CallStubId {
 enum StubId {
 #define DEF_STUB(name, counter) STUB_##name,
     FAST_RUNTIME_STUB_LIST(DEF_STUB)
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     INTERPRETER_STUB_LIST(DEF_STUB)
+#endif
 #undef DEF_STUB
     ALL_STUB_MAXCOUNT
 };

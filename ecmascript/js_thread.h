@@ -375,8 +375,6 @@ public:
         RUNTIME_FUNCTIONS,
         FAST_STUB_ENTRIES,
         FRAME_STATE_SIZE,
-        OPT_LEAVE_FRAME_SIZE,
-        OPT_LEAVE_FRAME_PREV_OFFSET,
         GLUE_FRAME_CONSTPOOL,
         GLUE_FRAME_PROFILE,
         GLUE_FRAME_ACC,
@@ -461,12 +459,18 @@ static constexpr uint32_t GLUE_EXCEPTION_OFFSET_64 = 0U;
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
 
+// static check asm glue offset macro
+#include "trampoline/ecma_asm_defines.h"
+
 #ifdef PANDA_TARGET_32
 #define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
 static_assert(GLUE_##name##_OFFSET_32 ==                                                       \
     (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
+// check asm glue offset definition samed with clang
+static_assert(GLUE_CURRENT_FRAME_OFFSET_32 == ASM_GLUE_CURRENT_FRAME_OFFSET);
+static_assert(GLUE_RUNTIME_FUNCTIONS_OFFSET_32 == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
 #endif
 
 #ifdef PANDA_TARGET_64
@@ -475,6 +479,9 @@ static_assert(GLUE_##name##_OFFSET_64 ==                                        
     (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
 GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
+// check asm glue offset definition samed with clang
+static_assert(GLUE_CURRENT_FRAME_OFFSET_64 == ASM_GLUE_CURRENT_FRAME_OFFSET);
+static_assert(GLUE_RUNTIME_FUNCTIONS_OFFSET_64 == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
 #endif
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_THREAD_H
