@@ -125,6 +125,9 @@ JSTaggedValue FastRuntimeStub::FastEqual(JSTaggedValue left, JSTaggedValue right
             return JSTaggedValue::False();
         }
     }
+    if (left.IsBigInt() && right.IsBigInt()) {
+        return JSTaggedValue(BigInt::Equal(left, right));
+    }
     return JSTaggedValue::Hole();
 }
 
@@ -147,6 +150,15 @@ bool FastRuntimeStub::FastStrictEqual(JSTaggedValue left, JSTaggedValue right)
     if (left.IsString() && right.IsString()) {
         return EcmaString::StringsAreEqual(static_cast<EcmaString *>(left.GetTaggedObject()),
                                            static_cast<EcmaString *>(right.GetTaggedObject()));
+    }
+    if (left.IsBigInt()) {
+        if (right.IsBigInt()) {
+            return BigInt::Equal(left, right);
+        }
+        return false;
+    }
+    if (right.IsBigInt()) {
+        return false;
     }
     return false;
 }
@@ -626,6 +638,9 @@ JSTaggedValue FastRuntimeStub::FastTypeOf(JSThread *thread, JSTaggedValue obj)
                 }
                 if (obj.IsCallable()) {
                     return globalConst->GetFunctionString();
+                }
+                if (obj.IsBigInt()) {
+                    return globalConst->GetBigIntString();
                 }
                 return globalConst->GetObjectString();
             }

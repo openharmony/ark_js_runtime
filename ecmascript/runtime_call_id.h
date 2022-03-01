@@ -224,7 +224,8 @@ namespace panda::ecmascript {
     V(LessEqDynWithIC)              \
     V(GreaterDynWithIC)             \
     V(SetPropertyByName)            \
-    V(GreaterEqDynWithIC)
+    V(GreaterEqDynWithIC)           \
+    V(LdBigInt)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUITINS_API_LIST(V)                   \
     V(Array, Constructor)                     \
@@ -370,6 +371,13 @@ namespace panda::ecmascript {
     V(Number, ToString)                       \
     V(Number, ValueOf)                        \
     V(Number, ThisNumberValue)                \
+    V(BigInt, Constructor)                    \
+    V(BigInt, AsUintN)                        \
+    V(BigInt, AsIntN)                         \
+    V(BigInt, ToLocaleString)                 \
+    V(BigInt, ToString)                       \
+    V(BigInt, ValueOf)                        \
+    V(BigInt, ThisBigIntValue)                \
     V(Object, Constructor)                    \
     V(Object, Assign)                         \
     V(Object, Create)                         \
