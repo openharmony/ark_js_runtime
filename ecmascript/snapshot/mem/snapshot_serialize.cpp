@@ -1234,15 +1234,13 @@ void SnapShotSerialize::DynProgramSerialize(TaggedObject *objectHeader, uintptr_
                                             std::unordered_map<uint64_t, ecmascript::SlotBit> *data)
 {
     size_t beginOffset = OBJECT_HEADER_SIZE;
-    auto objBodySize = Program::METHODS_DATA_OFFSET - OBJECT_HEADER_SIZE;
+    auto objBodySize = Program::SIZE - OBJECT_HEADER_SIZE;
     int numOfFields = static_cast<int>((objBodySize) / TAGGED_SIZE);
     uintptr_t startAddr = ToUintPtr(objectHeader) + beginOffset;
     for (int i = 0; i < numOfFields; i++) {
         auto fieldAddr = reinterpret_cast<JSTaggedType *>(startAddr + i * TAGGED_SIZE);
         SetObjectSlotField(snapshotObj, beginOffset + i * TAGGED_SIZE, HandleTaggedField(fieldAddr, queue, data));
     }
-    SetObjectSlotField(snapshotObj, Program::METHODS_DATA_OFFSET, 0);    // methods
-    SetObjectSlotField(snapshotObj, Program::NUMBER_METHODS_OFFSET, 0);  // method_number
 }
 
 void SnapShotSerialize::DynProgramDeserialize(uint64_t *objectHeader, [[maybe_unused]] size_t objectSize)
@@ -1251,7 +1249,7 @@ void SnapShotSerialize::DynProgramDeserialize(uint64_t *objectHeader, [[maybe_un
     // handle object_header
     DeserializeHandleClassWord(object);
 
-    auto objBodySize = Program::METHODS_DATA_OFFSET - OBJECT_HEADER_SIZE;
+    auto objBodySize = Program::SIZE - OBJECT_HEADER_SIZE;
     ASSERT(objBodySize % TAGGED_SIZE == 0);
     int numOfFields = static_cast<int>(objBodySize / TAGGED_SIZE);
     size_t addr = ToUintPtr(objectHeader) + OBJECT_HEADER_SIZE;
@@ -1259,10 +1257,6 @@ void SnapShotSerialize::DynProgramDeserialize(uint64_t *objectHeader, [[maybe_un
         auto fieldAddr = reinterpret_cast<uint64_t *>(addr + i * TAGGED_SIZE);
         DeserializeHandleTaggedField(fieldAddr);
     }
-
-    auto program = reinterpret_cast<Program *>(objectHeader);
-    program->SetMethodsData(nullptr);
-    program->SetNumberMethods(0);
 }
 
 void SnapShotSerialize::SerializePandaFileMethod()

@@ -1674,10 +1674,7 @@ JSHandle<Program> ObjectFactory::NewProgram()
     TaggedObject *header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetProgramClass().GetTaggedObject()));
     JSHandle<Program> p(thread_, header);
-    p->SetLocation(thread_, JSTaggedValue::Undefined());
-    p->SetConstantPool(thread_, JSTaggedValue::Undefined());
     p->SetMainFunction(thread_, JSTaggedValue::Undefined());
-    p->SetMethodsData(nullptr);
     return p;
 }
 
