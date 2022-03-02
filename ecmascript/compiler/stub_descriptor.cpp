@@ -30,11 +30,12 @@ namespace panda::ecmascript::kungfu {
 
 CALL_STUB_INIT_DESCRIPTOR(FastAdd)
 {
-    // 2 : 2 input parameters
-    StubDescriptor fastAdd("FastAdd", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    // 3 : 3 input parameters
+    StubDescriptor fastAdd("FastAdd", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
     *descriptor = fastAdd;
-    // 2 : 2 input parameters
-    std::array<VariableType, 2> params = {
+    // 3 : 3 input parameters
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
@@ -43,11 +44,12 @@ CALL_STUB_INIT_DESCRIPTOR(FastAdd)
 
 CALL_STUB_INIT_DESCRIPTOR(FastSub)
 {
-    // 2 : 2 input parameters
-    StubDescriptor fastSub("FastSub", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    // 3 : 3 input parameters
+    StubDescriptor fastSub("FastSub", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
     *descriptor = fastSub;
-    // 2 : 2 input parameters
-    std::array<VariableType, 2> params = {
+    // 3 : 3 input parameters
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
@@ -56,11 +58,12 @@ CALL_STUB_INIT_DESCRIPTOR(FastSub)
 
 CALL_STUB_INIT_DESCRIPTOR(FastMul)
 {
-    // 2 : 2 input parameters
-    StubDescriptor fastMul("FastMul", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    // 3 : 3 input parameters
+    StubDescriptor fastMul("FastMul", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
     *descriptor = fastMul;
-    // 2 : 2 input parameters
-    std::array<VariableType, 2> params = {
+    // 3 : 3 input parameters
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
@@ -87,11 +90,12 @@ CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest) {}
 
 CALL_STUB_INIT_DESCRIPTOR(FastDiv)
 {
-    // 2 : 2 input parameters
-    StubDescriptor fastDiv("FastDiv", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // float or hole
+    // 3 : 3 input parameters
+    StubDescriptor fastDiv("FastDiv", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // float or hole
     *descriptor = fastDiv;
-    // 2 : 2 input parameters
-    std::array<VariableType, 2> params = {
+    // 3 : 3 input parameters
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
@@ -128,11 +132,12 @@ CALL_STUB_INIT_DESCRIPTOR(FastTypeOf)
 
 CALL_STUB_INIT_DESCRIPTOR(FastEqual)
 {
-    // 2 input parameters, return may be true/false/hole
-    StubDescriptor fastEqual("FastEqual", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT64());
+    // 3 input parameters, return may be true/false/hole
+    StubDescriptor fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT64());
     *descriptor = fastEqual;
-    // 2 input parameters
-    std::array<VariableType, 2> params = {
+    // 3 input parameters
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
@@ -1978,39 +1983,6 @@ CALL_STUB_INIT_DESCRIPTOR(GreaterEqDyn)
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
-}
-
-CALL_STUB_INIT_DESCRIPTOR(PhiGateTest)
-{
-    StubDescriptor phiGateTest("PhiGateTest", 0, 1, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT32());
-    *descriptor = phiGateTest;
-    std::array<VariableType, 1> params = {
-        VariableType::INT32(),
-    };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
-}
-
-CALL_STUB_INIT_DESCRIPTOR(LoopTest)
-{
-    StubDescriptor loopTest("LoopTest", 0, 1, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT32());
-    *descriptor = loopTest;
-    std::array<VariableType, 1> params = {
-        VariableType::INT32(),
-    };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
-}
-
-CALL_STUB_INIT_DESCRIPTOR(LoopTest1)
-{
-    StubDescriptor loopTest1("LoopTest1", 0, 1, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT32());
-    *descriptor = loopTest1;
-    std::array<VariableType, 1> params = {
-        VariableType::INT32(),
-    };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::TEST_FUNC);
 }
 
 CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
