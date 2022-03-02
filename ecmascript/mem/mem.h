@@ -30,6 +30,9 @@ namespace panda::ecmascript {
 enum class MemAlignment : uint8_t {
     MEM_ALIGN_OBJECT = 8,
     MEM_ALIGN_REGION = 16,
+};
+
+enum class MemAlignmentLog2 : uint8_t {
     MEM_ALIGN_OBJECT_LOG2 = 3,
     MEM_ALIGN_REGION_LOG2 = 4,
 };
