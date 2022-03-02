@@ -140,19 +140,19 @@ JSHandle<JSTaggedValue> ModuleManager::GetModule(const JSThread *thread,
     return thread->GlobalConstants()->GetHandledUndefined();
 }
 
-CString ModuleManager::GenerateAmiPath(const std::string &currentPathFile, const CString &relativeFile)
+CString ModuleManager::GenerateAmiPath(const CString &currentPathFile, const CString &relativeFile)
 {
     if (relativeFile.find("./") != 0 && relativeFile.find("../") != 0) {  // not start with "./" or "../"
         return relativeFile;                                              // not relative
     }
 
     auto slashPos = currentPathFile.find_last_of('/');
-    if (slashPos == std::string::npos) {
+    if (slashPos == CString::npos) {
         return relativeFile;  // no need to process
     }
 
     auto dotPos = relativeFile.find_last_of(".");
-    if (dotPos == std::string::npos) {
+    if (dotPos == CString::npos) {
         dotPos = 0;
     }
 
