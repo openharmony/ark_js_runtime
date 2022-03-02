@@ -118,6 +118,7 @@ int Main(const int argc, const char **argv)
         std::cerr << "Error: cannot Create Runtime" << std::endl;
         return -1;
     }
+
     auto runtime = Runtime::GetCurrent();
 
     if (options.GetValue()) {

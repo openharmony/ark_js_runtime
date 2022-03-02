@@ -21,7 +21,7 @@ bool PassManager::Compile(std::string fileName)
 {
     std::vector<BytecodeTranslationInfo> infoList;
     const panda_file::File *file = nullptr;
-    auto res = vm_->CollectInfoOfPandaFile(fileName, entry_, infoList, file);
+    auto res = vm_->CollectInfoOfPandaFile(fileName, entry_, &infoList, file);
     if (!res) {
         std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry_ << "'" << std::endl;
         return false;
