@@ -225,6 +225,7 @@ enum class FrameType: uint64_t {
     OPTIMIZED_ENTRY_FRAME = 1,
     INTERPRETER_FRAME = 2,
     OPTIMIZED_LEAVE_FRAME = 3,
+    INTERPRETER_FAST_NEW_FRAME = 4,
 };
 
 class FrameConstants {
