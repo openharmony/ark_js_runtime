@@ -37,6 +37,7 @@
 #include "ecmascript/js_array_iterator.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_async_function.h"
+#include "ecmascript/js_bigint.h"
 #include "ecmascript/js_collator.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
@@ -338,6 +339,9 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
             break;
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::BIGINT:
+            BigInt::Cast(object)->VisitRangeSlot(visitor);
             break;
         default:
             UNREACHABLE();
