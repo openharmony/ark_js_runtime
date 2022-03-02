@@ -21,33 +21,6 @@
 
 namespace panda::ecmascript::kungfu {
 #ifndef NDEBUG
-class PhiGateTestStub : public Stub {
-public:
-    explicit PhiGateTestStub(Circuit *circuit) : Stub("Phi", 1, circuit) {}
-    ~PhiGateTestStub() = default;
-    NO_MOVE_SEMANTIC(PhiGateTestStub);
-    NO_COPY_SEMANTIC(PhiGateTestStub);
-    void GenerateCircuit(const CompilationConfig *cfg) override;
-};
-
-class LoopTestStub : public Stub {
-public:
-    explicit LoopTestStub(Circuit *circuit) : Stub("LoopTest", 1, circuit) {}
-    ~LoopTestStub() = default;
-    NO_MOVE_SEMANTIC(LoopTestStub);
-    NO_COPY_SEMANTIC(LoopTestStub);
-    void GenerateCircuit(const CompilationConfig *cfg) override;
-};
-
-class LoopTest1Stub : public Stub {
-public:
-    explicit LoopTest1Stub(Circuit *circuit) : Stub("LoopTest1", 1, circuit) {}
-    ~LoopTest1Stub() = default;
-    NO_MOVE_SEMANTIC(LoopTest1Stub);
-    NO_COPY_SEMANTIC(LoopTest1Stub);
-    void GenerateCircuit(const CompilationConfig *cfg) override;
-};
-
 class FastMulGCTestStub : public Stub {
 public:
     // 3 : 3 means argument counts
@@ -61,8 +34,8 @@ public:
 
 class FastAddStub : public Stub {
 public:
-    // 2 : 2 means argument counts
-    explicit FastAddStub(Circuit *circuit) : Stub("FastAdd", 2, circuit)
+    // 3 : 3 means argument counts
+    explicit FastAddStub(Circuit *circuit) : Stub("FastAdd", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
@@ -74,8 +47,8 @@ public:
 
 class FastSubStub : public Stub {
 public:
-    // 2 : 2 means argument counts
-    explicit FastSubStub(Circuit *circuit) : Stub("FastSub", 2, circuit) {}
+    // 3 : 3 means argument counts
+    explicit FastSubStub(Circuit *circuit) : Stub("FastSub", 3, circuit) {}
     ~FastSubStub() = default;
     NO_MOVE_SEMANTIC(FastSubStub);
     NO_COPY_SEMANTIC(FastSubStub);
@@ -84,8 +57,8 @@ public:
 
 class FastMulStub : public Stub {
 public:
-    // 2 : 2 means argument counts
-    explicit FastMulStub(Circuit *circuit) : Stub("FastMul", 2, circuit) {}
+    // 3 : 3 means argument counts
+    explicit FastMulStub(Circuit *circuit) : Stub("FastMul", 3, circuit) {}
     ~FastMulStub() = default;
     NO_MOVE_SEMANTIC(FastMulStub);
     NO_COPY_SEMANTIC(FastMulStub);
@@ -94,8 +67,8 @@ public:
 
 class FastDivStub : public Stub {
 public:
-    // 2 : 2 means argument counts
-    explicit FastDivStub(Circuit *circuit) : Stub("FastDiv", 2, circuit) {}
+    // 3 : 3 means argument counts
+    explicit FastDivStub(Circuit *circuit) : Stub("FastDiv", 3, circuit) {}
     ~FastDivStub() = default;
     NO_MOVE_SEMANTIC(FastDivStub);
     NO_COPY_SEMANTIC(FastDivStub);
@@ -228,8 +201,8 @@ public:
 
 class FastEqualStub : public Stub {
 public:
-    // 2 means argument counts
-    explicit FastEqualStub(Circuit *circuit) : Stub("FastEqual", 2, circuit) {}
+    // 3 means argument counts
+    explicit FastEqualStub(Circuit *circuit) : Stub("FastEqual", 3, circuit) {}
     ~FastEqualStub() = default;
     NO_MOVE_SEMANTIC(FastEqualStub);
     NO_COPY_SEMANTIC(FastEqualStub);

@@ -26,87 +26,6 @@ namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
 
 #ifndef NDEBUG
-void PhiGateTestStub::GenerateCircuit(const CompilationConfig *cfg)
-{
-    Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
-    DEFVARIABLE(z, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(x, VariableType::INT32(), Int32Argument(0));
-    Label ifTrue(env);
-    Label ifFalse(env);
-    Label next(env);
-
-    Branch(Int32Equal(*x, GetInt32Constant(10)), &ifTrue, &ifFalse);  // 10 : size of entry
-    Bind(&ifTrue);
-    z = Int32Add(*x, GetInt32Constant(10));  // 10 : size of entry
-    Jump(&next);
-    Bind(&ifFalse);
-    z = Int32Add(*x, GetInt32Constant(100));  // 100 : size of entry
-    Jump(&next);
-    Bind(&next);
-    Return(*z);
-}
-
-void LoopTestStub::GenerateCircuit(const CompilationConfig *cfg)
-{
-    Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
-    DEFVARIABLE(z, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(y, VariableType::INT32(), Int32Argument(0));
-    Label loopHead(env);
-    Label loopEnd(env);
-    Label afterLoop(env);
-    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
-    LoopBegin(&loopHead);
-    Label ifTrue(env);
-    Label ifFalse(env);
-    Label next(env);
-    Branch(Int32Equal(Int32Argument(0), GetInt32Constant(9)), &ifTrue, &ifFalse);  // 9 : size of entry
-    Bind(&ifTrue);
-    z = Int32Add(*y, GetInt32Constant(10));  // 10 : size of entry
-    y = Int32Add(*z, GetInt32Constant(1));
-    Jump(&next);
-    Bind(&ifFalse);
-    z = Int32Add(*y, GetInt32Constant(100));  // 100 : size of entry
-    Jump(&next);
-    Bind(&next);
-    y = Int32Add(*y, GetInt32Constant(1));
-    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
-    Bind(&loopEnd);
-    LoopEnd(&loopHead);
-    Bind(&afterLoop);
-    Return(*z);
-}
-
-void LoopTest1Stub::GenerateCircuit(const CompilationConfig *cfg)
-{
-    Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
-    DEFVARIABLE(y, VariableType::INT32(), Int32Argument(0));
-    DEFVARIABLE(x, VariableType::INT32(), Int32Argument(0));
-    DEFVARIABLE(z, VariableType::INT32(), Int32Argument(0));
-    Label loopHead(env);
-    Label loopEnd(env);
-    Label afterLoop(env);
-    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopHead, &afterLoop);  // 10 : size of entry
-    LoopBegin(&loopHead);
-    x = Int32Add(*z, GetInt32Constant(3));  // 3 : size of entry
-    Label ifTrue(env);
-    Label next(env);
-    Branch(Int32Equal(*x, GetInt32Constant(9)), &ifTrue, &next);  // 9 : size of entry
-    Bind(&ifTrue);
-    y = Int32Add(*z, *x);
-    Jump(&next);
-    Bind(&next);
-    y = Int32Add(*y, GetInt32Constant(1));
-    Branch(Int32LessThan(*y, GetInt32Constant(10)), &loopEnd, &afterLoop);  // 10 : size of entry
-    Bind(&loopEnd);
-    LoopEnd(&loopHead);
-    Bind(&afterLoop);
-    z = *y;
-    Return(*z);
-}
-
 void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
@@ -185,8 +104,8 @@ void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    GateRef x = TaggedArgument(0);
-    GateRef y = TaggedArgument(1);
+    GateRef x = TaggedArgument(1);
+    GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), 0);
     DEFVARIABLE(intY, VariableType::INT32(), 0);
     DEFVARIABLE(doubleX, VariableType::FLOAT64(), 0);
@@ -247,8 +166,8 @@ void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    GateRef x = TaggedArgument(0);
-    GateRef y = TaggedArgument(1);
+    GateRef x = TaggedArgument(1);
+    GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
     DEFVARIABLE(intY, VariableType::INT32(), GetInt32Constant(0));
     DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
@@ -323,8 +242,8 @@ void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    GateRef x = TaggedArgument(0);
-    GateRef y = TaggedArgument(1);
+    GateRef x = TaggedArgument(1);
+    GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
     DEFVARIABLE(intY, VariableType::INT32(), GetInt32Constant(0));
     DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
@@ -385,8 +304,8 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    GateRef x = TaggedArgument(0);
-    GateRef y = TaggedArgument(1);
+    GateRef x = TaggedArgument(1);
+    GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
     DEFVARIABLE(intY, VariableType::INT32(), GetInt32Constant(0));
     DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
@@ -772,8 +691,8 @@ void FastEqualStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
-    GateRef x = TaggedArgument(0);
-    GateRef y = TaggedArgument(1);
+    GateRef x = TaggedArgument(1);
+    GateRef y = TaggedArgument(2);
     Label xIsEqualy(env);
     Label xIsNotEqualy(env);
     Branch(Int64Equal(x, y), &xIsEqualy, &xIsNotEqualy);
