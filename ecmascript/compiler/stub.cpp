@@ -1157,19 +1157,22 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             Bind(&notNullPtr);
             {
                 // 1. bit_offset set AddrToBitOffset(address)
-                GateRef bitOffset = AddrToBitOffset(oldToNewSet, slotAddr);
-                // bit_offset >> LOG_BITSPERWORD
+                GateRef bitOffset = IntPtrLSR(IntPtrAnd(slotAddr,
+                                              GetIntPtrConstant(panda::ecmascript::DEFAULT_REGION_MASK)),
+                                              GetIntPtrConstant(RememberedSet::BYTESPERCHUNK_LOG2));
+                // (bit_offset >> LOG_BITSPERWORD) << LOG_INTPTR_SIZE
+                GateRef logBitsPerWord = GetIntPtrConstant(BitmapHelper::LogBitsPerWord(env_.Is32Bit()));
+                GateRef logIntPtrSize = GetIntPtrConstant(BitmapHelper::LogIntptrSize(env_.Is32Bit()));
+                GateRef wordOffset = IntPtrLSL(IntPtrLSR(bitOffset, logBitsPerWord), logIntPtrSize);
                 // 2. bitmap_[GetWordIdx(bit_offset)] |= GetBitMask(bit_offset)
                 // 2.0: wordIdx GetWordIdx(bit_offset)
                 // 2.1 bitmap_[wordIdx]
                 GateRef bitmapoffset = GetIntPtrConstant(0);
-                GateRef bitmap = IntPtrAdd(oldToNewSet, bitmapoffset);
-                GateRef bitmapData = Load(VariableType::POINTER(), bitmap, GetIntPtrConstant(0));
-                GateRef bitmapAddr = IntPtrAdd(bitmapData, bitOffset);
+                GateRef bitmapData = Load(VariableType::POINTER(), oldToNewSet, bitmapoffset);
                 // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset);
-                GateRef oldmapValue = Load(VariableType::POINTER(), bitmapAddr, GetIntPtrConstant(0));
-                Store(VariableType::POINTER(), glue, bitmapAddr, GetIntPtrConstant(0),
-                    IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
+                GateRef oldmapValue = Load(VariableType::POINTER(), bitmapData, wordOffset);
+                Store(VariableType::POINTER(), glue, bitmapData, wordOffset,
+                      IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
                 Jump(&notValidIndex);
             }
             Bind(&isNullPtr);

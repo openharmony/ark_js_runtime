@@ -1963,23 +1963,15 @@ GateRef Stub::IntptrEuqal(GateRef x, GateRef y)
     return env_.Is32Bit() ? Int32Equal(x, y) : Int64Equal(x, y);
 }
 
-GateRef Stub::AddrToBitOffset(GateRef memberset, GateRef addr)
-{
-    //  (addr - beginAddr_) / BYTESPERCHUNK
-    auto beginAddrOffset = RememberedSet::GetBeginAddrOffset(env_.Is32Bit());
-    auto beginAddr = Load(VariableType::POINTER(), memberset, GetIntPtrConstant(beginAddrOffset));
-    return IntPtrLSR(IntPtrSub(addr, beginAddr), GetIntPtrConstant(RememberedSet::BYTESPERCHUNK_LOG2));
-}
-
 GateRef Stub::GetBitMask(GateRef bitoffset)
 {
-    auto bitIndexMask = IntPtrLSL(GetIntPtrConstant(1), GetIntPtrConstant(mem::Bitmap::LOG_BITSPERWORD));
-    bitIndexMask = IntPtrSub(bitIndexMask, GetIntPtrConstant(1));
+    auto bitIndexMask = env_.Is32Bit()
+        ? GetIntPtrConstant(static_cast<size_t>((1UL << BitmapHelper::LOG_BITSPERWORD_32) - 1))
+        : GetIntPtrConstant(static_cast<size_t>((1UL << BitmapHelper::LOG_BITSPERWORD_64) - 1));
     // bit_offset & BIT_INDEX_MASK
     auto mask = IntPtrAnd(bitoffset, bitIndexMask);
     // 1UL << GetBitIdxWithinWord(bit_offset)
-    mask = IntPtrLSL(GetIntPtrConstant(1), mask);
-    return mask;
+    return IntPtrLSL(GetIntPtrConstant(1), mask);
 }
 
 GateRef Stub::ObjectAddressToRange(GateRef x)
