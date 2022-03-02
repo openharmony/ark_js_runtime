@@ -3479,6 +3479,24 @@ void InterpreterAssembly::HandleLdFunctionPref(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {
+    uint16_t numVars = READ_INST_16_1();
+    uint16_t scopeId = READ_INST_16_3();
+    LOG_INST() << "intrinsics::newlexenvwithnamedyn"
+               << " numVars " << numVars << " scopeId " << scopeId;
+
+    SAVE_PC();
+    JSTaggedValue res = SlowRuntimeStub::NewLexicalEnvWithNameDyn(thread, numVars, scopeId);
+    INTERPRETER_RETURN_IF_ABRUPT(res);
+
+    SET_ACC(res);
+    GET_FRAME(sp)->env = res;
+    DISPATCH(BytecodeInstruction::Format::PREF_IMM16_IMM16);
+}
+
+void InterpreterAssembly::HandleNewLexEnvWithNameDynPrefImm16Imm16(
+    JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
+    JSTaggedValue acc, int32_t hotnessCounter)
+{
     LOG_INST() << "intrinsic::ldfunction";
     SET_ACC(GetThisFunction(sp));
     DISPATCH(BytecodeInstruction::Format::PREF_NONE);

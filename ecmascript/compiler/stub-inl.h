@@ -174,11 +174,6 @@ GateRef Stub::GetIntPtrSize()
     return env_.Is32Bit() ? GetInt32Constant(sizeof(uint32_t)) : GetInt64Constant(sizeof(uint64_t));
 }
 
-uint64_t Stub::GetIntPtrSize() const
-{
-    return env_.Is32Bit() ? sizeof(int32_t) : sizeof(int64_t);
-}
-
 GateRef Stub::TrueConstant()
 {
     return TruncInt32ToInt1(GetInt32Constant(1));
@@ -1973,7 +1968,7 @@ GateRef Stub::AddrToBitOffset(GateRef memberset, GateRef addr)
     //  (addr - beginAddr_) / BYTESPERCHUNK
     auto beginAddrOffset = RememberedSet::GetBeginAddrOffset(env_.Is32Bit());
     auto beginAddr = Load(VariableType::POINTER(), memberset, GetIntPtrConstant(beginAddrOffset));
-    return IntPtrDiv(IntPtrSub(addr, beginAddr), GetIntPtrConstant(RememberedSet::BYTESPERCHUNK));
+    return IntPtrLSR(IntPtrSub(addr, beginAddr), GetIntPtrConstant(RememberedSet::BYTESPERCHUNK_LOG2));
 }
 
 GateRef Stub::GetBitMask(GateRef bitoffset)
@@ -1989,12 +1984,7 @@ GateRef Stub::GetBitMask(GateRef bitoffset)
 
 GateRef Stub::ObjectAddressToRange(GateRef x)
 {
-    if (env_.Is32Bit()) {
-        return IntPtrAnd(TaggedCastToInt32(x),
-            Int32Xor(GetIntPtrConstant(panda::mem::DEFAULT_REGION_MASK), GetIntPtrConstant(-1)));
-    }
-    return IntPtrAnd(TaggedCastToInt64(x),
-        Int64Xor(GetIntPtrConstant(panda::mem::DEFAULT_REGION_MASK), GetIntPtrConstant(-1)));
+    return IntPtrAnd(TaggedCastToIntPtr(x), GetIntPtrConstant(~panda::ecmascript::DEFAULT_REGION_MASK));
 }
 
 GateRef Stub::InYoungGeneration(GateRef glue, GateRef region)
