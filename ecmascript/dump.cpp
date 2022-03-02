@@ -964,17 +964,9 @@ void AccessorData::Dump(JSThread *thread, std::ostream &os) const
 
 void Program::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - Location: ";
-    GetLocation().D();
-    os << "\n";
-    os << " - ConstantPool: ";
-    GetConstantPool().D();
-    os << "\n";
     os << " - MainFunction: ";
     GetMainFunction().D();
     os << "\n";
-    os << " - MethodsData: " << GetMethodsData() << "\n";
-    os << " - NumberMethods: " << GetNumberMethods() << "\n";
 }
 
 void ConstantPool::Dump(JSThread *thread, std::ostream &os) const
@@ -2848,11 +2840,7 @@ void JSFunction::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 void Program::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                               std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("Location"), GetLocation()));
-    vec.push_back(std::make_pair(CString("ConstantPool"), GetConstantPool()));
     vec.push_back(std::make_pair(CString("MainFunction"), GetMainFunction()));
-    // MethodsData is another native field, and we don't dump it for JS heap.
-    vec.push_back(std::make_pair(CString("NumberMethods"), JSTaggedValue(GetNumberMethods())));
 }
 
 void ConstantPool::DumpForSnapshot([[maybe_unused]] JSThread *thread,
