@@ -228,7 +228,7 @@ public:
         return Runtime::GetOptions();
     }
 
-    static const JSRuntimeOptions &GetJSOptions()
+    const JSRuntimeOptions &GetJSOptions()
     {
         return options_;
     }
@@ -455,7 +455,7 @@ private:
     bool isTestMode_ {false};
 
     // VM startup states.
-    static JSRuntimeOptions options_;
+    JSRuntimeOptions options_;
     bool icEnable_ {true};
     bool vmInitialized_ {false};
     GCStats *gcStats_ {nullptr};
