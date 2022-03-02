@@ -201,6 +201,9 @@ std::optional<std::unordered_map<GateRef, size_t>> Scheduler::CalculateSchedulin
         if (circuit->GetOpCode(curGate).IsFixed()) {
             return bbGatesAddrToIdx.at(circuit->GetIn(curGate, 0));
         }
+        if (circuit->GetOpCode(curGate).IsState()) {
+            return bbGatesAddrToIdx.at(curGate);
+        }
         // then cur is schedulable
         size_t curUpperBound = 0;
         for (const auto &predGate : circuit->GetInVector(curGate)) {

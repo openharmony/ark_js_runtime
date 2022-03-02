@@ -1287,6 +1287,22 @@ DEF_RUNTIME_TRAMPOLINES(Mod2Dyn)
     return SlowRuntimeStub::Mod2Dyn(thread, left, right).GetRawData();
 }
 
+DEF_RUNTIME_TRAMPOLINES(GetLexicalEnv)
+{
+    RUNTIME_TRAMPOLINES_HEADER(GetLexicalEnv);
+    return thread->GetCurrentLexenv().GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(LoadValueFromConstantPool)
+{
+    RUNTIME_TRAMPOLINES_HEADER(LoadValueFromConstantPool);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(argFunc, 0);
+    CONVERT_ARG_TAGGED_CHECKED(id, 1);
+    JSHandle<JSFunction> funcHandle(thread, reinterpret_cast<JSFunction *>(argFunc));
+    JSHandle<ConstantPool> constantPool(thread, funcHandle->GetConstantPool());
+    return constantPool->GetObjectFromCache(id.GetInt()).GetRawData();
+}
+
 DEF_RUNTIME_TRAMPOLINES(JumpToCInterpreter)
 {
 #if ECMASCRIPT_COMPILE_INTERPRETER_ASM

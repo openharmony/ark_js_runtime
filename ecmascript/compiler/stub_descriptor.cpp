@@ -2209,6 +2209,32 @@ CALL_STUB_INIT_DESCRIPTOR(Mod2Dyn)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(GetLexicalEnv)
+{
+    StubDescriptor getLexicalEnv("GetLexicalEnv", 0, 1, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = getLexicalEnv;
+    std::array<VariableType, 1> params = {
+        VariableType::POINTER(),
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(LoadValueFromConstantPool)
+{
+    // 3 : 3 input parameter
+    StubDescriptor loadValue("LoadValueFromConstantPool", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = loadValue;
+    // 3 : 3 input parameter
+    std::array<VariableType, 3> params = {
+        VariableType::POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::INT32(),
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 void FastStubDescriptors::InitializeStubDescriptors()
 {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
