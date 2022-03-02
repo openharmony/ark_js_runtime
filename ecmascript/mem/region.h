@@ -20,6 +20,7 @@
 #include "ecmascript/mem/mem.h"
 #include "mem/gc/bitmap.h"
 #include "native_area_allocator.h"
+#include "securec.h"
 
 namespace panda {
 using RangeBitmap = mem::MemBitmap<static_cast<size_t>(ecmascript::MemAlignment::MEM_ALIGN_OBJECT)>;
@@ -269,7 +270,11 @@ public:
     int SetCodeExecutableAndReadable()
     {
         // NOLINT(hicpp-signed-bitwise)
+#ifndef PANDA_TARGET_WINDOWS
         int res = mprotect(reinterpret_cast<void *>(allocateBase_), GetCapacity(), PROT_EXEC | PROT_READ | PROT_WRITE);
+#else
+        int res = 0;
+#endif
         return res;
     }
 

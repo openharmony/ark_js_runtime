@@ -29,7 +29,11 @@ constexpr size_t NUM_MANDATORY_JSFUNC_ARGS = 3;
 #ifdef NDEBUG
 #define DUMP_API_ATTR __attribute__((unused))
 #else
+#ifndef PANDA_TARGET_WINDOWS
 #define DUMP_API_ATTR __attribute__((visibility ("default"), used))
+#else
+#define DUMP_API_ATTR __attribute__((unused))
+#endif
 #endif
 }  // namespace ecmascript
 }  // namespace panda

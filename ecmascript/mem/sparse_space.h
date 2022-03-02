@@ -135,8 +135,8 @@ public:
 
     void Merge(LocalSpace *localSpace);
 private:
-    static constexpr unsigned long PARTIAL_GC_MAX_COLLECT_REGION_RATE =  1024 * 1024 * 2;
-    static constexpr unsigned long PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE = 16;
+    static constexpr unsigned long long PARTIAL_GC_MAX_COLLECT_REGION_RATE =  1024 * 1024 * 2;
+    static constexpr unsigned long long PARTIAL_GC_INITIAL_COLLECT_REGION_SIZE = 16;
     static constexpr size_t PARTIAL_GC_MIN_COLLECT_REGION_SIZE = 5;
 
     CVector<Region *> collectRegionSet_;
