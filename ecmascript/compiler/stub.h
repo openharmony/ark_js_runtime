@@ -440,7 +440,6 @@ public:
     inline GateRef GetInt64Constant(int64_t value);
     inline GateRef GetIntPtrConstant(int64_t value);
     inline GateRef GetIntPtrSize();
-    inline uint64_t GetIntPtrSize() const;
     inline GateRef GetRelocatableData(uint64_t value);
     inline GateRef TrueConstant();
     inline GateRef FalseConstant();

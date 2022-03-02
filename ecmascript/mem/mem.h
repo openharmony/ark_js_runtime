@@ -30,6 +30,8 @@ namespace panda::ecmascript {
 enum class MemAlignment : uint8_t {
     MEM_ALIGN_OBJECT = 8,
     MEM_ALIGN_REGION = 16,
+    MEM_ALIGN_OBJECT_LOG2 = 3,
+    MEM_ALIGN_REGION_LOG2 = 4,
 };
 
 static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5 * 1024 * 1024;
