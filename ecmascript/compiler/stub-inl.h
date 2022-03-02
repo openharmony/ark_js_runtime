@@ -836,14 +836,6 @@ GateRef Stub::IntBuildTaggedTypeWithNoGC(GateRef x)
     return Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT));
 }
 
-GateRef Stub::PtrBuildTaggedWithNoGC(GateRef x)
-{
-    if (env_.IsArch32Bit()) {
-        return ZExtInt32ToInt64(x);
-    }
-    return x;
-}
-
 GateRef Stub::DoubleBuildTaggedWithNoGC(GateRef x)
 {
     GateRef val = CastDoubleToInt64(x);
