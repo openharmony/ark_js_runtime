@@ -45,8 +45,8 @@ namespace panda::ecmascript::kungfu {
     V(UpdateLayOutAndAddTransition, 5)       \
     V(NoticeThroughChainAndRefreshUser, 3)   \
     I(DebugPrint, 1)                         \
-    V(InsertOldToNewRememberedSet, 3)        \
-    V(MarkingBarrier, 5)                     \
+    I(InsertOldToNewRememberedSet, 3)        \
+    I(MarkingBarrier, 5)                     \
     V(JumpToCInterpreter, 7)                 \
     V(StGlobalRecord, 4)                     \
     V(SetFunctionNameNoPrefix, 3)            \

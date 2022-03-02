@@ -48,6 +48,9 @@ public:
 #undef DECLARE_RUNTIME_TRAMPOLINES
 
     static void DebugPrint(int fmtMessageId, ...);
+    static void MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
+        Region *objectRegion, TaggedObject *value, Region *valueRegion);
+    static void InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);
 
 private:
     static void PrintHeapReginInfo(uintptr_t argGlue);
