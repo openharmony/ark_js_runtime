@@ -1215,14 +1215,29 @@ int RegExpParser::ParseClassEscape(RangeSet *atom)
         // p{UnicodePropertyValueExpression}
         case 'P':
         case 'p':
+            PrintF("Warning: \\p is not supported in ECMA 2015!");
             Advance();
             if (c0_ == '{') {
                 Advance();
+                if (c0_ == '}') {
+                    break;  // p{}, invalid
+                }
                 bool isValue = false;
                 ParseUnicodePropertyValueCharacters(&isValue);
-                if (!isValue) {
+                if (!isValue && c0_ == '=') {
+                    // UnicodePropertyName = UnicodePropertyValue
+                    Advance();
+                    if (c0_ == '}') {
+                        break;  // p{xxx=}, invalid
+                    }
                     ParseUnicodePropertyValueCharacters(&isValue);
                 }
+                if (c0_ != '}') {
+                    break;  // p{xxx, invalid
+                }
+                // should do atom->Invert() here after ECMA 9.0
+                Advance();
+                result = CLASS_RANGE_BASE;
             }
             break;
         default:
@@ -1242,23 +1257,17 @@ void RegExpParser::ParseUnicodePropertyValueCharacters(bool *isValue)
     if ((c0_ >= 'A' && c0_ <= 'Z') || (c0_ >= 'a' && c0_ <= 'z')) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         PrintF("UnicodePropertyCharacter::ControlLetter %c\n", c0_);
-        Advance();
-    } else if (c0_ == '-') {
+    } else if (c0_ == '_') {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-        PrintF("UnicodePropertyCharacter:: - \n");
-        Advance();
+        PrintF("UnicodePropertyCharacter:: _ \n");
     } else if (c0_ >= '0' && c0_ <= '9') {
         *isValue = true;
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         PrintF("UnicodePropertyValueCharacter::DecimalDigit %c\n", c0_);
-        Advance();
-    } else if (*isValue && c0_ == '}') {
-        Advance();
-        return;
-    } else if (!*isValue && c0_ == '=') {
-        Advance();
+    } else {
         return;
     }
+    Advance();
     ParseUnicodePropertyValueCharacters(isValue);
 }
 
