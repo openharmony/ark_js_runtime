@@ -1177,17 +1177,18 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             }
             Bind(&isNullPtr);
             {
-                CallRuntimeTrampoline(glue, GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
-                    { PtrBuildTaggedWithNoGC(objectRegion), PtrBuildTaggedWithNoGC(slotAddr) });
+                StubDescriptor *insertOldToNewRememberedSet = GET_STUBDESCRIPTOR(InsertOldToNewRememberedSet);
+                CallRuntime(insertOldToNewRememberedSet, glue,
+                            GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
+                            { glue, objectRegion, slotAddr });
                 Jump(&notValidIndex);
             }
         }
         Bind(&notValidIndex);
         {
-            CallRuntimeTrampoline(glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
-                PtrBuildTaggedWithNoGC(slotAddr), PtrBuildTaggedWithNoGC(objectRegion),
-                PtrBuildTaggedWithNoGC(value), PtrBuildTaggedWithNoGC(valueRegion)
-            });
+            StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
+            CallRuntime(markingBarrier, glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
+                glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion });
             Jump(&exit);
         }
     }
