@@ -18,6 +18,9 @@
 #include <regex>
 #include <sys/time.h>
 #include "base/builtins_base.h"
+#ifdef PANDA_TARGET_WINDOWS
+#include <timezoneapi.h>
+#endif
 
 namespace panda::ecmascript {
 using NumberHelper = base::NumberHelper;
@@ -583,6 +586,7 @@ int64_t JSDate::GetLocalOffsetFromOS(int64_t timeMs, bool isLocal)
     if (!isLocal) {
         return 0;
     }
+#ifndef PANDA_TARGET_WINDOWS
     timeMs /= JSDate::THOUSAND;
     time_t tv = std::time(reinterpret_cast<time_t *>(&timeMs));
     struct tm tm {
@@ -591,6 +595,12 @@ int64_t JSDate::GetLocalOffsetFromOS(int64_t timeMs, bool isLocal)
     struct tm *t = localtime_r(&tv, &tm);
     // tm_gmtoff includes any daylight savings offset.
     return t->tm_gmtoff / SEC_PER_MINUTE;
+#else
+    TIME_ZONE_INFORMATION tmp;
+    GetTimeZoneInformation(&tmp);
+    int64_t res = tmp.Bias / SEC_PER_MINUTE;
+    return res;
+#endif
 }
 
 // 20.4.4.10

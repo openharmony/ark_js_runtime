@@ -102,7 +102,12 @@ void NativeAreaAllocator::FreeBuffer(void *mem)
     if (mem == nullptr) {
         return;
     }
+#ifndef PANDA_TARGET_WINDOWS
     DecreaseNativeMemoryUsage(malloc_usable_size(mem));
+#else
+    DecreaseNativeMemoryUsage(_msize(mem));
+#endif
+
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     memset_s(mem, size, INVALID_VALUE, size);
 #endif
