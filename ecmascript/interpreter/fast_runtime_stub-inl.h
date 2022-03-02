@@ -1362,5 +1362,24 @@ JSTaggedValue FastRuntimeStub::SetContainerProperty(JSThread *thread, JSTaggedVa
     }
     return res;
 }
+
+JSTaggedValue FastRuntimeStub::NewThisObject(JSThread *thread, JSTaggedValue ctor, JSTaggedValue newTarget,
+                                             InterpretedFrame *state)
+{
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+
+    JSHandle<JSFunction> ctorHandle(thread, ctor);
+    JSHandle<JSTaggedValue> newTargetHandle(thread, newTarget);
+    JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(ctorHandle, newTargetHandle);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSTaggedValue::Exception());
+
+    state->function = ctorHandle.GetTaggedValue();
+    state->constpool = ctorHandle->GetConstantPool();
+    state->profileTypeInfo = ctorHandle->GetProfileTypeInfo();
+    state->env = ctorHandle->GetLexicalEnv();
+
+    return obj.GetTaggedValue();
+}
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_INTERPRETER_FAST_RUNTIME_STUB_INL_H
