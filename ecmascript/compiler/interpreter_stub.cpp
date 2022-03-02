@@ -62,7 +62,7 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
     Bind(&slowPath);                                                                                \
     {                                                                                               \
         varProfileTypeInfo = CallRuntimeTrampoline(glue,                                            \
-            GetInt64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { PtrBuildTaggedWithNoGC(_sp) }); \
+            GetInt64Constant(FAST_STUB_ID(UpdateHotnessCounter)), {});                              \
         varHotnessCounter = GetInt32Constant(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);            \
         Jump(&dispatch);                                                                            \
     }                                                                                               \
@@ -1010,9 +1010,10 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
+    GateRef tmpFrame = GetFrame(*varSp);
+    SetPcToFrame(glue, tmpFrame, *varPc);
     varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(JumpToCInterpreter)), {
-        PtrBuildTaggedWithNoGC(pc), PtrBuildTaggedWithNoGC(sp), constpool, profileTypeInfo,
-            acc, IntBuildTaggedTypeWithNoGC(hotnessCounter)
+        constpool, profileTypeInfo, acc, IntBuildTaggedTypeWithNoGC(hotnessCounter)
     }));
     Label shouldReturn(env);
     Label shouldContinue(env);
@@ -1630,7 +1631,7 @@ DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SuperCallSpread)),
-        { acc, PtrBuildTaggedWithNoGC(sp), array }); // acc is thisFunc, sp for newTarget
+        { acc, array }); // acc is thisFunc, sp for newTarget
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2089,7 +2090,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
-        {  receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
+                                           {  receiver, propKey }); // sp for thisFunc
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2112,7 +2113,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByValuePrefV8V8)
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
      // acc is value, sp for thisFunc
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
-        { receiver, propKey, acc, PtrBuildTaggedWithNoGC(sp) });
+        { receiver, propKey, acc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2138,7 +2139,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByNamePrefId32V8)
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
 
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
-        { receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
+        { receiver, propKey }); // sp for thisFunc
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -2162,7 +2163,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByNamePrefId32V8)
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
 
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
-        { receiver, propKey, acc, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
+        { receiver, propKey, acc }); // sp for thisFunc
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -3839,8 +3840,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Label pcIsInvalid(env);
     Label pcNotInvalid(env);
     GateRef exception = Load(VariableType::JS_ANY(), glue, GetIntPtrConstant(0));
-    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(UpFrame)),
-        { PtrBuildTaggedWithNoGC(sp) }));
+    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(UpFrame)), {}));
     Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {

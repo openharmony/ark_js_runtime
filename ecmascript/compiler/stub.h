@@ -572,7 +572,6 @@ public:
     inline GateRef Int16BuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedTypeWithNoGC(GateRef x);
-    inline GateRef PtrBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
