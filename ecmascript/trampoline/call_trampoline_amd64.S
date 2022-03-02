@@ -22,9 +22,14 @@
     pushq %r14
     pushq %r15
     pushq %rbx
+    /* caller save */
+    pushq %rdi
 .endm
 
 .macro POP_GENERAL_REGS
+    /* caller restore */
+    popq %rdi
+    /* callee restore*/
     popq %rbx
     popq %r15
     popq %r14
