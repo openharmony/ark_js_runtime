@@ -15,8 +15,8 @@
 
 #include "ecmascript/tooling/interface/js_debugger.h"
 
-#include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "runtime/tooling/pt_method_private.h"
 
 namespace panda::tooling::ecmascript {
@@ -140,10 +140,11 @@ bool JSDebugger::RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset)
 JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
 {
     JSMethod *method = nullptr;
-    ecmaVm_->EnumeratePandaFiles([&method, location](const Program *pg, const panda_file::File *pf) {
-        if (std::string(location.GetPandaFile()) == pf->GetFilename()) {
-            JSMethod *methodsData = pg->GetMethodsData();
-            uint32_t numberMethods = pg->GetNumberMethods();
+    EcmaVM::GetJSPandaFileManager()->EnumerateJSPandaFiles([&method, location](
+        const panda::ecmascript::JSPandaFile *jsPandaFile) {
+        if (CString(location.GetPandaFile()) == jsPandaFile->GetJSPandaFileDesc()) {
+            JSMethod *methodsData = jsPandaFile->GetMethods();
+            uint32_t numberMethods = jsPandaFile->GetNumMethods();
             for (uint32_t i = 0; i < numberMethods; ++i) {
                 if (methodsData[i].GetFileId() == location.GetMethodId()) {
                     method = methodsData + i;

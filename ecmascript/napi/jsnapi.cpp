@@ -286,18 +286,19 @@ bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string 
     std::vector<std::string> argv;
     LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
     if (!vm->ExecuteFromPf(fileName, entry, argv)) {
-        LOG_ECMA(ERROR) << "Cannot execute ark file" << fileName;
-        LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName << "' with entry '" << entry << "'" << std::endl;
+        LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName
+                        << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
     return true;
 }
 
-bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size, const std::string &entry)
+bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size,
+                     const std::string &entry, const std::string &filename)
 {
     std::vector<std::string> argv;
-    if (!vm->ExecuteFromBuffer(data, size, entry, argv)) {
-        LOG_ECMA(ERROR) << "Cannot execute panda file from memory "
+    if (!vm->ExecuteFromBuffer(data, size, entry, argv, filename)) {
+        LOG_ECMA(ERROR) << "Cannot execute ark buffer file '" << filename
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
