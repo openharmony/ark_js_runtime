@@ -25,11 +25,6 @@ JSTaggedValue ConstantPool::GetObjectFromCache(uint32_t index) const
 {
     return Get(index);
 }
-
-void Program::FreeMethodData(NativeAreaAllocator *allocator)
-{
-    allocator->FreeBuffer(GetMethodsData());
-}
 }  // namespace ecmascript
 }  // namespace panda
 #endif  // ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
