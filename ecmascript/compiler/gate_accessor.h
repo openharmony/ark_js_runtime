@@ -319,6 +319,18 @@ public:
     [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0) const;
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
+    template<bool noThrow = false>
+    void replaceHirControlGate(GateRef oldGate, [[maybe_unused]] GateRef newGate)
+    {
+        Gate *oldPtr = circuit_->LoadGatePtr(oldGate);
+        ASSERT(oldPtr->GetOpCode() == OpCode::IF_SUCCESS || oldPtr->GetOpCode() == OpCode::IF_EXCEPTION);
+        if (!noThrow) {
+            oldPtr->GetFirstOut()->GetGate()->ModifyIn(oldPtr->GetFirstOut()->GetIndex(), circuit_->LoadGatePtr(newGate));
+            circuit_->DeleteGate(oldGate);        
+        } else {
+            oldPtr->DeleteIn(0);
+        }
+    };
 
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const

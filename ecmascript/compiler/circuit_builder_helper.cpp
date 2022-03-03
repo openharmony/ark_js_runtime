@@ -44,6 +44,86 @@ LabelManager::LabelManager(GateRef stateEntry, GateRef dependEntry, std::vector<
     }
 }
 
+LabelManager::~LabelManager()
+{
+    for (auto label : rawLabels_) {
+        delete label;
+    }
+}
+
+void LabelManager::Jump(Label *label)
+{
+    ASSERT(label);
+    auto currentLabel = GetCurrentLabel();
+    auto currentControl = currentLabel->GetControl();
+    auto jump = builder_.Goto(currentControl);
+    currentLabel->SetControl(jump);
+    label->AppendPredecessor(currentLabel);
+    label->MergeControl(currentLabel->GetControl());
+    SetCurrentLabel(nullptr);
+}
+
+void LabelManager::Branch(GateRef condition, Label *trueLabel, Label *falseLabel)
+{
+    auto currentLabel = GetCurrentLabel();
+    auto currentControl = currentLabel->GetControl();
+    GateRef ifBranch = builder_.Branch(currentControl, condition);
+    currentLabel->SetControl(ifBranch);
+    GateRef ifTrue = builder_.NewIfTrue(ifBranch);
+    trueLabel->AppendPredecessor(GetCurrentLabel());
+    trueLabel->MergeControl(ifTrue);
+    GateRef ifFalse = builder_.NewIfFalse(ifBranch);
+    falseLabel->AppendPredecessor(GetCurrentLabel());
+    falseLabel->MergeControl(ifFalse);
+    SetCurrentLabel(nullptr);
+}
+
+void LabelManager::Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys)
+{
+    auto currentLabel = GetCurrentLabel();
+    auto currentControl = currentLabel->GetControl();
+    GateRef switchBranch = builder_.SwitchBranch(currentControl, index, numberOfKeys);
+    currentLabel->SetControl(switchBranch);
+    for (int i = 0; i < numberOfKeys; i++) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        GateRef switchCase = builder_.NewSwitchCase(switchBranch, keysValue[i]);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        keysLabel[i].AppendPredecessor(currentLabel);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        keysLabel[i].MergeControl(switchCase);
+    }
+
+    GateRef defaultCase = builder_.NewDefaultCase(switchBranch);
+    defaultLabel->AppendPredecessor(currentLabel);
+    defaultLabel->MergeControl(defaultCase);
+    SetCurrentLabel(nullptr);
+}
+
+void LabelManager::LoopBegin(Label *loopHead)
+{
+    ASSERT(loopHead);
+    auto loopControl = builder_.LoopBegin(loopHead->GetControl());
+    loopHead->SetControl(loopControl);
+    loopHead->SetPreControl(loopControl);
+    loopHead->Bind();
+    SetCurrentLabel(loopHead);
+}
+
+void LabelManager::LoopEnd(Label *loopHead)
+{
+    ASSERT(loopHead);
+    auto currentLabel = GetCurrentLabel();
+    auto currentControl = currentLabel->GetControl();
+    auto loopend = builder_.LoopEnd(currentControl);
+    currentLabel->SetControl(loopend);
+    loopHead->AppendPredecessor(currentLabel);
+    loopHead->MergeControl(loopend);
+    loopHead->Seal();
+    loopHead->MergeAllControl();
+    loopHead->MergeAllDepend();
+    SetCurrentLabel(nullptr);
+}
+
 Label::Label(LabelManager *lm)
 {
     impl_ = lm->NewLabel(lm);
@@ -81,10 +161,10 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
         // only loopheader gate will be not sealed
         int valueCounts = static_cast<int>(this->predecessors_.size()) + 1;
         if (MachineType == MachineType::NOVALUE) {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), MachineType, predeControl_,
+            val = lm_->GetCircuitBuilder()->NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), MachineType, predeControl_,
                                                            valueCounts, var->Type());
         } else {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), MachineType, predeControl_,
+            val = lm_->GetCircuitBuilder()->NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), MachineType, predeControl_,
                                                            valueCounts, var->Type());
         }
         lm_->AddSelectorToLabel(val, Label(this));
@@ -93,10 +173,10 @@ GateRef LabelImpl::ReadVariableRecursive(Variable *var)
         val = predecessors_[0]->ReadVariable(var);
     } else {
         if (MachineType == MachineType::NOVALUE) {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), MachineType, predeControl_,
+            val = lm_->GetCircuitBuilder()->NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), MachineType, predeControl_,
                                                            this->predecessors_.size(), var->Type());
         } else {
-            val = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), MachineType, predeControl_,
+            val = lm_->GetCircuitBuilder()->NewSelectorGate(OpCode(OpCode::VALUE_SELECTOR), MachineType, predeControl_,
                                                            this->predecessors_.size(), var->Type());
         }
         lm_->AddSelectorToLabel(val, Label(this));
@@ -112,7 +192,7 @@ void LabelImpl::Bind()
     ASSERT(!predecessors_.empty());
     if (IsLoopHead()) {
         // 2 means input number of depend selector gate
-        loopDepend_ = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, 2);
+        loopDepend_ = lm_->GetCircuitBuilder()->NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_, 2);
         lm_->GetCircuit()->NewIn(loopDepend_, 1, predecessors_[0]->GetDepend());
         depend_ = loopDepend_;
     }
@@ -146,7 +226,7 @@ void LabelImpl::MergeAllControl()
         inGates[i++] = in;
     }
 
-    GateRef merge = lm_->GetCircuitBuilder().NewMerge(inGates.data(), inGates.size());
+    GateRef merge = lm_->GetCircuitBuilder()->NewMerge(inGates.data(), inGates.size());
     predeControl_ = merge;
     control_ = merge;
 }
@@ -156,13 +236,13 @@ void LabelImpl::MergeAllDepend()
     if (IsControlCase()) {
         // Add depend_relay to current label
         auto denpendEntry = Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY));
-        dependRelay_ = lm_->GetCircuitBuilder().NewDependRelay(predeControl_, denpendEntry);
+        dependRelay_ = lm_->GetCircuitBuilder()->NewDependRelay(predeControl_, denpendEntry);
     }
 
     if (predecessors_.size() < 2) {  // 2 : Loop Head only support two predecessors_
         depend_ = predecessors_[0]->GetDepend();
         if (dependRelay_ != -1) {
-            depend_ = lm_->GetCircuitBuilder().NewDependAnd({ depend_, dependRelay_ });
+            depend_ = lm_->GetCircuitBuilder()->NewDependAnd({ depend_, dependRelay_ });
         }
         return;
     }
@@ -180,7 +260,7 @@ void LabelImpl::MergeAllDepend()
     for (auto prede : this->GetPredecessors()) {
         dependsList.push_back(prede->GetDepend());
     }
-    depend_ = lm_->GetCircuitBuilder().NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_,
+    depend_ = lm_->GetCircuitBuilder()->NewSelectorGate(OpCode(OpCode::DEPEND_SELECTOR), predeControl_,
                                                        dependsList, dependsList.size());
 }
 
@@ -246,7 +326,7 @@ GateRef Variable::TryRemoveTrivialPhi(GateRef phiVal)
     if (same == nullptr) {
         // the phi is unreachable or in the start block
         GateType type = lm_->GetCircuit()->GetGateType(phiVal);
-        same = lm_->GetCircuit()->LoadGatePtr(lm_->GetCircuitBuilder().UndefineConstant(type));
+        same = lm_->GetCircuit()->LoadGatePtr(lm_->GetCircuitBuilder()->UndefineConstant(type));
     }
     auto same_addr_shift = lm_->GetCircuit()->SaveGatePtr(same);
 
