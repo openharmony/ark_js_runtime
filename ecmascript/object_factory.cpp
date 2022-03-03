@@ -2149,7 +2149,7 @@ JSHandle<TSClassInstanceType> ObjectFactory::NewTSClassInstanceType()
     JSHandle<TSClassInstanceType> classInstanceType(thread_, header);
 
     classInstanceType->SetGTRef(GlobalTSTypeRef::Default());
-    classInstanceType->SetCreateClassType(JSTaggedValue::Undefined());
+    classInstanceType->SetClassRefGT(GlobalTSTypeRef::Default());
 
     return classInstanceType;
 }
@@ -2163,7 +2163,7 @@ JSHandle<TSImportType> ObjectFactory::NewTSImportType()
     JSHandle<TSImportType> importType(thread_, header);
 
     importType->SetGTRef(GlobalTSTypeRef::Default());
-    importType->SetTargetType(thread_, JSTaggedValue::Undefined());
+    importType->SetTargetRefGT(GlobalTSTypeRef::Default());
     importType->SetImportPath(thread_, JSTaggedValue::Undefined());
 
     return importType;
