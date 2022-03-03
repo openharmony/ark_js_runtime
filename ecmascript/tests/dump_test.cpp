@@ -652,21 +652,6 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(classInfoExtractor)
                 break;
             }
-            case JSType::JS_QUEUE:
-            case JSType::JS_API_VECTOR:
-            case JSType::JS_API_ARRAY_LIST: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIArrayList::SIZE, 1)
-                JSHandle<JSAPIArrayList> jsArrayList = NewJSAPIArrayList(thread, factory, proto);
-                DUMP_FOR_HANDLE(jsArrayList)
-                break;
-            }
-            case JSType::JS_API_ARRAYLIST_ITERATOR: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIArrayListIterator::SIZE, 2)
-                JSHandle<JSAPIArrayListIterator> jsArrayListIter =
-                    factory->NewJSAPIArrayListIterator(NewJSAPIArrayList(thread, factory, proto));
-                DUMP_FOR_HANDLE(jsArrayListIter)
-                break;
-            }
             case JSType::TS_OBJECT_TYPE: {
                 CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSObjectType::SIZE, 3)
                 JSHandle<TSObjectType> objectType = factory->NewTSObjectType(0);
@@ -703,29 +688,52 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(unionType)
                 break;
             }
+            case JSType::JS_QUEUE:
+            case JSType::JS_API_VECTOR:
+            case JSType::JS_API_ARRAY_LIST: {
+                // 1 : 1 dump fileds number
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIArrayList::SIZE, 1)
+                JSHandle<JSAPIArrayList> jsArrayList = NewJSAPIArrayList(thread, factory, proto);
+                DUMP_FOR_HANDLE(jsArrayList)
+                break;
+            }
+            case JSType::JS_API_ARRAYLIST_ITERATOR: {
+                // 2 : 2 dump fileds number
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIArrayListIterator::SIZE, 2)
+                JSHandle<JSAPIArrayList> jsArrayList = NewJSAPIArrayList(thread, factory, proto);
+                JSHandle<JSAPIArrayListIterator> jsArrayListIter = factory->NewJSAPIArrayListIterator(jsArrayList);
+                DUMP_FOR_HANDLE(jsArrayListIter)
+                break;
+            }
             case JSType::JS_API_TREE_MAP: {
+                // 1 : 1 dump fileds number
                 CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeMap::SIZE, 1)
                 JSHandle<JSAPITreeMap> jsTreeMap = NewJSAPITreeMap(thread, factory);
                 DUMP_FOR_HANDLE(jsTreeMap)
                 break;
             }
             case JSType::JS_API_TREE_SET: {
+                // 1 : 1 dump fileds number
                 CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeSet::SIZE, 1)
                 JSHandle<JSAPITreeSet> jsTreeSet = NewJSAPITreeSet(thread, factory);
                 DUMP_FOR_HANDLE(jsTreeSet)
                 break;
             }
             case JSType::JS_API_TREEMAP_ITERATOR: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeMapIterator::SIZE, 4)
+                // 3 : 3 dump fileds number
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeMapIterator::SIZE, 3)
+                JSHandle<JSAPITreeMap> jsTreeMap = NewJSAPITreeMap(thread, factory);
                 JSHandle<JSAPITreeMapIterator> jsTreeMapIter =
-                    factory->NewJSAPITreeMapIterator(NewJSAPITreeMap(thread, factory), IterationKind::KEY);
+                    factory->NewJSAPITreeMapIterator(jsTreeMap, IterationKind::KEY);
                 DUMP_FOR_HANDLE(jsTreeMapIter)
                 break;
             }
             case JSType::JS_API_TREESET_ITERATOR: {
-                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeSetIterator::SIZE, 4)
+                // 3 : 3 dump fileds number
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPITreeSetIterator::SIZE, 3)
+                JSHandle<JSAPITreeSet> jsTreeSet = NewJSAPITreeSet(thread, factory);
                 JSHandle<JSAPITreeSetIterator> jsTreeSetIter =
-                    factory->NewJSAPITreeSetIterator(NewJSAPITreeSet(thread, factory), IterationKind::KEY);
+                    factory->NewJSAPITreeSetIterator(jsTreeSet, IterationKind::KEY);
                 DUMP_FOR_HANDLE(jsTreeSetIter)
                 break;
             }

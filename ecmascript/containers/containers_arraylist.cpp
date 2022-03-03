@@ -14,17 +14,17 @@
  */
 
 #include "containers_arraylist.h"
-#include "ecmascript/js_array.h"
 #include "ecmascript/base/array_helper.h"
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/ecma_vm.h"
+#include "ecmascript/internal_call_params.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
-#include "ecmascript/object_factory.h"
-#include "ecmascript/tagged_array-inl.h"
-#include "ecmascript/internal_call_params.h"
+#include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_iterator.h"
+#include "ecmascript/object_factory.h"
+#include "ecmascript/tagged_array-inl.h"
 
 namespace panda::ecmascript::containers {
 JSTaggedValue ContainersArrayList::ArrayListConstructor(EcmaRuntimeCallInfo *argv)
@@ -40,7 +40,8 @@ JSTaggedValue ContainersArrayList::ArrayListConstructor(EcmaRuntimeCallInfo *arg
     }
     JSHandle<JSTaggedValue> constructor = GetConstructor(argv);
     JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(constructor), newTarget);
-    obj->SetElements(thread, factory->NewTaggedArray(JSAPIArrayList::DEFAULT_CAPACITY_LENGTH));
+    JSHandle<TaggedArray> newTaggedArray = factory->NewTaggedArray(JSAPIArrayList::DEFAULT_CAPACITY_LENGTH);
+    obj->SetElements(thread, newTaggedArray);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
 
     return obj.GetTaggedValue();
@@ -76,6 +77,9 @@ JSTaggedValue ContainersArrayList::Insert(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> index = GetCallArg(argv, 1);
+    if (!index->IsNumber()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "index is not Integer", JSTaggedValue::Exception());
+    }
     JSAPIArrayList::Insert(thread, JSHandle<JSAPIArrayList>::Cast(self), value, JSTaggedValue::ToUint32(thread, index));
 
     return JSTaggedValue::Undefined();
@@ -163,6 +167,10 @@ JSTaggedValue ContainersArrayList::IncreaseCapacityTo(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> newCapacity = GetCallArg(argv, 0);
+    if (!newCapacity->IsNumber()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "newCapacity is not Integer", JSTaggedValue::Exception());
+    }
+
     JSAPIArrayList::IncreaseCapacityTo(thread, JSHandle<JSAPIArrayList>::Cast(self),
                                        JSTaggedValue::ToUint32(thread, newCapacity));
 
@@ -267,6 +275,10 @@ JSTaggedValue ContainersArrayList::RemoveByIndex(EcmaRuntimeCallInfo *argv)
     }
 
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
+    if (!value->IsNumber()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "index is not Integer", JSTaggedValue::Exception());
+    }
+
     JSAPIArrayList::RemoveByIndex(thread, JSHandle<JSAPIArrayList>::Cast(self), JSTaggedValue::ToUint32(thread, value));
 
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -307,6 +319,9 @@ JSTaggedValue ContainersArrayList::RemoveByRange(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> startIndex = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> endIndex = GetCallArg(argv, 1);
+    if (!startIndex->IsNumber() || !endIndex->IsNumber()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "startIndex or endIndex is not Integer", JSTaggedValue::Exception());
+    }
     JSAPIArrayList::RemoveByRange(thread, JSHandle<JSAPIArrayList>::Cast(self), startIndex, endIndex);
 
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
@@ -368,6 +383,9 @@ JSTaggedValue ContainersArrayList::SubArrayList(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> value1 = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> value2 = GetCallArg(argv, 1);
+    if (!value1->IsNumber() || !value2->IsNumber()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "startIndex or endIndex is not Integer", JSTaggedValue::Exception());
+    }
     JSHandle<JSAPIArrayList> newArrayList =
         JSAPIArrayList::SubArrayList(thread, JSHandle<JSAPIArrayList>::Cast(self), value1, value2);
 
