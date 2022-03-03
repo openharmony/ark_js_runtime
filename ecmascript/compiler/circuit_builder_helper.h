@@ -169,7 +169,7 @@ public:
     inline void PopCurrentLabel();
     inline GateRef GetInput(size_t index) const;
     template<bool noThrow = false>
-    static inline void MergeMirCircuit(GateRef hir, GateRef outir, std::vector<GateRef> successControl, std::vector<GateRef> exceptionControl);
+    inline void MergeMirCircuit(GateRef hir, GateRef outir, std::vector<GateRef> successControl, std::vector<GateRef> exceptionControl);
     inline GateRef Return(GateRef value);
     inline GateRef Return();
     inline void Bind(Label *label);

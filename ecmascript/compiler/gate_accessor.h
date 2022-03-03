@@ -319,6 +319,9 @@ public:
     [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0) const;
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
+    // Add for lowering
+    [[nodiscard]] GateType GetGateType(GateRef gate);
+    void SetGateType(GateRef gate, GateType gt);
     template<bool noThrow = false>
     void replaceHirControlGate(GateRef oldGate, [[maybe_unused]] GateRef newGate)
     {
@@ -331,7 +334,7 @@ public:
             oldPtr->DeleteIn(0);
         }
     };
-
+    void DeleteIn(UseIterator &it);
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const
     {
