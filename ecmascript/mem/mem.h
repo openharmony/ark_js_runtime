@@ -32,6 +32,11 @@ enum class MemAlignment : uint8_t {
     MEM_ALIGN_REGION = 16,
 };
 
+enum class MemAlignmentLog2 : uint8_t {
+    MEM_ALIGN_OBJECT_LOG2 = 3,
+    MEM_ALIGN_REGION_LOG2 = 4,
+};
+
 static constexpr size_t SEMI_SPACE_TRIGGER_CONCURRENT_MARK = 1.5 * 1024 * 1024;
 static constexpr size_t SEMI_SPACE_OVERSHOOT_SIZE = 2 * 1024 * 1024;
 

@@ -174,11 +174,6 @@ GateRef Stub::GetIntPtrSize()
     return env_.Is32Bit() ? GetInt32Constant(sizeof(uint32_t)) : GetInt64Constant(sizeof(uint64_t));
 }
 
-uint64_t Stub::GetIntPtrSize() const
-{
-    return env_.Is32Bit() ? sizeof(int32_t) : sizeof(int64_t);
-}
-
 GateRef Stub::TrueConstant()
 {
     return TruncInt32ToInt1(GetInt32Constant(1));
@@ -1968,33 +1963,20 @@ GateRef Stub::IntptrEuqal(GateRef x, GateRef y)
     return env_.Is32Bit() ? Int32Equal(x, y) : Int64Equal(x, y);
 }
 
-GateRef Stub::AddrToBitOffset(GateRef memberset, GateRef addr)
-{
-    //  (addr - beginAddr_) / BYTESPERCHUNK
-    auto beginAddrOffset = RememberedSet::GetBeginAddrOffset(env_.Is32Bit());
-    auto beginAddr = Load(VariableType::POINTER(), memberset, GetIntPtrConstant(beginAddrOffset));
-    return IntPtrDiv(IntPtrSub(addr, beginAddr), GetIntPtrConstant(RememberedSet::BYTESPERCHUNK));
-}
-
 GateRef Stub::GetBitMask(GateRef bitoffset)
 {
-    auto bitIndexMask = IntPtrLSL(GetIntPtrConstant(1), GetIntPtrConstant(mem::Bitmap::LOG_BITSPERWORD));
-    bitIndexMask = IntPtrSub(bitIndexMask, GetIntPtrConstant(1));
+    auto bitIndexMask = env_.Is32Bit()
+        ? GetIntPtrConstant(static_cast<size_t>((1UL << BitmapHelper::LOG_BITSPERWORD_32) - 1))
+        : GetIntPtrConstant(static_cast<size_t>((1UL << BitmapHelper::LOG_BITSPERWORD_64) - 1));
     // bit_offset & BIT_INDEX_MASK
     auto mask = IntPtrAnd(bitoffset, bitIndexMask);
     // 1UL << GetBitIdxWithinWord(bit_offset)
-    mask = IntPtrLSL(GetIntPtrConstant(1), mask);
-    return mask;
+    return IntPtrLSL(GetIntPtrConstant(1), mask);
 }
 
 GateRef Stub::ObjectAddressToRange(GateRef x)
 {
-    if (env_.Is32Bit()) {
-        return IntPtrAnd(TaggedCastToInt32(x),
-            Int32Xor(GetIntPtrConstant(panda::mem::DEFAULT_REGION_MASK), GetIntPtrConstant(-1)));
-    }
-    return IntPtrAnd(TaggedCastToInt64(x),
-        Int64Xor(GetIntPtrConstant(panda::mem::DEFAULT_REGION_MASK), GetIntPtrConstant(-1)));
+    return IntPtrAnd(TaggedCastToIntPtr(x), GetIntPtrConstant(~panda::ecmascript::DEFAULT_REGION_MASK));
 }
 
 GateRef Stub::InYoungGeneration(GateRef glue, GateRef region)
