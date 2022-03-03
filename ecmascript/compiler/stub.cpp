@@ -259,8 +259,8 @@ void LabelImpl::AppendPredecessor(LabelImpl *predecessor)
 bool LabelImpl::IsNeedSeal() const
 {
     auto control = env_->GetCircuit()->LoadGatePtr(predeControl_);
-    auto numsInList = control->GetOpCode().GetOpCodeNumInsArray(control->GetBitField());
-    return predecessors_.size() >= numsInList[0];
+    auto stateCount = control->GetOpCode().GetStateCount(control->GetBitField());
+    return predecessors_.size() >= stateCount;
 }
 
 bool LabelImpl::IsLoopHead() const

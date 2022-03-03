@@ -16,23 +16,6 @@
 #include "gate_accessor.h"
 
 namespace panda::ecmascript::kungfu {
-UseIterator::UseIterator(Circuit *circuit, GateRef gate) : circuit_(circuit)
-{
-    Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    Out *firstUse = gatePtr->GetFirstOut();
-    current_ = circuit_->SaveGatePtr(firstUse->GetGate());
-    currentIdx_ = firstUse->GetIndex();
-}
-
-bool GateAccessor::HasUse(GateRef gate)
-{
-    Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    if (gatePtr->IsFirstOutNull()) {
-        return false;
-    }
-    return true;
-}
-
 size_t GateAccessor::GetNumIns(GateRef gate)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
@@ -60,15 +43,15 @@ void GateAccessor::SetOpCode(GateRef gate, OpCode::Op opcode)
 GateRef GateAccessor::GetValueIn(GateRef gate, size_t idx)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    ASSERT(idx < gatePtr->GetNumInsArray()[2]); // 2: number of value inputs
-    size_t valueIndex = gatePtr->GetNumInsArray()[0] + gatePtr->GetNumInsArray()[1];
+    ASSERT(idx < gatePtr->GetInValueCount());
+    size_t valueIndex = gatePtr->GetStateCount() + gatePtr->GetDependCount();
     return circuit_->GetIn(gate, valueIndex + idx);
 }
 
 size_t GateAccessor::GetNumValueIn(GateRef gate)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    return gatePtr->GetNumInsArray()[2]; // 2: number of value inputs
+    return gatePtr->GetInValueCount();
 }
 
 GateRef GateAccessor::GetIn(GateRef gate, size_t idx)
@@ -78,38 +61,30 @@ GateRef GateAccessor::GetIn(GateRef gate, size_t idx)
 
 GateRef GateAccessor::GetState(GateRef gate, size_t idx)
 {
-    ASSERT(idx < circuit_->LoadGatePtr(gate)->GetNumInsArray()[0]); // 0: number of state inputs
+    ASSERT(idx < circuit_->LoadGatePtr(gate)->GetStateCount());
     return circuit_->GetIn(gate, idx);
 }
 
 GateRef GateAccessor::GetDep(GateRef gate, size_t idx)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    ASSERT(idx < gatePtr->GetNumInsArray()[1]); // 1: number of depend inputs
-    size_t dependIndex = gatePtr->GetNumInsArray()[0];
+    ASSERT(idx < gatePtr->GetDependCount());
+    size_t dependIndex = gatePtr->GetStateCount();
     return circuit_->GetIn(gate, dependIndex + idx);
 }
 
 void GateAccessor::SetDep(GateRef gate, GateRef depGate, size_t idx)
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    ASSERT(idx < gatePtr->GetNumInsArray()[1]); // 1: number of depend inputs
-    size_t dependIndex = gatePtr->GetNumInsArray()[0];
+    ASSERT(idx < gatePtr->GetDependCount());
+    size_t dependIndex = gatePtr->GetStateCount();
     gatePtr->ModifyIn(dependIndex + idx, circuit_->LoadGatePtr(depGate));
 }
 
-size_t GateAccessor::GetFirstUseIdx(GateRef gate)
+void GateAccessor::ReplaceIn(UsesIterator &useIt, GateRef replaceGate)
 {
-    Gate *gatePtr = circuit_->LoadGatePtr(gate);
-    return gatePtr->GetFirstOut()->GetIndex();
-}
-
-void GateAccessor::ReplaceIn(UseIterator &it, GateRef replaceGate)
-{
-    GateRef curGate = it.GetUse();
-    size_t idx = it.GetIdx();
-    Gate *curGatePtr = circuit_->LoadGatePtr(curGate);
+    Gate *curGatePtr = circuit_->LoadGatePtr(*useIt);
     Gate *replaceGatePtr = circuit_->LoadGatePtr(replaceGate);
-    curGatePtr->ModifyIn(idx, replaceGatePtr);
+    curGatePtr->ModifyIn(useIt.GetIndex(), replaceGatePtr);
 }
 }

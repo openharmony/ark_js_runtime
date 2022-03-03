@@ -135,6 +135,8 @@ namespace panda::ecmascript::kungfu {
     V(Mul2Dyn, 3)                            \
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
+    V(GetLexicalEnv, 1)                      \
+    V(LoadValueFromConstantPool, 3)          \
     I(CallRuntimeTrampoline, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
