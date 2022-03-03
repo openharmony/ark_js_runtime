@@ -24,7 +24,7 @@
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/base/typed_array_helper-inl.h"
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/ecma_global_storage-inl.h"
 #include "ecmascript/ecma_language_context.h"
@@ -108,9 +108,6 @@ using ecmascript::base::TypedArrayHelper;
 using ecmascript::job::MicroJobQueue;
 using ecmascript::job::QueueType;
 using ecmascript::JSRuntimeOptions;
-#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-using ecmascript::CpuProfiler;
-#endif
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -1962,46 +1959,5 @@ bool JSValueRef::IsGeneratorFunction()
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
     bool rst  = obj->IsGeneratorFunction();
     return rst;
-}
-#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-void JSNApi::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
-{
-    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StartCpuProfiler(vm, fileName);
-}
-
-void JSNApi::StopCpuProfiler()
-{
-    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StopCpuProfiler();
-    if (singleton != nullptr) {
-        delete singleton;
-        singleton = nullptr;
-    }
-}
-#endif
-
-bool JSNApi::SuspendVM(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    return thread->NotifyVMThreadSuspension();
-}
-
-void JSNApi::ResumeVM(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    thread->ResumeVM();
-}
-
-bool JSNApi::IsSuspended(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    return thread->IsSuspended();
-}
-
-bool JSNApi::CheckSafepoint(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    return  thread->CheckSafepoint();
 }
 }  // namespace panda

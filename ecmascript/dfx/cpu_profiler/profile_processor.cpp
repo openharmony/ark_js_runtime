@@ -12,11 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ecmascript/cpu_profiler/profile_processor.h"
+#include "ecmascript/dfx/cpu_profiler/profile_processor.h"
 
 #include <csignal>
 #include <sys/time.h>
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/interpreter/interpreter.h"
 
 namespace panda::ecmascript {

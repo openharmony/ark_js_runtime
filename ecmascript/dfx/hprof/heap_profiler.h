@@ -16,10 +16,10 @@
 #ifndef ECMASCRIPT_HPROF_HEAP_PROFILER_H
 #define ECMASCRIPT_HPROF_HEAP_PROFILER_H
 
+#include "ecmascript/dfx/hprof/heap_profiler_interface.h"
+#include "ecmascript/dfx/hprof/heap_snapshot_json_serializer.h"
+#include "ecmascript/dfx/hprof/heap_tracker.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/hprof/heap_profiler_interface.h"
-#include "ecmascript/hprof/heap_snapshot_json_serializer.h"
-#include "ecmascript/hprof/heap_tracker.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/heap.h"
 #include "os/mem.h"
@@ -69,7 +69,7 @@ private:
     const size_t MAX_NUM_HPROF = 5;  // ~10MB
     const Heap *heap_;
     ChunkVector<HeapSnapShot *> hprofs_;
-    HeapSnapShotJSONSerializer *jsonSerializer_{nullptr};
+    HeapSnapShotJSONSerializer *jsonSerializer_ {nullptr};
     std::unique_ptr<HeapTracker> heapTracker_;
 };
 }  // namespace panda::ecmascript

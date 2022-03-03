@@ -901,15 +901,6 @@ public:
     static void SetOptions(const ecmascript::JSRuntimeOptions &options);
     static void SetHostPromiseRejectionTracker(EcmaVM *vm, void *cb, void* data);
     static void SetHostEnqueueJob(const EcmaVM* vm, Local<JSValueRef> cb);
-    // profile generator
-#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-    static void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
-    static void StopCpuProfiler();
-#endif
-    static void ResumeVM(const EcmaVM *vm);
-    static bool SuspendVM(const EcmaVM *vm);
-    static bool IsSuspended(const EcmaVM *vm);
-    static bool CheckSafepoint(const EcmaVM *vm);
 
 private:
     static int vmCount;
