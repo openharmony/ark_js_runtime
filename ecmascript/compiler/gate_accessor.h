@@ -323,18 +323,20 @@ public:
     [[nodiscard]] GateType GetGateType(GateRef gate);
     void SetGateType(GateRef gate, GateType gt);
     template<bool noThrow = false>
-    void replaceHirControlGate(GateRef oldGate, [[maybe_unused]] GateRef newGate)
+    void ReplaceHirControlGate(UsesIterator &useIt, [[maybe_unused]] GateRef newGate)
     {
-        Gate *oldPtr = circuit_->LoadGatePtr(oldGate);
-        ASSERT(oldPtr->GetOpCode() == OpCode::IF_SUCCESS || oldPtr->GetOpCode() == OpCode::IF_EXCEPTION);
+        ASSERT(GetOpCode(*useIt) == OpCode::IF_SUCCESS || GetOpCode(*useIt) == OpCode::IF_EXCEPTION);
         if (!noThrow) {
-            oldPtr->GetFirstOut()->GetGate()->ModifyIn(oldPtr->GetFirstOut()->GetIndex(), circuit_->LoadGatePtr(newGate));
-            circuit_->DeleteGate(oldGate);        
+            Gate *oldPtr = circuit_->LoadGatePtr(*useIt);
+            oldPtr->GetFirstOut()->GetGate()->ModifyIn(oldPtr->GetFirstOut()->GetIndex(),
+                                                       circuit_->LoadGatePtr(newGate));
+            circuit_->DeleteGate(*useIt);
+            useIt.SetChanged();
         } else {
-            oldPtr->DeleteIn(0);
+            DeleteIn(useIt);
         }
     };
-    void DeleteIn(UseIterator &it);
+    void DeleteIn(UsesIterator &useIt);
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const
     {
