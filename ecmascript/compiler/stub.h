@@ -440,7 +440,6 @@ public:
     inline GateRef GetInt64Constant(int64_t value);
     inline GateRef GetIntPtrConstant(int64_t value);
     inline GateRef GetIntPtrSize();
-    inline uint64_t GetIntPtrSize() const;
     inline GateRef GetRelocatableData(uint64_t value);
     inline GateRef TrueConstant();
     inline GateRef FalseConstant();
@@ -775,7 +774,6 @@ public:
     inline void SetHasConstructorToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline void UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, GateRef value);
     inline GateRef GetBitMask(GateRef bitoffset);
-    inline GateRef AddrToBitOffset(GateRef memberset, GateRef addr);
     inline GateRef IntptrEuqal(GateRef x, GateRef y);
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);

@@ -29,6 +29,7 @@ class RememberedSet : public mem::Bitmap {
 public:
     using RememberedWordType = uintptr_t;
     static const size_t BYTESPERCHUNK = static_cast<size_t>(MemAlignment::MEM_ALIGN_OBJECT);
+    static const size_t BYTESPERCHUNK_LOG2 = static_cast<size_t>(MemAlignmentLog2::MEM_ALIGN_OBJECT_LOG2);
 
     RememberedSet(uintptr_t begin_addr, size_t range_size, uintptr_t bitset_addr)
         : mem::Bitmap(reinterpret_cast<mem::Bitmap::BitmapWordType *>(bitset_addr), range_size / BYTESPERCHUNK),
