@@ -35,6 +35,7 @@ const JSPandaFile *JSPandaFileManager::LoadPfAbc(const std::string &filename)
     CString desc = ConvertToString(filename);
     const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);
     if (jsPandaFile != nullptr) {
+        IncreaseRefJSPandaFile(jsPandaFile);
         return jsPandaFile;
     }
 
@@ -57,6 +58,7 @@ const JSPandaFile *JSPandaFileManager::LoadBufferAbc(const std::string &filename
     CString desc = ConvertToString(filename);
     const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);
     if (jsPandaFile != nullptr) {
+        IncreaseRefJSPandaFile(jsPandaFile);
         return jsPandaFile;
     }
 
