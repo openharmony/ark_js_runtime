@@ -53,11 +53,13 @@ class TSObjectType : public TSType {
 public:
     CAST_CHECK(TSObjectType, IsTSObjectType);
 
+    static constexpr size_t PROPERTIES_OFFSET = TSType::SIZE;
+
     JSHClass *GetOrCreateHClass(JSThread *thread);
 
-    uint64_t GetTypeIdOfKey(JSTaggedValue key);
+    static GlobalTSTypeRef SearchProperty(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
+                                          JSHandle<EcmaString> propName);
 
-    static constexpr size_t PROPERTIES_OFFSET = TSType::SIZE;
     ACCESSORS(ObjLayoutInfo, PROPERTIES_OFFSET, HCLASS_OFFSET);
     ACCESSORS(HClass, HCLASS_OFFSET, SIZE);
 
@@ -72,10 +74,10 @@ class TSClassType : public TSType {
 public:
     CAST_CHECK(TSClassType, IsTSClassType);
 
-    static constexpr uint8_t FIELD_LENGTH = 4;  // every field record name, typeIndex, accessFlag, readonly
+    static constexpr size_t FIELD_LENGTH = 4;  // every field record name, typeIndex, accessFlag, readonly
     static constexpr size_t INSTANCE_TYPE_OFFSET = TSType::SIZE;
 
-    static GlobalTSTypeRef SearchProperty(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
+    static GlobalTSTypeRef SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
                                           int localtypeId, JSHandle<EcmaString> propName);
 
     ACCESSORS(InstanceType, INSTANCE_TYPE_OFFSET, CONSTRUCTOR_TYPE_OFFSET);
@@ -92,13 +94,24 @@ class TSClassInstanceType : public TSType {
 public:
     CAST_CHECK(TSClassInstanceType, IsTSClassInstanceType);
 
-    static GlobalTSTypeRef SearchProperty(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
+    static GlobalTSTypeRef SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
                                           int localtypeId, JSHandle<EcmaString> propName);
 
     static constexpr size_t CREATE_CLASS_TYPE_OFFSET = TSType::SIZE;
-    ACCESSORS(CreateClassType, CREATE_CLASS_TYPE_OFFSET, SIZE);
+    static constexpr size_t CREATE_CLASS_OFFSET = 1;
+    ACCESSORS_PRIMITIVE_FIELD(ClassTypeRef, uint64_t, CREATE_CLASS_TYPE_OFFSET, LAST_OFFSET);
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
-    DECL_VISIT_OBJECT(CREATE_CLASS_TYPE_OFFSET, SIZE)
+    GlobalTSTypeRef GetClassRefGT() const
+    {
+        return GlobalTSTypeRef(GetClassTypeRef());
+    }
+
+    void SetClassRefGT(GlobalTSTypeRef r)
+    {
+        SetClassTypeRef(r.GetGlobalTSTypeRef());
+    }
+
     DECL_DUMP()
 };
 
@@ -107,10 +120,20 @@ public:
     CAST_CHECK(TSImportType, IsTSImportType);
 
     static constexpr size_t IMPORT_TYPE_ID_OFFSET = TSType::SIZE;
-
+    static constexpr size_t IMPORT_PATH_OFFSET_IN_LITERAL = 1;
     ACCESSORS(ImportPath, IMPORT_TYPE_ID_OFFSET, IMPORT_PATH);
-    ACCESSORS(TargetType, IMPORT_PATH, LAST_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(TargetTypeRef, uint64_t, IMPORT_PATH, LAST_OFFSET);
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
+
+    GlobalTSTypeRef GetTargetRefGT() const
+    {
+        return GlobalTSTypeRef(GetTargetTypeRef());
+    }
+
+    void SetTargetRefGT(GlobalTSTypeRef r)
+    {
+        SetTargetTypeRef(r.GetGlobalTSTypeRef());
+    }
 
     DECL_VISIT_OBJECT(IMPORT_TYPE_ID_OFFSET, IMPORT_PATH)
     DECL_DUMP()
@@ -137,7 +160,7 @@ public:
     ACCESSORS(Extends, EXTENDS_TYPE_ID_OFFSET, KEYS_OFFSET);
     ACCESSORS(Fields, KEYS_OFFSET, SIZE);
 
-    DECL_VISIT_OBJECT(KEYS_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(EXTENDS_TYPE_ID_OFFSET, SIZE)
     DECL_DUMP()
 };
 }  // namespace panda::ecmascript

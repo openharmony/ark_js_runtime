@@ -2241,27 +2241,59 @@ void TSImportType::Dump(JSThread *thread, std::ostream &os) const
     uint32_t typeKind = gt.GetUserDefineTypeKind();
     os << typeKind;
     os << "\n";
+    os << " -------------------------------------------- ";
     os << " - Target Type: ";
-    if (GetTargetType().IsTSInterfaceType()) {
-        TSInterfaceType *targetType = TSInterfaceType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else if (GetTargetType().IsTSClassType()) {
-        TSClassType *targetType = TSClassType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else if (GetTargetType().IsTSClassInstanceType()) {
-        TSClassInstanceType *targetType = TSClassInstanceType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else if (GetTargetType().IsTSUnionType()) {
-        TSUnionType *targetType = TSUnionType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else {
-        os << " - no link Target Type: ";
-        os << "\n";
+    GlobalTSTypeRef targetGT = GetTargetRefGT();
+    uint64_t targetGTValue = targetGT.GetGlobalTSTypeRef();
+    os << " - TargetTypeGT: ";
+    os << targetGTValue;
+    os << "\n";
+    os << " - Target Type moduleId: ";
+    uint32_t targetModuleId = targetGT.GetModuleId();
+    os << targetModuleId;
+    os << "\n";
+    os << " - Target Type localTypeId: ";
+    uint32_t targetLocalTypeId = targetGT.GetLocalId();
+    os << targetLocalTypeId;
+    os << "\n";
+    os << " - Target Type typeKind: ";
+    uint32_t targetTypeKind = targetGT.GetUserDefineTypeKind();
+    os << targetTypeKind;
+    os << "\n";
+    TSTypeKind flag = static_cast<TSTypeKind>(targetTypeKind);
+    switch (flag) {
+        case TSTypeKind::TS_CLASS: {
+            os << " - Target Type typeKind is classType ";
+            break;
+        }
+        case TSTypeKind::TS_CLASS_INSTANCE: {
+            os << " - Target Type typeKind is classInstanceType ";
+            break;
+        }
+        case TSTypeKind::TS_INTERFACE: {
+            os << " - Target Type typeKind is interfaceType";
+            break;
+        }
+        case TSTypeKind::TS_IMPORT: {
+            os << " - Target Type typeKind is importType";
+            break;
+        }
+        case TSTypeKind::TS_UNION: {
+            os << " - Target Type typeKind is UnionType";
+            break;
+        }
+        case TSTypeKind::TS_FUNCTION: {
+            os << " - Target Type typeKind is funtionType";
+            break;
+        }
+        case TSTypeKind::TS_OBJECT: {
+            os << " - Target Type typeKind is objectType";
+            break;
+        }
+        default:
+            os << " - unknown type";
     }
+    os << " -------------------------------------------- ";
     os << " - Taget Type Path: ";
     JSTaggedValue importPath = GetImportPath();
     importPath.DumpTaggedValue(thread, os);
@@ -2289,14 +2321,11 @@ void TSClassInstanceType::Dump(JSThread *thread, std::ostream &os) const
     os << typeKind;
     os << "\n";
 
-    JSTaggedValue createClassType = GetCreateClassType();
-    if (!createClassType.IsUndefined()) {
-        os << " - CreateClassType GT: ";
-        uint64_t createClassTypeGT = TSClassType::Cast(createClassType
-                                                       .GetTaggedObject())->GetGTRef().GetGlobalTSTypeRef();
-        os << createClassTypeGT;
-        os << "\n";
-    }
+    os << " -------------------------------------------- ";
+    os << " - createClassType GT: ";
+    GlobalTSTypeRef createClassTypeGT = GetClassRefGT();
+    os << createClassTypeGT.GetGlobalTSTypeRef();
+    os << "\n";
 }
 
 void TSUnionType::Dump(JSThread *thread, std::ostream &os) const
@@ -3494,12 +3523,11 @@ void TSInterfaceType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CS
 
 void TSClassInstanceType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("classTypeIndex"), GetCreateClassType()));
+    vec.push_back(std::make_pair(CString("classTypeIndex"), JSTaggedValue(GetClassRefGT().GetGlobalTSTypeRef())));
 }
 
 void TSImportType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("TargetType"), GetTargetType()));
     vec.push_back(std::make_pair(CString("ImportTypePath"), GetImportPath()));
 }
 
