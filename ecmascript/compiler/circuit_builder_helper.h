@@ -17,6 +17,7 @@
 #define ECMASCRIPT_COMPILER_CIRCUIT_BUILDER_HELPER_H
 
 #include "ecmascript/compiler/gate.h"
+#include "ecmascript/compiler/gate_accessor.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/variable_type.h"
@@ -139,7 +140,7 @@ public:
     using LabelImpl = Label::LabelImpl;
     LabelManager(GateRef hir, Circuit *circuit);
     LabelManager(GateRef stateEntry, GateRef dependEntry, std::vector<GateRef>& inlist, Circuit *circuit);
-    ~LabelManager() = default;
+    ~LabelManager();
     Label *GetCurrentLabel() const
     {
         return currentLabel_;
@@ -148,9 +149,9 @@ public:
     {
         currentLabel_ = label;
     }
-    CircuitBuilder &GetCircuitBuilder()
+    CircuitBuilder *GetCircuitBuilder()
     {
-        return builder_;
+        return &builder_;
     }
     Circuit *GetCircuit()
     {
@@ -167,6 +168,32 @@ public:
     inline void PushCurrentLabel(Label *entry);
     inline void PopCurrentLabel();
     inline GateRef GetInput(size_t index) const;
+    template<bool noThrow = false>
+    static inline void MergeMirCircuit(GateRef hir, GateRef outir, std::vector<GateRef> successControl, std::vector<GateRef> exceptionControl);
+    inline GateRef Return(GateRef value);
+    inline GateRef Return();
+    inline void Bind(Label *label);
+    inline void Bind(Label *label, bool justSlowPath);
+    inline GateRef CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target,
+                                 std::initializer_list<GateRef> args);
+    inline GateRef CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target, GateRef depend,
+                                 std::initializer_list<GateRef> args);
+    inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target,
+                               std::initializer_list<GateRef> args);
+    inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend,
+                               std::initializer_list<GateRef> args);
+    inline GateRef Load(VariableType type, GateRef base, GateRef offset);
+    inline GateRef Load(VariableType type, GateRef base);
+    inline GateRef LoadHClass(GateRef object);
+    void Jump(Label *label);
+    void Branch(GateRef condition, Label *trueLabel, Label *falseLabel);
+    void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
+    void Seal(Label *label)
+    {
+        label->Seal();
+    }
+    void LoopBegin(Label *loopHead);
+    void LoopEnd(Label *loopHead);
 private:
     Label *currentLabel_ {nullptr};
     Circuit *circuit_;
