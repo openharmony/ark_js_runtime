@@ -34,7 +34,7 @@ using EcmaVM = ecmascript::EcmaVM;
 class PUBLIC_API DFXJSNApi {
 public:
     static void DumpHeapSnapShot(EcmaVM *vm,  int dumpFormat, const std::string &path, bool isVmMode = true);
-    static std::string BuildNativeAndJsBackStackTrace(EcmaVM *vm);
+    static bool BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr);
     static bool StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode = true);
     static bool StopHeapTracking(EcmaVM *vm, int dumpFormat, const std::string &filePath);
     static void PrintStatisticResult(const EcmaVM *vm);

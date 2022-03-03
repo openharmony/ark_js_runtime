@@ -16,6 +16,11 @@
 #ifndef ECMASCRIPT_BASE_ERROR_HELPER_H
 #define ECMASCRIPT_BASE_ERROR_HELPER_H
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wextern-c-compat"
+#endif
+
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_handle.h"
@@ -32,8 +37,14 @@ public:
     static JSTaggedValue ErrorCommonConstructor(EcmaRuntimeCallInfo *argv, const ErrorType &errorType);
 
     static CString BuildNativeEcmaStackTrace(JSThread *thread);
+
+    static CString BuildNativeAndJsStackTrace(JSThread *thread);
+    
+    static CString BuildNativeStackTrace(JSThread *thread);
+
 private:
     static CString DecodeFunctionName(const CString &name);
+    
     static JSHandle<EcmaString> BuildEcmaStackTrace(JSThread *thread);
 
     static JSHandle<JSTaggedValue> GetErrorName(JSThread *thread, const JSHandle<JSTaggedValue> &name,
