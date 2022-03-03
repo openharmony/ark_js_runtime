@@ -350,9 +350,6 @@ static void DumpHClass(JSThread *thread, const JSHClass *jshclass, std::ostream 
     if (withDetail && !transtions.IsNull()) {
         transtions.Dump(thread, os);
     }
-    os << " - Parent :" << std::setw(DUMP_TYPE_OFFSET);
-    jshclass->GetParent().DumpTaggedValue(thread, os);
-    os << "\n";
 
     os << " - Flags : " << std::setw(DUMP_TYPE_OFFSET);
     os << "Ctor :" << jshclass->IsConstructor();
