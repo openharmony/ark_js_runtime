@@ -137,7 +137,7 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(ConstantIndex::TS_CLASS_TYPE_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, TSClassType::SIZE, JSType::TS_CLASS_TYPE));
     SetConstant(ConstantIndex::TS_UNION_TYPE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, TSClassType::SIZE, JSType::TS_UNION_TYPE));
+                factory->NewEcmaDynClass(dynClassClass, TSUnionType::SIZE, JSType::TS_UNION_TYPE));
     SetConstant(ConstantIndex::TS_INTERFACE_TYPE_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, TSInterfaceType::SIZE, JSType::TS_INTERFACE_TYPE));
     SetConstant(ConstantIndex::TS_CLASS_INSTANCE_TYPE_CLASS_INDEX,

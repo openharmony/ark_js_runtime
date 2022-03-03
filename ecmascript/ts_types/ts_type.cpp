@@ -97,21 +97,46 @@ bool TSUnionType::IsEqual(JSThread *thread, JSHandle<TSUnionType> unionB)
     return findUnionTag;
 }
 
-GlobalTSTypeRef TSClassType::SearchProperty(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
+GlobalTSTypeRef TSClassType::SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
                                             int localtypeId, JSHandle<EcmaString> propName)
 {
-    DISALLOW_GARBAGE_COLLECTION;
-    CString propertyName = ConvertToString(propName.GetTaggedValue());
-
-    TSClassType *classType = TSClassType::Cast(table->Get(localtypeId).GetTaggedObject());
-    TSObjectType *constructorType = TSObjectType::Cast(classType->GetConstructorType().GetTaggedObject());
-    TSObjLayoutInfo *propTypeInfo = TSObjLayoutInfo::Cast(constructorType->GetObjLayoutInfo().GetTaggedObject());
+    JSHandle<TSClassType> classType(thread, table->Get(localtypeId));
+    JSHandle<TSObjectType> constructorType(thread, classType->GetConstructorType());
 
     // search static propType in constructorType
-    for (uint32_t index = 0; index < propTypeInfo->NumberOfElements(); ++index) {
-        JSTaggedValue tsPropKey = propTypeInfo->GetKey(index);
-        if (ConvertToString(tsPropKey) == propertyName) {
-            int localId = propTypeInfo->GetTypeId(index).GetNumber();
+    return TSObjectType::SearchProperty(table, constructorType, propName);
+}
+
+GlobalTSTypeRef TSClassInstanceType::SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
+                                                    int localtypeId, JSHandle<EcmaString> propName)
+{
+    JSHandle<TSClassInstanceType> classInstanceType(thread, table->Get(localtypeId));
+    GlobalTSTypeRef createClassTypeRefGT = classInstanceType->GetClassRefGT();
+    int localId = createClassTypeRefGT.GetLocalId();
+    int localTableIndex = TSTypeTable::GetUserdefinedTypeId(localId);
+
+    JSHandle<TSClassType> createClassType(thread, table->Get(localTableIndex));
+    JSHandle<TSObjectType> instanceType(thread, createClassType->GetInstanceType());
+    JSHandle<TSObjectType> protoTypeType(thread, createClassType->GetPrototypeType());
+
+    // search non-static propType in instanceType
+    GlobalTSTypeRef propTypeGT = TSObjectType::SearchProperty(table, instanceType, propName);
+    if (propTypeGT.IsDefault()) {
+        // search non-static propType in prototypeType
+        propTypeGT = TSObjectType::SearchProperty(table, protoTypeType, propName);
+    }
+    return propTypeGT;
+}
+
+GlobalTSTypeRef TSObjectType::SearchProperty(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
+                                             JSHandle<EcmaString> propName)
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    TSObjLayoutInfo *objTypeInfo = TSObjLayoutInfo::Cast(objType->GetObjLayoutInfo().GetTaggedObject());
+    for (uint32_t index = 0; index < objTypeInfo->NumberOfElements(); ++index) {
+        EcmaString* propKey = EcmaString::Cast(objTypeInfo->GetKey(index).GetTaggedObject());
+        if (EcmaString::StringsAreEqual(propKey, *propName)) {
+            int localId = objTypeInfo->GetTypeId(index).GetInt();
             if (localId < GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT) {
                 return GlobalTSTypeRef(localId);
             }
@@ -119,54 +144,8 @@ GlobalTSTypeRef TSClassType::SearchProperty(JSThread *thread, JSHandle<TSTypeTab
             TSType *propertyType = TSType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
             if (JSTaggedValue(propertyType).IsTSImportType()) {
                 TSImportType *importType = TSImportType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
-                return importType->GetGTRef();
+                return importType->GetTargetRefGT();
             }
-            return propertyType->GetGTRef();
-        }
-    }
-    return GlobalTSTypeRef::Default();
-}
-
-GlobalTSTypeRef TSClassInstanceType::SearchProperty(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
-                                                    int localtypeId, JSHandle<EcmaString> propName)
-{
-    DISALLOW_GARBAGE_COLLECTION;
-    CString propertyName = ConvertToString(propName.GetTaggedValue());
-
-    TSClassInstanceType *classInstanceType = TSClassInstanceType::Cast(table->Get(localtypeId).GetTaggedObject());
-    int localId = 0;
-    TSClassType *createClassType = TSClassType::Cast(classInstanceType->GetCreateClassType().GetTaggedObject());
-    TSObjectType *instanceType = TSObjectType::Cast(createClassType->GetInstanceType().GetTaggedObject());
-    TSObjectType *prototype = TSObjectType::Cast(createClassType->GetPrototypeType().GetTaggedObject());
-    TSObjLayoutInfo *instanceTypeInfo = TSObjLayoutInfo::Cast(instanceType->GetObjLayoutInfo().GetTaggedObject());
-    TSObjLayoutInfo *prototypeTypeInfo = TSObjLayoutInfo::Cast(prototype->GetObjLayoutInfo().GetTaggedObject());
-
-    // search non-static propType in instanceType
-    for (uint32_t index = 0; index < instanceTypeInfo->NumberOfElements(); ++index) {
-        JSTaggedValue instancePropKey = instanceTypeInfo->GetKey(index);
-        if (ConvertToString(instancePropKey) == propertyName) {
-            localId = instanceTypeInfo->GetTypeId(index).GetNumber();
-            if (localId < GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT) {
-                return GlobalTSTypeRef(localId);
-            }
-            int localIdNonOffset = TSTypeTable::GetUserdefinedTypeId(localId);
-            TSType *propertyType = TSType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
-            if (propertyType->GetGTRef().GetUserDefineTypeKind() ==
-                static_cast<int>(TSTypeKind::TS_IMPORT)) {
-                TSImportType *importType = TSImportType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
-                return importType->GetGTRef();
-            }
-            return propertyType->GetGTRef();
-        }
-    }
-    // search functionType in prototype
-    for (uint32_t index = 0; index < prototypeTypeInfo->NumberOfElements(); ++index) {
-        JSTaggedValue prototypePropKey = prototypeTypeInfo->GetKey(index);
-        if (ConvertToString(prototypePropKey) == propertyName) {
-            localId = prototypeTypeInfo->GetTypeId(index).GetNumber();
-            ASSERT(localId > GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
-            int localIdNonOffset = TSTypeTable::GetUserdefinedTypeId(localId);
-            TSType *propertyType = TSType::Cast(table->Get(localIdNonOffset).GetTaggedObject());
             return propertyType->GetGTRef();
         }
     }
