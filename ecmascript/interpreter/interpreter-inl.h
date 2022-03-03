@@ -18,7 +18,7 @@
 
 #include "ecmascript/class_linker/program_object-inl.h"
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/ecma_string.h"
