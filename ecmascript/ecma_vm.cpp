@@ -566,6 +566,20 @@ void EcmaVM::PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo)
     LOG(ERROR, RUNTIME) << nameBuffer << ": " << msgBuffer << "\n" << stackBuffer;
 }
 
+void EcmaVM::ProcessNativeDelete(const WeakRootVisitor &v0)
+{
+    auto iter = arrayBufferDataList_.begin();
+    while (iter != arrayBufferDataList_.end()) {
+        JSNativePointer *object = *iter;
+        auto fwd = v0(reinterpret_cast<TaggedObject *>(object));
+        if (fwd == nullptr) {
+            object->Destroy();
+            iter = arrayBufferDataList_.erase(iter);
+        } else {
+            ++iter;
+        }
+    }
+}
 void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
 {
     if (regExpParserCache_ != nullptr) {
@@ -579,12 +593,12 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
         if (fwd == nullptr) {
             object->Destroy();
             iter = arrayBufferDataList_.erase(iter);
-        } else if (fwd != reinterpret_cast<TaggedObject *>(object)) {
-            *iter = JSNativePointer::Cast(fwd);
-            ++iter;
-        } else {
-            ++iter;
+            continue;
         }
+        if (fwd != reinterpret_cast<TaggedObject *>(object)) {
+            *iter = JSNativePointer::Cast(fwd);
+        }
+        ++iter;
     }
 
     // framework program

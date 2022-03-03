@@ -136,7 +136,6 @@ void JSHClass::Initialize(const JSThread *thread, uint32_t size, JSType type, ui
     SetIsPrototype(false);
     SetElementRepresentation(Representation::NONE);
     SetTransitions(thread, JSTaggedValue::Null());
-    SetParent(thread, JSTaggedValue::Null());
     SetProtoChangeMarker(thread, JSTaggedValue::Null());
     SetProtoChangeDetails(thread, JSTaggedValue::Null());
     SetEnumCache(thread, JSTaggedValue::Null());
@@ -151,7 +150,6 @@ JSHandle<JSHClass> JSHClass::Clone(const JSThread *thread, const JSHandle<JSHCla
     JSHandle<JSHClass> newJshclass = thread->GetEcmaVM()->GetFactory()->NewEcmaDynClass(size, type, numInlinedProps);
     // Copy all
     newJshclass->Copy(thread, *jshclass);
-    newJshclass->SetParent(thread, JSTaggedValue::Null());
     newJshclass->SetTransitions(thread, JSTaggedValue::Null());
     newJshclass->SetProtoChangeDetails(thread, JSTaggedValue::Null());
     newJshclass->SetEnumCache(thread, JSTaggedValue::Null());
