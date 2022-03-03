@@ -35,7 +35,6 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
     JSTaggedValue transitions = parent->GetTransitions();
     if (transitions.IsNull()) {
         parent->SetTransitions(thread, child.GetTaggedValue());
-        child->SetParent(thread, parent.GetTaggedValue());
         return;
     }
     JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
@@ -54,7 +53,6 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
     transitions =
         TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), attr).GetTaggedValue();
     parent->SetTransitions(thread, transitions);
-    child->SetParent(thread, parent.GetTaggedValue());
 }
 
 void JSHClass::AddExtensionTransitions(const JSThread *thread, const JSHandle<JSHClass> &parent,
@@ -87,7 +85,6 @@ void JSHClass::AddProtoTransitions(const JSThread *thread, const JSHandle<JSHCla
     transitions =
         TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), proto).GetTaggedValue();
     parent->SetTransitions(thread, transitions);
-    child->SetParent(thread, parent.GetTaggedValue());
 }
 
 inline JSHClass *JSHClass::FindTransitions(const JSTaggedValue &key, const JSTaggedValue &attributes)
