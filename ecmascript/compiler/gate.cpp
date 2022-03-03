@@ -286,28 +286,39 @@ std::string OpCode::Str() const
     }
     return "OP-" + std::to_string(op_);
 }
-// 4 : 4 means that there are 4 args in total
-std::array<size_t, 4> OpCode::GetOpCodeNumInsArray(BitField bitfield) const
+
+size_t OpCode::GetStateCount(BitField bitfield) const
+{
+    auto properties = GetProperties();
+    auto stateProp = properties.statesIn;
+    return stateProp.has_value() ? (stateProp->second ? bitfield : stateProp->first.size()) : 0;
+}
+
+size_t OpCode::GetDependCount(BitField bitfield) const
 {
     const size_t manyDepend = 2;
     auto properties = GetProperties();
-    auto stateProp = properties.statesIn;
     auto dependProp = properties.dependsIn;
+    return (dependProp == manyDepend) ? bitfield : dependProp;
+}
+
+size_t OpCode::GetInValueCount(BitField bitfield) const
+{
+    auto properties = GetProperties();
     auto valueProp = properties.valuesIn;
-    auto rootProp = properties.states;
-    size_t stateSize = stateProp.has_value() ? (stateProp->second ? bitfield : stateProp->first.size()) : 0;
-    size_t dependSize = (dependProp == manyDepend) ? bitfield : dependProp;
-    size_t valueSize = valueProp.has_value() ? (valueProp->second ? bitfield : valueProp->first.size()) : 0;
-    size_t rootSize = rootProp.has_value() ? 1 : 0;
-    return {stateSize, dependSize, valueSize, rootSize};
+    return valueProp.has_value() ? (valueProp->second ? bitfield : valueProp->first.size()) : 0;
+}
+
+size_t OpCode::GetRootCount(BitField bitfield) const
+{
+    auto properties = GetProperties();
+    auto rootProp = properties.root;
+    return rootProp.has_value() ? 1 : 0;
 }
 
 size_t OpCode::GetOpCodeNumIns(BitField bitfield) const
 {
-    auto numInsArray = GetOpCodeNumInsArray(bitfield);
-    // 2 : 2 means the third element.
-    // 3 : 3 means the fourth element.
-    return numInsArray[0] + numInsArray[1] + numInsArray[2] + numInsArray[3];
+    return GetStateCount(bitfield) + GetDependCount(bitfield) + GetInValueCount(bitfield) + GetRootCount(bitfield);
 }
 
 MachineType OpCode::GetMachineType() const
@@ -317,10 +328,9 @@ MachineType OpCode::GetMachineType() const
 
 MachineType OpCode::GetInMachineType(BitField bitfield, size_t idx) const
 {
-    auto numInsArray = GetOpCodeNumInsArray(bitfield);
     auto valueProp = GetProperties().valuesIn;
-    idx -= numInsArray[0];
-    idx -= numInsArray[1];
+    idx -= GetStateCount(bitfield);
+    idx -= GetDependCount(bitfield);
     ASSERT(valueProp.has_value());
     if (valueProp->second) {
         return valueProp->first.at(std::min(idx, valueProp->first.size() - 1));
@@ -377,9 +387,8 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckNullInput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckStateInput() const
 {
-    const auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
     size_t stateStart = 0;
-    size_t stateEnd = numInsArray[0];
+    size_t stateEnd = GetStateCount();
     for (size_t idx = stateStart; idx < stateEnd; idx++) {
         auto stateProp = GetOpCode().GetProperties().statesIn;
         ASSERT(stateProp.has_value());
@@ -403,9 +412,8 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckStateInput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckValueInput() const
 {
-    const auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
-    size_t valueStart = numInsArray[0] + numInsArray[1];
-    size_t valueEnd = numInsArray[0] + numInsArray[1] + numInsArray[2]; // 2 : 2 means the third element.
+    size_t valueStart = GetStateCount() + GetDependCount();
+    size_t valueEnd = valueStart + GetInValueCount();
     for (size_t idx = valueStart; idx < valueEnd; idx++) {
         auto expectedIn = GetOpCode().GetInMachineType(GetBitField(), idx);
         auto actualIn = GetInGateConst(idx)->GetOpCode().GetMachineType();
@@ -427,11 +435,10 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckValueInput() const
 
 std::optional<std::pair<std::string, size_t>> Gate::CheckDependInput() const
 {
-    const auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
-    size_t dependStart = numInsArray[0];
-    size_t dependEnd = dependStart + numInsArray[1];
+    size_t dependStart = GetStateCount();
+    size_t dependEnd = dependStart + GetDependCount();
     for (size_t idx = dependStart; idx < dependEnd; idx++) {
-        if (GetInGateConst(idx)->GetNumInsArray()[1] == 0 &&
+        if (GetInGateConst(idx)->GetDependCount() == 0 &&
             GetInGateConst(idx)->GetOpCode() != OpCode::DEPEND_ENTRY) {
             return std::make_pair("Depend input is side-effect free", idx);
         }
@@ -446,12 +453,12 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckStateOutput() const
         const Gate *curGate = this;
         if (!curGate->IsFirstOutNull()) {
             const Out *curOut = curGate->GetFirstOutConst();
-            if (curOut->GetGateConst()->GetOpCode().IsState()) {
+            if (curOut->IsStateEdge() && curOut->GetGateConst()->GetOpCode().IsState()) {
                 cnt++;
             }
             while (!curOut->IsNextOutNull()) {
                 curOut = curOut->GetNextOutConst();
-                if (curOut->GetGateConst()->GetOpCode().IsState()) {
+                if (curOut->IsStateEdge() && curOut->GetGateConst()->GetOpCode().IsState()) {
                     cnt++;
                 }
             }
@@ -460,7 +467,7 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckStateOutput() const
         bool needCheck = true;
         if (GetOpCode().IsTerminalState()) {
             expected = 0;
-        } else if (GetOpCode() == OpCode::IF_BRANCH) {
+        } else if (GetOpCode() == OpCode::IF_BRANCH || GetOpCode() == OpCode::JS_BYTECODE) {
             expected = 2; // 2: expected number of state out branches
         } else if (GetOpCode() == OpCode::SWITCH_BRANCH) {
             needCheck = false;
@@ -484,13 +491,15 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckBranchOutput() const
         const Gate *curGate = this;
         if (!curGate->IsFirstOutNull()) {
             const Out *curOut = curGate->GetFirstOutConst();
-            if (curOut->GetGateConst()->GetOpCode().IsState()) {
+            if (curOut->GetGateConst()->GetOpCode().IsState() && curOut->IsStateEdge()) {
+                ASSERT(!curOut->GetGateConst()->GetOpCode().IsFixed());
                 setOfOps[{curOut->GetGateConst()->GetOpCode(), curOut->GetGateConst()->GetBitField()}]++;
                 cnt++;
             }
             while (!curOut->IsNextOutNull()) {
                 curOut = curOut->GetNextOutConst();
-                if (curOut->GetGateConst()->GetOpCode().IsState()) {
+                if (curOut->GetGateConst()->GetOpCode().IsState() && curOut->IsStateEdge()) {
+                    ASSERT(!curOut->GetGateConst()->GetOpCode().IsFixed());
                     setOfOps[{curOut->GetGateConst()->GetOpCode(), curOut->GetGateConst()->GetBitField()}]++;
                     cnt++;
                 }
@@ -544,9 +553,10 @@ std::optional<std::pair<std::string, size_t>> Gate::CheckRelay() const
     if (GetOpCode() == OpCode::DEPEND_RELAY) {
         auto stateOp = GetInGateConst(0)->GetOpCode();
         if (!(stateOp == OpCode::IF_TRUE || stateOp == OpCode::IF_FALSE || stateOp == OpCode::SWITCH_CASE ||
-            stateOp == OpCode::DEFAULT_CASE || stateOp == OpCode::IF_SUCCESS || stateOp == OpCode::IF_EXCEPTION)) {
+            stateOp == OpCode::DEFAULT_CASE || stateOp == OpCode::IF_SUCCESS || stateOp == OpCode::IF_EXCEPTION ||
+            stateOp == OpCode::ORDINARY_BLOCK)) {
             return std::make_pair("State input does not match ("
-                "expected:[IF_TRUE|IF_FALSE|SWITCH_CASE|DEFAULT_CASE|IF_SUCCESS|IF_EXCEPTION] actual:" +
+                "expected:[IF_TRUE|IF_FALSE|SWITCH_CASE|DEFAULT_CASE|IF_SUCCESS|IF_EXCEPTION|ORDINARY_BLOCK] actual:" +
                 stateOp.Str() + ")", 0);
         }
     }
@@ -726,6 +736,11 @@ void Out::SetNextOutNull()
 bool Out::IsNextOutNull() const
 {
     return nextOut_ == 0;
+}
+
+bool Out::IsStateEdge() const
+{
+    return idx_ < GetGateConst()->GetStateCount();
 }
 
 void In::SetGate(const Gate *ptr)
@@ -985,9 +1000,24 @@ size_t Gate::GetNumIns() const
     return GetOpCodeNumIns(GetOpCode(), GetBitField());
 }
 
-std::array<size_t, 4> Gate::GetNumInsArray() const // 4 : 4 means that there are 4 args.
+size_t Gate::GetStateCount() const
 {
-    return GetOpCode().GetOpCodeNumInsArray(GetBitField());
+    return GetOpCode().GetStateCount(GetBitField());
+}
+
+size_t Gate::GetDependCount() const
+{
+    return GetOpCode().GetDependCount(GetBitField());
+}
+
+size_t Gate::GetInValueCount() const
+{
+    return GetOpCode().GetInValueCount(GetBitField());
+}
+
+size_t Gate::GetRootCount() const
+{
+    return GetOpCode().GetRootCount(GetBitField());
 }
 
 BitField Gate::GetBitField() const
@@ -1053,12 +1083,11 @@ void Gate::Print(std::string bytecode, bool inListPreview, size_t highlightIdx) 
                   << "mark=" << static_cast<uint32_t>(mark_) << ", ";
         std::cerr << "in="
                   << "[";
-        auto numInsArray = GetOpCode().GetOpCodeNumInsArray(GetBitField());
         size_t idx = 0;
-        auto stateSize = numInsArray[0];
-        auto dependSize = numInsArray[1];
-        auto valueSize = numInsArray[2]; // 2 : 2 means the third element.
-        auto rootSize = numInsArray[3]; // 3 : 3 means the four element.
+        auto stateSize = GetStateCount();
+        auto dependSize = GetDependCount();
+        auto valueSize = GetInValueCount();
+        auto rootSize = GetRootCount();
         idx = PrintInGate(stateSize, idx, 0, inListPreview, highlightIdx);
         idx = PrintInGate(stateSize + dependSize, idx, stateSize, inListPreview, highlightIdx);
         idx = PrintInGate(stateSize + dependSize + valueSize, idx, stateSize + dependSize, inListPreview, highlightIdx);
@@ -1123,38 +1152,33 @@ void Gate::SetMark(MarkCode mark, TimeStamp stamp)
 
 bool OpCode::IsRoot() const
 {
-    return (GetProperties().states == OpCode::CIRCUIT_ROOT) || (op_ == OpCode::CIRCUIT_ROOT);
+    return (GetProperties().root == OpCode::CIRCUIT_ROOT) || (op_ == OpCode::CIRCUIT_ROOT);
 }
 
 bool OpCode::IsProlog() const
 {
-    return (GetProperties().states == OpCode::ARG_LIST);
+    return (GetProperties().root == OpCode::ARG_LIST);
 }
 
 bool OpCode::IsFixed() const
 {
-    return (GetOpCodeNumInsArray(1)[0] > 0) &&
-        ((GetMachineType() != NOVALUE) ||
-            ((GetOpCodeNumInsArray(1)[1] > 0) && (GetOpCodeNumInsArray(1)[2] == 0) &&
-             (GetOpCodeNumInsArray(1)[3] == 0)));
+    return (op_ == OpCode::VALUE_SELECTOR) || (op_ == OpCode::DEPEND_SELECTOR) || (op_ == OpCode::DEPEND_RELAY);
 }
 
 bool OpCode::IsSchedulable() const
 {
-    return (op_ != OpCode::NOP) && (!IsProlog()) && (!IsRoot()) && (!IsFixed()) &&
-        (GetOpCodeNumInsArray(1)[0] == 0);
+    return (op_ != OpCode::NOP) && (!IsProlog()) && (!IsRoot()) && (!IsFixed()) && (GetStateCount(1) == 0);
 }
 
 bool OpCode::IsState() const
 {
-    return (op_ != OpCode::NOP) && (!IsProlog()) && (!IsRoot()) && (!IsFixed()) &&
-        (GetOpCodeNumInsArray(1)[0] > 0);
+    return (op_ != OpCode::NOP) && (!IsProlog()) && (!IsRoot()) && (!IsFixed()) && (GetStateCount(1) > 0);
 }
 
 bool OpCode::IsGeneralState() const
 {
-    return ((op_ == OpCode::IF_TRUE) || (op_ == OpCode::IF_FALSE) || (op_ == OpCode::IF_SUCCESS) ||
-            (op_ == OpCode::IF_EXCEPTION) || (op_ == OpCode::SWITCH_CASE) ||
+    return ((op_ == OpCode::IF_TRUE) || (op_ == OpCode::IF_FALSE) || (op_ == OpCode::JS_BYTECODE) ||
+            (op_ == OpCode::IF_SUCCESS) || (op_ == OpCode::IF_EXCEPTION) || (op_ == OpCode::SWITCH_CASE) ||
             (op_ == OpCode::DEFAULT_CASE) || (op_ == OpCode::MERGE) || (op_ == OpCode::LOOP_BEGIN) ||
             (op_ == OpCode::ORDINARY_BLOCK) || (op_ == OpCode::STATE_ENTRY));
 }
