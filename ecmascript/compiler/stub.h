@@ -20,6 +20,7 @@
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/circuit_builder.h"
+#include "ecmascript/compiler/circuit_builder-inl.h"
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/compiler/stub_descriptor.h"

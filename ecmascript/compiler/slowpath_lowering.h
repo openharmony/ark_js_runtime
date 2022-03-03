@@ -19,6 +19,7 @@
 #include "circuit.h"
 #include "bytecode_circuit_builder.h"
 #include "circuit_builder.h"
+#include "circuit_builder-inl.h"
 #include "gate_accessor.h"
 
 namespace panda::ecmascript::kungfu {

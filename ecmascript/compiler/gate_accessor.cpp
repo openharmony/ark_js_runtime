@@ -99,11 +99,11 @@ void GateAccessor::SetGateType(GateRef gate, GateType gt)
     circuit_->LoadGatePtr(gate)->SetGateType(gt);
 }
 
-void GateAccessor::DeleteIn(UseIterator &it)
+void GateAccessor::DeleteIn(UsesIterator &useIt)
 {
-    GateRef curGate = it.GetUse();
-    size_t idx = it.GetIdx();
-    Gate *curGatePtr = circuit_->LoadGatePtr(curGate);
+    size_t idx = useIt.GetIndex();
+    Gate *curGatePtr = circuit_->LoadGatePtr(*useIt);
     curGatePtr->DeleteIn(idx);
+    useIt.SetChanged();
 }
 }
