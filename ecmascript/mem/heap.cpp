@@ -76,7 +76,6 @@ void Heap::Initialize()
     paralledGc_ = false;
 #endif
 #if defined(IS_STANDARD_SYSTEM)
-    paralledGc_ = false;
     concurrentMarkingEnabled_ = false;
 #endif
     workList_ = new WorkerHelper(this, Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1);
