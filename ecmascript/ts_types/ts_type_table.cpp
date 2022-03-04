@@ -251,9 +251,9 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<TSClassType> classType = factory->NewTSClassType();
     uint32_t index = 0;
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index++).GetInt()) == TypeLiteralFlag::CLASS);
+    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::CLASS);
 
-    index++;  // ignore class modifier
+    index = index + 2;  // 2: ignore accessFlag and readonly
     uint32_t extendsTypeId = literal->Get(index++).GetInt();
 
     // ignore implement
@@ -398,7 +398,8 @@ JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, JSHandle<TST
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     uint32_t index = 0;
-    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index++).GetInt()) == TypeLiteralFlag::UNION);
+    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::UNION);
+    index++;
     uint32_t unionTypeLength = literal->Get(index++).GetInt();
 
     JSHandle<TSUnionType> unionType = factory->NewTSUnionType(unionTypeLength);
