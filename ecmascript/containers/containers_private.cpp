@@ -58,6 +58,16 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
             break;
         }
         case ContainerTag::Queue:
+        case ContainerTag::Deque:
+        case ContainerTag::Stack:
+        case ContainerTag::Vector:
+        case ContainerTag::List:
+        case ContainerTag::LinkedList:
+        case ContainerTag::HashMap:
+        case ContainerTag::HashSet:
+        case ContainerTag::LightWeightMap:
+        case ContainerTag::LightWeightSet:
+        case ContainerTag::PlainArray:
         case ContainerTag::END:
             break;
         default:

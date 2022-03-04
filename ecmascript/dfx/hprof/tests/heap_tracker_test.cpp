@@ -16,10 +16,10 @@
 #include <cstdio>
 #include <fstream>
 
+#include "ecmascript/dfx/hprof/heap_profiler_interface.h"
+#include "ecmascript/dfx/hprof/heap_snapshot_json_serializer.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/hprof/heap_profiler_interface.h"
-#include "ecmascript/hprof/heap_snapshot_json_serializer.h"
 
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"

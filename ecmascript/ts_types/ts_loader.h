@@ -63,6 +63,16 @@ public:
     {
         ref_ = 0;
     }
+
+    bool IsBuiltinTypes() const
+    {
+        return ref_ < TS_TYPE_RESERVED_COUNT;
+    }
+
+    bool IsDefault() const
+    {
+        return ref_ == 0;
+    }
 private:
     uint64_t ref_;
 };
@@ -152,34 +162,11 @@ public:
 
     void AddTypeTable(JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath);
 
-    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, int localId) const;
-
     void Link();
 
     void Dump();
 
-    inline static TSTypeKind PUBLIC_API GetTypeKind(GlobalTSTypeRef gt)
-    {
-        return static_cast<TSTypeKind>(gt.GetUserDefineTypeKind());
-    }
-
-    GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
-
-    int PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
-
-    bool IsPrimtiveBuiltinTypes(int localId) const;
-
-    int GetUTableIndex(GlobalTSTypeRef gt, uint32_t index) const;
-
-    GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
-
-    GlobalTSTypeRef PUBLIC_API GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeRef, int size);
-
     void Iterate(const RootVisitor &v);
-
-    GlobalTSTypeRef PUBLIC_API GetPrmitiveGT(TSTypeKind kind) const;
-
-    GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
 
     JSHandle<TSModuleTable> GetTSModuleTable() const
     {
@@ -196,6 +183,25 @@ public:
         JSHandle<TSModuleTable> table = GetTSModuleTable();
         return table->GetNumberOfTSTypeTable();
     }
+
+    inline static TSTypeKind PUBLIC_API GetTypeKind(GlobalTSTypeRef gt)
+    {
+        return static_cast<TSTypeKind>(gt.GetUserDefineTypeKind());
+    }
+
+    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, uint32_t vergId, JSMethod* method) const;
+
+    GlobalTSTypeRef PUBLIC_API GetPrmitiveGT(TSTypeKind kind) const;
+
+    GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
+
+    GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
+
+    int PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
+
+    GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
+
+    GlobalTSTypeRef PUBLIC_API GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeRef, int size);
 
     JSHandle<EcmaString> GenerateAmiPath(JSHandle<EcmaString> cur, JSHandle<EcmaString> rel) const;
 

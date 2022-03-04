@@ -964,17 +964,9 @@ void AccessorData::Dump(JSThread *thread, std::ostream &os) const
 
 void Program::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - Location: ";
-    GetLocation().D();
-    os << "\n";
-    os << " - ConstantPool: ";
-    GetConstantPool().D();
-    os << "\n";
     os << " - MainFunction: ";
     GetMainFunction().D();
     os << "\n";
-    os << " - MethodsData: " << GetMethodsData() << "\n";
-    os << " - NumberMethods: " << GetNumberMethods() << "\n";
 }
 
 void ConstantPool::Dump(JSThread *thread, std::ostream &os) const
@@ -1090,8 +1082,8 @@ void JSAPITreeMapIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - elements: " << std::dec << map->NumberOfElements() << "\n";
     os << " - deleted-elements: " << std::dec << map->NumberOfDeletedElements() << "\n";
     os << " - capacity: " << std::dec << map->Capacity() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
-    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(thread, os);
 
     os << " <TaggedTree[" << map->NumberOfElements() << "]>\n";
@@ -1104,8 +1096,8 @@ void JSAPITreeMapIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     TaggedTreeMap *map =
         TaggedTreeMap::Cast(JSAPITreeMap::Cast(GetIteratedMap().GetTaggedObject())->GetTreeMap().GetTaggedObject());
     map->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
-    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -1207,8 +1199,8 @@ void JSAPITreeSetIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - elements: " << std::dec << set->NumberOfElements() << "\n";
     os << " - deleted-elements: " << std::dec << set->NumberOfDeletedElements() << "\n";
     os << " - capacity: " << std::dec << set->Capacity() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
-    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(thread, os);
 
     os << " <TaggedTree[" << set->NumberOfElements() << "]>\n";
@@ -1221,8 +1213,8 @@ void JSAPITreeSetIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     TaggedTreeSet *set =
         TaggedTreeSet::Cast(JSAPITreeSet::Cast(GetIteratedSet().GetTaggedObject())->GetTreeSet().GetTaggedObject());
     set->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
-    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -1356,7 +1348,7 @@ void JSAPIArrayListIterator::Dump(JSThread *thread, std::ostream &os) const
 {
     JSAPIArrayList *arrayList = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
     os << " - length: " << std::dec << arrayList->GetLength().GetArrayLength() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     JSObject::Dump(thread, os);
 }
 
@@ -2249,27 +2241,59 @@ void TSImportType::Dump(JSThread *thread, std::ostream &os) const
     uint32_t typeKind = gt.GetUserDefineTypeKind();
     os << typeKind;
     os << "\n";
+    os << " -------------------------------------------- ";
     os << " - Target Type: ";
-    if (GetTargetType().IsTSInterfaceType()) {
-        TSInterfaceType *targetType = TSInterfaceType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else if (GetTargetType().IsTSClassType()) {
-        TSClassType *targetType = TSClassType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else if (GetTargetType().IsTSClassInstanceType()) {
-        TSClassInstanceType *targetType = TSClassInstanceType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else if (GetTargetType().IsTSUnionType()) {
-        TSUnionType *targetType = TSUnionType::Cast(GetTargetType().GetTaggedObject());
-        targetType->Dump(thread, os);
-        os << "\n";
-    } else {
-        os << " - no link Target Type: ";
-        os << "\n";
+    GlobalTSTypeRef targetGT = GetTargetRefGT();
+    uint64_t targetGTValue = targetGT.GetGlobalTSTypeRef();
+    os << " - TargetTypeGT: ";
+    os << targetGTValue;
+    os << "\n";
+    os << " - Target Type moduleId: ";
+    uint32_t targetModuleId = targetGT.GetModuleId();
+    os << targetModuleId;
+    os << "\n";
+    os << " - Target Type localTypeId: ";
+    uint32_t targetLocalTypeId = targetGT.GetLocalId();
+    os << targetLocalTypeId;
+    os << "\n";
+    os << " - Target Type typeKind: ";
+    uint32_t targetTypeKind = targetGT.GetUserDefineTypeKind();
+    os << targetTypeKind;
+    os << "\n";
+    TSTypeKind flag = static_cast<TSTypeKind>(targetTypeKind);
+    switch (flag) {
+        case TSTypeKind::TS_CLASS: {
+            os << " - Target Type typeKind is classType ";
+            break;
+        }
+        case TSTypeKind::TS_CLASS_INSTANCE: {
+            os << " - Target Type typeKind is classInstanceType ";
+            break;
+        }
+        case TSTypeKind::TS_INTERFACE: {
+            os << " - Target Type typeKind is interfaceType";
+            break;
+        }
+        case TSTypeKind::TS_IMPORT: {
+            os << " - Target Type typeKind is importType";
+            break;
+        }
+        case TSTypeKind::TS_UNION: {
+            os << " - Target Type typeKind is UnionType";
+            break;
+        }
+        case TSTypeKind::TS_FUNCTION: {
+            os << " - Target Type typeKind is funtionType";
+            break;
+        }
+        case TSTypeKind::TS_OBJECT: {
+            os << " - Target Type typeKind is objectType";
+            break;
+        }
+        default:
+            os << " - unknown type";
     }
+    os << " -------------------------------------------- ";
     os << " - Taget Type Path: ";
     JSTaggedValue importPath = GetImportPath();
     importPath.DumpTaggedValue(thread, os);
@@ -2297,14 +2321,11 @@ void TSClassInstanceType::Dump(JSThread *thread, std::ostream &os) const
     os << typeKind;
     os << "\n";
 
-    JSTaggedValue createClassType = GetCreateClassType();
-    if (!createClassType.IsUndefined()) {
-        os << " - CreateClassType GT: ";
-        uint64_t createClassTypeGT = TSClassType::Cast(createClassType
-                                                       .GetTaggedObject())->GetGTRef().GetGlobalTSTypeRef();
-        os << createClassTypeGT;
-        os << "\n";
-    }
+    os << " -------------------------------------------- ";
+    os << " - createClassType GT: ";
+    GlobalTSTypeRef createClassTypeGT = GetClassRefGT();
+    os << createClassTypeGT.GetGlobalTSTypeRef();
+    os << "\n";
 }
 
 void TSUnionType::Dump(JSThread *thread, std::ostream &os) const
@@ -2848,11 +2869,7 @@ void JSFunction::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 void Program::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                               std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("Location"), GetLocation()));
-    vec.push_back(std::make_pair(CString("ConstantPool"), GetConstantPool()));
     vec.push_back(std::make_pair(CString("MainFunction"), GetMainFunction()));
-    // MethodsData is another native field, and we don't dump it for JS heap.
-    vec.push_back(std::make_pair(CString("NumberMethods"), JSTaggedValue(GetNumberMethods())));
 }
 
 void ConstantPool::DumpForSnapshot([[maybe_unused]] JSThread *thread,
@@ -2969,7 +2986,7 @@ void JSAPIArrayListIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 {
     JSAPIArrayList *arraylist = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
     arraylist->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -3506,12 +3523,11 @@ void TSInterfaceType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CS
 
 void TSClassInstanceType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("classTypeIndex"), GetCreateClassType()));
+    vec.push_back(std::make_pair(CString("classTypeIndex"), JSTaggedValue(GetClassRefGT().GetGlobalTSTypeRef())));
 }
 
 void TSImportType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
-    vec.push_back(std::make_pair(CString("TargetType"), GetTargetType()));
     vec.push_back(std::make_pair(CString("ImportTypePath"), GetImportPath()));
 }
 

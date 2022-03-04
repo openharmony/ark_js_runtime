@@ -16,6 +16,7 @@
 #include "ecmascript/interpreter/interpreter_assembly.h"
 
 #include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/dfx/vmstat/runtime_stat.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
@@ -29,7 +30,6 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"
@@ -3476,6 +3476,24 @@ void InterpreterAssembly::HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8(
 }
 
 void InterpreterAssembly::HandleLdFunctionPref(
+    JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
+    JSTaggedValue acc, int32_t hotnessCounter)
+{
+    uint16_t numVars = READ_INST_16_1();
+    uint16_t scopeId = READ_INST_16_3();
+    LOG_INST() << "intrinsics::newlexenvwithnamedyn"
+               << " numVars " << numVars << " scopeId " << scopeId;
+
+    SAVE_PC();
+    JSTaggedValue res = SlowRuntimeStub::NewLexicalEnvWithNameDyn(thread, numVars, scopeId);
+    INTERPRETER_RETURN_IF_ABRUPT(res);
+
+    SET_ACC(res);
+    GET_FRAME(sp)->env = res;
+    DISPATCH(BytecodeInstruction::Format::PREF_IMM16_IMM16);
+}
+
+void InterpreterAssembly::HandleNewLexEnvWithNameDynPrefImm16Imm16(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {

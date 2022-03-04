@@ -23,7 +23,9 @@
 #include "ecmascript/base/json_stringifier.h"
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/base/typed_array_helper-inl.h"
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
+#endif
 #include "ecmascript/ecma_global_storage-inl.h"
 #include "ecmascript/ecma_language_context.h"
 #include "ecmascript/ecma_module.h"
@@ -52,7 +54,11 @@
 #include "ecmascript/tagged_array.h"
 #include "generated/base_options.h"
 #include "include/runtime_notification.h"
+
+#ifndef PANDA_TARGET_WINDOWS
 #include "libpandabase/os/library_loader.h"
+#endif
+
 #include "utils/pandargs.h"
 
 #include "os/mutex.h"
@@ -102,7 +108,6 @@ using ecmascript::base::TypedArrayHelper;
 using ecmascript::job::MicroJobQueue;
 using ecmascript::job::QueueType;
 using ecmascript::JSRuntimeOptions;
-using ecmascript::CpuProfiler;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -226,6 +231,7 @@ void JSNApi::ThrowException(const EcmaVM *vm, Local<JSValueRef> error)
     thread->SetException(JSNApiHelper::ToJSTaggedValue(*error));
 }
 
+#if defined(ECMASCRIPT_SUPPORT_DEBUGGER)
 bool JSNApi::StartDebugger(const char *library_path, EcmaVM *vm, bool isDebugMode)
 {
     auto handle = panda::os::library_loader::Load(std::string(library_path));
@@ -270,24 +276,26 @@ bool JSNApi::StopDebugger(const char *library_path)
     runtime->SetDebugMode(false);
     return true;
 }
+#endif
 
 bool JSNApi::Execute(EcmaVM *vm, const std::string &fileName, const std::string &entry)
 {
     std::vector<std::string> argv;
     LOG_ECMA(DEBUG) << "start to execute ark file" << fileName;
     if (!vm->ExecuteFromPf(fileName, entry, argv)) {
-        LOG_ECMA(ERROR) << "Cannot execute ark file" << fileName;
-        LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName << "' with entry '" << entry << "'" << std::endl;
+        LOG_ECMA(ERROR) << "Cannot execute ark file '" << fileName
+                        << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
     return true;
 }
 
-bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size, const std::string &entry)
+bool JSNApi::Execute(EcmaVM *vm, const uint8_t *data, int32_t size,
+                     const std::string &entry, const std::string &filename)
 {
     std::vector<std::string> argv;
-    if (!vm->ExecuteFromBuffer(data, size, entry, argv)) {
-        LOG_ECMA(ERROR) << "Cannot execute panda file from memory "
+    if (!vm->ExecuteFromBuffer(data, size, entry, argv, filename)) {
+        LOG_ECMA(ERROR) << "Cannot execute ark buffer file '" << filename
                         << "' with entry '" << entry << "'" << std::endl;
         return false;
     }
@@ -1951,44 +1959,5 @@ bool JSValueRef::IsGeneratorFunction()
     JSHandle<JSTaggedValue> obj = JSNApiHelper::ToJSHandle(this);
     bool rst  = obj->IsGeneratorFunction();
     return rst;
-}
-void JSNApi::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
-{
-    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StartCpuProfiler(vm, fileName);
-}
-
-void JSNApi::StopCpuProfiler()
-{
-    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
-    singleton->StopCpuProfiler();
-    if (singleton != nullptr) {
-        delete singleton;
-        singleton = nullptr;
-    }
-}
-
-bool JSNApi::SuspendVM(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    return thread->NotifyVMThreadSuspension();
-}
-
-void JSNApi::ResumeVM(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    thread->ResumeVM();
-}
-
-bool JSNApi::IsSuspended(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    return thread->IsSuspended();
-}
-
-bool JSNApi::CheckSafepoint(const EcmaVM *vm)
-{
-    ecmascript::JSThread* thread = vm->GetJSThread();
-    return  thread->CheckSafepoint();
 }
 }  // namespace panda

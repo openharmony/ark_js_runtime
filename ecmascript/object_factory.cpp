@@ -1670,10 +1670,7 @@ JSHandle<Program> ObjectFactory::NewProgram()
     TaggedObject *header = heap_->AllocateYoungOrHugeObject(
         JSHClass::Cast(thread_->GlobalConstants()->GetProgramClass().GetTaggedObject()));
     JSHandle<Program> p(thread_, header);
-    p->SetLocation(thread_, JSTaggedValue::Undefined());
-    p->SetConstantPool(thread_, JSTaggedValue::Undefined());
     p->SetMainFunction(thread_, JSTaggedValue::Undefined());
-    p->SetMethodsData(nullptr);
     return p;
 }
 
@@ -2152,7 +2149,7 @@ JSHandle<TSClassInstanceType> ObjectFactory::NewTSClassInstanceType()
     JSHandle<TSClassInstanceType> classInstanceType(thread_, header);
 
     classInstanceType->SetGTRef(GlobalTSTypeRef::Default());
-    classInstanceType->SetCreateClassType(JSTaggedValue::Undefined());
+    classInstanceType->SetClassRefGT(GlobalTSTypeRef::Default());
 
     return classInstanceType;
 }
@@ -2166,7 +2163,7 @@ JSHandle<TSImportType> ObjectFactory::NewTSImportType()
     JSHandle<TSImportType> importType(thread_, header);
 
     importType->SetGTRef(GlobalTSTypeRef::Default());
-    importType->SetTargetType(thread_, JSTaggedValue::Undefined());
+    importType->SetTargetRefGT(GlobalTSTypeRef::Default());
     importType->SetImportPath(thread_, JSTaggedValue::Undefined());
 
     return importType;
@@ -2325,7 +2322,7 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     JSHandle<JSAPIArrayListIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArrayList(thread_, arrayList);
-    iter->SetNextIndex(thread_, JSTaggedValue(0));
+    iter->SetNextIndex(0);
     return iter;
 }
 
@@ -2338,8 +2335,8 @@ JSHandle<JSAPITreeMapIterator> ObjectFactory::NewJSAPITreeMapIterator(const JSHa
     JSHandle<JSAPITreeMapIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedMap(thread_, map);
-    iter->SetNextIndex(thread_, JSTaggedValue(0));
-    iter->SetIterationKind(thread_, JSTaggedValue(static_cast<int>(kind)));
+    iter->SetNextIndex(0);
+    iter->SetIterationKind(kind);
     JSHandle<TaggedTreeMap> tmap(thread_, map->GetTreeMap());
     JSHandle<TaggedArray> entries = TaggedTreeMap::GetArrayFromMap(thread_, tmap);
     iter->SetEntries(thread_, entries);
@@ -2355,8 +2352,8 @@ JSHandle<JSAPITreeSetIterator> ObjectFactory::NewJSAPITreeSetIterator(const JSHa
     JSHandle<JSAPITreeSetIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedSet(thread_, set);
-    iter->SetNextIndex(thread_, JSTaggedValue(0));
-    iter->SetIterationKind(thread_, JSTaggedValue(static_cast<int>(kind)));
+    iter->SetNextIndex(0);
+    iter->SetIterationKind(kind);
     JSHandle<TaggedTreeSet> tset(thread_, set->GetTreeSet());
     JSHandle<TaggedArray> entries = TaggedTreeSet::GetArrayFromSet(thread_, tset);
     iter->SetEntries(thread_, entries);

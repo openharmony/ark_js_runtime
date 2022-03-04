@@ -96,7 +96,7 @@ ohos_shared_library("libark_ecma_debugger_test") {
     "//ark/js_runtime:libark_jsruntime_test_static",
   ]
 
-  if (!is_linux) {
+  if (!is_linux && !is_mingw && !is_mac) {
     if (build_public_version) {
       external_deps = [ "bytrace_standard:bytrace_core" ]
     }

@@ -62,7 +62,7 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
     Bind(&slowPath);                                                                                \
     {                                                                                               \
         varProfileTypeInfo = CallRuntimeTrampoline(glue,                                            \
-            GetInt64Constant(FAST_STUB_ID(UpdateHotnessCounter)), { PtrBuildTaggedWithNoGC(_sp) }); \
+            GetInt64Constant(FAST_STUB_ID(UpdateHotnessCounter)), {});                              \
         varHotnessCounter = GetInt32Constant(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);            \
         Jump(&dispatch);                                                                            \
     }                                                                                               \
@@ -83,6 +83,13 @@ DECLARE_ASM_HANDLER(HandleLdInfinityPref)
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
+DECLARE_ASM_HANDLER(HandleLdGlobalThisPref)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    varAcc = GetGlobalObject(glue);
+    DISPATCH_WITH_ACC(PREF_NONE);
+}
+
 DECLARE_ASM_HANDLER(HandleLdUndefinedPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -94,6 +101,21 @@ DECLARE_ASM_HANDLER(HandleLdNullPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = GetNullConstant();
+    DISPATCH_WITH_ACC(PREF_NONE);
+}
+
+DECLARE_ASM_HANDLER(HandleLdSymbolPref)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    varAcc = CallRuntimeTrampoline(glue,
+        GetInt64Constant(FAST_STUB_ID(GetSymbolFunction)), {});
+    DISPATCH_WITH_ACC(PREF_NONE);
+}
+
+DECLARE_ASM_HANDLER(HandleLdGlobalPref)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    varAcc = GetGlobalObject(glue);
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
@@ -265,6 +287,535 @@ DECLARE_ASM_HANDLER(HandlePopLexEnvDynPref)
     DISPATCH(PREF_NONE);
 }
 
+DECLARE_ASM_HANDLER(HandleGetUnmappedArgsPref)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetUnmapedArgs)),
+        {});
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_NONE);
+}
+
+DECLARE_ASM_HANDLER(HandleCopyRestArgsPrefImm16)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef restIdx = ZExtInt16ToInt32(ReadInst16_1(pc));
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CopyRestArgs)),
+        { IntBuildTaggedTypeWithNoGC(restIdx) });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_IMM16);
+}
+
+DECLARE_ASM_HANDLER(HandleCreateArrayWithBufferPrefImm16)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
+    GateRef result = GetObjectFromConstPool(constpool, imm);
+    GateRef res = CallRuntimeTrampoline(glue,
+        GetInt64Constant(FAST_STUB_ID(CreateArrayWithBuffer)), { result });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_IMM16);
+}
+
+DECLARE_ASM_HANDLER(HandleCreateObjectWithBufferPrefImm16)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
+    GateRef result = GetObjectFromConstPool(constpool, imm);
+    GateRef res = CallRuntimeTrampoline(glue,
+        GetInt64Constant(FAST_STUB_ID(CreateObjectWithBuffer)), { result });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_IMM16);
+}
+
+DECLARE_ASM_HANDLER(HandleCreateObjectWithExcludedKeysPrefImm16V8V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef numKeys = ReadInst16_1(pc);
+    GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
+    GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_4(pc));
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CreateObjectWithExcludedKeys)),
+        { Int16BuildTaggedTypeWithNoGC(numKeys), obj, Int16BuildTaggedTypeWithNoGC(firstArgRegIdx) });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_IMM16_V8_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleCreateObjectHavingMethodPrefImm16)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef imm = ZExtInt16ToInt32(ReadInst16_1(pc));
+    GateRef result = GetObjectFromConstPool(constpool, imm);
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CreateObjectHavingMethod)),
+        { result, acc, constpool }); // acc is env
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_IMM16);
+}
+
+DECLARE_ASM_HANDLER(HandleThrowIfSuperNotCorrectCallPrefImm16)
+{
+    auto env = GetEnvironment();
+    GateRef imm = ReadInst16_1(pc);
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ThrowIfSuperNotCorrectCall)),
+        { Int16BuildTaggedTypeWithNoGC(imm), acc }); // acc is thisValue
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    DISPATCH(PREF_IMM16);
+}
+
+DECLARE_ASM_HANDLER(HandleNewLexEnvDynPrefImm16)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef numVars = ReadInst16_1(pc);
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NewLexicalEnvDyn)),
+        { Int16BuildTaggedTypeWithNoGC(numVars) });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    SetEnvToFrame(glue, GetFrame(sp), res);
+    DISPATCH_WITH_ACC(PREF_IMM16);
+}
+
+DECLARE_ASM_HANDLER(HandleNewObjDynRangePrefImm16V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef numArgs = ReadInst16_1(pc);
+    GateRef firstArgRegIdx = ZExtInt8ToInt16(ReadInst8_3(pc));
+    GateRef firstArgOffset = GetInt16Constant(2);
+    GateRef func = GetVregValue(sp, ZExtInt16ToPtr(firstArgRegIdx));
+    GateRef newTarget = GetVregValue(sp, IntPtrAdd(ZExtInt16ToPtr(firstArgRegIdx), GetIntPtrConstant(1)));
+    GateRef firstArgIdx = Int16Add(firstArgRegIdx, firstArgOffset);
+    GateRef length = Int16Sub(numArgs, firstArgOffset);
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(NewObjDynRange)),
+        { func, newTarget, Int16BuildTaggedTypeWithNoGC(firstArgIdx), Int16BuildTaggedTypeWithNoGC(length) });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_IMM16_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleDefineFuncDynPrefId16Imm16V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef methodId = ReadInst16_1(pc);
+    GateRef length = ReadInst16_3(pc);
+    GateRef v0 = ReadInst8_5(pc);
+    DEFVARIABLE(result, VariableType::JS_POINTER(),
+        GetObjectFromConstPool(constpool, ZExtInt16ToInt32(methodId)));
+    Label isResolved(env);
+    Label notResolved(env);
+    Label defaultLabel(env);
+    Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
+    Bind(&isResolved);
+    {
+        result = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(DefinefuncDyn)), { *result });
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            SetConstantPoolToFunction(glue, *result, constpool);
+            Jump(&defaultLabel);
+        }
+    }
+    Bind(&notResolved);
+    {
+        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        Jump(&defaultLabel);
+    }
+    Bind(&defaultLabel);
+    {
+        GateRef hClass = LoadHClass(*result);
+        SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
+            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        GateRef envHandle = GetVregValue(sp, ZExtInt8ToPtr(v0));
+        SetLexicalEnvToFunction(glue, *result, envHandle);
+        varAcc = *result;
+        DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleDefineNCFuncDynPrefId16Imm16V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef methodId = ReadInst16_1(pc);
+    GateRef length = ReadInst16_3(pc);
+    GateRef v0 = ReadInst8_5(pc);
+    DEFVARIABLE(result, VariableType::JS_POINTER(),
+        GetObjectFromConstPool(constpool, ZExtInt16ToInt32(methodId)));
+    Label isResolved(env);
+    Label notResolved(env);
+    Label defaultLabel(env);
+    Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
+    Bind(&isResolved);
+    {
+        result = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(DefineNCFuncDyn)), { *result });
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            SetConstantPoolToFunction(glue, *result, constpool);
+            Jump(&defaultLabel);
+        }
+    }
+    Bind(&notResolved);
+    {
+        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        Jump(&defaultLabel);
+    }
+    Bind(&defaultLabel);
+    {
+        GateRef hClass = LoadHClass(*result);
+        SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
+            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
+        SetLexicalEnvToFunction(glue, *result, env);
+        SetHomeObjectToFunction(glue, *result, acc);
+        varAcc = *result;
+        DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleDefineGeneratorFuncPrefId16Imm16V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef methodId = ReadInst16_1(pc);
+    GateRef length = ReadInst16_3(pc);
+    GateRef v0 = ReadInst8_5(pc);
+    DEFVARIABLE(result, VariableType::JS_POINTER(),
+        GetObjectFromConstPool(constpool, ZExtInt16ToInt32(methodId)));
+    Label isResolved(env);
+    Label notResolved(env);
+    Label defaultLabel(env);
+    Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
+    Bind(&isResolved);
+    {
+        result = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(DefineGeneratorFunc)), { *result });
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            SetConstantPoolToFunction(glue, *result, constpool);
+            Jump(&defaultLabel);
+        }
+    }
+    Bind(&notResolved);
+    {
+        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        Jump(&defaultLabel);
+    }
+    Bind(&defaultLabel);
+    {
+        GateRef hClass = LoadHClass(*result);
+        SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
+            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
+        SetLexicalEnvToFunction(glue, *result, env);
+        varAcc = *result;
+        DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleDefineAsyncFuncPrefId16Imm16V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef methodId = ReadInst16_1(pc);
+    GateRef length = ReadInst16_3(pc);
+    GateRef v0 = ReadInst8_5(pc);
+    DEFVARIABLE(result, VariableType::JS_POINTER(),
+        GetObjectFromConstPool(constpool, ZExtInt16ToInt32(methodId)));
+    Label isResolved(env);
+    Label notResolved(env);
+    Label defaultLabel(env);
+    Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
+    Bind(&isResolved);
+    {
+        result = CallRuntimeTrampoline(glue,
+            GetInt64Constant(FAST_STUB_ID(DefineAsyncFunc)), { *result });
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            SetConstantPoolToFunction(glue, *result, constpool);
+            Jump(&defaultLabel);
+        }
+    }
+    Bind(&notResolved);
+    {
+        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        Jump(&defaultLabel);
+    }
+    Bind(&defaultLabel);
+    {
+        GateRef hClass = LoadHClass(*result);
+        SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
+            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
+        SetLexicalEnvToFunction(glue, *result, env);
+        varAcc = *result;
+        DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleDefineMethodPrefId16Imm16V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef methodId = ReadInst16_1(pc);
+    GateRef length = ReadInst16_3(pc);
+    GateRef v0 = ReadInst8_5(pc);
+    DEFVARIABLE(result, VariableType::JS_POINTER(),
+        GetObjectFromConstPool(constpool, ZExtInt16ToInt32(methodId)));
+    Label isResolved(env);
+    Label notResolved(env);
+    Label defaultLabel(env);
+    Branch(FunctionIsResolved(*result), &isResolved, &notResolved);
+    Bind(&isResolved);
+    {
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(DefineMethod)),
+            { *result, acc }); // acc is homeObject
+        Label isException(env);
+        Label notException(env);
+        Branch(TaggedIsException(*result), &isException, &notException);
+        Bind(&isException);
+        {
+            DISPATCH_LAST();
+        }
+        Bind(&notException);
+        {
+            SetConstantPoolToFunction(glue, *result, constpool);
+            Jump(&defaultLabel);
+        }
+    }
+    Bind(&notResolved);
+    {
+        SetHomeObjectToFunction(glue, *result, acc);
+        SetResolvedToFunction(glue, *result, GetBooleanConstant(true));
+        Jump(&defaultLabel);
+    }
+    Bind(&defaultLabel);
+    {
+        GateRef hClass = LoadHClass(*result);
+        SetPropertyInlinedProps(glue, *result, hClass, Int16BuildTaggedWithNoGC(length),
+            GetInt32Constant(JSFunction::LENGTH_INLINE_PROPERTY_INDEX), VariableType::INT64());
+        GateRef env = GetVregValue(sp, ZExtInt8ToPtr(v0));
+        SetLexicalEnvToFunction(glue, *result, env);
+        varAcc = *result;
+        DISPATCH_WITH_ACC(PREF_ID16_IMM16_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleCallSpreadDynPrefV8V8V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
+    GateRef array = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CallSpreadDyn)),
+        { func, obj, array });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    {
+        varAcc = res;
+        DISPATCH_WITH_ACC(PREF_V8_V8_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleAsyncFunctionResolvePrefV8V8V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(AsyncFunctionResolveOrReject)),
+        { asyncFuncObj, value, TaggedTrue() });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    {
+        varAcc = res;
+        DISPATCH_WITH_ACC(PREF_V8_V8_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleAsyncFunctionRejectPrefV8V8V8)
+{
+    auto env = GetEnvironment();
+    GateRef asyncFuncObj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef value = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(AsyncFunctionResolveOrReject)),
+        { asyncFuncObj, value, TaggedFalse() });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    {
+        DISPATCH(PREF_V8_V8_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleDefineGetterSetterByValuePrefV8V8V8V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef obj = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_1(pc)));
+    GateRef prop = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_2(pc)));
+    GateRef getter = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_3(pc)));
+    GateRef setter = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_4(pc)));
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(DefineGetterSetterByValue)),
+        { obj, prop, getter, setter, acc }); // acc is flag
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    {
+        varAcc = res;
+        DISPATCH_WITH_ACC(PREF_V8_V8_V8_V8);
+    }
+}
+
+DECLARE_ASM_HANDLER(HandleSuperCallPrefImm16V8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef range = ReadInst16_1(pc);
+    GateRef v0 = ZExtInt8ToInt16(ReadInst8_3(pc));
+    // acc is thisFunc
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SuperCall)),
+        { acc, Int16BuildTaggedTypeWithNoGC(v0), Int16BuildTaggedTypeWithNoGC(range) });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    {
+        varAcc = res;
+        DISPATCH_WITH_ACC(PREF_IMM16_V8);
+    }
+}
+
 DECLARE_ASM_HANDLER(HandleGetPropIteratorPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -304,6 +855,24 @@ DECLARE_ASM_HANDLER(HandleLdHolePref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     varAcc = GetHoleConstant();
+    DISPATCH_WITH_ACC(PREF_NONE);
+}
+
+DECLARE_ASM_HANDLER(HandleCreateEmptyObjectPref)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    GateRef res = CallRuntimeTrampoline(glue,
+        GetInt64Constant(FAST_STUB_ID(CreateEmptyObject)), {});
+    varAcc = res;
+    DISPATCH_WITH_ACC(PREF_NONE);
+}
+
+DECLARE_ASM_HANDLER(HandleCreateEmptyArrayPref)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    GateRef res = CallRuntimeTrampoline(glue,
+        GetInt64Constant(FAST_STUB_ID(CreateEmptyArray)), {});
+    varAcc = res;
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
@@ -1010,9 +1579,10 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     DEFVARIABLE(varHotnessCounter, VariableType::INT32(), hotnessCounter);
 
+    GateRef tmpFrame = GetFrame(*varSp);
+    SetPcToFrame(glue, tmpFrame, *varPc);
     varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(JumpToCInterpreter)), {
-        PtrBuildTaggedWithNoGC(pc), PtrBuildTaggedWithNoGC(sp), constpool, profileTypeInfo,
-            acc, IntBuildTaggedTypeWithNoGC(hotnessCounter)
+        constpool, profileTypeInfo, acc, IntBuildTaggedTypeWithNoGC(hotnessCounter)
     }));
     Label shouldReturn(env);
     Label shouldContinue(env);
@@ -1630,7 +2200,7 @@ DECLARE_ASM_HANDLER(HandleSuperCallSpreadPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef array = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(SuperCallSpread)),
-        { acc, PtrBuildTaggedWithNoGC(sp), array }); // acc is thisFunc, sp for newTarget
+        { acc, array }); // acc is thisFunc, sp for newTarget
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2089,7 +2659,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByValuePrefV8V8)
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
-        {  receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
+                                           {  receiver, propKey }); // sp for thisFunc
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2112,7 +2682,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByValuePrefV8V8)
     GateRef propKey = GetVregValue(sp, ZExtInt8ToPtr(v1));
      // acc is value, sp for thisFunc
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
-        { receiver, propKey, acc, PtrBuildTaggedWithNoGC(sp) });
+        { receiver, propKey, acc });
     Label isException(env);
     Label notException(env);
     Branch(TaggedIsException(result), &isException, &notException);
@@ -2138,7 +2708,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByNamePrefId32V8)
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
 
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdSuperByValue)),
-        { receiver, propKey, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
+        { receiver, propKey }); // sp for thisFunc
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -2162,7 +2732,7 @@ DECLARE_ASM_HANDLER(HandleStSuperByNamePrefId32V8)
     GateRef propKey = GetObjectFromConstPool(constpool, stringId);
 
     GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(StSuperByValue)),
-        { receiver, propKey, acc, PtrBuildTaggedWithNoGC(sp) }); // sp for thisFunc
+        { receiver, propKey, acc }); // sp for thisFunc
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
@@ -3839,8 +4409,7 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     Label pcIsInvalid(env);
     Label pcNotInvalid(env);
     GateRef exception = Load(VariableType::JS_ANY(), glue, GetIntPtrConstant(0));
-    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(UpFrame)),
-        { PtrBuildTaggedWithNoGC(sp) }));
+    varPc = TaggedCastToIntPtr(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(UpFrame)), {}));
     Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcIsInvalid, &pcNotInvalid);
     Bind(&pcIsInvalid);
     {
@@ -4194,6 +4763,29 @@ DECLARE_ASM_HANDLER(HandleStGlobalVarPrefId32)
     }
     Bind(&dispatch);
     DISPATCH(PREF_ID32);
+}
+
+DECLARE_ASM_HANDLER(HandleCreateRegExpWithLiteralPrefId32Imm8)
+{
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    auto env = GetEnvironment();
+    GateRef stringId = ReadInst32_1(pc);
+    GateRef pattern = GetObjectFromConstPool(constpool, stringId);
+    GateRef flags = ReadInst8_5(pc);
+    GateRef res = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CreateRegExpWithLiteral)),
+        { pattern, Int8BuildTaggedTypeWithNoGC(flags) });
+    Label isException(env);
+    Label notException(env);
+    Branch(TaggedIsException(res), &isException, &notException);
+    Bind(&isException);
+    {
+        DISPATCH_LAST();
+    }
+    Bind(&notException);
+    {
+        varAcc = res;
+        DISPATCH_WITH_ACC(PREF_ID32_IMM8);
+    }
 }
 
 DECLARE_ASM_HANDLER(HandleIsTruePref)

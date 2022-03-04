@@ -440,7 +440,6 @@ public:
     inline GateRef GetInt64Constant(int64_t value);
     inline GateRef GetIntPtrConstant(int64_t value);
     inline GateRef GetIntPtrSize();
-    inline uint64_t GetIntPtrSize() const;
     inline GateRef GetRelocatableData(uint64_t value);
     inline GateRef TrueConstant();
     inline GateRef FalseConstant();
@@ -502,6 +501,7 @@ public:
     inline GateRef IntPtrAdd(GateRef x, GateRef y);
     inline GateRef IntPtrSub(GateRef x, GateRef y);
     inline GateRef IntPtrEqual(GateRef x, GateRef y);
+    inline GateRef Int16Sub(GateRef x, GateRef y);
     inline GateRef Int32Sub(GateRef x, GateRef y);
     inline GateRef Int64Sub(GateRef x, GateRef y);
     inline GateRef DoubleSub(GateRef x, GateRef y);
@@ -568,11 +568,11 @@ public:
     inline GateRef TaggedIsFalse(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
     inline GateRef TaggedGetInt(GateRef x);
+    inline GateRef Int8BuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef Int16BuildTaggedWithNoGC(GateRef x);
     inline GateRef Int16BuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedTypeWithNoGC(GateRef x);
-    inline GateRef PtrBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedWithNoGC(GateRef x);
     inline GateRef DoubleBuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef CastDoubleToInt64(GateRef x);
@@ -678,7 +678,7 @@ public:
     inline void SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline GateRef IsProtoTypeHClass(GateRef hClass);
     inline void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
-                                        GateRef value, GateRef attrOffset);
+                                        GateRef value, GateRef attrOffset, VariableType type = VariableType::JS_ANY());
 
     inline void IncNumberOfProps(GateRef glue, GateRef hClass);
     inline GateRef GetNumberOfPropsFromHClass(GateRef hClass);
@@ -776,7 +776,6 @@ public:
     inline void SetHasConstructorToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline void UpdateValueInDict(GateRef glue, GateRef elements, GateRef index, GateRef value);
     inline GateRef GetBitMask(GateRef bitoffset);
-    inline GateRef AddrToBitOffset(GateRef memberset, GateRef addr);
     inline GateRef IntptrEuqal(GateRef x, GateRef y);
     void SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value);
     GateRef GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index);

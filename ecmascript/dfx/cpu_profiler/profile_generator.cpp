@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "ecmascript/cpu_profiler/profile_generator.h"
+#include "ecmascript/dfx/cpu_profiler/profile_generator.h"
 
 #include <climits>
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/interpreter/interpreter.h"
 namespace panda::ecmascript {
 int ProfileGenerator::staticGcState_ = false;
@@ -150,7 +150,7 @@ void ProfileGenerator::WriteMethodsAndSampleInfo(bool timeEnd)
             return;
         }
     }
-    sampleData_ += "\"cat\":\"disabled-by-default-v8.cpu_profiler\",\"id\":"
+    sampleData_ += "\"cat\":\"disabled-by-default-ark.cpu_profiler\",\"id\":"
                     "\"0x2\",\"name\":\"ProfileChunk\",\"ph\":\"P\",\"pid\":";
     pid_t pid = getpid();
     pthread_t tid = syscall(SYS_gettid);

@@ -42,7 +42,7 @@ class Gate;
 struct Properties;
 class BytecodeCircuitBuilder;
 
-enum MachineType { // bit whith
+enum MachineType { // Bit width
     NOVALUE,
     ANYVALUE,
     ARCH,
@@ -161,7 +161,10 @@ public:
     }
     explicit operator bool() const = delete;
     [[nodiscard]] Properties GetProperties() const;
-    [[nodiscard]] std::array<size_t, 4> GetOpCodeNumInsArray(BitField bitfield) const;
+    [[nodiscard]] size_t GetStateCount(BitField bitfield) const;
+    [[nodiscard]] size_t GetDependCount(BitField bitfield) const;
+    [[nodiscard]] size_t GetInValueCount(BitField bitfield) const;
+    [[nodiscard]] size_t GetRootCount(BitField bitfield) const;
     [[nodiscard]] size_t GetOpCodeNumIns(BitField bitfield) const;
     [[nodiscard]] MachineType GetMachineType() const;
     [[nodiscard]] MachineType GetInMachineType(BitField bitfield, size_t idx) const;
@@ -189,7 +192,7 @@ struct Properties {
     std::optional<std::pair<std::vector<OpCode>, bool>> statesIn;
     size_t dependsIn;
     std::optional<std::pair<std::vector<MachineType>, bool>> valuesIn;
-    std::optional<OpCode> states;
+    std::optional<OpCode> root;
 };
 
 enum MarkCode : GateMark {
@@ -217,6 +220,7 @@ public:
     [[nodiscard]] bool IsPrevOutNull() const;
     void SetNextOutNull();
     [[nodiscard]] bool IsNextOutNull() const;
+    [[nodiscard]] bool IsStateEdge() const;
     ~Out() = default;
 
 private:
@@ -317,7 +321,10 @@ public:
     void SetGateType(GateType type);
     [[nodiscard]] GateId GetId() const;
     [[nodiscard]] size_t GetNumIns() const;
-    [[nodiscard]] std::array<size_t, 4> GetNumInsArray() const;
+    [[nodiscard]] size_t GetStateCount() const;
+    [[nodiscard]] size_t GetDependCount() const;
+    [[nodiscard]] size_t GetInValueCount() const;
+    [[nodiscard]] size_t GetRootCount() const;
     [[nodiscard]] BitField GetBitField() const;
     void SetBitField(BitField bitfield);
     void AppendIn(const Gate *in);  // considered very slow
@@ -325,16 +332,16 @@ public:
     size_t PrintInGate(size_t numIns, size_t idx, size_t size, bool inListPreview, size_t highlightIdx,
                        bool isEnd = false) const;
     void PrintByteCode(std::string bytecode) const;
-    std::optional<std::pair<std::string, size_t>> CheckNullInput() const;
-    std::optional<std::pair<std::string, size_t>> CheckStateInput() const;
-    std::optional<std::pair<std::string, size_t>> CheckValueInput() const;
-    std::optional<std::pair<std::string, size_t>> CheckDependInput() const;
-    std::optional<std::pair<std::string, size_t>> CheckStateOutput() const;
-    std::optional<std::pair<std::string, size_t>> CheckBranchOutput() const;
-    std::optional<std::pair<std::string, size_t>> CheckNOP() const;
-    std::optional<std::pair<std::string, size_t>> CheckSelector() const;
-    std::optional<std::pair<std::string, size_t>> CheckRelay() const;
-    std::optional<std::pair<std::string, size_t>> SpecialCheck() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckNullInput() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckStateInput() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckValueInput() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckDependInput() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckStateOutput() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckBranchOutput() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckNOP() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckSelector() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> CheckRelay() const;
+    [[nodiscard]] std::optional<std::pair<std::string, size_t>> SpecialCheck() const;
     [[nodiscard]] bool Verify() const;
     [[nodiscard]] MarkCode GetMark(TimeStamp stamp) const;
     void SetMark(MarkCode mark, TimeStamp stamp);
