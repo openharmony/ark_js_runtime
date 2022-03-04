@@ -25,6 +25,25 @@
 #include "ecmascript/tagged_hash_table-inl.h"
 
 namespace panda::ecmascript::kungfu {
+#if ECMASCRIPT_ENABLE_ASM_INTERPRETER_LOG
+#define DECLARE_ASM_HANDLER(name)                                                         \
+void name##Stub::GenerateCircuit(const CompilationConfig *cfg)                            \
+{                                                                                         \
+    Stub::GenerateCircuit(cfg);                                                           \
+    GateRef glue = PtrArgument(0);                                                        \
+    GateRef pc = PtrArgument(1);                                                          \
+    GateRef sp = PtrArgument(2); /* 2 : 3rd parameter is value */                         \
+    GateRef constpool = TaggedPointerArgument(3); /* 3 : 4th parameter is value */        \
+    GateRef profileTypeInfo = TaggedPointerArgument(4); /* 4 : 5th parameter is value */  \
+    GateRef acc = TaggedArgument(5); /* 5: 6th parameter is value */                      \
+    GateRef hotnessCounter = Int32Argument(6); /* 6 : 7th parameter is value */           \
+    DebugPrint(glue, { GetInt32Constant(GET_MESSAGE_STRING_ID(name)) });                  \
+    GenerateCircuitImpl(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);   \
+}                                                                                         \
+void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,                \
+                                     GateRef constpool, GateRef profileTypeInfo,          \
+                                     GateRef acc, GateRef hotnessCounter)
+#else
 #define DECLARE_ASM_HANDLER(name)                                                         \
 void name##Stub::GenerateCircuit(const CompilationConfig *cfg)                            \
 {                                                                                         \
@@ -41,6 +60,7 @@ void name##Stub::GenerateCircuit(const CompilationConfig *cfg)                  
 void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,                \
                                      GateRef constpool, GateRef profileTypeInfo,          \
                                      GateRef acc, GateRef hotnessCounter)
+#endif
 
 #define DISPATCH(format)                                                                  \
     Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter,               \
