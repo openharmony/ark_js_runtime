@@ -106,7 +106,7 @@ public:
 
     JSThread(Runtime *runtime, PandaVM *vm);
 
-    ~JSThread() override;
+    PUBLIC_API ~JSThread() override;
 
     EcmaVM *GetEcmaVM() const;
 
@@ -156,8 +156,8 @@ public:
 
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
 
-    uintptr_t *ExpandHandleStorage();
-    void ShrinkHandleStorage(int prevIndex);
+    uintptr_t* PUBLIC_API ExpandHandleStorage();
+    void PUBLIC_API ShrinkHandleStorage(int prevIndex);
 
     JSTaggedType *GetHandleScopeStorageNext() const
     {

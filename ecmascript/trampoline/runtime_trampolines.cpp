@@ -33,6 +33,7 @@
 #include "ecmascript/runtime_api.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "libpandabase/utils/string_helpers.h"
+#include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript {
 #define DEF_RUNTIME_TRAMPOLINES(name) \
@@ -1296,14 +1297,12 @@ DEF_RUNTIME_TRAMPOLINES(GetLexicalEnv)
     return thread->GetCurrentLexenv().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LoadValueFromConstantPool)
+DEF_RUNTIME_TRAMPOLINES(LoadValueFromConstantStringTable)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LoadValueFromConstantPool);
-    CONVERT_ARG_TAGGED_TYPE_CHECKED(argFunc, 0);
-    CONVERT_ARG_TAGGED_CHECKED(id, 1);
-    JSHandle<JSFunction> funcHandle(thread, reinterpret_cast<JSFunction *>(argFunc));
-    JSHandle<ConstantPool> constantPool(thread, funcHandle->GetConstantPool());
-    return constantPool->GetObjectFromCache(id.GetInt()).GetRawData();
+    RUNTIME_TRAMPOLINES_HEADER(LoadValueFromConstantStringTable);
+    CONVERT_ARG_TAGGED_CHECKED(id, 0);
+    auto tsLoader = thread->GetEcmaVM()->GetTSLoader();
+    return tsLoader->GetStringById(id.GetInt()).GetTaggedValue().GetRawData();
 }
 
 DEF_RUNTIME_TRAMPOLINES(JumpToCInterpreter)

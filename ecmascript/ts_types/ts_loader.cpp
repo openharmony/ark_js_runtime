@@ -380,6 +380,10 @@ GlobalTSTypeRef TSLoader::GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTyp
 void TSLoader::Iterate(const RootVisitor &v)
 {
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&globalModuleTable_)));
+    uint64_t length = constantStringTable_.size();
+    for (uint64_t i = 0; i < length; i++) {
+        v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&(constantStringTable_.data()[i]))));
+    }
 }
 
 GlobalTSTypeRef TSLoader::GetPrmitiveGT(TSTypeKind kind) const
@@ -471,6 +475,12 @@ GlobalTSTypeRef TSLoader::GetArrayParameterTypeGT(GlobalTSTypeRef gt) const
     JSHandle<TSArrayType> arrayType(thread, typeTable->Get(localId));
 
     return arrayType->GetElementTypeGT(typeTable);
+}
+
+uint64_t TSLoader::AddConstString(JSTaggedValue string)
+{
+    constantStringTable_.emplace_back(string.GetRawData());
+    return constantStringTable_.size() - 1;
 }
 
 JSHandle<EcmaString> TSModuleTable::GetAmiPathByModuleId(JSThread *thread, int entry) const

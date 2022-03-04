@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include "ecmascript/common.h"
 #include "ecmascript/platform/runner.h"
 #include "os/mutex.h"
 
@@ -31,7 +32,7 @@ public:
     }
 
     Platform() = default;
-    ~Platform()
+    PUBLIC_API ~Platform()
     {
         os::memory::LockHolder lock(mutex_);
         runner_->TerminateThread();
