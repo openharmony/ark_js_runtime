@@ -372,7 +372,7 @@ static JSTaggedValue JSLocaleCreateWithOptionsTagsTest(JSThread *thread, JSHandl
 HWTEST_F_L0(BuiltinsLocaleTest, Maximize_001)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    // set language,then call Maximize function get language,script and region
+    // set language,then call Maximize function get language,script
     JSHandle<JSTaggedValue> languageValue(factory->NewFromCanBeCompressString("zh"));
     JSHandle<JSLocale> jsLocale = JSHandle<JSLocale>(thread, JSLocaleCreateWithOptionsTagsTest(thread, languageValue));
 
