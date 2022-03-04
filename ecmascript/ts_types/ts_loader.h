@@ -158,7 +158,7 @@ public:
     explicit TSLoader(EcmaVM *vm);
     ~TSLoader() = default;
 
-    void DecodeTSTypes(const panda_file::File &pf);
+    void PUBLIC_API DecodeTSTypes(const panda_file::File &pf);
 
     void AddTypeTable(JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath);
 
@@ -218,6 +218,19 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetArrayParameterTypeGT(GlobalTSTypeRef gt) const;
 
+    uint64_t PUBLIC_API AddConstString(JSTaggedValue string);
+
+    /*
+     * Before using this method for type infer, you need to wait until all the
+     * string objects of the panda_file are collected, otherwise an error will
+     * be generated, and it will be optimized later.
+     */
+    JSHandle<EcmaString> PUBLIC_API GetStringById(size_t index) const
+    {
+        ASSERT(index < constantStringTable_.size());
+        return JSHandle<EcmaString>(reinterpret_cast<uintptr_t>(&(constantStringTable_.at(index))));
+    }
+
 private:
 
     NO_COPY_SEMANTIC(TSLoader);
@@ -241,6 +254,7 @@ private:
 
     EcmaVM *vm_ {nullptr};
     JSTaggedValue globalModuleTable_ {JSTaggedValue::Hole()};
+    CVector<JSTaggedType> constantStringTable_ {};
     friend class EcmaVM;
 };
 }  // namespace panda::ecmascript

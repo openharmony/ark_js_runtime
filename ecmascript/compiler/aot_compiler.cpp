@@ -123,6 +123,10 @@ int Main(const int argc, const char **argv)
     EcmaVM *vm = EcmaVM::Cast(runtime->GetPandaVM());
 
     LocalScope scope(vm);
+    if (!vm->GetJSOptions().IsEnableTsAot()) {
+        std::cerr << "Error: non-aot execution!!!" << std::endl;
+        return -1;
+    }
     std::string entry = entrypoint.GetValue();
 
     arg_list_t fileNames = files.GetValue();

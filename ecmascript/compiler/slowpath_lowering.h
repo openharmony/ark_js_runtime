@@ -125,7 +125,8 @@ private:
     void LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glue);
     void LowerAsyncFunctionResolve(GateRef gate, GateRef glue);
     void LowerAsyncFunctionReject(GateRef gate, GateRef glue);
-    GateRef GetValueFromConstPool(CircuitBuilder &builder, GateRef gate, GateRef glue);
+    GateRef GetValueFromConstantStringTable(CircuitBuilder &builder, GateRef glue,
+                                            GateRef gate, uint32_t inIndex);
     void LowerLoadStr(GateRef gate, GateRef glue);
     void LowerLexicalEnv(GateRef gate, GateRef glue);
     void LowerStGlobalVar(GateRef gate, GateRef glue);

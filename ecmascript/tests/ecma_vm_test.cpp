@@ -60,7 +60,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     options2.SetEnableForceGC(false);
     options2.SetForceFullGC(false);
     options2.SetEnableCpuprofiler(true);
-    options2.SetEnableTsAot(true);
+    options2.SetEnableTsAot(false);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
     
     // // GC
