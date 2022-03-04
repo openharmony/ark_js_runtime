@@ -26,6 +26,7 @@
 
 namespace panda::ecmascript {
 class EcmaVM;
+class JSPandaFile;
 
 class SnapShotSerialize final {
 public:
@@ -34,7 +35,7 @@ public:
 
     void Serialize(TaggedObject *objectHeader, CQueue<TaggedObject *> *queue,
                    std::unordered_map<uint64_t, ecmascript::SlotBit> *data);
-    void RedirectSlot(const panda_file::File *pf);
+    void RedirectSlot(const JSPandaFile *jsPandaFile);
     void SerializePandaFileMethod();
 
     void SetProgramSerializeStart()
