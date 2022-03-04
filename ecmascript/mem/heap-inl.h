@@ -18,8 +18,8 @@
 
 #include "ecmascript/mem/heap.h"
 
+#include "ecmascript/dfx/hprof/heap_tracker.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/hprof/heap_tracker.h"
 #include "ecmascript/mem/allocator-inl.h"
 #include "ecmascript/mem/concurrent_sweeper.h"
 #include "ecmascript/mem/linear_space.h"

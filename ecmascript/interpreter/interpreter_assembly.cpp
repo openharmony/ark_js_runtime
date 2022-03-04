@@ -16,6 +16,7 @@
 #include "ecmascript/interpreter/interpreter_assembly.h"
 
 #include "ecmascript/class_linker/program_object-inl.h"
+#include "ecmascript/dfx/vmstat/runtime_stat.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
@@ -29,7 +30,6 @@
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/code_data_accessor.h"
 #include "libpandafile/file.h"

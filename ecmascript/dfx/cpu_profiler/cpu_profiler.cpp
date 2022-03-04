@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
+#include <atomic>
 #include <chrono>
 #include <climits>
 #include <csignal>
@@ -21,10 +22,11 @@
 #include "ecmascript/platform/platform.h"
 namespace panda::ecmascript {
 CMap<JSMethod *, struct StackInfo> CpuProfiler::staticStackInfo_ = CMap<JSMethod *, struct StackInfo>();
-CpuProfiler *CpuProfiler::singleton_ = nullptr;
+std::atomic<CpuProfiler*> CpuProfiler::singleton_ = nullptr;
 sem_t CpuProfiler::sem_ = sem_t {};
 CMap<std::string, int> CpuProfiler::scriptIdMap_ = CMap<std::string, int>();
 CVector<JSMethod *> CpuProfiler::staticFrameStack_ = CVector<JSMethod *>();
+os::memory::Mutex CpuProfiler::synchronizationMutex_;
 CpuProfiler::CpuProfiler()
 {
     generator_ = new ProfileGenerator();
@@ -38,8 +40,12 @@ CpuProfiler::CpuProfiler()
 
 CpuProfiler *CpuProfiler::GetInstance()
 {
-    if (CpuProfiler::singleton_ == nullptr) {
-        CpuProfiler::singleton_ = new CpuProfiler();
+    CpuProfiler *temp = singleton_;
+    if (temp == nullptr) {
+        os::memory::LockHolder lock(synchronizationMutex_);
+        if ((temp = CpuProfiler::singleton_) == nullptr) {
+            CpuProfiler::singleton_ = temp = new CpuProfiler();
+        }
     }
     return CpuProfiler::singleton_;
 }
@@ -96,6 +102,10 @@ void CpuProfiler::StopCpuProfiler()
                                 or the sampling thread is not started";
         return;
     }
+    if (tid != syscall(SYS_gettid)) {
+        LOG(ERROR, RUNTIME) << "Thread attempted to close other sampling threads";
+        return;
+    }
     isOnly_ = false;
     ProfileProcessor::SetIsStart(false);
     if (sem_wait(&sem_) != 0) {
@@ -137,7 +147,7 @@ void CpuProfiler::SetProfileStart(uint64_t nowTimeStamp)
     ts = ProfileProcessor::GetMicrosecondsTimeStamp();
     ts = ts % TIME_CHANGE;
     data += "{\"args\":{\"data\":{\"startTime\":" + std::to_string(nowTimeStamp) + "}},"
-            + "\"cat\":\"disabled-by-default-v8.cpu_profiler\",\"id\":\"0x2\","
+            + "\"cat\":\"disabled-by-default-ark.cpu_profiler\",\"id\":\"0x2\","
             + "\"name\":\"Profile\",\"ph\":\"P\",\"pid\":"
             + std::to_string(currentProcessInfo.pid) + ",\"tid\":"
             + std::to_string(currentProcessInfo.tid) + ",\"ts\":"
@@ -146,11 +156,11 @@ void CpuProfiler::SetProfileStart(uint64_t nowTimeStamp)
     generator_->SetStartsampleData(data);
 }
 
-void CpuProfiler::GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo) const
+void CpuProfiler::GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo)
 {
     currentProcessInfo.nowTimeStamp = ProfileProcessor::GetMicrosecondsTimeStamp() % TIME_CHANGE;
     currentProcessInfo.pid = getpid();
-    currentProcessInfo.tid = syscall(SYS_gettid);
+    tid = currentProcessInfo.tid = syscall(SYS_gettid);
     struct timespec time = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &time);
     currentProcessInfo.tts = time.tv_nsec / 1000; // 1000:Nanoseconds to milliseconds.

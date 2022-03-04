@@ -43,6 +43,17 @@ public:
     static size_t GetArrayBufferSize(EcmaVM *vm);
     static size_t GetHeapTotalSize(EcmaVM *vm);
     static size_t GetHeapUsedSize(EcmaVM *vm);
+
+    // profile generator
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+    static void StartCpuProfiler(const EcmaVM *vm, const std::string &fileName);
+    static void StopCpuProfiler();
+#endif
+
+    static void ResumeVM(const EcmaVM *vm);
+    static bool SuspendVM(const EcmaVM *vm);
+    static bool IsSuspended(const EcmaVM *vm);
+    static bool CheckSafepoint(const EcmaVM *vm);
 };
 }
 #endif

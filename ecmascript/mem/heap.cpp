@@ -21,7 +21,7 @@
 #endif
 
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/assert_scope-inl.h"

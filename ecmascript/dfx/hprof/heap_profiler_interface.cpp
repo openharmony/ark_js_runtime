@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/hprof/heap_profiler.h"
+#include "ecmascript/dfx/hprof/heap_profiler.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/heap.h"
 

@@ -19,7 +19,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/vmstat/caller_stat.h"
+#include "ecmascript/dfx/vmstat/caller_stat.h"
 
 namespace panda::ecmascript {
 class EcmaRuntimeStat {
@@ -40,7 +40,7 @@ public:
 
 private:
     PandaRuntimeTimer *currentTimer_ = nullptr;
-    CVector<PandaRuntimeCallerStat> callerStat_{};
+    CVector<PandaRuntimeCallerStat> callerStat_ {};
 };
 
 class RuntimeTimerScope {
@@ -73,8 +73,8 @@ public:
     NO_MOVE_SEMANTIC(RuntimeTimerScope);
 
 private:
-    PandaRuntimeTimer timer_{};
-    EcmaRuntimeStat *stats_{nullptr};
+    PandaRuntimeTimer timer_ {};
+    EcmaRuntimeStat *stats_ {nullptr};
 };
 }  // namespace panda::ecmascript
 #endif

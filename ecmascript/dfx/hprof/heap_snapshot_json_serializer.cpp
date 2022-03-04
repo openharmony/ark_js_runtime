@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "ecmascript/hprof/heap_snapshot_json_serializer.h"
+#include "ecmascript/dfx/hprof/heap_snapshot_json_serializer.h"
+#include "ecmascript/dfx/hprof/heap_snapshot.h"
+#include "ecmascript/dfx/hprof/string_hashmap.h"
 #include "ecmascript/mem/c_containers.h"
-#include "ecmascript/hprof/heap_snapshot.h"
-#include "ecmascript/hprof/string_hashmap.h"
 
 namespace panda::ecmascript {
 bool HeapSnapShotJSONSerializer::Serialize(HeapSnapShot *snapShot, const CString &fileName)
