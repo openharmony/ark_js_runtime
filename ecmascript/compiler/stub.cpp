@@ -259,8 +259,8 @@ void LabelImpl::AppendPredecessor(LabelImpl *predecessor)
 bool LabelImpl::IsNeedSeal() const
 {
     auto control = env_->GetCircuit()->LoadGatePtr(predeControl_);
-    auto numsInList = control->GetOpCode().GetOpCodeNumInsArray(control->GetBitField());
-    return predecessors_.size() >= numsInList[0];
+    auto stateCount = control->GetOpCode().GetStateCount(control->GetBitField());
+    return predecessors_.size() >= stateCount;
 }
 
 bool LabelImpl::IsLoopHead() const
@@ -1157,37 +1157,38 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
             Bind(&notNullPtr);
             {
                 // 1. bit_offset set AddrToBitOffset(address)
-                GateRef bitOffset = AddrToBitOffset(oldToNewSet, slotAddr);
-                // bit_offset >> LOG_BITSPERWORD
+                GateRef bitOffset = IntPtrLSR(IntPtrAnd(slotAddr,
+                                              GetIntPtrConstant(panda::ecmascript::DEFAULT_REGION_MASK)),
+                                              GetIntPtrConstant(RememberedSet::BYTESPERCHUNK_LOG2));
+                // (bit_offset >> LOG_BITSPERWORD) << LOG_INTPTR_SIZE
+                GateRef logBitsPerWord = GetIntPtrConstant(BitmapHelper::LogBitsPerWord(env_.Is32Bit()));
+                GateRef logIntPtrSize = GetIntPtrConstant(BitmapHelper::LogIntptrSize(env_.Is32Bit()));
+                GateRef wordOffset = IntPtrLSL(IntPtrLSR(bitOffset, logBitsPerWord), logIntPtrSize);
                 // 2. bitmap_[GetWordIdx(bit_offset)] |= GetBitMask(bit_offset)
                 // 2.0: wordIdx GetWordIdx(bit_offset)
-                uint64_t logBitsPerWord = BitmapHelper::LogBitsPerWord(env_.Is32Bit());
-                GateRef wordIdx = IntPtrLSR(bitOffset, GetIntPtrConstant(logBitsPerWord));
                 // 2.1 bitmap_[wordIdx]
                 GateRef bitmapoffset = GetIntPtrConstant(0);
-                GateRef bitmap = IntPtrAdd(oldToNewSet, bitmapoffset);
-                GateRef bitmapdata = Load(VariableType::POINTER(), bitmap, GetIntPtrConstant(0));
-                GateRef bitmapAddr = IntPtrAdd(bitmapdata,
-                    IntPtrMul(wordIdx, GetIntPtrConstant(GetIntPtrSize())));
+                GateRef bitmapData = Load(VariableType::POINTER(), oldToNewSet, bitmapoffset);
                 // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset);
-                GateRef oldmapValue = Load(VariableType::POINTER(), bitmapAddr, GetIntPtrConstant(0));
-                Store(VariableType::POINTER(), glue, bitmapAddr, GetIntPtrConstant(0),
-                    IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
+                GateRef oldmapValue = Load(VariableType::POINTER(), bitmapData, wordOffset);
+                Store(VariableType::POINTER(), glue, bitmapData, wordOffset,
+                      IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
                 Jump(&notValidIndex);
             }
             Bind(&isNullPtr);
             {
-                CallRuntimeTrampoline(glue, GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
-                    { PtrBuildTaggedWithNoGC(objectRegion), PtrBuildTaggedWithNoGC(slotAddr) });
+                StubDescriptor *insertOldToNewRememberedSet = GET_STUBDESCRIPTOR(InsertOldToNewRememberedSet);
+                CallRuntime(insertOldToNewRememberedSet, glue,
+                            GetIntPtrConstant(FAST_STUB_ID(InsertOldToNewRememberedSet)),
+                            { glue, objectRegion, slotAddr });
                 Jump(&notValidIndex);
             }
         }
         Bind(&notValidIndex);
         {
-            CallRuntimeTrampoline(glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
-                PtrBuildTaggedWithNoGC(slotAddr), PtrBuildTaggedWithNoGC(objectRegion),
-                PtrBuildTaggedWithNoGC(value), PtrBuildTaggedWithNoGC(valueRegion)
-            });
+            StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
+            CallRuntime(markingBarrier, glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
+                glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion });
             Jump(&exit);
         }
     }
@@ -2241,7 +2242,7 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     Label entry(env);
     env->PushCurrentLabel(&entry);
     auto proto = GetPrototypeFromHClass(srcHClass);
-    SetPrototypeToHClass(VariableType::INT64(), glue, dstHClass, proto);
+    SetPrototypeToHClass(VariableType::JS_POINTER(), glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
     SetNumberOfPropsToHClass(glue, dstHClass, GetNumberOfPropsFromHClass(srcHClass));
     SetParentToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
@@ -2249,7 +2250,7 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     SetProtoChangeDetailsToHClass(VariableType::INT64(), glue, dstHClass,
                                   GetInt64Constant(JSTaggedValue::VALUE_NULL));
     SetEnumCacheToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
-    SetLayoutToHClass(VariableType::INT64(), glue, dstHClass, GetLayoutFromHClass(srcHClass));
+    SetLayoutToHClass(VariableType::JS_POINTER(), glue, dstHClass, GetLayoutFromHClass(srcHClass));
     env->PopCurrentLabel();
     return;
 }

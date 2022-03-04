@@ -42,7 +42,7 @@ JSTaggedValue JSAPIArrayListIterator::Next(EcmaRuntimeCallInfo *argv)
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
 
-    uint32_t index = iter->GetNextIndex().GetInt();
+    uint32_t index = iter->GetNextIndex();
     uint32_t length = 0;
 
     if (arrayList->IsJSAPIArrayList()) {
@@ -54,7 +54,7 @@ JSTaggedValue JSAPIArrayListIterator::Next(EcmaRuntimeCallInfo *argv)
         return JSIterator::CreateIterResultObject(thread, undefinedHandle, true).GetTaggedValue();
     }
 
-    iter->SetNextIndex(thread, JSTaggedValue(index + 1));
+    iter->SetNextIndex(index + 1);
     JSHandle<JSTaggedValue> value = JSTaggedValue::GetProperty(thread, arrayList, index).GetValue();
 
     return JSIterator::CreateIterResultObject(thread, value, false).GetTaggedValue();

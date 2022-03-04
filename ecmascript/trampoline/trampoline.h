@@ -21,7 +21,7 @@
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
-extern "C" uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
+extern "C" JSTaggedType JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
     uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 }  // panda::ecmascript
 #endif  // ECMASCRIPT_BRIDGE_H

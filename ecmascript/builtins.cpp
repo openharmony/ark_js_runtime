@@ -15,6 +15,15 @@
 
 #include "ecmascript/builtins.h"
 
+#ifdef PANDA_TARGET_WINDOWS
+#include <shlwapi.h>
+#ifdef ERROR
+#undef ERROR
+#endif
+#ifdef GetObject
+#undef GetObject
+#endif
+#endif
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/builtins/builtins_ark_tools.h"
@@ -85,6 +94,7 @@
 #include "ecmascript/js_typed_array.h"
 #include "ecmascript/js_weak_container.h"
 #include "ecmascript/mem/mem.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/object_factory.h"
 #include "ohos/init_data.h"
 
@@ -135,6 +145,33 @@ using NumberFormat = builtins::BuiltinsNumberFormat;
 using Collator = builtins::BuiltinsCollator;
 using PluralRules = builtins::BuiltinsPluralRules;
 using ContainersPrivate = containers::ContainersPrivate;
+
+bool GetAbsolutePath(const std::string &relativePath, std::string &absPath)
+{
+    if (relativePath.size() >= PATH_MAX) {
+        return false;
+    }
+    char buffer[PATH_MAX] = {0};
+#ifndef PANDA_TARGET_WINDOWS
+    auto path = realpath(relativePath.c_str(), buffer);
+    if (path == nullptr) {
+        return false;
+    }
+    absPath = std::string(path);
+    return true;
+#else
+    auto path = _fullpath(buffer, relativePath.c_str(), buffer.size() - 1);
+    if (path == nullptr) {
+        return false;
+    }
+    bool valid = PathCanonicalizeA(buffer, path);
+    if (!valid) {
+        return false;
+    }
+    absPath = std::string(buffer);
+    return true;
+#endif
+}
 
 void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
 {
@@ -273,12 +310,18 @@ void Builtins::Initialize(const JSHandle<GlobalEnv> &env, JSThread *thread)
     InitializePromise(env, objFuncDynclass);
     InitializePromiseJob(env);
 
+    // Initialize IcuData Path
     JSRuntimeOptions options = vm_->GetJSOptions();
     std::string icuPath = options.GetIcuDataPath();
     if (icuPath == "default") {
+#ifndef PANDA_TARGET_WINDOWS
         SetHwIcuDirectory();
+#endif
     } else {
-        u_setDataDirectory(icuPath.c_str());
+        std::string absPath;
+        if (GetAbsolutePath(icuPath, absPath)) {
+            u_setDataDirectory(absPath.c_str());
+        }
     }
     InitializeIntl(env, objFuncPrototypeVal);
     InitializeLocale(env);

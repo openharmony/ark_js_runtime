@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_PLATFORM_RUNNER_H
 #define ECMASCRIPT_PLATFORM_RUNNER_H
 
+#include <array>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -64,7 +65,6 @@ private:
     TaskQueue taskQueue_ {};
     std::array<Task*, MAX_PLATFORM_THREAD_NUM + 1> runningTask_;
     uint32_t totalThreadNum_ {0};
-    std::vector<os::thread::ThreadId> threadIdToIndexList_;
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_PLATFORM_RUNNER_H

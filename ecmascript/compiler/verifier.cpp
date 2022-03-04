@@ -19,6 +19,7 @@
 #include <unordered_set>
 
 #include "ecmascript/compiler/scheduler.h"
+#include "ecmascript/compiler/gate_accessor.h"
 
 namespace panda::ecmascript::kungfu {
 bool Verifier::RunDataIntegrityCheck(const Circuit *circuit)
@@ -122,8 +123,9 @@ bool Verifier::RunCFGSoundnessCheck(const Circuit *circuit, const std::vector<Ga
     const std::unordered_map<GateRef, size_t> &bbGatesAddrToIdx)
 {
     for (const auto &bbGate : bbGatesList) {
-        for (const auto &predGate : circuit->GetInVector(bbGate)) {
-            if (circuit->GetOpCode(predGate).IsState()) {
+        GateAccessor gateAcc(const_cast<Circuit *>(circuit));
+        for (const auto &predGate : gateAcc.ConstIns(bbGate)) {
+            if (circuit->GetOpCode(predGate).IsState() || circuit->GetOpCode(predGate) == OpCode::STATE_ENTRY) {
                 if (bbGatesAddrToIdx.count(predGate) == 0) {
                     std::cerr << "[Verifier][Error] CFG is not sound" << std::endl;
                     std::cerr << "Proof:" << std::endl;
@@ -150,22 +152,25 @@ bool Verifier::RunCFGIsDAGCheck(const Circuit *circuit)
             return true;
         }
         circuit->SetMark(cur, MarkCode::VISITED);
-        for (const auto &succ : circuit->GetOutVector(cur)) {
-            if (circuit->GetOpCode(succ).IsState()) {
-                if (circuit->GetMark(succ) == MarkCode::VISITED) {
+        GateAccessor gateAcc(const_cast<Circuit *>(circuit));
+        auto uses = gateAcc.ConstUses(cur);
+        for (auto use = uses.begin(); use != uses.end(); ++use) {
+            if (circuit->GetOpCode(*use).IsState() && use.GetIndex() < circuit->GetOpCode(*use).GetStateCount(
+                circuit->LoadGatePtrConst(*use)->GetBitField())) {
+                if (circuit->GetMark(*use) == MarkCode::VISITED) {
                     std::cerr << "[Verifier][Error] CFG without loop back edges is not directed acyclic graph"
                               << std::endl;
                     std::cerr << "Proof:" << std::endl;
-                    std::cerr << "(id=" << circuit->GetId(succ) << ") is succ of "
+                    std::cerr << "(id=" << circuit->GetId(*use) << ") is succ of "
                               << "(id=" << circuit->GetId(cur) << ")" << std::endl;
                     std::cerr << "(id=" << circuit->GetId(cur) << ") is reachable from "
-                              << "(id=" << circuit->GetId(succ) << ") without loop back edges" << std::endl;
+                              << "(id=" << circuit->GetId(*use) << ") without loop back edges" << std::endl;
                     return false;
                 }
-                if (circuit->GetMark(succ) == MarkCode::FINISHED) {
+                if (circuit->GetMark(*use) == MarkCode::FINISHED) {
                     return true;
                 }
-                if (!dfs(succ)) {
+                if (!dfs(*use)) {
                     return false;
                 }
             }
@@ -189,18 +194,22 @@ bool Verifier::RunCFGReducibilityCheck(const Circuit *circuit, const std::vector
 {
     for (const auto &curGate : bbGatesList) {
         if (circuit->GetOpCode(curGate) == OpCode::LOOP_BACK) {
-            for (const auto &succGate : circuit->GetOutVector(curGate)) {
-                if (circuit->GetOpCode(succGate).IsState()) {
-                    bool isDom = isAncestor(bbGatesAddrToIdx.at(succGate), bbGatesAddrToIdx.at(curGate));
-                    if (!isDom) {
-                        std::cerr << "[Verifier][Error] CFG is not reducible" << std::endl;
-                        std::cerr << "Proof:" << std::endl;
-                        std::cerr << "(id=" << circuit->GetId(succGate) << ") is loop back succ of "
-                                  << "(id=" << circuit->GetId(curGate) << ")" << std::endl;
-                        std::cerr << "(id=" << circuit->GetId(succGate) << ") does not dominate "
-                                  << "(id=" << circuit->GetId(curGate) << ")" << std::endl;
-                        return false;
-                    }
+            GateAccessor gateAcc(const_cast<Circuit *>(circuit));
+            auto uses = gateAcc.ConstUses(curGate);
+            for (auto use = uses.begin(); use != uses.end(); use++) {
+                if (use.GetIndex() >= circuit->LoadGatePtrConst(*use)->GetStateCount()) {
+                    continue;
+                }
+                ASSERT(circuit->LoadGatePtrConst(*use)->GetOpCode().IsState());
+                bool isDom = isAncestor(bbGatesAddrToIdx.at(*use), bbGatesAddrToIdx.at(curGate));
+                if (!isDom) {
+                    std::cerr << "[Verifier][Error] CFG is not reducible" << std::endl;
+                    std::cerr << "Proof:" << std::endl;
+                    std::cerr << "(id=" << circuit->GetId(*use) << ") is loop back succ of "
+                              << "(id=" << circuit->GetId(curGate) << ")" << std::endl;
+                    std::cerr << "(id=" << circuit->GetId(*use) << ") does not dominate "
+                              << "(id=" << circuit->GetId(curGate) << ")" << std::endl;
+                    return false;
                 }
             }
         }

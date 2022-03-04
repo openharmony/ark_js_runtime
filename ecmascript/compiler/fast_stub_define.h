@@ -45,8 +45,8 @@ namespace panda::ecmascript::kungfu {
     V(UpdateLayOutAndAddTransition, 5)       \
     V(NoticeThroughChainAndRefreshUser, 3)   \
     I(DebugPrint, 1)                         \
-    V(InsertOldToNewRememberedSet, 3)        \
-    V(MarkingBarrier, 5)                     \
+    I(InsertOldToNewRememberedSet, 3)        \
+    I(MarkingBarrier, 5)                     \
     V(JumpToCInterpreter, 7)                 \
     V(StGlobalRecord, 4)                     \
     V(SetFunctionNameNoPrefix, 3)            \
@@ -135,17 +135,40 @@ namespace panda::ecmascript::kungfu {
     V(Mul2Dyn, 3)                            \
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
+    V(GetLexicalEnv, 1)                      \
+    V(LoadValueFromConstantPool, 3)          \
+    V(CreateEmptyObject, 1)                  \
+    V(CreateEmptyArray, 1)                   \
+    V(GetSymbolFunction, 1)                  \
+    V(GetUnmapedArgs, 2)                     \
+    V(CopyRestArgs, 3)                       \
+    V(CreateArrayWithBuffer, 2)              \
+    V(CreateObjectWithBuffer, 2)             \
+    V(NewLexicalEnvDyn, 2)                   \
+    V(NewObjDynRange, 5)                     \
+    V(DefinefuncDyn, 2)                      \
+    V(CreateRegExpWithLiteral, 3)            \
+    V(ThrowIfSuperNotCorrectCall, 3)         \
+    V(CreateObjectHavingMethod, 4)           \
+    V(CreateObjectWithExcludedKeys, 4)       \
+    V(DefineNCFuncDyn, 2)                    \
+    V(DefineGeneratorFunc, 2)                \
+    V(DefineAsyncFunc, 2)                    \
+    V(DefineMethod, 3)                       \
+    V(CallSpreadDyn, 4)                      \
+    V(DefineGetterSetterByValue, 6)          \
+    V(SuperCall, 5)                          \
     I(CallRuntimeTrampoline, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 
 #define FAST_STUB_LIST(V)        \
-    V(FastAdd, 2)                       \
-    V(FastSub, 2)                       \
-    V(FastMul, 2)                       \
-    V(FastDiv, 2)                       \
+    V(FastAdd, 3)                       \
+    V(FastSub, 3)                       \
+    V(FastMul, 3)                       \
+    V(FastDiv, 3)                       \
     V(FastMod, 3)                       \
-    V(FastEqual, 2)                     \
+    V(FastEqual, 3)                     \
     V(FastTypeOf, 2)                    \
     V(GetPropertyByName, 3)             \
     V(SetPropertyByName, 4)             \
@@ -170,10 +193,7 @@ namespace panda::ecmascript::kungfu {
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
-    V(PhiGateTest, 1)               \
     V(FastMulGCTest, 3)             \
-    V(LoopTest, 1)                  \
-    V(LoopTest1, 1)                 \
     V(TestAbsoluteAddressRelocation, 2)
 
 #define CALL_STUB_LIST(V)           \

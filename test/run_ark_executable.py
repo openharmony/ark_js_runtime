@@ -48,7 +48,7 @@ def judge_output(args):
         env={'LD_LIBRARY_PATH': str(input_args.env_path)})
     try:
         out, err = subp.communicate(timeout=300) # units: s
-    except TimeoutExpired:
+    except subprocess.TimeoutExpired:
         subp.kill()
         out, err = subp.communicate()
 

@@ -17,7 +17,9 @@
 #define ECMASCRIPT_INTERPRETER_INTERPRETER_INL_H
 
 #include "ecmascript/class_linker/program_object-inl.h"
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
+#endif
 #include "ecmascript/class_linker/program_object-inl.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ecma_vm.h"

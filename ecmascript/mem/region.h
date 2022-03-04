@@ -20,6 +20,7 @@
 #include "ecmascript/mem/mem.h"
 #include "mem/gc/bitmap.h"
 #include "native_area_allocator.h"
+#include "securec.h"
 
 namespace panda {
 using RangeBitmap = mem::MemBitmap<static_cast<size_t>(ecmascript::MemAlignment::MEM_ALIGN_OBJECT)>;
@@ -269,7 +270,11 @@ public:
     int SetCodeExecutableAndReadable()
     {
         // NOLINT(hicpp-signed-bitwise)
+#ifndef PANDA_TARGET_WINDOWS
         int res = mprotect(reinterpret_cast<void *>(allocateBase_), GetCapacity(), PROT_EXEC | PROT_READ | PROT_WRITE);
+#else
+        int res = 0;
+#endif
         return res;
     }
 
@@ -427,14 +432,22 @@ public:
     static const size_t BITSPERWORD_64 = BITSPERBYTE * sizeof(uint64_t);
     static const size_t BITSPERWORD_32 = BITSPERBYTE * sizeof(uint32_t);
     static constexpr size_t LOG_BITSPERWORD_64 = panda::helpers::math::GetIntLog2(
-        static_cast<uint64_t>(BITSPERWORD_64));
+        static_cast<uint32_t>(BITSPERWORD_64));
     static constexpr size_t LOG_BITSPERWORD_32 = panda::helpers::math::GetIntLog2(
-        static_cast<uint64_t>(BITSPERWORD_32));
+        static_cast<uint32_t>(BITSPERWORD_32));
+    static constexpr size_t LOG_INTPTR_SIZE_64 = panda::helpers::math::GetIntLog2(
+        static_cast<uint32_t>(sizeof(uint64_t)));
+    static constexpr size_t LOG_INTPTR_SIZE_32 = panda::helpers::math::GetIntLog2(
+        static_cast<uint32_t>(sizeof(uint32_t)));
     NO_COPY_SEMANTIC(BitmapHelper);
     NO_MOVE_SEMANTIC(BitmapHelper);
     static constexpr uint32_t LogBitsPerWord(bool is32Bit = false)
     {
         return is32Bit ? LOG_BITSPERWORD_32 : LOG_BITSPERWORD_64;
+    }
+    static constexpr uint32_t LogIntptrSize(bool is32Bit = false)
+    {
+        return is32Bit ? LOG_INTPTR_SIZE_32 : LOG_INTPTR_SIZE_64;
     }
     static constexpr bool CheckLayout()
     {

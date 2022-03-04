@@ -17,7 +17,7 @@
 #define ECMASCRIPT_RUNTIME_CALL_ID_H
 
 #include "ecmascript/base/config.h"
-#include "ecmascript/vmstat/runtime_stat.h"
+#include "ecmascript/dfx/vmstat/runtime_stat.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

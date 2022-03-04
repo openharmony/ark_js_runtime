@@ -49,7 +49,7 @@ private:
 
     void WriteJSON(const CString &fileName);
     fstream outputStream_;
-    HeapSnapShot *snapShot_{nullptr};
+    HeapSnapShot *snapShot_ {nullptr};
     stringstream stringBuffer_;
 };
 }  // namespace panda::ecmascript

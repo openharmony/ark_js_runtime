@@ -21,14 +21,14 @@
 #include <fstream>
 #include <sys/time.h>
 
-#include "ecmascript/mem/c_containers.h"
-#include "os/mem.h"
-#include "ecmascript/hprof/heap_profiler.h"
-#include "ecmascript/hprof/heap_root_visitor.h"
-#include "ecmascript/hprof/string_hashmap.h"
+#include "ecmascript/dfx/hprof/heap_profiler.h"
+#include "ecmascript/dfx/hprof/heap_root_visitor.h"
+#include "ecmascript/dfx/hprof/string_hashmap.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_tagged_value.h"
+#include "ecmascript/mem/c_containers.h"
+#include "os/mem.h"
 
 namespace panda::ecmascript {
 // Define the Object Graphic
@@ -116,15 +116,15 @@ public:
     static constexpr int NODE_FIELD_COUNT = 7;
     ~Node() = default;
 private:
-    uint64_t id_{0};  // Range from 1
-    uint64_t index_{0};
-    CString *name_{nullptr};
-    NodeType type_{NodeType::INVALID};
-    size_t size_{0};
-    size_t edgeCount_{0};
-    uint64_t traceId_{0};
-    Address address_{0x0};
-    bool isLive_{true};
+    uint64_t id_ {0};  // Range from 1
+    uint64_t index_ {0};
+    CString *name_ {nullptr};
+    NodeType type_ {NodeType::INVALID};
+    size_t size_ {0};
+    size_t edgeCount_ {0};
+    uint64_t traceId_ {0};
+    Address address_ {0x0};
+    bool isLive_ {true};
 };
 
 class Edge {
@@ -169,11 +169,11 @@ public:
     static constexpr int EDGE_FIELD_COUNT = 3;
     ~Edge() = default;
 private:
-    uint64_t id_{-1ULL};
-    EdgeType edgeType_{EdgeType::DEFAULT};
-    Node *from_{nullptr};
-    Node *to_{nullptr};
-    CString *name_{nullptr};
+    uint64_t id_ {-1ULL};
+    EdgeType edgeType_ {EdgeType::DEFAULT};
+    Node *from_ {nullptr};
+    Node *to_ {nullptr};
+    CString *name_ {nullptr};
 };
 
 class TimeStamp {
@@ -203,8 +203,8 @@ private:
         return tv.tv_usec + tv.tv_sec * THOUSAND * THOUSAND;
     }
 
-    int lastSequenceId_{0};
-    int64_t timeStampUs_{0};
+    int lastSequenceId_ {0};
+    int64_t timeStampUs_ {0};
 };
 
 class HeapEntryMap {
@@ -227,8 +227,8 @@ public:
     void InsertEntry(Node *node);
 
 private:
-    size_t nodeEntryCount_{0};
-    CUnorderedMap<Address, Node *> nodesMap_{};
+    size_t nodeEntryCount_ {0};
+    CUnorderedMap<Address, Node *> nodesMap_ {};
 };
 
 class HeapSnapShot {
@@ -314,18 +314,18 @@ private:
     Edge *InsertEdgeAt(size_t pos, Edge *edge);
 
     StringHashMap stringTable_;
-    CList<Node *> nodes_{};
-    CVector<Edge *> edges_{};
-    CVector<TimeStamp> timeStamps_{};
-    std::atomic_int sequenceId_{1};  // 1 Reversed for SyntheticRoot
-    int nodeCount_{0};
-    int edgeCount_{0};
-    int totalNodesSize_{0};
+    CList<Node *> nodes_ {};
+    CVector<Edge *> edges_ {};
+    CVector<TimeStamp> timeStamps_ {};
+    std::atomic_int sequenceId_ {1};  // 1 Reversed for SyntheticRoot
+    int nodeCount_ {0};
+    int edgeCount_ {0};
+    int totalNodesSize_ {0};
     HeapEntryMap entryMap_;
     panda::ecmascript::HeapRootVisitor rootVisitor_;
     JSThread *thread_;
     const Heap *heap_;
-    bool isVmMode_{true};
+    bool isVmMode_ {true};
 };
 
 class EntryVisitor {

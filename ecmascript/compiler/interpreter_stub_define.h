@@ -32,24 +32,24 @@ namespace panda::ecmascript::kungfu {
 #define ASM_INTERPRETER_STUB_LIST(V, T)                     \
     T(HandleLdNanPref, 7)                                   \
     T(HandleLdInfinityPref, 7)                              \
-    V(HandleLdGlobalThisPref, 7)                            \
+    T(HandleLdGlobalThisPref, 7)                            \
     T(HandleLdUndefinedPref, 7)                             \
     T(HandleLdNullPref, 7)                                  \
-    V(HandleLdSymbolPref, 7)                                \
-    V(HandleLdGlobalPref, 7)                                \
+    T(HandleLdSymbolPref, 7)                                \
+    T(HandleLdGlobalPref, 7)                                \
     T(HandleLdTruePref, 7)                                  \
     T(HandleLdFalsePref, 7)                                 \
     T(HandleThrowDynPref, 7)                                \
     T(HandleTypeOfDynPref, 7)                               \
     T(HandleLdLexEnvDynPref, 7)                             \
     T(HandlePopLexEnvDynPref, 7)                            \
-    V(HandleGetUnmappedArgsPref, 7)                         \
+    T(HandleGetUnmappedArgsPref, 7)                         \
     T(HandleGetPropIteratorPref, 7)                         \
     T(HandleAsyncFunctionEnterPref, 7)                      \
     T(HandleLdHolePref, 7)                                  \
     T(HandleReturnUndefinedPref, 7)                         \
-    V(HandleCreateEmptyObjectPref, 7)                       \
-    V(HandleCreateEmptyArrayPref, 7)                        \
+    T(HandleCreateEmptyObjectPref, 7)                       \
+    T(HandleCreateEmptyArrayPref, 7)                        \
     T(HandleGetIteratorPref, 7)                             \
     T(HandleThrowThrowNotExistsPref, 7)                     \
     T(HandleThrowPatternNonCoerciblePref, 7)                \
@@ -114,28 +114,28 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdObjByIndexPrefV8Imm32, 7)                     \
     T(HandleStObjByIndexPrefV8Imm32, 7)                     \
     T(HandleStOwnByIndexPrefV8Imm32, 7)                     \
-    V(HandleCallSpreadDynPrefV8V8V8, 7)                     \
-    V(HandleAsyncFunctionResolvePrefV8V8V8, 7)              \
-    V(HandleAsyncFunctionRejectPrefV8V8V8, 7)               \
+    T(HandleCallSpreadDynPrefV8V8V8, 7)                     \
+    T(HandleAsyncFunctionResolvePrefV8V8V8, 7)              \
+    T(HandleAsyncFunctionRejectPrefV8V8V8, 7)               \
     V(HandleCallArgs2DynPrefV8V8V8, 7)                      \
     V(HandleCallArgs3DynPrefV8V8V8V8, 7)                    \
-    V(HandleDefineGetterSetterByValuePrefV8V8V8V8, 7)       \
-    V(HandleNewObjDynRangePrefImm16V8, 7)                   \
+    T(HandleDefineGetterSetterByValuePrefV8V8V8V8, 7)       \
+    T(HandleNewObjDynRangePrefImm16V8, 7)                   \
     V(HandleCallIRangeDynPrefImm16V8, 7)                    \
     V(HandleCallIThisRangeDynPrefImm16V8, 7)                \
-    V(HandleSuperCallPrefImm16V8, 7)                        \
-    V(HandleCreateObjectWithExcludedKeysPrefImm16V8V8, 7)   \
-    V(HandleDefineFuncDynPrefId16Imm16V8, 7)                \
-    V(HandleDefineNCFuncDynPrefId16Imm16V8, 7)              \
-    V(HandleDefineGeneratorFuncPrefId16Imm16V8, 7)          \
-    V(HandleDefineAsyncFuncPrefId16Imm16V8, 7)              \
-    V(HandleDefineMethodPrefId16Imm16V8, 7)                 \
-    V(HandleNewLexEnvDynPrefImm16, 7)                       \
-    V(HandleCopyRestArgsPrefImm16, 7)                       \
-    V(HandleCreateArrayWithBufferPrefImm16, 7)              \
-    V(HandleCreateObjectHavingMethodPrefImm16, 7)           \
-    V(HandleThrowIfSuperNotCorrectCallPrefImm16, 7)         \
-    V(HandleCreateObjectWithBufferPrefImm16, 7)             \
+    T(HandleSuperCallPrefImm16V8, 7)                        \
+    T(HandleCreateObjectWithExcludedKeysPrefImm16V8V8, 7)   \
+    T(HandleDefineFuncDynPrefId16Imm16V8, 7)                \
+    T(HandleDefineNCFuncDynPrefId16Imm16V8, 7)              \
+    T(HandleDefineGeneratorFuncPrefId16Imm16V8, 7)          \
+    T(HandleDefineAsyncFuncPrefId16Imm16V8, 7)              \
+    T(HandleDefineMethodPrefId16Imm16V8, 7)                 \
+    T(HandleNewLexEnvDynPrefImm16, 7)                       \
+    T(HandleCopyRestArgsPrefImm16, 7)                       \
+    T(HandleCreateArrayWithBufferPrefImm16, 7)              \
+    T(HandleCreateObjectHavingMethodPrefImm16, 7)           \
+    T(HandleThrowIfSuperNotCorrectCallPrefImm16, 7)         \
+    T(HandleCreateObjectWithBufferPrefImm16, 7)             \
     T(HandleLdLexVarDynPrefImm4Imm4, 7)                     \
     T(HandleLdLexVarDynPrefImm8Imm8, 7)                     \
     T(HandleLdLexVarDynPrefImm16Imm16, 7)                   \
@@ -155,7 +155,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleLdSuperByNamePrefId32V8, 7)                     \
     T(HandleStSuperByNamePrefId32V8, 7)                     \
     T(HandleLdModVarByNamePrefId32V8, 7)                    \
-    V(HandleCreateRegExpWithLiteralPrefId32Imm8, 7)         \
+    T(HandleCreateRegExpWithLiteralPrefId32Imm8, 7)         \
     T(HandleIsTruePref, 7)                                  \
     T(HandleIsFalsePref, 7)                                 \
     T(HandleStConstToGlobalRecordPrefId32, 7)               \
@@ -164,6 +164,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleStOwnByValueWithNameSetPrefV8V8, 7)             \
     T(HandleStOwnByNameWithNameSetPrefId32V8, 7)            \
     T(HandleLdFunctionPref, 7)                              \
+    V(HandleNewLexEnvWithNameDynPrefImm16Imm16, 7)          \
     T(HandleMovDynV8V8, 7)                                  \
     T(HandleMovDynV16V16, 7)                                \
     T(HandleLdaStrId32, 7)                                  \

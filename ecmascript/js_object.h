@@ -30,7 +30,9 @@
 #include "ecmascript/mem/slots.h"
 #include "ecmascript/object_operator.h"
 #include "ecmascript/property_attributes.h"
+#ifndef PANDA_TARGET_WINDOWS
 #include "ecmascript/runtime_trampolines.h"
+#endif
 #include "ecmascript/tagged_array.h"
 
 namespace panda {

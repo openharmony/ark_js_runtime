@@ -35,10 +35,15 @@ public:
     };
 
     static constexpr std::string_view ENTRY_FUNC_NAME = "func_main_0";
-    static constexpr size_t RESERVE_TABLE_LENGTH = 2; // for reserve length and reserve exportTable
+    static constexpr size_t RESERVE_TABLE_LENGTH = 2; // for reserve length and exportTable
     static constexpr size_t TABLE_LENGTH_OFFSET_IN_LITREAL = 1;
     static constexpr size_t TYPE_KIND_OFFSET = 0;
     static constexpr size_t LENGTH_OFFSET = 0;
+    static constexpr const char* DECLARED_FILE_NAME = "ohos.lib.d.ts";
+    static constexpr const char* DECLARED_SYMBOLS = "declaredSymbols";
+    static constexpr const char* DECLARED_SYMBOL_TYPES = "declaredSymbolTypes";
+    static constexpr const char* EXPORTED_SYMBOLS = "exportedSymbols";
+    static constexpr const char* EXPORTED_SYMBOL_TYPES = "exportedSymbolTypes";
 
     inline static TSTypeTable *Cast(TaggedObject *object)
     {
@@ -47,7 +52,7 @@ public:
     }
 
     static void Initialize(JSThread *thread, const panda_file::File &pf,
-                           CVector<JSHandle<EcmaString>> &recordImportMdoules);
+                           CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static GlobalTSTypeRef GetPropertyType(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
                                            uint32_t index, JSHandle<EcmaString> propName);
@@ -55,11 +60,11 @@ public:
     static JSHandle<JSTaggedValue> ParseType(JSThread *thread, JSHandle<TSTypeTable> &table,
                                              JSHandle<TaggedArray> &literal,
                                              JSHandle<EcmaString> fileName,
-                                             CVector<JSHandle<EcmaString>> &recordImportMdoules);
+                                             CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static JSHandle<TaggedArray> GetExportValueTable(JSThread *thread, JSHandle<TSTypeTable> typeTable);
 
-    void SetTypeTableLength(const JSThread *thread, uint32_t length)
+    void SetTypeTableLength(JSThread *thread, uint32_t length)
     {
         TaggedArray::Set(thread, LENGTH_OFFSET, JSTaggedValue(length));
     }
@@ -69,10 +74,12 @@ public:
         return localId - GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT;
     }
 
+    void SetExportValueTable(JSThread *thread, const panda_file::File &pf);
+
 private:
 
     static JSHandle<TSTypeTable> GenerateTypeTable(JSThread *thread, const panda_file::File &pf,
-                                                    CVector<JSHandle<EcmaString>> &recordImportMdoules);
+                                                    CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static JSHandle<TaggedArray> GetExportTableFromPandFile(JSThread *thread, const panda_file::File &pf);
 
@@ -86,16 +93,22 @@ private:
     static JSHandle<TSInterfaceType> ParseInterfaceType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
                                                         const JSHandle<TaggedArray> &literal);
 
-    static JSHandle<TSImportType> ParseImportType(JSThread *thread,
-                                                  const JSHandle<TaggedArray> &literal,
+    static JSHandle<TSImportType> ParseImportType(JSThread *thread, const JSHandle<TaggedArray> &literal,
                                                   JSHandle<EcmaString> fileName,
-                                                  CVector<JSHandle<EcmaString>> &recordImportMdoules);
+                                                  CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static JSHandle<TSUnionType> ParseUnionType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
                                                 const JSHandle<TaggedArray> &literal);
 
     static JSHandle<TSObjectType> LinkSuper(JSThread *thread, JSHandle<TSClassType> &baseClassType,
                                             uint32_t *numBaseFields, uint32_t numDerivedFields);
+
+    static void CheckModule(JSThread *thread, const TSLoader* tsLoader, const JSHandle<EcmaString> target,
+                             CVector<JSHandle<EcmaString>> &recordImportModules);
+
+    static JSHandle<EcmaString> GenerateVarNameAndPath(JSThread *thread, JSHandle<EcmaString> importPath,
+                                                       JSHandle<EcmaString> fileName,
+                                                       CVector<JSHandle<EcmaString>> &recordImportModules);
 };
 }  // namespace panda::ecmascript
 

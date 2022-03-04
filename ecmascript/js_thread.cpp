@@ -48,6 +48,7 @@ JSThread::JSThread(Runtime *runtime, PandaVM *vm)
     globalStorage_ = chunk->New<EcmaGlobalStorage>(chunk);
     internalCallParams_ = new InternalCallParams();
     propertiesCache_ = new PropertiesCache();
+    vmThreadControl_ = new VmThreadControl();
 }
 
 JSThread::~JSThread()
@@ -72,6 +73,10 @@ JSThread::~JSThread()
     if (propertiesCache_ != nullptr) {
         delete propertiesCache_;
         propertiesCache_ = nullptr;
+    }
+    if (vmThreadControl_ != nullptr) {
+        delete vmThreadControl_;
+        vmThreadControl_ = nullptr;
     }
 }
 
@@ -251,10 +256,10 @@ void JSThread::LoadStubModule(const char *moduleFile)
     stubCode_ = stubModule.GetCode();
 }
 
-bool JSThread::CheckSafepoint()
+bool JSThread::CheckSafepoint() const
 {
-    if (VMNeedSuspension()) {
-        SuspendVM();
+    if (vmThreadControl_->VMNeedSuspension()) {
+        vmThreadControl_->SuspendVM();
     }
 #ifndef NDEBUG
     EcmaVM::Cast(GetVM())->CollectGarbage(TriggerGCType::FULL_GC);
@@ -266,36 +271,5 @@ bool JSThread::CheckSafepoint()
         return true;
     }
     return false;
-}
-
-bool JSThread::NotifyVMThreadSuspension() // block caller thread
-{
-    if (VMNeedSuspension()) { // only enable one thread to post suspension
-        return false;
-    }
-    SetVMNeedSuspension(true);
-    os::memory::LockHolder lock(vmThreadSuspensionMutex_);
-    while (!IsSuspended()) {
-        vmThreadNeedSuspensionCV_.Wait(&vmThreadSuspensionMutex_);
-    }
-    return true;
-}
-
-void JSThread::SuspendVM() // block vm thread
-{
-    os::memory::LockHolder lock(vmThreadSuspensionMutex_);
-    SetVMSuspened(true);
-    vmThreadNeedSuspensionCV_.Signal(); // wake up the thread who needs suspend vmthread
-    while (VMNeedSuspension()) {
-        vmThreadHasSuspendedCV_.Wait(&vmThreadSuspensionMutex_);
-    }
-    SetVMSuspened(false);
-}
-
-void JSThread::ResumeVM()
-{
-    os::memory::LockHolder lock(vmThreadSuspensionMutex_);
-    SetVMNeedSuspension(false);
-    vmThreadHasSuspendedCV_.Signal();
 }
 }  // namespace panda::ecmascript

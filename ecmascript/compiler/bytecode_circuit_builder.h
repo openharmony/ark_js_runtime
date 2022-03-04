@@ -161,6 +161,8 @@ public:
         return commonArgs_[idx];
     }
 
+    BytecodeInfo GetBytecodeInfo(uint8_t *pc);
+
 private:
     void PUBLIC_API CollectBytecodeBlockInfo(uint8_t* pc, std::vector<CfgInfo> &bytecodeBlockInfos);
 
@@ -178,7 +180,6 @@ private:
     void ComputeDominatorTree(BytecodeGraph &byteCodeGraph);
     void BuildImmediateDominator(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph);
     void ComputeDomFrontiers(std::vector<int32_t> &immDom, BytecodeGraph &byteCodeGraph);
-    BytecodeInfo GetBytecodeInfo(uint8_t *pc);
     void RemoveDeadRegions(const std::map<size_t, size_t> &dfsTimestamp, BytecodeGraph &byteCodeGraph);
     void InsertPhi(BytecodeGraph &byteCodeGraph);
     void UpdateCFG(BytecodeGraph &byteCodeGraph);

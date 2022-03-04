@@ -66,7 +66,7 @@ public:
 
     JSHandle<JSTaggedValue> GetModule(const JSThread *thread, JSHandle<JSTaggedValue> moduleName);
 
-    CString GenerateAmiPath(const std::string &currentPathFile, const CString &relativeFile);
+    CString GenerateAmiPath(const CString &currentPathFile, const CString &relativeFile);
 
     const CString &GetCurrentExportModuleName();
 

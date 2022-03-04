@@ -1226,7 +1226,7 @@ void LLVMIRBuilder::VisitSub(GateRef gate, GateRef e1, GateRef e2)
     COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
-    if (machineType == MachineType::I32 || machineType == MachineType::I64) {
+    if (machineType == MachineType::I16 || machineType == MachineType::I32 || machineType == MachineType::I64) {
         result = LLVMBuildSub(builder_, e1Value, e2Value, "");
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFSub(builder_, e1Value, e2Value, "");

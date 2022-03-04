@@ -14,13 +14,18 @@
  */
 
 #include "ecmascript/napi/include/dfx_jsnapi.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/hprof/heap_profiler.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/hprof/heap_profiler.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/heap-inl.h"
+
 namespace panda {
 using ecmascript::CString;
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+using ecmascript::CpuProfiler;
+#endif
 using ecmascript::EcmaString;
 using ecmascript::JSTaggedValue;
 using ecmascript::GCStats;
@@ -101,5 +106,43 @@ size_t DFXJSNApi::GetHeapTotalSize(EcmaVM *vm)
 size_t DFXJSNApi::GetHeapUsedSize(EcmaVM *vm)
 {
     return vm->GetHeap()->GetHeapObjectSize();
+}
+
+#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
+void DFXJSNApi::StartCpuProfiler(const EcmaVM *vm, const std::string &fileName)
+{
+    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
+    singleton->StartCpuProfiler(vm, fileName);
+}
+
+void DFXJSNApi::StopCpuProfiler()
+{
+    panda::ecmascript::CpuProfiler* singleton = panda::ecmascript::CpuProfiler::GetInstance();
+    singleton->StopCpuProfiler();
+}
+#endif
+
+bool DFXJSNApi::SuspendVM(const EcmaVM *vm)
+{
+    ecmascript::VmThreadControl* vmThreadControl = vm->GetJSThreadNoCheck()->GetVmThreadControl();
+    return vmThreadControl->NotifyVMThreadSuspension();
+}
+
+void DFXJSNApi::ResumeVM(const EcmaVM *vm)
+{
+    ecmascript::VmThreadControl* vmThreadControl = vm->GetJSThreadNoCheck()->GetVmThreadControl();
+    vmThreadControl->ResumeVM();
+}
+
+bool DFXJSNApi::IsSuspended(const EcmaVM *vm)
+{
+    ecmascript::VmThreadControl* vmThreadControl = vm->GetJSThreadNoCheck()->GetVmThreadControl();
+    return vmThreadControl->IsSuspended();
+}
+
+bool DFXJSNApi::CheckSafepoint(const EcmaVM *vm)
+{
+    ecmascript::JSThread* thread = vm->GetJSThread();
+    return  thread->CheckSafepoint();
 }
 }

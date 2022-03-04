@@ -627,6 +627,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::LDA_STR_ID32: {
             info.accOut = true;
             info.offset = BytecodeOffset::FIVE;
+            info.imm = READ_INST_32_0();
             break;
         }
         case EcmaOpcode::JMP_IMM8: {
@@ -1461,6 +1462,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::TRYLDGLOBALBYNAME_PREF_ID32: {
             info.accOut = true;
             info.offset = BytecodeOffset::SIX;
+            info.imm = READ_INST_32_1();
             break;
         }
         case EcmaOpcode::TRYSTGLOBALBYNAME_PREF_ID32: {
@@ -1535,6 +1537,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::STGLOBALVAR_PREF_ID32: {
             info.accIn = true;
             info.offset = BytecodeOffset::SIX;
+            info.imm = READ_INST_32_1();
             break;
         }
         case EcmaOpcode::CREATEGENERATOROBJ_PREF_V8: {
@@ -2083,7 +2086,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
 
     // resolve def-site of virtual regs and set all value inputs
     for (auto gate: circuit_.GetAllGates()) {
-        auto numInsArray = circuit_.GetOpCode(gate).GetOpCodeNumInsArray(circuit_.GetBitField(gate));
+        auto valueCount = circuit_.GetOpCode(gate).GetInValueCount(circuit_.GetBitField(gate));
         auto it = jsgateToBytecode_.find(gate);
         if (it == jsgateToBytecode_.end()) {
             continue;
@@ -2092,7 +2095,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
         auto bytecodeInfo = GetBytecodeInfo(pc);
         [[maybe_unused]] size_t numValueInputs = (bytecodeInfo.accIn ? 1 : 0) + bytecodeInfo.vregIn.size();
         [[maybe_unused]] size_t numValueOutputs = (bytecodeInfo.accOut ? 1 : 0) + bytecodeInfo.vregOut.size();
-        ASSERT(numValueInputs == numInsArray[2]); // 2 : 2 num of input value
+        ASSERT(numValueInputs == valueCount);
         ASSERT(numValueOutputs <= 1);
         // recursive variables renaming algorithm
         std::function<GateRef(size_t, const uint8_t *, uint16_t, bool)> defSiteOfReg =
@@ -2199,8 +2202,10 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         return ans;
                     }
                 };
-        for (size_t valueIdx = 0; valueIdx < numInsArray[2]; valueIdx++) { // 2: input value num
-            auto inIdx = valueIdx + numInsArray[0] + numInsArray[1];
+        auto stateCount = circuit_.GetOpCode(gate).GetStateCount(circuit_.GetBitField(gate));
+        auto dependCount = circuit_.GetOpCode(gate).GetStateCount(circuit_.GetBitField(gate));
+        for (size_t valueIdx = 0; valueIdx < valueCount; valueIdx++) {
+            auto inIdx = valueIdx + stateCount + dependCount;
             if (!circuit_.IsInGateNull(gate, inIdx)) {
                 continue;
             }
