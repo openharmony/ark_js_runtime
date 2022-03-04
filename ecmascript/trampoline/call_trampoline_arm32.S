@@ -112,9 +112,9 @@ JSFunctionEntry:
 //   |       frameType          |   v
 //   +--------------------------+ ---
 
-.global RuntimeCallTrampoline
-.type RuntimeCallTrampoline, %function
-RuntimeCallTrampoline:
+.global RuntimeCallTrampolineAot
+.type RuntimeCallTrampolineAot, %function
+RuntimeCallTrampolineAot:
     push    {r11, lr}                                   // save register for fp, rip
     mov     r11, sp                                     // set frame pointer = callsiteFp
     str     r11, [r0, #ASM_GLUE_CURRENT_FRAME_OFFSET]   // save to thread->currentFrame_
@@ -139,4 +139,33 @@ RuntimeCallTrampoline:
     pop     {r4, r5}
     add     sp, sp, #8
     pop     {r11, lr}
+    bx      lr
+
+.global RuntimeCallTrampolineInterpreterAsm
+.type RuntimeCallTrampolineInterpreterAsm, %function
+RuntimeCallTrampolineInterpreterAsm:
+    add     sp, sp, #-8
+    str     lr, [sp, #4]
+    str     sp, [r0, #ASM_GLUE_LEAVE_FRAME_OFFSET]   // save to thread->currentFrame_
+    add     sp, sp, #-8                                 // increase frame size
+    push    {r4, r5}                                    // callee save
+
+    // construct leave frame
+    mov     r4, #0
+    mov     r5, #ASM_LEAVE_FRAME_TYPE
+    str     r4, [sp, #12]
+    str     r5, [sp, #8]                              // save frame type
+
+
+    // load runtime trampoline address
+    add     r2, r0, r2, lsl #2
+    ldr     r4, [r2, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
+    ldr     r1, [sp, #24]  // argc
+    add     r2, sp,  #32   // argv[]
+    blx      r4
+
+    // descontruct leave frame and callee save register
+    pop     {r4, r5}
+    add     sp, sp, #12
+    ldr     r1, [sp, #0]
     bx      lr

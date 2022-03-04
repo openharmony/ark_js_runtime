@@ -433,10 +433,17 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
         return JSTaggedValue::Undefined();
     }
     InterpretedFrame *breakState = GET_FRAME(newSp);
+    auto leaveFrame = const_cast<JSTaggedType *>(thread->GetLastLeaveFrame());
+    if (leaveFrame != nullptr) {
+        [[maybe_unused]] OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(leaveFrame);
+        frame->callsiteFp = reinterpret_cast<uintptr_t>(sp);
+        breakState->base.prev = leaveFrame;
+    } else {
+        breakState->base.prev = sp;
+    }
     breakState->pc = nullptr;
     breakState->sp = nullptr;
     breakState->function = JSTaggedValue::Hole();
-    breakState->base.prev = sp;
     breakState->base.type = FrameType::INTERPRETER_FRAME;
     JSTaggedType *prevSp = newSp;
 

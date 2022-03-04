@@ -1048,12 +1048,28 @@ CALL_STUB_INIT_DESCRIPTOR(IterNext)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampoline)
+CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampolineAot)
 {
     /* 3 : 3 input parameters */
-    StubDescriptor runtimeCallTrampoline("RuntimeCallTrampoline", 0, 3,
+    StubDescriptor runtimeCallTrampolineAot("RuntimeCallTrampolineAot", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = runtimeCallTrampoline;
+    *descriptor = runtimeCallTrampolineAot;
+    std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
+        VariableType::POINTER(),
+        VariableType::INT64(),
+        VariableType::INT64(),
+    };
+    descriptor->SetVariableArgs(true);
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampolineInterpreterAsm)
+{
+    /* 3 : 3 input parameters */
+    StubDescriptor runtimeCallTrampolineInterpreterAsm("RuntimeCallTrampolineInterpreterAsm", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = runtimeCallTrampolineInterpreterAsm;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
         VariableType::POINTER(),
         VariableType::INT64(),

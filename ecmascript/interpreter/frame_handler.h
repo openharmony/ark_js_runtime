@@ -66,7 +66,7 @@ public:
 
     bool IsOptimizedLeaveFrame() const
     {
-        return GetFrameType() == FrameType::OPTIMIZED_LEAVE_FRAME;
+        return GetFrameType() == FrameType::OPTIMIZED_LEAVE_FRAME || GetFrameType() == FrameType::ASM_LEAVE_FRAME;
     }
 
     OptimizedLeaveFrame* GetOptimizedLeaveFrame() const
