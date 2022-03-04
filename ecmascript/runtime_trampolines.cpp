@@ -1326,6 +1326,200 @@ DEF_RUNTIME_TRAMPOLINES(JumpToCInterpreter)
 #endif
 }
 
+DEF_RUNTIME_TRAMPOLINES(CreateEmptyObject)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CreateEmptyObject);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
+    return SlowRuntimeStub::CreateEmptyObject(thread, factory, globalEnv).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CreateEmptyArray)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CreateEmptyArray);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
+    return SlowRuntimeStub::CreateEmptyArray(thread, factory, globalEnv).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(GetSymbolFunction)
+{
+    RUNTIME_TRAMPOLINES_HEADER(GetSymbolFunction);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
+    return globalEnv->GetSymbolFunction().GetTaggedValue().GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(GetUnmapedArgs)
+{
+    RUNTIME_TRAMPOLINES_HEADER(GetUnmapedArgs);
+    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
+    uint32_t startIdx = 0;
+    uint32_t actualNumArgs = EcmaInterpreter::GetNumArgs(sp, 0, startIdx);
+    return SlowRuntimeStub::GetUnmapedArgs(thread, sp, actualNumArgs, startIdx).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CopyRestArgs)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CopyRestArgs);
+    CONVERT_ARG_TAGGED_CHECKED(restIdx, 0);
+    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
+    uint32_t startIdx = 0;
+    uint32_t restNumArgs = EcmaInterpreter::GetNumArgs(sp, restIdx.GetInt(), startIdx);
+    return SlowRuntimeStub::CopyRestArgs(thread, sp, restNumArgs, startIdx).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CreateArrayWithBuffer)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CreateArrayWithBuffer);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(argArray, 0);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    return SlowRuntimeStub::CreateArrayWithBuffer(thread, factory, reinterpret_cast<JSArray*>(argArray)).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CreateObjectWithBuffer)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CreateObjectWithBuffer);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(argObj, 0);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    return SlowRuntimeStub::CreateObjectWithBuffer(thread, factory, reinterpret_cast<JSObject*>(argObj)).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(NewLexicalEnvDyn)
+{
+    RUNTIME_TRAMPOLINES_HEADER(NewLexicalEnvDyn);
+    CONVERT_ARG_TAGGED_CHECKED(numVars, 0);
+    return SlowRuntimeStub::NewLexicalEnvDyn(thread,
+        static_cast<uint16_t>(numVars.GetInt())).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(NewObjDynRange)
+{
+    RUNTIME_TRAMPOLINES_HEADER(NewObjDynRange);
+    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_TAGGED_CHECKED(newTarget, 1);
+    CONVERT_ARG_TAGGED_CHECKED(firstArgIdx, 2);
+    CONVERT_ARG_TAGGED_CHECKED(length, 3);
+    return SlowRuntimeStub::NewObjDynRange(thread, func, newTarget,
+        static_cast<uint16_t>(firstArgIdx.GetInt()),
+        static_cast<uint16_t>(length.GetInt())).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(DefinefuncDyn)
+{
+    RUNTIME_TRAMPOLINES_HEADER(DefinefuncDyn);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
+    return SlowRuntimeStub::DefinefuncDyn(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CreateRegExpWithLiteral)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CreateRegExpWithLiteral);
+    CONVERT_ARG_TAGGED_CHECKED(pattern, 0);
+    CONVERT_ARG_TAGGED_CHECKED(flags, 1);
+    return SlowRuntimeStub::CreateRegExpWithLiteral(thread, pattern,
+        static_cast<uint8_t>(flags.GetInt())).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(ThrowIfSuperNotCorrectCall)
+{
+    RUNTIME_TRAMPOLINES_HEADER(ThrowIfSuperNotCorrectCall);
+    CONVERT_ARG_TAGGED_CHECKED(index, 0);
+    CONVERT_ARG_TAGGED_CHECKED(thisValue, 1);
+    return SlowRuntimeStub::ThrowIfSuperNotCorrectCall(thread,
+        static_cast<uint16_t>(index.GetInt()), thisValue).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CreateObjectHavingMethod)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CreateObjectHavingMethod);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(literal, 0);
+    CONVERT_ARG_TAGGED_CHECKED(env, 1);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(constpool, 2);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    return SlowRuntimeStub::CreateObjectHavingMethod(thread, factory,
+        reinterpret_cast<JSObject*>(literal), env, reinterpret_cast<ConstantPool*>(constpool)).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CreateObjectWithExcludedKeys)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CreateObjectWithExcludedKeys);
+    CONVERT_ARG_TAGGED_CHECKED(numKeys, 0);
+    CONVERT_ARG_TAGGED_CHECKED(objVal, 1);
+    CONVERT_ARG_TAGGED_CHECKED(firstArgRegIdx, 2);
+    return SlowRuntimeStub::CreateObjectWithExcludedKeys(thread,
+        static_cast<uint16_t>(numKeys.GetInt()), objVal,
+        static_cast<uint16_t>(firstArgRegIdx.GetInt())).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(DefineNCFuncDyn)
+{
+    RUNTIME_TRAMPOLINES_HEADER(DefineNCFuncDyn);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
+    return SlowRuntimeStub::DefineNCFuncDyn(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(DefineGeneratorFunc)
+{
+    RUNTIME_TRAMPOLINES_HEADER(DefineGeneratorFunc);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
+    return SlowRuntimeStub::DefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(DefineAsyncFunc)
+{
+    RUNTIME_TRAMPOLINES_HEADER(DefineAsyncFunc);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
+    return SlowRuntimeStub::DefineAsyncFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(DefineMethod)
+{
+    RUNTIME_TRAMPOLINES_HEADER(DefineMethod);
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
+    CONVERT_ARG_TAGGED_CHECKED(homeObject, 1);
+    return SlowRuntimeStub::DefineMethod(thread, reinterpret_cast<JSFunction*>(func), homeObject).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CallSpreadDyn)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CallSpreadDyn);
+    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_TAGGED_CHECKED(obj, 1);
+    CONVERT_ARG_TAGGED_CHECKED(array, 2);
+    return SlowRuntimeStub::CallSpreadDyn(thread, func, obj, array).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(DefineGetterSetterByValue)
+{
+    RUNTIME_TRAMPOLINES_HEADER(DefineGetterSetterByValue);
+    CONVERT_ARG_TAGGED_CHECKED(obj, 0);
+    CONVERT_ARG_TAGGED_CHECKED(prop, 1);
+    CONVERT_ARG_TAGGED_CHECKED(getter, 2);
+    CONVERT_ARG_TAGGED_CHECKED(setter, 3);
+    CONVERT_ARG_TAGGED_CHECKED(flag, 4);
+    bool bFlag = flag.ToBoolean();
+    return SlowRuntimeStub::DefineGetterSetterByValue(thread, obj, prop, getter, setter, bFlag).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(SuperCall)
+{
+    RUNTIME_TRAMPOLINES_HEADER(SuperCall);
+    CONVERT_ARG_TAGGED_CHECKED(func, 0);
+    CONVERT_ARG_TAGGED_CHECKED(firstVRegIdx, 1);
+    CONVERT_ARG_TAGGED_CHECKED(length, 2);
+    auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
+    JSTaggedValue newTarget = EcmaInterpreter::GetNewTarget(sp);
+    return SlowRuntimeStub::SuperCall(thread, func, newTarget,
+        static_cast<uint16_t>(firstVRegIdx.GetInt()),
+        static_cast<uint16_t>(length.GetInt())).GetRawData();
+}
+
 void RuntimeTrampolines::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)
 {
     return region->InsertOldToNewRememberedSet(addr);

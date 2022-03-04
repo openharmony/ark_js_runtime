@@ -137,6 +137,27 @@ namespace panda::ecmascript::kungfu {
     V(Mod2Dyn, 3)                            \
     V(GetLexicalEnv, 1)                      \
     V(LoadValueFromConstantPool, 3)          \
+    V(CreateEmptyObject, 1)                  \
+    V(CreateEmptyArray, 1)                   \
+    V(GetSymbolFunction, 1)                  \
+    V(GetUnmapedArgs, 2)                     \
+    V(CopyRestArgs, 3)                       \
+    V(CreateArrayWithBuffer, 2)              \
+    V(CreateObjectWithBuffer, 2)             \
+    V(NewLexicalEnvDyn, 2)                   \
+    V(NewObjDynRange, 5)                     \
+    V(DefinefuncDyn, 2)                      \
+    V(CreateRegExpWithLiteral, 3)            \
+    V(ThrowIfSuperNotCorrectCall, 3)         \
+    V(CreateObjectHavingMethod, 4)           \
+    V(CreateObjectWithExcludedKeys, 4)       \
+    V(DefineNCFuncDyn, 2)                    \
+    V(DefineGeneratorFunc, 2)                \
+    V(DefineAsyncFunc, 2)                    \
+    V(DefineMethod, 3)                       \
+    V(CallSpreadDyn, 4)                      \
+    V(DefineGetterSetterByValue, 6)          \
+    V(SuperCall, 5)                          \
     I(CallRuntimeTrampoline, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
