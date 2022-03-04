@@ -272,6 +272,11 @@ public:
         return thread_;
     }
 
+    JSThread *GetJSThreadNoCheck() const
+    {
+        return thread_;
+    }
+
     bool ICEnable() const
     {
         return icEnable_;

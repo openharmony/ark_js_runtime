@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/hprof/string_hashmap.h"
+#include "ecmascript/dfx/hprof/string_hashmap.h"
 
 namespace panda::ecmascript {
 CString *StringHashMap::FindOrInsertString(CString *string)
@@ -75,7 +75,7 @@ CString *StringHashMap::FormatString(CString *string) const
 
 StringKey StringHashMap::GenerateStringKey(const CString *string) const
 {
-    return std::hash<std::string>{}(std::string(*string));
+    return std::hash<std::string>{} (std::string(*string));
 }
 
 CString *StringHashMap::GetString(CString as)

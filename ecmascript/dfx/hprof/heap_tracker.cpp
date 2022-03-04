@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "ecmascript/hprof/heap_tracker.h"
-#include "ecmascript/hprof/heap_snapshot.h"
+#include "ecmascript/dfx/hprof/heap_tracker.h"
+#include "ecmascript/dfx/hprof/heap_snapshot.h"
 #include "ecmascript/mem/space.h"
 
 namespace panda::ecmascript {

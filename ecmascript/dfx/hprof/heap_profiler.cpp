@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#include "ecmascript/hprof/heap_profiler.h"
+#include "ecmascript/dfx/hprof/heap_profiler.h"
 
 #include <cerrno>
 #include <ctime>
 #include <unistd.h>
 
+#include "ecmascript/dfx/hprof/heap_snapshot.h"
 #include "ecmascript/ecma_vm.h"
-#include "ecmascript/hprof/heap_snapshot.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/assert_scope-inl.h"
 #include "ecmascript/mem/concurrent_sweeper.h"

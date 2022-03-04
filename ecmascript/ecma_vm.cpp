@@ -21,8 +21,9 @@
 #include "ecmascript/class_linker/panda_file_translator.h"
 #include "ecmascript/class_linker/program_object-inl.h"
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
-#include "ecmascript/cpu_profiler/cpu_profiler.h"
+#include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
+#include "ecmascript/dfx/vmstat/runtime_stat.h"
 #include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/global_dictionary.h"
@@ -57,7 +58,6 @@
 #include "ecmascript/tagged_queue.h"
 #include "ecmascript/template_map.h"
 #include "ecmascript/ts_types/ts_loader.h"
-#include "ecmascript/vmstat/runtime_stat.h"
 #include "include/runtime_notification.h"
 #include "libpandafile/file.h"
 #ifdef PANDA_TARGET_WINDOWS

@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#include "ecmascript/hprof/heap_snapshot.h"
+#include "ecmascript/dfx/hprof/heap_snapshot.h"
 
 #include <functional>
 
+#include "ecmascript/dfx/hprof/heap_root_visitor.h"
 #include "ecmascript/ecma_string-inl.h"
 #include "ecmascript/global_dictionary.h"
 #include "ecmascript/global_env.h"
-#include "ecmascript/hprof/heap_root_visitor.h"
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_handle.h"
@@ -172,8 +172,7 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
         case JSType::FREE_OBJECT_WITH_ONE_FIELD:
         case JSType::FREE_OBJECT_WITH_NONE_FIELD:
         case JSType::FREE_OBJECT_WITH_TWO_FIELD:
-        case JSType::JS_NATIVE_POINTER:
-        {
+        case JSType::JS_NATIVE_POINTER: {
             break;
         }
         case JSType::JS_FUNCTION_BASE:
@@ -605,19 +604,21 @@ void HeapSnapShot::AddSyntheticRoot(JSThread *thread)
 
     int edgeOffset = 0;
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define ROOT_EDGE_BUILDER_CORE(type, slot)                                                                      \
-    JSTaggedValue value(slot.GetTaggedType());                                                                  \
-    if (value.IsHeapObject()) {                                                                                 \
-        TaggedObject *root = value.GetTaggedObject();                                                           \
-        Node *rootNode = entryMap_.FindEntry(Node::NewAddress(root));                                           \
-        if (rootNode != nullptr) {                                                                              \
-            Edge *edge =                                                                                        \
-                Edge::NewEdge(heap_, edgeCount_, EdgeType::SHORTCUT, syntheticRoot, rootNode, GetString("-subroot-")); \
-            InsertEdgeAt(edgeOffset, edge);                                                                     \
-            edgeOffset++;                                                                                       \
-            syntheticRoot->IncEdgeCount();                                                                      \
-        }                                                                                                       \
-    }
+#define ROOT_EDGE_BUILDER_CORE(type, slot)                                                            \
+    do {                                                                                              \
+        JSTaggedValue value((slot).GetTaggedType());                                                  \
+        if (value.IsHeapObject()) {                                                                   \
+            TaggedObject *root = value.GetTaggedObject();                                             \
+            Node *rootNode = entryMap_.FindEntry(Node::NewAddress(root));                             \
+            if (rootNode != nullptr) {                                                                \
+                Edge *edge = Edge::NewEdge(heap_,                                                     \
+                    edgeCount_, EdgeType::SHORTCUT, syntheticRoot, rootNode, GetString("-subroot-")); \
+                InsertEdgeAt(edgeOffset, edge);                                                       \
+                edgeOffset++;                                                                         \
+                syntheticRoot->IncEdgeCount();                                                        \
+            }                                                                                         \
+        }                                                                                             \
+    } while (false)
 
     RootVisitor rootEdgeBuilder = [this, syntheticRoot, &edgeOffset]([[maybe_unused]] Root type, ObjectSlot slot) {
         ROOT_EDGE_BUILDER_CORE(type, slot);

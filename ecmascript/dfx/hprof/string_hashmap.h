@@ -75,7 +75,7 @@ private:
     void Clear();
     const Heap *heap_;
     CVector<StringKey> orderedKey_;  // Used for Serialize Order
-    size_t index_{2};                       // 2: Offset the String-Table Header
+    size_t index_ {2};                       // 2: Offset the String-Table Header
     CUnorderedMap<StringKey, StringId> indexMap_;
     CUnorderedMap<StringKey, CString *> hashmap_;
 };
