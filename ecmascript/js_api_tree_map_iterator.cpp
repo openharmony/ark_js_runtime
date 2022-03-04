@@ -53,12 +53,12 @@ JSTaggedValue JSAPITreeMapIterator::Next(EcmaRuntimeCallInfo *argv)
     }
 
     // Let index be Map.[[NextIndex]].
-    int index = iter->GetNextIndex().GetInt();
+    int index = iter->GetNextIndex();
     if (index < elements) {
-        IterationKind itemKind = IterationKind(iter->GetIterationKind().GetInt());
+        IterationKind itemKind = IterationKind(iter->GetIterationKind());
 
         int keyIndex = entries->Get(index).GetInt();
-        iter->SetNextIndex(thread, JSTaggedValue(index + 1));
+        iter->SetNextIndex(index + 1);
 
         JSHandle<JSTaggedValue> key(thread, map->GetKey(keyIndex));
         // If itemKind is key, let result be e.[[Key]]
