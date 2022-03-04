@@ -477,6 +477,11 @@ GateRef Stub::IntPtrSub(GateRef x, GateRef y)
     return Int64Sub(x, y);
 }
 
+GateRef Stub::Int16Sub(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::I16, x, y);
+}
+
 GateRef Stub::Int32Sub(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::I32, x, y);
@@ -805,6 +810,12 @@ GateRef Stub::TaggedIsBoolean(GateRef x)
 GateRef Stub::TaggedGetInt(GateRef x)
 {
     return TruncInt64ToInt32(Int64And(x, GetInt64Constant(~JSTaggedValue::TAG_MASK)));
+}
+
+GateRef Stub::Int8BuildTaggedTypeWithNoGC(GateRef x)
+{
+    GateRef val = ZExtInt8ToInt64(x);
+    return Int64Or(val, GetInt64Constant(JSTaggedValue::TAG_INT));
 }
 
 GateRef Stub::Int16BuildTaggedWithNoGC(GateRef x)
@@ -1526,7 +1537,7 @@ GateRef Stub::IsProtoTypeHClass(GateRef hClass)
 }
 
 void Stub::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
-    GateRef value, GateRef attrOffset)
+    GateRef value, GateRef attrOffset, VariableType type)
 {
     GateRef bitfield = Load(VariableType::INT32(), hClass,
                             GetIntPtrConstant(JSHClass::BIT_FIELD1_OFFSET));
@@ -1537,7 +1548,7 @@ void Stub::SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
         Int32Add(inlinedPropsStart, attrOffset), GetInt32Constant(JSTaggedValue::TaggedTypeSize()));
 
     // NOTE: need to translate MarkingBarrier
-    Store(VariableType::JS_ANY(), glue, obj, ChangeInt32ToIntPtr(propOffset), value);
+    Store(type, glue, obj, ChangeInt32ToIntPtr(propOffset), value);
 }
 
 void Stub::IncNumberOfProps(GateRef glue, GateRef hClass)
@@ -2014,7 +2025,7 @@ void Stub::SetPropertiesToLexicalEnv(GateRef glue, GateRef object, GateRef index
 GateRef Stub::GetFunctionBitFieldFromJSFunction(GateRef object)
 {
     GateRef offset = GetIntPtrConstant(JSFunction::BIT_FIELD_OFFSET);
-    return Load(VariableType::JS_ANY(), object, offset);
+    return Load(VariableType::INT32(), object, offset);
 }
 
 GateRef Stub::GetHomeObjectFromJSFunction(GateRef object)

@@ -501,6 +501,7 @@ public:
     inline GateRef IntPtrAdd(GateRef x, GateRef y);
     inline GateRef IntPtrSub(GateRef x, GateRef y);
     inline GateRef IntPtrEqual(GateRef x, GateRef y);
+    inline GateRef Int16Sub(GateRef x, GateRef y);
     inline GateRef Int32Sub(GateRef x, GateRef y);
     inline GateRef Int64Sub(GateRef x, GateRef y);
     inline GateRef DoubleSub(GateRef x, GateRef y);
@@ -567,6 +568,7 @@ public:
     inline GateRef TaggedIsFalse(GateRef x);
     inline GateRef TaggedIsBoolean(GateRef x);
     inline GateRef TaggedGetInt(GateRef x);
+    inline GateRef Int8BuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef Int16BuildTaggedWithNoGC(GateRef x);
     inline GateRef Int16BuildTaggedTypeWithNoGC(GateRef x);
     inline GateRef IntBuildTaggedWithNoGC(GateRef x);
@@ -676,7 +678,7 @@ public:
     inline void SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value);
     inline GateRef IsProtoTypeHClass(GateRef hClass);
     inline void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,
-                                        GateRef value, GateRef attrOffset);
+                                        GateRef value, GateRef attrOffset, VariableType type = VariableType::JS_ANY());
 
     inline void IncNumberOfProps(GateRef glue, GateRef hClass);
     inline GateRef GetNumberOfPropsFromHClass(GateRef hClass);
