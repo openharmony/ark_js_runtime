@@ -460,15 +460,22 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
     LLVMValueRef rtoffset;
-    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(FAST_STUB_ID(RuntimeCallTrampoline));
+    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(FAST_STUB_ID(RuntimeCallTrampolineAot));
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
-
-    rtoffset = LLVMConstInt(glue_type,
-                            JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
-                                (FAST_STUB_ID(RuntimeCallTrampoline) - FAST_STUB_MAXCOUNT) * slotSize_,
-                            0);
+    if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME ||
+        circuit_->GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME) {
+        rtoffset = LLVMConstInt(glue_type,
+            JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
+                (FAST_STUB_ID(RuntimeCallTrampolineInterpreterAsm) - FAST_STUB_MAXCOUNT) * slotSize_,
+            0);
+    } else {
+        rtoffset = LLVMConstInt(glue_type,
+                                JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
+                                    (FAST_STUB_ID(RuntimeCallTrampolineAot) - FAST_STUB_MAXCOUNT) * slotSize_,
+                                0);
+    }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");

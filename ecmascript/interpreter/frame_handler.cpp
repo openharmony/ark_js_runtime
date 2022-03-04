@@ -49,6 +49,7 @@ void FrameHandler::PrevFrame()
             framehandle->PrevFrame();
             break;
         }
+        case FrameType::ASM_LEAVE_FRAME:
         case FrameType::OPTIMIZED_LEAVE_FRAME: {
             auto framehandle =
                 reinterpret_cast<OptimizedLeaveFrameHandler *>(this);
@@ -310,7 +311,12 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
 #if ECMASCRIPT_ENABLE_HEAP_VERIFY
     isVerifying = thread_->GetEcmaVM()->GetHeap()->GetIsVerifying();
 #endif
-
+    auto leaveFrame = const_cast<JSTaggedType *>(thread_->GetLastLeaveFrame());
+    if (leaveFrame != nullptr) {
+        ASSERT(OptimizedLeaveFrame::GetFrameFromSp(leaveFrame)->type == FrameType::ASM_LEAVE_FRAME);
+        OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(leaveFrame)).Iterate(v0,
+            v1, derivedPointers, isVerifying);
+    }
     JSTaggedType *current = const_cast<JSTaggedType *>(thread_->GetCurrentSPFrame());
     while (current) {
         FrameType type = FrameHandler(current).GetFrameType();
@@ -327,7 +333,7 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             current = frame->GetPrevFrameFp();
             ASSERT(FrameHandler(current).IsInterpretedFrame());
         } else {
-            ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME);
+            ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
             OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
@@ -335,7 +341,8 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             // Leave Frame.
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
-            FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME);
+            FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME ||
+            FrameHandler(current).GetFrameType() == FrameType::INTERPRETER_FRAME);
         }
     }
 }
