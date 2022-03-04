@@ -54,10 +54,8 @@ void JSPluralRules::SetIcuNumberFormatter(JSThread *thread, const JSHandle<JSPlu
         native->ResetExternalPointer(icuPointer);
         return;
     }
-    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer);
-    pointer->SetDeleter(callback);
+    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer, callback);
     pluralRules->SetIcuNF(thread, pointer.GetTaggedValue());
-    ecmaVm->PushToArrayDataList(*pointer);
 }
 
 icu::PluralRules *JSPluralRules::GetIcuPluralRules() const
@@ -91,10 +89,8 @@ void JSPluralRules::SetIcuPluralRules(JSThread *thread, const JSHandle<JSPluralR
         native->ResetExternalPointer(icuPointer);
         return;
     }
-    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer);
-    pointer->SetDeleter(callback);
+    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer, callback);
     pluralRules->SetIcuPR(thread, pointer.GetTaggedValue());
-    ecmaVm->PushToArrayDataList(*pointer);
 }
 
 JSHandle<TaggedArray> JSPluralRules::BuildLocaleSet(JSThread *thread, const std::set<std::string> &icuAvailableLocales)

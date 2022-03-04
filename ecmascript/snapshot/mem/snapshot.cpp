@@ -26,6 +26,7 @@
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/object_factory.h"
@@ -116,16 +117,16 @@ void SnapShot::MakeSnapShotProgramObject(Program *program, const panda_file::Fil
     write.close();
 }
 
-std::unique_ptr<const panda_file::File> SnapShot::DeserializeGlobalEnvAndProgram(const CString &fileName)
+const JSPandaFile *SnapShot::DeserializeGlobalEnvAndProgram(const CString &abcFile, const CString &snapshotFile)
 {
     SnapShotSerialize serialize(vm_, false);
 
     serialize.GeneratedNativeMethod();
 
-    std::pair<bool, CString> filePath = VerifyFilePath(fileName);
+    std::pair<bool, CString> filePath = VerifyFilePath(snapshotFile);
     if (!filePath.first) {
         LOG(ERROR, RUNTIME) << "snapshot file path error";
-        return std::unique_ptr<const panda_file::File>();
+        return nullptr;
     }
 
     int fd = open(filePath.second.c_str(), O_CLOEXEC);  // NOLINT(cppcoreguidelines-pro-type-vararg)
@@ -184,11 +185,13 @@ std::unique_ptr<const panda_file::File> SnapShot::DeserializeGlobalEnvAndProgram
     auto pf =
         panda_file::File::OpenFromMemory(os::mem::ConstBytePtr(ToNativePtr<std::byte>(panda_file_mem),
                                                                file_size - hdr.panda_file_begin, os::mem::MmapDeleter),
-                                         fileName);
+                                         abcFile);
     close(fd);
+    // Snapshot file has translated
+    const JSPandaFile *jsPandaFile = EcmaVM::GetJSPandaFileManager()->NewJSPandaFile(pf.release(), abcFile);
     // redirect object field
-    serialize.RedirectSlot(pf.get());
-    return pf;
+    serialize.RedirectSlot(jsPandaFile);
+    return jsPandaFile;
 }
 
 size_t SnapShot::AlignUpPageSize(size_t spaceSize)
