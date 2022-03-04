@@ -1082,8 +1082,8 @@ void JSAPITreeMapIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - elements: " << std::dec << map->NumberOfElements() << "\n";
     os << " - deleted-elements: " << std::dec << map->NumberOfDeletedElements() << "\n";
     os << " - capacity: " << std::dec << map->Capacity() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
-    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(thread, os);
 
     os << " <TaggedTree[" << map->NumberOfElements() << "]>\n";
@@ -1096,8 +1096,8 @@ void JSAPITreeMapIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     TaggedTreeMap *map =
         TaggedTreeMap::Cast(JSAPITreeMap::Cast(GetIteratedMap().GetTaggedObject())->GetTreeMap().GetTaggedObject());
     map->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
-    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -1199,8 +1199,8 @@ void JSAPITreeSetIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - elements: " << std::dec << set->NumberOfElements() << "\n";
     os << " - deleted-elements: " << std::dec << set->NumberOfDeletedElements() << "\n";
     os << " - capacity: " << std::dec << set->Capacity() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
-    os << " - IterationKind: " << std::dec << GetIterationKind().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
+    os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
     JSObject::Dump(thread, os);
 
     os << " <TaggedTree[" << set->NumberOfElements() << "]>\n";
@@ -1213,8 +1213,8 @@ void JSAPITreeSetIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     TaggedTreeSet *set =
         TaggedTreeSet::Cast(JSAPITreeSet::Cast(GetIteratedSet().GetTaggedObject())->GetTreeSet().GetTaggedObject());
     set->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
-    vec.push_back(std::make_pair(CString("IterationKind"), GetIterationKind()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    vec.push_back(std::make_pair(CString("IterationKind"), JSTaggedValue(static_cast<int>(GetIterationKind()))));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
@@ -1348,7 +1348,7 @@ void JSAPIArrayListIterator::Dump(JSThread *thread, std::ostream &os) const
 {
     JSAPIArrayList *arrayList = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
     os << " - length: " << std::dec << arrayList->GetLength().GetArrayLength() << "\n";
-    os << " - nextIndex: " << std::dec << GetNextIndex().GetInt() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     JSObject::Dump(thread, os);
 }
 
@@ -2986,7 +2986,7 @@ void JSAPIArrayListIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 {
     JSAPIArrayList *arraylist = JSAPIArrayList::Cast(GetIteratedArrayList().GetTaggedObject());
     arraylist->DumpForSnapshot(thread, vec);
-    vec.push_back(std::make_pair(CString("NextIndex"), GetNextIndex()));
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
     JSObject::DumpForSnapshot(thread, vec);
 }
 
