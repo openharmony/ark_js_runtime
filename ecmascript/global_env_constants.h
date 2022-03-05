@@ -95,6 +95,7 @@ class JSThread;
     V(JSTaggedValue, ArrayListIteratorPrototype, ARRAYLIST_ITERATOR_PROTOTYPE_INDEX, ArrayListIterator)               \
     V(JSTaggedValue, TreeMapIteratorPrototype, TREEMAP_ITERATOR_PROTOTYPE_INDEX, TreeMapIterator)                     \
     V(JSTaggedValue, TreeSetIteratorPrototype, TREESET_ITERATOR_PROTOTYPE_INDEX, TreeSetIterator)                     \
+    V(JSTaggedValue, QueueIteratorPrototype, QUEUE_ITERATOR_PROTOTYPE_INDEX, QueueIterator)                           \
     /* SymbolTable*RegisterSymbols */                                                                                 \
     V(JSTaggedValue, NameString, NAME_STRING_INDEX, name)                                                             \
     V(JSTaggedValue, GetPrototypeOfString, GETPROTOTYPEOF_STRING_INDEX, getPrototypeOf)                               \

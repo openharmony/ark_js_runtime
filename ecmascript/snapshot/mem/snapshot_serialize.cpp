@@ -54,9 +54,11 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/containers/containers_arraylist.h"
+#include "ecmascript/containers/containers_queue.h"
 #include "ecmascript/containers/containers_treemap.h"
 #include "ecmascript/containers/containers_treeset.h"
 #include "ecmascript/global_env.h"
+#include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/js_array_iterator.h"
@@ -119,6 +121,7 @@ using PluralRules = builtins::BuiltinsPluralRules;
 using ArrayList = containers::ContainersArrayList;
 using TreeMap = containers::ContainersTreeMap;
 using TreeSet = containers::ContainersTreeSet;
+using Queue = containers::ContainersQueue;
 
 constexpr int TAGGED_SIZE = JSTaggedValue::TaggedTypeSize();
 constexpr int OBJECT_HEADER_SIZE = TaggedObject::TaggedObjectSize();
@@ -616,6 +619,14 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(TreeSet::GetLength),
     reinterpret_cast<uintptr_t>(JSAPITreeMapIterator::Next),
     reinterpret_cast<uintptr_t>(JSAPITreeSetIterator::Next),
+    reinterpret_cast<uintptr_t>(Queue::QueueConstructor),
+    reinterpret_cast<uintptr_t>(Queue::Add),
+    reinterpret_cast<uintptr_t>(Queue::GetFirst),
+    reinterpret_cast<uintptr_t>(Queue::Pop),
+    reinterpret_cast<uintptr_t>(Queue::ForEach),
+    reinterpret_cast<uintptr_t>(Queue::GetIteratorObj),
+    reinterpret_cast<uintptr_t>(Queue::GetSize),
+    reinterpret_cast<uintptr_t>(JSAPIQueueIterator::Next),
 
     // not builtins method
     reinterpret_cast<uintptr_t>(JSFunction::PrototypeSetter),

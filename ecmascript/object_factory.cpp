@@ -36,6 +36,8 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -788,6 +790,11 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_API_TREE_SET:
                 JSAPITreeSet::Cast(*obj)->SetTreeSet(thread_, JSTaggedValue::Undefined());
                 break;
+            case JSType::JS_API_QUEUE:
+                JSAPIQueue::Cast(*obj)->SetLength(thread_, JSTaggedValue(0));
+                JSAPIQueue::Cast(*obj)->SetFront(0);
+                JSAPIQueue::Cast(*obj)->SetTail(0);
+                break;
             case JSType::JS_FUNCTION:
             case JSType::JS_GENERATOR_FUNCTION:
             case JSType::JS_FORIN_ITERATOR:
@@ -796,6 +803,7 @@ JSHandle<JSObject> ObjectFactory::NewJSObjectByConstructor(const JSHandle<JSFunc
             case JSType::JS_API_ARRAYLIST_ITERATOR:
             case JSType::JS_API_TREEMAP_ITERATOR:
             case JSType::JS_API_TREESET_ITERATOR:
+            case JSType::JS_API_QUEUE_ITERATOR:
             case JSType::JS_ARRAY_ITERATOR:
             default:
                 UNREACHABLE();
@@ -2322,6 +2330,36 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
     JSHandle<JSAPIArrayListIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArrayList(thread_, arrayList);
+    iter->SetNextIndex(0);
+    return iter;
+}
+
+JSHandle<TaggedArray> ObjectFactory::CopyQueue(const JSHandle<TaggedArray> &old, [[maybe_unused]] uint32_t oldLength,
+                                               uint32_t newLength, uint32_t front, uint32_t tail)
+{
+    NewObjectHook();
+    size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), newLength);
+    auto header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject()), size);
+    JSHandle<TaggedArray> newArray(thread_, header);
+    newArray->SetLength(newLength);
+
+    for (uint32_t i = 0; i < oldLength; i++) {
+        JSTaggedValue value = old->Get(i);
+        newArray->Set(thread_, i, value);
+    }
+
+    return newArray;
+}
+
+JSHandle<JSAPIQueueIterator> ObjectFactory::NewJSAPIQueueIterator(const JSHandle<JSAPIQueue> &queue)
+{
+    NewObjectHook();
+    JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetQueueIteratorPrototype());
+    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSAPIQueueIterator::SIZE, JSType::JS_API_QUEUE_ITERATOR, protoValue);
+    JSHandle<JSAPIQueueIterator> iter(NewJSObject(dynHandle));
+    iter->GetJSHClass()->SetExtensible(true);
+    iter->SetIteratedQueue(thread_, queue); // IteratedQueue
     iter->SetNextIndex(0);
     return iter;
 }
