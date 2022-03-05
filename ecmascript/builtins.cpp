@@ -65,6 +65,7 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_private.h"
 #include "ecmascript/ecma_runtime_call_info.h"
+#include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_api_arraylist.h"

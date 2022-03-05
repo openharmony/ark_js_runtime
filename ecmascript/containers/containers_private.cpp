@@ -16,11 +16,14 @@
 #include "ecmascript/containers/containers_private.h"
 
 #include "containers_arraylist.h"
+#include "containers_queue.h"
 #include "containers_treemap.h"
 #include "containers_treeset.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
+#include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -57,7 +60,10 @@ JSTaggedValue ContainersPrivate::Load(EcmaRuntimeCallInfo *msg)
             res = InitializeContainer(thread, thisValue, InitializeTreeSet, "TreeSetConstructor");
             break;
         }
-        case ContainerTag::Queue:
+        case ContainerTag::Queue: {
+            res = InitializeContainer(thread, thisValue, InitializeQueue, "QueueConstructor");
+            break;
+        }
         case ContainerTag::Deque:
         case ContainerTag::Stack:
         case ContainerTag::Vector:
@@ -413,5 +419,58 @@ void ContainersPrivate::InitializeTreeSetIterator(JSThread *thread)
     SetStringTagSymbol(thread, env, setIteratorPrototype, "TreeSet Iterator");
     auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
     globalConst->SetConstant(ConstantIndex::TREESET_ITERATOR_PROTOTYPE_INDEX, setIteratorPrototype.GetTaggedValue());
+}
+
+JSHandle<JSTaggedValue> ContainersPrivate::InitializeQueue(JSThread *thread)
+{
+    auto globalConst = const_cast<GlobalEnvConstants *>(thread->GlobalConstants());
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    // Queue.prototype
+    JSHandle<JSObject> queueFuncPrototype = factory->NewEmptyJSObject();
+    JSHandle<JSTaggedValue> queueFuncPrototypeValue(queueFuncPrototype);
+    // Queue.prototype_or_dynclass
+    JSHandle<JSHClass> queueInstanceDynclass =
+        factory->NewEcmaDynClass(JSAPIQueue::SIZE, JSType::JS_API_QUEUE, queueFuncPrototypeValue);
+    // Queue() = new Function()
+    JSHandle<JSTaggedValue> queueFunction(NewContainerConstructor(
+        thread, queueFuncPrototype, ContainersQueue::QueueConstructor, "Queue", FuncLength::ZERO));
+    JSHandle<JSFunction>(queueFunction)->SetFunctionPrototype(thread, queueInstanceDynclass.GetTaggedValue());
+
+    // "constructor" property on the prototype
+    JSHandle<JSTaggedValue> constructorKey = globalConst->GetHandledConstructorString();
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(queueFuncPrototype), constructorKey, queueFunction);
+
+    // Queue.prototype.add()
+    SetFrozenFunction(thread, queueFuncPrototype, "add", ContainersQueue::Add, FuncLength::ONE);
+    SetFrozenFunction(thread, queueFuncPrototype, "getFirst", ContainersQueue::GetFirst, FuncLength::ZERO);
+    SetFrozenFunction(thread, queueFuncPrototype, "pop", ContainersQueue::Pop, FuncLength::ZERO);
+    SetFrozenFunction(thread, queueFuncPrototype, "forEach", ContainersQueue::ForEach, FuncLength::TWO);
+
+    JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
+    SetStringTagSymbol(thread, env, queueFuncPrototype, "Queue");
+
+    JSHandle<JSTaggedValue> lengthGetter = CreateGetter(thread, ContainersQueue::GetSize, "length", FuncLength::ZERO);
+    JSHandle<JSTaggedValue> lengthKey(thread, globalConst->GetLengthString());
+    SetGetter(thread, queueFuncPrototype, lengthKey, lengthGetter);
+
+    SetFunctionAtSymbol(thread, env, queueFuncPrototype, env->GetIteratorSymbol(), "[Symbol.iterator]",
+                        ContainersQueue::GetIteratorObj, FuncLength::ONE);
+
+    ContainersPrivate::InitializeQueueIterator(thread, env, globalConst);
+    return queueFunction;
+}
+
+void ContainersPrivate::InitializeQueueIterator(JSThread *thread, const JSHandle<GlobalEnv> &env,
+                                                GlobalEnvConstants *globalConst)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSHClass> iteratorFuncDynclass =
+        factory->NewEcmaDynClass(JSObject::SIZE, JSType::JS_ITERATOR, env->GetIteratorPrototype());
+    // QueueIterator.prototype
+    JSHandle<JSObject> queueIteratorPrototype(factory->NewJSObject(iteratorFuncDynclass));
+    // Iterator.prototype.next()
+    SetFrozenFunction(thread, queueIteratorPrototype, "next", JSAPIQueueIterator::Next, FuncLength::ONE);
+    SetStringTagSymbol(thread, env, queueIteratorPrototype, "Queue Iterator");
+    globalConst->SetConstant(ConstantIndex::QUEUE_ITERATOR_PROTOTYPE_INDEX, queueIteratorPrototype.GetTaggedValue());
 }
 }  // namespace panda::ecmascript::containers

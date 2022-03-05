@@ -2950,7 +2950,7 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
     };
     std::array<int64_t, 2> keyValues = { // 2 : 2 means that there are 2 args in total.
         static_cast<int64_t>(JSType::JS_API_ARRAY_LIST),
-        static_cast<int64_t>(JSType::JS_QUEUE),
+        static_cast<int64_t>(JSType::JS_API_QUEUE),
     };
     // 2 : 2 means that there are 2 cases.
     Switch(ZExtInt32ToInt64(jsType), &defaultLabel, keyValues.data(), repCaseLabels.data(), 2);
