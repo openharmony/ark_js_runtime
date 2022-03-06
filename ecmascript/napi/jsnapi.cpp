@@ -878,7 +878,6 @@ Local<FunctionRef> FunctionRef::New(EcmaVM *vm, FunctionCallback nativeFunc, Del
     JSHandle<JSFunction> current(factory->NewJSFunction(env, reinterpret_cast<void *>(Callback::RegisterCallback)));
     JSHandle<JSNativePointer> extraInfo =
         factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc), deleter, data);
-    vm->PushToArrayDataList(*extraInfo);
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
     return JSNApiHelper::ToLocal<FunctionRef>(JSHandle<JSTaggedValue>(current));
 }
@@ -915,9 +914,6 @@ Local<FunctionRef> FunctionRef::NewClassFunction(EcmaVM *vm, FunctionCallbackWit
 
     JSHandle<JSNativePointer> extraInfo =
         factory->NewJSNativePointer(reinterpret_cast<void *>(nativeFunc), deleter, data);
-    if (deleter != nullptr) {
-        vm->PushToArrayDataList(*extraInfo);
-    }
     current->SetFunctionExtraInfo(thread, extraInfo.GetTaggedValue());
 
     JSHandle<JSObject> clsPrototype = JSFunction::NewJSFunctionPrototype(thread, factory, current);

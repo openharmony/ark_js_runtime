@@ -56,6 +56,10 @@ JSHandle<JSNativePointer> ObjectFactory::NewJSNativePointer(void *externalPointe
     obj->SetExternalPointer(externalPointer);
     obj->SetDeleter(callBack);
     obj->SetData(data);
+
+    if (callBack != nullptr) {
+        vm_->PushToNativePointerList(static_cast<JSNativePointer *>(header));
+    }
     return obj;
 }
 
@@ -84,10 +88,8 @@ void ObjectFactory::NewJSIntlIcuData(const JSHandle<T> &obj, const S &icu, const
         native->ResetExternalPointer(icuPoint);
         return;
     }
-    JSHandle<JSNativePointer> pointer(thread_, NewJSNativePointer(icuPoint, callback, nullptr).GetTaggedValue());
+    JSHandle<JSNativePointer> pointer = NewJSNativePointer(icuPoint, callback);
     obj->SetIcuField(thread_, pointer.GetTaggedValue());
-    // push uint8_t* to ecma array_data_list
-    vm_->PushToArrayDataList(*pointer);
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_OBJECT_FACTORY_INL_H

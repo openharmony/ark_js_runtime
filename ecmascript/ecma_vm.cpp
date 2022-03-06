@@ -113,7 +113,6 @@ Expected<EcmaVM *, CString> EcmaVM::Create(Runtime *runtime)
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 EcmaVM::EcmaVM() : EcmaVM(EcmaVM::GetJSOptions())
 {
-    isTestMode_ = true;
 }
 
 EcmaVM::EcmaVM(JSRuntimeOptions options)
@@ -121,8 +120,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
       nativeAreaAllocator_(std::make_unique<NativeAreaAllocator>()),
       heapRegionAllocator_(std::make_unique<HeapRegionAllocator>()),
       chunk_(nativeAreaAllocator_.get()),
-      arrayBufferDataList_(&chunk_),
-      frameworkProgramMethods_(&chunk_),
+      nativePointerList_(&chunk_),
       nativeMethods_(&chunk_)
 {
     options_ = std::move(options);
@@ -201,9 +199,10 @@ bool EcmaVM::Initialize()
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run snapshot";
         SnapShot snapShot(this);
-        std::unique_ptr<const panda_file::File> pf = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_);
-        frameworkPandaFile_ = GetJSPandaFileManager()->CreateJSPandaFile(pf.release(), frameworkAbcFileName_);
+        frameworkPandaFile_ = snapShot.DeserializeGlobalEnvAndProgram(snapshotFileName_, frameworkAbcFileName_);
         globalConst->InitGlobalUndefined();
+#else
+        LOG_ECMA(FATAL) << "Don't support snapshot now.";
 #endif
     }
 
@@ -335,54 +334,40 @@ EcmaVM::~EcmaVM()
         delete thread_;
         thread_ = nullptr;
     }
-
-    frameworkProgramMethods_.clear();
 }
 
 bool EcmaVM::ExecuteFromPf(const std::string &filename, std::string_view entryPoint,
                            const std::vector<std::string> &args, bool isModule)
 {
-    const JSPandaFile *jsPandaFile = nullptr;
-    if (frameworkPandaFile_ == nullptr || !IsFrameworkPandaFile(filename)) {
-        jsPandaFile = GetJSPandaFileManager()->LoadPfAbc(filename);
-        if (jsPandaFile == nullptr) {
-            return false;
-        }
-    } else {
-        jsPandaFile = frameworkPandaFile_;
+    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadJSPandaFile(filename);
+    if (jsPandaFile == nullptr) {
+        return false;
     }
+
     return Execute(jsPandaFile, entryPoint, args);
 }
 
-bool EcmaVM::CollectInfoOfPandaFile(const std::string &filename, std::string_view entryPoint,
-                                    std::vector<BytecodeTranslationInfo> *infoList, const panda_file::File *&pf)
+bool EcmaVM::CollectInfoOfPandaFile(const std::string &filename, std::vector<BytecodeTranslationInfo> *infoList)
 {
-    const JSPandaFile *jsPandaFile;
-    if (frameworkPandaFile_ == nullptr || !IsFrameworkPandaFile(filename)) {
-        jsPandaFile = GetJSPandaFileManager()->LoadPfAbc(filename);
-        if (jsPandaFile == nullptr) {
-            return false;
-        }
-    } else {
-        jsPandaFile = frameworkPandaFile_;
-    }
-
-    // Get ClassName and MethodName
-    size_t pos = entryPoint.find_last_of("::");
-    if (pos == std::string_view::npos) {
-        LOG_ECMA(ERROR) << "EntryPoint:" << entryPoint << " is illegal";
+    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadAotInfoFromPf(filename, infoList);
+    if (jsPandaFile == nullptr) {
         return false;
     }
-    CString methodName(entryPoint.substr(pos + 1));
 
-    PandaFileTranslator translator(this, jsPandaFile);
-    translator.TranslateAndCollectPandaFile(methodName, infoList);
+    if (GetJSOptions().IsEnableTsAot()) {
+        TSLoader *tsLoader = GetTSLoader();
+        tsLoader->DecodeTSTypes(*jsPandaFile->GetPandaFile());
+    }
     return true;
 }
 
 bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                                const std::vector<std::string> &args, const std::string &filename)
 {
+    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadJSPandaFile(filename, buffer, size);
+    if (jsPandaFile == nullptr) {
+        return false;
+    }
     // Get ClassName and MethodName
     size_t pos = entryPoint.find_last_of("::");
     if (pos == std::string_view::npos) {
@@ -390,10 +375,6 @@ bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view
         return false;
     }
     CString methodName(entryPoint.substr(pos + 1));
-    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadBufferAbc(filename, buffer, size);
-    if (jsPandaFile == nullptr) {
-        return false;
-    }
     InvokeEcmaEntrypoint(jsPandaFile, methodName, args);
     return true;
 }
@@ -443,22 +424,6 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
-void EcmaVM::RedirectMethod(const panda_file::File &pf)
-{
-    for (auto method : frameworkProgramMethods_) {
-        method->SetPandaFile(&pf);
-    }
-}
-
-Expected<int, Runtime::Error> EcmaVM::InvokeEntrypointImpl(Method *entrypoint, const std::vector<std::string> &args)
-{
-    // For testcase startup
-    const panda_file::File *file = entrypoint->GetPandaFile();
-    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->GetJSPandaFile(file);
-    ASSERT(jsPandaFile != nullptr);
-    return InvokeEcmaEntrypoint(jsPandaFile, utf::Mutf8AsCString(entrypoint->GetName().data), args);
-}
-
 Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *jsPandaFile,
                                                            [[maybe_unused]] const CString &methodName,
                                                            const std::vector<std::string> &args)
@@ -466,14 +431,16 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     JSHandle<Program> program;
     if (snapshotSerializeEnable_) {
+#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
         program = GetJSPandaFileManager()->GenerateProgram(this, jsPandaFile);
 
         auto index = jsPandaFile->GetJSPandaFileDesc().find(frameworkAbcFileName_);
         if (index != CString::npos) {
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
             LOG_ECMA(DEBUG) << "snapShot MakeSnapShotProgramObject abc " << jsPandaFile->GetJSPandaFileDesc();
             SnapShot snapShot(this);
             snapShot.MakeSnapShotProgramObject(*program, jsPandaFile->GetPandaFile(), snapshotFileName_);
+#else
+        LOG_ECMA(FATAL) << "Don't support snapshot now.";
 #endif
         }
     } else {
@@ -481,7 +448,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
             program = GetJSPandaFileManager()->GenerateProgram(this, jsPandaFile);
         } else {
             program = JSHandle<Program>(thread_, frameworkProgram_);
-            RedirectMethod(*jsPandaFile->GetPandaFile());
+            frameworkProgram_ = JSTaggedValue::Hole();
         }
     }
     if (program.IsEmpty()) {
@@ -524,12 +491,6 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         HandleUncaughtException(exception.GetTaggedObject());
     }
     return 0;
-}
-
-bool EcmaVM::IsFrameworkPandaFile(std::string_view filename) const
-{
-    return filename.size() >= frameworkAbcFileName_.size() &&
-           filename.substr(filename.size() - frameworkAbcFileName_.size()) == frameworkAbcFileName_;
 }
 
 JSHandle<JSTaggedValue> EcmaVM::GetAndClearEcmaUncaughtException() const
@@ -593,12 +554,12 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
     }
 
     // array buffer
-    for (auto iter = arrayBufferDataList_.begin(); iter != arrayBufferDataList_.end();) {
+    for (auto iter = nativePointerList_.begin(); iter != nativePointerList_.end();) {
         JSNativePointer *object = *iter;
         auto fwd = v0(reinterpret_cast<TaggedObject *>(object));
         if (fwd == nullptr) {
             object->Destroy();
-            iter = arrayBufferDataList_.erase(iter);
+            iter = nativePointerList_.erase(iter);
         } else if (fwd != reinterpret_cast<TaggedObject *>(object)) {
             *iter = JSNativePointer::Cast(fwd);
             ++iter;
@@ -606,31 +567,21 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
             ++iter;
         }
     }
-
-    // framework program
-    if (!frameworkProgram_.IsHole()) {
-        auto fwd = v0(frameworkProgram_.GetTaggedObject());
-        if (fwd == nullptr) {
-            frameworkProgram_ = JSTaggedValue::Undefined();
-        } else if (fwd != frameworkProgram_.GetTaggedObject()) {
-            frameworkProgram_ = JSTaggedValue(fwd);
-        }
-    }
 }
 
-void EcmaVM::PushToArrayDataList(JSNativePointer *array)
+void EcmaVM::PushToNativePointerList(JSNativePointer *array)
 {
-    if (std::find(arrayBufferDataList_.begin(), arrayBufferDataList_.end(), array) != arrayBufferDataList_.end()) {
+    if (std::find(nativePointerList_.begin(), nativePointerList_.end(), array) != nativePointerList_.end()) {
         return;
     }
-    arrayBufferDataList_.emplace_back(array);
+    nativePointerList_.emplace_back(array);
 }
 
-void EcmaVM::RemoveArrayDataList(JSNativePointer *array)
+void EcmaVM::RemoveFromNativePointerList(JSNativePointer *array)
 {
-    auto iter = std::find(arrayBufferDataList_.begin(), arrayBufferDataList_.end(), array);
-    if (iter != arrayBufferDataList_.end()) {
-        arrayBufferDataList_.erase(iter);
+    auto iter = std::find(nativePointerList_.begin(), nativePointerList_.end(), array);
+    if (iter != nativePointerList_.end()) {
+        nativePointerList_.erase(iter);
     }
 }
 
@@ -660,15 +611,10 @@ bool EcmaVM::VerifyFilePath(const CString &filePath) const
 
 void EcmaVM::ClearBufferData()
 {
-    for (auto iter : arrayBufferDataList_) {
+    for (auto iter : nativePointerList_) {
         iter->Destroy();
     }
-    arrayBufferDataList_.clear();
-
-    if (frameworkPandaFile_) {
-        delete frameworkPandaFile_;
-        frameworkPandaFile_ = nullptr;
-    }
+    nativePointerList_.clear();
 }
 
 bool EcmaVM::ExecutePromisePendingJob() const
@@ -700,6 +646,7 @@ void EcmaVM::Iterate(const RootVisitor &v)
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&globalEnv_)));
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&microJobQueue_)));
     v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&regexpCache_)));
+    v(Root::ROOT_VM, ObjectSlot(reinterpret_cast<uintptr_t>(&frameworkProgram_)));
     moduleManager_->Iterate(v);
     tsLoader_->Iterate(v);
 }

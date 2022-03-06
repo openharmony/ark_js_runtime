@@ -1915,14 +1915,11 @@ void ECMAObject::SetNativePointerField(int32_t index, void *nativePointer,
             JSHandle<JSTaggedValue> current = JSHandle<JSTaggedValue>(thread, array->Get(thread, index + 1));
             if (!current->IsHole() && nativePointer == nullptr) {
                 // Try to remove native pointer if exists.
-                vm->RemoveArrayDataList(*JSHandle<JSNativePointer>(current));
+                vm->RemoveFromNativePointerList(*JSHandle<JSNativePointer>(current));
                 array->Set(thread, index + 1, JSTaggedValue::Hole());
             } else {
                 JSHandle<JSNativePointer> pointer = vm->GetFactory()->NewJSNativePointer(
                     nativePointer, callBack, data);
-                if (callBack != nullptr) {
-                    vm->PushToArrayDataList(*pointer);
-                }
                 array->Set(thread, index + 1, pointer.GetTaggedValue());
             }
         }

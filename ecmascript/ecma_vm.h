@@ -107,9 +107,8 @@ public:
     bool ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
                            const std::vector<std::string> &args, const std::string &filename = "");
 
-    bool PUBLIC_API CollectInfoOfPandaFile(const std::string &filename, std::string_view entryPoint,
-                                           std::vector<BytecodeTranslationInfo> *infoList,
-                                           const panda_file::File *&pf);
+    bool PUBLIC_API CollectInfoOfPandaFile(const std::string &filename,
+                                           std::vector<BytecodeTranslationInfo> *infoList);
 
     PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
@@ -282,8 +281,8 @@ public:
         return icEnable_;
     }
 
-    void PushToArrayDataList(JSNativePointer *array);
-    void RemoveArrayDataList(JSNativePointer *array);
+    void PushToNativePointerList(JSNativePointer *array);
+    void RemoveFromNativePointerList(JSNativePointer *array);
 
     JSHandle<ecmascript::JSTaggedValue> GetAndClearEcmaUncaughtException() const;
     JSHandle<ecmascript::JSTaggedValue> GetEcmaUncaughtException() const;
@@ -409,15 +408,17 @@ protected:
     }
 
     Expected<int, Runtime::Error> InvokeEntrypointImpl(Method *entrypoint,
-                                                       const std::vector<std::string> &args) override;
+                                                       const std::vector<std::string> &args) override
+    {
+        // unused interface
+        UNREACHABLE();
+    }
 
     void HandleUncaughtException(ObjectHeader *exception) override;
 
     void PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo);
 
 private:
-    bool IsFrameworkPandaFile(std::string_view filename) const;
-
     void SetGlobalEnv(GlobalEnv *global);
 
     void SetMicroJobQueue(job::MicroJobQueue *queue);
@@ -428,8 +429,6 @@ private:
                                                        const std::vector<std::string> &args);
 
     void InitializeEcmaScriptRunStat();
-
-    void RedirectMethod(const panda_file::File &pf);
 
     bool VerifyFilePath(const CString &filePath) const;
 
@@ -442,7 +441,6 @@ private:
 
     // Useless/deprecated fields in the future:
     Rendezvous *rendezvous_{nullptr};
-    bool isTestMode_ {false};
 
     // VM startup states.
     static JSRuntimeOptions options_;
@@ -460,7 +458,7 @@ private:
     Chunk chunk_;
     Heap *heap_ {nullptr};
     ObjectFactory *factory_ {nullptr};
-    ChunkVector<JSNativePointer *> arrayBufferDataList_;
+    ChunkVector<JSNativePointer *> nativePointerList_;
 
     // VM execution states.
     JSThread *thread_ {nullptr};
@@ -471,14 +469,13 @@ private:
     bool runtimeStatEnabled_ {false};
     EcmaRuntimeStat *runtimeStat_ {nullptr};
 
-    // App framework resources.
-    JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};
+    // For framewrok file snapshot.
+    CString snapshotFileName_;
     CString frameworkAbcFileName_;
+    JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};
     const JSPandaFile *frameworkPandaFile_ {nullptr};
-    ChunkVector<JSMethod *> frameworkProgramMethods_;
 
     // VM resources.
-    CString snapshotFileName_;
     ChunkVector<JSMethod *> nativeMethods_;
     ModuleManager *moduleManager_ {nullptr};
     TSLoader *tsLoader_ {nullptr};
