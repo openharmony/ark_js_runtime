@@ -47,16 +47,6 @@ PandaFileTranslator::PandaFileTranslator(EcmaVM *vm, const JSPandaFile *jsPandaF
 {
 }
 
-void PandaFileTranslator::TranslateAndCollectPandaFile(const CString &methodName,
-                                                       std::vector<BytecodeTranslationInfo> *infoList)
-{
-    if (ecmaVm_->GetJSOptions().IsEnableTsAot()) {
-        TSLoader *tsLoader = ecmaVm_->GetTSLoader();
-        tsLoader->DecodeTSTypes(*jsPandaFile_->GetPandaFile());
-    }
-    TranslateClasses(const_cast<JSPandaFile *>(jsPandaFile_), methodName, infoList);
-}
-
 template<class T, class... Args>
 static T *InitializeMemory(T *mem, Args... args)
 {
@@ -244,7 +234,6 @@ Program *PandaFileTranslator::GenerateProgram()
         JSHandle<JSNativePointer> jsPandaFilePointer = factory_->NewJSNativePointer(
             const_cast<JSPandaFile *>(jsPandaFile_), JSPandaFileManager::RemoveJSPandaFile,
             EcmaVM::GetJSPandaFileManager());
-        ecmaVm_->PushToArrayDataList(*jsPandaFilePointer);
         constpool->Set(thread_, constpoolIndex, jsPandaFilePointer.GetTaggedValue());
     }
 

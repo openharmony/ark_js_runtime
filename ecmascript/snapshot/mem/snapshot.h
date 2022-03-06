@@ -25,6 +25,7 @@
 namespace panda::ecmascript {
 class Program;
 class EcmaVM;
+class JSPandaFile;
 
 class SnapShot final {
 public:
@@ -33,8 +34,8 @@ public:
 
     void MakeSnapShotProgramObject(Program *program, const panda_file::File *pf,
                                    const CString &fileName = "./snapshot");
-    std::unique_ptr<const panda_file::File> DeserializeGlobalEnvAndProgram(
-        const CString &fileName = "./snapshot");
+    const JSPandaFile *DeserializeGlobalEnvAndProgram(const CString &abcFile,
+                                                      const CString &snapshotFile = "./snapshot");
 
 private:
     struct Header {

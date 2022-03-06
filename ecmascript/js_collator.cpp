@@ -57,10 +57,8 @@ void JSCollator::SetIcuCollator(JSThread *thread, const JSHandle<JSCollator> &co
         native->ResetExternalPointer(icuCollator);
         return;
     }
-    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuCollator);
-    pointer->SetDeleter(callback);
+    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuCollator, callback);
     collator->SetIcuField(thread, pointer.GetTaggedValue());
-    ecmaVm->PushToArrayDataList(*pointer);
 }
 
 JSHandle<JSCollator> JSCollator::InitializeCollator(JSThread *thread, const JSHandle<JSCollator> &collator,

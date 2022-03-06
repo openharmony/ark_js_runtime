@@ -165,7 +165,6 @@ void ObjectFactory::NewJSArrayBufferData(const JSHandle<JSArrayBuffer> &array, i
     JSHandle<JSNativePointer> pointer = NewJSNativePointer(newData, NativeAreaAllocator::FreeBufferFunc,
                                                            vm_->GetNativeAreaAllocator());
     array->SetArrayBufferData(thread_, pointer.GetTaggedValue());
-    vm_->PushToArrayDataList(*pointer);
 }
 
 JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(int32_t length)
@@ -186,7 +185,6 @@ JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(int32_t length)
                                                                vm_->GetNativeAreaAllocator());
         arrayBuffer->SetArrayBufferData(thread_, pointer.GetTaggedValue());
         arrayBuffer->ClearBitField();
-        vm_->PushToArrayDataList(*pointer);
     }
     return arrayBuffer;
 }
@@ -205,7 +203,6 @@ JSHandle<JSArrayBuffer> ObjectFactory::NewJSArrayBuffer(void *buffer, int32_t le
         JSHandle<JSNativePointer> pointer = NewJSNativePointer(buffer, deleter, data);
         arrayBuffer->SetArrayBufferData(thread_, pointer.GetTaggedValue());
         arrayBuffer->SetShared(share);
-        vm_->PushToArrayDataList(*pointer);
     }
     return arrayBuffer;
 }
@@ -250,9 +247,6 @@ void ObjectFactory::NewJSRegExpByteCodeData(const JSHandle<JSRegExp> &regexp, vo
                                                            vm_->GetNativeAreaAllocator());
     regexp->SetByteCodeBuffer(thread_, pointer.GetTaggedValue());
     regexp->SetLength(static_cast<uint32_t>(size));
-
-    // push uint8_t* to ecma array_data_list
-    vm_->PushToArrayDataList(*pointer);
 }
 
 JSHandle<JSHClass> ObjectFactory::NewEcmaDynClass(uint32_t size, JSType type, const JSHandle<JSTaggedValue> &prototype)

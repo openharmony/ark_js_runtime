@@ -66,6 +66,7 @@
 #include "ecmascript/js_map_iterator.h"
 #include "ecmascript/js_set_iterator.h"
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/mem/heap.h"
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/space-inl.h"
@@ -738,13 +739,16 @@ void SnapShotSerialize::ExtendObjectArray()
     addressSlot_ = ToUintPtr(addr);
 }
 
-void SnapShotSerialize::RedirectSlot(const panda_file::File *pf)
+void SnapShotSerialize::RedirectSlot(const JSPandaFile *jsPandaFile)
 {
     SnapShotSpace *space = vm_->GetHeap()->GetSnapShotSpace();
     EcmaStringTable *stringTable = vm_->GetEcmaStringTable();
+    const panda_file::File *pf = jsPandaFile->GetPandaFile();
+    uint32_t methodNums = jsPandaFile->GetNumMethods();
+    JSMethod *methods = jsPandaFile->GetMethods();
 
     size_t others = 0;
-    space->EnumerateRegions([stringTable, &others, this, pf](Region *current) {
+    space->EnumerateRegions([stringTable, &others, this, pf, methods, &methodNums](Region *current) {
         size_t allocated = current->GetAllocatedBytes();
         uintptr_t begin = current->GetBegin();
         uintptr_t end = begin + allocated;
@@ -755,7 +759,10 @@ void SnapShotSerialize::RedirectSlot(const panda_file::File *pf)
                     auto method = reinterpret_cast<JSMethod *>(begin);
                     method->SetPandaFile(pf);
                     method->SetBytecodeArray(method->GetInstructions());
-                    vm_->frameworkProgramMethods_.emplace_back(method);
+                    if (memcpy_s(methods + (--methodNums), METHOD_SIZE, method, METHOD_SIZE) != EOK) {
+                        LOG_ECMA(FATAL) << "memcpy_s failed";
+                        UNREACHABLE();
+                    }
                     begin += METHOD_SIZE;
                     if (begin >= end) {
                         others = others - i - 1;
@@ -775,7 +782,10 @@ void SnapShotSerialize::RedirectSlot(const panda_file::File *pf)
                     auto method = reinterpret_cast<JSMethod *>(begin);
                     method->SetPandaFile(pf);
                     method->SetBytecodeArray(method->GetInstructions());
-                    vm_->frameworkProgramMethods_.emplace_back(method);
+                    if (memcpy_s(methods + (--methodNums), METHOD_SIZE, method, METHOD_SIZE) != EOK) {
+                        LOG_ECMA(FATAL) << "memcpy_s failed";
+                        UNREACHABLE();
+                    }
                     begin += METHOD_SIZE;
                     if (begin >= end) {
                         others = slot.GetObjectSize() - i - 1;
