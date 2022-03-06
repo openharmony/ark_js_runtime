@@ -46,11 +46,14 @@ void DFXJSNApi::DumpHeapSnapShot(EcmaVM *vm,  int dumpFormat, const std::string 
     }
 }
 
-std::string DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm)
+bool DFXJSNApi::BuildNativeAndJsBackStackTrace(EcmaVM *vm, std::string &stackTraceStr)
 {
-    CString trace = ecmascript::base::ErrorHelper::BuildNativeEcmaStackTrace(vm->GetJSThread());
-    std::string result = CstringConvertToStdString(trace);
-    return result;
+    CString trace = ecmascript::base::ErrorHelper::BuildNativeAndJsStackTrace(vm->GetJSThread());
+    stackTraceStr = CstringConvertToStdString(trace);
+    if (stackTraceStr == "") {
+        return false;
+    }
+    return true;
 }
 
 bool DFXJSNApi::StartHeapTracking(EcmaVM *vm, double timeInterval, bool isVmMode)

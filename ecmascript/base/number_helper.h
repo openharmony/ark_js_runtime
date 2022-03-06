@@ -89,11 +89,11 @@ public:
     static JSTaggedValue DoubleToPrecision(JSThread *thread, double number, int digit);
     static JSTaggedValue StringToDoubleWithRadix(const uint8_t *start, const uint8_t *end, int radix);
     static CString IntToString(int number);
+    static CString IntegerToString(double number, int radix);
 
 private:
     static char Carry(char current, int radix);
     static double Strtod(const char *str, int exponent, uint8_t radix);
-    static CString IntergerToString(double number, int radix);
     static CString DecimalsToString(double *numberInteger, double fraction, int radix, double delta);
     static bool IsNonspace(uint16_t c);
     static bool GotoNonspace(uint8_t **ptr, const uint8_t *end);
