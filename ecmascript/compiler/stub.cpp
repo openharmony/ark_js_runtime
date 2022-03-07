@@ -3452,4 +3452,41 @@ GateRef Stub::JSArrayListGet(GateRef glue, GateRef receiver, GateRef index)
     env->PopCurrentLabel();
     return ret;
 }
+
+GateRef Stub::DoubleToInt(GateRef glue, GateRef x)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    Label exit(env);
+    Label overflow(env);
+
+    GateRef xInt = ChangeFloat64ToInt32(x);
+    DEFVARIABLE(result, VariableType::INT32(), xInt);
+
+    if (env->IsAmd64()) {
+        // 0x80000000: amd64 overflow return value
+        Branch(Int32Equal(xInt, GetInt32Constant(0x80000000)), &overflow, &exit);
+    } else {
+        GateRef xInt64 = CastDoubleToInt64(x);
+        // exp = (u64 & DOUBLE_EXPONENT_MASK) >> DOUBLE_SIGNIFICAND_SIZE - DOUBLE_EXPONENT_BIAS
+        GateRef exp = Int64And(xInt64, GetInt64Constant(base::DOUBLE_EXPONENT_MASK));
+        exp = ChangeInt64ToInt32(UInt64LSR(exp, GetInt64Constant(base::DOUBLE_SIGNIFICAND_SIZE)));
+        exp = Int32Sub(exp, GetInt32Constant(base::DOUBLE_EXPONENT_BIAS));
+        GateRef bits = GetInt32Constant(base::INT32_BITS - 1);
+        // exp < 32 - 1
+        Branch(Int32LessThan(exp, bits), &exit, &overflow);
+    }
+    Bind(&overflow);
+    {
+        StubDescriptor *doubleToInt = GET_STUBDESCRIPTOR(DoubleToInt);
+        result = CallRuntime(doubleToInt, glue,
+            GetIntPtrConstant(FAST_STUB_ID(DoubleToInt)), { x });
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
 }  // namespace panda::ecmascript::kungfu
