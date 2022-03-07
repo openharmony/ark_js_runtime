@@ -94,6 +94,7 @@ class ProtoChangeDetails;
         JS_MAP_ITERATOR,         /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_SET_ITERATOR,         /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_ARRAYLIST_ITERATOR, /* /////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_QUEUE_ITERATOR,   /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREEMAP_ITERATOR, /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREESET_ITERATOR, /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_ARRAY_ITERATOR,       /* ///////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -119,7 +120,7 @@ class ProtoChangeDetails;
         JS_API_VECTOR,     /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREE_MAP,   /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_API_TREE_SET,   /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
-        JS_QUEUE,          /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        JS_API_QUEUE,      /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_TYPED_ARRAY, /* JS_TYPED_ARRAY_BEGIN /////////////////////////////////////////////////////////////////// */ \
         JS_INT8_ARRAY,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         JS_UINT8_ARRAY, /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -613,7 +614,7 @@ public:
     // non ECMA standard jsapi containers.
     inline bool IsSpecialContainer() const
     {
-        return GetObjectType() >= JSType::JS_API_ARRAY_LIST && GetObjectType() <= JSType::JS_QUEUE;
+        return GetObjectType() >= JSType::JS_API_ARRAY_LIST && GetObjectType() <= JSType::JS_API_QUEUE;
     }
     inline bool IsJSAPIArrayList() const
     {
@@ -623,10 +624,15 @@ public:
     {
         return GetObjectType() == JSType::JS_API_ARRAYLIST_ITERATOR;
     }
-    inline bool IsJSQueue() const
+    inline bool IsJSAPIQueue() const
     {
-        return GetObjectType() == JSType::JS_QUEUE;
+        return GetObjectType() == JSType::JS_API_QUEUE;
     }
+    inline bool IsJSAPIQueueIterator() const
+    {
+        return GetObjectType() == JSType::JS_API_QUEUE_ITERATOR;
+    }
+
     inline bool IsJSAPITreeMap() const
     {
         return GetObjectType() == JSType::JS_API_TREE_MAP;

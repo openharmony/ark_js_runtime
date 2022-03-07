@@ -30,6 +30,8 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -190,6 +192,18 @@ static JSHandle<JSAPIArrayList> NewJSAPIArrayList(JSThread *thread, ObjectFactor
     JSHandle<JSAPIArrayList> jsArrayList = JSHandle<JSAPIArrayList>::Cast(factory->NewJSObject(arrayListClass));
     jsArrayList->SetLength(thread, JSTaggedValue(0));
     return jsArrayList;
+}
+
+static JSHandle<JSAPIQueue> NewJSAPIQueue(JSThread *thread, ObjectFactory *factory, JSHandle<JSTaggedValue> proto)
+{
+    JSHandle<JSHClass> queueClass = factory->NewEcmaDynClass(JSAPIQueue::SIZE, JSType::JS_API_QUEUE, proto);
+    JSHandle<JSAPIQueue> jsQueue = JSHandle<JSAPIQueue>::Cast(factory->NewJSObject(queueClass));
+    JSHandle<TaggedArray> newElements = factory->NewTaggedArray(JSAPIQueue::DEFAULT_CAPACITY_LENGTH);
+    jsQueue->SetLength(thread, JSTaggedValue(0));
+    jsQueue->SetFront(0);
+    jsQueue->SetTail(0);
+    jsQueue->SetElements(thread, newElements);
+    return jsQueue;
 }
 
 HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
@@ -688,7 +702,6 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(unionType)
                 break;
             }
-            case JSType::JS_QUEUE:
             case JSType::JS_API_VECTOR:
             case JSType::JS_API_ARRAY_LIST: {
                 // 1 : 1 dump fileds number
@@ -703,6 +716,22 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 JSHandle<JSAPIArrayList> jsArrayList = NewJSAPIArrayList(thread, factory, proto);
                 JSHandle<JSAPIArrayListIterator> jsArrayListIter = factory->NewJSAPIArrayListIterator(jsArrayList);
                 DUMP_FOR_HANDLE(jsArrayListIter)
+                break;
+            }
+            case JSType::JS_API_QUEUE: {
+                // 2 : 2 dump fileds number
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIQueue::SIZE, 2)
+                JSHandle<JSAPIQueue> jsQueue = NewJSAPIQueue(thread, factory, proto);
+                DUMP_FOR_HANDLE(jsQueue)
+                break;
+            }
+            case JSType::JS_API_QUEUE_ITERATOR: {
+                // 2 : 2 dump fileds number
+                CHECK_DUMP_FILEDS(JSObject::SIZE, JSAPIQueueIterator::SIZE, 2)
+                JSHandle<JSAPIQueue> jsQueue = NewJSAPIQueue(thread, factory, proto);
+                JSHandle<JSAPIQueueIterator> jsQueueIter =
+                    factory->NewJSAPIQueueIterator(jsQueue);
+                DUMP_FOR_HANDLE(jsQueueIter)
                 break;
             }
             case JSType::JS_API_TREE_MAP: {
