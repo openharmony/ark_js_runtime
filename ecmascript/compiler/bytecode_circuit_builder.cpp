@@ -14,35 +14,35 @@
  */
 
 #include "bytecode_circuit_builder.h"
+#include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript::kungfu {
-void BytecodeCircuitBuilder::BytecodeToCircuit(const std::vector<uint8_t *> &pcArray, const panda_file::File &pf,
-                                               const JSMethod *method)
+void BytecodeCircuitBuilder::BytecodeToCircuit()
 {
-    auto curPc = pcArray.front();
+    auto curPc = pcArray_.front();
     auto prePc = curPc;
     std::map<uint8_t *, uint8_t *> byteCodeCurPrePc;
     std::vector<CfgInfo> bytecodeBlockInfos;
     auto startPc = curPc;
     bytecodeBlockInfos.emplace_back(startPc, SplitKind::START, std::vector<uint8_t *>(1, startPc));
     byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(curPc, prePc));
-    for (size_t i = 1; i < pcArray.size() - 1; i++) {
-        curPc = pcArray[i];
+    for (size_t i = 1; i < pcArray_.size() - 1; i++) {
+        curPc = pcArray_[i];
         byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(curPc, prePc));
         prePc = curPc;
         CollectBytecodeBlockInfo(curPc, bytecodeBlockInfos);
     }
     // handle empty
-    byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(pcArray[pcArray.size() - 1], prePc));
+    byteCodeCurPrePc.insert(std::pair<uint8_t *, uint8_t *>(pcArray_[pcArray_.size() - 1], prePc));
 
     // collect try catch block info
-    auto exceptionInfo = CollectTryCatchBlockInfo(pf, method, byteCodeCurPrePc, bytecodeBlockInfos);
+    auto exceptionInfo = CollectTryCatchBlockInfo(byteCodeCurPrePc, bytecodeBlockInfos);
 
-    // Complete bytecode blcok Infomation
+    // Complete bytecode block Information
     CompleteBytecodeBlockInfo(byteCodeCurPrePc, bytecodeBlockInfos);
 
     // Building the basic block diagram of bytecode
-    BuildBasicBlocks(method, exceptionInfo, bytecodeBlockInfos, byteCodeCurPrePc);
+    BuildBasicBlocks(exceptionInfo, bytecodeBlockInfos, byteCodeCurPrePc);
 }
 
 void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<CfgInfo> &bytecodeBlockInfos)
@@ -148,24 +148,24 @@ void BytecodeCircuitBuilder::CollectBytecodeBlockInfo(uint8_t *pc, std::vector<C
 }
 
 std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> BytecodeCircuitBuilder::CollectTryCatchBlockInfo(
-    const panda_file::File &file, const JSMethod *method, std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc,
-    std::vector<CfgInfo> &bytecodeBlockInfos)
+    std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc, std::vector<CfgInfo> &bytecodeBlockInfos)
 {
     // try contains many catch
+    const panda_file::File *file = file_->GetPandaFile();
     std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> byteCodeException;
-    panda_file::MethodDataAccessor mda(file, method->GetFileId());
-    panda_file::CodeDataAccessor cda(file, mda.GetCodeId().value());
-    cda.EnumerateTryBlocks([method, &byteCodeCurPrePc, &bytecodeBlockInfos, &byteCodeException](
+    panda_file::MethodDataAccessor mda(*file, method_->GetFileId());
+    panda_file::CodeDataAccessor cda(*file, mda.GetCodeId().value());
+    cda.EnumerateTryBlocks([this, &byteCodeCurPrePc, &bytecodeBlockInfos, &byteCodeException](
             panda_file::CodeDataAccessor::TryBlock &try_block) {
         auto tryStartOffset = try_block.GetStartPc();
         auto tryEndOffset = try_block.GetStartPc() + try_block.GetLength();
-        auto tryStartPc = const_cast<uint8_t *>(method->GetBytecodeArray() + tryStartOffset);
-        auto tryEndPc = const_cast<uint8_t *>(method->GetBytecodeArray() + tryEndOffset);
+        auto tryStartPc = const_cast<uint8_t *>(method_->GetBytecodeArray() + tryStartOffset);
+        auto tryEndPc = const_cast<uint8_t *>(method_->GetBytecodeArray() + tryEndOffset);
         byteCodeException[std::make_pair(tryStartPc, tryEndPc)] = {};
         uint32_t pcOffset = panda_file::INVALID_OFFSET;
         try_block.EnumerateCatchBlocks([&](panda_file::CodeDataAccessor::CatchBlock &catch_block) {
             pcOffset = catch_block.GetHandlerPc();
-            auto catchBlockPc = const_cast<uint8_t *>(method->GetBytecodeArray() + pcOffset);
+            auto catchBlockPc = const_cast<uint8_t *>(method_->GetBytecodeArray() + pcOffset);
             // try block associate catch block
             byteCodeException[std::make_pair(tryStartPc, tryEndPc)].emplace_back(catchBlockPc);
             return true;
@@ -305,9 +305,8 @@ void BytecodeCircuitBuilder::CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8
 #endif
 }
 
-void BytecodeCircuitBuilder::BuildBasicBlocks(const JSMethod *method,
-                                              std::map<std::pair<uint8_t *, uint8_t *>,
-                                              std::vector<uint8_t *>> &exception,
+void BytecodeCircuitBuilder::BuildBasicBlocks(std::map<std::pair<uint8_t *, uint8_t *>,
+                                                       std::vector<uint8_t *>> &exception,
                                               std::vector<CfgInfo> &bytecodeBlockInfo,
                                               std::map<uint8_t *, uint8_t *> &byteCodeCurPrePc)
 {
@@ -315,7 +314,7 @@ void BytecodeCircuitBuilder::BuildBasicBlocks(const JSMethod *method,
     std::map<uint8_t *, BytecodeRegion *> endPcToBB; // [end, bb]
     BytecodeGraph byteCodeGraph;
     auto &blocks = byteCodeGraph.graph;
-    byteCodeGraph.method = method;
+    byteCodeGraph.method = method_;
     blocks.resize(bytecodeBlockInfo.size() / 2); // 2 : half size
     // build basic block
     int blockId = 0;
@@ -2084,6 +2083,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
         byteCodeToJSGate_[value.second] = key;
     }
 
+    // ts loader
+    panda::ecmascript::TSLoader* tsLoader = vm_->GetTSLoader();
+
     // resolve def-site of virtual regs and set all value inputs
     for (auto gate: circuit_.GetAllGates()) {
         auto valueCount = circuit_.GetOpCode(gate).GetInValueCount(circuit_.GetBitField(gate));
@@ -2199,6 +2201,9 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         return defSiteOfReg(bb.iDominator->id, bb.iDominator->end, reg, acc);
                     } else {
                         // def-site already found
+                        const panda_file::File *pf = file_->GetPandaFile();
+                        auto tsType = tsLoader->GetGTFromPandFile(*pf, reg, method_).GetGlobalTSTypeRef();
+                        circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
                         return ans;
                     }
                 };
@@ -2284,7 +2289,7 @@ void BytecodeCircuitBuilder::PrintGraph(std::vector<BytecodeRegion> &graph)
                       " immediate dominator is " << graph[i].iDominator->id << std::endl;
         }
 
-        std::cout << "current block " << graph[i].id << " dominace Frontiers: ";
+        std::cout << "current block " << graph[i].id << " dominance Frontiers: ";
         for (const auto &frontier: graph[i].domFrontiers) {
             std::cout << frontier->id << " , ";
         }
