@@ -27,7 +27,7 @@
 namespace panda::ecmascript {
 struct BytecodeTranslationInfo {
     std::vector<uint8_t *> pcArray {};
-    const panda_file::File *file {nullptr};
+    const JSPandaFile *jsPandaFile {nullptr};
     const JSMethod *method {nullptr};
 };
 

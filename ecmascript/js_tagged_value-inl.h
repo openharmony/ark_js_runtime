@@ -512,6 +512,11 @@ inline bool JSTaggedValue::IsJSAPITreeSet() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPITreeSet();
 }
 
+inline bool JSTaggedValue::IsJSAPIQueue() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIQueue();
+}
+
 inline bool JSTaggedValue::IsSpecialContainer() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsSpecialContainer();
@@ -798,6 +803,11 @@ inline bool JSTaggedValue::IsJSArrayIterator() const
 inline bool JSTaggedValue::IsJSAPIArrayListIterator() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIArrayListIterator();
+}
+
+inline bool JSTaggedValue::IsJSAPIQueueIterator() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsJSAPIQueueIterator();
 }
 
 inline bool JSTaggedValue::IsIterator() const

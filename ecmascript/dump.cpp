@@ -31,6 +31,8 @@
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -282,6 +284,10 @@ CString JSHClass::DumpJSType(JSType type)
             return "TreeMapIterator";
         case JSType::JS_API_TREESET_ITERATOR:
             return "TreeSetIterator";
+        case JSType::JS_API_QUEUE:
+            return "Queue";
+        case JSType::JS_API_QUEUE_ITERATOR:
+            return "QueueIterator";
         default: {
             CString ret = "unknown type ";
             return ret + static_cast<char>(type);
@@ -654,6 +660,12 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_API_QUEUE:
+            JSAPIQueue::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_API_QUEUE_ITERATOR:
+            JSAPIQueueIterator::Cast(obj)->Dump(thread, os);
             break;
         default:
             UNREACHABLE();
@@ -1358,6 +1370,22 @@ void JSArrayIterator::Dump(JSThread *thread, std::ostream &os) const
     os << " - length: " << std::dec << array->GetArrayLength() << "\n";
     os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     os << " - IterationKind: " << std::dec << static_cast<int>(GetIterationKind()) << "\n";
+    JSObject::Dump(thread, os);
+}
+
+void JSAPIQueue::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - length: " << std::dec << GetSize() << "\n";
+    os << " - front: " << std::dec << GetFront() << "\n";
+    os << " - tail: " << std::dec << GetTail() << "\n";
+    JSObject::Dump(thread, os);
+}
+
+void JSAPIQueueIterator::Dump(JSThread *thread, std::ostream &os) const
+{
+    JSAPIQueue *queue = JSAPIQueue::Cast(GetIteratedQueue().GetTaggedObject());
+    os << " - length: " << std::dec << queue->GetSize() << "\n";
+    os << " - nextIndex: " << std::dec << GetNextIndex() << "\n";
     JSObject::Dump(thread, os);
 }
 
@@ -2583,6 +2611,12 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::JS_API_TREESET_ITERATOR:
             JSAPITreeSetIterator::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
+        case JSType::JS_API_QUEUE:
+            JSAPIQueue::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::JS_API_QUEUE_ITERATOR:
+            JSAPIQueueIterator::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
         default:
             break;
     }
@@ -2990,6 +3024,21 @@ void JSAPIArrayListIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     JSObject::DumpForSnapshot(thread, vec);
 }
 
+void JSAPIQueue::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                 std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
+void JSAPIQueueIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
+                                         std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    JSAPIQueue *queue = JSAPIQueue::Cast(GetIteratedQueue().GetTaggedObject());
+    queue->DumpForSnapshot(thread, vec);
+    vec.push_back(std::make_pair(CString("NextIndex"), JSTaggedValue(GetNextIndex())));
+    JSObject::DumpForSnapshot(thread, vec);
+}
+
 void JSArrayIterator::DumpForSnapshot([[maybe_unused]] JSThread *thread,
                                       std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
@@ -3173,6 +3222,7 @@ void GlobalEnv::DumpForSnapshot([[maybe_unused]] JSThread *thread,
     vec.push_back(std::make_pair(CString("ArrayListIteratorPrototype"), globalConst->GetArrayListIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeMapIteratorPrototype"), globalConst->GetTreeMapIteratorPrototype()));
     vec.push_back(std::make_pair(CString("TreeSetIteratorPrototype"), globalConst->GetTreeSetIteratorPrototype()));
+    vec.push_back(std::make_pair(CString("QueueIteratorPrototype"), globalConst->GetQueueIteratorPrototype()));
 }
 
 void JSDataView::DumpForSnapshot([[maybe_unused]] JSThread *thread,

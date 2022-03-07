@@ -21,18 +21,19 @@ bool PassManager::Compile(std::string fileName)
 {
     std::vector<BytecodeTranslationInfo> infoList;
     bool res;
-    if (vm_->GetJSOptions().IsEnableTsAot())
+    if (vm_->GetJSOptions().IsEnableTsAot()) {
         res = vm_->CollectInfoOfPandaFile(fileName, &infoList);
-    else
+    } else {
         res = vm_->CollectInfoOfPandaFile(fileName, nullptr);
+    }
     if (!res) {
         std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry_ << "'" << std::endl;
         return false;
     }
 
     for (auto &info : infoList) {
-        BytecodeCircuitBuilder builder;
-        builder.BytecodeToCircuit(info.pcArray, *info.file, info.method);
+        BytecodeCircuitBuilder builder(vm_, info);
+        builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data);
         pipeline.RunPass<SlowPathLoweringPass>(&builder);
