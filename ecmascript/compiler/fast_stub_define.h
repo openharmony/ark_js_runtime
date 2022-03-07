@@ -158,6 +158,7 @@ namespace panda::ecmascript::kungfu {
     V(CallSpreadDyn, 4)                      \
     V(DefineGetterSetterByValue, 6)          \
     V(SuperCall, 5)                          \
+    I(DoubleToInt, 1)                        \
     I(CallRuntimeTrampoline, 4)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

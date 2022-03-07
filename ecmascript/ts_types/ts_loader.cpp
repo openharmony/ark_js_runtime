@@ -178,7 +178,7 @@ GlobalTSTypeRef TSLoader::GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) con
     return resulteType->GetGTRef();
 }
 
-GlobalTSTypeRef TSLoader::GetGTFromPandFile(const panda_file::File &pf, uint32_t vergId, JSMethod* method) const
+GlobalTSTypeRef TSLoader::GetGTFromPandFile(const panda_file::File &pf, uint32_t vergId, const JSMethod* method) const
 {
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();

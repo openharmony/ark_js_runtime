@@ -189,7 +189,8 @@ public:
         return static_cast<TSTypeKind>(gt.GetUserDefineTypeKind());
     }
 
-    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, uint32_t vergId, JSMethod* method) const;
+    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, uint32_t vergId,
+                                                 const JSMethod* method) const;
 
     GlobalTSTypeRef PUBLIC_API GetPrmitiveGT(TSTypeKind kind) const;
 

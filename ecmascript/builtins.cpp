@@ -65,6 +65,7 @@
 #include "ecmascript/builtins/builtins_weak_set.h"
 #include "ecmascript/containers/containers_private.h"
 #include "ecmascript/ecma_runtime_call_info.h"
+#include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_api_arraylist.h"
@@ -160,7 +161,7 @@ bool GetAbsolutePath(const std::string &relativePath, std::string &absPath)
     absPath = std::string(path);
     return true;
 #else
-    auto path = _fullpath(buffer, relativePath.c_str(), buffer.size() - 1);
+    auto path = _fullpath(buffer, relativePath.c_str(), sizeof(buffer) - 1);
     if (path == nullptr) {
         return false;
     }
