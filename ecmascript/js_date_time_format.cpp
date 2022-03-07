@@ -110,10 +110,8 @@ void JSDateTimeFormat::SetIcuLocale(JSThread *thread, JSHandle<JSDateTimeFormat>
         native->ResetExternalPointer(icuPointer);
         return;
     }
-    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer);
-    pointer->SetDeleter(callback);
+    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer, callback);
     obj->SetLocaleIcu(thread, pointer.GetTaggedValue());
-    ecmaVm->PushToArrayDataList(*pointer);
 }
 
 void JSDateTimeFormat::FreeIcuLocale(void *pointer, void *data)
@@ -150,10 +148,8 @@ void JSDateTimeFormat::SetIcuSimpleDateFormat(JSThread *thread, JSHandle<JSDateT
         native->ResetExternalPointer(icuPointer);
         return;
     }
-    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer);
-    pointer->SetDeleter(callback);
+    JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(icuPointer, callback);
     obj->SetSimpleDateTimeFormatIcu(thread, pointer.GetTaggedValue());
-    ecmaVm->PushToArrayDataList(*pointer);
 }
 
 void JSDateTimeFormat::FreeSimpleDateFormat(void *pointer, void *data)
