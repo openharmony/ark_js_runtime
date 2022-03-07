@@ -21,7 +21,7 @@ bool PassManager::Compile(std::string fileName)
 {
     std::vector<BytecodeTranslationInfo> infoList;
     bool res;
-    if( vm_->GetJSOptions().IsEnableTsAot() )
+    if (vm_->GetJSOptions().IsEnableTsAot())
         res = vm_->CollectInfoOfPandaFile(fileName, &infoList);
     else
         res = vm_->CollectInfoOfPandaFile(fileName, nullptr);
