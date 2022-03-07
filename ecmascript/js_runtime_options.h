@@ -223,10 +223,10 @@ public:
 
     static const JSRuntimeOptions &GetRuntimeOptions()
     {
-        return runtime_options;
+        return temporary_options;
     }
 
-    static JSRuntimeOptions runtime_options;
+    static JSRuntimeOptions temporary_options;
 
 private:
     PandArg<bool> enableArkTools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};

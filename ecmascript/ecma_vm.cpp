@@ -73,7 +73,7 @@
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 static const std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
-JSRuntimeOptions JSRuntimeOptions::runtime_options;  // NOLINT(fuchsia-statically-constructed-objects)
+JSRuntimeOptions JSRuntimeOptions::temporary_options;  // NOLINT(fuchsia-statically-constructed-objects)
 
 /* static */
 EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options)
@@ -547,6 +547,20 @@ void EcmaVM::PrintJSErrorInfo(const JSHandle<JSTaggedValue> &exceptionInfo)
     LOG(ERROR, RUNTIME) << nameBuffer << ": " << msgBuffer << "\n" << stackBuffer;
 }
 
+void EcmaVM::ProcessNativeDelete(const WeakRootVisitor &v0)
+{
+    auto iter = nativePointerList_.begin();
+    while (iter != nativePointerList_.end()) {
+        JSNativePointer *object = *iter;
+        auto fwd = v0(reinterpret_cast<TaggedObject *>(object));
+        if (fwd == nullptr) {
+            object->Destroy();
+            iter = nativePointerList_.erase(iter);
+        } else {
+            ++iter;
+        }
+    }
+}
 void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
 {
     if (regExpParserCache_ != nullptr) {
@@ -560,12 +574,12 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
         if (fwd == nullptr) {
             object->Destroy();
             iter = nativePointerList_.erase(iter);
-        } else if (fwd != reinterpret_cast<TaggedObject *>(object)) {
-            *iter = JSNativePointer::Cast(fwd);
-            ++iter;
-        } else {
-            ++iter;
+            continue;
         }
+        if (fwd != reinterpret_cast<TaggedObject *>(object)) {
+            *iter = JSNativePointer::Cast(fwd);
+        }
+        ++iter;
     }
 }
 
