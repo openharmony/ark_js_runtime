@@ -1169,7 +1169,7 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
                 // 2.1 bitmap_[wordIdx]
                 GateRef bitmapoffset = GetIntPtrConstant(0);
                 GateRef bitmapData = Load(VariableType::POINTER(), oldToNewSet, bitmapoffset);
-                // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset);
+                // 2.2 bitmap_[wordIdx] |= GetBitMask(bit_offset)
                 GateRef oldmapValue = Load(VariableType::POINTER(), bitmapData, wordOffset);
                 Store(VariableType::POINTER(), glue, bitmapData, wordOffset,
                       IntPtrOr(oldmapValue, GetBitMask(bitOffset)));
