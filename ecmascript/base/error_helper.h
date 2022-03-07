@@ -39,6 +39,8 @@ public:
     static CString BuildNativeEcmaStackTrace(JSThread *thread);
 
     static CString BuildNativeAndJsStackTrace(JSThread *thread);
+    
+    static CString BuildNativeStackTrace(JSThread *thread);
 
 private:
     static CString DecodeFunctionName(const CString &name);

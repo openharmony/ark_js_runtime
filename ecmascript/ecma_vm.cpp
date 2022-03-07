@@ -111,7 +111,7 @@ Expected<EcmaVM *, CString> EcmaVM::Create(Runtime *runtime)
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-EcmaVM::EcmaVM() : EcmaVM(JSRuntimeOptions::GetRuntimeOptions())
+EcmaVM::EcmaVM() : EcmaVM(JSRuntimeOptions::GetTemporaryOptions())
 {
 }
 
