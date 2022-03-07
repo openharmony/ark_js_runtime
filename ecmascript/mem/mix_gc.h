@@ -49,6 +49,7 @@ private:
     void InitializePhase();
     void MarkingPhase();
     void SweepPhases();
+    void ProcessNativeDelete();
     void EvacuaPhases();
     void FinishPhase();
 
