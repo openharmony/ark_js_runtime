@@ -111,7 +111,6 @@ config("ark_jsruntime_public_config") {
   include_dirs = [
     "//ark/js_runtime",
     "$ark_root",
-    "//third_party/libunwind/include",
   ]
 }
 
@@ -146,7 +145,6 @@ source_set("libark_js_intl_static") {
     "$ark_root/runtime:arkruntime_header_deps",
     "//third_party/icu/icu4c:shared_icui18n",
     "//third_party/icu/icu4c:shared_icuuc",
-    "//third_party/libunwind:libunwind",
     sdk_libc_secshared_dep,
   ]
 }
@@ -550,7 +548,6 @@ source_set("libark_jsruntime_test_static") {
     "$ark_root/runtime:arkruntime_header_deps",
     "//third_party/icu/icu4c:shared_icui18n",
     "//third_party/icu/icu4c:shared_icuuc",
-    "//third_party/libunwind:libunwind",
     sdk_libc_secshared_dep,
   ]
 

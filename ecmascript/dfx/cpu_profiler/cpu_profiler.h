@@ -76,7 +76,7 @@ private:
     int interval_ = 500; // 500:Sampling interval 500 microseconds
     std::string fileName_ = "";
     ProfileGenerator *generator_ = nullptr;
-    pthread_t tid = 0;
+    pthread_t tid_ = 0;
 };
 } // namespace panda::ecmascript
 #endif // ECMASCRIPT_CPU_PROFILE_H
