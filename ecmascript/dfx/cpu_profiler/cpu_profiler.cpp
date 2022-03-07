@@ -102,7 +102,7 @@ void CpuProfiler::StopCpuProfiler()
                                 or the sampling thread is not started";
         return;
     }
-    if (tid != syscall(SYS_gettid)) {
+    if (static_cast<long>(tid_) != syscall(SYS_gettid)) {
         LOG(ERROR, RUNTIME) << "Thread attempted to close other sampling threads";
         return;
     }
@@ -160,7 +160,7 @@ void CpuProfiler::GetCurrentProcessInfo(struct CurrentProcessInfo &currentProces
 {
     currentProcessInfo.nowTimeStamp = ProfileProcessor::GetMicrosecondsTimeStamp() % TIME_CHANGE;
     currentProcessInfo.pid = getpid();
-    tid = currentProcessInfo.tid = syscall(SYS_gettid);
+    tid_ = currentProcessInfo.tid = syscall(SYS_gettid);
     struct timespec time = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &time);
     currentProcessInfo.tts = time.tv_nsec / 1000; // 1000:Nanoseconds to milliseconds.
