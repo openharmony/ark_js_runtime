@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (c) 2021 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +25,7 @@ BASE_HOME=${JSRUNTIME_HOME}/../../
 echo ${BIN_PATH}
 echo ${BASE_HOME}
 
-if [ ! -d ${BASE_HOME}/third_party/llvm-project ]; then
+if [ ! -d "${BASE_HOME}/third_party/llvm-project" ]; then
     cd ${BASE_HOME}/third_party
 	dd if=/dev/zero of=/tmp/mem.swap bs=1M count=4096
     git clone  https://gitee.com/surpassgoodchao/llvm-project.git
