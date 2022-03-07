@@ -3014,7 +3014,7 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
         Bind(&numberIsDouble);
         {
             GateRef valueDouble = TaggedCastToDouble(value);
-            number = ChangeFloat64ToInt32(valueDouble);
+            number = DoubleToInt(glue, valueDouble);
             varAcc = IntBuildTaggedWithNoGC(Int32Not(*number));
             Jump(&accDispatch);
         }
@@ -3078,7 +3078,7 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
                 {
                     opNumber0 = TaggedCastToInt32(left);
                     GateRef rightDouble = TaggedCastToDouble(right);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3090,7 +3090,7 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
                 Bind(&rightIsInt);
                 {
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = TaggedCastToInt32(right);
                     Jump(&accDispatch);
                 }
@@ -3098,8 +3098,8 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3170,7 +3170,7 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3182,7 +3182,7 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
                 Bind(&rightIsInt);
                 {
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = TaggedCastToInt32(right);
                     Jump(&accDispatch);
                 }
@@ -3190,8 +3190,8 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3262,7 +3262,7 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3274,7 +3274,7 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
                 Bind(&rightIsInt);
                 {
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = TaggedCastToInt32(right);
                     Jump(&accDispatch);
                 }
@@ -3282,8 +3282,8 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3354,7 +3354,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3366,7 +3366,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
                 Bind(&rightIsInt);
                 {
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = TaggedCastToInt32(right);
                     Jump(&accDispatch);
                 }
@@ -3374,8 +3374,8 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3447,7 +3447,7 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3459,7 +3459,7 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
                 Bind(&rightIsInt);
                 {
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = TaggedCastToInt32(right);
                     Jump(&accDispatch);
                 }
@@ -3467,8 +3467,8 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3539,7 +3539,7 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
@@ -3551,7 +3551,7 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
                 Bind(&rightIsInt);
                 {
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = TaggedCastToInt32(right);
                     Jump(&accDispatch);
                 }
@@ -3559,8 +3559,8 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     GateRef leftDouble = TaggedCastToDouble(left);
-                    opNumber0 = ChangeFloat64ToInt32(leftDouble);
-                    opNumber1 = ChangeFloat64ToInt32(rightDouble);
+                    opNumber0 = DoubleToInt(glue, leftDouble);
+                    opNumber1 = DoubleToInt(glue, rightDouble);
                     Jump(&accDispatch);
                 }
             }
