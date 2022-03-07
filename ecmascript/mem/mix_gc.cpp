@@ -102,8 +102,25 @@ void MixGC::SweepPhases()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "MixGC::SweepPhases");
     if (heap_->IsFullMark()) {
+        ProcessNativeDelete();
         heap_->GetSweeper()->SweepPhases();
     }
+}
+
+void MixGC::ProcessNativeDelete()
+{
+    WeakRootVisitor gcUpdateWeak = [this](TaggedObject *header) {
+        Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(header));
+        if (!objectRegion->InYoungOrCSetGeneration() && !heap_->IsFullMark()) {
+            return header;
+        }
+        auto markBitmap = objectRegion->GetMarkBitmap();
+        if (!markBitmap->Test(header)) {
+            return reinterpret_cast<TaggedObject *>(ToUintPtr(nullptr));
+        }
+        return header;
+    };
+    heap_->GetEcmaVM()->ProcessNativeDelete(gcUpdateWeak);
 }
 
 void MixGC::EvacuaPhases()
