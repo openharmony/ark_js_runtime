@@ -43,7 +43,7 @@ public:
 
 /*
  * @tc.name: SetCompressedStringsEnabled
- * @tc.desc: Create and destroy 2 EcmaVM from JSNApi,Check the Options state
+ * @tc.desc: Create and destroy 2 EcmaVM from JSNApi, check the Options state
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -68,11 +68,11 @@ HWTEST_F_L0(EcmaVMTest, CreateAndDestoryEcmaVMFromJSNApi)
 
 /*
  * @tc.name: SetCompressedStringsEnabled
- * @tc.desc: 
+ * @tc.desc: Create EcmaVM in 2 ways, check the Options state
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F_L0(EcmaVMTest, CreateEcmaVMWithTwoWays)
+HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
 {
     JSRuntimeOptions options1;
     options1.SetEnableTsAot(true);
@@ -88,7 +88,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMWithTwoWays)
     // Boot
     options1.SetShouldLoadBootPandaFiles(false);
     options1.SetShouldInitializeIntrinsics(false);
-    options1.SetBootClassSpaces({"ecmascript"});
+    options1.SetBootClassSpaces( {"ecmascript"} );
     // Dfx
     base_options::Options baseOptions("");
     baseOptions.SetLogLevel("info");
@@ -98,18 +98,17 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMWithTwoWays)
     Logger::Initialize(baseOptions);
 
     options1.SetEnableArkTools(true);
+    JSNApi::SetOptions(options1);
     static EcmaLanguageContext lcEcma;
     bool success = Runtime::Create(options1, {&lcEcma});
     EXPECT_TRUE(success);
-    
+
 
     auto runtime = Runtime::GetCurrent();
     EcmaVM *ecmaVm1 = EcmaVM::Cast(runtime->GetPandaVM());
 
     JSRuntimeOptions options2;
     options2.SetEnableTsAot(false);
-
-
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
     // GC
     options2.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
@@ -117,7 +116,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMWithTwoWays)
 
     EXPECT_TRUE(ecmaVm1 != ecmaVm2);
 
-    JSRuntimeOptions options1Out = ecmaVm1->GetJSOptions();
+    JSRuntimeOptions options1Out = JSRuntimeOptions::GetRuntimeOptions();
     JSRuntimeOptions options2Out = ecmaVm2->GetJSOptions();
 
     EXPECT_TRUE(&options1Out != &options2Out);
@@ -125,8 +124,8 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMWithTwoWays)
     EXPECT_EQ(options1Out.GetArkProperties(), ArkProperties::OPTIONAL_LOG);
     EXPECT_EQ(options2Out.GetArkProperties(), ArkProperties::GC_STATS_PRINT);
 
-    // EXPECT_TRUE(options1Out.IsEnableTsAot());
-    // EXPECT_TRUE(!options2Out.IsEnableTsAot());
+    EXPECT_TRUE(options1Out.IsEnableTsAot());
+    EXPECT_TRUE(!options2Out.IsEnableTsAot());
 
     PandaVM *mainVm = runtime->GetPandaVM();
     ecmaVm1->GetNotificationManager()->VmDeathEvent();
@@ -140,7 +139,6 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMWithTwoWays)
     }
 
     Runtime::Destroy();
-
 }
 
 /*

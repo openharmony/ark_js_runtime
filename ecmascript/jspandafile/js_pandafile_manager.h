@@ -39,13 +39,15 @@ public:
 
     JSHandle<Program> GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile);
 
-    const JSPandaFile *LoadPfAbc(const std::string &filename);
+    const JSPandaFile *LoadAotInfoFromPf(const std::string &filename, std::vector<BytecodeTranslationInfo> *infoList);
 
-    const JSPandaFile *LoadBufferAbc(const std::string &filename, const void *buffer, size_t size);
+    const JSPandaFile *LoadJSPandaFile(const std::string &filename);
 
-    const JSPandaFile *GetJSPandaFile(const panda_file::File *pf);
+    const JSPandaFile *LoadJSPandaFile(const std::string &filename, const void *buffer, size_t size);
 
-    const JSPandaFile *CreateJSPandaFile(const panda_file::File *pf, const CString &desc);
+    JSPandaFile *NewJSPandaFile(const panda_file::File *pf, const CString &desc);
+
+    const JSPandaFile *GenerateJSPandaFile(const panda_file::File *pf, const CString &desc);
 
     tooling::ecmascript::PtJSExtractor *GetOrCreatePtJSExtractor(const panda_file::File *pf);
 
@@ -72,6 +74,7 @@ private:
     };
 
     void ReleaseJSPandaFile(const JSPandaFile *jsPandaFile);
+    const JSPandaFile *GetJSPandaFile(const panda_file::File *pf);
     const JSPandaFile *FindJSPandaFile(const CString &filename);
     void InsertJSPandaFile(const JSPandaFile *jsPandaFile);
     void IncreaseRefJSPandaFile(const JSPandaFile *jsPandaFile);

@@ -120,7 +120,7 @@ JSTaggedValue NumberHelper::DoubleToString(JSThread *thread, double number, int 
         result += DecimalsToString(&numberInteger, numberFraction, radix, delta);
     }
 
-    result = IntergerToString(numberInteger, radix) + result;
+    result = IntegerToString(numberInteger, radix) + result;
 
     if (negative) {
         result = "-" + result;
@@ -270,7 +270,7 @@ char NumberHelper::Carry(char current, int radix)
     return CHARS[digit];
 }
 
-CString NumberHelper::IntergerToString(double number, int radix)
+CString NumberHelper::IntegerToString(double number, int radix)
 {
     ASSERT(radix >= MIN_RADIX && radix <= MAX_RADIX);
     CString result;

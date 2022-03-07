@@ -55,11 +55,9 @@ private:
     inline void DeleteExternalPointer()
     {
         void *externalPointer = GetExternalPointer();
-        if (externalPointer != nullptr) {
-            DeleteEntryPoint deleter = GetDeleter();
-            if (deleter != nullptr) {
-                deleter(externalPointer, GetData());
-            }
+        DeleteEntryPoint deleter = GetDeleter();
+        if (deleter != nullptr) {
+            deleter(externalPointer, GetData());
         }
     }
 };

@@ -41,7 +41,6 @@ JSTaggedValue ScopeInfoExtractor::GenerateScopeInfo(JSThread *thread, uint16_t s
 
     JSHandle<JSNativePointer> pointer = factory->NewJSNativePointer(
         buffer, NativeAreaAllocator::FreeObjectFunc<struct ScopeDebugInfo>, ecmaVm->GetNativeAreaAllocator());
-    ecmaVm->PushToArrayDataList(*pointer);
     return pointer.GetTaggedValue();
 }
 }  // namespace panda::ecmascript
