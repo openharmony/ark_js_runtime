@@ -334,6 +334,10 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("TreeMapIterator");
         case JSType::JS_API_TREESET_ITERATOR:
             return GetString("TreeSetIterator");
+        case JSType::JS_API_QUEUE:
+            return GetString("Queue");
+        case JSType::JS_API_QUEUE_ITERATOR:
+            return GetString("QueueIterator");
         default:
             break;
     }

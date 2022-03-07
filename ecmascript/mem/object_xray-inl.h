@@ -26,6 +26,8 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_queue.h"
+#include "ecmascript/js_api_queue_iterator.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -302,7 +304,12 @@ void ObjectXRay::VisitObjectBody(TaggedObject *object, JSHClass *klass, const Ec
         case JSType::CLASS_INFO_EXTRACTOR:
             ClassInfoExtractor::Cast(object)->VisitRangeSlot(visitor);
             break;
-        case JSType::JS_QUEUE:
+        case JSType::JS_API_QUEUE:
+            JSAPIQueue::Cast(object)->VisitRangeSlot(visitor);
+            break;
+        case JSType::JS_API_QUEUE_ITERATOR:
+            JSAPIQueueIterator::Cast(object)->VisitRangeSlot(visitor);
+            break;
         case JSType::JS_API_ARRAY_LIST:
             JSAPIArrayList::Cast(object)->VisitRangeSlot(visitor);
             break;

@@ -93,6 +93,8 @@ class TSObjLayoutInfo;
 class TSModuleTable;
 class JSAPIArrayList;
 class JSAPIArrayListIterator;
+class JSAPIQueue;
+class JSAPIQueueIterator;
 class JSAPITreeSet;
 class JSAPITreeMap;
 class JSAPITreeSetIterator;
@@ -381,6 +383,9 @@ public:
 
     // It is used to provide iterators for non ECMA standard jsapi containers.
     JSHandle<JSAPIArrayList> NewJSAPIArrayList(uint32_t capacity);
+    JSHandle<TaggedArray> CopyQueue(const JSHandle<TaggedArray> &old, uint32_t oldLength,
+                                    uint32_t newLength, uint32_t front, uint32_t tail);
+    JSHandle<JSAPIQueueIterator> NewJSAPIQueueIterator(const JSHandle<JSAPIQueue> &queue);
     JSHandle<JSAPIArrayListIterator> NewJSAPIArrayListIterator(const JSHandle<JSAPIArrayList> &arrayList);
     JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
     JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);

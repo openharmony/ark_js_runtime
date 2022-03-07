@@ -18,6 +18,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/internal_call_params.h"
+#include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_handle.h"
@@ -782,8 +783,9 @@ bool JSTaggedValue::HasContainerProperty(JSThread *thread, const JSHandle<JSTagg
         case JSType::JS_API_ARRAY_LIST: {
             return JSHandle<JSAPIArrayList>::Cast(obj)->Has(key.GetTaggedValue());
         }
-        case JSType::JS_QUEUE:
-            break;
+        case JSType::JS_API_QUEUE: {
+            return JSHandle<JSAPIQueue>::Cast(obj)->Has(key.GetTaggedValue());
+        }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::HasProperty(thread, JSHandle<JSObject>(obj), key);
@@ -803,8 +805,9 @@ JSHandle<TaggedArray> JSTaggedValue::GetOwnContainerPropertyKeys(JSThread *threa
         case JSType::JS_API_ARRAY_LIST: {
             return JSAPIArrayList::OwnKeys(thread, JSHandle<JSAPIArrayList>::Cast(obj));
         }
-        case JSType::JS_QUEUE:
-            break;
+        case JSType::JS_API_QUEUE: {
+            return JSAPIQueue::OwnKeys(thread, JSHandle<JSAPIQueue>::Cast(obj));
+        }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::GetOwnPropertyKeys(thread, JSHandle<JSObject>(obj));
@@ -825,8 +828,9 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
         case JSType::JS_API_ARRAY_LIST: {
             return JSAPIArrayList::GetOwnProperty(thread, JSHandle<JSAPIArrayList>::Cast(obj), key, desc);
         }
-        case JSType::JS_QUEUE:
-            break;
+        case JSType::JS_API_QUEUE: {
+            return JSAPIQueue::GetOwnProperty(thread, JSHandle<JSAPIQueue>::Cast(obj), key, desc);
+        }
         case JSType::JS_API_TREE_MAP:
         case JSType::JS_API_TREE_SET: {
             return JSObject::GetOwnProperty(thread, JSHandle<JSObject>(obj), key, desc);

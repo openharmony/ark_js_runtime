@@ -1000,6 +1000,19 @@ CALL_STUB_INIT_DESCRIPTOR(InsertOldToNewRememberedSet)
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }
 
+CALL_STUB_INIT_DESCRIPTOR(DoubleToInt)
+{
+    // 1 : 1 input parameters
+    StubDescriptor index("DoubleToInt", 0, 1, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT32());
+    *descriptor = index;
+    // 1 : 1 input parameters
+    std::array<VariableType, 1> params = {
+        VariableType::FLOAT64(),
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
 CALL_STUB_INIT_DESCRIPTOR(MarkingBarrier)
 {
     // 5 : 5 input parameters

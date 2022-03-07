@@ -15,6 +15,7 @@
 
 #include "runtime_trampolines.h"
 #include "ecmascript/accessor_data.h"
+#include "ecmascript/base/number_helper.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/ic/ic_runtime.h"
@@ -1518,6 +1519,11 @@ DEF_RUNTIME_TRAMPOLINES(SuperCall)
     return SlowRuntimeStub::SuperCall(thread, func, newTarget,
         static_cast<uint16_t>(firstVRegIdx.GetInt()),
         static_cast<uint16_t>(length.GetInt())).GetRawData();
+}
+
+int32_t RuntimeTrampolines::DoubleToInt(double x)
+{
+    return base::NumberHelper::DoubleToInt(x, base::INT32_BITS);
 }
 
 void RuntimeTrampolines::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)

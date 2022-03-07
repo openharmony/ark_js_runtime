@@ -574,7 +574,14 @@ namespace panda::ecmascript {
     V(TreeSet, GetLength)                     \
     V(TreeSet, Values)                        \
     V(TreeSet, ForEach)                       \
-    V(TreeSet, Entries)
+    V(TreeSet, Entries)                       \
+    V(Queue, Constructor)                     \
+    V(Queue, Add)                             \
+    V(Queue, GetFirst)                        \
+    V(Queue, Pop)                             \
+    V(Queue, ForEach)                         \
+    V(Queue, GetIteratorObj)                  \
+    V(Queue, GetSize)
 
 #define ABSTRACT_OPERATION_LIST(V) \
     V(JSTaggedValue, ToString)     \
