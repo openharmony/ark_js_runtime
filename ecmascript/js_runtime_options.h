@@ -221,7 +221,7 @@ public:
         return defaultSnapshotSpaceCapacity_.GetValue();
     }
 
-    static const JSRuntimeOptions &GetRuntimeOptions()
+    static const JSRuntimeOptions &GetTemporaryOptions()
     {
         return temporary_options;
     }

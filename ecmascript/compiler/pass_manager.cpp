@@ -20,7 +20,11 @@ namespace panda::ecmascript::kungfu {
 bool PassManager::Compile(std::string fileName)
 {
     std::vector<BytecodeTranslationInfo> infoList;
-    auto res = vm_->CollectInfoOfPandaFile(fileName, &infoList);
+    bool res;
+    if( vm_->GetJSOptions().IsEnableTsAot() )
+        res = vm_->CollectInfoOfPandaFile(fileName, &infoList);
+    else
+        res = vm_->CollectInfoOfPandaFile(fileName, nullptr);
     if (!res) {
         std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry_ << "'" << std::endl;
         return false;

@@ -14,6 +14,7 @@
  */
 
 #include "ecmascript/base/error_helper.h"
+#include <libunwind.h>
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/base/error_type.h"
 #include "ecmascript/base/number_helper.h"
@@ -231,9 +232,43 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
     return data;
 }
 
+CString ErrorHelper::BuildNativeStackTrace(JSThread *thread)
+{
+    unw_cursor_t cursor;
+    unw_context_t context;
+
+    CString data;
+    unw_getcontext(&context);
+    unw_init_local(&cursor, &context);
+    int radix = 16; // 16: Hexadecimal
+    while (unw_step(&cursor) > 0) {
+        unw_word_t offset;
+        unw_word_t pc;
+        unw_get_reg(&cursor, UNW_REG_IP, &pc);
+        if (pc == 0) {
+            break;
+        }
+        data += NumberHelper::IntegerToString(pc, radix);
+        data.append(":");
+        char sym[256]; // 256: Maximum length of stack column information
+        if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
+            data.append("(");
+            data += sym;
+            data.append("+");
+            data += NumberHelper::IntegerToString(offset, radix);
+            data.append(")\n");
+        } else {
+            data.append("ERROR: filed to get stack frame instruction");
+        }
+    }
+    return data;
+}
+
 CString ErrorHelper::BuildNativeAndJsStackTrace(JSThread *thread)
 {
     CString data = BuildNativeEcmaStackTrace(thread);
+    CString tempStr = BuildNativeStackTrace(thread);
+    data += tempStr;
     return data;
 }
 }  // namespace panda::ecmascript::base

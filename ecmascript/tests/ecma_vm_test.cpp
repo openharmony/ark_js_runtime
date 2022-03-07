@@ -43,123 +43,53 @@ public:
 
 /*
  * @tc.name: SetCompressedStringsEnabled
- * @tc.desc: Create and destroy 2 EcmaVM from JSNApi, check the Options state
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F_L0(EcmaVMTest, CreateAndDestoryEcmaVMFromJSNApi)
-{
-    RuntimeOption options1, options2;
-    options1.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
-    options2.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
-    EXPECT_TRUE(&options2 != &options1);
-
-    EcmaVM *ecmaVm1 = JSNApi::CreateJSVM(options1);
-    ASSERT_TRUE(ecmaVm1 != nullptr) << "Cannot create Runtime 1";
-
-    EcmaVM *ecmaVm2 = JSNApi::CreateJSVM(options2);
-    ASSERT_TRUE(ecmaVm2 != nullptr) << "Cannot create Runtime 2";
-
-    EXPECT_TRUE(&ecmaVm1->GetJSOptions() != &ecmaVm2->GetJSOptions());
-
-    JSNApi::DestroyJSVM(ecmaVm1);
-    JSNApi::DestroyJSVM(ecmaVm2);
-}
-
-/*
- * @tc.name: SetCompressedStringsEnabled
  * @tc.desc: Create EcmaVM in 2 ways, check the Options state
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
 {
-    JSRuntimeOptions options1;
-    options1.SetEnableTsAot(true);
-
-    options1.SetRuntimeType("ecmascript");
-    // GC
-    options1.SetGcType("gen-gc");
-    options1.SetRunGcInPlace(true);
-    options1.SetArkProperties(ArkProperties::OPTIONAL_LOG);
-    // Mem
-    options1.SetHeapSizeLimit(panda::DEFAULT_GC_POOL_SIZE);
-    options1.SetInternalAllocatorType("malloc");
-    // Boot
-    options1.SetShouldLoadBootPandaFiles(false);
-    options1.SetShouldInitializeIntrinsics(false);
-    options1.SetBootClassSpaces({"ecmascript"});
-    // Dfx
-    base_options::Options baseOptions("");
-    baseOptions.SetLogLevel("info");
-    arg_list_t logComponents;
-    logComponents.emplace_back("all");
-    baseOptions.SetLogComponents(logComponents);
-    Logger::Initialize(baseOptions);
-
-    options1.SetEnableArkTools(true);
-    JSNApi::SetOptions(options1);
-    static EcmaLanguageContext lcEcma;
-    bool success = Runtime::Create(options1, {&lcEcma});
-    EXPECT_TRUE(success);
-
-
-    auto runtime = Runtime::GetCurrent();
-    EcmaVM *ecmaVm1 = EcmaVM::Cast(runtime->GetPandaVM());
+    RuntimeOption options;
+    options.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+    EcmaVM *ecmaVm1 = JSNApi::CreateJSVM(options);
 
     JSRuntimeOptions options2;
-    options2.SetEnableTsAot(false);
+    options2.SetEnableArkTools(true);
+    options2.SetEnableStubAot(true);
+    options2.SetStubModuleFile("file2");
+    options2.SetEnableForceGC(false);
+    options2.SetForceFullGC(false);
+    options2.SetEnableCpuprofiler(true);
+    options2.SetEnableTsAot(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
-    // GC
-    options2.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
+    
+    // // GC
+    // options2.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
     EcmaVM *ecmaVm2 = EcmaVM::Cast(EcmaVM::Create(options2));
 
     EXPECT_TRUE(ecmaVm1 != ecmaVm2);
 
-    JSRuntimeOptions options1Out = JSRuntimeOptions::GetRuntimeOptions();
+    JSRuntimeOptions options1Out = ecmaVm1->GetJSOptions();
     JSRuntimeOptions options2Out = ecmaVm2->GetJSOptions();
 
     EXPECT_TRUE(&options1Out != &options2Out);
 
-    EXPECT_EQ(options1Out.GetArkProperties(), ArkProperties::OPTIONAL_LOG);
-    EXPECT_EQ(options2Out.GetArkProperties(), ArkProperties::GC_STATS_PRINT);
+    EXPECT_TRUE(options1Out.IsEnableArkTools() != options2Out.IsEnableArkTools());
+    EXPECT_TRUE(options1Out.IsEnableStubAot() != options2Out.IsEnableStubAot());
+    EXPECT_TRUE(options1Out.GetStubModuleFile() != options2Out.GetStubModuleFile());
+    EXPECT_TRUE(options1Out.IsEnableForceGC() != options2Out.IsEnableForceGC());
+    EXPECT_TRUE(options1Out.IsForceFullGC() != options2Out.IsForceFullGC());
+    EXPECT_TRUE(options1Out.IsEnableCpuProfiler() != options2Out.IsEnableCpuProfiler());
+    EXPECT_TRUE(options1Out.IsEnableTsAot() != options2Out.IsEnableTsAot());
+    EXPECT_TRUE(options1Out.GetArkProperties() != options2Out.GetArkProperties());
 
-    EXPECT_TRUE(options1Out.IsEnableTsAot());
-    EXPECT_TRUE(!options2Out.IsEnableTsAot());
-
+    auto runtime = Runtime::GetCurrent();
     PandaVM *mainVm = runtime->GetPandaVM();
-    ecmaVm1->GetNotificationManager()->VmDeathEvent();
-    if (mainVm != ecmaVm1) {
-        EcmaVM::Destroy(ecmaVm1);
-    }
-
     ecmaVm2->GetNotificationManager()->VmDeathEvent();
     if (mainVm != ecmaVm2) {
         EcmaVM::Destroy(ecmaVm2);
     }
 
-    Runtime::Destroy();
-}
-
-/*
- * @tc.name: SetCompressedStringsEnabled
- * @tc.desc: Create and destroy an EcmaVM with Scope,Check the Options state
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F_L0(EcmaVMTest, CreateAndDestroyEcmaVMWithScope)
-{
-    PandaVM *instance = nullptr;
-    ecmascript::EcmaHandleScope *scope = nullptr;
-    JSThread *thread = nullptr;
-
-    TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-    EXPECT_TRUE(instance != nullptr);
-    EXPECT_TRUE(thread != nullptr);
-    EXPECT_TRUE(scope != nullptr);
-    EcmaVM *ecmaVm = thread->GetEcmaVM();
-    EXPECT_TRUE(ecmaVm != nullptr);
-    EXPECT_TRUE(&ecmaVm->GetJSOptions() != &JSRuntimeOptions::GetRuntimeOptions());
-    TestHelper::DestroyEcmaVMWithScope(instance, scope);
+    JSNApi::DestroyJSVM(ecmaVm1);
 }
 }  // namespace panda::ecmascript
