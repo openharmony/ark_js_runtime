@@ -36,6 +36,10 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const std::string &file
 {
     CString desc = ConvertToString(filename);
     auto pf = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
+    if (pf == nullptr) {
+        LOG_ECMA(ERROR) << "open file " << filename << " error";
+        return nullptr;
+    }
 
     JSPandaFile *jsPandaFile = NewJSPandaFile(pf.release(), desc);
     PandaFileTranslator::TranslateClasses(jsPandaFile, ENTRY_FUNCTION_NAME, infoList);
@@ -77,6 +81,7 @@ const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const std::string &filena
 
     auto pf = panda_file::OpenPandaFileFromMemory(buffer, size);
     if (pf == nullptr) {
+        LOG_ECMA(ERROR) << "open file " << filename << " error";
         return nullptr;
     }
     jsPandaFile = GenerateJSPandaFile(pf.release(), desc);
