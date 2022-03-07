@@ -27,8 +27,8 @@ bool PassManager::Compile(std::string fileName)
     }
 
     for (auto &info : infoList) {
-        BytecodeCircuitBuilder builder;
-        builder.BytecodeToCircuit(info.pcArray, *info.file, info.method);
+        BytecodeCircuitBuilder builder(vm_, info);
+        builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data);
         pipeline.RunPass<SlowPathLoweringPass>(&builder);

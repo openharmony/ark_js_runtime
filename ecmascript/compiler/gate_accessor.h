@@ -61,6 +61,12 @@ public:
             return out_->GetIndex();
         }
 
+        OpCode GetOpCode() const
+        {
+            ASSERT(out_ != nullptr);
+            return out_->GetGateConst()->GetOpCode();
+        }
+
         friend bool operator== (const ConstUsesIterator& a, const ConstUsesIterator& b)
         {
             return a.out_ == b.out_;
@@ -115,6 +121,12 @@ public:
             return out_->GetIndex();
         }
 
+        OpCode GetOpCode() const
+        {
+            ASSERT(out_ != nullptr);
+            return out_->GetGateConst()->GetOpCode();
+        }
+
         friend bool operator== (const UsesIterator& a, const UsesIterator& b)
         {
             return a.out_ == b.out_;
@@ -156,6 +168,13 @@ public:
             ++(*this);
             return tmp;
         }
+
+        OpCode GetOpCode() const
+        {
+            ASSERT(in_ != nullptr);
+            return in_->GetGateConst()->GetOpCode();
+        }
+
         friend bool operator== (const ConstInsIterator& a, const ConstInsIterator& b)
         {
             return a.in_ == b.in_;
@@ -197,6 +216,13 @@ public:
             ++(*this);
             return tmp;
         }
+
+        OpCode GetOpCode() const
+        {
+            ASSERT(in_ != nullptr);
+            return in_->GetGateConst()->GetOpCode();
+        }
+
         friend bool operator== (const InsIterator& a, const InsIterator& b)
         {
             return a.in_ == b.in_;

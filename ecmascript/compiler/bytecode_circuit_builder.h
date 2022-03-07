@@ -25,6 +25,7 @@
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/js_method.h"
+#include "ecmascript/jspandafile/js_pandafile.h"
 
 namespace panda::ecmascript::kungfu {
 using VRegIDType = uint16_t;
@@ -123,12 +124,12 @@ enum CommonArgIdx : uint8_t {
 
 class BytecodeCircuitBuilder {
 public:
-    explicit BytecodeCircuitBuilder() = default;
+    explicit BytecodeCircuitBuilder(EcmaVM *vm, const BytecodeTranslationInfo &info)
+        : vm_(vm), pcArray_(info.pcArray), file_(info.jsPandaFile), method_(info.method) {}
     ~BytecodeCircuitBuilder() = default;
     NO_COPY_SEMANTIC(BytecodeCircuitBuilder);
     NO_MOVE_SEMANTIC(BytecodeCircuitBuilder);
-    void PUBLIC_API BytecodeToCircuit(const std::vector<uint8_t *> &pcArray, const panda_file::File &pf,
-                                      const JSMethod *method);
+    void PUBLIC_API BytecodeToCircuit();
 
     [[nodiscard]] kungfu::Circuit* GetCircuit()
     {
@@ -167,14 +168,12 @@ private:
     void PUBLIC_API CollectBytecodeBlockInfo(uint8_t* pc, std::vector<CfgInfo> &bytecodeBlockInfos);
 
     std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> CollectTryCatchBlockInfo(
-        const panda_file::File &file, const JSMethod *method, std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc,
-        std::vector<CfgInfo> &bytecodeBlockInfos);
+        std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc, std::vector<CfgInfo> &bytecodeBlockInfos);
 
     void CompleteBytecodeBlockInfo(std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc,
                                    std::vector<CfgInfo> &bytecodeBlockInfos);
 
-    void BuildBasicBlocks(const JSMethod *method,
-                          std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> &exception,
+    void BuildBasicBlocks(std::map<std::pair<uint8_t *, uint8_t *>, std::vector<uint8_t *>> &exception,
                           std::vector<CfgInfo> &bytecodeBlockInfo,
                           std::map<uint8_t *, uint8_t*> &byteCodeCurPrePc);
     void ComputeDominatorTree(BytecodeGraph &byteCodeGraph);
@@ -205,6 +204,10 @@ private:
     std::map<uint8_t *, kungfu::GateRef> byteCodeToJSGate_;
     std::map<int32_t, BytecodeRegion *> bbIdToBasicBlock_;
     std::array<GateRef, CommonArgIdx::NUM_OF_ARGS> commonArgs_ {};
+    EcmaVM* vm_;
+    const std::vector<uint8_t *> pcArray_;
+    const JSPandaFile* file_ {nullptr};
+    const JSMethod* method_ {nullptr};
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_CLASS_LINKER_BYTECODE_CIRCUIT_IR_BUILDER_H
