@@ -532,6 +532,9 @@ ohos_shared_library("libark_jsruntime") {
   install_enable = true
   part_name = "ark_js_runtime"
 
+  if (!is_mingw) {
+    output_extension = "so"
+  }
   if (!is_standard_system) {
     relative_install_dir = "ark"
   }
