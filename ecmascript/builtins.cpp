@@ -160,7 +160,7 @@ bool GetAbsolutePath(const std::string &relativePath, std::string &absPath)
     absPath = std::string(path);
     return true;
 #else
-    auto path = _fullpath(buffer, relativePath.c_str(), buffer.size() - 1);
+    auto path = _fullpath(buffer, relativePath.c_str(), sizeof(buffer) - 1);
     if (path == nullptr) {
         return false;
     }
