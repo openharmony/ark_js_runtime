@@ -735,6 +735,7 @@ public:
     GateRef ICStoreElement(GateRef glue, GateRef receiver, GateRef key,
                              GateRef value, GateRef handlerInfo);
     GateRef GetArrayLength(GateRef object);
+    GateRef DoubleToInt(GateRef glue, GateRef x);
     void StoreField(GateRef glue, GateRef receiver, GateRef value, GateRef handler);
     void StoreWithTransition(GateRef glue, GateRef receiver, GateRef value, GateRef handler);
     GateRef StoreGlobal(GateRef glue, GateRef value, GateRef cell);
