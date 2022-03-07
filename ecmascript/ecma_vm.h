@@ -332,7 +332,7 @@ public:
     {
         return const_cast<Chunk *>(&chunk_);
     }
-
+    void ProcessNativeDelete(const WeakRootVisitor &v0);
     void ProcessReferences(const WeakRootVisitor &v0);
 
     JSHandle<JSTaggedValue> GetModuleByName(JSHandle<JSTaggedValue> moduleName);

@@ -88,7 +88,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     // Boot
     options1.SetShouldLoadBootPandaFiles(false);
     options1.SetShouldInitializeIntrinsics(false);
-    options1.SetBootClassSpaces( {"ecmascript"} );
+    options1.SetBootClassSpaces({"ecmascript"});
     // Dfx
     base_options::Options baseOptions("");
     baseOptions.SetLogLevel("info");

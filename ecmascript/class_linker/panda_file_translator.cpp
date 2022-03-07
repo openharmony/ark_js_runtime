@@ -446,7 +446,9 @@ void PandaFileTranslator::TranslateBytecode(JSPandaFile *jsPandaFile, uint32_t i
     const panda_file::File *pf = jsPandaFile->GetPandaFile();
     auto bcIns = BytecodeInstruction(insArr);
     auto bcInsLast = bcIns.JumpTo(insSz);
-    if (infoList != nullptr && JSRuntimeOptions::GetRuntimeOptions().IsEnableTsAot()) {
+    auto runtime = Runtime::GetCurrent();
+    EcmaVM *ecmaVm = EcmaVM::Cast(runtime->GetPandaVM());
+    if (infoList != nullptr && ecmaVm->GetJSOptions().IsEnableTsAot()) {
         infoList->push_back(BytecodeTranslationInfo{{}, pf, method});
     }
 
@@ -515,12 +517,12 @@ void PandaFileTranslator::TranslateBytecode(JSPandaFile *jsPandaFile, uint32_t i
         bcIns = bcIns.GetNext();
         FixOpcode(pc);
         UpdateICOffset(const_cast<JSMethod *>(method), pc);
-        if (infoList != nullptr && JSRuntimeOptions::GetRuntimeOptions().IsEnableTsAot()) {
+        if (infoList != nullptr && ecmaVm->GetJSOptions().IsEnableTsAot()) {
             auto &pcArray = infoList->back().pcArray;
             pcArray.emplace_back(pc);
         }
     }
-    if (infoList != nullptr && JSRuntimeOptions::GetRuntimeOptions().IsEnableTsAot()) {
+    if (infoList != nullptr && ecmaVm->GetJSOptions().IsEnableTsAot()) {
         auto &pcArray = infoList->back().pcArray;
         pcArray.emplace_back(const_cast<uint8_t *>(bcInsLast.GetAddress()));
     }
