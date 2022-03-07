@@ -447,7 +447,7 @@ void PandaFileTranslator::TranslateBytecode(JSPandaFile *jsPandaFile, uint32_t i
     auto bcIns = BytecodeInstruction(insArr);
     auto bcInsLast = bcIns.JumpTo(insSz);
     if (infoList != nullptr) {
-        infoList->push_back(BytecodeTranslationInfo{{}, pf, method});
+        infoList->push_back(BytecodeTranslationInfo{{}, jsPandaFile, method});
     }
 
     while (bcIns.GetAddress() != bcInsLast.GetAddress()) {
