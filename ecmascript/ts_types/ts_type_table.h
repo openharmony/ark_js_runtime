@@ -54,7 +54,7 @@ public:
     static void Initialize(JSThread *thread, const panda_file::File &pf,
                            CVector<JSHandle<EcmaString>> &recordImportModules);
 
-    static GlobalTSTypeRef GetPropertyType(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
+    static GlobalTSTypeRef GetPropertyTypeGT(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
                                            uint32_t index, JSHandle<EcmaString> propName);
 
     static JSHandle<JSTaggedValue> ParseType(JSThread *thread, JSHandle<TSTypeTable> &table,
@@ -90,15 +90,13 @@ private:
     static JSHandle<TSClassType> ParseClassType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
                                                 const JSHandle<TaggedArray> &literal);
 
-    static JSHandle<TSInterfaceType> ParseInterfaceType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
-                                                        const JSHandle<TaggedArray> &literal);
+    static JSHandle<TSInterfaceType> ParseInterfaceType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 
     static JSHandle<TSImportType> ParseImportType(JSThread *thread, const JSHandle<TaggedArray> &literal,
                                                   JSHandle<EcmaString> fileName,
                                                   CVector<JSHandle<EcmaString>> &recordImportModules);
 
-    static JSHandle<TSUnionType> ParseUnionType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
-                                                const JSHandle<TaggedArray> &literal);
+    static JSHandle<TSUnionType> ParseUnionType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 
     static JSHandle<TSObjectType> LinkSuper(JSThread *thread, JSHandle<TSClassType> &baseClassType,
                                             uint32_t *numBaseFields, uint32_t numDerivedFields);
@@ -109,6 +107,12 @@ private:
     static JSHandle<EcmaString> GenerateVarNameAndPath(JSThread *thread, JSHandle<EcmaString> importPath,
                                                        JSHandle<EcmaString> fileName,
                                                        CVector<JSHandle<EcmaString>> &recordImportModules);
+
+    static JSHandle<TSFunctionType> ParseFunctionType(JSThread *thread, const JSHandle<TaggedArray> &literal);
+
+    static JSHandle<TSArrayType> ParseArrayType(JSThread *thread, const JSHandle<TaggedArray> &literal);
+
+    static JSHandle<TSObjectType> ParseObjectType(JSThread *thread, const JSHandle<TaggedArray> &literal);
 };
 }  // namespace panda::ecmascript
 

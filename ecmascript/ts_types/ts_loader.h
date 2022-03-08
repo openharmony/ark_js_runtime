@@ -64,7 +64,7 @@ public:
         ref_ = 0;
     }
 
-    bool IsBuiltinTypes() const
+    bool IsBuiltinType() const
     {
         return ref_ < TS_TYPE_RESERVED_COUNT;
     }
@@ -189,7 +189,13 @@ public:
         return static_cast<TSTypeKind>(gt.GetUserDefineTypeKind());
     }
 
-    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, uint32_t vergId,
+    JSHandle<EcmaString> GenerateAmiPath(JSHandle<EcmaString> cur, JSHandle<EcmaString> rel) const;
+
+    JSHandle<EcmaString> GenerateImportVar(JSHandle<EcmaString> import) const;
+
+    JSHandle<EcmaString> GenerateImportRelativePath(JSHandle<EcmaString> importRel) const;
+
+    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, uint32_t vregId,
                                                  const JSMethod* method) const;
 
     GlobalTSTypeRef PUBLIC_API GetPrmitiveGT(TSTypeKind kind) const;
@@ -204,11 +210,13 @@ public:
 
     GlobalTSTypeRef PUBLIC_API GetOrCreateUnionType(CVector<GlobalTSTypeRef> unionTypeRef, int size);
 
-    JSHandle<EcmaString> GenerateAmiPath(JSHandle<EcmaString> cur, JSHandle<EcmaString> rel) const;
+    int PUBLIC_API GetFuncParametersNum(GlobalTSTypeRef gt) const;
 
-    JSHandle<EcmaString> GenerateImportVar(JSHandle<EcmaString> import) const;
+    GlobalTSTypeRef PUBLIC_API GetFuncParameterTypeGT(GlobalTSTypeRef gt, int index) const;
 
-    JSHandle<EcmaString> GenerateImportRelativePath(JSHandle<EcmaString> importRel) const;
+    GlobalTSTypeRef PUBLIC_API GetFuncReturnValueTypeGT(GlobalTSTypeRef gt) const;
+
+    GlobalTSTypeRef PUBLIC_API GetArrayParameterTypeGT(GlobalTSTypeRef gt) const;
 
 private:
 

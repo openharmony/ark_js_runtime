@@ -910,6 +910,16 @@ inline bool JSTaggedValue::IsTSClassInstanceType() const
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSClassInstanceType();
 }
 
+inline bool JSTaggedValue::IsTSFunctionType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSFunctionType();
+}
+
+inline bool JSTaggedValue::IsTSArrayType() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSArrayType();
+}
+
 inline double JSTaggedValue::ExtractNumber() const
 {
     ASSERT(IsNumber());

@@ -17,13 +17,13 @@
 #define ECMASCRIPT_ASM_DEFINES_H
 
 #ifdef PANDA_TARGET_64
-#define ASM_GLUE_CURRENT_FRAME_OFFSET     2136
-#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET 4200
+#define ASM_GLUE_CURRENT_FRAME_OFFSET     2152 // if add 1 global_env_constant, the number need add 8
+#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET 4216 // if add 1 global_env_constant, the number need add 8
 #endif
 
 #ifdef PANDA_TARGET_32
-#define ASM_GLUE_CURRENT_FRAME_OFFSET     2128
-#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET 3160
+#define ASM_GLUE_CURRENT_FRAME_OFFSET     2144 // if add 1 global_env_constant, the number need add 8
+#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET 3176 // if add 1 global_env_constant, the number need add 8
 #endif
 
 #define OPTIMIZE_FRAME_TYPE              0

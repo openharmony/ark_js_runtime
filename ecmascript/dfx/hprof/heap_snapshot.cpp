@@ -375,6 +375,10 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
                 return GetString("TSImportType");
             case JSType::TS_CLASS_INSTANCE_TYPE:
                 return GetString("TSClassInstanceType");
+            case JSType::TS_FUNCTION_TYPE:
+                return GetString("TSFunctionType");
+            case JSType::TS_ARRAY_TYPE:
+                return GetString("TSArrayType");
             default:
                 break;
         }

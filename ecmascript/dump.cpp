@@ -274,6 +274,10 @@ CString JSHClass::DumpJSType(JSType type)
             return "TSClassInstanceType";
         case JSType::TS_UNION_TYPE:
             return "TSUnionType";
+        case JSType::TS_FUNCTION_TYPE:
+            return "TSFunctionType";
+        case JSType::TS_ARRAY_TYPE:
+            return "TSArrayType";
         case JSType::JS_API_ARRAYLIST_ITERATOR:
             return "JSArraylistIterator";
         case JSType::JS_API_TREE_MAP:
@@ -648,6 +652,12 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::TS_UNION_TYPE:
             TSUnionType::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_FUNCTION_TYPE:
+            TSFunctionType::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::TS_ARRAY_TYPE:
+            TSArrayType::Cast(obj)->Dump(thread, os);
             break;
         case JSType::JS_API_TREE_MAP:
             JSAPITreeMap::Cast(obj)->Dump(thread, os);
@@ -2164,7 +2174,7 @@ void TSObjectType::Dump(JSThread *thread, std::ostream &os) const
 
 void TSClassType::Dump(JSThread *thread, std::ostream &os) const
 {
-    os << " - Dump Class Type - " << "\n";
+    os << " - Dump TSClassType - " << "\n";
     os << " - TSClassType globalTSTypeRef: ";
     GlobalTSTypeRef gt = GetGTRef();
     uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
@@ -2380,6 +2390,58 @@ void TSUnionType::Dump(JSThread *thread, std::ostream &os) const
     JSHandle<TaggedArray> componentTypes(thread, GetComponentTypes());
 
     DumpArrayClass(thread, TaggedArray::Cast(GetComponentTypes().GetTaggedObject()), os);
+}
+
+void TSFunctionType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Dump TSFunctionType - " << "\n";
+    os << " - TSFunctionType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSFunctionType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSFunctionType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSFunctionType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+    os << " - TSFunctionType ParameterTypeIds: " << "\n";
+    JSHandle<TaggedArray> parametertTypes(thread, GetParameterTypes());
+
+    DumpArrayClass(thread, TaggedArray::Cast(GetParameterTypes().GetTaggedObject()), os);
+}
+
+void TSArrayType::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Dump TSArrayType - " << "\n";
+    os << " - TSArrayType globalTSTypeRef: ";
+    GlobalTSTypeRef gt = GetGTRef();
+    uint64_t globalTSTypeRef = gt.GetGlobalTSTypeRef();
+    os << globalTSTypeRef;
+    os << "\n";
+    os << " - TSArrayType moduleId: ";
+    uint32_t moduleId = gt.GetModuleId();
+    os << moduleId;
+    os << "\n";
+    os << " - TSArrayType localTypeId: ";
+    uint32_t localTypeId = gt.GetLocalId();
+    os << localTypeId;
+    os << "\n";
+    os << " - TSArrayType typeKind: ";
+    uint32_t typeKind = gt.GetUserDefineTypeKind();
+    os << typeKind;
+    os << "\n";
+    os << " - TSArrayType parameterTypeRef: " << "\n";
+    uint64_t parameterTypeRef = GetElementTypeRef();
+    os << parameterTypeRef;
+    os << "\n";
 }
 // ########################################################################################
 // Dump for Snapshot
@@ -2669,6 +2731,12 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
                 return;
             case JSType::TS_UNION_TYPE:
                 TSUnionType::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_FUNCTION_TYPE:
+                TSFunctionType::Cast(obj)->DumpForSnapshot(thread, vec);
+                return;
+            case JSType::TS_ARRAY_TYPE:
+                TSArrayType::Cast(obj)->DumpForSnapshot(thread, vec);
                 return;
             default:
                 UNREACHABLE();
@@ -3584,5 +3652,15 @@ void TSImportType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CStri
 void TSUnionType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("ComponentTypes"), GetComponentTypes()));
+}
+
+void TSFunctionType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("ParameterTypes"), GetParameterTypes()));
+}
+
+void TSArrayType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("ParameterTypeRef"), JSTaggedValue(GetElementTypeRef())));
 }
 }  // namespace panda::ecmascript

@@ -97,18 +97,18 @@ bool TSUnionType::IsEqual(JSThread *thread, JSHandle<TSUnionType> unionB)
     return findUnionTag;
 }
 
-GlobalTSTypeRef TSClassType::SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
-                                            int localtypeId, JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSClassType::GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
+                                           int localtypeId, JSHandle<EcmaString> propName)
 {
     JSHandle<TSClassType> classType(thread, table->Get(localtypeId));
     JSHandle<TSObjectType> constructorType(thread, classType->GetConstructorType());
 
     // search static propType in constructorType
-    return TSObjectType::SearchProperty(table, constructorType, propName);
+    return TSObjectType::GetPropTypeGT(table, constructorType, propName);
 }
 
-GlobalTSTypeRef TSClassInstanceType::SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
-                                                    int localtypeId, JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSClassInstanceType::GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
+                                                   int localtypeId, JSHandle<EcmaString> propName)
 {
     JSHandle<TSClassInstanceType> classInstanceType(thread, table->Get(localtypeId));
     GlobalTSTypeRef createClassTypeRefGT = classInstanceType->GetClassRefGT();
@@ -120,16 +120,16 @@ GlobalTSTypeRef TSClassInstanceType::SearchProperty(const JSThread *thread, JSHa
     JSHandle<TSObjectType> protoTypeType(thread, createClassType->GetPrototypeType());
 
     // search non-static propType in instanceType
-    GlobalTSTypeRef propTypeGT = TSObjectType::SearchProperty(table, instanceType, propName);
+    GlobalTSTypeRef propTypeGT = TSObjectType::GetPropTypeGT(table, instanceType, propName);
     if (propTypeGT.IsDefault()) {
         // search non-static propType in prototypeType
-        propTypeGT = TSObjectType::SearchProperty(table, protoTypeType, propName);
+        propTypeGT = TSObjectType::GetPropTypeGT(table, protoTypeType, propName);
     }
     return propTypeGT;
 }
 
-GlobalTSTypeRef TSObjectType::SearchProperty(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
-                                             JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSObjectType::GetPropTypeGT(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
+                                            JSHandle<EcmaString> propName)
 {
     DISALLOW_GARBAGE_COLLECTION;
     TSObjLayoutInfo *objTypeInfo = TSObjLayoutInfo::Cast(objType->GetObjLayoutInfo().GetTaggedObject());
@@ -150,5 +150,58 @@ GlobalTSTypeRef TSObjectType::SearchProperty(JSHandle<TSTypeTable> &table, JSHan
         }
     }
     return GlobalTSTypeRef::Default();
+}
+
+int TSFunctionType::GetParametersNum()
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    TaggedArray* functionParametersArray = TaggedArray::Cast(GetParameterTypes().GetTaggedObject());
+    return functionParametersArray->GetLength() - DEFAULT_LENGTH;
+}
+
+GlobalTSTypeRef TSFunctionType::GetParameterTypeGT(JSHandle<TSTypeTable> typeTable, int index)
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    TaggedArray* functionParametersArray = TaggedArray::Cast(GetParameterTypes().GetTaggedObject());
+    JSTaggedValue parameterType = functionParametersArray->Get(index + DEFAULT_LENGTH);
+    ASSERT(parameterType.IsInt());
+    int parameterTypeRef = parameterType.GetInt();
+    if (GlobalTSTypeRef(parameterTypeRef).IsBuiltinType()) {
+        return GlobalTSTypeRef(parameterTypeRef);
+    }
+    ASSERT(parameterTypeRef > GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
+    int parameterLocalId = TSTypeTable::GetUserdefinedTypeId(parameterTypeRef);
+    TSType* Type = TSType::Cast(typeTable->Get(parameterLocalId).GetTaggedObject());
+    return Type->GetGTRef();
+}
+
+GlobalTSTypeRef TSFunctionType::GetReturnValueTypeGT(JSHandle<TSTypeTable> typeTable)
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    TaggedArray* functionParametersArray = TaggedArray::Cast(GetParameterTypes().GetTaggedObject());
+    JSTaggedValue returnType = functionParametersArray->Get(RETURN_VALUE_TYPE_OFFSET);
+
+    ASSERT(returnType.IsInt());
+    int returnTypeRef = returnType.GetInt();
+    if (GlobalTSTypeRef(returnTypeRef).IsBuiltinType()) {
+        return GlobalTSTypeRef(returnTypeRef);
+    }
+    ASSERT(returnTypeRef > GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
+    int index = TSTypeTable::GetUserdefinedTypeId(returnTypeRef);
+    TSType* Type = TSType::Cast(typeTable->Get(index).GetTaggedObject());
+    return Type->GetGTRef();
+}
+
+GlobalTSTypeRef TSArrayType::GetElementTypeGT(JSHandle<TSTypeTable> typeTable)
+{
+    DISALLOW_GARBAGE_COLLECTION;
+    uint64_t parameterTypeRef = GetElementTypeRef();
+    if (GlobalTSTypeRef(parameterTypeRef).IsBuiltinType()) {
+        return GlobalTSTypeRef(parameterTypeRef);
+    }
+    ASSERT(parameterTypeRef > GlobalTSTypeRef::TS_TYPE_RESERVED_COUNT);
+    int index = TSTypeTable::GetUserdefinedTypeId(parameterTypeRef);
+    TSType* Type = TSType::Cast(typeTable->Get(index).GetTaggedObject());
+    return Type->GetGTRef();
 }
 }

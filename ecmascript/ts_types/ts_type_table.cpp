@@ -98,7 +98,7 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
             return JSHandle<JSTaggedValue>(classInstance);
         }
         case TypeLiteralFlag::INTERFACE: {
-            JSHandle<TSInterfaceType> interfaceType = ParseInterfaceType(thread, table, literal);
+            JSHandle<TSInterfaceType> interfaceType = ParseInterfaceType(thread, literal);
             return JSHandle<JSTaggedValue>(interfaceType);
         }
         case TypeLiteralFlag::IMPORT: {
@@ -106,13 +106,21 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
             return JSHandle<JSTaggedValue>(importType);
         }
         case TypeLiteralFlag::UNION: {
-            JSHandle<TSUnionType> unionType = ParseUnionType(thread, table, literal);
+            JSHandle<TSUnionType> unionType = ParseUnionType(thread, literal);
             return JSHandle<JSTaggedValue>(unionType);
         }
-        case TypeLiteralFlag::FUNCTION:
-            break;
-        case TypeLiteralFlag::OBJECT:
-            break;
+        case TypeLiteralFlag::FUNCTION: {
+            JSHandle<TSFunctionType> functionType = ParseFunctionType(thread, literal);
+            return JSHandle<JSTaggedValue>(functionType);
+        }
+        case TypeLiteralFlag::ARRAY: {
+            JSHandle<TSArrayType> arrayType = ParseArrayType(thread, literal);
+            return JSHandle<JSTaggedValue>(arrayType);
+        }
+        case TypeLiteralFlag::OBJECT: {
+            JSHandle<TSObjectType> objectType = ParseObjectType(thread, literal);
+            return JSHandle<JSTaggedValue>(objectType);
+        }
         default:
             UNREACHABLE();
     }
@@ -120,24 +128,28 @@ JSHandle<JSTaggedValue> TSTypeTable::ParseType(JSThread *thread, JSHandle<TSType
     return JSHandle<JSTaggedValue>(thread, JSTaggedValue::Null());
 }
 
-GlobalTSTypeRef TSTypeTable::GetPropertyType(JSThread *thread, JSHandle<TSTypeTable> &table,
-                                             TSTypeKind typeKind, uint32_t localtypeId, JSHandle<EcmaString> propName)
+GlobalTSTypeRef TSTypeTable::GetPropertyTypeGT(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
+                                               uint32_t localtypeId, JSHandle<EcmaString> propName)
 {
+    GlobalTSTypeRef gt = GlobalTSTypeRef::Default();
     switch (typeKind) {
         case TSTypeKind::TS_CLASS: {
-            return TSClassType::SearchProperty(thread, table, localtypeId, propName);
+            gt = TSClassType::GetPropTypeGT(thread, table, localtypeId, propName);
             break;
         }
         case TSTypeKind::TS_CLASS_INSTANCE: {
-            return TSClassInstanceType::SearchProperty(thread, table, localtypeId, propName);
+            gt = TSClassInstanceType::GetPropTypeGT(thread, table, localtypeId, propName);
             break;
         }
-        case TSTypeKind::TS_OBJECT:
+        case TSTypeKind::TS_OBJECT: {
+            JSHandle<TSObjectType> ObjectType(thread, table->Get(localtypeId));
+            gt = TSObjectType::GetPropTypeGT(table, ObjectType, propName);
             break;
+        }
         default:
             UNREACHABLE();
     }
-    return GlobalTSTypeRef::Default();
+    return gt;
 }
 
 panda_file::File::EntityId TSTypeTable::GetFileId(const panda_file::File &pf)
@@ -329,8 +341,7 @@ JSHandle<TSClassType> TSTypeTable::ParseClassType(JSThread *thread, JSHandle<TST
     return classType;
 }
 
-JSHandle<TSInterfaceType> TSTypeTable::ParseInterfaceType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
-                                                          const JSHandle<TaggedArray> &literal)
+JSHandle<TSInterfaceType> TSTypeTable::ParseInterfaceType(JSThread *thread, const JSHandle<TaggedArray> &literal)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
 
@@ -393,8 +404,7 @@ JSHandle<TSObjectType> TSTypeTable::LinkSuper(JSThread *thread, JSHandle<TSClass
     return derivedInstanceType;
 }
 
-JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
-                                                  const JSHandle<TaggedArray> &literal)
+JSHandle<TSUnionType> TSTypeTable::ParseUnionType(JSThread *thread, const JSHandle<TaggedArray> &literal)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     uint32_t index = 0;
@@ -465,5 +475,70 @@ JSHandle<EcmaString> TSTypeTable::GenerateVarNameAndPath(JSThread *thread, JSHan
 
     JSHandle<EcmaString> targetNameAndPathEcmaStr = factory->NewFromString(targetNameAndPath);
     return targetNameAndPathEcmaStr;
+}
+
+JSHandle<TSFunctionType> TSTypeTable::ParseFunctionType(JSThread *thread, const JSHandle<TaggedArray> &literal)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+
+    uint32_t index = 0;
+    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::FUNCTION);
+    index++;
+
+    index += TSFunctionType::FIELD_LENGTH;
+    JSHandle<JSTaggedValue> functionName(thread, literal->Get(index++));
+
+    uint32_t length = 0;
+    length = literal->Get(index++).GetInt();
+    JSHandle<TSFunctionType> functionType = factory->NewTSFunctionType(length);
+    JSHandle<TaggedArray> parameterTypes(thread, functionType->GetParameterTypes());
+    JSMutableHandle<JSTaggedValue> parameterTypeRef(thread, JSTaggedValue::Undefined());
+    for (uint32_t i = 0; i < length; ++i) {
+        parameterTypeRef.Update(literal->Get(index++));
+        parameterTypes->Set(thread, i + TSFunctionType::PARAMETER_START_ENTRY, parameterTypeRef);
+    }
+    JSHandle<JSTaggedValue> returnValueTypeRef = JSHandle<JSTaggedValue>(thread, literal->Get(index++));
+    parameterTypes->Set(thread, TSFunctionType::FUNCTION_NAME_OFFSET, functionName);
+    parameterTypes->Set(thread, TSFunctionType::RETURN_VALUE_TYPE_OFFSET, returnValueTypeRef);
+    functionType->SetParameterTypes(thread, parameterTypes);
+    return functionType;
+}
+
+JSHandle<TSArrayType> TSTypeTable::ParseArrayType(JSThread *thread, const JSHandle<TaggedArray> &literal)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+
+    uint32_t index = 0;
+    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::ARRAY);
+    index++;
+    JSHandle<JSTaggedValue> parameterTypeRef(thread, literal->Get(index++));
+    ASSERT(parameterTypeRef->IsInt());
+    JSHandle<TSArrayType> arrayType = factory->NewTSArrayType();
+    arrayType->SetElementTypeRef(parameterTypeRef->GetInt());
+    return arrayType;
+}
+
+JSHandle<TSObjectType> TSTypeTable::ParseObjectType(JSThread *thread, const JSHandle<TaggedArray> &literal)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+
+    uint32_t index = 0;
+    ASSERT(static_cast<TypeLiteralFlag>(literal->Get(index).GetInt()) == TypeLiteralFlag::OBJECT);
+    index++;
+    uint32_t length = literal->Get(index++).GetInt();
+
+    JSHandle<TSObjectType> objectType = factory->NewTSObjectType(length);
+    JSHandle<TSObjLayoutInfo> propertyTypeInfo(thread, objectType->GetObjLayoutInfo());
+    ASSERT(propertyTypeInfo->GetPropertiesCapacity() == length);
+
+    JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> typeId(thread, JSTaggedValue::Undefined());
+    for (uint32_t fieldIndex = 0; fieldIndex < length; ++fieldIndex) {
+        key.Update(literal->Get(index++));
+        typeId.Update(literal->Get(index++));
+        propertyTypeInfo->SetKey(thread, fieldIndex, key.GetTaggedValue(), typeId.GetTaggedValue());
+    }
+    objectType->SetObjLayoutInfo(thread, propertyTypeInfo);
+    return objectType;
 }
 }
