@@ -65,19 +65,17 @@
 
 //   Optimized Leave Frame(alias OptimizedLeaveFrame) layout
 //   +--------------------------+
-//   |      argv[]              |
+//   |       argv[]             |
 //   +--------------------------+ ---
 //   |       argc               |   ^
-//   |--------------------------|   |
-//   |       patchID            | Fixed
-//   |--------------------------| OptimizedLeaveFrame
-//   |       RuntimeId          |   |
+//   |--------------------------|  Fixed
+//   |       RuntimeId          | OptimizedLeaveFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |
 //   |       callsiteFp         |   |
 //   |--------------------------|   |
-//   |     frameType            |   v
+//   |       frameType          |   v
 //   +--------------------------+ ---
 //   |  callee save registers   |
 //   +--------------------------+
@@ -183,19 +181,18 @@
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
-//   |      argv[]              |                           ^
-//   +--------------------------+ ---                       |
+//   +--------------------------+---------------------------+
+//   |       argv[]             |                           ^
+//   +--------------------------+----                       |
 //   |       argc               |   ^                       |
-//   |--------------------------|   |                       |
-//   |       patchID            | Fixed                     |
-//   |--------------------------| OptimizedLeaveFrame             |
-//   |       RuntimeId          |   |                       |
-//   |--------------------------|   |                      OptimizedLeaveFrame
+//   |--------------------------|  Fixed                    |
+//   |       RuntimeId          | OptimizedLeaveFrame       |
+//   |--------------------------|   |                  OptimizedLeaveFrame
 //   |       returnAddr         |   |                       |
 //   |--------------------------|   |                       |
 //   |       callsiteFp         |   |                       |
 //   |--------------------------|   |                       |
-//   |     frameType            |   v                       |
+//   |       frameType          |   V                       |
 //   +--------------------------+ ----                      |
 //   |  callee save registers   |                           V
 //   +--------------------------+---------------------------+
@@ -446,7 +443,6 @@ struct OptimizedLeaveFrame {
 #ifndef PANDA_TARGET_32
     uint64_t argRuntimeId;
 #endif
-    uint64_t argPatchId;
     uint64_t argc;
     // argv[] is dynamic
     static OptimizedLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
@@ -459,7 +455,7 @@ struct OptimizedLeaveFrame {
 #ifndef PANDA_TARGET_32
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argRuntimeId);
 #else
-        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argPatchId);
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc);
 #endif
     }
 };
