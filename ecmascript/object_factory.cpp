@@ -2171,10 +2171,38 @@ JSHandle<TSImportType> ObjectFactory::NewTSImportType()
     return importType;
 }
 
+JSHandle<TSFunctionType> ObjectFactory::NewTSFunctionType(uint32_t length)
+{
+    NewObjectHook();
+
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSFunctionTypeClass().GetTaggedObject()));
+    JSHandle<TSFunctionType> functionType(thread_, header);
+
+    JSHandle<TaggedArray> parameterTypes = NewTaggedArray(length + TSFunctionType::DEFAULT_LENGTH,
+                                                          JSTaggedValue::Undefined());
+    functionType->SetGTRef(GlobalTSTypeRef::Default());
+    functionType->SetParameterTypes(thread_, parameterTypes);
+
+    return functionType;
+}
+
+JSHandle<TSArrayType> ObjectFactory::NewTSArrayType()
+{
+    NewObjectHook();
+
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetTSArrayTypeClass().GetTaggedObject()));
+
+    JSHandle<TSArrayType> arrayType(thread_, header);
+    arrayType->SetElementTypeRef(0);
+
+    return arrayType;
+}
+
 JSHandle<TSTypeTable> ObjectFactory::NewTSTypeTable(uint32_t length)
 {
     NewObjectHook();
-    ASSERT(length > 0);
 
     size_t size = TaggedArray::ComputeSize(JSTaggedValue::TaggedTypeSize(), length + TSTypeTable::RESERVE_TABLE_LENGTH);
     JSHClass *arrayClass = JSHClass::Cast(thread_->GlobalConstants()->GetArrayClass().GetTaggedObject());

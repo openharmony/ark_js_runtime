@@ -88,9 +88,13 @@ class TSUnionType;
 class TSInterfaceType;
 class TSTypeTable;
 class TSClassInstanceType;
+class TSFunctionType;
+class TSArrayType;
 class TSImportType;
 class TSObjLayoutInfo;
 class TSModuleTable;
+class TSFunctionType;
+class TSArrayType;
 class JSAPIArrayList;
 class JSAPIArrayListIterator;
 class JSAPIQueue;
@@ -349,6 +353,8 @@ public:
     JSHandle<TSClassInstanceType> NewTSClassInstanceType();
     JSHandle<TSTypeTable> NewTSTypeTable(uint32_t length);
     JSHandle<TSModuleTable> NewTSModuleTable(uint32_t length);
+    JSHandle<TSFunctionType> NewTSFunctionType(uint32_t length);
+    JSHandle<TSArrayType> NewTSArrayType();
 
     ~ObjectFactory() = default;
 
@@ -461,10 +467,6 @@ private:
     friend class RuntimeTrampolines;
     friend class ClassInfoExtractor;
     friend class TSObjectType;
-    friend class TSClassType;
-    friend class TSUnionType;
-    friend class TSClassInstanceType;
-    friend class TSImportType;
 };
 
 class ClassLinkerFactory {

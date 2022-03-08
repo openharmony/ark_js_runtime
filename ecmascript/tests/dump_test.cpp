@@ -702,6 +702,18 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 DUMP_FOR_HANDLE(unionType)
                 break;
             }
+            case JSType::TS_FUNCTION_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSFunctionType::SIZE, 2)
+                JSHandle<TSFunctionType> functionType = factory->NewTSFunctionType(1);
+                DUMP_FOR_HANDLE(functionType)
+                break;
+            }
+            case JSType::TS_ARRAY_TYPE: {
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), TSArrayType::SIZE, 2)
+                JSHandle<TSArrayType> arrayType = factory->NewTSArrayType();
+                DUMP_FOR_HANDLE(arrayType)
+                break;
+            }
             case JSType::JS_API_VECTOR:
             case JSType::JS_API_ARRAY_LIST: {
                 // 1 : 1 dump fileds number

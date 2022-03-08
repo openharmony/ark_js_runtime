@@ -167,7 +167,9 @@ class ProtoChangeDetails;
         MACHINE_CODE_OBJECT,                                                                                           \
         ECMA_MODULE, /* ///////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         CLASS_INFO_EXTRACTOR, /* //////////////////////////////////////////////////////////////////////////-PADDING */ \
+        TS_ARRAY_TYPE,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
         TS_UNION_TYPE,  /* ////////////////////////////////////////////////////////////////////////////////-PADDING */ \
+        TS_FUNCTION_TYPE,  /* /////////////////////////////////////////////////////////////////////////////-PADDING */ \
         TS_OBJECT_TYPE,  /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
         TS_IMPORT_TYPE,  /* ///////////////////////////////////////////////////////////////////////////////-PADDING */ \
         TS_CLASS_TYPE,    /* //////////////////////////////////////////////////////////////////////////////-PADDING */ \
@@ -937,6 +939,16 @@ public:
     inline bool IsTSImportType() const
     {
         return GetObjectType() == JSType::TS_IMPORT_TYPE;
+    }
+
+    inline bool IsTSFunctionType() const
+    {
+        return GetObjectType() == JSType::TS_FUNCTION_TYPE;
+    }
+
+    inline bool IsTSArrayType() const
+    {
+        return GetObjectType() == JSType::TS_ARRAY_TYPE;
     }
 
     inline void SetElementRepresentation(Representation representation)
