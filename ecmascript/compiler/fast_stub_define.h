@@ -135,6 +135,7 @@ namespace panda::ecmascript::kungfu {
     V(Mul2Dyn, 3)                            \
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
+<<<<<<< HEAD
     V(GetLexicalEnv, 1)                      \
     V(LoadValueFromConstantPool, 3)          \
     V(CreateEmptyObject, 1)                  \
@@ -160,10 +161,14 @@ namespace panda::ecmascript::kungfu {
     V(SuperCall, 5)                          \
     I(DoubleToInt, 1)                        \
     I(CallRuntimeTrampoline, 4)
+=======
+    I(RuntimeCallTrampoline, 4)
+>>>>>>> 90e2164... fixed for debug compile arm32
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 
 #define FAST_STUB_LIST(V)        \
+<<<<<<< HEAD
     V(FastAdd, 3)                       \
     V(FastSub, 3)                       \
     V(FastMul, 3)                       \
@@ -182,6 +187,9 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByValue, 5)              \
     V(TryStoreICByName, 5)              \
     V(TryStoreICByValue, 6)
+=======
+    V(FastMulGCTest, 3)
+>>>>>>> 90e2164... fixed for debug compile arm32
 
 #if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 #define FAST_RUNTIME_STUB_LIST(V)       \
@@ -194,7 +202,13 @@ namespace panda::ecmascript::kungfu {
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
+<<<<<<< HEAD
     V(FastMulGCTest, 3)             \
+=======
+    V(PhiGateTest, 1)               \
+    V(LoopTest, 1)                  \
+    V(LoopTest1, 1)                 \
+>>>>>>> 90e2164... fixed for debug compile arm32
     V(TestAbsoluteAddressRelocation, 2)
 
 #define CALL_STUB_LIST(V)           \
