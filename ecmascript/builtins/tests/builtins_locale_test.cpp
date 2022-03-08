@@ -37,7 +37,9 @@ public:
     void SetUp() override
     {
         JSRuntimeOptions options;
+#if PANDA_TARGET_LINUX
         options.SetIcuDataPath("./../../third_party/icu/icu4c/source/data/out/tmp/icudt67l.dat");
+#endif
         options.SetShouldLoadBootPandaFiles(false);
         options.SetShouldInitializeIntrinsics(false);
         options.SetBootClassSpaces(
@@ -394,6 +396,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Maximize_001)
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
+    JSHandle<EcmaString> handleEcmaStr(thread, result);
+    EXPECT_STREQ("zh-Hans-CN", CString(handleEcmaStr->GetCString().get()).c_str());
 }
 
 HWTEST_F_L0(BuiltinsLocaleTest, Maximize_002)
@@ -446,6 +450,8 @@ HWTEST_F_L0(BuiltinsLocaleTest, Minimize_001)
     TestHelper::TearDownFrame(thread, prev);
 
     EXPECT_TRUE(result.IsString());
+    JSHandle<EcmaString> handleEcmaStr(thread, result);
+    EXPECT_STREQ("en", CString(handleEcmaStr->GetCString().get()).c_str());
 }
 
 HWTEST_F_L0(BuiltinsLocaleTest, Minimize_002)
