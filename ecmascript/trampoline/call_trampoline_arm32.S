@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecma_asm_defines.h"
+#include "asm_defines.h"
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
 //                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);

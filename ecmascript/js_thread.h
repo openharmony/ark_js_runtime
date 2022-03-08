@@ -435,7 +435,7 @@ GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
 #undef GLUE_OFFSET_MACRO
 
 // static check asm glue offset macro
-#include "trampoline/ecma_asm_defines.h"
+#include "trampoline/asm_defines.h"
 
 #ifdef PANDA_TARGET_32
 #define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \

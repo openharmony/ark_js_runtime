@@ -216,7 +216,7 @@
 #define ECMASCRIPT_FRAMES_H
 
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/trampoline/ecma_asm_defines.h"
+#include "ecmascript/trampoline/asm_defines.h"
 
 namespace panda::ecmascript {
 class JSThread;

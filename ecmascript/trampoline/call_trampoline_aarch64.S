@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- #include "ecma_asm_defines.h"
+ #include "asm_defines.h"
 
  /* JSFunctionEntry Callee Register Save Macro */
 .macro PUSH_CALLEE_SAVED_REGS
