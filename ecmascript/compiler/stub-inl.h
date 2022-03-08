@@ -573,6 +573,11 @@ GateRef Stub::BoolAnd(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I1, x, y);
 }
 
+GateRef Stub::BoolOr(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), MachineType::I1, x, y);
+}
+
 GateRef Stub::Int32Not(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::REV), MachineType::I32, x);
@@ -670,8 +675,7 @@ GateRef Stub::TaggedIsInt(GateRef x)
 
 GateRef Stub::TaggedIsDouble(GateRef x)
 {
-    return Int32Equal(Int32Or(SExtInt1ToInt32(TaggedIsInt(x)), SExtInt1ToInt32(TaggedIsObject(x))),
-                      GetInt32Constant(0));
+    return BoolAnd(TaggedIsNumber(x), BoolNot(TaggedIsInt(x)));
 }
 
 GateRef Stub::TaggedIsObject(GateRef x)
@@ -682,7 +686,7 @@ GateRef Stub::TaggedIsObject(GateRef x)
 
 GateRef Stub::TaggedIsNumber(GateRef x)
 {
-    return TruncInt32ToInt1(Int32Or(SExtInt1ToInt32(TaggedIsInt(x)), SExtInt1ToInt32(TaggedIsDouble(x))));
+    return BoolNot(TaggedIsObject(x));
 }
 
 GateRef Stub::TaggedIsHole(GateRef x)

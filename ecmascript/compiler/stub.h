@@ -522,6 +522,7 @@ public:
     inline GateRef Int32And(GateRef x, GateRef y);
     inline GateRef IntPtrAnd(GateRef x, GateRef y);
     inline GateRef BoolAnd(GateRef x, GateRef y);
+    inline GateRef BoolOr(GateRef x, GateRef y);
     inline GateRef Int32Not(GateRef x);
     inline GateRef BoolNot(GateRef x);
     inline GateRef Int32Xor(GateRef x, GateRef y);
