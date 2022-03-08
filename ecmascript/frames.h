@@ -443,7 +443,6 @@ struct OptimizedLeaveFrame {
 #ifndef PANDA_TARGET_32
     uint64_t argRuntimeId;
 #endif
-    uint64_t argPatchId;
     uint64_t argc;
     // argv[] is dynamic
     static OptimizedLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
@@ -456,7 +455,7 @@ struct OptimizedLeaveFrame {
 #ifndef PANDA_TARGET_32
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argRuntimeId);
 #else
-        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argPatchId);
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc);
 #endif
     }
 };

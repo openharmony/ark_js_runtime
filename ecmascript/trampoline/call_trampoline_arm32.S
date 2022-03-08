@@ -101,20 +101,16 @@ JSFunctionEntry:
 // sp:      argc
 // construct Leave Frame:
 //   +--------------------------+
-//   |      argv[]              |
+//   |       argv[]             |
 //   +--------------------------+ ---
 //   |       argc               |   ^
-//   |- - - - - - -- - - - - - -|   |
-//   |       patchID            | Fixed
-//   |- - - - - - - -- - --  - -| OptLeaveFrame
+//   |--------------------------|  Fixed OptimizedLeaveFrame
 //   |       returnAddr         |   |
-//   |- - - - - - - - -- - - - -|   |
+//   |--------------------------|   |
 //   |       callsiteFp         |   |
-//   |-------------------- - - -|   |
-//   |     frameType            |   v
+//   |--------------------------|   |
+//   |       frameType          |   v
 //   +--------------------------+ ---
-//   |  callee save registers   |
-//   +--------------------------+
 
 .global RuntimeCallTrampoline
 .type RuntimeCallTrampoline, %function
@@ -135,8 +131,8 @@ RuntimeCallTrampoline:
     // load runtime trampoline address
     add     r2, r0, r2, lsl #2
     ldr     r4, [r2, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
-    ldr     r1, [r11, #16]  // argc
-    add     r2, r11,  #24   // argv[]
+    ldr     r1, [r11, #8]  // argc
+    add     r2, r11,  #16   // argv[]
     blx      r4
 
     // descontruct leave frame and callee save register

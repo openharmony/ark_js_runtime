@@ -167,6 +167,7 @@ void LLVMAssembler::BuildAndRunPasses()
     llvm::unwrap(modPass)->add(llvm::createRewriteStatepointsForGCLegacyPass()); // rs4gc pass added
     LLVMPassManagerBuilderPopulateModulePassManager(pmBuilder, modPass1);
 
+    LLVMRunPassManager(modPass, module_); // make sure rs4gc pass run first
     LLVMInitializeFunctionPassManager(funcPass);
     for (LLVMValueRef fn = LLVMGetFirstFunction(module_); fn; fn = LLVMGetNextFunction(fn)) {
         LLVMRunFunctionPassManager(funcPass, fn);
