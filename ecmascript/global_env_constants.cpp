@@ -144,6 +144,10 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, TSClassInstanceType::SIZE, JSType::TS_CLASS_INSTANCE_TYPE));
     SetConstant(ConstantIndex::TS_IMPORT_TYPE_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, TSImportType::SIZE, JSType::TS_IMPORT_TYPE));
+    SetConstant(ConstantIndex::TS_FUNCTION_TYPE_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSFunctionType::SIZE, JSType::TS_FUNCTION_TYPE));
+    SetConstant(ConstantIndex::TS_ARRAY_TYPE_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, TSArrayType::SIZE, JSType::TS_ARRAY_TYPE));
 }
 
 // NOLINTNEXTLINE(readability-function-size)
