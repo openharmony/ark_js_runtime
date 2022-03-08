@@ -159,7 +159,7 @@ namespace panda::ecmascript::kungfu {
     V(DefineGetterSetterByValue, 6)          \
     V(SuperCall, 5)                          \
     I(DoubleToInt, 1)                        \
-    I(RuntimeCallTrampoline, 4)
+    I(RuntimeCallTrampoline, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 
