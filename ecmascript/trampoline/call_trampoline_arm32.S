@@ -36,18 +36,18 @@ JSFunctionEntry:
     push    {r1}                                // prev managed frame
     push    {r0}
 
-    mov     r10, r2                             // save expected 
+    mov     r8, r2                             // save expected 
     cmp     r2, r3
     bls     .LCopyArguments
     mov     r6, #0
-    mov     r8, #10
-    mov     r2, r10
+    mov     r10, #10
+    mov     r2, r8
     mov     r4, #0
 .LCopyExtraAument:
     subs    r2, r2, #1
     mov     r7, r6
     mov     r9, r6
-    push    {r6, r8}
+    push    {r6, r10}
 
     sbc     r4, r4, #0
     subs    r5, r3, r2
@@ -55,8 +55,8 @@ JSFunctionEntry:
     blo     .LCopyExtraAument
 .LCopyArguments:
     ldr     lr, [r11, #40]   // load js function code address
-    cmp     r10, r3
-    movls   r3, r10
+    cmp     r8, r3
+    movls   r3, r8
     cmp     r3, #0
     beq     .LInvokeJSFunction
     ldr     r4, [r11, #36]   // load argv address
@@ -64,16 +64,16 @@ JSFunctionEntry:
 .LCopyLoop:
     sub     r5, r5, #8
     subs    r3, r3, #1
-    ldr     r8, [r5, #4]
+    ldr     r10, [r5, #4]
     ldr     r6, [r5]
-    push    {r6, r8}
+    push    {r6, r10}
 
     bne     .LCopyLoop
 .LInvokeJSFunction:
     mov     r10, #OPTIMIZE_FRAME_TYPE  // set frame type
     blx     lr
     mov     r2, #0                    // need fix for calltarget thisTarget NewTarget
-    add     r2, r2, r10, lsl #3
+    add     r2, r2, r8, lsl #3
     add     sp, sp, r2
 
     pop     {r4}
@@ -135,7 +135,7 @@ RuntimeCallTrampoline:
     ldr     r4, [r2, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
     ldr     r1, [r11, #16]  // argc
     add     r2, r11,  #24   // argv[]
-    bx      r4
+    blx      r4
 
     // descontruct leave frame and callee save register
     pop     {r4, r5}
