@@ -16,19 +16,19 @@
 #include "gate_accessor.h"
 
 namespace panda::ecmascript::kungfu {
-size_t GateAccessor::GetNumIns(GateRef gate)
+size_t GateAccessor::GetNumIns(GateRef gate) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     return gatePtr->GetNumIns();
 }
 
-OpCode GateAccessor::GetOpCode(GateRef gate)
+OpCode GateAccessor::GetOpCode(GateRef gate) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     return gatePtr->GetOpCode();
 }
 
-GateId GateAccessor::GetId(GateRef gate)
+GateId GateAccessor::GetId(GateRef gate) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     return gatePtr->GetId();
@@ -40,7 +40,7 @@ void GateAccessor::SetOpCode(GateRef gate, OpCode::Op opcode)
     gatePtr->SetOpCode(OpCode(opcode));
 }
 
-GateRef GateAccessor::GetValueIn(GateRef gate, size_t idx)
+GateRef GateAccessor::GetValueIn(GateRef gate, size_t idx) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     ASSERT(idx < gatePtr->GetInValueCount());
@@ -48,24 +48,24 @@ GateRef GateAccessor::GetValueIn(GateRef gate, size_t idx)
     return circuit_->GetIn(gate, valueIndex + idx);
 }
 
-size_t GateAccessor::GetNumValueIn(GateRef gate)
+size_t GateAccessor::GetNumValueIn(GateRef gate) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     return gatePtr->GetInValueCount();
 }
 
-GateRef GateAccessor::GetIn(GateRef gate, size_t idx)
+GateRef GateAccessor::GetIn(GateRef gate, size_t idx) const
 {
     return circuit_->GetIn(gate, idx);
 }
 
-GateRef GateAccessor::GetState(GateRef gate, size_t idx)
+GateRef GateAccessor::GetState(GateRef gate, size_t idx) const
 {
     ASSERT(idx < circuit_->LoadGatePtr(gate)->GetStateCount());
     return circuit_->GetIn(gate, idx);
 }
 
-GateRef GateAccessor::GetDep(GateRef gate, size_t idx)
+GateRef GateAccessor::GetDep(GateRef gate, size_t idx) const
 {
     Gate *gatePtr = circuit_->LoadGatePtr(gate);
     ASSERT(idx < gatePtr->GetDependCount());
@@ -86,5 +86,6 @@ void GateAccessor::ReplaceIn(UsesIterator &useIt, GateRef replaceGate)
     Gate *curGatePtr = circuit_->LoadGatePtr(*useIt);
     Gate *replaceGatePtr = circuit_->LoadGatePtr(replaceGate);
     curGatePtr->ModifyIn(useIt.GetIndex(), replaceGatePtr);
+    useIt.SetChanged();
 }
 }

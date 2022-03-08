@@ -24,12 +24,6 @@ class GateAccessor {
 public:
     // do not create new gate or modify self during iteration
     struct ConstUsesIterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = const Out;
-        using pointer           = const Out*;
-        using reference         = const Out&;
-
         explicit ConstUsesIterator(const Circuit* circuit, const Out* out) : circuit_(circuit), out_(out)
         {
         }
@@ -83,14 +77,13 @@ public:
 
     // do not create new gate or modify self during iteration
     struct UsesIterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = Out;
-        using pointer           = Out*;
-        using reference         = Out&;
-
-        explicit UsesIterator(const Circuit* circuit, Out* out) : circuit_(circuit), out_(out)
+        explicit UsesIterator(Circuit* circuit, Out* out, GateRef gate) : circuit_(circuit), out_(out), gate_(gate)
         {
+        }
+
+        void SetChanged()
+        {
+            changed_ = true;
         }
 
         GateRef operator*()
@@ -100,6 +93,16 @@ public:
 
         const UsesIterator& operator++()
         {
+            if (changed_) {
+                if (circuit_->LoadGatePtrConst(gate_)->IsFirstOutNull()) {
+                    out_ = nullptr;
+                    gate_ = 0;
+                } else {
+                    out_ = circuit_->LoadGatePtr(gate_)->GetFirstOut();
+                }
+                changed_ = false;
+                return *this;
+            }
             if (out_->IsNextOutNull()) {
                 out_ = nullptr;
                 return *this;
@@ -137,17 +140,13 @@ public:
         };
 
     private:
-        const Circuit* circuit_;
+        Circuit* circuit_;
         Out* out_;
+        GateRef gate_;
+        bool changed_ {false};
     };
 
     struct ConstInsIterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = const In;
-        using pointer           = const In*;
-        using reference         = const In&;
-
         explicit ConstInsIterator(const Circuit* circuit, const In* in) : circuit_(circuit), in_(in)
         {
         }
@@ -190,12 +189,6 @@ public:
     };
 
     struct InsIterator {
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = In;
-        using pointer           = In*;
-        using reference         = In&;
-
         explicit InsIterator(const Circuit* circuit, In* in) : circuit_(circuit), in_(in)
         {
         }
@@ -315,15 +308,15 @@ public:
 
     ~GateAccessor() = default;
 
-    [[nodiscard]] size_t GetNumIns(GateRef gate);
-    [[nodiscard]] OpCode GetOpCode(GateRef gate);
+    [[nodiscard]] size_t GetNumIns(GateRef gate) const;
+    [[nodiscard]] OpCode GetOpCode(GateRef gate) const;
     void SetOpCode(GateRef gate, OpCode::Op opcode);
-    [[nodiscard]] GateId GetId(GateRef gate);
-    [[nodiscard]] GateRef GetValueIn(GateRef gate, size_t idx);
-    [[nodiscard]] size_t GetNumValueIn(GateRef gate);
-    [[nodiscard]] GateRef GetIn(GateRef gate, size_t idx);
-    [[nodiscard]] GateRef GetState(GateRef gate, size_t idx = 0);
-    [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0);
+    [[nodiscard]] GateId GetId(GateRef gate) const;
+    [[nodiscard]] GateRef GetValueIn(GateRef gate, size_t idx) const;
+    [[nodiscard]] size_t GetNumValueIn(GateRef gate) const;
+    [[nodiscard]] GateRef GetIn(GateRef gate, size_t idx) const;
+    [[nodiscard]] GateRef GetState(GateRef gate, size_t idx = 0) const;
+    [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0) const;
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
 
@@ -345,15 +338,15 @@ private:
     [[nodiscard]] UsesIterator UseBegin(GateRef gate) const
     {
         if (circuit_->LoadGatePtrConst(gate)->IsFirstOutNull()) {
-            return UsesIterator(circuit_, nullptr);
+            return UsesIterator(circuit_, nullptr, 0);
         }
         auto use = circuit_->LoadGatePtr(gate)->GetFirstOut();
-        return UsesIterator(circuit_, use);
+        return UsesIterator(circuit_, use, gate);
     }
 
     [[nodiscard]] UsesIterator UseEnd() const
     {
-        return UsesIterator(circuit_, nullptr);
+        return UsesIterator(circuit_, nullptr, 0);
     }
 
     [[nodiscard]] ConstInsIterator ConstInBegin(GateRef gate) const
