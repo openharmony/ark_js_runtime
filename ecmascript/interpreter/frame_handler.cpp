@@ -334,18 +334,11 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
             OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
                 v1, derivedPointers, isVerifying);
-            //  arm32 only support stub, optimized entry frame don't exist, when interpret call stub
-            // don't customed prologue handle. when stub call runtime, generate optimized Leave Frame.
-            //  arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
+            //  arm32, arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
             // Leave Frame.
-#ifdef PANDA_TARGET_ARM32
-            current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
-            ASSERT(FrameHandler(current).IsInterpretedFrame());
-#else
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);
             ASSERT(FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME ||
             FrameHandler(current).GetFrameType() == FrameType::OPTIMIZED_FRAME);
-#endif
         }
     }
 }

@@ -13,22 +13,30 @@
  * limitations under the License.
  */
 
-// uint64_t JSFunctionCallTrampoline(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
+#include "ecma_asm_defines.h"
+
+// uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
 //                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 // Input:
 // %r0 - glue
 // %r1 - prevFp
 // %r2 - expectedNumArgs
 // %r3 - actualNumArgs
-// %r5  - argV
-// %r12  - codeAddr
-.global JSFunctionCallTrampoline
-.type JSFunctionCallTrampoline, %function
-JSFunctionCallTrampoline:
-    push    {r4, r5, r6, r7, r8, r9, r10, r11, lr}
-    add     r11, sp, #28
-    sub     sp, sp, #4
-    mov     r10, r2
+
+.global JSFunctionEntry
+.type JSFunctionEntry, %function
+JSFunctionEntry:
+    push    {r4, r5, r6, r7, r8, r9, r10, lr}   // callee save
+    push    {r11}                               // rbp
+    mov     r11, sp                             // set frame pointer
+    // construct frame
+    mov     r6, #0
+    mov     r8, #JS_ENTRY_FRAME_TYPE
+    push    {r6, r8}                            // frame type
+    push    {r1}                                // prev managed frame
+    push    {r0}
+
+    mov     r10, r2                             // save expected 
     cmp     r2, r3
     bls     .LCopyArguments
     mov     r6, #0
@@ -46,64 +54,91 @@ JSFunctionCallTrampoline:
     rscs    r5, r4, #0
     blo     .LCopyExtraAument
 .LCopyArguments:
-    ldr     r12, [r11, #12]
+    ldr     lr, [r11, #40]   // load js function code address
     cmp     r10, r3
-    add     lr, r1, #8
-    add     r2, r1, #16
     movls   r3, r10
-    add     r3, r3, #3          // add 3 for calltarget newtarget this LCopyArguments
-    ldr     r4, [r11, #8]
-    mov     r7, #0
+    cmp     r3, #0
+    beq     .LInvokeJSFunction
+    ldr     r4, [r11, #36]   // load argv address
     add     r5, r4, r3, lsl #3
-.LCopyLoop:                                @ =>This Inner Loop Header: Depth=1
-    ldr     r6, [r5, #4]
-    ldr     r8, [r5]
+.LCopyLoop:
     sub     r5, r5, #8
     subs    r3, r3, #1
-    mov     r9, r6
+    ldr     r8, [r5, #4]
+    ldr     r6, [r5]
     push    {r6, r8}
 
     bne     .LCopyLoop
-
-    mov     r2, r12
-    bl      InvokeCompiledJSFunction
-    mov     r2, #24
+.LInvokeJSFunction:
+    mov     r10, #OPTIMIZE_FRAME_TYPE  // set frame type
+    blx     lr
+    mov     r2, #0                    // need fix for calltarget thisTarget NewTarget
     add     r2, r2, r10, lsl #3
     add     sp, sp, r2
-    sub     sp, r11, #28
-    pop     {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+
+    pop     {r4}
+    pop     {r1}
+    str     r1, [r4, #ASM_GLUE_CURRENT_FRAME_OFFSET]
+    add     sp, sp, #8
+    pop     {r11}
+    pop     {r4, r5, r6, r7, r8, r9, r10, lr}
     bx      lr
 
-// uint64_t InvokeCompiledJSFunction
+// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
+// webkit_jscc calling convention call runtime_id's runtion function(c-abi)
+// JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
 // %r0 - glue
-// %r1 - prev fp
-// %r2 - code address
+// %r2, %r3 - runtime_id 
+// stack layout:
+// sp + N*8 argvN
+// ........
+// sp + 24: argv1
+// sp + 16: argv0
+// sp + 8: argc
+// sp:  patch_id
+// construct Leave Frame:
+//   +--------------------------+
+//   |      argv[]              |
+//   +--------------------------+ ---
+//   |       argc               |   ^
+//   |- - - - - - -- - - - - - -|   |
+//   |       patchID            | Fixed
+//   |- - - - - - - -- - --  - -| OptLeaveFrame
+//   |       returnAddr         |   |
+//   |- - - - - - - - -- - - - -|   |
+//   |       callsiteFp         |   |
+//   |-------------------- - - -|   |
+//   |     frameType            |   v
+//   +--------------------------+ ---
+//   |  callee save registers   |
+//   +--------------------------+
 
-.global InvokeCompiledJSFunction
-.type InvokeCompiledJSFunction, %function
-InvokeCompiledJSFunction:
-    // construct the frame  
-    push   {r11, lr}
-    mov     lr, #1
-    push    {lr, r1}            // js entry frame type, prev managerd fp
-    add     r11, sp, #8
-    mov     lr, r2
-    blx     lr
-    add     sp, sp, #8
-    pop     {r11, lr}
-    bx      lr
+.global RuntimeCallTrampoline
+.type RuntimeCallTrampoline, %function
+RuntimeCallTrampoline:
+    push    {r11, lr}                                   // save register for fp, rip
+    mov     r11, sp                                     // set frame pointer = callsiteFp
+    str     r11, [r0, #ASM_GLUE_CURRENT_FRAME_OFFSET]   // save to thread->currentFrame_
+    add     sp, sp, #-8                                 // increase frame size
+    push    {r4, r5}                                    // callee save
+
+    // construct leave frame
+    mov     r4, #0
+    mov     r5, #LEAVE_FRAME_TYPE
+    str     r4, [r11, #-4]
+    str     r5, [r11, #-8]                              // save frame type
 
 
-// uint64_t CallRuntimeTrampoline(uintptr_t glue, uint32_t runtime_id, uint32_t patch_id, uint64_t argc, ...);
-// webkit_jscc calling convention
-.global CallRuntimeTrampoline
-.type CallRuntimeTrampoline, %function
-CallRuntimeTrampoline:   // todo : need to rewrite
-    push    {r4, r5, r6, r7, r8, r9, r10, r11, lr}
-    add     r11, sp, #28
-    sub     sp, sp, #4
-    bx lr
+    // load runtime trampoline address
+    add     r2, r0, r2, lsl #2
+    ldr     r4, [r2, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
+    ldr     r1, [r11, #16]  // argc
+    add     r2, r11,  #24   // argv[]
+    bx      r4
+
+    // descontruct leave frame and callee save register
+    pop     {r4, r5}
     add     sp, sp, #8
     pop     {r11, lr}
     bx      lr

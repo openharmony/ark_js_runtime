@@ -26,6 +26,7 @@
     pushq %rdi
 .endm
 
+ /* JSFunctionEntry Callee Register restore Macro */
 .macro POP_GENERAL_REGS
     /* caller restore */
     popq %rdi
@@ -98,7 +99,7 @@ JSFunctionEntry:
 
 
 
-// uint64_t CallRuntimeTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
+// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -133,9 +134,9 @@ JSFunctionEntry:
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-.global CallRuntimeTrampoline
-.type CallRuntimeTrampoline, %function
-CallRuntimeTrampoline:
+.global RuntimeCallTrampoline
+.type RuntimeCallTrampoline, %function
+RuntimeCallTrampoline:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_CURRENT_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
