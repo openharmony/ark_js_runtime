@@ -57,6 +57,13 @@ JSFunctionEntry:
     pushq   $JS_ENTRY_FRAME_TYPE    // optimized entry frame type
     pushq   %rsi                    // prev managed fp
 
+    // 16 bytes align check
+    movl    %edx, %r14d
+    testb   $1, %r14b
+    je      .LAlign16Bytes
+    pushq   $0                  // push zero to align 16 bytes stack
+
+.LAlign16Bytes:
     // expectedNumArgs > actualNumArgs
     movl     %edx, %ebx        // save expectedNumArgs
     cmpl     %ecx, %edx
@@ -84,11 +91,16 @@ JSFunctionEntry:
     addq    $-1, %rax
     jne     .LCopyLoop
 
-    movq    %rdi, %rax     // move glue to rax
-    call    *%r9            // then call jsFunction
-    shll    $3, %ebx        // todo:: fixed for 3 extra arguments
-    addq    %rbx, %rsp
-    
+    movq    %rdi, %rax          // move glue to rax
+    call    *%r9                // then call jsFunction
+    leaq    (,%r14,8), %rcx     // todo:: fixed for 3 extra arguments
+    addq    %rcx, %rsp
+
+    testb   $1, %r14b           // stack 16bytes align check
+    je      .LPopFrame
+    addq    $8, %rsp
+
+.LPopFrame:
     popq    %rsi           // pop prev-managed frame
     addq    $8, %rsp       
     popq    %rbp
@@ -96,8 +108,6 @@ JSFunctionEntry:
     POP_GENERAL_REGS
     movq    %rsi, ASM_GLUE_CURRENT_FRAME_OFFSET(%rdi)   // restore thread->currentFrame_
     ret
-
-
 
 // uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)

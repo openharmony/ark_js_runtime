@@ -398,11 +398,14 @@ CALL_STUB_INIT_DESCRIPTOR(AddElementInternal)
 
 CALL_STUB_INIT_DESCRIPTOR(GetTaggedArrayPtrTest)
 {
-    StubDescriptor getTaggedArrayPtr("GetTaggedArrayPtrTest", 0, 1, ArgumentsOrder::DEFAULT_ORDER,
+    // 2 : 2 input parameters
+    StubDescriptor getTaggedArrayPtr("GetTaggedArrayPtrTest", 0, 2, ArgumentsOrder::DEFAULT_ORDER,
                                      VariableType::JS_POINTER());
     *descriptor = getTaggedArrayPtr;
-    std::array<VariableType, 1> params = {
+    // 2 : 2 input parameters
+    std::array<VariableType, 2> params = {
         VariableType::POINTER(),
+        VariableType::JS_ANY(),
     };
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
@@ -1048,9 +1051,9 @@ CALL_STUB_INIT_DESCRIPTOR(IterNext)
 CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampoline)
 {
     /* 4 : 4 input parameters */
-    StubDescriptor CallRuntimeTrampoline("CallRuntimeTrampoline", 0, 4,
+    StubDescriptor runtimeCallTrampoline("RuntimeCallTrampoline", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = CallRuntimeTrampoline;
+    *descriptor = runtimeCallTrampoline;
     std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
         VariableType::POINTER(),
         VariableType::INT64(),

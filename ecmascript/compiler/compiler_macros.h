@@ -19,7 +19,7 @@
 #include "ecmascript/base/config.h"
 #include "ecmascript/ecma_macros.h"
 
-#define ECMASCRIPT_ENABLE_COMPILER_LOG 1
+#define ECMASCRIPT_ENABLE_COMPILER_LOG 0
 
 #define COMPILER_LOG(level) ECMASCRIPT_ENABLE_COMPILER_LOG && LOG_ECMA(level)
 

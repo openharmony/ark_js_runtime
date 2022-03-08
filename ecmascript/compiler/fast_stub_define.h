@@ -34,7 +34,7 @@ namespace panda::ecmascript::kungfu {
     V(FindElementWithCache, 4)               \
     V(StringGetHashCode, 1)                  \
     V(FloatMod, 2)                           \
-    V(GetTaggedArrayPtrTest, 1)              \
+    V(GetTaggedArrayPtrTest, 2)              \
     V(NewInternalString, 2)                  \
     V(NewTaggedArray, 2)                     \
     V(CopyArray, 3)                          \
@@ -181,8 +181,7 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByName, 4)               \
     V(TryLoadICByValue, 5)              \
     V(TryStoreICByName, 5)              \
-    V(TryStoreICByValue, 6)             \
-    V(FastMulGCTest, 3)
+    V(TryStoreICByValue, 6)
 
 #if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 #define FAST_RUNTIME_STUB_LIST(V)       \
@@ -195,6 +194,7 @@ namespace panda::ecmascript::kungfu {
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TEST_FUNC_LIST(V)           \
+    V(FastMulGCTest, 3)             \
     V(TestAbsoluteAddressRelocation, 2)
 
 #define CALL_STUB_LIST(V)           \
