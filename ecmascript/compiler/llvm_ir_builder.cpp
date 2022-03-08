@@ -595,10 +595,10 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
     // for arm32, r0-r4 must be occupied by fake parameters, then the actual paramters will be in stack.
     if (compCfg_->Is32Bit() && calleeDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
-        for (int i = 0; i < reservedSlotForArm32; i++) {
+        for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
             params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
         }
-        extraParameterCnt += reservedSlotForArm32;
+        extraParameterCnt += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
     }
     // then push the actual parameter for js function call
     for (size_t paraIdx = paraStartIndex + 1; paraIdx < inList.size(); ++paraIdx) {
@@ -899,7 +899,7 @@ void LLVMIRBuilder::VisitParameter(GateRef gate)
     int argth = circuit_->LoadGatePtrConst(gate)->GetBitField();
     COMPILER_LOG(DEBUG) << " Parameter value" << argth;
     if (compCfg_->Is32Bit() && argth > 0) {
-        argth += reservedSlotForArm32;
+        argth += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
     }
     LLVMValueRef value = LLVMGetParam(function_, argth);
 
@@ -1741,10 +1741,10 @@ LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *st
     LLVMTypeRef glueType = ConvertLLVMTypeFromVariableType(paramsType[0]);
     paramTys.push_back(glueType);
     if (compCfg_.Is32Bit() && stubDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
-        for (int i = 0; i < reservedSlotForArm32; i++) {
+        for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
             paramTys.push_back(glueType);  // fake paramter's type is same with glue type
         }
-        extraParameterCnt += reservedSlotForArm32;
+        extraParameterCnt += CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32;
     }
 
     for (int i = 1; i < paramCount; i++) {

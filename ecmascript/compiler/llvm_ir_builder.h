@@ -155,7 +155,6 @@ private:
 #endif
     LLVMModuleRef module_;
     CompilationConfig compCfg_;
-    static constexpr int reservedSlotForArm32 = 3; // r1-r3
 };
 
 
@@ -276,7 +275,6 @@ private:
     std::set<OpCode::Op> opCodeHandleIgnore;
     int slotSize_;
     LLVMTypeRef slotType_;
-    static constexpr int reservedSlotForArm32 = 3; // r1-r3
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // PANDA_RUNTIME_ECMASCRIPT_COMPILER_LLVM_IR_BUILDER_H

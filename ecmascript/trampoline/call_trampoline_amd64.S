@@ -162,7 +162,7 @@ RuntimeCallTrampoline:
     movq    (%rdx), %r10       // runtime id
     movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rax, %r10, 8), %r10
     movq    %rax, %rdi       // glue
-    movl    8(%rdx), %esi   // argc
+    movl    8(%rdx), %esi    // argc
     addq    $16, %rdx        // argV
     call    *%r10
 

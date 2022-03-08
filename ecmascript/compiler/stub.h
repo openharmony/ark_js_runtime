@@ -123,6 +123,8 @@ public:
     private:
         std::array<uint32_t, static_cast<size_t>(JSThread::GlueID::NUMBER_OF_GLUE)> offsetTable_ {};
     };
+    // fake parameters for register r1 ~ r3
+    static constexpr int FAKE_REGISTER_PARAMTERS_ARM32 = 3;
 
 private:
     inline Triple GetTripleFromString(const std::string &triple)
