@@ -87,7 +87,7 @@ JSFunctionEntry:
     pop     {r4, r5, r6, r7, r8, r9, r10, lr}
     bx      lr
 
-// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
+// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -96,26 +96,21 @@ JSFunctionEntry:
 // stack layout:
 // sp + N*8 argvN
 // ........
-// sp + 24: argv1
-// sp + 16: argv0
-// sp + 8: argc
-// sp:  patch_id
+// sp + 16: argv1
+// sp + 8:  argv0
+// sp:      argc
 // construct Leave Frame:
 //   +--------------------------+
-//   |      argv[]              |
+//   |       argv[]             |
 //   +--------------------------+ ---
 //   |       argc               |   ^
-//   |- - - - - - -- - - - - - -|   |
-//   |       patchID            | Fixed
-//   |- - - - - - - -- - --  - -| OptLeaveFrame
+//   |--------------------------|  Fixed OptimizedLeaveFrame
 //   |       returnAddr         |   |
-//   |- - - - - - - - -- - - - -|   |
+//   |--------------------------|   |
 //   |       callsiteFp         |   |
-//   |-------------------- - - -|   |
-//   |     frameType            |   v
+//   |--------------------------|   |
+//   |       frameType          |   v
 //   +--------------------------+ ---
-//   |  callee save registers   |
-//   +--------------------------+
 
 .global RuntimeCallTrampoline
 .type RuntimeCallTrampoline, %function
@@ -136,8 +131,8 @@ RuntimeCallTrampoline:
     // load runtime trampoline address
     add     r2, r0, r2, lsl #2
     ldr     r4, [r2, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
-    ldr     r1, [r11, #16]  // argc
-    add     r2, r11,  #24   // argv[]
+    ldr     r1, [r11, #8]  // argc
+    add     r2, r11,  #16   // argv[]
     blx      r4
 
     // descontruct leave frame and callee save register

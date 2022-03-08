@@ -109,7 +109,7 @@ JSFunctionEntry:
     movq    %rsi, ASM_GLUE_CURRENT_FRAME_OFFSET(%rdi)   // restore thread->currentFrame_
     ret
 
-// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
+// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -117,26 +117,23 @@ JSFunctionEntry:
 // stack layout:
 // sp + N*8 argvN
 // ........
-// sp + 32: argv1
-// sp + 24: argv0
-// sp + 16: argc
-// sp + 8:  patch_id
+// sp + 24: argv1
+// sp + 16: argv0
+// sp + 8:  argc
 // sp:      runtime_id
 // construct Leave Frame:
 //   +--------------------------+
-//   |      argv[]              |
+//   |       argv[]             |
 //   +--------------------------+ ---
 //   |       argc               |   ^
-//   |--------------------------|   |
-//   |       patchID            | Fixed
-//   |--------------------------| OptimizedLeaveFrame
-//   |       RuntimeId          |   |
+//   |--------------------------|  Fixed
+//   |       RuntimeId          | OptimizedLeaveFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |
 //   |       callsiteFp         |   |
 //   |--------------------------|   |
-//   |     frameType            |   v
+//   |       frameType          |   v
 //   +--------------------------+ ---
 
 // Output:
@@ -165,8 +162,8 @@ RuntimeCallTrampoline:
     movq    (%rdx), %r10       // runtime id
     movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rax, %r10, 8), %r10
     movq    %rax, %rdi       // glue
-    movl    16(%rdx), %esi   // argc
-    addq    $24, %rdx        // argV
+    movl    8(%rdx), %esi   // argc
+    addq    $16, %rdx        // argV
     call    *%r10
 
     addq    $8, %rsp

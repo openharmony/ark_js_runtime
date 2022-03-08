@@ -295,9 +295,6 @@ void OptimizedLeaveFrameHandler::Iterate(const RootVisitor &v0, const RootRangeV
     bool ret = kungfu::LLVMStackMapParser::GetInstance().CollectStackMapSlots(
         frame->returnAddr, reinterpret_cast<uintptr_t>(sp_), slotAddrs, derivedPointers, isVerifying);
     if (ret == false) {
-#ifndef NDEBUG
-        LOG_ECMA(DEBUG) << " stackmap don't found patchPointId " << frame->argPatchId;
-#endif
         return;
     }
     for (auto slot : slotAddrs) {

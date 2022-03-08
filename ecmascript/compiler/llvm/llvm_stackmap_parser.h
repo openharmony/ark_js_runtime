@@ -201,10 +201,6 @@ public:
     const CallSiteInfo *GetCallSiteInfoByPc(uintptr_t funcAddr) const;
     bool CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t frameFp, std::set<uintptr_t> &baseSet,
                             ChunkMap<DerivedDataKey, uintptr_t> *data, [[maybe_unused]] bool isVerifying) const;
-    bool CollectStackMapSlots(OptimizedLeaveFrame *frame, std::set<uintptr_t> &baseSet,
-                            ChunkMap<DerivedDataKey, uintptr_t> *data,
-                            [[maybe_unused]] bool isVerifying) const;
-
 private:
     LLVMStackMapParser()
     {
