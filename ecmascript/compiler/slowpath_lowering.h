@@ -114,7 +114,9 @@ public:
     void CallRuntimeLowering();
 
 private:
-    void LowerHIR(CircuitBuilder &cirBuilder, GateRef oldGate, GateRef newGate);
+    void LowerHirToCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
+    void LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateRef hirGate,
+                                              GateRef condGate, GateRef callGate);
     void Lower(GateRef gate, EcmaOpcode bytecode);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
     void LowerCreateIterResultObj(GateRef gate, GateRef glue);
@@ -127,6 +129,7 @@ private:
     void LowerLexicalEnv(GateRef gate, GateRef glue);
     void LowerStGlobalVar(GateRef gate, GateRef glue);
     void LowerTryLdGlobalByName(GateRef gate, GateRef glue);
+    void LowerGetIterator(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
