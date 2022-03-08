@@ -586,21 +586,25 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
     callee = LLVMBuildIntToPtr(builder_, llvmAddr, rtfuncTypePtr, "cast");
-    // 16 : params limit
+    // 16 : function params max limit
     LLVMValueRef params[16];
     int extraParameterCnt = 0;
-    for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
-        GateRef gateTmp = inList[paraIdx];
-        params[paraIdx - paraStartIndex] = gateToLLVMMaps_[gateTmp];
-        if (compCfg_->Is32Bit() && (paraIdx - paraStartIndex == 0)) {
-            // for is32 push multiple paramer in order to use r0-r4
-            if (calleeDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
-                for (int i = 0; i < reservedSlotForArm32; i++) {
-                    params[paraIdx - paraStartIndex] = gateToLLVMMaps_[gateTmp];
-                }
-                extraParameterCnt += reservedSlotForArm32;
-            }
+
+    size_t dstParaIndex = 0;
+    // first argument is glue
+    GateRef glueGate = inList[paraStartIndex];
+    params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
+    // for arm32, r0-r4 must be occupied by fake parameters, then the actual paramters will be in stack.
+    if (compCfg_->Is32Bit() && calleeDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
+        for (int i = 0; i < reservedSlotForArm32; i++) {
+            params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
         }
+        extraParameterCnt += reservedSlotForArm32;
+    }
+    // then push the actual parameter for js function call
+    for (size_t paraIdx = paraStartIndex + 1; paraIdx < inList.size(); ++paraIdx) {
+        GateRef gateTmp = inList[paraIdx];
+        params[dstParaIndex++] = gateToLLVMMaps_[gateTmp];
     }
     if (callee == nullptr) {
         COMPILER_LOG(ERROR) << "callee nullptr";
@@ -610,7 +614,8 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
         SaveCurrentSP();
     }
 
-    gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params, inList.size() - paraStartIndex + extraParameterCnt, "");
+    gateToLLVMMaps_[gate] = LLVMBuildCall(builder_, callee, params,
+        inList.size() - paraStartIndex + extraParameterCnt, "");
     return;
 }
 
@@ -1730,20 +1735,25 @@ LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *st
     std::vector<LLVMTypeRef> paramTys;
     auto paramCount = stubDescriptor->GetParametersCount();
     int extraParameterCnt = 0;
-    for (int i = 0; i < paramCount; i++) {
-        auto paramsType = stubDescriptor->GetParametersType();
-        if (compCfg_.Is32Bit() && (i == 0)) {
-            if (stubDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
-                // for is32 push extra multiple paramer in order to use r0-r4
-                for (int t = 0; t < reservedSlotForArm32; t++) {
-                    paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType[i]));
-                }
-                extraParameterCnt += reservedSlotForArm32;
-            }
+
+    auto paramsType = stubDescriptor->GetParametersType();
+    ASSERT(paramCount > 0);
+    // first argument is glue
+    LLVMTypeRef glueType = ConvertLLVMTypeFromVariableType(paramsType[0]);
+    paramTys.push_back(glueType);
+    if (compCfg_.Is32Bit() && stubDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
+        for (int i = 0; i < reservedSlotForArm32; i++) {
+            paramTys.push_back(glueType);  // fake paramter's type is same with glue type
         }
+        extraParameterCnt += reservedSlotForArm32;
+    }
+
+    for (int i = 1; i < paramCount; i++) {
+        auto paramsType = stubDescriptor->GetParametersType();
         paramTys.push_back(ConvertLLVMTypeFromVariableType(paramsType[i]));
     }
-    auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount + extraParameterCnt, stubDescriptor->GetVariableArgs());
+    auto functype = LLVMFunctionType(returnType, paramTys.data(), paramCount + extraParameterCnt,
+        stubDescriptor->GetVariableArgs());
     return functype;
 }
 
