@@ -57,7 +57,7 @@ public:
 
     JSHClass *GetOrCreateHClass(JSThread *thread);
 
-    static GlobalTSTypeRef SearchProperty(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
+    static GlobalTSTypeRef GetPropTypeGT(JSHandle<TSTypeTable> &table, JSHandle<TSObjectType> objType,
                                           JSHandle<EcmaString> propName);
 
     ACCESSORS(ObjLayoutInfo, PROPERTIES_OFFSET, HCLASS_OFFSET);
@@ -77,7 +77,7 @@ public:
     static constexpr size_t FIELD_LENGTH = 4;  // every field record name, typeIndex, accessFlag, readonly
     static constexpr size_t INSTANCE_TYPE_OFFSET = TSType::SIZE;
 
-    static GlobalTSTypeRef SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
+    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
                                           int localtypeId, JSHandle<EcmaString> propName);
 
     ACCESSORS(InstanceType, INSTANCE_TYPE_OFFSET, CONSTRUCTOR_TYPE_OFFSET);
@@ -94,7 +94,7 @@ class TSClassInstanceType : public TSType {
 public:
     CAST_CHECK(TSClassInstanceType, IsTSClassInstanceType);
 
-    static GlobalTSTypeRef SearchProperty(const JSThread *thread, JSHandle<TSTypeTable> &table,
+    static GlobalTSTypeRef GetPropTypeGT(const JSThread *thread, JSHandle<TSTypeTable> &table,
                                           int localtypeId, JSHandle<EcmaString> propName);
 
     static constexpr size_t CREATE_CLASS_TYPE_OFFSET = TSType::SIZE;
@@ -161,6 +161,39 @@ public:
     ACCESSORS(Fields, KEYS_OFFSET, SIZE);
 
     DECL_VISIT_OBJECT(EXTENDS_TYPE_ID_OFFSET, SIZE)
+    DECL_DUMP()
+};
+
+class TSFunctionType : public TSType {
+public:
+    CAST_CHECK(TSFunctionType, IsTSFunctionType);
+
+    static constexpr size_t PARAMETER_TYPE_OFFSET = TSType::SIZE;
+    static constexpr size_t FUNCTION_NAME_OFFSET = 0;
+    static constexpr size_t RETURN_VALUE_TYPE_OFFSET = 1;
+    static constexpr size_t PARAMETER_START_ENTRY = 2;
+    static constexpr size_t FIELD_LENGTH = 2;  // every function record accessFlag, modifierStatic
+    static constexpr size_t DEFAULT_LENGTH = 2;
+
+    ACCESSORS(ParameterTypes, PARAMETER_TYPE_OFFSET, SIZE);
+
+    int GetParametersNum();
+
+    GlobalTSTypeRef GetParameterTypeGT(JSHandle<TSTypeTable> typeTable, int index);
+
+    GlobalTSTypeRef GetReturnValueTypeGT(JSHandle<TSTypeTable> typeTable);
+
+    DECL_VISIT_OBJECT(PARAMETER_TYPE_OFFSET, SIZE)
+    DECL_DUMP()
+};
+
+class TSArrayType : public TSType {
+public:
+    CAST_CHECK(TSArrayType, IsTSArrayType);
+    static constexpr size_t  PARAMETER_TYPE_REF_OFFSET = TSType::SIZE;
+
+    GlobalTSTypeRef GetElementTypeGT(JSHandle<TSTypeTable> typeTable);
+    ACCESSORS_PRIMITIVE_FIELD(ElementTypeRef, uint64_t, PARAMETER_TYPE_REF_OFFSET, SIZE);
     DECL_DUMP()
 };
 }  // namespace panda::ecmascript

@@ -309,4 +309,91 @@ HWTEST_F_L0(TSTypeTest, ClassInstanceType)
 
     ASSERT_EQ(classInstanceType->GetClassRefGT().GetGlobalTSTypeRef(), 50);
 }
+
+HWTEST_F_L0(TSTypeTest, FuntionType)
+{
+    auto factory = ecmaVm->GetFactory();
+    JSHandle<TSTypeTable> table = factory->NewTSTypeTable(2);
+
+    const int literalLength = 8;
+    const int parameterLength = 2;
+    JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
+    JSHandle<EcmaString> functionName = factory->NewFromCanBeCompressString("testFunction");
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::FUNCTION)));
+    literal->Set(thread, 1, JSTaggedValue(0));
+    literal->Set(thread, 2, JSTaggedValue(0));
+    literal->Set(thread, 3, functionName);
+    literal->Set(thread, 4, JSTaggedValue(parameterLength));
+    literal->Set(thread, 5, JSTaggedValue(1));
+    literal->Set(thread, 6, JSTaggedValue(2));
+    literal->Set(thread, 7, JSTaggedValue(6));
+
+    CVector<JSHandle<EcmaString>> recordImportModules {};
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
+                                                          factory->NewFromString(CString("test")),
+                                                          recordImportModules);
+    ASSERT_TRUE(type->IsTSFunctionType());
+
+    JSHandle<TSFunctionType> functionType = JSHandle<TSFunctionType>(type);
+    ASSERT_TRUE(functionType->GetParameterTypes().IsTaggedArray());
+
+    JSHandle<TaggedArray> parameterTypes(thread, functionType->GetParameterTypes());
+    ASSERT_EQ(parameterTypes->GetLength(), parameterLength + TSFunctionType::DEFAULT_LENGTH);
+    ASSERT_EQ(functionType->GetParametersNum(), parameterLength);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 0).GetGlobalTSTypeRef(), 1);
+    ASSERT_EQ(functionType->GetParameterTypeGT(table, 1).GetGlobalTSTypeRef(), 2);
+    ASSERT_EQ(functionType->GetReturnValueTypeGT(table).GetGlobalTSTypeRef(), 6);
+}
+
+HWTEST_F_L0(TSTypeTest, ObjectType)
+{
+    auto factory = ecmaVm->GetFactory();
+    JSHandle<TSTypeTable> table = factory->NewTSTypeTable(2);
+
+    const int literalLength = 6;
+    const uint32_t propsNum = 2;
+    JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
+    JSHandle<EcmaString> propsNameA = factory->NewFromCanBeCompressString("1");
+    JSHandle<EcmaString> propsNameB = factory->NewFromCanBeCompressString("name");
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::OBJECT)));
+    literal->Set(thread, 1, JSTaggedValue(propsNum));
+    literal->Set(thread, 2, propsNameA.GetTaggedValue());
+    literal->Set(thread, 3, JSTaggedValue(static_cast<int>(TSTypeKind::TS_STRING)));
+    literal->Set(thread, 4, propsNameB.GetTaggedValue());
+    literal->Set(thread, 5, JSTaggedValue(static_cast<int>(TSTypeKind::TS_STRING)));
+    CVector<JSHandle<EcmaString>> recordImportModules {};
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
+                                                          factory->NewFromString(CString("test")),
+                                                          recordImportModules);
+    ASSERT_TRUE(type->IsTSObjectType());
+    JSHandle<TSObjectType> objectType = JSHandle<TSObjectType>(type);
+    TSObjLayoutInfo *fieldsTypeInfo = TSObjLayoutInfo::Cast(objectType->GetObjLayoutInfo().GetTaggedObject());
+
+    ASSERT_EQ(fieldsTypeInfo->GetPropertiesCapacity(), propsNum);
+    ASSERT_EQ(fieldsTypeInfo->GetKey(0), propsNameA.GetTaggedValue());
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(0).GetInt(), static_cast<int>(TSTypeKind::TS_STRING));
+    ASSERT_EQ(fieldsTypeInfo->GetKey(1), propsNameB.GetTaggedValue());
+    ASSERT_EQ(fieldsTypeInfo->GetTypeId(1).GetInt(), static_cast<int>(TSTypeKind::TS_STRING));
+}
+
+HWTEST_F_L0(TSTypeTest, ArrayType)
+{
+    auto factory = ecmaVm->GetFactory();
+    JSHandle<TSTypeTable> table = factory->NewTSTypeTable(3);
+
+    const int literalLength = 2;
+    JSHandle<TaggedArray> literal = factory->NewTaggedArray(literalLength);
+
+    literal->Set(thread, 0, JSTaggedValue(static_cast<int>(TSTypeTable::TypeLiteralFlag::ARRAY)));
+    literal->Set(thread, 1, JSTaggedValue(2));
+
+    CVector<JSHandle<EcmaString>> recordImportModules {};
+    JSHandle<JSTaggedValue> type = TSTypeTable::ParseType(thread, table, literal,
+                                                          factory->NewFromString(CString("test")),
+                                                          recordImportModules);
+    ASSERT_TRUE(type->IsTSArrayType());
+    JSHandle<TSArrayType> arrayType = JSHandle<TSArrayType>(type);
+
+    ASSERT_EQ(arrayType->GetElementTypeRef(), 2);
+}
 }

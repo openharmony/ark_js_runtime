@@ -340,6 +340,9 @@ public:
     bool IsTSInterfaceType() const;
     bool IsTSClassInstanceType() const;
     bool IsTSImportType() const;
+    bool IsTSFunctionType() const;
+    bool IsTSArrayType() const;
+
     static bool IsSameTypeOrHClass(JSTaggedValue x, JSTaggedValue y);
 
     static ComparisonResult Compare(JSThread *thread, const JSHandle<JSTaggedValue> &x,
