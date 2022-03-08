@@ -1050,13 +1050,12 @@ CALL_STUB_INIT_DESCRIPTOR(IterNext)
 
 CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampoline)
 {
-    /* 4 : 4 input parameters */
-    StubDescriptor runtimeCallTrampoline("RuntimeCallTrampoline", 0, 4,
+    /* 3 : 3 input parameters */
+    StubDescriptor runtimeCallTrampoline("RuntimeCallTrampoline", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *descriptor = runtimeCallTrampoline;
-    std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
+    std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
         VariableType::POINTER(),
-        VariableType::INT64(),
         VariableType::INT64(),
         VariableType::INT64(),
     };
