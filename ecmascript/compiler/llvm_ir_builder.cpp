@@ -43,7 +43,9 @@ LLVMIRBuilder::LLVMIRBuilder(const std::vector<std::vector<GateRef>> *schedule, 
     if (circuit_->GetFrameType() == FrameType::INTERPRETER_FRAME) {
         LLVMSetFunctionCallConv(function_, LLVMGHCCallConv);
     } else if (circuit_->GetFrameType() == FrameType::OPTIMIZED_FRAME) {
-        // LLVMSetFunctionCallConv(function_, LLVMWebKitJSCallConv);
+        if (!compCfg_->Is32Bit()) {  // Arm32 not support webkit jscc calling convention
+            LLVMSetFunctionCallConv(function_, LLVMWebKitJSCallConv);
+        }
     }
     LLVMSetGC(function_, "statepoint-example");
     if (compCfg_->Is32Bit()) {
@@ -300,9 +302,9 @@ void LLVMIRBuilder::GenPrologue(LLVMModuleRef &module, LLVMBuilderRef &builder)
         -8    type
         -16   current sp before call other function
     */
-    // if (compCfg_->Is32Bit()) {
-    //     return;
-    // }
+    if (compCfg_->Is32Bit()) {
+        return;
+    }
     auto frameType = circuit_->GetFrameType();
     if (frameType != FrameType::OPTIMIZED_FRAME) {
         return;
@@ -1560,7 +1562,7 @@ void LLVMIRBuilder::VisitZExtInt(GateRef gate, GateRef e1)
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     ASSERT(GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(e1)->GetMachineType()) <=
         GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(gate)->GetMachineType()));
-    LLVMValueRef result = LLVMBuildZExt(builder_, e1Value, ConvertLLVMTypeFromGate(gate), "gtk");
+    LLVMValueRef result = LLVMBuildZExt(builder_, e1Value, ConvertLLVMTypeFromGate(gate), "");
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }

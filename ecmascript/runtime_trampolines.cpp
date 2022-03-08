@@ -202,21 +202,24 @@ DEF_RUNTIME_TRAMPOLINES(GetTaggedArrayPtrTest)
     // second call trigger gc.
     // don't call EcmaHandleScope handleScope(thread);
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
-    static int i = 0;
-    static JSHandle<TaggedArray> arr = factory->NewTaggedArray(2);
-    if (i == 0) {
+    CONVERT_ARG_TAGGED_TYPE_CHECKED(array, 0);
+    bool allocated = false;
+    if (array == JSTaggedValue::VALUE_UNDEFINED) {
+        JSHandle<TaggedArray> arr = factory->NewTaggedArray(2);
         arr->Set(thread, 0, JSTaggedValue(3.5)); // 3.5: first element
         arr->Set(thread, 1, JSTaggedValue(4.5)); // 4.5: second element
+        array = arr.GetTaggedValue().GetRawData();
+        allocated = true;
     }
+    JSHandle<TaggedArray> arr1(thread, JSTaggedValue(array));
 #ifndef NDEBUG
     PrintHeapReginInfo(argGlue);
 #endif
-    if (i != 0) {
+    if (!allocated) {
         thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     }
-    std::cout << " arr->GetData() " << std::hex << "  " << arr->GetData();
-    i++;
-    return arr.GetTaggedValue().GetRawData();
+    LOG_ECMA(INFO) << " arr->GetData() " << std::hex << "  " << arr1->GetData();
+    return arr1.GetTaggedValue().GetRawData();
 }
 
 DEF_RUNTIME_TRAMPOLINES(FloatMod)

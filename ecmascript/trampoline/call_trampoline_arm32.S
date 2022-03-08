@@ -30,9 +30,10 @@ JSFunctionEntry:
     push    {r11}                               // rbp
     mov     r11, sp                             // set frame pointer
     // construct frame
-    mov     r6, #0
-    mov     r8, #JS_ENTRY_FRAME_TYPE
-    push    {r6, r8}                            // frame type
+    mov     r6, #JS_ENTRY_FRAME_TYPE
+    mov     r8, #0
+    push    {r8, r6}                            // frame type
+    push    {r1}                                // prev managed frame
     push    {r1}                                // prev managed frame
     push    {r0}
 
@@ -71,12 +72,14 @@ JSFunctionEntry:
     bne     .LCopyLoop
 .LInvokeJSFunction:
     mov     r10, #OPTIMIZE_FRAME_TYPE  // set frame type
+    mov     r9, #OPTIMIZE_FRAME_TYPE  // set frame type
     blx     lr
     mov     r2, #0                    // need fix for calltarget thisTarget NewTarget
     add     r2, r2, r8, lsl #3
     add     sp, sp, r2
 
     pop     {r4}
+    pop     {r1}
     pop     {r1}
     str     r1, [r4, #ASM_GLUE_CURRENT_FRAME_OFFSET]
     add     sp, sp, #8

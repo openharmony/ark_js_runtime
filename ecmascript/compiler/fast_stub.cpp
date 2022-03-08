@@ -88,12 +88,13 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
-    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {});
-    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {});
-    auto value1 = GetValueFromTaggedArray(VariableType::INT64(), ptr1, GetInt64Constant(0));
+    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)),
+        {GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)});
+    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {ptr1});
+    auto value1 = GetValueFromTaggedArray(VariableType::INT64(), ptr1, GetInt32Constant(0));
     GateRef tmp = CastInt64ToFloat64(value1);
     doubleX = DoubleMul(*doubleX, tmp);
-    auto value2 = GetValueFromTaggedArray(VariableType::INT64(), ptr2, GetInt64Constant(1));
+    auto value2 = GetValueFromTaggedArray(VariableType::INT64(), ptr2, GetInt32Constant(1));
     tmp = CastInt64ToFloat64(value2);
     doubleX = DoubleMul(*doubleX, tmp);
     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -104,6 +105,8 @@ void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), 0);
@@ -166,6 +169,8 @@ void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
@@ -242,6 +247,8 @@ void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
@@ -304,6 +311,8 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
     DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
@@ -691,6 +700,8 @@ void FastEqualStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
+    GateRef glue = PtrArgument(0);
+    (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
     Label xIsEqualy(env);
