@@ -87,7 +87,7 @@ JSFunctionEntry:
     pop     {r4, r5, r6, r7, r8, r9, r10, lr}
     bx      lr
 
-// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t patch_id, uint64_t argc, ...);
+// uint64_t RuntimeCallTrampoline(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 // webkit_jscc calling convention call runtime_id's runtion function(c-abi)
 // JSTaggedType (*)(uintptr_t argGlue, uint64_t argc, JSTaggedType argv[])
 // Input:
@@ -96,10 +96,9 @@ JSFunctionEntry:
 // stack layout:
 // sp + N*8 argvN
 // ........
-// sp + 24: argv1
-// sp + 16: argv0
-// sp + 8: argc
-// sp:  patch_id
+// sp + 16: argv1
+// sp + 8:  argv0
+// sp:      argc
 // construct Leave Frame:
 //   +--------------------------+
 //   |      argv[]              |

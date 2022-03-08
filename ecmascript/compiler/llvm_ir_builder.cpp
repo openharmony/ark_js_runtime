@@ -475,17 +475,16 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     params[0] = glue;
     int index = circuit_->GetBitField(inList[1]);
     params[1] = LLVMConstInt(LLVMInt64Type(), index - FAST_STUB_MAXCOUNT, 0);
-    params[2] = LLVMConstInt(LLVMInt64Type(), 2882400000, 0); // 2882400000: default statepoint ID
-    params[3] = LLVMConstInt(LLVMInt64Type(), inList.size() - paraStartIndex, 0); // 3 : 3 means fourth parameter
+    params[2] = LLVMConstInt(LLVMInt64Type(), inList.size() - paraStartIndex, 0); // 2 : 2 means third parameter
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];
-        params[paraIdx + 1] = gateToLLVMMaps_[gateTmp];
+        params[paraIdx] = gateToLLVMMaps_[gateTmp];
     }
     if (callee == nullptr) {
         COMPILER_LOG(ERROR) << "callee nullptr";
         return;
     }
-    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size() + 1, "runtime_call");
+    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size(), "");
     if (!compCfg_->Is32Bit()) {  // Arm32 not support webkit jscc calling convention
         LLVMSetInstructionCallConv(runtimeCall, LLVMWebKitJSCallConv);
     }
