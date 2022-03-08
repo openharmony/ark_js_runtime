@@ -214,7 +214,7 @@ DEF_RUNTIME_TRAMPOLINES(GetTaggedArrayPtrTest)
     if (i != 0) {
         thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     }
-    LOG_ECMA(INFO) << " arr->GetData() " << std::hex << "  " << arr->GetData();
+    std::cout << " arr->GetData() " << std::hex << "  " << arr->GetData();
     i++;
     return arr.GetTaggedValue().GetRawData();
 }

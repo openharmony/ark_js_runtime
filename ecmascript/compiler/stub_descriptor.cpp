@@ -1048,7 +1048,6 @@ CALL_STUB_INIT_DESCRIPTOR(IterNext)
 CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampoline)
 {
     /* 4 : 4 input parameters */
-<<<<<<< HEAD
     StubDescriptor CallRuntimeTrampoline("CallRuntimeTrampoline", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *descriptor = CallRuntimeTrampoline;
@@ -1057,16 +1056,6 @@ CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampoline)
         VariableType::INT64(),
         VariableType::INT64(),
         VariableType::INT64(),
-=======
-    StubDescriptor runtimeCallTrampoline("RuntimeCallTrampoline", 0, 4,
-        ArgumentsOrder::DEFAULT_ORDER, StubMachineType::TAGGED);
-    *descriptor = runtimeCallTrampoline;
-    std::array<StubMachineType, 4> params = { /* 4 : 4 input parameters */
-        StubMachineType::NATIVE_POINTER,
-        StubMachineType::UINT64,
-        StubMachineType::UINT64,
-        StubMachineType::UINT64,
->>>>>>> 90e2164... fixed for debug compile arm32
     };
     descriptor->SetVariableArgs(true);
     descriptor->SetParameters(params.data());
