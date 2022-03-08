@@ -483,8 +483,10 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
         COMPILER_LOG(ERROR) << "callee nullptr";
         return;
     }
-    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size() + 1, "");
-    // LLVMSetInstructionCallConv(runtimeCall, LLVMWebKitJSCallConv);
+    LLVMValueRef runtimeCall = LLVMBuildCall(builder_, callee, params, inList.size() + 1, "runtime_call");
+    if (!compCfg_->Is32Bit()) {  // Arm32 not support webkit jscc calling convention
+        LLVMSetInstructionCallConv(runtimeCall, LLVMWebKitJSCallConv);
+    }
     gateToLLVMMaps_[gate] = runtimeCall;
 }
 
