@@ -205,6 +205,7 @@ DEF_RUNTIME_TRAMPOLINES(GetTaggedArrayPtrTest)
     CONVERT_ARG_TAGGED_TYPE_CHECKED(array, 0);
     bool allocated = false;
     if (array == JSTaggedValue::VALUE_UNDEFINED) {
+        // 2 : means construct 2 elements size taggedArray
         JSHandle<TaggedArray> arr = factory->NewTaggedArray(2);
         arr->Set(thread, 0, JSTaggedValue(3.5)); // 3.5: first element
         arr->Set(thread, 1, JSTaggedValue(4.5)); // 4.5: second element
