@@ -150,66 +150,6 @@ bool LLVMAssembler::BuildMCJITEngine()
     return true;
 }
 
-// rewrite patchpoint id value that is planned to be stored into JS thread temporarily
-void LLVMAssembler::RewritePatchPointIdStoredOnThread(LLVMValueRef instruction, uint64_t id)
-{
-    LLVMValueRef targetInst = LLVMGetPreviousInstruction(instruction);
-    while (targetInst != nullptr) {
-        if (LLVMGetInstructionOpcode(targetInst) == LLVMStore) {
-            size_t len = 0;
-            std::string destName(LLVMGetValueName2(LLVMGetOperand(targetInst, 1), &len));
-            std::string targetName("getFramePatchPointIdAddr");
-            // find the store instruction that planned to change getFramePatchPointIdAddr and rewrite src value
-            if (len >= targetName.size() && destName.substr(0, targetName.size()) == targetName) {
-                LLVMSetOperand(targetInst, 0, LLVMConstInt(LLVMInt64Type(), id, 0));
-            }
-        }
-        targetInst = LLVMGetPreviousInstruction(targetInst);
-    }
-}
-
-void LLVMAssembler::RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, uint64_t &callInsNum, uint64_t &funcNum)
-{
-    if (LLVMIsACallInst(instruction) && !LLVMIsAIntrinsicInst(instruction)) {
-        const char attrName[] = "statepoint-id";
-        uint64_t id =  (funcNum << 16) | callInsNum;
-        std::string patchId = std::to_string(id);
-        LLVMAttributeRef attr = LLVMCreateStringAttribute(LLVMGetGlobalContext(),
-            attrName, sizeof(attrName) - 1, patchId.c_str(), patchId.size());
-        LLVMAddCallSiteAttribute(instruction, LLVMAttributeFunctionIndex, attr);
-        callInsNum++;
-        std::string name(LLVMGetValueName(instruction));
-        if (name.find("runtime_call") != std::string::npos) {
-            // 2 : 2 means patch id arguments order
-            LLVMSetOperand(instruction, 2, LLVMConstInt(LLVMInt64Type(), id, 0));
-        } else {
-            RewritePatchPointIdStoredOnThread(instruction, id);
-        }
-    }
-}
-
-void LLVMAssembler::FillPatchPointIDs()
-{
-    uint64_t funcNum = 0;
-    LLVMValueRef func = LLVMGetFirstFunction(module_);
-    while (func) {
-        if (LLVMIsDeclaration(func)) {
-            func = LLVMGetNextFunction(func);
-            funcNum++;
-            continue;
-        }
-        uint64_t callInsNum = 0;
-        for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(func); bb; bb = LLVMGetNextBasicBlock(bb)) {
-            for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
-                instruction = LLVMGetNextInstruction(instruction)) {
-                RewritePatchPointIdOfStatePoint(instruction, callInsNum, funcNum);
-            }
-        }
-        func = LLVMGetNextFunction(func);
-        funcNum++;
-    }
-}
-
 void LLVMAssembler::BuildAndRunPasses()
 {
     COMPILER_LOG(DEBUG) << "BuildAndRunPasses  - ";
@@ -227,9 +167,6 @@ void LLVMAssembler::BuildAndRunPasses()
     llvm::unwrap(modPass)->add(llvm::createRewriteStatepointsForGCLegacyPass()); // rs4gc pass added
     LLVMPassManagerBuilderPopulateModulePassManager(pmBuilder, modPass1);
 
-    // run module pass, function pass, module pass1
-    FillPatchPointIDs(); // add "statepoint-id" callsite attribute for statepoint ID rewrite and rewrite store value
-    LLVMRunPassManager(modPass, module_); // make sure rs4gc pass run first
     LLVMInitializeFunctionPassManager(funcPass);
     for (LLVMValueRef fn = LLVMGetFirstFunction(module_); fn; fn = LLVMGetNextFunction(fn)) {
         LLVMRunFunctionPassManager(funcPass, fn);
