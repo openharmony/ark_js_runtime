@@ -19,8 +19,9 @@ enable_stub_aot = false
 asan_lib_path = "/usr/lib/llvm-10/lib/clang/10.0.0/lib/linux"
 
 # For OpenHarmony build, always link with the static lib:
-sdk_libc_secshared_dep = "//utils/native/base:utilsecurec"
-sdk_libc_secshared_config = "//utils/native/base:utils_config"
+sdk_libc_secshared_dep = "//third_party/bounds_checking_function:libsec_static"
+sdk_libc_secshared_config =
+    "//third_party/bounds_checking_function:libsec_public_config"
 
 # Generate file for a template and YAML data provided.
 #
