@@ -254,15 +254,14 @@ void InterpreterStub::SetHomeObjectToFunction(GateRef glue, GateRef function, Ga
 
 GateRef InterpreterStub::GetCurrentSpFrame(GateRef glue)
 {
-    GateRef spOffset = GetIntPtrConstant(
-        GetEnvironment()->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME));
+    bool isArch32 = GetEnvironment()->Is32Bit();
+    GateRef spOffset = GetIntPtrConstant(JSThread::GlueData::GetCurrentFrameOffset(isArch32));
     return Load(VariableType::POINTER(), glue, spOffset);
 }
 
 void InterpreterStub::SetCurrentSpFrame(GateRef glue, GateRef value)
 {
-    GateRef spOffset = GetIntPtrConstant(
-        GetEnvironment()->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME));
+    GateRef spOffset = GetIntPtrConstant(JSThread::GlueData::GetCurrentFrameOffset(GetEnvironment()->Is32Bit()));
     Store(VariableType::POINTER(), glue, glue, spOffset, value);
 }
 

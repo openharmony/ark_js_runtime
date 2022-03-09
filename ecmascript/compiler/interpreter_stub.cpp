@@ -164,7 +164,8 @@ DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
     auto env = GetEnvironment();
     
-    GateRef gConstOffset = IntPtrAdd(glue, GetIntPtrConstant(env->GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
+    GateRef gConstOffset = IntPtrAdd(glue,
+                                     GetIntPtrConstant(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit())));
     GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
     GateRef gConstUndefindStr = Load(VariableType::JS_POINTER(), gConstOffset, booleanIndex);
     DEFVARIABLE(resultRep, VariableType::JS_POINTER(), gConstUndefindStr);

@@ -24,6 +24,8 @@ enum BarrierMode { SKIP_BARRIER, WRITE_BARRIER, READ_BARRIER };
 
 constexpr size_t NUM_MANDATORY_JSFUNC_ARGS = 3;
 
+using Address = uintptr_t;
+
 #define PUBLIC_API PANDA_PUBLIC_API
 
 #ifdef NDEBUG
@@ -35,6 +37,22 @@ constexpr size_t NUM_MANDATORY_JSFUNC_ARGS = 3;
 #define DUMP_API_ATTR __attribute__((unused))
 #endif
 #endif
+
+#ifdef PANDA_TARGET_32
+#define STATIC_ASSERT_EQ_ARCH32(a, b) static_assert(a == b)
+#else
+#define STATIC_ASSERT_EQ_ARCH32(a, b)
+#endif
+
+#ifdef PANDA_TARGET_64
+#define STATIC_ASSERT_EQ_ARCH64(a, b) static_assert(a == b)
+#else
+#define STATIC_ASSERT_EQ_ARCH64(a, b)
+#endif
+
+#define STATIC_ASSERT_EQ_ARCH(expect, valueArch32, valueArch64) \
+    STATIC_ASSERT_EQ_ARCH32(expect, valueArch32)                \
+    STATIC_ASSERT_EQ_ARCH64(expect, valueArch64)
 }  // namespace ecmascript
 }  // namespace panda
 

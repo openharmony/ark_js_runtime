@@ -2046,7 +2046,7 @@ void Stub::SetLexicalEnvToFunction(GateRef glue, GateRef object, GateRef lexical
 
 GateRef Stub::GetGlobalObject(GateRef glue)
 {
-    GateRef offset = GetIntPtrConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_OBJECT));
+    GateRef offset = GetIntPtrConstant(JSThread::GlueData::GetGlobalObjOffset(env_.Is32Bit()));
     return Load(VariableType::JS_ANY(), glue, offset);
 }
 

@@ -75,7 +75,6 @@ class JSThread;
     V(JSTaggedValue, TSImportTypeClass, TS_IMPORT_TYPE_CLASS_INDEX, ecma_roots_class)                                 \
     V(JSTaggedValue, TSFunctionTypeClass, TS_FUNCTION_TYPE_CLASS_INDEX, ecma_roots_class)                             \
     V(JSTaggedValue, TSArrayTypeClass, TS_ARRAY_TYPE_CLASS_INDEX, ecma_roots_class)
-/* if modify the global env constant, please modify ecma_asm_defines.h */
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_SPECIAL(V)                               \
     V(JSTaggedValue, Undefined, UNDEFINED_INDEX, ecma_roots_special) \
@@ -313,7 +312,7 @@ class JSThread;
 /* RealmConstant */
 
 // ConstantIndex used for explicit visit each constant.
-enum class ConstantIndex : uint16_t {
+enum class ConstantIndex : size_t {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INDEX_FILTER(Type, Name, Index, Desc) Index,
     GLOBAL_ENV_CONSTANT_CLASS(INDEX_FILTER) GLOBAL_ENV_CONSTANT_SPECIAL(INDEX_FILTER)
@@ -372,8 +371,14 @@ public:
         visitor(ecmascript::Root::ROOT_VM, ObjectSlot(ToUintPtr(BeginSlot())), ObjectSlot(ToUintPtr(EndSlot())));
     }
 
+    static constexpr size_t SizeArch32 =
+        JSTaggedValue::TaggedTypeSize() * static_cast<size_t>(ConstantIndex::CONSTATNT_COUNT);
+    static constexpr size_t SizeArch64 =
+        JSTaggedValue::TaggedTypeSize() * static_cast<size_t>(ConstantIndex::CONSTATNT_COUNT);
+
 private:
     JSTaggedValue constants_[static_cast<int>(ConstantIndex::CONSTATNT_COUNT)];  // NOLINT(modernize-avoid-c-arrays)
 };
+STATIC_ASSERT_EQ_ARCH(sizeof(GlobalEnvConstants), GlobalEnvConstants::SizeArch32, GlobalEnvConstants::SizeArch64);
 }  // namespace panda::ecmascript
 #endif  // RUNTIME_ECMASCRIPT_ECMA_ROOTS_H
