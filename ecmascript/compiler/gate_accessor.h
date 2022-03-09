@@ -319,7 +319,24 @@ public:
     [[nodiscard]] GateRef GetDep(GateRef gate, size_t idx = 0) const;
     void SetDep(GateRef gate, GateRef depGate, size_t idx = 0);
     void ReplaceIn(UsesIterator &useIt, GateRef replaceGate);
-
+    // Add for lowering
+    [[nodiscard]] GateType GetGateType(GateRef gate);
+    void SetGateType(GateRef gate, GateType gt);
+    template<bool noThrow = false>
+    void ReplaceHirControlGate(UsesIterator &useIt, [[maybe_unused]] GateRef newGate)
+    {
+        ASSERT(GetOpCode(*useIt) == OpCode::IF_SUCCESS || GetOpCode(*useIt) == OpCode::IF_EXCEPTION);
+        if (!noThrow) {
+            Gate *oldPtr = circuit_->LoadGatePtr(*useIt);
+            oldPtr->GetFirstOut()->GetGate()->ModifyIn(oldPtr->GetFirstOut()->GetIndex(),
+                                                       circuit_->LoadGatePtr(newGate));
+            circuit_->DeleteGate(*useIt);
+            useIt.SetChanged();
+        } else {
+            DeleteIn(useIt);
+        }
+    };
+    void DeleteIn(UsesIterator &useIt);
 private:
     [[nodiscard]] ConstUsesIterator ConstUseBegin(GateRef gate) const
     {
