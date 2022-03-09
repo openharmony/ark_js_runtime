@@ -18,21 +18,27 @@
 
 #include <string>
 
+#include "ecmascript/compiler/interpreter_stub_define.h"
+
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define MESSAGE_STRING_LIST(V)                                                    \
+#define COMMON_MESSAGE_STRING_LIST(V)                                             \
     V(SetReadOnlyProperty, "Cannot set readonly property")                        \
     V(FunctionCallNotConstructor, "class constructor cannot call")                \
     V(SetPropertyWhenNotExtensible, "Cannot add property in prevent extensions ") \
     V(GetPropertyOutOfBounds, "Get Property index out-of-bounds")                 \
-    V(CanNotSetPropertyOnContainer, "Cannot set property on Container")
+    V(CanNotSetPropertyOnContainer, "Cannot set property on Container")           \
+    V(ASM_INTERPRETER_STUB_NAME, "ASM_INTERPRETER stub name: ")                   \
+    V(INT32_VALUE, "value: %ld")
 
 class MessageString {
 public:
     enum MessageId {
     // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DEF_MESSAGE_ID(name, string) Message_##name,
-        MESSAGE_STRING_LIST(DEF_MESSAGE_ID)
+        COMMON_MESSAGE_STRING_LIST(DEF_MESSAGE_ID)
+        INTERPRETER_STUB_HELPER_LIST(DEF_MESSAGE_ID)
+        ASM_INTERPRETER_STUB_LIST(DEF_MESSAGE_ID, DEF_MESSAGE_ID)
 #undef DEF_MESSAGE_ID
             MAX_MESSAGE_COUNT
     };
