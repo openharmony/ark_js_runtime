@@ -41,6 +41,11 @@
             <option name="push" value="test/test/libark_ecma_debugger_test.so -> /data/test" src="out"/>
         </preparer>
     </target>
+    <target name="JSPtHooksTest">
+        <preparer>
+            <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
+        </preparer>
+    </target>
     <target name="SnapshotTest">
         <preparer>
             <option name="push" value="test/test/libark_jsruntime_test.so -> /data/test" src="out"/>
