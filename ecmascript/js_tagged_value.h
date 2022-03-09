@@ -65,6 +65,9 @@ public:
         return JSTaggedValue(object);
     }
 
+    static constexpr size_t SizeArch32 = TaggedTypeSize();
+    static constexpr size_t SizeArch64 = TaggedTypeSize();
+
     JSTaggedValue(void *) = delete;
 
     constexpr JSTaggedValue() = default;
@@ -374,5 +377,6 @@ private:
     static bool GetContainerProperty(JSThread *thread, const JSHandle<JSTaggedValue> &obj,
                                      const JSHandle<JSTaggedValue> &key, PropertyDescriptor &desc);
 };
+STATIC_ASSERT_EQ_ARCH(sizeof(JSTaggedValue), JSTaggedValue::SizeArch32, JSTaggedValue::SizeArch64);
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_TAGGED_VALUE_H

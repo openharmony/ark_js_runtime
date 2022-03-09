@@ -509,7 +509,7 @@ public:
         JSTaggedValue acc, int32_t hotnessCounter);
 };
 
-static std::array<DispatchEntryPoint, JSThread::MAX_BYTECODE_HANDLERS> asmDispatchTable {
+static std::array<DispatchEntryPoint, BCHandlers::MAX_BYTECODE_HANDLERS> asmDispatchTable {
     InterpreterAssembly::HandleLdNanPref,
     InterpreterAssembly::HandleLdInfinityPref,
     InterpreterAssembly::HandleLdGlobalThisPref,

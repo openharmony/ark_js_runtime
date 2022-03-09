@@ -24,7 +24,7 @@
 #include "ecmascript/mem/slots.h"
 #include "utils/logger.h"
 
-#if (!defined PANDA_TARGET_LINUX) && (defined IS_PUBLIC_VERSION)
+#if !defined(PANDA_TARGET_LINUX) && defined(IS_PUBLIC_VERSION) && defined(ENABLE_BYTRACE)
     #include "bytrace.h"
 #endif
 
@@ -38,11 +38,11 @@
 #define OPTIONAL_LOG(ecmaVM, level, component) \
     LOG_IF(ecmaVM->IsOptionalLogEnabled(), level, component)
 
-#if !defined(PANDA_TARGET_LINUX) && !defined(PANDA_TARGET_WINDOWS) && defined(IS_PUBLIC_VERSION)
-#define ECMA_BYTRACE_NAME(tag, name)                                 \
-        BYTRACE_NAME(tag, name);                                     \
-        trace::ScopedTrace scopedTrace(name)
-#else
+#if !defined(ENABLE_BYTRACE)
+    #define ECMA_BYTRACE_NAME(tag, name)
+#elif !defined(PANDA_TARGET_LINUX) && !defined(PANDA_TARGET_WINDOWS) && defined(IS_PUBLIC_VERSION)
+    #define ECMA_BYTRACE_NAME(tag, name) BYTRACE_NAME(tag, name); trace::ScopedTrace scopedTrace(name)
+#elif defined(ENABLE_BYTRACE)
     #define ECMA_BYTRACE_NAME(tag, name) trace::ScopedTrace scopedTrace(name)
 #endif
 

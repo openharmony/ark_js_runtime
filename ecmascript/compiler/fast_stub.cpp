@@ -571,7 +571,8 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
     GateRef glue = PtrArgument(0);
     GateRef obj = TaggedArgument(1);
     DEFVARIABLE(holder, VariableType::JS_ANY(), obj);
-    GateRef gConstOffset = IntPtrAdd(glue, GetIntPtrConstant(env->GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
+    GateRef gConstOffset = IntPtrAdd(glue,
+                                     GetIntPtrConstant(JSThread::GlueData::GetGlobalConstOffset(cfg->Is32Bit())));
     GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
     GateRef gConstUndefindStr = Load(VariableType::JS_POINTER(), gConstOffset, booleanIndex);
     DEFVARIABLE(resultRep, VariableType::JS_POINTER(), gConstUndefindStr);
