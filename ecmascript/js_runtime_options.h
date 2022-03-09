@@ -29,6 +29,7 @@ enum ArkProperties {
     CONCURRENT_MARK = 1 << 3,
     CONCURRENT_SWEEP = 1 << 4,
     THREAD_CHECK = 1 << 5,
+    ENABLE_ARKTOOLS = 1 << 6,
 };
 
 class JSRuntimeOptions : public RuntimeOptions {
@@ -51,7 +52,7 @@ public:
 
     bool IsEnableArkTools() const
     {
-        return enableArkTools_.GetValue();
+        return (enableArkTools_.GetValue()) || ((arkProperties_.GetValue() & ArkProperties::ENABLE_ARKTOOLS) != 0);
     }
 
     void SetEnableArkTools(bool value)
