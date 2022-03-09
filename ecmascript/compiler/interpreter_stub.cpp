@@ -1845,15 +1845,8 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
     Bind(&valueIsInt);
     {
         GateRef valueInt = TaggedCastToInt32(value);
-        Label valueOverflow(env);
         Label valueNoOverflow(env);
-        Branch(Int32Equal(valueInt, GetInt32Constant(INT32_MAX)), &valueOverflow, &valueNoOverflow);
-        Bind(&valueOverflow);
-        {
-            GateRef valueDoubleFromInt = ChangeInt32ToFloat64(valueInt);
-            varAcc = DoubleBuildTaggedWithNoGC(DoubleAdd(valueDoubleFromInt, GetDoubleConstant(1.0)));
-            Jump(&accDispatch);
-        }
+        Branch(Int32Equal(valueInt, GetInt32Constant(INT32_MAX)), &valueNotInt, &valueNoOverflow);
         Bind(&valueNoOverflow);
         {
             varAcc = IntBuildTaggedWithNoGC(Int32Add(valueInt, GetInt32Constant(1)));
@@ -1861,16 +1854,18 @@ DECLARE_ASM_HANDLER(HandleIncDynPrefV8)
         }
     }
     Bind(&valueNotInt);
-    Label valueIsDouble(env);
-    Label valueNotDouble(env);
-    Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
-    Bind(&valueIsDouble);
-    {
-        GateRef valueDouble = TaggedCastToDouble(value);
-        varAcc = DoubleBuildTaggedWithNoGC(DoubleAdd(valueDouble, GetDoubleConstant(1.0)));
-        Jump(&accDispatch);
+    if (!env->IsAmd64()) {
+        Label valueIsDouble(env);
+        Label valueNotDouble(env);
+        Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
+        Bind(&valueIsDouble);
+        {
+            GateRef valueDouble = TaggedCastToDouble(value);
+            varAcc = DoubleBuildTaggedWithNoGC(DoubleAdd(valueDouble, GetDoubleConstant(1.0)));
+            Jump(&accDispatch);
+        }
+        Bind(&valueNotDouble);
     }
-    Bind(&valueNotDouble);
     {
         // slow path
         GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(IncDyn)), { value });
@@ -1904,15 +1899,8 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
     Bind(&valueIsInt);
     {
         GateRef valueInt = TaggedCastToInt32(value);
-        Label valueOverflow(env);
         Label valueNoOverflow(env);
-        Branch(Int32Equal(valueInt, GetInt32Constant(INT32_MIN)), &valueOverflow, &valueNoOverflow);
-        Bind(&valueOverflow);
-        {
-            GateRef valueDoubleFromInt = ChangeInt32ToFloat64(valueInt);
-            varAcc = DoubleBuildTaggedWithNoGC(DoubleSub(valueDoubleFromInt, GetDoubleConstant(1.0)));
-            Jump(&accDispatch);
-        }
+        Branch(Int32Equal(valueInt, GetInt32Constant(INT32_MIN)), &valueNotInt, &valueNoOverflow);
         Bind(&valueNoOverflow);
         {
             varAcc = IntBuildTaggedWithNoGC(Int32Sub(valueInt, GetInt32Constant(1)));
@@ -1920,16 +1908,18 @@ DECLARE_ASM_HANDLER(HandleDecDynPrefV8)
         }
     }
     Bind(&valueNotInt);
-    Label valueIsDouble(env);
-    Label valueNotDouble(env);
-    Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
-    Bind(&valueIsDouble);
-    {
-        GateRef valueDouble = TaggedCastToDouble(value);
-        varAcc = DoubleBuildTaggedWithNoGC(DoubleSub(valueDouble, GetDoubleConstant(1.0)));
-        Jump(&accDispatch);
+    if (!env->IsAmd64()) {
+        Label valueIsDouble(env);
+        Label valueNotDouble(env);
+        Branch(TaggedIsDouble(value), &valueIsDouble, &valueNotDouble);
+        Bind(&valueIsDouble);
+        {
+            GateRef valueDouble = TaggedCastToDouble(value);
+            varAcc = DoubleBuildTaggedWithNoGC(DoubleSub(valueDouble, GetDoubleConstant(1.0)));
+            Jump(&accDispatch);
+        }
+        Bind(&valueNotDouble);
     }
-    Bind(&valueNotDouble);
     {
         // slow path
         GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(DecDyn)), { value });
@@ -4899,144 +4889,87 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::FLOAT64(), GetDoubleConstant(0.0));
+    DEFVARIABLE(opNumber1, VariableType::FLOAT64(), GetDoubleConstant(0.0));
 
     Label accDispatch(env);
+    Label doFloatAdd(env);
+    Label slowPath(env);
     Label leftIsNumber(env);
-    Label leftNotNumberOrRightNotNumber(env);
-    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Label rightIsNumber(env);
+    Label leftIsInt(env);
+    Label leftIsDouble(env);
+    Label rightIsInt(env);
+    Label rightIsDouble(env);
+    Label rightIsInt1(env);
+    Label rightIsDouble1(env);
+    Label overflow(env);
+    Label notOverflow(env);
+
+    Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
     Bind(&leftIsNumber);
     {
-        Label rightIsNumber(env);
-        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
         Bind(&rightIsNumber);
         {
-            Label leftIsInt(env);
-            Label leftIsDouble(env);
             Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
             Bind(&leftIsInt);
             {
-                Label rightIsInt(env);
-                Label rightIsDouble(env);
-
                 Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
                 Bind(&rightIsInt);
                 {
-                    opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = TaggedCastToInt32(right);
-                    Label leftIsZero(env);
-                    Label leftNotZero(env);
-                    Branch(Int32Equal(*opNumber0, GetInt32Constant(0)), &leftIsZero, &leftNotZero);
-                    Bind(&leftIsZero);
+                    auto res = Int64Add(TaggedCastToInt64(left), TaggedCastToInt64(right));
+                    auto condition1 = Int64GreaterThan(res, GetInt64Constant(INT32_MAX));
+                    auto condition2 = Int64LessThan(res, GetInt64Constant(INT32_MIN));
+                    Branch(BoolOr(condition1, condition2), &overflow, &notOverflow);
+                    Bind(&overflow);
                     {
-                        GateRef res = Int32Add(*opNumber0, *opNumber1);
-                        varAcc = IntBuildTaggedWithNoGC(res);
-                        Jump(&accDispatch);
+                        opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                        opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                        Jump(&doFloatAdd);
                     }
-                    Bind(&leftNotZero);
+                    Bind(&notOverflow);
                     {
-                        Label rightIsZero(env);
-                        Label rightNotZero(env);
-                        Branch(Int32Equal(*opNumber1, GetInt32Constant(0)), &rightIsZero, &rightNotZero);
-                        Bind(&rightIsZero);
-                        {
-                            GateRef res = Int32Add(*opNumber0, *opNumber1);
-                            varAcc = IntBuildTaggedWithNoGC(res);
-                            Jump(&accDispatch);
-                        }
-                        Bind(&rightNotZero);
-                        {
-                            Label leftIsPositive(env);
-                            Label leftIsNegative(env);
-                            Branch(Int32GreaterThan(*opNumber0, GetInt32Constant(0)), &leftIsPositive,
-                                &leftIsNegative);
-                            Bind(&leftIsPositive);
-                            {
-                                Label positiveOverflow(env);
-                                Label notPositiveOverflow(env);
-                                Branch(Int32GreaterThan(*opNumber1, Int32Sub(GetInt32Constant(INT32_MAX), *opNumber0)),
-                                    &positiveOverflow, &notPositiveOverflow);
-                                Bind(&positiveOverflow);
-                                {
-                                    GateRef opNumber0ToDouble = ChangeInt32ToFloat64(*opNumber0);
-                                    GateRef opNumber1ToDouble = ChangeInt32ToFloat64(*opNumber1);
-                                    GateRef res = DoubleAdd(opNumber0ToDouble, opNumber1ToDouble);
-                                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                                Bind(&notPositiveOverflow);
-                                {
-                                    GateRef res = Int32Add(*opNumber0, *opNumber1);
-                                    varAcc = IntBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                            }
-                            Bind(&leftIsNegative);
-                            {
-                                Label negativeOverflow(env);
-                                Label notNegativeOverflow(env);
-                                Branch(Int32LessThan(*opNumber1, Int32Sub(GetInt32Constant(INT32_MIN), *opNumber0)),
-                                    &negativeOverflow, &notNegativeOverflow);
-                                Bind(&negativeOverflow);
-                                {
-                                    GateRef opNumber0ToDouble = ChangeInt32ToFloat64(*opNumber0);
-                                    GateRef opNumber1ToDouble = ChangeInt32ToFloat64(*opNumber1);
-                                    GateRef res = DoubleAdd(opNumber0ToDouble, opNumber1ToDouble);
-                                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                                Bind(&notNegativeOverflow);
-                                {
-                                    GateRef res = Int32Add(*opNumber0, *opNumber1);
-                                    varAcc = IntBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                            }
-                        }
+                        varAcc = IntBuildTaggedWithNoGC(ChangeInt64ToInt32(res));
+                        Jump(&accDispatch);
                     }
                 }
                 Bind(&rightIsDouble);
                 {
-                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
                     opNumber1 = TaggedCastToDouble(right);
-                    GateRef opNumber0ToDouble = ChangeInt32ToFloat64(*opNumber0);
-                    GateRef res = DoubleAdd(opNumber0ToDouble, *opNumber1);
-                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                    Jump(&accDispatch);
+                    Jump(&doFloatAdd);
                 }
             }
             Bind(&leftIsDouble);
             {
-                Label rightIsInt(env);
-                Label rightIsDouble(env);
-                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
-                Bind(&rightIsInt);
+                Branch(TaggedIsInt(right), &rightIsInt1, &rightIsDouble1);
+                Bind(&rightIsInt1);
                 {
                     opNumber0 = TaggedCastToDouble(left);
-                    opNumber1 = TaggedCastToInt32(right);
-                    GateRef opNumber1ToDouble = ChangeInt32ToFloat64(*opNumber1);
-                    GateRef res = DoubleAdd(opNumber1ToDouble, *opNumber0);
-                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                    Jump(&accDispatch);
+                    opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                    Jump(&doFloatAdd);
                 }
-                Bind(&rightIsDouble);
+                Bind(&rightIsDouble1);
                 {
-                    GateRef rightDouble = TaggedCastToDouble(right);
-                    GateRef leftDouble = TaggedCastToDouble(left);
-                    GateRef res = DoubleAdd(leftDouble, rightDouble);
-                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                    Jump(&accDispatch);
+                    opNumber0 = TaggedCastToDouble(left);
+                    opNumber1 = TaggedCastToDouble(right);
+                    Jump(&doFloatAdd);
                 }
             }
         }
     }
+    Bind(&doFloatAdd);
+    {
+        auto res = DoubleAdd(*opNumber0, *opNumber1);
+        varAcc = DoubleBuildTaggedWithNoGC(res);
+        Jump(&accDispatch);
+    }
     // slow path
-    Bind(&leftNotNumberOrRightNotNumber);
+    Bind(&slowPath);
     {
         GateRef taggedNumber = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Add2Dyn)),
                                                      { left, right });
-
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -5063,17 +4996,27 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
+    DEFVARIABLE(opNumber0, VariableType::FLOAT64(), GetDoubleConstant(0.0));
+    DEFVARIABLE(opNumber1, VariableType::FLOAT64(), GetDoubleConstant(0.0));
 
     Label accDispatch(env);
+    Label doFloatSub(env);
+    Label slowPath(env);
     Label leftIsNumber(env);
-    Label leftNotNumberOrRightNotNumber(env);
-    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
+    Label rightIsNumber(env);
+    Label leftIsInt(env);
+    Label leftIsDouble(env);
+    Label rightIsInt(env);
+    Label rightIsDouble(env);
+    Label rightIsInt1(env);
+    Label rightIsDouble1(env);
+    Label overflow(env);
+    Label notOverflow(env);
+
+    Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
     Bind(&leftIsNumber);
     {
-        Label rightIsNumber(env);
-        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
+        Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
         Bind(&rightIsNumber);
         {
             Label leftIsInt(env);
@@ -5081,124 +5024,61 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
             Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
             Bind(&leftIsInt);
             {
-                Label rightIsInt(env);
-                Label rightIsDouble(env);
                 Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
                 Bind(&rightIsInt);
                 {
-                    opNumber0 = TaggedCastToInt32(left);
-                    opNumber1 = Int32Sub(GetInt32Constant(0), TaggedCastToInt32(right));
-                    Label leftIsZero(env);
-                    Label leftNotZero(env);
-                    Branch(Int32Equal(*opNumber0, GetInt32Constant(0)), &leftIsZero, &leftNotZero);
-                    Bind(&leftIsZero);
+                    auto res = Int64Sub(TaggedCastToInt64(left), TaggedCastToInt64(right));
+                    auto condition1 = Int64GreaterThan(res, GetInt64Constant(INT32_MAX));
+                    auto condition2 = Int64LessThan(res, GetInt64Constant(INT32_MIN));
+                    Branch(BoolOr(condition1, condition2), &overflow, &notOverflow);
+                    Bind(&overflow);
                     {
-                        GateRef res = Int32Add(*opNumber0, *opNumber1);
-                        varAcc = IntBuildTaggedWithNoGC(res);
-                        Jump(&accDispatch);
+                        opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                        opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                        Jump(&doFloatSub);
                     }
-                    Bind(&leftNotZero);
+                    Bind(&notOverflow);
                     {
-                        Label rightIsZero(env);
-                        Label rightNotZero(env);
-                        Branch(Int32Equal(*opNumber1, GetInt32Constant(0)), &rightIsZero, &rightNotZero);
-                        Bind(&rightIsZero);
-                        {
-                            GateRef res = Int32Add(*opNumber0, *opNumber1);
-                            varAcc = IntBuildTaggedWithNoGC(res);
-                            Jump(&accDispatch);
-                        }
-                        Bind(&rightNotZero);
-                        {
-                            Label leftIsPositive(env);
-                            Label leftIsNegative(env);
-                            Branch(Int32GreaterThan(*opNumber0, GetInt32Constant(0)), &leftIsPositive, &leftIsNegative);
-                            Bind(&leftIsPositive);
-                            {
-                                Label positiveOverflow(env);
-                                Label notPositiveOverflow(env);
-                                Branch(Int32GreaterThan(*opNumber1, Int32Sub(GetInt32Constant(INT32_MAX), *opNumber0)),
-                                    &positiveOverflow, &notPositiveOverflow);
-                                Bind(&positiveOverflow);
-                                {
-                                    GateRef opNumber0ToDouble = ChangeInt32ToFloat64(*opNumber0);
-                                    GateRef opNumber1ToDouble = ChangeInt32ToFloat64(*opNumber1);
-                                    GateRef res = DoubleAdd(opNumber0ToDouble, opNumber1ToDouble);
-                                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                                Bind(&notPositiveOverflow);
-                                {
-                                    GateRef res = Int32Add(*opNumber0, *opNumber1);
-                                    varAcc = IntBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                            }
-                            Bind(&leftIsNegative);
-                            {
-                                Label negativeOverflow(env);
-                                Label notNegativeOverflow(env);
-                                Branch(Int32LessThan(*opNumber1, Int32Sub(GetInt32Constant(INT32_MIN), *opNumber0)),
-                                    &negativeOverflow, &notNegativeOverflow);
-                                Bind(&negativeOverflow);
-                                {
-                                    GateRef opNumber0ToDouble = ChangeInt32ToFloat64(*opNumber0);
-                                    GateRef opNumber1ToDouble = ChangeInt32ToFloat64(*opNumber1);
-                                    GateRef res = DoubleAdd(opNumber0ToDouble, opNumber1ToDouble);
-                                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                                Bind(&notNegativeOverflow);
-                                {
-                                    GateRef res = Int32Add(*opNumber0, *opNumber1);
-                                    varAcc = IntBuildTaggedWithNoGC(res);
-                                    Jump(&accDispatch);
-                                }
-                            }
-                        }
+                        varAcc = IntBuildTaggedWithNoGC(ChangeInt64ToInt32(res));
+                        Jump(&accDispatch);
                     }
                 }
                 Bind(&rightIsDouble);
                 {
-                    opNumber0 = TaggedCastToInt32(left);
+                    opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
                     opNumber1 = TaggedCastToDouble(right);
-                    GateRef opNumber0ToDouble = ChangeInt32ToFloat64(*opNumber0);
-                    GateRef res = DoubleSub(opNumber0ToDouble, *opNumber1);
-                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                    Jump(&accDispatch);
+                    Jump(&doFloatSub);
                 }
             }
             Bind(&leftIsDouble);
             {
-                Label rightIsInt(env);
-                Label rightIsDouble(env);
-                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
-                Bind(&rightIsInt);
+                Branch(TaggedIsInt(right), &rightIsInt1, &rightIsDouble1);
+                Bind(&rightIsInt1);
                 {
                     opNumber0 = TaggedCastToDouble(left);
-                    opNumber1 = TaggedCastToInt32(right);
-                    GateRef opNumber1ToDouble = ChangeInt32ToFloat64(*opNumber1);
-                    GateRef res = DoubleSub(opNumber1ToDouble, *opNumber0);
-                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                    Jump(&accDispatch);
+                    opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                    Jump(&doFloatSub);
                 }
-                Bind(&rightIsDouble);
+                Bind(&rightIsDouble1);
                 {
-                    GateRef rightDouble = TaggedCastToDouble(right);
-                    GateRef leftDouble = TaggedCastToDouble(left);
-                    GateRef res = DoubleSub(leftDouble, rightDouble);
-                    varAcc = DoubleBuildTaggedWithNoGC(res);
-                    Jump(&accDispatch);
+                    opNumber0 = TaggedCastToDouble(left);
+                    opNumber1 = TaggedCastToDouble(right);
+                    Jump(&doFloatSub);
                 }
             }
         }
     }
+    Bind(&doFloatSub);
+    {
+        auto res = DoubleSub(*opNumber0, *opNumber1);
+        varAcc = DoubleBuildTaggedWithNoGC(res);
+        Jump(&accDispatch);
+    }
     // slow path
-    Bind(&leftNotNumberOrRightNotNumber);
+    Bind(&slowPath);
     {
         GateRef taggedNumber = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(Sub2Dyn)),
                                                      { left, right });
-
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
