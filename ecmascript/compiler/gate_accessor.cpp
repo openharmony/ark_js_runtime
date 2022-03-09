@@ -88,4 +88,22 @@ void GateAccessor::ReplaceIn(UsesIterator &useIt, GateRef replaceGate)
     curGatePtr->ModifyIn(useIt.GetIndex(), replaceGatePtr);
     useIt.SetChanged();
 }
+
+GateType GateAccessor::GetGateType(GateRef gate)
+{
+    return circuit_->LoadGatePtr(gate)->GetGateType();
+}
+
+void GateAccessor::SetGateType(GateRef gate, GateType gt)
+{
+    circuit_->LoadGatePtr(gate)->SetGateType(gt);
+}
+
+void GateAccessor::DeleteIn(UsesIterator &useIt)
+{
+    size_t idx = useIt.GetIndex();
+    Gate *curGatePtr = circuit_->LoadGatePtr(*useIt);
+    curGatePtr->DeleteIn(idx);
+    useIt.SetChanged();
+}
 }
