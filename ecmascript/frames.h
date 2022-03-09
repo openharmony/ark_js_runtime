@@ -255,6 +255,8 @@ public:
     static constexpr int AARCH64_SLOT_SIZE = sizeof(uint64_t);
     static constexpr int AMD64_SLOT_SIZE = sizeof(uint64_t);
     static constexpr int ARM32_SLOT_SIZE = sizeof(uint32_t);
+    static constexpr int CALLSITE_SP_TO_FP_DELTA_OFFSET = \
+        CALLSITE_SP_TO_FP_DELTA * static_cast<int>(sizeof(uintptr_t));
 };
 
 class OptimizedFrameBase {

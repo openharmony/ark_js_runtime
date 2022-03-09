@@ -155,7 +155,7 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     PrintCallSiteInfo(infos, fp);
 #endif
     uintptr_t callsiteFp = *fp;
-    uintptr_t callsiteSp = callsiteFp + FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t);
+    uintptr_t callsiteSp = callsiteFp + FrameConstants::CALLSITE_SP_TO_FP_DELTA_OFFSET;
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
