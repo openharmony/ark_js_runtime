@@ -204,6 +204,8 @@
 // get bar's Frame by baz's frame fp field
 // get foo's Frame by bar's Frame prev field
 
+#include "ecmascript/base/aligned_struct.h"
+
 namespace panda::ecmascript {
 class JSThread;
 enum class FrameType: uint64_t  {
@@ -303,49 +305,42 @@ public:
     }
 };
 
-#define INTERPRETED_FRAME_OFFSET_LIST(V)                                                            \
-    V(SP, PC, sizeof(uint32_t), sizeof(uint64_t))                                                   \
-    V(CONSTPOOL, SP, sizeof(uint32_t), sizeof(uint64_t))                                            \
-    V(FUNCTION, CONSTPOOL, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())        \
-    V(PROFILETYPEINFO, FUNCTION, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())  \
-    V(ACC, PROFILETYPEINFO, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())       \
-    V(ENV, ACC, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                   \
-    V(BASE, ENV, JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                  \
-
-static constexpr uint32_t INTERPRETED_FRAME_PC_OFFSET_32 = 0U;
-static constexpr uint32_t INTERPRETED_FRAME_PC_OFFSET_64 = 0U;
-#define INTERPRETED_FRAME_OFFSET_MACRO(name, lastName, lastSize32, lastSize64) \
-    static constexpr uint32_t INTERPRETED_FRAME_##name##_OFFSET_32 =           \
-        INTERPRETED_FRAME_##lastName##_OFFSET_32 + (lastSize32);               \
-    static constexpr uint32_t INTERPRETED_FRAME_##name##_OFFSET_64 =           \
-        INTERPRETED_FRAME_##lastName##_OFFSET_64 + (lastSize64);
-INTERPRETED_FRAME_OFFSET_LIST(INTERPRETED_FRAME_OFFSET_MACRO)
-#undef INTERPRETED_FRAME_OFFSET_MACRO
-static constexpr uint32_t SIZEOF_INTERPRETED_FRAME_32 = INTERPRETED_FRAME_ENV_OFFSET_32 +
-    JSTaggedValue::TaggedTypeSize() + sizeof(uint32_t) + sizeof(uint64_t);
-static constexpr uint32_t SIZEOF_INTERPRETED_FRAME_64 = INTERPRETED_FRAME_ENV_OFFSET_64 +
-    JSTaggedValue::TaggedTypeSize() + sizeof(uint64_t) + sizeof(uint64_t);
-
 class InterpretedFrameBase {
 public:
     InterpretedFrameBase() = default;
     ~InterpretedFrameBase() = default;
     JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     FrameType type;
+    static constexpr size_t SizeArch32 = 2 * sizeof(JSTaggedType *) + sizeof(FrameType); // 2: padding for arm32
+    static constexpr size_t SizeArch64 = sizeof(JSTaggedType *) + sizeof(FrameType);
 };
+STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase), InterpretedFrameBase::SizeArch32, InterpretedFrameBase::SizeArch64);
 
 // align with 8
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-struct InterpretedFrame {
-    const uint8_t *pc;
-    JSTaggedType *sp;
-    // aligned with 8 bits
-    alignas(sizeof(uint64_t)) JSTaggedValue constpool;
-    JSTaggedValue function;
-    JSTaggedValue profileTypeInfo;
-    JSTaggedValue acc;
-    JSTaggedValue env;
-    InterpretedFrameBase base;
+struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                     base::AlignedPointer,
+                                                     base::AlignedPointer,
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
+                                                     JSTaggedValue,
+                                                     InterpretedFrameBase> {
+    enum class Index : size_t {
+        PcIndex = 0,
+        SpIndex,
+        ConstPoolIndex,
+        FunctionIndex,
+        ProFileTypeInfoIndex,
+        AccIndex,
+        EnvIndex,
+        BaseIndex,
+        NumOfMembers
+    };
+
+    static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
     inline JSTaggedType* GetPrevFrameFp()
     {
         return base.prev;
@@ -356,75 +351,58 @@ struct InterpretedFrame {
         return reinterpret_cast<InterpretedFrame *>(sp) - 1;
     }
 
-    static constexpr uint32_t GetSpOffset(bool isArch32)
+    static uint32_t GetSpOffset(bool isArch32)
     {
-        if (isArch32) {
-            return INTERPRETED_FRAME_SP_OFFSET_32;
-        }
-        return INTERPRETED_FRAME_SP_OFFSET_64;
+        return GetOffset<static_cast<size_t>(Index::SpIndex)>(isArch32);
     }
 
-    static constexpr uint32_t GetConstpoolOffset(bool isArch32)
+    static uint32_t GetConstpoolOffset(bool isArch32)
     {
-        if (isArch32) {
-            return INTERPRETED_FRAME_CONSTPOOL_OFFSET_32;
-        }
-        return INTERPRETED_FRAME_CONSTPOOL_OFFSET_64;
+        return GetOffset<static_cast<size_t>(Index::ConstPoolIndex)>(isArch32);
     }
 
-    static constexpr uint32_t GetFunctionOffset(bool isArch32)
+    static uint32_t GetFunctionOffset(bool isArch32)
     {
-        if (isArch32) {
-            return INTERPRETED_FRAME_FUNCTION_OFFSET_32;
-        }
-        return INTERPRETED_FRAME_FUNCTION_OFFSET_64;
+        return GetOffset<static_cast<size_t>(Index::FunctionIndex)>(isArch32);
     }
 
-    static constexpr uint32_t GetProfileTypeInfoOffset(bool isArch32)
+    static uint32_t GetProfileTypeInfoOffset(bool isArch32)
     {
-        if (isArch32) {
-            return INTERPRETED_FRAME_PROFILETYPEINFO_OFFSET_32;
-        }
-        return INTERPRETED_FRAME_PROFILETYPEINFO_OFFSET_64;
+        return GetOffset<static_cast<size_t>(Index::ProFileTypeInfoIndex)>(isArch32);
     }
 
-    static constexpr uint32_t GetAccOffset(bool isArch32)
+    static uint32_t GetAccOffset(bool isArch32)
     {
-        if (isArch32) {
-            return INTERPRETED_FRAME_ACC_OFFSET_32;
-        }
-        return INTERPRETED_FRAME_ACC_OFFSET_64;
+        return GetOffset<static_cast<size_t>(Index::AccIndex)>(isArch32);
     }
 
-    static constexpr uint32_t GetEnvOffset(bool isArch32)
+    static uint32_t GetEnvOffset(bool isArch32)
     {
-        if (isArch32) {
-            return INTERPRETED_FRAME_ENV_OFFSET_32;
-        }
-        return INTERPRETED_FRAME_ENV_OFFSET_64;
+        return GetOffset<static_cast<size_t>(Index::EnvIndex)>(isArch32);
     }
     
-    static constexpr uint32_t GetBaseOffset(bool isArch32)
+    static uint32_t GetBaseOffset(bool isArch32)
     {
-        if (isArch32) {
-            return INTERPRETED_FRAME_BASE_OFFSET_32;
-        }
-        return INTERPRETED_FRAME_BASE_OFFSET_64;
+        return GetOffset<static_cast<size_t>(Index::BaseIndex)>(isArch32);
     }
 
     static constexpr uint32_t GetSize(bool isArch32)
     {
-        if (isArch32) {
-            return kSizeOn32Platform;
-        }
-        return kSizeOn64Platform;
+        return isArch32 ? InterpretedFrame::SizeArch32 : InterpretedFrame::SizeArch64;
     }
 
-    static constexpr uint32_t kSizeOn64Platform =
-        2 * sizeof(int64_t) + 5 * sizeof(JSTaggedValue) + 2 * sizeof(uint64_t);
-    static constexpr uint32_t kSizeOn32Platform =
-        2 * sizeof(int32_t) + 5 * sizeof(JSTaggedValue) + 2 * sizeof(uint64_t);
+    alignas(EAS) const uint8_t *pc {nullptr};
+    alignas(EAS) JSTaggedType *sp {nullptr};
+    alignas(EAS) JSTaggedValue constpool {JSTaggedValue::Hole()};
+    alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
+    alignas(EAS) JSTaggedValue profileTypeInfo {JSTaggedValue::Hole()};
+    alignas(EAS) JSTaggedValue acc {JSTaggedValue::Hole()};
+    alignas(EAS) JSTaggedValue env {JSTaggedValue::Hole()};
+    alignas(EAS) InterpretedFrameBase base;
 };
+
+STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrame), InterpretedFrame::SizeArch32, InterpretedFrame::SizeArch64);
+
 static_assert(sizeof(InterpretedFrame) % sizeof(uint64_t) == 0u);
 
 struct OptimizedLeaveFrame {
@@ -455,14 +433,10 @@ static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_FRAME) == OPTIMIZE_FRAM
 static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_ENTRY_FRAME) == JS_ENTRY_FRAME_TYPE);
 static_assert(static_cast<uint64_t>(FrameType::OPTIMIZED_LEAVE_FRAME) == LEAVE_FRAME_TYPE);
 #ifdef PANDA_TARGET_64
-    static_assert(InterpretedFrame::kSizeOn64Platform == sizeof(InterpretedFrame));
     static_assert(OptimizedFrame::GetCallsiteSpToFpDelta() ==
         FrameConstants::CALLSITE_SP_TO_FP_DELTA * sizeof(uintptr_t));
     static_assert(OptimizedEntryFrame::GetInterpreterFrameFpToFpDelta() ==
         FrameConstants::INTERPER_FRAME_FP_TO_FP_DELTA * sizeof(uintptr_t));
-#endif
-#ifdef PANDA_TARGET_32
-    static_assert(InterpretedFrame::kSizeOn32Platform == sizeof(InterpretedFrame));
 #endif
 }  // namespace panda::ecmascript
 #endif // ECMASCRIPT_FRAMES_H
