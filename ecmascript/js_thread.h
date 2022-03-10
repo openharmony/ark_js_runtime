@@ -17,7 +17,7 @@
 #define ECMASCRIPT_JS_THREAD_H
 
 #include "include/managed_thread.h"
-
+#include "ecmascript/base/aligned_struct.h"
 #include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/dfx/vm_thread_control.h"
 #include "ecmascript/ecma_global_storage.h"
@@ -30,17 +30,73 @@ class EcmaVM;
 class HeapRegionAllocator;
 class InternalCallParams;
 class PropertiesCache;
+
 enum class MarkStatus : uint8_t {
     READY_TO_MARK,
     MARKING,
     MARK_FINISHED,
 };
 
+struct BCHandlers {
+    static constexpr size_t MAX_BYTECODE_HANDLERS = 0x100;
+    Address handlers_[MAX_BYTECODE_HANDLERS];
+
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * MAX_BYTECODE_HANDLERS;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * MAX_BYTECODE_HANDLERS;
+
+    void Set(size_t index, Address addr)
+    {
+        assert(index < MAX_BYTECODE_HANDLERS);
+        handlers_[index] = addr;
+    }
+
+    Address* GetAddr()
+    {
+        return reinterpret_cast<Address*>(handlers_);
+    }
+};
+STATIC_ASSERT_EQ_ARCH(sizeof(BCHandlers), BCHandlers::SizeArch32, BCHandlers::SizeArch64);
+
+struct RTInterfaces {
+    static constexpr size_t MAX_RUNTIME_FUNCTIONS = kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT;
+    Address interfaces_[MAX_RUNTIME_FUNCTIONS];
+
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * MAX_RUNTIME_FUNCTIONS;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * MAX_RUNTIME_FUNCTIONS;
+
+    void Set(size_t index, Address addr)
+    {
+        assert(index < MAX_RUNTIME_FUNCTIONS);
+        interfaces_[index] = addr;
+    }
+};
+STATIC_ASSERT_EQ_ARCH(sizeof(RTInterfaces), RTInterfaces::SizeArch32, RTInterfaces::SizeArch64);
+
+struct StubEntries {
+    Address entries_[kungfu::FAST_STUB_MAXCOUNT];
+
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * kungfu::FAST_STUB_MAXCOUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * kungfu::FAST_STUB_MAXCOUNT;
+
+    void Set(size_t index, Address addr)
+    {
+        assert(index < kungfu::FAST_STUB_MAXCOUNT);
+        entries_[index] = addr;
+    }
+
+    Address Get(size_t index)
+    {
+        assert(index < kungfu::FAST_STUB_MAXCOUNT);
+        return entries_[index];
+    }
+};
+STATIC_ASSERT_EQ_ARCH(sizeof(StubEntries), StubEntries::SizeArch32, StubEntries::SizeArch64);
+
 class JSThread : public ManagedThread {
 public:
     static constexpr int CONCURRENT_MARKING_BITFIELD_NUM = 2;
     using MarkStatusBits = BitField<MarkStatus, 0, CONCURRENT_MARKING_BITFIELD_NUM>;
-    using Address = uintptr_t;
+
     static JSThread *Cast(ManagedThread *thread)
     {
         ASSERT(thread != nullptr);
@@ -67,22 +123,22 @@ public:
 
     const JSTaggedType *GetCurrentSPFrame() const
     {
-        return currentFrame_;
+        return glueData_.currentFrame_;
     }
 
     void SetCurrentSPFrame(JSTaggedType *sp)
     {
-        currentFrame_ = sp;
+        glueData_.currentFrame_ = sp;
     }
 
     const JSTaggedType *GetLastLeaveFrame() const
     {
-        return leaveFrame_;
+        return glueData_.leaveFrame_;
     }
 
     void SetLastLeaveFrame(JSTaggedType *sp)
     {
-        leaveFrame_ = sp;
+        glueData_.leaveFrame_ = sp;
     }
 
     bool DoStackOverflowCheck(const JSTaggedType *sp);
@@ -141,12 +197,12 @@ public:
 
     JSTaggedValue GetException() const
     {
-        return exception_;
+        return glueData_.exception_;
     }
 
     bool HasPendingException() const
     {
-        return !exception_.IsHole();
+        return !glueData_.exception_.IsHole();
     }
 
     void ClearException();
@@ -158,12 +214,12 @@ public:
 
     void SetGlobalObject(JSTaggedValue globalObject)
     {
-        globalObject_ = globalObject;
+        glueData_.globalObject_ = globalObject;
     }
 
     const GlobalEnvConstants *GlobalConstants() const
     {
-        return &globalConst_;
+        return &glueData_.globalConst_;
     }
 
     void NotifyStableArrayElementsGuardians(JSHandle<JSObject> receiver);
@@ -177,27 +233,25 @@ public:
 
     JSTaggedValue GetCurrentLexenv() const;
 
-    void SetRuntimeFunction(uint32_t id, Address functionAddress)
+    void SetRuntimeFunction(size_t id, Address addr)
     {
         ASSERT(id < kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT);
-        runtimeFunctions_[id] = functionAddress;
+        glueData_.rtInterfaces_.Set(id, addr);
     }
 
     Address GetFastStubEntry(uint32_t id)
     {
-        ASSERT(id < kungfu::FAST_STUB_MAXCOUNT);
-        return fastStubEntries_[id];
+        return glueData_.stubEntries_.Get(id);
     }
 
-    void SetFastStubEntry(uint32_t id, Address entry)
+    void SetFastStubEntry(size_t id, Address entry)
     {
-        ASSERT(id < kungfu::FAST_STUB_MAXCOUNT);
-        fastStubEntries_[id] = entry;
+        glueData_.stubEntries_.Set(id, entry);
     }
 
     Address *GetBytecodeHandler()
     {
-        return &bytecodeHandlers_[0];
+        return glueData_.bcHandlers_.GetAddr();
     }
 
     void InitializeFastRuntimeStubs();
@@ -224,51 +278,6 @@ public:
     PropertiesCache *GetPropertiesCache() const
     {
         return propertiesCache_;
-    }
-
-    static constexpr uint32_t GetPropertiesCacheOffset()
-    {
-        return MEMBER_OFFSET(JSThread, propertiesCache_);
-    }
-
-    static constexpr uint32_t GetGlobalObjectOffset()
-    {
-        return MEMBER_OFFSET(JSThread, globalObject_);
-    }
-
-    static constexpr uint32_t GetGlobalConstantsOffset()
-    {
-        return MEMBER_OFFSET(JSThread, globalConst_);
-    }
-
-    static constexpr uint32_t GetGlobalStorageOffset()
-    {
-        return MEMBER_OFFSET(JSThread, globalStorage_);
-    }
-
-    static constexpr uint32_t GetCurrentFrameOffset()
-    {
-        return MEMBER_OFFSET(JSThread, currentFrame_);
-    }
-
-    static constexpr uint32_t GetLeaveFrameOffset()
-    {
-        return MEMBER_OFFSET(JSThread, leaveFrame_);
-    }
-
-    static constexpr uint32_t GetRuntimeFunctionsOffset()
-    {
-        return MEMBER_OFFSET(JSThread, runtimeFunctions_);
-    }
-
-    static constexpr uint32_t GetFastStubEntriesOffset()
-    {
-        return MEMBER_OFFSET(JSThread, fastStubEntries_);
-    }
-
-    static constexpr uint32_t GetBytecodeHandlersOffset()
-    {
-        return MEMBER_OFFSET(JSThread, bytecodeHandlers_);
     }
 
     void SetMarkStatus(MarkStatus status)
@@ -321,42 +330,96 @@ public:
         return vmThreadControl_;
     }
 
-    static constexpr uint32_t GetExceptionOffset()
+    static constexpr size_t GetGlueDataOffset()
     {
-        return MEMBER_OFFSET(JSThread, exception_);
+        return MEMBER_OFFSET(JSThread, glueData_);
     }
 
     uintptr_t GetGlueAddr() const
     {
-        return reinterpret_cast<uintptr_t>(this) + GetExceptionOffset();
+        return reinterpret_cast<uintptr_t>(this) + GetGlueDataOffset();
     }
 
     static JSThread *GlueToJSThread(uintptr_t glue)
     {
         // very careful to modify here
-        return reinterpret_cast<JSThread *>(glue - GetExceptionOffset());
+        return reinterpret_cast<JSThread *>(glue - GetGlueDataOffset());
     }
 
-    static constexpr uint32_t MAX_RUNTIME_FUNCTIONS = kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT;
-    static constexpr uint32_t MAX_BYTECODE_HANDLERS = 0x100;
-    // The sequence must be the same as that of the GLUE members.
-    enum class GlueID : uint8_t {
-        EXCEPTION = 0U,
-        GLOBAL_OBJECT,
-        GLOBAL_CONST,
-        PROPERTIES_CACHE,
-        GLOBAL_STORAGE,
-        CURRENT_FRAME,
-        LEAVE_FRAME,
-        BYTECODE_HANDLERS,
-        RUNTIME_FUNCTIONS,
-        FAST_STUB_ENTRIES,
-        FRAME_STATE_SIZE,
-        GLUE_FRAME_CONSTPOOL,
-        GLUE_FRAME_PROFILE,
-        GLUE_FRAME_ACC,
-        NUMBER_OF_GLUE,
+    struct GlueData : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
+                                                 JSTaggedValue,
+                                                 JSTaggedValue,
+                                                 GlobalEnvConstants,
+                                                 base::AlignedPointer,
+                                                 base::AlignedPointer,
+                                                 BCHandlers,
+                                                 RTInterfaces,
+                                                 StubEntries> {
+        enum class Index : size_t {
+            ExceptionIndex = 0,
+            GlobalObjIndex,
+            GlobalConstIndex,
+            CurrentFrameIndex,
+            LeaveFrameIndex,
+            BCHandlersIndex,
+            RTInterfacesIndex,
+            StubEntriesIndex,
+            NumOfMembers
+        };
+        static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
+
+        static size_t GetExceptionOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::ExceptionIndex)>(isArch32);
+        }
+
+        static size_t GetGlobalObjOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::GlobalObjIndex)>(isArch32);
+        }
+
+        static size_t GetGlobalConstOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::GlobalConstIndex)>(isArch32);
+        }
+
+        static size_t GetCurrentFrameOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::CurrentFrameIndex)>(isArch32);
+        }
+
+        static size_t GetLeaveFrameOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::LeaveFrameIndex)>(isArch32);
+        }
+
+        static size_t GetBCHandlersOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::BCHandlersIndex)>(isArch32);
+        }
+
+        static size_t GetRTInterfacesOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::RTInterfacesIndex)>(isArch32);
+        }
+
+        static size_t GetStubEntriesOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::StubEntriesIndex)>(isArch32);
+        }
+
+        alignas(EAS) JSTaggedValue exception_ {JSTaggedValue::Hole()};
+        alignas(EAS) JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
+        alignas(EAS) GlobalEnvConstants globalConst_;
+        alignas(EAS) JSTaggedType *currentFrame_ {nullptr};
+        alignas(EAS) JSTaggedType *leaveFrame_ {nullptr};
+        alignas(EAS) BCHandlers bcHandlers_;
+        alignas(EAS) RTInterfaces rtInterfaces_;
+        alignas(EAS) StubEntries stubEntries_;
     };
+    static_assert(MEMBER_OFFSET(GlueData, rtInterfaces_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
+    static_assert(MEMBER_OFFSET(GlueData, currentFrame_) == ASM_GLUE_CURRENT_FRAME_OFFSET);
+    STATIC_ASSERT_EQ_ARCH(sizeof(GlueData), GlueData::SizeArch32, GlueData::SizeArch64);
 
 private:
     NO_COPY_SEMANTIC(JSThread);
@@ -381,6 +444,9 @@ private:
     int32_t handleScopeCount_ {0};
     JSTaggedValue stubCode_ {JSTaggedValue::Hole()};
 
+    PropertiesCache *propertiesCache_ {nullptr};
+    EcmaGlobalStorage *globalStorage_ {nullptr};
+
     // Run-time state
     bool getStackSignal_ {false};
     bool gcState_ {false};
@@ -390,73 +456,10 @@ private:
     JSTaggedType *frameBase_ {nullptr};
     bool stableArrayElementsGuardians_ {true};
     InternalCallParams *internalCallParams_ {nullptr};
-
-    // GLUE members start, very careful to modify here
-    JSTaggedValue exception_ {JSTaggedValue::Hole()};
-    JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
-    GlobalEnvConstants globalConst_;  // Place-Holder
-    PropertiesCache *propertiesCache_ {nullptr};
-    EcmaGlobalStorage *globalStorage_ {nullptr};
-    JSTaggedType *currentFrame_ {nullptr};
-    JSTaggedType *leaveFrame_ {0};
-    Address bytecodeHandlers_[MAX_BYTECODE_HANDLERS];
-    Address runtimeFunctions_[MAX_RUNTIME_FUNCTIONS];
-    Address fastStubEntries_[kungfu::FAST_STUB_MAXCOUNT];
+    GlueData glueData_;
 
     friend class EcmaHandleScope;
     friend class GlobalHandleCollection;
 };
-
-#define GLUE_OFFSET_LIST(V)                                                                      \
-    V(GLOBAL_OBJECT, GlobalObject, EXCEPTION,                                                    \
-        JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                        \
-    V(GLOBAL_CONSTANTS, GlobalConstants, GLOBAL_OBJECT,                                          \
-        JSTaggedValue::TaggedTypeSize(), JSTaggedValue::TaggedTypeSize())                        \
-    V(PROPERTIES_CACHE, PropertiesCache, GLOBAL_CONSTANTS,                                       \
-        static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize(), \
-        static_cast<uint32_t>(ConstantIndex::CONSTATNT_COUNT) * JSTaggedValue::TaggedTypeSize()) \
-    V(GLOBAL_STORAGE, GlobalStorage, PROPERTIES_CACHE, sizeof(uint32_t), sizeof(uint64_t))       \
-    V(CURRENT_FRAME, CurrentFrame, GLOBAL_STORAGE, sizeof(uint32_t), sizeof(uint64_t))           \
-    V(LEAVE_FRAME, LeaveFrame, CURRENT_FRAME, sizeof(uint32_t), sizeof(uint64_t))                \
-    V(BYTECODE_HANDLERS, BytecodeHandlers, LEAVE_FRAME, sizeof(uint32_t), sizeof(uint64_t))      \
-    V(RUNTIME_FUNCTIONS, RuntimeFunctions, BYTECODE_HANDLERS,                                    \
-        JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint32_t),                                      \
-        JSThread::MAX_BYTECODE_HANDLERS * sizeof(uint64_t))                                      \
-    V(FASTSTUB_ENTRIES, FastStubEntries, RUNTIME_FUNCTIONS,                                      \
-        JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint32_t),                                      \
-        JSThread::MAX_RUNTIME_FUNCTIONS * sizeof(uint64_t))                                      \
-
-static constexpr uint32_t GLUE_EXCEPTION_OFFSET_32 = 0U;
-static constexpr uint32_t GLUE_EXCEPTION_OFFSET_64 = 0U;
-#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                        \
-    static constexpr uint32_t GLUE_##name##_OFFSET_32 = GLUE_##lastName##_OFFSET_32 + (lastSize32); \
-    static constexpr uint32_t GLUE_##name##_OFFSET_64 = GLUE_##lastName##_OFFSET_64 + (lastSize64);
-GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
-#undef GLUE_OFFSET_MACRO
-
-// static check asm glue offset macro
-#include "trampoline/asm_defines.h"
-
-#ifdef PANDA_TARGET_32
-#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
-static_assert(GLUE_##name##_OFFSET_32 ==                                                       \
-    (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
-GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
-#undef GLUE_OFFSET_MACRO
-// check asm glue offset definition samed with clang
-static_assert(GLUE_CURRENT_FRAME_OFFSET_32 == ASM_GLUE_CURRENT_FRAME_OFFSET);
-static_assert(GLUE_RUNTIME_FUNCTIONS_OFFSET_32 == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
-#endif
-
-#ifdef PANDA_TARGET_64
-#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64)                   \
-static_assert(GLUE_##name##_OFFSET_64 ==                                                       \
-    (JSThread::Get##camelName##Offset() - JSThread::GetExceptionOffset()));
-GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
-#undef GLUE_OFFSET_MACRO
-// check asm glue offset definition samed with clang
-static_assert(GLUE_CURRENT_FRAME_OFFSET_64 == ASM_GLUE_CURRENT_FRAME_OFFSET);
-static_assert(GLUE_RUNTIME_FUNCTIONS_OFFSET_64 == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
-#endif
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JS_THREAD_H

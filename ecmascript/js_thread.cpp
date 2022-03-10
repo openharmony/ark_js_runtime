@@ -33,7 +33,7 @@ JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
     // algin with 16
     jsThread->frameBase_ = static_cast<JSTaggedType *>(
         EcmaVM::Cast(vm)->GetNativeAreaAllocator()->Allocate(sizeof(JSTaggedType) * MAX_STACK_SIZE));
-    jsThread->currentFrame_ = jsThread->frameBase_ + MAX_STACK_SIZE;
+    jsThread->glueData_.currentFrame_ = jsThread->frameBase_ + MAX_STACK_SIZE;
     JSThread::SetCurrent(jsThread);
     EcmaInterpreter::InitStackFrame(jsThread);
     return jsThread;
@@ -87,17 +87,17 @@ EcmaVM *JSThread::GetEcmaVM() const
 
 void JSThread::SetException(JSTaggedValue exception)
 {
-    exception_ = exception;
+    glueData_.exception_ = exception;
 }
 
 void JSThread::ClearException()
 {
-    exception_ = JSTaggedValue::Hole();
+    glueData_.exception_ = JSTaggedValue::Hole();
 }
 
 JSTaggedValue JSThread::GetCurrentLexenv() const
 {
-    return InterpretedFrameHandler(currentFrame_).GetEnv();
+    return InterpretedFrameHandler(glueData_.currentFrame_).GetEnv();
 }
 
 void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
@@ -106,16 +106,16 @@ void JSThread::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1)
         propertiesCache_->Clear();
     }
 
-    if (!exception_.IsHole()) {
-        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&exception_)));
+    if (!glueData_.exception_.IsHole()) {
+        v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&glueData_.exception_)));
     }
     if (!stubCode_.IsHole()) {
         v0(Root::ROOT_VM, ObjectSlot(ToUintPtr(&stubCode_)));
     }
     // visit global Constant
-    globalConst_.VisitRangeSlot(v1);
+    glueData_.globalConst_.VisitRangeSlot(v1);
     // visit stack roots
-    FrameIterator iterator(currentFrame_, this);
+    FrameIterator iterator(glueData_.currentFrame_, this);
     iterator.Iterate(v0, v1);
     // visit internal call params；
     internalCallParams_->Iterate(v1);
@@ -236,16 +236,16 @@ void JSThread::LoadStubModule(const char *moduleFile)
     StubModule stubModule;
     std::string fileName(moduleFile);
     stubModule.Load(this, fileName);
-    for (uint32_t i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
-        fastStubEntries_[i] = stubModule.GetStubEntry(i);
+    for (size_t i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
+        glueData_.stubEntries_.Set(i, stubModule.GetStubEntry(i));
     }
 #if ECMASCRIPT_COMPILE_INTERPRETER_ASM
-    for (uint32_t i = 0; i < MAX_BYTECODE_HANDLERS; i++) {
-        bytecodeHandlers_[i] = stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging);
+    for (size_t i = 0; i < BCHandlers::MAX_BYTECODE_HANDLERS; i++) {
+        glueData_.bcHandlers_.Set(i, stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging));
     }
-#define DEF_STUB(name, counter)                                   \
-        bytecodeHandlers_[kungfu::InterpreterStubId::name##Id] =  \
-            stubModule.GetStubEntry(kungfu::StubId::STUB_##name);
+#define DEF_STUB(name, counter)                                                             \
+        glueData_.bcHandlers_.Set(kungfu::InterpreterStubId::name##Id,                      \
+                                  stubModule.GetStubEntry(kungfu::StubId::STUB_##name));
     INTERPRETER_STUB_LIST(DEF_STUB)
 #undef DEF_STUB
 #endif

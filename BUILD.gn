@@ -254,7 +254,8 @@ config("ark_jsruntime_common_config") {
   }
 
   if (!is_linux) {
-    if (build_public_version) {
+    if (build_public_version && enable_bytrace) {
+      defines += [ "ENABLE_BYTRACE" ]
       include_dirs = [
         "//developtools/bytrace_standard/interfaces/innerkits/native/include",
       ]
@@ -524,8 +525,10 @@ ohos_shared_library("libark_jsruntime") {
     ":libark_jsruntime_static",
   ]
 
+  defines = []
   if (!is_linux && !is_mingw && !is_mac) {
-    if (build_public_version) {
+    if (build_public_version && enable_bytrace) {
+      defines += [ "ENABLE_BYTRACE" ]
       external_deps = [ "bytrace_standard:bytrace_core" ]
     }
   }
@@ -582,8 +585,10 @@ ohos_shared_library("libark_jsruntime_test") {
 
   deps = [ ":libark_jsruntime_test_static" ]
 
+  defines = []
   if (!is_linux && !is_mingw && !is_mac) {
-    if (build_public_version) {
+    if (build_public_version && enable_bytrace) {
+      defines += [ "ENABLE_BYTRACE" ]
       external_deps = [ "bytrace_standard:bytrace_core" ]
     }
   }
