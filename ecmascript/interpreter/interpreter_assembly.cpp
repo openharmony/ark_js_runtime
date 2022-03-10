@@ -941,7 +941,7 @@ void InterpreterAssembly::HandleToNumberPrefV8(
     LOG_INST() << "intrinsics::tonumber"
                 << " v" << v0;
     JSTaggedValue value = GET_VREG_VALUE(v0);
-    if (value.IsNumber()) {
+    if (value.IsNumber() || value.IsBigInt()) {
         // fast path
         SET_ACC(value);
     } else {
@@ -1410,6 +1410,9 @@ void InterpreterAssembly::HandleLessDynPrefV8(
         double valueB = right.IsInt() ? static_cast<double>(right.GetInt()) : right.GetDouble();
         bool ret = JSTaggedValue::StrictNumberCompare(valueA, valueB) == ComparisonResult::LESS;
         SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
+    } else if (left.IsBigInt() && right.IsBigInt()) {
+        bool result = BigInt::LessThan(left, right);
+        SET_ACC(JSTaggedValue(result));
     } else {
         // slow path
         JSTaggedValue res = SlowRuntimeStub::LessDyn(thread, left, right);
@@ -1438,6 +1441,9 @@ void InterpreterAssembly::HandleLessEqDynPrefV8(
         double valueB = right.IsInt() ? static_cast<double>(right.GetInt()) : right.GetDouble();
         bool ret = JSTaggedValue::StrictNumberCompare(valueA, valueB) <= ComparisonResult::EQUAL;
         SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
+    } else if (left.IsBigInt() && right.IsBigInt()) {
+        bool result = BigInt::LessThan(left, right) || BigInt::Equal(left, right);
+        SET_ACC(JSTaggedValue(result));
     } else {
         // slow path
         JSTaggedValue res = SlowRuntimeStub::LessEqDyn(thread, left, right);
@@ -1467,6 +1473,9 @@ void InterpreterAssembly::HandleGreaterDynPrefV8(
         double valueB = right.IsInt() ? static_cast<double>(right.GetInt()) : right.GetDouble();
         bool ret = JSTaggedValue::StrictNumberCompare(valueA, valueB) == ComparisonResult::GREAT;
         SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
+    } else if (left.IsBigInt() && right.IsBigInt()) {
+        bool result = BigInt::LessThan(right, left);
+        SET_ACC(JSTaggedValue(result));
     } else {
         // slow path
         JSTaggedValue res = SlowRuntimeStub::GreaterDyn(thread, left, right);
@@ -1496,7 +1505,10 @@ void InterpreterAssembly::HandleGreaterEqDynPrefV8(
         ComparisonResult comparison = JSTaggedValue::StrictNumberCompare(valueA, valueB);
         bool ret = (comparison == ComparisonResult::GREAT) || (comparison == ComparisonResult::EQUAL);
         SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
-    } else {
+    } else if (left.IsBigInt() && right.IsBigInt()) {
+        bool result = BigInt::LessThan(right, left) || BigInt::Equal(right, left);
+        SET_ACC(JSTaggedValue(result))
+    }  else {
         // slow path
         JSTaggedValue res = SlowRuntimeStub::GreaterEqDyn(thread, left, right);
         INTERPRETER_RETURN_IF_ABRUPT(res);
@@ -3513,6 +3525,19 @@ void InterpreterAssembly::HandleNewLexEnvWithNameDynPrefImm16Imm16(
     LOG_INST() << "intrinsic::ldfunction";
     SET_ACC(GetThisFunction(sp));
     DISPATCH(BytecodeInstruction::Format::PREF_NONE);
+}
+
+void InterpreterAssembly::HandleLdBigIntPrefId32(
+    JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
+    JSTaggedValue acc, int32_t hotnessCounter)
+{
+    uint32_t stringId = READ_INST_32_1();
+    LOG_INST() << "intrinsic::ldbigint";
+    JSTaggedValue numberBigInt = ConstantPool::Cast(constpool.GetTaggedObject())->GetObjectFromCache(stringId);
+    JSTaggedValue res = SlowRuntimeStub::LdBigInt(thread, numberBigInt);
+    INTERPRETER_RETURN_IF_ABRUPT(res);
+    SET_ACC(res);
+    DISPATCH(BytecodeInstruction::Format::PREF_ID32);
 }
 
 void InterpreterAssembly::HandleSuperCallPrefImm16V8(

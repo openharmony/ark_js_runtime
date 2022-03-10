@@ -552,10 +552,21 @@ JSTaggedValue BuiltinsMath::Pow(EcmaRuntimeCallInfo *argv)
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> msgX = GetCallArg(argv, 0);
     JSHandle<JSTaggedValue> msgY = GetCallArg(argv, 1);
-    JSTaggedNumber numberValueX = JSTaggedValue::ToNumber(thread, msgX);
-    JSTaggedNumber numberValueY = JSTaggedValue::ToNumber(thread, msgY);
-    double valueX = numberValueX.GetNumber();
-    double valueY = numberValueY.GetNumber();
+    JSHandle<JSTaggedValue> baseVale(thread, JSTaggedValue::ToNumeric(thread, msgX));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> exponentValue(thread, JSTaggedValue::ToNumeric(thread, msgY));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    if (baseVale->IsBigInt() && exponentValue->IsBigInt()) {
+        JSHandle<BigInt> bigBaseVale(baseVale);
+        JSHandle<BigInt> bigExponentValue(exponentValue);
+        return  BigInt::Exponentiate(thread, bigBaseVale, bigExponentValue).GetTaggedValue();
+    }
+    if (baseVale->IsBigInt() || exponentValue->IsBigInt()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "Cannot mix BigInt and other types, use explicit conversions",
+                                    JSTaggedValue::Exception());
+    }
+    double valueX = baseVale->GetNumber();
+    double valueY = exponentValue->GetNumber();
     // If abs(x) is 1 and y is inf or -inf, the result is NaN
     if (std::abs(valueX) == 1 && !std::isfinite(valueY)) {
         return GetTaggedDouble(base::NAN_VALUE);
