@@ -20,10 +20,7 @@
 #include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_errors.h"
 #include "ecmascript/builtins/builtins_global.h"
-#include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/free_object.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/global_env_constants-inl.h"
@@ -38,6 +35,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -76,6 +75,8 @@
 #include "ecmascript/linked_hash_table-inl.h"
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/mem/space.h"
+#include "ecmascript/module/js_module_namespace.h"
+#include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/record.h"
 #include "ecmascript/symbol_table-inl.h"
 #include "ecmascript/tagged_tree-inl.h"
@@ -1676,14 +1677,17 @@ JSHandle<Program> ObjectFactory::NewProgram()
     return p;
 }
 
-JSHandle<EcmaModule> ObjectFactory::NewEmptyEcmaModule()
+JSHandle<ModuleNamespace> ObjectFactory::NewModuleNamespace()
 {
     NewObjectHook();
-    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
-        JSHClass::Cast(thread_->GlobalConstants()->GetEcmaModuleClass().GetTaggedObject()));
-    JSHandle<EcmaModule> module(thread_, header);
-    module->SetNameDictionary(thread_, JSTaggedValue::Undefined());
-    return module;
+    JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
+    JSHandle<JSHClass> dynclass = JSHandle<JSHClass>::Cast(env->GetModuleNamespaceClass());
+    JSHandle<JSObject> obj = NewJSObject(dynclass);
+
+    JSHandle<ModuleNamespace> moduleNamespace = JSHandle<ModuleNamespace>::Cast(obj);
+    moduleNamespace->SetModule(thread_, JSTaggedValue::Undefined());
+    moduleNamespace->SetExports(thread_, JSTaggedValue::Undefined());
+    return moduleNamespace;
 }
 
 JSHandle<EcmaString> ObjectFactory::GetEmptyString() const
@@ -2418,5 +2422,89 @@ JSHandle<JSAPITreeSetIterator> ObjectFactory::NewJSAPITreeSetIterator(const JSHa
     JSHandle<TaggedArray> entries = TaggedTreeSet::GetArrayFromSet(thread_, tset);
     iter->SetEntries(thread_, entries);
     return iter;
+}
+
+JSHandle<ImportEntry> ObjectFactory::NewImportEntry()
+{
+    JSHandle<JSTaggedValue> defautValue = thread_->GlobalConstants()->GetHandledUndefined();
+    return NewImportEntry(defautValue, defautValue, defautValue);
+}
+
+JSHandle<ImportEntry> ObjectFactory::NewImportEntry(const JSHandle<JSTaggedValue> &moduleRequest,
+                                                    const JSHandle<JSTaggedValue> &importName,
+                                                    const JSHandle<JSTaggedValue> &localName)
+{
+    NewObjectHook();
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetImportEntryClass().GetTaggedObject()));
+    JSHandle<ImportEntry> obj(thread_, header);
+    obj->SetModuleRequest(thread_, moduleRequest);
+    obj->SetImportName(thread_, importName);
+    obj->SetLocalName(thread_, localName);
+    return obj;
+}
+
+JSHandle<ExportEntry> ObjectFactory::NewExportEntry()
+{
+    JSHandle<JSTaggedValue> defautValue = thread_->GlobalConstants()->GetHandledUndefined();
+    return NewExportEntry(defautValue, defautValue, defautValue, defautValue);
+}
+
+JSHandle<ExportEntry> ObjectFactory::NewExportEntry(const JSHandle<JSTaggedValue> &exportName,
+                                                    const JSHandle<JSTaggedValue> &moduleRequest,
+                                                    const JSHandle<JSTaggedValue> &importName,
+                                                    const JSHandle<JSTaggedValue> &localName)
+{
+    NewObjectHook();
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetExportEntryClass().GetTaggedObject()));
+    JSHandle<ExportEntry> obj(thread_, header);
+    obj->SetExportName(thread_, exportName);
+    obj->SetModuleRequest(thread_, moduleRequest);
+    obj->SetImportName(thread_, importName);
+    obj->SetLocalName(thread_, localName);
+    return obj;
+}
+
+JSHandle<SourceTextModule> ObjectFactory::NewSourceTextModule()
+{
+    NewObjectHook();
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetSourceTextModuleClass().GetTaggedObject()));
+    JSHandle<SourceTextModule> obj(thread_, header);
+    JSTaggedValue undefinedValue = thread_->GlobalConstants()->GetUndefined();
+    obj->SetEnvironment(thread_, undefinedValue);
+    obj->SetNamespace(thread_, undefinedValue);
+    obj->SetRequestedModules(thread_, undefinedValue);
+    obj->SetImportEntries(thread_, undefinedValue);
+    obj->SetLocalExportEntries(thread_, undefinedValue);
+    obj->SetIndirectExportEntries(thread_, undefinedValue);
+    obj->SetStarExportEntries(thread_, undefinedValue);
+    obj->SetNameDictionary(thread_, undefinedValue);
+    obj->SetDFSIndex(SourceTextModule::UNDEFINED_INDEX);
+    obj->SetDFSAncestorIndex(SourceTextModule::UNDEFINED_INDEX);
+    obj->SetEvaluationError(SourceTextModule::UNDEFINED_INDEX);
+    obj->SetStatus(ModuleStatus::UNINSTANTIATED);
+    return obj;
+}
+
+JSHandle<ResolvedBinding> ObjectFactory::NewResolvedBindingRecord()
+{
+    JSTaggedValue undefinedValue = thread_->GlobalConstants()->GetUndefined();
+    JSHandle<SourceTextModule> ecmaModule(thread_, undefinedValue);
+    JSHandle<JSTaggedValue> bindingName(thread_, undefinedValue);
+    return NewResolvedBindingRecord(ecmaModule, bindingName);
+}
+
+JSHandle<ResolvedBinding> ObjectFactory::NewResolvedBindingRecord(const JSHandle<SourceTextModule> &module,
+                                                                  const JSHandle<JSTaggedValue> &bindingName)
+{
+    NewObjectHook();
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetResolvedBindingClass().GetTaggedObject()));
+    JSHandle<ResolvedBinding> obj(thread_, header);
+    obj->SetModule(thread_, module);
+    obj->SetBindingName(thread_, bindingName);
+    return obj;
 }
 }  // namespace panda::ecmascript

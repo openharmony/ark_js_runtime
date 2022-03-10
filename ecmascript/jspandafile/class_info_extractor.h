@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_CLASS_INFO_EXTRACTOR_H
-#define ECMASCRIPT_CLASS_INFO_EXTRACTOR_H
+#ifndef ECMASCRIPT_JSPANDAFILE_CLASS_INFO_EXTRACTOR_H
+#define ECMASCRIPT_JSPANDAFILE_CLASS_INFO_EXTRACTOR_H
 
-#include "js_tagged_value-inl.h"
+#include "ecmascript/js_tagged_value-inl.h"
 
 namespace panda::ecmascript {
 // ClassInfoExtractor will analyze and extract the contents from class literal to keys, properties and elements(both
@@ -97,4 +97,4 @@ private:
                                          JSHandle<TaggedArray> &elements, const JSHandle<ConstantPool> &constantpool);
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_CLASS_INFO_EXTRACTOR_H
+#endif  // ECMASCRIPT_JSPANDAFILE_CLASS_INFO_EXTRACTOR_H

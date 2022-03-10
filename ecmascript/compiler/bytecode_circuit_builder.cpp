@@ -1296,7 +1296,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             info.offset = BytecodeOffset::FOUR;
             break;
         }
-        case EcmaOpcode::IMPORTMODULE_PREF_ID32: {
+        case EcmaOpcode::GETMODULENAMESPACE_PREF_ID32: {
             info.accOut = true;
             info.offset = BytecodeOffset::SIX;
             break;
@@ -1312,9 +1312,7 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
             info.offset = BytecodeOffset::THREE;
             break;
         }
-        case EcmaOpcode::LDMODVARBYNAME_PREF_ID32_V8: {
-            uint32_t v0 = READ_INST_8_5();
-            info.vregIn.emplace_back(v0);
+        case EcmaOpcode::LDMODULEVAR_PREF_ID32_IMM8: {
             info.accOut = true;
             info.offset = BytecodeOffset::SEVEN;
             break;

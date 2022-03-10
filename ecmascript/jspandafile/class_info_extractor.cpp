@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ecmascript/class_info_extractor.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
 
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_function.h"

@@ -60,7 +60,6 @@ class JSThread;
     V(JSTaggedValue, TransitionHandlerClass, TRANSITION_HANDLER_CLASS_INDEX, ecma_roots_class)                        \
     V(JSTaggedValue, PropertyBoxClass, PROPERTY_BOX_CLASS_INDEX, ecma_roots_class)                                    \
     V(JSTaggedValue, ProgramClass, PROGRAM_CLASS_INDEX, ecma_roots_class)                                             \
-    V(JSTaggedValue, EcmaModuleClass, ECMA_MODULE_CLASS_INDEX, ecma_roots_class)                                      \
     V(JSTaggedValue, JSProxyCallableClass, JS_PROXY_CALLABLE_CLASS_INDEX, ecma_roots_class)                           \
     V(JSTaggedValue, JSProxyConstructClass, JS_PROXY_CONSTRUCT_CLASS_INDEX, ecma_roots_class)                         \
     V(JSTaggedValue, JSRealmClass, JS_REALM_CLASS_INDEX, ecma_roots_class)                                            \
@@ -74,7 +73,12 @@ class JSThread;
     V(JSTaggedValue, TSClassInstanceTypeClass, TS_CLASS_INSTANCE_TYPE_CLASS_INDEX, ecma_roots_class)                  \
     V(JSTaggedValue, TSImportTypeClass, TS_IMPORT_TYPE_CLASS_INDEX, ecma_roots_class)                                 \
     V(JSTaggedValue, TSFunctionTypeClass, TS_FUNCTION_TYPE_CLASS_INDEX, ecma_roots_class)                             \
-    V(JSTaggedValue, TSArrayTypeClass, TS_ARRAY_TYPE_CLASS_INDEX, ecma_roots_class)
+    V(JSTaggedValue, TSArrayTypeClass, TS_ARRAY_TYPE_CLASS_INDEX, ecma_roots_class)                                   \
+    V(JSTaggedValue, ImportEntryClass, IMPORT_ENTRY_CLASS_INDEX, ecma_roots_class)                                    \
+    V(JSTaggedValue, ExportEntryClass, EXPORT_ENTRY_CLASS_INDEX, ecma_roots_class)                                    \
+    V(JSTaggedValue, SourceTextModuleClass, SOURCE_TEXT_MODULE_CLASS_INDEX, ecma_roots_class)                         \
+    V(JSTaggedValue, ResolvedBindingClass, RESOLVED_BINDING_CLASS_INDEX, ecma_roots_class)
+
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_SPECIAL(V)                               \
     V(JSTaggedValue, Undefined, UNDEFINED_INDEX, ecma_roots_special) \
@@ -302,7 +306,11 @@ class JSThread;
     V(JSTaggedValue, IndexString, INDEX_INDEX, index)                                                                 \
     V(JSTaggedValue, InputString, INPUT_INDEX, input)                                                                 \
     V(JSTaggedValue, UnicodeString, UNICODE_INDEX, unicode)                                                           \
-    V(JSTaggedValue, ZeroString, ZERO_INDEX, zero)
+    V(JSTaggedValue, ZeroString, ZERO_INDEX, zero)                                                                    \
+    /* for module. */                                                                                                 \
+    V(JSTaggedValue, AmbiguousString, AMBIGUOUS_INDEX, ambiguous)                                                     \
+    V(JSTaggedValue, ModuleString, MODULE_INDEX, module)                                                              \
+    V(JSTaggedValue, StarString, STAR_INDEX, star)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define GLOBAL_ENV_CONSTANT_ACCESSOR(V)                                                           \

@@ -17,8 +17,6 @@
 #include <fstream>
 
 #include "ecmascript/accessor_data.h"
-#include "ecmascript/class_linker/program_object-inl.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
@@ -32,6 +30,7 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"

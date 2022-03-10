@@ -1279,7 +1279,7 @@ JSHandle<TaggedArray> JSObject::EnumerableOwnNames(JSThread *thread, const JSHan
     JSHandle<JSTaggedValue> tagObj(obj);
     uint32_t copyLength = 0;
     // fast mode
-    if (tagObj->IsJSObject() && !tagObj->IsTypedArray()) {
+    if (tagObj->IsJSObject() && !tagObj->IsTypedArray() && !tagObj->IsModuleNamespace()) {
         uint32_t numOfKeys = obj->GetNumberOfKeys();
         uint32_t numOfElements = obj->GetNumberOfElements();
         JSHandle<TaggedArray> elementArray;

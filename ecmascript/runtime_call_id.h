@@ -179,10 +179,10 @@ namespace panda::ecmascript {
     V(CreateObjectWithBuffer)       \
     V(CreateObjectHavingMethod)     \
     V(SetObjectWithProto)           \
-    V(ImportModule)                 \
+    V(getmodulenamespace)           \
     V(StModuleVar)                  \
     V(CopyModule)                   \
-    V(LdModvarByName)               \
+    V(LdModvarVar)                  \
     V(CreateRegExpWithLiteral)      \
     V(CreateArrayWithBuffer)        \
     V(GetNextPropName)              \

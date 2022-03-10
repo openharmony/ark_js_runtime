@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
-#define ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
+#ifndef ECMASCRIPT_JSPANDAFILE_PROGRAM_OBJECT_INL_H
+#define ECMASCRIPT_JSPANDAFILE_PROGRAM_OBJECT_INL_H
 
 #include "program_object.h"
 #include "ecmascript/mem/native_area_allocator.h"
@@ -27,4 +27,4 @@ JSTaggedValue ConstantPool::GetObjectFromCache(uint32_t index) const
 }
 }  // namespace ecmascript
 }  // namespace panda
-#endif  // ECMASCRIPT_CLASS_LINKER_PROGRAM_INL_H
+#endif  // ECMASCRIPT_JSPANDAFILE_PROGRAM_OBJECT_INL_H

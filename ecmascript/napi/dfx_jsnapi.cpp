@@ -16,7 +16,7 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/dfx/hprof/heap_profiler.h"
-#include "ecmascript/ecma_module.h"
+#include "ecmascript/base/error_helper.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/mem/heap-inl.h"
