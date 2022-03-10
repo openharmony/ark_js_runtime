@@ -182,9 +182,6 @@ private:
     bool BuildMCJITEngine();
     void BuildAndRunPasses();
     void BuildSimpleFunction();
-    void FillPatchPointIDs();
-    void RewritePatchPointIdOfStatePoint(LLVMValueRef instruction, uint64_t &callInsNum, uint64_t &funcNum);
-    void RewritePatchPointIdStoredOnThread(LLVMValueRef instruction, uint64_t id);
     void Initialize();
     void InitMember();
 
