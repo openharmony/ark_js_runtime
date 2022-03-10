@@ -34,7 +34,7 @@ namespace panda::ecmascript::kungfu {
     V(FindElementWithCache, 4)               \
     V(StringGetHashCode, 1)                  \
     V(FloatMod, 2)                           \
-    V(GetTaggedArrayPtrTest, 1)              \
+    V(GetTaggedArrayPtrTest, 2)              \
     V(NewInternalString, 2)                  \
     V(NewTaggedArray, 2)                     \
     V(CopyArray, 3)                          \
@@ -159,7 +159,7 @@ namespace panda::ecmascript::kungfu {
     V(DefineGetterSetterByValue, 6)          \
     V(SuperCall, 5)                          \
     I(DoubleToInt, 1)                        \
-    I(CallRuntimeTrampoline, 4)
+    I(RuntimeCallTrampoline, 3)
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 

@@ -65,19 +65,17 @@
 
 //   Optimized Leave Frame(alias OptimizedLeaveFrame) layout
 //   +--------------------------+
-//   |      argv[]              |
+//   |       argv[]             |
 //   +--------------------------+ ---
 //   |       argc               |   ^
-//   |--------------------------|   |
-//   |       patchID            | Fixed
-//   |--------------------------| OptimizedLeaveFrame
-//   |       RuntimeId          |   |
+//   |--------------------------|  Fixed
+//   |       RuntimeId          | OptimizedLeaveFrame
 //   |--------------------------|   |
 //   |       returnAddr         |   |
 //   |--------------------------|   |
 //   |       callsiteFp         |   |
 //   |--------------------------|   |
-//   |     frameType            |   v
+//   |       frameType          |   v
 //   +--------------------------+ ---
 //   |  callee save registers   |
 //   +--------------------------+
@@ -183,19 +181,18 @@
 //   +--------------------------+---------------------------+
 //   |                   .............                      |
 //   +--------------------------+---------------------------+
-//   |      argv[]              |                           ^
-//   +--------------------------+ ---                       |
+//   +--------------------------+---------------------------+
+//   |       argv[]             |                           ^
+//   +--------------------------+----                       |
 //   |       argc               |   ^                       |
-//   |--------------------------|   |                       |
-//   |       patchID            | Fixed                     |
-//   |--------------------------| OptimizedLeaveFrame             |
-//   |       RuntimeId          |   |                       |
-//   |--------------------------|   |                      OptimizedLeaveFrame
+//   |--------------------------|  Fixed                    |
+//   |       RuntimeId          | OptimizedLeaveFrame       |
+//   |--------------------------|   |                  OptimizedLeaveFrame
 //   |       returnAddr         |   |                       |
 //   |--------------------------|   |                       |
 //   |       callsiteFp         |   |                       |
 //   |--------------------------|   |                       |
-//   |     frameType            |   v                       |
+//   |       frameType          |   V                       |
 //   +--------------------------+ ----                      |
 //   |  callee save registers   |                           V
 //   +--------------------------+---------------------------+
@@ -216,11 +213,11 @@
 #define ECMASCRIPT_FRAMES_H
 
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/trampoline/ecma_asm_defines.h"
+#include "ecmascript/trampoline/asm_defines.h"
 
 namespace panda::ecmascript {
 class JSThread;
-enum class FrameType: uint64_t {
+enum class FrameType: uint64_t  {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
     INTERPRETER_FRAME = 2,
@@ -245,8 +242,8 @@ public:
 #ifdef PANDA_TARGET_ARM32
     static constexpr int SP_DWARF_REG_NUM = 13;
     static constexpr int FP_DWARF_REG_NUM = 11;
-    static constexpr int CALLSITE_SP_TO_FP_DELTA = 0;
-    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = 0;
+    static constexpr int CALLSITE_SP_TO_FP_DELTA = -2;
+    static constexpr int INTERPER_FRAME_FP_TO_FP_DELTA = -2;
 #else
     static constexpr int SP_DWARF_REG_NUM = 0;
     static constexpr int FP_DWARF_REG_NUM = 0;
@@ -258,6 +255,8 @@ public:
     static constexpr int AARCH64_SLOT_SIZE = sizeof(uint64_t);
     static constexpr int AMD64_SLOT_SIZE = sizeof(uint64_t);
     static constexpr int ARM32_SLOT_SIZE = sizeof(uint32_t);
+    static constexpr int CALLSITE_SP_TO_FP_DELTA_OFFSET = \
+        CALLSITE_SP_TO_FP_DELTA * static_cast<int>(sizeof(uintptr_t));
 };
 
 class OptimizedFrameBase {
@@ -443,8 +442,9 @@ struct OptimizedLeaveFrame {
     FrameType type;
     uintptr_t callsiteFp; // thread sp set here
     uintptr_t returnAddr;
+#ifndef PANDA_TARGET_32
     uint64_t argRuntimeId;
-    uint64_t argPatchId;
+#endif
     uint64_t argc;
     // argv[] is dynamic
     static OptimizedLeaveFrame* GetFrameFromSp(JSTaggedType *sp)
@@ -454,7 +454,11 @@ struct OptimizedLeaveFrame {
     }
     uintptr_t GetCallSiteSp()
     {
+#ifndef PANDA_TARGET_32
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argRuntimeId);
+#else
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc);
+#endif
     }
 };
 

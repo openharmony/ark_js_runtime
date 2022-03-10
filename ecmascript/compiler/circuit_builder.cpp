@@ -339,7 +339,7 @@ GateRef CircuitBuilder::NewRuntimeCallGate(GateRef glue, GateRef target,
         inputs.push_back(arg);
     }
     OpCode opcode(OpCode::RUNTIME_CALL);
-    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(CallRuntimeTrampoline);
+    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(RuntimeCallTrampoline);
     MachineType machineType = GetCallMachineTypeFromVariableType(descriptor->GetReturnType());
     GateType type = VariableType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)
