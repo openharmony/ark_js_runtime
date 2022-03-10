@@ -49,6 +49,7 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const std::string &file
 
 const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const std::string &filename)
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "JSPandaFileManager::LoadJSPandaFile");
     CString desc = ConvertToString(filename);
     const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);
     if (jsPandaFile != nullptr) {
@@ -90,6 +91,7 @@ const JSPandaFile *JSPandaFileManager::LoadJSPandaFile(const std::string &filena
 
 JSHandle<Program> JSPandaFileManager::GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile)
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "JSPandaFileManager::GenerateProgram");
     LOG_ECMA(INFO) << "GenerateProgram " << jsPandaFile->GetPandaFile()->GetFilename();
     ASSERT(GetJSPandaFile(jsPandaFile->GetPandaFile()) != nullptr);
 

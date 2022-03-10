@@ -16,9 +16,9 @@
 #ifndef ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 #define ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 
-#include "ecmascript/mem/c_containers.h"
 #include "ecmascript/jspandafile/constpool_value.h"
 #include "ecmascript/jspandafile/panda_file_translator.h"
+#include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "libpandafile/file.h"
 #include "libpandabase/utils/logger.h"
@@ -53,6 +53,13 @@ public:
     JSMethod *GetMethods() const
     {
         return methods_;
+    }
+
+    void SetMethodToMap(JSMethod *method)
+    {
+        if (method != nullptr) {
+            methodMap_.emplace(method->GetFileId().GetOffset(), method);
+        }
     }
 
     uint32_t GetNumMethods() const
@@ -99,6 +106,7 @@ private:
     uint32_t numMethods_ {0};
     uint32_t mainMethodIndex_ {0};
     JSMethod *methods_ {nullptr};
+    CUnorderedMap<uint32_t, JSMethod *> methodMap_;
     const panda_file::File *pf_ {nullptr};
     std::unique_ptr<tooling::ecmascript::PtJSExtractor> ptJSExtractor_;
     CString desc_;
