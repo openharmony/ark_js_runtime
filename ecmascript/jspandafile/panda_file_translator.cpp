@@ -93,6 +93,7 @@ void PandaFileTranslator::TranslateClasses(JSPandaFile *jsPandaFile, const CStri
                 translatedCode.insert(insns);
                 TranslateBytecode(jsPandaFile, codeSize, insns, method, infoList);
             }
+            jsPandaFile->SetMethodToMap(method);
         });
     }
 }
