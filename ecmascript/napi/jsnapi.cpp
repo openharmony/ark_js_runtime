@@ -496,7 +496,7 @@ Local<ObjectRef> JSNApi::GetExportObject(EcmaVM *vm, const std::string &file, co
 
 void JSNApi::SetOptions(const ecmascript::JSRuntimeOptions &options)
 {
-    ecmascript::EcmaVM::options_ = options;
+    ecmascript::JSRuntimeOptions::temporary_options = options;
 }
 // ----------------------------------- HandleScope -------------------------------------
 LocalScope::LocalScope(const EcmaVM *vm) : thread_(vm->GetJSThread())

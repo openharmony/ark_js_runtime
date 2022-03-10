@@ -73,7 +73,7 @@
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
 static const std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
-JSRuntimeOptions EcmaVM::options_;  // NOLINT(fuchsia-statically-constructed-objects)
+JSRuntimeOptions JSRuntimeOptions::temporary_options;  // NOLINT(fuchsia-statically-constructed-objects)
 
 /* static */
 EcmaVM *EcmaVM::Create(const JSRuntimeOptions &options)
@@ -111,7 +111,7 @@ Expected<EcmaVM *, CString> EcmaVM::Create(Runtime *runtime)
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-EcmaVM::EcmaVM() : EcmaVM(EcmaVM::GetJSOptions())
+EcmaVM::EcmaVM() : EcmaVM(JSRuntimeOptions::GetTemporaryOptions())
 {
 }
 

@@ -221,6 +221,13 @@ public:
         return defaultSnapshotSpaceCapacity_.GetValue();
     }
 
+    static const JSRuntimeOptions &GetTemporaryOptions()
+    {
+        return temporary_options;
+    }
+
+    static JSRuntimeOptions temporary_options;
+
 private:
     PandArg<bool> enableArkTools_ {"enable-ark-tools", false, R"(Enable ark tools to debug. Default: false)"};
     PandArg<bool> enableCpuprofiler_ {"enable-cpuprofiler", false,
