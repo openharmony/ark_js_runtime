@@ -253,6 +253,14 @@ void JSThread::LoadStubModule(const char *moduleFile)
     INTERPRETER_IGNORE_STUB_LIST(UNDEF_STUB)
 #undef DEF_STUB
 #undef UNDEF_STUB
+    AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.handleStart >= 0 && asmInterOpt.handleStart < kungfu::InterpreterStubId::INTERPRETER_STUB_MAXCOUNT
+        && asmInterOpt.handleEnd >= 0 && asmInterOpt.handleEnd < kungfu::InterpreterStubId::INTERPRETER_STUB_MAXCOUNT
+        && asmInterOpt.handleStart <= asmInterOpt.handleEnd) {
+        for (int i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd; i++) {
+            glueData_.bcHandlers_.Set(i, stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging));
+        }
+    }
 #endif
 
 #ifdef NDEBUG
