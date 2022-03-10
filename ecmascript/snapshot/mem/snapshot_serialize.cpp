@@ -19,6 +19,7 @@
 #include "ecmascript/builtins/builtins_array.h"
 #include "ecmascript/builtins/builtins_arraybuffer.h"
 #include "ecmascript/builtins/builtins_async_function.h"
+#include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/builtins/builtins_boolean.h"
 #include "ecmascript/builtins/builtins_collator.h"
 #include "ecmascript/builtins/builtins_dataview.h"
@@ -76,6 +77,7 @@
 
 namespace panda::ecmascript {
 using Number = builtins::BuiltinsNumber;
+using BuiltinsBigInt = builtins::BuiltinsBigInt;
 using Object = builtins::BuiltinsObject;
 using Date = builtins::BuiltinsDate;
 using Symbol = builtins::BuiltinsSymbol;
@@ -169,6 +171,12 @@ static uintptr_t g_nativeTable[] = {
     reinterpret_cast<uintptr_t>(Number::IsSafeInteger),
     reinterpret_cast<uintptr_t>(Number::ParseFloat),
     reinterpret_cast<uintptr_t>(Number::ParseInt),
+    reinterpret_cast<uintptr_t>(BuiltinsBigInt::BigIntConstructor),
+    reinterpret_cast<uintptr_t>(BuiltinsBigInt::AsUintN),
+    reinterpret_cast<uintptr_t>(BuiltinsBigInt::AsIntN),
+    reinterpret_cast<uintptr_t>(BuiltinsBigInt::ToLocaleString),
+    reinterpret_cast<uintptr_t>(BuiltinsBigInt::ToString),
+    reinterpret_cast<uintptr_t>(BuiltinsBigInt::ValueOf),
     reinterpret_cast<uintptr_t>(Symbol::SymbolConstructor),
     reinterpret_cast<uintptr_t>(Symbol::For),
     reinterpret_cast<uintptr_t>(Symbol::KeyFor),

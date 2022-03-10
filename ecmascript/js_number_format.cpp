@@ -684,8 +684,16 @@ JSHandle<JSTaggedValue> JSNumberFormat::FormatNumeric(JSThread *thread, const JS
     ASSERT(icuNumberFormat != nullptr);
 
     UErrorCode status = U_ZERO_ERROR;
-    double number = x.GetNumber();
-    icu::number::FormattedNumber formattedNumber = icuNumberFormat->formatDouble(number, status);
+    icu::number::FormattedNumber formattedNumber;
+    if (x.IsBigInt()) {
+        JSHandle<BigInt> bigint(thread, x);
+        JSHandle<EcmaString> bigintStr = BigInt::ToString(thread, bigint);
+        std::string stdString = bigintStr->GetCString().get();
+        formattedNumber = icuNumberFormat->formatDecimal(icu::StringPiece(stdString), status);
+    } else {
+        double number = x.GetNumber();
+        formattedNumber = icuNumberFormat->formatDouble(number, status);
+    }
     if (U_FAILURE(status)) {
         JSHandle<JSTaggedValue> errorResult(thread, JSTaggedValue::Exception());
         THROW_RANGE_ERROR_AND_RETURN(thread, "icu formatter format failed", errorResult);
