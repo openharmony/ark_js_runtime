@@ -48,10 +48,11 @@ public:
         TRIPLE_AARCH64,
         TRIPLE_ARM32,
     };
+    // fake parameters for register r1 ~ r3
+    static constexpr int FAKE_REGISTER_PARAMTERS_ARM32 = 3;
 
     explicit CompilationConfig(const std::string &triple)
-        : triple_(GetTripleFromString(triple)),
-          glueTable_(triple_)
+        : triple_(GetTripleFromString(triple))
     {
     }
     ~CompilationConfig() = default;
@@ -81,52 +82,6 @@ public:
         return triple_;
     }
 
-    uint32_t GetGlueOffset(JSThread::GlueID id) const
-    {
-        return glueTable_.GetOffset(id);
-    }
-
-    class GlueTable {
-    public:
-        explicit GlueTable(Triple triple)
-        {
-            switch (triple) {
-                case Triple::TRIPLE_AMD64:
-                case Triple::TRIPLE_AARCH64:
-                    offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_64,
-#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
-                        GLUE_##name##_OFFSET_64,
-                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
-#undef GLUE_OFFSET_MACRO
-                    };
-                    break;
-                case Triple::TRIPLE_ARM32:
-                    offsetTable_ = {
-                        GLUE_EXCEPTION_OFFSET_32,
-#define GLUE_OFFSET_MACRO(name, camelName, lastName, lastSize32, lastSize64) \
-                        GLUE_##name##_OFFSET_32,
-                        GLUE_OFFSET_LIST(GLUE_OFFSET_MACRO)
-#undef GLUE_OFFSET_MACRO
-                    };
-                    break;
-                default:
-                    UNREACHABLE();
-            }
-        }
-        ~GlueTable() = default;
-
-        uint32_t GetOffset(JSThread::GlueID id) const
-        {
-            return offsetTable_[static_cast<size_t>(id)];
-        }
-
-    private:
-        std::array<uint32_t, static_cast<size_t>(JSThread::GlueID::NUMBER_OF_GLUE)> offsetTable_ {};
-    };
-    // fake parameters for register r1 ~ r3
-    static constexpr int FAKE_REGISTER_PARAMTERS_ARM32 = 3;
-
 private:
     inline Triple GetTripleFromString(const std::string &triple)
     {
@@ -144,7 +99,6 @@ private:
         UNREACHABLE();
     }
     Triple triple_;
-    GlueTable glueTable_;
 };
 
 class Stub {
@@ -313,11 +267,6 @@ public:
         inline bool IsArch32Bit() const
         {
             return compCfg_->Is32Bit();
-        }
-
-        uint32_t GetGlueOffset(JSThread::GlueID id) const
-        {
-            return compCfg_->GetGlueOffset(id);
         }
 
         inline GateType GetGateType(GateRef gate) const;

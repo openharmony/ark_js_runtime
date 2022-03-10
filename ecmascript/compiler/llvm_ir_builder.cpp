@@ -337,7 +337,7 @@ void LLVMIRBuilder::GenPrologue(LLVMModuleRef &module, LLVMBuilderRef &builder)
 
     LLVMValueRef glue = LLVMGetParam(function_, 0);
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
-    LLVMValueRef rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME), 0);
+    LLVMValueRef rtoffset = LLVMConstInt(glue_type, JSThread::GlueData::GetCurrentFrameOffset(compCfg_->Is32Bit()), 0);
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(slotType_, 0), "");
     LLVMValueRef threadFpValue = LLVMBuildLoad(builder_, rtbaseAddr, "");
@@ -464,8 +464,11 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
-    rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
-                                (FAST_STUB_ID(RuntimeCallTrampoline) - FAST_STUB_MAXCOUNT) * slotSize_, 0);
+
+    rtoffset = LLVMConstInt(glue_type,
+                            JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
+                                (FAST_STUB_ID(RuntimeCallTrampoline) - FAST_STUB_MAXCOUNT) * slotSize_,
+                            0);
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
     LLVMValueRef llvmAddr = LLVMBuildLoad(builder_, rtbaseAddr, "");
@@ -532,7 +535,9 @@ LLVMValueRef LLVMIRBuilder::GetCurrentSPFrameAddr()
 {
     LLVMValueRef glue = LLVMGetParam(function_, 0);
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
-    LLVMValueRef rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::CURRENT_FRAME), 0);
+    LLVMValueRef rtoffset = LLVMConstInt(glue_type,
+                                         JSThread::GlueData::GetCurrentFrameOffset(compCfg_->Is32Bit()),
+                                         0);
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     return rtbaseoffset;
 }
@@ -575,11 +580,14 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     // runtime case
     if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB ||
         calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC) {
-        rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::RUNTIME_FUNCTIONS) +
-                                (index - FAST_STUB_MAXCOUNT) * slotSize_, 0);
+        rtoffset = LLVMConstInt(glue_type,
+                                JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
+                                    (index - FAST_STUB_MAXCOUNT) * slotSize_,
+                                0);
     } else {
-        rtoffset = LLVMConstInt(glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::FAST_STUB_ENTRIES) +
-                                index * slotSize_, 0);
+        rtoffset = LLVMConstInt(glue_type,
+                                JSThread::GlueData::GetStubEntriesOffset(compCfg_->Is32Bit()) + index * slotSize_,
+                                0);
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
@@ -628,8 +636,9 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
-    LLVMValueRef bytecodeoffset = LLVMConstInt(
-        glue_type, compCfg_->GetGlueOffset(JSThread::GlueID::BYTECODE_HANDLERS), 0);
+    LLVMValueRef bytecodeoffset = LLVMConstInt(glue_type,
+                                               JSThread::GlueData::GetBCHandlersOffset(compCfg_->Is32Bit()),
+                                               0);
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(
         builder_, glue, LLVMBuildAdd(builder_, bytecodeoffset, opcodeOffset, ""), "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");

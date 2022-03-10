@@ -910,7 +910,8 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
 //      keyHandle.GetTaggedValue() == thread->GlobalConstants()->GetConstructorString()
 GateRef Stub::SetHasConstructorCondition(GateRef glue, GateRef receiver, GateRef key)
 {
-    GateRef gConstOffset = IntPtrAdd(glue, GetIntPtrConstant(env_.GetGlueOffset(JSThread::GlueID::GLOBAL_CONST)));
+    GateRef gConstOffset = IntPtrAdd(glue,
+                                     GetIntPtrConstant(JSThread::GlueData::GetGlobalConstOffset(env_.Is32Bit())));
     GateRef gCtorStr = Load(VariableType::JS_ANY(),
         gConstOffset,
         Int64Mul(GetInt64Constant(sizeof(JSTaggedValue)),

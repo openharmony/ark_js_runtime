@@ -13,16 +13,11 @@
  * limitations under the License.
  */
 
-//    in aot project, five Frames: Interpreter Frame、Runtime Frame、Optimized Entry Frame、Optimized Frame、
-// Optimized Leave Frame.
-//    Optimized Entry Frame: when Interpreter/RuntimeFrame call aot code, generate this kind of frame.
-// following c-abi, we'll add the following field: frameType(distinguish frame)、sp(record callite sp register
-// for llvm stackmap)、prev(record previous frame position).
-//    Optimized Leave Frame: when aot code call Interpreter/RuntimeFrame, generate this kind of frame.
-// gc related context (patchid、sp、fp) is saved to frame, prev field point to previous frame.
-//    Optimized Frame: when aot code call aot code, generate this kind of frame.
-// following c-abi, we'll add the following field: frameType(distinguish frame)、sp(record callite sp register
-// for llvm stackmap).
+#ifndef ECMASCRIPT_FRAMES_H
+#define ECMASCRIPT_FRAMES_H
+
+#include "ecmascript/js_tagged_value.h"
+#include "ecmascript/trampoline/asm_defines.h"
 
 // Frame Layout
 // Interpreter Frame(alias   **iframe** ) Layout as follow:
@@ -208,12 +203,6 @@
 // get baz's Frame by OptimizedLeaveFrame.prev field.
 // get bar's Frame by baz's frame fp field
 // get foo's Frame by bar's Frame prev field
-
-#ifndef ECMASCRIPT_FRAMES_H
-#define ECMASCRIPT_FRAMES_H
-
-#include "ecmascript/js_tagged_value.h"
-#include "ecmascript/trampoline/asm_defines.h"
 
 namespace panda::ecmascript {
 class JSThread;
