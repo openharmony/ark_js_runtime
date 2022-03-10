@@ -320,8 +320,6 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("PendingJob");
         case JSType::COMPLETION_RECORD:
             return GetString("CompletionRecord");
-        case JSType::ECMA_MODULE:
-            return GetString("EcmaModule");
         case JSType::JS_API_ARRAY_LIST:
             return GetString("ArrayList");
         case JSType::JS_API_ARRAYLIST_ITERATOR:
@@ -338,6 +336,16 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("Queue");
         case JSType::JS_API_QUEUE_ITERATOR:
             return GetString("QueueIterator");
+        case JSType::SOURCE_TEXT_MODULE_RECORD:
+            return GetString("SourceTextModule");
+        case JSType::IMPORTENTRY_RECORD:
+            return GetString("ImportEntry");
+        case JSType::EXPORTENTRY_RECORD:
+            return GetString("ExportEntry");
+        case JSType::RESOLVEDBINDING_RECORD:
+            return GetString("ResolvedBinding");
+        case JSType::JS_MODULE_NAMESPACE:
+            return GetString("ModuleNamespace");
         default:
             break;
     }

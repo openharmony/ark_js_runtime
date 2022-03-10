@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_ECMA_CLASS_LINKER_EXTENSION_H
-#define ECMASCRIPT_ECMA_CLASS_LINKER_EXTENSION_H
+#ifndef ECMASCRIPT_JSPANDAFILE_ECMA_CLASS_LINKER_EXTENSION_H
+#define ECMASCRIPT_JSPANDAFILE_ECMA_CLASS_LINKER_EXTENSION_H
 
 #include "libpandafile/file_items.h"
 #include "include/class_linker.h"
@@ -106,4 +106,4 @@ private:
 }  // namespace ecmascript
 }  // namespace panda
 
-#endif  // ECMASCRIPT_ECMA_CLASS_LINKER_EXTENSION_H
+#endif  // ECMASCRIPT_JSPANDAFILE_ECMA_CLASS_LINKER_EXTENSION_H

@@ -2197,9 +2197,6 @@ DECLARE_ASM_HANDLER(HandleCloseIteratorPrefV8)
 
 DECLARE_ASM_HANDLER(HandleCopyModulePrefV8)
 {
-    GateRef v0 = ReadInst8_1(pc);
-    GateRef srcModule = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(CopyModule)), { srcModule });
     DISPATCH(PREF_V8);
 }
 
@@ -4444,13 +4441,13 @@ DECLARE_ASM_HANDLER(ExceptionHandler)
     }
 }
 
-DECLARE_ASM_HANDLER(HandleImportModulePrefId32)
+DECLARE_ASM_HANDLER(HandleGetModuleNamespacePrefId32)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef stringId = ReadInst32_1(pc);
     GateRef prop = GetObjectFromConstPool(constpool, stringId);
-    GateRef moduleRef = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(ImportModule)), { prop });
+    GateRef moduleRef = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetModuleNamespace)), { prop });
     varAcc = moduleRef;
     DISPATCH_WITH_ACC(PREF_ID32);
 }
@@ -4465,18 +4462,18 @@ DECLARE_ASM_HANDLER(HandleStModuleVarPrefId32)
     DISPATCH(PREF_ID32);
 }
 
-DECLARE_ASM_HANDLER(HandleLdModVarByNamePrefId32V8)
+DECLARE_ASM_HANDLER(HandleLdModuleVarPrefId32Imm8)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
 
     GateRef stringId = ReadInst32_1(pc);
-    GateRef v0 = ReadInst8_5(pc);
-    GateRef itemName = GetObjectFromConstPool(constpool, stringId);
-    GateRef moduleObj = GetVregValue(sp, ZExtInt8ToPtr(v0));
-    GateRef moduleVar = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdModvarByName)),
-                                              { moduleObj, itemName });
+    GateRef flag = ReadInst8_5(pc);
+    GateRef key = GetObjectFromConstPool(constpool, stringId);
+    GateRef innerFlag = ChangeInt64ToTagged(SExtInt1ToInt64(Int32NotEqual(ZExtInt8ToInt32(flag), GetInt32Constant(0))));
+    GateRef moduleVar = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(LdModuleVar)),
+                                              { key, innerFlag });
     varAcc = moduleVar;
-    DISPATCH_WITH_ACC(PREF_ID32_V8);
+    DISPATCH_WITH_ACC(PREF_ID32_IMM8);
 }
 
 DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
-#define ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
+#ifndef ECMASCRIPT_JSPANDAFILE_PANDA_FILE_TRANSLATOR_H
+#define ECMASCRIPT_JSPANDAFILE_PANDA_FILE_TRANSLATOR_H
 
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_function.h"
@@ -66,4 +66,4 @@ private:
     const JSPandaFile *jsPandaFile_;
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_CLASS_LINKER_PANDA_FILE_TRANSLATOR_H
+#endif  // ECMASCRIPT_JSPANDAFILE_PANDA_FILE_TRANSLATOR_H

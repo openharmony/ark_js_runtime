@@ -878,7 +878,7 @@ public:
     static bool Execute(EcmaVM *vm, const uint8_t *data, int32_t size, const std::string &entry,
                         const std::string &filename = "");
     static bool ExecuteModuleFromBuffer(EcmaVM *vm, const void *data, int32_t size, const std::string &file);
-    static Local<ObjectRef> GetExportObject(EcmaVM *vm, const std::string &file, const std::string &itemName);
+    static Local<ObjectRef> GetExportObject(EcmaVM *vm, const std::string &file, const std::string &key);
 
     // ObjectRef Operation
     static Local<ObjectRef> GetGlobalObject(const EcmaVM *vm);

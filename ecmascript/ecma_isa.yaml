@@ -489,7 +489,7 @@ groups:
         prefix: ecma
         format: [pref_op_id_16_imm1_16_imm2_16_v1_8_v2_8]
         properties: [method_id]
-      - sig: ecma.importmodule string_id
+      - sig: ecma.getmodulenamespace string_id
         acc: out:top
         prefix: ecma
         format: [pref_op_id_32]
@@ -544,10 +544,10 @@ groups:
         prefix: ecma
         format: [pref_op_id_32_v_8]
         properties: [string_id]
-      - sig: ecma.ldmodvarbyname string_id, v:in:top
+      - sig: ecma.ldmodulevar string_id, imm
         acc: out:top
         prefix: ecma
-        format: [pref_op_id_32_v_8]
+        format: [pref_op_id_32_imm_8]
         properties: [string_id]
       - sig: ecma.createregexpwithliteral string_id, imm
         acc: out:top

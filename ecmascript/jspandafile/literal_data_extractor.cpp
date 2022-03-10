@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "literal_data_extractor.h"
+#include "ecmascript/jspandafile/literal_data_extractor.h"
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/ecma_string.h"
 

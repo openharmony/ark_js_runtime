@@ -77,7 +77,6 @@ class EcmaVM;
 class Heap;
 class ConstantPool;
 class Program;
-class EcmaModule;
 class LayoutInfo;
 class JSIntlBoundFunction;
 class FreeObject;
@@ -103,6 +102,11 @@ class JSAPITreeSet;
 class JSAPITreeMap;
 class JSAPITreeSetIterator;
 class JSAPITreeMapIterator;
+class ModuleNamespace;
+class ImportEntry;
+class ExportEntry;
+class SourceTextModule;
+class ResolvedBinding;
 
 namespace job {
 class MicroJobQueue;
@@ -133,7 +137,6 @@ public:
     JSHandle<ProfileTypeInfo> NewProfileTypeInfo(uint32_t length);
     JSHandle<ConstantPool> NewConstantPool(uint32_t capacity);
     JSHandle<Program> NewProgram();
-    JSHandle<EcmaModule> NewEmptyEcmaModule();
 
     JSHandle<JSObject> GetJSError(const ErrorType &errorType, const char *data = nullptr);
 
@@ -395,6 +398,21 @@ public:
     JSHandle<JSAPIArrayListIterator> NewJSAPIArrayListIterator(const JSHandle<JSAPIArrayList> &arrayList);
     JSHandle<JSAPITreeMapIterator> NewJSAPITreeMapIterator(const JSHandle<JSAPITreeMap> &map, IterationKind kind);
     JSHandle<JSAPITreeSetIterator> NewJSAPITreeSetIterator(const JSHandle<JSAPITreeSet> &set, IterationKind kind);
+    // --------------------------------------module--------------------------------------------
+    JSHandle<ModuleNamespace> NewModuleNamespace();
+    JSHandle<ImportEntry> NewImportEntry();
+    JSHandle<ImportEntry> NewImportEntry(const JSHandle<JSTaggedValue> &moduleRequest,
+                                         const JSHandle<JSTaggedValue> &importName,
+                                         const JSHandle<JSTaggedValue> &localName);
+    JSHandle<ExportEntry> NewExportEntry();
+    JSHandle<ExportEntry> NewExportEntry(const JSHandle<JSTaggedValue> &exportName,
+                                         const JSHandle<JSTaggedValue> &moduleRequest,
+                                         const JSHandle<JSTaggedValue> &importName,
+                                         const JSHandle<JSTaggedValue> &localName);
+    JSHandle<SourceTextModule> NewSourceTextModule();
+    JSHandle<ResolvedBinding> NewResolvedBindingRecord();
+    JSHandle<ResolvedBinding> NewResolvedBindingRecord(const JSHandle<SourceTextModule> &module,
+                                                       const JSHandle<JSTaggedValue> &bindingName);
 
 private:
     friend class GlobalEnv;
@@ -467,6 +485,7 @@ private:
     friend class RuntimeTrampolines;
     friend class ClassInfoExtractor;
     friend class TSObjectType;
+    friend class ModuleDataExtractor;
 };
 
 class ClassLinkerFactory {

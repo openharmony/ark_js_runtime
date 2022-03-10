@@ -20,10 +20,10 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "ecmascript/class_linker/program_object.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
 #include "ecmascript/jobs/micro_job_queue.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"

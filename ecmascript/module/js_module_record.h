@@ -13,22 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_SCOPE_INFO_EXTRACTOR_H
-#define ECMASCRIPT_SCOPE_INFO_EXTRACTOR_H
+#ifndef ECMASCRIPT_MODULE_JS_MODULE_RECORD_H
+#define ECMASCRIPT_MODULE_JS_MODULE_RECORD_H
 
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/record.h"
 
 namespace panda::ecmascript {
-class ScopeInfoExtractor {
+class ModuleRecord : public Record {
 public:
-    explicit ScopeInfoExtractor() = default;
-    virtual ~ScopeInfoExtractor() = default;
+    CAST_CHECK(ModuleRecord, IsModuleRecord);
 
-    DEFAULT_NOEXCEPT_MOVE_SEMANTIC(ScopeInfoExtractor);
-    DEFAULT_COPY_SEMANTIC(ScopeInfoExtractor);
+    // 15.2.1.16.4 Instantiate()
+    static int Instantiate(JSThread *thread, const JSHandle<JSTaggedValue> &module);
+    // 15.2.1.16.5 Evaluate()
+    static int Evaluate(JSThread *thread, const JSHandle<JSTaggedValue> &module);
 
-    static JSTaggedValue GenerateScopeInfo(JSThread *thread, uint16_t scopeId);
+    static JSTaggedValue GetNamespace(JSTaggedValue module);
+    static void SetNamespace(JSThread *thread, JSTaggedValue module, JSTaggedValue value);
 };
 }  // namespace panda::ecmascript
-
-#endif  // ECMASCRIPT_SCOPE_INFO_EXTRACTOR_H
+#endif  // ECMASCRIPT_MODULE_JS_MODULE_RECORD_H

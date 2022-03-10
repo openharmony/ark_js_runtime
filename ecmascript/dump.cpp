@@ -19,9 +19,6 @@
 #include <string>
 
 #include "ecmascript/accessor_data.h"
-#include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object-inl.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_dictionary-inl.h"
 #include "ecmascript/global_env.h"
@@ -33,6 +30,8 @@
 #include "ecmascript/jobs/pending_job.h"
 #include "ecmascript/js_api_queue.h"
 #include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_api_tree_map.h"
 #include "ecmascript/js_api_tree_map_iterator.h"
 #include "ecmascript/js_api_tree_set.h"
@@ -78,6 +77,8 @@
 #include "ecmascript/mem/assert_scope-inl.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/machine_code.h"
+#include "ecmascript/module/js_module_namespace.h"
+#include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/tagged_tree-inl.h"
@@ -256,8 +257,6 @@ CString JSHClass::DumpJSType(JSType type)
             return "program";
         case JSType::MACHINE_CODE_OBJECT:
             return "MachineCode";
-        case JSType::ECMA_MODULE:
-            return "EcmaModule";
         case JSType::CLASS_INFO_EXTRACTOR:
             return "ClassInfoExtractor";
         case JSType::JS_API_ARRAY_LIST:
@@ -623,9 +622,6 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
         case JSType::MACHINE_CODE_OBJECT:
             MachineCode::Cast(obj)->Dump(thread, os);
             break;
-        case JSType::ECMA_MODULE:
-            EcmaModule::Cast(obj)->Dump(thread, os);
-            break;
         case JSType::CLASS_INFO_EXTRACTOR:
             ClassInfoExtractor::Cast(obj)->Dump(thread, os);
             break;
@@ -676,6 +672,21 @@ static void DumpObject(JSThread *thread, TaggedObject *obj, std::ostream &os)
             break;
         case JSType::JS_API_QUEUE_ITERATOR:
             JSAPIQueueIterator::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::SOURCE_TEXT_MODULE_RECORD:
+            SourceTextModule::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::IMPORTENTRY_RECORD:
+            ImportEntry::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::EXPORTENTRY_RECORD:
+            ExportEntry::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::RESOLVEDBINDING_RECORD:
+            ResolvedBinding::Cast(obj)->Dump(thread, os);
+            break;
+        case JSType::JS_MODULE_NAMESPACE:
+            ModuleNamespace::Cast(obj)->Dump(thread, os);
             break;
         default:
             UNREACHABLE();
@@ -1023,6 +1034,9 @@ void JSFunction::Dump(JSThread *thread, std::ostream &os) const
     os << "\n";
     os << " - ProfileTypeInfo: ";
     GetProfileTypeInfo().D();
+    os << "\n";
+    os << " - Module: ";
+    GetModule().D();
     os << "\n";
     JSObject::Dump(thread, os);
 }
@@ -2112,13 +2126,6 @@ void MachineCode::Dump(JSThread *thread, std::ostream &os) const
     os << "\n";
 }
 
-void EcmaModule::Dump(JSThread *thread, std::ostream &os) const
-{
-    os << " - NameDictionary: ";
-    GetNameDictionary().D();
-    os << "\n";
-}
-
 void ClassInfoExtractor::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - PrototypeHClass: ";
@@ -2443,6 +2450,99 @@ void TSArrayType::Dump(JSThread *thread, std::ostream &os) const
     os << parameterTypeRef;
     os << "\n";
 }
+
+void SourceTextModule::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Environment: ";
+    GetEnvironment().D();
+    os << "\n";
+    os << " - Namespace: ";
+    GetNamespace().D();
+    os << "\n";
+    os << " - EcmaModuleFilename: ";
+    GetEcmaModuleFilename().D();
+    os << "\n";
+    os << " - RequestedModules: ";
+    GetRequestedModules().D();
+    os << "\n";
+    os << " - ImportEntries: ";
+    GetImportEntries().D();
+    os << "\n";
+    os << " - LocalExportEntries: ";
+    GetLocalExportEntries().D();
+    os << "\n";
+    os << " - IndirectExportEntries: ";
+    GetIndirectExportEntries().D();
+    os << "\n";
+    os << " - StarExportEntries: ";
+    GetStarExportEntries().D();
+    os << "\n";
+    os << " - Status: ";
+    os << static_cast<int32_t>(GetStatus());
+    os << "\n";
+    os << " - EvaluationError: ";
+    os << GetEvaluationError();
+    os << "\n";
+    os << " - DFSIndex: ";
+    os << GetDFSIndex();
+    os << "\n";
+    os << " - DFSAncestorIndex: ";
+    os << GetDFSAncestorIndex();
+    os << "\n";
+    os << " - NameDictionary: ";
+    GetNameDictionary().D();
+    os << "\n";
+}
+
+void ImportEntry::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - ModuleRequest: ";
+    GetModuleRequest().D();
+    os << "\n";
+    os << " - ImportName: ";
+    GetImportName().D();
+    os << "\n";
+    os << " - LocalName: ";
+    GetLocalName().D();
+    os << "\n";
+}
+
+void ExportEntry::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - ExportName: ";
+    GetExportName().D();
+    os << "\n";
+    os << " - ModuleRequest: ";
+    GetModuleRequest().D();
+    os << "\n";
+    os << " - ImportName: ";
+    GetImportName().D();
+    os << "\n";
+    os << " - LocalName: ";
+    GetLocalName().D();
+    os << "\n";
+}
+
+void ResolvedBinding::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Module: ";
+    GetModule().D();
+    os << "\n";
+    os << " - BindingName: ";
+    GetBindingName().D();
+    os << "\n";
+}
+
+void ModuleNamespace::Dump(JSThread *thread, std::ostream &os) const
+{
+    os << " - Module: ";
+    GetModule().D();
+    os << "\n";
+    os << " - Exports: ";
+    GetExports().D();
+    os << "\n";
+}
+
 // ########################################################################################
 // Dump for Snapshot
 // ########################################################################################
@@ -2652,9 +2752,6 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
         case JSType::JS_GENERATOR_CONTEXT:
             GeneratorContext::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
-        case JSType::ECMA_MODULE:
-            EcmaModule::Cast(obj)->DumpForSnapshot(thread, vec);
-            return;
         case JSType::JS_API_ARRAY_LIST:
             JSAPIArrayList::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
@@ -2678,6 +2775,21 @@ static void DumpObject(JSThread *thread, TaggedObject *obj,
             return;
         case JSType::JS_API_QUEUE_ITERATOR:
             JSAPIQueueIterator::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::SOURCE_TEXT_MODULE_RECORD:
+            SourceTextModule::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::IMPORTENTRY_RECORD:
+            ImportEntry::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::EXPORTENTRY_RECORD:
+            ExportEntry::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::RESOLVEDBINDING_RECORD:
+            ResolvedBinding::Cast(obj)->DumpForSnapshot(thread, vec);
+            return;
+        case JSType::JS_MODULE_NAMESPACE:
+            ModuleNamespace::Cast(obj)->DumpForSnapshot(thread, vec);
             return;
         default:
             break;
@@ -3602,11 +3714,6 @@ void MachineCode::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CStrin
     vec.push_back(std::make_pair(CString("InstructionSizeInBytes"), JSTaggedValue(GetInstructionSizeInBytes())));
 }
 
-void EcmaModule::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
-{
-    vec.push_back(std::make_pair(CString("NameDictionary"), GetNameDictionary()));
-}
-
 void ClassInfoExtractor::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("PrototypeHClass"), GetPrototypeHClass()));
@@ -3662,5 +3769,49 @@ void TSFunctionType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CSt
 void TSArrayType::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
 {
     vec.push_back(std::make_pair(CString("ParameterTypeRef"), JSTaggedValue(GetElementTypeRef())));
+}
+
+void SourceTextModule::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Environment"), GetEnvironment()));
+    vec.push_back(std::make_pair(CString("Namespace"), GetNamespace()));
+    vec.push_back(std::make_pair(CString("EcmaModuleFilename"), GetEcmaModuleFilename()));
+    vec.push_back(std::make_pair(CString("RequestedModules"), GetRequestedModules()));
+    vec.push_back(std::make_pair(CString("ImportEntries"), GetImportEntries()));
+    vec.push_back(std::make_pair(CString("LocalExportEntries"), GetLocalExportEntries()));
+    vec.push_back(std::make_pair(CString("IndirectExportEntries"), GetIndirectExportEntries()));
+    vec.push_back(std::make_pair(CString("StarExportEntries"), GetStarExportEntries()));
+    vec.push_back(std::make_pair(CString("Status"), JSTaggedValue(static_cast<int32_t>(GetStatus()))));
+    vec.push_back(std::make_pair(CString("EvaluationError"), JSTaggedValue(GetEvaluationError())));
+    vec.push_back(std::make_pair(CString("DFSIndex"), JSTaggedValue(GetDFSIndex())));
+    vec.push_back(std::make_pair(CString("DFSAncestorIndex"), JSTaggedValue(GetDFSAncestorIndex())));
+    vec.push_back(std::make_pair(CString("NameDictionary"), GetNameDictionary()));
+}
+
+void ImportEntry::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("ModuleRequest"), GetModuleRequest()));
+    vec.push_back(std::make_pair(CString("ImportName"), GetImportName()));
+    vec.push_back(std::make_pair(CString("LocalName"), GetLocalName()));
+}
+
+void ExportEntry::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("ExportName"), GetExportName()));
+    vec.push_back(std::make_pair(CString("ModuleRequest"), GetModuleRequest()));
+    vec.push_back(std::make_pair(CString("ImportName"), GetImportName()));
+    vec.push_back(std::make_pair(CString("LocalName"), GetLocalName()));
+}
+
+void ResolvedBinding::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Module"), GetModule()));
+    vec.push_back(std::make_pair(CString("BindingName"), GetBindingName()));
+}
+
+void ModuleNamespace::DumpForSnapshot(JSThread *thread, std::vector<std::pair<CString, JSTaggedValue>> &vec) const
+{
+    vec.push_back(std::make_pair(CString("Module"), GetModule()));
+    vec.push_back(std::make_pair(CString("Exports"), GetExports()));
 }
 }  // namespace panda::ecmascript

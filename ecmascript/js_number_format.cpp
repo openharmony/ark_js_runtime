@@ -469,11 +469,11 @@ void JSNumberFormat::InitializeNumberFormat(JSThread *thread, const JSHandle<JSN
     if (!numberingSystemTaggedValue->IsUndefined()) {
         JSHandle<EcmaString> numberingSystemEcmaString = JSHandle<EcmaString>::Cast(numberingSystemTaggedValue);
         if (numberingSystemEcmaString->IsUtf16()) {
-            THROW_RANGE_ERROR(thread, "invalid numberingSystem");
+            THROW_ERROR(thread, ErrorType::RANGE_ERROR, "invalid numberingSystem");
         }
         numberingSystemStr = JSLocale::ConvertToStdString(numberingSystemEcmaString);
         if (!JSLocale::IsNormativeNumberingSystem(numberingSystemStr)) {
-            THROW_RANGE_ERROR(thread, "invalid numberingSystem");
+            THROW_ERROR(thread, ErrorType::RANGE_ERROR, "invalid numberingSystem");
         }
     }
 

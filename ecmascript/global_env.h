@@ -137,7 +137,8 @@ class JSThread;
     V(JSTaggedValue, JSIntlBoundFunctionClass, JS_INTL_BOUND_FUNCTION_CLASS)                        \
     V(JSTaggedValue, NumberFormatLocales, NUMBER_FORMAT_LOCALES_INDEX)                              \
     V(JSTaggedValue, DateTimeFormatLocales, DATE_TIMEFORMAT_LOCALES_INDEX)                          \
-    V(JSTaggedValue, GlobalRecord, GLOBAL_RECORD)
+    V(JSTaggedValue, GlobalRecord, GLOBAL_RECORD)                                                   \
+    V(JSTaggedValue, ModuleNamespaceClass, MODULENAMESPACE_CLASS)
 
 class GlobalEnv : public TaggedObject {
 public:

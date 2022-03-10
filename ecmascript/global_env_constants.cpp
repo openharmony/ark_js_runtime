@@ -18,9 +18,6 @@
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_global.h"
-#include "ecmascript/class_info_extractor.h"
-#include "ecmascript/class_linker/program_object.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/free_object.h"
 #include "ecmascript/global_env.h"
@@ -30,6 +27,8 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/jspandafile/class_info_extractor.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_arguments.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_array_iterator.h"
@@ -50,6 +49,7 @@
 #include "ecmascript/js_symbol.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/module/js_module_source_text.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/ts_types/ts_type.h"
 
@@ -112,8 +112,18 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, PropertyBox::SIZE, JSType::PROPERTY_BOX));
     SetConstant(ConstantIndex::PROGRAM_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, Program::SIZE, JSType::PROGRAM));
-    SetConstant(ConstantIndex::ECMA_MODULE_CLASS_INDEX,
-                factory->NewEcmaDynClass(dynClassClass, EcmaModule::SIZE, JSType::ECMA_MODULE));
+    SetConstant(
+        ConstantIndex::IMPORT_ENTRY_CLASS_INDEX,
+        factory->NewEcmaDynClass(dynClassClass, ImportEntry::SIZE, JSType::IMPORTENTRY_RECORD));
+    SetConstant(
+        ConstantIndex::EXPORT_ENTRY_CLASS_INDEX,
+        factory->NewEcmaDynClass(dynClassClass, ExportEntry::SIZE, JSType::EXPORTENTRY_RECORD));
+    SetConstant(
+        ConstantIndex::SOURCE_TEXT_MODULE_CLASS_INDEX,
+        factory->NewEcmaDynClass(dynClassClass, SourceTextModule::SIZE, JSType::SOURCE_TEXT_MODULE_RECORD));
+    SetConstant(
+        ConstantIndex::RESOLVED_BINDING_CLASS_INDEX,
+        factory->NewEcmaDynClass(dynClassClass, ResolvedBinding::SIZE, JSType::RESOLVEDBINDING_RECORD));
 
     JSHClass *jsProxyCallableClass = *factory->NewEcmaDynClass(dynClassClass, JSProxy::SIZE, JSType::JS_PROXY);
 
@@ -385,6 +395,9 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::UNICODE_INDEX, factory->NewFromCanBeCompressString("unicode"));
     SetConstant(ConstantIndex::ZERO_INDEX, factory->NewFromCanBeCompressString("0"));
     SetConstant(ConstantIndex::VALUES_INDEX, factory->NewFromCanBeCompressString("values"));
+    SetConstant(ConstantIndex::AMBIGUOUS_INDEX, factory->NewFromCanBeCompressString("ambiguous"));
+    SetConstant(ConstantIndex::MODULE_INDEX, factory->NewFromCanBeCompressString("module"));
+    SetConstant(ConstantIndex::STAR_INDEX, factory->NewFromCanBeCompressString("*"));
 
     auto accessor = factory->NewInternalAccessor(reinterpret_cast<void *>(JSFunction::PrototypeSetter),
                                                  reinterpret_cast<void *>(JSFunction::PrototypeGetter));

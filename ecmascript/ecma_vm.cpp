@@ -18,13 +18,10 @@
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_regexp.h"
-#include "ecmascript/class_linker/panda_file_translator.h"
-#include "ecmascript/class_linker/program_object-inl.h"
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
 #include "ecmascript/dfx/vmstat/runtime_stat.h"
-#include "ecmascript/ecma_module.h"
 #include "ecmascript/ecma_string_table.h"
 #include "ecmascript/global_dictionary.h"
 #include "ecmascript/global_env.h"
@@ -34,6 +31,9 @@
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
+#include "ecmascript/jspandafile/module_data_extractor.h"
+#include "ecmascript/jspandafile/panda_file_translator.h"
+#include "ecmascript/jspandafile/program_object-inl.h"
 #include "ecmascript/js_arraybuffer.h"
 #include "ecmascript/js_for_in_iterator.h"
 #include "ecmascript/js_invoker.h"
@@ -41,6 +41,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/concurrent_marker.h"
 #include "ecmascript/mem/heap.h"
+#include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/platform/platform.h"
 #include "ecmascript/regexp/regexp_parser_cache.h"
@@ -72,7 +73,6 @@
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(fuchsia-statically-constructed-objects)
-static const std::string_view ENTRY_POINTER = "_GLOBAL::func_main_0";
 JSRuntimeOptions JSRuntimeOptions::temporary_options;  // NOLINT(fuchsia-statically-constructed-objects)
 
 /* static */
@@ -336,17 +336,6 @@ EcmaVM::~EcmaVM()
     }
 }
 
-bool EcmaVM::ExecuteFromPf(const std::string &filename, std::string_view entryPoint,
-                           const std::vector<std::string> &args, bool isModule)
-{
-    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadJSPandaFile(filename);
-    if (jsPandaFile == nullptr) {
-        return false;
-    }
-
-    return Execute(jsPandaFile, entryPoint, args);
-}
-
 bool EcmaVM::CollectInfoOfPandaFile(const std::string &filename, std::vector<BytecodeTranslationInfo> *infoList)
 {
     const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadAotInfoFromPf(filename, infoList);
@@ -361,42 +350,10 @@ bool EcmaVM::CollectInfoOfPandaFile(const std::string &filename, std::vector<Byt
     return true;
 }
 
-bool EcmaVM::ExecuteFromBuffer(const void *buffer, size_t size, std::string_view entryPoint,
-                               const std::vector<std::string> &args, const std::string &filename)
-{
-    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadJSPandaFile(filename, buffer, size);
-    if (jsPandaFile == nullptr) {
-        return false;
-    }
-    // Get ClassName and MethodName
-    size_t pos = entryPoint.find_last_of("::");
-    if (pos == std::string_view::npos) {
-        LOG_ECMA(ERROR) << "EntryPoint:" << entryPoint << " is illegal";
-        return false;
-    }
-    CString methodName(entryPoint.substr(pos + 1));
-    InvokeEcmaEntrypoint(jsPandaFile, methodName, args);
-    return true;
-}
-
 tooling::ecmascript::PtJSExtractor *EcmaVM::GetDebugInfoExtractor(const panda_file::File *file)
 {
     tooling::ecmascript::PtJSExtractor *res = GetJSPandaFileManager()->GetOrCreatePtJSExtractor(file);
     return res;
-}
-
-bool EcmaVM::Execute(const JSPandaFile *jsPandaFile, std::string_view entryPoint, const std::vector<std::string> &args)
-{
-    // Get ClassName and MethodName
-    size_t pos = entryPoint.find_last_of("::");
-    if (pos == std::string_view::npos) {
-        LOG_ECMA(ERROR) << "EntryPoint:" << entryPoint << " is illegal";
-        return false;
-    }
-    CString methodName(entryPoint.substr(pos + 1));
-    // For Ark application startup
-    InvokeEcmaEntrypoint(jsPandaFile, methodName, args);
-    return true;
 }
 
 JSHandle<GlobalEnv> EcmaVM::GetGlobalEnv() const
@@ -471,6 +428,12 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     params->MakeArgList(*jsargs);
     JSRuntimeOptions options = this->GetJSOptions();
     JSHandle<JSTaggedValue> global = GlobalEnv::Cast(globalEnv_.GetTaggedObject())->GetJSGlobalObject();
+
+    if (jsPandaFile->IsModule()) {
+        global = JSHandle<JSTaggedValue>(thread_, JSTaggedValue::Undefined());
+        JSHandle<SourceTextModule> module = moduleManager_->HostGetImportedModule(jsPandaFile->GetJSPandaFileDesc());
+        func->SetModule(thread_, module);
+    }
     if (options.IsEnableCpuProfiler()) {
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
         CpuProfiler *profiler = CpuProfiler::GetInstance();
@@ -675,44 +638,6 @@ void EcmaVM::SetMicroJobQueue(job::MicroJobQueue *queue)
 {
     ASSERT(queue != nullptr);
     microJobQueue_ = JSTaggedValue(queue);
-}
-
-JSHandle<JSTaggedValue> EcmaVM::GetModuleByName(JSHandle<JSTaggedValue> moduleName)
-{
-    // only used in testcase, pandaFileWithProgram_ only one item. this interface will delete
-    const JSPandaFile *currentJSPandaFile = nullptr;
-    GetJSPandaFileManager()->EnumerateJSPandaFiles([&currentJSPandaFile](const JSPandaFile *jsPandaFile) {
-        currentJSPandaFile = jsPandaFile;
-        return false;
-    });
-    ASSERT(currentJSPandaFile != nullptr);
-    CString currentPathFile = currentJSPandaFile->GetJSPandaFileDesc();
-    CString relativeFile = ConvertToString(EcmaString::Cast(moduleName->GetTaggedObject()));
-
-    // generate full path
-    CString abcPath = moduleManager_->GenerateAmiPath(currentPathFile, relativeFile);
-
-    // Uniform module name
-    JSHandle<EcmaString> abcModuleName = factory_->NewFromString(abcPath);
-
-    JSHandle<JSTaggedValue> module = moduleManager_->GetModule(thread_, JSHandle<JSTaggedValue>::Cast(abcModuleName));
-    if (module->IsUndefined()) {
-        std::string file = base::StringHelper::ToStdString(abcModuleName.GetObject<EcmaString>());
-        std::vector<std::string> argv;
-        ExecuteModule(file, ENTRY_POINTER, argv);
-        module = moduleManager_->GetModule(thread_, JSHandle<JSTaggedValue>::Cast(abcModuleName));
-    }
-    return module;
-}
-
-void EcmaVM::ExecuteModule(const std::string &moduleFile, std::string_view entryPoint,
-                           const std::vector<std::string> &args)
-{
-    moduleManager_->SetCurrentExportModuleName(moduleFile);
-    // Update Current Module
-    EcmaVM::ExecuteFromPf(moduleFile, entryPoint, args, true);
-    // Restore Current Module
-    moduleManager_->RestoreCurrentExportModuleName();
 }
 
 void EcmaVM::ClearNativeMethodsData()

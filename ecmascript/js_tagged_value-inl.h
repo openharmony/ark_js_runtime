@@ -33,6 +33,7 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/mem/tagged_object-inl.h"
+#include "ecmascript/module/js_module_namespace.h"
 #include "ecmascript/object_factory.h"
 
 namespace panda::ecmascript {
@@ -236,6 +237,9 @@ inline bool JSTaggedValue::IsExtensible(JSThread *thread) const
 {
     if (UNLIKELY(IsJSProxy())) {
         return JSProxy::IsExtensible(thread, JSHandle<JSProxy>(thread, *this));
+    }
+    if (UNLIKELY(IsModuleNamespace())) {
+        return ModuleNamespace::IsExtensible();
     }
 
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsExtensible();
@@ -918,6 +922,36 @@ inline bool JSTaggedValue::IsTSFunctionType() const
 inline bool JSTaggedValue::IsTSArrayType() const
 {
     return IsHeapObject() && GetTaggedObject()->GetClass()->IsTSArrayType();
+}
+
+inline bool JSTaggedValue::IsModuleRecord() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsModuleRecord();
+}
+
+inline bool JSTaggedValue::IsSourceTextModule() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsSourceTextModule();
+}
+
+inline bool JSTaggedValue::IsImportEntry() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsImportEntry();
+}
+
+inline bool JSTaggedValue::IsExportEntry() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsExportEntry();
+}
+
+inline bool JSTaggedValue::IsResolvedBinding() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsResolvedBinding();
+}
+
+inline bool JSTaggedValue::IsModuleNamespace() const
+{
+    return IsHeapObject() && GetTaggedObject()->GetClass()->IsModuleNamespace();
 }
 
 inline double JSTaggedValue::ExtractNumber() const
