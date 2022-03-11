@@ -1492,7 +1492,7 @@ GateRef Stub::SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hCla
 
 GateRef Stub::SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef protoChange)
 {
-    GateRef offset = GetIntPtrConstant(JSHClass::PROTOTYPE_INFO_OFFSET);
+    GateRef offset = GetIntPtrConstant(JSHClass::PROTO_CHANGE_DETAILS_OFFSET);
     return Store(type, glue, hClass, offset, protoChange);
 }
 
@@ -1500,12 +1500,6 @@ GateRef Stub::SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass,
 {
     GateRef offset = GetIntPtrConstant(JSHClass::LAYOUT_OFFSET);
     return Store(type, glue, hClass, offset, attr);
-}
-
-GateRef Stub::SetParentToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef parent)
-{
-    GateRef offset = GetIntPtrConstant(JSHClass::PARENT_OFFSET);
-    return Store(type, glue, hClass, offset, parent);
 }
 
 GateRef Stub::SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key)
@@ -1770,6 +1764,7 @@ GateRef Stub::TaggedCastToDouble(GateRef x)
 
 GateRef Stub::TaggedCastToWeakReferentUnChecked(GateRef x)
 {
+    x = ChangeTaggedPointerToInt64(x);
     return Int64And(x, GetInt64Constant(~JSTaggedValue::TAG_WEAK_MASK));
 }
 

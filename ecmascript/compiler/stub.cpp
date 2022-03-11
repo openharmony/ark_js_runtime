@@ -2245,8 +2245,7 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     SetPrototypeToHClass(VariableType::JS_POINTER(), glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
     SetNumberOfPropsToHClass(glue, dstHClass, GetNumberOfPropsFromHClass(srcHClass));
-    SetParentToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
-    SetTransitionsToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
+    SetTransitionsToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));
     SetProtoChangeDetailsToHClass(VariableType::INT64(), glue, dstHClass,
                                   GetInt64Constant(JSTaggedValue::VALUE_NULL));
     SetEnumCacheToHClass(VariableType::INT64(), glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
@@ -2265,18 +2264,19 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
     GateRef transition = Load(VariableType::JS_POINTER(), hclass, transitionOffset);
     DEFVARIABLE(result, VariableType::JS_ANY(), transition);
 
-    Label notNull(env);
-    Branch(Int64Equal(transition, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &exit, &notNull);
-    Bind(&notNull);
+    Label notUndefined(env);
+    Branch(Int64Equal(transition, GetUndefinedConstant()), &exit, &notUndefined);
+    Bind(&notUndefined);
     {
-        Label isJSHClass(env);
-        Label notJSHClass(env);
-        Branch(IsJSHClass(transition), &isJSHClass, &notJSHClass);
-        Bind(&isJSHClass);
+        Label isWeak(env);
+        Label notWeak(env);
+        Branch(TaggedIsWeak(transition), &isWeak, &notWeak);
+        Bind(&isWeak);
         {
-            GateRef propNums = GetNumberOfPropsFromHClass(transition);
+            GateRef transitionHClass = TaggedCastToWeakReferentUnChecked(transition);
+            GateRef propNums = GetNumberOfPropsFromHClass(transitionHClass);
             GateRef last = Int32Sub(propNums, GetInt32Constant(1));
-            GateRef layoutInfo = GetLayoutFromHClass(transition);
+            GateRef layoutInfo = GetLayoutFromHClass(transitionHClass);
             GateRef cachedKey = GetKeyFromLayoutInfo(layoutInfo, last);
             GateRef cachedAttr = TaggedCastToInt32(GetPropAttrFromLayoutInfo(layoutInfo, last));
             GateRef cachedMetaData = GetPropertyMetaDataFromAttr(cachedAttr);
@@ -2290,9 +2290,9 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
                 Bind(&isMatch);
                 {
 #if ECMASCRIPT_ENABLE_IC
-                    NotifyHClassChanged(glue, hclass, transition);
+                    NotifyHClassChanged(glue, hclass, transitionHClass);
 #endif
-                    StoreHClass(glue, receiver, transition);
+                    StoreHClass(glue, receiver, transitionHClass);
                     Jump(&exit);
                 }
             }
@@ -2302,7 +2302,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
                 Jump(&exit);
             }
         }
-        Bind(&notJSHClass);
+        Bind(&notWeak);
         {
             // need to find from dictionary
             GateRef entry = FindEntryFromTransitionDictionary(glue, transition, key, metaData);
@@ -2310,17 +2310,30 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
             Label notFound(env);
             Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &isFound, &notFound);
             Bind(&isFound);
-            auto newHClass = GetValueFromDictionary<TransitionsDictionary>(
+            auto value = GetValueFromDictionary<TransitionsDictionary>(
                 VariableType::JS_POINTER(), transition, entry);
-            result = newHClass;
+            Label valueUndefined(env);
+            Label valueNotUndefined(env);
+            Branch(Int64NotEqual(value, GetUndefinedConstant()), &valueNotUndefined,
+                &valueUndefined);
+            Bind(&valueNotUndefined);
+            {
+                GateRef newHClass = TaggedCastToWeakReferentUnChecked(value);
+                result = ChangeInt64ToTagged(newHClass);
 #if ECMASCRIPT_ENABLE_IC
-            NotifyHClassChanged(glue, hclass, newHClass);
+                NotifyHClassChanged(glue, hclass, newHClass);
 #endif
-            StoreHClass(glue, receiver, newHClass);
-            Jump(&exit);
-            Bind(&notFound);
-            result = GetNullConstant();
-            Jump(&exit);
+                StoreHClass(glue, receiver, newHClass);
+                Jump(&exit);
+                Bind(&notFound);
+                result = GetNullConstant();
+                Jump(&exit);
+            }
+            Bind(&valueUndefined);
+            {
+                result = GetNullConstant();
+                Jump(&exit);
+            }
         }
     }
     Bind(&exit);
