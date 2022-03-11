@@ -158,9 +158,9 @@ JSFunctionEntry:
 //  current sp - 8:  type
 //  current sp - 16: callee save x19
 
-.global RuntimeCallTrampoline
-.type RuntimeCallTrampoline, %function
-RuntimeCallTrampoline:
+.global RuntimeCallTrampolineAot
+.type RuntimeCallTrampolineAot, %function
+RuntimeCallTrampolineAot:
     stp     x29, x30, [sp, #-16]!  // save register for fp, rip
     mov     x29, sp                // set frame pointer = callsiteFp
     str     x29, [x0, #ASM_GLUE_CURRENT_FRAME_OFFSET]       // save to thread->currentFrame_
@@ -184,4 +184,31 @@ RuntimeCallTrampoline:
     add   sp, sp, #16
     // restore register
     ldp     x29, x30, [sp], #16
+    ret
+
+.global RuntimeCallTrampolineInterpreterAsm
+.type RuntimeCallTrampolineInterpreterAsm, %function
+RuntimeCallTrampolineInterpreterAsm:
+    stp     #0, x30, [sp, #-16]!  // save register for fp, rip
+    str     sp, [x0, #ASM_GLUE_LEAVE_FRAME_OFFSET]       // save to thread->currentFrame_
+    str     x19, [sp, #-16]        // callee save register
+
+    // construct leave frame
+    mov     x19, #ASM_LEAVE_FRAME_TYPE
+    str     x19, [sp, #-8]
+    add     sp, sp, #-16
+
+    // load runtime trampoline address
+    ldr     x19, [sp, #32]  // runtime_id
+    add     x19, x0, x19, lsl #3
+    ldr     x19, [x19, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
+    ldr     x1, [sp, #40]  // argc
+    add     x2, sp,  #48   // argv[]
+    blr     x19
+
+    // descontruct leave frame and callee save register
+    ldr     x19, [sp]
+    add   sp, sp, #24
+    // restore register
+    ldr     x30, [sp], #8
     ret

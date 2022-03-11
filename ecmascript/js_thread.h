@@ -419,6 +419,7 @@ public:
     };
     static_assert(MEMBER_OFFSET(GlueData, rtInterfaces_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
     static_assert(MEMBER_OFFSET(GlueData, currentFrame_) == ASM_GLUE_CURRENT_FRAME_OFFSET);
+    static_assert(MEMBER_OFFSET(GlueData, leaveFrame_) == ASM_GLUE_LEAVE_FRAME_OFFSET);
     STATIC_ASSERT_EQ_ARCH(sizeof(GlueData), GlueData::SizeArch32, GlueData::SizeArch64);
 
 private:

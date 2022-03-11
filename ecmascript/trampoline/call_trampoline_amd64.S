@@ -49,7 +49,7 @@
 // %r9  - codeAddr
 .global JSFunctionEntry
 .type JSFunctionEntry, %function
-JSFunctionEntry: 
+JSFunctionEntry:
     PUSH_GENERAL_REGS
     // construct the frame
     pushq   %rbp
@@ -102,7 +102,7 @@ JSFunctionEntry:
 
 .LPopFrame:
     popq    %rsi           // pop prev-managed frame
-    addq    $8, %rsp       
+    addq    $8, %rsp
     popq    %rbp
 
     POP_GENERAL_REGS
@@ -141,9 +141,9 @@ JSFunctionEntry:
 //  sp - 16: rbp <---------current rbp & current sp
 //  current sp - 8:  type
 
-.global RuntimeCallTrampoline
-.type RuntimeCallTrampoline, %function
-RuntimeCallTrampoline:
+.global RuntimeCallTrampolineAot
+.type RuntimeCallTrampolineAot, %function
+RuntimeCallTrampolineAot:
     pushq   %rbp
     movq    %rsp, %rbp     // set frame pointer
     movq    %rbp, ASM_GLUE_CURRENT_FRAME_OFFSET(%rax)   // save to thread->currentFrame_
@@ -172,4 +172,36 @@ RuntimeCallTrampoline:
 
     addq    $8, %rsp
     popq    %rbp
+    ret
+
+.global RuntimeCallTrampolineInterpreterAsm
+.type RuntimeCallTrampolineInterpreterAsm, %function
+RuntimeCallTrampolineInterpreterAsm:
+    pushq   $0
+    movq    %rsp, ASM_GLUE_LEAVE_FRAME_OFFSET(%rax)   // save to thread->leaveFrame_
+    pushq   $ASM_LEAVE_FRAME_TYPE
+    
+    // callee save
+    pushq    %r10
+    pushq    %rdx
+    pushq    %rax
+
+    // construct leave frame
+    movq    %rsp, %rdx
+    addq    $48, %rdx        // 16 : for rbp & return address
+
+    // load runtime trampoline address
+    movq    (%rdx), %r10       // runtime id
+    movq    ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET(%rax, %r10, 8), %r10
+    movq    %rax, %rdi       // glue
+    movl    8(%rdx), %esi   // argc
+    addq    $16, %rdx        // argV
+    call    *%r10
+
+    addq    $8, %rsp
+    popq    %rdx
+    popq    %r10
+
+    addq    $8, %rsp
+    addq    $8, %rsp
     ret
