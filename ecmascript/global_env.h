@@ -34,6 +34,7 @@ class JSThread;
     V(JSTaggedValue, FunctionFunction, FUNCTION_FUNCTION_INDEX)                                     \
     V(JSTaggedValue, FunctionPrototype, FUNCTION_PROTOTYPE_INDEX)                                   \
     V(JSTaggedValue, NumberFunction, NUMBER_FUNCTION_INDEX)                                         \
+    V(JSTaggedValue, BigIntFunction, BIGINT_FUNCTION_INDEX)                                         \
     V(JSTaggedValue, DateFunction, DATE_FUNCTION_INDEX)                                             \
     V(JSTaggedValue, BooleanFunction, BOOLEAN_FUNCTION_INDEX)                                       \
     V(JSTaggedValue, ErrorFunction, ERROR_FUNCTION_INDEX)                                           \

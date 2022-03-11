@@ -38,27 +38,36 @@ JSTaggedValue BuiltinsNumber::NumberConstructor(EcmaRuntimeCallInfo *argv)
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<JSTaggedValue> newTarget = GetNewTarget(argv);
-    // 1. If no arguments were passed to this function invocation, let n be +0.
+    // 1. If value is present, then a , b , c.
+    // 2. Else Let n be +0𝔽.
     JSTaggedNumber numberValue(0);
     if (argv->GetArgsNumber() > 0) {
-        // 2. Else, let n be ToNumber(value).
-        JSHandle<JSTaggedValue> numberInput = GetCallArg(argv, 0);
-        numberValue = JSTaggedValue::ToNumber(thread, numberInput);
+        JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
+        // a. Let prim be ? ToNumeric(value).
+        JSTaggedValue numeric = JSTaggedValue::ToNumeric(thread, value);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        JSHandle<JSTaggedValue> numericVal(thread, numeric);
+        // b. If Type(prim) is BigInt, let n be 𝔽(ℝ(prim)).
+        if (numericVal->IsBigInt()) {
+            JSHandle<BigInt> bigNumericVal(numericVal);
+            numberValue = BigInt::BigIntToNumber(thread, bigNumericVal);
+        } else {
+            // c. Otherwise, let n be prim.
+            numberValue = JSTaggedNumber(numeric);
+        }
     }
-    // 4. If NewTarget is undefined, return n.
+    // 3. If NewTarget is undefined, return n.
     if (newTarget->IsUndefined()) {
         return numberValue;
     }
-    // 5. Let O be OrdinaryCreateFromConstructor(NewTarget, "%NumberPrototype%", «[[NumberData]]» ).
+    // 4. Let O be OrdinaryCreateFromConstructor(NewTarget, "%NumberPrototype%", «[[NumberData]]» ).
     JSHandle<JSTaggedValue> constructor = GetConstructor(argv);
     JSHandle<JSObject> result =
         thread->GetEcmaVM()->GetFactory()->NewJSObjectByConstructor(JSHandle<JSFunction>::Cast(constructor), newTarget);
-    // 6. ReturnIfAbrupt(O).
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    // 7. Set the value of O’s [[NumberData]] internal slot to n.
+    // 5. Set O.[[NumberData]] to n.
     JSPrimitiveRef::Cast(*result)->SetValue(thread, numberValue);
-    // 8. Return O.
+    // 6. Return O.
     return result.GetTaggedValue();
 }
 

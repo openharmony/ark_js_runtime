@@ -107,7 +107,7 @@ class ImportEntry;
 class ExportEntry;
 class SourceTextModule;
 class ResolvedBinding;
-
+class BigInt;
 namespace job {
 class MicroJobQueue;
 class PendingJob;
@@ -250,7 +250,7 @@ public:
     JSHandle<ProtoChangeMarker> NewProtoChangeMarker();
 
     JSHandle<ProtoChangeDetails> NewProtoChangeDetails();
-
+    JSHandle<BigInt> NewBigInt();
     // use for copy properties keys's array to another array
     JSHandle<TaggedArray> ExtendArray(const JSHandle<TaggedArray> &old, uint32_t length,
                                       JSTaggedValue initVal = JSTaggedValue::Hole());

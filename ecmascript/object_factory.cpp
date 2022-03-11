@@ -48,6 +48,7 @@
 #include "ecmascript/js_api_arraylist.h"
 #include "ecmascript/js_api_arraylist_iterator.h"
 #include "ecmascript/js_async_function.h"
+#include "ecmascript/js_bigint.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_date.h"
 #include "ecmascript/js_for_in_iterator.h"
@@ -1178,6 +1179,9 @@ JSHandle<JSPrimitiveRef> ObjectFactory::NewJSPrimitiveRef(PrimitiveType type, co
         case PrimitiveType::PRIMITIVE_BOOLEAN:
             function = env->GetBooleanFunction();
             break;
+        case PrimitiveType::PRIMITIVE_BIGINT:
+            function = env->GetBigIntFunction();
+            break;
         default:
             break;
     }
@@ -1794,6 +1798,17 @@ JSHandle<ProfileTypeInfo> ObjectFactory::NewProfileTypeInfo(uint32_t length)
     array->InitializeWithSpecialValue(JSTaggedValue::Undefined(), length);
 
     return array;
+}
+
+JSHandle<BigInt> ObjectFactory::NewBigInt()
+{
+    NewObjectHook();
+    TaggedObject *header = heap_->AllocateYoungOrHugeObject(
+        JSHClass::Cast(thread_->GlobalConstants()->GetBigIntClass().GetTaggedObject()));
+    JSHandle<BigInt> obj(thread_, BigInt::Cast(header));
+    obj->SetData(thread_, JSTaggedValue::Undefined());
+    obj->SetSign(false);
+    return obj;
 }
 
 // static
