@@ -21,6 +21,8 @@
 #include "ecmascript/compiler/gate_accessor.h"
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/base/number_helper.h"
+#include "ecmascript/js_hclass.h"
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
