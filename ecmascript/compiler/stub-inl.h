@@ -161,22 +161,22 @@ inline GateRef Stub::Environment::GetArgument(size_t index) const
 // constant
 inline GateRef Stub::GetInt8Constant(int8_t value)
 {
-    return env_.GetCircuitBuilder().NewInt8Constant(value);
+    return env_.GetCircuitBuilder().Int8Constant(value);
 }
 
 inline GateRef Stub::GetInt16Constant(int16_t value)
 {
-    return env_.GetCircuitBuilder().NewInt16Constant(value);
+    return env_.GetCircuitBuilder().Int16Constant(value);
 }
 
 inline GateRef Stub::GetInt32Constant(int32_t value)
 {
-    return env_.GetCircuitBuilder().NewIntegerConstant(value);
+    return env_.GetCircuitBuilder().Int32Constant(value);
 };
 
 inline GateRef Stub::GetInt64Constant(int64_t value)
 {
-    return env_.GetCircuitBuilder().NewInteger64Constant(value);
+    return env_.GetCircuitBuilder().Int64Constant(value);
 }
 
 inline GateRef Stub::GetIntPtrConstant(int64_t value)
@@ -201,32 +201,32 @@ inline GateRef Stub::FalseConstant()
 
 inline GateRef Stub::GetBooleanConstant(bool value)
 {
-    return env_.GetCircuitBuilder().NewBooleanConstant(value);
+    return env_.GetCircuitBuilder().BooleanConstant(value);
 }
 
 inline GateRef Stub::GetDoubleConstant(double value)
 {
-    return env_.GetCircuitBuilder().NewDoubleConstant(value);
+    return env_.GetCircuitBuilder().DoubleConstant(value);
 }
 
 inline GateRef Stub::GetUndefinedConstant(VariableType type)
 {
-    return env_.GetCircuitBuilder().UndefineConstant(CircuitBuilder::VariableType2GateType(type));
+    return env_.GetCircuitBuilder().UndefineConstant(type.GetGateType());
 }
 
 inline GateRef Stub::GetHoleConstant(VariableType type)
 {
-    return env_.GetCircuitBuilder().HoleConstant(CircuitBuilder::VariableType2GateType(type));
+    return env_.GetCircuitBuilder().HoleConstant(type.GetGateType());
 }
 
 inline GateRef Stub::GetNullConstant(VariableType type)
 {
-    return env_.GetCircuitBuilder().NullConstant(CircuitBuilder::VariableType2GateType(type));
+    return env_.GetCircuitBuilder().NullConstant(type.GetGateType());
 }
 
 inline GateRef Stub::GetExceptionConstant(VariableType type)
 {
-    return env_.GetCircuitBuilder().ExceptionConstant(CircuitBuilder::VariableType2GateType(type));
+    return env_.GetCircuitBuilder().ExceptionConstant(type.GetGateType());
 }
 
 inline GateRef Stub::IntPtrMul(GateRef x, GateRef y)
@@ -240,7 +240,7 @@ inline GateRef Stub::IntPtrMul(GateRef x, GateRef y)
 
 inline GateRef Stub::GetRelocatableData(uint64_t value)
 {
-    return env_.GetCircuitBuilder().NewRelocatableData(value);
+    return env_.GetCircuitBuilder().RelocatableData(value);
 }
 
 // parameter
@@ -352,14 +352,14 @@ inline GateRef Stub::CallStub(const CallSignature *descriptor, GateRef glue, Gat
     std::initializer_list<GateRef> args)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetCircuitBuilder().NewCallGate(descriptor, glue, target, depend, args);
+    GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
 inline GateRef Stub::CallStub(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
     std::initializer_list<GateRef> args)
 {
-    GateRef result = env_.GetCircuitBuilder().NewCallGate(descriptor, glue, target, depend, args);
+    GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -368,7 +368,7 @@ inline GateRef Stub::CallRuntime(const CallSignature *descriptor, GateRef glue, 
     std::initializer_list<GateRef> args)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetCircuitBuilder().NewCallGate(descriptor, glue, target, depend, args);
+    GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -376,7 +376,7 @@ inline GateRef Stub::CallRuntime(const CallSignature *descriptor, GateRef glue, 
 inline GateRef Stub::CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
     std::initializer_list<GateRef> args)
 {
-    GateRef result = env_.GetCircuitBuilder().NewCallGate(descriptor, glue, target, depend, args);
+    GateRef result = env_.GetCircuitBuilder().Call(descriptor, glue, target, args, depend);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -398,7 +398,7 @@ inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
 inline GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetCircuitBuilder().NewRuntimeCallGate(glue, target, depend, args);
+    GateRef result = env_.GetCircuitBuilder().RuntimeCall(glue, target, depend, args);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -406,7 +406,7 @@ inline GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, std::in
 inline GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend,
     std::initializer_list<GateRef> args)
 {
-    GateRef result = env_.GetCircuitBuilder().NewRuntimeCallGate(glue, target, depend, args);
+    GateRef result = env_.GetCircuitBuilder().RuntimeCall(glue, target, depend, args);
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -420,7 +420,8 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
         if (type == VariableType::POINTER()) {
             type = VariableType::INT64();
         }
-        GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend);
+        GateRef result = env_.GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
+            0, { depend, val }, type.GetGateType());
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -429,7 +430,8 @@ inline GateRef Stub::Load(VariableType type, GateRef base, GateRef offset)
         if (type == VariableType::POINTER()) {
             type = VariableType::INT32();
         }
-        GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, val, depend);
+        GateRef result = env_.GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
+            0, { depend, val }, type.GetGateType());
         env_.GetCurrentLabel()->SetDepend(result);
         return result;
     }
@@ -446,7 +448,8 @@ inline GateRef Stub::Load(VariableType type, GateRef base)
         }
     }
     auto depend = env_.GetCurrentLabel()->GetDepend();
-    GateRef result = env_.GetCircuitBuilder().NewLoadGate(type, base, depend);
+    GateRef result = env_.GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
+        0, { depend, base }, type.GetGateType());
     env_.GetCurrentLabel()->SetDepend(result);
     return result;
 }
@@ -454,22 +457,22 @@ inline GateRef Stub::Load(VariableType type, GateRef base)
 // arithmetic
 inline GateRef Stub::Int16Add(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), MachineType::I16, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I16, x, y);
 }
 
 inline GateRef Stub::Int32Add(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Add(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::DoubleAdd(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ADD), MachineType::F64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::ADD), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::IntPtrAdd(GateRef x, GateRef y)
@@ -503,57 +506,57 @@ inline GateRef Stub::IntPtrSub(GateRef x, GateRef y)
 
 inline GateRef Stub::PointerSub(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::ARCH, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::ARCH, x, y);
 }
 
 inline GateRef Stub::Int16Sub(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::I16, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I16, x, y);
 }
 
 inline GateRef Stub::Int32Sub(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Sub(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::DoubleSub(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::F64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SUB), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::Int32Mul(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::MUL), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::MUL), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Mul(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::MUL), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::MUL), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::DoubleMul(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::MUL), MachineType::F64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::MUL), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::DoubleDiv(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::FDIV), MachineType::F64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::FDIV), MachineType::F64, x, y);
 }
 
 inline GateRef Stub::Int32Div(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SDIV), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SDIV), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64Div(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SDIV), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SDIV), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrDiv(GateRef x, GateRef y)
@@ -563,147 +566,147 @@ inline GateRef Stub::IntPtrDiv(GateRef x, GateRef y)
 
 inline GateRef Stub::UInt32Div(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::UDIV), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::UDIV), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::UInt64Div(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::UDIV), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::UDIV), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::Int32Mod(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SMOD), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SMOD), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::DoubleMod(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SMOD), MachineType::F64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::SMOD), MachineType::F64, x, y);
 }
 
 // bit operation
 inline GateRef Stub::Int32Or(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::OR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int8And(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I8, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I8, x, y);
 }
 
 inline GateRef Stub::Int32And(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::BoolAnd(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I1, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I1, x, y);
 }
 
 inline GateRef Stub::BoolOr(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), MachineType::I1, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::OR), MachineType::I1, x, y);
 }
 
 inline GateRef Stub::Int32Not(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::REV), MachineType::I32, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::REV), MachineType::I32, x);
 }
 
 inline GateRef Stub::BoolNot(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::REV), MachineType::I1, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::REV), MachineType::I1, x);
 }
 
 inline GateRef Stub::Int64Or(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::OR), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrOr(GateRef x, GateRef y)
 {
     auto ptrsize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::OR), ptrsize, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::OR), ptrsize, x, y);
 }
 
 inline GateRef Stub::Int64And(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::AND), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::AND), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::Int16LSL(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::I16, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I16, x, y);
 }
 
 inline GateRef Stub::Int64Xor(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::XOR), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::XOR), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::Int32Xor(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::XOR), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::XOR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int8LSR(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), MachineType::I8, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I8, x, y);
 }
 
 inline GateRef Stub::Int64Not(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::REV), MachineType::I64, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::REV), MachineType::I64, x);
 }
 
 inline GateRef Stub::Int32LSL(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::Int64LSL(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::UInt64LSL(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSL), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrLSL(GateRef x, GateRef y)
 {
     auto ptrSize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), ptrSize, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSL), ptrSize, x, y);
 }
 
 inline GateRef Stub::Int32ASR(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ASR), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::ASR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::UInt32LSR(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), MachineType::I32, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::UInt64LSR(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), MachineType::I64, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSR), MachineType::I64, x, y);
 }
 
 inline GateRef Stub::IntPtrLSR(GateRef x, GateRef y)
 {
     auto ptrSize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), ptrSize, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(OpCode::LSR), ptrSize, x, y);
 }
 
 template<OpCode::Op Op, MachineType Type>
 inline GateRef Stub::BinaryOp(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(Op), Type, x, y);
+    return env_.GetCircuitBuilder().BinaryArithmetic(OpCode(Op), Type, x, y);
 }
 
 inline GateRef Stub::TaggedIsInt(GateRef x)
@@ -899,7 +902,7 @@ inline GateRef Stub::DoubleBuildTaggedTypeWithNoGC(GateRef x)
 
 inline GateRef Stub::CastDoubleToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::BITCAST), MachineType::I64, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::BITCAST), MachineType::I64, x);
 }
 
 inline GateRef Stub::TaggedTrue()
@@ -915,144 +918,144 @@ inline GateRef Stub::TaggedFalse()
 // compare operation
 inline GateRef Stub::Int8Equal(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::Int32Equal(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::Int32NotEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::NE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::NE), x, y);
 }
 
 inline GateRef Stub::Int64Equal(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::DoubleEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::EQ), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::EQ), x, y);
 }
 
 inline GateRef Stub::DoubleLessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SLT), x, y);
 }
 
 inline GateRef Stub::DoubleLessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SLE), x, y);
 }
 
 inline GateRef Stub::DoubleGreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SGT), x, y);
 }
 
 inline GateRef Stub::DoubleGreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SGE), x, y);
 }
 
 inline GateRef Stub::Int64NotEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::NE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::NE), x, y);
 }
 
 inline GateRef Stub::Int32GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SGT), x, y);
 }
 
 inline GateRef Stub::Int32LessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SLT), x, y);
 }
 
 inline GateRef Stub::Int32GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SGE), x, y);
 }
 
 inline GateRef Stub::Int32LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SLE), x, y);
 }
 
 inline GateRef Stub::UInt32GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::UGT), x, y);
 }
 
 inline GateRef Stub::UInt32LessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::ULT), x, y);
 }
 
 inline GateRef Stub::UInt32LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::ULE), x, y);
 }
 
 inline GateRef Stub::UInt32GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::UGE), x, y);
 }
 
 inline GateRef Stub::Int64GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SGT), x, y);
 }
 
 inline GateRef Stub::Int64LessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SLT), x, y);
 }
 
 inline GateRef Stub::Int64LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SLE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SLE), x, y);
 }
 
 inline GateRef Stub::Int64GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::SGE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::SGE), x, y);
 }
 
 inline GateRef Stub::UInt6464GreaterThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::UGT), x, y);
 }
 
 inline GateRef Stub::UInt64LessThan(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULT), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::ULT), x, y);
 }
 
 inline GateRef Stub::UInt64LessThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::ULE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::ULE), x, y);
 }
 
 inline GateRef Stub::UInt6464GreaterThanOrEqual(GateRef x, GateRef y)
 {
-    return env_.GetCircuitBuilder().NewLogicGate(OpCode(OpCode::UGE), x, y);
+    return env_.GetCircuitBuilder().BinaryLogic(OpCode(OpCode::UGE), x, y);
 }
 
 // cast operation
 inline GateRef Stub::ChangeInt64ToInt32(GateRef val)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32), val);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
 }
 
 inline GateRef Stub::ChangeInt64ToIntPtr(GateRef val)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32), val);
+        return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), val);
     }
     return val;
 }
@@ -1738,93 +1741,93 @@ inline GateRef Stub::TaggedCastToWeakReferentUnChecked(GateRef x)
 
 inline GateRef Stub::ChangeInt32ToFloat64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SIGNED_INT_TO_FLOAT), MachineType::F64, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::SIGNED_INT_TO_FLOAT), MachineType::F64, x);
 }
 
 inline GateRef Stub::ChangeUInt32ToFloat64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::UNSIGNED_INT_TO_FLOAT), MachineType::F64, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::UNSIGNED_INT_TO_FLOAT), MachineType::F64, x);
 }
 
 inline GateRef Stub::ChangeFloat64ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::FLOAT_TO_SIGNED_INT), MachineType::I32, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::FLOAT_TO_SIGNED_INT), MachineType::I32, x);
 }
 
 inline GateRef Stub::ChangeTaggedPointerToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TAGGED_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::TAGGED_TO_INT64), x);
 }
 
 inline GateRef Stub::ChangeInt64ToTagged(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewNumberGate(OpCode(OpCode::INT64_TO_TAGGED), x);
+    return env_.GetCircuitBuilder().TaggedNumber(OpCode(OpCode::INT64_TO_TAGGED), x);
 }
 
 inline GateRef Stub::CastInt64ToFloat64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::BITCAST), MachineType::F64, x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::BITCAST), MachineType::F64, x);
 }
 
 inline GateRef Stub::SExtInt32ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::SExtInt1ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::SExtInt1ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT32), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt8ToInt16(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT16), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT16), x);
 }
 
 inline GateRef Stub::ZExtInt32ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt1ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt1ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt8ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt8ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt8ToPtr(GateRef x)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
+        return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
     }
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt16ToPtr(GateRef x)
 {
     if (env_.IsArch32Bit()) {
-        return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
+        return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
     }
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::SExtInt32ToPtr(GateRef x)
@@ -1832,22 +1835,22 @@ inline GateRef Stub::SExtInt32ToPtr(GateRef x)
     if (env_.IsArch32Bit()) {
         return x;
     }
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::SEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::ZExtInt16ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT32), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT32), x);
 }
 
 inline GateRef Stub::ZExtInt16ToInt64(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ZEXT_TO_INT64), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::ZEXT_TO_INT64), x);
 }
 
 inline GateRef Stub::TruncInt64ToInt32(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT32), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT32), x);
 }
 
 inline GateRef Stub::TruncPtrToInt32(GateRef x)
@@ -1860,12 +1863,12 @@ inline GateRef Stub::TruncPtrToInt32(GateRef x)
 
 inline GateRef Stub::TruncInt64ToInt1(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT1), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT1), x);
 }
 
 inline GateRef Stub::TruncInt32ToInt1(GateRef x)
 {
-    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::TRUNC_TO_INT1), x);
+    return env_.GetCircuitBuilder().UnaryArithmetic(OpCode(OpCode::TRUNC_TO_INT1), x);
 }
 
 inline GateRef Stub::GetGlobalConstantAddr(GateRef index)
