@@ -155,7 +155,12 @@ bool LLVMStackMapParser::CollectStackMapSlots(uintptr_t callSiteAddr, uintptr_t 
     PrintCallSiteInfo(infos, fp);
 #endif
     uintptr_t callsiteFp = *fp;
-    uintptr_t callsiteSp = callsiteFp + FrameConstants::CALLSITE_SP_TO_FP_DELTA_OFFSET;
+    uintptr_t callsiteSp;
+    if (FrameHandler(reinterpret_cast<JSTaggedType *>(frameFp)).GetFrameType() == FrameType::ASM_LEAVE_FRAME) {
+        callsiteSp = OptimizedLeaveFrame::GetFrameFromSp(reinterpret_cast<JSTaggedType *>(frameFp))->GetCallSiteSp();
+    } else {
+        callsiteSp = callsiteFp + FrameConstants::CALLSITE_SP_TO_FP_DELTA_OFFSET;
+    }
 
     for (auto &info: *infos) {
         if (info.first == FrameConstants::SP_DWARF_REG_NUM) {
