@@ -1674,7 +1674,7 @@ void LLVMIRBuilder::VisitCastIntXToIntY(GateRef gate, GateRef e1)
     COMPILER_LOG(DEBUG) << "int cast2 int gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
-    ASSERT(GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(e1)->GetMachineType()) >= 
+    ASSERT(GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(e1)->GetMachineType()) >=
         GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(gate)->GetMachineType()));
     LLVMValueRef result = LLVMBuildIntCast2(builder_, e1Value, ConvertLLVMTypeFromGate(gate), 1, "");
     gateToLLVMMaps_[gate] = result;
