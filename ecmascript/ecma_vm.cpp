@@ -47,7 +47,7 @@
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
 #ifndef PANDA_TARGET_WINDOWS
-#include "ecmascript/runtime_trampolines.h"
+#include "ecmascript/trampoline/runtime_trampolines.h"
 #endif
 #include "ecmascript/snapshot/mem/slot_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
@@ -239,6 +239,9 @@ void EcmaVM::InitializeEcmaScriptRunStat()
 #define MEM_ALLOCATE_AND_GC_NAME(name) "Memory::" #name,
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_NAME)
 #undef MEM_ALLOCATE_AND_GC_NAME
+#define DEF_RUNTIME_ID(name, c) "Runtime::" #name,
+    RUNTIME_CALL_LIST(DEF_RUNTIME_ID)
+#undef DEF_RUNTIME_ID
     };
     static_assert(sizeof(runtimeCallerNames) == sizeof(const char *) * ecmascript::RUNTIME_CALLER_NUMBER,
                   "Invalid runtime caller number");

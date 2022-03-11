@@ -88,9 +88,9 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
-    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)),
+    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(GetTaggedArrayPtrTest)),
         {GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)});
-    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(GetTaggedArrayPtrTest)), {ptr1});
+    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(GetTaggedArrayPtrTest)), {ptr1});
     auto value1 = GetValueFromTaggedArray(VariableType::INT64(), ptr1, GetInt32Constant(0));
     GateRef tmp = CastInt64ToFloat64(value1);
     doubleX = DoubleMul(*doubleX, tmp);
@@ -552,7 +552,7 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
                 Jump(&xIsZeroOryIsInf);
                 Bind(&yNotInf);
                 {
-                    doubleX = TaggedCastToDouble(CallRuntimeTrampoline(glue, GetInt64Constant(FAST_STUB_ID(FloatMod)), {
+                    doubleX = TaggedCastToDouble(CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(FloatMod)), {
                             DoubleBuildTaggedTypeWithNoGC(*doubleX), DoubleBuildTaggedTypeWithNoGC(*doubleY)
                         }));
                     Return(DoubleBuildTaggedWithNoGC(*doubleX));
@@ -883,7 +883,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Bind(&notIntenalString);
                     {
                         key = CallRuntimeTrampoline(glue,
-                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { *key });
+                            GetInt64Constant(RUNTIME_CALL_ID(NewInternalString)), { *key });
                         Jump(&getByName);
                     }
                 }
@@ -956,7 +956,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Bind(&notIntenalString);
                     {
                         key = CallRuntimeTrampoline(glue,
-                            GetInt64Constant(FAST_STUB_ID(NewInternalString)), { *key });
+                            GetInt64Constant(RUNTIME_CALL_ID(NewInternalString)), { *key });
                         Jump(&getByName);
                     }
                 }

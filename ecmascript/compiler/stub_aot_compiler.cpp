@@ -161,7 +161,7 @@ int main(const int argc, const char **argv)
     if (compiledStubList.compare("All") == 0 || compiledStubList.find(#name) != std::string::npos) { \
         moduleBuilder.SetStub(STUB_ID(name), &name##Stub);                                           \
     }
-    FAST_RUNTIME_STUB_LIST(SET_STUB_TO_MODULE)
+    FAST_STUB_LIST(SET_STUB_TO_MODULE)
 #if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     INTERPRETER_STUB_LIST(SET_STUB_TO_MODULE)
 #endif
