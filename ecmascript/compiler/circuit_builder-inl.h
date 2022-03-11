@@ -462,7 +462,7 @@ GateRef CircuitBuilder::ChangeInt64ToInt32(GateRef val)
 
 GateRef CircuitBuilder::ChangeInt32ToIntPtr(GateRef val)
 {
-    return ZExtInt32ToArch(val);
+    return ZExtInt32ToPtr(val);
 }
 
 GateRef CircuitBuilder::TruncInt64ToInt32(GateRef x)
@@ -571,9 +571,9 @@ GateRef CircuitBuilder::UInt32LessThanOrEqual(GateRef x, GateRef y)
     return NewLogicGate(OpCode(OpCode::ULE), x, y);
 }
 
-GateRef CircuitBuilder::Int64GreaterThan(GateRef x, GateRef y)
+GateRef CircuitBuilder::UInt32GreaterThan(GateRef x, GateRef y)
 {
-    return NewLogicGate(OpCode(OpCode::SGT), x, y);
+    return NewLogicGate(OpCode(OpCode::UGT), x, y);
 }
 
 GateRef CircuitBuilder::UInt32GreaterThanOrEqual(GateRef x, GateRef y)
@@ -656,7 +656,7 @@ GateRef JsCircuitBuilder::TaggedIsNotHole(GateRef x)
 
 GateRef JsCircuitBuilder::TaggedIsUndefined(GateRef x)
 {
-    return Int64Equal(x, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));
+    return builder_->Int64Equal(x, builder_->GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));
 }
 
 GateRef JsCircuitBuilder::TaggedIsException(GateRef x)
