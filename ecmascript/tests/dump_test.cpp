@@ -500,7 +500,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::HCLASS: {
-                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), JSHClass::SIZE, 8)
+                CHECK_DUMP_FILEDS(TaggedObject::TaggedObjectSize(), JSHClass::SIZE, 7)
                 JSHandle<JSHClass> hclass = factory->NewEcmaDynClass(JSHClass::SIZE, JSType::HCLASS, proto);
                 DUMP_FOR_HANDLE(hclass)
                 break;

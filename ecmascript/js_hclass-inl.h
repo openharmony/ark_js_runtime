@@ -33,14 +33,14 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
                               const JSHandle<JSTaggedValue> &key, PropertyAttributes attributes)
 {
     JSTaggedValue transitions = parent->GetTransitions();
-    if (transitions.IsNull()) {
-        parent->SetTransitions(thread, child.GetTaggedValue());
-        child->SetParent(thread, parent.GetTaggedValue());
+    if (transitions.IsUndefined()) {
+        JSTaggedValue weakChild = JSTaggedValue(child.GetTaggedValue().CreateAndGetWeakRef());
+        parent->SetTransitions(thread, weakChild);
         return;
     }
     JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
-    if (transitions.IsJSHClass()) {
-        auto cachedHClass = JSHClass::Cast(transitions.GetTaggedObject());
+    if (transitions.IsWeak()) {
+        auto cachedHClass = JSHClass::Cast(transitions.GetTaggedWeakRef());
         int last = cachedHClass->NumberOfProps() - 1;
         LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
@@ -54,7 +54,6 @@ void JSHClass::AddTransitions(const JSThread *thread, const JSHandle<JSHClass> &
     transitions =
         TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), attr).GetTaggedValue();
     parent->SetTransitions(thread, transitions);
-    child->SetParent(thread, parent.GetTaggedValue());
 }
 
 void JSHClass::AddExtensionTransitions(const JSThread *thread, const JSHandle<JSHClass> &parent,
@@ -70,10 +69,10 @@ void JSHClass::AddProtoTransitions(const JSThread *thread, const JSHandle<JSHCla
 {
     JSTaggedValue transitions = parent->GetTransitions();
     JSMutableHandle<TransitionsDictionary> dict(thread, JSTaggedValue::Undefined());
-    if (transitions.IsNull()) {
+    if (transitions.IsUndefined()) {
         transitions = TransitionsDictionary::Create(thread).GetTaggedValue();
-    } else if (transitions.IsJSHClass()) {
-        auto cachedHClass = JSHClass::Cast(transitions.GetTaggedObject());
+    } else if (transitions.IsWeak()) {
+        auto cachedHClass = JSHClass::Cast(transitions.GetTaggedWeakRef());
         int last = cachedHClass->NumberOfProps() - 1;
         LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = JSHandle<JSTaggedValue>(thread, JSTaggedValue(layoutInfo->GetAttr(last).GetPropertyMetaData()));
@@ -87,18 +86,17 @@ void JSHClass::AddProtoTransitions(const JSThread *thread, const JSHandle<JSHCla
     transitions =
         TransitionsDictionary::PutIfAbsent(thread, dict, key, JSHandle<JSTaggedValue>(child), proto).GetTaggedValue();
     parent->SetTransitions(thread, transitions);
-    child->SetParent(thread, parent.GetTaggedValue());
 }
 
 inline JSHClass *JSHClass::FindTransitions(const JSTaggedValue &key, const JSTaggedValue &attributes)
 {
     DISALLOW_GARBAGE_COLLECTION;
     JSTaggedValue transitions = GetTransitions();
-    if (transitions.IsNull()) {
+    if (transitions.IsUndefined()) {
         return nullptr;
     }
-    if (transitions.IsJSHClass()) {
-        auto cachedHClass = JSHClass::Cast(transitions.GetTaggedObject());
+    if (transitions.IsWeak()) {
+        auto cachedHClass = JSHClass::Cast(transitions.GetTaggedWeakRef());
         int last = cachedHClass->NumberOfProps() - 1;
         LayoutInfo *layoutInfo = LayoutInfo::Cast(cachedHClass->GetLayout().GetTaggedObject());
         auto attr = layoutInfo->GetAttr(last).GetPropertyMetaData();
@@ -115,15 +113,21 @@ inline JSHClass *JSHClass::FindTransitions(const JSTaggedValue &key, const JSTag
     if (entry == -1) {
         return nullptr;
     }
-    return JSHClass::Cast(dict->GetValue(entry).GetTaggedObject());
+
+    JSTaggedValue ret = dict->GetValue(entry);
+    if (ret.IsUndefined()) {
+        return nullptr;
+    }
+
+    return JSHClass::Cast(ret.GetTaggedWeakRef());
 }
 
 inline JSHClass *JSHClass::FindProtoTransitions(const JSTaggedValue &key, const JSTaggedValue &proto)
 {
     DISALLOW_GARBAGE_COLLECTION;
     JSTaggedValue transitions = GetTransitions();
-    if (!transitions.IsTaggedArray()) {
-        ASSERT(transitions.IsNull() || transitions.IsJSHClass());
+    if (transitions.IsWeak() || !transitions.IsTaggedArray()) {
+        ASSERT(transitions.IsUndefined() || transitions.IsWeak());
         return nullptr;
     }
     ASSERT(transitions.IsTaggedArray());
@@ -132,7 +136,13 @@ inline JSHClass *JSHClass::FindProtoTransitions(const JSTaggedValue &key, const 
     if (entry == -1) {
         return nullptr;
     }
-    return JSHClass::Cast(dict->GetValue(entry).GetTaggedObject());
+
+    JSTaggedValue ret = dict->GetValue(entry);
+    if (ret.IsUndefined()) {
+        return nullptr;
+    }
+
+    return JSHClass::Cast(ret.GetTaggedWeakRef());
 }
 
 inline void JSHClass::UpdatePropertyMetaData(const JSThread *thread, [[maybe_unused]] const JSTaggedValue &key,

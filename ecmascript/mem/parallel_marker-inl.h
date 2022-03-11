@@ -59,6 +59,10 @@ inline void NonMovableMarker::HandleRangeRoots(uint32_t threadId, [[maybe_unused
     for (ObjectSlot slot = start; slot < end; slot++) {
         JSTaggedValue value(slot.GetTaggedType());
         if (value.IsHeapObject()) {
+            if (value.IsWeakForHeapObject()) {
+                RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
+                continue;
+            }
             MarkObject(threadId, value.GetTaggedObject());
         }
     }
@@ -71,8 +75,12 @@ inline void NonMovableMarker::HandleOldToNewRSet(uint32_t threadId, Region *regi
         oldRSet->IterateOverMarkedChunks([this, threadId](void *mem) -> bool {
             ObjectSlot slot(ToUintPtr(mem));
             JSTaggedValue value(slot.GetTaggedType());
-            if (value.IsHeapObject() && !value.IsWeakForHeapObject()) {
-                MarkObject(threadId, value.GetTaggedObject());
+            if (value.IsHeapObject()) {
+                if (value.IsWeakForHeapObject()) {
+                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(mem));
+                } else {
+                    MarkObject(threadId, value.GetTaggedObject());
+                }
             }
             return true;
         });
@@ -81,8 +89,9 @@ inline void NonMovableMarker::HandleOldToNewRSet(uint32_t threadId, Region *regi
 
 inline void NonMovableMarker::RecordWeakReference(uint32_t threadId, JSTaggedType *ref)
 {
-    Region *objectRegion = Region::ObjectAddressToRange(reinterpret_cast<TaggedObject *>(ref));
-    if (!objectRegion->InYoungGeneration()) {
+    auto value = JSTaggedValue(*ref);
+    Region *objectRegion = Region::ObjectAddressToRange(value.GetTaggedWeakRef());
+    if (!objectRegion->InYoungOrCSetGeneration()) {
         heap_->GetWorkList()->PushWeakReference(threadId, ref);
     }
 }
@@ -101,7 +110,11 @@ inline void MovableMarker::HandleRangeRoots(uint32_t threadId, [[maybe_unused]] 
     for (ObjectSlot slot = start; slot < end; slot++) {
         JSTaggedValue value(slot.GetTaggedType());
         if (value.IsHeapObject()) {
-            MarkObject(threadId, value.GetTaggedObject(), slot);
+            if (value.IsWeakForHeapObject()) {
+                RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
+            } else {
+                MarkObject(threadId, value.GetTaggedObject(), slot);
+            }
         }
     }
 }
