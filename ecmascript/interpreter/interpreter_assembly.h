@@ -441,6 +441,9 @@ public:
     static void HandleLdFunctionPref(
         JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
         JSTaggedValue acc, int32_t hotnessCounter);
+    static void HandleLdBigIntPrefId32(
+        JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
+        JSTaggedValue acc, int32_t hotnessCounter);
     static void HandleNewLexEnvWithNameDynPrefImm16Imm16(
         JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
         JSTaggedValue acc, int32_t hotnessCounter);
@@ -644,6 +647,7 @@ static std::array<DispatchEntryPoint, BCHandlers::MAX_BYTECODE_HANDLERS> asmDisp
     InterpreterAssembly::HandleStOwnByValueWithNameSetPrefV8V8,
     InterpreterAssembly::HandleStOwnByNameWithNameSetPrefId32V8,
     InterpreterAssembly::HandleLdFunctionPref,
+    InterpreterAssembly::HandleLdBigIntPrefId32,
     InterpreterAssembly::HandleNewLexEnvWithNameDynPrefImm16Imm16,
     InterpreterAssembly::HandleMovDynV8V8,
     InterpreterAssembly::HandleMovDynV16V16,
@@ -662,7 +666,6 @@ static std::array<DispatchEntryPoint, BCHandlers::MAX_BYTECODE_HANDLERS> asmDisp
     InterpreterAssembly::HandleJnezImm8,
     InterpreterAssembly::HandleJnezImm16,
     InterpreterAssembly::ExceptionHandler,
-    InterpreterAssembly::HandleOverflow,
     InterpreterAssembly::HandleOverflow,
     InterpreterAssembly::HandleOverflow,
     InterpreterAssembly::HandleOverflow,

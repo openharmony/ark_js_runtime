@@ -48,6 +48,12 @@ public:
     static JSTaggedValue LessEqDyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
     static JSTaggedValue GreaterDyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
     static JSTaggedValue GreaterEqDyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
+    static JSTaggedValue Shl2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
+    static JSTaggedValue Shr2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
+    static JSTaggedValue Ashr2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
+    static JSTaggedValue And2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
+    static JSTaggedValue Or2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
+    static JSTaggedValue Xor2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right);
 
     static JSTaggedValue ToJSTaggedValueWithInt32(JSThread *thread, JSTaggedValue value);
     static JSTaggedValue ToJSTaggedValueWithUint32(JSThread *thread, JSTaggedValue value);
@@ -152,10 +158,11 @@ public:
                                                 JSTaggedValue lexenv, ConstantPool *constpool);
     static JSTaggedValue SetClassConstructorLength(JSThread *thread, JSTaggedValue ctor, JSTaggedValue length);
     static JSTaggedValue GetModuleNamespace(JSThread *thread, JSTaggedValue localName);
+    static JSTaggedValue LdBigInt(JSThread *thread, JSTaggedValue numberBigInt);
+    static JSTaggedValue ThrowTypeError(JSThread *thread, const char *message);
     /* -------------- Common API End, Don't change those interface!!! ----------------- */
 
 private:
-    static JSTaggedValue ThrowTypeError(JSThread *thread, const char *message);
     static JSTaggedValue ThrowSyntaxError(JSThread *thread, const char *message);
     static JSTaggedValue GetCallSpreadArgs(JSThread *thread, JSTaggedValue array);
     static JSTaggedValue SetClassInheritanceRelationship(JSThread *thread, JSTaggedValue ctor, JSTaggedValue base);

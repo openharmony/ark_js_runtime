@@ -37,6 +37,7 @@
 #include "ecmascript/jspandafile/js_pandafile_executor.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_arraybuffer.h"
+#include "ecmascript/js_bigint.h"
 #include "ecmascript/js_dataview.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_map.h"
@@ -110,6 +111,7 @@ using ecmascript::base::TypedArrayHelper;
 using ecmascript::job::MicroJobQueue;
 using ecmascript::job::QueueType;
 using ecmascript::JSRuntimeOptions;
+using ecmascript::BigInt;
 template<typename T>
 using JSHandle = ecmascript::JSHandle<T>;
 
@@ -548,6 +550,71 @@ Local<NumberRef> NumberRef::New(const EcmaVM *vm, double input)
 double NumberRef::Value()
 {
     return JSTaggedNumber(JSNApiHelper::ToJSTaggedValue(this)).GetNumber();
+}
+
+// ----------------------------------- BigIntRef ---------------------------------------
+Local<BigIntRef> BigIntRef::New(const EcmaVM *vm, uint64_t input)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<BigInt> big = BigInt::Uint64ToBigInt(thread, input);
+    JSHandle<JSTaggedValue> bigint = JSHandle<JSTaggedValue>::Cast(big);
+    return JSNApiHelper::ToLocal<BigIntRef>(bigint);
+}
+
+Local<BigIntRef> BigIntRef::New(const EcmaVM *vm, int64_t input)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<BigInt> big = BigInt::Int64ToBigInt(thread, input);
+    JSHandle<JSTaggedValue> bigint = JSHandle<JSTaggedValue>::Cast(big);
+    return JSNApiHelper::ToLocal<BigIntRef>(bigint);
+}
+
+Local<JSValueRef> BigIntRef::CreateBigWords(const EcmaVM *vm, bool sign, uint32_t size, const uint64_t* words)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<BigInt> big = BigInt::CreateBigWords(thread, sign, size, words);
+    JSHandle<JSTaggedValue> bigint = JSHandle<JSTaggedValue>::Cast(big);
+    return JSNApiHelper::ToLocal<JSValueRef>(bigint);
+}
+
+void BigIntRef::BigIntToInt64(const EcmaVM *vm, int64_t *cValue, bool *lossless)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<JSTaggedValue> bigintVal(JSNApiHelper::ToJSHandle(this));
+    BigInt::BigIntToInt64(thread, bigintVal, cValue, lossless);
+}
+
+void BigIntRef::BigIntToUint64(const EcmaVM *vm, uint64_t *cValue, bool *lossless)
+{
+    JSThread *thread = vm->GetJSThread();
+    JSHandle<JSTaggedValue> bigintVal(JSNApiHelper::ToJSHandle(this));
+    BigInt::BigIntToUint64(thread, bigintVal, cValue, lossless);
+}
+
+void BigIntRef::GetWordsArray(bool* signBit, size_t wordCount, uint64_t* words)
+{
+    JSHandle<BigInt> bigintVal(JSNApiHelper::ToJSHandle(this));
+    uint32_t len = bigintVal->GetLength();
+    uint32_t count = 0;
+    uint32_t index = 0;
+    for (; index < wordCount - 1; ++index) {
+        words[index] = static_cast<uint64_t>(bigintVal->GetDigit(count++));
+        words[index] |= static_cast<uint64_t>(bigintVal->GetDigit(count++)) << 32; // 32 : int32_t bits
+    }
+    if (len % 2 == 0) { // 2 : len is odd or even
+        words[index] = static_cast<uint64_t>(bigintVal->GetDigit(count++));
+        words[index] |= static_cast<uint64_t>(bigintVal->GetDigit(count++)) << 32; // 32 : int32_t bits
+    } else {
+        words[index] = static_cast<uint64_t>(bigintVal->GetDigit(count++));
+    }
+    *signBit = bigintVal->GetSign();
+}
+
+uint32_t BigIntRef::GetWordsArraySize()
+{
+    JSHandle<BigInt> bigintVal(JSNApiHelper::ToJSHandle(this));
+    uint32_t len = bigintVal->GetLength();
+    return len % 2 != 0 ? len / 2 + 1 : len / 2; // 2 : len is odd or even
 }
 
 // ----------------------------------- BooleanRef ---------------------------------------
@@ -1709,6 +1776,11 @@ bool JSValueRef::IsFalse()
 bool JSValueRef::IsNumber()
 {
     return JSNApiHelper::ToJSTaggedValue(this).IsNumber();
+}
+
+bool JSValueRef::IsBigInt()
+{
+    return JSNApiHelper::ToJSTaggedValue(this).IsBigInt();
 }
 
 bool JSValueRef::IsInt()
