@@ -104,6 +104,12 @@ GateRef CircuitBuilder::NewInteger64Constant(int64_t val)
     return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, val, {constantList}, GateType::C_VALUE);
 }
 
+GateRef CircuitBuilder::NewPtrConstant(int64_t val)
+{
+    auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::ARCH, val, {constantList}, GateType::C_VALUE);
+}
+
 GateRef CircuitBuilder::NewRelocatableData(uint64_t val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
@@ -385,7 +391,55 @@ GateRef CircuitBuilder::Alloca(int size)
     return circuit_->NewGate(OpCode(OpCode::ALLOCA), size, { allocaList }, GateType::C_VALUE);
 }
 
-LabelManager::LabelManager(GateRef hir, Circuit *circuit) : circuit_(circuit), builder_(circuit, this)
+GateRef JsCircuitBuilder::TaggedIsString(GateRef obj)
+{
+    Label entry(lm_);
+    lm_->PushCurrentLabel(&entry);
+    Label exit(lm_);
+    DEFVAlUE(result, lm_, VariableType::BOOL(), FalseConstant());
+    Label isHeapObject(lm_);
+    lm_->Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    lm_->Bind(&isHeapObject);
+    {
+        result = builder_->Int32Equal(GetObjectType(LoadHClass(obj)),
+            builder_->GetInt32Constant(static_cast<int32_t>(JSType::STRING)));
+        lm_->Jump(&exit);
+    }
+    lm_->Bind(&exit);
+    auto ret = *result;
+    lm_->PopCurrentLabel();
+    return ret;
+}
+
+GateRef JsCircuitBuilder::TaggedIsStringOrSymbol(GateRef obj)
+{
+    Label entry(lm_);
+    lm_->PushCurrentLabel(&entry);
+    Label exit(lm_);
+    DEFVARIABLE(result, lm_, VariableType::BOOL(), FalseConstant());
+    Label isHeapObject(lm_);
+    lm_->Branch(TaggedIsHeapObject(obj), &isHeapObject, &exit);
+    lm_->Bind(&isHeapObject);
+    {
+        GateRef objType = GetObjectType(LoadHClass(obj));
+        result = builder_->Int32Equal(objType, builder_->GetInt32Constant(static_cast<int32_t>(JSType::STRING)));
+        Label isString(lm_);
+        Label notString(lm_);
+        lm_->Branch(*result, &exit, &notString);
+        lm_->Bind(&notString);
+        {
+            result = builder_->Int32Equal(objType, builder_->GetInt32Constant(static_cast<int32_t>(JSType::SYMBOL)));
+            lm_->Jump(&exit);
+        }
+    }
+    lm_->Bind(&exit);
+    auto ret = *result;
+    lm_->PopCurrentLabel();
+    return ret;
+}
+
+LabelManager::LabelManager(GateRef hir, Circuit *circuit)
+    : circuit_(circuit), builder_(circuit, this), jsBuilder_(circuit, this, &builder_)
 {
     auto hirGate = circuit_->LoadGatePtr(hir);
     entry_ = Label(NewLabel(this, circuit_->SaveGatePtr(hirGate->GetInGate(0))));
@@ -399,7 +453,7 @@ LabelManager::LabelManager(GateRef hir, Circuit *circuit) : circuit_(circuit), b
 }
 
 LabelManager::LabelManager(GateRef stateEntry, GateRef dependEntry, std::vector<GateRef>& inlist, Circuit *circuit)
-    : circuit_(circuit), builder_(circuit, this)
+    : circuit_(circuit), builder_(circuit, this), jsBuilder_(circuit, this, &builder_)
 {
     entry_ = Label(NewLabel(this, stateEntry));
     currentLabel_ = &entry_;
