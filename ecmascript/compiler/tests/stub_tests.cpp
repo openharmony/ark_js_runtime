@@ -50,7 +50,7 @@ public:
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
         std::vector<int> stubSet = {
 #define DEF_FAST_STUB(name, counter) FAST_STUB_ID(name),
-            FAST_RUNTIME_STUB_LIST(DEF_FAST_STUB)
+            FAST_STUB_LIST_BASE(DEF_FAST_STUB)
 #undef DEF_FAST_STUB
         };
         stubModule.Initialize(stubSet);

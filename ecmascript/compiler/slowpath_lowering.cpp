@@ -175,7 +175,7 @@ void SlowPathLowering::LowerAdd2Dyn(GateRef gate, GateRef glue)
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(Add2Dyn));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(Add2Dyn));
     // 2: number of value inputs
     ASSERT(acc.GetNumValueIn(gate) == 2);
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
@@ -187,7 +187,7 @@ void SlowPathLowering::LowerCreateIterResultObj(GateRef gate, GateRef glue)
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(CreateIterResultObj));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CreateIterResultObj));
     // 2: number of value inputs
     ASSERT(acc.GetNumValueIn(gate) == 2);
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
@@ -199,7 +199,7 @@ void SlowPathLowering::LowerSuspendGenerator(GateRef gate, GateRef glue)
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(SuspendGenerator));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(SuspendGenerator));
     // 2: number of value inputs
     ASSERT(acc.GetNumValueIn(gate) == 2);
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
@@ -211,7 +211,7 @@ void SlowPathLowering::LowerAsyncFunctionAwaitUncaught(GateRef gate, GateRef glu
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(AsyncFunctionAwaitUncaught));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(AsyncFunctionAwaitUncaught));
     // 2: number of value inputs
     ASSERT(acc.GetNumValueIn(gate) == 2);
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
@@ -223,7 +223,7 @@ void SlowPathLowering::LowerAsyncFunctionResolve(GateRef gate, GateRef glue)
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(AsyncFunctionResolveOrReject));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(AsyncFunctionResolveOrReject));
     // 2: number of value inputs
     ASSERT(acc.GetNumValueIn(gate) == 2);
     GateRef tureConst = cirBuilder.NewBooleanConstant(true);
@@ -237,7 +237,7 @@ void SlowPathLowering::LowerAsyncFunctionReject(GateRef gate, GateRef glue)
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(AsyncFunctionResolveOrReject));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(AsyncFunctionResolveOrReject));
     // 2: number of value inputs
     ASSERT(acc.GetNumValueIn(gate) == 2);
     GateRef falseConst = cirBuilder.NewBooleanConstant(false);
@@ -248,7 +248,7 @@ void SlowPathLowering::LowerAsyncFunctionReject(GateRef gate, GateRef glue)
 
 GateRef SlowPathLowering::GetValueFromConstPool(CircuitBuilder &builder, GateRef gate, GateRef glue)
 {
-    GateRef id = builder.NewInteger64Constant(FAST_STUB_ID(LoadValueFromConstantPool));
+    GateRef id = builder.NewInteger64Constant(RUNTIME_CALL_ID(LoadValueFromConstantPool));
     auto bytecodeInfo = builder_->GetBytecodeInfo(builder_->GetJSBytecode(gate));
     GateRef stringId = builder.NewInteger64Constant(bytecodeInfo.imm);
     return builder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
@@ -265,7 +265,7 @@ void SlowPathLowering::LowerLoadStr(GateRef gate, GateRef glue)
 void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 {
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(GetLexicalEnv));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(GetLexicalEnv));
     GateRef newGate =
         cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {});
     LowerHirToCall(cirBuilder, gate, newGate);
@@ -275,7 +275,7 @@ void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
     CircuitBuilder cirBuilder(circuit_);
     GateRef prop = GetValueFromConstPool(cirBuilder, gate, glue);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(TryLdGlobalByName));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(TryLdGlobalByName));
     GateRef newGate =
         cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
     LowerHirToCall(cirBuilder, gate, newGate);
@@ -286,7 +286,7 @@ void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
     GateRef prop = GetValueFromConstPool(cirBuilder, gate, glue);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(StGlobalVar));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(StGlobalVar));
     ASSERT(acc.GetNumValueIn(gate) == 1);
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
                                                     {prop, acc.GetValueIn(gate, 0)});
@@ -297,7 +297,7 @@ void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef id = cirBuilder.NewInteger64Constant(FAST_STUB_ID(GetIterator));
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(GetIterator));
     // 1: number of value inputs
     ASSERT(acc.GetNumValueIn(gate) == 1);
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),

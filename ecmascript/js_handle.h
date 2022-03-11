@@ -134,6 +134,7 @@ private:
     friend class GlobalEnv;
     friend class JSHandleTest;
     friend class GlobalHandleCollection;
+    friend class RuntimeTrampolines;
 };
 
 template <>

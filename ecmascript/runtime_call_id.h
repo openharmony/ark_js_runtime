@@ -18,6 +18,7 @@
 
 #include "ecmascript/base/config.h"
 #include "ecmascript/dfx/vmstat/runtime_stat.h"
+#include "ecmascript/trampoline/runtime_define.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -181,8 +182,8 @@ namespace panda::ecmascript {
     V(SetObjectWithProto)           \
     V(getmodulenamespace)           \
     V(StModuleVar)                  \
+    V(LdModuleVar)                  \
     V(CopyModule)                   \
-    V(LdModvarVar)                  \
     V(CreateRegExpWithLiteral)      \
     V(CreateArrayWithBuffer)        \
     V(GetNextPropName)              \
@@ -617,6 +618,8 @@ namespace panda::ecmascript {
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define INTERPRETER_CALLER_ID(name) INTERPRETER_ID_##name,
+#define RUNTIME_CALLER_ID(name) RUNTIME_ID_##name,
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUILTINS_API_ID(class, name) BUILTINS_ID_##class##_##name,
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -628,6 +631,9 @@ enum EcmaRuntimeCallerId {
     INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_ID) BUITINS_API_LIST(BUILTINS_API_ID)
     ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_ID)
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_ID)
+#define DEF_RUNTIME_ID(name, c) RUNTIME_CALL_ID_##name,
+    RUNTIME_CALL_LIST(DEF_RUNTIME_ID)
+#undef DEF_RUNTIME_ID
     RUNTIME_CALLER_NUMBER,
 };
 
@@ -637,8 +643,14 @@ enum EcmaRuntimeCallerId {
     [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
     [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
     RuntimeTimerScope interpret_##name##_scope_(thread, INTERPRETER_CALLER_ID(name) _run_stat_)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define RUNTIME_TRACE(thread, name)                                                        \
+    [[maybe_unused]] JSThread *_js_thread_ = thread;                                           \
+    [[maybe_unused]] EcmaRuntimeStat *_run_stat_ = _js_thread_->GetEcmaVM()->GetRuntimeStat(); \
+    RuntimeTimerScope interpret_##name##_scope_(thread, RUNTIME_CALLER_ID(name) _run_stat_)
 #else
 #define INTERPRETER_TRACE(thread, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
+#define RUNTIME_TRACE(thread, name) static_cast<void>(0) // NOLINT(cppcoreguidelines-macro-usage)
 #endif // ECMASCRIPT_ENABLE_INTERPRETER_TRUNTIME_STAT
 
 #if ECMASCRIPT_ENABLE_BUILTINS_RUNTIME_STAT

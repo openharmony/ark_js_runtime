@@ -15,10 +15,10 @@
 
 #ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
-#include "ecmascript/compiler/fast_stub_define.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/trampoline/runtime_define.h"
 
 namespace panda::ecmascript {
 extern "C" JSTaggedType RuntimeCallTrampolineAot(uintptr_t glue, uint64_t runtime_id,
@@ -27,26 +27,19 @@ extern "C" JSTaggedType RuntimeCallTrampolineInterpreterAsm(uintptr_t glue, uint
                                                             uint64_t argc, ...);
 class RuntimeTrampolines {
 public:
-    enum RuntimeTrampolineId {
-#define DEF_RUNTIME_STUB(name, counter) RUNTIME_ID_##name,
-        EXTERNAL_RUNTIMESTUB_LIST(DEF_RUNTIME_STUB, DEF_RUNTIME_STUB)
-#undef DEF_RUNTIME_STUB
-        EXTERNAL_RUNTIME_STUB_MAXID
-    };
     static void InitializeRuntimeTrampolines(JSThread *thread)
     {
     #define DEF_RUNTIME_STUB(name, counter) RuntimeTrampolineId::RUNTIME_ID_##name
     #define INITIAL_RUNTIME_FUNCTIONS(name, count) \
         thread->SetRuntimeFunction(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
-        EXTERNAL_RUNTIMESTUB_LIST(INITIAL_RUNTIME_FUNCTIONS, INITIAL_RUNTIME_FUNCTIONS)
+        ALL_RUNTIME_CALL_LIST(INITIAL_RUNTIME_FUNCTIONS)
     #undef INITIAL_RUNTIME_FUNCTIONS
     #undef DEF_RUNTIME_STUB
     }
 
-#define IGNORE_DECLARE_RUNTIME_TRAMPOLINES(...)
 #define DECLARE_RUNTIME_TRAMPOLINES(name, counter) \
     static JSTaggedType name(uintptr_t argGlue, uint32_t argc, uintptr_t argv);
-    EXTERNAL_RUNTIMESTUB_LIST(DECLARE_RUNTIME_TRAMPOLINES, IGNORE_DECLARE_RUNTIME_TRAMPOLINES)
+    RUNTIME_CALL_LIST(DECLARE_RUNTIME_TRAMPOLINES)
 #undef DECLARE_RUNTIME_TRAMPOLINES
 
     static void DebugPrint(int fmtMessageId, ...);
