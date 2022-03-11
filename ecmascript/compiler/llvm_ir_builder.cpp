@@ -109,8 +109,10 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::ZEXT_TO_INT16, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_TO_INT32, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::ZEXT_TO_INT64, &LLVMIRBuilder::HandleZExtInt},
+        {OpCode::ZEXT_TO_ARCH, &LLVMIRBuilder::HandleZExtInt},
         {OpCode::SEXT_TO_INT32, &LLVMIRBuilder::HandleSExtInt},
         {OpCode::SEXT_TO_INT64, &LLVMIRBuilder::HandleSExtInt},
+        {OpCode::SEXT_TO_ARCH, &LLVMIRBuilder::HandleSExtInt},
         {OpCode::TRUNC_TO_INT1, &LLVMIRBuilder::HandleCastIntXToIntY},
         {OpCode::TRUNC_TO_INT32, &LLVMIRBuilder::HandleCastIntXToIntY},
         {OpCode::REV, &LLVMIRBuilder::HandleIntRev},
@@ -852,6 +854,13 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
 {
     LLVMValueRef llvmValue = nullptr;
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
+    if (machineType == MachineType::ARCH) {
+        if (compCfg_->Is32Bit()) {
+            machineType = MachineType::I32;
+        } else {
+            machineType = MachineType::I64;
+        }
+    }
     if (machineType == MachineType::I32) {
         llvmValue = LLVMConstInt(LLVMInt32Type(), value.to_ulong(), 0);
     } else if (machineType == MachineType::I64) {
@@ -1665,6 +1674,8 @@ void LLVMIRBuilder::VisitCastIntXToIntY(GateRef gate, GateRef e1)
     COMPILER_LOG(DEBUG) << "int cast2 int gate:" << gate;
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    ASSERT(GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(e1)->GetMachineType()) >= 
+        GetBitWidthFromMachineType(circuit_->LoadGatePtrConst(gate)->GetMachineType()));
     LLVMValueRef result = LLVMBuildIntCast2(builder_, e1Value, ConvertLLVMTypeFromGate(gate), 1, "");
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
