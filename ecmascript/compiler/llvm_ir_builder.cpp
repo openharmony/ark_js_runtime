@@ -468,12 +468,12 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
         circuit_->GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME) {
         rtoffset = LLVMConstInt(glue_type,
             JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
-                (FAST_STUB_ID(RuntimeCallTrampolineInterpreterAsm) - FAST_STUB_MAXCOUNT) * slotSize_,
+                (RUNTIME_CALL_ID(RuntimeCallTrampolineInterpreterAsm)) * slotSize_,
             0);
     } else {
         rtoffset = LLVMConstInt(glue_type,
                                 JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
-                                    (FAST_STUB_ID(RuntimeCallTrampolineAot) - FAST_STUB_MAXCOUNT) * slotSize_,
+                                    (RUNTIME_CALL_ID(RuntimeCallTrampolineAot)) * slotSize_,
                                 0);
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
@@ -484,7 +484,7 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     LLVMValueRef params[16];
     params[0] = glue;
     int index = circuit_->GetBitField(inList[1]);
-    params[1] = LLVMConstInt(LLVMInt64Type(), index - FAST_STUB_MAXCOUNT, 0);
+    params[1] = LLVMConstInt(LLVMInt64Type(), index, 0);
     params[2] = LLVMConstInt(LLVMInt64Type(), inList.size() - paraStartIndex, 0); // 2 : 2 means third parameter
     for (size_t paraIdx = paraStartIndex; paraIdx < inList.size(); ++paraIdx) {
         GateRef gateTmp = inList[paraIdx];

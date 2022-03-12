@@ -1181,7 +1181,7 @@ void InterpreterAssembly::HandleThrowIfNotObjectPrefV8(
     INTERPRETER_GOTO_EXCEPTION_HANDLER();
 }
 
-void InterpreterAssembly::HandleIternextPrefV8(
+void InterpreterAssembly::HandleIterNextPrefV8(
     JSThread *thread, const uint8_t *pc, JSTaggedType *sp, JSTaggedValue constpool, JSTaggedValue profileTypeInfo,
     JSTaggedValue acc, int32_t hotnessCounter)
 {

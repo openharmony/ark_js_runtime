@@ -336,7 +336,7 @@ void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef
                                    GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
 {
     GateRef opcodeOffset = IntPtrMul(
-        GetIntPtrConstant(EcmaOpcode::LAST_OPCODE), GetIntPtrSize());
+        GetIntPtrConstant(InterpreterStubId::ExceptionHandlerId), GetIntPtrSize());
     StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result = GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset,

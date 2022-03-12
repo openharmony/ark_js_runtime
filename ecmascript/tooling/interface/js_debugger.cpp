@@ -15,6 +15,7 @@
 
 #include "ecmascript/tooling/interface/js_debugger.h"
 
+#include "ecmascript/interpreter/frame_handler.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "runtime/tooling/pt_method_private.h"
