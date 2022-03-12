@@ -32,6 +32,7 @@ JSPandaFileManager::~JSPandaFileManager()
 
 const JSPandaFile *JSPandaFileManager::LoadPfAbc(const std::string &filename)
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "JSPandaFileManager::LoadJSPandaFile");
     CString desc = ConvertToString(filename);
     const JSPandaFile *jsPandaFile = FindJSPandaFile(desc);
     if (jsPandaFile != nullptr) {
@@ -72,6 +73,7 @@ const JSPandaFile *JSPandaFileManager::LoadBufferAbc(const std::string &filename
 
 JSHandle<Program> JSPandaFileManager::GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile)
 {
+    ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "JSPandaFileManager::GenerateProgram");
     LOG_ECMA(INFO) << "GenerateProgram " << jsPandaFile->GetPandaFile()->GetFilename();
     ASSERT(GetJSPandaFile(jsPandaFile->GetPandaFile()) != nullptr);
 
