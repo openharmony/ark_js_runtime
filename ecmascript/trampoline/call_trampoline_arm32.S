@@ -32,7 +32,7 @@ JSFunctionEntry:
     // construct frame
     mov     r6, #JS_ENTRY_FRAME_TYPE
     mov     r8, #0
-    push    {r8, r6}                            // frame type
+    push    {r6}                                // frame type
     push    {r1}                                // prev managed frame
     push    {r1}                                // prev managed frame
     push    {r0}
@@ -80,7 +80,6 @@ JSFunctionEntry:
 
     pop     {r4}
     pop     {r1}
-    pop     {r1}
     str     r1, [r4, #ASM_GLUE_CURRENT_FRAME_OFFSET]
     add     sp, sp, #8
     pop     {r11}
@@ -109,7 +108,9 @@ JSFunctionEntry:
 //   |--------------------------|   |
 //   |       callsiteFp         |   |
 //   |--------------------------|   |
-//   |       frameType          |   v
+//   |       frameType          |   |
+//   |--------------------------|   |
+//   |       padding            |   v
 //   +--------------------------+ ---
 
 .global RuntimeCallTrampolineAot
@@ -124,16 +125,16 @@ RuntimeCallTrampolineAot:
     // construct leave frame
     mov     r4, #0
     mov     r5, #LEAVE_FRAME_TYPE
-    str     r4, [r11, #-4]
-    str     r5, [r11, #-8]                              // save frame type
+    str     r5, [r11, #-4]                             // save frame type
+    str     r4, [r11, #-8]                             // padding
 
 
     // load runtime trampoline address
     add     r2, r0, r2, lsl #2
     ldr     r4, [r2, #ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET]
-    ldr     r1, [r11, #8]  // argc
+    ldr     r1, [r11, #8]   // argc
     add     r2, r11,  #16   // argv[]
-    blx      r4
+    blx     r4
 
     // descontruct leave frame and callee save register
     pop     {r4, r5}
