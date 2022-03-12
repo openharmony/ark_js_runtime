@@ -1187,6 +1187,14 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
         }
         Bind(&notValidIndex);
         {
+            Label marking(env);
+            bool isArch32 = GetEnvironment()->Is32Bit();
+            GateRef stateBitFieldAddr = Int64Add(glue,
+                GetInt64Constant(JSThread::GlueData::GetStateBitFieldOffset(isArch32)));
+            GateRef stateBitField = Load(VariableType::INT64(), stateBitFieldAddr, GetInt64Constant(0));
+            Branch(Int64Equal(stateBitField, GetInt64Constant(0)), &exit, &marking);
+
+            Bind(&marking);
             StubDescriptor *markingBarrier = GET_STUBDESCRIPTOR(MarkingBarrier);
             CallRuntime(markingBarrier, glue, GetIntPtrConstant(FAST_STUB_ID(MarkingBarrier)), {
                 glue, slotAddr, objectRegion, TaggedCastToIntPtr(value), valueRegion });

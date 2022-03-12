@@ -33,7 +33,7 @@ template<typename T, typename... Res>
 struct TypeList<T, Res...> {
     using Head = T;
     using Next = TypeList<Res...>;
-    static constexpr size_t Size = 1 + TypeList<Res...>::Size;
+    static constexpr size_t Size = 1 + sizeof...(Res);
 };
 
 template<size_t ElementAlign, typename... Ts>
@@ -81,6 +81,11 @@ struct AlignedStruct {
 
 struct AlignedPointer {
     static constexpr size_t SizeArch32 = sizeof(uint32_t);
+    static constexpr size_t SizeArch64 = sizeof(uint64_t);
+};
+
+struct AlignedUint64 {
+    static constexpr size_t SizeArch32 = sizeof(uint64_t);
     static constexpr size_t SizeArch64 = sizeof(uint64_t);
 };
 }
