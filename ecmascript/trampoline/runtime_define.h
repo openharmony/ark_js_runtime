@@ -157,6 +157,10 @@ namespace panda::ecmascript {
     V(DefineGeneratorFunc, 2)                \
     V(DefineAsyncFunc, 2)                    \
     V(DefineMethod, 3)                       \
+    V(SetNotCallableException, 0)            \
+    V(SetCallConstructorException, 0)        \
+    V(SetStackOverflowException, 0)          \
+    V(CallNative, 3)                         \
     V(CallSpreadDyn, 4)                      \
     V(DefineGetterSetterByValue, 6)          \
     V(SuperCall, 5)

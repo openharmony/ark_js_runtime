@@ -24,12 +24,15 @@ namespace panda::ecmascript::kungfu {
 #define IGNORE_STUB(...)
 
 #define INTERPRETER_STUB_LIST(V) \
-    ASM_INTERPRETER_STUB_LIST(IGNORE_STUB, V)
+    ASM_INTERPRETER_STUB_LIST(IGNORE_STUB, V, V)
+
+#define INTERPRETER_IGNORE_STUB_LIST(V) \
+    ASM_INTERPRETER_STUB_LIST(IGNORE_STUB, IGNORE_STUB, V)
 
 #define ASM_INTERPRETER_ID_LIST(V) \
-    ASM_INTERPRETER_STUB_LIST(V, V)
+    ASM_INTERPRETER_STUB_LIST(V, V, V)
 
-#define ASM_INTERPRETER_STUB_LIST(V, T)                     \
+#define ASM_INTERPRETER_STUB_LIST(V, T, I)                  \
     T(HandleLdNanPref, 7)                                   \
     T(HandleLdInfinityPref, 7)                              \
     T(HandleLdGlobalThisPref, 7)                            \
@@ -89,7 +92,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleThrowConstAssignmentPrefV8, 7)                  \
     T(HandleGetTemplateObjectPrefV8, 7)                     \
     T(HandleGetNextPropNamePrefV8, 7)                       \
-    V(HandleCallArg0DynPrefV8, 7)                           \
+    I(HandleCallArg0DynPrefV8, 7)                           \
     T(HandleThrowIfNotObjectPrefV8, 7)                      \
     T(HandleIterNextPrefV8, 7)                              \
     T(HandleCloseIteratorPrefV8, 7)                         \
@@ -101,7 +104,7 @@ namespace panda::ecmascript::kungfu {
     T(HandleSuspendGeneratorPrefV8V8, 7)                    \
     T(HandleAsyncFunctionAwaitUncaughtPrefV8V8, 7)          \
     T(HandleThrowUndefinedIfHolePrefV8V8, 7)                \
-    V(HandleCallArg1DynPrefV8V8, 7)                         \
+    I(HandleCallArg1DynPrefV8V8, 7)                         \
     T(HandleCopyDataPropertiesPrefV8V8, 7)                  \
     T(HandleStArraySpreadPrefV8V8, 7)                       \
     T(HandleGetIteratorNextPrefV8V8, 7)                     \
@@ -117,12 +120,12 @@ namespace panda::ecmascript::kungfu {
     T(HandleCallSpreadDynPrefV8V8V8, 7)                     \
     T(HandleAsyncFunctionResolvePrefV8V8V8, 7)              \
     T(HandleAsyncFunctionRejectPrefV8V8V8, 7)               \
-    V(HandleCallArgs2DynPrefV8V8V8, 7)                      \
-    V(HandleCallArgs3DynPrefV8V8V8V8, 7)                    \
+    I(HandleCallArgs2DynPrefV8V8V8, 7)                      \
+    I(HandleCallArgs3DynPrefV8V8V8V8, 7)                    \
     T(HandleDefineGetterSetterByValuePrefV8V8V8V8, 7)       \
     T(HandleNewObjDynRangePrefImm16V8, 7)                   \
-    V(HandleCallIRangeDynPrefImm16V8, 7)                    \
-    V(HandleCallIThisRangeDynPrefImm16V8, 7)                \
+    I(HandleCallIRangeDynPrefImm16V8, 7)                    \
+    I(HandleCallIThisRangeDynPrefImm16V8, 7)                \
     T(HandleSuperCallPrefImm16V8, 7)                        \
     T(HandleCreateObjectWithExcludedKeysPrefImm16V8V8, 7)   \
     T(HandleDefineFuncDynPrefId16Imm16V8, 7)                \

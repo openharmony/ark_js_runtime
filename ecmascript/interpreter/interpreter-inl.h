@@ -3792,7 +3792,7 @@ uint32_t EcmaInterpreter::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_
     uint32_t numArgs = method->GetNumArgsWithCallField();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *lastFrame = state->base.prev - FRAME_STATE_SIZE;
-    if (lastFrame - sp > numVregs + copyArgs + numArgs) {
+    if (static_cast<uint32_t>(lastFrame - sp) > numVregs + copyArgs + numArgs) {
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
