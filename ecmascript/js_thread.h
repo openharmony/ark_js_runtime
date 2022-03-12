@@ -24,6 +24,7 @@
 #include "ecmascript/frames.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/mem/object_xray.h"
+#include "ecmascript/trampoline/runtime_define.h"
 
 namespace panda::ecmascript {
 class EcmaVM;
@@ -58,7 +59,7 @@ struct BCHandlers {
 STATIC_ASSERT_EQ_ARCH(sizeof(BCHandlers), BCHandlers::SizeArch32, BCHandlers::SizeArch64);
 
 struct RTInterfaces {
-    static constexpr size_t MAX_RUNTIME_FUNCTIONS = kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT;
+    static constexpr size_t MAX_RUNTIME_FUNCTIONS = RuntimeTrampolineId::RUNTIME_CALL_MAX_ID;
     Address interfaces_[MAX_RUNTIME_FUNCTIONS];
 
     static constexpr size_t SizeArch32 = sizeof(uint32_t) * MAX_RUNTIME_FUNCTIONS;
@@ -349,21 +350,21 @@ public:
     struct GlueData : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                  JSTaggedValue,
                                                  JSTaggedValue,
-                                                 GlobalEnvConstants,
                                                  base::AlignedPointer,
                                                  base::AlignedPointer,
                                                  BCHandlers,
                                                  RTInterfaces,
-                                                 StubEntries> {
+                                                 StubEntries,
+                                                 GlobalEnvConstants> {
         enum class Index : size_t {
             ExceptionIndex = 0,
             GlobalObjIndex,
-            GlobalConstIndex,
             CurrentFrameIndex,
             LeaveFrameIndex,
             BCHandlersIndex,
             RTInterfacesIndex,
             StubEntriesIndex,
+            GlobalConstIndex,
             NumOfMembers
         };
         static_assert(static_cast<size_t>(Index::NumOfMembers) == NumOfTypes);
@@ -410,12 +411,12 @@ public:
 
         alignas(EAS) JSTaggedValue exception_ {JSTaggedValue::Hole()};
         alignas(EAS) JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
-        alignas(EAS) GlobalEnvConstants globalConst_;
         alignas(EAS) JSTaggedType *currentFrame_ {nullptr};
         alignas(EAS) JSTaggedType *leaveFrame_ {nullptr};
         alignas(EAS) BCHandlers bcHandlers_;
         alignas(EAS) RTInterfaces rtInterfaces_;
         alignas(EAS) StubEntries stubEntries_;
+        alignas(EAS) GlobalEnvConstants globalConst_;
     };
     static_assert(MEMBER_OFFSET(GlueData, rtInterfaces_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
     static_assert(MEMBER_OFFSET(GlueData, currentFrame_) == ASM_GLUE_CURRENT_FRAME_OFFSET);
