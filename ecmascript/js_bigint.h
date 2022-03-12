@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,6 +54,8 @@ public:
     static JSHandle<BigInt> BitwiseAddOne(JSThread *thread, JSHandle<BigInt> bigint);
     static JSHandle<EcmaString> ToString(JSThread *thread, JSHandle<BigInt> bigint,
                                          uint32_t conversionToRadix = BigInt::DECIMAL);
+    static std::string ToStdString(JSThread *thread, JSHandle<BigInt> bigint,
+                                   uint32_t conversionToRadix = BigInt::DECIMAL);
 
     static JSHandle<BigInt> UnaryMinus(JSThread *thread, JSHandle<BigInt> x);
     static JSHandle<BigInt> BitwiseNOT(JSThread *thread, JSHandle<BigInt> x);
@@ -67,8 +69,8 @@ public:
 
     static JSHandle<BigInt> Add(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> Subtract(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
-    static bool LessThan(JSThread *thread, const JSTaggedValue &x, const JSTaggedValue &y);
-    static bool LessThan(JSThread *thread, const JSHandle<BigInt> &x, const JSHandle<BigInt> &y);
+    static bool LessThan(const JSTaggedValue &x, const JSTaggedValue &y);
+    static bool LessThan(const BigInt *x, const BigInt *y);
     static ComparisonResult Compare(JSThread *thread, const JSTaggedValue &x, const JSTaggedValue &y);
     static JSHandle<BigInt> SignedRightShift(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> RightShiftHelper(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
@@ -80,10 +82,17 @@ public:
 
     static JSTaggedValue NumberToBigInt(JSThread *thread, JSHandle<JSTaggedValue> number);
     static JSHandle<BigInt> Int32ToBigInt(JSThread *thread, const int &number);
+    static JSHandle<BigInt> Int64ToBigInt(JSThread *thread, const int64_t &number);
+    static JSHandle<BigInt> Uint64ToBigInt(JSThread *thread, const uint64_t &number);
+    static void BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int64_t *cValue, bool *lossless);
+    static void BigIntToUint64(JSThread *thread, JSHandle<JSTaggedValue> bigint, uint64_t *cValue, bool *lossless);
+    static JSHandle<BigInt> CreateBigWords(JSThread *thread, bool sign, uint32_t size, const uint64_t* words);
     static JSHandle<BigInt> FloorMod(JSThread *thread, JSHandle<BigInt> leftVal, JSHandle<BigInt> rightVal);
     static JSTaggedValue AsUintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
     static JSTaggedValue AsintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
     static JSTaggedNumber BigIntToNumber(JSThread *thread, JSHandle<BigInt> bigint);
+    static ComparisonResult CompareWithNumber(JSThread *thread, JSHandle<BigInt> bigint,
+                                              JSHandle<JSTaggedValue> number);
     inline bool IsZero()
     {
         return GetLength() == 1 && !GetDigit(0);

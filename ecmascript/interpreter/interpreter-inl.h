@@ -1176,10 +1176,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         LOG_INST() << "intrinsics::tonumber"
                    << " v" << v0;
         JSTaggedValue value = GET_VREG_VALUE(v0);
-        if (value.IsNumber()) {
+        if (value.IsNumber() || value.IsBigInt()) {
             // fast path
-            SET_ACC(value);
-        } else if (value.IsBigInt()) {
             SET_ACC(value);
         } else {
             // slow path
@@ -1597,7 +1595,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             bool ret = JSTaggedValue::StrictNumberCompare(valueA, valueB) == ComparisonResult::LESS;
             SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
         } else if (left.IsBigInt() && right.IsBigInt()) {
-            bool result = BigInt::LessThan(thread, left, right);
+            bool result = BigInt::LessThan(left, right);
             SET_ACC(JSTaggedValue(result));
         } else {
             // slow path
@@ -1621,7 +1619,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             bool ret = JSTaggedValue::StrictNumberCompare(valueA, valueB) <= ComparisonResult::EQUAL;
             SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
         } else if (left.IsBigInt() && right.IsBigInt()) {
-            bool result = BigInt::LessThan(thread, left, right) || BigInt::Equal(left, right);
+            bool result = BigInt::LessThan(left, right) || BigInt::Equal(left, right);
             SET_ACC(JSTaggedValue(result));
         } else {
             // slow path
@@ -1646,7 +1644,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             bool ret = JSTaggedValue::StrictNumberCompare(valueA, valueB) == ComparisonResult::GREAT;
             SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
         } else if (left.IsBigInt() && right.IsBigInt()) {
-            bool result = BigInt::LessThan(thread, right, left);
+            bool result = BigInt::LessThan(right, left);
             SET_ACC(JSTaggedValue(result));
         } else {
             // slow path
@@ -1671,7 +1669,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             bool ret = (comparison == ComparisonResult::GREAT) || (comparison == ComparisonResult::EQUAL);
             SET_ACC(ret ? JSTaggedValue::True() : JSTaggedValue::False())
         } else if (left.IsBigInt() && right.IsBigInt()) {
-            bool result = BigInt::LessThan(thread, right, left) || BigInt::Equal(right, left);
+            bool result = BigInt::LessThan(right, left) || BigInt::Equal(right, left);
             SET_ACC(JSTaggedValue(result))
         } else {
             // slow path
@@ -1694,10 +1692,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber0 = left.GetInt();
             int32_t opNumber1 = right.GetInt();
             uint32_t shift =
-                static_cast<uint32_t>(opNumber1) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+                static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
             using unsigned_type = std::make_unsigned_t<int32_t>;
             auto ret =
-                static_cast<int32_t>(static_cast<unsigned_type>(opNumber0) << shift);  // NOLINT(hicpp-signed-bitwise)
+                static_cast<int32_t>(static_cast<unsigned_type>(opNumber0) << shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
@@ -1705,10 +1703,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 =
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             uint32_t shift =
-                static_cast<uint32_t>(opNumber1) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+                static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
             using unsigned_type = std::make_unsigned_t<int32_t>;
             auto ret =
-                static_cast<int32_t>(static_cast<unsigned_type>(opNumber0) << shift);  // NOLINT(hicpp-signed-bitwise)
+                static_cast<int32_t>(static_cast<unsigned_type>(opNumber0) << shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else {
             // slow path
@@ -1731,8 +1729,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber0 = left.GetInt();
             int32_t opNumber1 = right.GetInt();
             uint32_t shift =
-            static_cast<uint32_t>(opNumber1) & 0x1f;          // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-            auto ret = static_cast<int32_t>(opNumber0 >> shift);  // NOLINT(hicpp-signed-bitwise)
+            static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+                auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
@@ -1740,8 +1738,8 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 =
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             uint32_t shift =
-            static_cast<uint32_t>(opNumber1) & 0x1f;          // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-            auto ret = static_cast<int32_t>(opNumber0 >> shift);  // NOLINT(hicpp-signed-bitwise)
+                static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+            auto ret = static_cast<int32_t>(opNumber0 >> shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else {
             // slow path
@@ -1763,10 +1761,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber0 = left.GetInt();
             int32_t opNumber1 = right.GetInt();
             uint32_t shift =
-                static_cast<uint32_t>(opNumber1) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+                static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
             using unsigned_type = std::make_unsigned_t<uint32_t>;
             auto ret =
-                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift);  // NOLINT(hicpp-signed-bitwise)
+                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
             SET_ACC(JSTaggedValue(ret))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
@@ -1774,10 +1772,10 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 =
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             uint32_t shift =
-                static_cast<uint32_t>(opNumber1) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
+                static_cast<uint32_t>(opNumber1) & 0x1f; // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
             using unsigned_type = std::make_unsigned_t<uint32_t>;
             auto ret =
-                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift);  // NOLINT(hicpp-signed-bitwise)
+                static_cast<uint32_t>(static_cast<unsigned_type>(opNumber0) >> shift); // NOLINT(hicpp-signed-bitwise)
         SET_ACC(JSTaggedValue(ret))
         } else {
             // slow path
@@ -3564,6 +3562,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         uint32_t stringId = READ_INST_32_1();
         LOG_INST() << "intrinsic::ldbigint";
         JSTaggedValue numberBigInt = constpool->GetObjectFromCache(stringId);
+        SAVE_PC();
         JSTaggedValue res = SlowRuntimeStub::LdBigInt(thread, numberBigInt);
         INTERPRETER_RETURN_IF_ABRUPT(res);
         SET_ACC(res);
@@ -4001,6 +4000,7 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
         {STOWNBYVALUEWITHNAMESET_PREF_V8_V8, "STOWNBYVALUEWITHNAMESET"},
         {STOWNBYNAMEWITHNAMESET_PREF_ID32_V8, "STOWNBYNAMEWITHNAMESET"},
         {LDFUNCTION_PREF, "LDFUNCTION"},
+        {LDBIGINT_PREF_ID32, "LDBIGINT"},
         {MOV_DYN_V8_V8, "MOV_DYN"},
         {MOV_DYN_V16_V16, "MOV_DYN"},
         {LDA_STR_ID32, "LDA_STR"},
