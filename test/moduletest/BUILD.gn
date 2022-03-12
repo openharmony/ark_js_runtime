@@ -35,4 +35,7 @@ group("ark_js_moduletest") {
     "throwdyn:throwdynAction",
     "yieldstar:yieldstarAction",
   ]
+  if (!is_debug) {
+    deps += [ "weaktransitions:weaktransitionsAction" ]
+  }
 }

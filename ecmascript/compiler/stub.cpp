@@ -2244,7 +2244,6 @@ void Stub::CopyAllHClass(GateRef glue, GateRef dstHClass, GateRef srcHClass)
     SetPrototypeToHClass(StubMachineType::INT64, glue, dstHClass, proto);
     SetBitFieldToHClass(glue, dstHClass, GetBitFieldFromHClass(srcHClass));
     SetNumberOfPropsToHClass(glue, dstHClass, GetNumberOfPropsFromHClass(srcHClass));
-    SetParentToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
     SetTransitionsToHClass(StubMachineType::INT64, glue, dstHClass, GetInt64Constant(JSTaggedValue::VALUE_NULL));
     SetProtoChangeDetailsToHClass(StubMachineType::INT64, glue, dstHClass,
                                   GetInt64Constant(JSTaggedValue::VALUE_NULL));
