@@ -208,7 +208,7 @@
 
 namespace panda::ecmascript {
 class JSThread;
-enum class FrameType: uint64_t  {
+enum class FrameType: uintptr_t {
     OPTIMIZED_FRAME = 0,
     OPTIMIZED_ENTRY_FRAME = 1,
     INTERPRETER_FRAME = 2,
@@ -312,7 +312,7 @@ public:
     ~InterpretedFrameBase() = default;
     JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     FrameType type;
-    static constexpr size_t SizeArch32 = 2 * sizeof(JSTaggedType *) + sizeof(FrameType); // 2: padding for arm32
+    static constexpr size_t SizeArch32 = sizeof(JSTaggedType *) + sizeof(FrameType);
     static constexpr size_t SizeArch64 = sizeof(JSTaggedType *) + sizeof(FrameType);
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase), InterpretedFrameBase::SizeArch32, InterpretedFrameBase::SizeArch64);

@@ -283,24 +283,24 @@ public:
 
     void SetMarkStatus(MarkStatus status)
     {
-        MarkStatusBits::Set(status, &threadStateBitField_);
+        MarkStatusBits::Set(status, &glueData_.threadStateBitField_);
     }
 
     bool IsReadyToMark() const
     {
-        auto status = MarkStatusBits::Decode(threadStateBitField_);
+        auto status = MarkStatusBits::Decode(glueData_.threadStateBitField_);
         return status == MarkStatus::READY_TO_MARK;
     }
 
     bool IsMarking() const
     {
-        auto status = MarkStatusBits::Decode(threadStateBitField_);
+        auto status = MarkStatusBits::Decode(glueData_.threadStateBitField_);
         return status == MarkStatus::MARKING;
     }
 
     bool IsMarkFinished() const
     {
-        auto status = MarkStatusBits::Decode(threadStateBitField_);
+        auto status = MarkStatusBits::Decode(glueData_.threadStateBitField_);
         return status == MarkStatus::MARK_FINISHED;
     }
 
@@ -355,6 +355,7 @@ public:
                                                  BCHandlers,
                                                  RTInterfaces,
                                                  StubEntries,
+                                                 base::AlignedUint64,
                                                  GlobalEnvConstants> {
         enum class Index : size_t {
             ExceptionIndex = 0,
@@ -364,6 +365,7 @@ public:
             BCHandlersIndex,
             RTInterfacesIndex,
             StubEntriesIndex,
+            StateBitFieldIndex,
             GlobalConstIndex,
             NumOfMembers
         };
@@ -382,6 +384,11 @@ public:
         static size_t GetGlobalConstOffset(bool isArch32)
         {
             return GetOffset<static_cast<size_t>(Index::GlobalConstIndex)>(isArch32);
+        }
+
+        static size_t GetStateBitFieldOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::StateBitFieldIndex)>(isArch32);
         }
 
         static size_t GetCurrentFrameOffset(bool isArch32)
@@ -416,6 +423,7 @@ public:
         alignas(EAS) BCHandlers bcHandlers_;
         alignas(EAS) RTInterfaces rtInterfaces_;
         alignas(EAS) StubEntries stubEntries_;
+        alignas(EAS) volatile uint64_t threadStateBitField_ {0ULL};
         alignas(EAS) GlobalEnvConstants globalConst_;
     };
     static_assert(MEMBER_OFFSET(GlueData, rtInterfaces_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
@@ -452,7 +460,6 @@ private:
     // Run-time state
     bool getStackSignal_ {false};
     bool gcState_ {false};
-    volatile uint64_t threadStateBitField_ {0ULL};
     VmThreadControl *vmThreadControl_ {nullptr};
 
     JSTaggedType *frameBase_ {nullptr};
