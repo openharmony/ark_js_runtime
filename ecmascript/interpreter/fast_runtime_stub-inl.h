@@ -761,6 +761,7 @@ JSTaggedValue FastRuntimeStub::NewLexicalEnvDyn(JSThread *thread, ObjectFactory 
     }
     JSTaggedValue currentLexenv = thread->GetCurrentLexenv();
     newEnv->SetParentEnv(thread, currentLexenv);
+    newEnv->SetScopeInfo(thread, JSTaggedValue::Hole());
     return JSTaggedValue(newEnv);
 }
 

@@ -42,6 +42,16 @@ public:
 
     static void FreeBufferFunc(void* buffer, void* data);
 
+    template<class T>
+    static void FreeObjectFunc(void* buffer, void* data)
+    {
+        if (buffer == nullptr || data == nullptr) {
+            return;
+        }
+        NativeAreaAllocator* allocator = reinterpret_cast<NativeAreaAllocator*>(data);
+        allocator->Delete<T>(static_cast<T *>(buffer));
+    }
+
     // implemented by AllocateBuffer
     template<typename T, typename... Args>
     std::enable_if_t<!std::is_array_v<T>, T *> New(Args &&... args)

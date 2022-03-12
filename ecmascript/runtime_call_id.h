@@ -95,6 +95,7 @@ namespace panda::ecmascript {
     V(CallRangeDyn)                 \
     V(CallSpreadDyn)                \
     V(NewlexenvDyn)                 \
+    V(NewlexenvwithNameDyn)         \
     V(StlexvarDyn)                  \
     V(LdlexvarDyn)                  \
     V(LdlexenvDyn)                  \
