@@ -414,6 +414,7 @@ ecma_source = [
   "ecmascript/regexp/regexp_parser_cache.cpp",
   "ecmascript/runtime_api.cpp",
   "ecmascript/runtime_trampolines.cpp",
+  "ecmascript/scope_info_extractor.cpp",
   "ecmascript/snapshot/mem/slot_bit.cpp",
   "ecmascript/snapshot/mem/snapshot.cpp",
   "ecmascript/snapshot/mem/snapshot_serialize.cpp",
