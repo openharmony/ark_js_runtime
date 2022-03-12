@@ -236,7 +236,7 @@ public:
 
     void SetRuntimeFunction(size_t id, Address addr)
     {
-        ASSERT(id < kungfu::EXTERNAL_RUNTIME_STUB_MAXCOUNT);
+        ASSERT(id < RuntimeTrampolineId::RUNTIME_CALL_MAX_ID);
         glueData_.rtInterfaces_.Set(id, addr);
     }
 
