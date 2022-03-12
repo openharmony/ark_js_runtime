@@ -452,6 +452,7 @@ public:
     inline GateRef DoubleAdd(GateRef x, GateRef y);
     inline GateRef IntPtrAdd(GateRef x, GateRef y);
     inline GateRef IntPtrSub(GateRef x, GateRef y);
+    inline GateRef PointerSub(GateRef x, GateRef y);
     inline GateRef IntPtrEqual(GateRef x, GateRef y);
     inline GateRef Int16Sub(GateRef x, GateRef y);
     inline GateRef Int32Sub(GateRef x, GateRef y);

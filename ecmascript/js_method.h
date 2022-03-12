@@ -35,10 +35,10 @@ static constexpr size_t STORAGE_PTR_NUM = 3;
     V(CODEID, FILEID, sizeof(uint32_t), sizeof(uint32_t))                                           \
     V(SHORTY, CODEID, sizeof(uint32_t), sizeof(uint32_t))                                           \
     V(PROFILINGDATA, SHORTY, sizeof(uint32_t), sizeof(uint64_t))                                    \
-    V(BYTECODEARRAY, PROFILINGDATA, sizeof(uint32_t), sizeof(uint64_t))                             \
+    V(CALLFIELD, PROFILINGDATA, sizeof(uint32_t), sizeof(uint64_t))                                 \
+    V(BYTECODEARRAY, CALLFIELD, sizeof(uint64_t), sizeof(uint64_t))                                 \
     V(BYTECODEARRAYSIZE, BYTECODEARRAY, sizeof(uint32_t), sizeof(uint64_t))                         \
     V(SLOTSIZE, BYTECODEARRAYSIZE, sizeof(uint32_t), sizeof(uint32_t))                              \
-    V(CALLFIELD, SLOTSIZE, sizeof(uint8_t), sizeof(uint8_t))                                        \
 
 static constexpr uint32_t JS_METHOD_STOR32_OFFSET_32 = 0U;
 static constexpr uint32_t JS_METHOD_STOR32_OFFSET_64 = 0U;
@@ -131,6 +131,14 @@ public:
         return callField_;
     }
 
+    static constexpr uint32_t GetCallFieldOffset(bool isArm32)
+    {
+        if (isArm32) {
+            return JS_METHOD_CALLFIELD_OFFSET_32;
+        }
+        return JS_METHOD_CALLFIELD_OFFSET_64;
+    }
+
     void SetNativeBit(bool isNative)
     {
         callField_ = IsNativeBit::Update(callField_, isNative);
@@ -180,10 +188,10 @@ public:
     }
 
 private:
+    uint64_t callField_ {0};
     const uint8_t *bytecodeArray_ {nullptr};
     uint32_t bytecodeArraySize_ {0};
     uint8_t slotSize_ {0};
-    uint64_t callField_ {0};
 };
 }  // namespace panda::ecmascript
 
