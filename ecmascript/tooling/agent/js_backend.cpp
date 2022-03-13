@@ -390,6 +390,13 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
         varName = Trim(expression.substr(0, indexEqual));
         varValue = Trim(expression.substr(indexEqual + 1, expression.length()));
     }
+
+    if (!varValue.empty() && callFrameId != "0") {
+        *result = RemoteObject::FromTagged(ecmaVm_,
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Only allow set value in current frame")));
+        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport parent frame set value");
+    }
+
     int32_t regIndex = -1;
     auto varInfos = extractor->GetLocalVariableTable(method->GetFileId());
     for (const auto &varInfo : varInfos) {
@@ -397,20 +404,23 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
             regIndex = varInfo.reg_number;
         }
     }
-    if (regIndex == -1) {
+    if (regIndex != -1) {
+        if (varValue.empty()) {
+            return GetVregValue(regIndex, result);
+        }
+        return SetVregValue(regIndex, result, varValue);
+    }
+    int32_t level = 0;
+    uint32_t slot = 0;
+    if (!DebuggerApi::EvaluateLexicalValue(ecmaVm_, varName, level, slot)) {
         *result = RemoteObject::FromTagged(ecmaVm_,
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unknow input params")));
         return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport expression");
     }
     if (varValue.empty()) {
-        return GetValue(regIndex, result);
+        return GetLexicalValue(level, result, slot);
     }
-    if (callFrameId != "0") {
-        *result = RemoteObject::FromTagged(ecmaVm_,
-            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Only allow set value in current frame")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport parent frame set value");
-    }
-    return SetValue(regIndex, result, varValue);
+    return SetLexicalValue(level, result, varValue, slot);
 }
 
 CString JSBackend::Trim(const CString &str)
@@ -569,6 +579,16 @@ std::unique_ptr<Scope> JSBackend::GetLocalScopeChain(const InterpretedFrameHandl
         }
     }
 
+    if ((*thisObj)->GetType() == ObjectType::Undefined) {
+        const CString targetName = "this";
+        value = DebuggerApi::GetLexicalValueInfo(ecmaVm_, targetName);
+        *thisObj = RemoteObject::FromTagged(ecmaVm_, value);
+        if (value->IsObject() && !value->IsProxy()) {
+            (*thisObj)->SetObjectId(curObjectId_);
+            propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, value);
+        }
+    }
+
     const panda_file::LineNumberTable &lines = extractor->GetLineNumberTable(methodId);
     std::unique_ptr<Location> startLoc = std::make_unique<Location>();
     std::unique_ptr<Location> endLoc = std::make_unique<Location>();
@@ -610,10 +630,9 @@ void JSBackend::SetPauseOnException(bool flag)
     pauseOnException_ = flag;
 }
 
-std::optional<Error> JSBackend::SetValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
+std::optional<Error> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
     const CString &varValue)
 {
-    Local<JSValueRef> taggedValue;
     if (varValue == "false") {
         taggedValue = JSValueRef::False(ecmaVm_);
     } else if (varValue == "true") {
@@ -634,15 +653,49 @@ std::optional<Error> JSBackend::SetValue(int32_t regIndex, std::unique_ptr<Remot
         }
         taggedValue = NumberRef::New(ecmaVm_, d);
     }
-    DebuggerApi::SetVRegValue(ecmaVm_, regIndex, taggedValue);
+    return {};
+}
 
+std::optional<Error> JSBackend::SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result,
+    const CString &varValue)
+{
+    Local<JSValueRef> taggedValue;
+    std::optional<Error> ret = ConvertToLocal(taggedValue, result, varValue);
+    if (ret.has_value()) {
+        return ret;
+    }
+    DebuggerApi::SetVRegValue(ecmaVm_, regIndex, taggedValue);
     *result = RemoteObject::FromTagged(ecmaVm_, taggedValue);
     return {};
 }
 
-std::optional<Error> JSBackend::GetValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result)
+std::optional<Error> JSBackend::SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
+    const CString &varValue, uint32_t slot)
+{
+    Local<JSValueRef> taggedValue;
+    std::optional<Error> ret = ConvertToLocal(taggedValue, result, varValue);
+    if (ret.has_value()) {
+        return ret;
+    }
+    DebuggerApi::SetProperties(ecmaVm_, level, slot, taggedValue);
+    *result = RemoteObject::FromTagged(ecmaVm_, taggedValue);
+    return {};
+}
+
+std::optional<Error> JSBackend::GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result)
 {
     Local<JSValueRef> vValue = DebuggerApi::GetVRegValue(ecmaVm_, regIndex);
+    *result = RemoteObject::FromTagged(ecmaVm_, vValue);
+    if (vValue->IsObject() && !vValue->IsProxy()) {
+        (*result)->SetObjectId(curObjectId_);
+        propertiesPair_[curObjectId_++] = Global<JSValueRef>(ecmaVm_, vValue);
+    }
+    return {};
+}
+
+std::optional<Error> JSBackend::GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot)
+{
+    Local<JSValueRef> vValue = DebuggerApi::GetProperties(ecmaVm_, level, slot);
     *result = RemoteObject::FromTagged(ecmaVm_, vValue);
     if (vValue->IsObject() && !vValue->IsProxy()) {
         (*result)->SetObjectId(curObjectId_);

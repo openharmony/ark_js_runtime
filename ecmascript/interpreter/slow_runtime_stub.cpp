@@ -39,6 +39,7 @@
 #include "ecmascript/js_proxy.h"
 #include "ecmascript/js_tagged_value-inl.h"
 #include "ecmascript/js_thread.h"
+#include "ecmascript/scope_info_extractor.h"
 #include "ecmascript/tagged_dictionary.h"
 #include "ecmascript/runtime_call_id.h"
 #include "ecmascript/template_string.h"
@@ -795,6 +796,23 @@ JSTaggedValue SlowRuntimeStub::NewLexicalEnvDyn(JSThread *thread, uint16_t numVa
 
     JSTaggedValue currentLexenv = thread->GetCurrentLexenv();
     newEnv->SetParentEnv(thread, currentLexenv);
+    newEnv->SetScopeInfo(thread, JSTaggedValue::Hole());
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return newEnv.GetTaggedValue();
+}
+
+JSTaggedValue SlowRuntimeStub::NewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId)
+{
+    INTERPRETER_TRACE(thread, NewlexenvwithNameDyn);
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<LexicalEnv> newEnv = factory->NewLexicalEnv(numVars);
+
+    JSTaggedValue currentLexenv = thread->GetCurrentLexenv();
+    newEnv->SetParentEnv(thread, currentLexenv);
+    JSTaggedValue scopeInfo = ScopeInfoExtractor::GenerateScopeInfo(thread, scopeId);
+    newEnv->SetScopeInfo(thread, scopeInfo);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     return newEnv.GetTaggedValue();
 }

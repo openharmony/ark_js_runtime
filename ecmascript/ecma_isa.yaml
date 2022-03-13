@@ -590,8 +590,12 @@ groups:
         acc: out:top
         prefix: ecma
         format: [pref_op_none]
+      - sig: ecma.newlexenvwithnamedyn imm1, imm2
+        acc: out:top
+        prefix: ecma
+        format: [pref_op_imm1_16_imm2_16]
       - sig: ecma.ldbigint string_id
         acc: out:top
         prefix: ecma
         format: [pref_op_id_32]
-        properties: [string_id] 
+        properties: [string_id]
