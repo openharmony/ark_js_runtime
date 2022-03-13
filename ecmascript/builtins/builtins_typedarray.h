@@ -21,6 +21,7 @@
 namespace panda::ecmascript::builtins {
 class BuiltinsTypedArray : public base::BuiltinsBase {
 public:
+    enum SeparatorFlag : int { MINUS_ONE = -1, MINUS_TWO = -2 };
     // 22.2.1
     static JSTaggedValue TypedArrayBaseConstructor(EcmaRuntimeCallInfo *argv);
     static JSTaggedValue Int8ArrayConstructor(EcmaRuntimeCallInfo *argv);
