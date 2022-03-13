@@ -140,6 +140,7 @@ namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CALL_INITIALIZE()                                             \
     do {                                                              \
+        SAVE_PC();                                                    \
         thread->CheckSafepoint();                                     \
         funcTagged = sp[funcReg];                                     \
         JSTaggedValue funcValue(funcTagged);                          \
