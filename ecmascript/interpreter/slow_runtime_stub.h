@@ -68,6 +68,7 @@ public:
     static JSTaggedValue InstanceofDyn(JSThread *thread, JSTaggedValue obj, JSTaggedValue target);
 
     static JSTaggedValue NewLexicalEnvDyn(JSThread *thread, uint16_t numVars);
+    static JSTaggedValue NewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
     static JSTaggedValue CreateIterResultObj(JSThread *thread, JSTaggedValue value, JSTaggedValue flag);
 
     static JSTaggedValue CreateGeneratorObj(JSThread *thread, JSTaggedValue genFunc);
