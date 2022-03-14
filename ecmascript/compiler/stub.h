@@ -625,7 +625,6 @@ public:
     inline GateRef SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass,
 	                                               GateRef protoChange);
     inline GateRef SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef attr);
-    inline GateRef SetParentToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef parent);
     inline GateRef SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key);
     inline GateRef SetTransitionsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef transition);
     inline void SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value);
