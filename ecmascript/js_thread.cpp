@@ -199,7 +199,7 @@ void JSThread::ShrinkHandleStorage(int prevIndex)
     ASSERT(checkRes == 0);
     for (int32_t i = currentHandleStorageIndex_ + 1; i < lastIndex; i++) {
         checkRes = memset_s(handleStorageNodes_[i], NODE_BLOCK_SIZE * sizeof(JSTaggedType), 0,
-                 NODE_BLOCK_SIZE * sizeof(JSTaggedType));
+                            NODE_BLOCK_SIZE * sizeof(JSTaggedType));
         ASSERT(checkRes == 0);
     }
 #endif

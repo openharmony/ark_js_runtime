@@ -984,7 +984,8 @@ HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf8)
     const size_t lengthArrayU16Target = 8;
     uint8_t defaultByteForU16CompCopyTo = 1;
     uint8_t arrayU16CompCopyTo[lengthArrayU16Target];
-    int checkResUtf16 = memset_s(&arrayU16CompCopyTo[0], lengthArrayU16Target, defaultByteForU16CompCopyTo, lengthArrayU16Target);
+    int checkResUtf16 = memset_s(&arrayU16CompCopyTo[0], lengthArrayU16Target, defaultByteForU16CompCopyTo,
+                                 lengthArrayU16Target);
     EXPECT_TRUE(checkResUtf16 == 0);
 
     size_t indexStartFromArrayU16Comp = 2;
