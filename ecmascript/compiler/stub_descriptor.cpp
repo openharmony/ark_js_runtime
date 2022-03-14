@@ -133,7 +133,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastTypeOf)
 CALL_STUB_INIT_DESCRIPTOR(FastEqual)
 {
     // 3 input parameters, return may be true/false/hole
-    StubDescriptor fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT64());
+    StubDescriptor fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *descriptor = fastEqual;
     // 3 input parameters
     std::array<VariableType, 3> params = {
