@@ -425,7 +425,7 @@ struct OptimizedLeaveFrame {
 #ifndef PANDA_TARGET_32
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argRuntimeId);
 #else
-        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc);
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc) + argc * sizeof(JSTaggedType);
 #endif
     }
 };

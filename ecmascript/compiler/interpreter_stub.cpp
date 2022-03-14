@@ -164,132 +164,7 @@ DECLARE_ASM_HANDLER(HandleThrowDynPref)
 DECLARE_ASM_HANDLER(HandleTypeOfDynPref)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
-    auto env = GetEnvironment();
-    
-    GateRef gConstOffset = IntPtrAdd(glue,
-                                     GetIntPtrConstant(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit())));
-    GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
-    GateRef gConstUndefindStr = Load(VariableType::JS_POINTER(), gConstOffset, booleanIndex);
-    DEFVARIABLE(resultRep, VariableType::JS_POINTER(), gConstUndefindStr);
-    Label objIsTrue(env);
-    Label objNotTrue(env);
-    Label dispatch(env);
-    Label defaultLabel(env);
-    GateRef gConstBooleanStr = Load(
-        VariableType::JS_POINTER(), gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
-    Branch(Int64Equal(*varAcc, GetInt64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
-    Bind(&objIsTrue);
-    {
-        resultRep = gConstBooleanStr;
-        Jump(&dispatch);
-    }
-    Bind(&objNotTrue);
-    {
-        Label objIsFalse(env);
-        Label objNotFalse(env);
-        Branch(Int64Equal(*varAcc, GetInt64Constant(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
-        Bind(&objIsFalse);
-        {
-            resultRep = gConstBooleanStr;
-            Jump(&dispatch);
-        }
-        Bind(&objNotFalse);
-        {
-            Label objIsNull(env);
-            Label objNotNull(env);
-            Branch(Int64Equal(*varAcc, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
-            Bind(&objIsNull);
-            {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
-                    GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
-                Jump(&dispatch);
-            }
-            Bind(&objNotNull);
-            {
-                Label objIsUndefined(env);
-                Label objNotUndefined(env);
-                Branch(Int64Equal(*varAcc, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
-                    &objNotUndefined);
-                Bind(&objIsUndefined);
-                {
-                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
-                        GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
-                    Jump(&dispatch);
-                }
-                Bind(&objNotUndefined);
-                Jump(&defaultLabel);
-            }
-        }
-    }
-    Bind(&defaultLabel);
-    {
-        Label objIsHeapObject(env);
-        Label objNotHeapObject(env);
-        Branch(TaggedIsHeapObject(*varAcc), &objIsHeapObject, &objNotHeapObject);
-        Bind(&objIsHeapObject);
-        {
-            Label objIsString(env);
-            Label objNotString(env);
-            Branch(IsString(*varAcc), &objIsString, &objNotString);
-            Bind(&objIsString);
-            {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
-                    GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
-                Jump(&dispatch);
-            }
-            Bind(&objNotString);
-            {
-                Label objIsSymbol(env);
-                Label objNotSymbol(env);
-                Branch(IsSymbol(*varAcc), &objIsSymbol, &objNotSymbol);
-                Bind(&objIsSymbol);
-                {
-                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
-                        GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
-                    Jump(&dispatch);
-                }
-                Bind(&objNotSymbol);
-                {
-                    Label objIsCallable(env);
-                    Label objNotCallable(env);
-                    Branch(IsCallable(*varAcc), &objIsCallable, &objNotCallable);
-                    Bind(&objIsCallable);
-                    {
-                        resultRep = Load(
-                            VariableType::JS_POINTER(), gConstOffset,
-                            GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
-                        Jump(&dispatch);
-                    }
-                    Bind(&objNotCallable);
-                    {
-                        resultRep = Load(
-                            VariableType::JS_POINTER(), gConstOffset,
-                            GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
-                        Jump(&dispatch);
-                    }
-                }
-            }
-        }
-        Bind(&objNotHeapObject);
-        {
-            Label objIsNum(env);
-            Label objNotNum(env);
-            Branch(TaggedIsNumber(*varAcc), &objIsNum, &objNotNum);
-            Bind(&objIsNum);
-            {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
-                    GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
-                Jump(&dispatch);
-            }
-            Bind(&objNotNum);
-            Jump(&dispatch);
-        }
-    }
-    Bind(&dispatch);
-    varAcc = *resultRep;
+    varAcc = FastTypeOf(glue, acc);
     DISPATCH_WITH_ACC(PREF_NONE);
 }
 
@@ -4991,80 +4866,14 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::FLOAT64(), GetDoubleConstant(0.0));
-    DEFVARIABLE(opNumber1, VariableType::FLOAT64(), GetDoubleConstant(0.0));
 
+    GateRef result = FastAdd(left, right);
+    Label notHole(env), slowPath(env);
     Label accDispatch(env);
-    Label doFloatAdd(env);
-    Label slowPath(env);
-    Label leftIsNumber(env);
-    Label rightIsNumber(env);
-    Label leftIsInt(env);
-    Label leftIsDouble(env);
-    Label rightIsInt(env);
-    Label rightIsDouble(env);
-    Label rightIsInt1(env);
-    Label rightIsDouble1(env);
-    Label overflow(env);
-    Label notOverflow(env);
-
-    Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
-    Bind(&leftIsNumber);
+    Branch(TaggedIsHole(result), &slowPath, &notHole);
+    Bind(&notHole);
     {
-        Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
-        Bind(&rightIsNumber);
-        {
-            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
-            Bind(&leftIsInt);
-            {
-                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
-                Bind(&rightIsInt);
-                {
-                    auto res = Int64Add(TaggedCastToInt64(left), TaggedCastToInt64(right));
-                    auto condition1 = Int64GreaterThan(res, GetInt64Constant(INT32_MAX));
-                    auto condition2 = Int64LessThan(res, GetInt64Constant(INT32_MIN));
-                    Branch(BoolOr(condition1, condition2), &overflow, &notOverflow);
-                    Bind(&overflow);
-                    {
-                        opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
-                        opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
-                        Jump(&doFloatAdd);
-                    }
-                    Bind(&notOverflow);
-                    {
-                        varAcc = IntBuildTaggedWithNoGC(ChangeInt64ToInt32(res));
-                        Jump(&accDispatch);
-                    }
-                }
-                Bind(&rightIsDouble);
-                {
-                    opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
-                    opNumber1 = TaggedCastToDouble(right);
-                    Jump(&doFloatAdd);
-                }
-            }
-            Bind(&leftIsDouble);
-            {
-                Branch(TaggedIsInt(right), &rightIsInt1, &rightIsDouble1);
-                Bind(&rightIsInt1);
-                {
-                    opNumber0 = TaggedCastToDouble(left);
-                    opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
-                    Jump(&doFloatAdd);
-                }
-                Bind(&rightIsDouble1);
-                {
-                    opNumber0 = TaggedCastToDouble(left);
-                    opNumber1 = TaggedCastToDouble(right);
-                    Jump(&doFloatAdd);
-                }
-            }
-        }
-    }
-    Bind(&doFloatAdd);
-    {
-        auto res = DoubleAdd(*opNumber0, *opNumber1);
-        varAcc = DoubleBuildTaggedWithNoGC(res);
+        varAcc = result;
         Jump(&accDispatch);
     }
     // slow path
@@ -5099,82 +4908,14 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     GateRef v0 = ReadInst8_1(pc);
     GateRef left = GetVregValue(sp, ZExtInt8ToPtr(v0));
     GateRef right = *varAcc;
-    DEFVARIABLE(opNumber0, VariableType::FLOAT64(), GetDoubleConstant(0.0));
-    DEFVARIABLE(opNumber1, VariableType::FLOAT64(), GetDoubleConstant(0.0));
 
+    GateRef result = FastSub(left, right);
+    Label notHole(env), slowPath(env);
     Label accDispatch(env);
-    Label doFloatSub(env);
-    Label slowPath(env);
-    Label leftIsNumber(env);
-    Label rightIsNumber(env);
-    Label leftIsInt(env);
-    Label leftIsDouble(env);
-    Label rightIsInt(env);
-    Label rightIsDouble(env);
-    Label rightIsInt1(env);
-    Label rightIsDouble1(env);
-    Label overflow(env);
-    Label notOverflow(env);
-
-    Branch(TaggedIsNumber(left), &leftIsNumber, &slowPath);
-    Bind(&leftIsNumber);
+    Branch(TaggedIsHole(result), &slowPath, &notHole);
+    Bind(&notHole);
     {
-        Branch(TaggedIsNumber(right), &rightIsNumber, &slowPath);
-        Bind(&rightIsNumber);
-        {
-            Label leftIsInt(env);
-            Label leftIsDouble(env);
-            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
-            Bind(&leftIsInt);
-            {
-                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
-                Bind(&rightIsInt);
-                {
-                    auto res = Int64Sub(TaggedCastToInt64(left), TaggedCastToInt64(right));
-                    auto condition1 = Int64GreaterThan(res, GetInt64Constant(INT32_MAX));
-                    auto condition2 = Int64LessThan(res, GetInt64Constant(INT32_MIN));
-                    Branch(BoolOr(condition1, condition2), &overflow, &notOverflow);
-                    Bind(&overflow);
-                    {
-                        opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
-                        opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
-                        Jump(&doFloatSub);
-                    }
-                    Bind(&notOverflow);
-                    {
-                        varAcc = IntBuildTaggedWithNoGC(ChangeInt64ToInt32(res));
-                        Jump(&accDispatch);
-                    }
-                }
-                Bind(&rightIsDouble);
-                {
-                    opNumber0 = ChangeInt32ToFloat64(TaggedCastToInt32(left));
-                    opNumber1 = TaggedCastToDouble(right);
-                    Jump(&doFloatSub);
-                }
-            }
-            Bind(&leftIsDouble);
-            {
-                Branch(TaggedIsInt(right), &rightIsInt1, &rightIsDouble1);
-                Bind(&rightIsInt1);
-                {
-                    opNumber0 = TaggedCastToDouble(left);
-                    opNumber1 = ChangeInt32ToFloat64(TaggedCastToInt32(right));
-                    Jump(&doFloatSub);
-                }
-                Bind(&rightIsDouble1);
-                {
-                    opNumber0 = TaggedCastToDouble(left);
-                    opNumber1 = TaggedCastToDouble(right);
-                    Jump(&doFloatSub);
-                }
-            }
-        }
-    }
-    Bind(&doFloatSub);
-    {
-        auto res = DoubleSub(*opNumber0, *opNumber1);
-        varAcc = DoubleBuildTaggedWithNoGC(res);
+        varAcc = result;
         Jump(&accDispatch);
     }
     // slow path

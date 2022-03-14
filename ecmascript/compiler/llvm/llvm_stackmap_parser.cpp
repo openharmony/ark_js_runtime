@@ -73,6 +73,7 @@ void LLVMStackMapParser::PrintCallSiteInfo(const CallSiteInfo *infos, OptimizedL
             LOG_ECMA(DEBUG) << std::dec << "SP_DWARF_REG_NUM:  info.second:" << info.second
                             << std::hex << "rsp :" << rsp;
         } else if (info.first == FrameConstants::FP_DWARF_REG_NUM) {
+            ASSERT(frame->type != FrameType::ASM_LEAVE_FRAME);
             uintptr_t fp = frame->callsiteFp;
             address = fp + info.second;
             LOG_ECMA(DEBUG) << std::dec << "FP_DWARF_REG_NUM:  info.second:" << info.second

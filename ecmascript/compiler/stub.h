@@ -750,13 +750,19 @@ public:
     inline GateRef GetBoxFromGlobalDictionary(GateRef object, GateRef entry);
     inline GateRef GetValueFromGlobalDictionary(GateRef object, GateRef entry);
     inline GateRef GetPropertiesFromJSObject(GateRef object);
+    template<OpCode::Op Op, MachineType Type>
+    inline GateRef BinaryOp(GateRef x, GateRef y);
     GateRef GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key);
-
     // fast path
     GateRef FastEqual(GateRef left, GateRef right);
+    GateRef FastMod(GateRef gule, GateRef left, GateRef right);
+    GateRef FastTypeOf(GateRef left, GateRef right);
     GateRef FastMul(GateRef left, GateRef right);
     GateRef FastDiv(GateRef left, GateRef right);
-    GateRef FastMod(GateRef glue, GateRef left, GateRef right);
+    GateRef FastAdd(GateRef left, GateRef right);
+    GateRef FastSub(GateRef left, GateRef right);
+    template<OpCode::Op Op>
+    GateRef FastBinaryOp(GateRef left, GateRef right);
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
