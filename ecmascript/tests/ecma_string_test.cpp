@@ -960,7 +960,8 @@ HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf8)
     const size_t lengthArrayU8Target = 7;
     uint8_t defaultByteForU8CopyTo = 1;
     uint8_t arrayU8CopyTo[lengthArrayU8Target];
-    memset_s(&arrayU8CopyTo[0], lengthArrayU8Target, defaultByteForU8CopyTo, lengthArrayU8Target);
+    int checkResUtf8 = memset_s(&arrayU8CopyTo[0], lengthArrayU8Target, defaultByteForU8CopyTo, lengthArrayU8Target);
+    EXPECT_TRUE(checkResUtf8 == 0);
 
     size_t indexStartFromArrayU8 = 2;
     size_t lengthCopyToEcmaStrU8 = 3;
@@ -983,7 +984,8 @@ HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf8)
     const size_t lengthArrayU16Target = 8;
     uint8_t defaultByteForU16CompCopyTo = 1;
     uint8_t arrayU16CompCopyTo[lengthArrayU16Target];
-    memset_s(&arrayU16CompCopyTo[0], lengthArrayU16Target, defaultByteForU16CompCopyTo, lengthArrayU16Target);
+    int checkResUtf16 = memset_s(&arrayU16CompCopyTo[0], lengthArrayU16Target, defaultByteForU16CompCopyTo, lengthArrayU16Target);
+    EXPECT_TRUE(checkResUtf16 == 0);
 
     size_t indexStartFromArrayU16Comp = 2;
     size_t lengthCopyToEcmaStrU16Comp = 3;
@@ -1063,8 +1065,9 @@ HWTEST_F_L0(EcmaStringTest, CopyDataRegionUtf16)
     const size_t lengthArrayU16Target = 13;
     uint16_t arrayU16NotCompCopyTo[lengthArrayU16Target];
     uint8_t defaultOneByteValueOfArrayU16NotCompCopyTo = 244;
-    memset_s(&arrayU16NotCompCopyTo[0], sizeof(uint16_t) * lengthArrayU16Target,
+    int checkResUtf16 = memset_s(&arrayU16NotCompCopyTo[0], sizeof(uint16_t) * lengthArrayU16Target,
         defaultOneByteValueOfArrayU16NotCompCopyTo, sizeof(uint16_t) * lengthArrayU16Target);
+    EXPECT_TRUE(checkResUtf16 == 0);
 
     size_t startIndexFromArrayU16NotComp = 2;
     size_t lengthCopyFromArrayU16NotComp = 3;
@@ -1099,8 +1102,9 @@ HWTEST_F_L0(EcmaStringTest, CopyDataUtf16)
     const size_t lengthArrayU16Target = 13;
     uint16_t arrayU16NotCompCopyTo[lengthArrayU16Target];
     uint8_t defaultOneByteValueOfArrayU16NotCompCopyTo = 244;
-    memset_s(&arrayU16NotCompCopyTo[0], sizeof(uint16_t) * lengthArrayU16Target,
+    int checkResUtf16 = memset_s(&arrayU16NotCompCopyTo[0], sizeof(uint16_t) * lengthArrayU16Target,
         defaultOneByteValueOfArrayU16NotCompCopyTo, sizeof(uint16_t) * lengthArrayU16Target);
+    EXPECT_TRUE(checkResUtf16 == 0);
 
     size_t lengthReturnU16NotComp = handleEcmaStrU16NotCompCopyFrom->CopyDataUtf16(&arrayU16NotCompCopyTo[0],
         lengthArrayU16Target);

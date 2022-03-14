@@ -53,7 +53,7 @@ public:
  *           to each position of the container, and when the maximum length is reached, overwrite the original
  *           value from scratch.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(GCRingBufferTest, Push)
 {
@@ -75,7 +75,7 @@ static int SumCallback(const int initial, int elements)
  * @tc.name: Sum
  * @tc.desc: The "Sum" function calculates the sum of stored data by calling the callback function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(GCRingBufferTest, Sum)
 {
@@ -100,7 +100,7 @@ HWTEST_F_L0(GCRingBufferTest, Sum)
  *           The next time you store data, store it from the first position. then call the "Count" function to check
  *           whether the count of the container is zero.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(GCRingBufferTest, Reset)
 {

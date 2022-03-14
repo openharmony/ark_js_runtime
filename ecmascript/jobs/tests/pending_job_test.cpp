@@ -56,7 +56,7 @@ public:
  * @tc.name: GetJob
  * @tc.desc: Check whether the result returned through "GetJob" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(PendingJobTest, GetJob)
 {
@@ -80,7 +80,7 @@ HWTEST_F_L0(PendingJobTest, GetJob)
  * @tc.name: GetArguments
  * @tc.desc: Check whether the result returned through "GetArguments" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(PendingJobTest, GetArguments)
 {
@@ -111,7 +111,7 @@ HWTEST_F_L0(PendingJobTest, GetArguments)
  *           to both.the pendingjob object call "ExecutePendingJob" function to execute the method of function and
  *           return the value of the method.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(PendingJobTest, ExecutePendingJob_001)
 {
@@ -146,7 +146,7 @@ HWTEST_F_L0(PendingJobTest, ExecutePendingJob_001)
  *           to both.the pendingjob object call "ExecutePendingJob" function to execute the method of function and
  *           return the value of the method.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(PendingJobTest, ExecutePendingJob_002)
 {
@@ -182,7 +182,7 @@ HWTEST_F_L0(PendingJobTest, ExecutePendingJob_002)
  *           to both.the pendingjob object call "ExecutePendingJob" function to execute the method of function and
  *           return the value of the method.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(PendingJobTest, ExecutePendingJob_003)
 {
@@ -228,7 +228,7 @@ JSTaggedValue TestPromiseOnResolved(EcmaRuntimeCallInfo *argv)
  *           the pendingjob object call "ExecutePendingJob" function to execute the method of function and return the
  *           value of the method.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(PendingJobTest, ExecutePendingJob_004)
 {
@@ -276,7 +276,7 @@ JSTaggedValue TestPromiseResolveThenableJob(EcmaRuntimeCallInfo *argv)
  *           according to both.The pendingjob object call "ExecutePendingJob" function to execute the method of function
  *           and return the value of the method.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(PendingJobTest, ExecutePendingJob_005)
 {

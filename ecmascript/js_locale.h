@@ -350,7 +350,7 @@ public:
         icu::NumberingSystem *numberingSystem = icu::NumberingSystem::createInstanceByName(value.c_str(), status);
         bool result = U_SUCCESS(status) != 0 && numberingSystem != nullptr;
         delete numberingSystem;
-        numberingSystem = NULL;
+        numberingSystem = nullptr;
         return result;
     }
 
@@ -380,7 +380,7 @@ public:
                                                                         false, status);
         if (U_FAILURE(status)) {
             delete sequence;
-            sequence = NULL;
+            sequence = nullptr;
             return false;
         }
         int32_t size;
@@ -388,13 +388,13 @@ public:
         while (U_SUCCESS(status) && element != nullptr) {
             if (strcmp(outdatedType, element) == 0) {
                 delete sequence;
-                sequence = NULL;
+                sequence = nullptr;
                 return true;
             }
             element = sequence->next(&size, status);
         }
         delete sequence;
-        sequence = NULL;
+        sequence = nullptr;
         return false;
     }
 

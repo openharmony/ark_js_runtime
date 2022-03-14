@@ -1187,7 +1187,7 @@ std::unique_ptr<icu::Calendar> JSDateTimeFormat::BuildCalendar(const icu::Locale
     UErrorCode status = U_ZERO_ERROR;
     std::unique_ptr<icu::Calendar> calendar(icu::Calendar::createInstance(timeZone, locale, status));
     ASSERT_PRINT(U_SUCCESS(status), "buildCalendar failed");
-    ASSERT_PRINT(calendar.get() != nullptr, "calender is nullptr");
+    ASSERT_PRINT(calendar.get() != nullptr, "calendar is nullptr");
 
     /**
      * Return the class ID for this class.
@@ -1337,9 +1337,11 @@ std::string JSDateTimeFormat::ConstructGMTTimeZoneID(const std::string &input)
         return "";
     }
     std::string ret = "Etc/GMT";
-    if (regex_match(input.substr(7), std::regex("[+-][1][0-4]")) || (regex_match(input.substr(7),
-        std::regex("[+-][0-9]")) || input.substr(7) == "0")) {
-        return ret + input.substr(7);
+    int timeZoneOffsetFlag = 7;
+    if (regex_match(input.substr(timeZoneOffsetFlag), std::regex("[+-][1][0-4]"))
+        || (regex_match(input.substr(timeZoneOffsetFlag), std::regex("[+-][0-9]"))
+        || input.substr(timeZoneOffsetFlag) == "0")) {
+        return ret + input.substr(timeZoneOffsetFlag);
     }
     return "";
 }

@@ -507,9 +507,9 @@
 #endif
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHECK_DUMP_FILEDS(begin, end, num)                                               \
+#define CHECK_DUMP_FIELDS(begin, end, num)                                               \
     LOG_IF((num) != ((end) - (begin)) / JSTaggedValue::TaggedTypeSize(), FATAL, RUNTIME) \
-        << "Fileds in obj are not in dump list. ";
+        << "Fields in obj are not in dump list. ";
 
 #define CHECK_OBJECT_SIZE(size)                                                                     \
     if ((size) == 0) {                                                                              \

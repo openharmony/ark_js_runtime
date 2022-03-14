@@ -52,7 +52,7 @@ template<typename T1>
 class PassRunner {
 public:
     explicit PassRunner(T1* data) : data_(data) {}
-    ~PassRunner() = default;
+    virtual ~PassRunner() = default;
     template<typename T2, typename... Args>
     bool RunPass(Args... args)
     {

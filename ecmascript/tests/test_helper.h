@@ -113,6 +113,7 @@ public:
     static inline void DestroyEcmaVMWithScope(PandaVM *instance, EcmaHandleScope *scope)
     {
         delete scope;
+        scope = nullptr;
         EcmaVM::Cast(instance)->SetEnableForceGC(false);
         auto thread = EcmaVM::Cast(instance)->GetJSThread();
         thread->ClearException();

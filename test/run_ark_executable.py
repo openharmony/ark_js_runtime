@@ -43,7 +43,7 @@ def judge_output(args):
     start_time = time.time()
     cmd = input_args.script_file
     if input_args.script_args:
-        cmd += " " + input_args.script_args
+        cmd += " {}".format(input_args.script_args)
     subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
         env={'LD_LIBRARY_PATH': str(input_args.env_path)})
     try:
@@ -57,7 +57,7 @@ def judge_output(args):
         if returncode != args.expect_output:
             print_str = out.decode('UTF-8')
             print(print_str)
-            raise RuntimeError("Run [" + cmd + "] failed!")
+            raise RuntimeError("Run [{}] failed!".format(cmd))
     elif args.expect_file:
         with open(args.expect_file, mode='r') as file:
             # skip license header
@@ -65,12 +65,12 @@ def judge_output(args):
             file.close()
             print_str = out.decode('UTF-8')
             if print_str != expect_output:
-                raise RuntimeError("\n>>>>> Expect : [" + expect_output \
-                    + "]\n>>>>> But got: [" + print_str + "]")
+                raise RuntimeError("\n>>>>> Expect : [{}]\n>>>>> But got: [{}]"
+                                   .format(expect_output, print_str))
     else:
-        raise RuntimeError("Run [" + cmd + "] with no expect !")
+        raise RuntimeError("Run [{}] with no expect !".format(cmd))
 
-    print("Run [" + cmd + "] success!")
+    print("Run [{}] success!".format(cmd))
     print("used: %.5f seconds" % (time.time() - start_time))
 
 

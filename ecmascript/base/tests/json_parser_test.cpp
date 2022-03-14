@@ -52,7 +52,7 @@ public:
  * @tc.desc: Passing in a character of type "uint8_t" check whether the result returned through "ParserUtf8" function
  *           Test without for no Nesting.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonParserTest, Parser_001)
 {
@@ -80,7 +80,7 @@ HWTEST_F_L0(JsonParserTest, Parser_001)
  * @tc.desc: Passing in a character of type "uint16_t" check whether the result returned through "ParseUtf16" function
  *           Test without for no Nesting.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonParserTest, Parser_002)
 {
@@ -116,7 +116,7 @@ HWTEST_F_L0(JsonParserTest, Parser_002)
  * @tc.desc: Passing in a character of type "uint8_t" check whether the result returned through "ParserUtf8" function
  *           Test with for Nesting of numbers, strings, objects, arrays, Booleans.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonParserTest, Parser_003)
 {
@@ -136,7 +136,7 @@ HWTEST_F_L0(JsonParserTest, Parser_003)
  * @tc.desc: Passing in a character of type "uint8_t" check whether the result returned through "ParserUtf8" function
  *           Test with for Nesting of numbers, strings, arrays.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonParserTest, Parser_004)
 {
@@ -163,7 +163,7 @@ HWTEST_F_L0(JsonParserTest, Parser_004)
  * @tc.desc: Passing in a character of type "uint8_t" check whether the result returned through "ParserUtf8" function
  *           Test without for Nesting of numbers, strings, objects.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonParserTest, Parser_005)
 {
