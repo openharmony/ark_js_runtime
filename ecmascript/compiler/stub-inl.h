@@ -666,6 +666,11 @@ GateRef Stub::IntPtrLSR(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), ptrSize, x, y);
 }
 
+template<OpCode::Op Op, MachineType Type>
+GateRef Stub::BinaryOp(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(Op), Type, x, y);
+}
 
 GateRef Stub::TaggedIsInt(GateRef x)
 {
