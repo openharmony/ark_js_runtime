@@ -65,8 +65,7 @@ def judge_output(args):
             file.close()
             print_str = out.decode('UTF-8')
             if print_str != expect_output:
-                raise RuntimeError("\n>>>>> Expect : [{}]\n>>>>> But got: [{}]"
-                                   .format(expect_output, print_str))
+                raise RuntimeError("\n>>>>> Expect : [{}]\n>>>>> But got: [{}]".format(expect_output, print_str))
     else:
         raise RuntimeError("Run [{}] with no expect !".format(cmd))
 
