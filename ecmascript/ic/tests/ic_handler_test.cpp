@@ -245,7 +245,7 @@ HWTEST_F_L0(ICHandlerTest, LoadPrototype)
 
 /**
  * @tc.name: StorePrototype
- * @tc.desc: Call "StorePrototype" function,check whether the Prototype is stored successfully by checking returned value
+ * @tc.desc: Call StorePrototype function,check whether the Prototype is stored successfully by checking returned value
  *           according to the ObjectOperation object,the stored Property is different.the stored ObjectOperation object
  *           must be Found.
  * @tc.type: FUNC
