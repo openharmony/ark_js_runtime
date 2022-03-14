@@ -140,7 +140,7 @@ bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
     panda_file::ClassDataAccessor cda(*pfs, panda_file::File::EntityId(classes[index]));
     auto lang = cda.GetSourceLang();
     if (lang.value_or(panda_file::SourceLang::PANDA_ASSEMBLY) != panda_file::SourceLang::ECMASCRIPT) {
-        LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: Unsupport file: " << fileName;
+        LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: Unsupported file: " << fileName;
         return false;
     }
 
@@ -148,7 +148,7 @@ bool JSBackend::NotifyScriptParsed(int32_t scriptId, const CString &fileName)
     CString source;
     PtJSExtractor *extractor = GenerateExtractor(pfs);
     if (extractor == nullptr) {
-        LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: Unsupport file: " << fileName;
+        LOG(ERROR, DEBUGGER) << "NotifyScriptParsed: Unsupported file: " << fileName;
         return false;
     }
 
@@ -394,7 +394,7 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
     if (!varValue.empty() && callFrameId != "0") {
         *result = RemoteObject::FromTagged(ecmaVm_,
             Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Only allow set value in current frame")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport parent frame set value");
+        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupported parent frame set value");
     }
 
     int32_t regIndex = -1;
@@ -414,8 +414,8 @@ std::optional<Error> JSBackend::EvaluateValue(const CString &callFrameId, const 
     uint32_t slot = 0;
     if (!DebuggerApi::EvaluateLexicalValue(ecmaVm_, varName, level, slot)) {
         *result = RemoteObject::FromTagged(ecmaVm_,
-            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unknow input params")));
-        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport expression");
+            Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unknown input params")));
+        return Error(Error::Type::METHOD_NOT_FOUND, "Unsupported expression");
     }
     if (varValue.empty()) {
         return GetLexicalValue(level, result, slot);
@@ -648,8 +648,8 @@ std::optional<Error> JSBackend::ConvertToLocal(Local<JSValueRef> &taggedValue, s
         double d = DebuggerApi::StringToDouble(begin, end, 0);
         if (std::isnan(d)) {
             *result = RemoteObject::FromTagged(ecmaVm_,
-                Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupport value")));
-            return Error(Error::Type::METHOD_NOT_FOUND, "Unsupport value");
+                Exception::EvalError(ecmaVm_, StringRef::NewFromUtf8(ecmaVm_, "Unsupported value")));
+            return Error(Error::Type::METHOD_NOT_FOUND, "Unsupported value");
         }
         taggedValue = NumberRef::New(ecmaVm_, d);
     }

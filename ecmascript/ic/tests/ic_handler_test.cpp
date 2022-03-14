@@ -55,9 +55,9 @@ public:
 
 /**
  * @tc.name: LoadElement
- * @tc.desc: Call "LoadElement" function,check wether the Element is loaded successfully by checking returned value.
+ * @tc.desc: Call "LoadElement" function,check whether the Element is loaded successfully by checking returned value.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ICHandlerTest, LoadElement)
 {
@@ -68,9 +68,9 @@ HWTEST_F_L0(ICHandlerTest, LoadElement)
 
 /**
  * @tc.name: LoadProperty
- * @tc.desc: Call "LoadProperty" function,check wether the Property is loaded successfully by checking returned value.
+ * @tc.desc: Call "LoadProperty" function,check whether the Property is loaded successfully by checking returned value.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ICHandlerTest, LoadProperty)
 {
@@ -105,9 +105,9 @@ HWTEST_F_L0(ICHandlerTest, LoadProperty)
 
 /**
  * @tc.name: StoreElement
- * @tc.desc: Call "StoreElement" function,check wether the Element is stored successfully by checking returned value.
+ * @tc.desc: Call "StoreElement" function,check whether the Element is stored successfully by checking returned value.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ICHandlerTest, StoreElement)
 {
@@ -133,11 +133,11 @@ HWTEST_F_L0(ICHandlerTest, StoreElement)
 
 /**
  * @tc.name: StoreProperty
- * @tc.desc: Call "StoreProperty" function,check wether the Property is stored successfully by checking returned value.
+ * @tc.desc: Call "StoreProperty" function,check whether the Property is stored successfully by checking returned value.
  *           according to the ObjectOperation object,the stored Property is different,the stored ObjectOperation object
  *           is Found.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ICHandlerTest, StoreProperty)
 {
@@ -175,10 +175,10 @@ HWTEST_F_L0(ICHandlerTest, StoreProperty)
 
 /**
  * @tc.name: StoreTransition
- * @tc.desc: Call "StoreTransition" function,check wether the Transition is stored successfully by checking
+ * @tc.desc: Call "StoreTransition" function,check whether the Transition is stored successfully by checking
  *           returned value.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ICHandlerTest, StoreTransition)
 {
@@ -202,10 +202,10 @@ HWTEST_F_L0(ICHandlerTest, StoreTransition)
 
 /**
  * @tc.name: LoadPrototype
- * @tc.desc: Call "LoadPrototype" function,check wether the Prototype is loaded successfully by checking returned value
+ * @tc.desc: Call "LoadPrototype" function,check whether the Prototype is loaded successfully by checking returned value
  *           according to the ObjectOperation object,the stored Property is different.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ICHandlerTest, LoadPrototype)
 {
@@ -245,11 +245,11 @@ HWTEST_F_L0(ICHandlerTest, LoadPrototype)
 
 /**
  * @tc.name: StorePrototype
- * @tc.desc: Call "StorePrototype" function,check wether the Prototype is stored successfully by checking returned value
+ * @tc.desc: Call "StorePrototype" function,check whether the Prototype is stored successfully by checking returned value
  *           according to the ObjectOperation object,the stored Property is different.the stored ObjectOperation object
  *           must be Found.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ICHandlerTest, StorePrototype)
 {

@@ -51,9 +51,9 @@ public:
 
 /**
  * @tc.name: IsConcatSpreadable
- * @tc.desc: Check wether the second parameter is a JsArray type through "IsConcatSpreadable" function.
+ * @tc.desc: Check whether the second parameter is a JsArray type through "IsConcatSpreadable" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ArrayHelperTest, IsConcatSpreadable)
 {
@@ -76,10 +76,10 @@ HWTEST_F_L0(ArrayHelperTest, IsConcatSpreadable)
 
 /**
  * @tc.name: SortCompare
- * @tc.desc: Check wether the two data(X,Y) are sorted from large two smalle,both X and Y are Undefined return zero,if
+ * @tc.desc: Check whether the two data(X,Y) are sorted from large two smalle,both X and Y are Undefined return zero,if
  *           X or Y is Undefined return -1,if X more than the Y return 1,otherwrise return 0.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ArrayHelperTest, SortCompare)
 {
@@ -109,9 +109,9 @@ HWTEST_F_L0(ArrayHelperTest, SortCompare)
 
 /**
  * @tc.name: GetLength
- * @tc.desc: Check wether the result returned through "GetLength" function is within expectations.
+ * @tc.desc: Check whether the result returned through "GetLength" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ArrayHelperTest, GetLength)
 {
@@ -143,9 +143,9 @@ HWTEST_F_L0(ArrayHelperTest, GetLength)
 
 /**
  * @tc.name: GetArrayLength
- * @tc.desc: Check wether the result returned through "GetArrayLength" function is within expectations.
+ * @tc.desc: Check whether the result returned through "GetArrayLength" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(ArrayHelperTest, GetArrayLength)
 {

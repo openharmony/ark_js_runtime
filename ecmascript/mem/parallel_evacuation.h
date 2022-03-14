@@ -95,18 +95,21 @@ private:
     class EvacuationFragment : public Fragment {
     public:
         EvacuationFragment(ParallelEvacuation *evacuation, Region *region) : Fragment(evacuation, region) {}
+        ~EvacuationFragment() = default;
         bool Process(bool isMain) override;
     };
 
     class UpdateRSetFragment : public Fragment {
     public:
         UpdateRSetFragment(ParallelEvacuation *evacuation, Region *region) : Fragment(evacuation, region) {}
+        ~UpdateRSetFragment() = default;
         bool Process(bool isMain) override;
     };
 
     class UpdateNewRegionFragment : public Fragment {
     public:
         UpdateNewRegionFragment(ParallelEvacuation *evacuation, Region *region) : Fragment(evacuation, region) {}
+        ~UpdateNewRegionFragment() = default;
         bool Process(bool isMain) override;
     };
 
@@ -114,6 +117,7 @@ private:
     public:
         UpdateAndSweepNewRegionFragment(ParallelEvacuation *evacuation, Region *region)
             : Fragment(evacuation, region) {}
+        ~UpdateAndSweepNewRegionFragment() = default;
         bool Process(bool isMain) override;
     };
 

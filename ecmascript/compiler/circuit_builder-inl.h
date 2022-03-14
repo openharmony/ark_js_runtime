@@ -179,9 +179,9 @@ Label::LabelImpl *LabelManager::NewLabel(LabelManager *lm, GateRef control)
 
 void LabelManager::PushCurrentLabel(Label *entry)
 {
-    GateRef control = currentLabel_->GetControl();
-    GateRef depend = currentLabel_->GetDepend();
     if (currentLabel_ != nullptr) {
+        GateRef control = currentLabel_->GetControl();
+        GateRef depend = currentLabel_->GetDepend();
         stack_.push(currentLabel_);
         currentLabel_ = entry;
         currentLabel_->SetControl(control);

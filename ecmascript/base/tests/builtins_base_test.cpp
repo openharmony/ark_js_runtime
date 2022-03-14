@@ -55,7 +55,7 @@ public:
  * @tc.desc: Create msgs through "CreateEcmaRuntimeCallInfo" function,Set ArgsNumber and CallArg ,then call
  *           the "GetArgsArray" function to get an array value is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(BuiltinsBaseTest, GetArgsArray)
 {
@@ -81,7 +81,7 @@ HWTEST_F_L0(BuiltinsBaseTest, GetArgsArray)
  *           function set msgs,check result returned through "GetConstructor","GetFunction","GetThis","GetCallArg"
  *           function from BuiltinsBase is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(BuiltinsBaseTest, BuiltinsBase_info_Get)
 {
@@ -120,7 +120,7 @@ HWTEST_F_L0(BuiltinsBaseTest, BuiltinsBase_info_Get)
  * @tc.name: GetTaggedString
  * @tc.desc: Check whether the result returned through "GetTaggedString" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(BuiltinsBaseTest, GetTaggedString)
 {
@@ -141,7 +141,7 @@ HWTEST_F_L0(BuiltinsBaseTest, GetTaggedString)
  * @tc.name: GetTaggedInt
  * @tc.desc: Check whether the result returned through "GetTaggedInt" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(BuiltinsBaseTest, GetTaggedInt)
 {
@@ -153,7 +153,7 @@ HWTEST_F_L0(BuiltinsBaseTest, GetTaggedInt)
  * @tc.name: GetTaggedDouble
  * @tc.desc: Check whether the result returned through "GetTaggedDouble" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(BuiltinsBaseTest, GetTaggedDouble)
 {
@@ -165,7 +165,7 @@ HWTEST_F_L0(BuiltinsBaseTest, GetTaggedDouble)
  * @tc.name: GetTaggedBoolean
  * @tc.desc: Check whether the result returned through "GetTaggedBoolean" function is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(BuiltinsBaseTest, GetTaggedBoolean)
 {

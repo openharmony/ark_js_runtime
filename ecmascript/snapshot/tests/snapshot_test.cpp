@@ -59,6 +59,7 @@ public:
         thread->ClearException();
         ecmaVm->SetEnableForceGC(false);
         delete scope;
+        scope = nullptr;
         [[maybe_unused]] bool success = EcmaVM::Destroy(ecmaVm);
         ASSERT_TRUE(success) << "Cannot destroy Runtime";
     }

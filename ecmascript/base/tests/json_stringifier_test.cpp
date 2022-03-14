@@ -94,7 +94,7 @@ static JSTaggedValue TestForStringfy2([[maybe_unused]] EcmaRuntimeCallInfo *argv
  *           is Undefined.if the second parameter is JSFunction,the return value is the parameter stringification
  *           after through "call" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_001)
 {
@@ -128,7 +128,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_001)
  *           the first parameter of the ECMAObject,the second parameter is Undefined,the third parameter
  *           is Number.This situation will stringize parameters through "SerializeJSONObject" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_002)
 {
@@ -152,7 +152,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_002)
  *           the first parameter of the ECMAObject,the second parameter is Undefined,the third parameter
  *           is String,This situation will stringize parameters through "SerializeJSONObject" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_003)
 {
@@ -180,7 +180,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_003)
  *           the first parameter of the ECMAObject,the second parameter is JSArray,the third parameter
  *           is String.This situation will stringize parameters through "SerializeJSONObject" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_004)
 {
@@ -219,7 +219,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_004)
  *           the first parameter of the ECMAObject,the second parameter is Undefined,the third parameter
  *           is Undefined.This situation will stringize the first parameter through "SerializeJSONObject" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_005)
 {
@@ -242,7 +242,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_005)
  *           the first parameter of the JSArray,the second parameter is Undefined,the third parameter
  *           is String,This situation will stringize parameters through "SerializeJSArray" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_006)
 {
@@ -284,7 +284,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_006)
  *           the first parameter of the JSObject,the second parameter is Undefined,the third parameter
  *           is Undefined.This situation will stringize the first parameter through "SerializeJSArray" function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_007)
 {
@@ -324,7 +324,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_007)
  *           is Undefined.This situation will stringize the first parameter through "SerilaizePrimitiveRef"
  *           function.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(JsonStringifierTest, Stringify_008)
 {
