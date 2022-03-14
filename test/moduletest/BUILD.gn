@@ -14,6 +14,7 @@
 group("ark_js_moduletest") {
   testonly = true
   deps = [
+    "allocatearraybuffer:allocatearraybufferAction",
     "async:asyncAction",
     "bitwiseop:bitwiseopAction",
     "callframe:callframeAction",
