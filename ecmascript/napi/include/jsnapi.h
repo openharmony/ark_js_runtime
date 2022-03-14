@@ -279,6 +279,7 @@ public:
     bool IsTrue();
     bool IsFalse();
     bool IsNumber();
+    bool IsBigInt();
     bool IsInt();
     bool WithinInt32();
     bool IsBoolean();
@@ -355,6 +356,17 @@ class PUBLIC_API NumberRef : public PrimitiveRef {
 public:
     static Local<NumberRef> New(const EcmaVM *vm, double input);
     double Value();
+};
+
+class PUBLIC_API BigIntRef : public PrimitiveRef {
+public:
+    static Local<BigIntRef> New(const EcmaVM *vm, uint64_t input);
+    static Local<BigIntRef> New(const EcmaVM *vm, int64_t input);
+    static Local<JSValueRef> CreateBigWords(const EcmaVM *vm, bool sign, uint32_t size, const uint64_t* words);
+    void BigIntToInt64(const EcmaVM *vm, int64_t *cValue, bool *lossless);
+    void BigIntToUint64(const EcmaVM *vm, uint64_t *cValue, bool *lossless);
+    void GetWordsArray(bool* signBit, size_t wordCount, uint64_t* words);
+    uint32_t GetWordsArraySize();
 };
 
 class PUBLIC_API BooleanRef : public PrimitiveRef {

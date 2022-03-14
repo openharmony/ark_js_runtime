@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -161,13 +161,14 @@ std::string BigIntHelper::GetBinary(JSHandle<BigInt> bigint)
         index++;
     }
     size_t count = 0;
-    for (size_t i = 0; i < res.size(); ++i) {
+    size_t resLen = res.size();
+    for (size_t i = 0; i < resLen; ++i) {
         if (res[i] != '0') {
             break;
         }
         count++;
     }
-    if (count == res.size()) {
+    if (count == resLen) {
         return "0";
     }
     return res.substr(count);
@@ -490,6 +491,16 @@ JSHandle<EcmaString> BigInt::ToString(JSThread *thread, JSHandle<BigInt> bigint,
     return factory->NewFromStdStringUnCheck(result, true);
 }
 
+std::string BigInt::ToStdString(JSThread *thread, JSHandle<BigInt> bigint, uint32_t conversionToRadix)
+{
+    std::string result =
+        BigIntHelper::Conversion(BigIntHelper::GetBinary(bigint), conversionToRadix, BigInt::BINARY);
+    if (bigint->GetSign() && !(result.size() == 1 && result[0] == '0')) {
+        result = "-" + result;
+    }
+    return result;
+}
+
 JSTaggedValue BigInt::NumberToBigInt(JSThread *thread, JSHandle<JSTaggedValue> number)
 {
     if (!number->IsInteger()) {
@@ -536,6 +547,63 @@ JSTaggedValue BigInt::NumberToBigInt(JSThread *thread, JSHandle<JSTaggedValue> n
 JSHandle<BigInt> BigInt::Int32ToBigInt(JSThread *thread, const int &number)
 {
     return BigIntHelper::SetBigInt(thread, std::to_string(number));
+}
+
+JSHandle<BigInt> BigInt::Int64ToBigInt(JSThread *thread, const int64_t &number)
+{
+    return BigIntHelper::SetBigInt(thread, std::to_string(number));
+}
+
+JSHandle<BigInt> BigInt::Uint64ToBigInt(JSThread *thread, const uint64_t &number)
+{
+    return BigIntHelper::SetBigInt(thread, std::to_string(number));
+}
+
+void BigInt::BigIntToInt64(JSThread *thread, JSHandle<JSTaggedValue> bigint, int64_t *cValue, bool *lossless)
+{
+    ASSERT(bigint->IsBigInt());
+    ASSERT(cValue);
+    ASSERT(lossless);
+    JSHandle<BigInt> bigInt64(thread, JSTaggedValue::ToBigInt64(thread, bigint));
+    if (Equal(bigInt64.GetTaggedValue(), bigint.GetTaggedValue())) {
+        *lossless = true;
+    }
+    uint32_t *addr = reinterpret_cast<uint32_t *>(cValue);
+    int len = bigInt64->GetLength();
+    for (int index = len - 1; index >= 0; --index) {
+        *(addr + index) = bigInt64->GetDigit(index);
+    }
+    if (bigInt64->GetSign()) {
+        *cValue = ~(*cValue - 1);
+    }
+}
+
+void BigInt::BigIntToUint64(JSThread *thread, JSHandle<JSTaggedValue> bigint, uint64_t *cValue, bool *lossless)
+{
+    ASSERT(bigint->IsBigInt());
+    ASSERT(cValue);
+    ASSERT(lossless);
+    JSHandle<BigInt> bigUint64(thread, JSTaggedValue::ToBigUint64(thread, bigint));
+    if (Equal(bigUint64.GetTaggedValue(), bigint.GetTaggedValue())) {
+        *lossless = true;
+    }
+    uint32_t *addr = reinterpret_cast<uint32_t *>(cValue);
+    int len = bigUint64->GetLength();
+    for (int index = len - 1; index >= 0; --index) {
+        *(addr + index) = bigUint64->GetDigit(index);
+    }
+}
+
+JSHandle<BigInt> BigInt::CreateBigWords(JSThread *thread, bool sign, uint32_t size, const uint64_t* words)
+{
+    uint32_t needLen = size * 2; // 2 : uint64_t size to uint32_t size
+    JSHandle<BigInt> bigint = CreateBigint(thread, needLen);
+    const uint32_t *digits = reinterpret_cast<const uint32_t *>(words);
+    for (uint32_t index = 0; index < needLen; ++index) {
+        SetDigit(thread, bigint, index, *(digits + index));
+    }
+    bigint->SetSign(sign);
+    return BigIntHelper::RightTruncate(thread, bigint);
 }
 
 JSHandle<BigInt> BigInt::Add(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y)
@@ -689,8 +757,8 @@ inline uint32_t BigIntHelper::SubHelper(uint32_t x, uint32_t y, uint32_t &bigint
 
 ComparisonResult BigInt::Compare(JSThread *thread, const JSTaggedValue &x, const JSTaggedValue &y)
 {
-    if (!LessThan(thread, x, y)) {
-        if (!LessThan(thread, y, x)) {
+    if (!LessThan(x, y)) {
+        if (!LessThan(y, x)) {
             return ComparisonResult::EQUAL;
         }
         return ComparisonResult::GREAT;
@@ -698,14 +766,14 @@ ComparisonResult BigInt::Compare(JSThread *thread, const JSTaggedValue &x, const
     return ComparisonResult::LESS;
 }
 
-bool BigInt::LessThan(JSThread *thread, const JSTaggedValue &x, const JSTaggedValue &y)
+bool BigInt::LessThan(const JSTaggedValue &x, const JSTaggedValue &y)
 {
-    JSHandle<BigInt> bigLeft(thread, x);
-    JSHandle<BigInt> bigRight(thread, y);
-    return LessThan(thread, bigLeft, bigRight);
+    BigInt* xVal = BigInt::Cast(x.GetTaggedObject());
+    BigInt* yVal = BigInt::Cast(y.GetTaggedObject());
+    return LessThan(xVal, yVal);
 }
 
-bool BigInt::LessThan(JSThread *thread, const JSHandle<BigInt> &x, const JSHandle<BigInt> &y)
+bool BigInt::LessThan(const BigInt *x, const BigInt *y)
 {
     bool xSignFlag = x->GetSign();
     bool ySignFlag = y->GetSign();
@@ -1138,7 +1206,8 @@ JSTaggedValue BigInt::AsintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<Bi
     JSHandle<BigInt> modValue =  FloorMod(thread, bigint, tValue);
     JSHandle<BigInt> resValue = Exponentiate(thread, base, exponent);
     // If mod ≥ 2bits - 1, return ℤ(mod - 2bits); otherwise, return (mod).
-    if (LessThan(thread, resValue, modValue) || Equal(resValue.GetTaggedValue(), modValue.GetTaggedValue())) {
+    if (LessThan(resValue.GetTaggedValue(), modValue.GetTaggedValue()) ||
+        Equal(resValue.GetTaggedValue(), modValue.GetTaggedValue())) {
         return Subtract(thread, modValue, tValue).GetTaggedValue();
     }
     return modValue.GetTaggedValue();
@@ -1146,7 +1215,128 @@ JSTaggedValue BigInt::AsintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<Bi
 
 JSTaggedNumber BigInt::BigIntToNumber(JSThread *thread, JSHandle<BigInt> bigint)
 {
-    JSHandle<JSTaggedValue> bigintStr = JSHandle<JSTaggedValue>::Cast(ToString(thread, bigint));
-    return JSTaggedValue::ToNumber(thread, bigintStr);
+    std::string bigintStr = ToStdString(thread, bigint, HEXADECIMAL);
+    bool sign = false;
+    if (bigintStr[0] == '-') {
+        bigintStr = bigintStr.substr(1); // 1 : dump '-'
+        sign = true;
+    }
+    bigintStr = "0x" + bigintStr;
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<EcmaString> str = factory->NewFromStdStringUnCheck(bigintStr, true);
+    JSHandle<JSTaggedValue> numberStr(thread, str.GetTaggedValue());
+    JSTaggedNumber number = JSTaggedValue::ToNumber(thread, numberStr);
+    if (sign) {
+        return JSTaggedNumber(-number.GetNumber());
+    }
+    return number;
+}
+
+int CompareToBitsLen(JSHandle<BigInt> bigint, int numBitLen, int &preZero)
+{
+    uint32_t bigintLen = bigint->GetLength();
+    uint32_t BigintHead = bigint->GetDigit(bigintLen - 1);
+    uint32_t bits = BigInt::DATEBITS;
+    while (bits) {
+        bits--;
+        if (((BigintHead >> bits) | 0) != 0) {
+            break;
+        }
+        preZero++;
+    }
+    
+    int bigintBitLen = bigintLen * BigInt::DATEBITS - preZero;
+    bool bigintSign = bigint->GetSign();
+    if (bigintBitLen > numBitLen) {
+        return bigintSign ? 0 : 1;
+    }
+
+    if (bigintBitLen < numBitLen) {
+        return bigintSign ? 1 : 0;
+    }
+    return -1;
+}
+
+ComparisonResult BigInt::CompareWithNumber(JSThread *thread, JSHandle<BigInt> bigint, JSHandle<JSTaggedValue> number)
+{
+    double num = number->GetNumber();
+    bool numberSign = num < 0;
+    if (std::isnan(num)) {
+        return ComparisonResult::UNDEFINED;
+    }
+    if (!std::isfinite(num)) {
+        return (!numberSign ?  ComparisonResult::LESS : ComparisonResult::GREAT);
+    }
+    // Bit operations must be of integer type
+    uint64_t bits = 0;
+    memcpy_s(&bits, sizeof(bits), &num, sizeof(num));
+    int exponential = (bits >> 52) & 0x7FF;
+
+    // Take out bits 62-52 (11 bits in total) and subtract 1023
+    int integerDigits = exponential - 0x3FF;
+    uint64_t mantissa = (bits & 0x000FFFFFFFFFFFFF) | 0x0010000000000000;
+    bool bigintSign = bigint->GetSign();
+    // Handling the opposite sign
+    if (!numberSign && bigintSign) {
+        return ComparisonResult::LESS;
+    } else if (numberSign && !bigintSign) {
+        return ComparisonResult::GREAT;
+    }
+    if (bigint->IsZero() && !num) {
+        return ComparisonResult::EQUAL;
+    }
+    if (bigint->IsZero() && num > 0) {
+        return ComparisonResult::LESS;
+    }
+
+    if (integerDigits < 0) {
+        return bigintSign ? ComparisonResult::LESS : ComparisonResult::GREAT;
+    }
+
+    // Compare the significant bits of bigint with the significant integer bits of double
+    int preZero = 0;
+    int res =  CompareToBitsLen(bigint, integerDigits + 1, preZero);
+    if (res == 0) {
+        return ComparisonResult::LESS;
+    } else if (res == 1) {
+        return ComparisonResult::GREAT;
+    }
+    int mantissaSize = 52; // mantissaSize
+    uint32_t bigintLen = bigint->GetLength();
+    int leftover = 0;
+    bool IsFirstInto = true;
+    for (int index = bigintLen - 1; index >= 0; --index) {
+        uint32_t doubleNum = 0;
+        uint32_t BigintNum = bigint->GetDigit(index);
+        if (IsFirstInto) {
+            IsFirstInto = false;
+            leftover = mantissaSize - BigInt::DATEBITS + preZero + 1;
+            doubleNum = static_cast<uint32_t>(mantissa >> leftover);
+            mantissa = mantissa << (64 - leftover); // 64 double bits
+            if (BigintNum > doubleNum) {
+                return bigintSign ? ComparisonResult::LESS : ComparisonResult::GREAT;
+            }
+            if (BigintNum < doubleNum) {
+                return bigintSign ? ComparisonResult::GREAT : ComparisonResult::LESS;
+            }
+        } else {
+            leftover -= BigInt::DATEBITS;
+            doubleNum = static_cast<uint32_t>(mantissa >> BigInt::DATEBITS);
+            mantissa = mantissa << BigInt::DATEBITS;
+            if (BigintNum > doubleNum) {
+                return bigintSign ? ComparisonResult::LESS : ComparisonResult::GREAT;
+            }
+            if (BigintNum < doubleNum) {
+                return bigintSign ? ComparisonResult::GREAT : ComparisonResult::LESS;
+            }
+            leftover -= BigInt::DATEBITS;
+        }
+    }
+
+    if (mantissa != 0) {
+        ASSERT(leftover > 0);
+        return bigintSign ? ComparisonResult::GREAT : ComparisonResult::LESS;
+    }
+    return ComparisonResult::EQUAL;
 }
 } // namespace

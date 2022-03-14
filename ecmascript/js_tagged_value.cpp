@@ -126,10 +126,7 @@ bool JSTaggedValue::Equal(JSThread *thread, const JSHandle<JSTaggedValue> &x, co
             return StrictNumberEquals(x->ExtractNumber(), yNumber.GetNumber());
         }
         if (y->IsBigInt()) {
-            JSHandle<BigInt> bigint = JSHandle<BigInt>::Cast(y);
-            JSTaggedNumber yNumber = BigInt::BigIntToNumber(thread, bigint);
-            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, false);
-            return StrictNumberEquals(x->ExtractNumber(), yNumber.GetNumber());
+            return Equal(thread, y, x);
         }
         if (y->IsHeapObject() && !y->IsSymbol()) {
             JSHandle<JSTaggedValue> yPrimitive(thread, ToPrimitive(thread, y));
@@ -205,7 +202,8 @@ bool JSTaggedValue::Equal(JSThread *thread, const JSHandle<JSTaggedValue> &x, co
             return BigInt::Equal(x.GetTaggedValue(), yNumber.GetTaggedValue());
         }
         if (y->IsNumber()) {
-            return Equal(thread, y, x);
+            JSHandle<BigInt> bigint = JSHandle<BigInt>::Cast(x);
+            return BigInt::CompareWithNumber(thread, bigint, y) == ComparisonResult::EQUAL;
         }
         if (y->IsHeapObject() && !y->IsSymbol()) {
             JSHandle<JSTaggedValue> yPrimitive(thread, ToPrimitive(thread, y));
@@ -272,19 +270,8 @@ ComparisonResult JSTaggedValue::Compare(JSThread *thread, const JSHandle<JSTagge
     }
     if (primX->IsBigInt()) {
         if (primY->IsNumber()) {
-            double num = primY->GetNumber();
-            if (std::isnan(num)) {
-                return ComparisonResult::UNDEFINED;
-            }
-            if (!std::isfinite(num) && num > 0) {
-                return ComparisonResult::LESS;
-            }
-            if (!std::isfinite(num) && num < 0) {
-                return ComparisonResult::GREAT;
-            }
-            JSHandle<JSTaggedValue> bigY(thread, BigInt::NumberToBigInt(thread, primY));
-            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ComparisonResult::UNDEFINED);
-            return BigInt::Compare(thread, primX.GetTaggedValue(), bigY.GetTaggedValue());
+            JSHandle<BigInt> bigint = JSHandle<BigInt>::Cast(primX);
+            return BigInt::CompareWithNumber(thread, bigint, primY);
         } else if (primY->IsString()) {
             JSHandle<JSTaggedValue> bigY(thread, base::NumberHelper::StringToBigInt(thread, primY));
             if (!bigY->IsBigInt()) {
@@ -293,6 +280,7 @@ ComparisonResult JSTaggedValue::Compare(JSThread *thread, const JSHandle<JSTagge
             return BigInt::Compare(thread, primX.GetTaggedValue(), bigY.GetTaggedValue());
         } else {
             JSHandle<JSTaggedValue> bigY(thread, ToBigInt(thread, primY));
+            RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, ComparisonResult::UNDEFINED);
             return BigInt::Compare(thread, primX.GetTaggedValue(), bigY.GetTaggedValue());
         }
     }
@@ -927,11 +915,11 @@ bool JSTaggedValue::GetContainerProperty(JSThread *thread, const JSHandle<JSTagg
 JSTaggedValue JSTaggedValue::ToNumeric(JSThread *thread, const JSHandle<JSTaggedValue> &tagged)
 {
     // 1. Let primValue be ? ToPrimitive(value, number)
-    JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, tagged));
+    JSHandle<JSTaggedValue> primValue(thread, ToPrimitive(thread, tagged, PREFER_NUMBER));
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 2. If Type(primValue) is BigInt, return primValue.
     if (primValue->IsBigInt()) {
-        return primValue.GetTaggedValue();\
+        return primValue.GetTaggedValue();
     }
     // 3. Return ? ToNumber(primValue).
     JSTaggedNumber number = ToNumber(thread, primValue);

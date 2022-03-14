@@ -195,7 +195,7 @@ inline JSTaggedValue JSTaggedValue::ToBigInt64(JSThread *thread, const JSHandle<
     JSHandle<BigInt> int64bitVal = BigInt::FloorMod(thread, value, tVal);
     JSHandle<BigInt> resValue = BigInt::Exponentiate(thread, base, exponentone);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    if (!BigInt::LessThan(thread, int64bitVal, resValue)) {
+    if (!BigInt::LessThan(int64bitVal.GetTaggedValue(), resValue.GetTaggedValue())) {
         return BigInt::Subtract(thread, int64bitVal, tVal).GetTaggedValue();
     } else {
         return int64bitVal.GetTaggedValue();
