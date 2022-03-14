@@ -119,8 +119,13 @@ private:
     std::unique_ptr<Scope> GetLocalScopeChain(const InterpretedFrameHandler *frameHandler,
         std::unique_ptr<RemoteObject> *thisObj);
     std::unique_ptr<Scope> GetGlobalScopeChain();
-    std::optional<Error> SetValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result, const CString &varValue);
-    std::optional<Error> GetValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result);
+    std::optional<Error> ConvertToLocal(Local<JSValueRef> &taggedValue, std::unique_ptr<RemoteObject> *result,
+        const CString &varValue);
+    std::optional<Error> SetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result, const CString &varValue);
+    std::optional<Error> SetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result,
+        const CString &varValue, uint32_t slot);
+    std::optional<Error> GetVregValue(int32_t regIndex, std::unique_ptr<RemoteObject> *result);
+    std::optional<Error> GetLexicalValue(int32_t level, std::unique_ptr<RemoteObject> *result, uint32_t slot);
     void GetProtoOrProtoType(const Local<JSValueRef> &value, bool isOwn, bool isAccessorOnly,
                              CVector<std::unique_ptr<PropertyDescriptor>> *outPropertyDesc);
     constexpr static int32_t SPECIAL_LINE_MARK = -1;

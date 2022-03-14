@@ -21,6 +21,8 @@
 #include "ecmascript/common.h"
 #include "ecmascript/mem/c_string.h"
 #include "ecmascript/napi/include/jsnapi.h"
+#include "ecmascript/scope_info_extractor.h"
+#include "ecmascript/lexical_env.h"
 
 #include "mem/rendezvous.h"
 #include "include/runtime.h"
@@ -91,6 +93,12 @@ public:
 
     // JSMehthod
     static CString ParseFunctionName(const JSMethod *method);
+
+    // ScopeInfo
+    static Local<JSValueRef> GetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot);
+    static void SetProperties(const EcmaVM *ecmaVm, int32_t level, uint32_t slot, Local<JSValueRef> value);
+    static bool EvaluateLexicalValue(const EcmaVM *ecmaVm, const CString &name, int32_t &level, uint32_t &slot);
+    static Local<JSValueRef> GetLexicalValueInfo(const EcmaVM *ecmaVm, const CString &name);
 };
 }  // namespace panda::tooling::ecmascript
 

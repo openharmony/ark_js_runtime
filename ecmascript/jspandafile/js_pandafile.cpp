@@ -29,6 +29,7 @@ JSPandaFile::~JSPandaFile()
         delete pf_;
         pf_ = nullptr;
     }
+    methodMap_.clear();
     if (methods_ != nullptr) {
         JSPandaFileManager::FreeBuffer(methods_);
         methods_ = nullptr;
@@ -74,13 +75,6 @@ void JSPandaFile::InitMethods()
 
 const JSMethod *JSPandaFile::FindMethods(uint32_t offset) const
 {
-    for (uint32_t i = 0; i < numMethods_; i++) {
-        const JSMethod *method = methods_ + i;
-        if (method->GetFileId().GetOffset() == offset) {
-            return method;
-        }
-    }
-
-    return nullptr;
+    return methodMap_.at(offset);
 }
 }  // namespace panda::ecmascript
