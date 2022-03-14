@@ -104,682 +104,68 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
 void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
-    DEFVARIABLE(intX, VariableType::INT32(), 0);
-    DEFVARIABLE(intY, VariableType::INT32(), 0);
-    DEFVARIABLE(doubleX, VariableType::FLOAT64(), 0);
-    DEFVARIABLE(doubleY, VariableType::FLOAT64(), 0);
-    Label xIsNumber(env);
-    Label xNotNumberOryNotNumber(env);
-    Label xIsNumberAndyIsNumber(env);
-    Label xIsDoubleAndyIsDouble(env);
-    Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
-    Bind(&xIsNumber);
-    {
-        Label yIsNumber(env);
-        // if right.IsNumber()
-        Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
-        Bind(&yIsNumber);
-        {
-            Label xIsInt(env);
-            Label xNotInt(env);
-            Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
-            Bind(&xIsInt);
-            {
-                intX = TaggedCastToInt32(x);
-                doubleX = ChangeInt32ToFloat64(*intX);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-            Bind(&xNotInt);
-            {
-                doubleX = TaggedCastToDouble(x);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-        }
-    }
-    Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(VariableType::JS_ANY()));
-    Label yIsInt(env);
-    Label yNotInt(env);
-    Bind(&xIsNumberAndyIsNumber);
-    {
-        Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
-        Bind(&yIsInt);
-        {
-            intY = TaggedCastToInt32(y);
-            doubleY = ChangeInt32ToFloat64(*intY);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-        Bind(&yNotInt);
-        {
-            doubleY = TaggedCastToDouble(y);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-    }
-    Bind(&xIsDoubleAndyIsDouble);
-    doubleX = DoubleAdd(*doubleX, *doubleY);
-    Return(DoubleBuildTaggedWithNoGC(*doubleX));
+    Return(FastAdd(x, y));
 }
 
 void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
-    DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(intY, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, VariableType::FLOAT64(), GetDoubleConstant(0));
-    Label xIsNumber(env);
-    Label xNotNumberOryNotNumber(env);
-    Label xNotIntOryNotInt(env);
-    Label xIsIntAndyIsInt(env);
-    // if x is number
-    Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
-    Bind(&xIsNumber);
-    {
-        Label yIsNumber(env);
-        // if y is number
-        Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
-        {
-            Bind(&yIsNumber);
-            {
-                Label xIsInt(env);
-                Label xNotInt(env);
-                Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
-                Bind(&xIsInt);
-                {
-                    intX = TaggedCastToInt32(x);
-                    Label yIsInt(env);
-                    Label yNotInt(env);
-                    Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
-                    Bind(&yIsInt);
-                    {
-                        intY = TaggedCastToInt32(y);
-                        intX = Int32Sub(*intX, *intY);
-                        Jump(&xIsIntAndyIsInt);
-                    }
-                    Bind(&yNotInt);
-                    {
-                        doubleY = TaggedCastToDouble(y);
-                        doubleX = ChangeInt32ToFloat64(*intX);
-                        Jump(&xNotIntOryNotInt);
-                    }
-                }
-                Bind(&xNotInt);
-                {
-                    Label yIsInt(env);
-                    Label yNotInt(env);
-                    doubleX = TaggedCastToDouble(x);
-                    Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
-                    Bind(&yIsInt);
-                    {
-                        intY = TaggedCastToInt32(y);
-                        doubleY = ChangeInt32ToFloat64(*intY);
-                        Jump(&xNotIntOryNotInt);
-                    }
-                    Bind(&yNotInt);
-                    {
-                        doubleY = TaggedCastToDouble(y);
-                        Jump(&xNotIntOryNotInt);
-                    }
-                }
-            }
-        }
-    }
-    Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(VariableType::JS_ANY()));
-    Bind(&xNotIntOryNotInt);
-    doubleX = DoubleSub(*doubleX, *doubleY);
-    Return(DoubleBuildTaggedWithNoGC(*doubleX));
-    Bind(&xIsIntAndyIsInt);
-    Return(IntBuildTaggedWithNoGC(*intX));
+    Return(FastSub(x, y));
 }
 
 void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
-    DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(intY, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, VariableType::FLOAT64(), GetDoubleConstant(0));
-    Label xIsNumber(env);
-    Label xNotNumberOryNotNumber(env);
-    Label xIsNumberAndyIsNumber(env);
-    Label xIsDoubleAndyIsDouble(env);
-    Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
-    Bind(&xIsNumber);
-    {
-        Label yIsNumber(env);
-        // if right.IsNumber()
-        Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
-        Bind(&yIsNumber);
-        {
-            Label xIsInt(env);
-            Label xNotInt(env);
-            Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
-            Bind(&xIsInt);
-            {
-                intX = TaggedCastToInt32(x);
-                doubleX = ChangeInt32ToFloat64(*intX);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-            Bind(&xNotInt);
-            {
-                doubleX = TaggedCastToDouble(x);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-        }
-    }
-    Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(VariableType::JS_ANY()));
-    Label yIsInt(env);
-    Label yNotInt(env);
-    Bind(&xIsNumberAndyIsNumber);
-    {
-        Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
-        Bind(&yIsInt);
-        {
-            intY = TaggedCastToInt32(y);
-            doubleY = ChangeInt32ToFloat64(*intY);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-        Bind(&yNotInt);
-        {
-            doubleY = TaggedCastToDouble(y);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-    }
-    Bind(&xIsDoubleAndyIsDouble);
-    doubleX = DoubleMul(*doubleX, *doubleY);
-    Return(DoubleBuildTaggedWithNoGC(*doubleX));
+    Return(FastMul(x, y));
 }
 
 void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
-    DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(intY, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, VariableType::FLOAT64(), GetDoubleConstant(0));
-    Label xIsNumber(env);
-    Label xNotNumberOryNotNumber(env);
-    Label xIsNumberAndyIsNumber(env);
-    Label xIsDoubleAndyIsDouble(env);
-    Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
-    Bind(&xIsNumber);
-    {
-        Label yIsNumber(env);
-        // if right.IsNumber()
-        Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
-        Bind(&yIsNumber);
-        {
-            Label xIsInt(env);
-            Label xNotInt(env);
-            Branch(TaggedIsInt(x), &xIsInt, &xNotInt);
-            Bind(&xIsInt);
-            {
-                intX = TaggedCastToInt32(x);
-                doubleX = ChangeInt32ToFloat64(*intX);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-            Bind(&xNotInt);
-            {
-                doubleX = TaggedCastToDouble(x);
-                Jump(&xIsNumberAndyIsNumber);
-            }
-        }
-    }
-    Bind(&xNotNumberOryNotNumber);
-    Return(GetHoleConstant(VariableType::JS_ANY()));
-    Label yIsInt(env);
-    Label yNotInt(env);
-    Bind(&xIsNumberAndyIsNumber);
-    Branch(TaggedIsInt(y), &yIsInt, &yNotInt);
-    Bind(&yIsInt);
-    {
-        intY = TaggedCastToInt32(y);
-        doubleY = ChangeInt32ToFloat64(*intY);
-        Jump(&xIsDoubleAndyIsDouble);
-    }
-    Bind(&yNotInt);
-    {
-        doubleY = TaggedCastToDouble(y);
-        Jump(&xIsDoubleAndyIsDouble);
-    }
-    Bind(&xIsDoubleAndyIsDouble);
-    {
-        Label divisorIsZero(env);
-        Label divisorNotZero(env);
-        Branch(DoubleEqual(*doubleY, GetDoubleConstant(0.0)), &divisorIsZero, &divisorNotZero);
-        Bind(&divisorIsZero);
-        {
-            Label xIsZeroOrNan(env);
-            Label xNeiZeroOrNan(env);
-            Label xIsZero(env);
-            Label xNotZero(env);
-            // dLeft == 0.0 || std::isnan(dLeft)
-            Branch(DoubleEqual(*doubleX, GetDoubleConstant(0.0)), &xIsZero, &xNotZero);
-            Bind(&xIsZero);
-            Jump(&xIsZeroOrNan);
-            Bind(&xNotZero);
-            {
-                Label xIsNan(env);
-                Label xNotNan(env);
-                Branch(DoubleIsNAN(*doubleX), &xIsNan, &xNotNan);
-                Bind(&xIsNan);
-                Jump(&xIsZeroOrNan);
-                Bind(&xNotNan);
-                Jump(&xNeiZeroOrNan);
-            }
-            Bind(&xIsZeroOrNan);
-            Return(DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE)));
-            Bind(&xNeiZeroOrNan);
-            {
-                GateRef intXTmp = CastDoubleToInt64(*doubleX);
-                GateRef intYtmp = CastDoubleToInt64(*doubleY);
-                intXTmp = Int64And(Int64Xor(intXTmp, intYtmp), GetInt64Constant(base::DOUBLE_SIGN_MASK));
-                intXTmp = Int64Xor(intXTmp, CastDoubleToInt64(GetDoubleConstant(base::POSITIVE_INFINITY)));
-                doubleX = CastInt64ToFloat64(intXTmp);
-                Return(DoubleBuildTaggedWithNoGC(*doubleX));
-            }
-        }
-        Bind(&divisorNotZero);
-        {
-            doubleX = DoubleDiv(*doubleX, *doubleY);
-            Return(DoubleBuildTaggedWithNoGC(*doubleX));
-        }
-    }
+    Return(FastDiv(x, y));
 }
 
 void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2); // 2: 3rd argument
-    DEFVARIABLE(intX, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(intY, VariableType::INT32(), GetInt32Constant(0));
-    DEFVARIABLE(doubleX, VariableType::FLOAT64(), GetDoubleConstant(0));
-    DEFVARIABLE(doubleY, VariableType::FLOAT64(), GetDoubleConstant(0));
-    Label xIsInt(env);
-    Label xNotIntOryNotInt(env);
-    Branch(TaggedIsInt(x), &xIsInt, &xNotIntOryNotInt);
-    Bind(&xIsInt);
-    {
-        Label yIsInt(env);
-        Label xIsIntAndyIsInt(env);
-        // if right.IsInt()
-        Branch(TaggedIsInt(y), &yIsInt, &xNotIntOryNotInt);
-        Bind(&yIsInt);
-        {
-            intX = TaggedCastToInt32(x);
-            intY = TaggedCastToInt32(y);
-            Jump(&xIsIntAndyIsInt);
-        }
-        Bind(&xIsIntAndyIsInt);
-        {
-            Label xGtZero(env);
-            Label xGtZeroAndyGtZero(env);
-            Branch(Int32GreaterThan(*intX, GetInt32Constant(0)), &xGtZero, &xNotIntOryNotInt);
-            Bind(&xGtZero);
-            {
-                Branch(Int32GreaterThan(*intY, GetInt32Constant(0)), &xGtZeroAndyGtZero, &xNotIntOryNotInt);
-                Bind(&xGtZeroAndyGtZero);
-                {
-                    intX = Int32Mod(*intX, *intY);
-                    Return(IntBuildTaggedWithNoGC(*intX));
-                }
-            }
-        }
-    }
-    Bind(&xNotIntOryNotInt);
-    {
-        Label xIsNumber(env);
-        Label xNotNumberOryNotNumber(env);
-        Label xIsNumberAndyIsNumber(env);
-        Label xIsDoubleAndyIsDouble(env);
-        Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberOryNotNumber);
-        Bind(&xIsNumber);
-        {
-            Label yIsNumber(env);
-            // if right.IsNumber()
-            Branch(TaggedIsNumber(y), &yIsNumber, &xNotNumberOryNotNumber);
-            Bind(&yIsNumber);
-            {
-                Label xIfInt(env);
-                Label xIfNotInt(env);
-                Branch(TaggedIsInt(x), &xIfInt, &xIfNotInt);
-                Bind(&xIfInt);
-                {
-                    intX = TaggedCastToInt32(x);
-                    doubleX = ChangeInt32ToFloat64(*intX);
-                    Jump(&xIsNumberAndyIsNumber);
-                }
-                Bind(&xIfNotInt);
-                {
-                    doubleX = TaggedCastToDouble(x);
-                    Jump(&xIsNumberAndyIsNumber);
-                }
-            }
-        }
-        Bind(&xNotNumberOryNotNumber);
-        Return(GetHoleConstant(VariableType::JS_ANY()));
-        Label yIfInt(env);
-        Label yIfNotInt(env);
-        Bind(&xIsNumberAndyIsNumber);
-        Branch(TaggedIsInt(y), &yIfInt, &yIfNotInt);
-        Bind(&yIfInt);
-        {
-            intY = TaggedCastToInt32(y);
-            doubleY = ChangeInt32ToFloat64(*intY);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-        Bind(&yIfNotInt);
-        {
-            doubleY = TaggedCastToDouble(y);
-            Jump(&xIsDoubleAndyIsDouble);
-        }
-        Bind(&xIsDoubleAndyIsDouble);
-        {
-            Label yIsZero(env);
-            Label yNotZero(env);
-            Label yIsZeroOrNanOrxIsNanOrInf(env);
-            Label yNeiZeroOrNanAndxNeiNanOrInf(env);
-            // dRight == 0.0 or std::isnan(dRight) or std::isnan(dLeft) or std::isinf(dLeft)
-            Branch(DoubleEqual(*doubleY, GetDoubleConstant(0.0)), &yIsZero, &yNotZero);
-            Bind(&yIsZero);
-            Jump(&yIsZeroOrNanOrxIsNanOrInf);
-            Bind(&yNotZero);
-            {
-                Label yIsNan(env);
-                Label yNotNan(env);
-                Branch(DoubleIsNAN(*doubleY), &yIsNan, &yNotNan);
-                Bind(&yIsNan);
-                Jump(&yIsZeroOrNanOrxIsNanOrInf);
-                Bind(&yNotNan);
-                {
-                    Label xIsNan(env);
-                    Label xNotNan(env);
-                    Branch(DoubleIsNAN(*doubleX), &xIsNan, &xNotNan);
-                    Bind(&xIsNan);
-                    Jump(&yIsZeroOrNanOrxIsNanOrInf);
-                    Bind(&xNotNan);
-                    {
-                        Label xIsInf(env);
-                        Label xNotInf(env);
-                        Branch(DoubleIsINF(*doubleX), &xIsInf, &xNotInf);
-                        Bind(&xIsInf);
-                        Jump(&yIsZeroOrNanOrxIsNanOrInf);
-                        Bind(&xNotInf);
-                        Jump(&yNeiZeroOrNanAndxNeiNanOrInf);
-                    }
-                }
-            }
-            Bind(&yIsZeroOrNanOrxIsNanOrInf);
-            Return(DoubleBuildTaggedWithNoGC(GetDoubleConstant(base::NAN_VALUE)));
-            Bind(&yNeiZeroOrNanAndxNeiNanOrInf);
-            {
-                Label xIsFloatZero(env);
-                Label xIsZeroOryIsInf(env);
-                Label xNotZeroAndyNotInf(env);
-                Branch(DoubleEqual(*doubleX, GetDoubleConstant(0.0)), &xIsFloatZero, &xNotZeroAndyNotInf);
-                Bind(&xIsFloatZero);
-                Jump(&xIsZeroOryIsInf);
-                Label yIsInf(env);
-                Label yNotInf(env);
-                Bind(&xNotZeroAndyNotInf);
-                Branch(DoubleIsINF(*doubleY), &yIsInf, &yNotInf);
-                Bind(&yIsInf);
-                Jump(&xIsZeroOryIsInf);
-                Bind(&yNotInf);
-                {
-                    doubleX = TaggedCastToDouble(CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(FloatMod)), {
-                            DoubleBuildTaggedTypeWithNoGC(*doubleX), DoubleBuildTaggedTypeWithNoGC(*doubleY)
-                        }));
-                    Return(DoubleBuildTaggedWithNoGC(*doubleX));
-                }
-                Bind(&xIsZeroOryIsInf);
-                Return(DoubleBuildTaggedWithNoGC(*doubleX));
-            }
-        }
-    }
+    Return(FastMod(glue, x, y));
 }
 
 void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     GateRef obj = TaggedArgument(1);
-    DEFVARIABLE(holder, VariableType::JS_ANY(), obj);
-    GateRef gConstOffset = IntPtrAdd(glue,
-                                     GetIntPtrConstant(JSThread::GlueData::GetGlobalConstOffset(cfg->Is32Bit())));
-    GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
-    GateRef gConstUndefindStr = Load(VariableType::JS_POINTER(), gConstOffset, booleanIndex);
-    DEFVARIABLE(resultRep, VariableType::JS_POINTER(), gConstUndefindStr);
-    Label objIsTrue(env);
-    Label objNotTrue(env);
-    Label exit(env);
-    Label defaultLabel(env);
-    GateRef gConstBooleanStr = Load(
-        VariableType::JS_POINTER(), gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
-    Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
-    Bind(&objIsTrue);
-    {
-        resultRep = gConstBooleanStr;
-        Jump(&exit);
-    }
-    Bind(&objNotTrue);
-    {
-        Label objIsFalse(env);
-        Label objNotFalse(env);
-        Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
-        Bind(&objIsFalse);
-        {
-            resultRep = gConstBooleanStr;
-            Jump(&exit);
-        }
-        Bind(&objNotFalse);
-        {
-            Label objIsNull(env);
-            Label objNotNull(env);
-            Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
-            Bind(&objIsNull);
-            {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
-                    GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
-                Jump(&exit);
-            }
-            Bind(&objNotNull);
-            {
-                Label objIsUndefined(env);
-                Label objNotUndefined(env);
-                Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
-                    &objNotUndefined);
-                Bind(&objIsUndefined);
-                {
-                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
-                        GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
-                    Jump(&exit);
-                }
-                Bind(&objNotUndefined);
-                Jump(&defaultLabel);
-            }
-        }
-    }
-    Bind(&defaultLabel);
-    {
-        Label objIsHeapObject(env);
-        Label objNotHeapObject(env);
-        Branch(TaggedIsHeapObject(obj), &objIsHeapObject, &objNotHeapObject);
-        Bind(&objIsHeapObject);
-        {
-            Label objIsString(env);
-            Label objNotString(env);
-            Branch(IsString(obj), &objIsString, &objNotString);
-            Bind(&objIsString);
-            {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
-                    GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
-                Jump(&exit);
-            }
-            Bind(&objNotString);
-            {
-                Label objIsSymbol(env);
-                Label objNotSymbol(env);
-                Branch(IsSymbol(obj), &objIsSymbol, &objNotSymbol);
-                Bind(&objIsSymbol);
-                {
-                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
-                        GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
-                    Jump(&exit);
-                }
-                Bind(&objNotSymbol);
-                {
-                    Label objIsCallable(env);
-                    Label objNotCallable(env);
-                    Branch(IsCallable(obj), &objIsCallable, &objNotCallable);
-                    Bind(&objIsCallable);
-                    {
-                        resultRep = Load(
-                            VariableType::JS_POINTER(), gConstOffset,
-                            GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
-                        Jump(&exit);
-                    }
-                    Bind(&objNotCallable);
-                    {
-                        resultRep = Load(
-                            VariableType::JS_POINTER(), gConstOffset,
-                            GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
-                        Jump(&exit);
-                    }
-                }
-            }
-        }
-        Bind(&objNotHeapObject);
-        {
-            Label objIsNum(env);
-            Label objNotNum(env);
-            Branch(TaggedIsNumber(obj), &objIsNum, &objNotNum);
-            Bind(&objIsNum);
-            {
-                resultRep = Load(
-                    VariableType::JS_POINTER(), gConstOffset,
-                    GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
-                Jump(&exit);
-            }
-            Bind(&objNotNum);
-            Jump(&exit);
-        }
-    }
-    Bind(&exit);
-    Return(*resultRep);
+    Return(FastTypeOf(glue, obj));
 }
 
 void FastEqualStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
-    auto env = GetEnvironment();
     GateRef glue = PtrArgument(0);
     (void)glue;
     GateRef x = TaggedArgument(1);
     GateRef y = TaggedArgument(2);
-    Label xIsEqualy(env);
-    Label xIsNotEqualy(env);
-    Branch(Int64Equal(x, y), &xIsEqualy, &xIsNotEqualy);
-    Bind(&xIsEqualy);
-    {
-        Label xIsDouble(env);
-        Label xNotDoubleOrxNotNan(env);
-        Branch(TaggedIsDouble(x), &xIsDouble, &xNotDoubleOrxNotNan);
-        Bind(&xIsDouble);
-        {
-            GateRef doubleX = TaggedCastToDouble(x);
-            Label xIsNan(env);
-            Branch(DoubleIsNAN(doubleX), &xIsNan, &xNotDoubleOrxNotNan);
-            Bind(&xIsNan);
-            Return(TaggedFalse());
-        }
-        Bind(&xNotDoubleOrxNotNan);
-        Return(TaggedTrue());
-    }
-    Bind(&xIsNotEqualy);
-    {
-        Label xIsNumber(env);
-        Label xNotNumberAndxNotIntAndyNotInt(env);
-        Branch(TaggedIsNumber(x), &xIsNumber, &xNotNumberAndxNotIntAndyNotInt);
-        Bind(&xIsNumber);
-        {
-            Label xIsInt(env);
-            Branch(TaggedIsInt(x), &xIsInt, &xNotNumberAndxNotIntAndyNotInt);
-            Bind(&xIsInt);
-            {
-                Label yIsInt(env);
-                Branch(TaggedIsInt(y), &yIsInt, &xNotNumberAndxNotIntAndyNotInt);
-                Bind(&yIsInt);
-                Return(TaggedFalse());
-            }
-        }
-        Bind(&xNotNumberAndxNotIntAndyNotInt);
-        {
-            Label yIsUndefinedOrNull(env);
-            Label xyNotUndefinedAndNull(env);
-            Branch(TaggedIsUndefinedOrNull(y), &yIsUndefinedOrNull, &xyNotUndefinedAndNull);
-            Bind(&yIsUndefinedOrNull);
-            {
-                Label xIsHeapObject(env);
-                Label xNotHeapObject(env);
-                Branch(TaggedIsHeapObject(x), &xIsHeapObject, &xNotHeapObject);
-                Bind(&xIsHeapObject);
-                Return(TaggedFalse());
-                Bind(&xNotHeapObject);
-                {
-                    Label xIsUndefinedOrNull(env);
-                    Branch(TaggedIsUndefinedOrNull(x), &xIsUndefinedOrNull, &xyNotUndefinedAndNull);
-                    Bind(&xIsUndefinedOrNull);
-                    Return(TaggedTrue());
-                }
-            }
-            Bind(&xyNotUndefinedAndNull);
-            {
-                Label xIsBoolean(env);
-                Label xNotBooleanAndyNotSpecial(env);
-                Branch(TaggedIsBoolean(x), &xIsBoolean, &xNotBooleanAndyNotSpecial);
-                Bind(&xIsBoolean);
-                {
-                    Label yIsSpecial(env);
-                    Branch(TaggedIsSpecial(y), &yIsSpecial, &xNotBooleanAndyNotSpecial);
-                    Bind(&yIsSpecial);
-                    Return(TaggedFalse());
-                }
-                Bind(&xNotBooleanAndyNotSpecial);
-                {
-                    Return(GetHoleConstant(VariableType::INT64()));
-                }
-            }
-        }
-    }
+    Return(FastEqual(x, y));
 }
 
 void GetPropertyByIndexStub::GenerateCircuit(const CompilationConfig *cfg)

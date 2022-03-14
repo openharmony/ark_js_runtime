@@ -2975,6 +2975,140 @@ GateRef Stub::GetContainerProperty(GateRef glue, GateRef receiver, GateRef index
     return ret;
 }
 
+GateRef Stub::FastTypeOf(GateRef glue, GateRef obj)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    Label exit(env);
+
+    GateRef gConstOffset = IntPtrAdd(glue,
+                                     GetIntPtrConstant(JSThread::GlueData::GetGlobalConstOffset(env->Is32Bit())));
+    GateRef booleanIndex = GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX);
+    GateRef gConstUndefindStr = Load(VariableType::JS_POINTER(), gConstOffset, booleanIndex);
+    DEFVARIABLE(resultRep, VariableType::JS_POINTER(), gConstUndefindStr);
+    Label objIsTrue(env);
+    Label objNotTrue(env);
+    Label defaultLabel(env);
+    GateRef gConstBooleanStr = Load(
+        VariableType::JS_POINTER(), gConstOffset, GetGlobalConstantString(ConstantIndex::BOOLEAN_STRING_INDEX));
+    Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_TRUE)), &objIsTrue, &objNotTrue);
+    Bind(&objIsTrue);
+    {
+        resultRep = gConstBooleanStr;
+        Jump(&exit);
+    }
+    Bind(&objNotTrue);
+    {
+        Label objIsFalse(env);
+        Label objNotFalse(env);
+        Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_FALSE)), &objIsFalse, &objNotFalse);
+        Bind(&objIsFalse);
+        {
+            resultRep = gConstBooleanStr;
+            Jump(&exit);
+        }
+        Bind(&objNotFalse);
+        {
+            Label objIsNull(env);
+            Label objNotNull(env);
+            Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &objIsNull, &objNotNull);
+            Bind(&objIsNull);
+            {
+                resultRep = Load(
+                    VariableType::JS_POINTER(), gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                Jump(&exit);
+            }
+            Bind(&objNotNull);
+            {
+                Label objIsUndefined(env);
+                Label objNotUndefined(env);
+                Branch(Int64Equal(obj, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)), &objIsUndefined,
+                    &objNotUndefined);
+                Bind(&objIsUndefined);
+                {
+                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
+                        GetGlobalConstantString(ConstantIndex::UNDEFINED_STRING_INDEX));
+                    Jump(&exit);
+                }
+                Bind(&objNotUndefined);
+                Jump(&defaultLabel);
+            }
+        }
+    }
+    Bind(&defaultLabel);
+    {
+        Label objIsHeapObject(env);
+        Label objNotHeapObject(env);
+        Branch(TaggedIsHeapObject(obj), &objIsHeapObject, &objNotHeapObject);
+        Bind(&objIsHeapObject);
+        {
+            Label objIsString(env);
+            Label objNotString(env);
+            Branch(IsString(obj), &objIsString, &objNotString);
+            Bind(&objIsString);
+            {
+                resultRep = Load(
+                    VariableType::JS_POINTER(), gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::STRING_STRING_INDEX));
+                Jump(&exit);
+            }
+            Bind(&objNotString);
+            {
+                Label objIsSymbol(env);
+                Label objNotSymbol(env);
+                Branch(IsSymbol(obj), &objIsSymbol, &objNotSymbol);
+                Bind(&objIsSymbol);
+                {
+                    resultRep = Load(VariableType::JS_POINTER(), gConstOffset,
+                        GetGlobalConstantString(ConstantIndex::SYMBOL_STRING_INDEX));
+                    Jump(&exit);
+                }
+                Bind(&objNotSymbol);
+                {
+                    Label objIsCallable(env);
+                    Label objNotCallable(env);
+                    Branch(IsCallable(obj), &objIsCallable, &objNotCallable);
+                    Bind(&objIsCallable);
+                    {
+                        resultRep = Load(
+                            VariableType::JS_POINTER(), gConstOffset,
+                            GetGlobalConstantString(ConstantIndex::FUNCTION_STRING_INDEX));
+                        Jump(&exit);
+                    }
+                    Bind(&objNotCallable);
+                    {
+                        resultRep = Load(
+                            VariableType::JS_POINTER(), gConstOffset,
+                            GetGlobalConstantString(ConstantIndex::OBJECT_STRING_INDEX));
+                        Jump(&exit);
+                    }
+                }
+            }
+        }
+        Bind(&objNotHeapObject);
+        {
+            Label objIsNum(env);
+            Label objNotNum(env);
+            Branch(TaggedIsNumber(obj), &objIsNum, &objNotNum);
+            Bind(&objIsNum);
+            {
+                resultRep = Load(
+                    VariableType::JS_POINTER(), gConstOffset,
+                    GetGlobalConstantString(ConstantIndex::NUMBER_STRING_INDEX));
+                Jump(&exit);
+            }
+            Bind(&objNotNum);
+            Jump(&exit);
+        }
+    }
+    Bind(&exit);
+    auto ret = *resultRep;
+    env->PopCurrentLabel();
+    return ret;
+}
+
 GateRef Stub::FastEqual(GateRef left, GateRef right)
 {
     auto env = GetEnvironment();
@@ -3074,72 +3208,6 @@ GateRef Stub::FastEqual(GateRef left, GateRef right)
                 }
             }
         }
-    }
-    Bind(&exit);
-    auto ret = *result;
-    env->PopCurrentLabel();
-    return ret;
-}
-
-GateRef Stub::FastMul(GateRef left, GateRef right)
-{
-    auto env = GetEnvironment();
-    Label entry(env);
-    env->PushCurrentLabel(&entry);
-    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
-    DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
-    DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
-    Label leftIsNumber(env);
-    Label leftNotNumberOrRightNotNumber(env);
-    Label leftIsNumberAndRightIsNumber(env);
-    Label leftIsDoubleAndRightIsDouble(env);
-    Label exit(env);
-    Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
-    Bind(&leftIsNumber);
-    {
-        Label rightIsNumber(env);
-        Branch(TaggedIsNumber(right), &rightIsNumber, &leftNotNumberOrRightNotNumber);
-        Bind(&rightIsNumber);
-        {
-            Label leftIsInt(env);
-            Label leftNotInt(env);
-            Branch(TaggedIsInt(left), &leftIsInt, &leftNotInt);
-            Bind(&leftIsInt);
-            {
-                doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
-                Jump(&leftIsNumberAndRightIsNumber);
-            }
-            Bind(&leftNotInt);
-            {
-                doubleLeft = TaggedCastToDouble(left);
-                Jump(&leftIsNumberAndRightIsNumber);
-            }
-        }
-    }
-    Bind(&leftNotNumberOrRightNotNumber);
-    {
-        Jump(&exit);
-    }
-    Bind(&leftIsNumberAndRightIsNumber);
-    {
-        Label rightIsInt(env);
-        Label rightNotInt(env);
-        Branch(TaggedIsInt(right), &rightIsInt, &rightNotInt);
-        Bind(&rightIsInt);
-        {
-            doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
-            Jump(&leftIsDoubleAndRightIsDouble);
-        }
-        Bind(&rightNotInt);
-        {
-            doubleRight = TaggedCastToDouble(right);
-            Jump(&leftIsDoubleAndRightIsDouble);
-        }
-    }
-    Bind(&leftIsDoubleAndRightIsDouble);
-    {
-        result = DoubleBuildTaggedWithNoGC(DoubleMul(*doubleLeft, *doubleRight));
-        Jump(&exit);
     }
     Bind(&exit);
     auto ret = *result;
@@ -3252,6 +3320,111 @@ GateRef Stub::FastDiv(GateRef left, GateRef right)
     auto ret = *result;
     env->PopCurrentLabel();
     return ret;
+}
+
+template<OpCode::Op Op>
+GateRef Stub::FastBinaryOp(GateRef left, GateRef right)
+{
+    auto env = GetEnvironment();
+    Label entry(env);
+    env->PushCurrentLabel(&entry);
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+    DEFVARIABLE(doubleLeft, VariableType::FLOAT64(), GetDoubleConstant(0));
+    DEFVARIABLE(doubleRight, VariableType::FLOAT64(), GetDoubleConstant(0));
+
+    Label exit(env);
+    Label doFloatOp(env);
+    Label leftIsNumber(env);
+    Label rightIsNumber(env);
+    Label leftIsInt(env);
+    Label leftIsDouble(env);
+    Label leftIsIntRightIsInt(env);
+    Label leftIsIntRightIsDouble(env);
+    Label rightIsInt(env);
+    Label rightIsDouble(env);
+    Label overflow(env);
+    Label notOverflow(env);
+
+    Branch(TaggedIsNumber(left), &leftIsNumber, &exit);
+    Bind(&leftIsNumber);
+    {
+        Branch(TaggedIsNumber(right), &rightIsNumber, &exit);
+        Bind(&rightIsNumber);
+        {
+            Label leftIsInt(env);
+            Label leftIsDouble(env);
+            Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
+            Bind(&leftIsInt);
+            {
+                Branch(TaggedIsInt(right), &leftIsIntRightIsInt, &leftIsIntRightIsDouble);
+                Bind(&leftIsIntRightIsInt);
+                {
+                    auto res = BinaryOp<Op, MachineType::I64>(TaggedCastToInt64(left), TaggedCastToInt64(right));
+                    auto condition1 = Int64GreaterThan(res, GetInt64Constant(INT32_MAX));
+                    auto condition2 = Int64LessThan(res, GetInt64Constant(INT32_MIN));
+                    Branch(BoolOr(condition1, condition2), &overflow, &notOverflow);
+                    Bind(&overflow);
+                    {
+                        doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                        doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                        Jump(&doFloatOp);
+                    }
+                    Bind(&notOverflow);
+                    {
+                        result = IntBuildTaggedWithNoGC(ChangeInt64ToInt32(res));
+                        Jump(&exit);
+                    }
+                }
+                Bind(&leftIsIntRightIsDouble);
+                {
+                    doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&doFloatOp);
+                }
+            }
+            Bind(&leftIsDouble);
+            {
+                Branch(TaggedIsInt(right), &rightIsInt, &rightIsDouble);
+                Bind(&rightIsInt);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+                    Jump(&doFloatOp);
+                }
+                Bind(&rightIsDouble);
+                {
+                    doubleLeft = TaggedCastToDouble(left);
+                    doubleRight = TaggedCastToDouble(right);
+                    Jump(&doFloatOp);
+                }
+            }
+        }
+    }
+    Bind(&doFloatOp);
+    {
+        auto res = BinaryOp<Op, MachineType::F64>(*doubleLeft, *doubleRight);
+        result = DoubleBuildTaggedWithNoGC(res);
+        Jump(&exit);
+    }
+    Bind(&exit);
+    auto ret = *result;
+    env->PopCurrentLabel();
+    return ret;
+}
+
+GateRef Stub::FastAdd(GateRef left, GateRef right)
+{
+    return FastBinaryOp<OpCode::ADD>(left, right);
+}
+
+GateRef Stub::FastSub(GateRef left, GateRef right)
+{
+    return FastBinaryOp<OpCode::SUB>(left, right);
+}
+
+GateRef Stub::FastMul(GateRef left, GateRef right)
+{
+    return FastBinaryOp<OpCode::MUL>(left, right);
 }
 
 GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)

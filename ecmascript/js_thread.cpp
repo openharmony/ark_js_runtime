@@ -243,9 +243,9 @@ void JSThread::LoadStubModule(const char *moduleFile)
     for (size_t i = 0; i < BCHandlers::MAX_BYTECODE_HANDLERS; i++) {
         glueData_.bcHandlers_.Set(i, stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging));
     }
-#define DEF_STUB(name, counter)                                                             \
-        glueData_.bcHandlers_.Set(kungfu::InterpreterStubId::name##Id,                      \
-                                  stubModule.GetStubEntry(kungfu::StubId::STUB_##name));
+#define DEF_STUB(name, counter)                                                         \
+    glueData_.bcHandlers_.Set(kungfu::InterpreterStubId::name##Id,                      \
+                              stubModule.GetStubEntry(kungfu::StubId::STUB_##name));
     INTERPRETER_STUB_LIST(DEF_STUB)
 #undef DEF_STUB
 #endif
