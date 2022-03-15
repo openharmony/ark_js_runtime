@@ -400,8 +400,11 @@ void *JSNApi::SerializeValue(const EcmaVM *vm, Local<JSValueRef> value, Local<JS
     if (serializer.WriteValue(thread, arkValue, arkTransfer)) {
         data = serializer.Release();
     }
-    ASSERT(data != nullptr);
-    return reinterpret_cast<void *>(data.release());
+    if (data == nullptr) {
+        return nullptr;
+    } else {
+        return reinterpret_cast<void *>(data.release());
+    }
 }
 
 Local<JSValueRef> JSNApi::DeserializeValue(const EcmaVM *vm, void *recoder)

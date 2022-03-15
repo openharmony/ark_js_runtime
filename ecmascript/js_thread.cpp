@@ -196,11 +196,11 @@ void JSThread::ShrinkHandleStorage(int prevIndex)
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     uintptr_t size = ToUintPtr(handleScopeStorageEnd_) - ToUintPtr(handleScopeStorageNext_);
     int checkRes = memset_s(handleScopeStorageNext_, size, 0, size);
-    ASSERT(checkRes == 0);
+    ASSERT(checkRes == EOK);
     for (int32_t i = currentHandleStorageIndex_ + 1; i < lastIndex; i++) {
         checkRes = memset_s(handleStorageNodes_[i], NODE_BLOCK_SIZE * sizeof(JSTaggedType), 0,
                             NODE_BLOCK_SIZE * sizeof(JSTaggedType));
-        ASSERT(checkRes == 0);
+        ASSERT(checkRes == EOK);
     }
 #endif
 
