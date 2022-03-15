@@ -30,7 +30,6 @@ def parse_args():
     """parse arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--script-file', help='execute script file')
-    parser.add_argument('--script-options', help='execute script options')
     parser.add_argument('--script-args', help='args of script')
     parser.add_argument('--expect-output', help='expect output')
     parser.add_argument('--expect-file', help='expect file')
@@ -43,8 +42,6 @@ def judge_output(args):
     """run testcase and judge is success or not."""
     start_time = time.time()
     cmd = input_args.script_file
-    if input_args.script_options:
-        cmd += input_args.script_options
     if input_args.script_args:
         cmd += " " + input_args.script_args
     subp = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,

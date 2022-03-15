@@ -96,19 +96,17 @@ public:
         int index = GetEntryIndex(entry) + ENTRY_DETAILS_INDEX;
         return HashTableT::Get(index);
     }
-
     inline void SetAttributes(const JSThread *thread, int entry, JSTaggedValue metaData)
     {
         int index = GetEntryIndex(entry) + ENTRY_DETAILS_INDEX;
         HashTableT::Set(thread, index, metaData);
     }
 
-    inline void SetEntry(const JSThread *thread, int entry, const JSTaggedValue &key, JSTaggedValue &value,
+    inline void SetEntry(const JSThread *thread, int entry, const JSTaggedValue &key, const JSTaggedValue &value,
                          const JSTaggedValue &metaData)
     {
         SetKey(thread, entry, key);
-        JSTaggedValue weakValue = JSTaggedValue(value.CreateAndGetWeakRef());
-        SetValue(thread, entry, weakValue);
+        SetValue(thread, entry, value);
         SetAttributes(thread, entry, metaData);
     }
 
