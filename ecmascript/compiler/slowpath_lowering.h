@@ -148,6 +148,18 @@ private:
     void LowerThrowPatternNonCoercible(GateRef gate, GateRef glue);
     void LowerThrowIfSuperNotCorrectCall(GateRef gate, GateRef glue);
     void LowerThrowDeleteSuperProperty(GateRef gate, GateRef glue);
+    void LowerLdSymbol(GateRef gate, GateRef glue);
+    void LowerLdGlobal(GateRef gate, GateRef glue);
+    void LowerSub2Dyn(GateRef gate, GateRef glue);
+    void LowerMul2Dyn(GateRef gate, GateRef glue);
+    void LowerDiv2Dyn(GateRef gate, GateRef glue);
+    void LowerMod2Dyn(GateRef gate, GateRef glue);
+    void LowerEqDyn(GateRef gate, GateRef glue);
+    void LowerNotEqDyn(GateRef gate, GateRef glue);
+    void LowerLessDyn(GateRef gate, GateRef glue);
+    void LowerLessEqDyn(GateRef gate, GateRef glue);
+    void LowerGreaterDyn(GateRef gate, GateRef glue);
+    void LowerGreaterEqDyn(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
