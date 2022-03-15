@@ -189,9 +189,11 @@ RuntimeCallTrampolineAot:
 .global RuntimeCallTrampolineInterpreterAsm
 .type RuntimeCallTrampolineInterpreterAsm, %function
 RuntimeCallTrampolineInterpreterAsm:
-    stp     #0, x30, [sp, #-16]!  // save register for fp, rip
-    str     sp, [x0, #ASM_GLUE_LEAVE_FRAME_OFFSET]       // save to thread->currentFrame_
+    str     x30, [sp, #-8]             // save register rip
+    add     sp, sp, #-16
     str     x19, [sp, #-16]        // callee save register
+    mov     x19, sp
+    str     x19, [x0, #ASM_GLUE_LEAVE_FRAME_OFFSET]       // save to thread->leaveFrame_
 
     // construct leave frame
     mov     x19, #ASM_LEAVE_FRAME_TYPE
