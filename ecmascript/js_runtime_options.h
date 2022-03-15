@@ -248,7 +248,7 @@ private:
         16 * 1024 * 1024,
         R"(set max semi space capacity)"};
     PandArg<size_t> maxOldSpaceCapacity_ {"maxOldSpaceCapacity",
-        512 * 1024 * 1024,
+        256 * 1024 * 1024,
         R"(set max old space capacity)"};
     PandArg<size_t> maxNonmovableSpaceCapacity_ {"maxNonmovableSpaceCapacity",
         4 * 1024 * 1024,
