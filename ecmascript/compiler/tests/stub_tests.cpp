@@ -343,6 +343,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     // test all non-conforming conditions
     int x5 = 7;
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
+    thread->SetLastLeaveFrame(nullptr);
     auto y5 = factory->NewFromStdString("hello world");
     auto result5 = fn(thread->GetGlueAddr(), JSTaggedValue(x5).GetRawData(), y5.GetTaggedValue().GetRawData());
     EXPECT_EQ(result5, JSTaggedValue::Hole());
@@ -1078,7 +1079,6 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 
     thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex), reinterpret_cast<uintptr_t>(getpropertyByIndexPtr));
     thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByName), reinterpret_cast<uintptr_t>(getPropertyByNamePtr));
-
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
@@ -1113,6 +1113,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
                                    strDigit.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), y);
     thread->SetCurrentSPFrame(sp);
+    thread->SetLastLeaveFrame(nullptr);
     JSHandle<JSTaggedValue> strHello(factory->NewFromCanBeCompressString("hello world"));
     double key = 4.29497e+09;
     resVal = getPropertyByValuePtr(thread->GetGlueAddr(), strHello.GetTaggedValue().GetRawData(),
