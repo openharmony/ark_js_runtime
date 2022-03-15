@@ -877,7 +877,7 @@ void Stub::JSHClassAddProperty(GateRef glue, GateRef receiver, GateRef key, Gate
     GateRef newDyn = FindTransitions(glue, receiver, hclass, key, metaData);
     Label findHClass(env);
     Label notFindHClass(env);
-    Branch(Int64Equal(newDyn, GetInt64Constant(JSTaggedValue::VALUE_NULL)), &notFindHClass, &findHClass);
+    Branch(Int64Equal(newDyn, GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)), &notFindHClass, &findHClass);
     Bind(&findHClass);
     {
         Jump(&exit);
@@ -2307,7 +2307,7 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
             }
             Bind(&notMatch);
             {
-                result = GetNullConstant();
+                result = GetUndefinedConstant();
                 Jump(&exit);
             }
         }
@@ -2335,12 +2335,12 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
                 StoreHClass(glue, receiver, newHClass);
                 Jump(&exit);
                 Bind(&notFound);
-                result = GetNullConstant();
+                result = GetUndefinedConstant();
                 Jump(&exit);
             }
             Bind(&valueUndefined);
             {
-                result = GetNullConstant();
+                result = GetUndefinedConstant();
                 Jump(&exit);
             }
         }
