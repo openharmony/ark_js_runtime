@@ -814,46 +814,38 @@ HWTEST_F_L0(JSObjectTest, SetterIsUndefined)
               JSTaggedValue(10));
 }
 
-HWTEST_F_L0(JSObjectTest, HClass)
+HWTEST_F_L0(JSObjectTest, Transitions)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<JSTaggedValue> objFunc(thread, JSObjectTestCreate(thread));
     JSHandle<JSObject> obj1 = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
-    JSHandle<JSHClass> hc0(thread, obj1->GetJSHClass());
+    JSHandle<JSObject> obj2 = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
+
+    JSHandle<JSHClass> hc1(thread, obj1->GetJSHClass());
+    JSHandle<JSHClass> hc2(thread, obj2->GetJSHClass());
+    EXPECT_EQ(hc1.GetTaggedValue(), hc2.GetTaggedValue());
 
     JSHandle<JSTaggedValue> key1(factory->NewFromCanBeCompressString("x"));
     JSHandle<JSTaggedValue> key2(factory->NewFromCanBeCompressString("y"));
-    JSHandle<JSTaggedValue> key3(factory->NewFromCanBeCompressString("z"));
     JSHandle<JSTaggedValue> value(thread, JSTaggedValue(1));
 
+    // key1
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key1, value);
-    JSHandle<JSHClass> hc1(thread, obj1->GetJSHClass());
-    EXPECT_NE(hc0.GetTaggedValue(), hc1.GetTaggedValue());
-
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key2, value);
-    JSHandle<JSHClass> hc2(thread, obj1->GetJSHClass());
-    EXPECT_NE(hc1.GetTaggedValue(), hc2.GetTaggedValue());
-
-    JSHandle<JSObject> obj2 = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
-    EXPECT_EQ(hc0.GetTaggedValue().GetTaggedObject(), obj2->GetJSHClass());
+    JSHandle<JSHClass> hc3(thread, obj1->GetJSHClass());
+    EXPECT_NE(hc1.GetTaggedValue(), hc3.GetTaggedValue());
 
     JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key1, value);
-    EXPECT_EQ(hc1.GetTaggedValue().GetTaggedObject(), obj2->GetJSHClass());
+    JSHandle<JSHClass> hc4(thread, obj2->GetJSHClass());
+    EXPECT_EQ(hc3.GetTaggedValue(), hc4.GetTaggedValue());
 
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key3, value);
-    JSHandle<JSHClass> hc3(thread, obj2->GetJSHClass());
-    EXPECT_NE(hc1.GetTaggedValue().GetTaggedObject(), obj2->GetJSHClass());
+    // key2
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj1), key2, value);
+    JSHandle<JSHClass> hc5(thread, obj1->GetJSHClass());
+    EXPECT_NE(hc3.GetTaggedValue(), hc5.GetTaggedValue());
 
-    JSHandle<JSObject> obj3 = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(objFunc), objFunc);
-    EXPECT_EQ(hc0.GetTaggedValue().GetTaggedObject(), obj3->GetJSHClass());
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj3), key1, value);
-    EXPECT_EQ(hc1.GetTaggedValue().GetTaggedObject(), obj3->GetJSHClass());
-
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj3), key2, value);
-    EXPECT_EQ(hc2.GetTaggedValue().GetTaggedObject(), obj3->GetJSHClass());
-
-    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj3), key3, value);
-    EXPECT_NE(hc3.GetTaggedValue().GetTaggedObject(), obj3->GetJSHClass());
+    JSObject::SetProperty(thread, JSHandle<JSTaggedValue>(obj2), key2, value);
+    JSHandle<JSHClass> hc6(thread, obj2->GetJSHClass());
+    EXPECT_EQ(hc5.GetTaggedValue(), hc6.GetTaggedValue());
 }
 
 HWTEST_F_L0(JSObjectTest, FastToSlow)
