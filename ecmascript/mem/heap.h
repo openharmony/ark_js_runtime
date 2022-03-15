@@ -409,7 +409,6 @@ private:
     size_t startNewSpaceSize_ {0};
     size_t promotedSize_ {0};
     size_t semiSpaceCopiedSize_ {0};
-    size_t previousSemiSpaceCopiedSize_ {0};
 };
 }  // namespace panda::ecmascript
 
