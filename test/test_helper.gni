@@ -119,17 +119,9 @@ template("host_moduletest_action") {
 
     script = "//ark/js_runtime/test/run_ark_executable.py"
 
-    js_vm_options = " "
-    if (defined(invoker.is_set_maxNonmovableSpaceCapacity) &&
-        invoker.is_set_maxNonmovableSpaceCapacity) {
-      js_vm_options += "--maxNonmovableSpaceCapacity=524288"  # 0.5M
-    }
-
     args = [
       "--script-file",
       rebase_path(_root_out_dir_) + "/ark/ark_js_runtime/ark_js_vm",
-      "--script-options",
-      js_vm_options,
       "--script-args",
       _test_abc_paths_,
       "--expect-file",

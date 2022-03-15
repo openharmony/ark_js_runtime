@@ -705,7 +705,7 @@ void JSTaggedValue::DumpHeapObjectType([[maybe_unused]] JSThread *thread, std::o
            << "\n";
     }
 
-    JSType type = obj->GetClass()->GetObjectType();
+    JSType type = GetTaggedObject()->GetClass()->GetObjectType();
     if (type == JSType::STRING) {
         CString string = ConvertToString(EcmaString::Cast(obj));
         os << std::left << std::setw(DUMP_TYPE_OFFSET) << "[" + string + "]";

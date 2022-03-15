@@ -130,7 +130,6 @@ private:
     void UpdateReference();
     void UpdateRoot();
     void UpdateWeakReference();
-    void UpdateRecordWeakReference();
     void UpdateRSet(Region *region);
     void UpdateNewRegionReference(Region *region);
     void UpdateAndSweepNewRegionReference(Region *region);

@@ -62,7 +62,6 @@ void NonMovableMarker::ProcessMarkStack(uint32_t threadId)
                     obj = value.GetTaggedObject();
                     MarkObject(threadId, obj);
                 } else {
-                    RecordWeakReference(threadId, reinterpret_cast<JSTaggedType *>(slot.SlotAddress()));
                     obj = value.GetWeakReferentUnChecked();
                 }
                 if (needBarrier) {
