@@ -246,19 +246,19 @@ void SlowPathLowering::LowerAsyncFunctionReject(GateRef gate, GateRef glue)
     LowerHirToCall(cirBuilder, gate, newGate);
 }
 
-GateRef SlowPathLowering::GetValueFromConstPool(CircuitBuilder &builder, GateRef gate, GateRef glue)
+GateRef SlowPathLowering::GetValueFromConstantStringTable(CircuitBuilder &builder, GateRef glue,
+                                                          GateRef gate, uint32_t inIndex)
 {
-    GateRef id = builder.NewInteger64Constant(RUNTIME_CALL_ID(LoadValueFromConstantPool));
-    auto bytecodeInfo = builder_->GetBytecodeInfo(builder_->GetJSBytecode(gate));
-    GateRef stringId = builder.NewInteger64Constant(bytecodeInfo.imm);
-    return builder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
-                                      {builder_->GetCommonArgByIndex(CommonArgIdx::FUNC), stringId});
+    GateAccessor accessor(circuit_);
+    GateRef id = builder.NewInteger64Constant(RUNTIME_CALL_ID(LoadValueFromConstantStringTable));
+    auto idGate = accessor.GetValueIn(gate, inIndex);
+    return builder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {idGate});
 }
 
 void SlowPathLowering::LowerLoadStr(GateRef gate, GateRef glue)
 {
     CircuitBuilder cirBuilder(circuit_);
-    GateRef newGate = GetValueFromConstPool(cirBuilder, gate, glue);
+    GateRef newGate = GetValueFromConstantStringTable(cirBuilder, glue, gate, 0);
     LowerHirToCall(cirBuilder, gate, newGate);
 }
 
@@ -273,9 +273,11 @@ void SlowPathLowering::LowerLexicalEnv(GateRef gate, GateRef glue)
 
 void SlowPathLowering::LowerTryLdGlobalByName(GateRef gate, GateRef glue)
 {
+    GateAccessor gateAcc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef prop = GetValueFromConstPool(cirBuilder, gate, glue);
+    GateRef prop = GetValueFromConstantStringTable(cirBuilder, glue, gate, 0);
     GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(TryLdGlobalByName));
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
     GateRef newGate =
         cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)), {prop});
     LowerHirToCall(cirBuilder, gate, newGate);
@@ -285,9 +287,9 @@ void SlowPathLowering::LowerStGlobalVar(GateRef gate, GateRef glue)
 {
     GateAccessor acc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
-    GateRef prop = GetValueFromConstPool(cirBuilder, gate, glue);
+    GateRef prop = GetValueFromConstantStringTable(cirBuilder, glue, gate, 0);
     GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(StGlobalVar));
-    ASSERT(acc.GetNumValueIn(gate) == 1);
+    ASSERT(acc.GetNumValueIn(gate) == 2); // 2: number of value inputs
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
                                                     {prop, acc.GetValueIn(gate, 0)});
     LowerHirToCall(cirBuilder, gate, newGate);

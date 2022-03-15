@@ -32,7 +32,7 @@ JSPandaFileManager::~JSPandaFileManager()
 
 // generate aot info on host
 const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const std::string &filename,
-                                                         std::vector<BytecodeTranslationInfo> *infoList)
+                                                         std::vector<MethodPcInfo> *methodPcInfos)
 {
     CString desc = ConvertToString(filename);
     auto pf = panda_file::OpenPandaFileOrZip(filename, panda_file::File::READ_WRITE);
@@ -42,7 +42,7 @@ const JSPandaFile *JSPandaFileManager::LoadAotInfoFromPf(const std::string &file
     }
 
     JSPandaFile *jsPandaFile = NewJSPandaFile(pf.release(), desc);
-    PandaFileTranslator::TranslateClasses(jsPandaFile, ENTRY_FUNCTION_NAME, infoList);
+    PandaFileTranslator::TranslateClasses(jsPandaFile, ENTRY_FUNCTION_NAME, methodPcInfos);
 
     return jsPandaFile;
 }
@@ -97,8 +97,7 @@ JSHandle<Program> JSPandaFileManager::GenerateProgram(EcmaVM *vm, const JSPandaF
 
     PandaFileTranslator translator(vm, jsPandaFile);
     auto result = translator.GenerateProgram();
-    JSThread *thread = vm->GetJSThread();
-    return JSHandle<Program>(thread, result);
+    return result;
 }
 
 const JSPandaFile *JSPandaFileManager::FindJSPandaFile(const CString &filename)

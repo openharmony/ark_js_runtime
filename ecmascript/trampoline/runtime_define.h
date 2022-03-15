@@ -138,7 +138,7 @@ namespace panda::ecmascript {
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
     V(GetLexicalEnv, 1)                      \
-    V(LoadValueFromConstantPool, 3)          \
+    V(LoadValueFromConstantStringTable, 2)   \
     V(CreateEmptyObject, 1)                  \
     V(CreateEmptyArray, 1)                   \
     V(GetSymbolFunction, 1)                  \

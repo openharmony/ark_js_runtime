@@ -243,7 +243,7 @@ private:
         true,
         R"(if true trigger full gc, else trigger semi and old gc)"};
     PandArg<int> arkProperties_ {"ark-properties", GetDefaultProperties(), R"(set ark properties)"};
-    PandArg<int> enableTsAot_ {"enable-ts-aot", false, R"(enable aot of fast stub. Default: false)"};
+    PandArg<int> enableTsAot_ {"enable-ts-aot", true, R"(enable aot of fast stub. Default: false)"};
     PandArg<size_t> maxSemiSpaceCapacity_ {"maxSemiSpaceCapacity",
         16 * 1024 * 1024,
         R"(set max semi space capacity)"};
