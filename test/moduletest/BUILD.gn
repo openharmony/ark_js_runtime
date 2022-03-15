@@ -20,6 +20,7 @@ group("ark_js_moduletest") {
     "class:classAction",
     "container:containerAction",
     "dyninstruction:dyninstructionAction",
+    "ecmastringtable:ecmastringtableAction",
     "fortest:fortestAction",
     "generator:generatorAction",
     "getunmappedargs:getunmappedargsAction",
