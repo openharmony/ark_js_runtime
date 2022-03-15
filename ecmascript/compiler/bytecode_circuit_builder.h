@@ -20,6 +20,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <variant>
 
 #include "circuit.h"
 #include "ecmascript/ecma_vm.h"
@@ -29,6 +30,93 @@
 
 namespace panda::ecmascript::kungfu {
 using VRegIDType = uint16_t;
+using ImmValueType = uint64_t;
+using StringIdType = uint32_t;
+using MethodIdType = uint16_t;
+
+class VirtualRegister {
+public:
+    explicit VirtualRegister(VRegIDType id) : id_(id)
+    {
+    }
+    ~VirtualRegister() = default;
+
+    void SetId(VRegIDType id)
+    {
+        id_ = id;
+    }
+
+    VRegIDType GetId() const
+    {
+        return id_;
+    }
+
+private:
+    VRegIDType id_;
+};
+
+class Immediate {
+public:
+    explicit Immediate(ImmValueType value) : value_(value)
+    {
+    }
+    ~Immediate() = default;
+
+    void SetValue(ImmValueType value)
+    {
+        value_ = value;
+    }
+
+    ImmValueType GetValue() const
+    {
+        return value_;
+    }
+
+private:
+    ImmValueType value_;
+};
+
+class StringId {
+public:
+    explicit StringId(StringIdType id) : id_(id)
+    {
+    }
+    ~StringId() = default;
+
+    void SetId(StringIdType id)
+    {
+        id_ = id;
+    }
+
+    StringIdType GetId() const
+    {
+        return id_;
+    }
+
+private:
+    StringIdType id_;
+};
+
+class MethodId {
+public:
+    explicit MethodId(MethodIdType id) : id_(id)
+    {
+    }
+    ~MethodId() = default;
+
+    void SetId(MethodIdType id)
+    {
+        id_ = id;
+    }
+
+    MethodIdType GetId() const
+    {
+        return id_;
+    }
+
+private:
+    MethodIdType id_;
+};
 
 enum class SplitKind : uint8_t {
     DEFAULT,
@@ -87,11 +175,11 @@ struct BytecodeRegion {
 };
 
 struct BytecodeInfo {
-    std::vector<VRegIDType> vregIn {}; // read register
+    // set of id, immediate and read register
+    std::vector<std::variant<StringId, MethodId, Immediate, VirtualRegister>> inputs {};
     std::vector<VRegIDType> vregOut {}; // write register
     bool accIn {false}; // read acc
     bool accOut {false}; // write acc
-    uint64_t imm {0};
     uint8_t opcode {0};
     uint16_t offset {0};
 };
@@ -124,8 +212,11 @@ enum CommonArgIdx : uint8_t {
 
 class BytecodeCircuitBuilder {
 public:
-    explicit BytecodeCircuitBuilder(EcmaVM *vm, const BytecodeTranslationInfo &info)
-        : vm_(vm), pcArray_(info.pcArray), file_(info.jsPandaFile), method_(info.method) {}
+    explicit BytecodeCircuitBuilder(EcmaVM *vm, const BytecodeTranslationInfo &translationInfo, size_t index)
+        : vm_(vm), file_(translationInfo.jsPandaFile), method_(translationInfo.methodPcInfos[index].method),
+        pcArray_(translationInfo.methodPcInfos[index].pcArray), constantPool_(translationInfo.constantPool)
+    {
+    }
     ~BytecodeCircuitBuilder() = default;
     NO_COPY_SEMANTIC(BytecodeCircuitBuilder);
     NO_MOVE_SEMANTIC(BytecodeCircuitBuilder);
@@ -183,7 +274,9 @@ private:
     void InsertPhi(BytecodeGraph &byteCodeGraph);
     void UpdateCFG(BytecodeGraph &byteCodeGraph);
     void BuildCircuit(BytecodeGraph &byteCodeGraph);
+    GateRef SetGateConstant(const BytecodeInfo &info);
     void PrintCollectBlockInfo(std::vector<CfgInfo> &bytecodeBlockInfos);
+    size_t GetFunctionArgIndex(size_t currentVreg, size_t numVregs) const;
     void PrintGraph(std::vector<BytecodeRegion> &graph);
     void PrintBytecodeInfo(std::vector<BytecodeRegion> &graph);
     void PrintBBInfo(std::vector<BytecodeRegion> &graph);
@@ -205,9 +298,10 @@ private:
     std::map<int32_t, BytecodeRegion *> bbIdToBasicBlock_;
     std::array<GateRef, CommonArgIdx::NUM_OF_ARGS> commonArgs_ {};
     EcmaVM* vm_;
-    const std::vector<uint8_t *> pcArray_;
     const JSPandaFile* file_ {nullptr};
     const JSMethod* method_ {nullptr};
+    const std::vector<uint8_t *> pcArray_;
+    JSHandle<JSTaggedValue> constantPool_;
 };
 }  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_CLASS_LINKER_BYTECODE_CIRCUIT_IR_BUILDER_H

@@ -339,20 +339,6 @@ EcmaVM::~EcmaVM()
     }
 }
 
-bool EcmaVM::CollectInfoOfPandaFile(const std::string &filename, std::vector<BytecodeTranslationInfo> *infoList)
-{
-    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadAotInfoFromPf(filename, infoList);
-    if (jsPandaFile == nullptr) {
-        return false;
-    }
-
-    if (GetJSOptions().IsEnableTsAot()) {
-        TSLoader *tsLoader = GetTSLoader();
-        tsLoader->DecodeTSTypes(*jsPandaFile->GetPandaFile());
-    }
-    return true;
-}
-
 tooling::ecmascript::PtJSExtractor *EcmaVM::GetDebugInfoExtractor(const panda_file::File *file)
 {
     tooling::ecmascript::PtJSExtractor *res = GetJSPandaFileManager()->GetOrCreatePtJSExtractor(file);

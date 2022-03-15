@@ -14,25 +14,27 @@
  */
 
 #include "pass_manager.h"
+
+#include "ecmascript/ecma_handle_scope.h"
+#include "ecmascript/js_tagged_value.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
+#include "ecmascript/jspandafile/panda_file_translator.h"
+#include "ecmascript/ts_types/ts_loader.h"
 #include "pass.h"
 
 namespace panda::ecmascript::kungfu {
 bool PassManager::Compile(std::string fileName)
 {
-    std::vector<BytecodeTranslationInfo> infoList;
-    bool res;
-    if (vm_->GetJSOptions().IsEnableTsAot()) {
-        res = vm_->CollectInfoOfPandaFile(fileName, &infoList);
-    } else {
-        res = vm_->CollectInfoOfPandaFile(fileName, nullptr);
-    }
+    BytecodeTranslationInfo translationInfo;
+    [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
+    bool res = CollectInfoOfPandaFile(fileName, &translationInfo);
     if (!res) {
         std::cerr << "Cannot execute panda file '" << fileName << "' with entry '" << entry_ << "'" << std::endl;
         return false;
     }
 
-    for (auto &info : infoList) {
-        BytecodeCircuitBuilder builder(vm_, info);
+    for (size_t i = 0; i < translationInfo.methodPcInfos.size(); i++) {
+        BytecodeCircuitBuilder builder(vm_, translationInfo, i);
         builder.BytecodeToCircuit();
         PassData data(builder.GetCircuit());
         PassRunner<PassData> pipeline(&data);
@@ -41,6 +43,29 @@ bool PassManager::Compile(std::string fileName)
         pipeline.RunPass<SchedulingPass>();
         pipeline.RunPass<LLVMIRGenPass>();
     }
+    return true;
+}
+
+bool PassManager::CollectInfoOfPandaFile(const std::string &filename, BytecodeTranslationInfo *translateInfo)
+{
+    if (translateInfo == nullptr) {
+        return false;
+    }
+    const JSPandaFile *jsPandaFile =
+        vm_->GetJSPandaFileManager()->LoadAotInfoFromPf(filename, &(translateInfo->methodPcInfos));
+    if (jsPandaFile == nullptr) {
+        return false;
+    }
+    translateInfo->jsPandaFile = jsPandaFile;
+
+    TSLoader *tsLoader = vm_->GetTSLoader();
+    tsLoader->DecodeTSTypes(*jsPandaFile->GetPandaFile());
+
+    PandaFileTranslator translator(vm_, jsPandaFile);
+    auto program = translator.GenerateProgram();
+    JSHandle<JSFunction> mainFunc(vm_->GetJSThread(), program->GetMainFunction());
+    JSHandle<JSTaggedValue> constPool(vm_->GetJSThread(), mainFunc->GetConstantPool());
+    translateInfo->constantPool = constPool;
     return true;
 }
 }

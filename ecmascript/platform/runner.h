@@ -21,6 +21,7 @@
 #include <thread>
 #include <vector>
 
+#include "ecmascript/common.h"
 #include "ecmascript/platform/task_queue.h"
 
 namespace panda::ecmascript {
@@ -40,7 +41,7 @@ public:
         taskQueue_.PostTask(std::move(task));
     }
 
-    void TerminateThread();
+    void PUBLIC_API TerminateThread();
     void TerminateTask();
 
     uint32_t GetTotalThreadNum() const
