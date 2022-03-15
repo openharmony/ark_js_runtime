@@ -27,7 +27,6 @@
 #include "ecmascript/weak_vector-inl.h"
 
 namespace panda::ecmascript {
-// class TransitionsDictionary
 JSHandle<TransitionsDictionary> TransitionsDictionary::PutIfAbsent(const JSThread *thread,
                                                                    const JSHandle<TransitionsDictionary> &dictionary,
                                                                    const JSHandle<JSTaggedValue> &key,
@@ -46,7 +45,8 @@ JSHandle<TransitionsDictionary> TransitionsDictionary::PutIfAbsent(const JSThrea
     JSHandle<TransitionsDictionary> newDictionary(HashTableT::GrowHashTable(thread, dictionary));
     // Compute the key object.
     entry = newDictionary->FindInsertIndex(hash);
-    newDictionary->SetEntry(thread, entry, key.GetTaggedValue(), value.GetTaggedValue(), metaData.GetTaggedValue());
+    JSTaggedValue val = value.GetTaggedValue();
+    newDictionary->SetEntry(thread, entry, key.GetTaggedValue(), val, metaData.GetTaggedValue());
 
     newDictionary->IncreaseEntries(thread);
     return newDictionary;
@@ -135,7 +135,7 @@ void JSHClass::Initialize(const JSThread *thread, uint32_t size, JSType type, ui
     SetExtensible(true);
     SetIsPrototype(false);
     SetElementRepresentation(Representation::NONE);
-    SetTransitions(thread, JSTaggedValue::Null());
+    SetTransitions(thread, JSTaggedValue::Undefined());
     SetProtoChangeMarker(thread, JSTaggedValue::Null());
     SetProtoChangeDetails(thread, JSTaggedValue::Null());
     SetEnumCache(thread, JSTaggedValue::Null());
@@ -150,7 +150,7 @@ JSHandle<JSHClass> JSHClass::Clone(const JSThread *thread, const JSHandle<JSHCla
     JSHandle<JSHClass> newJshclass = thread->GetEcmaVM()->GetFactory()->NewEcmaDynClass(size, type, numInlinedProps);
     // Copy all
     newJshclass->Copy(thread, *jshclass);
-    newJshclass->SetTransitions(thread, JSTaggedValue::Null());
+    newJshclass->SetTransitions(thread, JSTaggedValue::Undefined());
     newJshclass->SetProtoChangeDetails(thread, JSTaggedValue::Null());
     newJshclass->SetEnumCache(thread, JSTaggedValue::Null());
     // reuse Attributes first.
@@ -264,9 +264,9 @@ JSHandle<JSHClass> JSHClass::TransitionProto(const JSThread *thread, const JSHan
     JSHandle<JSHClass> newJshclass = JSHClass::Clone(thread, jshclass);
     newJshclass->SetPrototype(thread, proto.GetTaggedValue());
 
-    JSTaggedValue attrs = newJshclass->GetLayout();
+    JSTaggedValue layout = newJshclass->GetLayout();
     {
-        JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, attrs);
+        JSMutableHandle<LayoutInfo> layoutInfoHandle(thread, layout);
         layoutInfoHandle.Update(factory->CopyLayoutInfo(layoutInfoHandle).GetTaggedValue());
         newJshclass->SetLayout(thread, layoutInfoHandle);
     }
