@@ -223,19 +223,9 @@ JSTaggedValue BuiltinsArrayBuffer::AllocateArrayBuffer(JSThread *thread, const J
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
     JSHandle<JSTaggedValue> arrBufFunc = env->GetArrayBufferFunction();
-    JSHandle<JSObject> obj;
-    if (!newTarget->IsBoundFunction()) {
-        obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(arrBufFunc), newTarget);
-        // 2. ReturnIfAbrupt
-        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    } else {
-        JSHandle<JSTaggedValue> prototypeKey = thread->GlobalConstants()->GetHandledPrototypeString();
-        JSHandle<JSTaggedValue> constructTag(newTarget);
-        JSHandle<JSTaggedValue> constructProto =
-            JSTaggedValue::GetProperty(thread, constructTag, prototypeKey).GetValue();
-        obj = JSObject::ObjectCreate(thread, JSHandle<JSObject>(constructProto));
-        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-    }
+    JSHandle<JSObject> obj = factory->NewJSObjectByConstructor(JSHandle<JSFunction>(arrBufFunc), newTarget);
+    // 2. ReturnIfAbrupt
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 3. Assert: byteLength is a positive integer.
     ASSERT(JSTaggedValue(byteLength).IsInteger());
     ASSERT(byteLength >= 0);
