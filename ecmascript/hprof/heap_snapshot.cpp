@@ -517,7 +517,7 @@ void HeapSnapShot::FillEdges(JSThread *thread)
         for (auto const &it : nameResources) {
             JSTaggedValue toValue = it.second;
             Node *entryTo = nullptr;
-            if (!toValue.IsWeak() && toValue.IsHeapObject()) {
+            if (toValue.IsHeapObject()) {
                 auto *to = reinterpret_cast<TaggedObject *>(toValue.GetHeapObject());
                 entryTo = entryMap_.FindEntry(Node::NewAddress(to));
             }
