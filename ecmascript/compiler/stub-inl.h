@@ -1490,7 +1490,7 @@ GateRef Stub::SetPrototypeToHClass(StubMachineType type, GateRef glue, GateRef h
 
 GateRef Stub::SetProtoChangeDetailsToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef protoChange)
 {
-    GateRef offset = GetIntPtrConstant(JSHClass::PROTOTYPE_INFO_OFFSET);
+    GateRef offset = GetIntPtrConstant(JSHClass::PROTO_CHANGE_DETAILS_OFFSET);
     return Store(type, glue, hClass, offset, protoChange);
 }
 
@@ -1498,12 +1498,6 @@ GateRef Stub::SetLayoutToHClass(StubMachineType type, GateRef glue, GateRef hCla
 {
     GateRef offset = GetIntPtrConstant(JSHClass::LAYOUT_OFFSET);
     return Store(type, glue, hClass, offset, attr);
-}
-
-GateRef Stub::SetParentToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef parent)
-{
-    GateRef offset = GetIntPtrConstant(JSHClass::PARENT_OFFSET);
-    return Store(type, glue, hClass, offset, parent);
 }
 
 GateRef Stub::SetEnumCacheToHClass(StubMachineType type, GateRef glue, GateRef hClass, GateRef key)
