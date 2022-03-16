@@ -426,7 +426,7 @@ private:
     NO_COPY_SEMANTIC(EcmaVM);
 
     // Useless/deprecated fields in the future:
-    Rendezvous *rendezvous_{nullptr};
+    Rendezvous *rendezvous_ {nullptr};
 
     // VM startup states.
     JSRuntimeOptions options_;
