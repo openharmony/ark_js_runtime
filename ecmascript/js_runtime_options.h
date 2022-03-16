@@ -32,6 +32,13 @@ enum ArkProperties {
     ENABLE_ARKTOOLS = 1 << 6,
 };
 
+// asm interpreter control parsed option
+struct AsmInterParsedOption {
+    int handleStart {-1};
+    int handleEnd {-1};
+    bool enableAsm {false};
+};
+
 class JSRuntimeOptions : public RuntimeOptions {
 public:
     explicit JSRuntimeOptions(const std::string &exePath = "") : RuntimeOptions(exePath) {}
@@ -49,6 +56,7 @@ public:
         parser->Add(&arkProperties_);
         parser->Add(&enableTsAot_);
         parser->Add(&maxNonmovableSpaceCapacity_);
+        parser->Add(&asmInter_);
     }
 
     bool IsEnableArkTools() const
@@ -223,6 +231,55 @@ public:
         return defaultSnapshotSpaceCapacity_.GetValue();
     }
 
+    void SetAsmInterOption(std::string value)
+    {
+        asmInter_.SetValue(std::move(value));
+    }
+
+    void ParseAsmInterOption()
+    {
+        std::string strAsmInterOption = asmInter_.GetValue();
+        if (strAsmInterOption.empty()) {
+            return;
+        }
+        std::vector<std::string> vec;
+        size_t pos = 0;
+        size_t len = strAsmInterOption.length();
+        while (pos < len) {
+            size_t delimPos = strAsmInterOption.find("#", pos);
+            if (delimPos == std::string::npos) {
+                vec.emplace_back(strAsmInterOption.substr(pos));
+                break;
+            }
+            vec.emplace_back(strAsmInterOption.substr(pos, delimPos - pos));
+            pos = delimPos + 1;
+        }
+        
+        // asm interpreter handle disable range
+        if (vec.size() > 0) {
+            std::string handleDisableRange = vec[0];
+            pos = handleDisableRange.find(",");
+            if (pos != std::string::npos) {
+                std::string strStart = handleDisableRange.substr(0, pos);
+                std::string strEnd = handleDisableRange.substr(pos + 1);
+                asmInterParsedOption_.handleStart =  strStart.empty() ? 0 : std::stoi(strStart);
+                asmInterParsedOption_.handleEnd = strEnd.empty() ?
+                    kungfu::InterpreterStubId::ExceptionHandlerId : std::stoi(strEnd);
+            }
+        }
+
+        // enable or not asm interpreter
+        if (vec.size() > 1) {
+            std::string enableAsm = vec[1];
+            asmInterParsedOption_.enableAsm = (enableAsm == "1") ? true : false;
+        }
+    }
+
+    AsmInterParsedOption GetAsmInterParsedOption() const
+    {
+        return asmInterParsedOption_;
+    }
+
     static const JSRuntimeOptions &GetTemporaryOptions()
     {
         return temporary_options;
@@ -265,6 +322,10 @@ private:
     PandArg<size_t> defaultSnapshotSpaceCapacity_ {"defaultSnapshotSpaceCapacity",
         256 * 1024,
         R"(set default snapshot space capacity)"};
+    PandArg<std::string> asmInter_ {"asmInter",
+        "",
+        R"(set asm interpreter control properties)"};
+    AsmInterParsedOption asmInterParsedOption_;
 };
 }  // namespace panda::ecmascript
 
