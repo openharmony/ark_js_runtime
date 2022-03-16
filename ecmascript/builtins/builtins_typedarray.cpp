@@ -680,10 +680,87 @@ JSTaggedValue BuiltinsTypedArray::IndexOf(EcmaRuntimeCallInfo *argv)
 JSTaggedValue BuiltinsTypedArray::Join(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
-    if (!GetThis(argv)->IsTypedArray()) {
+    BUILTINS_API_TRACE(argv->GetThread(), TypedArray, Join);
+    JSThread *thread = argv->GetThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
+
+    if (!thisHandle->IsTypedArray()) {
         THROW_TYPE_ERROR_AND_RETURN(argv->GetThread(), "This is not a TypedArray.", JSTaggedValue::Exception());
     }
-    return BuiltinsArray::Join(argv);
+
+    uint32_t length = TypedArrayHelper::GetArrayLength(thread, JSHandle<JSObject>::Cast(thisHandle));
+
+    JSHandle<JSTaggedValue> sepHandle = GetCallArg(argv, 0);
+    int sep = ',';
+    uint32_t sepLength = 1;
+    JSHandle<EcmaString> sepStringHandle;
+    if (!sepHandle->IsUndefined()) {
+        if (sepHandle->IsString()) {
+            sepStringHandle = JSHandle<EcmaString>::Cast(sepHandle);
+        } else {
+            sepStringHandle = JSTaggedValue::ToString(thread, sepHandle);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        }
+        if (sepStringHandle->IsUtf8() && sepStringHandle->GetLength() == 1) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+            sep = sepStringHandle->GetDataUtf8()[0];
+        } else if (sepStringHandle->GetLength() == 0) {
+            sep = BuiltinsTypedArray::SeparatorFlag::MINUS_TWO;
+            sepLength = 0;
+        } else {
+            sep = BuiltinsTypedArray::SeparatorFlag::MINUS_ONE;
+            sepLength = sepStringHandle->GetLength();
+        }
+    }
+    if (length == 0) {
+        const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+        return globalConst->GetEmptyString();
+    }
+    size_t allocateLength = 0;
+    bool isOneByte = (sep != BuiltinsTypedArray::SeparatorFlag::MINUS_ONE) || sepStringHandle->IsUtf8();
+    CVector<JSHandle<EcmaString>> vec;
+    JSMutableHandle<JSTaggedValue> elementHandle(thread, JSTaggedValue::Undefined());
+    const GlobalEnvConstants *globalConst = thread->GlobalConstants();
+    for (uint32_t k = 0; k < length; k++) {
+        JSTaggedValue element = JSTypedArray::GetProperty(thread, thisHandle, k).GetValue().GetTaggedValue();
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        if (!element.IsUndefinedOrNull() && !element.IsHole()) {
+            if (!element.IsString()) {
+                elementHandle.Update(element);
+                JSHandle<EcmaString> strElement = JSTaggedValue::ToString(thread, elementHandle);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                element = strElement.GetTaggedValue();
+            }
+            auto nextStr = EcmaString::Cast(element.GetTaggedObject());
+            JSHandle<EcmaString> nextStrHandle(thread, nextStr);
+            vec.push_back(nextStrHandle);
+            isOneByte = nextStr->IsUtf8() ? isOneByte : false;
+            allocateLength += nextStr->GetLength();
+        } else {
+            vec.push_back(JSHandle<EcmaString>(globalConst->GetHandledEmptyString()));
+        }
+    }
+    allocateLength += sepLength * (length - 1);
+    auto newString = EcmaString::AllocStringObject(allocateLength, isOneByte, thread->GetEcmaVM());
+    int current = 0;
+    DISALLOW_GARBAGE_COLLECTION;
+    for (uint32_t k = 0; k < length; k++) {
+        if (k > 0) {
+            if (sep >= 0) {
+                newString->WriteData(static_cast<char>(sep), current);
+            } else if (sep != BuiltinsTypedArray::SeparatorFlag::MINUS_TWO) {
+                newString->WriteData(*sepStringHandle, current, allocateLength - current, sepLength);
+            }
+            current += sepLength;
+        }
+        JSHandle<EcmaString> nextStr = vec[k];
+        int nextLength = nextStr->GetLength();
+        newString->WriteData(*nextStr, current, allocateLength - current, nextLength);
+        current += nextLength;
+    }
+    return JSTaggedValue(newString);
 }
 
 // 22.2.3.15

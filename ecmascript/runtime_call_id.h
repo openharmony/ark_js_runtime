@@ -506,6 +506,7 @@ namespace panda::ecmascript {
     V(TypedArray, Every)                      \
     V(TypedArray, Filter)                     \
     V(TypedArray, ForEach)                    \
+    V(TypedArray, Join)                       \
     V(TypedArray, Keys)                       \
     V(TypedArray, GetLength)                  \
     V(TypedArray, Map)                        \

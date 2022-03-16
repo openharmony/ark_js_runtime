@@ -98,13 +98,12 @@ void EcmaStringTable::InternEmptyString(EcmaString *emptyStr)
 EcmaString *EcmaStringTable::GetOrInternString(const JSHandle<EcmaString> &firstString,
                                                const JSHandle<EcmaString> &secondString)
 {
-    if (firstString->IsInternString() && secondString->IsInternString()) {
-        EcmaString *concatString = GetString(firstString, secondString);
-        if (concatString != nullptr) {
-            return concatString;
-        }
+    EcmaString *concatString = GetString(firstString, secondString);
+    if (concatString != nullptr) {
+        return concatString;
     }
-    EcmaString *concatString = EcmaString::Concat(firstString, secondString, vm_);
+
+    concatString = EcmaString::Concat(firstString, secondString, vm_);
 
     InternString(concatString);
     return concatString;
