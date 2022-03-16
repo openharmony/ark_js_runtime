@@ -50,14 +50,14 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/llvm_stackmap_parser.h"
-#include "stub_descriptor.h"
+#include "call_signature.h"
 
 using namespace panda::ecmascript;
 namespace panda::ecmascript::kungfu {
-void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+void LLVMIRGeneratorImpl::GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, size_t index,
                                                 const CompilationConfig *cfg)
 {
-    LLVMValueRef function = module_->GetStubFunction(index);
+    LLVMValueRef function = module_->GetFunction(index);
     LLVMIRBuilder builder(&graph, circuit, module_, function, cfg);
     builder.Build();
 }
@@ -71,32 +71,24 @@ void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
 {
     auto codeBuff = reinterpret_cast<uintptr_t>(assembler_.GetCodeBuffer());
     auto engine = assembler_.GetEngine();
-    std::map<uint64_t, std::string> addr2name;
-    for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
-        auto stubfunction = stubmodule_->GetStubFunction(i);
-#ifndef NDEBUG
-        COMPILER_LOG(DEBUG) << "  AssembleStubModule :" << i << " th " << std::endl;
-#endif
-        if (stubfunction != nullptr) {
-            uintptr_t stubEntry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, stubfunction));
-            module->SetStubEntry(i, stubEntry - codeBuff);
-            if (i >= FAST_STUB_MAXCOUNT) {
-                addr2name[stubEntry] = FastStubDescriptors::GetInstance()
-                    .GetStubDescriptor(CallStubId::NAME_BytecodeHandler)->GetName();
-            } else {
-                addr2name[stubEntry] = FastStubDescriptors::GetInstance().GetStubDescriptor(i)->GetName();
-            }
-#ifndef NDEBUG
-            COMPILER_LOG(DEBUG) << "name : " << addr2name[codeBuff] << std::endl;
-#endif
-        }
+    std::map<uintptr_t, std::string> addr2name;
+
+    auto callSigns = stubmodule_->GetCSigns();
+    for (size_t i = 0; i < stubmodule_->GetFuncsSize(); i++) {
+        auto cs = callSigns[i];
+        LLVMValueRef func = stubmodule_->GetFunction(i);
+        ASSERT(func != nullptr);
+        uintptr_t entry = reinterpret_cast<uintptr_t>(LLVMGetPointerToGlobal(engine, func));
+        module->AddStubEntry(cs->GetTargetKind(), cs->GetID(), entry - codeBuff);
+        ASSERT(!cs->GetName().empty());
+        addr2name[entry] = cs->GetName();
     }
     module->SetHostCodeSectionAddr(codeBuff);
     // stackmaps ptr and size
     module->SetStackMapAddr(reinterpret_cast<uintptr_t>(assembler_.GetStackMapsSection()));
     module->SetStackMapSize(assembler_.GetStackMapsSize());
 #ifndef NDEBUG
-    assembler_.Disassemble(addr2name);
+    assembler_.Disassemble(&addr2name);
 #endif
 }
 
@@ -275,7 +267,7 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
 }
 #endif
 
-void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> addr2name) const
+void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> &addr2name) const
 {
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);

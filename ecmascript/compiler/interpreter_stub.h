@@ -17,10 +17,174 @@
 #define ECMASCRIPT_COMPILER_INTERPRETER_STUB_H
 
 #include "ecmascript/base/config.h"
-#include "ecmascript/compiler/fast_stub_define.h"
-#include "ecmascript/compiler/stub-inl.h"
+#include "ecmascript/compiler/stub.h"
 
 namespace panda::ecmascript::kungfu {
+#define IGNORE_BC_STUB(...)
+#define ASM_INTERPRETER_BC_STUB_LIST(V, T, I)               \
+    T(HandleLdNanPref, 7)                                   \
+    T(HandleLdInfinityPref, 7)                              \
+    T(HandleLdGlobalThisPref, 7)                            \
+    T(HandleLdUndefinedPref, 7)                             \
+    T(HandleLdNullPref, 7)                                  \
+    T(HandleLdSymbolPref, 7)                                \
+    T(HandleLdGlobalPref, 7)                                \
+    T(HandleLdTruePref, 7)                                  \
+    T(HandleLdFalsePref, 7)                                 \
+    T(HandleThrowDynPref, 7)                                \
+    T(HandleTypeOfDynPref, 7)                               \
+    T(HandleLdLexEnvDynPref, 7)                             \
+    T(HandlePopLexEnvDynPref, 7)                            \
+    T(HandleGetUnmappedArgsPref, 7)                         \
+    T(HandleGetPropIteratorPref, 7)                         \
+    T(HandleAsyncFunctionEnterPref, 7)                      \
+    T(HandleLdHolePref, 7)                                  \
+    T(HandleReturnUndefinedPref, 7)                         \
+    T(HandleCreateEmptyObjectPref, 7)                       \
+    T(HandleCreateEmptyArrayPref, 7)                        \
+    T(HandleGetIteratorPref, 7)                             \
+    T(HandleThrowThrowNotExistsPref, 7)                     \
+    T(HandleThrowPatternNonCoerciblePref, 7)                \
+    T(HandleLdHomeObjectPref, 7)                            \
+    T(HandleThrowDeleteSuperPropertyPref, 7)                \
+    T(HandleDebuggerPref, 7)                                \
+    T(HandleAdd2DynPrefV8, 7)                               \
+    T(HandleSub2DynPrefV8, 7)                               \
+    T(HandleMul2DynPrefV8, 7)                               \
+    T(HandleDiv2DynPrefV8, 7)                               \
+    T(HandleMod2DynPrefV8, 7)                               \
+    T(HandleEqDynPrefV8, 7)                                 \
+    T(HandleNotEqDynPrefV8, 7)                              \
+    T(HandleLessDynPrefV8, 7)                               \
+    T(HandleLessEqDynPrefV8, 7)                             \
+    T(HandleGreaterDynPrefV8, 7)                            \
+    T(HandleGreaterEqDynPrefV8, 7)                          \
+    T(HandleShl2DynPrefV8, 7)                               \
+    T(HandleShr2DynPrefV8, 7)                               \
+    T(HandleAshr2DynPrefV8, 7)                              \
+    T(HandleAnd2DynPrefV8, 7)                               \
+    T(HandleOr2DynPrefV8, 7)                                \
+    T(HandleXOr2DynPrefV8, 7)                               \
+    T(HandleToNumberPrefV8, 7)                              \
+    T(HandleNegDynPrefV8, 7)                                \
+    T(HandleNotDynPrefV8, 7)                                \
+    T(HandleIncDynPrefV8, 7)                                \
+    T(HandleDecDynPrefV8, 7)                                \
+    T(HandleExpDynPrefV8, 7)                                \
+    T(HandleIsInDynPrefV8, 7)                               \
+    T(HandleInstanceOfDynPrefV8, 7)                         \
+    T(HandleStrictNotEqDynPrefV8, 7)                        \
+    T(HandleStrictEqDynPrefV8, 7)                           \
+    T(HandleResumeGeneratorPrefV8, 7)                       \
+    T(HandleGetResumeModePrefV8, 7)                         \
+    T(HandleCreateGeneratorObjPrefV8, 7)                    \
+    T(HandleThrowConstAssignmentPrefV8, 7)                  \
+    T(HandleGetTemplateObjectPrefV8, 7)                     \
+    T(HandleGetNextPropNamePrefV8, 7)                       \
+    I(HandleCallArg0DynPrefV8, 7)                           \
+    T(HandleThrowIfNotObjectPrefV8, 7)                      \
+    T(HandleIterNextPrefV8, 7)                              \
+    T(HandleCloseIteratorPrefV8, 7)                         \
+    T(HandleCopyModulePrefV8, 7)                            \
+    T(HandleSuperCallSpreadPrefV8, 7)                       \
+    T(HandleDelObjPropPrefV8V8, 7)                          \
+    T(HandleNewObjSpreadDynPrefV8V8, 7)                     \
+    T(HandleCreateIterResultObjPrefV8V8, 7)                 \
+    T(HandleSuspendGeneratorPrefV8V8, 7)                    \
+    T(HandleAsyncFunctionAwaitUncaughtPrefV8V8, 7)          \
+    T(HandleThrowUndefinedIfHolePrefV8V8, 7)                \
+    I(HandleCallArg1DynPrefV8V8, 7)                         \
+    T(HandleCopyDataPropertiesPrefV8V8, 7)                  \
+    T(HandleStArraySpreadPrefV8V8, 7)                       \
+    T(HandleGetIteratorNextPrefV8V8, 7)                     \
+    T(HandleSetObjectWithProtoPrefV8V8, 7)                  \
+    T(HandleLdObjByValuePrefV8V8, 7)                        \
+    T(HandleStObjByValuePrefV8V8, 7)                        \
+    T(HandleStOwnByValuePrefV8V8, 7)                        \
+    T(HandleLdSuperByValuePrefV8V8, 7)                      \
+    T(HandleStSuperByValuePrefV8V8, 7)                      \
+    T(HandleLdObjByIndexPrefV8Imm32, 7)                     \
+    T(HandleStObjByIndexPrefV8Imm32, 7)                     \
+    T(HandleStOwnByIndexPrefV8Imm32, 7)                     \
+    T(HandleCallSpreadDynPrefV8V8V8, 7)                     \
+    T(HandleAsyncFunctionResolvePrefV8V8V8, 7)              \
+    T(HandleAsyncFunctionRejectPrefV8V8V8, 7)               \
+    I(HandleCallArgs2DynPrefV8V8V8, 7)                      \
+    I(HandleCallArgs3DynPrefV8V8V8V8, 7)                    \
+    T(HandleDefineGetterSetterByValuePrefV8V8V8V8, 7)       \
+    T(HandleNewObjDynRangePrefImm16V8, 7)                   \
+    I(HandleCallIRangeDynPrefImm16V8, 7)                    \
+    I(HandleCallIThisRangeDynPrefImm16V8, 7)                \
+    T(HandleSuperCallPrefImm16V8, 7)                        \
+    T(HandleCreateObjectWithExcludedKeysPrefImm16V8V8, 7)   \
+    T(HandleDefineFuncDynPrefId16Imm16V8, 7)                \
+    T(HandleDefineNCFuncDynPrefId16Imm16V8, 7)              \
+    T(HandleDefineGeneratorFuncPrefId16Imm16V8, 7)          \
+    T(HandleDefineAsyncFuncPrefId16Imm16V8, 7)              \
+    T(HandleDefineMethodPrefId16Imm16V8, 7)                 \
+    T(HandleNewLexEnvDynPrefImm16, 7)                       \
+    T(HandleCopyRestArgsPrefImm16, 7)                       \
+    T(HandleCreateArrayWithBufferPrefImm16, 7)              \
+    T(HandleCreateObjectHavingMethodPrefImm16, 7)           \
+    T(HandleThrowIfSuperNotCorrectCallPrefImm16, 7)         \
+    T(HandleCreateObjectWithBufferPrefImm16, 7)             \
+    T(HandleLdLexVarDynPrefImm4Imm4, 7)                     \
+    T(HandleLdLexVarDynPrefImm8Imm8, 7)                     \
+    T(HandleLdLexVarDynPrefImm16Imm16, 7)                   \
+    T(HandleStLexVarDynPrefImm4Imm4V8, 7)                   \
+    T(HandleStLexVarDynPrefImm8Imm8V8, 7)                   \
+    T(HandleStLexVarDynPrefImm16Imm16V8, 7)                 \
+    T(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8, 7) \
+    T(HandleGetModuleNamespacePrefId32, 7)                  \
+    T(HandleStModuleVarPrefId32, 7)                         \
+    T(HandleTryLdGlobalByNamePrefId32, 7)                   \
+    T(HandleTryStGlobalByNamePrefId32, 7)                   \
+    T(HandleLdGlobalVarPrefId32, 7)                         \
+    T(HandleStGlobalVarPrefId32, 7)                         \
+    T(HandleLdObjByNamePrefId32V8, 7)                       \
+    T(HandleStObjByNamePrefId32V8, 7)                       \
+    T(HandleStOwnByNamePrefId32V8, 7)                       \
+    T(HandleLdSuperByNamePrefId32V8, 7)                     \
+    T(HandleStSuperByNamePrefId32V8, 7)                     \
+    T(HandleLdModuleVarPrefId32Imm8, 7)                     \
+    T(HandleCreateRegExpWithLiteralPrefId32Imm8, 7)         \
+    T(HandleIsTruePref, 7)                                  \
+    T(HandleIsFalsePref, 7)                                 \
+    T(HandleStConstToGlobalRecordPrefId32, 7)               \
+    T(HandleStLetToGlobalRecordPrefId32, 7)                 \
+    T(HandleStClassToGlobalRecordPrefId32, 7)               \
+    T(HandleStOwnByValueWithNameSetPrefV8V8, 7)             \
+    T(HandleStOwnByNameWithNameSetPrefId32V8, 7)            \
+    T(HandleLdFunctionPref, 7)                              \
+    V(HandleLdBigIntPrefId32, 7)                            \
+    V(HandleNewLexEnvWithNameDynPrefImm16Imm16, 7)          \
+    T(HandleMovDynV8V8, 7)                                  \
+    T(HandleMovDynV16V16, 7)                                \
+    T(HandleLdaStrId32, 7)                                  \
+    T(HandleLdaiDynImm32, 7)                                \
+    T(HandleFldaiDynImm64, 7)                               \
+    T(HandleJmpImm8, 7)                                     \
+    T(HandleJmpImm16, 7)                                    \
+    T(HandleJmpImm32, 7)                                    \
+    T(HandleJeqzImm8, 7)                                    \
+    T(HandleJeqzImm16, 7)                                   \
+    T(HandleLdaDynV8, 7)                                    \
+    T(HandleStaDynV8, 7)                                    \
+    T(HandleReturnDyn, 7)                                   \
+    T(HandleMovV4V4, 7)                                     \
+    T(HandleJnezImm8, 7)                                    \
+    T(HandleJnezImm16, 7)                                   \
+    T(ExceptionHandler, 7)
+
+#define INTERPRETER_IGNORED_BC_STUB_LIST(V) \
+    ASM_INTERPRETER_BC_STUB_LIST(IGNORE_BC_STUB, IGNORE_BC_STUB, V)
+
+#define INTERPRETER_BC_STUB_LIST(V) \
+    ASM_INTERPRETER_BC_STUB_LIST(IGNORE_BC_STUB, V, V)
+
+#define ASM_INTERPRETER_BC_STUB_ID_LIST(V) \
+    ASM_INTERPRETER_BC_STUB_LIST(V, V, V)
+
 class InterpreterStub : public Stub {
 public:
     InterpreterStub(const char* name, int argCount, Circuit *circuit)
@@ -86,7 +250,6 @@ public:
     inline GateRef GetObjectFromConstPool(GateRef constpool, GateRef index);
 };
 
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 class AsmInterpreterEntryStub : public InterpreterStub {
 public:
     // 7 : 7 means argument counts
@@ -103,7 +266,6 @@ private:
     void GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,
                              GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter);
 };
-#endif
 
 #define DECLARE_HANDLE_STUB_CLASS(name, argc)                                                   \
     class name##Stub : public InterpreterStub {                                                 \
@@ -121,11 +283,39 @@ private:
         void GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp, GateRef constpool,       \
                                  GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter); \
     };
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
-    INTERPRETER_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
-#endif
+    INTERPRETER_BC_STUB_LIST(DECLARE_HANDLE_STUB_CLASS)
     DECLARE_HANDLE_STUB_CLASS(SingleStepDebugging, 7)
 #undef DECLARE_HANDLE_STUB_CLASS
-}  // namespace panda::ecmascript::kungfu
 
+class BytecodeStubCSigns {
+public:
+    enum ValidID {
+#define DEF_VALID_BC_STUB_ID(name, counter) name,
+        INTERPRETER_BC_STUB_LIST(DEF_VALID_BC_STUB_ID)
+#undef DEF_VALID_BC_STUB_ID
+        NUM_OF_VALID_STUBS
+    };
+
+    enum ID {
+#define DEF_BC_STUB_ID(name, counter) ID_##name,
+        ASM_INTERPRETER_BC_STUB_ID_LIST(DEF_BC_STUB_ID)
+#undef DEF_BC_STUB_ID
+        NUM_OF_ALL_STUBS
+    };
+    static void Initialize();
+
+    static void GetCSigns(std::vector<CallSignature*>& outCSigns);
+
+    static const CallSignature* Get(size_t index)
+    {
+        ASSERT(index < NUM_OF_VALID_STUBS);
+        return &callSigns_[index];
+    }
+private:
+    static CallSignature callSigns_[NUM_OF_VALID_STUBS];
+};
+
+#define BYTECODE_STUB_BEGIN_ID BytecodeStubCSigns::ID_HandleLdNanPref
+#define BYTECODE_STUB_END_ID BytecodeStubCSigns::ID_ExceptionHandler
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_INTERPRETER_STUB_H

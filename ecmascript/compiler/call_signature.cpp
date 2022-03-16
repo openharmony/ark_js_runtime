@@ -13,143 +13,138 @@
  * limitations under the License.
  */
 
-#include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/compiler/call_signature.h"
 
 #include "llvm-c/Core.h"
 #include "llvm/Support/Host.h"
 
 namespace panda::ecmascript::kungfu {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CALL_STUB_INIT_DESCRIPTOR(name)                              \
-    class Stub##name##InterfaceDescriptor final {                    \
-    public:                                                          \
-        static void Initialize(StubDescriptor *descriptor); \
-    };                                                               \
-    void Stub##name##InterfaceDescriptor::Initialize(StubDescriptor *descriptor)
+#define DEF_CALL_SIGNATURE(name)                                  \
+    void name##CallSignature::Initialize(CallSignature *callSign)
 
-
-CALL_STUB_INIT_DESCRIPTOR(FastAdd)
+DEF_CALL_SIGNATURE(FastAdd)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastAdd("FastAdd", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
-    *descriptor = fastAdd;
+    CallSignature fastAdd("FastAdd", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    *callSign = fastAdd;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(FastSub)
+DEF_CALL_SIGNATURE(FastSub)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastSub("FastSub", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
-    *descriptor = fastSub;
+    CallSignature fastSub("FastSub", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    *callSign = fastSub;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(FastMul)
+DEF_CALL_SIGNATURE(FastMul)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastMul("FastMul", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
-    *descriptor = fastMul;
+    CallSignature fastMul("FastMul", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    *callSign = fastMul;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
 #ifndef NDEBUG
-CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest)
+DEF_CALL_SIGNATURE(FastMulGCTest)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = fastMulGC;
+    CallSignature fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = fastMulGC;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::INT64(),
         VariableType::INT64(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 #else
-CALL_STUB_INIT_DESCRIPTOR(FastMulGCTest) {}
+DEF_CALL_SIGNATURE(FastMulGCTest) {}
 #endif
 
-CALL_STUB_INIT_DESCRIPTOR(FastDiv)
+DEF_CALL_SIGNATURE(FastDiv)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastDiv("FastDiv", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // float or hole
-    *descriptor = fastDiv;
+    CallSignature fastDiv("FastDiv", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // float or hole
+    *callSign = fastDiv;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(FastMod)
+DEF_CALL_SIGNATURE(FastMod)
 {
     // 3 : 3 input parameters
-    StubDescriptor fastMod("FastMod", 0, 3,
+    CallSignature fastMod("FastMod", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // int,float or hole
-    *descriptor = fastMod;
+    *callSign = fastMod;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(FastTypeOf)
+DEF_CALL_SIGNATURE(FastTypeOf)
 {
     // 2 input parameters
-    StubDescriptor fastTypeOf("FastTypeOf", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_POINTER());
-    *descriptor = fastTypeOf;
+    CallSignature fastTypeOf("FastTypeOf", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_POINTER());
+    *callSign = fastTypeOf;
     // 2 input parameters
     std::array<VariableType, 2> params = {
         VariableType::POINTER(), // glue
         VariableType::JS_ANY(), // ACC
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(FastEqual)
+DEF_CALL_SIGNATURE(FastEqual)
 {
     // 3 input parameters, return may be true/false/hole
-    StubDescriptor fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = fastEqual;
+    CallSignature fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = fastEqual;
     // 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(SetPropertyByName)
+DEF_CALL_SIGNATURE(SetPropertyByName)
 {
     // 4 : 4 input parameters
-    StubDescriptor setPropertyByName("SetPropertyByName", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
+    CallSignature setPropertyByName("SetPropertyByName", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
         VariableType::INT64());
-    *descriptor = setPropertyByName;
+    *callSign = setPropertyByName;
 
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::POINTER(),
@@ -157,15 +152,15 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByName)
         VariableType::JS_POINTER(),
         VariableType::JS_ANY()
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(SetPropertyByNameWithOwn)
+DEF_CALL_SIGNATURE(SetPropertyByNameWithOwn)
 {
     // 4 : 4 input parameters
-    StubDescriptor setPropertyByNameWithOwn("SetPropertyByNameWithOwn", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
+    CallSignature setPropertyByNameWithOwn("SetPropertyByNameWithOwn", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
         VariableType::INT64());
-    *descriptor = setPropertyByNameWithOwn;
+    *callSign = setPropertyByNameWithOwn;
 
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::POINTER(),
@@ -173,15 +168,15 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByNameWithOwn)
         VariableType::JS_POINTER(),
         VariableType::JS_ANY()
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
+DEF_CALL_SIGNATURE(SetPropertyByValue)
 {
     // 4 : 4 input parameters
-    StubDescriptor setPropertyByName("SetPropertyByValue", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
+    CallSignature setPropertyByName("SetPropertyByValue", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
         VariableType::INT64());
-    *descriptor = setPropertyByName;
+    *callSign = setPropertyByName;
 
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::POINTER(),
@@ -189,44 +184,44 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByValue)
         VariableType::JS_ANY(),
         VariableType::JS_ANY()
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(GetPropertyByName)
+DEF_CALL_SIGNATURE(GetPropertyByName)
 {
         // 3 : 3 input parameters
-    StubDescriptor getPropertyByName("GetPropertyByName", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = getPropertyByName;
+    CallSignature getPropertyByName("GetPropertyByName", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = getPropertyByName;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(), // glue
         VariableType::JS_ANY(),         // receiver
         VariableType::JS_POINTER(), // key
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(GetPropertyByIndex)
+DEF_CALL_SIGNATURE(GetPropertyByIndex)
 {
     // 3 : 3 input parameters
-    StubDescriptor getPropertyByIndex("GetPropertyByIndex", 0, 3, ArgumentsOrder::DEFAULT_ORDER,
+    CallSignature getPropertyByIndex("GetPropertyByIndex", 0, 3, ArgumentsOrder::DEFAULT_ORDER,
         VariableType::JS_ANY());
-    *descriptor = getPropertyByIndex;
+    *callSign = getPropertyByIndex;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(), // glue
         VariableType::JS_ANY(), // receiver
         VariableType::INT32(), // index
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
+DEF_CALL_SIGNATURE(SetPropertyByIndex)
 {
     // 4 : 4 input parameters
-    StubDescriptor setPropertyByIndex("SetPropertyByIndex", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
+    CallSignature setPropertyByIndex("SetPropertyByIndex", 0, 4, ArgumentsOrder::DEFAULT_ORDER,
         VariableType::INT64()); // hole or undefined
-    *descriptor = setPropertyByIndex;
+    *callSign = setPropertyByIndex;
     // 4 : 4 input parameters
     std::array<VariableType, 4> params = {
         VariableType::POINTER(),
@@ -234,30 +229,30 @@ CALL_STUB_INIT_DESCRIPTOR(SetPropertyByIndex)
         VariableType::INT32(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(GetPropertyByValue)
+DEF_CALL_SIGNATURE(GetPropertyByValue)
 {
     // 3 : 3 input parameters
-    StubDescriptor getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER,
+    CallSignature getPropertyByValue("GetPropertyByValue", 0, 3, ArgumentsOrder::DEFAULT_ORDER,
                                       VariableType::JS_ANY());
-    *descriptor = getPropertyByValue;
+    *callSign = getPropertyByValue;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::JS_POINTER(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(TryLoadICByName)
+DEF_CALL_SIGNATURE(TryLoadICByName)
 {
     // 4 : 4 input parameters
-    StubDescriptor tryLoadICByName("TryLoadICByName", 0, 4,
+    CallSignature tryLoadICByName("TryLoadICByName", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = tryLoadICByName;
+    *callSign = tryLoadICByName;
     // 4 : 4 input parameters
     std::array<VariableType, 4> params = {
         VariableType::POINTER(),
@@ -265,15 +260,15 @@ CALL_STUB_INIT_DESCRIPTOR(TryLoadICByName)
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(TryLoadICByValue)
+DEF_CALL_SIGNATURE(TryLoadICByValue)
 {
     // 5 : 5 input parameters
-    StubDescriptor tryLoadICByValue("TryLoadICByValue", 0, 5,
+    CallSignature tryLoadICByValue("TryLoadICByValue", 0, 5,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = tryLoadICByValue;
+    *callSign = tryLoadICByValue;
     // 5 : 5 input parameters
     std::array<VariableType, 5> params = {
         VariableType::POINTER(),
@@ -282,15 +277,15 @@ CALL_STUB_INIT_DESCRIPTOR(TryLoadICByValue)
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(TryStoreICByName)
+DEF_CALL_SIGNATURE(TryStoreICByName)
 {
     // 5 : 5 input parameters
-    StubDescriptor tryStoreICByName("TryStoreICByName", 0, 5,
+    CallSignature tryStoreICByName("TryStoreICByName", 0, 5,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::INT64()); // undefined or hole
-    *descriptor = tryStoreICByName;
+    *callSign = tryStoreICByName;
     // 5 : 5 input parameters
     std::array<VariableType, 5> params = {
         VariableType::POINTER(),
@@ -299,15 +294,15 @@ CALL_STUB_INIT_DESCRIPTOR(TryStoreICByName)
         VariableType::JS_ANY(),
         VariableType::JS_POINTER(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(TryStoreICByValue)
+DEF_CALL_SIGNATURE(TryStoreICByValue)
 {
     // 6 : 6 input parameters
-    StubDescriptor tryStoreICByValue("TryStoreICByValue", 0, 6,
+    CallSignature tryStoreICByValue("TryStoreICByValue", 0, 6,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::INT64()); // undefined or hole
-    *descriptor = tryStoreICByValue;
+    *callSign = tryStoreICByValue;
     // 6 : 6 input parameters
     std::array<VariableType, 6> params = {
         VariableType::POINTER(),
@@ -317,44 +312,44 @@ CALL_STUB_INIT_DESCRIPTOR(TryStoreICByValue)
         VariableType::JS_ANY(),
         VariableType::JS_POINTER(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(TestAbsoluteAddressRelocation)
+DEF_CALL_SIGNATURE(TestAbsoluteAddressRelocation)
 {
     // 2 : 2 input parameters
-    StubDescriptor TestAbsoluteAddressRelocation("TestAbsoluteAddressRelocation", 0, 2,
+    CallSignature TestAbsoluteAddressRelocation("TestAbsoluteAddressRelocation", 0, 2,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::INT64()); // undefined or hole
-    *descriptor = TestAbsoluteAddressRelocation;
+    *callSign = TestAbsoluteAddressRelocation;
     // 2 : 2 input parameters
     std::array<VariableType, 2> params = {
         VariableType::INT64(),
         VariableType::INT64(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(GetTaggedArrayPtrTest)
+DEF_CALL_SIGNATURE(GetTaggedArrayPtrTest)
 {
     // 2 : 2 input parameters
-    StubDescriptor getTaggedArrayPtr("GetTaggedArrayPtrTest", 0, 2, ArgumentsOrder::DEFAULT_ORDER,
+    CallSignature getTaggedArrayPtr("GetTaggedArrayPtrTest", 0, 2, ArgumentsOrder::DEFAULT_ORDER,
                                      VariableType::JS_POINTER());
-    *descriptor = getTaggedArrayPtr;
+    *callSign = getTaggedArrayPtr;
     // 2 : 2 input parameters
     std::array<VariableType, 2> params = {
         VariableType::POINTER(),
         VariableType::JS_ANY(),
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(BytecodeHandler)
+DEF_CALL_SIGNATURE(BytecodeHandler)
 {
     // 7 : 7 input parameters
-    StubDescriptor bytecodeHandler("bytecodeHandler", 0, 7,
+    CallSignature bytecodeHandler("bytecodeHandler", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
-    *descriptor = bytecodeHandler;
+    *callSign = bytecodeHandler;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
         VariableType::POINTER(),
         VariableType::POINTER(),
@@ -364,16 +359,16 @@ CALL_STUB_INIT_DESCRIPTOR(BytecodeHandler)
         VariableType::JS_ANY(),
         VariableType::INT32(),
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::BYTECODE_HANDLER);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::BYTECODE_HANDLER);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(SingleStepDebugging)
+DEF_CALL_SIGNATURE(SingleStepDebugging)
 {
     // 7 : 7 input parameters
-    StubDescriptor singleStepDebugging("singleStepDebugging", 0, 7,
+    CallSignature singleStepDebugging("singleStepDebugging", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
-    *descriptor = singleStepDebugging;
+    *callSign = singleStepDebugging;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
         VariableType::POINTER(),
         VariableType::POINTER(),
@@ -383,16 +378,16 @@ CALL_STUB_INIT_DESCRIPTOR(SingleStepDebugging)
         VariableType::JS_ANY(),
         VariableType::INT32(),
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::BYTECODE_HANDLER);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::BYTECODE_HANDLER);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(AsmInterpreterEntry)
+DEF_CALL_SIGNATURE(AsmInterpreterEntry)
 {
     // 7 : 7 input parameters
-    StubDescriptor asmInterpreterEntry("AsmInterpreterEntry", 0, 7,
+    CallSignature asmInterpreterEntry("AsmInterpreterEntry", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
-    *descriptor = asmInterpreterEntry;
+    *callSign = asmInterpreterEntry;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
         VariableType::POINTER(),
         VariableType::POINTER(),
@@ -402,89 +397,89 @@ CALL_STUB_INIT_DESCRIPTOR(AsmInterpreterEntry)
         VariableType::JS_ANY(),
         VariableType::INT32(),
     };
-    descriptor->SetParameters(params.data());
+    callSign->SetParameters(params.data());
 }
 
-CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampolineInterpreterAsm)
+DEF_CALL_SIGNATURE(RuntimeCallTrampolineInterpreterAsm)
 {
     /* 3 : 3 input parameters */
-    StubDescriptor runtimeCallTrampoline("RuntimeCallTrampolineInterpreterAsm", 0, 3,
+    CallSignature runtimeCallTrampoline("RuntimeCallTrampolineInterpreterAsm", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = runtimeCallTrampoline;
+    *callSign = runtimeCallTrampoline;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
         VariableType::POINTER(),
         VariableType::INT64(),
         VariableType::INT64(),
     };
-    descriptor->SetVariableArgs(true);
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(RuntimeCallTrampolineAot)
+DEF_CALL_SIGNATURE(RuntimeCallTrampolineAot)
 {
     /* 3 : 3 input parameters */
-    StubDescriptor runtimeCallTrampoline("RuntimeCallTrampolineAot", 0, 3,
+    CallSignature runtimeCallTrampoline("RuntimeCallTrampolineAot", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = runtimeCallTrampoline;
+    *callSign = runtimeCallTrampoline;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
         VariableType::POINTER(),
         VariableType::INT64(),
         VariableType::INT64(),
     };
-    descriptor->SetVariableArgs(true);
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(DebugPrint)
+DEF_CALL_SIGNATURE(DebugPrint)
 {
     // 1 : 1 input parameters
-    StubDescriptor debugPrint("DebugPrint", 0, 1,
+    CallSignature debugPrint("DebugPrint", 0, 1,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
-    *descriptor = debugPrint;
+    *callSign = debugPrint;
     // 1 : 1 input parameters
     std::array<VariableType, 1> params = {
         VariableType::INT32(),
     };
-    descriptor->SetVariableArgs(true);
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(InsertOldToNewRememberedSet)
+DEF_CALL_SIGNATURE(InsertOldToNewRememberedSet)
 {
     // 3 : 3 input parameters
-    StubDescriptor index("InsertOldToNewRememberedSet", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
-    *descriptor = index;
+    CallSignature index("InsertOldToNewRememberedSet", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
         VariableType::POINTER(),
         VariableType::POINTER(),
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(DoubleToInt)
+DEF_CALL_SIGNATURE(DoubleToInt)
 {
     // 1 : 1 input parameters
-    StubDescriptor index("DoubleToInt", 0, 1, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT32());
-    *descriptor = index;
+    CallSignature index("DoubleToInt", 0, 1, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT32());
+    *callSign = index;
     // 1 : 1 input parameters
     std::array<VariableType, 1> params = {
         VariableType::FLOAT64(),
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(MarkingBarrier)
+DEF_CALL_SIGNATURE(MarkingBarrier)
 {
     // 5 : 5 input parameters
-    StubDescriptor index("MarkingBarrier", 0, 5, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
-    *descriptor = index;
+    CallSignature index("MarkingBarrier", 0, 5, ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = index;
     // 5 : 5 input parameters
     std::array<VariableType, 5> params = {
         VariableType::POINTER(),
@@ -493,61 +488,61 @@ CALL_STUB_INIT_DESCRIPTOR(MarkingBarrier)
         VariableType::POINTER(),
         VariableType::POINTER(),
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(CallArg0Dyn)
+DEF_CALL_SIGNATURE(CallArg0Dyn)
 {
     // 2 : 2 input parameters
-    StubDescriptor callArg0Dyn("callArg0Dyn", 0, 2,
+    CallSignature callArg0Dyn("callArg0Dyn", 0, 2,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = callArg0Dyn;
+    *callSign = callArg0Dyn;
     std::array<VariableType, 2> params = { // 2 : 2 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY()
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(CallArg1Dyn)
+DEF_CALL_SIGNATURE(CallArg1Dyn)
 {
     // 3 : 3 input parameters
-    StubDescriptor callArg1Dyn("callArg1Dyn", 0, 3,
+    CallSignature callArg1Dyn("callArg1Dyn", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = callArg1Dyn;
+    *callSign = callArg1Dyn;
     std::array<VariableType, 3> params = { // 3 : 3 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY()
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(CallArgs2Dyn)
+DEF_CALL_SIGNATURE(CallArgs2Dyn)
 {
     // 4 : 4 input parameters
-    StubDescriptor callArgs2Dyn("callArgs2Dyn", 0, 4,
+    CallSignature callArgs2Dyn("callArgs2Dyn", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = callArgs2Dyn;
+    *callSign = callArgs2Dyn;
     std::array<VariableType, 4> params = { // 4 : 4 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY()
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(CallArgs3Dyn)
+DEF_CALL_SIGNATURE(CallArgs3Dyn)
 {
     // 5 : 5 input parameters
-    StubDescriptor callArgs3Dyn("callArgs3Dyn", 0, 5,
+    CallSignature callArgs3Dyn("callArgs3Dyn", 0, 5,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = callArgs3Dyn;
+    *callSign = callArgs3Dyn;
     std::array<VariableType, 5> params = { // 5 : 5 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY(),
@@ -555,53 +550,38 @@ CALL_STUB_INIT_DESCRIPTOR(CallArgs3Dyn)
         VariableType::JS_ANY(),
         VariableType::JS_ANY()
     };
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(CallIThisRangeDyn)
+DEF_CALL_SIGNATURE(CallIThisRangeDyn)
 {
     // 3 : 3 input parameters
-    StubDescriptor callIThisRangeDyn("callIThisRangeDyn", 0, 3,
+    CallSignature callIThisRangeDyn("callIThisRangeDyn", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = callIThisRangeDyn;
+    *callSign = callIThisRangeDyn;
     std::array<VariableType, 3> params = { // 3 : 3 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY(),
         VariableType::JS_ANY()
     };
-    descriptor->SetVariableArgs(true);
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-CALL_STUB_INIT_DESCRIPTOR(CallIRangeDyn)
+DEF_CALL_SIGNATURE(CallIRangeDyn)
 {
     // 2 : 2 input parameters
-    StubDescriptor callIRangeDyn("callIRangeDyn", 0, 2,
+    CallSignature callIRangeDyn("callIRangeDyn", 0, 2,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *descriptor = callIRangeDyn;
+    *callSign = callIRangeDyn;
     std::array<VariableType, 2> params = { // 2 : 2 input parameters
         VariableType::POINTER(),
         VariableType::JS_ANY()
     };
-    descriptor->SetVariableArgs(true);
-    descriptor->SetParameters(params.data());
-    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
-}
-
-void FastStubDescriptors::InitializeStubDescriptors()
-{
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEF_CALL_STUB(name) NAME_##name
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define INITIALIZE_CALL_STUB_DESCRIPTOR(name, argcounts) \
-    Stub##name##InterfaceDescriptor::Initialize(&callStubsDescriptor_[DEF_CALL_STUB(name)]);
-    CALL_STUB_LIST(INITIALIZE_CALL_STUB_DESCRIPTOR)
-#ifndef NDEBUG
-    TEST_FUNC_LIST(INITIALIZE_CALL_STUB_DESCRIPTOR)
-#endif
-#undef INITIALIZE_CALL_STUB_DESCRIPTOR
-#undef DEF_CALL_STUB
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 }  // namespace panda::ecmascript::kungfu

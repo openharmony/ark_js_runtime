@@ -35,8 +35,8 @@
 #include "libpandafile/file.h"
 #include "libpandafile/method_data_accessor.h"
 
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 namespace panda::ecmascript {
+using panda::ecmascript::kungfu::CommonStubCSigns;
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wvoid-ptr-dereference"
@@ -421,7 +421,7 @@ void InterpreterAssembly::RunInternal(JSThread *thread, ConstantPool *constpool,
     auto hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
     auto profileTypeInfo = JSFunction::Cast(state->function.GetTaggedObject())->GetProfileTypeInfo();
 
-    auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(AsmInterpreterEntry));
+    auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::AsmInterpreterEntry);
     AsmDispatchEntryPoint asmEntry = reinterpret_cast<AsmDispatchEntryPoint>(stubAddr);
     asmEntry(thread->GetGlueAddr(), pc, sp, JSTaggedValue(constpool), profileTypeInfo, acc, hotnessCounter);
 }
@@ -3835,4 +3835,3 @@ inline JSTaggedValue InterpreterAssembly::UpdateHotnessCounter(JSThread* thread,
 #pragma GCC diagnostic pop
 #endif
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_COMPILE_INTERPRETER_ASM

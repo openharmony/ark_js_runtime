@@ -18,7 +18,7 @@
 
 #include "ecmascript/base/config.h"
 #include "ecmascript/dfx/vmstat/runtime_stat.h"
-#include "ecmascript/trampoline/runtime_define.h"
+#include "ecmascript/stubs/runtime_stubs.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -633,7 +633,7 @@ enum EcmaRuntimeCallerId {
     ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_ID)
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_ID)
 #define DEF_RUNTIME_ID(name, c) RUNTIME_CALL_ID_##name,
-    RUNTIME_CALL_LIST(DEF_RUNTIME_ID)
+    RUNTIME_STUB_WITH_GC_LIST(DEF_RUNTIME_ID)
 #undef DEF_RUNTIME_ID
     RUNTIME_CALLER_NUMBER,
 };

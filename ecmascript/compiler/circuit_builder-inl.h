@@ -18,7 +18,7 @@
 #include "ecmascript/compiler/circuit_builder.h"
 
 namespace panda::ecmascript::kungfu {
-GateRef CircuitBuilder::CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target,
+GateRef CircuitBuilder::CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
     std::initializer_list<GateRef> args)
 {
     auto label = lm_->GetCurrentLabel();
@@ -28,7 +28,7 @@ GateRef CircuitBuilder::CallRuntime(StubDescriptor *descriptor, GateRef glue, Ga
     return result;
 }
 
-GateRef CircuitBuilder::CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target, GateRef depend,
+GateRef CircuitBuilder::CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
     std::initializer_list<GateRef> args)
 {
     auto label = lm_->GetCurrentLabel();

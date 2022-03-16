@@ -15,6 +15,8 @@
 
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/circuit_builder-inl.h"
+#include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/rt_call_signature.h"
 #include "include/coretypes/tagged_value.h"
 #include "utils/bit_utils.h"
 
@@ -294,7 +296,7 @@ MachineType CircuitBuilder::GetCallMachineTypeFromVariableType(VariableType type
     return type.GetMachineType();
 }
 
-GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+GateRef CircuitBuilder::NewCallGate(const CallSignature *descriptor, GateRef glue, GateRef target,
                                     std::initializer_list<GateRef> args)
 {
     std::vector<GateRef> inputs;
@@ -312,7 +314,7 @@ GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, Ga
     return circuit_->NewGate(OpCode(OpCode::CALL), machineType, args.size() + extraparamCnt, inputs, type);
 }
 
-GateRef CircuitBuilder::NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+GateRef CircuitBuilder::NewCallGate(const CallSignature *descriptor, GateRef glue, GateRef target,
                                     GateRef depend, std::initializer_list<GateRef> args)
 {
     std::vector<GateRef> inputs;
@@ -339,7 +341,7 @@ GateRef CircuitBuilder::NewRuntimeCallGate(GateRef glue, GateRef target,
         inputs.push_back(arg);
     }
     OpCode opcode(OpCode::RUNTIME_CALL);
-    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(RuntimeCallTrampolineAot);
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(RuntimeCallTrampolineAot));
     MachineType machineType = GetCallMachineTypeFromVariableType(descriptor->GetReturnType());
     GateType type = VariableType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)
@@ -352,7 +354,7 @@ GateRef CircuitBuilder::CallRuntimeVariadic(GateRef glue, GateRef target, GateRe
     std::vector<GateRef> inputs {depend, target, glue};
     inputs.insert(inputs.end(), args.begin(), args.end());
     OpCode opcode(OpCode::RUNTIME_CALL);
-    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(RuntimeCallTrampolineAot);
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(RuntimeCallTrampolineAot));
     MachineType machineType = GetCallMachineTypeFromVariableType(descriptor->GetReturnType());
     GateType type = VariableType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)
@@ -360,7 +362,7 @@ GateRef CircuitBuilder::CallRuntimeVariadic(GateRef glue, GateRef target, GateRe
     return circuit_->NewGate(opcode, machineType, args.size() + extraparamCnt, inputs, type);
 }
 
-GateRef CircuitBuilder::NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+GateRef CircuitBuilder::NewBytecodeCallGate(const CallSignature *descriptor, GateRef glue, GateRef target,
                                             GateRef depend, std::initializer_list<GateRef> args)
 {
     std::vector<GateRef> inputs;

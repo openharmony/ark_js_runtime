@@ -23,7 +23,6 @@
 #include "ecmascript/js_thread.h"
 #include "ecmascript/frames.h"
 
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
 namespace panda::ecmascript {
 using TaggedType = coretypes::TaggedType;
 using DispatchEntryPoint =
@@ -56,13 +55,13 @@ public:
     static void name(JSThread *thread, const uint8_t *pc, JSTaggedType *sp,  \
                      JSTaggedValue constpool, JSTaggedValue profileTypeInfo, \
                      JSTaggedValue acc, int32_t hotnessCounter);
-    ASM_INTERPRETER_ID_LIST(DEF_HANDLER)
+    ASM_INTERPRETER_BC_STUB_ID_LIST(DEF_HANDLER)
 #undef DEF_HANDLER
 };
 
-static std::array<DispatchEntryPoint, BCHandlers::MAX_BYTECODE_HANDLERS> asmDispatchTable {
+static std::array<DispatchEntryPoint, BCHandlers::BC_COUNT> asmDispatchTable {
 #define DEF_HANDLER(name, counter) InterpreterAssembly::name,
-    ASM_INTERPRETER_ID_LIST(DEF_HANDLER)
+    ASM_INTERPRETER_BC_STUB_ID_LIST(DEF_HANDLER)
 #undef DEF_HANDLER
     InterpreterAssembly::HandleOverflow,
     InterpreterAssembly::HandleOverflow,
@@ -169,5 +168,4 @@ static std::array<DispatchEntryPoint, BCHandlers::MAX_BYTECODE_HANDLERS> asmDisp
     InterpreterAssembly::HandleOverflow,
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_COMPILE_INTERPRETER_ASM
 #endif  // ECMASCRIPT_INTERPRETER_INTERPRETER_ASSEMBLY_64BIT_H

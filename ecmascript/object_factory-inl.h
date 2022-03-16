@@ -23,6 +23,7 @@
 #include "ecmascript/lexical_env.h"
 #include "ecmascript/mem/heap-inl.h"
 #include "ecmascript/tagged_array-inl.h"
+#include "ecmascript/mem/barriers-inl.h"
 
 namespace panda::ecmascript {
 EcmaString *ObjectFactory::AllocNonMovableStringObject(size_t size)

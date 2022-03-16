@@ -16,6 +16,7 @@
 #ifndef ECMASCRIPT_MEM_BARRIERS_H
 #define ECMASCRIPT_MEM_BARRIERS_H
 
+#include "ecmascript/common.h"
 #include "ecmascript/mem/mark_word.h"
 
 namespace panda::ecmascript {
@@ -38,7 +39,7 @@ public:
     }
 
     template<bool need_write_barrier = true>
-    static inline void SetDynObject(const JSThread *thread, void *obj, size_t offset, JSTaggedType value);
+    static void SetDynObject(const JSThread *thread, void *obj, size_t offset, JSTaggedType value);
 
     template<class T>
     static inline T GetDynValue(const void *obj, size_t offset)

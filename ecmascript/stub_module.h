@@ -17,16 +17,40 @@
 #define ECMASCRIPT_STUB_MODULE_H
 
 #include "ecmascript/common.h"
+#include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/js_thread.h"
 #include "ecmascript/mem/machine_code.h"
 #include "libpandabase/macros.h"
 
 namespace panda::ecmascript {
+using panda::ecmascript::kungfu::CallSignature;
 class PUBLIC_API StubModule {
 public:
-    uint64_t GetStubEntry(int index)
+    struct StubDes {
+        CallSignature::TargetKind kind_;
+        uint32_t indexInKind_;
+        uint64_t codeAddr_;
+        bool IsStub() const
+        {
+            return kungfu::CallSignature::TargetKind::STUB_BEGIN <= kind_ &&
+                kind_ < kungfu::CallSignature::TargetKind::STUB_END;
+        }
+
+        bool IsBCHandler() const
+        {
+            return kungfu::CallSignature::TargetKind::BCHANDLER_BEGIN <= kind_ &&
+                kind_ < kungfu::CallSignature::TargetKind::BCHANDLER_END;
+        }
+
+        bool IsCommonStub() const
+        {
+            return (kind_ == kungfu::CallSignature::TargetKind::COMMON_STUB);
+        }
+    };
+
+    const StubDes& GetStubDes(int index) const
     {
-        return code_->GetDataOffsetAddress() + stubEntries_[index];
+        return stubEntries_[index];
     }
     void Save(const std::string &filename);
     void Load(JSThread *thread, const std::string &filename);
@@ -45,9 +69,23 @@ public:
         return codePtr_;
     }
 
-    void SetStubEntry(int index, uint64_t offset)
+    uint64_t GetStubNum() const
     {
-        stubEntries_[index] = offset;
+        return stubNum_;
+    }
+
+    void SetStubNum(uint64_t n)
+    {
+        stubNum_ = n;
+    }
+
+    void AddStubEntry(CallSignature::TargetKind kind, int indexInKind, uint64_t offset)
+    {
+        StubDes des;
+        des.kind_ = kind;
+        des.indexInKind_ = indexInKind;
+        des.codeAddr_ = offset;
+        stubEntries_.emplace_back(des);
     }
     void SetHostCodeSectionAddr(uint64_t addr)
     {
@@ -81,19 +119,23 @@ public:
     {
         stackMapSize_ = len;
     }
-
     int GetStackMapSize() const
     {
         return stackMapSize_;
     }
+    const std::vector<StubDes>& GetStubs() const
+    {
+        return stubEntries_;
+    }
 
 private:
-    std::array<uint64_t, kungfu::ALL_STUB_MAXCOUNT> stubEntries_ {-1};
-    uint64_t hostCodeSectionAddr_  {0};
+    uint64_t stubNum_ {0};
+    std::vector<StubDes> stubEntries_ {};
+    uint64_t hostCodeSectionAddr_ {0};
     uint64_t devicesCodeSectionAddr_ {0};
     MachineCode *code_ {nullptr};
     uint64_t stackMapAddr_ {0};
-    uint64_t codePtr_{0};
+    uint64_t codePtr_ {0};
     int stackMapSize_ {0};
 };
 }  // namespace panda::ecmascript
