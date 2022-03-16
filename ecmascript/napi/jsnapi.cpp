@@ -141,6 +141,8 @@ bool JSNApi::CreateRuntime(const RuntimeOption &option)
     runtimeOptions.SetShouldLoadBootPandaFiles(false);
     runtimeOptions.SetShouldInitializeIntrinsics(false);
     runtimeOptions.SetBootClassSpaces({"ecmascript"});
+    // asmInterpreter
+    runtimeOptions.SetAsmInterOption(option.GetAsmInterOption());
 
     // Dfx
     base_options::Options baseOptions("");
@@ -185,6 +187,7 @@ EcmaVM *JSNApi::CreateJSVM(const RuntimeOption &option)
     }
     JSRuntimeOptions runtimeOptions;
     runtimeOptions.SetArkProperties(option.GetArkProperties());
+    runtimeOptions.SetAsmInterOption(option.GetAsmInterOption());
     // GC
     runtimeOptions.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
 

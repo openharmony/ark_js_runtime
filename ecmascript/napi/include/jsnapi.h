@@ -772,6 +772,11 @@ public:
         arkProperties_ = prop;
     }
 
+    void SetAsmInterOption(const std::string &value)
+    {
+        asmInterOption_ = value;
+    }
+
 private:
     std::string GetGcType() const
     {
@@ -847,6 +852,11 @@ private:
         return arkProperties_;
     }
 
+    std::string GetAsmInterOption() const
+    {
+        return asmInterOption_;
+    }
+
     GC_TYPE gcType_ = GC_TYPE::EPSILON;
     LOG_LEVEL logLevel_ = LOG_LEVEL::DEBUG;
     uint32_t gcPoolSize_ = DEFAULT_GC_POOL_SIZE;
@@ -857,6 +867,7 @@ private:
     bool enableCpuprofiler_ {false};
 #endif
     int arkProperties_ {-1};
+    std::string asmInterOption_ {""};
     friend JSNApi;
 };
 
