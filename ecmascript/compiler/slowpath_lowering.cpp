@@ -136,6 +136,27 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode bytecode)
         case LDA_STR_ID32:
             LowerLoadStr(gate, glue);
             break;
+        case CALLARG0DYN_PREF_V8:
+            LowerCallArg0Dyn(gate, glue);
+            break;
+        case CALLARG1DYN_PREF_V8_V8:
+            LowerCallArg1Dyn(gate, glue);
+            break;
+        case CALLARGS2DYN_PREF_V8_V8_V8:
+            LowerCallArgs2Dyn(gate, glue);
+            break;
+        case CALLARGS3DYN_PREF_V8_V8_V8_V8:
+            LowerCallArgs3Dyn(gate, glue);
+            break;
+        case CALLITHISRANGEDYN_PREF_IMM16_V8:
+            LowerCallIThisRangeDyn(gate, glue);
+            break;
+        case CALLSPREADDYN_PREF_V8_V8_V8:
+            LowerCallSpreadDyn(gate, glue);
+            break;
+        case CALLIRANGEDYN_PREF_IMM16_V8:
+            LowerCallIRangeDyn(gate, glue);
+            break;
         case LDLEXENVDYN_PREF:
             LowerLexicalEnv(gate, glue);
             break;
@@ -306,5 +327,103 @@ void SlowPathLowering::LowerGetIterator(GateRef gate, GateRef glue)
                                                     {glue, acc.GetValueIn(gate, 0)});
     GateRef isNotGeneratorObject = cirBuilder.NewBooleanConstant(true);
     LowerHirToConditionCall(cirBuilder, gate, isNotGeneratorObject, newGate);
+}
+
+void SlowPathLowering::LowerCallArg0Dyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CallArg0Dyn));
+
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerCallArg1Dyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CallArg1Dyn));
+    // 2: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 2);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0),
+                                                     gateAcc.GetValueIn(gate, 1)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerCallArgs2Dyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CallArgs2Dyn));
+    // 3: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 3);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0),
+                                                     gateAcc.GetValueIn(gate, 1),
+                                                     gateAcc.GetValueIn(gate, 2)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerCallArgs3Dyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CallArgs3Dyn));
+    // 4: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 4);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0),
+                                                     gateAcc.GetValueIn(gate, 1),
+                                                     gateAcc.GetValueIn(gate, 2),
+                                                     gateAcc.GetValueIn(gate, 3)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerCallIThisRangeDyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CallIThisRangeDyn));
+    std::vector<GateRef> vec;
+    size_t numArgs = gateAcc.GetNumValueIn(gate);
+    for (size_t i = 0; i < numArgs; i++) {
+        vec.emplace_back(gateAcc.GetValueIn(gate, i));
+    }
+    GateRef newGate = cirBuilder.CallRuntimeVariadic(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                     vec);
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerCallSpreadDyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CallSpreadDyn));
+    // 3: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 3);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0),
+                                                     gateAcc.GetValueIn(gate, 1),
+                                                     gateAcc.GetValueIn(gate, 2)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(CallIRangeDyn));
+    std::vector<GateRef> vec;
+    size_t numArgs = gateAcc.GetNumValueIn(gate);
+    for (size_t i = 0; i < numArgs; i++) {
+        vec.emplace_back(gateAcc.GetValueIn(gate, i));
+    }
+    GateRef newGate = cirBuilder.CallRuntimeVariadic(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                     vec);
+    LowerHirToCall(cirBuilder, gate, newGate);
 }
 }  // namespace panda::ecmascript
