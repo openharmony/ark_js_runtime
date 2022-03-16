@@ -47,6 +47,7 @@ public:
         parser->Add(&enableCpuprofiler_);
         parser->Add(&arkProperties_);
         parser->Add(&enableTsAot_);
+        parser->Add(&maxNonmovableSpaceCapacity_);
     }
 
     bool IsEnableArkTools() const
