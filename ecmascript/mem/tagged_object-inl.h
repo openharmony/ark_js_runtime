@@ -19,6 +19,7 @@
 #include "ecmascript/mem/tagged_object.h"
 
 #include <atomic>
+#include "ecmascript/ecma_vm.h"
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_handle.h"
 #include "heap.h"

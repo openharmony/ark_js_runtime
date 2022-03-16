@@ -444,7 +444,7 @@ ecma_source = [
   "ecmascript/template_string.cpp",
   "ecmascript/weak_vector.cpp",
   "ecmascript/compiler/llvm/llvm_stackmap_parser.cpp",
-  "ecmascript/trampoline/runtime_trampolines.cpp",
+  "ecmascript/stubs/runtime_stubs.cpp",
   "ecmascript/ts_types/ts_type.cpp",
   "ecmascript/ts_types/ts_type_table.cpp",
   "ecmascript/ts_types/ts_loader.cpp",

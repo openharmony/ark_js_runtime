@@ -15,6 +15,7 @@
 
 #include "ecmascript/jspandafile/ecma_class_linker_extension.h"
 #include "ecmascript/ecma_string.h"
+#include "ecmascript/ecma_vm.h"
 #include "include/class_linker-inl.h"
 #include "include/coretypes/class.h"
 

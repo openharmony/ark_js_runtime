@@ -42,6 +42,7 @@
 #include "libpandafile/method_data_accessor.h"
 
 namespace panda::ecmascript {
+using CommonStubCSigns = kungfu::CommonStubCSigns;
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wvoid-ptr-dereference"
@@ -527,16 +528,12 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.enableAsm) {
         InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
     } else {
         EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
     }
-#else
-    EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
-#endif
     thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
@@ -604,16 +601,12 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     thread->SetCurrentSPFrame(newSp);
 
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.enableAsm) {
         InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
     } else {
         EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
     }
-#else
-    EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
-#endif
     thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     JSTaggedValue res = state->acc;
@@ -1055,7 +1048,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             if (!acc.IsUndefined()) {
                 {
                     [[maybe_unused]] EcmaHandleScope handleScope(thread);
-                    JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, 
+                    JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
                                                    "Derived constructor must return object or undefined");
                     thread->SetException(error.GetTaggedValue());
                 }
@@ -1315,7 +1308,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     HANDLE_OPCODE(HANDLE_TYPEOFDYN_PREF) {
         LOG_INST() << "intrinsics::typeofdyn";
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastTypeOf));
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastTypeOf);
         typedef JSTaggedType (*PFFastTypeOf)(uintptr_t, JSTaggedType);
         auto fastTypeOfPtr = reinterpret_cast<PFFastTypeOf>(stubAddr);
         JSTaggedValue res = JSTaggedValue(fastTypeOfPtr(thread->GetGlueAddr(), GET_ACC().GetRawData()));
@@ -1490,7 +1483,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMul));
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastMul);
         typedef JSTaggedType (*PFFastMul)(JSTaggedType, JSTaggedType);
         auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
         JSTaggedValue value = JSTaggedValue(fastMulPtr(left.GetRawData(), right.GetRawData()));
@@ -1535,7 +1528,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue right = GET_ACC();
 
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastMod));
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastMod);
         typedef JSTaggedType (*PFFastMod)(uintptr_t, JSTaggedType, JSTaggedType);
         auto fastModPtr = reinterpret_cast<PFFastMod>(stubAddr);
         JSTaggedValue res = JSTaggedValue(fastModPtr(thread->GetGlueAddr(), left.GetRawData(), right.GetRawData()));
@@ -1561,7 +1554,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(FastEqual));
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastEqual);
         typedef JSTaggedType (*PFFastEqual)(JSTaggedType, JSTaggedType);
         auto fastEqualPtr = reinterpret_cast<PFFastEqual>(stubAddr);
         JSTaggedValue res = JSTaggedValue(fastEqualPtr(left.GetRawData(), right.GetRawData()));
@@ -2503,7 +2496,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             // fast path
             SAVE_ACC();
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByNameWithOwn));
+            auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::SetPropertyByNameWithOwn);
             typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType, JSTaggedType);
             auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
             JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(),
@@ -2854,7 +2847,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex));
+            auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::GetPropertyByIndex);
             typedef JSTaggedType (*PFGetPropertyByIndex)(uintptr_t, JSTaggedType, uint32_t);
             auto getPropertyByIndex = reinterpret_cast<PFGetPropertyByIndex>(stubAddr);
             JSTaggedValue res = JSTaggedValue(getPropertyByIndex(thread->GetGlueAddr(), receiver.GetRawData(), idx));
@@ -2887,7 +2880,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             JSTaggedValue value = GET_ACC();
             // fast path
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByIndex));
+            auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::SetPropertyByIndex);
             typedef JSTaggedType (*PFSetPropertyByIndex)(uintptr_t, JSTaggedType, uint32_t, JSTaggedType);
             auto setPropertyByIndex = reinterpret_cast<PFSetPropertyByIndex>(stubAddr);
             JSTaggedValue res = JSTaggedValue(setPropertyByIndex(thread->GetGlueAddr(),
@@ -2950,7 +2943,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         // fast path
         if (LIKELY(receiver.IsHeapObject())) {
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByValue));
+            auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::GetPropertyByValue);
             typedef JSTaggedType (*PFGetPropertyByValue)(uintptr_t, JSTaggedType, JSTaggedType);
             auto getPropertyByValuePtr = reinterpret_cast<PFGetPropertyByValue>(stubAddr);
             JSTaggedValue res = JSTaggedValue(getPropertyByValuePtr(thread->GetGlueAddr(),
@@ -3252,7 +3245,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             // fast path
             SAVE_ACC();
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByNameWithOwn));
+            auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::SetPropertyByNameWithOwn);
             typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType, JSTaggedType);
             auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
             JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(), receiver.GetRawData(),
@@ -3350,7 +3343,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         if (LIKELY(receiver.IsHeapObject())) {
             // fast path
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(GetPropertyByName));
+            auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::GetPropertyByName);
             typedef JSTaggedType (*PFGetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType);
             auto getPropertyByNamePtr = reinterpret_cast<PFGetPropertyByName>(stubAddr);
             JSTaggedValue res = JSTaggedValue(getPropertyByNamePtr(thread->GetGlueAddr(), receiver.GetRawData(),
@@ -3389,7 +3382,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             if (LIKELY(firstValue.IsHeapObject())) {
                 JSTaggedValue secondValue = profileTypeArray->Get(slotId + 1);
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-                auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(TryStoreICByName));
+                auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::TryStoreICByName);
                 typedef JSTaggedType (*PFTryStoreICByName)(uintptr_t,
                     JSTaggedType, JSTaggedType, JSTaggedType, JSTaggedType);
                 auto tryStoreICByNamePtr = reinterpret_cast<PFTryStoreICByName>(stubAddr);
@@ -3425,7 +3418,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             // fast path
             SAVE_ACC();
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-            auto stubAddr = thread->GetFastStubEntry(FAST_STUB_ID(SetPropertyByName));
+            auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::SetPropertyByName);
             typedef JSTaggedType (*PFSetPropertyByName)(uintptr_t, JSTaggedType, JSTaggedType, JSTaggedType);
             auto setPropertyByNamePtr = reinterpret_cast<PFSetPropertyByName>(stubAddr);
             JSTaggedValue res = JSTaggedValue(setPropertyByNamePtr(thread->GetGlueAddr(),

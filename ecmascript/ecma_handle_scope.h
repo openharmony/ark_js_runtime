@@ -17,21 +17,44 @@
 #define ECMASCRIPT_HANDLE_SCOPE_H
 
 #include "ecmascript/js_tagged_value.h"
-
+#include "ecmascript/js_thread.h"
 namespace panda::ecmascript {
-class JSThread;
-
 /*
  * Handles are only valid within a HandleScope. When a handle is created for an object a cell is allocated in the
  * current HandleScope.
  */
 class EcmaHandleScope {
 public:
-    inline explicit EcmaHandleScope(JSThread *thread);
+    inline explicit EcmaHandleScope(JSThread *thread) :
+        thread_(thread), prevNext_(thread->handleScopeStorageNext_), prevEnd_(thread->handleScopeStorageEnd_),
+        prevHandleStorageIndex_(thread->currentHandleStorageIndex_)
+    {
+        thread->HandleScopeCountAdd();
+    }
 
-    inline ~EcmaHandleScope();
+    inline ~EcmaHandleScope()
+    {
+        thread_->HandleScopeCountDec();
+        thread_->handleScopeStorageNext_ = prevNext_;
+        if (thread_->handleScopeStorageEnd_ != prevEnd_) {
+            thread_->handleScopeStorageEnd_ = prevEnd_;
+            thread_->ShrinkHandleStorage(prevHandleStorageIndex_);
+        }
+    }
 
-    static inline uintptr_t PUBLIC_API NewHandle(JSThread *thread, JSTaggedType value);
+    static inline uintptr_t PUBLIC_API NewHandle(JSThread *thread, JSTaggedType value)
+    {
+        // Each Handle must be managed by HandleScope, otherwise it may cause Handle leakage.
+        ASSERT(thread->handleScopeCount_ > 0);
+        auto result = thread->handleScopeStorageNext_;
+        if (result == thread->handleScopeStorageEnd_) {
+            result = reinterpret_cast<JSTaggedType *>(thread->ExpandHandleStorage());
+        }
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        thread->handleScopeStorageNext_ = result + 1;
+        *result = value;
+        return reinterpret_cast<uintptr_t>(result);
+    }
 
     JSThread *GetThread() const
     {

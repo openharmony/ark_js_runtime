@@ -260,7 +260,7 @@ public:
             std::string enableAsm = vec[0];
             asmInterParsedOption_.enableAsm = (enableAsm == "1") ? true : false;
         }
-        
+
         // asm interpreter handle disable range
         if (vec.size() > 1) {
             std::string handleDisableRange = vec[1];
@@ -269,8 +269,7 @@ public:
                 std::string strStart = handleDisableRange.substr(0, pos);
                 std::string strEnd = handleDisableRange.substr(pos + 1);
                 asmInterParsedOption_.handleStart =  strStart.empty() ? 0 : std::stoi(strStart);
-                asmInterParsedOption_.handleEnd = strEnd.empty() ?
-                    kungfu::InterpreterStubId::ExceptionHandlerId : std::stoi(strEnd);
+                asmInterParsedOption_.handleEnd = strEnd.empty() ? kungfu::BYTECODE_STUB_END_ID : std::stoi(strEnd);
             }
         }
     }

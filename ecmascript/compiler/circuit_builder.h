@@ -20,7 +20,7 @@
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/gate_accessor.h"
 #include "ecmascript/compiler/variable_type.h"
-#include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/compiler/call_signature.h"
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
@@ -81,13 +81,13 @@ public:
     GateRef NewLogicGate(OpCode opcode, MachineType machineType, GateRef left, GateRef right);
     GateRef NewLogicGate(OpCode opcode, GateRef left, GateRef right);
     GateRef NewLogicGate(OpCode opcode, MachineType machineType, GateRef value);
-    GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+    GateRef NewCallGate(const CallSignature *descriptor, GateRef glue, GateRef target,
                                  std::initializer_list<GateRef> args);
-    GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+    GateRef NewCallGate(const CallSignature *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
     GateRef NewRuntimeCallGate(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
     GateRef CallRuntimeVariadic(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
-    GateRef NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
+    GateRef NewBytecodeCallGate(const CallSignature *descriptor, GateRef glue, GateRef target,
                                 GateRef depend, std::initializer_list<GateRef> args);
     static MachineType GetLoadMachineTypeFromVariableType(VariableType type);
     static MachineType GetStoreMachineTypeFromVariableType(VariableType type);
@@ -99,9 +99,9 @@ public:
         return type.GetGateType();
     }
     // call operation
-    inline GateRef CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target,
+    inline GateRef CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target,
                                std::initializer_list<GateRef> args);
-    inline GateRef CallRuntime(StubDescriptor *descriptor, GateRef glue, GateRef target, GateRef depend,
+    inline GateRef CallRuntime(const CallSignature *descriptor, GateRef glue, GateRef target, GateRef depend,
                                std::initializer_list<GateRef> args);
     inline GateRef CallRuntimeTrampoline(GateRef glue, GateRef target,
                                std::initializer_list<GateRef> args);

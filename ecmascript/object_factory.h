@@ -26,9 +26,11 @@
 #include "ecmascript/mem/heap_region_allocator.h"
 #include "ecmascript/mem/machine_code.h"
 #include "ecmascript/mem/native_area_allocator.h"
+#include "ecmascript/mem/space.h"
 #include "ecmascript/tagged_array.h"
 
 namespace panda::ecmascript {
+class JSMethod;
 class JSObject;
 class JSArray;
 class JSSymbol;
@@ -482,7 +484,7 @@ private:
     friend class JsVerificationTest;
     friend class PandaFileTranslator;
     friend class LiteralDataExtractor;
-    friend class RuntimeTrampolines;
+    friend class RuntimeStubs;
     friend class ClassInfoExtractor;
     friend class TSObjectType;
     friend class ModuleDataExtractor;

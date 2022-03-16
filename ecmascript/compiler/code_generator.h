@@ -25,7 +25,7 @@ class CodeGeneratorImpl {
 public:
     CodeGeneratorImpl() = default;
     virtual ~CodeGeneratorImpl() = default;
-    virtual void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+    virtual void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, size_t index,
                                      const CompilationConfig *cfg) = 0;
 };
 
@@ -33,7 +33,7 @@ class CodeGenerator {
 public:
     explicit CodeGenerator(std::unique_ptr<CodeGeneratorImpl> &impl) : impl_(std::move(impl)) {}
     ~CodeGenerator() = default;
-    void Run(Circuit *circuit, const ControlFlowGraph &graph, int index, const CompilationConfig *cfg)
+    void Run(Circuit *circuit, const ControlFlowGraph &graph, size_t index, const CompilationConfig *cfg)
     {
         impl_->GenerateCodeForStub(circuit, graph, index, cfg);
     }

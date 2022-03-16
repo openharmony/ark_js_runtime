@@ -18,6 +18,10 @@
 #include "ecmascript/base/string_helper.h"
 #include "ecmascript/builtins.h"
 #include "ecmascript/builtins/builtins_regexp.h"
+#include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/interpreter_stub.h"
+#include "ecmascript/compiler/rt_call_signature.h"
+#include "ecmascript/compiler/call_signature.h"
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #endif
@@ -47,7 +51,7 @@
 #include "ecmascript/regexp/regexp_parser_cache.h"
 #include "ecmascript/runtime_call_id.h"
 #ifndef PANDA_TARGET_WINDOWS
-#include "ecmascript/trampoline/runtime_trampolines.h"
+#include "ecmascript/stubs/runtime_stubs.h"
 #endif
 #include "ecmascript/snapshot/mem/slot_bit.h"
 #include "ecmascript/snapshot/mem/snapshot.h"
@@ -144,9 +148,8 @@ bool EcmaVM::Initialize()
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "EcmaVM::Initialize");
     Platform::GetCurrentPlatform()->Initialize();
 #ifndef PANDA_TARGET_WINDOWS
-    RuntimeTrampolines::InitializeRuntimeTrampolines(thread_);
+    RuntimeStubs::Initialize(thread_);
 #endif
-
     auto globalConst = const_cast<GlobalEnvConstants *>(thread_->GlobalConstants());
     regExpParserCache_ = new RegExpParserCache();
     heap_ = new Heap(this);
@@ -205,7 +208,6 @@ bool EcmaVM::Initialize()
         LOG_ECMA(FATAL) << "Don't support snapshot now.";
 #endif
     }
-
     thread_->SetGlobalObject(GetGlobalEnv()->GetGlobalObject());
     moduleManager_ = new ModuleManager(this);
     tsLoader_ = new TSLoader(this);
@@ -240,7 +242,7 @@ void EcmaVM::InitializeEcmaScriptRunStat()
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_NAME)
 #undef MEM_ALLOCATE_AND_GC_NAME
 #define DEF_RUNTIME_ID(name, c) "Runtime::" #name,
-    RUNTIME_CALL_LIST(DEF_RUNTIME_ID)
+    RUNTIME_STUB_WITH_GC_LIST(DEF_RUNTIME_ID)
 #undef DEF_RUNTIME_ID
     };
     static_assert(sizeof(runtimeCallerNames) == sizeof(const char *) * ecmascript::RUNTIME_CALLER_NUMBER,

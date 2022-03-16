@@ -22,17 +22,16 @@ void StubModule::Save(const std::string &filename)
 {
     if (code_ != nullptr) {
         std::ofstream modulefile(filename.c_str(), std::ofstream::binary);
+        SetStubNum(stubEntries_.size());
         /* write stub entries offset  */
-        modulefile.write(reinterpret_cast<char *>(stubEntries_.data()),
-                         sizeof(uint64_t) * (kungfu::ALL_STUB_MAXCOUNT));
+        modulefile.write(reinterpret_cast<char *>(&stubNum_), sizeof(uint64_t));
+        modulefile.write(reinterpret_cast<char *>(stubEntries_.data()), sizeof(StubDes) * stubNum_);
         int codeSize = code_->GetInstructionSizeInBytes();
         /* write host code section start addr */
         modulefile.write(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
         /* write stackmap offset */
-        int stackmapOffset = sizeof(uintptr_t) * (kungfu::ALL_STUB_MAXCOUNT) + 2 * sizeof(int)
-            + codeSize;
-        modulefile.write(reinterpret_cast<char *>(&stackmapOffset),
-                         sizeof(int));
+        int stackmapOffset = sizeof(uintptr_t) * stubNum_ + 2 * sizeof(int) + codeSize;
+        modulefile.write(reinterpret_cast<char *>(&stackmapOffset), sizeof(int));
         /* write code length & code buff */
         modulefile.write(reinterpret_cast<char *>(&codeSize), sizeof(codeSize));
         modulefile.write(reinterpret_cast<char *>(code_->GetDataOffsetAddress()), codeSize);
@@ -54,8 +53,9 @@ void StubModule::Load(JSThread *thread, const std::string &filename)
     //  then MachineCode will support movable, code is saved to MachineCode and stackmap is saved
     // to different heap which will be freed when stackmap is parsed by EcmaVM is started.
     std::ifstream modulefile(filename.c_str(), std::ofstream::binary);
-    modulefile.read(reinterpret_cast<char *>(stubEntries_.data()),
-        sizeof(uint64_t) * (kungfu::ALL_STUB_MAXCOUNT));
+    modulefile.read(reinterpret_cast<char *>(&stubNum_), sizeof(uint64_t));
+    stubEntries_.resize(stubNum_);
+    modulefile.read(reinterpret_cast<char *>(stubEntries_.data()), sizeof(StubDes) * stubNum_);
     /* read  host code section start addr  */
     modulefile.read(reinterpret_cast<char *>(&hostCodeSectionAddr_), sizeof(hostCodeSectionAddr_));
     int stackmapOffset;
@@ -76,6 +76,9 @@ void StubModule::Load(JSThread *thread, const std::string &filename)
     if (stackmapSize != 0) {
         kungfu::LLVMStackMapParser::GetInstance().CalculateStackMap(std::move(stackmapPtr),
             hostCodeSectionAddr_, devicesCodeSectionAddr_);
+    }
+    for (size_t i = 0; i < stubEntries_.size(); i++) {
+        stubEntries_[i].codeAddr_ += code_->GetDataOffsetAddress();
     }
     modulefile.close();
 }

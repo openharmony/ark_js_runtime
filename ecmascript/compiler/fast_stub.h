@@ -16,11 +16,37 @@
 #ifndef ECMASCRIPT_COMPILER_FASTPATH_STUB_H
 #define ECMASCRIPT_COMPILER_FASTPATH_STUB_H
 
-#include "ecmascript/compiler/fast_stub_define.h"
-#include "ecmascript/compiler/stub-inl.h"
+#include "ecmascript/compiler/stub.h"
 
 namespace panda::ecmascript::kungfu {
-#ifndef NDEBUG
+#define INTERPRETER_STUB_HELPER_LIST(V)  \
+    V(AsmInterpreterEntry, 7)            \
+    V(SingleStepDebugging, 7)
+
+#define COMMON_FAST_STUB_LIST(V)              \
+    V(FastAdd, 3)                             \
+    V(FastSub, 3)                             \
+    V(FastMul, 3)                             \
+    V(FastDiv, 3)                             \
+    V(FastMod, 3)                             \
+    V(FastEqual, 3)                           \
+    V(FastTypeOf, 2)                          \
+    V(GetPropertyByName, 3)                   \
+    V(SetPropertyByName, 4)                   \
+    V(SetPropertyByNameWithOwn, 4)            \
+    V(GetPropertyByIndex, 3)                  \
+    V(SetPropertyByIndex, 4)                  \
+    V(GetPropertyByValue, 3)                  \
+    V(SetPropertyByValue, 4)                  \
+    V(TryLoadICByName, 4)                     \
+    V(TryLoadICByValue, 5)                    \
+    V(TryStoreICByName, 5)                    \
+    V(TryStoreICByValue, 6)
+
+#define COMMON_FAST_STUB_ID_LIST(V)      \
+    COMMON_FAST_STUB_LIST(V)             \
+    INTERPRETER_STUB_HELPER_LIST(V)
+
 class FastMulGCTestStub : public Stub {
 public:
     // 3 : 3 means argument counts
@@ -30,7 +56,6 @@ public:
     NO_COPY_SEMANTIC(FastMulGCTestStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
-#endif
 
 class FastAddStub : public Stub {
 public:
@@ -267,6 +292,27 @@ public:
     NO_COPY_SEMANTIC(TestAbsoluteAddressRelocationStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
-}  // namespace panda::ecmascript::kungfu
 
+class CommonStubCSigns {
+public:
+    enum ID {
+#define DEF_STUB_ID(name, counter) name,
+        COMMON_FAST_STUB_ID_LIST(DEF_STUB_ID)
+#undef DEF_STUB_ID
+        NUM_OF_STUBS
+    };
+
+    static void Initialize();
+
+    static void GetCSigns(std::vector<CallSignature*>& callSigns);
+
+    static const CallSignature *Get(size_t index)
+    {
+        ASSERT(index < NUM_OF_STUBS);
+        return &callSigns_[index];
+    }
+private:
+    static CallSignature callSigns_[NUM_OF_STUBS];
+};
+}  // namespace panda::ecmascript::kungfu
 #endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H
