@@ -20,6 +20,7 @@
 
 #include "ecmascript/cpu_profiler/profile_generator.h"
 #include "ecmascript/cpu_profiler/profile_processor.h"
+#include "os/mutex.h"
 
 namespace panda::ecmascript {
 struct CurrentProcessInfo {
@@ -63,17 +64,19 @@ public:
     virtual ~CpuProfiler();
 private:
     static CMap<std::string, int> scriptIdMap_;
-    static CpuProfiler *singleton_;
+    static std::atomic<CpuProfiler*> singleton_;
+    static os::memory::Mutex synchronizationMutex_;
 
     explicit CpuProfiler();
     void SetProfileStart(uint64_t nowTimeStamp);
-    void GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo) const;
+    void GetCurrentProcessInfo(struct CurrentProcessInfo &currentProcessInfo);
     bool CheckFileName(const std::string &fileName, std::string &absoluteFilePath) const;
 
     bool isOnly_ = false;
     int interval_ = 500; // 500:Sampling interval 500 microseconds
     std::string fileName_ = "";
     ProfileGenerator *generator_ = nullptr;
+    pthread_t tid_ = 0;
 };
 } // namespace panda::ecmascript
 #endif // ECMASCRIPT_CPU_PROFILE_H
