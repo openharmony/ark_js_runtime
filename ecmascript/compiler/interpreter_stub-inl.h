@@ -197,6 +197,11 @@ GateRef InterpreterStub::GetEnvFromFrame(GateRef frame)
         GetIntPtrConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())));
 }
 
+GateRef InterpreterStub::GetEnvFromFunction(GateRef function)
+{
+    return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::LEXICAL_ENV_OFFSET));
+}
+
 GateRef InterpreterStub::GetProfileTypeInfoFromFunction(GateRef function)
 {
     return Load(VariableType::JS_POINTER(), function, GetIntPtrConstant(JSFunction::PROFILE_TYPE_INFO_OFFSET));

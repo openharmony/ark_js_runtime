@@ -885,14 +885,13 @@ DEF_RUNTIME_TRAMPOLINES(UpdateHotnessCounter)
     RUNTIME_TRAMPOLINES_HEADER(UpdateHotnessCounter);
     InterpretedFrame *state = GET_FRAME(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()));
     thread->CheckSafepoint();
-    if (state->profileTypeInfo == JSTaggedValue::Undefined()) {
-        auto thisFunc = state->function;
-        auto method = ECMAObject::Cast(thisFunc.GetTaggedObject())->GetCallTarget();
-        auto res = SlowRuntimeStub::NotifyInlineCache(
-            thread, JSFunction::Cast(thisFunc.GetHeapObject()), method);
-            state->profileTypeInfo = res;
+    auto thisFunc = JSFunction::Cast(state->function.GetTaggedObject());
+    if (thisFunc->GetProfileTypeInfo() == JSTaggedValue::Undefined()) {
+        auto method = thisFunc->GetCallTarget();
+        auto res = SlowRuntimeStub::NotifyInlineCache(thread, thisFunc, method);
+        return res.GetRawData();
     }
-    return state->profileTypeInfo.GetRawData();
+    return thisFunc->GetProfileTypeInfo().GetRawData();
 }
 
 DEF_RUNTIME_TRAMPOLINES(LoadICByName)
@@ -1520,6 +1519,52 @@ DEF_RUNTIME_TRAMPOLINES(SuperCall)
     return SlowRuntimeStub::SuperCall(thread, func, newTarget,
         static_cast<uint16_t>(firstVRegIdx.GetInt()),
         static_cast<uint16_t>(length.GetInt())).GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(SetNotCallableException)
+{
+    RUNTIME_TRAMPOLINES_HEADER(SetNotCallableException);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, "is not callable");
+    thread->SetException(error.GetTaggedValue());
+    return JSTaggedValue::Hole().GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(SetCallConstructorException)
+{
+    RUNTIME_TRAMPOLINES_HEADER(SetCallConstructorException);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
+                                                   "class constructor cannot called without 'new'");
+    thread->SetException(error.GetTaggedValue());
+    return JSTaggedValue::Hole().GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(SetStackOverflowException)
+{
+    RUNTIME_TRAMPOLINES_HEADER(SetStackOverflowException);
+    EcmaVM *ecmaVm = thread->GetEcmaVM();
+    ObjectFactory *factory = ecmaVm->GetFactory();
+    JSHandle<JSObject> error = factory->GetJSError(base::ErrorType::RANGE_ERROR, "Stack overflow!");
+    if (LIKELY(!thread->HasPendingException())) {
+        thread->SetException(error.GetTaggedValue());
+    }
+    return JSTaggedValue::Hole().GetRawData();
+}
+
+DEF_RUNTIME_TRAMPOLINES(CallNative)
+{
+    RUNTIME_TRAMPOLINES_HEADER(CallNative);
+    CONVERT_ARG_TAGGED_CHECKED(numArgs, 0);
+    CONVERT_ARG_PTR_CHECKED(JSTaggedValue *, sp, 1);
+    CONVERT_ARG_PTR_CHECKED(JSMethod *, method, 2);
+
+    EcmaRuntimeCallInfo ecmaRuntimeCallInfo(thread, numArgs.GetInt(), sp);
+    JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
+        const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
+    return retValue.GetRawData();
 }
 
 int32_t RuntimeTrampolines::DoubleToInt(double x)

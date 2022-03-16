@@ -126,8 +126,11 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::SLT, &LLVMIRBuilder::HandleCmp},
         {OpCode::ULT, &LLVMIRBuilder::HandleCmp},
         {OpCode::SLE, &LLVMIRBuilder::HandleCmp},
+        {OpCode::ULE, &LLVMIRBuilder::HandleCmp},
         {OpCode::SGT, &LLVMIRBuilder::HandleCmp},
+        {OpCode::UGT, &LLVMIRBuilder::HandleCmp},
         {OpCode::SGE, &LLVMIRBuilder::HandleCmp},
+        {OpCode::UGE, &LLVMIRBuilder::HandleCmp},
         {OpCode::NE, &LLVMIRBuilder::HandleCmp},
         {OpCode::EQ, &LLVMIRBuilder::HandleCmp},
         {OpCode::LOAD, &LLVMIRBuilder::HandleLoad},
@@ -1264,7 +1267,8 @@ void LLVMIRBuilder::VisitSub(GateRef gate, GateRef e1, GateRef e2)
     COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
     LLVMValueRef result = nullptr;
     auto machineType = circuit_->LoadGatePtrConst(gate)->GetMachineType();
-    if (machineType == MachineType::I16 || machineType == MachineType::I32 || machineType == MachineType::I64) {
+    if (machineType == MachineType::I16 || machineType == MachineType::I32 ||
+        machineType == MachineType::I64 || machineType == MachineType::ARCH) {
         result = LLVMBuildSub(builder_, e1Value, e2Value, "");
     } else if (machineType == MachineType::F64) {
         result = LLVMBuildFSub(builder_, e1Value, e2Value, "");
@@ -1384,13 +1388,28 @@ void LLVMIRBuilder::VisitCmp(GateRef gate, GateRef e1, GateRef e2)
             realOpcode = LLVMRealOLE;
             break;
         }
+        case OpCode::ULE: {
+            intOpcode = LLVMIntULE;
+            realOpcode = LLVMRealOLE;
+            break;
+        }
         case OpCode::SGT: {
             intOpcode = LLVMIntSGT;
             realOpcode = LLVMRealOGT;
             break;
         }
+        case OpCode::UGT: {
+            intOpcode = LLVMIntUGT;
+            realOpcode = LLVMRealOGT;
+            break;
+        }
         case OpCode::SGE: {
             intOpcode = LLVMIntSGE;
+            realOpcode = LLVMRealOGE;
+            break;
+        }
+        case OpCode::UGE: {
+            intOpcode = LLVMIntUGE;
             realOpcode = LLVMRealOGE;
             break;
         }
