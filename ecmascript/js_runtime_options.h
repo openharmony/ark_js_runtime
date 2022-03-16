@@ -254,10 +254,16 @@ public:
             vec.emplace_back(strAsmInterOption.substr(pos, delimPos - pos));
             pos = delimPos + 1;
         }
+
+        // enable or not asm interpreter
+        if (vec.size() > 0) {
+            std::string enableAsm = vec[0];
+            asmInterParsedOption_.enableAsm = (enableAsm == "1") ? true : false;
+        }
         
         // asm interpreter handle disable range
-        if (vec.size() > 0) {
-            std::string handleDisableRange = vec[0];
+        if (vec.size() > 1) {
+            std::string handleDisableRange = vec[1];
             pos = handleDisableRange.find(",");
             if (pos != std::string::npos) {
                 std::string strStart = handleDisableRange.substr(0, pos);
@@ -266,12 +272,6 @@ public:
                 asmInterParsedOption_.handleEnd = strEnd.empty() ?
                     kungfu::InterpreterStubId::ExceptionHandlerId : std::stoi(strEnd);
             }
-        }
-
-        // enable or not asm interpreter
-        if (vec.size() > 1) {
-            std::string enableAsm = vec[1];
-            asmInterParsedOption_.enableAsm = (enableAsm == "1") ? true : false;
         }
     }
 
