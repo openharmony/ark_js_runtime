@@ -346,6 +346,20 @@ GateRef CircuitBuilder::NewRuntimeCallGate(GateRef glue, GateRef target,
     return circuit_->NewGate(opcode, machineType, args.size() + 2, inputs, type);
 }
 
+GateRef CircuitBuilder::CallRuntimeVariadic(GateRef glue, GateRef target, GateRef depend,
+                                            const std::vector<GateRef> &args)
+{
+    std::vector<GateRef> inputs {depend, target, glue};
+    inputs.insert(inputs.end(), args.begin(), args.end());
+    OpCode opcode(OpCode::RUNTIME_CALL);
+    StubDescriptor *descriptor = GET_STUBDESCRIPTOR(RuntimeCallTrampolineAot);
+    MachineType machineType = GetCallMachineTypeFromVariableType(descriptor->GetReturnType());
+    GateType type = VariableType2GateType(descriptor->GetReturnType());
+    // 2 : 2 means extra two input gates (target glue)
+    static constexpr size_t extraparamCnt = 2;
+    return circuit_->NewGate(opcode, machineType, args.size() + extraparamCnt, inputs, type);
+}
+
 GateRef CircuitBuilder::NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                             GateRef depend, std::initializer_list<GateRef> args)
 {
