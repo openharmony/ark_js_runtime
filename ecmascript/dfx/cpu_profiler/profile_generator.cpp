@@ -19,10 +19,17 @@
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
 #include "ecmascript/interpreter/interpreter.h"
 namespace panda::ecmascript {
-int ProfileGenerator::staticGcState_ = false;
+bool ProfileGenerator::staticGcState_ = false;
 ProfileGenerator::ProfileGenerator()
 {
     stackTopLines_.push_back(0);
+    struct MethodKey methodkey;
+    struct MethodNode methodNode;
+    methodkey.method = reinterpret_cast<JSMethod*>(INT_MAX - 1);
+    methodMap_.insert(std::make_pair(methodkey, methodMap_.size() + 1));
+    methodNode.parentId = 0;
+    methodNode.codeEntry.codeType = "JS";
+    methodNodes_.push_back(methodNode);
 }
 
 ProfileGenerator::~ProfileGenerator()
@@ -55,7 +62,8 @@ void ProfileGenerator::AddSample(CVector<JSMethod *> sample, uint64_t sampleTime
         for (auto method = sample.rbegin(); method != sample.rend(); method++) {
             methodkey.method = *method;
             if (method == sample.rbegin()) {
-                methodNode.parentId = methodkey.parentId = 0;
+                methodNode.id = 1;
+                continue;
             } else {
                 methodNode.parentId = methodkey.parentId = methodNode.id;
             }
