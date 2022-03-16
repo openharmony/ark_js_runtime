@@ -74,8 +74,8 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
 #define DISPATCH_LAST()                                                                   \
     DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter)           \
 
-#define DISPATCH_LAST()                                                                   \
-    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter)           \
+#define DISPATCH_LAST_WITH_ACC()                                                          \
+    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter)       \
 
 #define UPDATE_HOTNESS(_sp)                                                                         \
     varHotnessCounter = Int32Add(offset, *varHotnessCounter);                                       \
@@ -83,7 +83,7 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
     Bind(&slowPath);                                                                                \
     {                                                                                               \
         varProfileTypeInfo = CallRuntimeTrampoline(glue,                                            \
-            GetInt64Constant(RUNTIME_CALL_ID(UpdateHotnessCounter)), {});                              \
+            GetInt64Constant(RUNTIME_CALL_ID(UpdateHotnessCounter)), {});                           \
         varHotnessCounter = GetInt32Constant(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);            \
         Jump(&dispatch);                                                                            \
     }                                                                                               \
@@ -744,7 +744,7 @@ DECLARE_ASM_HANDLER(HandleGetPropIteratorPref)
     Branch(TaggedIsException(res), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST_WITH_ACC();
     }
     Bind(&notException);
     varAcc = res;
@@ -762,7 +762,7 @@ DECLARE_ASM_HANDLER(HandleAsyncFunctionEnterPref)
     Branch(TaggedIsException(res), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST_WITH_ACC();
     }
     Bind(&notException);
     varAcc = res;
@@ -816,7 +816,7 @@ DECLARE_ASM_HANDLER(HandleGetIteratorPref)
         Branch(TaggedIsException(res), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         varAcc = res;
@@ -2656,7 +2656,7 @@ DECLARE_ASM_HANDLER(HandleLdSuperByNamePrefId32V8)
     Branch(TaggedIsException(result), &isException, &dispatch);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST_WITH_ACC();
     }
     Bind(&dispatch);
     varAcc = result;
@@ -2828,7 +2828,7 @@ DECLARE_ASM_HANDLER(HandleStConstToGlobalRecordPrefId32)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST_WITH_ACC();
     }
     Bind(&notException);
     DISPATCH_WITH_ACC(PREF_ID32);
@@ -2849,7 +2849,7 @@ DECLARE_ASM_HANDLER(HandleStLetToGlobalRecordPrefId32)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST_WITH_ACC();
     }
     Bind(&notException);
     DISPATCH_WITH_ACC(PREF_ID32);
@@ -2870,7 +2870,7 @@ DECLARE_ASM_HANDLER(HandleStClassToGlobalRecordPrefId32)
     Branch(TaggedIsException(result), &isException, &notException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST_WITH_ACC();
     }
     Bind(&notException);
     DISPATCH_WITH_ACC(PREF_ID32);
@@ -2927,7 +2927,7 @@ DECLARE_ASM_HANDLER(HandleNegDynPrefV8)
             Branch(TaggedIsException(result), &isException, &notException);
             Bind(&isException);
             {
-                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+                DISPATCH_LAST_WITH_ACC();
             }
             Bind(&notException);
             varAcc = result;
@@ -2979,7 +2979,7 @@ DECLARE_ASM_HANDLER(HandleNotDynPrefV8)
             Branch(TaggedIsException(result), &isException, &notException);
             Bind(&isException);
             {
-                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+                DISPATCH_LAST_WITH_ACC();
             }
             Bind(&notException);
             varAcc = result;
@@ -3068,7 +3068,7 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -3161,7 +3161,7 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -3254,7 +3254,7 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -3347,7 +3347,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -3441,7 +3441,7 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -3534,7 +3534,7 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &IsException, &NotException);
         Bind(&IsException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&NotException);
         {
@@ -3592,7 +3592,7 @@ DECLARE_ASM_HANDLER(HandleDefineClassWithBufferPrefId16Imm16Imm16V8V8)
     Branch(TaggedIsException(*res), &isException, &isNotException);
     Bind(&isException);
     {
-        DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+        DISPATCH_LAST_WITH_ACC();
     }
     Bind(&isNotException);
     GateRef newLexicalEnv = GetVregValue(sp, ZExtInt8ToPtr(v0));  // slow runtime may gc
@@ -3682,7 +3682,7 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         Branch(TaggedIsException(result), &isException, &noException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&noException);
         varAcc = result;
@@ -4473,7 +4473,7 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
             Branch(TaggedIsException(*icResult), &isException, &isNotException);
             Bind(&isException);
             {
-                DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+                DISPATCH_LAST_WITH_ACC();
             }
             Bind(&isNotException);
             varAcc = *icResult;
@@ -4505,7 +4505,7 @@ DECLARE_ASM_HANDLER(HandleTryLdGlobalByNamePrefId32)
                 Branch(TaggedIsException(slowResult), &isException, &isNotException);
                 Bind(&isException);
                 {
-                    DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+                    DISPATCH_LAST_WITH_ACC();
                 }
                 Bind(&isNotException);
                 varAcc = slowResult;
@@ -4666,7 +4666,7 @@ DECLARE_ASM_HANDLER(HandleLdGlobalVarPrefId32)
         Branch(TaggedIsException(*result), &isException, &dispatch);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
     }
     Bind(&dispatch);
@@ -4848,7 +4848,7 @@ DECLARE_ASM_HANDLER(HandleToNumberPrefV8)
         Branch(TaggedIsException(res), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -4887,7 +4887,7 @@ DECLARE_ASM_HANDLER(HandleAdd2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -4929,7 +4929,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
         Bind(&isException);
         {
-            DispatchLast(glue, pc, sp, constpool, profileTypeInfo, *varAcc, hotnessCounter);
+            DISPATCH_LAST_WITH_ACC();
         }
         Bind(&notException);
         {
@@ -4941,9 +4941,475 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Bind(&accDispatch);
     DISPATCH_WITH_ACC(PREF_V8);
 }
+
+#define CALL_INITIALIZE()                                                                            \
+    SetPcToFrame(glue, GetFrame(sp), pc);                                                            \
+    GateRef func = GetVregValue(sp, ZExtInt8ToPtr(funcReg));                                         \
+    Label funcIsHeapObject(env);                                                                     \
+    Label funcIsCallable(env);                                                                       \
+    Label funcNotCallable(env);                                                                      \
+    Branch(TaggedIsHeapObject(func), &funcIsHeapObject, &funcNotCallable);                           \
+    Bind(&funcIsHeapObject);                                                                         \
+    Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);                                     \
+    Bind(&funcNotCallable);                                                                          \
+    {                                                                                                \
+        CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(SetNotCallableException)), {}); \
+        DISPATCH_LAST();                                                                             \
+    }                                                                                                \
+    Bind(&funcIsCallable);                                                                           \
+    DEFVARIABLE(methodOffset, VariableType::INT32(), GetInt32Constant(0));                           \
+    /* method = func->GetCallTarget() */                                                             \
+    /* ASSERT(JSTaggedValue(func).IsJSFunctionBase() || JSTaggedValue(func).IsJSProxy()) */          \
+    Label funcIsJSFunctionBase(env);                                                                 \
+    Label funcIsJSProxy(env);                                                                        \
+    Label getMethod(env);                                                                            \
+    Branch(IsJSFunctionBase(func), &funcIsJSFunctionBase, &funcIsJSProxy);                           \
+    Bind(&funcIsJSFunctionBase);                                                                     \
+    {                                                                                                \
+        methodOffset = GetInt32Constant(JSFunctionBase::METHOD_OFFSET);                              \
+        Jump(&getMethod);                                                                            \
+    }                                                                                                \
+    Bind(&funcIsJSProxy);                                                                            \
+    {                                                                                                \
+        methodOffset = GetInt32Constant(JSProxy::METHOD_OFFSET);                                     \
+        Jump(&getMethod);                                                                            \
+    }                                                                                                \
+    Bind(&getMethod);                                                                                \
+    GateRef method = Load(VariableType::POINTER(), func, ChangeInt32ToIntPtr(*methodOffset));        \
+    GateRef callFieldOffset = GetIntPtrConstant(JSMethod::GetCallFieldOffset(env->IsArch32Bit()));   \
+    GateRef callField = Load(VariableType::INT64(), method, callFieldOffset);                        \
+    DEFVARIABLE(newSp, VariableType::POINTER(),                                                      \
+                PointerSub(sp, GetIntPtrConstant(InterpretedFrame::GetSize(env->IsArch32Bit()))))
+
+#define CALL_PUSH_UNDEFINED(n)                                            \
+    i = GetInt32Constant(0);                                              \
+    Label pushUndefined(env);                                             \
+    Label pushUndefinedAgain(env);                                        \
+    Label pushUndefinedEnd(env);                                          \
+    Branch(Int32LessThan(*i, n), &pushUndefined, &pushUndefinedEnd);      \
+    LoopBegin(&pushUndefined);                                            \
+    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));  \
+    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),      \
+          GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));              \
+    i = Int32Add(*i, GetInt32Constant(1));                                \
+    Branch(Int32LessThan(*i, n), &pushUndefinedAgain, &pushUndefinedEnd); \
+    Bind(&pushUndefinedAgain);                                            \
+    LoopEnd(&pushUndefined);                                              \
+    Bind(&pushUndefinedEnd)
+
+#define CALL_PUSH_ARGS(format)                                                                                        \
+    DEFVARIABLE(i, VariableType::INT32(), GetInt32Constant(0));                                                       \
+    GateRef isNativeMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::IsNativeBit::START_BIT);            \
+    Label methodIsNative(env);                                                                                        \
+    Label methodNotNative(env);                                                                                       \
+    Branch(Int64NotEqual(Int64And(callField, isNativeMask), GetInt64Constant(0)), &methodIsNative, &methodNotNative); \
+    Bind(&methodIsNative);                                                                                            \
+    {                                                                                                                 \
+        CALL_PUSH_ARGS_##format();                                                                                    \
+        SET_VREGS_AND_FRAME_NATIVE(format);                                                                           \
+    }                                                                                                                 \
+    Bind(&methodNotNative);                                                                                           \
+    GateRef numArgsOffset = GetInt64Constant(JSMethod::NumArgsBits::START_BIT);                                       \
+    GateRef numArgsMask = GetInt64Constant((static_cast<uint64_t>(1) << JSMethod::NumArgsBits::SIZE) - 1);            \
+    GateRef declaredNumArgs = ChangeInt64ToInt32(Int64And(UInt64LSR(callField, numArgsOffset), numArgsMask));         \
+    Label fastPath(env);                                                                                              \
+    Label slowPath(env);                                                                                              \
+    Label setVregsAndFrameNotNative(env);                                                                             \
+    Branch(Int32Equal(actualNumArgs, declaredNumArgs), &fastPath, &slowPath);                                         \
+    Bind(&fastPath);                                                                                                  \
+    {                                                                                                                 \
+        CALL_PUSH_ARGS_##format();                                                                                    \
+        Jump(&setVregsAndFrameNotNative);                                                                             \
+    }                                                                                                                 \
+    Bind(&slowPath);                                                                                                  \
+    GateRef haveExtraMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::HaveExtraBit::START_BIT);          \
+    Label methodNoExtra(env);                                                                                         \
+    Label methodHaveExtra(env);                                                                                       \
+    Branch(Int64NotEqual(Int64And(callField, haveExtraMask), GetInt64Constant(0)), &methodHaveExtra, &methodNoExtra); \
+    Bind(&methodNoExtra);                                                                                             \
+    {                                                                                                                 \
+        GateRef undefinedNumArgs = Int32Sub(declaredNumArgs, actualNumArgs);                                          \
+        CALL_PUSH_UNDEFINED(undefinedNumArgs);                                                                        \
+        CALL_PUSH_ARGS_NO_EXTRA_##format();                                                                           \
+        Jump(&setVregsAndFrameNotNative);                                                                             \
+    }                                                                                                                 \
+    Bind(&methodHaveExtra);                                                                                           \
+    {                                                                                                                 \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                          \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), IntBuildTaggedTypeWithNoGC(actualNumArgs));  \
+        GateRef undefinedNumArgs = Int32Sub(declaredNumArgs, actualNumArgs);                                          \
+        CALL_PUSH_UNDEFINED(undefinedNumArgs);                                                                        \
+        CALL_PUSH_ARGS_##format();                                                                                    \
+        Jump(&setVregsAndFrameNotNative);                                                                             \
+    }                                                                                                                 \
+    Bind(&setVregsAndFrameNotNative);                                                                                 \
+    SET_VREGS_AND_FRAME_NOT_NATIVE(format)
+
+#define SET_VREGS_AND_FRAME_NATIVE(format)                                                                   \
+    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                     \
+    Label pushThis(env);                                                                                     \
+    Label pushThisUndefined(env);                                                                            \
+    Label pushNewTarget(env);                                                                                \
+    Branch(callThis, &pushThis, &pushThisUndefined);                                                         \
+    Bind(&pushThis);                                                                                         \
+    {                                                                                                        \
+        GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), GetIntPtrConstant(1)));       \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), thisValue);                         \
+        Jump(&pushNewTarget);                                                                                \
+    }                                                                                                        \
+    Bind(&pushThisUndefined);                                                                                \
+    {                                                                                                        \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                     \
+              GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                             \
+        Jump(&pushNewTarget);                                                                                \
+    }                                                                                                        \
+    Bind(&pushNewTarget);                                                                                    \
+    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                     \
+    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                         \
+          GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                                 \
+    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                     \
+    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), func);                                  \
+    /* ASSERT(JSMethod::NumVregsBits::Decode(callField) == 0) */                                             \
+    /* thread->DoStackOverflowCheck(newSp) */                                                                \
+    GateRef frameBaseOffset = GetIntPtrConstant(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit())); \
+    GateRef frameBase = Load(VariableType::POINTER(), glue, frameBaseOffset);                                \
+    Label stackOverflow(env);                                                                                \
+    Label stackNotOverflow(env);                                                                             \
+    Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                                \
+        /* 2: double size in case */                                                                         \
+        GetIntPtrConstant(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                        \
+        &stackOverflow, &stackNotOverflow);                                                                  \
+    Bind(&stackOverflow);                                                                                    \
+    {                                                                                                        \
+        CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(SetStackOverflowException)), {});       \
+        DISPATCH_LAST();                                                                                     \
+    }                                                                                                        \
+    Bind(&stackNotOverflow);                                                                                 \
+    GateRef state = GetFrame(*newSp);                                                                        \
+    GateRef prevOffset = GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit()));             \
+    Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                             \
+    GateRef frameTypeOffset = IntPtrAdd(prevOffset, GetIntPtrSize());                                        \
+    Store(VariableType::INT64(), glue, state, frameTypeOffset,                                               \
+          GetInt64Constant(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                            \
+    SetPcToFrame(glue, state, GetIntPtrConstant(0));                                                         \
+    SetFunctionToFrame(glue, state, func);                                                                   \
+    SetCurrentSpFrame(glue, *newSp);                                                                         \
+    GateRef numArgs = Int32Add(GetInt32Constant(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);                  \
+    GateRef retValue = CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(CallNative)),            \
+                                             {IntBuildTaggedTypeWithNoGC(numArgs), *newSp, method});         \
+    SetCurrentSpFrame(glue, sp);                                                                             \
+    DEFVARIABLE(varAcc, VariableType::JS_ANY(), retValue);                                                   \
+    DISPATCH_WITH_ACC(format)
+
+#define SET_VREGS_AND_FRAME_NOT_NATIVE(format)                                                                   \
+    Label funcIsClassConstructor(env);                                                                           \
+    Label funcNotClassConstructor(env);                                                                          \
+    Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcNotClassConstructor);                         \
+    Bind(&funcIsClassConstructor);                                                                               \
+    {                                                                                                            \
+        CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(SetCallConstructorException)), {});         \
+        DISPATCH_LAST();                                                                                         \
+    }                                                                                                            \
+    Bind(&funcNotClassConstructor);                                                                              \
+    Label notNormalCallType(env);                                                                                \
+    Label isNormalCallType(env);                                                                                 \
+    Branch(Int64Equal(Int64And(callField, GetInt64Constant(CALL_TYPE_MASK)), GetInt64Constant(0)),               \
+           &isNormalCallType, &notNormalCallType);                                                               \
+    Bind(&notNormalCallType);                                                                                    \
+    {                                                                                                            \
+        GateRef haveThisMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::HaveThisBit::START_BIT);   \
+        Label methodHaveThis(env);                                                                               \
+        Label methodNoThis(env);                                                                                 \
+        Branch(Int64NotEqual(Int64And(callField, haveThisMask), GetInt64Constant(0)),                            \
+               &methodHaveThis, &methodNoThis);                                                                  \
+        Bind(&methodHaveThis);                                                                                   \
+        {                                                                                                        \
+            newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                 \
+            Label pushThis(env);                                                                                 \
+            Label pushThisUndefined(env);                                                                        \
+            Branch(callThis, &pushThis, &pushThisUndefined);                                                     \
+            Bind(&pushThis);                                                                                     \
+            {                                                                                                    \
+                GateRef thisValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), GetIntPtrConstant(1)));   \
+                Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), thisValue);                     \
+                Jump(&methodNoThis);                                                                             \
+            }                                                                                                    \
+            Bind(&pushThisUndefined);                                                                            \
+            {                                                                                                    \
+                Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                 \
+                      GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                         \
+                Jump(&methodNoThis);                                                                             \
+            }                                                                                                    \
+        }                                                                                                        \
+        Bind(&methodNoThis);                                                                                     \
+        GateRef haveNewTargetMask = GetInt64Constant(static_cast<uint64_t>(1) <<                                 \
+                                                     JSMethod::HaveNewTargetBit::START_BIT);                     \
+        Label methodHaveNewTarget(env);                                                                          \
+        Label methodNoNewTarget(env);                                                                            \
+        Branch(Int64NotEqual(Int64And(callField, haveNewTargetMask), GetInt64Constant(0)),                       \
+               &methodHaveNewTarget, &methodNoNewTarget);                                                        \
+        Bind(&methodHaveNewTarget);                                                                              \
+        {                                                                                                        \
+            newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                 \
+            Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0),                                     \
+                  GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED));                                             \
+            Jump(&methodNoNewTarget);                                                                            \
+        }                                                                                                        \
+        Bind(&methodNoNewTarget);                                                                                \
+        GateRef haveFuncMask = GetInt64Constant(static_cast<uint64_t>(1) << JSMethod::HaveFuncBit::START_BIT);   \
+        Label methodHaveFunc(env);                                                                               \
+        Label methodNoFunc(env);                                                                                 \
+        Branch(Int64NotEqual(Int64And(callField, haveFuncMask), GetInt64Constant(0)),                            \
+               &methodHaveFunc, &methodNoFunc);                                                                  \
+        Bind(&methodHaveFunc);                                                                                   \
+        {                                                                                                        \
+            newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                                 \
+            Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), func);                              \
+            Jump(&methodNoFunc);                                                                                 \
+        }                                                                                                        \
+        Bind(&methodNoFunc);                                                                                     \
+        Jump(&isNormalCallType);                                                                                 \
+    }                                                                                                            \
+    Bind(&isNormalCallType);                                                                                     \
+    {                                                                                                            \
+        GateRef numVregsOffset = GetInt64Constant(JSMethod::NumVregsBits::START_BIT);                            \
+        GateRef numVregsMask = GetInt64Constant((static_cast<uint64_t>(1) << JSMethod::NumVregsBits::SIZE) - 1); \
+        GateRef numVregs = ChangeInt64ToInt32(Int64And(UInt64LSR(callField, numVregsOffset), numVregsMask));     \
+        CALL_PUSH_UNDEFINED(numVregs);                                                                           \
+        /* thread->DoStackOverflowCheck(newSp) */                                                                \
+        GateRef frameBaseOffset = GetIntPtrConstant(JSThread::GlueData::GetFrameBaseOffset(env->IsArch32Bit())); \
+        GateRef frameBase = Load(VariableType::POINTER(), glue, frameBaseOffset);                                \
+        Label stackOverflow(env);                                                                                \
+        Label stackNotOverflow(env);                                                                             \
+        Branch(UInt64LessThanOrEqual(*newSp, IntPtrAdd(frameBase,                                                \
+            /* 2: double size in case */                                                                         \
+            GetIntPtrConstant(JSThread::RESERVE_STACK_SIZE * sizeof(JSTaggedType) * 2))),                        \
+            &stackOverflow, &stackNotOverflow);                                                                  \
+        Bind(&stackOverflow);                                                                                    \
+        {                                                                                                        \
+            CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(SetStackOverflowException)), {});       \
+            DISPATCH_LAST();                                                                                     \
+        }                                                                                                        \
+        Bind(&stackNotOverflow);                                                                                 \
+        SetPcToFrame(glue, GetFrame(sp),                                                                         \
+            IntPtrAdd(pc, GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::format))));   \
+        GateRef state = GetFrame(*newSp);                                                                        \
+        GateRef prevOffset = GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit()));             \
+        Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                             \
+        GateRef frameTypeOffset = IntPtrAdd(prevOffset, GetIntPtrConstant(                                       \
+            env->IsArch32Bit() ? InterpretedFrameBase::TYPE_OFFSET_32 : InterpretedFrameBase::TYPE_OFFSET_64));  \
+        Store(VariableType::INT64(), glue, state, frameTypeOffset,                                               \
+              GetInt64Constant(static_cast<uint64_t>(FrameType::INTERPRETER_FRAME)));                            \
+        GateRef bytecodeArrayOffset = GetIntPtrConstant(JSMethod::GetBytecodeArrayOffset(env->IsArch32Bit()));   \
+        GateRef bytecodeArray = Load(VariableType::POINTER(), method, bytecodeArrayOffset);                      \
+        SetPcToFrame(glue, state, bytecodeArray);                                                                \
+        SetFunctionToFrame(glue, state, func);                                                                   \
+        SetAccToFrame(glue, state, GetHoleConstant(VariableType::JS_ANY()));                                     \
+        GateRef newEnv = GetEnvFromFunction(func);                                                               \
+        SetEnvToFrame(glue, state, newEnv);                                                                      \
+        SetCurrentSpFrame(glue, *newSp);                                                                         \
+        GateRef newConstpool = GetConstpoolFromFunction(func);                                                   \
+        GateRef newProfileTypeInfo = GetProfileTypeInfoFromFunction(func);                                       \
+        GateRef newHotnessCounter = Load(VariableType::INT32(), method,                                          \
+                                         GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));                   \
+        Dispatch(glue, bytecodeArray, *newSp, newConstpool, newProfileTypeInfo,                                  \
+                 GetHoleConstant(VariableType::JS_ANY()), newHotnessCounter, GetIntPtrConstant(0));              \
+    }
+
+#define CALL_PUSH_ARGS_PREF_V8() \
+    static_cast<void>(0) // do nothing when 0 arg
+
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8() \
+    static_cast<void>(0) // do nothing when 0 arg
+
+#define CALL_PUSH_ARGS_PREF_V8_V8()                                           \
+    GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));                    \
+    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));      \
+    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a0Value)
+
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8()                                                \
+    Label push0(env);                                                                       \
+    Label skip0(env);                                                                       \
+    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                         \
+        GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARG1)), &push0, &skip0); \
+    Bind(&push0);                                                                           \
+    {                                                                                       \
+        GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));                              \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a0Value);          \
+        Jump(&skip0);                                                                       \
+    }                                                                                       \
+    Bind(&skip0)
+
+#define CALL_PUSH_ARGS_PREF_V8_V8_V8()                                         \
+    GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));                     \
+    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));       \
+    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a1Value); \
+    CALL_PUSH_ARGS_PREF_V8_V8()
+
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8()                                              \
+    Label push1(env);                                                                        \
+    Label skip1(env);                                                                        \
+    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                          \
+        GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS2)), &push1, &skip1); \
+    Bind(&push1);                                                                            \
+    {                                                                                        \
+        GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));                               \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                 \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a1Value);           \
+        Jump(&skip1);                                                                        \
+    }                                                                                        \
+    Bind(&skip1);                                                                            \
+    CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8()
+
+#define CALL_PUSH_ARGS_PREF_V8_V8_V8_V8()                                      \
+    GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));                     \
+    newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));       \
+    Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a2Value); \
+    CALL_PUSH_ARGS_PREF_V8_V8_V8()
+
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8_V8()                                           \
+    Label push2(env);                                                                        \
+    Label skip2(env);                                                                        \
+    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                          \
+        GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS3)), &push2, &skip2); \
+    Bind(&push2);                                                                            \
+    {                                                                                        \
+        GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));                               \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                 \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a2Value);           \
+        Jump(&skip2);                                                                        \
+    }                                                                                        \
+    Bind(&skip2);                                                                            \
+    CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8()
+
+#define CALL_PUSH_ARGS_PREF_IMM16_V8() \
+    i = actualNumArgs;                 \
+    CALL_PUSH_ARGS_I()
+
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_IMM16_V8()                                          \
+    /* i = std::min(actualNumArgs, declaredNumArgs) */                                   \
+    i = actualNumArgs;                                                                   \
+    Label declaredNumArgsSmaller(env);                                                   \
+    Label callPushArgsI(env);                                                            \
+    Branch(Int32LessThan(*i, declaredNumArgs), &callPushArgsI, &declaredNumArgsSmaller); \
+    Bind(&declaredNumArgsSmaller);                                                       \
+    i = declaredNumArgs;                                                                 \
+    Jump(&callPushArgsI);                                                                \
+    Bind(&callPushArgsI);                                                                \
+    CALL_PUSH_ARGS_I()
+
+#define CALL_PUSH_ARGS_I()                                                                             \
+    Label pushWithThis(env);                                                                           \
+    Label pushWithoutThis(env);                                                                        \
+    Label pushArgsEnd(env);                                                                            \
+    Branch(callThis, &pushWithThis, &pushWithoutThis);                                                 \
+    Bind(&pushWithThis);                                                                               \
+    {                                                                                                  \
+        i = Int32Add(*i, GetInt32Constant(1)); /* 1: skip this */                                      \
+        Label pushArgs(env);                                                                           \
+        Label pushArgsAgain(env);                                                                      \
+        Branch(Int32GreaterThan(*i, GetInt32Constant(1)), &pushArgs, &pushArgsEnd);                    \
+        LoopBegin(&pushArgs);                                                                          \
+        GateRef aValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i))); \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                           \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), aValue);                      \
+        i = Int32Sub(*i, GetInt32Constant(1));                                                         \
+        Branch(Int32GreaterThan(*i, GetInt32Constant(1)), &pushArgsAgain, &pushArgsEnd);               \
+        Bind(&pushArgsAgain);                                                                          \
+        LoopEnd(&pushArgs);                                                                            \
+    }                                                                                                  \
+    Bind(&pushWithoutThis);                                                                            \
+    {                                                                                                  \
+        Label pushArgs(env);                                                                           \
+        Label pushArgsAgain(env);                                                                      \
+        Branch(Int32GreaterThan(*i, GetInt32Constant(0)), &pushArgs, &pushArgsEnd);                    \
+        LoopBegin(&pushArgs);                                                                          \
+        GateRef aValue = GetVregValue(sp, IntPtrAdd(ZExtInt8ToPtr(funcReg), ChangeInt32ToIntPtr(*i))); \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                           \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), aValue);                      \
+        i = Int32Sub(*i, GetInt32Constant(1));                                                         \
+        Branch(Int32GreaterThan(*i, GetInt32Constant(0)), &pushArgsAgain, &pushArgsEnd);               \
+        Bind(&pushArgsAgain);                                                                          \
+        LoopEnd(&pushArgs);                                                                            \
+    }                                                                                                  \
+    Bind(&pushArgsEnd)
+
+DECLARE_ASM_HANDLER(HandleCallArg0DynPrefV8)
+{
+    auto env = GetEnvironment();
+
+    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARG0);
+    GateRef funcReg = ReadInst8_1(pc);
+    CALL_INITIALIZE();
+    GateRef callThis = FalseConstant();
+    CALL_PUSH_ARGS(PREF_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleCallArg1DynPrefV8V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARG1);
+    GateRef funcReg = ReadInst8_1(pc);
+    GateRef a0 = ReadInst8_2(pc);
+    CALL_INITIALIZE();
+    GateRef callThis = FalseConstant();
+    CALL_PUSH_ARGS(PREF_V8_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleCallArgs2DynPrefV8V8V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS2);
+    GateRef funcReg = ReadInst8_1(pc);
+    GateRef a0 = ReadInst8_2(pc);
+    GateRef a1 = ReadInst8_3(pc);
+    CALL_INITIALIZE();
+    GateRef callThis = FalseConstant();
+    CALL_PUSH_ARGS(PREF_V8_V8_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleCallArgs3DynPrefV8V8V8V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS3);
+    GateRef funcReg = ReadInst8_1(pc);
+    GateRef a0 = ReadInst8_2(pc);
+    GateRef a1 = ReadInst8_3(pc);
+    GateRef a2 = ReadInst8_4(pc);
+    CALL_INITIALIZE();
+    GateRef callThis = FalseConstant();
+    CALL_PUSH_ARGS(PREF_V8_V8_V8_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleCallIRangeDynPrefImm16V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef actualNumArgs = ZExtInt16ToInt32(ReadInst16_1(pc));
+    GateRef funcReg = ReadInst8_3(pc);
+    CALL_INITIALIZE();
+    GateRef callThis = FalseConstant();
+    CALL_PUSH_ARGS(PREF_IMM16_V8);
+}
+
+DECLARE_ASM_HANDLER(HandleCallIThisRangeDynPrefImm16V8)
+{
+    auto env = GetEnvironment();
+
+    GateRef actualNumArgs = Int32Sub(ZExtInt16ToInt32(ReadInst16_1(pc)), GetInt32Constant(1));  // 1: exclude this
+    GateRef funcReg = ReadInst8_3(pc);
+    CALL_INITIALIZE();
+    GateRef callThis = TrueConstant();
+    CALL_PUSH_ARGS(PREF_IMM16_V8);
+}
 #endif
 #undef DECLARE_ASM_HANDLER
 #undef DISPATCH
 #undef DISPATCH_WITH_ACC
 #undef DISPATCH_LAST
+#undef DISPATCH_LAST_WITH_ACC
 }  // namespace panda::ecmascript::kungfu

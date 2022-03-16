@@ -477,6 +477,11 @@ GateRef Stub::IntPtrSub(GateRef x, GateRef y)
     return Int64Sub(x, y);
 }
 
+GateRef Stub::PointerSub(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::ARCH, x, y);
+}
+
 GateRef Stub::Int16Sub(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SUB), MachineType::I16, x, y);

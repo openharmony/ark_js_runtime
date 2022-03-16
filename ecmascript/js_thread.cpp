@@ -31,9 +31,9 @@ JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
     jsThread->nativeAreaAllocator_ = EcmaVM::Cast(vm)->GetNativeAreaAllocator();
     jsThread->heapRegionAllocator_ = EcmaVM::Cast(vm)->GetHeapRegionAllocator();
     // algin with 16
-    jsThread->frameBase_ = static_cast<JSTaggedType *>(
+    jsThread->glueData_.frameBase_ = static_cast<JSTaggedType *>(
         EcmaVM::Cast(vm)->GetNativeAreaAllocator()->Allocate(sizeof(JSTaggedType) * MAX_STACK_SIZE));
-    jsThread->glueData_.currentFrame_ = jsThread->frameBase_ + MAX_STACK_SIZE;
+    jsThread->glueData_.currentFrame_ = jsThread->glueData_.frameBase_ + MAX_STACK_SIZE;
     JSThread::SetCurrent(jsThread);
     EcmaInterpreter::InitStackFrame(jsThread);
     return jsThread;
@@ -62,8 +62,8 @@ JSThread::~JSThread()
     handleScopeStorageNext_ = handleScopeStorageEnd_ = nullptr;
     EcmaVM::Cast(GetVM())->GetChunk()->Delete(globalStorage_);
 
-    GetNativeAreaAllocator()->Free(frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
-    frameBase_ = nullptr;
+    GetNativeAreaAllocator()->Free(glueData_.frameBase_, sizeof(JSTaggedType) * MAX_STACK_SIZE);
+    glueData_.frameBase_ = nullptr;
     nativeAreaAllocator_ = nullptr;
     heapRegionAllocator_ = nullptr;
     if (internalCallParams_ != nullptr) {
@@ -158,7 +158,7 @@ void JSThread::IterateWeakEcmaGlobalStorage(const WeakRootVisitor &visitor)
 bool JSThread::DoStackOverflowCheck(const JSTaggedType *sp)
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (UNLIKELY(sp <= frameBase_ + RESERVE_STACK_SIZE)) {
+    if (UNLIKELY(sp <= glueData_.frameBase_ + RESERVE_STACK_SIZE)) {
         ObjectFactory *factory = GetEcmaVM()->GetFactory();
         JSHandle<JSObject> error = factory->GetJSError(base::ErrorType::RANGE_ERROR, "Stack overflow!");
         if (LIKELY(!HasPendingException())) {
@@ -247,7 +247,12 @@ void JSThread::LoadStubModule(const char *moduleFile)
     glueData_.bcHandlers_.Set(kungfu::InterpreterStubId::name##Id,                      \
                               stubModule.GetStubEntry(kungfu::StubId::STUB_##name));
     INTERPRETER_STUB_LIST(DEF_STUB)
+#define UNDEF_STUB(name, counter)                                                           \
+        glueData_.bcHandlers_.Set(kungfu::InterpreterStubId::name##Id,                      \
+                                  stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging));
+    INTERPRETER_IGNORE_STUB_LIST(UNDEF_STUB)
 #undef DEF_STUB
+#undef UNDEF_STUB
 #endif
 
 #ifdef NDEBUG
