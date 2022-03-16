@@ -24,9 +24,16 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_queue-inl.h"
 #include "ecmascript/tagged_queue.h"
+#ifndef PANDA_TARGET_LINUX
+#include "hitrace/hitrace.h"
+#include "hitrace/hitraceid.h"
+#endif
 #include "utils/expected.h"
 
 namespace panda::ecmascript::job {
+#ifndef PANDA_TARGET_LINUX
+using namespace OHOS::HiviewDFX;
+#endif
 void MicroJobQueue::EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueue, QueueType queueType,
     const JSHandle<JSFunction> &job, const JSHandle<TaggedArray> &argv)
 {
@@ -38,6 +45,30 @@ void MicroJobQueue::EnqueueJob(JSThread *thread, JSHandle<MicroJobQueue> jobQueu
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
     JSHandle<PendingJob> pendingJob(factory->NewPendingJob(job, argv));
+#ifndef PANDA_TARGET_LINUX
+    HiTraceId id = HiTrace::GetId();
+    if (id.IsValid() && id.IsFlagEnabled(HITRACE_FLAG_INCLUDE_ASYNC)) {
+        HiTraceId childId = HiTrace::CreateSpan();
+
+        pendingJob->SetChainId(childId.GetChainId());
+        pendingJob->SetSpanId(childId.GetSpanId());
+        pendingJob->SetParentSpanId(childId.GetParentSpanId());
+        pendingJob->SetFlags(childId.GetFlags());
+
+        if (id.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {
+            if (queueType == QueueType::QUEUE_PROMISE) {
+                HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_CS,
+                                    childId, "Queue type:%s", "Promise queue");
+            } else if (queueType == QueueType::QUEUE_SCRIPT) {
+                HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_CS,
+                                    childId, "Queue type:%s", "Script queue");
+            } else {
+                HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_CS,
+                                    childId, "Queue type:%s", "Other queue");
+            }
+        }
+    }
+#endif
     if (queueType == QueueType::QUEUE_PROMISE) {
         JSHandle<TaggedQueue> promiseQueue(thread, jobQueue->GetPromiseJobQueue());
         LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
@@ -60,7 +91,35 @@ void MicroJobQueue::ExecutePendingJob(JSThread *thread, JSHandle<MicroJobQueue> 
         LOG_ECMA(DEBUG) << "promiseQueue start length: " << promiseQueue->Size();
         pendingJob.Update(promiseQueue->Pop(thread));
         LOG_ECMA(DEBUG) << "promiseQueue end length: " << promiseQueue->Size();
+#ifndef PANDA_TARGET_LINUX
+        HiTraceId hitraceId;
+        if (pendingJob->GetChainId() != 0) {
+            hitraceId.SetChainId(pendingJob->GetChainId());
+            hitraceId.SetSpanId(pendingJob->GetSpanId());
+            hitraceId.SetParentSpanId(pendingJob->GetParentSpanId());
+            hitraceId.SetFlags(pendingJob->GetFlags());
+
+            if (hitraceId.IsValid()) {
+                HiTrace::SetId(hitraceId);
+                if (hitraceId.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SR,
+                                    hitraceId, "Before %s queue job execute", "Promise");
+                }
+            }
+        }
+#endif
         PendingJob::ExecutePendingJob(pendingJob, thread);
+#ifndef PANDA_TARGET_LINUX
+        if (pendingJob->GetChainId() != 0) {
+            if (hitraceId.IsValid()) {
+                if (hitraceId.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SS,
+                                    hitraceId, "After %s queue job execute", "Promise");
+                }
+                HiTrace::ClearId();
+            }
+        }
+#endif
         if (thread->HasPendingException()) {
             return;
         }
@@ -70,7 +129,35 @@ void MicroJobQueue::ExecutePendingJob(JSThread *thread, JSHandle<MicroJobQueue> 
     JSHandle<TaggedQueue> scriptQueue(thread, jobQueue->GetScriptJobQueue());
     while (!scriptQueue->Empty()) {
         pendingJob.Update(scriptQueue->Pop(thread));
+#ifndef PANDA_TARGET_LINUX
+        HiTraceId hitraceId;
+        if (pendingJob->GetChainId() != 0) {
+            hitraceId.SetChainId(pendingJob->GetChainId());
+            hitraceId.SetSpanId(pendingJob->GetSpanId());
+            hitraceId.SetParentSpanId(pendingJob->GetParentSpanId());
+            hitraceId.SetFlags(pendingJob->GetFlags());
+
+            if (hitraceId.IsValid()) {
+                HiTrace::SetId(hitraceId);
+                if (hitraceId.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SR,
+                                    hitraceId, "Before %s queue job execute", "Script");
+                }
+            }
+        }
+#endif
         PendingJob::ExecutePendingJob(pendingJob, thread);
+#ifndef PANDA_TARGET_LINUX
+        if (pendingJob->GetChainId() != 0) {
+            if (hitraceId.IsValid()) {
+                if (hitraceId.IsFlagEnabled(HITRACE_FLAG_TP_INFO)) {
+                    HiTrace::Tracepoint(HITRACE_CM_THREAD, HITRACE_TP_SS,
+                                    hitraceId, "After %s queue job execute", "Script");
+                }
+                HiTrace::ClearId();
+            }
+        }
+#endif
         if (thread->HasPendingException()) {
             return;
         }
