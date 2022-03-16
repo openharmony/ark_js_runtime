@@ -621,7 +621,7 @@ HWTEST_F_L0(EcmaDumpTest, HeapProfileDump)
                 break;
             }
             case JSType::PENDING_JOB: {
-                CHECK_DUMP_FILEDS(Record::SIZE, ecmascript::job::PendingJob::SIZE, 2)
+                CHECK_DUMP_FILEDS(Record::SIZE, ecmascript::job::PendingJob::SIZE, 6)
                 JSHandle<JSHClass> pendingClass(thread,
                     JSHClass::Cast(globalConst->GetPendingJobClass().GetTaggedObject()));
                 JSHandle<TaggedObject> pendingJob(thread, factory->NewDynObject(pendingClass));
