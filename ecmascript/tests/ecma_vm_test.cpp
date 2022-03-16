@@ -62,7 +62,7 @@ HWTEST_F_L0(EcmaVMTest, CreateEcmaVMInTwoWays)
     options2.SetEnableCpuprofiler(true);
     options2.SetEnableTsAot(true);
     options2.SetArkProperties(ArkProperties::GC_STATS_PRINT);
-    
+
     // // GC
     // options2.SetGcTriggerType("no-gc-for-start-up");  // A non-production gc strategy. Prohibit stw-gc 10 times.
     EcmaVM *ecmaVm2 = EcmaVM::Cast(EcmaVM::Create(options2));
