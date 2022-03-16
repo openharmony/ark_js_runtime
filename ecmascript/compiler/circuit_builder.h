@@ -86,6 +86,7 @@ public:
     GateRef NewCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                  GateRef depend, std::initializer_list<GateRef> args);
     GateRef NewRuntimeCallGate(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
+    GateRef CallRuntimeVariadic(GateRef glue, GateRef target, GateRef depend, const std::vector<GateRef> &args);
     GateRef NewBytecodeCallGate(StubDescriptor *descriptor, GateRef glue, GateRef target,
                                 GateRef depend, std::initializer_list<GateRef> args);
     static MachineType GetLoadMachineTypeFromVariableType(VariableType type);

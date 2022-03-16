@@ -706,28 +706,35 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         }
         case EcmaOpcode::CALLARGS2DYN_PREF_V8_V8_V8: {
             uint32_t funcReg = READ_INST_8_1();
-            uint32_t reg = READ_INST_8_3();
+            uint32_t reg0 = READ_INST_8_2();
+            uint32_t reg1 = READ_INST_8_3();
             info.accOut = true;
             info.offset = BytecodeOffset::FIVE;
             info.inputs.emplace_back(VirtualRegister(funcReg));
-            info.inputs.emplace_back(VirtualRegister(reg));
+            info.inputs.emplace_back(VirtualRegister(reg0));
+            info.inputs.emplace_back(VirtualRegister(reg1));
             break;
         }
         case EcmaOpcode::CALLARGS3DYN_PREF_V8_V8_V8_V8: {
             uint32_t funcReg = READ_INST_8_1();
-            uint32_t reg = READ_INST_8_4();
+            uint32_t reg0 = READ_INST_8_2();
+            uint32_t reg1 = READ_INST_8_3();
+            uint32_t reg2 = READ_INST_8_4();
             info.accOut = true;
             info.offset = BytecodeOffset::SIX;
             info.inputs.emplace_back(VirtualRegister(funcReg));
-            info.inputs.emplace_back(VirtualRegister(reg));
+            info.inputs.emplace_back(VirtualRegister(reg0));
+            info.inputs.emplace_back(VirtualRegister(reg1));
+            info.inputs.emplace_back(VirtualRegister(reg2));
             break;
         }
         case EcmaOpcode::CALLITHISRANGEDYN_PREF_IMM16_V8: {
             uint32_t funcReg = READ_INST_8_3();
-            uint32_t actualNumArgs = READ_INST_16_1() - 1;
-            size_t copyArgs = actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS - 2;
+            uint32_t actualNumArgs = READ_INST_16_1();
+
+            info.inputs.emplace_back(Immediate(actualNumArgs));
             info.inputs.emplace_back(VirtualRegister(funcReg));
-            for (size_t i = 1; i <= copyArgs; i++) {
+            for (size_t i = 1; i <= actualNumArgs; i++) {
                 info.inputs.emplace_back(VirtualRegister(funcReg + i));
             }
             info.accOut = true;
@@ -748,10 +755,10 @@ BytecodeInfo BytecodeCircuitBuilder::GetBytecodeInfo(uint8_t *pc)
         case EcmaOpcode::CALLIRANGEDYN_PREF_IMM16_V8: {
             uint32_t funcReg = READ_INST_8_3();
             uint32_t actualNumArgs = READ_INST_16_1();
-            size_t copyArgs = actualNumArgs + NUM_MANDATORY_JSFUNC_ARGS - 2;
+
             info.inputs.emplace_back(Immediate(actualNumArgs));
             info.inputs.emplace_back(VirtualRegister(funcReg));
-            for (size_t i = 1; i <= copyArgs; i++) {
+            for (size_t i = 1; i <= actualNumArgs; i++) {
                 info.inputs.emplace_back(VirtualRegister(funcReg + i));
             }
             info.accOut = true;
