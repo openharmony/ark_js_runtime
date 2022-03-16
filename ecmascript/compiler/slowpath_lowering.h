@@ -132,6 +132,13 @@ private:
     void LowerStGlobalVar(GateRef gate, GateRef glue);
     void LowerTryLdGlobalByName(GateRef gate, GateRef glue);
     void LowerGetIterator(GateRef gate, GateRef glue);
+    void LowerCallArg0Dyn(GateRef gate, GateRef glue);
+    void LowerCallArg1Dyn(GateRef gate, GateRef glue);
+    void LowerCallArgs2Dyn(GateRef gate, GateRef glue);
+    void LowerCallArgs3Dyn(GateRef gate, GateRef glue);
+    void LowerCallIThisRangeDyn(GateRef gate, GateRef glue);
+    void LowerCallSpreadDyn(GateRef gate, GateRef glue);
+    void LowerCallIRangeDyn(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;

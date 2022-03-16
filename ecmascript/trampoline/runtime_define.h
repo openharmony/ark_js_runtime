@@ -163,7 +163,13 @@ namespace panda::ecmascript {
     V(CallNative, 3)                         \
     V(CallSpreadDyn, 4)                      \
     V(DefineGetterSetterByValue, 6)          \
-    V(SuperCall, 5)
+    V(SuperCall, 5)                          \
+    V(CallArg0Dyn, 2)                        \
+    V(CallArg1Dyn, 3)                        \
+    V(CallArgs2Dyn, 4)                       \
+    V(CallArgs3Dyn, 5)                       \
+    V(CallIThisRangeDyn, 3)                  \
+    V(CallIRangeDyn, 2)
 
 #define IGNORE_RUNTIME(...)
 
