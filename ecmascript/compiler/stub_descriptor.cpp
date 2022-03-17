@@ -133,7 +133,7 @@ CALL_STUB_INIT_DESCRIPTOR(FastTypeOf)
 CALL_STUB_INIT_DESCRIPTOR(FastEqual)
 {
     // 3 input parameters, return may be true/false/hole
-    StubDescriptor fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::INT64());
+    StubDescriptor fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *descriptor = fastEqual;
     // 3 input parameters
     std::array<VariableType, 3> params = {
@@ -493,6 +493,99 @@ CALL_STUB_INIT_DESCRIPTOR(MarkingBarrier)
         VariableType::POINTER(),
         VariableType::POINTER(),
     };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CallArg0Dyn)
+{
+    // 2 : 2 input parameters
+    StubDescriptor callArg0Dyn("callArg0Dyn", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = callArg0Dyn;
+    std::array<VariableType, 2> params = { // 2 : 2 input parameters
+        VariableType::POINTER(),
+        VariableType::JS_ANY()
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CallArg1Dyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor callArg1Dyn("callArg1Dyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = callArg1Dyn;
+    std::array<VariableType, 3> params = { // 3 : 3 input parameters
+        VariableType::POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY()
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CallArgs2Dyn)
+{
+    // 4 : 4 input parameters
+    StubDescriptor callArgs2Dyn("callArgs2Dyn", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = callArgs2Dyn;
+    std::array<VariableType, 4> params = { // 4 : 4 input parameters
+        VariableType::POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY()
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CallArgs3Dyn)
+{
+    // 5 : 5 input parameters
+    StubDescriptor callArgs3Dyn("callArgs3Dyn", 0, 5,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = callArgs3Dyn;
+    std::array<VariableType, 5> params = { // 5 : 5 input parameters
+        VariableType::POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY()
+    };
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CallIThisRangeDyn)
+{
+    // 3 : 3 input parameters
+    StubDescriptor callIThisRangeDyn("callIThisRangeDyn", 0, 3,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = callIThisRangeDyn;
+    std::array<VariableType, 3> params = { // 3 : 3 input parameters
+        VariableType::POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::JS_ANY()
+    };
+    descriptor->SetVariableArgs(true);
+    descriptor->SetParameters(params.data());
+    descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
+}
+
+CALL_STUB_INIT_DESCRIPTOR(CallIRangeDyn)
+{
+    // 2 : 2 input parameters
+    StubDescriptor callIRangeDyn("callIRangeDyn", 0, 2,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *descriptor = callIRangeDyn;
+    std::array<VariableType, 2> params = { // 2 : 2 input parameters
+        VariableType::POINTER(),
+        VariableType::JS_ANY()
+    };
+    descriptor->SetVariableArgs(true);
     descriptor->SetParameters(params.data());
     descriptor->SetStubKind(StubDescriptor::CallStubKind::RUNTIME_STUB);
 }

@@ -31,7 +31,7 @@ public:
 
     inline ~EcmaHandleScope();
 
-    static inline uintptr_t NewHandle(JSThread *thread, JSTaggedType value);
+    static inline uintptr_t PUBLIC_API NewHandle(JSThread *thread, JSTaggedType value);
 
     JSThread *GetThread() const
     {

@@ -138,7 +138,7 @@ namespace panda::ecmascript {
     V(Div2Dyn, 3)                            \
     V(Mod2Dyn, 3)                            \
     V(GetLexicalEnv, 1)                      \
-    V(LoadValueFromConstantPool, 3)          \
+    V(LoadValueFromConstantStringTable, 2)   \
     V(CreateEmptyObject, 1)                  \
     V(CreateEmptyArray, 1)                   \
     V(GetSymbolFunction, 1)                  \
@@ -157,9 +157,19 @@ namespace panda::ecmascript {
     V(DefineGeneratorFunc, 2)                \
     V(DefineAsyncFunc, 2)                    \
     V(DefineMethod, 3)                       \
+    V(SetNotCallableException, 0)            \
+    V(SetCallConstructorException, 0)        \
+    V(SetStackOverflowException, 0)          \
+    V(CallNative, 3)                         \
     V(CallSpreadDyn, 4)                      \
     V(DefineGetterSetterByValue, 6)          \
-    V(SuperCall, 5)
+    V(SuperCall, 5)                          \
+    V(CallArg0Dyn, 2)                        \
+    V(CallArg1Dyn, 3)                        \
+    V(CallArgs2Dyn, 4)                       \
+    V(CallArgs3Dyn, 5)                       \
+    V(CallIThisRangeDyn, 3)                  \
+    V(CallIRangeDyn, 2)
 
 #define IGNORE_RUNTIME(...)
 

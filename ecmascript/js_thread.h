@@ -96,6 +96,7 @@ STATIC_ASSERT_EQ_ARCH(sizeof(StubEntries), StubEntries::SizeArch32, StubEntries:
 class JSThread : public ManagedThread {
 public:
     static constexpr int CONCURRENT_MARKING_BITFIELD_NUM = 2;
+    static constexpr uint32_t RESERVE_STACK_SIZE = 128;
     using MarkStatusBits = BitField<MarkStatus, 0, CONCURRENT_MARKING_BITFIELD_NUM>;
 
     static JSThread *Cast(ManagedThread *thread)
@@ -106,7 +107,7 @@ public:
 
     JSThread(Runtime *runtime, PandaVM *vm);
 
-    ~JSThread() override;
+    PUBLIC_API ~JSThread() override;
 
     EcmaVM *GetEcmaVM() const;
 
@@ -156,8 +157,8 @@ public:
 
     void Iterate(const RootVisitor &v0, const RootRangeVisitor &v1);
 
-    uintptr_t *ExpandHandleStorage();
-    void ShrinkHandleStorage(int prevIndex);
+    uintptr_t* PUBLIC_API ExpandHandleStorage();
+    void PUBLIC_API ShrinkHandleStorage(int prevIndex);
 
     JSTaggedType *GetHandleScopeStorageNext() const
     {
@@ -356,6 +357,7 @@ public:
                                                  RTInterfaces,
                                                  StubEntries,
                                                  base::AlignedUint64,
+                                                 base::AlignedPointer,
                                                  GlobalEnvConstants> {
         enum class Index : size_t {
             ExceptionIndex = 0,
@@ -366,6 +368,7 @@ public:
             RTInterfacesIndex,
             StubEntriesIndex,
             StateBitFieldIndex,
+            FrameBaseIndex,
             GlobalConstIndex,
             NumOfMembers
         };
@@ -416,6 +419,11 @@ public:
             return GetOffset<static_cast<size_t>(Index::StubEntriesIndex)>(isArch32);
         }
 
+        static size_t GetFrameBaseOffset(bool isArch32)
+        {
+            return GetOffset<static_cast<size_t>(Index::FrameBaseIndex)>(isArch32);
+        }
+
         alignas(EAS) JSTaggedValue exception_ {JSTaggedValue::Hole()};
         alignas(EAS) JSTaggedValue globalObject_ {JSTaggedValue::Hole()};
         alignas(EAS) JSTaggedType *currentFrame_ {nullptr};
@@ -424,6 +432,7 @@ public:
         alignas(EAS) RTInterfaces rtInterfaces_;
         alignas(EAS) StubEntries stubEntries_;
         alignas(EAS) volatile uint64_t threadStateBitField_ {0ULL};
+        alignas(EAS) JSTaggedType *frameBase_ {nullptr};
         alignas(EAS) GlobalEnvConstants globalConst_;
     };
     static_assert(MEMBER_OFFSET(GlueData, rtInterfaces_) == ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET);
@@ -438,7 +447,6 @@ private:
     void DumpStack() DUMP_API_ATTR;
 
     static constexpr uint32_t MAX_STACK_SIZE = 128 * 1024;
-    static constexpr uint32_t RESERVE_STACK_SIZE = 128;
     static const uint32_t NODE_BLOCK_SIZE_LOG2 = 10;
     static const uint32_t NODE_BLOCK_SIZE = 1U << NODE_BLOCK_SIZE_LOG2;
     static constexpr int32_t MIN_HANDLE_STORAGE_SIZE = 2;
@@ -462,7 +470,6 @@ private:
     bool gcState_ {false};
     VmThreadControl *vmThreadControl_ {nullptr};
 
-    JSTaggedType *frameBase_ {nullptr};
     bool stableArrayElementsGuardians_ {true};
     InternalCallParams *internalCallParams_ {nullptr};
     GlueData glueData_;

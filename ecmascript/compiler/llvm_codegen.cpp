@@ -256,7 +256,7 @@ void LLVMAssembler::Initialize()
     LLVMInitializeMCJITCompilerOptions(&options_, sizeof(options_));
     options_.OptLevel = 3; // opt level 2
     // Just ensure that this field still exists.
-#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
     // tmp for interpreter stub
     options_.NoFramePointerElim = false;
 #else

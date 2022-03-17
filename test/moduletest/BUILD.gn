@@ -14,12 +14,14 @@
 group("ark_js_moduletest") {
   testonly = true
   deps = [
+    "allocatearraybuffer:allocatearraybufferAction",
     "async:asyncAction",
     "bitwiseop:bitwiseopAction",
     "callframe:callframeAction",
     "class:classAction",
     "container:containerAction",
     "dyninstruction:dyninstructionAction",
+    "ecmastringtable:ecmastringtableAction",
     "fortest:fortestAction",
     "generator:generatorAction",
     "getunmappedargs:getunmappedargsAction",
@@ -35,4 +37,7 @@ group("ark_js_moduletest") {
     "throwdyn:throwdynAction",
     "yieldstar:yieldstarAction",
   ]
+  if (!is_debug) {
+    deps += [ "weaktransitions:weaktransitionsAction" ]
+  }
 }

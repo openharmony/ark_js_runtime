@@ -100,9 +100,6 @@ public:
 
     ~EcmaVM() override;
 
-    bool PUBLIC_API CollectInfoOfPandaFile(const std::string &filename,
-                                           std::vector<BytecodeTranslationInfo> *infoList);
-
     PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
     bool IsInitialized() const
@@ -387,7 +384,7 @@ public:
         }
     }
 
-    static JSPandaFileManager *GetJSPandaFileManager();
+    static JSPandaFileManager* PUBLIC_API GetJSPandaFileManager();
 
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override

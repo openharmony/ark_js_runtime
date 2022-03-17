@@ -68,7 +68,7 @@ public:
     const std::string GetFileName() const;
     void ClearSampleData();
 
-    static int staticGcState_;
+    static bool staticGcState_;
     std::ofstream fileHandle_;
 private:
     void WriteAddNodes();
@@ -80,9 +80,9 @@ private:
     CVector<int> stackTopLines_;
     CMap<struct MethodKey, int> methodMap_;
     CDeque<struct SampleInfo> samples_;
-    std::string sampleData_;
-    uint64_t threadStartTime_;
-    std::string fileName_;
+    std::string sampleData_ = "";
+    uint64_t threadStartTime_ = 0;
+    std::string fileName_ = "";
 };
 } // namespace panda::ecmascript
 #endif // ECMASCRIPT_PROFILE_GENERSTOR_H

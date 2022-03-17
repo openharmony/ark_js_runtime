@@ -312,8 +312,10 @@ public:
     ~InterpretedFrameBase() = default;
     JSTaggedType  *prev; // for llvm :c-fp ; for interrupt: thread-fp for gc
     FrameType type;
-    static constexpr size_t SizeArch32 = sizeof(JSTaggedType *) + sizeof(FrameType);
-    static constexpr size_t SizeArch64 = sizeof(JSTaggedType *) + sizeof(FrameType);
+    static constexpr size_t TYPE_OFFSET_32 = sizeof(uint32_t);
+    static constexpr size_t TYPE_OFFSET_64 = sizeof(uint64_t);
+    static constexpr size_t SizeArch32 = TYPE_OFFSET_32 + sizeof(FrameType);
+    static constexpr size_t SizeArch64 = TYPE_OFFSET_64 + sizeof(FrameType);
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase), InterpretedFrameBase::SizeArch32, InterpretedFrameBase::SizeArch64);
 
@@ -425,7 +427,7 @@ struct OptimizedLeaveFrame {
 #ifndef PANDA_TARGET_32
         return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argRuntimeId);
 #else
-        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc);
+        return ToUintPtr(this) + MEMBER_OFFSET(OptimizedLeaveFrame, argc) + argc * sizeof(JSTaggedType);
 #endif
     }
 };
