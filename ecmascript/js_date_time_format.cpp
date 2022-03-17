@@ -1337,7 +1337,7 @@ std::string JSDateTimeFormat::ConstructGMTTimeZoneID(const std::string &input)
         return "";
     }
     std::string ret = "Etc/GMT";
-    int timeZoneOffsetFlag = 7;
+    int timeZoneOffsetFlag = 7; // The offset of time zone flag, to match RegExp starting with the correct string
     if (regex_match(input.substr(timeZoneOffsetFlag), std::regex("[+-][1][0-4]"))
         || (regex_match(input.substr(timeZoneOffsetFlag), std::regex("[+-][0-9]"))
         || input.substr(timeZoneOffsetFlag) == "0")) {
