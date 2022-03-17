@@ -227,9 +227,31 @@ void ParallelEvacuation::UpdateRoot()
     objXRay_.VisitVMRoots(gcUpdateYoung, gcUpdateRangeYoung);
 }
 
+void ParallelEvacuation::UpdateRecordWeakReference()
+{
+    auto totalThreadCount = Platform::GetCurrentPlatform()->GetTotalThreadNum() + 1;
+    for (uint32_t i = 0; i < totalThreadCount; i++) {
+        ProcessQueue *queue = heap_->GetWorkList()->GetWeakReferenceQueue(i);
+
+        while (true) {
+            auto obj = queue->PopBack();
+            if (UNLIKELY(obj == nullptr)) {
+                break;
+            }
+            ObjectSlot slot(ToUintPtr(obj));
+            JSTaggedValue value(slot.GetTaggedType());
+            ASSERT(value.IsWeak() || value.IsUndefined());
+            if (!value.IsUndefined()) {
+                UpdateWeakObjectSlot(value.GetTaggedWeakRef(), slot);
+            }
+        }
+    }
+}
+
 void ParallelEvacuation::UpdateWeakReference()
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), UpdateWeakReference);
+    UpdateRecordWeakReference();
     auto stringTable = heap_->GetEcmaVM()->GetEcmaStringTable();
     bool isFullMark = heap_->IsFullMark();
     WeakRootVisitor gcUpdateWeak = [isFullMark](TaggedObject *header) {
@@ -335,6 +357,8 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
             if (freeStart != freeEnd) {
                 size_t freeSize = freeEnd - freeStart;
                 FreeObject::FillFreeObject(heap_->GetEcmaVM(), freeStart, freeSize);
+                SemiSpace *toSpace = const_cast<SemiSpace *>(heap_->GetNewSpace());
+                toSpace->DecrementSurvivalObjectSize(freeSize);
             }
 
             freeStart = freeEnd + klass->SizeFromJSHClass(header);

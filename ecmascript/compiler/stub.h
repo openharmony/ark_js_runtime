@@ -452,6 +452,7 @@ public:
     inline GateRef DoubleAdd(GateRef x, GateRef y);
     inline GateRef IntPtrAdd(GateRef x, GateRef y);
     inline GateRef IntPtrSub(GateRef x, GateRef y);
+    inline GateRef PointerSub(GateRef x, GateRef y);
     inline GateRef IntPtrEqual(GateRef x, GateRef y);
     inline GateRef Int16Sub(GateRef x, GateRef y);
     inline GateRef Int32Sub(GateRef x, GateRef y);
@@ -625,7 +626,6 @@ public:
     inline GateRef SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass,
 	                                               GateRef protoChange);
     inline GateRef SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef attr);
-    inline GateRef SetParentToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef parent);
     inline GateRef SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key);
     inline GateRef SetTransitionsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef transition);
     inline void SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value);
@@ -751,13 +751,19 @@ public:
     inline GateRef GetBoxFromGlobalDictionary(GateRef object, GateRef entry);
     inline GateRef GetValueFromGlobalDictionary(GateRef object, GateRef entry);
     inline GateRef GetPropertiesFromJSObject(GateRef object);
+    template<OpCode::Op Op, MachineType Type>
+    inline GateRef BinaryOp(GateRef x, GateRef y);
     GateRef GetGlobalOwnProperty(GateRef glue, GateRef receiver, GateRef key);
-
     // fast path
     GateRef FastEqual(GateRef left, GateRef right);
+    GateRef FastMod(GateRef gule, GateRef left, GateRef right);
+    GateRef FastTypeOf(GateRef left, GateRef right);
     GateRef FastMul(GateRef left, GateRef right);
     GateRef FastDiv(GateRef left, GateRef right);
-    GateRef FastMod(GateRef glue, GateRef left, GateRef right);
+    GateRef FastAdd(GateRef left, GateRef right);
+    GateRef FastSub(GateRef left, GateRef right);
+    template<OpCode::Op Op>
+    GateRef FastBinaryOp(GateRef left, GateRef right);
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);

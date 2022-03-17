@@ -359,9 +359,6 @@ static void DumpHClass(JSThread *thread, const JSHClass *jshclass, std::ostream 
     if (withDetail && !transtions.IsNull()) {
         transtions.Dump(thread, os);
     }
-    os << " - Parent :" << std::setw(DUMP_TYPE_OFFSET);
-    jshclass->GetParent().DumpTaggedValue(thread, os);
-    os << "\n";
 
     os << " - Flags : " << std::setw(DUMP_TYPE_OFFSET);
     os << "Ctor :" << jshclass->IsConstructor();
@@ -741,7 +738,7 @@ void JSTaggedValue::DumpHeapObjectType([[maybe_unused]] JSThread *thread, std::o
            << "\n";
     }
 
-    JSType type = GetTaggedObject()->GetClass()->GetObjectType();
+    JSType type = obj->GetClass()->GetObjectType();
     if (type == JSType::STRING) {
         CString string = ConvertToString(EcmaString::Cast(obj));
         os << std::left << std::setw(DUMP_TYPE_OFFSET) << "[" + string + "]";

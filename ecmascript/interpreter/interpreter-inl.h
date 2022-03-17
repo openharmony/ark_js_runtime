@@ -527,8 +527,13 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
-#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
-    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+    } else {
+        EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
+    }
 #else
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
 #endif
@@ -599,8 +604,13 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     thread->SetCurrentSPFrame(newSp);
 
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
-#if ECMASCRIPT_ENABLE_INTERPRETER_ASM
-    InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+    } else {
+        EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
+    }
 #else
     EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
 #endif
@@ -3793,7 +3803,7 @@ uint32_t EcmaInterpreter::GetNumArgs(JSTaggedType *sp, uint32_t restIdx, uint32_
     uint32_t numArgs = method->GetNumArgsWithCallField();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSTaggedType *lastFrame = state->base.prev - FRAME_STATE_SIZE;
-    if (lastFrame - sp > numVregs + copyArgs + numArgs) {
+    if (static_cast<uint32_t>(lastFrame - sp) > numVregs + copyArgs + numArgs) {
         // In this case, actualNumArgs is in the end
         // If not, then actualNumArgs == declaredNumArgs, therefore do nothing
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)

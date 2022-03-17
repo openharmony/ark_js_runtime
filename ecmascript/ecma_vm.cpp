@@ -157,7 +157,7 @@ bool EcmaVM::Initialize()
         LOG_ECMA(FATAL) << "alloc factory_ failed";
         UNREACHABLE();
     }
-
+    options_.ParseAsmInterOption();
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     if (!snapshotDeserializeEnable_ || !VerifyFilePath(snapshotFileName_)) {
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";
@@ -337,20 +337,6 @@ EcmaVM::~EcmaVM()
         delete thread_;
         thread_ = nullptr;
     }
-}
-
-bool EcmaVM::CollectInfoOfPandaFile(const std::string &filename, std::vector<BytecodeTranslationInfo> *infoList)
-{
-    const JSPandaFile *jsPandaFile = GetJSPandaFileManager()->LoadAotInfoFromPf(filename, infoList);
-    if (jsPandaFile == nullptr) {
-        return false;
-    }
-
-    if (GetJSOptions().IsEnableTsAot()) {
-        TSLoader *tsLoader = GetTSLoader();
-        tsLoader->DecodeTSTypes(*jsPandaFile->GetPandaFile());
-    }
-    return true;
 }
 
 tooling::ecmascript::PtJSExtractor *EcmaVM::GetDebugInfoExtractor(const panda_file::File *file)

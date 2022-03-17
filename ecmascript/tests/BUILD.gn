@@ -1042,12 +1042,12 @@ host_unittest_action("MemControllerTest") {
   }
 }
 
-host_unittest_action("WeakRefGenGcTest") {
+host_unittest_action("WeakRefOldGcTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
-    "weak_ref_gen_gc_test.cpp",
+    "weak_ref_old_gc_test.cpp",
   ]
 
   configs = [
@@ -1069,12 +1069,12 @@ host_unittest_action("WeakRefGenGcTest") {
   }
 }
 
-host_unittest_action("WeakRefStwGcTest") {
+host_unittest_action("WeakRefSemiGcTest") {
   module_out_path = module_output_path
 
   sources = [
     # test file
-    "weak_ref_stw_gc_test.cpp",
+    "weak_ref_semi_gc_test.cpp",
   ]
 
   configs = [
@@ -1223,8 +1223,8 @@ group("unittest") {
     ":SymbolTableTest",
     ":TaggedTreeTest",
     ":TaggedValueTest",
-    ":WeakRefGenGcTest",
-    ":WeakRefStwGcTest",
+    ":WeakRefOldGcTest",
+    ":WeakRefSemiGcTest",
   ]
 }
 
@@ -1273,7 +1273,7 @@ group("host_unittest") {
     ":SymbolTableTestAction",
     ":TaggedTreeTestAction",
     ":TaggedValueTestAction",
-    ":WeakRefGenGcTestAction",
-    ":WeakRefStwGcTestAction",
+    ":WeakRefOldGcTestAction",
+    ":WeakRefSemiGcTestAction",
   ]
 }
