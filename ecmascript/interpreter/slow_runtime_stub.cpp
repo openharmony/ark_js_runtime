@@ -2084,9 +2084,6 @@ JSTaggedValue SlowRuntimeStub::CloneClassFromTemplate(JSThread *thread, JSTagged
     JSHandle<JSObject> clsPrototype(thread, cls->GetFunctionPrototype());
 
     bool canShareHClass = false;
-    if (cls->GetClass()->GetProto() == baseHandle.GetTaggedValue()) {
-        canShareHClass = true;
-    }
 
     JSHandle<JSFunction> cloneClass = factory->CloneClassCtor(cls, lexenvHandle, canShareHClass);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
