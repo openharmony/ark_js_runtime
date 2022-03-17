@@ -1765,8 +1765,18 @@ void PendingJob::Dump(JSThread *thread, std::ostream &os) const
 {
     os << " - job: ";
     GetJob().D();
+    os << "\n";
     os << " - arguments: ";
     GetArguments().D();
+    os << "\n";
+    os << " - chainId: " << GetChainId();
+    os << "\n";
+    os << " - spanId: " << GetSpanId();
+    os << "\n";
+    os << " - parentSpanId: " << GetParentSpanId();
+    os << "\n";
+    os << " - flags: " << GetFlags();
+    os << "\n";
 }
 
 void CompletionRecord::Dump(JSThread *thread, std::ostream &os) const
@@ -3275,6 +3285,10 @@ void PendingJob::DumpForSnapshot([[maybe_unused]] JSThread *thread,
 {
     vec.push_back(std::make_pair(CString("job"), GetJob()));
     vec.push_back(std::make_pair(CString("arguments"), GetArguments()));
+    vec.push_back(std::make_pair(CString("chainId"), JSTaggedValue(GetChainId())));
+    vec.push_back(std::make_pair(CString("spanId"), JSTaggedValue(GetChainId())));
+    vec.push_back(std::make_pair(CString("parentSpanId"), JSTaggedValue(GetChainId())));
+    vec.push_back(std::make_pair(CString("flags"), JSTaggedValue(GetChainId())));
 }
 
 void CompletionRecord::DumpForSnapshot([[maybe_unused]] JSThread *thread,

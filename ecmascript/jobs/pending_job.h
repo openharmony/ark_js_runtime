@@ -24,8 +24,16 @@
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tagged_array.h"
 #include "ecmascript/mem/c_containers.h"
+#ifndef PANDA_TARGET_LINUX
+#include "hitrace/hitrace.h"
+#include "hitrace/hitraceid.h"
+#endif
 
 namespace panda::ecmascript::job {
+#ifndef PANDA_TARGET_LINUX
+using namespace OHOS::HiviewDFX;
+#endif
+
 class PendingJob final : public Record {
 public:
     static PendingJob *Cast(ObjectHeader *object)
@@ -47,11 +55,16 @@ public:
 
     static constexpr size_t JOB_OFFSET = Record::SIZE;
     ACCESSORS(Job, JOB_OFFSET, ARGUMENT_OFFSET);
-    ACCESSORS(Arguments, ARGUMENT_OFFSET, SIZE);
+    ACCESSORS(Arguments, ARGUMENT_OFFSET, CHAINID_OFFSET);
+    ACCESSORS_PRIMITIVE_FIELD(ChainId, uint64_t, CHAINID_OFFSET, SPANID_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(SpanId, uint64_t, SPANID_OFFSET, PARENTSPANID_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(ParentSpanId, uint64_t, PARENTSPANID_OFFSET, FLAGS_OFFSET)
+    ACCESSORS_PRIMITIVE_FIELD(Flags, uint32_t, FLAGS_OFFSET, LAST_OFFSET)
+    DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     DECL_DUMP()
 
-    DECL_VISIT_OBJECT(JOB_OFFSET, SIZE)
+    DECL_VISIT_OBJECT(JOB_OFFSET, CHAINID_OFFSET)
 };
 }  // namespace panda::ecmascript::job
 #endif  // ECMASCRIPT_JOBS_PENDING_JOB_H
