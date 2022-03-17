@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -236,6 +236,8 @@ void GlobalEnvConstants::InitGlobalConstant(JSThread *thread)
     SetConstant(ConstantIndex::UINT32_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Uint32Array"));
     SetConstant(ConstantIndex::FLOAT32_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Float32Array"));
     SetConstant(ConstantIndex::FLOAT64_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("Float64Array"));
+    SetConstant(ConstantIndex::BIGINT64_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("BigInt64Array"));
+    SetConstant(ConstantIndex::BIGUINT64_ARRAY_STRING_INDEX, factory->NewFromCanBeCompressString("BigUint64Array"));
     SetConstant(ConstantIndex::ASYNC_FUNCTION_STRING_INDEX, factory->NewFromCanBeCompressString("AsyncFunction"));
     SetConstant(ConstantIndex::PROMISE_RESOLVE_STRING_INDEX, factory->NewFromCanBeCompressString("resolve"));
     SetConstant(ConstantIndex::ID_STRING_INDEX, factory->NewFromCanBeCompressString("id"));

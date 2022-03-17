@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,8 +54,12 @@ DataViewType TypedArrayHelper::GetType(const JSHandle<JSObject> &obj)
             return DataViewType::UINT32;
         case JSType::JS_FLOAT32_ARRAY:
             return DataViewType::FLOAT32;
-        default:
+        case JSType::JS_FLOAT64_ARRAY:
             return DataViewType::FLOAT64;
+        case JSType::JS_BIGINT64_ARRAY:
+            return DataViewType::BIGINT64;
+        default:
+            return DataViewType::BIGUINT64;
     }
 }
 
@@ -106,7 +110,13 @@ DataViewType TypedArrayHelper::GetTypeFromName(JSThread *thread, const JSHandle<
     if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledFloat32ArrayString())) {
         return DataViewType::FLOAT32;
     }
-    return DataViewType::FLOAT64;
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledFloat64ArrayString())) {
+        return DataViewType::FLOAT64;
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledBigInt64ArrayString())) {
+        return DataViewType::BIGINT64;
+    }
+    return DataViewType::BIGUINT64;
 }
 
 JSHandle<JSTaggedValue> TypedArrayHelper::GetConstructor(JSThread *thread, const JSHandle<JSTaggedValue> &obj)
@@ -130,8 +140,12 @@ JSHandle<JSTaggedValue> TypedArrayHelper::GetConstructor(JSThread *thread, const
             return env->GetUint32ArrayFunction();
         case JSType::JS_FLOAT32_ARRAY:
             return env->GetFloat32ArrayFunction();
-        default:
+        case JSType::JS_FLOAT64_ARRAY:
             return env->GetFloat64ArrayFunction();
+        case JSType::JS_BIGINT64_ARRAY:
+            return env->GetBigInt64ArrayFunction();
+        default:
+            return env->GetBigUint64ArrayFunction();
     }
 }
 
@@ -163,7 +177,13 @@ JSHandle<JSFunction> TypedArrayHelper::GetConstructorFromName(JSThread *thread, 
     if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledFloat32ArrayString())) {
         return JSHandle<JSFunction>(env->GetFloat32ArrayFunction());
     }
-    return JSHandle<JSFunction>(env->GetFloat64ArrayFunction());
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledFloat64ArrayString())) {
+        return JSHandle<JSFunction>(env->GetFloat64ArrayFunction());
+    }
+    if (JSTaggedValue::SameValue(typeName, globalConst->GetHandledBigInt64ArrayString())) {
+        return JSHandle<JSFunction>(env->GetBigInt64ArrayFunction());
+    }
+    return JSHandle<JSFunction>(env->GetBigUint64ArrayFunction());
 }
 
 int32_t TypedArrayHelper::GetSizeFromName(JSThread *thread, const JSHandle<JSTaggedValue> &typeName)

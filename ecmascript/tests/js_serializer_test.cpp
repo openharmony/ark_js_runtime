@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -453,6 +453,7 @@ public:
         JSTaggedValue byteLength = resJSInt8Array->GetByteLength();
         JSTaggedValue byteOffset = resJSInt8Array->GetByteOffset();
         JSTaggedValue arrayLength = resJSInt8Array->GetArrayLength();
+        ContentType contentType = resJSInt8Array->GetContentType();
         JSHandle<JSTaggedValue> viewedArrayBuffer(thread, resJSInt8Array->GetViewedArrayBuffer());
 
         EXPECT_TRUE(typedArrayName->IsString());
@@ -461,6 +462,7 @@ public:
         EXPECT_TRUE(byteLength.GetInt() == originTypedArray->GetByteLength().GetInt()) << "Not Same ByteLength";
         EXPECT_TRUE(byteOffset.GetInt() == originTypedArray->GetByteOffset().GetInt()) << "Not Same ByteOffset";
         EXPECT_TRUE(arrayLength.GetInt() == originTypedArray->GetArrayLength().GetInt()) << "Not Same ArrayLength";
+        EXPECT_TRUE(contentType == originTypedArray->GetContentType()) << "Not Same ContentType";
 
         // check arrayBuffer
         JSHandle<JSArrayBuffer> resJSArrayBuffer(viewedArrayBuffer);
@@ -918,8 +920,12 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSArrayBuffer)
     thread->GetEcmaVM()->GetFactory()->NewJSArrayBufferData(jsArrayBuffer, byteLength);
     jsArrayBuffer->SetArrayBufferByteLength(byteLength);
     JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>(jsArrayBuffer);
-    BuiltinsArrayBuffer::SetValueInBuffer(obj.GetTaggedValue(), 1, DataViewType::UINT8, JSTaggedNumber(7), true);
-    BuiltinsArrayBuffer::SetValueInBuffer(obj.GetTaggedValue(), 3, DataViewType::UINT8, JSTaggedNumber(17), true);
+    JSHandle<JSTaggedValue> number(thread, JSTaggedValue(7));
+    BuiltinsArrayBuffer::SetValueInBuffer(thread, obj.GetTaggedValue(), 1, DataViewType::UINT8,
+                                          number, true);
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(17));
+    BuiltinsArrayBuffer::SetValueInBuffer(thread, obj.GetTaggedValue(), 3, DataViewType::UINT8, // 3:index
+                                          number, true);
 
     JSSerializer *serializer = new JSSerializer(thread);
     bool success = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(jsArrayBuffer));
@@ -1013,9 +1019,13 @@ JSArrayBuffer *CreateTestJSArrayBuffer(JSThread *thread)
     jsArrayBuffer->SetArrayBufferByteLength(byteLength);
     JSHandle<JSTaggedValue> obj = JSHandle<JSTaggedValue>(jsArrayBuffer);
     // 7 : test case
-    BuiltinsArrayBuffer::SetValueInBuffer(obj.GetTaggedValue(), 1, DataViewType::UINT8, JSTaggedNumber(7), true);
+    JSHandle<JSTaggedValue> number(thread, JSTaggedValue(7));
+    BuiltinsArrayBuffer::SetValueInBuffer(thread, obj.GetTaggedValue(), 1, DataViewType::UINT8,
+                                          number, true);
     // 3, 17 : test case
-    BuiltinsArrayBuffer::SetValueInBuffer(obj.GetTaggedValue(), 3, DataViewType::UINT8, JSTaggedNumber(17), true);
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(17));
+    BuiltinsArrayBuffer::SetValueInBuffer(thread, obj.GetTaggedValue(), 3, DataViewType::UINT8,  // 3:index
+                                          number, true);
     return *jsArrayBuffer;
 }
 
@@ -1035,6 +1045,7 @@ HWTEST_F_L0(JSSerializerTest, SerializeJSTypedArray)
     int8Array->SetByteOffset(thread, JSTaggedValue(byteOffset));
     int8Array->SetTypedArrayName(thread, thread->GlobalConstants()->GetInt8ArrayString());
     int8Array->SetArrayLength(thread, JSTaggedValue(arrayLength));
+    int8Array->SetContentType(ContentType::Number);
     JSSerializer *serializer = new JSSerializer(thread);
     bool success = serializer->SerializeJSTaggedValue(JSHandle<JSTaggedValue>::Cast(int8Array));
     EXPECT_TRUE(success);

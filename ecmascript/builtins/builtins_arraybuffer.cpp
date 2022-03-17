@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 
 #include "ecmascript/base/builtins_base.h"
 #include "ecmascript/base/number_helper.h"
+#include "ecmascript/builtins/builtins_bigint.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/global_env.h"
@@ -306,8 +307,8 @@ JSTaggedValue BuiltinsArrayBuffer::CloneArrayBuffer(JSThread *thread, const JSHa
 
 // 24.1.1.5
 // NOLINTNEXTLINE(readability-function-size)
-JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
-                                                      bool littleEndian)
+JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSThread *thread, JSTaggedValue arrBuf, uint32_t byteIndex,
+                                                      DataViewType type, bool littleEndian)
 {
     JSArrayBuffer *jsArrayBuffer = JSArrayBuffer::Cast(arrBuf.GetTaggedObject());
     JSTaggedValue data = jsArrayBuffer->GetArrayBufferData();
@@ -336,6 +337,10 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSTaggedValue arrBuf, uint
             return GetValueFromBufferForFloat<float, UnionType32, NumberSize::FLOAT32>(block, byteIndex, littleEndian);
         case DataViewType::FLOAT64:
             return GetValueFromBufferForFloat<double, UnionType64, NumberSize::FLOAT64>(block, byteIndex, littleEndian);
+        case DataViewType::BIGINT64:
+            return GetValueFromBufferForBigInt(thread, block, byteIndex);
+        case DataViewType::BIGUINT64:
+            return GetValueFromBufferForBigUint(thread, block, byteIndex);
         default:
             break;
     }
@@ -344,14 +349,30 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBuffer(JSTaggedValue arrBuf, uint
 }
 
 // 24.1.1.6
-JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
-                                                    JSTaggedNumber value, bool littleEndian)
+JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSThread *thread, JSTaggedValue arrBuf, uint32_t byteIndex,
+                                                    DataViewType type, const JSHandle<JSTaggedValue> &value,
+                                                    bool littleEndian)
 {
     JSArrayBuffer *jsArrayBuffer = JSArrayBuffer::Cast(arrBuf.GetTaggedObject());
     JSTaggedValue data = jsArrayBuffer->GetArrayBufferData();
     void *pointer = JSNativePointer::Cast(data.GetTaggedObject())->GetExternalPointer();
     auto *block = reinterpret_cast<uint8_t *>(pointer);
-    double val = value.GetNumber();
+    if (IsBigIntElementType(type)) {
+        switch (type) {
+            case DataViewType::BIGINT64:
+                SetValueInBufferForBigInt(thread, value, block, byteIndex, false);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                break;
+            case DataViewType::BIGUINT64:
+                SetValueInBufferForBigInt(thread, value, block, byteIndex, true);
+                RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+                break;
+            default:
+                UNREACHABLE();
+        }
+        return JSTaggedValue::Undefined();
+    }
+    double val = value.GetTaggedValue().GetNumber();
     switch (type) {
         case DataViewType::UINT8:
             SetValueInBufferForByte<uint8_t>(val, block, byteIndex);
@@ -386,11 +407,27 @@ JSTaggedValue BuiltinsArrayBuffer::SetValueInBuffer(JSTaggedValue arrBuf, uint32
     return JSTaggedValue::Undefined();
 }
 
+// es12 25.1.2.7 IsBigIntElementType ( type )
+bool BuiltinsArrayBuffer::IsBigIntElementType(DataViewType type)
+{
+    if (type == DataViewType::BIGINT64 || type == DataViewType::BIGUINT64) {
+        return true;
+    }
+    return false;
+}
+
 template<typename T>
 void BuiltinsArrayBuffer::SetTypeData(uint8_t *block, T value, uint32_t index)
 {
-    uint32_t sizeCount = sizeof(T);
-    auto *res = reinterpret_cast<uint8_t *>(&value);
+    uint32_t sizeCount = 0;
+    uint8_t *res = nullptr;
+    if constexpr (std::is_same_v<T, uint32_t*>) {
+        sizeCount = sizeof(uint32_t) * 2; // 2:Array occupies 8 bytes
+        res = reinterpret_cast<uint8_t *>(value);
+    } else {
+        sizeCount = sizeof(T);
+        res = reinterpret_cast<uint8_t *>(&value);
+    }
     for (uint32_t i = 0; i < sizeCount; i++) {
         *(block + index + i) = *(res + i);  // NOLINT
     }
@@ -486,6 +523,34 @@ JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForFloat(uint8_t *block, ui
     return GetTaggedDouble(unionValue.value);
 }
 
+JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForBigInt(JSThread *thread, uint8_t *block, uint32_t byteIndex)
+{
+    uint32_t *pTmp = reinterpret_cast<uint32_t *>(block + byteIndex);
+    JSHandle<BigInt> valBigInt = BigInt::CreateBigint(thread, 2); // 2:Create a bigint of 2 elements
+    BigInt::SetDigit(thread, valBigInt, 0, *pTmp);
+    uint32_t tmp = *(pTmp + 1);
+    if (tmp >> BITS_THIRTY_ONE) {
+        valBigInt->SetSign(true);
+    }
+    if ((*pTmp == 0) && (tmp >> BITS_THIRTY_ONE)) {
+        BigInt::SetDigit(thread, valBigInt, 1, tmp);
+    } else {
+        BigInt::SetDigit(thread, valBigInt, 1, tmp & ~(1 << BITS_THIRTY_ONE));
+    }
+    BigIntHelper::RightTruncate(thread, valBigInt);
+    return valBigInt.GetTaggedValue();
+}
+
+JSTaggedValue BuiltinsArrayBuffer::GetValueFromBufferForBigUint(JSThread *thread, uint8_t *block, uint32_t byteIndex)
+{
+    uint32_t *pTmp = reinterpret_cast<uint32_t *>(block + byteIndex);
+    JSHandle<BigInt> valBigInt = BigInt::CreateBigint(thread, 2); // 2:2 elements
+    BigInt::SetDigit(thread, valBigInt, 0, *pTmp);
+    BigInt::SetDigit(thread, valBigInt, 1, *(pTmp + 1));
+    BigIntHelper::RightTruncate(thread, valBigInt);
+    return valBigInt.GetTaggedValue();
+}
+
 template<typename T>
 void BuiltinsArrayBuffer::SetValueInBufferForByte(double val, uint8_t *block, uint32_t byteIndex)
 {
@@ -564,5 +629,28 @@ void BuiltinsArrayBuffer::SetValueInBufferForFloat(double val, uint8_t *block, u
         }
     }
     SetTypeData(block, data, byteIndex);
+}
+
+JSTaggedValue BuiltinsArrayBuffer::SetValueInBufferForBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &val,
+                                                             uint8_t *block, uint32_t byteIndex, bool isUint)
+{
+    JSHandle<BigInt> valBigintHandle;
+    if (isUint) {
+        valBigintHandle = JSHandle<BigInt>(thread, val->ToBigUint64(thread, val));
+    } else {
+        valBigintHandle = JSHandle<BigInt>(thread, val->ToBigInt64(thread, val));
+    }
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    uint32_t valLength = valBigintHandle->GetLength();
+    uint32_t varBuffer[2] = {0}; // 2:2 elements with 8 bits
+    for (uint32_t i = 0; i < valLength; i++) {
+        varBuffer[i] = valBigintHandle->GetDigit(i);
+    }
+    if (!isUint) {
+        bool sign = valBigintHandle->GetSign();
+        varBuffer[1] = sign ? (varBuffer[1] |= 1 << BITS_THIRTY_ONE) : varBuffer[1];
+    }
+    SetTypeData(block, varBuffer, byteIndex);
+    return JSTaggedValue::Undefined();
 }
 }  // namespace panda::ecmascript::builtins

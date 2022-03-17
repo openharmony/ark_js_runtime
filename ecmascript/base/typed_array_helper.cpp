@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -204,12 +204,13 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     // 16. If IsSharedArrayBuffer(srcData) is false, then
     //   a. Let bufferConstructor be ? SpeciesConstructor(srcData, %ArrayBuffer%).
 
-    JSTaggedValue data;
+    JSHandle<JSTaggedValue>  data;
     // 18. If elementType is the same as srcType, then
     //   a. Let data be ? CloneArrayBuffer(srcData, srcByteOffset, byteLength, bufferConstructor).
     if (elementType == srcType) {
-        data =
+        JSTaggedValue tmp =
             BuiltinsArrayBuffer::CloneArrayBuffer(thread, srcData, srcByteOffset, globalConst->GetHandledUndefined());
+        data = JSHandle<JSTaggedValue>(thread, tmp);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     } else {
         // 19. Else,
@@ -217,11 +218,18 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
         JSHandle<JSTaggedValue> bufferConstructor =
             JSObject::SpeciesConstructor(thread, JSHandle<JSObject>(srcData), env->GetArrayBufferFunction());
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        data = BuiltinsArrayBuffer::AllocateArrayBuffer(thread, bufferConstructor, byteLength);
+        JSTaggedValue tmp = BuiltinsArrayBuffer::AllocateArrayBuffer(thread, bufferConstructor, byteLength);
+        data = JSHandle<JSTaggedValue>(thread, tmp);
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
         //   b. If IsDetachedBuffer(srcData) is true, throw a TypeError exception.
         if (BuiltinsArrayBuffer::IsDetachedBuffer(srcData.GetTaggedValue())) {
             THROW_TYPE_ERROR_AND_RETURN(thread, "The srcData is detached buffer.", JSTaggedValue::Exception());
+        }
+        ContentType objContentType = JSHandle<JSTypedArray>::Cast(obj)->GetContentType();
+        ContentType srcArrayContentType = JSHandle<JSTypedArray>::Cast(srcArray)->GetContentType();
+        if (srcArrayContentType != objContentType) {
+            THROW_TYPE_ERROR_AND_RETURN(thread, "srcArrayContentType is not equal objContentType.",
+                                        JSTaggedValue::Exception());
         }
         //   d. Let srcByteIndex be srcByteOffset.
         //   e. Let targetByteIndex be 0.
@@ -233,11 +241,12 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
         for (int32_t count = elementLength; count > 0; count--) {
             // i. Let value be GetValueFromBuffer(srcData, srcByteIndex, srcType, true, Unordered).
             JSTaggedValue taggedData =
-                BuiltinsArrayBuffer::GetValueFromBuffer(srcData.GetTaggedValue(), srcByteIndex, srcType, true);
+                BuiltinsArrayBuffer::GetValueFromBuffer(thread, srcData.GetTaggedValue(), srcByteIndex, srcType, true);
             value.Update(taggedData);
-            JSTaggedNumber numVal = JSTaggedValue::ToNumber(thread, value);
             // ii. Perform SetValueInBuffer(data, targetByteIndex, elementType, value, true, Unordered).
-            BuiltinsArrayBuffer::SetValueInBuffer(data, targetByteIndex, elementType, numVal, true);
+            BuiltinsArrayBuffer::SetValueInBuffer(thread, data.GetTaggedValue(),
+                                                  targetByteIndex, elementType, value, true);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             // iii. Set srcByteIndex to srcByteIndex + srcElementSize.
             // iv. Set targetByteIndex to targetByteIndex + elementSize.
             // v. Set count to count - 1.
@@ -249,10 +258,11 @@ JSTaggedValue TypedArrayHelper::CreateFromTypedArray(EcmaRuntimeCallInfo *argv, 
     // 20. Set O’s [[ByteLength]] internal slot to byteLength.
     // 21. Set O’s [[ByteOffset]] internal slot to 0.
     // 22. Set O’s [[ArrayLength]] internal slot to elementLength.
-    JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread, data);
-    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(byteLength));
-    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(0));
-    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(elementLength));
+    JSTypedArray *jsTypedArray = JSTypedArray::Cast(*obj);
+    jsTypedArray->SetViewedArrayBuffer(thread, data);
+    jsTypedArray->SetByteLength(thread, JSTaggedValue(byteLength));
+    jsTypedArray->SetByteOffset(thread, JSTaggedValue(0));
+    jsTypedArray->SetArrayLength(thread, JSTaggedValue(elementLength));
     // 23. Return O.
     return obj.GetTaggedValue();
 }
@@ -319,10 +329,11 @@ JSTaggedValue TypedArrayHelper::CreateFromArrayBuffer(EcmaRuntimeCallInfo *argv,
     // 14. Set O.[[ByteLength]] to newByteLength.
     // 15. Set O.[[ByteOffset]] to offset.
     // 16. Set O.[[ArrayLength]] to newByteLength / elementSize.
-    JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread, buffer);
-    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(newByteLength));
-    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(offset));
-    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(newByteLength / elementSize));
+    JSTypedArray *jsTypedArray = JSTypedArray::Cast(*obj);
+    jsTypedArray->SetViewedArrayBuffer(thread, buffer);
+    jsTypedArray->SetByteLength(thread, JSTaggedValue(newByteLength));
+    jsTypedArray->SetByteOffset(thread, JSTaggedValue(offset));
+    jsTypedArray->SetArrayLength(thread, JSTaggedValue(newByteLength / elementSize));
     // 17. Return O.
     return obj.GetTaggedValue();
 }
@@ -341,14 +352,24 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArray(ObjectFactory *factory, 
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 3. Assert: obj.[[ViewedArrayBuffer]] is undefined.
     // 4. Set obj.[[TypedArrayName]] to constructorName.
+
+    // 5. If constructorName is "BigInt64Array" or "BigUint64Array", set obj.[[ContentType]] to BigInt.
+    // 6. Otherwise, set obj.[[ContentType]] to Number.
+    JSTypedArray *jsTypedArray = JSTypedArray::Cast(*obj);
+    if (JSTaggedValue::SameValue(constructorName, thread->GlobalConstants()->GetHandledBigInt64ArrayString()) ||
+        JSTaggedValue::SameValue(constructorName, thread->GlobalConstants()->GetHandledBigUint64ArrayString())) {
+        jsTypedArray->SetContentType(ContentType::BigInt);
+    } else {
+        jsTypedArray->SetContentType(ContentType::Number);
+    }
     // 7. If length is not present, then
     //   a. Set obj.[[ByteLength]] to 0.
     //   b. Set obj.[[ByteOffset]] to 0.
     //   c. Set obj.[[ArrayLength]] to 0.
-    JSTypedArray::Cast(*obj)->SetTypedArrayName(thread, constructorName);
-    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(0));
-    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(0));
-    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(0));
+    jsTypedArray->SetTypedArrayName(thread, constructorName);
+    jsTypedArray->SetByteLength(thread, JSTaggedValue(0));
+    jsTypedArray->SetByteOffset(thread, JSTaggedValue(0));
+    jsTypedArray->SetArrayLength(thread, JSTaggedValue(0));
     // 9. Return obj.
     return obj;
 }  // namespace panda::ecmascript::base
@@ -401,14 +422,21 @@ JSHandle<JSObject> TypedArrayHelper::AllocateTypedArrayBuffer(JSThread *thread, 
     JSHandle<JSTaggedValue> constructor = env->GetArrayBufferFunction();
     JSTaggedValue data = BuiltinsArrayBuffer::AllocateArrayBuffer(thread, constructor, byteLength);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, exception);
+    JSTypedArray *jsTypedArray = JSTypedArray::Cast(*obj);
+    if (JSTaggedValue::SameValue(constructorName, thread->GlobalConstants()->GetHandledBigInt64ArrayString()) ||
+        JSTaggedValue::SameValue(constructorName, thread->GlobalConstants()->GetHandledBigUint64ArrayString())) {
+        jsTypedArray->SetContentType(ContentType::BigInt);
+    } else {
+        jsTypedArray->SetContentType(ContentType::Number);
+    }
     // 8. Set O.[[ViewedArrayBuffer]] to data.
     // 9. Set O.[[ByteLength]] to byteLength.
     // 10. Set O.[[ByteOffset]] to 0.
     // 11. Set O.[[ArrayLength]] to length.
-    JSTypedArray::Cast(*obj)->SetViewedArrayBuffer(thread, data);
-    JSTypedArray::Cast(*obj)->SetByteLength(thread, JSTaggedValue(byteLength));
-    JSTypedArray::Cast(*obj)->SetByteOffset(thread, JSTaggedValue(0));
-    JSTypedArray::Cast(*obj)->SetArrayLength(thread, JSTaggedValue(length));
+    jsTypedArray->SetViewedArrayBuffer(thread, data);
+    jsTypedArray->SetByteLength(thread, JSTaggedValue(byteLength));
+    jsTypedArray->SetByteOffset(thread, JSTaggedValue(0));
+    jsTypedArray->SetArrayLength(thread, JSTaggedValue(length));
     // 12. Return O.
     return obj;
 }
@@ -425,7 +453,16 @@ JSHandle<JSObject> TypedArrayHelper::TypedArraySpeciesCreate(JSThread *thread, c
     JSHandle<JSTaggedValue> thisConstructor = JSObject::SpeciesConstructor(thread, obj, defaultConstructor);
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
     // 4. Let result be ? TypedArrayCreate(constructor, argumentList).
-    return TypedArrayHelper::TypedArrayCreate(thread, thisConstructor, argc, argv);
+    JSHandle<JSObject> result = TypedArrayHelper::TypedArrayCreate(thread, thisConstructor, argc, argv);
+    RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSObject>(thread, JSTaggedValue::Exception()));
+    // 5. If result.[[ContentType]] ≠ exemplar.[[ContentType]], throw a TypeError exception.
+    ContentType objContentType = JSHandle<JSTypedArray>::Cast(obj)->GetContentType();
+    ContentType resultContentType = JSHandle<JSTypedArray>::Cast(result)->GetContentType();
+    if (objContentType != resultContentType) {
+        JSHandle<JSObject> exception(thread, JSTaggedValue::Exception());
+        THROW_TYPE_ERROR_AND_RETURN(thread, "resultContentType is not equal objContentType.", exception);
+    }
+    return result;
 }
 
 // es11 22.2.4.6 TypedArrayCreate ( constructor, argumentList )
@@ -482,8 +519,8 @@ int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedV
                                       const JSHandle<JSTaggedValue> &secondValue)
 {
     const GlobalEnvConstants *globalConst = thread->GlobalConstants();
-    // 1. Assert: Both Type(x) and Type(y) is Number.
-    ASSERT(firstValue->IsNumber() && secondValue->IsNumber());
+    // 1. Assert: Both Type(x) and Type(y) are Number or both are BigInt.
+    ASSERT((firstValue->IsNumber() && secondValue->IsNumber()) || (firstValue->IsBigInt() && secondValue->IsBigInt()));
     // 2. If the argument comparefn is not undefined, then
     //   a. Let v be Call(comparefn, undefined, «x, y»).
     //   b. ReturnIfAbrupt(v).
@@ -509,41 +546,51 @@ int32_t TypedArrayHelper::SortCompare(JSThread *thread, const JSHandle<JSTaggedV
         }
         return value;
     }
-    // 3. If x and y are both NaN, return +0.
-    if (NumberHelper::IsNaN(firstValue.GetTaggedValue())) {
-        if (NumberHelper::IsNaN(secondValue.GetTaggedValue())) {
-            return +0;
+    if (firstValue->IsNumber()) {
+        // 3. If x and y are both NaN, return +0.
+        if (NumberHelper::IsNaN(firstValue.GetTaggedValue())) {
+            if (NumberHelper::IsNaN(secondValue.GetTaggedValue())) {
+                return +0;
+            }
+            // 4. If x is NaN, return 1.
+            return 1;
         }
-        // 4. If x is NaN, return 1.
-        return 1;
-    }
-    // 5. If y is NaN, return -1.
-    if (NumberHelper::IsNaN(secondValue.GetTaggedValue())) {
-        return -1;
-    }
-    ComparisonResult compareResult = JSTaggedValue::Compare(thread, firstValue, secondValue);
-    // 6. If x < y, return -1.
-    // 7. If x > y, return 1.
-    // 8. If x is -0 and y is +0, return -1.
-    // 9. If x is +0 and y is -0, return 1.
-    // 10. Return +0.
-    if (compareResult == ComparisonResult::LESS) {
-        return -1;
-    }
-    if (compareResult == ComparisonResult::GREAT) {
-        return 1;
-    }
-    JSTaggedNumber xNumber = JSTaggedValue::ToNumber(thread, firstValue);
-    JSTaggedNumber yNumber = JSTaggedValue::ToNumber(thread, secondValue);
-    double eZeroTemp = -0.0;
-    auto eZero = JSTaggedNumber(eZeroTemp);
-    double pZeroTemp = +0.0;
-    auto pZero = JSTaggedNumber(pZeroTemp);
-    if (JSTaggedNumber::SameValue(xNumber, eZero) && JSTaggedNumber::SameValue(yNumber, pZero)) {
-        return -1;
-    }
-    if (JSTaggedNumber::SameValue(xNumber, pZero) && JSTaggedNumber::SameValue(yNumber, eZero)) {
-        return 1;
+        // 5. If y is NaN, return -1.
+        if (NumberHelper::IsNaN(secondValue.GetTaggedValue())) {
+            return -1;
+        }
+        ComparisonResult compareResult = JSTaggedValue::Compare(thread, firstValue, secondValue);
+        // 6. If x < y, return -1.
+        // 7. If x > y, return 1.
+        // 8. If x is -0 and y is +0, return -1.
+        // 9. If x is +0 and y is -0, return 1.
+        // 10. Return +0.
+        if (compareResult == ComparisonResult::LESS) {
+            return -1;
+        }
+        if (compareResult == ComparisonResult::GREAT) {
+            return 1;
+        }
+        JSTaggedNumber xNumber = JSTaggedValue::ToNumber(thread, firstValue);
+        JSTaggedNumber yNumber = JSTaggedValue::ToNumber(thread, secondValue);
+        double eZeroTemp = -0.0;
+        auto eZero = JSTaggedNumber(eZeroTemp);
+        double pZeroTemp = +0.0;
+        auto pZero = JSTaggedNumber(pZeroTemp);
+        if (JSTaggedNumber::SameValue(xNumber, eZero) && JSTaggedNumber::SameValue(yNumber, pZero)) {
+            return -1;
+        }
+        if (JSTaggedNumber::SameValue(xNumber, pZero) && JSTaggedNumber::SameValue(yNumber, eZero)) {
+            return 1;
+        }
+    } else {
+        ComparisonResult compareResult = JSTaggedValue::Compare(thread, firstValue, secondValue);
+        if (compareResult == ComparisonResult::LESS) {
+            return -1;
+        }
+        if (compareResult == ComparisonResult::GREAT) {
+            return 1;
+        }
     }
     return +0;
 }

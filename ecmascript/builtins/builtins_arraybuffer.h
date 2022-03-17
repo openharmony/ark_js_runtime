@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,6 +26,7 @@ static constexpr uint32_t BITS_EIGHT = 8;
 static constexpr uint32_t BITS_TWENTY_FOUR = 24;
 static constexpr uint32_t BITS_FORTY = 40;
 static constexpr uint32_t BITS_FIFTY_SIX = 56;
+static constexpr uint32_t BITS_THIRTY_ONE = 31;
 using DataViewType = ecmascript::DataViewType;
 union UnionType32 {
     uint32_t uValue;
@@ -37,7 +38,9 @@ union UnionType64 {
 };
 class BuiltinsArrayBuffer : public base::BuiltinsBase {
 public:
-    enum NumberSize : uint8_t { UINT16 = 2, INT16 = 2, UINT32 = 4, INT32 = 4, FLOAT32 = 4, FLOAT64 = 8 };
+    enum NumberSize : uint8_t {
+        UINT16 = 2, INT16 = 2, UINT32 = 4, INT32 = 4, FLOAT32 = 4, FLOAT64 = 8, BIGINT64 = 8, BIGUINT64 = 8
+    };
 
     // 24.1.2.1 ArrayBuffer(length)
     static JSTaggedValue ArrayBufferConstructor(EcmaRuntimeCallInfo *argv);
@@ -52,17 +55,19 @@ public:
     // 24.1.1.2 IsDetachedBuffer(arrayBuffer)
     static bool IsDetachedBuffer(JSTaggedValue arrayBuffer);
     // 24.1.1.5 GetValueFromBuffer ( arrayBuffer, byteIndex, type, isLittleEndian )
-    static JSTaggedValue GetValueFromBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
-                                            bool littleEndian);
+    static JSTaggedValue GetValueFromBuffer(JSThread *thread, JSTaggedValue arrBuf, uint32_t byteIndex,
+                                            DataViewType type, bool littleEndian);
     // 24.1.1.6 SetValueInBuffer ( arrayBuffer, byteIndex, type, value, isLittleEndian )
-    static JSTaggedValue SetValueInBuffer(JSTaggedValue arrBuf, uint32_t byteIndex, DataViewType type,
-                                          JSTaggedNumber value, bool littleEndian);
+    static JSTaggedValue SetValueInBuffer(JSThread *thread, JSTaggedValue arrBuf, uint32_t byteIndex,
+                                          DataViewType type, const JSHandle<JSTaggedValue> &value, bool littleEndian);
     // 24.1.1.4 CloneArrayBuffer( srcBuffer, srcByteOffset [, cloneConstructor] )
     static JSTaggedValue CloneArrayBuffer(JSThread *thread, const JSHandle<JSTaggedValue> &srcBuffer,
                                           uint32_t srcByteOffset, JSHandle<JSTaggedValue> constructor);
     // 24.1.1.1 AllocateArrayBuffer(constructor, byteLength)
     static JSTaggedValue AllocateArrayBuffer(JSThread *thread, const JSHandle<JSTaggedValue> &newTarget,
                                              double byteLength);
+    // es12 25.1.2.7 IsBigIntElementType ( type )
+    static bool IsBigIntElementType(DataViewType type);
 
 private:
     template <typename T>
@@ -79,6 +84,10 @@ private:
     template<typename T, typename UnionType, NumberSize size>
     static JSTaggedValue GetValueFromBufferForFloat(uint8_t *block, uint32_t byteIndex, bool littleEndian);
 
+    static JSTaggedValue GetValueFromBufferForBigInt(JSThread *thread, uint8_t *block, uint32_t byteIndex);
+
+    static JSTaggedValue GetValueFromBufferForBigUint(JSThread *thread, uint8_t *block, uint32_t byteIndex);
+
     template<typename T>
     static void SetValueInBufferForByte(double val, uint8_t *block, uint32_t byteIndex);
 
@@ -89,6 +98,9 @@ private:
 
     template<typename T>
     static void SetValueInBufferForFloat(double val, uint8_t *block, uint32_t byteIndex, bool littleEndian);
+
+    static JSTaggedValue SetValueInBufferForBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &val, uint8_t *block,
+                                                   uint32_t byteIndex, bool isUint);
 };
 }  // namespace panda::ecmascript::builtins
 
