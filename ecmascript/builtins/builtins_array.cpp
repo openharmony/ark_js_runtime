@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -736,9 +736,13 @@ JSTaggedValue BuiltinsArray::Fill(EcmaRuntimeCallInfo *argv)
 
     JSHandle<JSTaggedValue> value = GetCallArg(argv, 0);
     if (thisHandle->IsTypedArray()) {
-        JSTaggedNumber number = JSTaggedValue::ToNumber(thread, value);
+        ContentType contentType = JSHandle<JSTypedArray>::Cast(thisHandle)->GetContentType();
+        if (contentType == ContentType::BigInt) {
+            value = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToBigInt(thread, value));
+        } else {
+            value = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToNumber(thread, value));
+        }
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
-        value = JSHandle<JSTaggedValue>(thread, JSTaggedValue(number.GetNumber()));
     }
 
     // 3. Let len be ToLength(Get(O, "length")).
@@ -2635,5 +2639,162 @@ JSTaggedValue BuiltinsArray::Unscopables(EcmaRuntimeCallInfo *argv)
     JSObject::CreateDataProperty(thread, unscopableList, valuesKey, trueVal);
 
     return unscopableList.GetTaggedValue();
+}
+
+// es12 23.1.3.10
+JSTaggedValue BuiltinsArray::Flat(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    BUILTINS_API_TRACE(argv->GetThread(), Array, Values);
+    JSThread *thread = argv->GetThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // 1. Let O be ? ToObject(this value).
+    JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
+    JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    array_size_t argc = argv->GetArgsNumber();
+    JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
+
+    // 2. Let sourceLen be ? LengthOfArrayLike(O).
+    double sourceLen = ArrayHelper::GetLength(thread, thisObjVal);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // 3. Let depthNum be 1.
+    double depthNum = 1;
+
+    // 4. If depth is not undefined, then
+    // a. Set depthNum to ? ToIntegerOrInfinity(depth).
+    // b. If depthNum < 0, set depthNum to 0.
+    if (argc > 0) {
+        JSHandle<JSTaggedValue> msg1 = GetCallArg(argv, 0);
+        JSTaggedNumber fromIndexTemp = JSTaggedValue::ToNumber(thread, msg1);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        depthNum = base::NumberHelper::TruncateDouble(fromIndexTemp.GetNumber());
+        depthNum = depthNum < 0 ? 0 : depthNum;
+    }
+
+    // 5. Let A be ? ArraySpeciesCreate(O, 0).
+    uint32_t arrayLen = 0;
+    JSTaggedValue newArray = JSArray::ArraySpeciesCreate(thread, thisObjHandle, JSTaggedNumber(arrayLen));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    base::FlattenArgs args = { sourceLen, 0, depthNum };
+    JSHandle<JSObject> newArrayHandle(thread, newArray);
+    // 6. Perform ? FlattenIntoArray(A, O, sourceLen, 0, depthNum).
+    ArrayHelper::FlattenIntoArray(thread, newArrayHandle, thisObjVal, args,
+                                  thread->GlobalConstants()->GetHandledUndefined(),
+                                  thread->GlobalConstants()->GetHandledUndefined());
+
+    // 7. Return A.
+    return newArrayHandle.GetTaggedValue();
+}
+
+// es12 23.1.3.11
+JSTaggedValue BuiltinsArray::FlatMap(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    BUILTINS_API_TRACE(argv->GetThread(), Array, Values);
+    JSThread *thread = argv->GetThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+
+    // 1. Let O be ? ToObject(this value).
+    JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
+    JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
+
+    // 2. Let sourceLen be ? LengthOfArrayLike(O).
+    double sourceLen = ArrayHelper::GetLength(thread, thisObjVal);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    // 3. If ! IsCallable(mapperFunction) is false, throw a TypeError exception.
+    JSHandle<JSTaggedValue> mapperFunctionHandle = GetCallArg(argv, 0);
+    if (!mapperFunctionHandle->IsCallable()) {
+        THROW_TYPE_ERROR_AND_RETURN(thread, "the mapperFunction is not callable.", JSTaggedValue::Exception());
+    }
+    // 4. Let A be ? ArraySpeciesCreate(O, 0).
+    uint32_t arrayLen = 0;
+    JSTaggedValue newArray = JSArray::ArraySpeciesCreate(thread, thisObjHandle, JSTaggedNumber(arrayLen));
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    base::FlattenArgs args = { sourceLen, 0, 1 };
+    JSHandle<JSObject> newArrayHandle(thread, newArray);
+    // 5. Perform ? FlattenIntoArray(A, O, sourceLen, 0, 1, mapperFunction, thisArg).
+    ArrayHelper::FlattenIntoArray(thread, newArrayHandle, thisObjVal, args,
+                                  mapperFunctionHandle, GetCallArg(argv, 1));
+
+    // 6. Return A.
+    return newArrayHandle.GetTaggedValue();
+}
+
+// 23.1.3.13 Array.prototype.includes ( searchElement [ , fromIndex ] )
+JSTaggedValue BuiltinsArray::Includes(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    BUILTINS_API_TRACE(argv->GetThread(), Array, Includes);
+    JSThread *thread = argv->GetThread();
+    [[maybe_unused]] EcmaHandleScope handleScope(thread);
+    // 1. Let O be ? ToObject(this value).
+    JSHandle<JSTaggedValue> thisHandle = GetThis(argv);
+    JSHandle<JSObject> thisObjHandle = JSTaggedValue::ToObject(thread, thisHandle);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+
+    array_size_t argc = argv->GetArgsNumber();
+    JSHandle<JSTaggedValue> thisObjVal(thisObjHandle);
+    JSHandle<JSTaggedValue> searchElement = GetCallArg(argv, 0);
+
+    // 2. Let len be ? LengthOfArrayLike(O).
+    double len = ArrayHelper::GetLength(thread, thisObjVal);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    // 3. If len is 0, return false.
+    if (len == 0) {
+        return GetTaggedBoolean(false);
+    }
+    // 4. Let n be ? ToIntegerOrInfinity(fromIndex).
+    // 5. Assert: If fromIndex is undefined, then n is 0.
+    double fromIndex = 0;
+    if (argc > 1) {
+        JSHandle<JSTaggedValue> msg1 = GetCallArg(argv, 1);
+        JSTaggedNumber fromIndexTemp = JSTaggedValue::ToNumber(thread, msg1);
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        fromIndex = base::NumberHelper::TruncateDouble(fromIndexTemp.GetNumber());
+    }
+
+    // 6. If n is +∞, return false.
+    // 7. Else if n is -∞, set n to 0.
+    if (fromIndex >= len) {
+        return GetTaggedBoolean(false);
+    } else if (fromIndex < -len) {
+        fromIndex = 0;
+    }
+    // 8. If n ≥ 0, then
+    //     a. Let k be n.
+    // 9. Else,
+    //     a. Let k be len + n.
+    //     b. If k < 0, let k be 0.
+    double from = (fromIndex >= 0) ? fromIndex : ((len + fromIndex) >= 0 ? len + fromIndex : 0);
+
+    // 10. Repeat, while k < len,
+    //     a. Let elementK be ? Get(O, ! ToString(!(k))).
+    //     b. If SameValueZero(searchElement, elementK) is true, return true.
+    //     c. Set k to k + 1.
+    JSMutableHandle<JSTaggedValue> key(thread, JSTaggedValue::Undefined());
+    JSMutableHandle<JSTaggedValue> kValueHandle(thread, JSTaggedValue::Undefined());
+    JSHandle<EcmaString> fromStr;
+    while (from < len) {
+        JSHandle<JSTaggedValue> handledFrom(thread, JSTaggedValue(from));
+        fromStr = JSTaggedValue::ToString(thread, handledFrom);
+        key.Update(fromStr.GetTaggedValue());
+        kValueHandle.Update(JSArray::FastGetPropertyByValue(thread, thisObjVal, key).GetTaggedValue());
+        RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        if (JSTaggedValue::SameValueZero(searchElement.GetTaggedValue(), kValueHandle.GetTaggedValue())) {
+            return GetTaggedBoolean(true);
+        }
+        from++;
+    }
+    // 11. Return false.
+    return GetTaggedBoolean(false);
 }
 }  // namespace panda::ecmascript::builtins

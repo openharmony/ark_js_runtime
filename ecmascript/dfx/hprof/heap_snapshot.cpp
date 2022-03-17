@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -234,6 +234,10 @@ CString *HeapSnapShot::GenerateNodeName(JSThread *thread, TaggedObject *entry)
             return GetString("Float32 Array");
         case JSType::JS_FLOAT64_ARRAY:
             return GetString("Float64 Array");
+        case JSType::JS_BIGINT64_ARRAY:
+            return GetString("BigInt64 Array");
+        case JSType::JS_BIGUINT64_ARRAY:
+            return GetString("BigUint64 Array");
         case JSType::JS_ARGUMENTS:
             return GetString("Arguments");
         case JSType::BIGINT:

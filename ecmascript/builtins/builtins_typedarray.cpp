@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -109,6 +109,20 @@ JSTaggedValue BuiltinsTypedArray::Float64ArrayConstructor(EcmaRuntimeCallInfo *a
     ASSERT(argv);
     JSThread *thread = argv->GetThread();
     return TypedArrayHelper::TypedArrayConstructor(argv, thread->GlobalConstants()->GetHandledFloat64ArrayString());
+}
+
+JSTaggedValue BuiltinsTypedArray::BigInt64ArrayConstructor(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    return TypedArrayHelper::TypedArrayConstructor(argv, thread->GlobalConstants()->GetHandledBigInt64ArrayString());
+}
+
+JSTaggedValue BuiltinsTypedArray::BigUint64ArrayConstructor(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    JSThread *thread = argv->GetThread();
+    return TypedArrayHelper::TypedArrayConstructor(argv, thread->GlobalConstants()->GetHandledBigUint64ArrayString());
 }
 
 // 22.2.2.1 %TypedArray%.from ( source [ , mapfn [ , thisArg ] ] )
@@ -996,26 +1010,34 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
         int32_t limit = targetByteIndex + targetElementSize * srcLen;
         // 24. Repeat, while targetByteIndex < limit
         //   a. Let Pk be ToString(k).
-        //   b. Let kNumber be ToNumber(Get(src, Pk)).
-        //   c. ReturnIfAbrupt(kNumber).
+        //   b. If target.[[ContentType]] is BigInt, set value to ? ToBigInt(value).
+        //   c. Otherwise, set value to ? ToNumber(value).
         //   d. If IsDetachedBuffer(targetBuffer) is true, throw a TypeError exception.
         //   e. Perform SetValueInBuffer(targetBuffer, targetByteIndex, targetType, kNumber).
         //   f. Set k to k + 1.
         //   g. Set targetByteIndex to targetByteIndex + targetElementSize.
         JSMutableHandle<JSTaggedValue> tKey(thread, JSTaggedValue::Undefined());
+        JSMutableHandle<JSTaggedValue> kNumberHandle(thread, JSTaggedValue::Undefined());
         while (targetByteIndex < limit) {
             tKey.Update(JSTaggedValue(k));
             JSHandle<JSTaggedValue> kKey(JSTaggedValue::ToString(thread, tKey));
             JSHandle<JSTaggedValue> kValue =
                 JSTaggedValue::GetProperty(thread, JSHandle<JSTaggedValue>::Cast(src), kKey).GetValue();
-            JSTaggedNumber kNumber = JSTaggedValue::ToNumber(thread, kValue);
             RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             if (BuiltinsArrayBuffer::IsDetachedBuffer(targetBuffer.GetTaggedValue())) {
                 THROW_TYPE_ERROR_AND_RETURN(thread, "The targetBuffer of This value is detached buffer.",
                                             JSTaggedValue::Exception());
             }
-            BuiltinsArrayBuffer::SetValueInBuffer(targetBuffer.GetTaggedValue(), targetByteIndex, targetType, kNumber,
-                                                  true);
+            ContentType contentType = JSHandle<JSTypedArray>::Cast(target)->GetContentType();
+            if (contentType == ContentType::BigInt) {
+                kNumberHandle.Update(JSTaggedValue::ToBigInt(thread, kValue));
+            } else {
+                kNumberHandle.Update(JSTaggedValue::ToNumber(thread, kValue));
+            }
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+            BuiltinsArrayBuffer::SetValueInBuffer(thread, targetBuffer.GetTaggedValue(), targetByteIndex,
+                                                  targetType, kNumberHandle, true);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             k++;
             targetByteIndex = targetByteIndex + targetElementSize;
         }
@@ -1028,8 +1050,17 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     // 12. Let srcBuffer be the value of typedArray’s [[ViewedArrayBuffer]] internal slot.
     // 13. If IsDetachedBuffer(srcBuffer) is true, throw a TypeError exception.
     JSTaggedValue srcBuffer = JSTypedArray::Cast(*typedArray)->GetViewedArrayBuffer();
+    JSHandle<JSTaggedValue> srcBufferHandle = JSHandle<JSTaggedValue>(thread, srcBuffer);
     if (BuiltinsArrayBuffer::IsDetachedBuffer(srcBuffer)) {
         THROW_TYPE_ERROR_AND_RETURN(thread, "The ArrayBuffer of typedArray is detached buffer.",
+                                    JSTaggedValue::Exception());
+    }
+
+    ContentType objContentType = JSHandle<JSTypedArray>::Cast(target)->GetContentType();
+    ContentType argArrayContentType = JSHandle<JSTypedArray>::Cast(argArray)->GetContentType();
+    if (argArrayContentType != objContentType) {
+        THROW_TYPE_ERROR_AND_RETURN(thread,
+                                    "argArrayContentType is not equal objContentType.",
                                     JSTaggedValue::Exception());
     }
     // 18. Let srcName be the String value of typedArray’s [[TypedArrayName]] internal slot.
@@ -1055,10 +1086,11 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     //   d. Let srcByteIndex be 0.
     // 25. Else, let srcByteIndex be srcByteOffset.
     int32_t srcByteIndex;
-    if (JSTaggedValue::SameValue(srcBuffer, targetBuffer.GetTaggedValue())) {
+    if (JSTaggedValue::SameValue(srcBufferHandle.GetTaggedValue(), targetBuffer.GetTaggedValue())) {
         srcBuffer =
             BuiltinsArrayBuffer::CloneArrayBuffer(thread, targetBuffer, srcByteOffset, env->GetArrayBufferFunction());
         RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+        srcBufferHandle = JSHandle<JSTaggedValue>(thread, srcBuffer);
         srcByteIndex = 0;
     } else {
         srcByteIndex = srcByteOffset;
@@ -1076,11 +1108,13 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
     JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
     if (srcType != targetType) {
         while (targetByteIndex < limit) {
-            JSTaggedValue taggedData = BuiltinsArrayBuffer::GetValueFromBuffer(srcBuffer, srcByteIndex, srcType, true);
+            JSTaggedValue taggedData =
+                BuiltinsArrayBuffer::GetValueFromBuffer(thread, srcBufferHandle.GetTaggedValue(),
+                                                        srcByteIndex, srcType, true);
             value.Update(taggedData);
-            JSTaggedNumber kNumber = JSTaggedValue::ToNumber(thread, value);
-            BuiltinsArrayBuffer::SetValueInBuffer(targetBuffer.GetTaggedValue(), targetByteIndex, targetType, kNumber,
-                                                  true);
+            BuiltinsArrayBuffer::SetValueInBuffer(thread, targetBuffer.GetTaggedValue(), targetByteIndex,
+                                                  targetType, value, true);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             srcByteIndex = srcByteIndex + srcElementSize;
             targetByteIndex = targetByteIndex + targetElementSize;
         }
@@ -1095,11 +1129,12 @@ JSTaggedValue BuiltinsTypedArray::Set(EcmaRuntimeCallInfo *argv)
         //     iv. Set targetByteIndex to targetByteIndex + 1.
         while (targetByteIndex < limit) {
             JSTaggedValue taggedData =
-                BuiltinsArrayBuffer::GetValueFromBuffer(srcBuffer, srcByteIndex, DataViewType::UINT8, true);
+                BuiltinsArrayBuffer::GetValueFromBuffer(thread, srcBufferHandle.GetTaggedValue(), srcByteIndex,
+                                                        DataViewType::UINT8, true);
             value.Update(taggedData);
-            JSTaggedNumber kNumber = JSTaggedValue::ToNumber(thread, value);
-            BuiltinsArrayBuffer::SetValueInBuffer(targetBuffer.GetTaggedValue(), targetByteIndex, DataViewType::UINT8,
-                                                  kNumber, true);
+            BuiltinsArrayBuffer::SetValueInBuffer(thread, targetBuffer.GetTaggedValue(), targetByteIndex,
+                                                  DataViewType::UINT8, value, true);
+            RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
             srcByteIndex = srcByteIndex + 1;
             targetByteIndex = targetByteIndex + 1;
         }
@@ -1225,12 +1260,12 @@ JSTaggedValue BuiltinsTypedArray::Slice(EcmaRuntimeCallInfo *argv)
         //     iv. Increase targetByteIndex by 1.
         JSMutableHandle<JSTaggedValue> value(thread, JSTaggedValue::Undefined());
         for (int32_t targetByteIndex = 0; targetByteIndex < count * elementSize; srcByteIndex++, targetByteIndex++) {
-            JSTaggedValue taggedData = BuiltinsArrayBuffer::GetValueFromBuffer(srcBuffer.GetTaggedValue(), srcByteIndex,
-                                                                               DataViewType::UINT8, true);
+            JSTaggedValue taggedData = BuiltinsArrayBuffer::GetValueFromBuffer(thread, srcBuffer.GetTaggedValue(),
+                                                                               srcByteIndex, DataViewType::UINT8,
+                                                                               true);
             value.Update(taggedData);
-            JSTaggedNumber kNumber = JSTaggedValue::ToNumber(thread, value);
-            BuiltinsArrayBuffer::SetValueInBuffer(targetBuffer.GetTaggedValue(), targetByteIndex, DataViewType::UINT8,
-                                                  kNumber, true);
+            BuiltinsArrayBuffer::SetValueInBuffer(thread, targetBuffer.GetTaggedValue(), targetByteIndex,
+                                                  DataViewType::UINT8, value, true);
         }
     }
     // 23. Return A.
@@ -1435,5 +1470,15 @@ JSTaggedValue BuiltinsTypedArray::ToStringTag(EcmaRuntimeCallInfo *argv)
     ASSERT(name.IsString());
     // 6. Return name.
     return name;
+}
+
+// es12 23.2.3.13
+JSTaggedValue BuiltinsTypedArray::Includes(EcmaRuntimeCallInfo *argv)
+{
+    ASSERT(argv);
+    if (!GetThis(argv)->IsTypedArray()) {
+        THROW_TYPE_ERROR_AND_RETURN(argv->GetThread(), "This is not a TypedArray.", JSTaggedValue::Exception());
+    }
+    return BuiltinsArray::Includes(argv);
 }
 }  // namespace panda::ecmascript::builtins

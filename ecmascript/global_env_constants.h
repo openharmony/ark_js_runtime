@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -155,6 +155,8 @@ class JSThread;
     V(JSTaggedValue, Uint32ArrayString, UINT32_ARRAY_STRING_INDEX, Uint32Array)                                       \
     V(JSTaggedValue, Float32ArrayString, FLOAT32_ARRAY_STRING_INDEX, Float32Array)                                    \
     V(JSTaggedValue, Float64ArrayString, FLOAT64_ARRAY_STRING_INDEX, Float64Array)                                    \
+    V(JSTaggedValue, BigInt64ArrayString, BIGINT64_ARRAY_STRING_INDEX, BigInt64Array)                                 \
+    V(JSTaggedValue, BigUint64ArrayString, BIGUINT64_ARRAY_STRING_INDEX, BigUint64Array)                              \
     V(JSTaggedValue, AsyncFunctionString, ASYNC_FUNCTION_STRING_INDEX, AsyncFunction)                                 \
     V(JSTaggedValue, PromiseResolveString, PROMISE_RESOLVE_STRING_INDEX, resolve)                                     \
     V(JSTaggedValue, IdString, ID_STRING_INDEX, id)                                                                   \
