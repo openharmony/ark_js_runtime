@@ -395,6 +395,10 @@ public:
 
     static JSPandaFileManager *GetJSPandaFileManager();
 
+    void SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool);
+
+    JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
+
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
     {
@@ -469,6 +473,7 @@ private:
     CString frameworkAbcFileName_;
     const JSPandaFile *frameworkPandaFile_ {nullptr};
     ChunkVector<JSMethod *> frameworkProgramMethods_;
+    CMap<const JSPandaFile *, JSTaggedValue> pandaFileWithConstpool_ {};
 
     // VM resources.
     CString snapshotFileName_;
