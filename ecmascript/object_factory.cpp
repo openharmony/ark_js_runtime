@@ -1401,6 +1401,10 @@ JSHandle<job::PendingJob> ObjectFactory::NewPendingJob(const JSHandle<JSFunction
     JSHandle<job::PendingJob> obj(thread_, header);
     obj->SetJob(thread_, func.GetTaggedValue());
     obj->SetArguments(thread_, argv.GetTaggedValue());
+    obj->SetChainId(0);
+    obj->SetSpanId(0);
+    obj->SetParentSpanId(0);
+    obj->SetFlags(0);
     return obj;
 }
 
