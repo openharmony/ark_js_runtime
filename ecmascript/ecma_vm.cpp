@@ -426,6 +426,23 @@ JSMethod *EcmaVM::GetMethodForNativeFunction(const void *func)
     return nativeMethods_.back();
 }
 
+JSTaggedValue EcmaVM::FindConstpool(const JSPandaFile *jsPandaFile)
+{
+    auto iter = pandaFileWithConstpool_.find(jsPandaFile);
+    if (iter == pandaFileWithConstpool_.end()) {
+        return JSTaggedValue::Hole();
+    }
+    return iter->second;
+}
+
+void EcmaVM::SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool)
+{
+    ASSERT(constpool.IsTaggedArray());
+    ASSERT(pandaFileWithConstpool_.find(jsPandaFile) == pandaFileWithConstpool_.end());
+
+    pandaFileWithConstpool_[jsPandaFile] = constpool;
+}
+
 void EcmaVM::RedirectMethod(const panda_file::File &pf)
 {
     for (auto method : frameworkProgramMethods_) {
@@ -610,6 +627,21 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
             frameworkProgram_ = JSTaggedValue(fwd);
         }
     }
+
+    for (auto iter = pandaFileWithConstpool_.begin(); iter != pandaFileWithConstpool_.end();) {
+        auto object = iter->second;
+        if (object.IsObject()) {
+            TaggedObject *obj = object.GetTaggedObject();
+            auto fwd = v0(obj);
+            if (fwd == nullptr) {
+                iter = pandaFileWithConstpool_.erase(iter);
+                continue;
+            } else if (fwd != obj) {
+                iter->second = JSTaggedValue(fwd);
+            }
+        }
+        ++iter;
+    }
 }
 
 void EcmaVM::PushToArrayDataList(JSNativePointer *array)
@@ -653,6 +685,8 @@ void EcmaVM::ClearBufferData()
         iter->Destroy();
     }
     arrayBufferDataList_.clear();
+
+    pandaFileWithConstpool_.clear();
 
     if (frameworkPandaFile_) {
         delete frameworkPandaFile_;
