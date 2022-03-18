@@ -424,7 +424,7 @@ bool JSFunction::SetFunctionLength(JSThread *thread, const JSHandle<JSFunction> 
     JSHandle<JSTaggedValue> lengthKeyHandle = thread->GlobalConstants()->GetHandledLengthString();
     ASSERT_PRINT(!JSTaggedValue::Less(thread, JSHandle<JSTaggedValue>(thread, length),
                                       JSHandle<JSTaggedValue>(thread, JSTaggedValue(0))),
-                 "length must be non negtive integer");
+                 "length must be non negative integer");
     PropertyDescriptor lengthDesc(thread, JSHandle<JSTaggedValue>(thread, length), false, false, cfg);
     JSHandle<JSTaggedValue> funcHandle(func);
     return JSTaggedValue::DefinePropertyOrThrow(thread, funcHandle, lengthKeyHandle, lengthDesc);

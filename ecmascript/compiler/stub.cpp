@@ -2103,17 +2103,13 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
     Label loopEnd(env);
     Label loopExit(env);
     Label afterLoop(env);
-    // a do-while loop
     Jump(&loopHead);
     LoopBegin(&loopHead);
     {
-        // auto *hclass = holder.GetTaggedObject()->GetClass()
-        // JSType jsType = hclass->GetObjectType()
         GateRef hClass = LoadHClass(*holder);
         GateRef jsType = GetObjectType(hClass);
         Label isSIndexObj(env);
         Label notSIndexObj(env);
-        // if branch condition : IsSpecialIndexedObj(jsType)
         Branch(IsSpecialIndexedObj(jsType), &isSIndexObj, &notSIndexObj);
         Bind(&isSIndexObj);
         {
@@ -2124,26 +2120,19 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
         {
             Label isDicMode(env);
             Label notDicMode(env);
-            // if branch condition : LIKELY(!hclass->IsDictionaryMode())
             Branch(IsDictionaryModeByHClass(hClass), &isDicMode, &notDicMode);
             Bind(&notDicMode);
             {
-                // LayoutInfo *layoutInfo = LayoutInfo::Cast(hclass->GetAttributes().GetTaggedObject())
                 GateRef layOutInfo = GetLayoutFromHClass(hClass);
-                // int propsNumber = hclass->NumberOfPropsFromHClass()
                 GateRef propsNum = GetNumberOfPropsFromHClass(hClass);
-                // int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber)
                 GateRef entry = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
                 Label hasEntry(env);
                 Label noEntry(env);
-                // if branch condition : entry != -1
                 Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
                 Bind(&hasEntry);
                 {
-                    // PropertyAttributes attr(layoutInfo->GetAttr(entry))
                     GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entry);
                     GateRef attr = TaggedCastToInt32(propAttr);
-                    // auto value = JSObject::Cast(holder)->GetProperty(hclass, attr)
                     GateRef value = JSObjectGetProperty(VariableType::JS_ANY(), *holder, hClass, attr);
                     Label isAccessor(env);
                     Label notAccessor(env);
@@ -2180,21 +2169,16 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
             Bind(&isDicMode);
             {
                 GateRef array = GetPropertiesArray(*holder);
-                // int entry = dict->FindEntry(key)
                 GateRef entry = FindEntryFromNameDictionary(glue, array, key);
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
-                // if branch condition : entry != -1
                 Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
-                    // auto value = dict->GetValue(entry)
                     GateRef attr = GetAttributesFromDictionary(array, entry);
-                    // auto attr = dict->GetAttributes(entry)
                     GateRef value = GetValueFromDictionary(VariableType::JS_ANY(), array, entry);
                     Label isAccessor1(env);
                     Label notAccessor1(env);
-                    // if branch condition : UNLIKELY(attr.IsAccessor())
                     Branch(IsAccessor(attr), &isAccessor1, &notAccessor1);
                     Bind(&isAccessor1);
                     {
@@ -2225,9 +2209,7 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
             }
             Bind(&loopExit);
             {
-                // holder = hclass->GetPrototype()
                 holder = GetPrototypeFromHClass(LoadHClass(*holder));
-                // loop condition for a do-while loop
                 Branch(TaggedIsHeapObject(*holder), &loopEnd, &afterLoop);
             }
         }

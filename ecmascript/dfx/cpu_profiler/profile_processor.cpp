@@ -84,7 +84,7 @@ bool ProfileProcessor::Run(uint32_t threadIndex)
 uint64_t ProfileProcessor::GetMicrosecondsTimeStamp()
 {
     struct timeval time;
-    gettimeofday(&time, NULL);
+    gettimeofday(&time, nullptr);
     return (time.tv_sec * 1000000 + time.tv_usec); // 1000000:Second to subtle
 }
 

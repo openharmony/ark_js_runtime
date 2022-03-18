@@ -13,7 +13,7 @@
 
 ARK JS Runtime is the runtime used by JavaScript \(JS\) applications on OpenHarmony. It consists of the JS object allocator, garbage collector \(GC\), a standard library compliant with ECMAScript specifications, ARK bytecode interpreter, inline caches that store hidden classes, and the ARK Foreign Function Interface \(AFFI\).
 
-For more infomation, see: [ARK Runtime Subsystem](https://gitee.com/openharmony/docs/blob/master/en/readme/ARK-Runtime-Subsystem.md).
+For more information, see: [ARK Runtime Subsystem](https://gitee.com/openharmony/docs/blob/master/en/readme/ARK-Runtime-Subsystem.md).
 
 **ARK JS runtime architecture**
 
@@ -73,7 +73,7 @@ $ export LD_LIBRARY_PATH=clang_x64/ark/ark_js_runtime:clang_x64/ark/ark:clang_x6
 $ ./clang_x64/ark/ark_js_runtime/ark_js_vm helloworld.abc
 ```
 
-For more infomation, please see: [ARK-Runtime-Usage-Guide](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide.md).
+For more information, please see: [ARK-Runtime-Usage-Guide](https://gitee.com/openharmony/ark_js_runtime/blob/master/docs/ARK-Runtime-Usage-Guide.md).
 
 ## Repositories Involved<a name="section1371113476307"></a>
 
