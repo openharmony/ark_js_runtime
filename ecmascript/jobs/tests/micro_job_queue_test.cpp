@@ -57,7 +57,7 @@ public:
  * @tc.desc: Check whether the result returned through "GetPromiseJobQueue" and "GetScriptJobQueue" function
  *           is within expectations.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(MicroJobQueueTest, GetJobQueue)
 {
@@ -91,7 +91,7 @@ HWTEST_F_L0(MicroJobQueueTest, GetJobQueue)
  *           function to enter the "function" and TaggedArray object into the promise job queueof the MicroJobQueue,then
  *           check whether the object out of the queue is the same as the object in the queue.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(MicroJobQueueTest, EnqueuePromiseJob)
 {
@@ -127,7 +127,7 @@ HWTEST_F_L0(MicroJobQueueTest, EnqueuePromiseJob)
  *           function to enter the "function" and TaggedArray object into the script job queue of the MicroJobQueue,then
  *           check whether the object out of the queue is the same as the object in the queue.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(MicroJobQueueTest, EnqueueScriptJob)
 {
@@ -174,7 +174,7 @@ HWTEST_F_L0(MicroJobQueueTest, EnqueueScriptJob)
  *           value and enter "function" and TaggedArray object into the promise job queue.Calling "ExecutePendingJob"
  *           function to execute the method of function and return the value of the method.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(MicroJobQueueTest, ExecutePendingJob_001)
 {
@@ -217,7 +217,7 @@ HWTEST_F_L0(MicroJobQueueTest, ExecutePendingJob_001)
  *           Calling "ExecutePendingJob" function to execute the method of Two queue function and return the value
  *           of the method.
  * @tc.type: FUNC
- * @tc.requre:
+ * @tc.require:
  */
 HWTEST_F_L0(MicroJobQueueTest, ExecutePendingJob_002)
 {

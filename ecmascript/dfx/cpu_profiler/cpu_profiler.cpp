@@ -194,7 +194,7 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, Interprete
         codeEntry.codeType = "other";
         codeEntry.functionName = "native";
         staticStackInfo_.insert(std::make_pair(method, codeEntry));
-    } else {
+    } else if (method != nullptr) {
         codeEntry.codeType = "JS";
         const CString &functionName = method->ParseFunctionName();
         if (functionName.empty()) {
@@ -261,7 +261,7 @@ std::string CpuProfiler::GetProfileName() const
 {
     char time1[16] = {0}; // 16:Time format length
     char time2[16] = {0}; // 16:Time format length
-    time_t timep = std::time(NULL);
+    time_t timep = std::time(nullptr);
     struct tm nowTime1;
     localtime_r(&timep, &nowTime1);
     size_t result = 0;
