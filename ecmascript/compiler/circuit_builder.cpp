@@ -111,7 +111,7 @@ GateRef CircuitBuilder::NewRelocatableData(uint64_t val)
 GateRef CircuitBuilder::NewBooleanConstant(bool val)
 {
     auto constantList = Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST));
-    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I32, val ? 1 : 0, {constantList},
+    return circuit_->NewGate(OpCode(OpCode::CONSTANT), MachineType::I1, val ? 1 : 0, {constantList},
                              GateType::C_VALUE);
 }
 

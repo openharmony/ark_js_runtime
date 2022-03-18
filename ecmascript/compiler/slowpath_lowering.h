@@ -118,7 +118,9 @@ private:
     void LowerHirToCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
     void LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateRef hirGate,
                                               GateRef condGate, GateRef callGate);
-    void Lower(GateRef gate, EcmaOpcode bytecode);
+    void LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate);
+    void LowerExceptionHandler(GateRef hirGate);
+    void Lower(GateRef gate, EcmaOpcode op);
     void LowerAdd2Dyn(GateRef gate, GateRef glue);
     void LowerCreateIterResultObj(GateRef gate, GateRef glue);
     void LowerSuspendGenerator(GateRef gate, GateRef glue);
@@ -139,6 +141,13 @@ private:
     void LowerCallIThisRangeDyn(GateRef gate, GateRef glue);
     void LowerCallSpreadDyn(GateRef gate, GateRef glue);
     void LowerCallIRangeDyn(GateRef gate, GateRef glue);
+    void LowerNewObjSpreadDyn(GateRef gate, GateRef glue);
+    void LowerThrowDyn(GateRef gate, GateRef glue);
+    void LowerThrowConstAssignment(GateRef gate, GateRef glue);
+    void LowerThrowThrowNotExists(GateRef gate, GateRef glue);
+    void LowerThrowPatternNonCoercible(GateRef gate, GateRef glue);
+    void LowerThrowIfSuperNotCorrectCall(GateRef gate, GateRef glue);
+    void LowerThrowDeleteSuperProperty(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
