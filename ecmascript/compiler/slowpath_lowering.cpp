@@ -20,10 +20,12 @@ void SlowPathLowering::CallRuntimeLowering()
 {
     const auto &gateList = circuit_->GetAllGates();
     for (const auto &gate : gateList) {
-        if (circuit_->LoadGatePtrConst(gate)->GetOpCode() == OpCode::JS_BYTECODE) {
+        auto op = circuit_->LoadGatePtrConst(gate)->GetOpCode();
+        if (op == OpCode::JS_BYTECODE) {
             auto pc = builder_->GetJSBytecode(gate);
-            EcmaOpcode op = static_cast<EcmaOpcode>(*pc);
-            Lower(gate, op);
+            Lower(gate, static_cast<EcmaOpcode>(*pc));
+        } else if (op == OpCode::GET_EXCEPTION) {
+            LowerExceptionHandler(gate);
         }
     }
 #if ECMASCRIPT_ENABLE_TS_AOT_PRINT
@@ -65,6 +67,33 @@ void SlowPathLowering::LowerHirToCall(CircuitBuilder &cirBuilder, GateRef hirGat
     // delete old gate
     circuit_->DeleteGate(hirGate);
 }
+
+void SlowPathLowering::LowerHirToThrowCall(CircuitBuilder &cirBuilder, GateRef hirGate, GateRef callGate)
+{
+    GateAccessor acc(circuit_);
+    GateRef stateInGate = acc.GetState(hirGate);
+    GateRef dependInGate = acc.GetDep(hirGate);
+    acc.SetDep(callGate, dependInGate);
+
+    GateRef ifBranch = cirBuilder.Branch(stateInGate, cirBuilder.NewBooleanConstant(true));
+    auto uses = acc.Uses(hirGate);
+    for (auto it = uses.begin(); it != uses.end(); it++) {
+        if (acc.GetOpCode(*it) == OpCode::IF_SUCCESS) {
+            acc.SetOpCode(*it, OpCode::IF_FALSE);
+            acc.ReplaceIn(it, ifBranch);
+        } else {
+            if (acc.GetOpCode(*it) == OpCode::IF_EXCEPTION) {
+                acc.SetOpCode(*it, OpCode::IF_TRUE);
+                acc.ReplaceIn(it, ifBranch);
+            } else {
+                acc.ReplaceIn(it, callGate);
+            }
+        }
+    }
+
+    circuit_->DeleteGate(hirGate);
+}
+
 
 /*
  * lower condition call like this pattern:
@@ -128,11 +157,11 @@ void SlowPathLowering::LowerHirToConditionCall(CircuitBuilder &cirBuilder, GateR
     circuit_->DeleteGate(hirGate);
 }
 
-void SlowPathLowering::Lower(GateRef gate, EcmaOpcode bytecode)
+void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
 {
     GateRef glue = builder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
 
-    switch (bytecode) {
+    switch (op) {
         case LDA_STR_ID32:
             LowerLoadStr(gate, glue);
             break;
@@ -186,6 +215,31 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode bytecode)
             break;
         case GETITERATOR_PREF:
             LowerGetIterator(gate, glue);
+            break;
+        case NEWOBJSPREADDYN_PREF_V8_V8:
+            LowerNewObjSpreadDyn(gate, glue);
+            break;
+        case THROWDYN_PREF:
+            LowerThrowDyn(gate, glue);
+            break;
+        case THROWCONSTASSIGNMENT_PREF_V8:
+            LowerThrowConstAssignment(gate, glue);
+            break;
+        case THROWTHROWNOTEXISTS_PREF:
+            LowerThrowThrowNotExists(gate, glue);
+            break;
+        case THROWPATTERNNONCOERCIBLE_PREF:
+            LowerThrowPatternNonCoercible(gate, glue);
+            break;
+        case THROWIFNOTOBJECT_PREF_V8:
+            break;
+        case THROWUNDEFINEDIFHOLE_PREF_V8_V8:
+            break;
+        case THROWIFSUPERNOTCORRECTCALL_PREF_IMM16:
+            LowerThrowIfSuperNotCorrectCall(gate, glue);
+            break;
+        case THROWDELETESUPERPROPERTY_PREF:
+            LowerThrowDeleteSuperProperty(gate, glue);
             break;
         default:
             break;
@@ -425,5 +479,108 @@ void SlowPathLowering::LowerCallIRangeDyn(GateRef gate, GateRef glue)
     GateRef newGate = cirBuilder.CallRuntimeVariadic(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
                                                      vec);
     LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerNewObjSpreadDyn(GateRef gate, GateRef glue)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(NewObjSpreadDyn));
+    // 3: number of value inputs
+    ASSERT(acc.GetNumValueIn(gate) == 3);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {glue, acc.GetValueIn(gate, 0), 
+                                                     acc.GetValueIn(gate, 1),
+                                                     acc.GetValueIn(gate, 2)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerThrowDyn(GateRef gate, GateRef glue)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+
+    GateRef exception = acc.GetValueIn(gate, 0);
+    GateRef setException = cirBuilder.NewStoreGate(VariableType::INT64(), glue, exception,
+                                                   Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)));
+    LowerHirToThrowCall(cirBuilder, gate, setException);
+}
+
+void SlowPathLowering::LowerThrowConstAssignment(GateRef gate, GateRef glue)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(ThrowConstAssignment));
+    // 1: number of value inputs
+    ASSERT(acc.GetNumValueIn(gate) == 1);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {glue, acc.GetValueIn(gate, 0)});
+    LowerHirToThrowCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerThrowThrowNotExists(GateRef gate, GateRef glue)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(ThrowThrowNotExists));
+    // 1: number of value inputs
+    ASSERT(acc.GetNumValueIn(gate) == 1);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {glue, acc.GetValueIn(gate, 0)});
+    LowerHirToThrowCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerThrowPatternNonCoercible(GateRef gate, GateRef glue)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(ThrowPatternNonCoercible));
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {glue});
+    LowerHirToThrowCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerThrowIfSuperNotCorrectCall(GateRef gate, GateRef glue)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(ThrowIfSuperNotCorrectCall));
+    // 2: number of value inputs
+    ASSERT(acc.GetNumValueIn(gate) == 2);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {glue, acc.GetValueIn(gate, 0), acc.GetValueIn(gate, 1)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerThrowDeleteSuperProperty(GateRef gate, GateRef glue)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(ThrowDeleteSuperProperty));
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {glue});
+    LowerHirToThrowCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerExceptionHandler(GateRef hirGate)
+{
+    GateAccessor acc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+
+    GateRef glue = builder_->GetCommonArgByIndex(CommonArgIdx::GLUE);
+    GateRef depend = acc.GetDep(hirGate);
+    GateRef loadException = cirBuilder.NewLoadGate(VariableType::JS_ANY(), glue, depend);
+    acc.SetDep(loadException, depend);
+    GateRef holeCst = cirBuilder.HoleConstant(CircuitBuilder::VariableType2GateType(VariableType::JS_ANY()));
+    GateRef clearException = cirBuilder.NewStoreGate(VariableType::INT64(), glue, holeCst, loadException);
+    auto uses = acc.Uses(hirGate);
+    for (auto it = uses.begin(); it != uses.end(); it++) {
+        if (acc.GetDep(*it) == hirGate) {
+            acc.ReplaceIn(it, clearException);
+        } else {
+            acc.ReplaceIn(it, loadException);
+        }
+    }
+    circuit_->DeleteGate(hirGate);
 }
 }  // namespace panda::ecmascript
