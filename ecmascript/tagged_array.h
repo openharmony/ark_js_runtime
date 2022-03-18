@@ -18,10 +18,10 @@
 
 #include "ecmascript/js_hclass.h"
 #include "ecmascript/js_tagged_value.h"
-#include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {
 class ObjectFactory;
+class JSThread;
 
 class TaggedArray : public TaggedObject {
 public:

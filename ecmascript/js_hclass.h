@@ -17,9 +17,12 @@
 #define ECMASCRIPT_JS_HCLASS_H
 
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/tagged_object.h"
+#include "ecmascript/js_tagged_value.h"
 #include "ecmascript/property_attributes.h"
+#include "ecmascript/mem/barriers.h"
+#include "ecmascript/mem/object_xray.h"
+#include "ecmascript/mem/slots.h"
 #include "include/hclass.h"
 #include "utils/bit_field.h"
 
@@ -1043,7 +1046,7 @@ public:
     }
     inline void SetHasConstructor(bool value)
     {
-        TaggedType newVal = HasConstructorBits::Update(GetBitField(), value);
+        coretypes::TaggedType newVal = HasConstructorBits::Update(GetBitField(), value);
         SetBitField(newVal);
     }
     inline bool HasConstructor() const
@@ -1184,7 +1187,7 @@ private:
     {
         return reinterpret_cast<uint32_t *>(ToUintPtr(this) + BIT_FIELD_OFFSET);
     }
-    friend class RuntimeTrampolines;
+    friend class RuntimeStubs;
 };
 static_assert(JSHClass::BIT_FIELD_OFFSET % static_cast<uint8_t>(MemAlignment::MEM_ALIGN_OBJECT) == 0);
 }  // namespace panda::ecmascript

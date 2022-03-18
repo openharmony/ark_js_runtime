@@ -21,9 +21,10 @@
 
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/compiler_macros.h"
+#include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/fast_stub.h"
 #include "ecmascript/compiler/gate.h"
-#include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/js_thread.h"
 #include "llvm/IR/Instructions.h"
@@ -463,7 +464,8 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
     LLVMValueRef rtoffset;
-    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(FAST_STUB_ID(RuntimeCallTrampolineAot));
+    LLVMTypeRef rtfuncType = stubModule_->GetFunctionType(RTSTUB_ID(RuntimeCallTrampolineAot) +
+        NOGC_RTSTUB_CSIGNS_BEGIN);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
@@ -471,12 +473,12 @@ void LLVMIRBuilder::VisitRuntimeCall(GateRef gate, const std::vector<GateRef> &i
         circuit_->GetFrameType() == FrameType::OPTIMIZED_ENTRY_FRAME) {
         rtoffset = LLVMConstInt(glue_type,
             JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
-                (RUNTIME_CALL_ID(RuntimeCallTrampolineInterpreterAsm)) * slotSize_,
+                (RTSTUB_ID(RuntimeCallTrampolineInterpreterAsm)) * slotSize_,
             0);
     } else {
         rtoffset = LLVMConstInt(glue_type,
                                 JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
-                                    (RUNTIME_CALL_ID(RuntimeCallTrampolineAot)) * slotSize_,
+                                    (RTSTUB_ID(RuntimeCallTrampolineAot)) * slotSize_,
                                 0);
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
@@ -578,26 +580,23 @@ LLVMValueRef LLVMIRBuilder::GetCurrentFrameType(LLVMValueRef currentSpFrameAddr)
 void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
 {
     int paraStartIndex = 3;
-    int index = circuit_->GetBitField(inList[1]);
+    size_t index = circuit_->GetBitField(inList[1]);
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
     LLVMValueRef rtoffset;
-    StubDescriptor *calleeDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
-    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(index);
+    const CallSignature *calleeDescriptor = stubModule_->GetCSign(index);
+    LLVMTypeRef rtfuncType = stubModule_->GetFunctionType(index);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
     // runtime case
-    if (calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB ||
-        calleeDescriptor->GetStubKind() == StubDescriptor::CallStubKind::RUNTIME_STUB_NO_GC) {
-        rtoffset = LLVMConstInt(glue_type,
-                                JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
-                                    (index - FAST_STUB_MAXCOUNT) * slotSize_,
-                                0);
+    if (calleeDescriptor->GetTargetKind() == CallSignature::TargetKind::RUNTIME_STUB ||
+        calleeDescriptor->GetTargetKind() == CallSignature::TargetKind::RUNTIME_STUB_NO_GC) {
+        rtoffset = LLVMConstInt(glue_type, JSThread::GlueData::GetRTInterfacesOffset(compCfg_->Is32Bit()) +
+            (index - NOGC_RTSTUB_CSIGNS_BEGIN) * slotSize_, 0);
     } else {
         rtoffset = LLVMConstInt(glue_type,
-                                JSThread::GlueData::GetStubEntriesOffset(compCfg_->Is32Bit()) + index * slotSize_,
-                                0);
+                                JSThread::GlueData::GetStubEntriesOffset(compCfg_->Is32Bit()) + index * slotSize_, 0);
     }
     LLVMValueRef rtbaseoffset = LLVMBuildAdd(builder_, glue, rtoffset, "");
     LLVMValueRef rtbaseAddr = LLVMBuildIntToPtr(builder_, rtbaseoffset, LLVMPointerType(glue_type, 0), "");
@@ -612,7 +611,7 @@ void LLVMIRBuilder::VisitCall(GateRef gate, const std::vector<GateRef> &inList)
     GateRef glueGate = inList[paraStartIndex];
     params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
     // for arm32, r0-r4 must be occupied by fake parameters, then the actual paramters will be in stack.
-    if (compCfg_->Is32Bit() && calleeDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
+    if (compCfg_->Is32Bit() && calleeDescriptor->GetTargetKind() != CallSignature::TargetKind::RUNTIME_STUB) {
         for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
             params[dstParaIndex++] = gateToLLVMMaps_[glueGate];
         }
@@ -642,7 +641,8 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
-    LLVMTypeRef rtfuncType = stubModule_->GetStubFunctionType(CallStubId::NAME_BytecodeHandler);
+    // start index of bytecode handler csign in llvmModule
+    LLVMTypeRef rtfuncType = stubModule_->GetFunctionType(CommonStubCSigns::NUM_OF_STUBS);
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
@@ -1721,49 +1721,31 @@ LLVMStubModule::~LLVMStubModule()
     }
 }
 
-void LLVMStubModule::Initialize(const std::vector<int> &stubIndices)
+void LLVMStubModule::Initialize()
 {
-    uint32_t i;
-    for (i = 0; i < CALL_STUB_MAXCOUNT; i++) {
-        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i);
-        if (!stubDescriptor->GetName().empty()) {
-            stubFunctionType_[i] = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
-        }
-    }
-    for (i = 0; i < FAST_STUB_MAXCOUNT; i++) {
-        uint32_t index = stubIndices[i];
-        auto stubDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(index);
-        if (!stubDescriptor->GetName().empty()) {
-            stubFunctions_[i] = GetLLVMFunctionByStubDescriptor(stubDescriptor);
-        }
-    }
-#define DEF_STUB_FUNCTION(name, argc)                                                       \
-    {                                                                                       \
-        auto funcType = stubFunctionType_[CallStubId::NAME_BytecodeHandler];                \
-        stubFunctions_[StubId::STUB_##name] = LLVMAddFunction(module_, #name, funcType);    \
-    }
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
-    INTERPRETER_STUB_LIST(DEF_STUB_FUNCTION)
-#endif
-#undef DEF_STUB_FUNCTION
+    CommonStubCSigns::GetCSigns(callSigns_);
+    BytecodeStubCSigns::GetCSigns(callSigns_);
+    RuntimeStubCSigns::GetCSigns(callSigns_);
 
-#ifndef NDEBUG
-    for (i = 0; i < TEST_FUNC_MAXCOUNT; i++) {
-        auto testFuncDescriptor = FastStubDescriptors::GetInstance().GetStubDescriptor(i + TEST_FUNC_OFFSET);
-        if (!testFuncDescriptor->GetName().empty()) {
-            testFunctions_[i] = GetLLVMFunctionByStubDescriptor(testFuncDescriptor);
+    for (size_t i = 0; i < callSigns_.size(); i++) {
+        CallSignature* cs = callSigns_[i];
+        ASSERT(!cs->GetName().empty());
+        LLVMTypeRef type = GetLLVMFunctionTypeCallSignature(cs);
+        functionTypes_.emplace_back(type);
+        if (cs->IsCommonStub() || cs->IsBCHandler()) {
+            LLVMValueRef value = GetLLVMFunctionByCallSignature(cs);
+            functions_.emplace_back(value);
         }
     }
-#endif
 }
 
-LLVMValueRef LLVMStubModule::GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor)
+LLVMValueRef LLVMStubModule::GetLLVMFunctionByCallSignature(CallSignature *stubDescriptor)
 {
-    auto funcType = GetLLVMFunctionTypeStubDescriptor(stubDescriptor);
+    auto funcType = GetLLVMFunctionTypeCallSignature(stubDescriptor);
     return LLVMAddFunction(module_, stubDescriptor->GetName().c_str(), funcType);
 }
 
-LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor)
+LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeCallSignature(CallSignature *stubDescriptor)
 {
     LLVMTypeRef returnType = ConvertLLVMTypeFromVariableType(stubDescriptor->GetReturnType());
     std::vector<LLVMTypeRef> paramTys;
@@ -1775,7 +1757,7 @@ LLVMTypeRef LLVMStubModule::GetLLVMFunctionTypeStubDescriptor(StubDescriptor *st
     // first argument is glue
     LLVMTypeRef glueType = ConvertLLVMTypeFromVariableType(paramsType[0]);
     paramTys.push_back(glueType);
-    if (compCfg_.Is32Bit() && stubDescriptor->GetStubKind() != StubDescriptor::CallStubKind::RUNTIME_STUB) {
+    if (compCfg_.Is32Bit() && stubDescriptor->GetTargetKind() != CallSignature::TargetKind::RUNTIME_STUB) {
         for (int i = 0; i < CompilationConfig::FAKE_REGISTER_PARAMTERS_ARM32; i++) {
             paramTys.push_back(glueType);  // fake paramter's type is same with glue type
         }

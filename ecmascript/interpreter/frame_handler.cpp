@@ -335,8 +335,10 @@ void FrameIterator::Iterate(const RootVisitor &v0, const RootRangeVisitor &v1) c
         } else {
             ASSERT(type == FrameType::OPTIMIZED_LEAVE_FRAME || type == FrameType::ASM_LEAVE_FRAME);
             OptimizedLeaveFrame *frame = OptimizedLeaveFrame::GetFrameFromSp(current);
-            OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
-                v1, derivedPointers, isVerifying);
+            if (leaveFrame != current) { // avoid iterating from same leaveframe again
+                OptimizedLeaveFrameHandler(reinterpret_cast<uintptr_t *>(current)).Iterate(v0,
+                    v1, derivedPointers, isVerifying);
+            }
             //  arm32, arm64 and x86_64 support stub and aot, when aot/stub call runtime, generate Optimized
             // Leave Frame.
             current = reinterpret_cast<JSTaggedType *>(frame->callsiteFp);

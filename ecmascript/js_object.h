@@ -19,11 +19,11 @@
 #include <vector>
 
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string.h"
 #include "ecmascript/ic/property_box.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_hclass.h"
+#include "ecmascript/js_method.h"
 #include "ecmascript/js_native_pointer.h"
 #include "ecmascript/js_tagged_value.h"
 #include "ecmascript/mem/object_xray.h"
@@ -35,15 +35,12 @@
 namespace panda {
 namespace ecmascript {
 class ObjectOperator;
-
 class JSFunction;
 class AccessorData;
 class JSArray;
-
 class JSForInIterator;
-
 class LexicalEnv;
-
+class GlobalEnv;
 // Integrity level for objects
 enum IntegrityLevel { SEALED, FROZEN };
 
@@ -610,7 +607,7 @@ private:
     friend class StoreICRuntime;
     friend class FastRuntimeStub;
     friend class ICRuntimeStub;
-    friend class RuntimeTrampolines;
+    friend class RuntimeStubs;
 
     static bool AddElementInternal(
         JSThread *thread, const JSHandle<JSObject> &receiver, uint32_t index, const JSHandle<JSTaggedValue> &value,

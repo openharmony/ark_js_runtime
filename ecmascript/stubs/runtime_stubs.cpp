@@ -13,19 +13,26 @@
  * limitations under the License.
  */
 
-#include "runtime_trampolines-inl.h"
+#include "runtime_stubs-inl.h"
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/base/number_helper.h"
+#include "ecmascript/compiler/call_signature.h"
+#include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/ecma_macros.h"
+#include "ecmascript/ecma_vm.h"
 #include "ecmascript/frames.h"
+#include "ecmascript/global_env.h"
 #include "ecmascript/ic/ic_runtime.h"
 #include "ecmascript/ic/profile_type_info.h"
 #include "ecmascript/ic/properties_cache.h"
 #include "ecmascript/interpreter/interpreter-inl.h"
 #include "ecmascript/interpreter/interpreter_assembly.h"
 #include "ecmascript/js_api_arraylist.h"
+#include "ecmascript/js_function.h"
 #include "ecmascript/js_object.h"
 #include "ecmascript/js_proxy.h"
+#include "ecmascript/js_thread.h"
+#include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/layout_info.h"
 #include "ecmascript/mem/space-inl.h"
 #include "ecmascript/message_string.h"
@@ -36,10 +43,10 @@
 #include "ecmascript/ts_types/ts_loader.h"
 
 namespace panda::ecmascript {
-#define DEF_RUNTIME_TRAMPOLINES(name) \
-JSTaggedType RuntimeTrampolines::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv) \
+#define DEF_RUNTIME_STUBS(name) \
+JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv) \
 
-#define RUNTIME_TRAMPOLINES_HEADER(name)                  \
+#define RUNTIME_STUBS_HEADER(name)                  \
     auto thread = JSThread::GlueToJSThread(argGlue);      \
     [[maybe_unused]] EcmaHandleScope handleScope(thread)  \
 
@@ -59,9 +66,9 @@ JSTaggedType RuntimeTrampolines::name(uintptr_t argGlue, uint32_t argc, uintptr_
     ASSERT((index) < argc);                        \
     type name = reinterpret_cast<type>(*(reinterpret_cast<JSTaggedType *>(argv) + (index)))
 
-DEF_RUNTIME_TRAMPOLINES(AddElementInternal)
+DEF_RUNTIME_STUBS(AddElementInternal)
 {
-    RUNTIME_TRAMPOLINES_HEADER(AddElementInternal);
+    RUNTIME_STUBS_HEADER(AddElementInternal);
     CONVERT_ARG_HANDLE_CHECKED(JSObject, receiver, 0);
     CONVERT_ARG_TAGGED_CHECKED(argIndex, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
@@ -71,9 +78,9 @@ DEF_RUNTIME_TRAMPOLINES(AddElementInternal)
     return JSTaggedValue(result).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallSetter)
+DEF_RUNTIME_STUBS(CallSetter)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallSetter);
+    RUNTIME_STUBS_HEADER(CallSetter);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argSetter, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, receiver, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
@@ -83,9 +90,9 @@ DEF_RUNTIME_TRAMPOLINES(CallSetter)
     return JSTaggedValue(result).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallSetter2)
+DEF_RUNTIME_STUBS(CallSetter2)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallSetter2);
+    RUNTIME_STUBS_HEADER(CallSetter2);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, objHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, valueHandle, 1);
     CONVERT_ARG_TAGGED_CHECKED(argAccessor, 2);
@@ -94,9 +101,9 @@ DEF_RUNTIME_TRAMPOLINES(CallSetter2)
     return success ? JSTaggedValue::Undefined().GetRawData() : JSTaggedValue::Exception().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallGetter2)
+DEF_RUNTIME_STUBS(CallGetter2)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallGetter2);
+    RUNTIME_STUBS_HEADER(CallGetter2);
     CONVERT_ARG_TAGGED_CHECKED(argReceiver, 0);
     CONVERT_ARG_TAGGED_CHECKED(argHolder, 1);
     CONVERT_ARG_TAGGED_CHECKED(argAccessor, 2);
@@ -109,9 +116,9 @@ DEF_RUNTIME_TRAMPOLINES(CallGetter2)
     return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(JSProxySetProperty)
+DEF_RUNTIME_STUBS(JSProxySetProperty)
 {
-    RUNTIME_TRAMPOLINES_HEADER(JSProxySetProperty);
+    RUNTIME_STUBS_HEADER(JSProxySetProperty);
     CONVERT_ARG_HANDLE_CHECKED(JSProxy, proxy, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, index, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
@@ -121,7 +128,7 @@ DEF_RUNTIME_TRAMPOLINES(JSProxySetProperty)
     return JSTaggedValue(result).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetHash32)
+DEF_RUNTIME_STUBS(GetHash32)
 {
     CONVERT_ARG_TAGGED_CHECKED(argKey, 0);
     CONVERT_ARG_TAGGED_CHECKED(len, 1);
@@ -131,9 +138,9 @@ DEF_RUNTIME_TRAMPOLINES(GetHash32)
     return JSTaggedValue(static_cast<uint64_t>(result)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallGetter)
+DEF_RUNTIME_STUBS(CallGetter)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallGetter);
+    RUNTIME_STUBS_HEADER(CallGetter);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argGetter, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argReceiver, 1);
 
@@ -142,9 +149,9 @@ DEF_RUNTIME_TRAMPOLINES(CallGetter)
     return JSObject::CallGetter(thread, accessor, objHandle).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallInternalGetter)
+DEF_RUNTIME_STUBS(CallInternalGetter)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallInternalGetter);
+    RUNTIME_STUBS_HEADER(CallInternalGetter);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argAccessor, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argReceiver, 1);
 
@@ -153,9 +160,9 @@ DEF_RUNTIME_TRAMPOLINES(CallInternalGetter)
     return accessor->CallInternalGet(thread, objHandle).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(FindElementWithCache)
+DEF_RUNTIME_STUBS(FindElementWithCache)
 {
-    RUNTIME_TRAMPOLINES_HEADER(FindElementWithCache);
+    RUNTIME_STUBS_HEADER(FindElementWithCache);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(hClass, 0);
     CONVERT_ARG_TAGGED_CHECKED(key, 1);
     CONVERT_ARG_TAGGED_CHECKED(num, 2);
@@ -171,7 +178,7 @@ DEF_RUNTIME_TRAMPOLINES(FindElementWithCache)
     return JSTaggedValue(index).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StringGetHashCode)
+DEF_RUNTIME_STUBS(StringGetHashCode)
 {
     CONVERT_ARG_TAGGED_TYPE_CHECKED(ecmaString, 0);
     auto string = reinterpret_cast<EcmaString *>(ecmaString);
@@ -179,7 +186,7 @@ DEF_RUNTIME_TRAMPOLINES(StringGetHashCode)
     return JSTaggedValue(static_cast<uint64_t>(result)).GetRawData();
 }
 
-void RuntimeTrampolines::PrintHeapReginInfo(uintptr_t argGlue)
+void RuntimeStubs::PrintHeapReginInfo(uintptr_t argGlue)
 {
     auto thread = JSThread::GlueToJSThread(argGlue);
     thread->GetEcmaVM()->GetHeap()->GetNewSpace()->EnumerateRegions([](Region *current) {
@@ -196,9 +203,9 @@ void RuntimeTrampolines::PrintHeapReginInfo(uintptr_t argGlue)
     });
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetTaggedArrayPtrTest)
+DEF_RUNTIME_STUBS(GetTaggedArrayPtrTest)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetTaggedArrayPtrTest);
+    RUNTIME_STUBS_HEADER(GetTaggedArrayPtrTest);
     // this case static static JSHandle<TaggedArray> arr don't free in first call
     // second call trigger gc.
     // don't call EcmaHandleScope handleScope(thread);
@@ -224,7 +231,7 @@ DEF_RUNTIME_TRAMPOLINES(GetTaggedArrayPtrTest)
     return arr1.GetTaggedValue().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(FloatMod)
+DEF_RUNTIME_STUBS(FloatMod)
 {
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
@@ -232,25 +239,25 @@ DEF_RUNTIME_TRAMPOLINES(FloatMod)
     return JSTaggedValue(result).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NewInternalString)
+DEF_RUNTIME_STUBS(NewInternalString)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NewInternalString);
+    RUNTIME_STUBS_HEADER(NewInternalString);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, keyHandle, 0);
     return JSTaggedValue(thread->GetEcmaVM()->GetFactory()->InternString(keyHandle)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NewTaggedArray)
+DEF_RUNTIME_STUBS(NewTaggedArray)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NewTaggedArray);
+    RUNTIME_STUBS_HEADER(NewTaggedArray);
     CONVERT_ARG_TAGGED_CHECKED(length, 0);
 
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
     return factory->NewTaggedArray(length.GetInt()).GetTaggedValue().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CopyArray)
+DEF_RUNTIME_STUBS(CopyArray)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CopyArray);
+    RUNTIME_STUBS_HEADER(CopyArray);
     CONVERT_ARG_HANDLE_CHECKED(TaggedArray, array, 0);
     CONVERT_ARG_TAGGED_CHECKED(length, 1);
     CONVERT_ARG_TAGGED_CHECKED(capacity, 2);
@@ -259,9 +266,9 @@ DEF_RUNTIME_TRAMPOLINES(CopyArray)
     return factory->CopyArray(array, length.GetInt(), capacity.GetInt()).GetTaggedValue().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NameDictPutIfAbsent)
+DEF_RUNTIME_STUBS(NameDictPutIfAbsent)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NameDictPutIfAbsent);
+    RUNTIME_STUBS_HEADER(NameDictPutIfAbsent);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(receiver, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(array, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, keyHandle, 2);
@@ -282,9 +289,9 @@ DEF_RUNTIME_TRAMPOLINES(NameDictPutIfAbsent)
     }
 }
 
-DEF_RUNTIME_TRAMPOLINES(PropertiesSetValue)
+DEF_RUNTIME_STUBS(PropertiesSetValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(PropertiesSetValue);
+    RUNTIME_STUBS_HEADER(PropertiesSetValue);
     CONVERT_ARG_HANDLE_CHECKED(JSObject, objHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, valueHandle, 1);
     CONVERT_ARG_HANDLE_CHECKED(TaggedArray, arrayHandle, 2);
@@ -305,9 +312,9 @@ DEF_RUNTIME_TRAMPOLINES(PropertiesSetValue)
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(TaggedArraySetValue)
+DEF_RUNTIME_STUBS(TaggedArraySetValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(TaggedArraySetValue);
+    RUNTIME_STUBS_HEADER(TaggedArraySetValue);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argReceiver, 0);
     CONVERT_ARG_TAGGED_CHECKED(value, 1);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argElement, 2);
@@ -333,9 +340,9 @@ DEF_RUNTIME_TRAMPOLINES(TaggedArraySetValue)
     return JSTaggedValue::Undefined().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NewEcmaDynClass)
+DEF_RUNTIME_STUBS(NewEcmaDynClass)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NewEcmaDynClass);
+    RUNTIME_STUBS_HEADER(NewEcmaDynClass);
     CONVERT_ARG_TAGGED_CHECKED(size, 0);
     CONVERT_ARG_TAGGED_CHECKED(type, 1);
     CONVERT_ARG_TAGGED_CHECKED(inlinedProps, 2);
@@ -343,9 +350,9 @@ DEF_RUNTIME_TRAMPOLINES(NewEcmaDynClass)
         size.GetInt(), JSType(type.GetInt()), inlinedProps.GetInt())).GetTaggedValue().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(UpdateLayOutAndAddTransition)
+DEF_RUNTIME_STUBS(UpdateLayOutAndAddTransition)
 {
-    RUNTIME_TRAMPOLINES_HEADER(UpdateLayOutAndAddTransition);
+    RUNTIME_STUBS_HEADER(UpdateLayOutAndAddTransition);
     CONVERT_ARG_HANDLE_CHECKED(JSHClass, oldHClassHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSHClass, newHClassHandle, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, keyHandle, 2);
@@ -375,7 +382,7 @@ DEF_RUNTIME_TRAMPOLINES(UpdateLayOutAndAddTransition)
     return JSTaggedValue::Hole().GetRawData();
 }
 
-void RuntimeTrampolines::DebugPrint(int fmtMessageId, ...)
+void RuntimeStubs::DebugPrint(int fmtMessageId, ...)
 {
     std::string format = MessageString::GetMessageString(fmtMessageId);
     va_list args;
@@ -385,9 +392,9 @@ void RuntimeTrampolines::DebugPrint(int fmtMessageId, ...)
     va_end(args);
 }
 
-DEF_RUNTIME_TRAMPOLINES(NoticeThroughChainAndRefreshUser)
+DEF_RUNTIME_STUBS(NoticeThroughChainAndRefreshUser)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NoticeThroughChainAndRefreshUser);
+    RUNTIME_STUBS_HEADER(NoticeThroughChainAndRefreshUser);
     CONVERT_ARG_HANDLE_CHECKED(JSHClass, oldHClassHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSHClass, newHClassHandle, 1);
 
@@ -396,23 +403,23 @@ DEF_RUNTIME_TRAMPOLINES(NoticeThroughChainAndRefreshUser)
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(IncDyn)
+DEF_RUNTIME_STUBS(IncDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(IncDyn);
+    RUNTIME_STUBS_HEADER(IncDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
     return RuntimeIncDyn(thread, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DecDyn)
+DEF_RUNTIME_STUBS(DecDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DecDyn);
+    RUNTIME_STUBS_HEADER(DecDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
     return RuntimeDecDyn(thread, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ExpDyn)
+DEF_RUNTIME_STUBS(ExpDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ExpDyn);
+    RUNTIME_STUBS_HEADER(ExpDyn);
     CONVERT_ARG_TAGGED_CHECKED(baseValue, 0);
     CONVERT_ARG_TAGGED_CHECKED(exponentValue, 1);
 
@@ -443,25 +450,25 @@ DEF_RUNTIME_TRAMPOLINES(ExpDyn)
     return res.GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(IsInDyn)
+DEF_RUNTIME_STUBS(IsInDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(IsInDyn);
+    RUNTIME_STUBS_HEADER(IsInDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 1);
     return RuntimeIsInDyn(thread, prop, obj).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(InstanceOfDyn)
+DEF_RUNTIME_STUBS(InstanceOfDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(InstanceOfDyn);
+    RUNTIME_STUBS_HEADER(InstanceOfDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, target, 1);
     return RuntimeInstanceofDyn(thread, obj, target).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(FastStrictNotEqual)
+DEF_RUNTIME_STUBS(FastStrictNotEqual)
 {
-    RUNTIME_TRAMPOLINES_HEADER(FastStrictNotEqual);
+    RUNTIME_STUBS_HEADER(FastStrictNotEqual);
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
     bool result = FastRuntimeStub::FastStrictEqual(left, right);
@@ -471,9 +478,9 @@ DEF_RUNTIME_TRAMPOLINES(FastStrictNotEqual)
     return JSTaggedValue::True().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(FastStrictEqual)
+DEF_RUNTIME_STUBS(FastStrictEqual)
 {
-    RUNTIME_TRAMPOLINES_HEADER(FastStrictEqual);
+    RUNTIME_STUBS_HEADER(FastStrictEqual);
     CONVERT_ARG_TAGGED_CHECKED(left, 0);
     CONVERT_ARG_TAGGED_CHECKED(right, 1);
     bool result = FastRuntimeStub::FastStrictEqual(left, right);
@@ -483,49 +490,49 @@ DEF_RUNTIME_TRAMPOLINES(FastStrictEqual)
     return JSTaggedValue::False().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateGeneratorObj)
+DEF_RUNTIME_STUBS(CreateGeneratorObj)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateGeneratorObj);
+    RUNTIME_STUBS_HEADER(CreateGeneratorObj);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, genFunc, 0);
     return RuntimeCreateGeneratorObj(thread, genFunc).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetTemplateObject)
+DEF_RUNTIME_STUBS(GetTemplateObject)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetTemplateObject);
+    RUNTIME_STUBS_HEADER(GetTemplateObject);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, literal, 0);
     return RuntimeGetTemplateObject(thread, literal).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetNextPropName)
+DEF_RUNTIME_STUBS(GetNextPropName)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetNextPropName);
+    RUNTIME_STUBS_HEADER(GetNextPropName);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, iter, 0);
     return RuntimeGetNextPropName(thread, iter).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(IterNext)
+DEF_RUNTIME_STUBS(IterNext)
 {
-    RUNTIME_TRAMPOLINES_HEADER(IterNext);
+    RUNTIME_STUBS_HEADER(IterNext);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, iter, 0);
     return RuntimeIterNext(thread, iter).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CloseIterator)
+DEF_RUNTIME_STUBS(CloseIterator)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CloseIterator);
+    RUNTIME_STUBS_HEADER(CloseIterator);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, iter, 0);
     return RuntimeCloseIterator(thread, iter).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CopyModule)
+DEF_RUNTIME_STUBS(CopyModule)
 {
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SuperCallSpread)
+DEF_RUNTIME_STUBS(SuperCallSpread)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SuperCallSpread);
+    RUNTIME_STUBS_HEADER(SuperCallSpread);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, array, 1);
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
@@ -533,84 +540,84 @@ DEF_RUNTIME_TRAMPOLINES(SuperCallSpread)
     return RuntimeSuperCallSpread(thread, func, JSHandle<JSTaggedValue>(thread, function), array).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DelObjProp)
+DEF_RUNTIME_STUBS(DelObjProp)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DelObjProp);
+    RUNTIME_STUBS_HEADER(DelObjProp);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 1);
     return RuntimeDelObjProp(thread, obj, prop).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NewObjSpreadDyn)
+DEF_RUNTIME_STUBS(NewObjSpreadDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NewObjSpreadDyn);
+    RUNTIME_STUBS_HEADER(NewObjSpreadDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, newTarget, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, array, 2);
     return RuntimeNewObjSpreadDyn(thread, func, newTarget, array).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateIterResultObj)
+DEF_RUNTIME_STUBS(CreateIterResultObj)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateIterResultObj);
+    RUNTIME_STUBS_HEADER(CreateIterResultObj);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
     CONVERT_ARG_TAGGED_CHECKED(flag, 1);
     return RuntimeCreateIterResultObj(thread, value, flag).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(AsyncFunctionAwaitUncaught)
+DEF_RUNTIME_STUBS(AsyncFunctionAwaitUncaught)
 {
-    RUNTIME_TRAMPOLINES_HEADER(AsyncFunctionAwaitUncaught);
+    RUNTIME_STUBS_HEADER(AsyncFunctionAwaitUncaught);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, asyncFuncObj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 1);
     return RuntimeAsyncFunctionAwaitUncaught(thread, asyncFuncObj, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(AsyncFunctionResolveOrReject)
+DEF_RUNTIME_STUBS(AsyncFunctionResolveOrReject)
 {
-    RUNTIME_TRAMPOLINES_HEADER(AsyncFunctionResolveOrReject);
+    RUNTIME_STUBS_HEADER(AsyncFunctionResolveOrReject);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, asyncFuncObj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 1);
     CONVERT_ARG_TAGGED_CHECKED(is_resolve, 2);
     return RuntimeAsyncFunctionResolveOrReject(thread, asyncFuncObj, value, is_resolve.IsTrue()).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CopyDataProperties)
+DEF_RUNTIME_STUBS(CopyDataProperties)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CopyDataProperties);
+    RUNTIME_STUBS_HEADER(CopyDataProperties);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, dst, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, src, 1);
     return RuntimeCopyDataProperties(thread, dst, src).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StArraySpread)
+DEF_RUNTIME_STUBS(StArraySpread)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StArraySpread);
+    RUNTIME_STUBS_HEADER(StArraySpread);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, dst, 0);
     CONVERT_ARG_TAGGED_CHECKED(index, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, src, 2);
     return RuntimeStArraySpread(thread, dst, index, src).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetIteratorNext)
+DEF_RUNTIME_STUBS(GetIteratorNext)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetIteratorNext);
+    RUNTIME_STUBS_HEADER(GetIteratorNext);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, method, 1);
     return RuntimeGetIteratorNext(thread, obj, method).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SetObjectWithProto)
+DEF_RUNTIME_STUBS(SetObjectWithProto)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SetObjectWithProto);
+    RUNTIME_STUBS_HEADER(SetObjectWithProto);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, proto, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 1);
     return RuntimeSetObjectWithProto(thread, proto, obj).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LoadICByValue)
+DEF_RUNTIME_STUBS(LoadICByValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LoadICByValue);
+    RUNTIME_STUBS_HEADER(LoadICByValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, profileTypeInfo, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, receiver, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, propKey, 2);
@@ -623,9 +630,9 @@ DEF_RUNTIME_TRAMPOLINES(LoadICByValue)
     return icRuntime.LoadMiss(receiver, propKey).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StoreICByValue)
+DEF_RUNTIME_STUBS(StoreICByValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StoreICByValue);
+    RUNTIME_STUBS_HEADER(StoreICByValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, profileTypeInfo, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, receiver, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, propKey, 2);
@@ -640,9 +647,9 @@ DEF_RUNTIME_TRAMPOLINES(StoreICByValue)
     return icRuntime.StoreMiss(receiver, propKey, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StOwnByValue)
+DEF_RUNTIME_STUBS(StOwnByValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StOwnByValue);
+    RUNTIME_STUBS_HEADER(StOwnByValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, key, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
@@ -650,9 +657,9 @@ DEF_RUNTIME_TRAMPOLINES(StOwnByValue)
     return RuntimeStOwnByValue(thread, obj, key, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LdSuperByValue)
+DEF_RUNTIME_STUBS(LdSuperByValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LdSuperByValue);
+    RUNTIME_STUBS_HEADER(LdSuperByValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, key, 1);
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
@@ -660,9 +667,9 @@ DEF_RUNTIME_TRAMPOLINES(LdSuperByValue)
     return RuntimeLdSuperByValue(thread, obj, key, thisFunc).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StSuperByValue)
+DEF_RUNTIME_STUBS(StSuperByValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StSuperByValue);
+    RUNTIME_STUBS_HEADER(StSuperByValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, key, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
@@ -671,9 +678,9 @@ DEF_RUNTIME_TRAMPOLINES(StSuperByValue)
     return RuntimeStSuperByValue(thread, obj, key, value, thisFunc).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LdObjByIndex)
+DEF_RUNTIME_STUBS(LdObjByIndex)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LdObjByIndex);
+    RUNTIME_STUBS_HEADER(LdObjByIndex);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_TAGGED_CHECKED(idx, 1);
     CONVERT_ARG_TAGGED_CHECKED(callGetter, 2);
@@ -681,50 +688,50 @@ DEF_RUNTIME_TRAMPOLINES(LdObjByIndex)
     return RuntimeLdObjByIndex(thread, obj, idx.GetInt(), callGetter.IsTrue(), receiver).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StObjByIndex)
+DEF_RUNTIME_STUBS(StObjByIndex)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StObjByIndex);
+    RUNTIME_STUBS_HEADER(StObjByIndex);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_TAGGED_CHECKED(idx, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
     return RuntimeStObjByIndex(thread, obj, idx.GetInt(), value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StOwnByIndex)
+DEF_RUNTIME_STUBS(StOwnByIndex)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StOwnByIndex);
+    RUNTIME_STUBS_HEADER(StOwnByIndex);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, idx, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
     return RuntimeStOwnByIndex(thread, obj, idx, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StGlobalRecord)
+DEF_RUNTIME_STUBS(StGlobalRecord)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StGlobalRecord);
+    RUNTIME_STUBS_HEADER(StGlobalRecord);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 1);
     CONVERT_ARG_TAGGED_CHECKED(isConst, 2);
     return RuntimeStGlobalRecord(thread, prop, value, isConst.IsTrue()).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NegDyn)
+DEF_RUNTIME_STUBS(NegDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NegDyn);
+    RUNTIME_STUBS_HEADER(NegDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
     return RuntimeNegDyn(thread, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NotDyn)
+DEF_RUNTIME_STUBS(NotDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NotDyn);
+    RUNTIME_STUBS_HEADER(NotDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
     return RuntimeNotDyn(thread, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ChangeUintAndIntShrToJSTaggedValue)
+DEF_RUNTIME_STUBS(ChangeUintAndIntShrToJSTaggedValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ChangeUintAndIntShrToJSTaggedValue);
+    RUNTIME_STUBS_HEADER(ChangeUintAndIntShrToJSTaggedValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
 
@@ -742,9 +749,9 @@ DEF_RUNTIME_TRAMPOLINES(ChangeUintAndIntShrToJSTaggedValue)
     return JSTaggedValue(ret).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ChangeTwoInt32AndToJSTaggedValue)
+DEF_RUNTIME_STUBS(ChangeTwoInt32AndToJSTaggedValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ChangeTwoInt32AndToJSTaggedValue);
+    RUNTIME_STUBS_HEADER(ChangeTwoInt32AndToJSTaggedValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
 
@@ -761,9 +768,9 @@ DEF_RUNTIME_TRAMPOLINES(ChangeTwoInt32AndToJSTaggedValue)
     return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ChangeTwoInt32OrToJSTaggedValue)
+DEF_RUNTIME_STUBS(ChangeTwoInt32OrToJSTaggedValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ChangeTwoInt32OrToJSTaggedValue);
+    RUNTIME_STUBS_HEADER(ChangeTwoInt32OrToJSTaggedValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
 
@@ -780,9 +787,9 @@ DEF_RUNTIME_TRAMPOLINES(ChangeTwoInt32OrToJSTaggedValue)
     return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ChangeTwoInt32XorToJSTaggedValue)
+DEF_RUNTIME_STUBS(ChangeTwoInt32XorToJSTaggedValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ChangeTwoInt32XorToJSTaggedValue);
+    RUNTIME_STUBS_HEADER(ChangeTwoInt32XorToJSTaggedValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
 
@@ -799,9 +806,9 @@ DEF_RUNTIME_TRAMPOLINES(ChangeTwoInt32XorToJSTaggedValue)
     return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ChangeTwoUint32AndToJSTaggedValue)
+DEF_RUNTIME_STUBS(ChangeTwoUint32AndToJSTaggedValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ChangeTwoUint32AndToJSTaggedValue);
+    RUNTIME_STUBS_HEADER(ChangeTwoUint32AndToJSTaggedValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
 
@@ -818,9 +825,9 @@ DEF_RUNTIME_TRAMPOLINES(ChangeTwoUint32AndToJSTaggedValue)
     return JSTaggedValue(ret).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ChangeUintAndIntShlToJSTaggedValue)
+DEF_RUNTIME_STUBS(ChangeUintAndIntShlToJSTaggedValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ChangeUintAndIntShlToJSTaggedValue);
+    RUNTIME_STUBS_HEADER(ChangeUintAndIntShlToJSTaggedValue);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
 
@@ -841,9 +848,9 @@ DEF_RUNTIME_TRAMPOLINES(ChangeUintAndIntShlToJSTaggedValue)
     return JSTaggedValue(ret).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ResolveClass)
+DEF_RUNTIME_STUBS(ResolveClass)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ResolveClass);
+    RUNTIME_STUBS_HEADER(ResolveClass);
     CONVERT_ARG_HANDLE_CHECKED(JSFunction, ctor, 0);
     CONVERT_ARG_HANDLE_CHECKED(TaggedArray, literal, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, base, 2);
@@ -852,9 +859,9 @@ DEF_RUNTIME_TRAMPOLINES(ResolveClass)
     return RuntimeResolveClass(thread, ctor, literal, base, lexenv, constpool).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CloneClassFromTemplate)
+DEF_RUNTIME_STUBS(CloneClassFromTemplate)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CloneClassFromTemplate);
+    RUNTIME_STUBS_HEADER(CloneClassFromTemplate);
     CONVERT_ARG_HANDLE_CHECKED(JSFunction, ctor, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, base, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, lexenv, 2);
@@ -862,18 +869,18 @@ DEF_RUNTIME_TRAMPOLINES(CloneClassFromTemplate)
     return RuntimeCloneClassFromTemplate(thread, ctor, base, lexenv, constpool).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SetClassConstructorLength)
+DEF_RUNTIME_STUBS(SetClassConstructorLength)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SetClassConstructorLength);
+    RUNTIME_STUBS_HEADER(SetClassConstructorLength);
     CONVERT_ARG_TAGGED_CHECKED(ctor, 0);
     CONVERT_ARG_TAGGED_CHECKED(length, 1);
     return RuntimeSetClassConstructorLength(thread, ctor, length).GetRawData();
 }
 
 
-DEF_RUNTIME_TRAMPOLINES(UpdateHotnessCounter)
+DEF_RUNTIME_STUBS(UpdateHotnessCounter)
 {
-    RUNTIME_TRAMPOLINES_HEADER(UpdateHotnessCounter);
+    RUNTIME_STUBS_HEADER(UpdateHotnessCounter);
     InterpretedFrame *state = GET_FRAME(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()));
     thread->CheckSafepoint();
     auto thisFunc = JSFunction::Cast(state->function.GetTaggedObject());
@@ -885,9 +892,9 @@ DEF_RUNTIME_TRAMPOLINES(UpdateHotnessCounter)
     return thisFunc->GetProfileTypeInfo().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LoadICByName)
+DEF_RUNTIME_STUBS(LoadICByName)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LoadICByName);
+    RUNTIME_STUBS_HEADER(LoadICByName);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, profileHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, receiverHandle, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, keyHandle, 2);
@@ -903,9 +910,9 @@ DEF_RUNTIME_TRAMPOLINES(LoadICByName)
     return icRuntime.LoadMiss(receiverHandle, keyHandle).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StoreICByName)
+DEF_RUNTIME_STUBS(StoreICByName)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StoreICByName);
+    RUNTIME_STUBS_HEADER(StoreICByName);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, profileHandle, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, receiverHandle, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, keyHandle, 2);
@@ -922,53 +929,53 @@ DEF_RUNTIME_TRAMPOLINES(StoreICByName)
     return icRuntime.StoreMiss(receiverHandle, keyHandle, valueHandle).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SetFunctionNameNoPrefix)
+DEF_RUNTIME_STUBS(SetFunctionNameNoPrefix)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SetFunctionNameNoPrefix);
+    RUNTIME_STUBS_HEADER(SetFunctionNameNoPrefix);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(argFunc, 0);
     CONVERT_ARG_TAGGED_CHECKED(argName, 1);
     JSFunction::SetFunctionNameNoPrefix(thread, reinterpret_cast<JSFunction *>(argFunc), argName);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StOwnByValueWithNameSet)
+DEF_RUNTIME_STUBS(StOwnByValueWithNameSet)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StOwnByValueWithNameSet);
+    RUNTIME_STUBS_HEADER(StOwnByValueWithNameSet);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
     return RuntimeStOwnByValueWithNameSet(thread, obj, prop, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StOwnByName)
+DEF_RUNTIME_STUBS(StOwnByName)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StOwnByName);
+    RUNTIME_STUBS_HEADER(StOwnByName);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
     return RuntimeStOwnByName(thread, obj, prop, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StOwnByNameWithNameSet)
+DEF_RUNTIME_STUBS(StOwnByNameWithNameSet)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StOwnByNameWithNameSet);
+    RUNTIME_STUBS_HEADER(StOwnByNameWithNameSet);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
     return RuntimeStOwnByValueWithNameSet(thread, obj, prop, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SuspendGenerator)
+DEF_RUNTIME_STUBS(SuspendGenerator)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SuspendGenerator);
+    RUNTIME_STUBS_HEADER(SuspendGenerator);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 1);
     return RuntimeSuspendGenerator(thread, obj, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(UpFrame)
+DEF_RUNTIME_STUBS(UpFrame)
 {
-    RUNTIME_TRAMPOLINES_HEADER(UpFrame);
+    RUNTIME_STUBS_HEADER(UpFrame);
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     InterpretedFrameHandler frameHandler(sp);
     uint32_t pcOffset = panda_file::INVALID_OFFSET;
@@ -987,106 +994,106 @@ DEF_RUNTIME_TRAMPOLINES(UpFrame)
     return JSTaggedValue(static_cast<uint64_t>(0)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetModuleNamespace)
+DEF_RUNTIME_STUBS(GetModuleNamespace)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetModuleNamespace);
+    RUNTIME_STUBS_HEADER(GetModuleNamespace);
     CONVERT_ARG_TAGGED_CHECKED(localName, 0);
     return RuntimeGetModuleNamespace(thread, localName).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StModuleVar)
+DEF_RUNTIME_STUBS(StModuleVar)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StModuleVar);
+    RUNTIME_STUBS_HEADER(StModuleVar);
     CONVERT_ARG_TAGGED_CHECKED(key, 0);
     CONVERT_ARG_TAGGED_CHECKED(value, 1);
     RuntimeStModuleVar(thread, key, value);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LdModuleVar)
+DEF_RUNTIME_STUBS(LdModuleVar)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LdModuleVar);
+    RUNTIME_STUBS_HEADER(LdModuleVar);
     CONVERT_ARG_TAGGED_CHECKED(key, 0);
     CONVERT_ARG_TAGGED_CHECKED(taggedFlag, 1);
     bool innerFlag = taggedFlag.GetInt() != 0;
     return RuntimeLdModuleVar(thread, key, innerFlag).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetPropIterator)
+DEF_RUNTIME_STUBS(GetPropIterator)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetPropIterator);
+    RUNTIME_STUBS_HEADER(GetPropIterator);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
     return RuntimeGetPropIterator(thread, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(AsyncFunctionEnter)
+DEF_RUNTIME_STUBS(AsyncFunctionEnter)
 {
-    RUNTIME_TRAMPOLINES_HEADER(AsyncFunctionEnter);
+    RUNTIME_STUBS_HEADER(AsyncFunctionEnter);
     return RuntimeAsyncFunctionEnter(thread).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetIterator)
+DEF_RUNTIME_STUBS(GetIterator)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetIterator);
+    RUNTIME_STUBS_HEADER(GetIterator);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     return RuntimeGetIterator(thread, obj).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowDyn)
+DEF_RUNTIME_STUBS(ThrowDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowDyn);
+    RUNTIME_STUBS_HEADER(ThrowDyn);
     CONVERT_ARG_TAGGED_CHECKED(value, 0);
     RuntimeThrowDyn(thread, value);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowThrowNotExists)
+DEF_RUNTIME_STUBS(ThrowThrowNotExists)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowThrowNotExists);
+    RUNTIME_STUBS_HEADER(ThrowThrowNotExists);
     RuntimeThrowThrowNotExists(thread);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowPatternNonCoercible)
+DEF_RUNTIME_STUBS(ThrowPatternNonCoercible)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowPatternNonCoercible);
+    RUNTIME_STUBS_HEADER(ThrowPatternNonCoercible);
     RuntimeThrowPatternNonCoercible(thread);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowDeleteSuperProperty)
+DEF_RUNTIME_STUBS(ThrowDeleteSuperProperty)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowDeleteSuperProperty);
+    RUNTIME_STUBS_HEADER(ThrowDeleteSuperProperty);
     RuntimeThrowDeleteSuperProperty(thread);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowUndefinedIfHole)
+DEF_RUNTIME_STUBS(ThrowUndefinedIfHole)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowUndefinedIfHole);
+    RUNTIME_STUBS_HEADER(ThrowUndefinedIfHole);
     CONVERT_ARG_HANDLE_CHECKED(EcmaString, obj, 0);
     RuntimeThrowUndefinedIfHole(thread, obj);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowIfNotObject)
+DEF_RUNTIME_STUBS(ThrowIfNotObject)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowIfNotObject);
+    RUNTIME_STUBS_HEADER(ThrowIfNotObject);
     RuntimeThrowIfNotObject(thread);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowConstAssignment)
+DEF_RUNTIME_STUBS(ThrowConstAssignment)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowConstAssignment);
+    RUNTIME_STUBS_HEADER(ThrowConstAssignment);
     CONVERT_ARG_HANDLE_CHECKED(EcmaString, value, 0);
     RuntimeThrowConstAssignment(thread, value);
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowTypeError)
+DEF_RUNTIME_STUBS(ThrowTypeError)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowTypeError);
+    RUNTIME_STUBS_HEADER(ThrowTypeError);
     CONVERT_ARG_TAGGED_CHECKED(argMessageStringId, 0);
     std::string message = MessageString::GetMessageString(argMessageStringId.GetInt());
     ObjectFactory *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
@@ -1094,16 +1101,16 @@ DEF_RUNTIME_TRAMPOLINES(ThrowTypeError)
     THROW_NEW_ERROR_AND_RETURN_VALUE(thread, error.GetTaggedValue(), JSTaggedValue::Hole().GetRawData());
 }
 
-DEF_RUNTIME_TRAMPOLINES(LdGlobalRecord)
+DEF_RUNTIME_STUBS(LdGlobalRecord)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LdGlobalRecord);
+    RUNTIME_STUBS_HEADER(LdGlobalRecord);
     CONVERT_ARG_TAGGED_CHECKED(key, 0);
     return RuntimeLdGlobalRecord(thread, key).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetGlobalOwnProperty)
+DEF_RUNTIME_STUBS(GetGlobalOwnProperty)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetGlobalOwnProperty);
+    RUNTIME_STUBS_HEADER(GetGlobalOwnProperty);
     CONVERT_ARG_TAGGED_CHECKED(key, 0);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
@@ -1111,9 +1118,9 @@ DEF_RUNTIME_TRAMPOLINES(GetGlobalOwnProperty)
     return FastRuntimeStub::GetGlobalOwnProperty(thread, globalObj, key).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(TryLdGlobalByName)
+DEF_RUNTIME_STUBS(TryLdGlobalByName)
 {
-    RUNTIME_TRAMPOLINES_HEADER(TryLdGlobalByName);
+    RUNTIME_STUBS_HEADER(TryLdGlobalByName);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 0);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
@@ -1121,9 +1128,9 @@ DEF_RUNTIME_TRAMPOLINES(TryLdGlobalByName)
     return RuntimeTryLdGlobalByName(thread, globalObj, prop).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LoadMiss)
+DEF_RUNTIME_STUBS(LoadMiss)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LoadMiss);
+    RUNTIME_STUBS_HEADER(LoadMiss);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(profileTypeInfo, 0);
     CONVERT_ARG_TAGGED_CHECKED(receiver, 1);
     CONVERT_ARG_TAGGED_CHECKED(key, 2);
@@ -1133,9 +1140,9 @@ DEF_RUNTIME_TRAMPOLINES(LoadMiss)
         slotId.GetInt(), static_cast<ICKind>(kind.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StoreMiss)
+DEF_RUNTIME_STUBS(StoreMiss)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StoreMiss);
+    RUNTIME_STUBS_HEADER(StoreMiss);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(profileTypeInfo, 0);
     CONVERT_ARG_TAGGED_CHECKED(receiver, 1);
     CONVERT_ARG_TAGGED_CHECKED(key, 2);
@@ -1146,158 +1153,158 @@ DEF_RUNTIME_TRAMPOLINES(StoreMiss)
         slotId.GetInt(), static_cast<ICKind>(kind.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(TryUpdateGlobalRecord)
+DEF_RUNTIME_STUBS(TryUpdateGlobalRecord)
 {
-    RUNTIME_TRAMPOLINES_HEADER(TryUpdateGlobalRecord);
+    RUNTIME_STUBS_HEADER(TryUpdateGlobalRecord);
     CONVERT_ARG_TAGGED_CHECKED(prop, 0);
     CONVERT_ARG_TAGGED_CHECKED(value, 1);
     return RuntimeTryUpdateGlobalRecord(thread, prop, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowReferenceError)
+DEF_RUNTIME_STUBS(ThrowReferenceError)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowReferenceError);
+    RUNTIME_STUBS_HEADER(ThrowReferenceError);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 0);
     return RuntimeThrowReferenceError(thread, prop, " is not defined").GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LdGlobalVar)
+DEF_RUNTIME_STUBS(LdGlobalVar)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LdGlobalVar);
+    RUNTIME_STUBS_HEADER(LdGlobalVar);
     CONVERT_ARG_TAGGED_CHECKED(global, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 1);
     return RuntimeLdGlobalVar(thread, global, prop).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(StGlobalVar)
+DEF_RUNTIME_STUBS(StGlobalVar)
 {
-    RUNTIME_TRAMPOLINES_HEADER(StGlobalVar);
+    RUNTIME_STUBS_HEADER(StGlobalVar);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 1);
     return RuntimeStGlobalVar(thread, prop, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ToNumber)
+DEF_RUNTIME_STUBS(ToNumber)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ToNumber);
+    RUNTIME_STUBS_HEADER(ToNumber);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 0);
     return RuntimeToNumber(thread, value).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ToBoolean)
+DEF_RUNTIME_STUBS(ToBoolean)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ToBoolean);
+    RUNTIME_STUBS_HEADER(ToBoolean);
     CONVERT_ARG_TAGGED_CHECKED(value, 0);
     bool result = value.ToBoolean();
     return JSTaggedValue(result).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(EqDyn)
+DEF_RUNTIME_STUBS(EqDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(EqDyn);
+    RUNTIME_STUBS_HEADER(EqDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeEqDyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NotEqDyn)
+DEF_RUNTIME_STUBS(NotEqDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NotEqDyn);
+    RUNTIME_STUBS_HEADER(NotEqDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeNotEqDyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LessDyn)
+DEF_RUNTIME_STUBS(LessDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LessDyn);
+    RUNTIME_STUBS_HEADER(LessDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeLessDyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LessEqDyn)
+DEF_RUNTIME_STUBS(LessEqDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LessEqDyn);
+    RUNTIME_STUBS_HEADER(LessEqDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeLessEqDyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GreaterDyn)
+DEF_RUNTIME_STUBS(GreaterDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GreaterDyn);
+    RUNTIME_STUBS_HEADER(GreaterDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeGreaterDyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GreaterEqDyn)
+DEF_RUNTIME_STUBS(GreaterEqDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GreaterEqDyn);
+    RUNTIME_STUBS_HEADER(GreaterEqDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeGreaterEqDyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(Add2Dyn)
+DEF_RUNTIME_STUBS(Add2Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(Add2Dyn);
+    RUNTIME_STUBS_HEADER(Add2Dyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     return RuntimeAdd2Dyn(thread, ecmaVm, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(Sub2Dyn)
+DEF_RUNTIME_STUBS(Sub2Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(Sub2Dyn);
+    RUNTIME_STUBS_HEADER(Sub2Dyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeSub2Dyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(Mul2Dyn)
+DEF_RUNTIME_STUBS(Mul2Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(Mul2Dyn);
+    RUNTIME_STUBS_HEADER(Mul2Dyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeMul2Dyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(Div2Dyn)
+DEF_RUNTIME_STUBS(Div2Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(Div2Dyn);
+    RUNTIME_STUBS_HEADER(Div2Dyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeDiv2Dyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(Mod2Dyn)
+DEF_RUNTIME_STUBS(Mod2Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(Mod2Dyn);
+    RUNTIME_STUBS_HEADER(Mod2Dyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, left, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, right, 1);
     return RuntimeMod2Dyn(thread, left, right).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetLexicalEnv)
+DEF_RUNTIME_STUBS(GetLexicalEnv)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetLexicalEnv);
+    RUNTIME_STUBS_HEADER(GetLexicalEnv);
     return thread->GetCurrentLexenv().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(LoadValueFromConstantStringTable)
+DEF_RUNTIME_STUBS(LoadValueFromConstantStringTable)
 {
-    RUNTIME_TRAMPOLINES_HEADER(LoadValueFromConstantStringTable);
+    RUNTIME_STUBS_HEADER(LoadValueFromConstantStringTable);
     CONVERT_ARG_TAGGED_CHECKED(id, 0);
     auto tsLoader = thread->GetEcmaVM()->GetTSLoader();
     return tsLoader->GetStringById(id.GetInt()).GetTaggedValue().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallArg0Dyn)
+DEF_RUNTIME_STUBS(CallArg0Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallArg0Dyn);
+    RUNTIME_STUBS_HEADER(CallArg0Dyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     uint32_t actualNumArgs = EcmaInterpreter::ActualNumArgsOfCall::CALLARG0;
     bool callThis = false;
@@ -1305,9 +1312,9 @@ DEF_RUNTIME_TRAMPOLINES(CallArg0Dyn)
     return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallArg1Dyn)
+DEF_RUNTIME_STUBS(CallArg1Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallArg1Dyn);
+    RUNTIME_STUBS_HEADER(CallArg1Dyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
     uint32_t actualNumArgs = EcmaInterpreter::ActualNumArgsOfCall::CALLARG1;
@@ -1317,9 +1324,9 @@ DEF_RUNTIME_TRAMPOLINES(CallArg1Dyn)
     return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallArgs2Dyn)
+DEF_RUNTIME_STUBS(CallArgs2Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallArgs2Dyn);
+    RUNTIME_STUBS_HEADER(CallArgs2Dyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg1, 2);
@@ -1331,9 +1338,9 @@ DEF_RUNTIME_TRAMPOLINES(CallArgs2Dyn)
     return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallArgs3Dyn)
+DEF_RUNTIME_STUBS(CallArgs3Dyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallArgs3Dyn);
+    RUNTIME_STUBS_HEADER(CallArgs3Dyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg1, 2);
@@ -1347,9 +1354,9 @@ DEF_RUNTIME_TRAMPOLINES(CallArgs3Dyn)
     return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallIThisRangeDyn)
+DEF_RUNTIME_STUBS(CallIThisRangeDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallIThisRangeDyn);
+    RUNTIME_STUBS_HEADER(CallIThisRangeDyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     uint32_t actualNumArgs = argc - 2; // 2 : skip func and this
     std::vector<JSTaggedType> actualArgs;
@@ -1361,9 +1368,9 @@ DEF_RUNTIME_TRAMPOLINES(CallIThisRangeDyn)
     return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallIRangeDyn)
+DEF_RUNTIME_STUBS(CallIRangeDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallIRangeDyn);
+    RUNTIME_STUBS_HEADER(CallIRangeDyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     std::vector<JSTaggedType> actualArgs;
     uint32_t actualNumArgs = argc - 1; // 1 : skip func
@@ -1375,10 +1382,9 @@ DEF_RUNTIME_TRAMPOLINES(CallIRangeDyn)
     return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
 }
 
-DEF_RUNTIME_TRAMPOLINES(JumpToCInterpreter)
+DEF_RUNTIME_STUBS(JumpToCInterpreter)
 {
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
-    RUNTIME_TRAMPOLINES_HEADER(JumpToCInterpreter);
+    RUNTIME_STUBS_HEADER(JumpToCInterpreter);
     CONVERT_ARG_TAGGED_CHECKED(constpool, 0);
     CONVERT_ARG_TAGGED_CHECKED(profileTypeInfo, 1);
     CONVERT_ARG_TAGGED_CHECKED(acc, 2);
@@ -1393,49 +1399,46 @@ DEF_RUNTIME_TRAMPOLINES(JumpToCInterpreter)
     InterpretedFrame *frame = GET_FRAME(sp);
     uintptr_t framePc = reinterpret_cast<uintptr_t>(frame->pc);
     return JSTaggedValue(static_cast<uint64_t>(framePc)).GetRawData();
-#else
-    return 0;
-#endif
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateEmptyObject)
+DEF_RUNTIME_STUBS(CreateEmptyObject)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateEmptyObject);
+    RUNTIME_STUBS_HEADER(CreateEmptyObject);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
     return RuntimeCreateEmptyObject(thread, factory, globalEnv).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateEmptyArray)
+DEF_RUNTIME_STUBS(CreateEmptyArray)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateEmptyArray);
+    RUNTIME_STUBS_HEADER(CreateEmptyArray);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
     return RuntimeCreateEmptyArray(thread, factory, globalEnv).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetSymbolFunction)
+DEF_RUNTIME_STUBS(GetSymbolFunction)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetSymbolFunction);
+    RUNTIME_STUBS_HEADER(GetSymbolFunction);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     JSHandle<GlobalEnv> globalEnv = ecmaVm->GetGlobalEnv();
     return globalEnv->GetSymbolFunction().GetTaggedValue().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(GetUnmapedArgs)
+DEF_RUNTIME_STUBS(GetUnmapedArgs)
 {
-    RUNTIME_TRAMPOLINES_HEADER(GetUnmapedArgs);
+    RUNTIME_STUBS_HEADER(GetUnmapedArgs);
     auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
     uint32_t startIdx = 0;
     uint32_t actualNumArgs = EcmaInterpreter::GetNumArgs(sp, 0, startIdx);
     return RuntimeGetUnmapedArgs(thread, sp, actualNumArgs, startIdx).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CopyRestArgs)
+DEF_RUNTIME_STUBS(CopyRestArgs)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CopyRestArgs);
+    RUNTIME_STUBS_HEADER(CopyRestArgs);
     CONVERT_ARG_TAGGED_CHECKED(restIdx, 0);
     auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
     uint32_t startIdx = 0;
@@ -1443,34 +1446,34 @@ DEF_RUNTIME_TRAMPOLINES(CopyRestArgs)
     return RuntimeCopyRestArgs(thread, sp, restNumArgs, startIdx).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateArrayWithBuffer)
+DEF_RUNTIME_STUBS(CreateArrayWithBuffer)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateArrayWithBuffer);
+    RUNTIME_STUBS_HEADER(CreateArrayWithBuffer);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, argArray, 0);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     return RuntimeCreateArrayWithBuffer(thread, factory, argArray).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateObjectWithBuffer)
+DEF_RUNTIME_STUBS(CreateObjectWithBuffer)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateObjectWithBuffer);
+    RUNTIME_STUBS_HEADER(CreateObjectWithBuffer);
     CONVERT_ARG_HANDLE_CHECKED(JSObject, argObj, 0);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     return RuntimeCreateObjectWithBuffer(thread, factory, argObj).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NewLexicalEnvDyn)
+DEF_RUNTIME_STUBS(NewLexicalEnvDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NewLexicalEnvDyn);
+    RUNTIME_STUBS_HEADER(NewLexicalEnvDyn);
     CONVERT_ARG_TAGGED_CHECKED(numVars, 0);
     return RuntimeNewLexicalEnvDyn(thread, static_cast<uint16_t>(numVars.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(NewObjDynRange)
+DEF_RUNTIME_STUBS(NewObjDynRange)
 {
-    RUNTIME_TRAMPOLINES_HEADER(NewObjDynRange);
+    RUNTIME_STUBS_HEADER(NewObjDynRange);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, newTarget, 1);
     CONVERT_ARG_TAGGED_CHECKED(firstArgIdx, 2);
@@ -1479,32 +1482,32 @@ DEF_RUNTIME_TRAMPOLINES(NewObjDynRange)
                                  static_cast<uint16_t>(length.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DefinefuncDyn)
+DEF_RUNTIME_STUBS(DefinefuncDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DefinefuncDyn);
+    RUNTIME_STUBS_HEADER(DefinefuncDyn);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
     return RuntimeDefinefuncDyn(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateRegExpWithLiteral)
+DEF_RUNTIME_STUBS(CreateRegExpWithLiteral)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateRegExpWithLiteral);
+    RUNTIME_STUBS_HEADER(CreateRegExpWithLiteral);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, pattern, 0);
     CONVERT_ARG_TAGGED_CHECKED(flags, 1);
     return RuntimeCreateRegExpWithLiteral(thread, pattern, static_cast<uint8_t>(flags.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(ThrowIfSuperNotCorrectCall)
+DEF_RUNTIME_STUBS(ThrowIfSuperNotCorrectCall)
 {
-    RUNTIME_TRAMPOLINES_HEADER(ThrowIfSuperNotCorrectCall);
+    RUNTIME_STUBS_HEADER(ThrowIfSuperNotCorrectCall);
     CONVERT_ARG_TAGGED_CHECKED(index, 0);
     CONVERT_ARG_TAGGED_CHECKED(thisValue, 1);
     return RuntimeThrowIfSuperNotCorrectCall(thread, static_cast<uint16_t>(index.GetInt()), thisValue).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateObjectHavingMethod)
+DEF_RUNTIME_STUBS(CreateObjectHavingMethod)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateObjectHavingMethod);
+    RUNTIME_STUBS_HEADER(CreateObjectHavingMethod);
     CONVERT_ARG_HANDLE_CHECKED(JSObject, literal, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, env, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, constpool, 2);
@@ -1513,9 +1516,9 @@ DEF_RUNTIME_TRAMPOLINES(CreateObjectHavingMethod)
     return RuntimeCreateObjectHavingMethod(thread, factory, literal, env, constpool).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CreateObjectWithExcludedKeys)
+DEF_RUNTIME_STUBS(CreateObjectWithExcludedKeys)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CreateObjectWithExcludedKeys);
+    RUNTIME_STUBS_HEADER(CreateObjectWithExcludedKeys);
     CONVERT_ARG_TAGGED_CHECKED(numKeys, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, objVal, 1);
     CONVERT_ARG_TAGGED_CHECKED(firstArgRegIdx, 2);
@@ -1523,47 +1526,47 @@ DEF_RUNTIME_TRAMPOLINES(CreateObjectWithExcludedKeys)
         static_cast<uint16_t>(firstArgRegIdx.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DefineNCFuncDyn)
+DEF_RUNTIME_STUBS(DefineNCFuncDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DefineNCFuncDyn);
+    RUNTIME_STUBS_HEADER(DefineNCFuncDyn);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
     return RuntimeDefineNCFuncDyn(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DefineGeneratorFunc)
+DEF_RUNTIME_STUBS(DefineGeneratorFunc)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DefineGeneratorFunc);
+    RUNTIME_STUBS_HEADER(DefineGeneratorFunc);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
     return RuntimeDefineGeneratorFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DefineAsyncFunc)
+DEF_RUNTIME_STUBS(DefineAsyncFunc)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DefineAsyncFunc);
+    RUNTIME_STUBS_HEADER(DefineAsyncFunc);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
     return RuntimeDefineAsyncFunc(thread, reinterpret_cast<JSFunction*>(func)).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DefineMethod)
+DEF_RUNTIME_STUBS(DefineMethod)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DefineMethod);
+    RUNTIME_STUBS_HEADER(DefineMethod);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(func, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, homeObject, 1);
     return RuntimeDefineMethod(thread, reinterpret_cast<JSFunction*>(func), homeObject).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallSpreadDyn)
+DEF_RUNTIME_STUBS(CallSpreadDyn)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallSpreadDyn);
+    RUNTIME_STUBS_HEADER(CallSpreadDyn);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, array, 2);
     return RuntimeCallSpreadDyn(thread, func, obj, array).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(DefineGetterSetterByValue)
+DEF_RUNTIME_STUBS(DefineGetterSetterByValue)
 {
-    RUNTIME_TRAMPOLINES_HEADER(DefineGetterSetterByValue);
+    RUNTIME_STUBS_HEADER(DefineGetterSetterByValue);
     CONVERT_ARG_HANDLE_CHECKED(JSObject, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, prop, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, getter, 2);
@@ -1573,9 +1576,9 @@ DEF_RUNTIME_TRAMPOLINES(DefineGetterSetterByValue)
     return RuntimeDefineGetterSetterByValue(thread, obj, prop, getter, setter, bFlag).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SuperCall)
+DEF_RUNTIME_STUBS(SuperCall)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SuperCall);
+    RUNTIME_STUBS_HEADER(SuperCall);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_TAGGED_CHECKED(firstVRegIdx, 1);
     CONVERT_ARG_TAGGED_CHECKED(length, 2);
@@ -1586,9 +1589,9 @@ DEF_RUNTIME_TRAMPOLINES(SuperCall)
         static_cast<uint16_t>(length.GetInt())).GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SetNotCallableException)
+DEF_RUNTIME_STUBS(SetNotCallableException)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SetNotCallableException);
+    RUNTIME_STUBS_HEADER(SetNotCallableException);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR, "is not callable");
@@ -1596,9 +1599,9 @@ DEF_RUNTIME_TRAMPOLINES(SetNotCallableException)
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SetCallConstructorException)
+DEF_RUNTIME_STUBS(SetCallConstructorException)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SetCallConstructorException);
+    RUNTIME_STUBS_HEADER(SetCallConstructorException);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSObject> error = factory->GetJSError(ErrorType::TYPE_ERROR,
@@ -1607,9 +1610,9 @@ DEF_RUNTIME_TRAMPOLINES(SetCallConstructorException)
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(SetStackOverflowException)
+DEF_RUNTIME_STUBS(SetStackOverflowException)
 {
-    RUNTIME_TRAMPOLINES_HEADER(SetStackOverflowException);
+    RUNTIME_STUBS_HEADER(SetStackOverflowException);
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSHandle<JSObject> error = factory->GetJSError(base::ErrorType::RANGE_ERROR, "Stack overflow!");
@@ -1619,9 +1622,9 @@ DEF_RUNTIME_TRAMPOLINES(SetStackOverflowException)
     return JSTaggedValue::Hole().GetRawData();
 }
 
-DEF_RUNTIME_TRAMPOLINES(CallNative)
+DEF_RUNTIME_STUBS(CallNative)
 {
-    RUNTIME_TRAMPOLINES_HEADER(CallNative);
+    RUNTIME_STUBS_HEADER(CallNative);
     CONVERT_ARG_TAGGED_CHECKED(numArgs, 0);
     CONVERT_ARG_PTR_CHECKED(JSTaggedValue *, sp, 1);
     CONVERT_ARG_PTR_CHECKED(JSMethod *, method, 2);
@@ -1632,17 +1635,17 @@ DEF_RUNTIME_TRAMPOLINES(CallNative)
     return retValue.GetRawData();
 }
 
-int32_t RuntimeTrampolines::DoubleToInt(double x)
+int32_t RuntimeStubs::DoubleToInt(double x)
 {
     return base::NumberHelper::DoubleToInt(x, base::INT32_BITS);
 }
 
-void RuntimeTrampolines::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)
+void RuntimeStubs::InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr)
 {
     return region->InsertOldToNewRememberedSet(addr);
 }
 
-void RuntimeTrampolines::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
+void RuntimeStubs::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
     Region *objectRegion, TaggedObject *value,
     Region *valueRegion)
 {
@@ -1650,5 +1653,15 @@ void RuntimeTrampolines::MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintp
         return;
     }
     ::panda::ecmascript::RuntimeApi::MarkObject(slotAddr, objectRegion, value, valueRegion);
+}
+
+void RuntimeStubs::Initialize(JSThread *thread)
+{
+#define DEF_RUNTIME_STUB(name, counter) kungfu::RuntimeStubCSigns::ID_##name
+#define INITIAL_RUNTIME_FUNCTIONS(name, count) \
+    thread->SetRuntimeFunction(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
+    RUNTIME_STUB_LIST(INITIAL_RUNTIME_FUNCTIONS)
+#undef INITIAL_RUNTIME_FUNCTIONS
+#undef DEF_RUNTIME_STUB
 }
 }  // namespace panda::ecmascript

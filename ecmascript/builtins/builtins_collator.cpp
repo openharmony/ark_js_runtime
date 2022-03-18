@@ -19,6 +19,7 @@
 #include "ecmascript/global_env.h"
 #include "ecmascript/js_collator.h"
 #include "ecmascript/js_intl.h"
+#include "ecmascript/mem/barriers-inl.h"
 
 namespace panda::ecmascript::builtins {
 constexpr uint32_t FUNCTION_LENGTH_TWO = 2;

@@ -17,6 +17,7 @@
 #define ECMASCRIPT_COMPILER_INTERPRETER_STUB_INL_H
 
 #include "ecmascript/compiler/interpreter_stub.h"
+#include "ecmascript/js_function.h"
 
 namespace panda::ecmascript::kungfu {
 void InterpreterStub::SetVregValue(GateRef glue, GateRef sp, GateRef idx, GateRef val)
@@ -329,7 +330,7 @@ void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef con
     GateRef opcode = Load(VariableType::INT8(), newPc);
     GateRef opcodeOffset = IntPtrMul(
         ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), GetIntPtrSize());
-    StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
+    const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result = GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset,
         depend, {glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
@@ -341,8 +342,8 @@ void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef
                                    GateRef profileTypeInfo, GateRef acc, GateRef hotnessCounter)
 {
     GateRef opcodeOffset = IntPtrMul(
-        GetIntPtrConstant(InterpreterStubId::ExceptionHandlerId), GetIntPtrSize());
-    StubDescriptor *bytecodeHandler = GET_STUBDESCRIPTOR(BytecodeHandler);
+        GetIntPtrConstant(BytecodeStubCSigns::ID_ExceptionHandler), GetIntPtrSize());
+    const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
     auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
     GateRef result = GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset,
         depend, {glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter});

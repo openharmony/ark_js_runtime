@@ -21,6 +21,7 @@
 #include "ecmascript/js_array.h"
 #include "ecmascript/message_string.h"
 #include "ecmascript/tagged_hash_table-inl.h"
+#include "stub-inl.h"
 
 namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
@@ -88,9 +89,9 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
     }
     Bind(&xIsDoubleAndyIsDouble);
     doubleX = DoubleMul(*doubleX, *doubleY);
-    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(GetTaggedArrayPtrTest)),
+    GateRef ptr1 = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetTaggedArrayPtrTest)),
         {GetInt64Constant(JSTaggedValue::VALUE_UNDEFINED)});
-    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(RUNTIME_CALL_ID(GetTaggedArrayPtrTest)), {ptr1});
+    GateRef ptr2 = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(GetTaggedArrayPtrTest)), {ptr1});
     auto value1 = GetValueFromTaggedArray(VariableType::INT64(), ptr1, GetInt32Constant(0));
     GateRef tmp = CastInt64ToFloat64(value1);
     doubleX = DoubleMul(*doubleX, tmp);
@@ -269,7 +270,7 @@ void GetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Bind(&notIntenalString);
                     {
                         key = CallRuntimeTrampoline(glue,
-                            GetInt64Constant(RUNTIME_CALL_ID(NewInternalString)), { *key });
+                            GetInt64Constant(RTSTUB_ID(NewInternalString)), { *key });
                         Jump(&getByName);
                     }
                 }
@@ -342,7 +343,7 @@ void SetPropertyByValueStub::GenerateCircuit(const CompilationConfig *cfg)
                     Bind(&notIntenalString);
                     {
                         key = CallRuntimeTrampoline(glue,
-                            GetInt64Constant(RUNTIME_CALL_ID(NewInternalString)), { *key });
+                            GetInt64Constant(RTSTUB_ID(NewInternalString)), { *key });
                         Jump(&getByName);
                     }
                 }
@@ -536,5 +537,29 @@ void TestAbsoluteAddressRelocationStub::GenerateCircuit(const CompilationConfig 
     GateRef dummyValueC1 = Load(VariableType::INT64(), globalValueC);
     GateRef result = Int64Add(a, Int64Add(b, Int64Add(dummyValueC, Int64Add(dummyValueD, dummyValueC1))));
     Return(result);
+}
+
+CallSignature CommonStubCSigns::callSigns_[CommonStubCSigns::NUM_OF_STUBS];
+
+void CommonStubCSigns::Initialize()
+{
+#define INIT_SIGNATURES(name, counter)                           \
+    name##CallSignature::Initialize(&callSigns_[name]);          \
+    callSigns_[name].SetID(name);                                \
+    callSigns_[name].SetConstructor(                             \
+        [](void* ciruit) {                                       \
+            return static_cast<void*>(                           \
+                new name##Stub(static_cast<Circuit*>(ciruit)));  \
+        });
+
+    COMMON_FAST_STUB_ID_LIST(INIT_SIGNATURES)
+#undef INIT_SIGNATURES
+}
+
+void CommonStubCSigns::GetCSigns(std::vector<CallSignature*>& outCSigns)
+{
+    for (size_t i = 0; i < NUM_OF_STUBS; i++) {
+        outCSigns.push_back(&callSigns_[i]);
+    }
 }
 }  // namespace panda::ecmascript::kungfu

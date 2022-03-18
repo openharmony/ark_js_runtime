@@ -24,12 +24,7 @@
 #include "ecmascript/mem/space.h"
 
 namespace panda::ecmascript {
-inline void Region::SetSpace(Space *space)
-{
-    space_ = space;
-}
-
-RememberedSet *Region::CreateRememberedSet()
+inline RememberedSet *Region::CreateRememberedSet()
 {
     auto setSize = RememberedSet::GetSizeInByte(GetCapacity());
     auto setAddr = const_cast<NativeAreaAllocator *>(heap_->GetNativeAreaAllocator())->Allocate(setSize);
@@ -39,7 +34,7 @@ RememberedSet *Region::CreateRememberedSet()
     return ret;
 }
 
-RememberedSet *Region::GetOrCreateCrossRegionRememberedSet()
+inline RememberedSet *Region::GetOrCreateCrossRegionRememberedSet()
 {
     if (UNLIKELY(crossRegionSet_ == nullptr)) {
         os::memory::LockHolder lock(lock_);
@@ -50,7 +45,7 @@ RememberedSet *Region::GetOrCreateCrossRegionRememberedSet()
     return crossRegionSet_;
 }
 
-RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
+inline RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
 {
     if (UNLIKELY(oldToNewSet_ == nullptr)) {
         os::memory::LockHolder lock(lock_);
@@ -61,36 +56,36 @@ RememberedSet *Region::GetOrCreateOldToNewRememberedSet()
     return oldToNewSet_;
 }
 
-void Region::InsertCrossRegionRememberedSet(uintptr_t addr)
+inline void Region::InsertCrossRegionRememberedSet(uintptr_t addr)
 {
     auto set = GetOrCreateCrossRegionRememberedSet();
     set->Insert(addr);
 }
 
-void Region::AtomicInsertCrossRegionRememberedSet(uintptr_t addr)
+inline void Region::AtomicInsertCrossRegionRememberedSet(uintptr_t addr)
 {
     auto set = GetOrCreateCrossRegionRememberedSet();
     set->AtomicInsert(addr);
 }
 
-void Region::InsertOldToNewRememberedSet(uintptr_t addr)
+inline void Region::InsertOldToNewRememberedSet(uintptr_t addr)
 {
     auto set = GetOrCreateOldToNewRememberedSet();
     set->Insert(addr);
 }
 
-void Region::AtomicInsertOldToNewRememberedSet(uintptr_t addr)
+inline void Region::AtomicInsertOldToNewRememberedSet(uintptr_t addr)
 {
     auto set = GetOrCreateOldToNewRememberedSet();
     set->AtomicInsert(addr);
 }
 
-WorkerHelper *Region::GetWorkList() const
+inline WorkerHelper *Region::GetWorkList() const
 {
     return heap_->GetWorkList();
 }
 
-void Region::DeleteMarkBitmap()
+inline void Region::DeleteMarkBitmap()
 {
     if (markBitmap_ != nullptr) {
         auto size = RangeBitmap::GetBitMapSizeInByte(GetCapacity());
@@ -101,7 +96,7 @@ void Region::DeleteMarkBitmap()
     }
 }
 
-void Region::DeleteCrossRegionRememberedSet()
+inline void Region::DeleteCrossRegionRememberedSet()
 {
     if (crossRegionSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
@@ -112,7 +107,7 @@ void Region::DeleteCrossRegionRememberedSet()
     }
 }
 
-void Region::DeleteOldToNewRememberedSet()
+inline void Region::DeleteOldToNewRememberedSet()
 {
     if (oldToNewSet_ != nullptr) {
         auto size = RememberedSet::GetSizeInByte(GetCapacity());
@@ -123,21 +118,21 @@ void Region::DeleteOldToNewRememberedSet()
     }
 }
 
-void Region::ClearMarkBitmap()
+inline void Region::ClearMarkBitmap()
 {
     if (markBitmap_ != nullptr) {
         markBitmap_->ClearAllBits();
     }
 }
 
-void Region::ClearCrossRegionRememberedSet()
+inline void Region::ClearCrossRegionRememberedSet()
 {
     if (crossRegionSet_ != nullptr) {
         crossRegionSet_->ClearAllBits();
     }
 }
 
-bool Region::IsMarking() const
+inline bool Region::IsMarking() const
 {
     return !heap_->GetJSThread()->IsReadyToMark();
 }

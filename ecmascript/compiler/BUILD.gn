@@ -41,6 +41,7 @@ config("ark_jsruntime_compiler_config") {
 source_set("libark_jsoptimizer_static") {
   sources = [
     "bytecode_circuit_builder.cpp",
+    "call_signature.cpp",
     "circuit.cpp",
     "circuit_builder.cpp",
     "fast_stub.cpp",
@@ -49,9 +50,9 @@ source_set("libark_jsoptimizer_static") {
     "interpreter_stub.cpp",
     "llvm_codegen.cpp",
     "llvm_ir_builder.cpp",
+    "rt_call_signature.cpp",
     "scheduler.cpp",
     "stub.cpp",
-    "stub_descriptor.cpp",
     "type.cpp",
     "verifier.cpp",
   ]
@@ -185,7 +186,7 @@ ark_gen_file("stub_aot_options_gen_h") {
 }
 
 ohos_executable("ark_stub_opt") {
-  sources = [ "stub_aot_compiler.cpp" ]
+  sources = [ "stub_compiler.cpp" ]
   include_dirs = [ "$target_gen_dir" ]
 
   configs = [

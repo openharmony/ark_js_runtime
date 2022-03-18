@@ -24,6 +24,8 @@
 #include "include/panda_vm.h"
 
 namespace panda::ecmascript {
+using CommonStubCSigns = panda::ecmascript::kungfu::CommonStubCSigns;
+using BytecodeStubCSigns = panda::ecmascript::kungfu::BytecodeStubCSigns;
 // static
 JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
 {
@@ -238,33 +240,33 @@ void JSThread::LoadStubModule(const char *moduleFile)
     StubModule stubModule;
     std::string fileName(moduleFile);
     stubModule.Load(this, fileName);
-    for (size_t i = 0; i < kungfu::FAST_STUB_MAXCOUNT; i++) {
-        glueData_.stubEntries_.Set(i, stubModule.GetStubEntry(i));
-    }
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
-    for (size_t i = 0; i < BCHandlers::MAX_BYTECODE_HANDLERS; i++) {
-        glueData_.bcHandlers_.Set(i, stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging));
-    }
-#define DEF_STUB(name, counter)                                                         \
-    glueData_.bcHandlers_.Set(kungfu::InterpreterStubId::name##Id,                      \
-                              stubModule.GetStubEntry(kungfu::StubId::STUB_##name));
-    INTERPRETER_STUB_LIST(DEF_STUB)
-#define UNDEF_STUB(name, counter)                                                           \
-        glueData_.bcHandlers_.Set(kungfu::InterpreterStubId::name##Id,                      \
-                                  stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging));
-    INTERPRETER_IGNORE_STUB_LIST(UNDEF_STUB)
-#undef DEF_STUB
-#undef UNDEF_STUB
-    AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    if (asmInterOpt.handleStart >= 0 && asmInterOpt.handleStart < kungfu::InterpreterStubId::INTERPRETER_STUB_MAXCOUNT
-        && asmInterOpt.handleEnd >= 0 && asmInterOpt.handleEnd < kungfu::InterpreterStubId::INTERPRETER_STUB_MAXCOUNT
-        && asmInterOpt.handleStart <= asmInterOpt.handleEnd) {
-        for (int i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd; i++) {
-            glueData_.bcHandlers_.Set(i, stubModule.GetStubEntry(kungfu::StubId::STUB_SingleStepDebugging));
+
+    auto stubs = stubModule.GetStubs();
+    for (size_t i = 0; i < stubs.size(); i++) {
+        auto des = stubs[i];
+        if (des.IsCommonStub()) {
+            glueData_.stubEntries_.Set(des.indexInKind_, des.codeAddr_);
+        } else if (des.IsBCHandler()) {
+            glueData_.bcHandlers_.Set(des.indexInKind_, des.codeAddr_);
+        } else {
+            UNREACHABLE();
         }
     }
-#endif
-
+    auto defaultBCHandlerDes = stubs[CommonStubCSigns::SingleStepDebugging];
+    ASSERT(defaultBCHandlerDes.IsBCHandler());
+    glueData_.bcHandlers_.SetUnsupportedBCHandlers(defaultBCHandlerDes.codeAddr_);
+#define UNDEF_STUB(name, counter)                                                       \
+    glueData_.bcHandlers_.Set(BytecodeStubCSigns::ID_##name, defaultBCHandlerDes.codeAddr_);
+    INTERPRETER_IGNORED_BC_STUB_LIST(UNDEF_STUB)
+#undef UNDEF_STUB
+    AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.handleStart >= 0 && asmInterOpt.handleStart < kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS
+        && asmInterOpt.handleEnd >= 0 && asmInterOpt.handleEnd < kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS
+        && asmInterOpt.handleStart <= asmInterOpt.handleEnd) {
+        for (size_t i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd; i++) {
+            glueData_.bcHandlers_.Set(i, defaultBCHandlerDes.codeAddr_);
+        }
+    }
 #ifdef NDEBUG
     kungfu::LLVMStackMapParser::GetInstance().Print();
 #endif

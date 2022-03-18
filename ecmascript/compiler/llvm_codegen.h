@@ -25,7 +25,6 @@
 #include "code_generator.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/js_thread.h"
 #include "ecmascript/stub_module.h"
 #include "llvm-c/Analysis.h"
 #include "llvm-c/Core.h"
@@ -154,7 +153,7 @@ public:
     {
         return engine_;
     }
-    void Disassemble(std::map<uint64_t, std::string> addr2name = std::map<uint64_t, std::string>()) const;
+    void Disassemble(std::map<uint64_t, std::string> &addr2name) const;
     uint8_t *GetStackMapsSection() const
     {
         return codeInfo_.GetStackMapsSection();
@@ -181,14 +180,11 @@ private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();
     void BuildAndRunPasses();
-    void BuildSimpleFunction();
     void Initialize();
-    void InitMember();
 
     LLVMMCJITCompilerOptions options_ {};
     LLVMModuleRef module_;
     LLVMExecutionEngineRef engine_ {nullptr};
-    const CompilationConfig *compCfg_;
     char *error_ {nullptr};
     struct CodeInfo codeInfo_ {};
 };
@@ -197,7 +193,7 @@ class LLVMIRGeneratorImpl : public CodeGeneratorImpl {
 public:
     explicit LLVMIRGeneratorImpl(LLVMStubModule *module) : module_(module) {}
     ~LLVMIRGeneratorImpl() = default;
-    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, int index,
+    void GenerateCodeForStub(Circuit *circuit, const ControlFlowGraph &graph, size_t index,
                              const CompilationConfig *cfg) override;
 
 private:

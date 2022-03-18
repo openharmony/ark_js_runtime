@@ -128,7 +128,7 @@ int Main(const int argc, const char **argv)
     EcmaVM *vm = EcmaVM::Cast(runtime->GetPandaVM());
 
     LocalScope scope(vm);
-    std::string entry = entrypoint.GetValue();    
+    std::string entry = entrypoint.GetValue();
 
     arg_list_t fileNames = files.GetValue();
     for (const auto &fileName : fileNames) {

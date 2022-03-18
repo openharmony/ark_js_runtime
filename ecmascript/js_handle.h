@@ -18,7 +18,7 @@
 
 #include <type_traits>
 
-#include "ecmascript/ecma_handle_scope-inl.h"
+#include "ecmascript/ecma_handle_scope.h"
 #include "ecmascript/js_tagged_value.h"
 #include "handle_base.h"
 
@@ -134,7 +134,7 @@ private:
     friend class GlobalEnv;
     friend class JSHandleTest;
     friend class GlobalHandleCollection;
-    friend class RuntimeTrampolines;
+    friend class RuntimeStubs;
 };
 
 template <>
