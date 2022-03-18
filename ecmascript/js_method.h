@@ -36,7 +36,8 @@ static constexpr size_t STORAGE_PTR_NUM = 3;
     V(SHORTY, CODEID, sizeof(uint32_t), sizeof(uint32_t))                                           \
     V(PROFILINGDATA, SHORTY, sizeof(uint32_t), sizeof(uint64_t))                                    \
     V(CALLFIELD, PROFILINGDATA, sizeof(uint32_t), sizeof(uint64_t))                                 \
-    V(BYTECODEARRAY, CALLFIELD, sizeof(uint64_t), sizeof(uint64_t))                                 \
+    V(JSPANDAFILE, CALLFIELD, sizeof(uint64_t), sizeof(uint64_t))                                   \
+    V(BYTECODEARRAY, JSPANDAFILE, sizeof(uint32_t), sizeof(uint64_t))                               \
     V(BYTECODEARRAYSIZE, BYTECODEARRAY, sizeof(uint32_t), sizeof(uint64_t))                         \
     V(SLOTSIZE, BYTECODEARRAYSIZE, sizeof(uint32_t), sizeof(uint32_t))                              \
 

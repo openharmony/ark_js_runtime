@@ -439,6 +439,12 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const JSHandle<JSFuncti
 JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& params)
 {
     INTERPRETER_TRACE(thread, Execute);
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        return InterpreterAssembly::Execute(thread, params);
+    }
+#endif
     JSMethod *method = params.callTarget->GetCallTarget();
     if (method->IsNativeWithCallField()) {
         return EcmaInterpreter::ExecuteNative(thread, params);
@@ -544,12 +550,7 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
                             << std::hex << reinterpret_cast<uintptr_t>(pc);
 
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
-    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    if (asmInterOpt.enableAsm) {
-        InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
-    } else {
-        EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
-    }
+    EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), pc, newSp);
     thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     // NOLINTNEXTLINE(readability-identifier-naming)
@@ -565,6 +566,12 @@ JSTaggedValue EcmaInterpreter::Execute(JSThread *thread, const CallParams& param
 JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSHandle<GeneratorContext> context)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        return InterpreterAssembly::GeneratorReEnterInterpreter(thread, context);
+    }
+#endif
     JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
     JSMethod *method = func->GetCallTarget();
 
@@ -617,12 +624,7 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
     thread->SetCurrentSPFrame(newSp);
 
     thread->GetEcmaVM()->GetNotificationManager()->MethodEntryEvent(thread, method);
-    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
-    if (asmInterOpt.enableAsm) {
-        InterpreterAssembly::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
-    } else {
-        EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
-    }
+    EcmaInterpreter::RunInternal(thread, ConstantPool::Cast(constpool.GetTaggedObject()), resumePc, newSp);
     thread->GetEcmaVM()->GetNotificationManager()->MethodExitEvent(thread, method);
 
     JSTaggedValue res = state->acc;
@@ -634,6 +636,12 @@ JSTaggedValue EcmaInterpreter::GeneratorReEnterInterpreter(JSThread *thread, JSH
 void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorContext> context)
 {
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        return InterpreterAssembly::ChangeGenContext(thread, context);
+    }
+#endif
     JSHandle<JSFunction> func = JSHandle<JSFunction>::Cast(JSHandle<JSTaggedValue>(thread, context->GetMethod()));
     JSMethod *method = func->GetCallTarget();
 
@@ -687,6 +695,12 @@ void EcmaInterpreter::ChangeGenContext(JSThread *thread, JSHandle<GeneratorConte
 
 void EcmaInterpreter::ResumeContext(JSThread *thread)
 {
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        return InterpreterAssembly::ResumeContext(thread);
+    }
+#endif
     JSTaggedType *sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     InterpretedFrame *state = GET_FRAME(sp);
     thread->SetCurrentSPFrame(state->base.prev);
@@ -3742,6 +3756,12 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
 
 void EcmaInterpreter::InitStackFrame(JSThread *thread)
 {
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+    AsmInterParsedOption asmInterOpt = thread->GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
+    if (asmInterOpt.enableAsm) {
+        return InterpreterAssembly::InitStackFrame(thread);
+    }
+#endif
     uint64_t *prevSp = const_cast<uint64_t *>(thread->GetCurrentSPFrame());
     InterpretedFrame *state = GET_FRAME(prevSp);
     state->pc = nullptr;
@@ -4072,6 +4092,45 @@ std::string GetEcmaOpcodeStr(EcmaOpcode opcode)
     }
     return "bytecode-" + std::to_string(opcode);
 }
+#undef LOG_INST
+#undef HANDLE_OPCODE
+#undef ADVANCE_PC
+#undef GOTO_NEXT
+#undef DISPATCH
+#undef DISPATCH_OFFSET
+#undef GET_FRAME
+#undef SAVE_PC
+#undef SAVE_ACC
+#undef RESTORE_ACC
+#undef INTERPRETER_GOTO_EXCEPTION_HANDLER
+#undef INTERPRETER_HANDLE_RETURN
+#undef CHECK_SWITCH_TO_DEBUGGER_TABLE
+#undef REAL_GOTO_DISPATCH_OPCODE
+#undef REAL_GOTO_EXCEPTION_HANDLER
+#undef INTERPRETER_RETURN_IF_ABRUPT
+#undef NOTIFY_DEBUGGER_EVENT
+#undef CALL_INITIALIZE
+#undef CALL_PUSH_UNDEFINED
+#undef CALL_PUSH_ARGS_0
+#undef CALL_PUSH_ARGS_1
+#undef CALL_PUSH_ARGS_2
+#undef CALL_PUSH_ARGS_3
+#undef CALL_PUSH_ARGS_I
+#undef CALL_PUSH_ARGS_I_THIS
+#undef CALL_PUSH_ARGS_0_NO_EXTRA
+#undef CALL_PUSH_ARGS_1_NO_EXTRA
+#undef CALL_PUSH_ARGS_2_NO_EXTRA
+#undef CALL_PUSH_ARGS_3_NO_EXTRA
+#undef CALL_PUSH_ARGS_I_NO_EXTRA
+#undef CALL_PUSH_ARGS_I_THIS_NO_EXTRA
+#undef CALL_PUSH_ARGS
+#undef UPDATE_HOTNESS_COUNTER_NON_ACC
+#undef UPDATE_HOTNESS_COUNTER
+#undef GET_VREG
+#undef GET_VREG_VALUE
+#undef SET_VREG
+#undef GET_ACC
+#undef SET_ACC
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #elif defined(__GNUC__)

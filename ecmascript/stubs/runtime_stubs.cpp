@@ -75,6 +75,9 @@ JSTaggedType RuntimeStubs::name(uintptr_t argGlue, uint32_t argc, uintptr_t argv
     ASSERT((index) < argc);                        \
     type name = reinterpret_cast<type>(*(reinterpret_cast<JSTaggedType *>(argv) + (index)))
 
+#define GET_ASM_FRAME(CurrentSp) \
+    (reinterpret_cast<AsmInterpretedFrame *>(CurrentSp) - 1) // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
 DEF_RUNTIME_STUBS(AddElementInternal)
 {
     RUNTIME_STUBS_HEADER(AddElementInternal);
@@ -556,7 +559,7 @@ DEF_RUNTIME_STUBS(SuperCallSpread)
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, func, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, array, 1);
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedValue function = EcmaInterpreter::GetNewTarget(sp);
+    JSTaggedValue function = InterpreterAssembly::GetNewTarget(sp);
     return RuntimeSuperCallSpread(thread, func, JSHandle<JSTaggedValue>(thread, function), array).GetRawData();
 }
 
@@ -683,7 +686,7 @@ DEF_RUNTIME_STUBS(LdSuperByValue)
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, obj, 0);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, key, 1);
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedValue thisFunc = EcmaInterpreter::GetThisFunction(sp);
+    JSTaggedValue thisFunc = InterpreterAssembly::GetThisFunction(sp);
     return RuntimeLdSuperByValue(thread, obj, key, thisFunc).GetRawData();
 }
 
@@ -694,7 +697,7 @@ DEF_RUNTIME_STUBS(StSuperByValue)
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, key, 1);
     CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, value, 2);
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
-    JSTaggedValue thisFunc = EcmaInterpreter::GetThisFunction(sp);
+    JSTaggedValue thisFunc = InterpreterAssembly::GetThisFunction(sp);
     return RuntimeStSuperByValue(thread, obj, key, value, thisFunc).GetRawData();
 }
 
@@ -842,7 +845,7 @@ DEF_RUNTIME_STUBS(SetClassConstructorLength)
 DEF_RUNTIME_STUBS(UpdateHotnessCounter)
 {
     RUNTIME_STUBS_HEADER(UpdateHotnessCounter);
-    InterpretedFrame *state = GET_FRAME(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()));
+    AsmInterpretedFrame *state = GET_ASM_FRAME(const_cast<JSTaggedType *>(thread->GetCurrentSPFrame()));
     thread->CheckSafepoint();
     auto thisFunc = JSFunction::Cast(state->function.GetTaggedObject());
     if (thisFunc->GetProfileTypeInfo() == JSTaggedValue::Undefined()) {
@@ -945,7 +948,7 @@ DEF_RUNTIME_STUBS(UpFrame)
             return JSTaggedValue(static_cast<uint64_t>(0)).GetRawData();
         }
         auto method = frameHandler.GetMethod();
-        pcOffset = EcmaInterpreter::FindCatchBlock(method, frameHandler.GetBytecodeOffset());
+        pcOffset = InterpreterAssembly::FindCatchBlock(method, frameHandler.GetBytecodeOffset());
         if (pcOffset != panda_file::INVALID_OFFSET) {
             thread->SetCurrentSPFrame(frameHandler.GetSp());
             uintptr_t pc = reinterpret_cast<uintptr_t>(method->GetBytecodeArray() + pcOffset);
@@ -1266,7 +1269,7 @@ DEF_RUNTIME_STUBS(CallArg0Dyn)
 {
     RUNTIME_STUBS_HEADER(CallArg0Dyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
-    uint32_t actualNumArgs = EcmaInterpreter::ActualNumArgsOfCall::CALLARG0;
+    uint32_t actualNumArgs = InterpreterAssembly::ActualNumArgsOfCall::CALLARG0;
     bool callThis = false;
     std::vector<JSTaggedType> actualArgs;
     return RuntimeNativeCall(thread, func, callThis, actualNumArgs, actualArgs);
@@ -1277,7 +1280,7 @@ DEF_RUNTIME_STUBS(CallArg1Dyn)
     RUNTIME_STUBS_HEADER(CallArg1Dyn);
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
-    uint32_t actualNumArgs = EcmaInterpreter::ActualNumArgsOfCall::CALLARG1;
+    uint32_t actualNumArgs = InterpreterAssembly::ActualNumArgsOfCall::CALLARG1;
     bool callThis = false;
     std::vector<JSTaggedType> actualArgs;
     actualArgs.emplace_back(arg0);
@@ -1290,7 +1293,7 @@ DEF_RUNTIME_STUBS(CallArgs2Dyn)
     CONVERT_ARG_TAGGED_CHECKED(func, 0);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg1, 2);
-    uint32_t actualNumArgs = EcmaInterpreter::ActualNumArgsOfCall::CALLARGS2;
+    uint32_t actualNumArgs = InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2;
     bool callThis = false;
     std::vector<JSTaggedType> actualArgs;
     actualArgs.emplace_back(arg0);
@@ -1305,7 +1308,7 @@ DEF_RUNTIME_STUBS(CallArgs3Dyn)
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg0, 1);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg1, 2);
     CONVERT_ARG_TAGGED_TYPE_CHECKED(arg2, 3);
-    uint32_t actualNumArgs = EcmaInterpreter::ActualNumArgsOfCall::CALLARGS3;
+    uint32_t actualNumArgs = InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3;
     bool callThis = false;
     std::vector<JSTaggedType> actualArgs;
     actualArgs.emplace_back(arg0);
@@ -1351,12 +1354,12 @@ DEF_RUNTIME_STUBS(JumpToCInterpreter)
     CONVERT_ARG_TAGGED_CHECKED(hotnessCounter, 3);
 
     auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
-    const uint8_t* currentPc = reinterpret_cast<const uint8_t*>(GET_FRAME(sp)->pc);
+    const uint8_t* currentPc = reinterpret_cast<const uint8_t*>(GET_ASM_FRAME(sp)->pc);
 
     uint8_t opcode = currentPc[0];
     asmDispatchTable[opcode](thread, currentPc, sp, constpool, profileTypeInfo, acc, hotnessCounter.GetInt());
     sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
-    InterpretedFrame *frame = GET_FRAME(sp);
+    AsmInterpretedFrame *frame = GET_ASM_FRAME(sp);
     uintptr_t framePc = reinterpret_cast<uintptr_t>(frame->pc);
     return JSTaggedValue(static_cast<uint64_t>(framePc)).GetRawData();
 }
@@ -1392,7 +1395,7 @@ DEF_RUNTIME_STUBS(GetUnmapedArgs)
     RUNTIME_STUBS_HEADER(GetUnmapedArgs);
     auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
     uint32_t startIdx = 0;
-    uint32_t actualNumArgs = EcmaInterpreter::GetNumArgs(sp, 0, startIdx);
+    uint32_t actualNumArgs = InterpreterAssembly::GetNumArgs(sp, 0, startIdx);
     return RuntimeGetUnmapedArgs(thread, sp, actualNumArgs, startIdx).GetRawData();
 }
 
@@ -1402,7 +1405,7 @@ DEF_RUNTIME_STUBS(CopyRestArgs)
     CONVERT_ARG_TAGGED_CHECKED(restIdx, 0);
     auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
     uint32_t startIdx = 0;
-    uint32_t restNumArgs = EcmaInterpreter::GetNumArgs(sp, restIdx.GetInt(), startIdx);
+    uint32_t restNumArgs = InterpreterAssembly::GetNumArgs(sp, restIdx.GetInt(), startIdx);
     return RuntimeCopyRestArgs(thread, sp, restNumArgs, startIdx).GetRawData();
 }
 
@@ -1543,7 +1546,7 @@ DEF_RUNTIME_STUBS(SuperCall)
     CONVERT_ARG_TAGGED_CHECKED(firstVRegIdx, 1);
     CONVERT_ARG_TAGGED_CHECKED(length, 2);
     auto sp = const_cast<JSTaggedType*>(thread->GetCurrentSPFrame());
-    JSTaggedValue newTarget = EcmaInterpreter::GetNewTarget(sp);
+    JSTaggedValue newTarget = InterpreterAssembly::GetNewTarget(sp);
     return RuntimeSuperCall(thread, func, JSHandle<JSTaggedValue>(thread, newTarget),
         static_cast<uint16_t>(firstVRegIdx.GetInt()),
         static_cast<uint16_t>(length.GetInt())).GetRawData();

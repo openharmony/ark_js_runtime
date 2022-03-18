@@ -138,6 +138,7 @@ EcmaVM::EcmaVM(JSRuntimeOptions options)
     }
     snapshotFileName_ = options_.GetSnapshotFile();
     frameworkAbcFileName_ = options_.GetFrameworkAbcFile();
+    options_.ParseAsmInterOption();
 
     auto runtime = Runtime::GetCurrent();
     notificationManager_ = chunk_.New<RuntimeNotificationManager>(runtime->GetInternalAllocator());
@@ -161,7 +162,6 @@ bool EcmaVM::Initialize()
         LOG_ECMA(FATAL) << "alloc factory_ failed";
         UNREACHABLE();
     }
-    options_.ParseAsmInterOption();
     [[maybe_unused]] EcmaHandleScope scope(thread_);
     if (!snapshotDeserializeEnable_ || !VerifyFilePath(snapshotFileName_)) {
         LOG_ECMA(DEBUG) << "EcmaVM::Initialize run builtins";

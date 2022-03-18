@@ -173,7 +173,7 @@ GateRef InterpreterStub::ReadInst16_5(GateRef pc)
 
 GateRef InterpreterStub::GetFrame(GateRef CurrentSp)
 {
-    return IntPtrSub(CurrentSp, GetIntPtrConstant(InterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
+    return IntPtrSub(CurrentSp, GetIntPtrConstant(AsmInterpretedFrame::GetSize(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
@@ -184,25 +184,25 @@ GateRef InterpreterStub::GetPcFromFrame(GateRef frame)
 GateRef InterpreterStub::GetFunctionFromFrame(GateRef frame)
 {
     return Load(VariableType::JS_POINTER(), frame,
-        GetIntPtrConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())));
+        GetIntPtrConstant(AsmInterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetCallSizeFromFrame(GateRef frame)
 {
     return Load(VariableType::POINTER(), frame,
-        GetIntPtrConstant(InterpretedFrame::GetCallSizeOffset(GetEnvironment()->IsArch32Bit())));
+        GetIntPtrConstant(AsmInterpretedFrame::GetCallSizeOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetAccFromFrame(GateRef frame)
 {
     return Load(VariableType::JS_ANY(), frame,
-        GetIntPtrConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())));
+        GetIntPtrConstant(AsmInterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetEnvFromFrame(GateRef frame)
 {
     return Load(VariableType::JS_POINTER(), frame,
-        GetIntPtrConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())));
+        GetIntPtrConstant(AsmInterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())));
 }
 
 GateRef InterpreterStub::GetEnvFromFunction(GateRef function)
@@ -234,12 +234,6 @@ GateRef InterpreterStub::GetResumeModeFromGeneratorObject(GateRef obj)
         GetInt32Constant((1LU << JSGeneratorObject::ResumeModeBits::SIZE) - 1));
 }
 
-void InterpreterStub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef value)
-{
-    Store(VariableType::INT64(), glue, frame,
-        GetIntPtrConstant(InterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())), value);
-}
-
 void InterpreterStub::SetPcToFrame(GateRef glue, GateRef frame, GateRef value)
 {
     Store(VariableType::INT64(), glue, frame, GetIntPtrConstant(0), value);
@@ -247,20 +241,26 @@ void InterpreterStub::SetPcToFrame(GateRef glue, GateRef frame, GateRef value)
 
 void InterpreterStub::SetCallSizeToFrame(GateRef glue, GateRef frame, GateRef value)
 {
-    Store(VariableType::INT64(), glue, frame,
-          GetIntPtrConstant(InterpretedFrame::GetCallSizeOffset(GetEnvironment()->IsArch32Bit())), value);
+    Store(VariableType::POINTER(), glue, frame,
+          GetIntPtrConstant(AsmInterpretedFrame::GetCallSizeOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
 void InterpreterStub::SetAccToFrame(GateRef glue, GateRef frame, GateRef value)
 {
     Store(VariableType::INT64(), glue, frame,
-          GetIntPtrConstant(InterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())), value);
+          GetIntPtrConstant(AsmInterpretedFrame::GetAccOffset(GetEnvironment()->IsArch32Bit())), value);
+}
+
+void InterpreterStub::SetEnvToFrame(GateRef glue, GateRef frame, GateRef value)
+{
+    Store(VariableType::INT64(), glue, frame,
+          GetIntPtrConstant(AsmInterpretedFrame::GetEnvOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
 void InterpreterStub::SetFunctionToFrame(GateRef glue, GateRef frame, GateRef value)
 {
     Store(VariableType::INT64(), glue, frame,
-          GetIntPtrConstant(InterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())), value);
+          GetIntPtrConstant(AsmInterpretedFrame::GetFunctionOffset(GetEnvironment()->IsArch32Bit())), value);
 }
 
 void InterpreterStub::SetConstantPoolToFunction(GateRef glue, GateRef function, GateRef value)
