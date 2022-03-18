@@ -28,7 +28,11 @@ class ECMAObject;
 class GeneratorContext;
 
 // NOLINTNEXTLINE(bugprone-sizeof-expression)
+#if ECMASCRIPT_COMPILE_ASM_INTERPRETER
+static const uint32_t FRAME_STATE_SIZE = sizeof(AsmInterpretedFrame) / sizeof(uint64_t);
+#else
 static const uint32_t FRAME_STATE_SIZE = sizeof(InterpretedFrame) / sizeof(uint64_t);
+#endif
 
 static constexpr uint32_t RESERVED_CALL_ARGCOUNT = 3;
 static constexpr uint32_t RESERVED_INDEX_CALL_TARGET = 0;

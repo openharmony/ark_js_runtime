@@ -20,7 +20,7 @@
 #include "ecmascript/compiler/variable_type.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/ic/profile_type_info.h"
-#include "ecmascript/interpreter/interpreter.h"
+#include "ecmascript/interpreter/interpreter_assembly.h"
 #include "ecmascript/js_array.h"
 #include "ecmascript/js_function.h"
 #include "ecmascript/js_generator_object.h"
@@ -87,7 +87,7 @@ void name##Stub::GenerateCircuitImpl(GateRef glue, GateRef pc, GateRef sp,      
     {                                                                                               \
         varProfileTypeInfo = CallRuntimeTrampoline(glue,                                            \
             GetInt64Constant(RTSTUB_ID(UpdateHotnessCounter)), {});                                 \
-        varHotnessCounter = GetInt32Constant(EcmaInterpreter::METHOD_HOTNESS_THRESHOLD);            \
+        varHotnessCounter = GetInt32Constant(InterpreterAssembly::METHOD_HOTNESS_THRESHOLD);        \
         Jump(&dispatch);                                                                            \
     }                                                                                               \
     Bind(&dispatch);
@@ -4254,7 +4254,7 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
 
     Bind(&tryContinue);
     varSp = Load(VariableType::POINTER(), frame,
-        GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+        GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
     Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcEqualNullptr, &pcNotEqualNullptr);
@@ -4314,7 +4314,7 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
 
     Bind(&tryContinue);
     varSp = Load(VariableType::POINTER(), frame,
-        GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+        GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
     varAcc = GetUndefinedConstant();
@@ -4389,7 +4389,7 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
 
     Bind(&tryContinue);
     varSp = Load(VariableType::POINTER(), frame,
-        GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
+        GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit())));
     GateRef prevState = GetFrame(*varSp);
     varPc = GetPcFromFrame(prevState);
     Branch(IntPtrEqual(*varPc, GetIntPtrConstant(0)), &pcEqualNullptr, &pcNotEqualNullptr);
@@ -5009,7 +5009,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(IsCallable(func), &funcIsCallable, &funcNotCallable);                                     \
     Bind(&funcNotCallable);                                                                          \
     {                                                                                                \
-        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetNotCallableException)), {}); \
+        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetNotCallableException)), {});       \
         DISPATCH_LAST();                                                                             \
     }                                                                                                \
     Bind(&funcIsCallable);                                                                           \
@@ -5035,7 +5035,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     GateRef callFieldOffset = GetIntPtrConstant(JSMethod::GetCallFieldOffset(env->IsArch32Bit()));   \
     GateRef callField = Load(VariableType::INT64(), method, callFieldOffset);                        \
     DEFVARIABLE(newSp, VariableType::POINTER(),                                                      \
-                PointerSub(sp, GetIntPtrConstant(InterpretedFrame::GetSize(env->IsArch32Bit()))))
+                PointerSub(sp, GetIntPtrConstant(AsmInterpretedFrame::GetSize(env->IsArch32Bit()))))
 
 #define CALL_PUSH_UNDEFINED(n)                                            \
     i = GetInt32Constant(0);                                              \
@@ -5137,12 +5137,12 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
         &stackOverflow, &stackNotOverflow);                                                                  \
     Bind(&stackOverflow);                                                                                    \
     {                                                                                                        \
-        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetStackOverflowException)), {});       \
+        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetStackOverflowException)), {});             \
         DISPATCH_LAST();                                                                                     \
     }                                                                                                        \
     Bind(&stackNotOverflow);                                                                                 \
     GateRef state = GetFrame(*newSp);                                                                        \
-    GateRef prevOffset = GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit()));             \
+    GateRef prevOffset = GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));          \
     Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                             \
     GateRef frameTypeOffset = IntPtrAdd(prevOffset, GetIntPtrSize());                                        \
     Store(VariableType::INT64(), glue, state, frameTypeOffset,                                               \
@@ -5151,7 +5151,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     SetFunctionToFrame(glue, state, func);                                                                   \
     SetCurrentSpFrame(glue, *newSp);                                                                         \
     GateRef numArgs = Int32Add(GetInt32Constant(NUM_MANDATORY_JSFUNC_ARGS), actualNumArgs);                  \
-    GateRef retValue = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CallNative)),            \
+    GateRef retValue = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(CallNative)),                  \
                                              {IntBuildTaggedTypeWithNoGC(numArgs), *newSp, method});         \
     SetCurrentSpFrame(glue, sp);                                                                             \
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), retValue);                                                   \
@@ -5163,7 +5163,7 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Branch(IsClassConstructor(func), &funcIsClassConstructor, &funcNotClassConstructor);                         \
     Bind(&funcIsClassConstructor);                                                                               \
     {                                                                                                            \
-        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetCallConstructorException)), {});         \
+        CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetCallConstructorException)), {});               \
         DISPATCH_LAST();                                                                                         \
     }                                                                                                            \
     Bind(&funcNotClassConstructor);                                                                              \
@@ -5243,14 +5243,14 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
             &stackOverflow, &stackNotOverflow);                                                                  \
         Bind(&stackOverflow);                                                                                    \
         {                                                                                                        \
-            CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetStackOverflowException)), {});       \
+            CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(SetStackOverflowException)), {});             \
             DISPATCH_LAST();                                                                                     \
         }                                                                                                        \
         Bind(&stackNotOverflow);                                                                                 \
         SetCallSizeToFrame(glue, GetFrame(sp),                                                                   \
             GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::format)));                  \
         GateRef state = GetFrame(*newSp);                                                                        \
-        GateRef prevOffset = GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit()));             \
+        GateRef prevOffset = GetIntPtrConstant(AsmInterpretedFrame::GetBaseOffset(env->IsArch32Bit()));          \
         Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                             \
         GateRef frameTypeOffset = IntPtrAdd(prevOffset, GetIntPtrConstant(                                       \
             env->IsArch32Bit() ? InterpretedFrameBase::TYPE_OFFSET_32 : InterpretedFrameBase::TYPE_OFFSET_64));  \
@@ -5283,18 +5283,18 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));      \
     Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a0Value)
 
-#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8()                                                \
-    Label push0(env);                                                                       \
-    Label skip0(env);                                                                       \
-    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                         \
-        GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARG1)), &push0, &skip0); \
-    Bind(&push0);                                                                           \
-    {                                                                                       \
-        GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));                              \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a0Value);          \
-        Jump(&skip0);                                                                       \
-    }                                                                                       \
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8()                                                    \
+    Label push0(env);                                                                           \
+    Label skip0(env);                                                                           \
+    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                             \
+        GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARG1)), &push0, &skip0); \
+    Bind(&push0);                                                                               \
+    {                                                                                           \
+        GateRef a0Value = GetVregValue(sp, ZExtInt8ToPtr(a0));                                  \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                    \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a0Value);              \
+        Jump(&skip0);                                                                           \
+    }                                                                                           \
     Bind(&skip0)
 
 #define CALL_PUSH_ARGS_PREF_V8_V8_V8()                                         \
@@ -5303,19 +5303,19 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a1Value); \
     CALL_PUSH_ARGS_PREF_V8_V8()
 
-#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8()                                              \
-    Label push1(env);                                                                        \
-    Label skip1(env);                                                                        \
-    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                          \
-        GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS2)), &push1, &skip1); \
-    Bind(&push1);                                                                            \
-    {                                                                                        \
-        GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));                               \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                 \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a1Value);           \
-        Jump(&skip1);                                                                        \
-    }                                                                                        \
-    Bind(&skip1);                                                                            \
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8()                                                  \
+    Label push1(env);                                                                            \
+    Label skip1(env);                                                                            \
+    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                              \
+        GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2)), &push1, &skip1); \
+    Bind(&push1);                                                                                \
+    {                                                                                            \
+        GateRef a1Value = GetVregValue(sp, ZExtInt8ToPtr(a1));                                   \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                     \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a1Value);               \
+        Jump(&skip1);                                                                            \
+    }                                                                                            \
+    Bind(&skip1);                                                                                \
     CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8()
 
 #define CALL_PUSH_ARGS_PREF_V8_V8_V8_V8()                                      \
@@ -5324,19 +5324,19 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
     Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a2Value); \
     CALL_PUSH_ARGS_PREF_V8_V8_V8()
 
-#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8_V8()                                           \
-    Label push2(env);                                                                        \
-    Label skip2(env);                                                                        \
-    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                          \
-        GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS3)), &push2, &skip2); \
-    Bind(&push2);                                                                            \
-    {                                                                                        \
-        GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));                               \
-        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                 \
-        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a2Value);           \
-        Jump(&skip2);                                                                        \
-    }                                                                                        \
-    Bind(&skip2);                                                                            \
+#define CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8_V8()                                               \
+    Label push2(env);                                                                            \
+    Label skip2(env);                                                                            \
+    Branch(Int32GreaterThanOrEqual(declaredNumArgs,                                              \
+        GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3)), &push2, &skip2); \
+    Bind(&push2);                                                                                \
+    {                                                                                            \
+        GateRef a2Value = GetVregValue(sp, ZExtInt8ToPtr(a2));                                   \
+        newSp = PointerSub(*newSp, GetIntPtrConstant(sizeof(JSTaggedType)));                     \
+        Store(VariableType::INT64(), glue, *newSp, GetIntPtrConstant(0), a2Value);               \
+        Jump(&skip2);                                                                            \
+    }                                                                                            \
+    Bind(&skip2);                                                                                \
     CALL_PUSH_ARGS_NO_EXTRA_PREF_V8_V8_V8()
 
 #define CALL_PUSH_ARGS_PREF_IMM16_V8() \
@@ -5395,7 +5395,7 @@ DECLARE_ASM_HANDLER(HandleCallArg0DynPrefV8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARG0);
+    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARG0);
     GateRef funcReg = ReadInst8_1(pc);
     CALL_INITIALIZE();
     GateRef callThis = FalseConstant();
@@ -5406,7 +5406,7 @@ DECLARE_ASM_HANDLER(HandleCallArg1DynPrefV8V8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARG1);
+    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARG1);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     CALL_INITIALIZE();
@@ -5418,7 +5418,7 @@ DECLARE_ASM_HANDLER(HandleCallArgs2DynPrefV8V8V8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS2);
+    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS2);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     GateRef a1 = ReadInst8_3(pc);
@@ -5431,7 +5431,7 @@ DECLARE_ASM_HANDLER(HandleCallArgs3DynPrefV8V8V8V8)
 {
     auto env = GetEnvironment();
 
-    GateRef actualNumArgs = GetInt32Constant(EcmaInterpreter::ActualNumArgsOfCall::CALLARGS3);
+    GateRef actualNumArgs = GetInt32Constant(InterpreterAssembly::ActualNumArgsOfCall::CALLARGS3);
     GateRef funcReg = ReadInst8_1(pc);
     GateRef a0 = ReadInst8_2(pc);
     GateRef a1 = ReadInst8_3(pc);
