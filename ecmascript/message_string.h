@@ -17,8 +17,8 @@
 #define ECMASCRIPT_MESSAGE_STRING_H
 
 #include <string>
-
-#include "ecmascript/compiler/interpreter_stub_define.h"
+#include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/interpreter_stub.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -38,7 +38,7 @@ public:
 #define DEF_MESSAGE_ID(name, string) Message_##name,
         COMMON_MESSAGE_STRING_LIST(DEF_MESSAGE_ID)
         INTERPRETER_STUB_HELPER_LIST(DEF_MESSAGE_ID)
-        ASM_INTERPRETER_STUB_LIST(DEF_MESSAGE_ID, DEF_MESSAGE_ID, DEF_MESSAGE_ID)
+        ASM_INTERPRETER_BC_STUB_LIST(DEF_MESSAGE_ID, DEF_MESSAGE_ID, DEF_MESSAGE_ID)
 #undef DEF_MESSAGE_ID
             MAX_MESSAGE_COUNT
     };

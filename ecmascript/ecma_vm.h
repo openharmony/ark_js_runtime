@@ -20,7 +20,6 @@
 
 #include "ecmascript/base/config.h"
 #include "ecmascript/ecma_string_table.h"
-#include "ecmascript/global_handle_collection.h"
 #include "ecmascript/js_handle.h"
 #include "ecmascript/js_method.h"
 #include "ecmascript/js_runtime_options.h"

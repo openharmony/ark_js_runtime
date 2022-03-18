@@ -118,7 +118,10 @@ public:
         return end_ - begin_;
     }
 
-    inline void SetSpace(Space *space);
+    inline void SetSpace(Space *space)
+    {
+        space_ = space;
+    }
 
     Heap *GetHeap() const
     {
@@ -237,18 +240,18 @@ public:
         ret->ClearAllBits();
         return ret;
     }
-    inline RememberedSet *CreateRememberedSet();
-    inline RememberedSet *GetOrCreateCrossRegionRememberedSet();
-    inline RememberedSet *GetOrCreateOldToNewRememberedSet();
-    inline void DeleteMarkBitmap();
-    inline void DeleteCrossRegionRememberedSet();
-    inline void DeleteOldToNewRememberedSet();
-    inline void ClearMarkBitmap();
-    inline void ClearCrossRegionRememberedSet();
-    inline void InsertCrossRegionRememberedSet(uintptr_t addr);
-    inline void AtomicInsertCrossRegionRememberedSet(uintptr_t addr);
-    inline void InsertOldToNewRememberedSet(uintptr_t addr);
-    inline void AtomicInsertOldToNewRememberedSet(uintptr_t addr);
+    RememberedSet *CreateRememberedSet();
+    RememberedSet *GetOrCreateCrossRegionRememberedSet();
+    RememberedSet *GetOrCreateOldToNewRememberedSet();
+    void DeleteMarkBitmap();
+    void DeleteCrossRegionRememberedSet();
+    void DeleteOldToNewRememberedSet();
+    void ClearMarkBitmap();
+    void ClearCrossRegionRememberedSet();
+    void InsertCrossRegionRememberedSet(uintptr_t addr);
+    void AtomicInsertCrossRegionRememberedSet(uintptr_t addr);
+    void InsertOldToNewRememberedSet(uintptr_t addr);
+    void AtomicInsertOldToNewRememberedSet(uintptr_t addr);
 
     uintptr_t GetAllocateBase() const
     {

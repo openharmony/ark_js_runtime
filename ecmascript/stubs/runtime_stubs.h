@@ -15,32 +15,188 @@
 
 #ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
+#include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/interpreter/frame_handler.h"
-#include "ecmascript/js_thread.h"
-#include "ecmascript/trampoline/runtime_define.h"
+#include "ecmascript/js_tagged_value.h"
+#include "ecmascript/js_method.h"
+#include "ecmascript/mem/region.h"
 
 namespace panda::ecmascript {
-extern "C" JSTaggedType RuntimeCallTrampolineAot(uintptr_t glue, uint64_t runtime_id,
-                                                 uint64_t argc, ...);
-extern "C" JSTaggedType RuntimeCallTrampolineInterpreterAsm(uintptr_t glue, uint64_t runtime_id,
-                                                            uint64_t argc, ...);
-class RuntimeTrampolines {
-public:
-    static void InitializeRuntimeTrampolines(JSThread *thread)
-    {
-    #define DEF_RUNTIME_STUB(name, counter) RuntimeTrampolineId::RUNTIME_ID_##name
-    #define INITIAL_RUNTIME_FUNCTIONS(name, count) \
-        thread->SetRuntimeFunction(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
-        ALL_RUNTIME_CALL_LIST(INITIAL_RUNTIME_FUNCTIONS)
-    #undef INITIAL_RUNTIME_FUNCTIONS
-    #undef DEF_RUNTIME_STUB
-    }
+using kungfu::CallSignature;
+class ConstantPool;
+class EcmaVM;
+class GlobalEnv;
+class JSthread;
+class JSFunction;
+class ObjectFactory;
+extern "C" JSTaggedType RuntimeCallTrampolineAot(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" JSTaggedType RuntimeCallTrampolineInterpreterAsm(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 
-#define DECLARE_RUNTIME_TRAMPOLINES(name, counter) \
+#define RUNTIME_STUB_WITHOUT_GC_LIST(V)      \
+    V(DebugPrint, 1)                         \
+    V(InsertOldToNewRememberedSet, 3)        \
+    V(MarkingBarrier, 5)                     \
+    V(DoubleToInt, 1)                        \
+    V(RuntimeCallTrampolineAot, 3)           \
+    V(RuntimeCallTrampolineInterpreterAsm, 3)
+
+#define RUNTIME_STUB_WITH_GC_LIST(V)         \
+    V(AddElementInternal, 5)                 \
+    V(CallSetter, 5)                         \
+    V(CallSetter2, 3)                        \
+    V(CallGetter, 3)                         \
+    V(CallGetter2, 4)                        \
+    V(CallInternalGetter, 3)                 \
+    V(ThrowTypeError, 2)                     \
+    V(JSProxySetProperty, 6)                 \
+    V(GetHash32, 2)                          \
+    V(FindElementWithCache, 4)               \
+    V(StringGetHashCode, 1)                  \
+    V(FloatMod, 2)                           \
+    V(GetTaggedArrayPtrTest, 2)              \
+    V(NewInternalString, 2)                  \
+    V(NewTaggedArray, 2)                     \
+    V(CopyArray, 3)                          \
+    V(NameDictPutIfAbsent, 7)                \
+    V(PropertiesSetValue, 6)                 \
+    V(TaggedArraySetValue, 6)                \
+    V(NewEcmaDynClass, 4)                    \
+    V(UpdateLayOutAndAddTransition, 5)       \
+    V(NoticeThroughChainAndRefreshUser, 3)   \
+    V(JumpToCInterpreter, 7)                 \
+    V(StGlobalRecord, 4)                     \
+    V(SetFunctionNameNoPrefix, 3)            \
+    V(StOwnByValueWithNameSet, 4)            \
+    V(StOwnByName, 4)                        \
+    V(StOwnByNameWithNameSet, 7)             \
+    V(SuspendGenerator, 7)                   \
+    V(UpFrame, 1)                            \
+    V(NegDyn, 2)                             \
+    V(NotDyn, 2)                             \
+    V(IncDyn, 2)                             \
+    V(DecDyn, 2)                             \
+    V(ChangeUintAndIntShrToJSTaggedValue, 3) \
+    V(ChangeUintAndIntShlToJSTaggedValue, 3) \
+    V(ChangeTwoInt32AndToJSTaggedValue, 3)   \
+    V(ChangeTwoInt32XorToJSTaggedValue, 3)   \
+    V(ChangeTwoInt32OrToJSTaggedValue, 3)    \
+    V(ChangeTwoUint32AndToJSTaggedValue, 3)  \
+    V(ExpDyn, 3)                             \
+    V(IsInDyn, 3)                            \
+    V(InstanceOfDyn, 3)                      \
+    V(FastStrictEqual, 2)                    \
+    V(FastStrictNotEqual, 2)                 \
+    V(CreateGeneratorObj, 2)                 \
+    V(ThrowConstAssignment, 2)               \
+    V(GetTemplateObject, 2)                  \
+    V(GetNextPropName, 2)                    \
+    V(ThrowIfNotObject, 1)                   \
+    V(IterNext, 2)                           \
+    V(CloseIterator, 2)                      \
+    V(CopyModule, 2)                         \
+    V(SuperCallSpread, 4)                    \
+    V(DelObjProp, 3)                         \
+    V(NewObjSpreadDyn, 4)                    \
+    V(CreateIterResultObj, 3)                \
+    V(AsyncFunctionAwaitUncaught, 3)         \
+    V(AsyncFunctionResolveOrReject, 4)       \
+    V(ThrowUndefinedIfHole, 2)               \
+    V(CopyDataProperties, 3)                 \
+    V(StArraySpread, 4)                      \
+    V(GetIteratorNext, 3)                    \
+    V(SetObjectWithProto, 3)                 \
+    V(LoadICByValue, 5)                      \
+    V(StoreICByValue, 6)                     \
+    V(StOwnByValue, 4)                       \
+    V(LdSuperByValue, 4)                     \
+    V(StSuperByValue, 5)                     \
+    V(LdObjByIndex, 5)                       \
+    V(StObjByIndex, 4)                       \
+    V(StOwnByIndex, 4)                       \
+    V(ResolveClass, 6)                       \
+    V(CloneClassFromTemplate, 5)             \
+    V(SetClassConstructorLength, 3)          \
+    V(LoadICByName, 5)                       \
+    V(StoreICByName, 6)                      \
+    V(UpdateHotnessCounter, 2)               \
+    V(GetModuleNamespace, 2)                 \
+    V(StModuleVar, 3)                        \
+    V(LdModuleVar, 3)                        \
+    V(ThrowDyn, 2)                           \
+    V(GetPropIterator, 2)                    \
+    V(AsyncFunctionEnter, 1)                 \
+    V(GetIterator, 2)                        \
+    V(ThrowThrowNotExists, 1)                \
+    V(ThrowPatternNonCoercible, 1)           \
+    V(ThrowDeleteSuperProperty, 1)           \
+    V(EqDyn, 3)                              \
+    V(LdGlobalRecord, 2)                     \
+    V(GetGlobalOwnProperty, 2)               \
+    V(TryLdGlobalByName, 2)                  \
+    V(LoadMiss, 6)                           \
+    V(StoreMiss, 7)                          \
+    V(TryUpdateGlobalRecord, 3)              \
+    V(ThrowReferenceError, 2)                \
+    V(StGlobalVar, 3)                        \
+    V(LdGlobalVar, 3)                        \
+    V(ToNumber, 2)                           \
+    V(ToBoolean, 1)                          \
+    V(NotEqDyn, 3)                           \
+    V(LessDyn, 3)                            \
+    V(LessEqDyn, 3)                          \
+    V(GreaterDyn, 3)                         \
+    V(GreaterEqDyn, 3)                       \
+    V(Add2Dyn, 3)                            \
+    V(Sub2Dyn, 3)                            \
+    V(Mul2Dyn, 3)                            \
+    V(Div2Dyn, 3)                            \
+    V(Mod2Dyn, 3)                            \
+    V(GetLexicalEnv, 1)                      \
+    V(LoadValueFromConstantStringTable, 2)   \
+    V(CreateEmptyObject, 1)                  \
+    V(CreateEmptyArray, 1)                   \
+    V(GetSymbolFunction, 1)                  \
+    V(GetUnmapedArgs, 2)                     \
+    V(CopyRestArgs, 3)                       \
+    V(CreateArrayWithBuffer, 2)              \
+    V(CreateObjectWithBuffer, 2)             \
+    V(NewLexicalEnvDyn, 2)                   \
+    V(NewObjDynRange, 5)                     \
+    V(DefinefuncDyn, 2)                      \
+    V(CreateRegExpWithLiteral, 3)            \
+    V(ThrowIfSuperNotCorrectCall, 3)         \
+    V(CreateObjectHavingMethod, 4)           \
+    V(CreateObjectWithExcludedKeys, 4)       \
+    V(DefineNCFuncDyn, 2)                    \
+    V(DefineGeneratorFunc, 2)                \
+    V(DefineAsyncFunc, 2)                    \
+    V(DefineMethod, 3)                       \
+    V(SetNotCallableException, 0)            \
+    V(SetCallConstructorException, 0)        \
+    V(SetStackOverflowException, 0)          \
+    V(CallNative, 3)                         \
+    V(CallSpreadDyn, 4)                      \
+    V(DefineGetterSetterByValue, 6)          \
+    V(SuperCall, 5)                          \
+    V(CallArg0Dyn, 2)                        \
+    V(CallArg1Dyn, 3)                        \
+    V(CallArgs2Dyn, 4)                       \
+    V(CallArgs3Dyn, 5)                       \
+    V(CallIThisRangeDyn, 3)                  \
+    V(CallIRangeDyn, 2)
+
+#define RUNTIME_STUB_LIST(V)                 \
+    RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
+    RUNTIME_STUB_WITH_GC_LIST(V)
+
+class RuntimeStubs {
+public:
+    static void Initialize(JSThread *thread);
+
+#define DECLARE_RUNTIME_STUBS(name, counter) \
     static JSTaggedType name(uintptr_t argGlue, uint32_t argc, uintptr_t argv);
-    RUNTIME_CALL_LIST(DECLARE_RUNTIME_TRAMPOLINES)
-#undef DECLARE_RUNTIME_TRAMPOLINES
+    RUNTIME_STUB_WITH_GC_LIST(DECLARE_RUNTIME_STUBS)
+#undef DECLARE_RUNTIME_STUBS
 
     static void DebugPrint(int fmtMessageId, ...);
     static void MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,

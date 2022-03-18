@@ -19,6 +19,7 @@
 
 #include "ecmascript/global_env.h"
 #include "ecmascript/mem/c_string.h"
+#include "ecmascript/mem/barriers-inl.h"
 
 namespace panda::ecmascript {
 // NOLINTNEXTLINE (readability-identifier-naming, fuchsia-statically-constructed-objects)

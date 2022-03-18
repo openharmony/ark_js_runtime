@@ -24,7 +24,7 @@
 #include "ecmascript/compiler/circuit.h"
 #include "ecmascript/compiler/gate.h"
 #include "ecmascript/compiler/stub.h"
-#include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/compiler/call_signature.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Types.h"
 
@@ -110,33 +110,24 @@ class LLVMStubModule {
 public:
     LLVMStubModule(const std::string &name, const std::string &triple);
     ~LLVMStubModule();
-
-    void Initialize(const std::vector<int> &stubIndices);
-
+    void Initialize();
     LLVMModuleRef GetModule() const
     {
         return module_;
     }
-    LLVMTypeRef GetStubFunctionType(uint32_t index) const
+    LLVMTypeRef GetFunctionType(size_t index) const
     {
-        ASSERT(index < CALL_STUB_MAXCOUNT);
-        return stubFunctionType_[index];
+        return functionTypes_[index];
     }
 
-    LLVMValueRef GetStubFunction(uint32_t index)
+    LLVMValueRef GetFunction(size_t index)
     {
-        ASSERT(index < ALL_STUB_MAXCOUNT);
-        return stubFunctions_[index];
+        return functions_[index];
     }
 
-    LLVMValueRef GetTestFunction(uint32_t index)
+    const CallSignature *GetCSign(size_t index) const
     {
-#ifndef NDEBUG
-            ASSERT(index < TEST_FUNC_MAXCOUNT);
-            return testFunctions_[index];
-#else
-            return nullptr;
-#endif
+        return callSigns_[index];
     }
 
     const CompilationConfig *GetCompilationConfig() const
@@ -144,15 +135,22 @@ public:
         return &compCfg_;
     }
 
+    const std::vector<CallSignature*> &GetCSigns() const
+    {
+        return callSigns_;
+    }
+
+    size_t GetFuncsSize() const
+    {
+        return functions_.size();
+    }
 private:
-    LLVMValueRef GetLLVMFunctionByStubDescriptor(StubDescriptor *stubDescriptor);
-    LLVMTypeRef GetLLVMFunctionTypeStubDescriptor(StubDescriptor *stubDescriptor);
+    LLVMValueRef GetLLVMFunctionByCallSignature(CallSignature *stubDescriptor);
+    LLVMTypeRef GetLLVMFunctionTypeCallSignature(CallSignature *stubDescriptor);
     LLVMTypeRef ConvertLLVMTypeFromVariableType(VariableType type);
-    std::array<LLVMValueRef, ALL_STUB_MAXCOUNT> stubFunctions_ {nullptr};
-    std::array<LLVMTypeRef, CALL_STUB_MAXCOUNT> stubFunctionType_ {nullptr};
-#ifndef NDEBUG
-    std::array<LLVMValueRef, TEST_FUNC_MAXCOUNT> testFunctions_ {nullptr};
-#endif
+    std::vector<LLVMValueRef> functions_;
+    std::vector<LLVMTypeRef> functionTypes_;
+    std::vector<CallSignature*> callSigns_;
     LLVMModuleRef module_;
     CompilationConfig compCfg_;
 };

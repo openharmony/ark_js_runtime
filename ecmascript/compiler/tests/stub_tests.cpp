@@ -24,7 +24,7 @@
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
 #include "ecmascript/compiler/scheduler.h"
-#include "ecmascript/compiler/stub_descriptor.h"
+#include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/compiler/verifier.h"
 #include "ecmascript/ecma_vm.h"
 #include "ecmascript/interpreter/fast_runtime_stub-inl.h"
@@ -48,12 +48,10 @@ public:
     void SetUp() override
     {
         TestHelper::CreateEcmaVMWithScope(instance, thread, scope);
-        std::vector<int> stubSet = {
-#define DEF_FAST_STUB(name, counter) FAST_STUB_ID(name),
-            FAST_STUB_LIST_BASE(DEF_FAST_STUB)
-#undef DEF_FAST_STUB
-        };
-        stubModule.Initialize(stubSet);
+        BytecodeStubCSigns::Initialize();
+        CommonStubCSigns::Initialize();
+        RuntimeStubCSigns::Initialize();
+        stubModule.Initialize();
     }
 
     void TearDown() override
@@ -90,7 +88,7 @@ public:
 HWTEST_F_L0(StubTest, FastAddTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastAdd));
+    auto function = stubModule.GetFunction(CommonStubCSigns::FastAdd);
     Circuit netOfGates;
     FastAddStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -133,7 +131,7 @@ HWTEST_F_L0(StubTest, FastAddTest)
 HWTEST_F_L0(StubTest, FastSubTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastSub));
+    auto function = stubModule.GetFunction(CommonStubCSigns::FastSub);
     Circuit netOfGates;
     FastSubStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -169,7 +167,7 @@ HWTEST_F_L0(StubTest, FastSubTest)
 HWTEST_F_L0(StubTest, FastMulTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMul));
+    auto function = stubModule.GetFunction(CommonStubCSigns::FastMul);
     Circuit netOfGates;
     FastMulStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -237,7 +235,7 @@ HWTEST_F_L0(StubTest, FastMulTest)
 HWTEST_F_L0(StubTest, FastDivTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastDiv));
+    auto function = stubModule.GetFunction(CommonStubCSigns::FastDiv);
     Circuit netOfGates;
     FastDivStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -288,7 +286,7 @@ HWTEST_F_L0(StubTest, FastDivTest)
 HWTEST_F_L0(StubTest, FastModTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastMod));
+    auto function = stubModule.GetFunction(CommonStubCSigns::FastMod);
     Circuit netOfGates;
     FastModStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -355,7 +353,7 @@ HWTEST_F_L0(StubTest, FastModTest)
 HWTEST_F_L0(StubTest, TryLoadICByName)
 {
     auto module = stubModule.GetModule();
-    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryLoadICByName));
+    auto findFunction = stubModule.GetFunction(CommonStubCSigns::TryLoadICByName);
     Circuit netOfGates;
     TryLoadICByNameStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -371,7 +369,7 @@ HWTEST_F_L0(StubTest, TryLoadICByName)
 HWTEST_F_L0(StubTest, TryLoadICByValue)
 {
     auto module = stubModule.GetModule();
-    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryLoadICByValue));
+    auto findFunction = stubModule.GetFunction(CommonStubCSigns::TryLoadICByValue);
     Circuit netOfGates;
     TryLoadICByValueStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -387,7 +385,7 @@ HWTEST_F_L0(StubTest, TryLoadICByValue)
 HWTEST_F_L0(StubTest, TryStoreICByName)
 {
     auto module = stubModule.GetModule();
-    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryStoreICByName));
+    auto findFunction = stubModule.GetFunction(CommonStubCSigns::TryStoreICByName);
     Circuit netOfGates;
     TryStoreICByNameStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -403,7 +401,7 @@ HWTEST_F_L0(StubTest, TryStoreICByName)
 HWTEST_F_L0(StubTest, TryStoreICByValue)
 {
     auto module = stubModule.GetModule();
-    auto findFunction = stubModule.GetStubFunction(FAST_STUB_ID(TryStoreICByValue));
+    auto findFunction = stubModule.GetFunction(CommonStubCSigns::TryStoreICByValue);
     Circuit netOfGates;
     TryStoreICByValueStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -744,7 +742,6 @@ HWTEST_F_L0(StubTest, Prologue)
     assembler.Run();
     auto engine = assembler.GetEngine();
     uint64_t mainCode = LLVMGetFunctionAddress(engine, "main");
-    assembler.Disassemble();
     auto mainFunc = reinterpret_cast<int64_t (*)(int64_t, int64_t)>(mainCode);
     int64_t result = mainFunc(1, 2);
     EXPECT_EQ(result, 3);
@@ -818,7 +815,6 @@ HWTEST_F_L0(StubTest, CEntryFp)
     auto engine = assembler.GetEngine();
     uint64_t nativeCode = LLVMGetFunctionAddress(engine, "main");
     std::cout << std::endl << " nativeCode : " << nativeCode << std::endl;
-    assembler.Disassemble();
     struct ThreadTy parameters = {0x0, 0x0};
 
     auto mainFunc = reinterpret_cast<int64_t (*)(struct ThreadTy *)>(nativeCode);
@@ -860,7 +856,6 @@ HWTEST_F_L0(StubTest, LoadGCIRTest)
     uint8_t *ptr = assembler.GetStackMapsSection();
     LLVMStackMapParser::GetInstance().CalculateStackMap(ptr);
 
-    assembler.Disassemble();
     int value = reinterpret_cast<int (*)()>(mainPtr)();
     std::cout << " value:" << value << std::endl;
 }
@@ -902,7 +897,7 @@ void DoSafepoint()
 HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByIndex));
+    auto function = stubModule.GetFunction(CommonStubCSigns::GetPropertyByIndex);
     Circuit netOfGates;
     GetPropertyByIndexStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -921,7 +916,6 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
     int y = 10;
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 1, JSTaggedValue(x));
     FastRuntimeStub::SetOwnElement(thread, obj.GetTaggedValue(), 10250, JSTaggedValue(y));
-    assembler.Disassemble();
     JSTaggedValue resVal = getpropertyByIndex(thread->GetGlueAddr(), obj.GetTaggedValue(), 1);
     EXPECT_EQ(resVal.GetNumber(), x);
     resVal = getpropertyByIndex(thread->GetGlueAddr(), obj.GetTaggedValue(), 10250);
@@ -932,7 +926,7 @@ HWTEST_F_L0(StubTest, GetPropertyByIndexStub)
 HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(SetPropertyByIndex));
+    auto function = stubModule.GetFunction(CommonStubCSigns::SetPropertyByIndex);
     Circuit netOfGates;
     SetPropertyByIndexStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -949,7 +943,6 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSArray> array = factory->NewJSArray();
-    assembler.Disassemble();
     // set value to array
     array->SetArrayLength(thread, 20);
     for (int i = 0; i < 20; i++) {
@@ -966,7 +959,7 @@ HWTEST_F_L0(StubTest, SetPropertyByIndexStub)
 HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByName));
+    auto function = stubModule.GetFunction(CommonStubCSigns::GetPropertyByName);
     Circuit netOfGates;
     GetPropertyByNameStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -989,7 +982,6 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
     JSHandle<JSTaggedValue> strBig(factory->NewFromCanBeCompressString("biggest"));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y));
-    assembler.Disassemble();
     JSTaggedValue resVal = getPropertyByNamePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
         strA.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal.GetNumber(), x);
@@ -1002,7 +994,7 @@ HWTEST_F_L0(StubTest, GetPropertyByNameStub)
 HWTEST_F_L0(StubTest, SetPropertyByNameStub)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(SetPropertyByName));
+    auto function = stubModule.GetFunction(CommonStubCSigns::SetPropertyByName);
     Circuit netOfGates;
     SetPropertyByNameStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -1013,7 +1005,6 @@ HWTEST_F_L0(StubTest, SetPropertyByNameStub)
     llvmBuilder.Build();
     LLVMAssembler assembler(module);
     assembler.Run();
-    assembler.Disassemble();
     auto *setPropertyByName = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue,
         JSTaggedValue, JSTaggedValue, bool)>
         (reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function)));
@@ -1035,7 +1026,7 @@ HWTEST_F_L0(StubTest, SetPropertyByNameStub)
 HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 {
     auto module = stubModule.GetModule();
-    LLVMValueRef getPropertyByIndexfunction = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByIndex));
+    LLVMValueRef getPropertyByIndexfunction = stubModule.GetFunction(CommonStubCSigns::GetPropertyByIndex);
     Circuit netOfGates2;
     GetPropertyByIndexStub getPropertyByIndexStub(&netOfGates2);
     getPropertyByIndexStub.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -1045,7 +1036,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
                                 stubModule.GetCompilationConfig());
     llvmBuilder2.Build();
 
-    LLVMValueRef getPropertyByNamefunction = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByName));
+    LLVMValueRef getPropertyByNamefunction = stubModule.GetFunction(CommonStubCSigns::GetPropertyByName);
     Circuit netOfGates1;
     GetPropertyByNameStub getPropertyByNameStub(&netOfGates1);
     getPropertyByNameStub.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -1056,7 +1047,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
                                stubModule.GetCompilationConfig());
     llvmBuilder1.Build();
 
-    LLVMValueRef function = stubModule.GetStubFunction(FAST_STUB_ID(GetPropertyByValue));
+    LLVMValueRef function = stubModule.GetFunction(CommonStubCSigns::GetPropertyByValue);
     Circuit netOfGates;
     GetPropertyByValueStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -1077,8 +1068,8 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
     auto *getpropertyByIndexPtr = reinterpret_cast<JSTaggedValue (*)(uintptr_t, JSTaggedValue, uint32_t)>(
         reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(getPropertyByIndexfunction)));
 
-    thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByIndex), reinterpret_cast<uintptr_t>(getpropertyByIndexPtr));
-    thread->SetFastStubEntry(FAST_STUB_ID(GetPropertyByName), reinterpret_cast<uintptr_t>(getPropertyByNamePtr));
+    thread->SetFastStubEntry(CommonStubCSigns::GetPropertyByIndex, reinterpret_cast<uintptr_t>(getpropertyByIndexPtr));
+    thread->SetFastStubEntry(CommonStubCSigns::GetPropertyByName, reinterpret_cast<uintptr_t>(getPropertyByNamePtr));
     auto *factory = JSThread::Cast(thread)->GetEcmaVM()->GetFactory();
     JSHandle<JSObject> obj = factory->NewEmptyJSObject();
     int x = 213;
@@ -1093,8 +1084,6 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strA.GetTaggedValue(), JSTaggedValue(x));
     FastRuntimeStub::SetPropertyByName(thread, obj.GetTaggedValue(), strBig.GetTaggedValue(), JSTaggedValue(y));
-    assembler.Disassemble();
-
     JSTaggedValue resVal1 = getPropertyByNamePtr(thread->GetGlueAddr(), obj.GetTaggedValue().GetRawData(),
         strA.GetTaggedValue().GetRawData());
     EXPECT_EQ(resVal1.GetNumber(), x);
@@ -1124,7 +1113,7 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 HWTEST_F_L0(StubTest, FastTypeOfTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastTypeOf));
+    auto function = stubModule.GetFunction(CommonStubCSigns::FastTypeOf);
     Circuit netOfGates;
     FastTypeOfStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
@@ -1227,7 +1216,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
 HWTEST_F_L0(StubTest, FastEqualTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetStubFunction(FAST_STUB_ID(FastEqual));
+    auto function = stubModule.GetFunction(CommonStubCSigns::FastEqual);
     Circuit netOfGates;
     FastEqualStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());

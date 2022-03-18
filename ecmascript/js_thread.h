@@ -18,15 +18,17 @@
 
 #include "include/managed_thread.h"
 #include "ecmascript/base/aligned_struct.h"
-#include "ecmascript/compiler/fast_stub_define.h"
+#include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/interpreter_stub.h"
+#include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/dfx/vm_thread_control.h"
 #include "ecmascript/ecma_global_storage.h"
 #include "ecmascript/frames.h"
 #include "ecmascript/global_env_constants.h"
 #include "ecmascript/mem/object_xray.h"
-#include "ecmascript/trampoline/runtime_define.h"
 
 namespace panda::ecmascript {
+class EcmaHandleScope;
 class EcmaVM;
 class HeapRegionAllocator;
 class InternalCallParams;
@@ -39,16 +41,28 @@ enum class MarkStatus : uint8_t {
 };
 
 struct BCHandlers {
-    static constexpr size_t MAX_BYTECODE_HANDLERS = 0x100;
-    Address handlers_[MAX_BYTECODE_HANDLERS];
+    static constexpr size_t BC_HANDER_COUNT = kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS;
+    // The number of bytecodes.
+    static constexpr size_t BC_COUNT = 0x100;
+    static_assert(BC_HANDER_COUNT <= BC_COUNT);
+    Address handlers_[BC_COUNT] = {0};
 
-    static constexpr size_t SizeArch32 = sizeof(uint32_t) * MAX_BYTECODE_HANDLERS;
-    static constexpr size_t SizeArch64 = sizeof(uint64_t) * MAX_BYTECODE_HANDLERS;
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * BC_COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * BC_COUNT;
 
     void Set(size_t index, Address addr)
     {
-        assert(index < MAX_BYTECODE_HANDLERS);
+        assert(index < BC_COUNT);
         handlers_[index] = addr;
+    }
+
+    void SetUnsupportedBCHandlers(Address addr)
+    {
+        for (size_t i = 0; i < BC_COUNT; i++) {
+            if (handlers_[i] == 0) {
+                handlers_[i] = addr;
+            }
+        }
     }
 
     Address* GetAddr()
@@ -59,35 +73,36 @@ struct BCHandlers {
 STATIC_ASSERT_EQ_ARCH(sizeof(BCHandlers), BCHandlers::SizeArch32, BCHandlers::SizeArch64);
 
 struct RTInterfaces {
-    static constexpr size_t MAX_RUNTIME_FUNCTIONS = RuntimeTrampolineId::RUNTIME_CALL_MAX_ID;
-    Address interfaces_[MAX_RUNTIME_FUNCTIONS];
+    static constexpr size_t COUNT = kungfu::RuntimeStubCSigns::NUM_OF_STUBS;
+    Address interfaces_[COUNT];
 
-    static constexpr size_t SizeArch32 = sizeof(uint32_t) * MAX_RUNTIME_FUNCTIONS;
-    static constexpr size_t SizeArch64 = sizeof(uint64_t) * MAX_RUNTIME_FUNCTIONS;
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * COUNT;
 
     void Set(size_t index, Address addr)
     {
-        assert(index < MAX_RUNTIME_FUNCTIONS);
+        assert(index < COUNT);
         interfaces_[index] = addr;
     }
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(RTInterfaces), RTInterfaces::SizeArch32, RTInterfaces::SizeArch64);
 
 struct StubEntries {
-    Address entries_[kungfu::FAST_STUB_MAXCOUNT];
+    static constexpr size_t COUNT = kungfu::CommonStubCSigns::NUM_OF_STUBS;
+    Address entries_[COUNT];
 
-    static constexpr size_t SizeArch32 = sizeof(uint32_t) * kungfu::FAST_STUB_MAXCOUNT;
-    static constexpr size_t SizeArch64 = sizeof(uint64_t) * kungfu::FAST_STUB_MAXCOUNT;
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * COUNT;
 
     void Set(size_t index, Address addr)
     {
-        assert(index < kungfu::FAST_STUB_MAXCOUNT);
+        assert(index < COUNT);
         entries_[index] = addr;
     }
 
     Address Get(size_t index)
     {
-        assert(index < kungfu::FAST_STUB_MAXCOUNT);
+        assert(index < COUNT);
         return entries_[index];
     }
 };
@@ -237,7 +252,7 @@ public:
 
     void SetRuntimeFunction(size_t id, Address addr)
     {
-        ASSERT(id < RuntimeTrampolineId::RUNTIME_CALL_MAX_ID);
+        ASSERT(id < kungfu::RuntimeStubCSigns::NUM_OF_STUBS);
         glueData_.rtInterfaces_.Set(id, addr);
     }
 

@@ -17,12 +17,6 @@
 #define ECMASCRIPT_ECMA_MACROS_H
 
 #include "ecmascript/common.h"
-#include "ecmascript/ecma_vm.h"
-#include "ecmascript/js_tagged_value.h"
-#include "ecmascript/js_thread.h"
-#include "ecmascript/mem/barriers-inl.h"
-#include "ecmascript/mem/slots.h"
-#include "utils/logger.h"
 
 #if !defined(PANDA_TARGET_LINUX) && defined(IS_PUBLIC_VERSION) && defined(ENABLE_BYTRACE)
     #include "bytrace.h"

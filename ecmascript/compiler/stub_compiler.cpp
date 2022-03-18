@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "stub_aot_compiler.h"
+#include "stub_compiler.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -80,7 +80,7 @@ public:
     {
         llvmImpl_ = std::make_unique<LLVMIRGeneratorImpl>(module);
     }
-    bool Run(StubPassData *data, int index)
+    bool Run(StubPassData *data, size_t index)
     {
         auto stubModule = data->GetStubModule();
         CreateCodeGen(stubModule);
@@ -89,30 +89,33 @@ public:
         return true;
     }
 private:
-    std::unique_ptr<CodeGeneratorImpl> llvmImpl_{nullptr};
+    std::unique_ptr<CodeGeneratorImpl> llvmImpl_ {nullptr};
 };
 
-void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::ecmascript::StubModule *module,
-                                             const std::string &filename)
+void StubCompiler::BuildStubModuleAndSave(const std::string &triple, const std::string &filename)
 {
-    LLVMStubModule stubModule("fast_stubs", triple);
-    std::vector<int> stubSet = GetStubIndices();
-    stubModule.Initialize(stubSet);
-    for (int i = 0; i < ALL_STUB_MAXCOUNT; i++) {
-        auto stub = stubs_[i];
-        if (stub != nullptr) {
-            StubPassData data(stub, &stubModule);
-            PassRunner<StubPassData> pipeline(&data);
-            pipeline.RunPass<StubBuildCircuitPass>();
-            pipeline.RunPass<VerifierPass>();
-            pipeline.RunPass<SchedulingPass>();
-            pipeline.RunPass<StubLLVMIRGenPass>(i);
+    LLVMStubModule stubModule("stubs", triple);
+    stubModule.Initialize();
+    auto callSigns = stubModule.GetCSigns();
+    for (size_t i = 0; i < callSigns.size(); i++) {
+        Circuit circuit;
+        if (!callSigns[i]->HasConstructor()) {
+            continue;
         }
+        Stub* stub = static_cast<Stub*>(callSigns[i]->GetConstructor()(reinterpret_cast<void*>(&circuit)));
+        StubPassData data(stub, &stubModule);
+        PassRunner<StubPassData> pipeline(&data);
+        pipeline.RunPass<StubBuildCircuitPass>();
+        pipeline.RunPass<VerifierPass>();
+        pipeline.RunPass<SchedulingPass>();
+        pipeline.RunPass<StubLLVMIRGenPass>(i);
+        delete stub;
     }
 
     LLVMModuleAssembler assembler(&stubModule);
     assembler.AssembleModule();
-    assembler.AssembleStubModule(module);
+    panda::ecmascript::StubModule module;
+    assembler.AssembleStubModule(&module);
 
     auto codeSize = assembler.GetCodeSize();
     panda::ecmascript::MachineCode *code = reinterpret_cast<panda::ecmascript::MachineCode *>(
@@ -121,8 +124,8 @@ void StubAotCompiler::BuildStubModuleAndSave(const std::string &triple, panda::e
 
     assembler.CopyAssemblerToCode(code);
 
-    module->SetCode(code);
-    module->Save(filename);
+    module.SetCode(code);
+    module.Save(filename);
 
     delete[] code;
 }
@@ -154,19 +157,11 @@ int main(const int argc, const char **argv)
     std::string tripleString = stubOptions.GetTargetTriple();
     std::string moduleFilename = stubOptions.GetStubOutputFile();
     std::string compiledStubList = stubOptions.GetCompiledStubs();
-    panda::ecmascript::kungfu::StubAotCompiler moduleBuilder;
-#define SET_STUB_TO_MODULE(name, counter) \
-    panda::ecmascript::kungfu::Circuit name##Circuit;                                                \
-    panda::ecmascript::kungfu::name##Stub name##Stub(& name##Circuit);                               \
-    if (compiledStubList.compare("All") == 0 || compiledStubList.find(#name) != std::string::npos) { \
-        moduleBuilder.SetStub(STUB_ID(name), &name##Stub);                                           \
-    }
-    FAST_STUB_LIST(SET_STUB_TO_MODULE)
-#if ECMASCRIPT_COMPILE_INTERPRETER_ASM
-    INTERPRETER_STUB_LIST(SET_STUB_TO_MODULE)
-#endif
-    panda::ecmascript::StubModule stubModule;
-    moduleBuilder.BuildStubModuleAndSave(tripleString, &stubModule, moduleFilename);
+    panda::ecmascript::kungfu::BytecodeStubCSigns::Initialize();
+    panda::ecmascript::kungfu::CommonStubCSigns::Initialize();
+    panda::ecmascript::kungfu::RuntimeStubCSigns::Initialize();
+    panda::ecmascript::kungfu::StubCompiler compiler;
+    compiler.BuildStubModuleAndSave(tripleString, moduleFilename);
     std::cout << "BuildStubModuleAndSave success" << std::endl;
     return 0;
 }

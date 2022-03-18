@@ -18,13 +18,13 @@
 
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/ecma_macros.h"
-#include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/lexical_env.h"
 
 namespace panda::ecmascript {
 using panda::coretypes::DynClass;
 class JSThread;
+class EcmaRuntimeCallInfo;
 
 class JSFunctionBase : public JSObject {
 public:
