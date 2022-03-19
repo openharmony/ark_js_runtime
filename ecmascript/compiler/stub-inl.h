@@ -126,9 +126,9 @@ inline LabelImpl *Stub::Environment::NewLabel(Stub::Environment *env, GateRef co
 
 inline void Stub::Environment::PushCurrentLabel(Stub::Label *entry)
 {
-    GateRef control = currentLabel_->GetControl();
-    GateRef depend = currentLabel_->GetDepend();
     if (currentLabel_ != nullptr) {
+        GateRef control = currentLabel_->GetControl();
+        GateRef depend = currentLabel_->GetDepend();
         stack_.push(currentLabel_);
         currentLabel_ = entry;
         currentLabel_->SetControl(control);

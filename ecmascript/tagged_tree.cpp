@@ -39,7 +39,7 @@ JSHandle<Derived> TaggedTree<Derived>::Create(const JSThread *thread, int number
 template<typename Derived>
 void TaggedTree<Derived>::InsertRebalance(const JSThread *thread, int index)
 {
-    while (IsVaildIndex(index) && GetColor(GetParent(index)) == TreeColor::RED) {
+    while (IsValidIndex(index) && GetColor(GetParent(index)) == TreeColor::RED) {
         if (IsLeft(GetParent(index))) {
             int bro = GetLeftBrother(GetParent(index));
             if (GetColor(bro)) {

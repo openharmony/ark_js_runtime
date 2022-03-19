@@ -271,7 +271,7 @@ bool TaggedTree<Derived>::IsRight(int entry) const
 }
 
 template<typename Derived>
-bool TaggedTree<Derived>::IsVaildIndex(int entry) const
+bool TaggedTree<Derived>::IsValidIndex(int entry) const
 {
     return entry != GetRootEntries() && !GetKey(entry).IsHole();
 }

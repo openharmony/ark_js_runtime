@@ -27,7 +27,7 @@ namespace panda::ecmascript::kungfu {
 class PassData {
 public:
     explicit PassData(Circuit* circuit) : circuit_(circuit) {}
-    ~PassData() = default;
+    virtual ~PassData() = default;
     const ControlFlowGraph &GetScheduleResult() const
     {
         return cfg_;

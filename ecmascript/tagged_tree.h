@@ -24,7 +24,7 @@ namespace panda::ecmascript {
 enum TreeColor : uint8_t { BLACK = 0, RED };
 /**
  * The tree layout is as follows:
- * 1.array[0-4] is used to store common information, sush as:
+ * 1.array[0-4] is used to store common information, such as:
  * +------------------------+-----------------------------+------------------------+------------+------------------+
  * | the number of elements | the number of hole elements | the number of capacity | root index | compare function |
  * +------------------------+-----------------------------+------------------------+------------+------------------+
@@ -115,7 +115,7 @@ protected:
 
     void InsertRebalance(const JSThread *thread, int index);
     void DeleteRebalance(const JSThread *thread, int index);
-    inline bool IsVaildIndex(int entry) const;
+    inline bool IsValidIndex(int entry) const;
 
     inline int GetLeftBrother(int entry) const;
     inline int GetRightBrother(int entry) const;
