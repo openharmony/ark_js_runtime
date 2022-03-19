@@ -241,7 +241,7 @@ void ParallelEvacuation::UpdateRecordWeakReference()
             ObjectSlot slot(ToUintPtr(obj));
             JSTaggedValue value(slot.GetTaggedType());
             ASSERT(value.IsWeak() || value.IsUndefined());
-            if (!value.IsUndefined()) {
+            if (value.IsWeak()) {
                 UpdateWeakObjectSlot(value.GetTaggedWeakRef(), slot);
             }
         }
