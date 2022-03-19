@@ -82,7 +82,7 @@ public:
     using DictionaryOrderField = PropertyBoxTypeField::NextField<uint32_t, DICTIONARY_ORDER_NUM>;  // 26
 
     static constexpr uint32_t BIT_SIZE = 28;
-    static constexpr int INTIAL_PROPERTY_INDEX = 0;
+    static constexpr int INITIAL_PROPERTY_INDEX = 0;
 
     inline int GetPropertyMetaData() const
     {

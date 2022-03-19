@@ -368,7 +368,7 @@ JSTaggedValue JsonStringifier::SerializeJSONProperty(const JSHandle<JSTaggedValu
                 return tagValue;
             }
             case JSType::JS_PRIMITIVE_REF: {
-                SerilaizePrimitiveRef(valHandle);
+                SerializePrimitiveRef(valHandle);
                 return tagValue;
             }
             case JSType::SYMBOL:
@@ -598,7 +598,7 @@ bool JsonStringifier::SerializeJSArray(const JSHandle<JSTaggedValue> &value, con
     return true;
 }
 
-void JsonStringifier::SerilaizePrimitiveRef(const JSHandle<JSTaggedValue> &primitiveRef)
+void JsonStringifier::SerializePrimitiveRef(const JSHandle<JSTaggedValue> &primitiveRef)
 {
     JSTaggedValue primitive = JSPrimitiveRef::Cast(primitiveRef.GetTaggedValue().GetTaggedObject())->GetValue();
     if (primitive.IsString()) {

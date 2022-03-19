@@ -339,7 +339,7 @@ template<typename Derived>
 JSHandle<Derived> OrderTaggedHashTable<Derived>::Create(const JSThread *thread, int numberOfElements)
 {
     JSHandle<Derived> dict = HashTableT::Create(thread, numberOfElements);
-    dict->SetNextEnumerationIndex(thread, PropertyAttributes::INTIAL_PROPERTY_INDEX);
+    dict->SetNextEnumerationIndex(thread, PropertyAttributes::INITIAL_PROPERTY_INDEX);
     return dict;
 }
 
@@ -433,12 +433,12 @@ int OrderTaggedHashTable<Derived>::NextEnumerationIndex(const JSThread *thread)
         int length = indexOrder.size();
         for (int i = 0; i < length; i++) {
             int oldIndex = indexOrder[i];
-            int enumIndex = PropertyAttributes::INTIAL_PROPERTY_INDEX + i;
+            int enumIndex = PropertyAttributes::INITIAL_PROPERTY_INDEX + i;
             PropertyAttributes attr = table->GetAttributes(oldIndex);
             attr.SetDictionaryOrder(enumIndex);
             table->SetAttributes(thread, oldIndex, attr);
         }
-        index = PropertyAttributes::INTIAL_PROPERTY_INDEX + length;
+        index = PropertyAttributes::INITIAL_PROPERTY_INDEX + length;
     }
     return index;
 }
