@@ -1308,7 +1308,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     HANDLE_OPCODE(HANDLE_TYPEOFDYN_PREF) {
         LOG_INST() << "intrinsics::typeofdyn";
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastTypeOf);
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::TypeOf);
         typedef JSTaggedType (*PFFastTypeOf)(uintptr_t, JSTaggedType);
         auto fastTypeOfPtr = reinterpret_cast<PFFastTypeOf>(stubAddr);
         JSTaggedValue res = JSTaggedValue(fastTypeOfPtr(thread->GetGlueAddr(), GET_ACC().GetRawData()));
@@ -1483,7 +1483,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastMul);
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::Mul);
         typedef JSTaggedType (*PFFastMul)(JSTaggedType, JSTaggedType);
         auto fastMulPtr = reinterpret_cast<PFFastMul>(stubAddr);
         JSTaggedValue value = JSTaggedValue(fastMulPtr(left.GetRawData(), right.GetRawData()));
@@ -1528,7 +1528,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue right = GET_ACC();
 
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastMod);
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::Mod);
         typedef JSTaggedType (*PFFastMod)(uintptr_t, JSTaggedType, JSTaggedType);
         auto fastModPtr = reinterpret_cast<PFFastMod>(stubAddr);
         JSTaggedValue res = JSTaggedValue(fastModPtr(thread->GetGlueAddr(), left.GetRawData(), right.GetRawData()));
@@ -1554,7 +1554,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
         JSTaggedValue left = GET_VREG_VALUE(v0);
         JSTaggedValue right = acc;
 #ifdef ECMASCRIPT_ENABLE_STUB_AOT
-        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::FastEqual);
+        auto stubAddr = thread->GetFastStubEntry(CommonStubCSigns::Equal);
         typedef JSTaggedType (*PFFastEqual)(JSTaggedType, JSTaggedType);
         auto fastEqualPtr = reinterpret_cast<PFFastEqual>(stubAddr);
         JSTaggedValue res = JSTaggedValue(fastEqualPtr(left.GetRawData(), right.GetRawData()));
