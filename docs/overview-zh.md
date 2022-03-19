@@ -4,13 +4,12 @@
 
 本次开源的ARK-JS分成两个部分，分别是JS编译工具链与JS运行时。JS工具链将JS源码编译成方舟字节码\(ARK Bytecode\)，JS运行时负责执行生成的方舟字节码\(后续如无特殊说明，字节码特指方舟字节码\)。
 
-JS编译工具链架构：
-
+图 1 JS编译工具链架构
 ![](figures/zh-cn_image_0000001197967897.png)
 
 ARK-JS的源码编译器接收JS源码的输入，再由ts2abc（将JavaScript文件转换为字节码的工具）转化为abc文件。
 
-JS运行时（Runtime）架构：
+图 2 JS运行时（Runtime）架构
 
 ![](figures/zh-cn_image_0000001196789343.png)
 
@@ -39,7 +38,7 @@ ARK-JS Runtime主要由四个部分组成：
 
 -   高性能TypeScript支持
 
-OpenHamony目前选用了TS（TypeScript）作为主要开发语言之一，而TS简单地概括就是具有静态类型的JS。业界通用的执行方式是把TS转化为JS，再使用JS运行时来执行生成的JS代码。
+OpenHarmony目前选用了TS（TypeScript）作为主要开发语言之一，而TS简单地概括就是具有静态类型的JS。业界通用的执行方式是把TS转化为JS，再使用JS运行时来执行生成的JS代码。
 
 ARK-JS规划原生支持TS。在ts2abc编译TS源码时，会推导分析TS的类型信息并传递给ARK-JS运行时，运行时直接利用类型信息静态生成内联缓存从而加速字节码执行。
 

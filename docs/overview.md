@@ -39,7 +39,7 @@ Future plan:
 
 -   High-performance TypeScript support
 
-OpenHamony uses TypeScript \(TS\) as one of its main development languages. TS is simply JS with syntax for static types. The common way to process TS in the industry is to convert TS into JS and execute JS code with JS runtime.
+OpenHarmony uses TypeScript \(TS\) as one of its main development languages. TS is simply JS with syntax for static types. The common way to process TS in the industry is to convert TS into JS and execute JS code with JS runtime.
 
 ARK-JS is planned to support the native TS. When compiling the TS source code, ts2abc analyzes and obtains the TS type information and sends the TS type information to ARK-JS runtime. The ARK-JS runtime directly uses the type information to statically generate an inline cache to accelerate bytecode execution.
 

@@ -204,9 +204,6 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, Interprete
         }
         // source file
         tooling::ecmascript::PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());
-        if (method == nullptr) {
-            return;
-        }
         const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
         if (sourceFile.empty()) {
             codeEntry.url = "";

@@ -28,8 +28,8 @@ public:
         return static_cast<WeakVector *>(object);
     }
 
-    static constexpr uint32_t DEFALUT_CAPACITY = 4;
-    static JSHandle<WeakVector> Create(const JSThread *thread, uint32_t capacity = DEFALUT_CAPACITY);
+    static constexpr uint32_t DEFAULT_CAPACITY = 4;
+    static JSHandle<WeakVector> Create(const JSThread *thread, uint32_t capacity = DEFAULT_CAPACITY);
     static JSHandle<WeakVector> Grow(const JSThread *thread, const JSHandle<WeakVector> &old, uint32_t newCapacity);
     uint32_t PushBack(const JSThread *thread, JSTaggedValue value);
     // just set index value to Hole
