@@ -44,7 +44,7 @@ source_set("libark_jsoptimizer_static") {
     "call_signature.cpp",
     "circuit.cpp",
     "circuit_builder.cpp",
-    "fast_stub.cpp",
+    "common_stubs.cpp",
     "gate.cpp",
     "gate_accessor.cpp",
     "interpreter_stub.cpp",

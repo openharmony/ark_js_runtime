@@ -23,11 +23,11 @@ namespace panda::ecmascript::kungfu {
 #define DEF_CALL_SIGNATURE(name)                                  \
     void name##CallSignature::Initialize(CallSignature *callSign)
 
-DEF_CALL_SIGNATURE(FastAdd)
+DEF_CALL_SIGNATURE(Add)
 {
     // 3 : 3 input parameters
-    CallSignature fastAdd("FastAdd", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
-    *callSign = fastAdd;
+    CallSignature Add("Add", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    *callSign = Add;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
@@ -37,11 +37,11 @@ DEF_CALL_SIGNATURE(FastAdd)
     callSign->SetParameters(params.data());
 }
 
-DEF_CALL_SIGNATURE(FastSub)
+DEF_CALL_SIGNATURE(Sub)
 {
     // 3 : 3 input parameters
-    CallSignature fastSub("FastSub", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
-    *callSign = fastSub;
+    CallSignature Sub("Sub", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    *callSign = Sub;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
@@ -51,11 +51,11 @@ DEF_CALL_SIGNATURE(FastSub)
     callSign->SetParameters(params.data());
 }
 
-DEF_CALL_SIGNATURE(FastMul)
+DEF_CALL_SIGNATURE(Mul)
 {
     // 3 : 3 input parameters
-    CallSignature fastMul("FastMul", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
-    *callSign = fastMul;
+    CallSignature Mul("Mul", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // number or hole
+    *callSign = Mul;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
@@ -66,11 +66,11 @@ DEF_CALL_SIGNATURE(FastMul)
 }
 
 #ifndef NDEBUG
-DEF_CALL_SIGNATURE(FastMulGCTest)
+DEF_CALL_SIGNATURE(MulGCTest)
 {
     // 3 : 3 input parameters
-    CallSignature fastMulGC("FastMulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = fastMulGC;
+    CallSignature MulGC("MulGCTest", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = MulGC;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
@@ -80,14 +80,14 @@ DEF_CALL_SIGNATURE(FastMulGCTest)
     callSign->SetParameters(params.data());
 }
 #else
-DEF_CALL_SIGNATURE(FastMulGCTest) {}
+DEF_CALL_SIGNATURE(MulGCTest) {}
 #endif
 
-DEF_CALL_SIGNATURE(FastDiv)
+DEF_CALL_SIGNATURE(Div)
 {
     // 3 : 3 input parameters
-    CallSignature fastDiv("FastDiv", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // float or hole
-    *callSign = fastDiv;
+    CallSignature Div("Div", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // float or hole
+    *callSign = Div;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
@@ -97,12 +97,12 @@ DEF_CALL_SIGNATURE(FastDiv)
     callSign->SetParameters(params.data());
 }
 
-DEF_CALL_SIGNATURE(FastMod)
+DEF_CALL_SIGNATURE(Mod)
 {
     // 3 : 3 input parameters
-    CallSignature fastMod("FastMod", 0, 3,
+    CallSignature Mod("Mod", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY()); // int,float or hole
-    *callSign = fastMod;
+    *callSign = Mod;
     // 3 : 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),
@@ -112,11 +112,11 @@ DEF_CALL_SIGNATURE(FastMod)
     callSign->SetParameters(params.data());
 }
 
-DEF_CALL_SIGNATURE(FastTypeOf)
+DEF_CALL_SIGNATURE(TypeOf)
 {
     // 2 input parameters
-    CallSignature fastTypeOf("FastTypeOf", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_POINTER());
-    *callSign = fastTypeOf;
+    CallSignature TypeOf("TypeOf", 0, 2, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_POINTER());
+    *callSign = TypeOf;
     // 2 input parameters
     std::array<VariableType, 2> params = {
         VariableType::POINTER(), // glue
@@ -125,11 +125,11 @@ DEF_CALL_SIGNATURE(FastTypeOf)
     callSign->SetParameters(params.data());
 }
 
-DEF_CALL_SIGNATURE(FastEqual)
+DEF_CALL_SIGNATURE(Equal)
 {
     // 3 input parameters, return may be true/false/hole
-    CallSignature fastEqual("FastEqual", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = fastEqual;
+    CallSignature Equal("Equal", 0, 3, ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = Equal;
     // 3 input parameters
     std::array<VariableType, 3> params = {
         VariableType::POINTER(),

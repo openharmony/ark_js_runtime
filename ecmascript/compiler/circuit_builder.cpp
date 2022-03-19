@@ -15,7 +15,7 @@
 
 #include "ecmascript/compiler/circuit_builder.h"
 #include "ecmascript/compiler/circuit_builder-inl.h"
-#include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "include/coretypes/tagged_value.h"
 #include "utils/bit_utils.h"

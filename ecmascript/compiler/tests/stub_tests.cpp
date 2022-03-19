@@ -19,7 +19,7 @@
 #include "gtest/gtest.h"
 #include "ecmascript/builtins/builtins_promise_handler.h"
 #include "ecmascript/compiler/compiler_macros.h"
-#include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/llvm_codegen.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
 #include "ecmascript/compiler/llvm/llvm_stackmap_parser.h"
@@ -88,9 +88,9 @@ public:
 HWTEST_F_L0(StubTest, FastAddTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetFunction(CommonStubCSigns::FastAdd);
+    auto function = stubModule.GetFunction(CommonStubCSigns::Add);
     Circuit netOfGates;
-    FastAddStub optimizer(&netOfGates);
+    AddStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -131,9 +131,9 @@ HWTEST_F_L0(StubTest, FastAddTest)
 HWTEST_F_L0(StubTest, FastSubTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetFunction(CommonStubCSigns::FastSub);
+    auto function = stubModule.GetFunction(CommonStubCSigns::Sub);
     Circuit netOfGates;
-    FastSubStub optimizer(&netOfGates);
+    SubStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -167,9 +167,9 @@ HWTEST_F_L0(StubTest, FastSubTest)
 HWTEST_F_L0(StubTest, FastMulTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetFunction(CommonStubCSigns::FastMul);
+    auto function = stubModule.GetFunction(CommonStubCSigns::Mul);
     Circuit netOfGates;
-    FastMulStub optimizer(&netOfGates);
+    MulStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -235,9 +235,9 @@ HWTEST_F_L0(StubTest, FastMulTest)
 HWTEST_F_L0(StubTest, FastDivTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetFunction(CommonStubCSigns::FastDiv);
+    auto function = stubModule.GetFunction(CommonStubCSigns::Div);
     Circuit netOfGates;
-    FastDivStub optimizer(&netOfGates);
+    DivStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -286,9 +286,9 @@ HWTEST_F_L0(StubTest, FastDivTest)
 HWTEST_F_L0(StubTest, FastModTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetFunction(CommonStubCSigns::FastMod);
+    auto function = stubModule.GetFunction(CommonStubCSigns::Mod);
     Circuit netOfGates;
-    FastModStub optimizer(&netOfGates);
+    ModStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);
@@ -298,7 +298,7 @@ HWTEST_F_L0(StubTest, FastModTest)
     LLVMAssembler assembler(module);
     assembler.Run();
     auto engine = assembler.GetEngine();
-    uint64_t stub1Code = LLVMGetFunctionAddress(engine, "FastModStub");
+    uint64_t stub1Code = LLVMGetFunctionAddress(engine, "ModStub");
     std::map<uint64_t, std::string> addr2name = {{stub1Code, "stub1"}};
     assembler.Disassemble(addr2name);
     auto fn = reinterpret_cast<JSTaggedValue (*)(uintptr_t, int64_t, int64_t)>(
@@ -1113,9 +1113,9 @@ HWTEST_F_L0(StubTest, GetPropertyByValueStub)
 HWTEST_F_L0(StubTest, FastTypeOfTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetFunction(CommonStubCSigns::FastTypeOf);
+    auto function = stubModule.GetFunction(CommonStubCSigns::TypeOf);
     Circuit netOfGates;
-    FastTypeOfStub optimizer(&netOfGates);
+    TypeOfStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     bool verRes = Verifier::Run(&netOfGates);
@@ -1216,9 +1216,9 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
 HWTEST_F_L0(StubTest, FastEqualTest)
 {
     auto module = stubModule.GetModule();
-    auto function = stubModule.GetFunction(CommonStubCSigns::FastEqual);
+    auto function = stubModule.GetFunction(CommonStubCSigns::Equal);
     Circuit netOfGates;
-    FastEqualStub optimizer(&netOfGates);
+    EqualStub optimizer(&netOfGates);
     optimizer.GenerateCircuit(stubModule.GetCompilationConfig());
     netOfGates.PrintAllGates();
     auto cfg = Scheduler::Run(&netOfGates);

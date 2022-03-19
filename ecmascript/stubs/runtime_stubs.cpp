@@ -1659,7 +1659,7 @@ void RuntimeStubs::Initialize(JSThread *thread)
 {
 #define DEF_RUNTIME_STUB(name, counter) kungfu::RuntimeStubCSigns::ID_##name
 #define INITIAL_RUNTIME_FUNCTIONS(name, count) \
-    thread->SetRuntimeFunction(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
+    thread->RegisterRTInterface(DEF_RUNTIME_STUB(name, count), reinterpret_cast<uintptr_t>(name));
     RUNTIME_STUB_LIST(INITIAL_RUNTIME_FUNCTIONS)
 #undef INITIAL_RUNTIME_FUNCTIONS
 #undef DEF_RUNTIME_STUB
