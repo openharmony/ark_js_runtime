@@ -321,7 +321,7 @@ HWTEST_F_L0(JsonStringifierTest, Stringify_007)
  * @tc.name: Stringify_008
  * @tc.desc: Check whether the result returned through "Stringify" function is within expectations
  *           the first parameter of the JSObject,the second parameter is Undefined,the third parameter
- *           is Undefined.This situation will stringize the first parameter through "SerilaizePrimitiveRef"
+ *           is Undefined.This situation will stringize the first parameter through "SerializePrimitiveRef"
  *           function.
  * @tc.type: FUNC
  * @tc.require:

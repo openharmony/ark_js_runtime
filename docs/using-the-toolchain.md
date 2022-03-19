@@ -4,7 +4,7 @@ The ARK front-end tools use the command line interaction mode and convert JS cod
 
 ## JS Bytecode Compiler
 
-Front-end tools, converting JS source code into ARK bytecode, can be built by specifing the `--build-target` with `ark_ts2abc`.
+Front-end tools, converting JS source code into ARK bytecode, can be built by specifying the `--build-target` with `ark_ts2abc`.
 
 Build tools:
 

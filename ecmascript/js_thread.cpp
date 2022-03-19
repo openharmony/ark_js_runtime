@@ -30,6 +30,7 @@ using BytecodeStubCSigns = panda::ecmascript::kungfu::BytecodeStubCSigns;
 JSThread *JSThread::Create(Runtime *runtime, PandaVM *vm)
 {
     auto jsThread = new JSThread(runtime, vm);
+
     jsThread->nativeAreaAllocator_ = EcmaVM::Cast(vm)->GetNativeAreaAllocator();
     jsThread->heapRegionAllocator_ = EcmaVM::Cast(vm)->GetHeapRegionAllocator();
     // algin with 16

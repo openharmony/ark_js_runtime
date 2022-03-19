@@ -109,7 +109,7 @@ bool ClassInfoExtractor::ExtractAndReturnWhetherWithElements(JSThread *thread, c
     ASSERT(keys->GetLength() == properties->GetLength() && elements->GetLength() == 0);
 
     uint32_t pos = detail.fillStartLoc;
-    bool withElemenstFlag = false;
+    bool withElementsFlag = false;
     bool isStaticFlag = detail.ctorMethod ? true : false;
     bool keysHasNameFlag = false;
 
@@ -136,7 +136,7 @@ bool ClassInfoExtractor::ExtractAndReturnWhetherWithElements(JSThread *thread, c
                 elements = TaggedArray::SetCapacity(thread, elements, elementsLength + 2);  // 2: key-value pair
                 elements->Set(thread, elementsLength, firstValue);
                 elements->Set(thread, elementsLength + 1, secondValue);
-                withElemenstFlag = true;
+                withElementsFlag = true;
                 continue;
             }
         }
@@ -161,13 +161,13 @@ bool ClassInfoExtractor::ExtractAndReturnWhetherWithElements(JSThread *thread, c
         }
     }
 
-    if (UNLIKELY(withElemenstFlag)) {
+    if (UNLIKELY(withElementsFlag)) {
         ASSERT(pos + elements->GetLength() / 2 == properties->GetLength());  // 2: half
         keys->Trim(thread, pos);
         properties->Trim(thread, pos);
     }
 
-    return withElemenstFlag;
+    return withElementsFlag;
 }
 
 JSHandle<JSHClass> ClassInfoExtractor::CreatePrototypeHClass(JSThread *thread, JSHandle<TaggedArray> &keys,
