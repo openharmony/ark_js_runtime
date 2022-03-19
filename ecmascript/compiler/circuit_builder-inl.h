@@ -57,7 +57,18 @@ GateRef CircuitBuilder::Load(VariableType type, GateRef base, GateRef offset)
     auto depend = label->GetDepend();
     GateRef val = IntPtrAdd(base, offset);
     GateRef result = GetCircuit()->NewGate(OpCode(OpCode::LOAD), type.GetMachineType(),
-        0, { depend, val }, type.GetGateType());
+                                           0, { depend, val }, type.GetGateType());
+    label->SetDepend(result);
+    return result;
+}
+
+GateRef CircuitBuilder::Store(VariableType type, GateRef base, GateRef offset, GateRef value)
+{
+    auto label = lm_->GetCurrentLabel();
+    auto depend = label->GetDepend();
+    GateRef ptr = IntPtrAdd(base, offset);
+    GateRef result = GetCircuit()->NewGate(OpCode(OpCode::STORE), type.GetMachineType(),
+                                           0, { depend, value, ptr }, type.GetGateType());
     label->SetDepend(result);
     return result;
 }
@@ -117,6 +128,26 @@ GateRef CircuitBuilder::TaggedIsObject(GateRef x)
 GateRef CircuitBuilder::TaggedIsNumber(GateRef x)
 {
     return BoolNot(TaggedIsObject(x));
+}
+
+GateRef CircuitBuilder::TaggedIsHole(GateRef x)
+{
+    return Int64Equal(x, Int64Constant(JSTaggedValue::VALUE_HOLE));
+}
+
+GateRef CircuitBuilder::TaggedIsNotHole(GateRef x)
+{
+    return Int64NotEqual(x, Int64Constant(JSTaggedValue::VALUE_HOLE));
+}
+
+GateRef CircuitBuilder::TaggedIsUndefined(GateRef x)
+{
+    return Int64Equal(x, Int64Constant(JSTaggedValue::VALUE_UNDEFINED));
+}
+
+GateRef CircuitBuilder::TaggedIsException(GateRef x)
+{
+    return Int64Equal(x, Int64Constant(JSTaggedValue::VALUE_EXCEPTION));
 }
 
 GateRef CircuitBuilder::TaggedIsSpecial(GateRef x)
