@@ -218,15 +218,15 @@ private:
     TargetConstructor constructor_ {nullptr};
 };
 
-#define EXPLICIT_CALL_SIGNATURE_LIST(V) \
-    V(FastAdd)                              \
-    V(FastSub)                              \
-    V(FastMul)                              \
-    V(FastMulGCTest)                        \
-    V(FastDiv)                              \
-    V(FastMod)                              \
-    V(FastTypeOf)                           \
-    V(FastEqual)                            \
+#define EXPLICIT_CALL_SIGNATURE_LIST(V)     \
+    V(Add)                                  \
+    V(Sub)                                  \
+    V(Mul)                                  \
+    V(MulGCTest)                            \
+    V(Div)                                  \
+    V(Mod)                                  \
+    V(TypeOf)                               \
+    V(Equal)                                \
     V(SetPropertyByName)                    \
     V(SetPropertyByNameWithOwn)             \
     V(SetPropertyByValue)                   \
@@ -256,7 +256,7 @@ private:
     V(CallIThisRangeDyn)                    \
     V(CallIRangeDyn)
 
-#define DECL_CALL_SIGNATURE(name)                                   \
+#define DECL_CALL_SIGNATURE(name)                                  \
 class name##CallSignature final {                                  \
     public:                                                        \
         static void Initialize(CallSignature *descriptor);         \

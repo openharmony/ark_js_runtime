@@ -15,6 +15,7 @@
 
 #ifndef ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
 #define ECMASCRIPT_RUNTIME_TRAMPOLINES_NEW_H
+
 #include "ecmascript/compiler/call_signature.h"
 #include "ecmascript/ecma_macros.h"
 #include "ecmascript/js_tagged_value.h"

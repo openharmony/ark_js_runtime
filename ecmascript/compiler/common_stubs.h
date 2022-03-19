@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_COMPILER_FASTPATH_STUB_H
-#define ECMASCRIPT_COMPILER_FASTPATH_STUB_H
+#ifndef ECMASCRIPT_COMPILER_COMMON_STUBS_H
+#define ECMASCRIPT_COMPILER_COMMON_STUBS_H
 
 #include "ecmascript/compiler/stub.h"
 
@@ -23,80 +23,80 @@ namespace panda::ecmascript::kungfu {
     V(AsmInterpreterEntry, 7)            \
     V(SingleStepDebugging, 7)
 
-#define COMMON_FAST_STUB_LIST(V)              \
-    V(FastAdd, 3)                             \
-    V(FastSub, 3)                             \
-    V(FastMul, 3)                             \
-    V(FastDiv, 3)                             \
-    V(FastMod, 3)                             \
-    V(FastEqual, 3)                           \
-    V(FastTypeOf, 2)                          \
-    V(GetPropertyByName, 3)                   \
-    V(SetPropertyByName, 4)                   \
-    V(SetPropertyByNameWithOwn, 4)            \
-    V(GetPropertyByIndex, 3)                  \
-    V(SetPropertyByIndex, 4)                  \
-    V(GetPropertyByValue, 3)                  \
-    V(SetPropertyByValue, 4)                  \
-    V(TryLoadICByName, 4)                     \
-    V(TryLoadICByValue, 5)                    \
-    V(TryStoreICByName, 5)                    \
+#define COMMON_STUB_LIST(V)              \
+    V(Add, 3)                            \
+    V(Sub, 3)                            \
+    V(Mul, 3)                            \
+    V(Div, 3)                            \
+    V(Mod, 3)                            \
+    V(Equal, 3)                          \
+    V(TypeOf, 2)                         \
+    V(GetPropertyByName, 3)              \
+    V(SetPropertyByName, 4)              \
+    V(SetPropertyByNameWithOwn, 4)       \
+    V(GetPropertyByIndex, 3)             \
+    V(SetPropertyByIndex, 4)             \
+    V(GetPropertyByValue, 3)             \
+    V(SetPropertyByValue, 4)             \
+    V(TryLoadICByName, 4)                \
+    V(TryLoadICByValue, 5)               \
+    V(TryStoreICByName, 5)               \
     V(TryStoreICByValue, 6)
 
-#define COMMON_FAST_STUB_ID_LIST(V)      \
-    COMMON_FAST_STUB_LIST(V)             \
+#define COMMON_STUB_ID_LIST(V)      \
+    COMMON_STUB_LIST(V)             \
     INTERPRETER_STUB_HELPER_LIST(V)
 
-class FastMulGCTestStub : public Stub {
+class MulGCTestStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastMulGCTestStub(Circuit *circuit) : Stub("FastMulGCTest", 3, circuit) {}
-    ~FastMulGCTestStub() = default;
-    NO_MOVE_SEMANTIC(FastMulGCTestStub);
-    NO_COPY_SEMANTIC(FastMulGCTestStub);
+    explicit MulGCTestStub(Circuit *circuit) : Stub("FastMulGCTest", 3, circuit) {}
+    ~MulGCTestStub() = default;
+    NO_MOVE_SEMANTIC(MulGCTestStub);
+    NO_COPY_SEMANTIC(MulGCTestStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FastAddStub : public Stub {
+class AddStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastAddStub(Circuit *circuit) : Stub("FastAdd", 3, circuit)
+    explicit AddStub(Circuit *circuit) : Stub("FastAdd", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_FRAME);
     }
-    ~FastAddStub() = default;
-    NO_MOVE_SEMANTIC(FastAddStub);
-    NO_COPY_SEMANTIC(FastAddStub);
+    ~AddStub() = default;
+    NO_MOVE_SEMANTIC(AddStub);
+    NO_COPY_SEMANTIC(AddStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FastSubStub : public Stub {
+class SubStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastSubStub(Circuit *circuit) : Stub("FastSub", 3, circuit) {}
-    ~FastSubStub() = default;
-    NO_MOVE_SEMANTIC(FastSubStub);
-    NO_COPY_SEMANTIC(FastSubStub);
+    explicit SubStub(Circuit *circuit) : Stub("FastSub", 3, circuit) {}
+    ~SubStub() = default;
+    NO_MOVE_SEMANTIC(SubStub);
+    NO_COPY_SEMANTIC(SubStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FastMulStub : public Stub {
+class MulStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastMulStub(Circuit *circuit) : Stub("FastMul", 3, circuit) {}
-    ~FastMulStub() = default;
-    NO_MOVE_SEMANTIC(FastMulStub);
-    NO_COPY_SEMANTIC(FastMulStub);
+    explicit MulStub(Circuit *circuit) : Stub("FastMul", 3, circuit) {}
+    ~MulStub() = default;
+    NO_MOVE_SEMANTIC(MulStub);
+    NO_COPY_SEMANTIC(MulStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FastDivStub : public Stub {
+class DivStub : public Stub {
 public:
     // 3 : 3 means argument counts
-    explicit FastDivStub(Circuit *circuit) : Stub("FastDiv", 3, circuit) {}
-    ~FastDivStub() = default;
-    NO_MOVE_SEMANTIC(FastDivStub);
-    NO_COPY_SEMANTIC(FastDivStub);
+    explicit DivStub(Circuit *circuit) : Stub("FastDiv", 3, circuit) {}
+    ~DivStub() = default;
+    NO_MOVE_SEMANTIC(DivStub);
+    NO_COPY_SEMANTIC(DivStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
@@ -165,26 +165,26 @@ public:
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FastModStub : public Stub {
+class ModStub : public Stub {
 public:
     // 3 means argument counts
-    explicit FastModStub(Circuit *circuit) : Stub("FastMod", 3, circuit)
+    explicit ModStub(Circuit *circuit) : Stub("FastMod", 3, circuit)
     {
         circuit->SetFrameType(panda::ecmascript::FrameType::OPTIMIZED_ENTRY_FRAME);
     }
-    ~FastModStub() = default;
-    NO_MOVE_SEMANTIC(FastModStub);
-    NO_COPY_SEMANTIC(FastModStub);
+    ~ModStub() = default;
+    NO_MOVE_SEMANTIC(ModStub);
+    NO_COPY_SEMANTIC(ModStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FastTypeOfStub : public Stub {
+class TypeOfStub : public Stub {
 public:
     // 2 means argument counts
-    explicit FastTypeOfStub(Circuit *circuit) : Stub("FastTypeOf", 2, circuit) {}
-    ~FastTypeOfStub() = default;
-    NO_MOVE_SEMANTIC(FastTypeOfStub);
-    NO_COPY_SEMANTIC(FastTypeOfStub);
+    explicit TypeOfStub(Circuit *circuit) : Stub("FastTypeOf", 2, circuit) {}
+    ~TypeOfStub() = default;
+    NO_MOVE_SEMANTIC(TypeOfStub);
+    NO_COPY_SEMANTIC(TypeOfStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
@@ -224,13 +224,13 @@ public:
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
-class FastEqualStub : public Stub {
+class EqualStub : public Stub {
 public:
     // 3 means argument counts
-    explicit FastEqualStub(Circuit *circuit) : Stub("FastEqual", 3, circuit) {}
-    ~FastEqualStub() = default;
-    NO_MOVE_SEMANTIC(FastEqualStub);
-    NO_COPY_SEMANTIC(FastEqualStub);
+    explicit EqualStub(Circuit *circuit) : Stub("FastEqual", 3, circuit) {}
+    ~EqualStub() = default;
+    NO_MOVE_SEMANTIC(EqualStub);
+    NO_COPY_SEMANTIC(EqualStub);
     void GenerateCircuit(const CompilationConfig *cfg) override;
 };
 
@@ -297,7 +297,7 @@ class CommonStubCSigns {
 public:
     enum ID {
 #define DEF_STUB_ID(name, counter) name,
-        COMMON_FAST_STUB_ID_LIST(DEF_STUB_ID)
+        COMMON_STUB_ID_LIST(DEF_STUB_ID)
 #undef DEF_STUB_ID
         NUM_OF_STUBS
     };
@@ -315,4 +315,4 @@ private:
     static CallSignature callSigns_[NUM_OF_STUBS];
 };
 }  // namespace panda::ecmascript::kungfu
-#endif  // ECMASCRIPT_COMPILER_FASTPATH_STUB_H
+#endif  // ECMASCRIPT_COMPILER_COMMON_STUBS_H

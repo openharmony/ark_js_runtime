@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 #include "ecmascript/base/config.h"
-#include "fast_stub.h"
+#include "common_stubs.h"
 #include "interpreter_stub-inl.h"
 #include "generated/stub_aot_options_gen.h"
 #include "libpandabase/utils/pandargs.h"

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "fast_stub.h"
+#include "common_stubs.h"
 
 #include "ecmascript/base/number_helper.h"
 #include "ecmascript/compiler/llvm_ir_builder.h"
@@ -27,7 +27,7 @@ namespace panda::ecmascript::kungfu {
 using namespace panda::ecmascript;
 
 #ifndef NDEBUG
-void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
+void MulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     auto env = GetEnvironment();
@@ -102,7 +102,7 @@ void FastMulGCTestStub::GenerateCircuit(const CompilationConfig *cfg)
 }
 #endif
 
-void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
+void AddStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
@@ -112,7 +112,7 @@ void FastAddStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(FastAdd(x, y));
 }
 
-void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
+void SubStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
@@ -122,7 +122,7 @@ void FastSubStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(FastSub(x, y));
 }
 
-void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
+void MulStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
@@ -132,7 +132,7 @@ void FastMulStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(FastMul(x, y));
 }
 
-void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
+void DivStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
@@ -142,7 +142,7 @@ void FastDivStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(FastDiv(x, y));
 }
 
-void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
+void ModStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
@@ -151,7 +151,7 @@ void FastModStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(FastMod(glue, x, y));
 }
 
-void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
+void TypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
@@ -159,7 +159,7 @@ void FastTypeOfStub::GenerateCircuit(const CompilationConfig *cfg)
     Return(FastTypeOf(glue, obj));
 }
 
-void FastEqualStub::GenerateCircuit(const CompilationConfig *cfg)
+void EqualStub::GenerateCircuit(const CompilationConfig *cfg)
 {
     Stub::GenerateCircuit(cfg);
     GateRef glue = PtrArgument(0);
@@ -552,7 +552,7 @@ void CommonStubCSigns::Initialize()
                 new name##Stub(static_cast<Circuit*>(ciruit)));  \
         });
 
-    COMMON_FAST_STUB_ID_LIST(INIT_SIGNATURES)
+    COMMON_STUB_ID_LIST(INIT_SIGNATURES)
 #undef INIT_SIGNATURES
 }
 
