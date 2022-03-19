@@ -153,7 +153,7 @@ public:
     {
         return engine_;
     }
-    void Disassemble(std::map<uint64_t, std::string> &addr2name) const;
+    void Disassemble(const std::map<uint64_t, std::string> &addr2name) const;
     uint8_t *GetStackMapsSection() const
     {
         return codeInfo_.GetStackMapsSection();

@@ -17,7 +17,7 @@
 #define ECMASCRIPT_COMPILER_PASS_H
 
 #include "bytecode_circuit_builder.h"
-#include "fast_stub.h"
+#include "common_stubs.h"
 #include "llvm_codegen.h"
 #include "scheduler.h"
 #include "slowpath_lowering.h"

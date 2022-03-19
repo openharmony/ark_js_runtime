@@ -18,7 +18,7 @@
 
 #include "include/managed_thread.h"
 #include "ecmascript/base/aligned_struct.h"
-#include "ecmascript/compiler/fast_stub.h"
+#include "ecmascript/compiler/common_stubs.h"
 #include "ecmascript/compiler/interpreter_stub.h"
 #include "ecmascript/compiler/rt_call_signature.h"
 #include "ecmascript/dfx/vm_thread_control.h"
@@ -250,7 +250,7 @@ public:
 
     JSTaggedValue GetCurrentLexenv() const;
 
-    void SetRuntimeFunction(size_t id, Address addr)
+    void RegisterRTInterface(size_t id, Address addr)
     {
         ASSERT(id < kungfu::RuntimeStubCSigns::NUM_OF_STUBS);
         glueData_.rtInterfaces_.Set(id, addr);

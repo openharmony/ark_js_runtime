@@ -88,7 +88,7 @@ void LLVMModuleAssembler::AssembleStubModule(StubModule *module)
     module->SetStackMapAddr(reinterpret_cast<uintptr_t>(assembler_.GetStackMapsSection()));
     module->SetStackMapSize(assembler_.GetStackMapsSize());
 #ifndef NDEBUG
-    assembler_.Disassemble(&addr2name);
+    assembler_.Disassemble(addr2name);
 #endif
 }
 
@@ -267,7 +267,7 @@ static const char *SymbolLookupCallback([[maybe_unused]] void *disInfo, [[maybe_
 }
 #endif
 
-void LLVMAssembler::Disassemble(std::map<uint64_t, std::string> &addr2name) const
+void LLVMAssembler::Disassemble(const std::map<uint64_t, std::string> &addr2name) const
 {
 #if ECMASCRIPT_ENABLE_COMPILER_LOG
     LLVMDisasmContextRef dcr = LLVMCreateDisasm(LLVMGetTarget(module_), nullptr, 0, nullptr, SymbolLookupCallback);
