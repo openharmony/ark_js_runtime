@@ -1800,7 +1800,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 = right.GetInt();
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) & static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
                 left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
@@ -1808,7 +1808,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) & static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else {
             // slow path
             SAVE_PC();
@@ -1831,7 +1831,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 = right.GetInt();
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) | static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
                 left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
@@ -1839,7 +1839,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) | static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else {
             // slow path
             SAVE_PC();
@@ -1862,7 +1862,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 = right.GetInt();
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) ^ static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
                 left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
@@ -1870,7 +1870,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) ^ static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else {
             // slow path
             SAVE_PC();

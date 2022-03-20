@@ -562,7 +562,7 @@ JSTaggedValue SlowRuntimeStub::And2Dyn(JSThread *thread, JSTaggedValue left, JST
     int32_t opNumber1 = taggedNumber1.GetInt();
     // NOLINT(hicpp-signed-bitwise)
     auto ret = static_cast<uint32_t>(opNumber0) & static_cast<uint32_t>(opNumber1);
-    return JSTaggedValue(static_cast<uint32_t>(ret));
+    return JSTaggedValue(static_cast<int32_t>(ret));
 }
 
 JSTaggedValue SlowRuntimeStub::Or2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
@@ -592,7 +592,7 @@ JSTaggedValue SlowRuntimeStub::Or2Dyn(JSThread *thread, JSTaggedValue left, JSTa
     int32_t opNumber1 = taggedNumber1.GetInt();
     // NOLINT(hicpp-signed-bitwise)
     auto ret = static_cast<uint32_t>(opNumber0) | static_cast<uint32_t>(opNumber1);
-    return JSTaggedValue(static_cast<uint32_t>(ret));
+    return JSTaggedValue(static_cast<int32_t>(ret));
 }
 
 JSTaggedValue SlowRuntimeStub::Xor2Dyn(JSThread *thread, JSTaggedValue left, JSTaggedValue right)
@@ -622,7 +622,7 @@ JSTaggedValue SlowRuntimeStub::Xor2Dyn(JSThread *thread, JSTaggedValue left, JST
     int32_t opNumber1 = taggedNumber1.GetInt();
     // NOLINT(hicpp-signed-bitwise)
     auto ret = static_cast<uint32_t>(opNumber0) ^ static_cast<uint32_t>(opNumber1);
-    return JSTaggedValue(static_cast<uint32_t>(ret));
+    return JSTaggedValue(static_cast<int32_t>(ret));
 }
 
 JSTaggedValue SlowRuntimeStub::ToJSTaggedValueWithInt32(JSThread *thread, JSTaggedValue value)
