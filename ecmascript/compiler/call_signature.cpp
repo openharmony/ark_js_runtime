@@ -432,6 +432,23 @@ DEF_CALL_SIGNATURE(RuntimeCallTrampolineAot)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
+DEF_CALL_SIGNATURE(AotCallAotTrampoline)
+{
+    /* 4 : 4 input parameters */
+    CallSignature runtimeCallTrampoline("AotCallAotTrampoline", 0, 4,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
+    *callSign = runtimeCallTrampoline;
+    std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
+        VariableType::POINTER(),
+        VariableType::INT32(),
+        VariableType::INT32(),
+        VariableType::POINTER(),
+    };
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
 DEF_CALL_SIGNATURE(DebugPrint)
 {
     // 1 : 1 input parameters

@@ -245,6 +245,7 @@ private:
     V(AsmInterpreterEntry)                  \
     V(RuntimeCallTrampolineInterpreterAsm)  \
     V(RuntimeCallTrampolineAot)             \
+    V(AotCallAotTrampoline)                 \
     V(DebugPrint)                           \
     V(InsertOldToNewRememberedSet)          \
     V(DoubleToInt)                          \
