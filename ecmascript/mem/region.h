@@ -74,7 +74,9 @@ public:
     {
         flags_ = 0;
         highWaterMark_ = end_;
-        memset_s(reinterpret_cast<void *>(begin_), GetSize(), 0, GetSize());
+        if (memset_s(reinterpret_cast<void *>(begin_), GetSize(), 0, GetSize()) != EOK) {
+            UNREACHABLE();
+        }
     }
 
     void LinkNext(Region *next)
