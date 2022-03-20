@@ -32,6 +32,8 @@ class JSFunction;
 class ObjectFactory;
 extern "C" JSTaggedType RuntimeCallTrampolineAot(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" JSTaggedType RuntimeCallTrampolineInterpreterAsm(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" JSTaggedType AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNumArgs,
+    uint32_t actualNumArgs, uintptr_t codeAddr, ...);
 
 #define RUNTIME_STUB_WITHOUT_GC_LIST(V)      \
     V(DebugPrint, 1)                         \
@@ -39,6 +41,7 @@ extern "C" JSTaggedType RuntimeCallTrampolineInterpreterAsm(uintptr_t glue, uint
     V(MarkingBarrier, 5)                     \
     V(DoubleToInt, 1)                        \
     V(RuntimeCallTrampolineAot, 3)           \
+    V(AotCallAotTrampoline, 4)               \
     V(RuntimeCallTrampolineInterpreterAsm, 3)
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)         \

@@ -22,6 +22,8 @@
 
 namespace panda::ecmascript {
 extern "C" JSTaggedType JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-    uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
+    uint32_t actualNumArgs, uintptr_t codeAddr, ...);
+extern "C" JSTaggedType AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNumArgs,
+    uint32_t actualNumArgs, uintptr_t codeAddr, ...);
 }  // panda::ecmascript
 #endif  // ECMASCRIPT_BRIDGE_H
