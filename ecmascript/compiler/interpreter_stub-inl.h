@@ -248,7 +248,7 @@ void InterpreterStub::SetResolvedToFunction(GateRef glue, GateRef function, Gate
     GateRef mask = GetInt32Constant(
         ~(((1<<JSFunction::ResolvedBits::SIZE) - 1) << JSFunction::ResolvedBits::START_BIT));
     GateRef result = Int32Or(Int32And(bitfield, mask),
-        Int32LSL(value, GetInt32Constant(JSFunction::ResolvedBits::START_BIT)));
+        Int32LSL(ZExtInt1ToInt32(value), GetInt32Constant(JSFunction::ResolvedBits::START_BIT)));
     Store(VariableType::INT32(), glue, function, GetIntPtrConstant(JSFunction::BIT_FIELD_OFFSET), result);
 }
 

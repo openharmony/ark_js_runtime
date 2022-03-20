@@ -873,6 +873,8 @@ void LLVMIRBuilder::VisitConstant(GateRef gate, std::bitset<64> value) // 64: bi
         llvmValue = LLVMConstInt(LLVMInt8Type(), value.to_ulong(), 0);
     } else if (machineType == MachineType::I16) {
         llvmValue = LLVMConstInt(LLVMInt16Type(), value.to_ulong(), 0);
+    } else if (machineType == MachineType::I1) {
+        llvmValue = LLVMConstInt(LLVMInt1Type(), value.to_ulong(), 0);
     } else {
         abort();
     }
