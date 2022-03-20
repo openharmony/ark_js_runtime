@@ -630,9 +630,6 @@ JSHandle<BigInt> BigInt::Add(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigI
         while (i > 0 && x->GetDigit(i) == y->GetDigit(i)) {
             i--;
         }
-        if (i < 0) {
-            return BigintSub(thread, x, y, xSignFlag);
-        }
         if ((x->GetDigit(i) > y->GetDigit(i))) {
             return BigintSub(thread, x, y, xSignFlag);
         } else {
@@ -662,9 +659,6 @@ JSHandle<BigInt> BigInt::Subtract(JSThread *thread, JSHandle<BigInt> x, JSHandle
     } else if (subSize == 0) {
         while (i > 0 && x->GetDigit(i) == y->GetDigit(i)) {
             i--;
-        }
-        if (i < 0) {
-            return BigintSub(thread, x, y, xSignFlag);
         }
         if ((x->GetDigit(i) > y->GetDigit(i))) {
             return BigintSub(thread, x, y, xSignFlag);
@@ -793,9 +787,6 @@ bool BigInt::LessThan(const BigInt *x, const BigInt *y)
         }
         while (i > 0 && x->GetDigit(i) == y->GetDigit(i)) {
             i--;
-        }
-        if (i < 0) {
-            return false;
         }
         if ((x->GetDigit(i) > y->GetDigit(i))) {
             return xSignFlag ? true : false;
