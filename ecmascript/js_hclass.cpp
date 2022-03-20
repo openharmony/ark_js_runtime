@@ -38,6 +38,10 @@ JSHandle<TransitionsDictionary> TransitionsDictionary::PutIfAbsent(const JSThrea
     /* no need to add key if exist */
     int entry = dictionary->FindEntry(key.GetTaggedValue(), metaData.GetTaggedValue());
     if (entry != -1) {
+        if (dictionary->GetValue(entry).IsUndefined()) {
+            JSTaggedValue weakValue = JSTaggedValue(value->CreateAndGetWeakRef());
+            dictionary->SetValue(thread, entry, weakValue);
+        }
         return dictionary;
     }
 
