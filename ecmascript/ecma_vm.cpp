@@ -217,12 +217,6 @@ bool EcmaVM::Initialize()
     return true;
 }
 
-JSPandaFileManager *EcmaVM::GetJSPandaFileManager()
-{
-    static JSPandaFileManager jsFileManager;
-    return &jsFileManager;
-}
-
 void EcmaVM::InitializeEcmaScriptRunStat()
 {
     // NOLINTNEXTLINE(modernize-avoid-c-arrays)
@@ -341,12 +335,6 @@ EcmaVM::~EcmaVM()
     }
 }
 
-tooling::ecmascript::PtJSExtractor *EcmaVM::GetDebugInfoExtractor(const panda_file::File *file)
-{
-    tooling::ecmascript::PtJSExtractor *res = GetJSPandaFileManager()->GetOrCreatePtJSExtractor(file);
-    return res;
-}
-
 JSHandle<GlobalEnv> EcmaVM::GetGlobalEnv() const
 {
     return JSHandle<GlobalEnv>(reinterpret_cast<uintptr_t>(&globalEnv_));
@@ -380,7 +368,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
     JSHandle<Program> program;
     if (snapshotSerializeEnable_) {
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
-        program = GetJSPandaFileManager()->GenerateProgram(this, jsPandaFile);
+        program = JSPandaFileManager::GetInstance()->GenerateProgram(this, jsPandaFile);
 
         auto index = jsPandaFile->GetJSPandaFileDesc().find(frameworkAbcFileName_);
         if (index != CString::npos) {
@@ -393,7 +381,7 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         }
     } else {
         if (jsPandaFile != frameworkPandaFile_) {
-            program = GetJSPandaFileManager()->GenerateProgram(this, jsPandaFile);
+            program = JSPandaFileManager::GetInstance()->GenerateProgram(this, jsPandaFile);
         } else {
             program = JSHandle<Program>(thread_, frameworkProgram_);
             frameworkProgram_ = JSTaggedValue::Hole();
@@ -445,6 +433,23 @@ Expected<int, Runtime::Error> EcmaVM::InvokeEcmaEntrypoint(const JSPandaFile *js
         HandleUncaughtException(exception.GetTaggedObject());
     }
     return 0;
+}
+
+JSTaggedValue EcmaVM::FindConstpool(const JSPandaFile *jsPandaFile)
+{
+    auto iter = cachedConstpools_.find(jsPandaFile);
+    if (iter == cachedConstpools_.end()) {
+        return JSTaggedValue::Hole();
+    }
+    return iter->second;
+}
+
+void EcmaVM::SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool)
+{
+    ASSERT(constpool.IsTaggedArray());
+    ASSERT(cachedConstpools_.find(jsPandaFile) == cachedConstpools_.end());
+
+    cachedConstpools_[jsPandaFile] = constpool;
 }
 
 JSHandle<JSTaggedValue> EcmaVM::GetAndClearEcmaUncaughtException() const
@@ -535,6 +540,22 @@ void EcmaVM::ProcessReferences(const WeakRootVisitor &v0)
         }
         ++iter;
     }
+
+    // program maps
+    for (auto iter = cachedConstpools_.begin(); iter != cachedConstpools_.end();) {
+        auto object = iter->second;
+        if (object.IsObject()) {
+            TaggedObject *obj = object.GetTaggedObject();
+            auto fwd = v0(obj);
+            if (fwd == nullptr) {
+                iter = cachedConstpools_.erase(iter);
+                continue;
+            } else if (fwd != obj) {
+                iter->second = JSTaggedValue(fwd);
+            }
+        }
+        ++iter;
+    }
 }
 
 void EcmaVM::PushToNativePointerList(JSNativePointer *array)
@@ -554,7 +575,7 @@ void EcmaVM::RemoveFromNativePointerList(JSNativePointer *array)
 }
 
 // Do not support snapshot on windows
-bool EcmaVM::VerifyFilePath(const CString &filePath) const
+bool EcmaVM::VerifyFilePath(const std::string &filePath) const
 {
 #ifndef PANDA_TARGET_WINDOWS
     if (filePath.size() > PATH_MAX) {
@@ -583,6 +604,8 @@ void EcmaVM::ClearBufferData()
         iter->Destroy();
     }
     nativePointerList_.clear();
+
+    cachedConstpools_.clear();
 }
 
 bool EcmaVM::ExecutePromisePendingJob() const

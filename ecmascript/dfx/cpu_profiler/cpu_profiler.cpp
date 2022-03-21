@@ -14,12 +14,16 @@
  */
 
 #include "ecmascript/dfx/cpu_profiler/cpu_profiler.h"
+
 #include <atomic>
 #include <chrono>
 #include <climits>
 #include <csignal>
 #include <fstream>
+
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/platform/platform.h"
+
 namespace panda::ecmascript {
 CMap<JSMethod *, struct StackInfo> CpuProfiler::staticStackInfo_ = CMap<JSMethod *, struct StackInfo>();
 std::atomic<CpuProfiler*> CpuProfiler::singleton_ = nullptr;
@@ -189,7 +193,6 @@ void CpuProfiler::GetFrameStack(JSThread *thread)
 void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, InterpretedFrameHandler frameHandler)
 {
     struct StackInfo codeEntry;
-    auto ecmaVm = thread->GetEcmaVM();
     if (method != nullptr && method->IsNative()) {
         codeEntry.codeType = "other";
         codeEntry.functionName = "native";
@@ -203,7 +206,8 @@ void CpuProfiler::ParseMethodInfo(JSMethod *method, JSThread *thread, Interprete
             codeEntry.functionName = functionName.c_str();
         }
         // source file
-        tooling::ecmascript::PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());
+        tooling::ecmascript::PtJSExtractor *debugExtractor =
+            JSPandaFileManager::GetInstance()->GetPtJSExtractor(method->GetJSPandaFile());
         const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
         if (sourceFile.empty()) {
             codeEntry.url = "";

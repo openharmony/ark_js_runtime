@@ -14,20 +14,22 @@
  */
 
 #include "ecmascript/ts_types/ts_loader.h"
+
+#include "ecmascript/jspandafile/js_pandafile.h"
 #include "ecmascript/ts_types/ts_type_table.h"
 
 namespace panda::ecmascript {
-void TSLoader::DecodeTSTypes(const panda_file::File &pf)
+void TSLoader::DecodeTSTypes(const JSPandaFile *jsPandaFile)
 {
     JSThread *thread = vm_->GetJSThread();
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<TSModuleTable> table = GetTSModuleTable();
 
-    JSHandle<EcmaString> queryFileName = factory->NewFromStdString(pf.GetFilename());
+    JSHandle<EcmaString> queryFileName = factory->NewFromStdString(jsPandaFile->GetJSPandaFileDesc());
     int index = table->GetGlobalModuleID(thread, queryFileName);
     if (index == TSModuleTable::NOT_FOUND) {
         CVector<JSHandle<EcmaString>> recordImportModules {};
-        TSTypeTable::Initialize(thread, pf, recordImportModules);
+        TSTypeTable::Initialize(thread, jsPandaFile, recordImportModules);
         Link();
     }
 }
