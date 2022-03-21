@@ -514,7 +514,10 @@ JSTaggedValue BigInt::NumberToBigInt(JSThread *thread, JSHandle<JSTaggedValue> n
 
     // Bit operations must be of integer type
     uint64_t bits = 0;
-    memcpy_s(&bits, sizeof(bits), &num, sizeof(num));
+    if (memcpy_s(&bits, sizeof(bits), &num, sizeof(num)) != EOK) {
+        LOG_ECMA(FATAL) << "memcpy_s failed";
+        UNREACHABLE();
+    }
     // Take out bits 62-52 (11 bits in total) and subtract 1023
     uint64_t integerDigits = ((bits >> 52) & 0x7FF) - 0x3FF; // 52 : mantissa size
     uint32_t MayNeedLen = integerDigits / BigInt::DATEBITS + 1;
@@ -1269,7 +1272,10 @@ ComparisonResult BigInt::CompareWithNumber(JSThread *thread, JSHandle<BigInt> bi
     }
     // Bit operations must be of integer type
     uint64_t bits = 0;
-    memcpy_s(&bits, sizeof(bits), &num, sizeof(num));
+    if (memcpy_s(&bits, sizeof(bits), &num, sizeof(num)) != EOK) {
+        LOG_ECMA(FATAL) << "memcpy_s failed";
+        UNREACHABLE();
+    }
     int exponential = (bits >> 52) & 0x7FF;
 
     // Take out bits 62-52 (11 bits in total) and subtract 1023
