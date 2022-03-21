@@ -264,7 +264,7 @@ HWTEST_F_L0(ICHandlerTest, StorePrototype)
 
     JSHandle<JSHClass> obj1Dynclass(thread, handleObj1->GetJSHClass());
     JSHandle<JSHClass> obj2Dynclass(thread, handleObj2->GetJSHClass());
-    
+
     ObjectOperator handleOp(thread, handleKey, OperatorType::OWN);
     handleOp.SetFastMode(true);
     handleOp.SetIndex(2);

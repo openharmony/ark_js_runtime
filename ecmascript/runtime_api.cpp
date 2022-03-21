@@ -36,4 +36,4 @@ void RuntimeApi::MarkObject(uintptr_t slotAddr, Region *objectRegion, TaggedObje
         set->AtomicInsert(slotAddr);
     }
 }
-}  // namespace panda::tooling::ecmascript
+}  // namespace panda::ecmascript

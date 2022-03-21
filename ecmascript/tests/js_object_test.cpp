@@ -14,7 +14,6 @@
  */
 
 #include "ecmascript/base/builtins_base.h"
-#include "ecmascript/base/builtins_base.h"
 
 #include "ecmascript/ecma_runtime_call_info.h"
 #include "ecmascript/ecma_string.h"

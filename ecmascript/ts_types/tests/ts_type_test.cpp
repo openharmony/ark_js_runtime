@@ -396,4 +396,4 @@ HWTEST_F_L0(TSTypeTest, ArrayType)
 
     ASSERT_EQ(arrayType->GetElementTypeRef(), 2);
 }
-}
+} // namespace panda::test

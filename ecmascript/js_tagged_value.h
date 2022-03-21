@@ -68,7 +68,7 @@ public:
     static constexpr size_t SizeArch32 = TaggedTypeSize();
     static constexpr size_t SizeArch64 = TaggedTypeSize();
 
-    JSTaggedValue(void *) = delete;
+    explicit JSTaggedValue(void *) = delete;
 
     constexpr JSTaggedValue() = default;
     constexpr explicit JSTaggedValue(coretypes::TaggedType v) : coretypes::TaggedValue(v) {}
@@ -79,7 +79,7 @@ public:
     explicit JSTaggedValue(const ObjectHeader *v) : coretypes::TaggedValue(v) {}
     explicit JSTaggedValue(const TaggedObject *v) : coretypes::TaggedValue(v) {}
     explicit JSTaggedValue(const coretypes::TaggedValue &other) : coretypes::TaggedValue(other.GetRawData()) {}
-    explicit JSTaggedValue(int64_t v) : coretypes::TaggedValue(v){};
+    explicit JSTaggedValue(int64_t v) : coretypes::TaggedValue(v){}
 
     ~JSTaggedValue() = default;
     DEFAULT_COPY_SEMANTIC(JSTaggedValue);

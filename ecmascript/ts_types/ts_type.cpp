@@ -204,4 +204,4 @@ GlobalTSTypeRef TSArrayType::GetElementTypeGT(JSHandle<TSTypeTable> typeTable)
     TSType* Type = TSType::Cast(typeTable->Get(index).GetTaggedObject());
     return Type->GetGTRef();
 }
-}
+} // namespace panda::ecmascript

@@ -82,7 +82,6 @@
 #include "ecmascript/symbol_table-inl.h"
 #include "ecmascript/tagged_tree-inl.h"
 #include "ecmascript/template_map.h"
-#include "ecmascript/template_map.h"
 #include "ecmascript/ts_types/ts_obj_layout_info-inl.h"
 #include "ecmascript/ts_types/ts_type.h"
 #include "ecmascript/ts_types/ts_type_table.h"

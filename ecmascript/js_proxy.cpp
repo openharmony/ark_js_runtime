@@ -125,7 +125,7 @@ bool JSProxy::SetPrototype(JSThread *thread, const JSHandle<JSProxy> &proxy, con
     // 7. If trap is undefined, then Return target.[[SetPrototypeOf]](V).
     if (trap->IsUndefined()) {
         return JSTaggedValue::SetPrototype(thread, targetHandle, proto);
-    };
+    }
     JSHandle<JSTaggedValue> handlerTag(thread, proxy->GetHandler());
     InternalCallParams *arguments = thread->GetInternalCallParams();
     arguments->MakeArgv(targetHandle, proto);

@@ -324,7 +324,7 @@ JSTaggedValue BuiltinsDataView::GetViewValue(JSThread *thread, const JSHandle<JS
     }
     uint32_t index = indexInt;
     // 7. Let isLittleEndian be ToBoolean(isLittleEndian).
-    bool isLittleEndian;
+    bool isLittleEndian = false;
     if (littleEndian.IsUndefined()) {
         isLittleEndian = false;
     } else {
@@ -379,7 +379,7 @@ JSTaggedValue BuiltinsDataView::SetViewValue(JSThread *thread, const JSHandle<JS
     JSTaggedNumber numVal = JSTaggedValue::ToNumber(thread, value);
     RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
     // 7. Let isLittleEndian be ToBoolean(isLittleEndian).
-    bool isLittleEndian;
+    bool isLittleEndian = false;
     if (littleEndian.IsUndefined()) {
         isLittleEndian = false;
     } else {

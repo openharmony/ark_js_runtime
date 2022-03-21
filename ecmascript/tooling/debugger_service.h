@@ -23,7 +23,7 @@
 
 namespace panda::ecmascript {
 class EcmaVM;
-}  // panda::ecmascript
+}  // namespace panda::ecmascript
 
 namespace panda::tooling::ecmascript {
 #ifdef __cplusplus

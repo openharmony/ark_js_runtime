@@ -27,7 +27,7 @@ using panda::ecmascript::CUnorderedSet;
 
 class JSDebugger : public DebugInterface, RuntimeListener {
 public:
-    JSDebugger(const EcmaVM *vm) : ecmaVm_(vm)
+    explicit JSDebugger(const EcmaVM *vm) : ecmaVm_(vm)
     {
         auto notificationMgr = ecmaVm_->GetNotificationManager();
         notificationMgr->AddListener(this, JSDEBUG_EVENT_MASK);

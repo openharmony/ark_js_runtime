@@ -102,5 +102,5 @@ public:
 private:
     std::unique_ptr<CodeGeneratorImpl> llvmImpl_ {nullptr};
 };
-}
+} // namespace panda::ecmascript::kungfu
 #endif

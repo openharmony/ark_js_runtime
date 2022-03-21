@@ -24,7 +24,7 @@ public:
     PtBaseParams() = default;
     ~PtBaseParams() override = default;
 
-    virtual Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override = 0;
+    Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override = 0;
 
 private:
     NO_COPY_SEMANTIC(PtBaseParams);
