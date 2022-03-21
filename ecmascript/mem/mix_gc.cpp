@@ -57,7 +57,7 @@ void MixGC::InitializePhase()
         heap_->Prepare();
         if (heap_->IsFullMark()) {
             heap_->GetOldSpace()->SelectCSet();
-            heap_->EnumerateNonNewSpaceRegions([this](Region *current) {
+            heap_->EnumerateNonNewSpaceRegions([](Region *current) {
                 current->ResetAliveObject();
             });
         }

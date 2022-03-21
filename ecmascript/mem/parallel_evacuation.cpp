@@ -347,7 +347,7 @@ void ParallelEvacuation::UpdateAndSweepNewRegionReference(Region *region)
     uintptr_t freeStart = region->GetBegin();
     uintptr_t freeEnd = freeStart + region->GetAllocatedBytes();
     if (markBitmap != nullptr) {
-        markBitmap->IterateOverMarkedChunks([this, &region, &freeStart](void *mem) {
+        markBitmap->IterateOverMarkedChunks([this, &freeStart](void *mem) {
             ASSERT(region->InRange(ToUintPtr(mem)));
             auto header = reinterpret_cast<TaggedObject *>(mem);
             JSHClass *klass = header->GetClass();
