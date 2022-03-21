@@ -122,7 +122,7 @@ void ConcurrentMarker::InitializeMarking()
         heapObjectSize_ = heap_->GetHeapObjectSize();
         heap_->GetOldSpace()->SelectCSet();
         // The alive object size of Region in OldSpace will be recompute
-        heap_->EnumerateNonNewSpaceRegions([this](Region *current) {
+        heap_->EnumerateNonNewSpaceRegions([](Region *current) {
             current->ResetAliveObject();
         });
     } else {

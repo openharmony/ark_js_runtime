@@ -154,6 +154,7 @@ source_set("libark_js_intl_static") {
 config("ark_jsruntime_common_config") {
   defines = [ "PANDA_ENABLE_LTO" ]
   cflags_cc = [
+    "-Wall",
     "-pedantic",
     "-Wno-invalid-offsetof",
     "-Wno-gnu-statement-expression",
@@ -272,8 +273,6 @@ config("ark_jsruntime_config") {
 # ecmascript unit testcase config
 config("ecma_test_config") {
   visibility = [ ":*" ]
-
-  cflags_cc = [ "-Wno-sign-compare" ]
 
   ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
 }
