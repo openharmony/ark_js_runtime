@@ -26,6 +26,9 @@
  .global AotCallAotTrampoline
 .type AotCallAotTrampoline, %function
 
+.global HandleCommonCall
+.type HandleCommonCall, %function
+
  /* JSFunctionEntry Callee Register Save Macro */
 .macro PUSH_CALLEE_SAVED_REGS
     stp x27, x28, [sp, #-16]!
@@ -363,4 +366,8 @@ AotCallAotTrampoline:
     lsl     w8, w19, #3
     add     sp, sp, x8
     POP_CALLEE_SAVED_REGS
+    ret
+
+// void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp, uint64_t funcReg, uint64_t actualArgc, ...);
+HandleCommonCall:
     ret

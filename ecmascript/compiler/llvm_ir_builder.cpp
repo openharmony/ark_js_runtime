@@ -642,8 +642,14 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
-    // start index of bytecode handler csign in llvmModule
-    LLVMTypeRef rtfuncType = stubModule_->GetFunctionType(CommonStubCSigns::NUM_OF_STUBS);
+    LLVMTypeRef rtfuncType;
+    if (BCHandlers::GetHandlerOffset(BCHandlers::BC_COUNT + BytecodeHelperId::HandleCommonCallId) == inList[1]) {
+        rtfuncType = stubModule_->GetFunctionType(CommonStubCSigns::NUM_OF_STUBS +
+            BytecodeStubCSigns::NUM_OF_VALID_STUBS + RuntimeStubCSigns::NOGCSTUB_ID_HandleCommonCall);
+    } else {
+        // start index of bytecode handler csign in llvmModule
+        rtfuncType = stubModule_->GetFunctionType(CommonStubCSigns::NUM_OF_STUBS);
+    }
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);

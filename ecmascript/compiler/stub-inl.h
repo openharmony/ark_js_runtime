@@ -388,6 +388,13 @@ inline void Stub::DebugPrint(GateRef glue, std::initializer_list<GateRef> args)
         RTSTUB_ID(DebugPrint) + NOGC_RTSTUB_CSIGNS_BEGIN), args);
 }
 
+inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
+{
+    const CallSignature *fatalPrint = RuntimeStubCSigns::Get(RTSTUB_ID(FatalPrint));
+    CallRuntime(fatalPrint, glue, GetInt64Constant(
+        RTSTUB_ID(FatalPrint) + NOGC_RTSTUB_CSIGNS_BEGIN), args);
+}
+
 inline GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
