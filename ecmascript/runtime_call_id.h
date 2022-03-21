@@ -229,7 +229,7 @@ namespace panda::ecmascript {
     V(GreaterEqDynWithIC)           \
     V(LdBigInt)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define BUITINS_API_LIST(V)                   \
+#define BUILTINS_API_LIST(V)                   \
     V(Array, Constructor)                     \
     V(Array, From)                            \
     V(Array, Of)                              \
@@ -386,7 +386,7 @@ namespace panda::ecmascript {
     V(Object, DefineProperties)               \
     V(Object, DefineProperty)                 \
     V(Object, Freeze)                         \
-    V(Object, GetOwnPropertyDesciptor)        \
+    V(Object, GetOwnPropertyDescriptor)        \
     V(Object, GetOwnPropertyKeys)             \
     V(Object, GetOwnPropertyNames)            \
     V(Object, GetOwnPropertySymbols)          \
@@ -629,7 +629,7 @@ namespace panda::ecmascript {
 #define MEM_ALLOCATE_AND_GC_ID(name) MEM_ID##name,
 
 enum EcmaRuntimeCallerId {
-    INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_ID) BUITINS_API_LIST(BUILTINS_API_ID)
+    INTERPRETER_CALLER_LIST(INTERPRETER_CALLER_ID) BUILTINS_API_LIST(BUILTINS_API_ID)
     ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_ID)
     MEM_ALLOCATE_AND_GC_LIST(MEM_ALLOCATE_AND_GC_ID)
 #define DEF_RUNTIME_ID(name, c) RUNTIME_CALL_ID_##name,

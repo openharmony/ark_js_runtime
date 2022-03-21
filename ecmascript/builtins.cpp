@@ -465,7 +465,7 @@ void Builtins::InitializeObject(const JSHandle<GlobalEnv> &env, const JSHandle<J
     // 19.1.2.5Object.freeze ( O )
     SetFunction(env, objFunc, "freeze", Object::Freeze, FunctionLength::ONE);
     // 19.1.2.6Object.getOwnPropertyDescriptor ( O, P )
-    SetFunction(env, objFunc, "getOwnPropertyDescriptor", Object::GetOwnPropertyDesciptor, FunctionLength::TWO);
+    SetFunction(env, objFunc, "getOwnPropertyDescriptor", Object::GetOwnPropertyDescriptor, FunctionLength::TWO);
     // 19.1.2.7Object.getOwnPropertyNames ( O )
     SetFunction(env, objFunc, "getOwnPropertyNames", Object::GetOwnPropertyNames, FunctionLength::ONE);
     // 19.1.2.8Object.getOwnPropertySymbols ( O )

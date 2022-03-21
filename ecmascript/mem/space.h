@@ -68,7 +68,7 @@ static inline std::string ToSpaceTypeName(MemSpaceType type)
         case COMPRESS_SPACE:
             return "compress space";
         default:
-            return "unknow space";
+            return "unknown space";
     }
 }
 

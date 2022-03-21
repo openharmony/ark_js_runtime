@@ -1224,7 +1224,7 @@ std::unique_ptr<icu::TimeZone> JSDateTimeFormat::ConstructTimeZone(const std::st
 
 std::map<std::string, std::string> JSDateTimeFormat::GetSpecialTimeZoneMap()
 {
-    std::vector<std::string> specicalTimeZones = {
+    std::vector<std::string> specialTimeZones = {
         "America/Argentina/ComodRivadavia"
         "America/Knox_IN"
         "Antarctica/McMurdo"
@@ -1257,7 +1257,7 @@ std::map<std::string, std::string> JSDateTimeFormat::GetSpecialTimeZoneMap()
         "W-SU"
         "WET"};
     std::map<std::string, std::string> map;
-    for (const auto &item : specicalTimeZones) {
+    for (const auto &item : specialTimeZones) {
         std::string upper(item);
         transform(upper.begin(), upper.end(), upper.begin(), toupper);
         map.insert({upper, item});

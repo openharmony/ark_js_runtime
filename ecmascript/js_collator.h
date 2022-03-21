@@ -93,7 +93,7 @@ public:
                                         const JSHandle<EcmaString> &string2);
 
 private:
-    static CaseFirstOption StringToCaseForstOption(const std::string &str);
+    static CaseFirstOption StringToCaseFirstOption(const std::string &str);
 
     static UColAttributeValue OptionToUColAttribute(CaseFirstOption caseFirstOption);
 

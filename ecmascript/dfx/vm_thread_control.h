@@ -44,7 +44,7 @@ public:
 
     bool NotifyVMThreadSuspension();
 
-    void SetVMSuspened(bool flag)
+    void SetVMSuspended(bool flag)
     {
         uint64_t newVal = VMHasSuspendedBit::Update(threadStateBitField_, flag);
         threadStateBitField_ = newVal;

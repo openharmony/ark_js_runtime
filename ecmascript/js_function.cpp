@@ -127,7 +127,7 @@ bool JSFunction::PrototypeSetter(JSThread *thread, const JSHandle<JSObject> &sel
     JSHandle<JSFunction> func(self);
     JSTaggedValue protoOrDyn = func->GetProtoOrDynClass();
     if (protoOrDyn.IsJSHClass()) {
-        // need transtion
+        // need transition
         JSHandle<JSHClass> dynclass(thread, protoOrDyn);
         JSHandle<JSHClass> newDynclass = JSHClass::TransitionProto(thread, dynclass, value);
         if (value->IsECMAObject()) {
