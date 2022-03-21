@@ -2043,19 +2043,19 @@ void JSNApi::StopCpuProfiler()
 
 bool JSNApi::SuspendVM(const EcmaVM *vm)
 {
-    ecmascript::JSThread* thread = vm->GetJSThread();
+    ecmascript::JSThread* thread = vm->GetJSThreadNoCheck();
     return thread->NotifyVMThreadSuspension();
 }
 
 void JSNApi::ResumeVM(const EcmaVM *vm)
 {
-    ecmascript::JSThread* thread = vm->GetJSThread();
+    ecmascript::JSThread* thread = vm->GetJSThreadNoCheck();
     thread->ResumeVM();
 }
 
 bool JSNApi::IsSuspended(const EcmaVM *vm)
 {
-    ecmascript::JSThread* thread = vm->GetJSThread();
+    ecmascript::JSThread* thread = vm->GetJSThreadNoCheck();
     return thread->IsSuspended();
 }
 
