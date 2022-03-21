@@ -40,6 +40,7 @@ public:
     // Ensure task finish
     void EnsureTaskFinished(MemSpaceType type);
 
+    void PostConcurrentSweepTasks(bool fullGC = false);
 private:
     class SweeperTask : public Task {
     public:
