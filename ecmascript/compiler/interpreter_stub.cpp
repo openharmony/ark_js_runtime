@@ -3286,6 +3286,9 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     DEFVARIABLE(opNumber1, VariableType::INT32(), GetInt32Constant(0));
 
     Label accDispatch(env);
+    Label doShr(env);
+    Label overflow(env);
+    Label notOverflow(env);
     Label leftIsNumber(env);
     Label leftNotNumberOrRightNotNumber(env);
     Branch(TaggedIsNumber(left), &leftIsNumber, &leftNotNumberOrRightNotNumber);
@@ -3307,14 +3310,14 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
                 {
                     opNumber0 = TaggedCastToInt32(left);
                     opNumber1 = TaggedCastToInt32(right);
-                    Jump(&accDispatch);
+                    Jump(&doShr);
                 }
                 Bind(&rightIsDouble);
                 {
                     GateRef rightDouble = TaggedCastToDouble(right);
                     opNumber0 = TaggedCastToInt32(left);
                     opNumber1 = DoubleToInt(glue, rightDouble);
-                    Jump(&accDispatch);
+                    Jump(&doShr);
                 }
             }
             Bind(&leftIsDouble);
@@ -3327,7 +3330,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
                     GateRef leftDouble = TaggedCastToDouble(left);
                     opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = TaggedCastToInt32(right);
-                    Jump(&accDispatch);
+                    Jump(&doShr);
                 }
                 Bind(&rightIsDouble);
                 {
@@ -3335,7 +3338,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
                     GateRef leftDouble = TaggedCastToDouble(left);
                     opNumber0 = DoubleToInt(glue, leftDouble);
                     opNumber1 = DoubleToInt(glue, rightDouble);
-                    Jump(&accDispatch);
+                    Jump(&doShr);
                 }
             }
         }
@@ -3356,14 +3359,28 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
         Bind(&notException);
         {
             varAcc = taggedNumber;
-            DISPATCH_WITH_ACC(PREF_V8);
+            Jump(&accDispatch);
+        }
+    }
+    Bind(&doShr);
+    {
+        GateRef shift = Int32And(*opNumber1, GetInt32Constant(0x1f));
+        GateRef ret = UInt32LSR(*opNumber0, shift);
+        auto condition = UInt32GreaterThan(ret, GetInt32Constant(INT32_MAX));
+        Branch(condition, &overflow, &notOverflow);
+        Bind(&overflow);
+        {
+            varAcc = DoubleBuildTaggedWithNoGC(ChangeUInt32ToFloat64(ret));
+            Jump(&accDispatch);
+        }
+        Bind(&notOverflow);
+        {
+            varAcc = IntBuildTaggedWithNoGC(ret);
+            Jump(&accDispatch);
         }
     }
     Bind(&accDispatch);
     {
-        GateRef shift = Int32And(*opNumber1, GetInt32Constant(0x1f));
-        GateRef ret = UInt32LSR(*opNumber0, shift);
-        varAcc = IntBuildTaggedWithNoGC(ret);
         DISPATCH_WITH_ACC(PREF_V8);
     }
 }

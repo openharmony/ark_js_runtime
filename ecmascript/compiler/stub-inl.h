@@ -1729,6 +1729,11 @@ inline GateRef Stub::ChangeInt32ToFloat64(GateRef x)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SIGNED_INT_TO_FLOAT), MachineType::F64, x);
 }
 
+inline GateRef Stub::ChangeUInt32ToFloat64(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::UNSIGNED_INT_TO_FLOAT), MachineType::F64, x);
+}
+
 inline GateRef Stub::ChangeFloat64ToInt32(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::FLOAT_TO_SIGNED_INT), MachineType::I32, x);

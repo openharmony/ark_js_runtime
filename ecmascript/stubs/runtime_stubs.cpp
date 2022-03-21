@@ -784,7 +784,7 @@ DEF_RUNTIME_STUBS(ChangeTwoInt32OrToJSTaggedValue)
     }
 
     auto ret = static_cast<uint32_t>(leftInt) | static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
+    return JSTaggedValue(static_cast<int32_t>(ret)).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(ChangeTwoInt32XorToJSTaggedValue)
@@ -803,7 +803,7 @@ DEF_RUNTIME_STUBS(ChangeTwoInt32XorToJSTaggedValue)
     }
 
     auto ret = static_cast<uint32_t>(leftInt) ^ static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
+    return JSTaggedValue(static_cast<int32_t>(ret)).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(ChangeTwoUint32AndToJSTaggedValue)
@@ -822,7 +822,7 @@ DEF_RUNTIME_STUBS(ChangeTwoUint32AndToJSTaggedValue)
     }
 
     auto ret = static_cast<uint32_t>(leftInt) & static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(ret).GetRawData();
+    return JSTaggedValue(static_cast<int32_t>(ret)).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(ChangeUintAndIntShlToJSTaggedValue)
