@@ -41,7 +41,6 @@ public:
     static JSHandle<BigInt> CreateBigint(JSThread *thread, uint32_t size);
 
     static bool Equal(const JSTaggedValue &x, const JSTaggedValue &y);
-    static bool Equal(const BigInt *x, const BigInt *y);
     static bool SameValue(const JSTaggedValue &x, const JSTaggedValue &y);
     static bool SameValueZero(const JSTaggedValue &x, const JSTaggedValue &y);
 
@@ -54,8 +53,7 @@ public:
     static JSHandle<BigInt> BitwiseAddOne(JSThread *thread, JSHandle<BigInt> bigint);
     static JSHandle<EcmaString> ToString(JSThread *thread, JSHandle<BigInt> bigint,
                                          uint32_t conversionToRadix = BigInt::DECIMAL);
-    static std::string ToStdString(JSThread *thread, JSHandle<BigInt> bigint,
-                                   uint32_t conversionToRadix = BigInt::DECIMAL);
+    std::string ToStdString(uint32_t conversionToRadix) const;
 
     static JSHandle<BigInt> UnaryMinus(JSThread *thread, JSHandle<BigInt> x);
     static JSHandle<BigInt> BitwiseNOT(JSThread *thread, JSHandle<BigInt> x);
@@ -65,12 +63,11 @@ public:
     static JSHandle<BigInt> Remainder(JSThread *thread, JSHandle<BigInt> n, JSHandle<BigInt> d);
     static JSHandle<BigInt> BigintAddOne(JSThread *thread, JSHandle<BigInt> x);
     static JSHandle<BigInt> BigintSubOne(JSThread *thread, JSHandle<BigInt> x);
-    static JSHandle<BigInt> copy(JSThread *thread, JSHandle<BigInt> x);
+    static JSHandle<BigInt> Copy(JSThread *thread, JSHandle<BigInt> x);
 
     static JSHandle<BigInt> Add(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> Subtract(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static bool LessThan(const JSTaggedValue &x, const JSTaggedValue &y);
-    static bool LessThan(const BigInt *x, const BigInt *y);
     static ComparisonResult Compare(JSThread *thread, const JSTaggedValue &x, const JSTaggedValue &y);
     static JSHandle<BigInt> SignedRightShift(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
     static JSHandle<BigInt> RightShiftHelper(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);
@@ -90,7 +87,7 @@ public:
     static JSHandle<BigInt> FloorMod(JSThread *thread, JSHandle<BigInt> leftVal, JSHandle<BigInt> rightVal);
     static JSTaggedValue AsUintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
     static JSTaggedValue AsintN(JSThread *thread, JSTaggedNumber &bits, JSHandle<BigInt> bigint);
-    static JSTaggedNumber BigIntToNumber(JSThread *thread, JSHandle<BigInt> bigint);
+    static JSTaggedNumber BigIntToNumber(JSHandle<BigInt> bigint);
     static ComparisonResult CompareWithNumber(JSThread *thread, JSHandle<BigInt> bigint,
                                               JSHandle<JSTaggedValue> number);
     inline bool IsZero()
@@ -114,6 +111,10 @@ public:
 
     DECL_VISIT_OBJECT(DATA_OFFSET, BIT_FIELD_OFFSET)
     DECL_DUMP()
+
+private:
+    static bool Equal(const BigInt *x, const BigInt *y);
+    static bool LessThan(const BigInt *x, const BigInt *y);
 };
 
 class BigIntHelper {
@@ -121,7 +122,7 @@ public:
     static std::string Conversion(const std::string &num, uint32_t conversionToRadix, uint32_t currentRadix);
     static JSHandle<BigInt> SetBigInt(JSThread *thread, const std::string &numStr,
                                       uint32_t currentRadix = BigInt::DECIMAL);
-    static std::string GetBinary(JSHandle<BigInt> bigint);
+    static std::string GetBinary(const BigInt *bigint);
     static JSHandle<BigInt> RightTruncate(JSThread *thread, JSHandle<BigInt> x);
 
     static JSHandle<BigInt> DivideImpl(JSThread *thread, JSHandle<BigInt> x, JSHandle<BigInt> y);

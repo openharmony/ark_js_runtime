@@ -50,7 +50,7 @@ JSTaggedValue BuiltinsNumber::NumberConstructor(EcmaRuntimeCallInfo *argv)
         // b. If Type(prim) is BigInt, let n be 𝔽(ℝ(prim)).
         if (numericVal->IsBigInt()) {
             JSHandle<BigInt> bigNumericVal(numericVal);
-            numberValue = BigInt::BigIntToNumber(thread, bigNumericVal);
+            numberValue = BigInt::BigIntToNumber(bigNumericVal);
         } else {
             // c. Otherwise, let n be prim.
             numberValue = JSTaggedNumber(numeric);
