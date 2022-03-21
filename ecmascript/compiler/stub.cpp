@@ -3408,8 +3408,9 @@ GateRef Stub::FastDiv(GateRef left, GateRef right)
     return ret;
 }
 
-template<OpCode::Op Op>
-GateRef Stub::FastBinaryOp(GateRef left, GateRef right)
+GateRef Stub::FastBinaryOp(GateRef left, GateRef right,
+                           const BinaryOperation& intOp,
+                           const BinaryOperation& floatOp)
 {
     auto env = GetEnvironment();
     Label entry(env);
@@ -3420,16 +3421,14 @@ GateRef Stub::FastBinaryOp(GateRef left, GateRef right)
 
     Label exit(env);
     Label doFloatOp(env);
+    Label doIntOp(env);
     Label leftIsNumber(env);
     Label rightIsNumber(env);
     Label leftIsInt(env);
     Label leftIsDouble(env);
-    Label leftIsIntRightIsInt(env);
     Label leftIsIntRightIsDouble(env);
     Label rightIsInt(env);
     Label rightIsDouble(env);
-    Label overflow(env);
-    Label notOverflow(env);
 
     Branch(TaggedIsNumber(left), &leftIsNumber, &exit);
     Bind(&leftIsNumber);
@@ -3442,25 +3441,7 @@ GateRef Stub::FastBinaryOp(GateRef left, GateRef right)
             Branch(TaggedIsInt(left), &leftIsInt, &leftIsDouble);
             Bind(&leftIsInt);
             {
-                Branch(TaggedIsInt(right), &leftIsIntRightIsInt, &leftIsIntRightIsDouble);
-                Bind(&leftIsIntRightIsInt);
-                {
-                    auto res = BinaryOp<Op, MachineType::I64>(TaggedCastToInt64(left), TaggedCastToInt64(right));
-                    auto condition1 = Int64GreaterThan(res, GetInt64Constant(INT32_MAX));
-                    auto condition2 = Int64LessThan(res, GetInt64Constant(INT32_MIN));
-                    Branch(BoolOr(condition1, condition2), &overflow, &notOverflow);
-                    Bind(&overflow);
-                    {
-                        doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
-                        doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
-                        Jump(&doFloatOp);
-                    }
-                    Bind(&notOverflow);
-                    {
-                        result = IntBuildTaggedWithNoGC(ChangeInt64ToInt32(res));
-                        Jump(&exit);
-                    }
-                }
+                Branch(TaggedIsInt(right), &doIntOp, &leftIsIntRightIsDouble);
                 Bind(&leftIsIntRightIsDouble);
                 {
                     doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
@@ -3486,10 +3467,14 @@ GateRef Stub::FastBinaryOp(GateRef left, GateRef right)
             }
         }
     }
+    Bind(&doIntOp);
+    {
+        result = intOp(env, left, right);
+        Jump(&exit);
+    }
     Bind(&doFloatOp);
     {
-        auto res = BinaryOp<Op, MachineType::F64>(*doubleLeft, *doubleRight);
-        result = DoubleBuildTaggedWithNoGC(res);
+        result = floatOp(env, *doubleLeft, *doubleRight);
         Jump(&exit);
     }
     Bind(&exit);
@@ -3498,19 +3483,58 @@ GateRef Stub::FastBinaryOp(GateRef left, GateRef right)
     return ret;
 }
 
+template<OpCode::Op Op>
+GateRef Stub::FastAddSubAndMul(GateRef left, GateRef right)
+{
+    auto intOperation = [=](Environment *env, GateRef left, GateRef right) {
+        Label entry(env);
+        env->PushCurrentLabel(&entry);
+        DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
+        Label exit(env);
+        Label overflow(env);
+        Label notOverflow(env);
+        auto res = BinaryOp<Op, MachineType::I64>(TaggedCastToInt64(left), TaggedCastToInt64(right));
+        auto condition1 = Int64GreaterThan(res, GetInt64Constant(INT32_MAX));
+        auto condition2 = Int64LessThan(res, GetInt64Constant(INT32_MIN));
+        Branch(BoolOr(condition1, condition2), &overflow, &notOverflow);
+        Bind(&overflow);
+        {
+            auto doubleLeft = ChangeInt32ToFloat64(TaggedCastToInt32(left));
+            auto doubleRight = ChangeInt32ToFloat64(TaggedCastToInt32(right));
+            auto res = BinaryOp<Op, MachineType::F64>(doubleLeft, doubleRight);
+            result = DoubleBuildTaggedWithNoGC(res);
+            Jump(&exit);
+        }
+        Bind(&notOverflow);
+        {
+            result = IntBuildTaggedWithNoGC(ChangeInt64ToInt32(res));
+            Jump(&exit);
+        }
+        Bind(&exit);
+        auto ret = *result;
+        env->PopCurrentLabel();
+        return ret;
+    };
+    auto floatOperation = [=]([[maybe_unused]] Environment *env, GateRef left, GateRef right) {
+        auto res = BinaryOp<Op, MachineType::F64>(left, right);
+        return DoubleBuildTaggedWithNoGC(res);
+    };
+    return FastBinaryOp(left, right, intOperation, floatOperation);
+}
+
 GateRef Stub::FastAdd(GateRef left, GateRef right)
 {
-    return FastBinaryOp<OpCode::ADD>(left, right);
+    return FastAddSubAndMul<OpCode::ADD>(left, right);
 }
 
 GateRef Stub::FastSub(GateRef left, GateRef right)
 {
-    return FastBinaryOp<OpCode::SUB>(left, right);
+    return FastAddSubAndMul<OpCode::SUB>(left, right);
 }
 
 GateRef Stub::FastMul(GateRef left, GateRef right)
 {
-    return FastBinaryOp<OpCode::MUL>(left, right);
+    return FastAddSubAndMul<OpCode::MUL>(left, right);
 }
 
 GateRef Stub::FastMod(GateRef glue, GateRef left, GateRef right)
