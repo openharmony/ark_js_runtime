@@ -141,9 +141,9 @@ bool JSDebugger::RemoveBreakpoint(const JSMethod *method, uint32_t bcOffset)
 JSMethod *JSDebugger::FindMethod(const PtLocation &location) const
 {
     JSMethod *method = nullptr;
-    EcmaVM::GetJSPandaFileManager()->EnumerateJSPandaFiles([&method, location](
+    ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&method, location](
         const panda::ecmascript::JSPandaFile *jsPandaFile) {
-        if (CString(location.GetPandaFile()) == jsPandaFile->GetJSPandaFileDesc()) {
+        if (location.GetPandaFile() == jsPandaFile->GetJSPandaFileDesc()) {
             JSMethod *methodsData = jsPandaFile->GetMethods();
             uint32_t numberMethods = jsPandaFile->GetNumMethods();
             for (uint32_t i = 0; i < numberMethods; ++i) {

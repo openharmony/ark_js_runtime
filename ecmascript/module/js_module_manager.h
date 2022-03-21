@@ -28,7 +28,7 @@ public:
     JSTaggedValue GetModuleValueInner(JSTaggedValue key);
     JSTaggedValue GetModuleValueOutter(JSTaggedValue key);
     void StoreModuleValue(JSTaggedValue key, JSTaggedValue value);
-    JSHandle<SourceTextModule> HostGetImportedModule(const CString &referencingModule);
+    JSHandle<SourceTextModule> HostGetImportedModule(const std::string &referencingModule);
     JSHandle<SourceTextModule> HostResolveImportedModule(const std::string &referencingModule);
     JSTaggedValue GetModuleNamespace(JSTaggedValue localName);
     void AddResolveImportedModule(const JSPandaFile *jsPandaFile, const std::string &referencingModule);

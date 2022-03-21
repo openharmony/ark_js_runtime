@@ -52,17 +52,16 @@ bool PassManager::CollectInfoOfPandaFile(const std::string &filename, BytecodeTr
         return false;
     }
     const JSPandaFile *jsPandaFile =
-        vm_->GetJSPandaFileManager()->LoadAotInfoFromPf(filename, &(translateInfo->methodPcInfos));
+        JSPandaFileManager::GetCurrent()->LoadAotInfoFromPf(filename, &(translateInfo->methodPcInfos));
     if (jsPandaFile == nullptr) {
         return false;
     }
     translateInfo->jsPandaFile = jsPandaFile;
 
     TSLoader *tsLoader = vm_->GetTSLoader();
-    tsLoader->DecodeTSTypes(*jsPandaFile->GetPandaFile());
+    tsLoader->DecodeTSTypes(jsPandaFile);
 
-    PandaFileTranslator translator(vm_, jsPandaFile);
-    auto program = translator.GenerateProgram();
+    auto program = PandaFileTranslator::GenerateProgram(vm_, jsPandaFile);
     JSHandle<JSFunction> mainFunc(vm_->GetJSThread(), program->GetMainFunction());
     JSHandle<JSTaggedValue> constPool(vm_->GetJSThread(), mainFunc->GetConstantPool());
     translateInfo->constantPool = constPool;
