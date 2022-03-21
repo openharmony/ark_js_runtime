@@ -426,6 +426,7 @@ public:
     GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args);
     GateRef CallRuntimeTrampoline(GateRef glue, GateRef target, GateRef depend, std::initializer_list<GateRef> args);
     void DebugPrint(GateRef thread, std::initializer_list<GateRef> args);
+    void FatalPrint(GateRef thread, std::initializer_list<GateRef> args);
     // memory
     GateRef Load(VariableType type, GateRef base, GateRef offset);
     GateRef Load(VariableType type, GateRef base);

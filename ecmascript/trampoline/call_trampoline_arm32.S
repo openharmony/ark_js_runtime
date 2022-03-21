@@ -27,6 +27,9 @@
  .global AotCallAotTrampoline
 .type AotCallAotTrampoline, %function
 
+.global HandleCommonCall
+.type HandleCommonCall, %function
+
 #define CALLEESAVE_REGS_SIZE   (32)
 #define SLOT_SIZE              (4)
 // 1: r11
@@ -244,4 +247,8 @@ AotCallAotTrampoline:
     add     sp, sp, r1
 
     pop     {r4, r5, r6, r7, r8, r9, r10, lr}
+    bx      lr
+
+// void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp, uint64_t funcReg, uint64_t actualArgc, ...);
+HandleCommonCall:
     bx      lr

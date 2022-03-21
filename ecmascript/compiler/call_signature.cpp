@@ -379,7 +379,6 @@ DEF_CALL_SIGNATURE(SingleStepDebugging)
         VariableType::INT32(),
     };
     callSign->SetParameters(params.data());
-    callSign->SetTargetKind(CallSignature::TargetKind::BYTECODE_HANDLER);
 }
 
 DEF_CALL_SIGNATURE(AsmInterpreterEntry)
@@ -388,6 +387,24 @@ DEF_CALL_SIGNATURE(AsmInterpreterEntry)
     CallSignature asmInterpreterEntry("AsmInterpreterEntry", 0, 7,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = asmInterpreterEntry;
+    std::array<VariableType, 7> params = { // 7 : 7 input parameters
+        VariableType::POINTER(),
+        VariableType::POINTER(),
+        VariableType::POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_POINTER(),
+        VariableType::JS_ANY(),
+        VariableType::INT32(),
+    };
+    callSign->SetParameters(params.data());
+}
+
+DEF_CALL_SIGNATURE(HandleOverflow)
+{
+    // 7 : 7 input parameters
+    CallSignature handleOverflow("HandleOverflow", 0, 7,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = handleOverflow;
     std::array<VariableType, 7> params = { // 7 : 7 input parameters
         VariableType::POINTER(),
         VariableType::POINTER(),
@@ -449,12 +466,45 @@ DEF_CALL_SIGNATURE(AotCallAotTrampoline)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
+DEF_CALL_SIGNATURE(HandleCommonCall)
+{
+    /* 5 : 5 input parameters */
+    CallSignature handleCommonCall("HandleCommonCall", 0, 5,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = handleCommonCall;
+    std::array<VariableType, 5> params = { /* 5 : 5 input parameters */
+        VariableType::POINTER(),
+        VariableType::INT64(),
+        VariableType::POINTER(),
+        VariableType::INT64(),
+        VariableType::INT64(),
+    };
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
 DEF_CALL_SIGNATURE(DebugPrint)
 {
     // 1 : 1 input parameters
     CallSignature debugPrint("DebugPrint", 0, 1,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
     *callSign = debugPrint;
+    // 1 : 1 input parameters
+    std::array<VariableType, 1> params = {
+        VariableType::INT32(),
+    };
+    callSign->SetVariableArgs(true);
+    callSign->SetParameters(params.data());
+    callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
+}
+
+DEF_CALL_SIGNATURE(FatalPrint)
+{
+    // 1 : 1 input parameters
+    CallSignature fatalPrint("FatalPrint", 0, 1,
+        ArgumentsOrder::DEFAULT_ORDER, VariableType::VOID());
+    *callSign = fatalPrint;
     // 1 : 1 input parameters
     std::array<VariableType, 1> params = {
         VariableType::INT32(),
