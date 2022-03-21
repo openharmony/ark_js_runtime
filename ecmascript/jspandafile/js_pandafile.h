@@ -17,7 +17,7 @@
 #define ECMASCRIPT_JSPANDAFILE_JS_PANDAFILE_H
 
 #include "ecmascript/jspandafile/constpool_value.h"
-#include "ecmascript/jspandafile/panda_file_translator.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/mem/c_containers.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 #include "libpandafile/file.h"
@@ -35,12 +35,12 @@ namespace ecmascript {
 
 class JSPandaFile {
 public:
-    JSPandaFile(const panda_file::File *pf, const CString &descriptor);
+    JSPandaFile(const panda_file::File *pf, const std::string &descriptor);
     ~JSPandaFile();
 
     tooling::ecmascript::PtJSExtractor *GetOrCreatePtJSExtractor();
 
-    CString GetJSPandaFileDesc() const
+    const std::string &GetJSPandaFileDesc() const
     {
         return desc_;
     }
@@ -89,7 +89,7 @@ public:
         mainMethodIndex_ = mainMethodIndex;
     }
 
-    const JSMethod *FindMethods(uint32_t offset) const;
+    JSMethod *FindMethods(uint32_t offset) const;
 
     Span<const uint32_t> GetClasses() const
     {
@@ -106,10 +106,10 @@ private:
     uint32_t numMethods_ {0};
     uint32_t mainMethodIndex_ {0};
     JSMethod *methods_ {nullptr};
-    CUnorderedMap<uint32_t, JSMethod *> methodMap_;
+    std::unordered_map<uint32_t, JSMethod *> methodMap_;
     const panda_file::File *pf_ {nullptr};
     std::unique_ptr<tooling::ecmascript::PtJSExtractor> ptJSExtractor_;
-    CString desc_;
+    std::string desc_;
     bool isModule_ {false};
 };
 }  // namespace ecmascript

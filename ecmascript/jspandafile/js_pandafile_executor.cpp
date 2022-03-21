@@ -25,7 +25,7 @@ namespace panda::ecmascript {
 bool JSPandaFileExecutor::ExecuteFromFile(JSThread *thread, const std::string &filename, std::string_view entryPoint,
                                           const std::vector<std::string> &args)
 {
-    const JSPandaFile *jsPandaFile = EcmaVM::GetJSPandaFileManager()->LoadJSPandaFile(filename);
+    const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(filename);
     if (jsPandaFile == nullptr) {
         return false;
     }
@@ -52,7 +52,7 @@ bool JSPandaFileExecutor::ExecuteFromBuffer(JSThread *thread, const void *buffer
                                             std::string_view entryPoint, const std::vector<std::string> &args,
                                             const std::string &filename)
 {
-    const JSPandaFile *jsPandaFile = EcmaVM::GetJSPandaFileManager()->LoadJSPandaFile(filename, buffer, size);
+    const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(filename, buffer, size);
     if (jsPandaFile == nullptr) {
         return false;
     }

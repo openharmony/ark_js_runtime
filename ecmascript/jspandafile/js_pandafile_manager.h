@@ -34,8 +34,13 @@ class Program;
 
 class JSPandaFileManager {
 public:
-    JSPandaFileManager() = default;
     ~JSPandaFileManager();
+
+    static JSPandaFileManager *GetInstance()
+    {
+        static JSPandaFileManager jsFileManager;
+        return &jsFileManager;
+    }
 
     JSHandle<Program> GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile);
 
@@ -46,11 +51,11 @@ public:
 
     const JSPandaFile *LoadJSPandaFile(const std::string &filename, const void *buffer, size_t size);
 
-    JSPandaFile *NewJSPandaFile(const panda_file::File *pf, const CString &desc);
+    JSPandaFile *OpenJSPandaFile(const std::string &filename);
 
-    const JSPandaFile *GenerateJSPandaFile(const panda_file::File *pf, const CString &desc);
+    JSPandaFile *NewJSPandaFile(const panda_file::File *pf, const std::string &desc);
 
-    tooling::ecmascript::PtJSExtractor *GetOrCreatePtJSExtractor(const panda_file::File *pf);
+    tooling::ecmascript::PtJSExtractor *GetPtJSExtractor(const JSPandaFile *jsPandaFile);
 
     static void RemoveJSPandaFile(void *pointer, void *data);
 
@@ -68,15 +73,18 @@ public:
     }
 
 private:
+    JSPandaFileManager() = default;
+
     class JSPandaFileAllocator {
     public:
         static void *AllocateBuffer(size_t size);
         static void FreeBuffer(void *mem);
     };
 
+    const JSPandaFile *GenerateJSPandaFile(const panda_file::File *pf, const std::string &desc);
     void ReleaseJSPandaFile(const JSPandaFile *jsPandaFile);
     const JSPandaFile *GetJSPandaFile(const panda_file::File *pf);
-    const JSPandaFile *FindJSPandaFile(const CString &filename);
+    const JSPandaFile *FindJSPandaFile(const std::string &filename);
     void InsertJSPandaFile(const JSPandaFile *jsPandaFile);
     void IncreaseRefJSPandaFile(const JSPandaFile *jsPandaFile);
     void DecreaseRefJSPandaFile(const JSPandaFile *jsPandaFile);

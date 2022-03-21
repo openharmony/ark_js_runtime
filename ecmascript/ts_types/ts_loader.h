@@ -158,7 +158,7 @@ public:
     explicit TSLoader(EcmaVM *vm);
     ~TSLoader() = default;
 
-    void PUBLIC_API DecodeTSTypes(const panda_file::File &pf);
+    void PUBLIC_API DecodeTSTypes(const JSPandaFile *jsPandaFile);
 
     void AddTypeTable(JSHandle<JSTaggedValue> typeTable, JSHandle<EcmaString> amiPath);
 

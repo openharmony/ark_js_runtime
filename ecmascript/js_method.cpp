@@ -13,10 +13,23 @@
  * limitations under the License.
  */
 
-#include "js_method.h"
+#include "ecmascript/js_method.h"
+
+#include "ecmascript/jspandafile/js_pandafile.h"
 #include "libpandafile/method_data_accessor-inl.h"
 
 namespace panda::ecmascript {
+JSMethod::JSMethod(Class *klass, const JSPandaFile *jsPandaFile, panda_file::File::EntityId fileId,
+                   panda_file::File::EntityId codeId, uint32_t accessFlags,
+                   uint32_t numArgs, const uint16_t *shorty)
+    : Method(klass, jsPandaFile != nullptr ? jsPandaFile->GetPandaFile() : nullptr,
+                fileId, codeId, accessFlags, numArgs, shorty)
+{
+    bytecodeArray_ = JSMethod::GetInstructions();
+    bytecodeArraySize_ = JSMethod::GetCodeSize();
+    jsPandaFile_ = jsPandaFile;
+}
+
 // It's not allowed '#' token appear in ECMA function(method) name, which discriminates same names in panda methods.
 CString JSMethod::ParseFunctionName() const
 {

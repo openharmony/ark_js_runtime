@@ -3553,28 +3553,21 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8) {
         uint16_t methodId = READ_INST_16_1();
-        uint16_t imm = READ_INST_16_3();
         uint16_t length = READ_INST_16_5();
         uint16_t v0 = READ_INST_8_7();
         uint16_t v1 = READ_INST_8_8();
         LOG_INST() << "intrinsics::defineclasswithbuffer"
-                   << " method id:" << methodId << " literal id:" << imm << " lexenv: v" << v0 << " parent: v" << v1;
+                   << " method id:" << methodId << " lexenv: v" << v0 << " parent: v" << v1;
         JSFunction *classTemplate = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(classTemplate != nullptr);
 
-        TaggedArray *literalBuffer = TaggedArray::Cast(constpool->GetObjectFromCache(imm).GetTaggedObject());
         JSTaggedValue lexenv = GET_VREG_VALUE(v0);
         JSTaggedValue proto = GET_VREG_VALUE(v1);
 
         JSTaggedValue res;
         SAVE_PC();
-        if (LIKELY(!classTemplate->GetResolved())) {
-            res = SlowRuntimeStub::ResolveClass(thread, JSTaggedValue(classTemplate), literalBuffer,
-                                                proto, lexenv, constpool);
-        } else {
-            res = SlowRuntimeStub::CloneClassFromTemplate(thread, JSTaggedValue(classTemplate),
-                                                          proto, lexenv, constpool);
-        }
+        res = SlowRuntimeStub::CloneClassFromTemplate(thread, JSTaggedValue(classTemplate),
+                                                      proto, lexenv, constpool);
 
         INTERPRETER_RETURN_IF_ABRUPT(res);
         ASSERT(res.IsClassConstructor());
