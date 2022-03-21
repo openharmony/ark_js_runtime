@@ -392,6 +392,17 @@ void RuntimeStubs::DebugPrint(int fmtMessageId, ...)
     va_end(args);
 }
 
+void RuntimeStubs::FatalPrint(int fmtMessageId, ...)
+{
+    std::string format = MessageString::GetMessageString(fmtMessageId);
+    va_list args;
+    va_start(args, fmtMessageId);
+    std::string result = panda::helpers::string::Vformat(format.c_str(), args);
+    std::cerr << result << std::endl;
+    va_end(args);
+    std::abort();
+}
+
 DEF_RUNTIME_STUBS(NoticeThroughChainAndRefreshUser)
 {
     RUNTIME_STUBS_HEADER(NoticeThroughChainAndRefreshUser);
