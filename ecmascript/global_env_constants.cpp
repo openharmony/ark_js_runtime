@@ -77,7 +77,7 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
     SetConstant(ConstantIndex::ENV_CLASS_INDEX, factory->NewEcmaDynClass(dynClassClass, 0, JSType::TAGGED_ARRAY));
     SetConstant(ConstantIndex::SYMBOL_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, JSSymbol::SIZE, JSType::SYMBOL));
-    SetConstant(ConstantIndex::ACCESSOE_DATA_CLASS_INDEX,
+    SetConstant(ConstantIndex::ACCESSOR_DATA_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::ACCESSOR_DATA));
     SetConstant(ConstantIndex::INTERNAL_ACCESSOR_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, AccessorData::SIZE, JSType::INTERNAL_ACCESSOR));

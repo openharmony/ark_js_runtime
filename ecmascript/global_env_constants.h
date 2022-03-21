@@ -43,7 +43,7 @@ class JSThread;
     V(JSTaggedValue, FreeObjectWithOneFieldClass, FREE_OBJECT_WITH_ONE_FIELD_CLASS_INDEX, ecma_roots_class)           \
     V(JSTaggedValue, FreeObjectWithTwoFieldClass, FREE_OBJECT_WITH_TWO_FIELD_CLASS_INDEX, ecma_roots_class)           \
     V(JSTaggedValue, SymbolClass, SYMBOL_CLASS_INDEX, ecma_roots_class)                                               \
-    V(JSTaggedValue, AccessorDataClass, ACCESSOE_DATA_CLASS_INDEX, ecma_roots_class)                                  \
+    V(JSTaggedValue, AccessorDataClass, ACCESSOR_DATA_CLASS_INDEX, ecma_roots_class)                                  \
     V(JSTaggedValue, InternalAccessorClass, INTERNAL_ACCESSOR_CLASS_INDEX, ecma_roots_class)                          \
     V(JSTaggedValue, JSProxyOrdinaryClass, JS_PROXY_ORDINARY_CLASS_INDEX, ecma_roots_class)                           \
     V(JSTaggedValue, CompletionRecordClass, COMPLETION_RECORD_CLASS_INDEX, ecma_roots_class)                          \

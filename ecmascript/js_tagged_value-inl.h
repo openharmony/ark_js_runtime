@@ -826,8 +826,8 @@ inline bool JSTaggedValue::IsInternalAccessor() const
 inline bool JSTaggedValue::IsAccessor() const
 {
     if (IsHeapObject()) {
-        auto *jshcalss = GetTaggedObject()->GetClass();
-        return jshcalss->IsAccessorData() || jshcalss->IsInternalAccessor();
+        auto *jshclass = GetTaggedObject()->GetClass();
+        return jshclass->IsAccessorData() || jshclass->IsInternalAccessor();
     }
 
     return false;

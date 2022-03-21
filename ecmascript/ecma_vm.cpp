@@ -233,7 +233,7 @@ void EcmaVM::InitializeEcmaScriptRunStat()
 #undef INTERPRETER_CALLER_NAME
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define BUILTINS_API_NAME(class, name) "BuiltinsApi::" #class "_" #name,
-    BUITINS_API_LIST(BUILTINS_API_NAME)
+    BUILTINS_API_LIST(BUILTINS_API_NAME)
 #undef BUILTINS_API_NAME
 #define ABSTRACT_OPERATION_NAME(class, name) "AbstractOperation::" #class "_" #name,
     ABSTRACT_OPERATION_LIST(ABSTRACT_OPERATION_NAME)
