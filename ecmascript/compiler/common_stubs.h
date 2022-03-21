@@ -21,7 +21,8 @@
 namespace panda::ecmascript::kungfu {
 #define INTERPRETER_STUB_HELPER_LIST(V)  \
     V(AsmInterpreterEntry, 7)            \
-    V(SingleStepDebugging, 7)
+    V(SingleStepDebugging, 7)            \
+    V(HandleOverflow, 7)
 
 #define COMMON_STUB_LIST(V)              \
     V(Add, 3)                            \
@@ -42,6 +43,8 @@ namespace panda::ecmascript::kungfu {
     V(TryLoadICByValue, 5)               \
     V(TryStoreICByName, 5)               \
     V(TryStoreICByValue, 6)
+
+#define COMMON_EXPROTED_TO_BC_STUB_LIST(V)
 
 #define COMMON_STUB_ID_LIST(V)      \
     COMMON_STUB_LIST(V)             \

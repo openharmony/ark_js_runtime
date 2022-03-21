@@ -27,6 +27,9 @@
  .global AotCallAotTrampoline
 .type AotCallAotTrampoline, %function
 
+.global HandleCommonCall
+.type HandleCommonCall, %function
+
  /* JSFunctionEntry Callee Register Save Macro */
  .macro PUSH_GENERAL_REGS
     pushq %r12
@@ -342,4 +345,8 @@ RuntimeCallTrampolineInterpreterAsm:
 
     addq    $8, %rsp
     addq    $8, %rsp
+    ret
+
+// void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp, uint64_t funcReg, uint64_t actualArgc, ...);
+HandleCommonCall:
     ret

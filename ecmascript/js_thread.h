@@ -44,21 +44,32 @@ struct BCHandlers {
     static constexpr size_t BC_HANDER_COUNT = kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS;
     // The number of bytecodes.
     static constexpr size_t BC_COUNT = 0x100;
+    // Add bytecode helper handlers at the end of bytecode handlers.
+    static constexpr size_t BC_HELPER_COUNT = kungfu::BytecodeHelperId::NUM_OF_BYTECODE_HELPERS;
+    static constexpr size_t ALL_SLOTS_COUNT = BC_COUNT + BC_HELPER_COUNT;
     static_assert(BC_HANDER_COUNT <= BC_COUNT);
-    Address handlers_[BC_COUNT] = {0};
+    Address handlers_[ALL_SLOTS_COUNT] = {0};
 
-    static constexpr size_t SizeArch32 = sizeof(uint32_t) * BC_COUNT;
-    static constexpr size_t SizeArch64 = sizeof(uint64_t) * BC_COUNT;
+    static constexpr size_t SizeArch32 = sizeof(uint32_t) * ALL_SLOTS_COUNT;
+    static constexpr size_t SizeArch64 = sizeof(uint64_t) * ALL_SLOTS_COUNT;
 
     void Set(size_t index, Address addr)
     {
-        assert(index < BC_COUNT);
+        assert(index < ALL_SLOTS_COUNT);
         handlers_[index] = addr;
     }
 
-    void SetUnsupportedBCHandlers(Address addr)
+    void SetUnrealizedBCHandlers(Address addr)
     {
-        for (size_t i = 0; i < BC_COUNT; i++) {
+        for (size_t i = 0; i < BC_HANDER_COUNT; i++) {
+            if (handlers_[i] == 0) {
+                handlers_[i] = addr;
+            }
+        }
+    }
+    void SetUnusedBCSlotsHandlers(Address addr)
+    {
+        for (size_t i = BC_HANDER_COUNT; i < BC_COUNT; i++) {
             if (handlers_[i] == 0) {
                 handlers_[i] = addr;
             }
@@ -68,6 +79,15 @@ struct BCHandlers {
     Address* GetAddr()
     {
         return reinterpret_cast<Address*>(handlers_);
+    }
+
+    static int32_t GetHandlerOffset(int32_t handlerId)
+    {
+#ifdef PANDA_TARGET_32
+        return handlerId * sizeof(uint32_t);
+#else
+        return handlerId * sizeof(uint64_t);
+#endif
     }
 };
 STATIC_ASSERT_EQ_ARCH(sizeof(BCHandlers), BCHandlers::SizeArch32, BCHandlers::SizeArch64);

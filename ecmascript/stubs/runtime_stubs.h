@@ -34,15 +34,18 @@ extern "C" JSTaggedType RuntimeCallTrampolineAot(uintptr_t glue, uint64_t runtim
 extern "C" JSTaggedType RuntimeCallTrampolineInterpreterAsm(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
 extern "C" JSTaggedType AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNumArgs,
     uint32_t actualNumArgs, uintptr_t codeAddr, ...);
-
-#define RUNTIME_STUB_WITHOUT_GC_LIST(V)      \
-    V(DebugPrint, 1)                         \
-    V(InsertOldToNewRememberedSet, 3)        \
-    V(MarkingBarrier, 5)                     \
-    V(DoubleToInt, 1)                        \
-    V(RuntimeCallTrampolineAot, 3)           \
-    V(AotCallAotTrampoline, 4)               \
-    V(RuntimeCallTrampolineInterpreterAsm, 3)
+extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp, uint64_t funcReg,
+                                 uint64_t actualArgc, ...);
+#define RUNTIME_STUB_WITHOUT_GC_LIST(V)       \
+    V(DebugPrint, 1)                          \
+    V(FatalPrint, 1)                          \
+    V(InsertOldToNewRememberedSet, 3)         \
+    V(MarkingBarrier, 5)                      \
+    V(DoubleToInt, 1)                         \
+    V(RuntimeCallTrampolineAot, 3)            \
+    V(AotCallAotTrampoline, 4)                \
+    V(RuntimeCallTrampolineInterpreterAsm, 3) \
+    V(HandleCommonCall, 5)
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)         \
     V(AddElementInternal, 5)                 \
@@ -189,6 +192,9 @@ extern "C" JSTaggedType AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNu
     V(CallIThisRangeDyn, 3)                  \
     V(CallIRangeDyn, 2)
 
+#define RUNTIME_EXPROTED_TO_BC_STUB_LIST(V) \
+    V(HandleCommonCall)
+
 #define RUNTIME_STUB_LIST(V)                 \
     RUNTIME_STUB_WITHOUT_GC_LIST(V)          \
     RUNTIME_STUB_WITH_GC_LIST(V)
@@ -203,6 +209,7 @@ public:
 #undef DECLARE_RUNTIME_STUBS
 
     static void DebugPrint(int fmtMessageId, ...);
+    static void FatalPrint(int fmtMessageId, ...);
     static void MarkingBarrier([[maybe_unused]]uintptr_t argGlue, uintptr_t slotAddr,
         Region *objectRegion, TaggedObject *value, Region *valueRegion);
     static void InsertOldToNewRememberedSet([[maybe_unused]]uintptr_t argGlue, Region* region, uintptr_t addr);

@@ -1543,6 +1543,12 @@ DECLARE_ASM_HANDLER(SingleStepDebugging)
              *varHotnessCounter, GetIntPtrConstant(0));
 }
 
+DECLARE_ASM_HANDLER(HandleOverflow)
+{
+    FatalPrint(glue, { GetInt32Constant(GET_MESSAGE_STRING_ID(OPCODE_OVERFLOW)) });
+    Dispatch(glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter, GetIntPtrConstant(0));
+}
+
 DECLARE_ASM_HANDLER(HandleLdaDynV8)
 {
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
@@ -5448,7 +5454,7 @@ void BytecodeStubCSigns::Initialize()
             new name##Stub(static_cast<Circuit*>(ciruit)));        \
     });
     INTERPRETER_BC_STUB_LIST(INIT_SIGNATURES)
-#undef INIT_CTOR_OF_SIGNATURES
+#undef INIT_SIGNATURES
 }
 
 void BytecodeStubCSigns::GetCSigns(std::vector<CallSignature*>& outCSigns)

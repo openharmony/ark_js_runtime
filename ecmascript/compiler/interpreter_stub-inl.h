@@ -323,18 +323,24 @@ GateRef InterpreterStub::ReadInst64_0(GateRef pc)
     return Int64Add(currentInst13, ZExtInt8ToInt64(ReadInst8_0(pc)));
 }
 
+template<typename... Args>
+void InterpreterStub::DispatchBase(GateRef bcOffset, const CallSignature *signature, GateRef glue, Args... args)
+{
+    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
+    GateRef result =
+        GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(signature, glue, bcOffset, depend, {glue, args...});
+    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+}
+
+
 void InterpreterStub::Dispatch(GateRef glue, GateRef pc, GateRef sp, GateRef constpool, GateRef profileTypeInfo,
                                GateRef acc, GateRef hotnessCounter, GateRef format)
 {
     GateRef newPc = IntPtrAdd(pc, format);
     GateRef opcode = Load(VariableType::INT8(), newPc);
-    GateRef opcodeOffset = IntPtrMul(
-        ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), GetIntPtrSize());
+    GateRef opcodeOffset = IntPtrMul(ChangeInt32ToIntPtr(ZExtInt8ToInt32(opcode)), GetIntPtrSize());
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
-    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
-    GateRef result = GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset,
-        depend, {glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
-    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+    DispatchBase(opcodeOffset, bytecodeHandler, glue, newPc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
     Return();
 }
 
@@ -344,10 +350,41 @@ void InterpreterStub::DispatchLast(GateRef glue, GateRef pc, GateRef sp, GateRef
     GateRef opcodeOffset = IntPtrMul(
         GetIntPtrConstant(BytecodeStubCSigns::ID_ExceptionHandler), GetIntPtrSize());
     const CallSignature *bytecodeHandler = BytecodeStubCSigns::Get(BYTECODE_STUB_BEGIN_ID);
-    auto depend = GetEnvironment()->GetCurrentLabel()->GetDepend();
-    GateRef result = GetEnvironment()->GetCircuitBuilder().NewBytecodeCallGate(bytecodeHandler, glue, opcodeOffset,
-        depend, {glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter});
-    GetEnvironment()->GetCurrentLabel()->SetDepend(result);
+    DispatchBase(opcodeOffset, bytecodeHandler, glue, pc, sp, constpool, profileTypeInfo, acc, hotnessCounter);
+    Return();
+}
+
+// Decode for callType:
+// high 32 bits: jumpSize
+// bit0: isNew
+// bit1: callThis
+// ...
+
+// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
+// |type:           | POINTER|   INT64    | POINTER |   INT64   |    INT64     |   INT64   |   INT64   |   INT64   |
+// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
+// |callarg0:       |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
+// +--------------- +--------+------------+---------+-----------+--------------+-----------+
+// |callarg1:       |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |  arg0Reg  |
+// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+
+// |callargs2:      |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |  arg0Reg  |  arg1Reg  |
+// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
+// |callargs3:      |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |  arg0Reg  |  arg1Reg  |  arg2Reg  |
+// +--------------- +--------+------------+---------+-----------+--------------+-----------+-----------+-----------+
+// |callirange:     |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
+// +--------------- +--------+------------+---------+-----------+--------------+
+// |callithisrange: |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
+// +--------------- +--------+------------+---------+-----------+--------------+
+// |newobjdynrange: |  glue  |  callType  |   sp    |  funcReg  |  actualArgc  |
+// +--------------- +--------+------------+---------+-----------+--------------+
+template<typename... Args>
+void InterpreterStub::DispatchCommonCall(GateRef glue, GateRef callType, GateRef sp, GateRef funcReg,
+                                         GateRef actualArgc, Args... args)
+{
+    GateRef opcodeOffset = IntPtrMul(
+        GetIntPtrConstant(BCHandlers::BC_COUNT + BytecodeHelperId::HandleCommonCallId), GetIntPtrSize());
+    const CallSignature *signature = RuntimeStubCSigns::Get(RTSTUB_ID(HandleCommonCall));
+    DispatchBase(opcodeOffset, signature, glue, callType, sp, funcReg, actualArgc, args...);
     Return();
 }
 
