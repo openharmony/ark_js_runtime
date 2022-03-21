@@ -160,6 +160,11 @@ private:
     void LowerLessEqDyn(GateRef gate, GateRef glue);
     void LowerGreaterDyn(GateRef gate, GateRef glue);
     void LowerGreaterEqDyn(GateRef gate, GateRef glue);
+    void LowerGetPropIterator(GateRef gate, GateRef glue);
+    void LowerIterNext(GateRef gate, GateRef glue);
+    void LowerCloseIterator(GateRef gate, GateRef glue);
+    void LowerIncDyn(GateRef gate, GateRef glue);
+    void LowerDecDyn(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
