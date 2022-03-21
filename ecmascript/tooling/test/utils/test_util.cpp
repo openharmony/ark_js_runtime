@@ -23,7 +23,7 @@ DebugEvent TestUtil::lastEvent_ = DebugEvent::UNINITIALIZED;
 bool TestUtil::initialized_ = false;
 os::memory::Mutex TestUtil::suspendMutex_;
 os::memory::ConditionVariable TestUtil::suspendCv_;
-bool TestUtil::suspended_;
+bool TestUtil::suspended_ = false;
 PtThread TestUtil::lastEventThread_ = PtThread::NONE;
 PtLocation TestUtil::lastEventLocation_("", EntityId(0), 0);
 

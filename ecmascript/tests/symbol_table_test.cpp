@@ -119,12 +119,12 @@ HWTEST_F_L0(SymbolTableTest, Hash_Utf8)
 
     uint8_t utf8ArrayName1[4] = {1, 2, 3}; // The last element is "\0"
     uint32_t utf8ArrayNameLen1 = sizeof(utf8ArrayName1) - 1;
-    JSHandle<EcmaString> nameStringUtf8Obj1 =factory->NewFromUtf8(utf8ArrayName1, utf8ArrayNameLen1);
+    JSHandle<EcmaString> nameStringUtf8Obj1 = factory->NewFromUtf8(utf8ArrayName1, utf8ArrayNameLen1);
     EXPECT_EQ(SymbolTable::Hash(nameStringUtf8Obj1.GetTaggedValue()), 1026); // 1026 = (1 << 5 - 1 + 2) << 5 - 2 + 3
 
     uint8_t utf8ArrayName2[] = "key";
     uint32_t utf8ArrayNameLen2 = sizeof(utf8ArrayName2) - 1;
-    JSHandle<EcmaString> nameStringUtf8Obj2 =factory->NewFromUtf8(utf8ArrayName2, utf8ArrayNameLen2);
+    JSHandle<EcmaString> nameStringUtf8Obj2 = factory->NewFromUtf8(utf8ArrayName2, utf8ArrayNameLen2);
     EXPECT_EQ(SymbolTable::Hash(nameStringUtf8Obj2.GetTaggedValue()), 106079);
 }
 
@@ -142,12 +142,12 @@ HWTEST_F_L0(SymbolTableTest, Hash_Utf16)
 
     uint16_t utf16ArrayName1[] = {1, 2, 3};
     uint32_t utf16ArrayNameLen1 = sizeof(utf16ArrayName1) / sizeof(utf16ArrayName1[0]);
-    JSHandle<EcmaString> nameStringUtf16Obj1 =factory->NewFromUtf16(utf16ArrayName1, utf16ArrayNameLen1);
+    JSHandle<EcmaString> nameStringUtf16Obj1 = factory->NewFromUtf16(utf16ArrayName1, utf16ArrayNameLen1);
     EXPECT_EQ(SymbolTable::Hash(nameStringUtf16Obj1.GetTaggedValue()), 1026); // 1026 = (1 << 5 - 1 + 2) << 5 - 2 + 3
 
     uint16_t utf16ArrayName2[] = {0, 1, 2};
     uint32_t utf16ArrayNameLen2 = sizeof(utf16ArrayName2) / sizeof(utf16ArrayName2[0]);
-    JSHandle<EcmaString> nameStringUtf16Obj2 =factory->NewFromUtf16(utf16ArrayName2, utf16ArrayNameLen2);
+    JSHandle<EcmaString> nameStringUtf16Obj2 = factory->NewFromUtf16(utf16ArrayName2, utf16ArrayNameLen2);
     EXPECT_EQ(SymbolTable::Hash(nameStringUtf16Obj2.GetTaggedValue()), 33); // 33 = (0 << 5 - 0 + 1) << 5 - 1 + 2
 }
 
@@ -192,10 +192,10 @@ HWTEST_F_L0(SymbolTableTest, ContainsKey)
 
     symbolTable->SetKey(thread, 1, JSTaggedValue::Hole());
     EXPECT_EQ(symbolTable->ContainsKey(thread, symbolTableStringKey1.GetTaggedValue()), false);
-    
+
     symbolTable->SetKey(thread, 1, JSTaggedValue::Undefined());
     EXPECT_EQ(symbolTable->ContainsKey(thread, symbolTableStringKey1.GetTaggedValue()), false);
-    
+
     symbolTable->SetKey(thread, 1, symbolTableStringKey1.GetTaggedValue());
     EXPECT_EQ(symbolTable->ContainsKey(thread, symbolTableStringKey1.GetTaggedValue()), true);
 
@@ -228,7 +228,7 @@ HWTEST_F_L0(SymbolTableTest, GetSymbol)
 
     symbolTable->SetValue(thread, 0, JSTaggedValue(1));
     EXPECT_EQ(symbolTable->GetSymbol(symbolTableStringKey.GetTaggedValue()), JSTaggedValue::Undefined());
-    
+
     symbolTable->SetValue(thread, 1, JSTaggedValue(1));
     EXPECT_EQ(symbolTable->GetSymbol(symbolTableStringKey.GetTaggedValue()).GetInt(), 1);
 }
@@ -268,4 +268,4 @@ HWTEST_F_L0(SymbolTableTest, FindSymbol)
     JSTaggedValue resultValue4 = symbolTable->FindSymbol(thread, handleSymbol.GetTaggedValue());
     EXPECT_EQ(JSTaggedValue::SameValue(resultValue4, JSTaggedValue::Undefined()), true);
 }
-}  // namespace panda::ecmascript
+}  // namespace panda::test

@@ -149,7 +149,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetDeleteAndHas)
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
         // test has
-        bool has= JSAPITreeSet::Has(thread, tset, key);
+        bool has = JSAPITreeSet::Has(thread, tset, key);
         EXPECT_EQ(has, false);
     }
 
@@ -158,7 +158,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetDeleteAndHas)
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
         // test has
-        bool has= JSAPITreeSet::Has(thread, tset, key);
+        bool has = JSAPITreeSet::Has(thread, tset, key);
         EXPECT_EQ(has, true);
     }
 }
@@ -186,7 +186,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetClear)
         key.Update(factory->NewFromStdString(ikey).GetTaggedValue());
 
         // test has
-        bool has= JSAPITreeSet::Has(thread, tset, key);
+        bool has = JSAPITreeSet::Has(thread, tset, key);
         EXPECT_EQ(has, false);
     }
 }
@@ -213,7 +213,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetPop)
     JSTaggedValue fvalue = JSAPITreeSet::PopFirst(thread, tset);
     EXPECT_EQ(tset->GetSize(), NODE_NUMBERS - 1);
     EXPECT_EQ(fvalue, key.GetTaggedValue());
-    bool has= JSAPITreeSet::Has(thread, tset, key);
+    bool has = JSAPITreeSet::Has(thread, tset, key);
     EXPECT_EQ(has, false);
 
     // test popLast
@@ -222,7 +222,7 @@ HWTEST_F_L0(JSAPITreeSetTest, TreeSetPop)
     JSTaggedValue lvalue = JSAPITreeSet::PopLast(thread, tset);
     EXPECT_EQ(tset->GetSize(), NODE_NUMBERS - 2);
     EXPECT_EQ(lvalue, key.GetTaggedValue());
-    has= JSAPITreeSet::Has(thread, tset, key);
+    has = JSAPITreeSet::Has(thread, tset, key);
     EXPECT_EQ(has, false);
 }
 

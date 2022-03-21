@@ -541,4 +541,4 @@ JSHandle<TSObjectType> TSTypeTable::ParseObjectType(JSThread *thread, const JSHa
     objectType->SetObjLayoutInfo(thread, propertyTypeInfo);
     return objectType;
 }
-}
+} // namespace panda::ecmascript

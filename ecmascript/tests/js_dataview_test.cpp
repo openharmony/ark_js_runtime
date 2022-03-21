@@ -209,4 +209,4 @@ HWTEST_F_L0(JSDataViewTest, SetByteOffset)
     handleDataView->SetByteOffset(offsetDataView2);
     EXPECT_EQ(handleDataView->GetByteOffset(), offsetDataView2);
 }
-}  // namespace panda::ecmascript
+}  // namespace panda::test

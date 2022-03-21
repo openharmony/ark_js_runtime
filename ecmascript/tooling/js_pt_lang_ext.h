@@ -76,5 +76,5 @@ public:
     NO_COPY_SEMANTIC(JSPtLangExt);
     NO_MOVE_SEMANTIC(JSPtLangExt);
 };
-}  // panda::tooling::ecmascript
+}  // namespace panda::tooling::ecmascript
 #endif  // ECMASCRIPT_TOOLING_JS_PT_LANG_EXT_H

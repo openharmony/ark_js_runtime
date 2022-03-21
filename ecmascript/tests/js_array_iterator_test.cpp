@@ -170,4 +170,4 @@ HWTEST_F_L0(JSArrayIteratorTest, SetIterationKind)
     handleJSArrayIter->SetIterationKind(IterationKind::KEY_AND_VALUE);
     EXPECT_EQ(handleJSArrayIter->GetIterationKind(), IterationKind::KEY_AND_VALUE);
 }
-}  // namespace panda::ecmascript
+}  // namespace panda::test

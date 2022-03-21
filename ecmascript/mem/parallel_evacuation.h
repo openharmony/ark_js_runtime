@@ -33,7 +33,7 @@ class JSHClass;
 class TlabAllocator;
 class ParallelEvacuation {
 public:
-    ParallelEvacuation(Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()) {}
+    explicit ParallelEvacuation(Heap *heap) : heap_(heap), objXRay_(heap->GetEcmaVM()) {}
     ~ParallelEvacuation() = default;
     void Initialize();
     void Finalize();
@@ -47,7 +47,7 @@ public:
 private:
     class EvacuationTask : public Task {
     public:
-        EvacuationTask(ParallelEvacuation *evacuation);
+        explicit EvacuationTask(ParallelEvacuation *evacuation);
         ~EvacuationTask() override;
         bool Run(uint32_t threadIndex) override;
 
@@ -61,7 +61,7 @@ private:
 
     class UpdateReferenceTask : public Task {
     public:
-        UpdateReferenceTask(ParallelEvacuation *evacuation) : evacuation_(evacuation) {};
+        explicit UpdateReferenceTask(ParallelEvacuation *evacuation) : evacuation_(evacuation) {};
         ~UpdateReferenceTask() override = default;
 
         bool Run(uint32_t threadIndex) override;

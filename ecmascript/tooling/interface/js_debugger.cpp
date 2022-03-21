@@ -181,4 +181,4 @@ void JSDebugger::MethodExit(ManagedThread *thread, Method *method)
     PtValue retValue(frameHandler.GetAcc().GetRawData());
     hooks_->MethodExit(ptThread, MethodToPtMethod(method), isExceptionTriggered, retValue);
 }
-}  // panda::tooling::ecmascript
+}  // namespace panda::tooling::ecmascript

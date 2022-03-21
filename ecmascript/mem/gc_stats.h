@@ -26,7 +26,7 @@ class GCStats {
     using Duration = std::chrono::duration<uint64_t, std::nano>;
 
 public:
-    GCStats(const Heap *heap) : heap_(heap) {};
+    explicit GCStats(const Heap *heap) : heap_(heap) {}
     ~GCStats() = default;
 
     void PrintStatisticResult(bool isForce = false);

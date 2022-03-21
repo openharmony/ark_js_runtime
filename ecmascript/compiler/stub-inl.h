@@ -1505,40 +1505,40 @@ inline GateRef Stub::GetBitFieldFromHClass(GateRef hClass)
     return Load(VariableType::INT32(), hClass, offset);
 }
 
-inline GateRef Stub::SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield)
+inline void Stub::SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::BIT_FIELD_OFFSET);
-    return Store(VariableType::INT32(), glue, hClass, offset, bitfield);
+    Store(VariableType::INT32(), glue, hClass, offset, bitfield);
 }
 
-inline GateRef Stub::SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef proto)
+inline void Stub::SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef proto)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::PROTOTYPE_OFFSET);
-    return Store(type, glue, hClass, offset, proto);
+    Store(type, glue, hClass, offset, proto);
 }
 
-inline GateRef Stub::SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef protoChange)
+inline void Stub::SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef protoChange)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::PROTO_CHANGE_DETAILS_OFFSET);
-    return Store(type, glue, hClass, offset, protoChange);
+    Store(type, glue, hClass, offset, protoChange);
 }
 
-inline GateRef Stub::SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef attr)
+inline void Stub::SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef attr)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::LAYOUT_OFFSET);
-    return Store(type, glue, hClass, offset, attr);
+    Store(type, glue, hClass, offset, attr);
 }
 
-inline GateRef Stub::SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key)
+inline void Stub::SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::ENUM_CACHE_OFFSET);
-    return Store(type, glue, hClass, offset, key);
+    Store(type, glue, hClass, offset, key);
 }
 
-inline GateRef Stub::SetTransitionsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef transition)
+inline void Stub::SetTransitionsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef transition)
 {
     GateRef offset = GetIntPtrConstant(JSHClass::TRANSTIONS_OFFSET);
-    return Store(type, glue, hClass, offset, transition);
+    Store(type, glue, hClass, offset, transition);
 }
 
 inline void Stub::SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value)

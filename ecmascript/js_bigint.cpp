@@ -37,7 +37,7 @@ int CharToInt(char c)
 std::string Division(std::string &num, uint32_t conversionToRadix, uint32_t currentRadix, uint32_t &remain)
 {
     ASSERT(conversionToRadix != 0);
-    int temp = 0;
+    uint32_t temp = 0;
     remain = 0;
     for (size_t i = 0; i < num.size(); i++) {
         temp = (currentRadix * remain + CharToInt(num[i]));

@@ -91,7 +91,7 @@ HWTEST_F_L0(ArrayHelperTest, SortCompare)
     JSHandle<JSTaggedValue> handleValueY1(thread, JSTaggedValue::Undefined());
     JSHandle<JSTaggedValue> handleValueY2(thread, JSTaggedValue(10));
     JSHandle<JSTaggedValue> handleValueY3(thread, JSTaggedValue(12));
-    
+
     int32_t resultValue1 = ArrayHelper::SortCompare(thread, callbackfnHandle, handleValueX1, handleValueY1);
     int32_t resultValue2 = ArrayHelper::SortCompare(thread, callbackfnHandle, handleValueX1, handleValueY2);
     int32_t resultValue3 = ArrayHelper::SortCompare(thread, callbackfnHandle, handleValueX2, handleValueY1);
@@ -154,7 +154,7 @@ HWTEST_F_L0(ArrayHelperTest, GetArrayLength)
 
     JSHandle<JSTaggedValue> lengthKey = thread->GlobalConstants()->GetHandledLengthString();
     JSHandle<JSTaggedValue> lengthValue(thread, JSTaggedValue(10.0));
-    
+
     JSArray *handleArr = JSArray::ArrayCreate(thread, JSTaggedNumber(0)).GetObject<JSArray>();
     JSHandle<JSTaggedValue> arrayHandle(thread, handleArr);
     EXPECT_EQ(ArrayHelper::GetLength(thread, arrayHandle), 0);

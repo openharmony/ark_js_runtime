@@ -1850,4 +1850,4 @@ HWTEST_F_L0(EcmaStringTest, SetIsInternString)
     handleEcmaStrU16NotComp->SetIsInternString();
     EXPECT_TRUE(handleEcmaStrU16NotComp->IsInternString());
 }
-}  // namespace panda::ecmascript
+}  // namespace panda::test

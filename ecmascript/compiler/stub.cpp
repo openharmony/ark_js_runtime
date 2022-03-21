@@ -1102,7 +1102,7 @@ GateRef Stub::TaggedToRepresentation(GateRef value)
     return ret;
 }
 
-GateRef Stub::Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value)
+void Stub::Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
     GateRef result;
@@ -1126,7 +1126,7 @@ GateRef Stub::Store(VariableType type, GateRef glue, GateRef base, GateRef offse
     if (type == VariableType::JS_POINTER() || type == VariableType::JS_ANY()) {
         SetValueWithBarrier(glue, base, offset, value);
     }
-    return result;
+    return;
 }
 
 void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRef value)
