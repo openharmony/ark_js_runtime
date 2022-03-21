@@ -284,7 +284,7 @@ void JSThread::LoadStubModule(const char *moduleFile)
         && asmInterOpt.handleEnd >= 0 && asmInterOpt.handleEnd < kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS
         && asmInterOpt.handleStart <= asmInterOpt.handleEnd) {
         for (int i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd; i++) {
-            glueData_.bcHandlers_.Set(i, defaultBCHandlerDes.codeAddr_);
+            glueData_.bcHandlers_.Set(static_cast<size_t>(i), defaultBCHandlerDes.codeAddr_);
         }
     }
 #ifdef NDEBUG
