@@ -304,8 +304,8 @@ JSHandle<JSFunction> ClassHelper::DefineClassTemplate(JSThread *thread, JSHandle
         }
     } else {
         JSHandle<TaggedArray> nonStaticKeys(thread, extractor->GetNonStaticKeys());
-        JSHandle<NameDictionary> dict = BuildDictionaryPropeties(thread, prototype, nonStaticKeys, nonStaticProperties,
-                                                                 ClassPropertyType::NON_STATIC, constantpool);
+        JSHandle<NameDictionary> dict = BuildDictionaryProperties(thread, prototype, nonStaticKeys, nonStaticProperties,
+                                                                  ClassPropertyType::NON_STATIC, constantpool);
         prototype->SetProperties(thread, dict);
     }
 
@@ -331,9 +331,9 @@ JSHandle<JSFunction> ClassHelper::DefineClassTemplate(JSThread *thread, JSHandle
         }
     } else {
         JSHandle<TaggedArray> staticKeys(thread, extractor->GetStaticKeys());
-        JSHandle<NameDictionary> dict = BuildDictionaryPropeties(thread, JSHandle<JSObject>(constructor), staticKeys,
-                                                                 staticProperties, ClassPropertyType::STATIC,
-                                                                 constantpool);
+        JSHandle<NameDictionary> dict = BuildDictionaryProperties(thread, JSHandle<JSObject>(constructor), staticKeys,
+                                                                  staticProperties, ClassPropertyType::STATIC,
+                                                                  constantpool);
         constructor->SetProperties(thread, dict);
     }
 
@@ -348,11 +348,11 @@ JSHandle<JSFunction> ClassHelper::DefineClassTemplate(JSThread *thread, JSHandle
     return constructor;
 }
 
-JSHandle<NameDictionary> ClassHelper::BuildDictionaryPropeties(JSThread *thread, const JSHandle<JSObject> &object,
-                                                               JSHandle<TaggedArray> &keys,
-                                                               JSHandle<TaggedArray> &properties,
-                                                               ClassPropertyType type,
-                                                               const JSHandle<ConstantPool> &constantpool)
+JSHandle<NameDictionary> ClassHelper::BuildDictionaryProperties(JSThread *thread, const JSHandle<JSObject> &object,
+                                                                JSHandle<TaggedArray> &keys,
+                                                                JSHandle<TaggedArray> &properties,
+                                                                ClassPropertyType type,
+                                                                const JSHandle<ConstantPool> &constantpool)
 {
     uint32_t length = keys->GetLength();
     ASSERT(length > PropertyAttributes::MAX_CAPACITY_OF_PROPERTIES);

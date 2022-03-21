@@ -88,10 +88,10 @@ public:
                                                     const JSHandle<ConstantPool> &constantpool);
 
 private:
-    static JSHandle<NameDictionary> BuildDictionaryPropeties(JSThread *thread, const JSHandle<JSObject> &object,
-                                                             JSHandle<TaggedArray> &keys,
-                                                             JSHandle<TaggedArray> &properties, ClassPropertyType type,
-                                                             const JSHandle<ConstantPool> &constantpool);
+    static JSHandle<NameDictionary> BuildDictionaryProperties(JSThread *thread, const JSHandle<JSObject> &object,
+                                                              JSHandle<TaggedArray> &keys,
+                                                              JSHandle<TaggedArray> &properties, ClassPropertyType type,
+                                                              const JSHandle<ConstantPool> &constantpool);
 
     static void HandleElementsProperties(JSThread *thread, const JSHandle<JSObject> &object,
                                          JSHandle<TaggedArray> &elements, const JSHandle<ConstantPool> &constantpool);

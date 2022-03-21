@@ -415,7 +415,7 @@ public:
     template<ElementTypes types = ElementTypes::ALLTYPES>
     static JSHandle<JSTaggedValue> CreateListFromArrayLike(JSThread *thread, const JSHandle<JSTaggedValue> &obj);
 
-    // emca6 9.1
+    // ecma6 9.1
     // [[GetPrototypeOf]]
     JSTaggedValue GetPrototype(JSThread *thread) const;
 

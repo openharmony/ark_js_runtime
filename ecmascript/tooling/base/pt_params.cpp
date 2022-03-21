@@ -511,7 +511,7 @@ std::unique_ptr<StepOverParams> StepOverParams::Create(const EcmaVM *ecmaVm, con
                     if (obj != nullptr) {
                         paramsObject->skipList_->emplace_back(std::move(obj));
                     } else {
-                        error += "'skipList' items LocationRange is invaild;";
+                        error += "'skipList' items LocationRange is invalid;";
                     }
                 } else {
                     error += "'skipList' items should be an Object;";

@@ -43,7 +43,7 @@ public:
     // 19.1.2.5Object.freeze ( O )
     static JSTaggedValue Freeze(EcmaRuntimeCallInfo *argv);
     // 19.1.2.6Object.getOwnPropertyDescriptor ( O, P )
-    static JSTaggedValue GetOwnPropertyDesciptor(EcmaRuntimeCallInfo *argv);
+    static JSTaggedValue GetOwnPropertyDescriptor(EcmaRuntimeCallInfo *argv);
     // 19.1.2.7Object.getOwnPropertyNames ( O )
     static JSTaggedValue GetOwnPropertyNames(EcmaRuntimeCallInfo *argv);
     // 19.1.2.8Object.getOwnPropertySymbols ( O )

@@ -1181,7 +1181,7 @@ private:
     inline JSHClass *FindTransitions(const JSTaggedValue &key, const JSTaggedValue &attributes);
     inline JSHClass *FindProtoTransitions(const JSTaggedValue &key, const JSTaggedValue &proto);
 
-    inline void Copy(const JSThread *thread, const JSHClass *jshcalss);
+    inline void Copy(const JSThread *thread, const JSHClass *jshclass);
 
     uint32_t *GetBitFieldAddr() const
     {

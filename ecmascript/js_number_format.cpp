@@ -835,14 +835,14 @@ JSHandle<JSTaggedValue> JSNumberFormat::UnwrapNumberFormat(JSThread *thread, con
     // 2. If nf does not have an [[InitializedNumberFormat]] internal slot and ?
     //  InstanceofOperator(nf, %NumberFormat%) is true, then Let nf be ? Get(nf, %Intl%.[[FallbackSymbol]]).
     JSHandle<GlobalEnv> env = thread->GetEcmaVM()->GetGlobalEnv();
-    bool hasIstance = JSObject::InstanceOf(thread, nf, env->GetNumberFormatFunction());
+    bool hasInstance = JSObject::InstanceOf(thread, nf, env->GetNumberFormatFunction());
     RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));
 
     bool isJSNumberFormat = nf->IsJSNumberFormat();
     // If nf does not have an [[InitializedNumberFormat]] internal slot and ?
     // InstanceofOperator(nf, %NumberFormat%) is true, then
     //      a. Let nf be ? Get(nf, %Intl%.[[FallbackSymbol]]).
-    if (!isJSNumberFormat && hasIstance) {
+    if (!isJSNumberFormat && hasInstance) {
         JSHandle<JSTaggedValue> key(thread, JSHandle<JSIntl>::Cast(env->GetIntlFunction())->GetFallbackSymbol());
         OperationResult operationResult = JSTaggedValue::GetProperty(thread, nf, key);
         RETURN_VALUE_IF_ABRUPT_COMPLETION(thread, JSHandle<JSTaggedValue>(thread, JSTaggedValue::Undefined()));

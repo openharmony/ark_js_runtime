@@ -682,7 +682,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
 }
 
 /*
-verify modify llvm prologue : call main ok means don't destory c abi
+verify modify llvm prologue : call main ok means don't destroy c abi
 test:
 main          push rbp
               push type
