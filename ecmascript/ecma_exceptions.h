@@ -16,7 +16,7 @@
 #ifndef ECMASCRIPT_ECMA_EXCEPTIONS_H
 #define ECMASCRIPT_ECMA_EXCEPTIONS_H
 
-/* Do not add ecma special header's here */
+/* Do not add ecma special header files here */
 #include "ecmascript/js_thread.h"
 
 namespace panda::ecmascript {

@@ -32,12 +32,12 @@ bool VmThreadControl::NotifyVMThreadSuspension() // block caller thread
 void VmThreadControl::SuspendVM() // block vm thread
 {
     os::memory::LockHolder lock(vmThreadSuspensionMutex_);
-    SetVMSuspened(true);
+    SetVMSuspended(true);
     vmThreadNeedSuspensionCV_.Signal(); // wake up the thread who needs suspend vmthread
     while (VMNeedSuspension()) {
         vmThreadHasSuspendedCV_.Wait(&vmThreadSuspensionMutex_);
     }
-    SetVMSuspened(false);
+    SetVMSuspended(false);
 }
 
 void VmThreadControl::ResumeVM()

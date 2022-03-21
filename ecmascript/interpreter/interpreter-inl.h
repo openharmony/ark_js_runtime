@@ -3882,7 +3882,7 @@ JSTaggedValue EcmaInterpreter::GetThisObjectFromFastNewFrame(JSTaggedType *sp)
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     ASSERT(method->OnlyHaveThisWithCallField());
     uint32_t numVregs = method->GetNumVregsWithCallField();
-    uint32_t numDeclaredArgs = method->GetNumArgsWithCallField() + 1;  // 1: explict this object
+    uint32_t numDeclaredArgs = method->GetNumArgsWithCallField() + 1;  // 1: explicit this object
     uint32_t hiddenThisObjectIndex = numVregs + numDeclaredArgs;   // hidden this object in the end of fast new frame
     return JSTaggedValue(sp[hiddenThisObjectIndex]);
 }

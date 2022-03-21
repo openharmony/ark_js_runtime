@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_ECMA_GLOABL_STORAGE_H
-#define ECMASCRIPT_ECMA_GLOABL_STORAGE_H
+#ifndef ECMASCRIPT_ECMA_GLOBAL_STORAGE_H
+#define ECMASCRIPT_ECMA_GLOBAL_STORAGE_H
 
 #include "ecmascript/js_tagged_value.h"
 
@@ -264,4 +264,4 @@ private:
     NodeList *weakFreeListNodes_ {nullptr};
 };
 }  // namespace panda::ecmascript
-#endif  // ECMASCRIPT_ECMA_GLOABL_STORAGE_H
+#endif  // ECMASCRIPT_ECMA_GLOBAL_STORAGE_H

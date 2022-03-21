@@ -24,6 +24,7 @@
 #include "unicode/localematcher.h"
 
 namespace panda::ecmascript {
+const std::string LATN_STRING = "latn";
 // 6.2.2 IsStructurallyValidLanguageTag( locale )
 bool JSLocale::IsStructurallyValidLanguageTag(const JSHandle<EcmaString> &tag)
 {
@@ -159,8 +160,8 @@ JSLocale::ParsedLocale JSLocale::HandleLocale(const JSHandle<EcmaString> &locale
         return parsedResult;
     }
     // Let privateIndex be Call(%StringProto_indexOf%, foundLocale, « "-x-" »).
-    size_t praviteIndex = result.find("-x-");
-    if (praviteIndex != std::string::npos && praviteIndex < foundExtension) {
+    size_t privateIndex = result.find("-x-");
+    if (privateIndex != std::string::npos && privateIndex < foundExtension) {
         parsedResult.base = result;
         return parsedResult;
     }
@@ -955,7 +956,7 @@ std::string JSLocale::GetNumberingSystem(const icu::Locale &icuLocale)
     if (U_SUCCESS(status) != 0) {
         return numberingSystem->getName();
     }
-    return "latn";
+    return LATN_STRING;
 }
 
 bool JSLocale::IsWellFormedCurrencyCode(const std::string &currency)

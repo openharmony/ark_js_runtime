@@ -195,7 +195,7 @@ JSHandle<JSPluralRules> JSPluralRules::InitializePluralRules(JSThread *thread,
     icu::number::LocalizedNumberFormatter icuNumberFormatter =
         icu::number::NumberFormatter::withLocale(icuLocale).roundingMode(UNUM_ROUND_HALFUP);
 
-    bool sucess = true;
+    bool success = true;
     UErrorCode status = U_ZERO_ERROR;
     UPluralType icuType = UPLURAL_TYPE_CARDINAL;
     // Trans typeOption to ICU typeOption
@@ -211,11 +211,11 @@ JSHandle<JSPluralRules> JSPluralRules::InitializePluralRules(JSThread *thread,
     }
     std::unique_ptr<icu::PluralRules> icuPluralRules(icu::PluralRules::forLocale(icuLocale, icuType, status));
     if (U_FAILURE(status)) {  // NOLINT(readability-implicit-bool-conversion)
-        sucess = false;
+        success = false;
     }
 
     // Trans typeOption to ICU typeOption
-    if (!sucess || icuPluralRules == nullptr) {
+    if (!success || icuPluralRules == nullptr) {
         icu::Locale noExtensionLocale(icuLocale.getBaseName());
         status = U_ZERO_ERROR;
         icuType = UPLURAL_TYPE_CARDINAL;
