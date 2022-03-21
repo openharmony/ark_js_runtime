@@ -679,6 +679,11 @@ inline GateRef Stub::IntPtrLSL(GateRef x, GateRef y)
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), ptrSize, x, y);
 }
 
+inline GateRef Stub::Int32ASR(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ASR), MachineType::I32, x, y);
+}
+
 inline GateRef Stub::UInt32LSR(GateRef x, GateRef y)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSR), MachineType::I32, x, y);

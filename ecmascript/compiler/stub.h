@@ -481,6 +481,7 @@ public:
     GateRef UInt32LSR(GateRef x, GateRef y);
     GateRef UInt64LSR(GateRef x, GateRef y);
     GateRef IntPtrLSR(GateRef x, GateRef y);
+    GateRef Int32ASR(GateRef x, GateRef y);
     GateRef TaggedIsInt(GateRef x);
     GateRef TaggedIsDouble(GateRef x);
     GateRef TaggedIsObject(GateRef x);
@@ -750,14 +751,16 @@ public:
     GateRef FastDiv(GateRef left, GateRef right);
     GateRef FastAdd(GateRef left, GateRef right);
     GateRef FastSub(GateRef left, GateRef right);
-    template<OpCode::Op Op>
-    GateRef FastBinaryOp(GateRef left, GateRef right);
 
     // Add SpecialContainer
     GateRef GetContainerProperty(GateRef glue, GateRef receiver, GateRef index, GateRef jsType);
     GateRef JSArrayListGet(GateRef glue, GateRef receiver, GateRef index);
-
 private:
+    using BinaryOperation = std::function<GateRef(Environment*, GateRef, GateRef)>;
+    template<OpCode::Op Op>
+    GateRef FastAddSubAndMul(GateRef left, GateRef right);
+    GateRef FastBinaryOp(GateRef left, GateRef right,
+                         const BinaryOperation& intOp, const BinaryOperation& floatOp);
     Environment env_;
     std::string methodName_;
     int nextVariableId_ {0};

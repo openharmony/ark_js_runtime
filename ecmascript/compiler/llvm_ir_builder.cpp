@@ -124,6 +124,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::OR, &LLVMIRBuilder::HandleIntOr},
         {OpCode::XOR, &LLVMIRBuilder::HandleIntXor},
         {OpCode::LSR, &LLVMIRBuilder::HandleIntLsr},
+        {OpCode::ASR, &LLVMIRBuilder::HandleIntAsr},
         {OpCode::SLT, &LLVMIRBuilder::HandleCmp},
         {OpCode::ULT, &LLVMIRBuilder::HandleCmp},
         {OpCode::SLE, &LLVMIRBuilder::HandleCmp},
@@ -1357,6 +1358,13 @@ void LLVMIRBuilder::HandleIntLsr(GateRef gate)
     VisitIntLsr(gate, g0, g1);
 }
 
+void LLVMIRBuilder::HandleIntAsr(GateRef gate)
+{
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntAsr(gate, g0, g1);
+}
+
 void LLVMIRBuilder::HandleCmp(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
@@ -1584,6 +1592,20 @@ void LLVMIRBuilder::VisitIntLsr(GateRef gate, GateRef e1, GateRef e2)
     e1Value = CanonicalizeToInt(e1Value);
     e2Value = CanonicalizeToInt(e2Value);
     LLVMValueRef result = LLVMBuildLShr(builder_, e1Value, e2Value, "");
+    gateToLLVMMaps_[gate] = result;
+    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
+}
+
+void LLVMIRBuilder::VisitIntAsr(GateRef gate, GateRef e1, GateRef e2)
+{
+    COMPILER_LOG(DEBUG) << "int lsr gate:" << gate;
+    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
+    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    LLVMValueRef e2Value = gateToLLVMMaps_[e2];
+    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
+    e1Value = CanonicalizeToInt(e1Value);
+    e2Value = CanonicalizeToInt(e2Value);
+    LLVMValueRef result = LLVMBuildAShr(builder_, e1Value, e2Value, "");
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
