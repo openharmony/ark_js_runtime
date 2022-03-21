@@ -3072,7 +3072,7 @@ DECLARE_ASM_HANDLER(HandleAnd2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(ChangeTwoInt32AndToJSTaggedValue)), { left, right });
+            GetInt64Constant(RTSTUB_ID(And2Dyn)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3165,7 +3165,7 @@ DECLARE_ASM_HANDLER(HandleOr2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(ChangeTwoInt32OrToJSTaggedValue)), { left, right });
+            GetInt64Constant(RTSTUB_ID(Or2Dyn)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3258,7 +3258,7 @@ DECLARE_ASM_HANDLER(HandleXOr2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(ChangeTwoInt32XorToJSTaggedValue)), { left, right });
+            GetInt64Constant(RTSTUB_ID(Xor2Dyn)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3354,7 +3354,7 @@ DECLARE_ASM_HANDLER(HandleAshr2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(ChangeTwoUint32AndToJSTaggedValue)), { left, right });
+            GetInt64Constant(RTSTUB_ID(Ashr2Dyn)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3462,7 +3462,7 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(ChangeUintAndIntShrToJSTaggedValue)), { left, right });
+            GetInt64Constant(RTSTUB_ID(Shr2Dyn)), { left, right });
         Label isException(env);
         Label notException(env);
         Branch(TaggedIsException(taggedNumber), &isException, &notException);
@@ -3479,7 +3479,7 @@ DECLARE_ASM_HANDLER(HandleShr2DynPrefV8)
     Bind(&accDispatch);
     {
         GateRef shift = Int32And(*opNumber1, GetInt32Constant(0x1f));
-        GateRef ret = UInt32LSR(*opNumber0, shift);
+        GateRef ret = Int32ASR(*opNumber0, shift);
         varAcc = IntBuildTaggedWithNoGC(ret);
         DISPATCH_WITH_ACC(PREF_V8);
     }
@@ -3555,7 +3555,7 @@ DECLARE_ASM_HANDLER(HandleShl2DynPrefV8)
     {
         SetPcToFrame(glue, GetFrame(sp), pc);
         GateRef taggedNumber = CallRuntimeTrampoline(glue,
-            GetInt64Constant(RTSTUB_ID(ChangeUintAndIntShlToJSTaggedValue)), { left, right });
+            GetInt64Constant(RTSTUB_ID(Shl2Dyn)), { left, right });
         Label IsException(env);
         Label NotException(env);
         Branch(TaggedIsException(taggedNumber), &IsException, &NotException);
