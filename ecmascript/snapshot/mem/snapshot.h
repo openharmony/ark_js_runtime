@@ -33,9 +33,9 @@ public:
     ~SnapShot() = default;
 
     void MakeSnapShotProgramObject(Program *program, const panda_file::File *pf,
-                                   const CString &fileName = "./snapshot");
-    const JSPandaFile *DeserializeGlobalEnvAndProgram(const CString &abcFile,
-                                                      const CString &snapshotFile = "./snapshot");
+                                   const std::string &fileName = "./snapshot");
+    const JSPandaFile *DeserializeGlobalEnvAndProgram(const std::string &abcFile,
+                                                      const std::string &snapshotFile = "./snapshot");
 
 private:
     struct Header {
@@ -45,7 +45,7 @@ private:
 
 private:
     size_t AlignUpPageSize(size_t spaceSize);
-    std::pair<bool, CString> VerifyFilePath(const CString &filePath);
+    std::pair<bool, std::string> VerifyFilePath(const std::string &filePath);
 
     NO_MOVE_SEMANTIC(SnapShot);
     NO_COPY_SEMANTIC(SnapShot);

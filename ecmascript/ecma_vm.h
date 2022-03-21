@@ -32,7 +32,6 @@
 #include "ecmascript/mem/space.h"
 #include "ecmascript/platform/task.h"
 #include "ecmascript/snapshot/mem/snapshot_serialize.h"
-#include "ecmascript/tooling/pt_js_extractor.h"
 #include "include/panda_vm.h"
 #include "libpandabase/macros.h"
 #ifndef PANDA_TARGET_WINDOWS
@@ -69,7 +68,6 @@ class JSArrayBuffer;
 class JSFunction;
 class Program;
 class TSLoader;
-struct BytecodeTranslationInfo;
 class ModuleManager;
 using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
                                              const JSHandle<JSPromise> promise,
@@ -79,8 +77,6 @@ using HostPromiseRejectionTracker = void (*)(const EcmaVM* vm,
 using PromiseRejectCallback = void (*)(void* info);
 
 class EcmaVM : public PandaVM {
-    using PtJSExtractor = tooling::ecmascript::PtJSExtractor;
-
 public:
     static EcmaVM *Cast(PandaVM *object)
     {
@@ -98,8 +94,6 @@ public:
     EcmaVM();
 
     ~EcmaVM() override;
-
-    PtJSExtractor *GetDebugInfoExtractor(const panda_file::File *file);
 
     bool IsInitialized() const
     {
@@ -383,7 +377,9 @@ public:
         }
     }
 
-    static JSPandaFileManager* PUBLIC_API GetJSPandaFileManager();
+    void SetConstpool(const JSPandaFile *jsPandaFile, JSTaggedValue constpool);
+
+    JSTaggedValue FindConstpool(const JSPandaFile *jsPandaFile);
 
 protected:
     bool CheckEntrypointSignature([[maybe_unused]] Method *entrypoint) override
@@ -412,7 +408,7 @@ private:
 
     void InitializeEcmaScriptRunStat();
 
-    bool VerifyFilePath(const CString &filePath) const;
+    bool VerifyFilePath(const std::string &filePath) const;
 
     void ClearBufferData();
 
@@ -452,10 +448,11 @@ private:
     EcmaRuntimeStat *runtimeStat_ {nullptr};
 
     // For framewrok file snapshot.
-    CString snapshotFileName_;
-    CString frameworkAbcFileName_;
+    std::string snapshotFileName_;
+    std::string frameworkAbcFileName_;
     JSTaggedValue frameworkProgram_ {JSTaggedValue::Hole()};
     const JSPandaFile *frameworkPandaFile_ {nullptr};
+    CMap<const JSPandaFile *, JSTaggedValue> cachedConstpools_ {};
 
     // VM resources.
     ChunkVector<JSMethod *> nativeMethods_;

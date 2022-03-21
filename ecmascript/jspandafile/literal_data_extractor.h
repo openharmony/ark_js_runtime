@@ -32,11 +32,11 @@ public:
     DEFAULT_NOEXCEPT_MOVE_SEMANTIC(LiteralDataExtractor);
     DEFAULT_COPY_SEMANTIC(LiteralDataExtractor);
 
-    static void ExtractObjectDatas(JSThread *thread, const panda_file::File *pf, size_t index,
-                                   JSMutableHandle<TaggedArray> elements, JSMutableHandle<TaggedArray> properties,
-                                   PandaFileTranslator *pft);
-    static JSHandle<TaggedArray> GetDatasIgnoreType(JSThread *thread, const panda_file::File *pf, size_t index,
-                                                    PandaFileTranslator *pft = nullptr);
+    static void ExtractObjectDatas(JSThread *thread, const JSPandaFile *jsPandaFile, size_t index,
+                                   JSMutableHandle<TaggedArray> elements, JSMutableHandle<TaggedArray> properties);
+    static JSHandle<TaggedArray> GetDatasIgnoreType(JSThread *thread, const JSPandaFile *jsPandaFile, size_t index);
+    static JSHandle<JSFunction> DefineMethodInLiteral(JSThread *thread, JSMethod *method, FunctionKind kind,
+                                                      uint16_t length);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JSPANDAFILE_LITERAL_DATA_EXTRACTOR_H
