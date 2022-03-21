@@ -1679,7 +1679,7 @@ void InterpreterAssembly::HandleAnd2DynPrefV8(
     }
     // NOLINT(hicpp-signed-bitwise)
     auto ret = static_cast<uint32_t>(opNumber0) & static_cast<uint32_t>(opNumber1);
-    SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+    SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
     DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 
@@ -1718,7 +1718,7 @@ void InterpreterAssembly::HandleOr2DynPrefV8(
     }
     // NOLINT(hicpp-signed-bitwise)
     auto ret = static_cast<uint32_t>(opNumber0) | static_cast<uint32_t>(opNumber1);
-    SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+    SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
     DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 
@@ -1757,7 +1757,7 @@ void InterpreterAssembly::HandleXOr2DynPrefV8(
     }
     // NOLINT(hicpp-signed-bitwise)
     auto ret = static_cast<uint32_t>(opNumber0) ^ static_cast<uint32_t>(opNumber1);
-    SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+    SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
     DISPATCH(BytecodeInstruction::Format::PREF_V8);
 }
 

@@ -191,6 +191,7 @@ private:
     V(ReturnVoid, (GateRef gate))                                                     \
     V(CastIntXToIntY, (GateRef gate, GateRef e1))                                     \
     V(ChangeInt32ToDouble, (GateRef gate, GateRef e1))                                \
+    V(ChangeUInt32ToDouble, (GateRef gate, GateRef e1))                               \
     V(ChangeDoubleToInt32, (GateRef gate, GateRef e1))                                \
     V(BitCast, (GateRef gate, GateRef e1))                                            \
     V(IntLsl, (GateRef gate, GateRef e1, GateRef e2))                                 \

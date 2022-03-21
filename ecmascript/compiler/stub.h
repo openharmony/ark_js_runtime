@@ -685,6 +685,7 @@ public:
     GateRef TaggedCastToDouble(GateRef x);
     GateRef TaggedCastToWeakReferentUnChecked(GateRef x);
     GateRef ChangeInt32ToFloat64(GateRef x);
+    GateRef ChangeUInt32ToFloat64(GateRef x);
     GateRef ChangeFloat64ToInt32(GateRef x);
     GateRef ChangeTaggedPointerToInt64(GateRef x);
     GateRef ChangeInt64ToTagged(GateRef x);

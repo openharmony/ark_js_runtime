@@ -137,6 +137,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::STORE, &LLVMIRBuilder::HandleStore},
         {OpCode::SIGNED_INT_TO_FLOAT, &LLVMIRBuilder::HandleChangeInt32ToDouble},
+        {OpCode::UNSIGNED_INT_TO_FLOAT, &LLVMIRBuilder::HandleChangeUInt32ToDouble},
         {OpCode::FLOAT_TO_SIGNED_INT, &LLVMIRBuilder::HandleChangeDoubleToInt32},
         {OpCode::TAGGED_TO_INT64, &LLVMIRBuilder::HandleChangeTaggedPointerToInt64},
         {OpCode::INT64_TO_TAGGED, &LLVMIRBuilder::HandleChangeInt64ToTagged},
@@ -1464,6 +1465,12 @@ void LLVMIRBuilder::HandleChangeInt32ToDouble(GateRef gate)
     VisitChangeInt32ToDouble(gate, ins[0]);
 }
 
+void LLVMIRBuilder::HandleChangeUInt32ToDouble(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitChangeUInt32ToDouble(gate, ins[0]);
+}
+
 void LLVMIRBuilder::HandleChangeDoubleToInt32(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
@@ -1640,6 +1647,16 @@ void LLVMIRBuilder::VisitChangeInt32ToDouble(GateRef gate, GateRef e1)
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildSIToFP(builder_, e1Value, LLVMDoubleType(), "");
+    gateToLLVMMaps_[gate] = result;
+    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
+}
+
+void LLVMIRBuilder::VisitChangeUInt32ToDouble(GateRef gate, GateRef e1)
+{
+    COMPILER_LOG(DEBUG) << "int cast2 double gate:" << gate;
+    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
+    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildUIToFP(builder_, e1Value, LLVMDoubleType(), "");
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
