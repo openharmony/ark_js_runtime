@@ -84,6 +84,11 @@ struct AlignedPointer {
     static constexpr size_t SizeArch64 = sizeof(uint64_t);
 };
 
+struct AlignedSize {
+    static constexpr size_t SizeArch32 = sizeof(uint32_t);
+    static constexpr size_t SizeArch64 = sizeof(uint64_t);
+};
+
 struct AlignedUint64 {
     static constexpr size_t SizeArch32 = sizeof(uint64_t);
     static constexpr size_t SizeArch64 = sizeof(uint64_t);

@@ -225,6 +225,7 @@ public:
     inline GateRef GetFrame(GateRef frame);
     inline GateRef GetCurrentSpFrame(GateRef glue);
     inline GateRef GetPcFromFrame(GateRef frame);
+    inline GateRef GetCallSizeFromFrame(GateRef frame);
     inline GateRef GetFunctionFromFrame(GateRef frame);
     inline GateRef GetAccFromFrame(GateRef frame);
     inline GateRef GetEnvFromFrame(GateRef frame);
@@ -234,6 +235,7 @@ public:
 
     inline void SetCurrentSpFrame(GateRef glue, GateRef sp);
     inline void SetPcToFrame(GateRef glue, GateRef frame, GateRef value);
+    inline void SetCallSizeToFrame(GateRef glue, GateRef frame, GateRef value);
     inline void SetFunctionToFrame(GateRef glue, GateRef frame, GateRef value);
     inline void SetAccToFrame(GateRef glue, GateRef frame, GateRef value);
     inline void SetEnvToFrame(GateRef glue, GateRef frame, GateRef value);
