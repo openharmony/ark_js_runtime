@@ -27,6 +27,10 @@
 #include "ecmascript/ic/proto_change_details.h"
 #include "ecmascript/jobs/micro_job_queue.h"
 #include "ecmascript/jobs/pending_job.h"
+#include "ecmascript/js_api_arraylist_iterator.h"
+#include "ecmascript/js_api_queue_iterator.h"
+#include "ecmascript/js_api_tree_map_iterator.h"
+#include "ecmascript/js_api_tree_set_iterator.h"
 #include "ecmascript/jspandafile/class_info_extractor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/js_arguments.h"
@@ -160,6 +164,21 @@ void GlobalEnvConstants::InitRootsClass([[maybe_unused]] JSThread *thread, JSHCl
                 factory->NewEcmaDynClass(dynClassClass, TSFunctionType::SIZE, JSType::TS_FUNCTION_TYPE));
     SetConstant(ConstantIndex::TS_ARRAY_TYPE_CLASS_INDEX,
                 factory->NewEcmaDynClass(dynClassClass, TSArrayType::SIZE, JSType::TS_ARRAY_TYPE));
+    SetConstant(ConstantIndex::JS_SET_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSSetIterator::SIZE, JSType::JS_SET_ITERATOR));
+    SetConstant(ConstantIndex::JS_MAP_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSMapIterator::SIZE, JSType::JS_MAP_ITERATOR));
+    SetConstant(ConstantIndex::JS_ARRAY_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSArrayIterator::SIZE, JSType::JS_ARRAY_ITERATOR));
+    SetConstant(
+        ConstantIndex::JS_API_ARRAYLIST_ITERATOR_CLASS_INDEX,
+        factory->NewEcmaDynClass(dynClassClass, JSAPIArrayListIterator::SIZE, JSType::JS_API_ARRAYLIST_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_QUEUE_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPIQueueIterator::SIZE, JSType::JS_API_QUEUE_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_TREE_MAP_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPITreeMapIterator::SIZE, JSType::JS_API_TREEMAP_ITERATOR));
+    SetConstant(ConstantIndex::JS_API_TREE_SET_ITERATOR_CLASS_INDEX,
+                factory->NewEcmaDynClass(dynClassClass, JSAPITreeSetIterator::SIZE, JSType::JS_API_TREESET_ITERATOR));
 }
 
 // NOLINTNEXTLINE(readability-function-size)
