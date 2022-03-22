@@ -18,8 +18,9 @@
 #include "ecmascript/jspandafile/program_object-inl.h"
 
 namespace panda::ecmascript {
-JSPandaFile::JSPandaFile(const panda_file::File *pf, const CString &descriptor) : pf_(pf), desc_(descriptor)
+JSPandaFile::JSPandaFile(const panda_file::File *pf, const std::string &descriptor) : pf_(pf), desc_(descriptor)
 {
+    ASSERT(pf_ != nullptr);
     Initialize();
 }
 
@@ -77,7 +78,7 @@ void JSPandaFile::Initialize()
     methods_ = static_cast<JSMethod *>(JSPandaFileManager::AllocateBuffer(sizeof(JSMethod) * numMethods_));
 }
 
-const JSMethod *JSPandaFile::FindMethods(uint32_t offset) const
+JSMethod *JSPandaFile::FindMethods(uint32_t offset) const
 {
     return methodMap_.at(offset);
 }

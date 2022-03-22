@@ -198,12 +198,18 @@ void JSThread::ShrinkHandleStorage(int prevIndex)
     int32_t lastIndex = handleStorageNodes_.size() - 1;
 #if ECMASCRIPT_ENABLE_ZAP_MEM
     uintptr_t size = ToUintPtr(handleScopeStorageEnd_) - ToUintPtr(handleScopeStorageNext_);
-    int checkRes = memset_s(handleScopeStorageNext_, size, 0, size);
-    ASSERT(checkRes == EOK);
+    if (memset_s(handleScopeStorageNext_, size, 0, size) != EOK) {
+        LOG_ECMA(FATAL) << "memcpy_s failed";
+        UNREACHABLE();
+    }
     for (int32_t i = currentHandleStorageIndex_ + 1; i < lastIndex; i++) {
-        checkRes = memset_s(handleStorageNodes_[i], NODE_BLOCK_SIZE * sizeof(JSTaggedType), 0,
-                            NODE_BLOCK_SIZE * sizeof(JSTaggedType));
-        ASSERT(checkRes == EOK);
+        if (memset_s(handleStorageNodes_[i],
+                     NODE_BLOCK_SIZE * sizeof(JSTaggedType), 0,
+                     NODE_BLOCK_SIZE * sizeof(JSTaggedType)) !=
+                     EOK) {
+            LOG_ECMA(FATAL) << "memcpy_s failed";
+            UNREACHABLE();
+        }
     }
 #endif
 
@@ -254,18 +260,31 @@ void JSThread::LoadStubModule(const char *moduleFile)
         }
     }
     auto defaultBCHandlerDes = stubs[CommonStubCSigns::SingleStepDebugging];
-    ASSERT(defaultBCHandlerDes.IsBCHandler());
-    glueData_.bcHandlers_.SetUnsupportedBCHandlers(defaultBCHandlerDes.codeAddr_);
+    glueData_.bcHandlers_.SetUnrealizedBCHandlers(defaultBCHandlerDes.codeAddr_);
+    auto defaultUnusedBCSlotsDes = stubs[CommonStubCSigns::HandleOverflow];
+    glueData_.bcHandlers_.SetUnusedBCSlotsHandlers(defaultUnusedBCSlotsDes.codeAddr_);
 #define UNDEF_STUB(name, counter)                                                       \
     glueData_.bcHandlers_.Set(BytecodeStubCSigns::ID_##name, defaultBCHandlerDes.codeAddr_);
     INTERPRETER_IGNORED_BC_STUB_LIST(UNDEF_STUB)
 #undef UNDEF_STUB
+
+#define ADD_COMMON_BC_HELPER(name)                                                       \
+    glueData_.bcHandlers_.Set(BCHandlers::BC_COUNT + kungfu::BytecodeHelperId::name##Id, \
+        stubs[CommonStubCSigns::name].codeAddr_);
+    COMMON_EXPROTED_TO_BC_STUB_LIST(ADD_COMMON_BC_HELPER)
+#undef ADD_COMMON_BC_HELPER
+
+#define ADD_RUNTIME_BC_HELPER(name)                                                      \
+    glueData_.bcHandlers_.Set(BCHandlers::BC_COUNT + kungfu::BytecodeHelperId::name##Id, \
+        reinterpret_cast<uintptr_t>(name));
+    RUNTIME_EXPROTED_TO_BC_STUB_LIST(ADD_RUNTIME_BC_HELPER)
+#undef ADD_RUNTIME_BC_HELPER
     AsmInterParsedOption asmInterOpt = GetEcmaVM()->GetJSOptions().GetAsmInterParsedOption();
     if (asmInterOpt.handleStart >= 0 && asmInterOpt.handleStart < kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS
         && asmInterOpt.handleEnd >= 0 && asmInterOpt.handleEnd < kungfu::BytecodeStubCSigns::NUM_OF_ALL_STUBS
         && asmInterOpt.handleStart <= asmInterOpt.handleEnd) {
-        for (size_t i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd; i++) {
-            glueData_.bcHandlers_.Set(i, defaultBCHandlerDes.codeAddr_);
+        for (int i = asmInterOpt.handleStart; i <= asmInterOpt.handleEnd; i++) {
+            glueData_.bcHandlers_.Set(static_cast<size_t>(i), defaultBCHandlerDes.codeAddr_);
         }
     }
 #ifdef NDEBUG

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef ECMASCRIPT_JSFUCNTION_H
-#define ECMASCRIPT_JSFUCNTION_H
+#ifndef ECMASCRIPT_JSFUNCTION_H
+#define ECMASCRIPT_JSFUNCTION_H
 
 #include "ecmascript/accessor_data.h"
 #include "ecmascript/ecma_macros.h"
@@ -355,4 +355,4 @@ public:
 };
 }  // namespace panda::ecmascript
 
-#endif  // ECMASCRIPT_JSFUCNTION_H
+#endif  // ECMASCRIPT_JSFUNCTION_H

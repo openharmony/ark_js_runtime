@@ -94,7 +94,7 @@ public:
     static void Event(DebugEvent event, PtThread thread = PtThread::NONE,
                       PtLocation location = PtLocation("", EntityId(0), 0))
     {
-        LOG(DEBUG, DEBUGGER) << "Occured event " << event << " in thread with id " << thread.GetId();
+        LOG(DEBUG, DEBUGGER) << "Occurred event " << event << " in thread with id " << thread.GetId();
         os::memory::LockHolder holder(eventMutex_);
         lastEvent_ = event;
         lastEventThread_ = thread;

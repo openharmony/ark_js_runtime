@@ -24,8 +24,8 @@ JSTaggedValue ScopeInfoExtractor::GenerateScopeInfo(JSThread *thread, uint16_t s
     EcmaVM *ecmaVm = thread->GetEcmaVM();
     ObjectFactory *factory = ecmaVm->GetFactory();
     JSMethod *method = InterpretedFrameHandler(thread).GetMethod();
-    const panda_file::File *pf = method->GetPandaFile();
-    JSHandle<TaggedArray> elementsLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, pf, scopeId);
+    const JSPandaFile *jsPandaFile = method->GetJSPandaFile();
+    JSHandle<TaggedArray> elementsLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, scopeId);
     ASSERT(elementsLiteral->GetLength() > 0);
     size_t length = elementsLiteral->GetLength();
 

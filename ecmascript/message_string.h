@@ -29,6 +29,7 @@ namespace panda::ecmascript {
     V(GetPropertyOutOfBounds, "Get Property index out-of-bounds")                 \
     V(CanNotSetPropertyOnContainer, "Cannot set property on Container")           \
     V(ASM_INTERPRETER_STUB_NAME, "ASM_INTERPRETER stub name: ")                   \
+    V(OPCODE_OVERFLOW, "opcode overflow!")                                        \
     V(INT32_VALUE, "value: %ld")
 
 class MessageString {

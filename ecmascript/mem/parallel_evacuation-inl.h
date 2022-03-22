@@ -84,7 +84,7 @@ bool ParallelEvacuation::UpdateWeakObjectSlot(TaggedObject *value, ObjectSlot &s
 void ParallelEvacuation::SetObjectFieldRSet(TaggedObject *object, JSHClass *cls)
 {
     Region *region = Region::ObjectAddressToRange(object);
-    auto callbackWithCSet = [this, region](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
+    auto callbackWithCSet = [region](TaggedObject *root, ObjectSlot start, ObjectSlot end) {
         for (ObjectSlot slot = start; slot < end; slot++) {
             JSTaggedType value = slot.GetTaggedType();
             if (JSTaggedValue(value).IsHeapObject()) {

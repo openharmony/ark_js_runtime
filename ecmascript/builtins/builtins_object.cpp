@@ -311,10 +311,10 @@ JSTaggedValue BuiltinsObject::Freeze(EcmaRuntimeCallInfo *argv)
 }
 
 // 19.1.2.6 Object.getOwnPropertyDescriptor ( O, P )
-JSTaggedValue BuiltinsObject::GetOwnPropertyDesciptor(EcmaRuntimeCallInfo *argv)
+JSTaggedValue BuiltinsObject::GetOwnPropertyDescriptor(EcmaRuntimeCallInfo *argv)
 {
     ASSERT(argv);
-    BUILTINS_API_TRACE(argv->GetThread(), Object, GetOwnPropertyDesciptor);
+    BUILTINS_API_TRACE(argv->GetThread(), Object, GetOwnPropertyDescriptor);
     JSThread *thread = argv->GetThread();
     [[maybe_unused]] EcmaHandleScope handleScope(thread);
 

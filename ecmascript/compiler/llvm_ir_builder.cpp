@@ -124,6 +124,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::OR, &LLVMIRBuilder::HandleIntOr},
         {OpCode::XOR, &LLVMIRBuilder::HandleIntXor},
         {OpCode::LSR, &LLVMIRBuilder::HandleIntLsr},
+        {OpCode::ASR, &LLVMIRBuilder::HandleIntAsr},
         {OpCode::SLT, &LLVMIRBuilder::HandleCmp},
         {OpCode::ULT, &LLVMIRBuilder::HandleCmp},
         {OpCode::SLE, &LLVMIRBuilder::HandleCmp},
@@ -137,6 +138,7 @@ void LLVMIRBuilder::AssignHandleMap()
         {OpCode::LOAD, &LLVMIRBuilder::HandleLoad},
         {OpCode::STORE, &LLVMIRBuilder::HandleStore},
         {OpCode::SIGNED_INT_TO_FLOAT, &LLVMIRBuilder::HandleChangeInt32ToDouble},
+        {OpCode::UNSIGNED_INT_TO_FLOAT, &LLVMIRBuilder::HandleChangeUInt32ToDouble},
         {OpCode::FLOAT_TO_SIGNED_INT, &LLVMIRBuilder::HandleChangeDoubleToInt32},
         {OpCode::TAGGED_TO_INT64, &LLVMIRBuilder::HandleChangeTaggedPointerToInt64},
         {OpCode::INT64_TO_TAGGED, &LLVMIRBuilder::HandleChangeInt64ToTagged},
@@ -641,8 +643,14 @@ void LLVMIRBuilder::VisitBytecodeCall(GateRef gate, const std::vector<GateRef> &
     LLVMValueRef opcodeOffset = gateToLLVMMaps_[inList[1]];
     ASSERT(stubModule_ != nullptr);
     LLVMValueRef callee;
-    // start index of bytecode handler csign in llvmModule
-    LLVMTypeRef rtfuncType = stubModule_->GetFunctionType(CommonStubCSigns::NUM_OF_STUBS);
+    LLVMTypeRef rtfuncType;
+    if (BCHandlers::GetHandlerOffset(BCHandlers::BC_COUNT + BytecodeHelperId::HandleCommonCallId) == inList[1]) {
+        rtfuncType = stubModule_->GetFunctionType(CommonStubCSigns::NUM_OF_STUBS +
+            BytecodeStubCSigns::NUM_OF_VALID_STUBS + RuntimeStubCSigns::NOGCSTUB_ID_HandleCommonCall);
+    } else {
+        // start index of bytecode handler csign in llvmModule
+        rtfuncType = stubModule_->GetFunctionType(CommonStubCSigns::NUM_OF_STUBS);
+    }
     LLVMTypeRef rtfuncTypePtr = LLVMPointerType(rtfuncType, 0);
     LLVMValueRef glue = gateToLLVMMaps_[inList[2]];  // 2 : 2 means skip two input gates (target glue)
     LLVMTypeRef glue_type = LLVMTypeOf(glue);
@@ -1350,6 +1358,13 @@ void LLVMIRBuilder::HandleIntLsr(GateRef gate)
     VisitIntLsr(gate, g0, g1);
 }
 
+void LLVMIRBuilder::HandleIntAsr(GateRef gate)
+{
+    auto g0 = circuit_->GetIn(gate, 0);
+    auto g1 = circuit_->GetIn(gate, 1);
+    VisitIntAsr(gate, g0, g1);
+}
+
 void LLVMIRBuilder::HandleCmp(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
@@ -1464,6 +1479,12 @@ void LLVMIRBuilder::HandleChangeInt32ToDouble(GateRef gate)
     VisitChangeInt32ToDouble(gate, ins[0]);
 }
 
+void LLVMIRBuilder::HandleChangeUInt32ToDouble(GateRef gate)
+{
+    std::vector<GateRef> ins = circuit_->GetInVector(gate);
+    VisitChangeUInt32ToDouble(gate, ins[0]);
+}
+
 void LLVMIRBuilder::HandleChangeDoubleToInt32(GateRef gate)
 {
     std::vector<GateRef> ins = circuit_->GetInVector(gate);
@@ -1575,6 +1596,20 @@ void LLVMIRBuilder::VisitIntLsr(GateRef gate, GateRef e1, GateRef e2)
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }
 
+void LLVMIRBuilder::VisitIntAsr(GateRef gate, GateRef e1, GateRef e2)
+{
+    COMPILER_LOG(DEBUG) << "int lsr gate:" << gate;
+    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
+    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    LLVMValueRef e2Value = gateToLLVMMaps_[e2];
+    COMPILER_LOG(DEBUG) << "operand 1: " << LLVMValueToString(e2Value);
+    e1Value = CanonicalizeToInt(e1Value);
+    e2Value = CanonicalizeToInt(e2Value);
+    LLVMValueRef result = LLVMBuildAShr(builder_, e1Value, e2Value, "");
+    gateToLLVMMaps_[gate] = result;
+    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
+}
+
 void LLVMIRBuilder::HandleIntLsl(GateRef gate)
 {
     auto g0 = circuit_->GetIn(gate, 0);
@@ -1640,6 +1675,16 @@ void LLVMIRBuilder::VisitChangeInt32ToDouble(GateRef gate, GateRef e1)
     LLVMValueRef e1Value = gateToLLVMMaps_[e1];
     COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
     LLVMValueRef result = LLVMBuildSIToFP(builder_, e1Value, LLVMDoubleType(), "");
+    gateToLLVMMaps_[gate] = result;
+    COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
+}
+
+void LLVMIRBuilder::VisitChangeUInt32ToDouble(GateRef gate, GateRef e1)
+{
+    COMPILER_LOG(DEBUG) << "int cast2 double gate:" << gate;
+    LLVMValueRef e1Value = gateToLLVMMaps_[e1];
+    COMPILER_LOG(DEBUG) << "operand 0: " << LLVMValueToString(e1Value);
+    LLVMValueRef result = LLVMBuildUIToFP(builder_, e1Value, LLVMDoubleType(), "");
     gateToLLVMMaps_[gate] = result;
     COMPILER_LOG(DEBUG) << "result: " << LLVMValueToString(result);
 }

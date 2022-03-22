@@ -392,6 +392,17 @@ void RuntimeStubs::DebugPrint(int fmtMessageId, ...)
     va_end(args);
 }
 
+void RuntimeStubs::FatalPrint(int fmtMessageId, ...)
+{
+    std::string format = MessageString::GetMessageString(fmtMessageId);
+    va_list args;
+    va_start(args, fmtMessageId);
+    std::string result = panda::helpers::string::Vformat(format.c_str(), args);
+    std::cerr << result << std::endl;
+    va_end(args);
+    std::abort();
+}
+
 DEF_RUNTIME_STUBS(NoticeThroughChainAndRefreshUser)
 {
     RUNTIME_STUBS_HEADER(NoticeThroughChainAndRefreshUser);
@@ -729,123 +740,64 @@ DEF_RUNTIME_STUBS(NotDyn)
     return RuntimeNotDyn(thread, value).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(ChangeUintAndIntShrToJSTaggedValue)
+DEF_RUNTIME_STUBS(Shl2Dyn)
 {
-    RUNTIME_STUBS_HEADER(ChangeUintAndIntShrToJSTaggedValue);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
-
-    int32_t leftInt32 = JSTaggedValue::ToInt32(thread, leftHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-    int32_t rightInt32 = JSTaggedValue::ToUint32(thread, rightHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-
-    uint32_t shift = static_cast<uint32_t>(rightInt32) & 0x1f;
-    auto ret = static_cast<int32_t>(leftInt32 >> shift);
-    return JSTaggedValue(ret).GetRawData();
+    RUNTIME_STUBS_HEADER(Shl2Dyn);
+    CONVERT_ARG_TAGGED_CHECKED(left, 0);
+    CONVERT_ARG_TAGGED_CHECKED(right, 1);
+    
+    auto res = SlowRuntimeStub::Shl2Dyn(thread, left, right);
+    return JSTaggedValue(res).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(ChangeTwoInt32AndToJSTaggedValue)
+DEF_RUNTIME_STUBS(Shr2Dyn)
 {
-    RUNTIME_STUBS_HEADER(ChangeTwoInt32AndToJSTaggedValue);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
-
-    int32_t leftInt = JSTaggedValue::ToInt32(thread, leftHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-    int32_t rightInt = JSTaggedValue::ToInt32(thread, rightHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-
-    auto ret = static_cast<uint32_t>(leftInt) & static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
+    RUNTIME_STUBS_HEADER(Shr2Dyn);
+    CONVERT_ARG_TAGGED_CHECKED(left, 0);
+    CONVERT_ARG_TAGGED_CHECKED(right, 1);
+    
+    auto res = SlowRuntimeStub::Shr2Dyn(thread, left, right);
+    return JSTaggedValue(res).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(ChangeTwoInt32OrToJSTaggedValue)
+DEF_RUNTIME_STUBS(Ashr2Dyn)
 {
-    RUNTIME_STUBS_HEADER(ChangeTwoInt32OrToJSTaggedValue);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
-
-    int32_t leftInt = JSTaggedValue::ToInt32(thread, leftHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-    int32_t rightInt = JSTaggedValue::ToInt32(thread, rightHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-
-    auto ret = static_cast<uint32_t>(leftInt) | static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
+    RUNTIME_STUBS_HEADER(Ashr2Dyn);
+    CONVERT_ARG_TAGGED_CHECKED(left, 0);
+    CONVERT_ARG_TAGGED_CHECKED(right, 1);
+    
+    auto res = SlowRuntimeStub::Ashr2Dyn(thread, left, right);
+    return JSTaggedValue(res).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(ChangeTwoInt32XorToJSTaggedValue)
+DEF_RUNTIME_STUBS(And2Dyn)
 {
-    RUNTIME_STUBS_HEADER(ChangeTwoInt32XorToJSTaggedValue);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
-
-    int32_t leftInt = JSTaggedValue::ToInt32(thread, leftHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-    int32_t rightInt = JSTaggedValue::ToInt32(thread, rightHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-
-    auto ret = static_cast<uint32_t>(leftInt) ^ static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(static_cast<uint32_t>(ret)).GetRawData();
+    RUNTIME_STUBS_HEADER(And2Dyn);
+    CONVERT_ARG_TAGGED_CHECKED(left, 0);
+    CONVERT_ARG_TAGGED_CHECKED(right, 1);
+    
+    auto res = SlowRuntimeStub::And2Dyn(thread, left, right);
+    return JSTaggedValue(res).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(ChangeTwoUint32AndToJSTaggedValue)
+DEF_RUNTIME_STUBS(Xor2Dyn)
 {
-    RUNTIME_STUBS_HEADER(ChangeTwoUint32AndToJSTaggedValue);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
+    RUNTIME_STUBS_HEADER(Xor2Dyn);
+    CONVERT_ARG_TAGGED_CHECKED(left, 0);
+    CONVERT_ARG_TAGGED_CHECKED(right, 1);
 
-    int32_t leftInt = JSTaggedValue::ToUint32(thread, leftHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-    int32_t rightInt = JSTaggedValue::ToUint32(thread, rightHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-
-    auto ret = static_cast<uint32_t>(leftInt) & static_cast<uint32_t>(rightInt);
-    return JSTaggedValue(ret).GetRawData();
+    auto res = SlowRuntimeStub::Xor2Dyn(thread, left, right);
+    return JSTaggedValue(res).GetRawData();
 }
 
-DEF_RUNTIME_STUBS(ChangeUintAndIntShlToJSTaggedValue)
+DEF_RUNTIME_STUBS(Or2Dyn)
 {
-    RUNTIME_STUBS_HEADER(ChangeUintAndIntShlToJSTaggedValue);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, leftHandle, 0);
-    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, rightHandle, 1);
-
-    int32_t leftInt32 = JSTaggedValue::ToInt32(thread, leftHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-    int32_t rightInt32 = JSTaggedValue::ToUint32(thread, rightHandle);
-    if (thread->HasPendingException()) {
-        return JSTaggedValue::Exception().GetRawData();
-    }
-
-    uint32_t shift =
-        static_cast<uint32_t>(rightInt32) & 0x1f;  // NOLINT(hicpp-signed-bitwise, readability-magic-numbers)
-    using unsigned_type = std::make_unsigned_t<int32_t>;
-    auto ret =
-        static_cast<int32_t>(static_cast<unsigned_type>(leftInt32) << shift);  // NOLINT(hicpp-signed-bitwise)
-    return JSTaggedValue(ret).GetRawData();
+    RUNTIME_STUBS_HEADER(Or2Dyn);
+    CONVERT_ARG_TAGGED_CHECKED(left, 0);
+    CONVERT_ARG_TAGGED_CHECKED(right, 1);
+    
+    auto res = SlowRuntimeStub::Or2Dyn(thread, left, right);
+    return JSTaggedValue(res).GetRawData();
 }
 
 DEF_RUNTIME_STUBS(ResolveClass)

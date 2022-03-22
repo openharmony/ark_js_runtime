@@ -22,7 +22,6 @@ module_output_path = "ark/js_runtime"
 config("debug_api_test") {
   visibility = [ ":*" ]
 
-  cflags_cc = [ "-Wno-gnu-zero-variadic-macro-arguments" ]
   ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
   include_dirs = [
     "//ark/js_runtime",

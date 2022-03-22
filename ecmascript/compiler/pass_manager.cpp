@@ -23,7 +23,7 @@
 #include "pass.h"
 
 namespace panda::ecmascript::kungfu {
-bool PassManager::Compile(std::string fileName)
+bool PassManager::Compile(const std::string &fileName)
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
@@ -46,23 +46,22 @@ bool PassManager::Compile(std::string fileName)
     return true;
 }
 
-bool PassManager::CollectInfoOfPandaFile(const std::string &filename, BytecodeTranslationInfo *translateInfo)
+bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, BytecodeTranslationInfo *translateInfo)
 {
     if (translateInfo == nullptr) {
         return false;
     }
     const JSPandaFile *jsPandaFile =
-        vm_->GetJSPandaFileManager()->LoadAotInfoFromPf(filename, &(translateInfo->methodPcInfos));
+        JSPandaFileManager::GetInstance()->LoadAotInfoFromPf(fileName, &(translateInfo->methodPcInfos));
     if (jsPandaFile == nullptr) {
         return false;
     }
     translateInfo->jsPandaFile = jsPandaFile;
 
     TSLoader *tsLoader = vm_->GetTSLoader();
-    tsLoader->DecodeTSTypes(*jsPandaFile->GetPandaFile());
+    tsLoader->DecodeTSTypes(jsPandaFile);
 
-    PandaFileTranslator translator(vm_, jsPandaFile);
-    auto program = translator.GenerateProgram();
+    auto program = PandaFileTranslator::GenerateProgram(vm_, jsPandaFile);
     JSHandle<JSFunction> mainFunc(vm_->GetJSThread(), program->GetMainFunction());
     JSHandle<JSTaggedValue> constPool(vm_->GetJSThread(), mainFunc->GetConstantPool());
     translateInfo->constantPool = constPool;

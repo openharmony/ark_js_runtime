@@ -45,9 +45,9 @@ public:
     DEFINE_ALIGN_SIZE(LAST_OFFSET);
 
     // define BitField
-    static constexpr size_t ROUDING_TYPE_BITS = 3;
+    static constexpr size_t ROUNDING_TYPE_BITS = 3;
     static constexpr size_t TYPE_BITS = 2;
-    FIRST_BIT_FIELD(BitField, RoundingType, RoundingType, ROUDING_TYPE_BITS)
+    FIRST_BIT_FIELD(BitField, RoundingType, RoundingType, ROUNDING_TYPE_BITS)
     NEXT_BIT_FIELD(BitField, Type, TypeOption, TYPE_BITS, RoundingType)
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LOCALE_OFFSET, BIT_FIELD_OFFSET)
