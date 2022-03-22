@@ -1925,39 +1925,39 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
     auto tsType = 0;
     switch (opcode) {
         case EcmaOpcode::LDNAN_PREF:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::F64,
                                     bit_cast<int64_t>(panda::ecmascript::base::NAN_VALUE),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
         case EcmaOpcode::LDINFINITY_PREF:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::F64,
                                     bit_cast<int64_t>(panda::ecmascript::base::POSITIVE_INFINITY),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
         case EcmaOpcode::LDUNDEFINED_PREF:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_UNDEFINED).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_UNDEFINED).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, JSTaggedValue::VALUE_UNDEFINED,
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
         case EcmaOpcode::LDNULL_PREF:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_NULL).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NULL).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, JSTaggedValue::VALUE_NULL,
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
         case EcmaOpcode::LDTRUE_PREF:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_BOOLEAN).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_BOOLEAN).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, JSTaggedValue::VALUE_TRUE,
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
         case EcmaOpcode::LDFALSE_PREF:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_BOOLEAN).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_BOOLEAN).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64, JSTaggedValue::VALUE_FALSE,
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
@@ -1968,14 +1968,14 @@ GateRef BytecodeCircuitBuilder::SetGateConstant(const BytecodeInfo &info)
                                     GateType::TAGGED_NO_POINTER);
             break;
         case EcmaOpcode::LDAI_DYN_IMM32:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::I64,
                                     std::get<Immediate>(info.inputs[0]).GetValue(),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
                                     static_cast<GateType>(tsType));
             break;
         case EcmaOpcode::FLDAI_DYN_IMM64:
-            tsType = tsLoader->GetPrmitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
+            tsType = tsLoader->GetPrimitiveGT(TSTypeKind::TS_NUMBER).GetGlobalTSTypeRef();
             gate = circuit_.NewGate(OpCode(OpCode::CONSTANT), MachineType::F64,
                                     std::get<Immediate>(info.inputs.at(0)).GetValue(),
                                     {Circuit::GetCircuitRoot(OpCode(OpCode::CONSTANT_LIST))},
@@ -2378,7 +2378,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                         ASSERT(!acc && reg >= offsetArgs && reg < offsetArgs + argGates.size());
                         const panda_file::File *pf = file_->GetPandaFile();
                         auto argVreg = reg - offsetArgs;
-                        auto tsType = tsLoader->GetGTFromPandFile(*pf, argVreg, method_).GetGlobalTSTypeRef();
+                        auto tsType = tsLoader->GetGTFromPandaFile(*pf, argVreg, method_).GetGlobalTSTypeRef();
                         auto index = GetFunctionArgIndex(reg, offsetArgs);
                         circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
                         return argGates.at(index);
@@ -2389,7 +2389,7 @@ void BytecodeCircuitBuilder::BuildCircuit(BytecodeGraph &byteCodeGraph)
                     } else {
                         // def-site already found
                         const panda_file::File *pf = file_->GetPandaFile();
-                        auto tsType = tsLoader->GetGTFromPandFile(*pf, reg, method_).GetGlobalTSTypeRef();
+                        auto tsType = tsLoader->GetGTFromPandaFile(*pf, reg, method_).GetGlobalTSTypeRef();
                         circuit_.LoadGatePtr(ans)->SetGateType(static_cast<GateType>(tsType));
                         return ans;
                     }

@@ -406,6 +406,7 @@ public:
 #endif
         return true;
     }
+
 private:
     static constexpr double MOST_OBJECT_ALIVE_THRESHOLD_PERCENT = 0.8;
     uintptr_t flags_;  // Memory alignment, only low 32bits are used now

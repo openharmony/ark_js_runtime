@@ -72,6 +72,7 @@ public:
         return {pandaFile_, entryPoint_};
     }
     ~JsBreakpointTest() = default;
+
 private:
     CString pandaFile_ = "/data/test/Sample.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";

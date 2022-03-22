@@ -62,6 +62,7 @@ public:
     void StopCpuProfiler();
     std::string GetProfileName() const;
     virtual ~CpuProfiler();
+
 private:
     static CMap<std::string, int> scriptIdMap_;
     static std::atomic<CpuProfiler*> singleton_;

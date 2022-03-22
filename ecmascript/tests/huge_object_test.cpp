@@ -122,7 +122,7 @@ HWTEST_F_L0(HugeObjectTest, MultipleArrays)
     size_t failCount = 0;
     VerifyObjectVisitor objVerifier(heap, &failCount);
     heap->GetHugeObjectSpace()->IterateOverObjects(objVerifier);  // newspace reference the old space
-    EXPECT_TRUE(failCount == 0);
+    EXPECT_EQ(failCount, 0);
 #endif
 }
 }  // namespace panda::test
