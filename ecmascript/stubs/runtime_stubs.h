@@ -190,7 +190,9 @@ extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp
     V(CallArgs2Dyn, 4)                       \
     V(CallArgs3Dyn, 5)                       \
     V(CallIThisRangeDyn, 3)                  \
-    V(CallIRangeDyn, 2)
+    V(CallIRangeDyn, 2)                      \
+    V(LdBigInt, 2)                           \
+    V(NewLexicalEnvWithNameDyn, 3)
 
 #define RUNTIME_EXPROTED_TO_BC_STUB_LIST(V) \
     V(HandleCommonCall)
@@ -400,6 +402,8 @@ private:
     static inline JSTaggedValue RuntimeThrowSyntaxError(JSThread *thread, const char *message);
     static inline JSTaggedType RuntimeNativeCall(JSThread *thread, JSTaggedValue func, bool callThis,
                                                  uint32_t actualNumArgs, std::vector<JSTaggedType> &actualArgs);
+    static inline JSTaggedValue RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt);
+    static inline JSTaggedValue RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId);
 };
 }  // namespace panda::ecmascript
 #endif

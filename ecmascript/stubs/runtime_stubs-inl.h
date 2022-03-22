@@ -32,6 +32,7 @@
 #include "ecmascript/js_promise.h"
 #include "ecmascript/module/js_module_manager.h"
 #include "ecmascript/template_string.h"
+#include "ecmascript/jspandafile/scope_info_extractor.h"
 
 namespace panda::ecmascript {
 JSTaggedValue RuntimeStubs::RuntimeIncDyn(JSThread *thread, const JSHandle<JSTaggedValue> &value)
@@ -1604,6 +1605,24 @@ JSTaggedType RuntimeStubs::RuntimeNativeCall(JSThread *thread, JSTaggedValue fun
     JSTaggedValue retValue = reinterpret_cast<EcmaEntrypoint>(
                 const_cast<void *>(method->GetNativePointer()))(&ecmaRuntimeCallInfo);
     return retValue.GetRawData();
+}
+
+JSTaggedValue RuntimeStubs::RuntimeLdBigInt(JSThread *thread, const JSHandle<JSTaggedValue> &numberBigInt)
+{
+    return JSTaggedValue::ToBigInt(thread, numberBigInt);
+}
+
+JSTaggedValue RuntimeStubs::RuntimeNewLexicalEnvWithNameDyn(JSThread *thread, uint16_t numVars, uint16_t scopeId)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<LexicalEnv> newEnv = factory->NewLexicalEnv(numVars);
+
+    JSTaggedValue currentLexenv = thread->GetCurrentLexenv();
+    newEnv->SetParentEnv(thread, currentLexenv);
+    JSTaggedValue scopeInfo = ScopeInfoExtractor::GenerateScopeInfo(thread, scopeId);
+    newEnv->SetScopeInfo(thread, scopeInfo);
+    RETURN_EXCEPTION_IF_ABRUPT_COMPLETION(thread);
+    return newEnv.GetTaggedValue();
 }
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_RUNTIME_TRAMPOLINES_INL_H
