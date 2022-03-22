@@ -244,9 +244,9 @@ private:
     V(SingleStepDebugging)                  \
     V(AsmInterpreterEntry)                  \
     V(HandleOverflow)                       \
-    V(RuntimeCallTrampolineInterpreterAsm)  \
-    V(RuntimeCallTrampolineAot)             \
-    V(AotCallAotTrampoline)                 \
+    V(AsmIntCallRuntime)                    \
+    V(OptimizedCallRuntime)                 \
+    V(OptimizedCallOptimized)               \
     V(HandleCommonCall)                     \
     V(DebugPrint)                           \
     V(FatalPrint)                           \

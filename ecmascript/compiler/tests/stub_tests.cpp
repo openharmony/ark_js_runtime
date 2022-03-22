@@ -94,17 +94,17 @@ HWTEST_F_L0(StubTest, FastAddTest)
     assembler.Run();
     // Testcase build and run
     auto stubAddr = reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function));
-    JSTaggedType argv[2] = {JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData()};
+    JSTaggedType argV[2] = {JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData()};
     JSTaggedValue resA(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
-    argv[0] = JSTaggedValue(2).GetRawData();
-    argv[1] = JSTaggedValue(2).GetRawData();
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argV, stubAddr));
+    argV[0] = JSTaggedValue(2).GetRawData();
+    argV[1] = JSTaggedValue(2).GetRawData();
     JSTaggedValue resB(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
-    argv[0] = JSTaggedValue(11).GetRawData();
-    argv[1] = JSTaggedValue(11).GetRawData();
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argV, stubAddr));
+    argV[0] = JSTaggedValue(11).GetRawData();
+    argV[1] = JSTaggedValue(11).GetRawData();
     JSTaggedValue resC(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argV, stubAddr));
     LOG_ECMA(INFO) << "res for FastAdd(1, 1) = " << resA.GetNumber();
     LOG_ECMA(INFO) << "res for FastAdd(2, 2) = " << resB.GetNumber();
     LOG_ECMA(INFO) << "res for FastAdd(11, 11) = " << resC.GetNumber();
@@ -113,10 +113,10 @@ HWTEST_F_L0(StubTest, FastAddTest)
     EXPECT_EQ(resC.GetNumber(), JSTaggedValue(22).GetNumber());
     int x1 = 2147483647;
     int y1 = 15;
-    argv[0] = JSTaggedValue(x1).GetRawData();
-    argv[1] = JSTaggedValue(y1).GetRawData();
+    argV[0] = JSTaggedValue(x1).GetRawData();
+    argV[1] = JSTaggedValue(y1).GetRawData();
     JSTaggedValue resG(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argV, stubAddr));
     auto expectedG = FastRuntimeStub::FastAdd(JSTaggedValue(x1), JSTaggedValue(y1));
     EXPECT_EQ(resG, expectedG);
 }
@@ -139,15 +139,15 @@ HWTEST_F_L0(StubTest, FastSubTest)
     auto stubAddr = reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function));
     JSTaggedType argv[2] = {JSTaggedValue(2).GetRawData(), JSTaggedValue(1).GetRawData()};
     JSTaggedValue resA(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     argv[0] = JSTaggedValue(7).GetRawData(); // 7 : test case
     argv[1] = JSTaggedValue(2).GetRawData(); // 2 : test case
     JSTaggedValue resB(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     argv[0] = JSTaggedValue(11).GetRawData(); // 11 : test case
     argv[1] = JSTaggedValue(11).GetRawData(); // 11 : test case
     JSTaggedValue resC(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     LOG_ECMA(INFO) << "res for FastSub(2, 1) = " << resA.GetNumber();
     LOG_ECMA(INFO) << "res for FastSub(7, 2) = " << resB.GetNumber();
     LOG_ECMA(INFO) << "res for FastSub(11, 11) = " << resC.GetNumber();
@@ -176,15 +176,15 @@ HWTEST_F_L0(StubTest, FastMulTest)
     auto stubAddr = reinterpret_cast<uintptr_t>(assembler.GetFuncPtrFromCompiledModule(function));
     JSTaggedType argv[2] = {JSTaggedValue(-2).GetRawData(), JSTaggedValue(1).GetRawData()};
     JSTaggedValue resA(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     argv[0] = JSTaggedValue(-7).GetRawData(); // -7 : test case
     argv[1] = JSTaggedValue(-2).GetRawData(); // -2 : test case
     JSTaggedValue resB(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     argv[0] = JSTaggedValue(11).GetRawData(); // 11 : test case
     argv[1] = JSTaggedValue(11).GetRawData(); // 11 : test case
     JSTaggedValue resC(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     LOG_ECMA(INFO) << "res for FastMul(-2, 1) = " << std::dec << resA.GetNumber();
     LOG_ECMA(INFO) << "res for FastMul(-7, -2) = " << std::dec << resB.GetNumber();
     LOG_ECMA(INFO) << "res for FastMul(11, 11) = " << std::dec << resC.GetNumber();
@@ -196,7 +196,7 @@ HWTEST_F_L0(StubTest, FastMulTest)
     argv[0] = JSTaggedValue(x).GetRawData(); // 11 : test case
     argv[1] = JSTaggedValue(y).GetRawData(); // 11 : test case
     JSTaggedValue resD(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     JSTaggedValue expectedD = FastRuntimeStub::FastMul(JSTaggedValue(x), JSTaggedValue(y));
     EXPECT_EQ(resD, expectedD);
     x = -1;
@@ -204,7 +204,7 @@ HWTEST_F_L0(StubTest, FastMulTest)
     argv[0] = JSTaggedValue(x).GetRawData();
     argv[1] = JSTaggedValue(y).GetRawData();
     JSTaggedValue resE(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     JSTaggedValue expectedE = FastRuntimeStub::FastMul(JSTaggedValue(x), JSTaggedValue(y));
     EXPECT_EQ(resE, expectedE);
     x = -1;
@@ -212,7 +212,7 @@ HWTEST_F_L0(StubTest, FastMulTest)
     argv[0] = JSTaggedValue(x).GetRawData();
     argv[1] = JSTaggedValue(y).GetRawData();
     JSTaggedValue resF(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     JSTaggedValue expectedF = FastRuntimeStub::FastMul(JSTaggedValue(x), JSTaggedValue(y));
     EXPECT_EQ(resF, expectedF);
     int x1 = 2147483647;
@@ -220,7 +220,7 @@ HWTEST_F_L0(StubTest, FastMulTest)
     argv[0] = JSTaggedValue(x1).GetRawData();
     argv[1] = JSTaggedValue(y1).GetRawData();
     JSTaggedValue resG(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectedG = FastRuntimeStub::FastMul(JSTaggedValue(x1), JSTaggedValue(y1));
     EXPECT_EQ(resG, expectedG);
 }
@@ -247,7 +247,7 @@ HWTEST_F_L0(StubTest, FastDivTest)
     LOG_ECMA(INFO) << "x1 = " << x1 << "  y1 = " << y1;
     JSTaggedType argv[2] = {x1, y1};
     JSTaggedValue res1(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     LOG_ECMA(INFO) << "res for FastDiv(50, 25) = " << res1.GetRawData();
     auto expectedG1 = FastRuntimeStub::FastDiv(JSTaggedValue(x1), JSTaggedValue(y1));
     EXPECT_EQ(res1, expectedG1);
@@ -258,7 +258,7 @@ HWTEST_F_L0(StubTest, FastDivTest)
     argv[0] = x2;
     argv[1] = y2;
     JSTaggedValue res2(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     LOG_ECMA(INFO) << "res for FastDiv(base::NAN_VALUE, 0) = " << res2.GetRawData();
     auto expectedG2 = FastRuntimeStub::FastDiv(JSTaggedValue(x2), JSTaggedValue(y2));
     EXPECT_EQ(res2, expectedG2);
@@ -270,7 +270,7 @@ HWTEST_F_L0(StubTest, FastDivTest)
     argv[1] = y3;
     LOG_ECMA(INFO) << "x2 = " << x3 << "  y2 = " << y3;
     JSTaggedValue res3(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     LOG_ECMA(INFO) << "res for FastDiv(7, 0) = " << res3.GetRawData();
     auto expectedG3 = FastRuntimeStub::FastDiv(JSTaggedValue(x3), JSTaggedValue(y3));
     EXPECT_EQ(res3, expectedG3);
@@ -599,8 +599,8 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     LLVMTypeRef funcType = LLVMFunctionType(llvmI32, argsTy.data(), argsTy.size(), 1);
     LLVMValueRef runtimeFunc1 = LLVMAddFunction(module, "RuntimeFunc1", funcType);
 
-    std::vector<LLVMValueRef> argvalue = {value};
-    LLVMBuildCall(builder, runtimeFunc1, argvalue.data(), 1, "");
+    std::vector<LLVMValueRef> argValue = {value};
+    LLVMBuildCall(builder, runtimeFunc1, argValue.data(), 1, "");
     LLVMValueRef retVal = LLVMConstInt(LLVMInt64Type(), 1, false);
     LLVMBuildRet(builder, retVal);
 
@@ -629,9 +629,9 @@ HWTEST_F_L0(StubTest, JSEntryTest)
 
     LLVMValueRef stub3 = LLVMAddFunction(module, "stub3", LLVMFunctionType(LLVMInt64Type(), paramTys0, 1, 0));
     /* stub2 call stub3 */
-    argvalue = {value2};
+    argValue = {value2};
 
-    LLVMBuildCall(builder, stub3, argvalue.data(), 1, "");
+    LLVMBuildCall(builder, stub3, argValue.data(), 1, "");
     retVal = LLVMConstInt(LLVMInt64Type(), 2, false);
     LLVMBuildRet(builder, retVal);
 
@@ -652,8 +652,8 @@ HWTEST_F_L0(StubTest, JSEntryTest)
     */
     /* stub2 call RuntimeFunc2 */
     LLVMValueRef runtimeFunc2 = LLVMAddFunction(module, "RuntimeFunc2", funcType);
-    argvalue = {value3};
-    LLVMBuildCall(builder, runtimeFunc2, argvalue.data(), 1, "");
+    argValue = {value3};
+    LLVMBuildCall(builder, runtimeFunc2, argValue.data(), 1, "");
     retVal = LLVMConstInt(LLVMInt64Type(), 3, false);
     LLVMBuildRet(builder, retVal);
     char *error = nullptr;
@@ -682,7 +682,7 @@ HWTEST_F_L0(StubTest, JSEntryTest)
 }
 
 /*
-verify modify llvm prologue : call main ok means don't destroy c abi
+verify modify llvm prologue : call main ok means don't destory c abi
 test:
 main          push rbp
               push type
@@ -796,9 +796,9 @@ HWTEST_F_L0(StubTest, CEntryFp)
     LLVMTypeRef funcType = LLVMFunctionType(llvmI64, argsTy.data(), argsTy.size(), 1);
     LLVMValueRef runTimeFunc = LLVMAddFunction(module, "RuntimeFunc", funcType);
 
-    std::vector<LLVMValueRef> argvalue = {value};
+    std::vector<LLVMValueRef> argValue = {value};
     std::cout << std::endl;
-    LLVMValueRef retVal = LLVMBuildCall(builder, runTimeFunc, argvalue.data(), 1, "");
+    LLVMValueRef retVal = LLVMBuildCall(builder, runTimeFunc, argValue.data(), 1, "");
     LLVMBuildRet(builder, retVal);
     char *error = nullptr;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error);
@@ -1127,7 +1127,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     // obj is JSTaggedValue::VALUE_TRUE
     JSTaggedType argv[1] = {JSTaggedValue::True().GetRawData()};
     JSTaggedValue resultVal(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     JSTaggedValue expectResult = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::True());
     EXPECT_EQ(resultVal, globalConst->GetBooleanString());
     EXPECT_EQ(resultVal, expectResult);
@@ -1135,7 +1135,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     // obj is JSTaggedValue::VALUE_FALSE
     argv[0] = JSTaggedValue::False().GetRawData();
     JSTaggedValue resultVal2(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     JSTaggedValue expectResult2 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::False());
     EXPECT_EQ(resultVal2, globalConst->GetBooleanString());
     EXPECT_EQ(resultVal2, expectResult2);
@@ -1143,7 +1143,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     // obj is JSTaggedValue::VALUE_NULL
     argv[0] = JSTaggedValue::Null().GetRawData();
     JSTaggedValue resultVal3(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     JSTaggedValue expectResult3 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Null());
     EXPECT_EQ(resultVal3, globalConst->GetObjectString());
     EXPECT_EQ(resultVal3, expectResult3);
@@ -1151,7 +1151,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     // obj is JSTaggedValue::VALUE_UNDEFINED
     argv[0] = JSTaggedValue::Undefined().GetRawData();
     JSTaggedValue resultVal4(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     JSTaggedValue expectResult4 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue::Undefined());
     EXPECT_EQ(resultVal4, globalConst->GetUndefinedString());
     EXPECT_EQ(resultVal4, expectResult4);
@@ -1159,7 +1159,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     // obj is IsNumber
     argv[0] = JSTaggedValue(5).GetRawData();
     JSTaggedValue resultVal5(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     JSTaggedValue expectResult5 = FastRuntimeStub::FastTypeOf(thread, JSTaggedValue(5));
     EXPECT_EQ(resultVal5, globalConst->GetNumberString());
     EXPECT_EQ(resultVal5, expectResult5);
@@ -1171,7 +1171,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     JSTaggedValue expectResult6 = FastRuntimeStub::FastTypeOf(thread, str1.GetTaggedValue());
     argv[0] = str2.GetTaggedValue().GetRawData();
     JSTaggedValue resultVal6(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     EXPECT_EQ(resultVal6, globalConst->GetStringString());
     EXPECT_EQ(resultVal6, expectResult6);
 
@@ -1182,7 +1182,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
 
     argv[0] = symbol.GetRawData();
     JSTaggedValue resultVal7(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     EXPECT_EQ(resultVal7, globalConst->GetSymbolString());
     EXPECT_EQ(resultVal7, expectResult7);
 
@@ -1192,7 +1192,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     JSTaggedValue expectResult8= FastRuntimeStub::FastTypeOf(thread, resolveCallable.GetTaggedValue());
     argv[0] = resolveCallable.GetTaggedValue().GetRawData();
     JSTaggedValue resultVal8(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     EXPECT_EQ(resultVal8, globalConst->GetFunctionString());
     EXPECT_EQ(resultVal8, expectResult8);
 
@@ -1201,7 +1201,7 @@ HWTEST_F_L0(StubTest, FastTypeOfTest)
     JSTaggedValue expectResult9= FastRuntimeStub::FastTypeOf(thread, object.GetTaggedValue());
     argv[0] = object.GetTaggedValue().GetRawData();
     JSTaggedValue resultVal9(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, stubAddr, argv[0]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 1, 1, argv, stubAddr));
     EXPECT_EQ(resultVal9, globalConst->GetObjectString());
     EXPECT_EQ(resultVal9, expectResult9);
 }
@@ -1224,7 +1224,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     // test for 1 == 1
     JSTaggedType argv[2] = {JSTaggedValue(1).GetRawData(), JSTaggedValue(1).GetRawData()};
     JSTaggedValue resA(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectA = FastRuntimeStub::FastEqual(JSTaggedValue(1), JSTaggedValue(1));
     EXPECT_EQ(resA, expectA);
 
@@ -1233,7 +1233,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = JSTaggedValue(nan).GetRawData();
     argv[1] = JSTaggedValue(nan).GetRawData();
     JSTaggedValue resB(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectB = FastRuntimeStub::FastEqual(JSTaggedValue(nan), JSTaggedValue(nan));
     EXPECT_EQ(resB, expectB);
 
@@ -1241,7 +1241,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = JSTaggedValue::Undefined().GetRawData();
     argv[1] = JSTaggedValue::Null().GetRawData();
     JSTaggedValue resC(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectC = FastRuntimeStub::FastEqual(JSTaggedValue::Undefined(), JSTaggedValue::Null());
     EXPECT_EQ(resC, expectC);
 
@@ -1251,7 +1251,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = str.GetTaggedValue().GetRawData();
     argv[1] = JSTaggedValue::Undefined().GetRawData();
     JSTaggedValue resD(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectD = FastRuntimeStub::FastEqual(str.GetTaggedValue(), JSTaggedValue::Undefined());
     EXPECT_EQ(resD, expectD);
 
@@ -1259,7 +1259,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = JSTaggedValue::True().GetRawData();
     argv[1] = JSTaggedValue::Hole().GetRawData();
     JSTaggedValue resE(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectE = FastRuntimeStub::FastEqual(JSTaggedValue::True(), JSTaggedValue::Hole());
     EXPECT_EQ(resE, expectE);
 
@@ -1267,7 +1267,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = str.GetTaggedValue().GetRawData();
     argv[1] = str.GetTaggedValue().GetRawData();
     JSTaggedValue resF(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectF = FastRuntimeStub::FastEqual(str.GetTaggedValue(), str.GetTaggedValue());
     EXPECT_EQ(resF, expectF);
 
@@ -1275,7 +1275,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = JSTaggedValue(5.2).GetRawData();
     argv[1] = JSTaggedValue(5.2).GetRawData();
     JSTaggedValue resG(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectG = FastRuntimeStub::FastEqual(JSTaggedValue(5.2), JSTaggedValue(5.2));
     EXPECT_EQ(resG, expectG);
 
@@ -1283,7 +1283,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = JSTaggedValue::False().GetRawData();
     argv[1] = JSTaggedValue::False().GetRawData();
     JSTaggedValue resH(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectH = FastRuntimeStub::FastEqual(JSTaggedValue::False(), JSTaggedValue::False());
     EXPECT_EQ(resH, expectH);
 
@@ -1295,7 +1295,7 @@ HWTEST_F_L0(StubTest, FastEqualTest)
     argv[0] = obj1.GetTaggedValue().GetRawData();
     argv[1] = obj2.GetTaggedValue().GetRawData();
     JSTaggedValue resI(JSFunctionEntry(thread->GetGlueAddr(),
-        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, stubAddr, argv[0], argv[1]));
+        reinterpret_cast<uintptr_t>(thread->GetCurrentSPFrame()), 2, 2, argv, stubAddr));
     auto expectI = FastRuntimeStub::FastEqual(obj1.GetTaggedValue(), obj2.GetTaggedValue());
     EXPECT_EQ(resI, expectI);
 }

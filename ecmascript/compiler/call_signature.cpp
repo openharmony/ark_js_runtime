@@ -417,10 +417,10 @@ DEF_CALL_SIGNATURE(HandleOverflow)
     callSign->SetParameters(params.data());
 }
 
-DEF_CALL_SIGNATURE(RuntimeCallTrampolineInterpreterAsm)
+DEF_CALL_SIGNATURE(AsmIntCallRuntime)
 {
     /* 3 : 3 input parameters */
-    CallSignature runtimeCallTrampoline("RuntimeCallTrampolineInterpreterAsm", 0, 3,
+    CallSignature runtimeCallTrampoline("AsmIntCallRuntime", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = runtimeCallTrampoline;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
@@ -433,10 +433,10 @@ DEF_CALL_SIGNATURE(RuntimeCallTrampolineInterpreterAsm)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-DEF_CALL_SIGNATURE(RuntimeCallTrampolineAot)
+DEF_CALL_SIGNATURE(OptimizedCallRuntime)
 {
     /* 3 : 3 input parameters */
-    CallSignature runtimeCallTrampoline("RuntimeCallTrampolineAot", 0, 3,
+    CallSignature runtimeCallTrampoline("OptimizedCallRuntime", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = runtimeCallTrampoline;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
@@ -449,10 +449,10 @@ DEF_CALL_SIGNATURE(RuntimeCallTrampolineAot)
     callSign->SetTargetKind(CallSignature::TargetKind::RUNTIME_STUB);
 }
 
-DEF_CALL_SIGNATURE(AotCallAotTrampoline)
+DEF_CALL_SIGNATURE(OptimizedCallOptimized)
 {
     /* 4 : 4 input parameters */
-    CallSignature runtimeCallTrampoline("AotCallAotTrampoline", 0, 4,
+    CallSignature runtimeCallTrampoline("OptimizedCallOptimized", 0, 4,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
     *callSign = runtimeCallTrampoline;
     std::array<VariableType, 4> params = { /* 4 : 4 input parameters */
