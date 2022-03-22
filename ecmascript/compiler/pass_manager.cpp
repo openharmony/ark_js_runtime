@@ -23,7 +23,7 @@
 #include "pass.h"
 
 namespace panda::ecmascript::kungfu {
-bool PassManager::Compile(std::string fileName)
+bool PassManager::Compile(const std::string &fileName)
 {
     BytecodeTranslationInfo translationInfo;
     [[maybe_unused]] EcmaHandleScope handleScope(vm_->GetJSThread());
@@ -46,13 +46,13 @@ bool PassManager::Compile(std::string fileName)
     return true;
 }
 
-bool PassManager::CollectInfoOfPandaFile(const std::string &filename, BytecodeTranslationInfo *translateInfo)
+bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, BytecodeTranslationInfo *translateInfo)
 {
     if (translateInfo == nullptr) {
         return false;
     }
     const JSPandaFile *jsPandaFile =
-        JSPandaFileManager::GetCurrent()->LoadAotInfoFromPf(filename, &(translateInfo->methodPcInfos));
+        JSPandaFileManager::GetInstance()->LoadAotInfoFromPf(fileName, &(translateInfo->methodPcInfos));
     if (jsPandaFile == nullptr) {
         return false;
     }
