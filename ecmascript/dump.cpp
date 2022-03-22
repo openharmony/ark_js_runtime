@@ -1079,10 +1079,8 @@ void BigInt::Dump(JSThread *thread, std::ostream &os) const
     os << " - Data : ";
     GetData().DumpTaggedValue(thread, os);
     os << "\n";
-
-    os << " - Sign : ";
-    os << GetSign();
-    os << "\n";
+    os << " - value : " << ToStdString(DECIMAL) << "\n";
+    os << " - Sign : " << GetSign() << "\n";
 }
 
 void JSDate::Dump(JSThread *thread, std::ostream &os) const
