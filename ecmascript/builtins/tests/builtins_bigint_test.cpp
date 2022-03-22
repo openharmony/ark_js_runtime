@@ -455,4 +455,178 @@ HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_002)
 
     EXPECT_EQ(BigInt::SameValue(bigIntHandle.GetTaggedValue(), result2), true);
 }
+
+// testcases of NumberToBigint()
+HWTEST_F_L0(BuiltinsBigIntTest, NumberToBigint)
+{
+    JSHandle<JSTaggedValue> number(thread, JSTaggedValue::Undefined());
+    JSHandle<JSTaggedValue> bigint(thread, JSTaggedValue::Undefined());
+
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(base::MAX_VALUE));
+    bigint = JSHandle<JSTaggedValue>(thread, BigInt::NumberToBigInt(thread, number));
+    ASSERT_TRUE(bigint->IsBigInt());
+    bool compareRes = JSTaggedValue::Equal(thread, number, bigint);
+    ASSERT_TRUE(compareRes);
+
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(-base::MAX_VALUE));
+    bigint = JSHandle<JSTaggedValue>(thread, BigInt::NumberToBigInt(thread, number));
+    ASSERT_TRUE(bigint->IsBigInt());
+    compareRes = JSTaggedValue::Equal(thread, number, bigint);
+    ASSERT_TRUE(JSHandle<BigInt>::Cast(bigint)->GetSign());
+    ASSERT_TRUE(compareRes);
+
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(-0xffffffff));
+    bigint = JSHandle<JSTaggedValue>(thread, BigInt::NumberToBigInt(thread, number));
+    ASSERT_TRUE(bigint->IsBigInt());
+    compareRes = JSTaggedValue::Equal(thread, number, bigint);
+    ASSERT_TRUE(compareRes);
+
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(0));
+    bigint = JSHandle<JSTaggedValue>(thread, BigInt::NumberToBigInt(thread, number));
+    ASSERT_TRUE(bigint->IsBigInt());
+    compareRes = JSTaggedValue::Equal(thread, number, bigint);
+    ASSERT_TRUE(compareRes);
+}
+
+// testcases of BigintToNumber()
+HWTEST_F_L0(BuiltinsBigIntTest, BigintToNumber)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSTaggedValue> bigint(thread, JSTaggedValue::Undefined());
+    JSTaggedNumber number(0);
+
+    JSHandle<JSTaggedValue> parma(factory->NewFromCanBeCompressString("0xffff"));
+    bigint = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
+    ASSERT_EQ(number.GetNumber(), static_cast<double>(0xffff));
+
+    parma = JSHandle<JSTaggedValue>(
+        factory->NewFromCanBeCompressString("0xfffffffffffff8000000000000000000000000000000000000000000000000000"
+                                            "0000000000000000000000000000000000000000000000000000000000000000000"
+                                            "0000000000000000000000000000000000000000000000000000000000000000000"
+                                            "000000000000000000000000000000000000000000000000000000000"));
+    bigint = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
+    ASSERT_EQ(number.GetNumber(), base::MAX_VALUE);
+
+    parma = JSHandle<JSTaggedValue>(thread, JSTaggedValue::False());
+    bigint = JSHandle<JSTaggedValue>(thread, JSTaggedValue::ToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    ASSERT_TRUE(JSHandle<BigInt>::Cast(bigint)->IsZero());
+    number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
+    ASSERT_EQ(number.GetNumber(), 0.0);
+
+    parma = JSHandle<JSTaggedValue>(thread, JSTaggedValue(base::MAX_VALUE));
+    bigint = JSHandle<JSTaggedValue>(thread, BigInt::NumberToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
+    ASSERT_EQ(number.GetNumber(), base::MAX_VALUE);
+
+    parma = JSHandle<JSTaggedValue>(thread, JSTaggedValue(-base::MAX_VALUE));
+    bigint = JSHandle<JSTaggedValue>(thread, BigInt::NumberToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
+    ASSERT_EQ(number.GetNumber(), -base::MAX_VALUE);
+
+    parma = JSHandle<JSTaggedValue>(thread, JSTaggedValue(-0xffffffff));
+    bigint = JSHandle<JSTaggedValue>(thread, BigInt::NumberToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    number = BigInt::BigIntToNumber(JSHandle<BigInt>::Cast(bigint));
+    ASSERT_EQ(number.GetNumber(), -0xffffffff);
+}
+
+// testcases of StringToBigInt(EcmaString)
+HWTEST_F_L0(BuiltinsBigIntTest, StringToBigInt)
+{
+    ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
+    JSHandle<JSTaggedValue> bigint;
+    JSHandle<EcmaString> str;
+    JSHandle<JSTaggedValue> parma;
+
+    // hex string
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0xffff"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::HEXADECIMAL);
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("ffff"));
+    ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
+
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0XFFFF"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::HEXADECIMAL);
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("ffff"));
+    ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
+
+    // binary string
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0b11111111"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::BINARY);
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("11111111"));
+    ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
+
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0B11111111"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::BINARY);
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("11111111"));
+    ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
+
+    // octal string
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0o123456"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::OCTAL);
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("123456"));
+    ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
+
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("0O123456"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint), BigInt::OCTAL);
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("123456"));
+    ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
+
+    // decimal string
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("999999999"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    str = BigInt::ToString(thread, JSHandle<BigInt>::Cast(bigint));
+    ASSERT_EQ(str->Compare(reinterpret_cast<EcmaString *>(parma->GetRawData())), 0);
+
+    // string has space
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("  123  "));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    JSHandle<JSTaggedValue> number(thread, JSTaggedValue(static_cast<double>(123)));
+    bool compareRes = JSTaggedValue::Equal(thread, bigint, number);
+    ASSERT_TRUE(compareRes);
+
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("123   "));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(static_cast<double>(123)));
+    compareRes = JSTaggedValue::Equal(thread, bigint, number);
+    ASSERT_TRUE(compareRes);
+
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("   123"));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    number = JSHandle<JSTaggedValue>(thread, JSTaggedValue(static_cast<double>(123)));
+    compareRes = JSTaggedValue::Equal(thread, bigint, number);
+    ASSERT_TRUE(compareRes);
+
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString(""));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    ASSERT_TRUE(JSHandle<BigInt>::Cast(bigint)->IsZero());
+
+    parma = JSHandle<JSTaggedValue>(factory->NewFromCanBeCompressString("    "));
+    bigint = JSHandle<JSTaggedValue>(thread, base::NumberHelper::StringToBigInt(thread, parma));
+    ASSERT_TRUE(bigint->IsBigInt());
+    ASSERT_TRUE(JSHandle<BigInt>::Cast(bigint)->IsZero());
+}
 }  // namespace panda::test
