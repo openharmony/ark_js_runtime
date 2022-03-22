@@ -339,7 +339,8 @@ RuntimeCallTrampolineInterpreterAsm:
     addq    $16, %rdx        // argV
     call    *%r10
 
-    addq    $8, %rsp
+    popq    %r10
+    movq    $0, ASM_GLUE_LEAVE_FRAME_OFFSET(%r10)   // save nullptr to thread->leaveFrame_
     popq    %rdx
     popq    %r10
 

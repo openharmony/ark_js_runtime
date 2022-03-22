@@ -324,6 +324,7 @@ STATIC_ASSERT_EQ_ARCH(sizeof(InterpretedFrameBase), InterpretedFrameBase::SizeAr
 struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSize(),
                                                      base::AlignedPointer,
                                                      base::AlignedPointer,
+                                                     base::AlignedSize,
                                                      JSTaggedValue,
                                                      JSTaggedValue,
                                                      JSTaggedValue,
@@ -333,6 +334,7 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
     enum class Index : size_t {
         PcIndex = 0,
         SpIndex,
+        CallSizeIndex,
         ConstPoolIndex,
         FunctionIndex,
         ProFileTypeInfoIndex,
@@ -357,6 +359,11 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
     static uint32_t GetSpOffset(bool isArch32)
     {
         return GetOffset<static_cast<size_t>(Index::SpIndex)>(isArch32);
+    }
+
+    static uint32_t GetCallSizeOffset(bool isArch32)
+    {
+        return GetOffset<static_cast<size_t>(Index::CallSizeIndex)>(isArch32);
     }
 
     static uint32_t GetConstpoolOffset(bool isArch32)
@@ -396,6 +403,7 @@ struct InterpretedFrame : public base::AlignedStruct<JSTaggedValue::TaggedTypeSi
 
     alignas(EAS) const uint8_t *pc {nullptr};
     alignas(EAS) JSTaggedType *sp {nullptr};
+    alignas(EAS) size_t callSize {0};
     alignas(EAS) JSTaggedValue constpool {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue function {JSTaggedValue::Hole()};
     alignas(EAS) JSTaggedValue profileTypeInfo {JSTaggedValue::Hole()};

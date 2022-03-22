@@ -389,7 +389,7 @@ using panda::ecmascript::kungfu::CommonStubCSigns;
         if (UNLIKELY(thread->DoStackOverflowCheck(newSp))) {                                       \
             INTERPRETER_GOTO_EXCEPTION_HANDLER();                                                  \
         }                                                                                          \
-        GET_FRAME(sp)->pc = pc + GetJumpSizeAfterCall(pc);                                         \
+        GET_FRAME(sp)->callSize = GetJumpSizeAfterCall(pc);                                        \
         InterpretedFrame *state = GET_FRAME(newSp);                                                \
         state->base.prev = sp;                                                                     \
         state->base.type = FrameType::INTERPRETER_FRAME;                                           \
@@ -769,7 +769,8 @@ void InterpreterAssembly::HandleReturnDyn(
     method = ECMAObject::Cast(prevState->function.GetTaggedObject())->GetCallTarget();
     hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
 
-    DISPATCH_OFFSET(0);
+    size_t jumpSize = GetJumpSizeAfterCall(pc);
+    DISPATCH_OFFSET(jumpSize);
 }
 
 void InterpreterAssembly::HandleReturnUndefinedPref(
@@ -803,7 +804,8 @@ void InterpreterAssembly::HandleReturnUndefinedPref(
     hotnessCounter = static_cast<int32_t>(method->GetHotnessCounter());
 
     acc = JSTaggedValue::Undefined();
-    DISPATCH_OFFSET(0);
+    size_t jumpSize = GetJumpSizeAfterCall(pc);
+    DISPATCH_OFFSET(jumpSize);
 }
 
 void InterpreterAssembly::HandleLdNanPref(
@@ -2214,7 +2216,8 @@ void InterpreterAssembly::HandleSuspendGeneratorPrefV8V8(
     thread->SetCurrentSPFrame(sp);
     constpool = prevState->constpool;
 
-    DISPATCH_OFFSET(0);
+    size_t jumpSize = GetJumpSizeAfterCall(pc);
+    DISPATCH_OFFSET(jumpSize);
 }
 
 void InterpreterAssembly::HandleAsyncFunctionAwaitUncaughtPrefV8V8(
