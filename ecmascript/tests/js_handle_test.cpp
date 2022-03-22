@@ -65,7 +65,7 @@ HWTEST_F_L0(JSHandleTest, NewGlobalHandle)
     thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
 
     // check result
-    EXPECT_TRUE(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)) == 0);
+    EXPECT_EQ(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)), 0);
 }
 
 HWTEST_F_L0(JSHandleTest, NewGlobalHandle1)
@@ -90,15 +90,13 @@ HWTEST_F_L0(JSHandleTest, NewGlobalHandle1)
     // check result
     for (int i = 0; i <= 200; i++) {
         std::string test = "test" + std::to_string(i);
-        EXPECT_TRUE(
-            factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])) == 0);
+        EXPECT_EQ(factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])), 0);
     }
     // trigger GC
     thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     for (int i = 301; i < 600; i++) {
         std::string test = "test" + std::to_string(i);
-        EXPECT_TRUE(
-            factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])) == 0);
+        EXPECT_EQ(factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])), 0);
     }
 }
 
@@ -125,7 +123,7 @@ HWTEST_F_L0(JSHandleTest, DisposeGlobalHandle)
         EXPECT_TRUE(value.IsString());
         count++;
     });
-    EXPECT_TRUE(count == 288);
+    EXPECT_EQ(count, 288);
 }
 
 HWTEST_F_L0(JSHandleTest, DisposeAndNewGlobalHandle)
@@ -158,8 +156,8 @@ HWTEST_F_L0(JSHandleTest, DisposeAndNewGlobalHandle)
     // check result
     for (int i = 0; i <= 300; i++) {
         std::string test = "test" + std::to_string(i);
-        EXPECT_TRUE(
-            factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])) == 0);
+        EXPECT_EQ(
+            factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])), 0);
     }
 }
 
@@ -179,7 +177,7 @@ HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle)
         thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
 
         // check result
-        EXPECT_TRUE(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)) == 0);
+        EXPECT_EQ(factory->NewFromString("test1")->Compare(*reinterpret_cast<EcmaString **>(globalString)), 0);
         EXPECT_TRUE(global->IsWeak(globalString));
     }
     // trigger GC
@@ -187,7 +185,7 @@ HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle)
 
     // check weak reference
     JSTaggedType result = *reinterpret_cast<JSTaggedType *>(globalString);
-    EXPECT_TRUE(result == JSTaggedValue::Undefined().GetRawData());
+    EXPECT_EQ(result, JSTaggedValue::Undefined().GetRawData());
 }
 
 HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle1)
@@ -213,14 +211,14 @@ HWTEST_F_L0(JSHandleTest, NewWeakGlobalHandle1)
         // check result
         for (int i = 0; i <= 200; i++) {
             std::string test = "test" + std::to_string(i);
-            EXPECT_TRUE(
-                factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])) == 0);
+            EXPECT_EQ(
+                factory->NewFromString(test.c_str())->Compare(*reinterpret_cast<EcmaString **>(globalString[i])), 0);
         }
     }
     // trigger GC
     thread->GetEcmaVM()->CollectGarbage(TriggerGCType::FULL_GC);
     for (int i = 601; i < 800; i++) {
-        EXPECT_TRUE(*reinterpret_cast<TaggedType *>(globalString[i]) == JSTaggedValue::Undefined().GetRawData());
+        EXPECT_EQ(*reinterpret_cast<TaggedType *>(globalString[i]), JSTaggedValue::Undefined().GetRawData());
     }
 }
 }  // namespace panda::test

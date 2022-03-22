@@ -146,6 +146,7 @@ public:
             {
                 return depend_;
             }
+
         private:
             bool IsNeedSeal() const;
             bool IsSealed() const
@@ -190,6 +191,7 @@ public:
         GateRef GetControl() const;
         GateRef GetDepend() const;
         void SetDepend(GateRef depend);
+
     private:
         friend class Environment;
         LabelImpl *GetRawLabel() const
@@ -265,6 +267,7 @@ public:
         void PopCurrentLabel();
         void SetFrameType(FrameType type);
         GateRef GetArgument(size_t index) const;
+
     private:
         const CompilationConfig *compCfg_;
         Label *currentLabel_ {nullptr};
@@ -329,6 +332,7 @@ public:
         {
             return id_;
         }
+
     private:
         uint32_t id_;
         VariableType type_;
@@ -346,6 +350,7 @@ public:
         {
             env_->PopCurrentLabel();
         }
+
     private:
         Environment *env_;
     };

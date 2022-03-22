@@ -107,6 +107,7 @@ public:
                 JSTaggedValue(1) : (res == ComparisonResult::LESS ? JSTaggedValue(-1) : JSTaggedValue(0));
         }
     };
+
 protected:
     JSTaggedValue InitializeTreeSetConstructor()
     {
