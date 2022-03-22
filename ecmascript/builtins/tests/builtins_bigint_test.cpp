@@ -486,7 +486,6 @@ HWTEST_F_L0(BuiltinsBigIntTest, NumberToBigint)
     ASSERT_TRUE(bigint->IsBigInt());
     compareRes = JSTaggedValue::Equal(thread, number, bigint);
     ASSERT_TRUE(compareRes);
-
 }
 
 // testcases of BigintToNumber()
