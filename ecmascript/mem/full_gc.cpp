@@ -144,6 +144,7 @@ void FullGC::SweepPhases()
 void FullGC::FinishPhase()
 {
     ECMA_BYTRACE_NAME(BYTRACE_TAG_ARK, "FullGC::FinishPhase");
+    heap_->GetSweeper()->PostConcurrentSweepTasks(true);
     heap_->Resume(FULL_GC);
     workList_->Finish(youngAndOldAliveSize_);
 }
