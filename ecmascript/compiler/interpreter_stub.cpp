@@ -3634,12 +3634,16 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
 {
     auto env = GetEnvironment();
     DEFVARIABLE(varAcc, VariableType::JS_ANY(), acc);
+    DEFVARIABLE(result, VariableType::JS_ANY(), GetHoleConstant());
 
     GateRef slotId = ZExtInt8ToInt32(ReadInst8_0(pc));
     GateRef receiver = GetVregValue(sp, ZExtInt8ToPtr(ReadInst8_5(pc)));
     Label receiverIsHeapObject(env);
     Label dispatch(env);
     Label slowPath(env);
+    Label notHole(env);
+    Label hasException(env);
+    Label notException(env);
     SetPcToFrame(glue, GetFrame(sp), pc);
     Branch(TaggedIsHeapObject(receiver), &receiverIsHeapObject, &slowPath);
     Bind(&receiverIsHeapObject);
@@ -3671,30 +3675,31 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
 
                 Bind(&loadWithHandler);
                 {
-                    Label notHole(env);
-
-                    GateRef result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
-                    Branch(TaggedIsHole(result), &slowPath, &notHole);
-                    Bind(&notHole);
-                    varAcc = result;
-                    Jump(&dispatch);
+                    result = LoadICWithHandler(glue, receiver, receiver, *cachedHandler);
+                    Branch(TaggedIsHole(*result), &slowPath, &notHole);
                 }
             }
         }
         Bind(&tryFastPath);
         {
-            Label notHole(env);
             GateRef stringId = ReadInst32_1(pc);
             GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
             const CallSignature *getPropertyByName = CommonStubCSigns::Get(CommonStubCSigns::GetPropertyByName);
-            GateRef result = CallRuntime(getPropertyByName, glue,
+            result = CallRuntime(getPropertyByName, glue,
                 GetInt64Constant(CommonStubCSigns::GetPropertyByName), {
                 glue, receiver, propKey
             });
-            Branch(TaggedIsHole(result), &slowPath, &notHole);
-
-            Bind(&notHole);
-            varAcc = result;
+            Branch(TaggedIsHole(*result), &slowPath, &notHole);
+        }
+        Bind(&notHole);
+        {
+            Branch(TaggedIsException(*result), &hasException, &notException);
+            Bind(&hasException);
+            {
+                DISPATCH_LAST_WITH_ACC();
+            }
+            Bind(&notException);
+            varAcc = *result;
             Jump(&dispatch);
         }
     }
@@ -3704,16 +3709,16 @@ DECLARE_ASM_HANDLER(HandleLdObjByNamePrefId32V8)
         Label noException(env);
         GateRef stringId = ReadInst32_1(pc);
         GateRef propKey = GetValueFromTaggedArray(VariableType::JS_ANY(), constpool, stringId);
-        GateRef result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LoadICByName)), {
+        result = CallRuntimeTrampoline(glue, GetInt64Constant(RTSTUB_ID(LoadICByName)), {
             profileTypeInfo, receiver, propKey, IntBuildTaggedTypeWithNoGC(slotId)
         });
-        Branch(TaggedIsException(result), &isException, &noException);
+        Branch(TaggedIsException(*result), &isException, &noException);
         Bind(&isException);
         {
             DISPATCH_LAST_WITH_ACC();
         }
         Bind(&noException);
-        varAcc = result;
+        varAcc = *result;
         Jump(&dispatch);
     }
     Bind(&dispatch);
@@ -4249,8 +4254,9 @@ DECLARE_ASM_HANDLER(HandleReturnDyn)
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+        GateRef jumpSize = GetCallSizeFromFrame(prevState);
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
-                 *varHotnessCounter, GetIntPtrConstant(0));
+                 *varHotnessCounter, jumpSize);
     }
 }
 
@@ -4309,8 +4315,9 @@ DECLARE_ASM_HANDLER(HandleReturnUndefinedPref)
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+        GateRef jumpSize = GetCallSizeFromFrame(prevState);
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, *varAcc,
-                 *varHotnessCounter, GetIntPtrConstant(0));
+                 *varHotnessCounter, jumpSize);
     }
 }
 
@@ -4382,8 +4389,9 @@ DECLARE_ASM_HANDLER(HandleSuspendGeneratorPrefV8V8)
             GetIntPtrConstant(JSFunctionBase::METHOD_OFFSET));
         varHotnessCounter = Load(VariableType::INT32(), method,
                                  GetIntPtrConstant(JSMethod::HOTNESS_COUNTER_OFFSET));
+        GateRef jumpSize = GetCallSizeFromFrame(prevState);
         Dispatch(glue, *varPc, *varSp, *varConstpool, *varProfileTypeInfo, acc,
-                 *varHotnessCounter, GetIntPtrConstant(0));
+                 *varHotnessCounter, jumpSize);
     }
 }
 
@@ -5220,8 +5228,8 @@ DECLARE_ASM_HANDLER(HandleSub2DynPrefV8)
             DISPATCH_LAST();                                                                                     \
         }                                                                                                        \
         Bind(&stackNotOverflow);                                                                                 \
-        SetPcToFrame(glue, GetFrame(sp),                                                                         \
-            IntPtrAdd(pc, GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::format))));   \
+        SetCallSizeToFrame(glue, GetFrame(sp),                                                                   \
+            GetIntPtrConstant(BytecodeInstruction::Size(BytecodeInstruction::Format::format)));                  \
         GateRef state = GetFrame(*newSp);                                                                        \
         GateRef prevOffset = GetIntPtrConstant(InterpretedFrame::GetBaseOffset(env->IsArch32Bit()));             \
         Store(VariableType::POINTER(), glue, state, prevOffset, sp);                                             \
