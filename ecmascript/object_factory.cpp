@@ -1849,7 +1849,9 @@ JSHandle<JSSetIterator> ObjectFactory::NewJSSetIterator(const JSHandle<JSSet> &s
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> protoValue = env->GetSetIteratorPrototype();
-    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSSetIterator::SIZE, JSType::JS_SET_ITERATOR, protoValue);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSSetIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
     JSHandle<JSSetIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedSet(thread_, set->GetLinkedSet());
@@ -1862,7 +1864,9 @@ JSHandle<JSMapIterator> ObjectFactory::NewJSMapIterator(const JSHandle<JSMap> &m
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> protoValue = env->GetMapIteratorPrototype();
-    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSMapIterator::SIZE, JSType::JS_MAP_ITERATOR, protoValue);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSMapIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
     JSHandle<JSMapIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedMap(thread_, map->GetLinkedMap());
@@ -1875,7 +1879,9 @@ JSHandle<JSArrayIterator> ObjectFactory::NewJSArrayIterator(const JSHandle<JSObj
 {
     JSHandle<GlobalEnv> env = vm_->GetGlobalEnv();
     JSHandle<JSTaggedValue> protoValue = env->GetArrayIteratorPrototype();
-    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSArrayIterator::SIZE, JSType::JS_ARRAY_ITERATOR, protoValue);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSArrayIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
     JSHandle<JSArrayIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArray(thread_, array);
@@ -2366,8 +2372,9 @@ JSHandle<JSAPIArrayListIterator> ObjectFactory::NewJSAPIArrayListIterator(const 
 {
     NewObjectHook();
     JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetArrayListIteratorPrototype());
-    JSHandle<JSHClass> dynHandle =
-        NewEcmaDynClass(JSAPIArrayListIterator::SIZE, JSType::JS_API_ARRAYLIST_ITERATOR, protoValue);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIArrayListIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
     JSHandle<JSAPIArrayListIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedArrayList(thread_, arrayList);
@@ -2397,7 +2404,9 @@ JSHandle<JSAPIQueueIterator> ObjectFactory::NewJSAPIQueueIterator(const JSHandle
 {
     NewObjectHook();
     JSHandle<JSTaggedValue> protoValue(thread_, thread_->GlobalConstants()->GetQueueIteratorPrototype());
-    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSAPIQueueIterator::SIZE, JSType::JS_API_QUEUE_ITERATOR, protoValue);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPIQueueIteratorClass());
+    dynHandle->SetPrototype(thread_, protoValue);
     JSHandle<JSAPIQueueIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedQueue(thread_, queue); // IteratedQueue
@@ -2410,7 +2419,9 @@ JSHandle<JSAPITreeMapIterator> ObjectFactory::NewJSAPITreeMapIterator(const JSHa
 {
     NewObjectHook();
     JSHandle<JSTaggedValue> proto(thread_, thread_->GlobalConstants()->GetTreeMapIteratorPrototype());
-    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSAPITreeMapIterator::SIZE, JSType::JS_API_TREEMAP_ITERATOR, proto);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPITreeMapIteratorClass());
+    dynHandle->SetPrototype(thread_, proto);
     JSHandle<JSAPITreeMapIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedMap(thread_, map);
@@ -2427,7 +2438,9 @@ JSHandle<JSAPITreeSetIterator> ObjectFactory::NewJSAPITreeSetIterator(const JSHa
 {
     NewObjectHook();
     JSHandle<JSTaggedValue> proto(thread_, thread_->GlobalConstants()->GetTreeSetIteratorPrototype());
-    JSHandle<JSHClass> dynHandle = NewEcmaDynClass(JSAPITreeSetIterator::SIZE, JSType::JS_API_TREESET_ITERATOR, proto);
+    const GlobalEnvConstants *globalConst = thread_->GlobalConstants();
+    JSHandle<JSHClass> dynHandle(globalConst->GetHandledJSAPITreeSetIteratorClass());
+    dynHandle->SetPrototype(thread_, proto);
     JSHandle<JSAPITreeSetIterator> iter(NewJSObject(dynHandle));
     iter->GetJSHClass()->SetExtensible(true);
     iter->SetIteratedSet(thread_, set);
