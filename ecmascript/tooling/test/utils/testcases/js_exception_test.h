@@ -96,6 +96,7 @@ public:
         return {pandaFile_, entryPoint_};
     }
     ~JsExceptionTest() = default;
+
 private:
     CString pandaFile_ = "/data/test/exception.abc";
     CString entryPoint_ = "_GLOBAL::func_main_0";

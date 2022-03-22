@@ -453,6 +453,6 @@ HWTEST_F_L0(BuiltinsBigIntTest, ValueOf_002)
     JSTaggedValue result2 = BuiltinsBigInt::ValueOf(ecmaRuntimeCallInfo2.get());
     TestHelper::TearDownFrame(thread, prev);
 
-    EXPECT_EQ(BigInt::SameValue(result1, result2), true);
+    EXPECT_EQ(BigInt::SameValue(bigIntHandle.GetTaggedValue(), result2), true);
 }
 }  // namespace panda::test

@@ -70,6 +70,7 @@ public:
 
     static bool staticGcState_;
     std::ofstream fileHandle_;
+
 private:
     void WriteAddNodes();
     void WriteAddSamples();

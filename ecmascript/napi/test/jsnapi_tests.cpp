@@ -202,9 +202,9 @@ HWTEST_F_L0(JSNApiTests, StringUtf8_001)
     std::string test = "Hello world";
     Local<StringRef> testString = StringRef::NewFromUtf8(vm_, test.c_str());
 
-    EXPECT_TRUE(testString->Utf8Length() == 12);          // 12 : length of testString("Hello World")
+    EXPECT_EQ(testString->Utf8Length(), 12);          // 12 : length of testString("Hello World")
     char buffer[12];                                      // 12 : length of testString
-    EXPECT_TRUE(testString->WriteUtf8(buffer, 12) == 12); // 12 : length of testString("Hello World")
+    EXPECT_EQ(testString->WriteUtf8(buffer, 12), 12); // 12 : length of testString("Hello World")
     std::string res(buffer);
     ASSERT_EQ(res, test);
 }
@@ -215,9 +215,9 @@ HWTEST_F_L0(JSNApiTests, StringUtf8_002)
     std::string test = "年";
     Local<StringRef> testString = StringRef::NewFromUtf8(vm_, test.c_str());
 
-    EXPECT_TRUE(testString->Utf8Length() == 4);          // 4 : length of testString("年")
+    EXPECT_EQ(testString->Utf8Length(), 4);          // 4 : length of testString("年")
     char buffer[4];                                      // 4 : length of testString
-    EXPECT_TRUE(testString->WriteUtf8(buffer, 4) == 4); // 4 : length of testString("年")
+    EXPECT_EQ(testString->WriteUtf8(buffer, 4), 4); // 4 : length of testString("年")
     std::string res(buffer);
     ASSERT_EQ(res, test);
 }

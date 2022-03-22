@@ -58,9 +58,9 @@ HWTEST_F_L0(JSTaggedQueueTest, Create)
     JSHandle<TaggedQueue> queue = thread->GetEcmaVM()->GetFactory()->NewTaggedQueue(0);
     EXPECT_TRUE(*queue != nullptr);
     EXPECT_TRUE(queue->Empty());
-    EXPECT_TRUE(queue->Size() == 0);
-    EXPECT_TRUE(queue->Front() == JSTaggedValue::Hole());
-    EXPECT_TRUE(queue->Back() == JSTaggedValue::Hole());
+    EXPECT_EQ(queue->Size(), 0);
+    EXPECT_EQ(queue->Front(), JSTaggedValue::Hole());
+    EXPECT_EQ(queue->Back(), JSTaggedValue::Hole());
 }
 
 HWTEST_F_L0(JSTaggedQueueTest, PopAndPush)
