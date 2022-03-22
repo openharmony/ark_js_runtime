@@ -248,7 +248,7 @@ JSTaggedValue ContainersTreeMap::GetHigherKey(EcmaRuntimeCallInfo *argv)
         THROW_TYPE_ERROR_AND_RETURN(thread, "obj is not JSAPITreeMap", JSTaggedValue::Exception());
     }
 
-    JSHandle<JSAPITreeMap> map= JSHandle<JSAPITreeMap>::Cast(self);
+    JSHandle<JSAPITreeMap> map = JSHandle<JSAPITreeMap>::Cast(self);
     JSHandle<JSTaggedValue> key = GetCallArg(argv, 0);
 
     JSHandle<TaggedTreeMap> tmap(thread, map->GetTreeMap());

@@ -188,4 +188,4 @@ HWTEST_F_L0(EcmaModuleTest, GetModuleValue)
         moduleExport->GetModuleValue(thread, exportLocalNameHandle.GetTaggedValue(), false);
     EXPECT_EQ(exportValueHandle.GetTaggedValue(), importDefaultValue);
 }
-}  // namespace panda::ecmascript
+}  // namespace panda::test

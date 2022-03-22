@@ -129,7 +129,7 @@ struct CfgInfo {
     SplitKind splitKind {SplitKind::DEFAULT};
     std::vector<uint8_t *> succs {};
     CfgInfo(uint8_t *startOrEndPc, SplitKind kind, std::vector<uint8_t *> successors)
-        : pc(startOrEndPc), splitKind(kind), succs(successors) {};
+        : pc(startOrEndPc), splitKind(kind), succs(successors) {}
 
     bool operator<(const CfgInfo &rhs) const
     {

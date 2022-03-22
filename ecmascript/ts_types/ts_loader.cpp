@@ -527,4 +527,4 @@ JSHandle<TSModuleTable> TSModuleTable::AddTypeTable(JSThread *thread, JSHandle<T
     table->Set(thread, GetTSTypeTableOffset(numberOfTSTypeTable), typeTable);
     return table;
 }
-}
+} // namespace panda::ecmascript

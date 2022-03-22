@@ -67,4 +67,4 @@ bool PassManager::CollectInfoOfPandaFile(const std::string &fileName, BytecodeTr
     translateInfo->constantPool = constPool;
     return true;
 }
-}
+} // namespace panda::ecmascript::kungfu

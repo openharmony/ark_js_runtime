@@ -69,4 +69,4 @@ void JSMethod::InitializeCallField()
                                                   - HaveThisBit::Decode(callType)) |  // exclude this
                  IsNativeBit::Encode(IsNative());
 }
-}
+} // namespace panda::ecmascript

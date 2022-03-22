@@ -29,7 +29,7 @@ class Region;
 
 class Marker {
 public:
-    Marker(Heap *heap);
+    explicit Marker(Heap *heap);
     virtual ~Marker() = default;
 
     virtual void Initialized()
@@ -74,7 +74,7 @@ protected:
 
 class NonMovableMarker : public Marker {
 public:
-    NonMovableMarker(Heap *heap) : Marker(heap) {}
+    explicit NonMovableMarker(Heap *heap) : Marker(heap) {}
 
 protected:
     void ProcessMarkStack(uint32_t threadId) override;
@@ -89,7 +89,7 @@ protected:
 
 class MovableMarker : public Marker {
 public:
-    MovableMarker(Heap *heap) : Marker(heap) {}
+    explicit MovableMarker(Heap *heap) : Marker(heap) {}
 
 protected:
     inline void HandleRoots(uint32_t threadId, [[maybe_unused]] Root type, ObjectSlot slot) override;
@@ -109,7 +109,7 @@ protected:
 
 class SemiGcMarker : public MovableMarker {
 public:
-    SemiGcMarker(Heap *heap) : MovableMarker(heap) {}
+    explicit SemiGcMarker(Heap *heap) : MovableMarker(heap) {}
 
     void Initialized() override;
 
@@ -128,7 +128,7 @@ private:
 
 class CompressGcMarker : public MovableMarker {
 public:
-    CompressGcMarker(Heap *heap) : MovableMarker(heap) {}
+    explicit CompressGcMarker(Heap *heap) : MovableMarker(heap) {}
 
 protected:
     void ProcessMarkStack(uint32_t threadId) override;

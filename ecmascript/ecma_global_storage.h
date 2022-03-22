@@ -118,7 +118,7 @@ public:
 
     class NodeList {
     public:
-        NodeList(bool isWeak) : isWeak_(isWeak)
+        explicit NodeList(bool isWeak) : isWeak_(isWeak)
         {
             for (int i = 0; i < GLOBAL_BLOCK_SIZE; i++) {
                 nodeList_[i].SetIndex(i);
