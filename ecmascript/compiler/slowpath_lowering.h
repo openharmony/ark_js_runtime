@@ -165,6 +165,9 @@ private:
     void LowerCloseIterator(GateRef gate, GateRef glue);
     void LowerIncDyn(GateRef gate, GateRef glue);
     void LowerDecDyn(GateRef gate, GateRef glue);
+    void LowerToNumber(GateRef gate, GateRef glue);
+    void LowerNegDyn(GateRef gate, GateRef glue);
+    void LowerNotDyn(GateRef gate, GateRef glue);
 
     BytecodeCircuitBuilder *builder_;
     Circuit *circuit_;
