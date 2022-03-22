@@ -134,7 +134,7 @@ class JSDeserializer {
 public:
     // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     JSDeserializer(JSThread *thread, uint8_t *data, size_t size)
-        : thread_(thread), begin_(data), position_(data), end_(data + size)
+        : thread_(thread), factory_(thread->GetEcmaVM()->GetFactory()), begin_(data), position_(data), end_(data + size)
     {
     }
     ~JSDeserializer();
@@ -168,6 +168,7 @@ private:
     NO_COPY_SEMANTIC(JSDeserializer);
 
     JSThread *thread_ = nullptr;
+    ObjectFactory *factory_ = nullptr;
     uint8_t *begin_ = nullptr;
     const uint8_t *position_ = nullptr;
     const uint8_t * const end_ = nullptr;
