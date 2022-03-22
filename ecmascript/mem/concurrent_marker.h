@@ -30,7 +30,7 @@ class Heap;
 
 class ConcurrentMarker {
 public:
-    ConcurrentMarker(Heap *heap);
+    explicit ConcurrentMarker(Heap *heap);
     ~ConcurrentMarker() = default;
 
     void ConcurrentMarking();
@@ -57,7 +57,7 @@ private:
 
     class MarkerTask : public Task {
     public:
-        MarkerTask(Heap *heap) : heap_(heap) {}
+        explicit MarkerTask(Heap *heap) : heap_(heap) {}
         ~MarkerTask() override = default;
         bool Run(uint32_t threadId) override;
 

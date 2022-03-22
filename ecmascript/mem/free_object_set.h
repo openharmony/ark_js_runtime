@@ -27,7 +27,7 @@ class FreeObject;
 
 class FreeObjectSet {
 public:
-    FreeObjectSet(SetType type) : setType_(type)
+    explicit FreeObjectSet(SetType type) : setType_(type)
     {
         Rebuild();
     }

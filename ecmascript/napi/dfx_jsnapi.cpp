@@ -148,4 +148,4 @@ bool DFXJSNApi::CheckSafepoint(const EcmaVM *vm)
     ecmascript::JSThread* thread = vm->GetJSThread();
     return  thread->CheckSafepoint();
 }
-}
+} // namespace panda

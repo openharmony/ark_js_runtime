@@ -413,10 +413,6 @@ public:
     void Jump(Label *label);
     void Branch(GateRef condition, Label *trueLabel, Label *falseLabel);
     void Switch(GateRef index, Label *defaultLabel, int64_t *keysValue, Label *keysLabel, int numberOfKeys);
-    void Seal(Label *label)
-    {
-        label->Seal();
-    }
     void LoopBegin(Label *loopHead);
     void LoopEnd(Label *loopHead);
     // call operation
@@ -614,13 +610,13 @@ public:
     GateRef GetPrototypeFromHClass(GateRef hClass);
     GateRef GetLayoutFromHClass(GateRef hClass);
     GateRef GetBitFieldFromHClass(GateRef hClass);
-    GateRef SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield);
-    GateRef SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef proto);
-    GateRef SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass,
+    void SetBitFieldToHClass(GateRef glue, GateRef hClass, GateRef bitfield);
+    void SetPrototypeToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef proto);
+    void SetProtoChangeDetailsToHClass(VariableType type, GateRef glue, GateRef hClass,
 	                                               GateRef protoChange);
-    GateRef SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef attr);
-    GateRef SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key);
-    GateRef SetTransitionsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef transition);
+    void SetLayoutToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef attr);
+    void SetEnumCacheToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef key);
+    void SetTransitionsToHClass(VariableType type, GateRef glue, GateRef hClass, GateRef transition);
     void SetIsProtoTypeToHClass(GateRef glue, GateRef hClass, GateRef value);
     GateRef IsProtoTypeHClass(GateRef hClass);
     void SetPropertyInlinedProps(GateRef glue, GateRef obj, GateRef hClass,

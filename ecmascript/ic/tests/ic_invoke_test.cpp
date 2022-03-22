@@ -131,4 +131,4 @@ HWTEST_F_L0(ICInvokeTest, CheckPolyInvokeCache)
     JSTaggedValue testValue3 = InvokeCache::CheckPolyInvokeCache(array.GetTaggedValue(), func3.GetTaggedValue());
     ASSERT_EQ(testValue3, JSTaggedValue::Hole());
 }
-}
+} // namespace panda::test

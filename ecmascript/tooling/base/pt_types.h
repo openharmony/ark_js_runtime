@@ -111,7 +111,7 @@ using UniqueDebuggerId = CString;
 class RemoteObject : public PtBaseTypes {
 public:
     RemoteObject() = default;
-    virtual ~RemoteObject() override = default;
+    ~RemoteObject() override = default;
 
     static std::unique_ptr<RemoteObject> FromTagged(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
     static std::unique_ptr<RemoteObject> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
@@ -340,7 +340,7 @@ private:
 class PrimitiveRemoteObject final : public RemoteObject {
 public:
     explicit PrimitiveRemoteObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
-    virtual ~PrimitiveRemoteObject() override = default;
+    ~PrimitiveRemoteObject() override = default;
 };
 
 class StringRemoteObject final : public RemoteObject {
@@ -358,7 +358,7 @@ public:
     {
         SetType(RemoteObject::TypeName::Symbol).SetDescription(DescriptionForSymbol(ecmaVm, Local<SymbolRef>(tagged)));
     }
-    virtual ~SymbolRemoteObject() override = default;
+    ~SymbolRemoteObject() override = default;
 
 private:
     CString DescriptionForSymbol(const EcmaVM *ecmaVm, const Local<SymbolRef> &tagged) const;
@@ -372,7 +372,7 @@ public:
             .SetClassName(RemoteObject::ClassName::Function)
             .SetDescription(DescriptionForFunction(ecmaVm, tagged));
     }
-    virtual ~FunctionRemoteObject() override = default;
+    ~FunctionRemoteObject() override = default;
 
 private:
     CString DescriptionForFunction(const EcmaVM *ecmaVm, const Local<FunctionRef> &tagged) const;
@@ -394,7 +394,7 @@ public:
             .SetClassName(classname)
             .SetDescription(DescriptionForObject(ecmaVm, tagged));
     }
-    virtual ~ObjectRemoteObject() override = default;
+    ~ObjectRemoteObject() override = default;
     static CString DescriptionForObject(const EcmaVM *ecmaVm, const Local<JSValueRef> &tagged);
 
 private:
@@ -879,7 +879,7 @@ struct ScriptLanguage {
 class Location : public PtBaseTypes {
 public:
     Location() = default;
-    virtual ~Location() override = default;
+    ~Location() override = default;
 
     static std::unique_ptr<Location> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
@@ -935,7 +935,7 @@ private:
 class ScriptPosition : public PtBaseTypes {
 public:
     ScriptPosition() = default;
-    virtual ~ScriptPosition() override = default;
+    ~ScriptPosition() override = default;
 
     static std::unique_ptr<ScriptPosition> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
@@ -974,7 +974,7 @@ private:
 class SearchMatch : public PtBaseTypes {
 public:
     SearchMatch() = default;
-    virtual ~SearchMatch() override = default;
+    ~SearchMatch() override = default;
     static std::unique_ptr<SearchMatch> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;
 
@@ -990,7 +990,7 @@ private:
 class LocationRange : public PtBaseTypes {
 public:
     LocationRange() = default;
-    virtual ~LocationRange() override = default;
+    ~LocationRange() override = default;
 
     static std::unique_ptr<LocationRange> Create(const EcmaVM *ecmaVm, const Local<JSValueRef> &params);
     Local<ObjectRef> ToObject(const EcmaVM *ecmaVm) override;

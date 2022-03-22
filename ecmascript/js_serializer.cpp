@@ -1186,7 +1186,7 @@ JSHandle<JSTaggedValue> JSDeserializer::ReadJSArrayBuffer()
     // create jsarraybuffer
     JSHandle<JSTaggedValue> arrayBufferTag;
     if (shared) {
-        uint64_t *bufferAddr = (uint64_t*)GetBuffer(sizeof(uint64_t));
+        uint64_t *bufferAddr = reinterpret_cast<uint64_t*>(GetBuffer(sizeof(uint64_t)));
         void* bufferData = ToVoidPtr(*bufferAddr);
         JSHandle<JSArrayBuffer> arrayBuffer = factory->NewJSArrayBuffer(bufferData, arrayLength, nullptr, nullptr);
         arrayBufferTag = JSHandle<JSTaggedValue>::Cast(arrayBuffer);

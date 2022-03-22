@@ -92,7 +92,7 @@ JSTaggedValue BuiltinsWeakMap::WeakMapConstructor(EcmaRuntimeCallInfo *argv)
             JSTaggedValue ret = JSIterator::IteratorClose(thread, iter, record).GetTaggedValue();
             if (!thread->HasPendingException()) {
                 THROW_NEW_ERROR_AND_RETURN_VALUE(thread, typeError.GetTaggedValue(), ret);
-            };
+            }
             return ret;
         }
         // Let k be Get(nextItem, "0").

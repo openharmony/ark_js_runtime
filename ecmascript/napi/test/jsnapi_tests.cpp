@@ -755,11 +755,11 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_003)
     JSHandle<JSTaggedValue> defaultString = thread_->GlobalConstants()->GetHandledDefaultString();
     PropertyDescriptor desc = PropertyDescriptor(thread_, defaultString);
     JSObject::DefineOwnProperty(thread_, JSHandle<JSObject>::Cast(protoFunc), defaultString, desc);
-   
+
     noProtoLocal->Inherit(vm_, protoLocal);
     JSHandle<JSFunction> son1Handle = JSHandle<JSFunction>::Cast(JSNApiHelper::ToJSHandle(noProtoLocal));
     EXPECT_TRUE(son1Handle->HasFunctionPrototype());
-    
+
     OperationResult res = JSObject::GetProperty(thread_, JSHandle<JSObject>::Cast(son1Handle), defaultString);
     EXPECT_EQ(JSTaggedValue::SameValue(defaultString, res.GetValue()), true);
 
@@ -787,7 +787,7 @@ HWTEST_F_L0(JSNApiTests, InheritPrototype_004)
     JSMethod *invokeSelf =
         vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionPrototypeInvokeSelf));
     JSMethod *ctor = vm_->GetMethodForNativeFunction(reinterpret_cast<void *>(BuiltinsFunction::FunctionConstructor));
-    
+
     JSHandle<JSHClass> protoDynclass = JSHandle<JSHClass>::Cast(env->GetFunctionClassWithProto());
     JSHandle<JSFunction> funcFuncPrototype = factory->NewJSFunctionByDynClass(invokeSelf, protoDynclass);
     // add method in funcPrototype
