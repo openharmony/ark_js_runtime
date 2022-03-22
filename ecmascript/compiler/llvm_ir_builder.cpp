@@ -1212,7 +1212,8 @@ int64_t LLVMIRBuilder::GetBitWidthFromMachineType(MachineType machineType) const
         case FLEX:
         case ANYVALUE:
             abort();
-            break;
+        default:
+            abort();
     }
 }
 
