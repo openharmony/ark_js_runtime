@@ -16,8 +16,8 @@ prefixes:
     description: Extension for ecma support.
 
 groups:
-  - title: Ecma extension intrunctions
-    description: Ecma extension intrunctions with prefix ecam
+  - title: Ecma extension instructions
+    description: Ecma extension instructions with prefix ecma
     verification:
       - none
     exceptions:

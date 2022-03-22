@@ -80,11 +80,11 @@ void ModuleManager::StoreModuleValue(JSTaggedValue key, JSTaggedValue value)
     currentModule->StoreModuleValue(thread, keyHandle, valueHandle);
 }
 
-JSHandle<SourceTextModule> ModuleManager::HostGetImportedModule(const CString &referencingModule)
+JSHandle<SourceTextModule> ModuleManager::HostGetImportedModule(const std::string &referencingModule)
 {
     ObjectFactory *factory = vm_->GetFactory();
     JSHandle<JSTaggedValue> referencingHandle =
-        JSHandle<JSTaggedValue>::Cast(factory->NewFromString(referencingModule));
+        JSHandle<JSTaggedValue>::Cast(factory->NewFromStdString(referencingModule));
     int entry =
         NameDictionary::Cast(resolvedModules_.GetTaggedObject())->FindEntry(referencingHandle.GetTaggedValue());
     LOG_IF(entry == -1, FATAL, ECMASCRIPT) << "cannot get module: " << referencingModule;
@@ -106,7 +106,7 @@ JSHandle<SourceTextModule> ModuleManager::HostResolveImportedModule(const std::s
             thread, NameDictionary::Cast(resolvedModules_.GetTaggedObject())->GetValue(entry));
     }
 
-    const JSPandaFile *jsPandaFile = EcmaVM::GetJSPandaFileManager()->LoadJSPandaFile(referencingModule);
+    const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(referencingModule);
     if (jsPandaFile == nullptr) {
         LOG_ECMA(ERROR) << "open jsPandaFile " << referencingModule << " error";
         UNREACHABLE();

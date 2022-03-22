@@ -24,6 +24,7 @@
 #include "ecmascript/interpreter/interpreter.h"
 #include "ecmascript/js_object-inl.h"
 #include "ecmascript/js_tagged_value-inl.h"
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/tooling/pt_js_extractor.h"
 
@@ -191,7 +192,6 @@ JSHandle<EcmaString> ErrorHelper::BuildEcmaStackTrace(JSThread *thread)
 
 CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
 {
-    auto ecmaVm = thread->GetEcmaVM();
     CString data;
     auto sp = const_cast<JSTaggedType *>(thread->GetCurrentSPFrame());
     InterpretedFrameHandler frameHandler(sp);
@@ -205,7 +205,8 @@ CString ErrorHelper::BuildNativeEcmaStackTrace(JSThread *thread)
             data += DecodeFunctionName(method->ParseFunctionName());
             data.append(" (");
             // source file
-            PtJSExtractor *debugExtractor = ecmaVm->GetDebugInfoExtractor(method->GetPandaFile());
+            PtJSExtractor *debugExtractor =
+                JSPandaFileManager::GetInstance()->GetPtJSExtractor(method->GetJSPandaFile());
             const CString &sourceFile = debugExtractor->GetSourceFile(method->GetFileId());
             if (sourceFile.empty()) {
                 data.push_back('?');

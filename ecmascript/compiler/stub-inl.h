@@ -388,6 +388,13 @@ inline void Stub::DebugPrint(GateRef glue, std::initializer_list<GateRef> args)
         RTSTUB_ID(DebugPrint) + NOGC_RTSTUB_CSIGNS_BEGIN), args);
 }
 
+inline void Stub::FatalPrint(GateRef glue, std::initializer_list<GateRef> args)
+{
+    const CallSignature *fatalPrint = RuntimeStubCSigns::Get(RTSTUB_ID(FatalPrint));
+    CallRuntime(fatalPrint, glue, GetInt64Constant(
+        RTSTUB_ID(FatalPrint) + NOGC_RTSTUB_CSIGNS_BEGIN), args);
+}
+
 inline GateRef Stub::CallRuntimeTrampoline(GateRef glue, GateRef target, std::initializer_list<GateRef> args)
 {
     auto depend = env_.GetCurrentLabel()->GetDepend();
@@ -670,6 +677,11 @@ inline GateRef Stub::IntPtrLSL(GateRef x, GateRef y)
 {
     auto ptrSize = env_.Is32Bit() ? MachineType::I32 : MachineType::I64;
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::LSL), ptrSize, x, y);
+}
+
+inline GateRef Stub::Int32ASR(GateRef x, GateRef y)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::ASR), MachineType::I32, x, y);
 }
 
 inline GateRef Stub::UInt32LSR(GateRef x, GateRef y)
@@ -1727,6 +1739,11 @@ inline GateRef Stub::TaggedCastToWeakReferentUnChecked(GateRef x)
 inline GateRef Stub::ChangeInt32ToFloat64(GateRef x)
 {
     return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::SIGNED_INT_TO_FLOAT), MachineType::F64, x);
+}
+
+inline GateRef Stub::ChangeUInt32ToFloat64(GateRef x)
+{
+    return env_.GetCircuitBuilder().NewArithmeticGate(OpCode(OpCode::UNSIGNED_INT_TO_FLOAT), MachineType::F64, x);
 }
 
 inline GateRef Stub::ChangeFloat64ToInt32(GateRef x)

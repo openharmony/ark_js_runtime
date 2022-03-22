@@ -658,7 +658,7 @@ void SourceTextModule::ModuleExecution(JSThread *thread, const JSHandle<SourceTe
     JSTaggedValue moduleFileName = module->GetEcmaModuleFilename();
     ASSERT(moduleFileName.IsString());
     std::string moduleFilenameStr = base::StringHelper::ToStdString(EcmaString::Cast(moduleFileName.GetHeapObject()));
-    const JSPandaFile *jsPandaFile = EcmaVM::GetJSPandaFileManager()->LoadJSPandaFile(moduleFilenameStr);
+    const JSPandaFile *jsPandaFile = JSPandaFileManager::GetInstance()->LoadJSPandaFile(moduleFilenameStr);
     if (jsPandaFile == nullptr) {
         LOG_ECMA(ERROR) << "open jsPandaFile " << moduleFilenameStr << " error";
         UNREACHABLE();

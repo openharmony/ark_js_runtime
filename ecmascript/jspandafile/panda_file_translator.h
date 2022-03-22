@@ -41,18 +41,15 @@ class Program;
 class JSPandaFileManager;
 class JSPandaFile;
 
-class PandaFileTranslator {
+class PUBLIC_API PandaFileTranslator {
 public:
     enum FixInstructionIndex : uint8_t { FIX_ONE = 1, FIX_TWO = 2, FIX_FOUR = 4 };
 
-    explicit PandaFileTranslator(const JSPandaFile *jsPandaFile);
-    PUBLIC_API PandaFileTranslator(EcmaVM *vm, const JSPandaFile *jsPandaFile);
+    PandaFileTranslator() = default;
     ~PandaFileTranslator() = default;
     NO_COPY_SEMANTIC(PandaFileTranslator);
     NO_MOVE_SEMANTIC(PandaFileTranslator);
-    JSHandle<JSFunction> DefineMethodInLiteral(JSThread *thread, uint32_t methodId, FunctionKind kind,
-                                               uint16_t length) const;
-    JSHandle<Program> PUBLIC_API GenerateProgram();
+    static JSHandle<Program> GenerateProgram(EcmaVM *vm, const JSPandaFile *jsPandaFile);
     static void TranslateClasses(JSPandaFile *jsPandaFile, const CString &methodName,
                                  std::vector<MethodPcInfo> *methodPcInfos = nullptr);
 
@@ -62,12 +59,8 @@ private:
     static void FixInstructionId32(const BytecodeInstruction &inst, uint32_t index, uint32_t fixOrder = 0);
     static void FixOpcode(uint8_t *pc);
     static void UpdateICOffset(JSMethod *method, uint8_t *pc);
-    void DefineClassInConstPool(const JSHandle<ConstantPool> &constpool) const;
-
-    EcmaVM *ecmaVm_;
-    ObjectFactory *factory_;
-    JSThread *thread_;
-    const JSPandaFile *jsPandaFile_;
+    static JSTaggedValue ParseConstPool(EcmaVM *vm, const JSPandaFile *jsPandaFile);
+    static void DefineClassInConstPool(JSThread *thread, JSHandle<ConstantPool> constpool);
 };
 }  // namespace panda::ecmascript
 #endif  // ECMASCRIPT_JSPANDAFILE_PANDA_FILE_TRANSLATOR_H

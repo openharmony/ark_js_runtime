@@ -243,9 +243,13 @@ private:
     V(BytecodeHandler)                      \
     V(SingleStepDebugging)                  \
     V(AsmInterpreterEntry)                  \
+    V(HandleOverflow)                       \
     V(RuntimeCallTrampolineInterpreterAsm)  \
     V(RuntimeCallTrampolineAot)             \
+    V(AotCallAotTrampoline)                 \
+    V(HandleCommonCall)                     \
     V(DebugPrint)                           \
+    V(FatalPrint)                           \
     V(InsertOldToNewRememberedSet)          \
     V(DoubleToInt)                          \
     V(MarkingBarrier)                       \

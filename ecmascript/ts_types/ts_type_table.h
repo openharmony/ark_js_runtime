@@ -51,7 +51,7 @@ public:
         return static_cast<TSTypeTable *>(object);
     }
 
-    static void Initialize(JSThread *thread, const panda_file::File &pf,
+    static void Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
                            CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static GlobalTSTypeRef GetPropertyTypeGT(JSThread *thread, JSHandle<TSTypeTable> &table, TSTypeKind typeKind,
@@ -78,14 +78,12 @@ public:
 
 private:
 
-    static JSHandle<TSTypeTable> GenerateTypeTable(JSThread *thread, const panda_file::File &pf,
+    static JSHandle<TSTypeTable> GenerateTypeTable(JSThread *thread, const JSPandaFile *jsPandaFile,
                                                     CVector<JSHandle<EcmaString>> &recordImportModules);
 
     static JSHandle<TaggedArray> GetExportTableFromPandFile(JSThread *thread, const panda_file::File &pf);
 
     static panda_file::File::EntityId GetFileId(const panda_file::File &pf);
-
-    static const panda_file::File* GetPandaFile(JSHandle<EcmaString> modulePath);
 
     static JSHandle<TSClassType> ParseClassType(JSThread *thread, JSHandle<TSTypeTable> &typeTable,
                                                 const JSHandle<TaggedArray> &literal);

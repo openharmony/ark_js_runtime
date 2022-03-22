@@ -196,14 +196,14 @@ inline size_t JSHClass::SizeFromJSHClass(TaggedObject *header)
     return size;
 }
 
-inline void JSHClass::Copy(const JSThread *thread, const JSHClass *jshcalss)
+inline void JSHClass::Copy(const JSThread *thread, const JSHClass *jshclass)
 {
     DISALLOW_GARBAGE_COLLECTION;
 
     // copy jshclass
-    SetPrototype(thread, jshcalss->GetPrototype());
-    SetBitField(jshcalss->GetBitField());
-    SetNumberOfProps(jshcalss->NumberOfProps());
+    SetPrototype(thread, jshclass->GetPrototype());
+    SetBitField(jshclass->GetBitField());
+    SetNumberOfProps(jshclass->NumberOfProps());
 }
 }  // namespace panda::ecmascript
 

@@ -46,7 +46,7 @@ enum class SerializationUID : uint8_t {
     C_FALSE,
     // Tagged object reference mark
     TAGGED_OBJECT_REFERNCE,
-    // Support tagged objct id reference begin
+    // Support tagged object id reference begin
     JS_DATE,
     JS_REG_EXP,
     JS_PLAIN_OBJECT,
@@ -65,7 +65,7 @@ enum class SerializationUID : uint8_t {
     JS_FLOAT32_ARRAY,
     JS_FLOAT64_ARRAY,
     // TypedArray end
-    // Support tagged objct id reference end
+    // Support tagged object id reference end
     // Error UIDs
     JS_ERROR,
     EVAL_ERROR,

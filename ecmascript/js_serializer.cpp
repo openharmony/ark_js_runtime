@@ -583,7 +583,7 @@ bool JSSerializer::WriteJSArrayBuffer(const JSHandle<JSTaggedValue> &value)
         return false;
     }
 
-    // write Accessor shared which indicate the C memeory is shared
+    // write Accessor shared which indicate the C memory is shared
     bool shared = arrayBuffer->GetShared();
     if (!WriteBoolean(shared)) {
         bufferSize_ = oldSize;

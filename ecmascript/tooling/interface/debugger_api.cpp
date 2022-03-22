@@ -148,9 +148,9 @@ void DebuggerApi::ClearException(const EcmaVM *ecmaVm)
 const panda_file::File *DebuggerApi::FindPandaFile(const EcmaVM *ecmaVm, const CString &fileName)
 {
     const panda_file::File *pfs = nullptr;
-    EcmaVM::GetJSPandaFileManager()->EnumerateJSPandaFiles([&pfs, fileName](
+    ::panda::ecmascript::JSPandaFileManager::GetInstance()->EnumerateJSPandaFiles([&pfs, fileName](
         const panda::ecmascript::JSPandaFile *jsPandaFile) {
-        if (jsPandaFile->GetJSPandaFileDesc() == fileName) {
+        if (ConvertToString(jsPandaFile->GetJSPandaFileDesc()) == fileName) {
             pfs = jsPandaFile->GetPandaFile();
             return false;
         }

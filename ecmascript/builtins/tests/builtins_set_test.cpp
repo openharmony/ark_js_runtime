@@ -354,7 +354,7 @@ HWTEST_F_L0(BuiltinsSetTest, GetIterator)
     EXPECT_EQ(IterationKind::VALUE, IterationKind(iter->GetIterationKind()));
     EXPECT_EQ(JSSet::Cast(set.GetTaggedValue().GetTaggedObject())->GetLinkedSet(), iter->GetIteratedSet());
 
-    // test entrys()
+    // test entries()
     JSTaggedValue result2 = BuiltinsSet::Entries(ecmaRuntimeCallInfo.get());
     JSHandle<JSSetIterator> iter2(thread, result2);
     EXPECT_TRUE(iter2->IsJSSetIterator());

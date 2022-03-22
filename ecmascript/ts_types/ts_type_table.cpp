@@ -12,38 +12,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ecmascript/js_handle.h"
+
+#include "ecmascript/ts_types/ts_type_table.h"
+
+#include "ecmascript/jspandafile/js_pandafile_manager.h"
 #include "ecmascript/jspandafile/literal_data_extractor.h"
 #include "ecmascript/jspandafile/program_object.h"
 #include "ecmascript/object_factory.h"
 #include "ecmascript/ts_types/ts_loader.h"
 #include "ecmascript/ts_types/ts_obj_layout_info-inl.h"
-#include "ecmascript/ts_types/ts_type_table.h"
 
 namespace panda::ecmascript {
-void TSTypeTable::Initialize(JSThread *thread, const panda_file::File &pf,
+void TSTypeTable::Initialize(JSThread *thread, const JSPandaFile *jsPandaFile,
                              CVector<JSHandle<EcmaString>> &recordImportModules)
 {
     EcmaVM *vm = thread->GetEcmaVM();
     TSLoader *tsLoader = vm->GetTSLoader();
     ObjectFactory *factory = vm->GetFactory();
 
-    JSHandle<TSTypeTable> tsTypetable = GenerateTypeTable(thread, pf, recordImportModules);
+    JSHandle<TSTypeTable> tsTypetable = GenerateTypeTable(thread, jsPandaFile, recordImportModules);
 
     // Set TStypeTable -> GlobleModuleTable
-    JSHandle<EcmaString> fileName = factory->NewFromStdString(pf.GetFilename());
+    JSHandle<EcmaString> fileName = factory->NewFromStdString(jsPandaFile->GetJSPandaFileDesc());
     tsLoader->AddTypeTable(JSHandle<JSTaggedValue>(tsTypetable), fileName);
 
     // management dependency module
     while (recordImportModules.size() > 0) {
-        const panda_file::File *moduleFile = GetPandaFile(recordImportModules.back());
+        CString filename = ConvertToString(recordImportModules.back().GetTaggedValue());
         recordImportModules.pop_back();
+        const JSPandaFile *moduleFile = JSPandaFileManager::GetInstance()->OpenJSPandaFile(filename.c_str());
         ASSERT(moduleFile != nullptr);
-        TSTypeTable::Initialize(thread, *moduleFile, recordImportModules);
+        TSTypeTable::Initialize(thread, moduleFile, recordImportModules);
     }
 }
 
-JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const panda_file::File &pf,
+JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const JSPandaFile *jsPandaFile,
                                                      CVector<JSHandle<EcmaString>> &recordImportModules)
 {
     ObjectFactory *factory = thread->GetEcmaVM()->GetFactory();
@@ -52,7 +55,7 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const pan
     int typeKind = 0;
     uint32_t idx = 0;
 
-    JSHandle<TaggedArray> summaryLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, &pf, idx++);
+    JSHandle<TaggedArray> summaryLiteral = LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx++);
     ASSERT_PRINT(summaryLiteral->Get(TYPE_KIND_OFFSET).GetInt() == static_cast<int32_t>(TypeLiteralFlag::COUNTER),
                  "summary type literal flag is not counter");
 
@@ -60,9 +63,9 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const pan
     JSHandle<TSTypeTable> table = factory->NewTSTypeTable(length);
     JSMutableHandle<TaggedArray> typeLiteral(thread, JSTaggedValue::Undefined());
 
+    JSHandle<EcmaString> fileName = factory->NewFromStdString(jsPandaFile->GetJSPandaFileDesc());
     for (; idx <= length; ++idx) {
-        typeLiteral.Update(LiteralDataExtractor::GetDatasIgnoreType(thread, &pf, idx).GetTaggedValue());
-        JSHandle<EcmaString> fileName = factory->NewFromStdString(pf.GetFilename());
+        typeLiteral.Update(LiteralDataExtractor::GetDatasIgnoreType(thread, jsPandaFile, idx).GetTaggedValue());
         JSHandle<JSTaggedValue> type = ParseType(thread, table, typeLiteral, fileName, recordImportModules);
         if (!type->IsNull()) {
             // Set every object type GT
@@ -76,7 +79,7 @@ JSHandle<TSTypeTable> TSTypeTable::GenerateTypeTable(JSThread *thread, const pan
     }
 
     table->SetTypeTableLength(thread, length); // record the object type number
-    table->SetExportValueTable(thread, pf);
+    table->SetExportValueTable(thread, *jsPandaFile->GetPandaFile());
     return table;
 }
 
@@ -173,14 +176,6 @@ panda_file::File::EntityId TSTypeTable::GetFileId(const panda_file::File &pf)
         });
     }
     return fileId;
-}
-
-const panda_file::File* TSTypeTable::GetPandaFile(JSHandle<EcmaString> modulePath)
-{
-    CString modulePathString = ConvertToString(modulePath.GetTaggedValue());
-    auto pandfile = panda_file::OpenPandaFileOrZip(modulePathString, panda_file::File::READ_WRITE);
-    ASSERT(pandfile != nullptr);
-    return pandfile.release();
 }
 
 JSHandle<TaggedArray> TSTypeTable::GetExportTableFromPandFile(JSThread *thread, const panda_file::File &pf)

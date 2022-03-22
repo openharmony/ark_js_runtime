@@ -17,20 +17,21 @@
 #define ECMASCRIPT_ASM_DEFINES_H
 
 #ifdef PANDA_TARGET_64
-#define ASM_GLUE_CURRENT_FRAME_OFFSET     16
-#define ASM_GLUE_LEAVE_FRAME_OFFSET       24
-#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET 2080
+#define ASM_GLUE_CURRENT_FRAME_OFFSET     (16)
+#define ASM_GLUE_LEAVE_FRAME_OFFSET       (24)
+#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET (2088)
 #endif
 
 #ifdef PANDA_TARGET_32
-#define ASM_GLUE_CURRENT_FRAME_OFFSET     16
-#define ASM_GLUE_LEAVE_FRAME_OFFSET       24
-#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET 1056
+#define ASM_GLUE_CURRENT_FRAME_OFFSET     (16)
+#define ASM_GLUE_LEAVE_FRAME_OFFSET       (24)
+#define ASM_GLUE_RUNTIME_FUNCTIONS_OFFSET (1064)
 #endif
 
-#define OPTIMIZE_FRAME_TYPE              0
-#define JS_ENTRY_FRAME_TYPE              1
-#define LEAVE_FRAME_TYPE                 3
-#define ASM_LEAVE_FRAME_TYPE             5
+#define OPTIMIZE_FRAME_TYPE              (0)
+#define JS_ENTRY_FRAME_TYPE              (1)
+#define LEAVE_FRAME_TYPE                 (3)
+#define ASM_LEAVE_FRAME_TYPE             (5)
+#define JSUNDEFINED                     (0xa)
 
 #endif  // ECMASCRIPT_ASM_DEFINES_H

@@ -355,7 +355,7 @@ HWTEST_F_L0(BuiltinsObjectTest, Freeze)
 }
 
 // 19.1.2.6 Object.getOwnPropertyDescriptor ( O, P )
-HWTEST_F_L0(BuiltinsObjectTest, GetOwnPropertyDesciptor)
+HWTEST_F_L0(BuiltinsObjectTest, GetOwnPropertyDescriptor)
 {
     JSHandle<JSTaggedValue> function(thread, BuiltinsObjectTestCreate(thread));
     JSHandle<JSObject> objHandle =
@@ -374,7 +374,7 @@ HWTEST_F_L0(BuiltinsObjectTest, GetOwnPropertyDesciptor)
     objCallInfo->SetCallArg(1, key.GetTaggedValue());
 
     [[maybe_unused]] auto prev = TestHelper::SetupFrame(thread, objCallInfo.get());
-    JSTaggedValue result = BuiltinsObject::GetOwnPropertyDesciptor(objCallInfo.get());
+    JSTaggedValue result = BuiltinsObject::GetOwnPropertyDescriptor(objCallInfo.get());
     TestHelper::TearDownFrame(thread, prev);
 
     ASSERT_TRUE(result.IsECMAObject());

@@ -1812,7 +1812,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 = right.GetInt();
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) & static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
                 left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
@@ -1820,7 +1820,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) & static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else {
             // slow path
             SAVE_PC();
@@ -1843,7 +1843,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 = right.GetInt();
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) | static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
                 left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
@@ -1851,7 +1851,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) | static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else {
             // slow path
             SAVE_PC();
@@ -1874,7 +1874,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
             int32_t opNumber1 = right.GetInt();
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) ^ static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else if (left.IsNumber() && right.IsNumber()) {
             int32_t opNumber0 =
                 left.IsInt() ? left.GetInt() : base::NumberHelper::DoubleToInt(left.GetDouble(), base::INT32_BITS);
@@ -1882,7 +1882,7 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
                 right.IsInt() ? right.GetInt() : base::NumberHelper::DoubleToInt(right.GetDouble(), base::INT32_BITS);
             // NOLINT(hicpp-signed-bitwise)
             auto ret = static_cast<uint32_t>(opNumber0) ^ static_cast<uint32_t>(opNumber1);
-            SET_ACC(JSTaggedValue(static_cast<uint32_t>(ret)))
+            SET_ACC(JSTaggedValue(static_cast<int32_t>(ret)))
         } else {
             // slow path
             SAVE_PC();
@@ -3553,28 +3553,21 @@ NO_UB_SANITIZE void EcmaInterpreter::RunInternal(JSThread *thread, ConstantPool 
     }
     HANDLE_OPCODE(HANDLE_DEFINECLASSWITHBUFFER_PREF_ID16_IMM16_IMM16_V8_V8) {
         uint16_t methodId = READ_INST_16_1();
-        uint16_t imm = READ_INST_16_3();
         uint16_t length = READ_INST_16_5();
         uint16_t v0 = READ_INST_8_7();
         uint16_t v1 = READ_INST_8_8();
         LOG_INST() << "intrinsics::defineclasswithbuffer"
-                   << " method id:" << methodId << " literal id:" << imm << " lexenv: v" << v0 << " parent: v" << v1;
+                   << " method id:" << methodId << " lexenv: v" << v0 << " parent: v" << v1;
         JSFunction *classTemplate = JSFunction::Cast(constpool->GetObjectFromCache(methodId).GetTaggedObject());
         ASSERT(classTemplate != nullptr);
 
-        TaggedArray *literalBuffer = TaggedArray::Cast(constpool->GetObjectFromCache(imm).GetTaggedObject());
         JSTaggedValue lexenv = GET_VREG_VALUE(v0);
         JSTaggedValue proto = GET_VREG_VALUE(v1);
 
         JSTaggedValue res;
         SAVE_PC();
-        if (LIKELY(!classTemplate->GetResolved())) {
-            res = SlowRuntimeStub::ResolveClass(thread, JSTaggedValue(classTemplate), literalBuffer,
-                                                proto, lexenv, constpool);
-        } else {
-            res = SlowRuntimeStub::CloneClassFromTemplate(thread, JSTaggedValue(classTemplate),
-                                                          proto, lexenv, constpool);
-        }
+        res = SlowRuntimeStub::CloneClassFromTemplate(thread, JSTaggedValue(classTemplate),
+                                                      proto, lexenv, constpool);
 
         INTERPRETER_RETURN_IF_ABRUPT(res);
         ASSERT(res.IsClassConstructor());
@@ -3882,7 +3875,7 @@ JSTaggedValue EcmaInterpreter::GetThisObjectFromFastNewFrame(JSTaggedType *sp)
     JSMethod *method = ECMAObject::Cast(state->function.GetTaggedObject())->GetCallTarget();
     ASSERT(method->OnlyHaveThisWithCallField());
     uint32_t numVregs = method->GetNumVregsWithCallField();
-    uint32_t numDeclaredArgs = method->GetNumArgsWithCallField() + 1;  // 1: explict this object
+    uint32_t numDeclaredArgs = method->GetNumArgsWithCallField() + 1;  // 1: explicit this object
     uint32_t hiddenThisObjectIndex = numVregs + numDeclaredArgs;   // hidden this object in the end of fast new frame
     return JSTaggedValue(sp[hiddenThisObjectIndex]);
 }

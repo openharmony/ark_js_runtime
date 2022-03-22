@@ -49,6 +49,7 @@ JS_METHOD_OFFSET_LIST(JS_METHOD_OFFSET_MACRO)
 #undef JS_METHOD_OFFSET_MACRO
 
 namespace panda::ecmascript {
+class JSPandaFile;
 class JSMethod : public Method {
 public:
     static constexpr uint8_t MAX_SLOT_SIZE = 0xFF;
@@ -59,14 +60,9 @@ public:
         return static_cast<JSMethod *>(method);
     }
 
-    explicit JSMethod(Class *klass, const panda_file::File *pf, panda_file::File::EntityId fileId,
-                      panda_file::File::EntityId codeId, uint32_t accessFlags, uint32_t numArgs, const uint16_t *shorty)
-        : Method(klass, pf, fileId, codeId, accessFlags, numArgs, shorty)
-    {
-        bytecodeArray_ = JSMethod::GetInstructions();
-        bytecodeArraySize_ = JSMethod::GetCodeSize();
-    }
-
+    JSMethod(Class *klass, const JSPandaFile *jsPandaFile, panda_file::File::EntityId fileId,
+                      panda_file::File::EntityId codeId, uint32_t accessFlags,
+                      uint32_t numArgs, const uint16_t *shorty);
     JSMethod() = delete;
     ~JSMethod() = default;
     JSMethod(const JSMethod &) = delete;
@@ -187,8 +183,14 @@ public:
         return NumArgsBits::Decode(callField_);
     }
 
+    const JSPandaFile *GetJSPandaFile() const
+    {
+        return jsPandaFile_;
+    }
+
 private:
     uint64_t callField_ {0};
+    const JSPandaFile *jsPandaFile_ {nullptr};
     const uint8_t *bytecodeArray_ {nullptr};
     uint32_t bytecodeArraySize_ {0};
     uint8_t slotSize_ {0};

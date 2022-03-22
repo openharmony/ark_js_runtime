@@ -319,7 +319,7 @@ void OldSpace::SelectCSet()
         return;
     }
     CheckRegionSize();
-    // 1、Select region which alive object largger than 80%
+    // 1、Select region which alive object larger than 80%
     EnumerateRegions([this](Region *region) {
         if (!region->MostObjectAlive()) {
             collectRegionSet_.emplace_back(region);

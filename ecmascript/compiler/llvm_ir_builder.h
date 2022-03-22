@@ -181,6 +181,7 @@ private:
     V(IntAnd, (GateRef gate, GateRef e1, GateRef e2))                                 \
     V(IntXor, (GateRef gate, GateRef e1, GateRef e2))                                 \
     V(IntLsr, (GateRef gate, GateRef e1, GateRef e2))                                 \
+    V(IntAsr, (GateRef gate, GateRef e1, GateRef e2))                                 \
     V(Int32LessThanOrEqual, (GateRef gate, GateRef e1, GateRef e2))                   \
     V(Cmp, (GateRef gate, GateRef e1, GateRef e2))                                    \
     V(Branch, (GateRef gate, GateRef cmp, GateRef btrue, GateRef bfalse))             \
@@ -191,6 +192,7 @@ private:
     V(ReturnVoid, (GateRef gate))                                                     \
     V(CastIntXToIntY, (GateRef gate, GateRef e1))                                     \
     V(ChangeInt32ToDouble, (GateRef gate, GateRef e1))                                \
+    V(ChangeUInt32ToDouble, (GateRef gate, GateRef e1))                               \
     V(ChangeDoubleToInt32, (GateRef gate, GateRef e1))                                \
     V(BitCast, (GateRef gate, GateRef e1))                                            \
     V(IntLsl, (GateRef gate, GateRef e1, GateRef e2))                                 \
