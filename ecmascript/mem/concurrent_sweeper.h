@@ -32,6 +32,8 @@ public:
     NO_COPY_SEMANTIC(ConcurrentSweeper);
     NO_MOVE_SEMANTIC(ConcurrentSweeper);
 
+    void PostConcurrentSweepTasks(bool fullGC = false);
+
     void SweepPhases(bool fullGC = false);
 
     void WaitAllTaskFinished();

@@ -27,6 +27,17 @@ ConcurrentSweeper::ConcurrentSweeper(Heap *heap, bool concurrentSweep)
 {
 }
 
+void ConcurrentSweeper::PostConcurrentSweepTasks(bool fullGC)
+{
+    if (concurrentSweep_) {
+        if (!fullGC) {
+            Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
+        }
+        Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
+        Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
+    }
+}
+
 void ConcurrentSweeper::SweepPhases(bool fullGC)
 {
     MEM_ALLOCATE_AND_GC_TRACE(heap_->GetEcmaVM(), ConcurrentSweepingInitialize);
@@ -44,12 +55,6 @@ void ConcurrentSweeper::SweepPhases(bool fullGC)
         for (int type = startSpaceType_; type < FREE_LIST_NUM; type++) {
             remainderTaskNum_[type] = FREE_LIST_NUM - startSpaceType_;
         }
-
-        if (!fullGC) {
-            Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, OLD_SPACE));
-        }
-        Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, NON_MOVABLE));
-        Platform::GetCurrentPlatform()->PostTask(std::make_unique<SweeperTask>(this, MACHINE_CODE_SPACE));
     } else {
         if (!fullGC) {
             heap_->GetOldSpace()->Sweeping();
