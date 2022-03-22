@@ -295,6 +295,15 @@ void SlowPathLowering::Lower(GateRef gate, EcmaOpcode op)
         case LDGLOBAL_PREF:
             LowerLdGlobal(gate, glue);
             break;
+        case TONUMBER_PREF_V8:
+            LowerToNumber(gate, glue);
+            break;
+        case NEGDYN_PREF_V8:
+            LowerNegDyn(gate, glue);
+            break;
+        case NOTDYN_PREF_V8:
+            LowerNotDyn(gate, glue);
+            break;
         default:
             break;
     }
@@ -829,6 +838,42 @@ void SlowPathLowering::LowerDecDyn(GateRef gate, GateRef glue)
     GateAccessor gateAcc(circuit_);
     CircuitBuilder cirBuilder(circuit_);
     GateRef id = cirBuilder.NewInteger64Constant(RUNTIME_CALL_ID(DecDyn));
+    // 1: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerToNumber(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RTSTUB_ID(ToNumber));
+    // 1: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerNegDyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RTSTUB_ID(NegDyn));
+    // 1: number of value inputs
+    ASSERT(gateAcc.GetNumValueIn(gate) == 1);
+    GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
+                                                    {gateAcc.GetValueIn(gate, 0)});
+    LowerHirToCall(cirBuilder, gate, newGate);
+}
+
+void SlowPathLowering::LowerNotDyn(GateRef gate, GateRef glue)
+{
+    GateAccessor gateAcc(circuit_);
+    CircuitBuilder cirBuilder(circuit_);
+    GateRef id = cirBuilder.NewInteger64Constant(RTSTUB_ID(NotDyn));
     // 1: number of value inputs
     ASSERT(gateAcc.GetNumValueIn(gate) == 1);
     GateRef newGate = cirBuilder.NewRuntimeCallGate(glue, id, Circuit::GetCircuitRoot(OpCode(OpCode::DEPEND_ENTRY)),
