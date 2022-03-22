@@ -73,6 +73,7 @@ public:
     {
         return ref_ == 0;
     }
+
 private:
     uint64_t ref_;
 };
@@ -107,8 +108,8 @@ public:
     static constexpr int ELEMENT_OFFSET = 3;
     static constexpr int NUMBER_ELEMENTS_OFFSET = 0;
     static constexpr int INCREASE_CAPACITY_RATE = 2;
-    static constexpr int DEAULT_TABLE_CAPACITY = 4;
-    static constexpr int INITIA_TSTYPE_TABLE_NUMBER = 0;
+    static constexpr int DEFAULT_TABLE_CAPACITY = 4;
+    static constexpr int INITIAL_TSTYPE_TABLE_NUMBER = 0;
     static constexpr int NOT_FOUND = -1;
 
     static TSModuleTable *Cast(TaggedObject *object)
@@ -138,7 +139,7 @@ public:
 
     void InitializeNumberOfTSTypeTable(JSThread *thread)
     {
-        Set(thread, NUMBER_ELEMENTS_OFFSET, JSTaggedValue(INITIA_TSTYPE_TABLE_NUMBER));
+        Set(thread, NUMBER_ELEMENTS_OFFSET, JSTaggedValue(INITIAL_TSTYPE_TABLE_NUMBER));
     }
 private:
 
@@ -195,16 +196,16 @@ public:
 
     JSHandle<EcmaString> GenerateImportRelativePath(JSHandle<EcmaString> importRel) const;
 
-    GlobalTSTypeRef PUBLIC_API GetGTFromPandFile(const panda_file::File &pf, uint32_t vregId,
+    GlobalTSTypeRef PUBLIC_API GetGTFromPandaFile(const panda_file::File &pf, uint32_t vregId,
                                                  const JSMethod* method) const;
 
-    GlobalTSTypeRef PUBLIC_API GetPrmitiveGT(TSTypeKind kind) const;
+    GlobalTSTypeRef PUBLIC_API GetPrimitiveGT(TSTypeKind kind) const;
 
     GlobalTSTypeRef PUBLIC_API GetImportTypeTargetGT(GlobalTSTypeRef gt) const;
 
     GlobalTSTypeRef PUBLIC_API GetPropType(GlobalTSTypeRef gt, JSHandle<EcmaString> propertyName) const;
 
-    int PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
+    uint32_t PUBLIC_API GetUnionTypeLength(GlobalTSTypeRef gt) const;
 
     GlobalTSTypeRef PUBLIC_API GetUnionTypeByIndex(GlobalTSTypeRef gt, int index) const;
 
@@ -246,7 +247,7 @@ private:
 
     GlobalTSTypeRef CreateGT(int moduleId, int localId, int typeKind) const;
 
-    GlobalTSTypeRef AddUinonTypeToGlobalUnionTable(JSHandle<TSUnionType> unionType);
+    GlobalTSTypeRef AddUnionTypeToGlobalUnionTable(JSHandle<TSUnionType> unionType);
 
     GlobalTSTypeRef FindInGlobalUTable(JSHandle<TSUnionType> unionType) const;
 

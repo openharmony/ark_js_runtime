@@ -81,6 +81,7 @@ public:
 
     DECL_VISIT_OBJECT_FOR_JS_OBJECT(JSObject, LENGTH_OFFSET, SIZE)
     DECL_DUMP()
+
 private:
     inline static uint32_t ComputeCapacity(uint32_t oldCapacity)
     {

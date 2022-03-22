@@ -115,6 +115,7 @@ public:
     }
     static constexpr int NODE_FIELD_COUNT = 7;
     ~Node() = default;
+
 private:
     uint64_t id_ {0};  // Range from 1
     uint64_t index_ {0};
@@ -168,6 +169,7 @@ public:
     static Edge *NewEdge(const Heap *heap, uint64_t id, EdgeType type, Node *from, Node *to, CString *name);
     static constexpr int EDGE_FIELD_COUNT = 3;
     ~Edge() = default;
+
 private:
     uint64_t id_ {-1ULL};
     EdgeType edgeType_ {EdgeType::DEFAULT};

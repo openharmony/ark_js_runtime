@@ -176,6 +176,7 @@ public:
     {
         return LLVMGetPointerToGlobal(engine_, function);
     }
+
 private:
     void UseRoundTripSectionMemoryManager();
     bool BuildMCJITEngine();

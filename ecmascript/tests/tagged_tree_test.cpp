@@ -187,20 +187,20 @@ HWTEST_F_L0(TaggedTreeTest, TreeMapCreate)
 {
     constexpr uint32_t NODE_NUMBERS = 64;
     JSHandle<TaggedTreeMap> tmap(thread, TaggedTreeMap::Create(thread, NODE_NUMBERS));
-    EXPECT_TRUE(tmap->Capacity() == NODE_NUMBERS);
-    EXPECT_TRUE(tmap->GetRootEntries() == -1);
-    EXPECT_TRUE(tmap->NumberOfElements() == 0);
-    EXPECT_TRUE(tmap->NumberOfDeletedElements() == 0);
+    EXPECT_EQ(tmap->Capacity(), NODE_NUMBERS);
+    EXPECT_EQ(tmap->GetRootEntries(), -1);
+    EXPECT_EQ(tmap->NumberOfElements(), 0);
+    EXPECT_EQ(tmap->NumberOfDeletedElements(), 0);
 }
 
 HWTEST_F_L0(TaggedTreeTest, TreeSetCreate)
 {
     constexpr uint32_t NODE_NUMBERS = 64;
     JSHandle<TaggedTreeSet> tset(thread, TaggedTreeSet::Create(thread, NODE_NUMBERS));
-    EXPECT_TRUE(tset->Capacity() == NODE_NUMBERS);
-    EXPECT_TRUE(tset->GetRootEntries() == -1);
-    EXPECT_TRUE(tset->NumberOfElements() == 0);
-    EXPECT_TRUE(tset->NumberOfDeletedElements() == 0);
+    EXPECT_EQ(tset->Capacity(), NODE_NUMBERS);
+    EXPECT_EQ(tset->GetRootEntries(), -1);
+    EXPECT_EQ(tset->NumberOfElements(), 0);
+    EXPECT_EQ(tset->NumberOfDeletedElements(), 0);
 }
 
 HWTEST_F_L0(TaggedTreeTest, TestTreeMapAddKeyAndValue)
