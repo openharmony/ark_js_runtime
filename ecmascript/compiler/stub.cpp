@@ -1151,8 +1151,8 @@ void Stub::SetValueWithBarrier(GateRef glue, GateRef obj, GateRef offset, GateRe
         Branch(BoolAnd(objectNotInYoung, valueRegionInYoung), &isVailedIndex, &notValidIndex);
         Bind(&isVailedIndex);
         {
-            GateRef offset = GetIntPtrConstant(Region::GetOldToNewSetOffset(env_.Is32Bit()));
-            auto oldToNewSet = Load(VariableType::POINTER(), objectRegion, offset);
+            GateRef loadOffset = GetIntPtrConstant(Region::GetOldToNewSetOffset(env_.Is32Bit()));
+            auto oldToNewSet = Load(VariableType::POINTER(), objectRegion, loadOffset);
             Label isNullPtr(env);
             Label notNullPtr(env);
             Branch(IntptrEuqal(oldToNewSet, GetIntPtrConstant(0)), &isNullPtr, &notNullPtr);
@@ -1353,11 +1353,11 @@ GateRef Stub::StringToElementIndex(GateRef string)
                 Branch(UInt32LessThan(*i, len), &loopHead, &afterLoop);
                 LoopBegin(&loopHead);
                 {
-                    Label isUtf16(env);
+                    Label isUtf16A(env);
                     Label notUtf16(env);
                     Label getChar2(env);
-                    Branch(isUtf16String, &isUtf16, &notUtf16);
-                    Bind(&isUtf16);
+                    Branch(isUtf16String, &isUtf16A, &notUtf16);
+                    Bind(&isUtf16A);
                     {
                         // 2 : 2 means utf16 char width is two bytes
                         auto charOffset = IntPtrMul(ChangeInt32ToIntPtr(*i),  GetIntPtrConstant(2));
@@ -2115,14 +2115,14 @@ GateRef Stub::GetPropertyByIndex(GateRef glue, GateRef receiver, GateRef index)
             }
             Bind(&isDictionaryElement);
             {
-                GateRef entry = FindElementFromNumberDictionary(glue, elements, index);
+                GateRef entryA = FindElementFromNumberDictionary(glue, elements, index);
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
-                Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                Branch(Int32NotEqual(entryA, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
-                    GateRef attr = GetAttributesFromDictionary<NumberDictionary>(elements, entry);
-                    GateRef value = GetValueFromDictionary<NumberDictionary>(VariableType::JS_ANY(), elements, entry);
+                    GateRef attr = GetAttributesFromDictionary<NumberDictionary>(elements, entryA);
+                    GateRef value = GetValueFromDictionary<NumberDictionary>(VariableType::JS_ANY(), elements, entryA);
                     Label isAccessor(env);
                     Label notAccessor(env);
                     Branch(IsAccessor(attr), &isAccessor, &notAccessor);
@@ -2207,13 +2207,16 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
             {
                 GateRef layOutInfo = GetLayoutFromHClass(hClass);
                 GateRef propsNum = GetNumberOfPropsFromHClass(hClass);
-                GateRef entry = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
+                // int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber)
+                GateRef entryA = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
                 Label hasEntry(env);
                 Label noEntry(env);
-                Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
+                // if branch condition : entry != -1
+                Branch(Int32NotEqual(entryA, GetInt32Constant(-1)), &hasEntry, &noEntry);
                 Bind(&hasEntry);
                 {
-                    GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entry);
+                    // PropertyAttributes attr(layoutInfo->GetAttr(entry))
+                    GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entryA);
                     GateRef attr = TaggedCastToInt32(propAttr);
                     GateRef value = JSObjectGetProperty(VariableType::JS_ANY(), *holder, hClass, attr);
                     Label isAccessor(env);
@@ -2251,14 +2254,18 @@ GateRef Stub::GetPropertyByName(GateRef glue, GateRef receiver, GateRef key)
             Bind(&isDicMode);
             {
                 GateRef array = GetPropertiesArray(*holder);
-                GateRef entry = FindEntryFromNameDictionary(glue, array, key);
+                // int entry = dict->FindEntry(key)
+                GateRef entryB = FindEntryFromNameDictionary(glue, array, key);
                 Label notNegtiveOne(env);
                 Label negtiveOne(env);
-                Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
+                // if branch condition : entry != -1
+                Branch(Int32NotEqual(entryB, GetInt32Constant(-1)), &notNegtiveOne, &negtiveOne);
                 Bind(&notNegtiveOne);
                 {
-                    GateRef attr = GetAttributesFromDictionary<NameDictionary>(array, entry);
-                    GateRef value = GetValueFromDictionary<NameDictionary>(VariableType::JS_ANY(), array, entry);
+                    // auto value = dict->GetValue(entry)
+                    GateRef attr = GetAttributesFromDictionary<NameDictionary>(array, entryB);
+                    // auto attr = dict->GetAttributes(entry)
+                    GateRef value = GetValueFromDictionary<NameDictionary>(VariableType::JS_ANY(), array, entryB);
                     Label isAccessor1(env);
                     Label notAccessor1(env);
                     Branch(IsAccessor(attr), &isAccessor1, &notAccessor1);
@@ -2378,13 +2385,13 @@ GateRef Stub::FindTransitions(GateRef glue, GateRef receiver, GateRef hclass, Ga
         Bind(&notWeak);
         {
             // need to find from dictionary
-            GateRef entry = FindEntryFromTransitionDictionary(glue, transition, key, metaData);
+            GateRef entryA = FindEntryFromTransitionDictionary(glue, transition, key, metaData);
             Label isFound(env);
             Label notFound(env);
-            Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &isFound, &notFound);
+            Branch(Int32NotEqual(entryA, GetInt32Constant(-1)), &isFound, &notFound);
             Bind(&isFound);
             auto value = GetValueFromDictionary<TransitionsDictionary>(
-                VariableType::JS_POINTER(), transition, entry);
+                VariableType::JS_POINTER(), transition, entryA);
             Label valueUndefined(env);
             Label valueNotUndefined(env);
             Branch(Int64NotEqual(value, GetUndefinedConstant()), &valueNotUndefined,
@@ -2816,15 +2823,15 @@ GateRef Stub::SetPropertyByNameWithOwn(GateRef glue, GateRef receiver, GateRef k
             // int propsNumber = hclass->NumberOfPropsFromHClass()
             GateRef propsNum = GetNumberOfPropsFromHClass(hClass);
             // int entry = layoutInfo->FindElementWithCache(thread, hclass, key, propsNumber)
-            GateRef entry = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
+            GateRef entryA = FindElementWithCache(glue, layOutInfo, hClass, key, propsNum);
             Label hasEntry(env);
             Label noEntry(env);
             // if branch condition : entry != -1
-            Branch(Int32NotEqual(entry, GetInt32Constant(-1)), &hasEntry, &noEntry);
+            Branch(Int32NotEqual(entryA, GetInt32Constant(-1)), &hasEntry, &noEntry);
             Bind(&hasEntry);
             {
                 // PropertyAttributes attr(layoutInfo->GetAttr(entry))
-                GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entry);
+                GateRef propAttr = GetPropAttrFromLayoutInfo(layOutInfo, entryA);
                 GateRef attr = TaggedCastToInt32(propAttr);
                 Label isAccessor(env);
                 Label notAccessor(env);
