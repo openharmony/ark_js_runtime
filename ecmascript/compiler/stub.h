@@ -431,7 +431,7 @@ public:
     // memory
     GateRef Load(VariableType type, GateRef base, GateRef offset);
     GateRef Load(VariableType type, GateRef base);
-    GateRef Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
+    void Store(VariableType type, GateRef glue, GateRef base, GateRef offset, GateRef value);
     // arithmetic
     GateRef TaggedCastToIntPtr(GateRef x);
     GateRef Int16Add(GateRef x, GateRef y);
