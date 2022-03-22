@@ -34,7 +34,7 @@ class Program;
 
 class JSPandaFileManager {
 public:
-    ~JSPandaFileManager();
+    PUBLIC_API ~JSPandaFileManager();
 
     static JSPandaFileManager *GetInstance()
     {
