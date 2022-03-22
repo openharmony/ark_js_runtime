@@ -1587,6 +1587,23 @@ DEF_RUNTIME_STUBS(CallNative)
     return retValue.GetRawData();
 }
 
+DEF_RUNTIME_STUBS(LdBigInt)
+{
+    RUNTIME_STUBS_HEADER(LdBigInt);
+    CONVERT_ARG_HANDLE_CHECKED(JSTaggedValue, numberBigInt, 0);
+    return RuntimeLdBigInt(thread, numberBigInt).GetRawData();
+}
+
+DEF_RUNTIME_STUBS(NewLexicalEnvWithNameDyn)
+{
+    RUNTIME_STUBS_HEADER(NewLexicalEnvWithNameDyn);
+    CONVERT_ARG_TAGGED_CHECKED(numVars, 0);
+    CONVERT_ARG_TAGGED_CHECKED(scopeId, 1);
+    return RuntimeNewLexicalEnvWithNameDyn(thread,
+        static_cast<uint16_t>(numVars.GetInt()),
+        static_cast<uint16_t>(scopeId.GetInt())).GetRawData();
+}
+
 int32_t RuntimeStubs::DoubleToInt(double x)
 {
     return base::NumberHelper::DoubleToInt(x, base::INT32_BITS);

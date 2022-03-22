@@ -157,8 +157,8 @@ namespace panda::ecmascript::kungfu {
     T(HandleStOwnByValueWithNameSetPrefV8V8, 7)             \
     T(HandleStOwnByNameWithNameSetPrefId32V8, 7)            \
     T(HandleLdFunctionPref, 7)                              \
-    V(HandleLdBigIntPrefId32, 7)                            \
-    V(HandleNewLexEnvWithNameDynPrefImm16Imm16, 7)          \
+    T(HandleNewLexEnvWithNameDynPrefImm16Imm16, 7)          \
+    T(HandleLdBigIntPrefId32, 7)                            \
     T(HandleMovDynV8V8, 7)                                  \
     T(HandleMovDynV16V16, 7)                                \
     T(HandleLdaStrId32, 7)                                  \
