@@ -341,7 +341,7 @@ GateRef CircuitBuilder::NewRuntimeCallGate(GateRef glue, GateRef target,
         inputs.push_back(arg);
     }
     OpCode opcode(OpCode::RUNTIME_CALL);
-    const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(RuntimeCallTrampolineAot));
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntime));
     MachineType machineType = GetCallMachineTypeFromVariableType(descriptor->GetReturnType());
     GateType type = VariableType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)
@@ -354,7 +354,7 @@ GateRef CircuitBuilder::CallRuntimeVariadic(GateRef glue, GateRef target, GateRe
     std::vector<GateRef> inputs {depend, target, glue};
     inputs.insert(inputs.end(), args.begin(), args.end());
     OpCode opcode(OpCode::RUNTIME_CALL);
-    const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(RuntimeCallTrampolineAot));
+    const CallSignature *descriptor = RuntimeStubCSigns::Get(RTSTUB_ID(OptimizedCallRuntime));
     MachineType machineType = GetCallMachineTypeFromVariableType(descriptor->GetReturnType());
     GateType type = VariableType2GateType(descriptor->GetReturnType());
     // 2 : 2 means extra two input gates (target glue)

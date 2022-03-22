@@ -18,14 +18,14 @@
 .global JSFunctionEntry
 .type JSFunctionEntry, %function
 
-.global RuntimeCallTrampolineAot
-.type RuntimeCallTrampolineAot, %function
+.global OptimizedCallRuntime
+.type OptimizedCallRuntime, %function
 
-.global RuntimeCallTrampolineInterpreterAsm
-.type RuntimeCallTrampolineInterpreterAsm, %function
+.global AsmIntCallRuntime
+.type AsmIntCallRuntime, %function
 
- .global AotCallAotTrampoline
-.type AotCallAotTrampoline, %function
+ .global OptimizedCallOptimized
+.type OptimizedCallOptimized, %function
 
 .global HandleCommonCall
 .type HandleCommonCall, %function
@@ -36,7 +36,7 @@
 #define ARGS_STACK_TOP_TO_FP_OFFSET (CALLEESAVE_REGS_SIZE + SLOT_SIZE)
 
 // uint64_t JSFunctionEntry(uintptr_t glue, uintptr_t prevFp, uint32_t expectedNumArgs,
-//                                uint32_t actualNumArgs, uintptr_t codeAddr, ...);
+//                                uint32_t actualNumArgs, const JSTaggedType argV[], uintptr_t codeAddr);
 // Input:
 // %r0 - glue
 // %r1 - prevFp
@@ -72,14 +72,15 @@ JSFunctionEntry:
     rscs    r5, r4, #0
     blo     .LCopyExtraAument
 .LCopyArguments:
-    ldr     lr, [r11, #ARGS_STACK_TOP_TO_FP_OFFSET]   // load js function code address
+    add     r4, r11, #ARGS_STACK_TOP_TO_FP_OFFSET
+    add     r4, r4,  #SLOT_SIZE                   // skip argv[]
+    ldr     lr, [r4]   // load js function code address
     cmp     r8, r3
     movls   r3, r8
     cmp     r3, #0
     beq     .LInvokeJSFunction
 
-    add     r4, r11, #ARGS_STACK_TOP_TO_FP_OFFSET
-    add     r4, r4,  #SLOT_SIZE                   // skip codeAddr,load argv[0] addr
+    add     r4, r11, #ARGS_STACK_TOP_TO_FP_OFFSET // argv[]
     add     r5, r4, r3, lsl #3
 .LCopyLoop:
     sub     r5, r5, #8
@@ -132,9 +133,9 @@ JSFunctionEntry:
 //   |       padding            |   v
 //   +--------------------------+ ---
 
-.global RuntimeCallTrampolineAot
-.type RuntimeCallTrampolineAot, %function
-RuntimeCallTrampolineAot:
+.global OptimizedCallRuntime
+.type OptimizedCallRuntime, %function
+OptimizedCallRuntime:
     push    {r11, lr}                                   // save register for fp, rip
     mov     r11, sp                                     // set frame pointer = callsiteFp
     str     r11, [r0, #ASM_GLUE_CURRENT_FRAME_OFFSET]   // save to thread->currentFrame_
@@ -161,9 +162,9 @@ RuntimeCallTrampolineAot:
     pop     {r11, lr}
     bx      lr
 
-.global RuntimeCallTrampolineInterpreterAsm
-.type RuntimeCallTrampolineInterpreterAsm, %function
-RuntimeCallTrampolineInterpreterAsm:
+.global AsmIntCallRuntime
+.type AsmIntCallRuntime, %function
+AsmIntCallRuntime:
     add     sp, sp, #-8
     str     lr, [sp, #4]
     str     sp, [r0, #ASM_GLUE_LEAVE_FRAME_OFFSET]   // save to thread->currentFrame_
@@ -191,7 +192,7 @@ RuntimeCallTrampolineInterpreterAsm:
     bx      lr
 
 
-//extern "C" JSTaggedType AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNumArgs,
+//extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
 //                                  uint32_t actualNumArgs, uintptr_t codeAddr, ...)
 // Input:
 // %r0 - glue
@@ -199,9 +200,9 @@ RuntimeCallTrampolineInterpreterAsm:
 // %r2 - actualNumArgs
 // %r3 - codeAddr
 
-.global AotCallAotTrampoline
-.type AotCallAotTrampoline, %function
-AotCallAotTrampoline:
+.global OptimizedCallOptimized
+.type OptimizedCallOptimized, %function
+OptimizedCallOptimized:
     push    {r4, r5, r6, r7, r8, r9, r10, lr}   // callee save
 
     mov     r8, r1                             // save expected

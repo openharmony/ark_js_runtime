@@ -30,9 +30,9 @@ class GlobalEnv;
 class JSthread;
 class JSFunction;
 class ObjectFactory;
-extern "C" JSTaggedType RuntimeCallTrampolineAot(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
-extern "C" JSTaggedType RuntimeCallTrampolineInterpreterAsm(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
-extern "C" JSTaggedType AotCallAotTrampoline(uintptr_t glue, uint32_t expectedNumArgs,
+extern "C" JSTaggedType OptimizedCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" JSTaggedType AsmIntCallRuntime(uintptr_t glue, uint64_t runtime_id, uint64_t argc, ...);
+extern "C" JSTaggedType OptimizedCallOptimized(uintptr_t glue, uint32_t expectedNumArgs,
     uint32_t actualNumArgs, uintptr_t codeAddr, ...);
 extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp, uint64_t funcReg,
                                  uint64_t actualArgc, ...);
@@ -42,9 +42,9 @@ extern "C" void HandleCommonCall(uintptr_t glue, uint64_t callType, uintptr_t sp
     V(InsertOldToNewRememberedSet, 3)         \
     V(MarkingBarrier, 5)                      \
     V(DoubleToInt, 1)                         \
-    V(RuntimeCallTrampolineAot, 3)            \
-    V(AotCallAotTrampoline, 4)                \
-    V(RuntimeCallTrampolineInterpreterAsm, 3) \
+    V(OptimizedCallRuntime, 3)                \
+    V(OptimizedCallOptimized, 4)              \
+    V(AsmIntCallRuntime, 3)                   \
     V(HandleCommonCall, 5)
 
 #define RUNTIME_STUB_WITH_GC_LIST(V)         \
