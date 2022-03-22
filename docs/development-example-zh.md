@@ -51,7 +51,7 @@
     1.  设置搜索路径：
 
         ```
-        export LD_LIBRARY_PATH= out/hi3516dv300/clang_x64/ark/ark:out/hi3516dv300/clang_x64/ark/ark_js_runtime:out/hi3516dv300/clang_x64/global/i18n_standard:prebuilts/clang/ohos/linux-x86_64/llvm/lib
+        export LD_LIBRARY_PATH= /your code path/out/hi3516dv300/clang_x64/ark/ark:/your code path/out/hi3516dv300/clang_x64/ark/ark_js_runtime:/your code path/out/hi3516dv300/clang_x64/global/i18n_standard:/your code path/prebuilts/clang/ohos/linux-x86_64/llvm/lib
         ```
 
     2.  执行ark\_js\_vm：
@@ -72,10 +72,16 @@
 
 ### 反汇编hello-world.abc
 
-执行如下命令，结果输出到output文件中：
+编译生成反汇编工具：
 
 ```
-./your code path/out/hi3516dv300/clang_x64/ark/ark/ark_disasm hello-world.abc output
+./build.sh --product-name Hi3516DV300 --build-target ark_host_linux_tools_packages
+```
+
+执行如下命令，结果输出到output.pa文件中：
+
+```
+./your code path/out/hi3516dv300/clang_x64/ark/ark/ark_disasm hello-world.abc output.pa
 ```
 
 hello-world.abc反汇编结果如下：
