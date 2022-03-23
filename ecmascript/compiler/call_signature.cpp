@@ -420,9 +420,9 @@ DEF_CALL_SIGNATURE(HandleOverflow)
 DEF_CALL_SIGNATURE(AsmIntCallRuntime)
 {
     /* 3 : 3 input parameters */
-    CallSignature runtimeCallTrampoline("AsmIntCallRuntime", 0, 3,
+    CallSignature asmIntCallRuntime("AsmIntCallRuntime", 0, 3,
         ArgumentsOrder::DEFAULT_ORDER, VariableType::JS_ANY());
-    *callSign = runtimeCallTrampoline;
+    *callSign = asmIntCallRuntime;
     std::array<VariableType, 3> params = { /* 3 : 3 input parameters */
         VariableType::POINTER(),
         VariableType::INT64(),
