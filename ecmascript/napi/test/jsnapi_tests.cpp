@@ -101,7 +101,7 @@ HWTEST_F_L0(JSNApiTests, RegisterFunction)
         callback->Call(vm_, JSValueRef::Undefined(vm_), arguments.data(), arguments.size());
     ASSERT_TRUE(result->IsArray(vm_));
     Local<ArrayRef> array(result);
-    ASSERT_EQ(array->Length(vm_), arguments.size());
+    ASSERT_EQ(static_cast<uint64_t>(array->Length(vm_)), arguments.size());
 }
 
 HWTEST_F_L0(JSNApiTests, GetProperty)
@@ -426,8 +426,8 @@ HWTEST_F_L0(JSNApiTests, DataView)
     Local<DataViewRef> dataView = DataViewRef::New(vm_, arrayBuffer, 5, 7);
     ASSERT_TRUE(dataView->IsDataView());
     ASSERT_EQ(dataView->GetArrayBuffer(vm_)->GetBuffer(), arrayBuffer->GetBuffer());
-    ASSERT_EQ(dataView->ByteLength(), 7); // 7 : size of arguments
-    ASSERT_EQ(dataView->ByteOffset(), 5); // 5 : size of arguments
+    ASSERT_EQ(dataView->ByteLength(), 7U); // 7 : size of arguments
+    ASSERT_EQ(dataView->ByteOffset(), 5U); // 5 : size of arguments
 
     // 5 : offset of byte, 11 : length
     dataView = DataViewRef::New(vm_, arrayBuffer, 5, 11);
